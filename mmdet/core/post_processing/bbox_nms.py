@@ -1,0 +1,54 @@
+import torch
+
+from mmdet.ops import nms
+
+
+def multiclass_nms(multi_bboxes, multi_scores, score_thr, nms_thr, max_num=-1):
+    """NMS for multi-class bboxes.
+
+    Args:
+        multi_bboxes (Tensor): shape (n, #class*4) or (n, 4)
+        multi_scores (Tensor): shape (n, #class)
+        score_thr (float): bbox threshold, bboxes with scores lower than it
+            will not be considered.
+        nms_thr (float): NMS IoU threshold
+        max_num (int): if there are more than max_num bboxes after NMS,
+            only top max_num will be kept.
+
+    Returns:
+        tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
+            are 0-based.
+    """
+    num_classes = multi_scores.shape[1]
+    bboxes, labels = [], []
+    for i in range(1, num_classes):
+        cls_inds = multi_scores[:, i] > score_thr
+        if not cls_inds.any():
+            continue
+        # get bboxes and scores of this class
+        if multi_bboxes.shape[1] == 4:
+            _bboxes = multi_bboxes[cls_inds, :]
+        else:
+            _bboxes = multi_bboxes[cls_inds, i * 4:(i + 1) * 4]
+        _scores = multi_scores[cls_inds, i]
+        cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
+        # perform nms
+        nms_keep = nms(cls_dets, nms_thr)
+        cls_dets = cls_dets[nms_keep, :]
+        cls_labels = multi_bboxes.new_full(
+            (len(nms_keep), ), i - 1, dtype=torch.long)
+        bboxes.append(cls_dets)
+        labels.append(cls_labels)
+    if bboxes:
+        bboxes = torch.cat(bboxes)
+        labels = torch.cat(labels)
+        if bboxes.shape[0] > max_num:
+            _, inds = bboxes[:, -1].sort(descending=True)
+            inds = inds[:max_num]
+            bboxes = bboxes[inds]
+            labels = labels[inds]
+    else:
+        bboxes = multi_bboxes.new_zeros((0, 5))
+        labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
+
+    return bboxes, labels
