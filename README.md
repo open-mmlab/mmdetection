@@ -19,5 +19,5 @@ We are still working on organizing the codebase. This toolbox will be formally r
   
 - **State of the art**
 
-  This was the codebase of the *MMDet* team, who won the [COCO Detection 2018 competition](http://cocodataset.org/#detection-leaderboard). 
+  This was the codebase of the *MMDet* team, who won the [COCO Detection 2018 challenge](http://cocodataset.org/#detection-leaderboard). 
   
