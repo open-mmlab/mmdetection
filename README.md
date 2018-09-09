@@ -1,5 +1,6 @@
-# mm-det
-Open MMLab Detection Toolbox
+# mm-detection
+Open-MMLab Detection Toolbox
 
-### Coming Soon
-Codebase will be released recently.
+**Note:** 
+
+We are still working on organizing the codebase. This toolbox will be formally released by the end of September. Stay tuned!
