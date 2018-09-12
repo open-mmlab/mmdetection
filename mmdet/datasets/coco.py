@@ -71,7 +71,6 @@ def parse_ann_info(ann_info, cat2label, with_mask=True):
 
 
 class CocoDataset(Dataset):
-
     def __init__(self,
                  ann_file,
                  img_prefix,
@@ -253,31 +252,38 @@ class CocoDataset(Dataset):
 
     def prepare_test_img(self, idx):
         """Prepare an image for testing (multi-scale and flipping)"""
-        img_info = self._load_info(idx, with_ann=False)
-        img_file = osp.join(self.prefix, img_info['file_name'])
+        img_info = self.img_infos[idx]
+        img = mmcv.imread(osp.join(self.img_prefix, img_info['file_name']))
         proposal = (self.proposals[idx][:, :4]
                     if self.proposals is not None else None)
 
-        def prepare_single(img_file, scale, flip, proposal=None):
-            img_np, shape_scale_np = self.img_transform(img_file, scale, flip)
-            img, shape_scale = self.numpy2tensor(img_np, shape_scale_np)
-            img_meta = dict(shape_scale=shape_scale, flip=flip)
+        def prepare_single(img, scale, flip, proposal=None):
+            _img, _img_shape, _scale_factor = self.img_transform(
+                img, scale, flip)
+            img, img_shape, scale_factor = self.numpy2tensor(
+                _img, _img_shape, _scale_factor)
+            ori_shape = (img_info['height'], img_info['width'])
+            img_meta = dict(
+                ori_shape=ori_shape,
+                img_shape=img_shape,
+                scale_factor=scale_factor,
+                flip=flip)
             if proposal is not None:
-                proposal = self.bbox_transform(proposal, shape_scale_np, flip)
+                proposal = self.bbox_transform(proposal, _scale_factor, flip)
                 proposal = self.numpy2tensor(proposal)
             return img, img_meta, proposal
 
         imgs = []
         img_metas = []
         proposals = []
-        for scale in self.img_scale:
-            img, img_meta, proposal = prepare_single(img_file, scale, False,
+        for scale in self.img_scales:
+            img, img_meta, proposal = prepare_single(img, scale, False,
                                                      proposal)
             imgs.append(img)
             img_metas.append(img_meta)
             proposals.append(proposal)
             if self.flip_ratio > 0:
-                img, img_meta, prop = prepare_single(img_file, scale, True,
+                img, img_meta, prop = prepare_single(img, scale, True,
                                                      proposal)
                 imgs.append(img)
                 img_metas.append(img_meta)

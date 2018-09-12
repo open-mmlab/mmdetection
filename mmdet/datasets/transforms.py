@@ -1,9 +1,8 @@
 import mmcv
-# import cvbase as cvb
 import numpy as np
 import torch
 
-from mmdet.core import segms
+from mmdet.core.mask_ops import segms
 
 __all__ = [
     'ImageTransform', 'BboxTransform', 'PolyMaskTransform', 'Numpy2Tensor'
@@ -64,7 +63,7 @@ class ImageTransform(object):
 
 class ImageCrop(object):
     """crop image patches and resize patches into fixed size
-    1. (read and) flip image (if needed) 
+    1. (read and) flip image (if needed)
     2. crop image patches according to given bboxes
     3. resize patches into fixed size (default 224x224)
     4. normalize the image (if needed)
@@ -126,6 +125,8 @@ class BboxTransform(object):
         gt_bboxes = bboxes * scale_factor
         if flip:
             gt_bboxes = mmcv.bbox_flip(gt_bboxes, img_shape)
+        gt_bboxes[:, 0::2] = np.clip(gt_bboxes[:, 0::2], 0, img_shape[1])
+        gt_bboxes[:, 1::2] = np.clip(gt_bboxes[:, 1::2], 0, img_shape[0])
         if self.max_num_gts is None:
             return gt_bboxes
         else:
@@ -205,4 +206,4 @@ class Numpy2Tensor(object):
         if len(args) == 1:
             return torch.from_numpy(args[0])
         else:
-            return tuple([torch.from_numpy(array) for array in args])
+            return tuple([torch.from_numpy(np.array(array)) for array in args])

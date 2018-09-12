@@ -42,7 +42,7 @@ def bbox_assign(proposals,
         min_pos_iou(float): minimum iou for a bbox to be considered as a positive bbox,
                             for RPN, it is usually set as 0, for Fast R-CNN,
                             it is usually set as pos_iou_thr
-        crowd_thr: ignore proposals which have iof(intersection over foreground) with 
+        crowd_thr: ignore proposals which have iof(intersection over foreground) with
         crowd bboxes over crowd_thr
     Returns:
         tuple: (assigned_gt_inds, argmax_overlaps, max_overlaps), shape (n, )
@@ -253,3 +253,43 @@ def bbox_sampling(assigned_gt_inds,
                                 max_overlaps, neg_balance_thr,
                                 neg_hard_fraction)
     return pos_inds, neg_inds
+
+
+
+def sample_proposals(proposals_list, gt_bboxes_list, gt_crowds_list,
+                     gt_labels_list, cfg):
+    cfg_list = [cfg for _ in range(len(proposals_list))]
+    results = map(sample_proposals_single, proposals_list, gt_bboxes_list,
+                  gt_crowds_list, gt_labels_list, cfg_list)
+    # list of tuple to tuple of list
+    return tuple(map(list, zip(*results)))
+
+
+def sample_proposals_single(proposals,
+                            gt_bboxes,
+                            gt_crowds,
+                            gt_labels,
+                            cfg):
+    proposals = proposals[:, :4]
+    assigned_gt_inds, assigned_labels, argmax_overlaps, max_overlaps = \
+        bbox_assign(
+            proposals, gt_bboxes, gt_crowds, gt_labels, cfg.pos_iou_thr,
+            cfg.neg_iou_thr, cfg.pos_iou_thr, cfg.crowd_thr)
+    if cfg.add_gt_as_proposals:
+        proposals = torch.cat([gt_bboxes, proposals], dim=0)
+        gt_assign_self = torch.arange(
+            1, len(gt_labels) + 1, dtype=torch.long, device=proposals.device)
+        assigned_gt_inds = torch.cat([gt_assign_self, assigned_gt_inds])
+        assigned_labels = torch.cat([gt_labels, assigned_labels])
+
+    pos_inds, neg_inds = bbox_sampling(
+        assigned_gt_inds, cfg.roi_batch_size, cfg.pos_fraction, cfg.neg_pos_ub,
+        cfg.pos_balance_sampling, max_overlaps, cfg.neg_balance_thr)
+    pos_proposals = proposals[pos_inds]
+    neg_proposals = proposals[neg_inds]
+    pos_assigned_gt_inds = assigned_gt_inds[pos_inds] - 1
+    pos_gt_bboxes = gt_bboxes[pos_assigned_gt_inds, :]
+    pos_gt_labels = assigned_labels[pos_inds]
+
+    return (pos_inds, neg_inds, pos_proposals, neg_proposals,
+            pos_assigned_gt_inds, pos_gt_bboxes, pos_gt_labels)
