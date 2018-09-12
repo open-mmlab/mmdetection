@@ -7,10 +7,16 @@ import mmcv
 import numpy as np
 import torch
 from mmcv.torchpack import Hook
-from mmdet import collate, scatter
+from mmdet.datasets import collate
+from mmdet.nn.parallel import scatter
 from pycocotools.cocoeval import COCOeval
 
-from .eval import eval_recalls
+from ..eval import eval_recalls
+
+__all__ = [
+    'EmptyCacheHook', 'DistEvalHook', 'DistEvalRecallHook',
+    'CocoDistEvalmAPHook'
+]
 
 
 class EmptyCacheHook(Hook):
@@ -237,10 +243,3 @@ class CocoDistEvalmAPHook(DistEvalHook, CocoEvalMixin):
             runner.log_buffer.output[field] = cocoEval.stats[0]
         runner.log_buffer.ready = True
         os.remove(tmp_file)
-
-
-class CocoDistCascadeEvalmAPHook(CocoDistEvalmAPHook):
-
-    def evaluate(self, runner, results):
-        results = [res[-1] for res in results]
-        super(CocoDistCascadeEvalmAPHook, self).evaluate(runner, results)

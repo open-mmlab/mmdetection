@@ -9,8 +9,8 @@ from mmdet.core import (AnchorGenerator, anchor_target, bbox_transform_inv,
                         weighted_cross_entropy, weighted_smoothl1,
                         weighted_binary_cross_entropy)
 from mmdet.ops import nms
-from ..misc import multi_apply
-from ..weight_init import normal_init
+from ..utils import multi_apply
+from ..utils import normal_init
 
 
 class RPNHead(nn.Module):

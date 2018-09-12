@@ -1,7 +1,7 @@
 import torch
 from ._functions import Scatter
 from torch.nn.parallel._functions import Scatter as OrigScatter
-from detkit.datasets.utils import DataContainer
+from mmdet.datasets.utils import DataContainer
 
 
 def scatter(inputs, target_gpus, dim=0):

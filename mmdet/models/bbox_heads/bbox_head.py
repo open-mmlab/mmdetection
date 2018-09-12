@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import (bbox_transform_inv, bbox_target, multiclass_nms,
+from mmdet.core import (bbox_transform_inv, multiclass_nms, bbox_target,
                         weighted_cross_entropy, weighted_smoothl1, accuracy)
 
 
@@ -10,7 +10,6 @@ class BBoxHead(nn.Module):
     regression respectively"""
 
     def __init__(self,
-                 exclude_mal_box=True,
                  with_avg_pool=False,
                  with_cls=True,
                  with_reg=True,
@@ -31,7 +30,6 @@ class BBoxHead(nn.Module):
         self.target_means = target_means
         self.target_stds = target_stds
         self.reg_class_agnostic = reg_class_agnostic
-        self.exclude_mal_box = exclude_mal_box
 
         in_channels = self.in_channels
         if self.with_avg_pool:
@@ -61,7 +59,7 @@ class BBoxHead(nn.Module):
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
 
-    def bbox_target(self, pos_proposals, neg_proposals, pos_gt_bboxes,
+    def get_bbox_target(self, pos_proposals, neg_proposals, pos_gt_bboxes,
                     pos_gt_labels, rcnn_train_cfg):
         reg_num_classes = 1 if self.reg_class_agnostic else self.num_classes
         cls_reg_targets = bbox_target(
@@ -69,11 +67,10 @@ class BBoxHead(nn.Module):
             neg_proposals,
             pos_gt_bboxes,
             pos_gt_labels,
-            self.target_means,
-            self.target_stds,
             rcnn_train_cfg,
             reg_num_classes,
-            debug_imgs=self.debug_imgs)
+            target_means=self.target_means,
+            target_stds=self.target_stds)
         return cls_reg_targets
 
     def loss(self, cls_score, bbox_pred, labels, label_weights, bbox_targets,
@@ -96,6 +93,7 @@ class BBoxHead(nn.Module):
                        cls_score,
                        bbox_pred,
                        img_shape,
+                       scale_factor,
                        rescale=False,
                        nms_cfg=None):
         if isinstance(cls_score, list):
@@ -111,7 +109,7 @@ class BBoxHead(nn.Module):
             # TODO: add clip here
 
         if rescale:
-            bboxes /= img_shape[-1]
+            bboxes /= scale_factor.float()
 
         if nms_cfg is None:
             return bboxes, scores
