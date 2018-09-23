@@ -1,7 +1,7 @@
 # model settings
 model = dict(
-    pretrained=
-    '/mnt/lustre/pangjiangmiao/initmodel/pytorch/resnet50-19c8e357.pth',
+    type='RPN',
+    pretrained='modelzoo://resnet50',
     backbone=dict(
         type='resnet',
         depth=50,
@@ -25,8 +25,9 @@ model = dict(
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
         use_sigmoid_cls=True))
-meta_params = dict(
-    rpn_train_cfg=dict(
+# model training and testing settings
+train_cfg = dict(
+    rpn=dict(
         pos_fraction=0.5,
         pos_balance_sampling=False,
         neg_pos_ub=256,
@@ -38,8 +39,9 @@ meta_params = dict(
         min_pos_iou=1e-3,
         pos_weight=-1,
         smoothl1_beta=1 / 9.0,
-        debug=False),
-    rpn_test_cfg=dict(
+        debug=False))
+test_cfg = dict(
+    rpn=dict(
         nms_across_levels=False,
         nms_pre=2000,
         nms_post=2000,
@@ -47,49 +49,61 @@ meta_params = dict(
         nms_thr=0.7,
         min_bbox_size=0))
 # dataset settings
-data_root = '/mnt/lustre/pangjiangmiao/dataset/coco/'
+dataset_type = 'CocoDataset'
+data_root = '../data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-img_per_gpu = 1
-data_workers = 2
-train_dataset = dict(
-    ann_file=data_root + 'annotations/instances_train2017.json',
-    img_prefix=data_root + 'train2017/',
-    img_scale=(1333, 800),
-    img_norm_cfg=img_norm_cfg,
-    size_divisor=32,
-    flip_ratio=0.5)
-test_dataset = dict(
-    ann_file=data_root + 'annotations/instances_val2017.json',
-    img_prefix=data_root + 'val2017/',
-    img_scale=(1333, 800),
-    img_norm_cfg=img_norm_cfg,
-    size_divisor=32,
-    test_mode=True)
+data = dict(
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
+    train=dict(
+        type=dataset_type,
+        ann_file=data_root + 'annotations/instances_train2017.json',
+        img_prefix=data_root + 'train2017/',
+        img_scale=(1333, 800),
+        img_norm_cfg=img_norm_cfg,
+        size_divisor=32,
+        flip_ratio=0.5,
+        with_mask=False,
+        with_crowd=False,
+        with_label=False,
+        test_mode=False),
+    test=dict(
+        type=dataset_type,
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        img_prefix=data_root + 'val2017/',
+        img_scale=(1333, 800),
+        flip_ratio=0,
+        img_norm_cfg=img_norm_cfg,
+        size_divisor=32,
+        with_mask=False,
+        with_label=False,
+        test_mode=True))
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-grad_clip_config = dict(grad_clip=True, max_norm=35, norm_type=2)
-# learning policy
-lr_policy = dict(
+# runner configs
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=500,
-    warmup_ratio=0.333,
+    warmup_ratio=1.0 / 3,
     step=[8, 11])
-max_epoch = 12
 checkpoint_config = dict(interval=1)
-dist_params = dict(backend='nccl', port='29500', master_ip='127.0.0.1')
-# logging settings
-log_level = 'INFO'
 # yapf:disable
 log_config = dict(
     interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
-        # ('TensorboardLoggerHook', dict(log_dir=work_dir + '/log')),
+        # dict(type='TensorboardLoggerHook', log_dir=work_dir + '/log')
     ])
 # yapf:enable
-work_dir = './model/r50_fpn_1x'
+# runtime settings
+total_epochs = 12
+device_ids = range(8)
+dist_params = dict(backend='gloo', port='29500', master_ip='127.0.0.1')
+log_level = 'INFO'
+work_dir = './work_dirs/fpn_rpn_r50_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

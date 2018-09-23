@@ -84,18 +84,18 @@ def bbox_flip(bboxes, img_shape):
         return mmcv.bbox_flip(bboxes, img_shape)
 
 
-def bbox_mapping(bboxes, img_shape, flip):
+def bbox_mapping(bboxes, img_shape, scale_factor, flip):
     """Map bboxes from the original image scale to testing scale"""
-    new_bboxes = bboxes * img_shape[-1]
+    new_bboxes = bboxes * scale_factor
     if flip:
         new_bboxes = bbox_flip(new_bboxes, img_shape)
     return new_bboxes
 
 
-def bbox_mapping_back(bboxes, img_shape, flip):
+def bbox_mapping_back(bboxes, img_shape, scale_factor, flip):
     """Map bboxes from testing scale to original image scale"""
     new_bboxes = bbox_flip(bboxes, img_shape) if flip else bboxes
-    new_bboxes = new_bboxes / img_shape[-1]
+    new_bboxes = new_bboxes / scale_factor
     return new_bboxes
 
 
