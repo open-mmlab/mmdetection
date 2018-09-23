@@ -9,8 +9,7 @@ from mmdet.core import (AnchorGenerator, anchor_target, bbox_transform_inv,
                         weighted_cross_entropy, weighted_smoothl1,
                         weighted_binary_cross_entropy)
 from mmdet.ops import nms
-from ..utils import multi_apply
-from ..utils import normal_init
+from ..utils import multi_apply, normal_init
 
 
 class RPNHead(nn.Module):
@@ -66,14 +65,14 @@ class RPNHead(nn.Module):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
 
-    def get_anchors(self, featmap_sizes, img_shapes):
+    def get_anchors(self, featmap_sizes, img_metas):
         """Get anchors given a list of feature map sizes, and get valid flags
         at the same time. (Extra padding regions should be marked as invalid)
         """
         # calculate actual image shapes
         padded_img_shapes = []
-        for img_shape in img_shapes:
-            h, w = img_shape[:2]
+        for img_meta in img_metas:
+            h, w = img_meta['img_shape'][:2]
             padded_h = int(
                 np.ceil(h / self.coarsest_stride) * self.coarsest_stride)
             padded_w = int(
@@ -83,7 +82,7 @@ class RPNHead(nn.Module):
         # len = feature levels
         anchor_list = []
         # len = imgs per gpu
-        valid_flag_list = [[] for _ in range(len(img_shapes))]
+        valid_flag_list = [[] for _ in range(len(img_metas))]
         for i in range(len(featmap_sizes)):
             anchor_stride = self.anchor_strides[i]
             anchors = self.anchor_generators[i].grid_anchors(
@@ -103,26 +102,22 @@ class RPNHead(nn.Module):
 
     def loss_single(self, rpn_cls_score, rpn_bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
+        # classification loss
         labels = labels.contiguous().view(-1)
         label_weights = label_weights.contiguous().view(-1)
-        bbox_targets = bbox_targets.contiguous().view(-1, 4)
-        bbox_weights = bbox_weights.contiguous().view(-1, 4)
         if self.use_sigmoid_cls:
             rpn_cls_score = rpn_cls_score.permute(0, 2, 3,
                                                   1).contiguous().view(-1)
-            loss_cls = weighted_binary_cross_entropy(
-                rpn_cls_score,
-                labels,
-                label_weights,
-                ave_factor=num_total_samples)
+            criterion = weighted_binary_cross_entropy
         else:
             rpn_cls_score = rpn_cls_score.permute(0, 2, 3,
                                                   1).contiguous().view(-1, 2)
-            loss_cls = weighted_cross_entropy(
-                rpn_cls_score,
-                labels,
-                label_weights,
-                ave_factor=num_total_samples)
+            criterion = weighted_cross_entropy
+        loss_cls = criterion(
+            rpn_cls_score, labels, label_weights, avg_factor=num_total_samples)
+        # regression loss
+        bbox_targets = bbox_targets.contiguous().view(-1, 4)
+        bbox_weights = bbox_weights.contiguous().view(-1, 4)
         rpn_bbox_pred = rpn_bbox_pred.permute(0, 2, 3, 1).contiguous().view(
             -1, 4)
         loss_reg = weighted_smoothl1(
@@ -130,7 +125,7 @@ class RPNHead(nn.Module):
             bbox_targets,
             bbox_weights,
             beta=cfg.smoothl1_beta,
-            ave_factor=num_total_samples)
+            avg_factor=num_total_samples)
         return loss_cls, loss_reg
 
     def loss(self, rpn_cls_scores, rpn_bbox_preds, gt_bboxes, img_shapes, cfg):
@@ -158,8 +153,8 @@ class RPNHead(nn.Module):
             cfg=cfg)
         return dict(loss_rpn_cls=losses_cls, loss_rpn_reg=losses_reg)
 
-    def get_proposals(self, rpn_cls_scores, rpn_bbox_preds, img_shapes, cfg):
-        img_per_gpu = len(img_shapes)
+    def get_proposals(self, rpn_cls_scores, rpn_bbox_preds, img_meta, cfg):
+        num_imgs = len(img_meta)
         featmap_sizes = [featmap.size()[-2:] for featmap in rpn_cls_scores]
         mlvl_anchors = [
             self.anchor_generators[idx].grid_anchors(featmap_sizes[idx],
@@ -167,7 +162,7 @@ class RPNHead(nn.Module):
             for idx in range(len(featmap_sizes))
         ]
         proposal_list = []
-        for img_id in range(img_per_gpu):
+        for img_id in range(num_imgs):
             rpn_cls_score_list = [
                 rpn_cls_scores[idx][img_id].detach()
                 for idx in range(len(rpn_cls_scores))
@@ -177,10 +172,9 @@ class RPNHead(nn.Module):
                 for idx in range(len(rpn_bbox_preds))
             ]
             assert len(rpn_cls_score_list) == len(rpn_bbox_pred_list)
-            img_shape = img_shapes[img_id]
             proposals = self._get_proposals_single(
                 rpn_cls_score_list, rpn_bbox_pred_list, mlvl_anchors,
-                img_shape, cfg)
+                img_meta[img_id]['img_shape'], cfg)
             proposal_list.append(proposals)
         return proposal_list
 
@@ -195,7 +189,7 @@ class RPNHead(nn.Module):
             if self.use_sigmoid_cls:
                 rpn_cls_score = rpn_cls_score.permute(1, 2,
                                                       0).contiguous().view(-1)
-                rpn_cls_prob = F.sigmoid(rpn_cls_score)
+                rpn_cls_prob = rpn_cls_score.sigmoid()
                 scores = rpn_cls_prob
             else:
                 rpn_cls_score = rpn_cls_score.permute(1, 2,

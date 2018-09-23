@@ -1,1 +1,2 @@
-from .detectors import Detector
+from .detectors import *
+from .builder import *

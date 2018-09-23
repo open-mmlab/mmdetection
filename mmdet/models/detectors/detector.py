@@ -8,6 +8,7 @@ from mmdet.core import (bbox2roi, bbox_mapping, split_combined_gt_polys,
 
 
 class Detector(nn.Module):
+
     def __init__(self,
                  backbone,
                  neck=None,

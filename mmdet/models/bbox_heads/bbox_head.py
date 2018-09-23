@@ -60,7 +60,7 @@ class BBoxHead(nn.Module):
         return cls_score, bbox_pred
 
     def get_bbox_target(self, pos_proposals, neg_proposals, pos_gt_bboxes,
-                    pos_gt_labels, rcnn_train_cfg):
+                        pos_gt_labels, rcnn_train_cfg):
         reg_num_classes = 1 if self.reg_class_agnostic else self.num_classes
         cls_reg_targets = bbox_target(
             pos_proposals,
@@ -85,7 +85,7 @@ class BBoxHead(nn.Module):
                 bbox_pred,
                 bbox_targets,
                 bbox_weights,
-                ave_factor=bbox_targets.size(0))
+                avg_factor=bbox_targets.size(0))
         return losses
 
     def get_det_bboxes(self,
