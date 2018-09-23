@@ -1,30 +1,6 @@
 import functools
-from collections import Sequence
 
-import mmcv
-import numpy as np
 import torch
-
-
-def to_tensor(data):
-    """Convert objects of various python types to :obj:`torch.Tensor`.
-
-    Supported types are: :class:`numpy.ndarray`, :class:`torch.Tensor`,
-    :class:`Sequence`, :class:`int` and :class:`float`.
-    """
-    if isinstance(data, np.ndarray):
-        return torch.from_numpy(data)
-    elif isinstance(data, torch.Tensor):
-        return data
-    elif isinstance(data, Sequence) and not mmcv.is_str(data):
-        return torch.tensor(data)
-    elif isinstance(data, int):
-        return torch.LongTensor([data])
-    elif isinstance(data, float):
-        return torch.FloatTensor([data])
-    else:
-        raise TypeError('type {} cannot be converted to tensor.'.format(
-            type(data)))
 
 
 def assert_tensor_type(func):
@@ -41,11 +17,9 @@ def assert_tensor_type(func):
 
 class DataContainer(object):
 
-    def __init__(self, data, stack=False, padding_value=0):
-        if isinstance(data, list):
-            self._data = data
-        else:
-            self._data = to_tensor(data)
+    def __init__(self, data, stack=False, padding_value=0, cpu_only=False):
+        self._data = data
+        self._cpu_only = cpu_only
         self._stack = stack
         self._padding_value = padding_value
 
@@ -62,6 +36,10 @@ class DataContainer(object):
             return self.data.type()
         else:
             return type(self.data)
+
+    @property
+    def cpu_only(self):
+        return self._cpu_only
 
     @property
     def stack(self):
