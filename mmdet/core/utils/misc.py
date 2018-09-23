@@ -1,5 +1,3 @@
-import subprocess
-
 import mmcv
 import numpy as np
 import torch
@@ -7,20 +5,14 @@ import torch
 __all__ = ['tensor2imgs', 'unique', 'unmap', 'results2json']
 
 
-def tensor2imgs(tensor,
-                color_order='RGB',
-                color_mean=(0.485, 0.456, 0.406),
-                color_std=(0.229, 0.224, 0.225)):
-    assert color_order in ['RGB', 'BGR']
-    img_per_gpu = tensor.size(0)
-    color_mean = np.array(color_mean, dtype=np.float32)
-    color_std = np.array(color_std, dtype=np.float32)
+def tensor2imgs(tensor, mean=(0, 0, 0), std=(1, 1, 1), to_rgb=True):
+    num_imgs = tensor.size(0)
+    mean = np.array(mean, dtype=np.float32)
+    std = np.array(std, dtype=np.float32)
     imgs = []
-    for img_id in range(img_per_gpu):
+    for img_id in range(num_imgs):
         img = tensor[img_id, ...].cpu().numpy().transpose(1, 2, 0)
-        if color_order == 'RGB':
-            img = mmcv.rgb2bgr(img)
-        img = img * color_std + color_mean
+        img = mmcv.imdenorm(img, mean, std, to_bgr=to_rgb).astype(np.uint8)
         imgs.append(np.ascontiguousarray(img))
     return imgs
 
@@ -45,6 +37,7 @@ def unmap(data, count, inds, fill=0):
         ret[inds, :] = data
     return ret
 
+
 def xyxy2xywh(bbox):
     _bbox = bbox.tolist()
     return [
@@ -53,6 +46,7 @@ def xyxy2xywh(bbox):
         _bbox[2] - _bbox[0] + 1,
         _bbox[3] - _bbox[1] + 1,
     ]
+
 
 def det2json(dataset, results):
     json_results = []

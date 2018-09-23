@@ -1,30 +1,28 @@
-# TODO merge naive and weighted loss to one function.
+# TODO merge naive and weighted loss.
 import torch
 import torch.nn.functional as F
 
-from ..bbox_ops import bbox_transform_inv, bbox_overlaps
+
+def weighted_nll_loss(pred, label, weight, avg_factor=None):
+    if avg_factor is None:
+        avg_factor = max(torch.sum(weight > 0).float().item(), 1.)
+    raw = F.nll_loss(pred, label, reduction='none')
+    return torch.sum(raw * weight)[None] / avg_factor
 
 
-def weighted_nll_loss(pred, label, weight, ave_factor=None):
-    if ave_factor is None:
-        ave_factor = max(torch.sum(weight > 0).float().item(), 1.)
-    raw = F.nll_loss(pred, label, size_average=False, reduce=False)
-    return torch.sum(raw * weight)[None] / ave_factor
+def weighted_cross_entropy(pred, label, weight, avg_factor=None):
+    if avg_factor is None:
+        avg_factor = max(torch.sum(weight > 0).float().item(), 1.)
+    raw = F.cross_entropy(pred, label, reduction='none')
+    return torch.sum(raw * weight)[None] / avg_factor
 
 
-def weighted_cross_entropy(pred, label, weight, ave_factor=None):
-    if ave_factor is None:
-        ave_factor = max(torch.sum(weight > 0).float().item(), 1.)
-    raw = F.cross_entropy(pred, label, size_average=False, reduce=False)
-    return torch.sum(raw * weight)[None] / ave_factor
-
-
-def weighted_binary_cross_entropy(pred, label, weight, ave_factor=None):
-    if ave_factor is None:
-        ave_factor = max(torch.sum(weight > 0).float().item(), 1.)
+def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
+    if avg_factor is None:
+        avg_factor = max(torch.sum(weight > 0).float().item(), 1.)
     return F.binary_cross_entropy_with_logits(
         pred, label.float(), weight.float(),
-        size_average=False)[None] / ave_factor
+        reduction='sum')[None] / avg_factor
 
 
 def sigmoid_focal_loss(pred,
@@ -46,13 +44,13 @@ def weighted_sigmoid_focal_loss(pred,
                                 weight,
                                 gamma=2.0,
                                 alpha=0.25,
-                                ave_factor=None,
+                                avg_factor=None,
                                 num_classes=80):
-    if ave_factor is None:
-        ave_factor = torch.sum(weight > 0).float().item() / num_classes + 1e-6
+    if avg_factor is None:
+        avg_factor = torch.sum(weight > 0).float().item() / num_classes + 1e-6
     return sigmoid_focal_loss(
         pred, target, weight, gamma=gamma, alpha=alpha,
-        size_average=False)[None] / ave_factor
+        reduction='sum')[None] / avg_factor
 
 
 def mask_cross_entropy(pred, target, label):
@@ -60,7 +58,7 @@ def mask_cross_entropy(pred, target, label):
     inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
     pred_slice = pred[inds, label].squeeze(1)
     return F.binary_cross_entropy_with_logits(
-        pred_slice, target, size_average=True)[None]
+        pred_slice, target, reduction='sum')[None]
 
 
 def weighted_mask_cross_entropy(pred, target, weight, label):
@@ -73,24 +71,27 @@ def weighted_mask_cross_entropy(pred, target, weight, label):
         pred_slice, target, weight, size_average=False)[None] / num_samples
 
 
-def smooth_l1_loss(pred, target, beta=1.0, size_average=True, reduce=True):
+def smooth_l1_loss(pred, target, beta=1.0, reduction='elementwise_mean'):
     assert beta > 0
     assert pred.size() == target.size() and target.numel() > 0
     diff = torch.abs(pred - target)
     loss = torch.where(diff < beta, 0.5 * diff * diff / beta,
                        diff - 0.5 * beta)
-    if size_average:
-        loss /= pred.numel()
-    if reduce:
-        loss = loss.sum()
-    return loss
+    reduction = F._Reduction.get_enum(reduction)
+    # none: 0, elementwise_mean:1, sum: 2
+    if reduction == 0:
+        return loss
+    elif reduction == 1:
+        return loss.sum() / pred.numel()
+    elif reduction == 2:
+        return loss.sum()
 
 
-def weighted_smoothl1(pred, target, weight, beta=1.0, ave_factor=None):
-    if ave_factor is None:
-        ave_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
-    loss = smooth_l1_loss(pred, target, beta, size_average=False, reduce=False)
-    return torch.sum(loss * weight)[None] / ave_factor
+def weighted_smoothl1(pred, target, weight, beta=1.0, avg_factor=None):
+    if avg_factor is None:
+        avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
+    loss = smooth_l1_loss(pred, target, beta, reduction='none')
+    return torch.sum(loss * weight)[None] / avg_factor
 
 
 def accuracy(pred, target, topk=1):

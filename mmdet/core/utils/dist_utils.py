@@ -3,11 +3,11 @@ import torch
 import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch.nn.utils import clip_grad
-from mmcv.torchpack import Hook, OptimizerStepperHook
+from mmcv.torchpack import Hook, OptimizerHook
 
 __all__ = [
-    'init_dist', 'average_gradients', 'broadcast_params',
-    'DistOptimizerStepperHook', 'DistSamplerSeedHook'
+    'init_dist', 'average_gradients', 'broadcast_params', 'DistOptimizerHook',
+    'DistSamplerSeedHook'
 ]
 
 
@@ -40,17 +40,16 @@ def broadcast_params(model):
         dist.broadcast(p, 0)
 
 
-class DistOptimizerStepperHook(OptimizerStepperHook):
+class DistOptimizerHook(OptimizerHook):
 
     def after_train_iter(self, runner):
         runner.optimizer.zero_grad()
         runner.outputs['loss'].backward()
         average_gradients(runner.model)
-        if self.grad_clip:
+        if self.grad_clip is not None:
             clip_grad.clip_grad_norm_(
                 filter(lambda p: p.requires_grad, runner.model.parameters()),
-                max_norm=self.max_norm,
-                norm_type=self.norm_type)
+                **self.grad_clip)
         runner.optimizer.step()
 
 

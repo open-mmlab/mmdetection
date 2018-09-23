@@ -1,8 +1,8 @@
 import torch
 
-from mmdet.ops import nms
 import numpy as np
 
+from mmdet.ops import nms
 from ..bbox_ops import bbox_mapping_back
 
 
@@ -21,11 +21,12 @@ def merge_aug_proposals(aug_proposals, img_metas, rpn_test_cfg):
     """
     recovered_proposals = []
     for proposals, img_info in zip(aug_proposals, img_metas):
-        shape_scale = img_info['shape_scale'][0]
-        flip = img_info['flip'][0]
+        img_shape = img_info['img_shape']
+        scale_factor = img_info['scale_factor']
+        flip = img_info['flip']
         _proposals = proposals.clone()
-        _proposals[:, :4] = bbox_mapping_back(_proposals[:, :4], shape_scale,
-                                              flip)
+        _proposals[:, :4] = bbox_mapping_back(_proposals[:, :4], img_shape,
+                                              scale_factor, flip)
         recovered_proposals.append(_proposals)
     aug_proposals = torch.cat(recovered_proposals, dim=0)
     nms_keep = nms(aug_proposals, rpn_test_cfg.nms_thr,
@@ -53,9 +54,10 @@ def merge_aug_bboxes(aug_bboxes, aug_scores, img_metas, rcnn_test_cfg):
     """
     recovered_bboxes = []
     for bboxes, img_info in zip(aug_bboxes, img_metas):
-        shape_scale = img_info['shape_scale'][0]
-        flip = img_info['flip'][0]
-        bboxes = bbox_mapping_back(bboxes, shape_scale, flip)
+        img_shape = img_info['img_shape']
+        scale_factor = img_info['scale_factor']
+        flip = img_info['flip']
+        bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip)
         recovered_bboxes.append(bboxes)
     bboxes = torch.stack(recovered_bboxes).mean(dim=0)
     if aug_scores is None:

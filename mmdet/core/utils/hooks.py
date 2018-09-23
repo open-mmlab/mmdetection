@@ -7,7 +7,7 @@ import mmcv
 import numpy as np
 import torch
 from mmcv.torchpack import Hook
-from mmdet.datasets import collate
+from mmdet.datasets.loader import collate
 from mmdet.nn.parallel import scatter
 from pycocotools.cocoeval import COCOeval
 

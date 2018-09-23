@@ -244,6 +244,7 @@ def bbox_sampling(assigned_gt_inds,
     num_expected_pos = int(num_expected * pos_fraction)
     pos_inds = sample_positives(assigned_gt_inds, num_expected_pos,
                                 pos_balance_sampling)
+    pos_inds = pos_inds.unique()
     num_sampled_pos = pos_inds.numel()
     num_neg_max = int(
         neg_pos_ub *
@@ -252,8 +253,8 @@ def bbox_sampling(assigned_gt_inds,
     neg_inds = sample_negatives(assigned_gt_inds, num_expected_neg,
                                 max_overlaps, neg_balance_thr,
                                 neg_hard_fraction)
+    neg_inds = neg_inds.unique()
     return pos_inds, neg_inds
-
 
 
 def sample_proposals(proposals_list, gt_bboxes_list, gt_crowds_list,
@@ -265,11 +266,7 @@ def sample_proposals(proposals_list, gt_bboxes_list, gt_crowds_list,
     return tuple(map(list, zip(*results)))
 
 
-def sample_proposals_single(proposals,
-                            gt_bboxes,
-                            gt_crowds,
-                            gt_labels,
-                            cfg):
+def sample_proposals_single(proposals, gt_bboxes, gt_crowds, gt_labels, cfg):
     proposals = proposals[:, :4]
     assigned_gt_inds, assigned_labels, argmax_overlaps, max_overlaps = \
         bbox_assign(

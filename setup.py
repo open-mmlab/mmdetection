@@ -8,7 +8,7 @@ def readme():
 
 
 def get_version():
-    version_file = 'mmcv/version.py'
+    version_file = 'mmdet/version.py'
     with open(version_file, 'r') as f:
         exec(compile(f.read(), version_file, 'exec'))
     return locals()['__version__']

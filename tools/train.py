@@ -1,28 +1,61 @@
 from __future__ import division
+
 import argparse
-import sys
-import os.path as osp
-sys.path.append(osp.abspath(osp.join(__file__, '../../')))
-sys.path.append('/mnt/lustre/pangjiangmiao/sensenet_folder/mmcv')
+from collections import OrderedDict
 
 import torch
-import torch.multiprocessing as mp
 from mmcv import Config
-from mmcv.torchpack import Runner
-from mmdet.core import (batch_processor, init_dist, broadcast_params,
-                        DistOptimizerStepperHook, DistSamplerSeedHook)
-from mmdet.datasets.data_engine import build_data
-from mmdet.models import Detector
-from mmdet.nn.parallel import MMDataParallel
+from mmcv.torchpack import Runner, obj_from_dict
+
+from mmdet import datasets
+from mmdet.core import init_dist, DistOptimizerHook, DistSamplerSeedHook
+from mmdet.datasets.loader import build_dataloader
+from mmdet.models import build_detector
+from mmdet.nn.parallel import MMDataParallel, MMDistributedDataParallel
+
+
+def parse_losses(losses):
+    log_vars = OrderedDict()
+    for loss_name, loss_value in losses.items():
+        if isinstance(loss_value, torch.Tensor):
+            log_vars[loss_name] = loss_value.mean()
+        elif isinstance(loss_value, list):
+            log_vars[loss_name] = sum(_loss.mean() for _loss in loss_value)
+        else:
+            raise TypeError(
+                '{} is not a tensor or list of tensors'.format(loss_name))
+
+    loss = sum(_value for _key, _value in log_vars.items() if 'loss' in _key)
+
+    log_vars['loss'] = loss
+    for name in log_vars:
+        log_vars[name] = log_vars[name].item()
+
+    return loss, log_vars
+
+
+def batch_processor(model, data, train_mode, args=None):
+    losses = model(**data)
+    loss, log_vars = parse_losses(losses)
+
+    outputs = dict(
+        loss=loss / args.world_size,
+        log_vars=log_vars,
+        num_samples=len(data['img'].data))
+
+    return outputs
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MMDet train val detector')
+    parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
-    parser.add_argument('--validate', action='store_true', help='validate')
     parser.add_argument(
-        '--dist', action='store_true', help='distributed training or not')
-    parser.add_argument('--world_size', default=1, type=int)
+        '--validate',
+        action='store_true',
+        help='whether to add a validate phase')
+    parser.add_argument(
+        '--dist', action='store_true', help='use distributed training or not')
+    parser.add_argument('--world-size', default=1, type=int)
     parser.add_argument('--rank', default=0, type=int)
     args = parser.parse_args()
 
@@ -33,53 +66,57 @@ args = parse_args()
 
 
 def main():
-    # Enable distributed training or not
+    # get config from file
+    cfg = Config.fromfile(args.config)
+    cfg.update(world_size=args.world_size, rank=args.rank)
+
+    # init distributed environment if necessary
     if args.dist:
         print('Enable distributed training.')
-        mp.set_start_method("spawn", force=True)
-        init_dist(
-            args.world_size,
-            args.rank,
-            **cfg.dist_params)
+        init_dist(args.world_size, args.rank, **cfg.dist_params)
     else:
         print('Disabled distributed training.')
 
-    # Fetch config information
-    cfg = Config.fromfile(args.config)
-    # TODO more flexible
-    args.img_per_gpu = cfg.img_per_gpu
-    args.data_workers = cfg.data_workers
-
-    # prepare training loader
-    train_loader = [build_data(cfg.train_dataset, args)]
+    # prepare data loaders
+    train_dataset = obj_from_dict(cfg.data.train, datasets)
+    data_loaders = [
+        build_dataloader(
+            train_dataset, cfg.data.imgs_per_gpu, cfg.data.workers_per_gpu,
+            len(cfg.device_ids), args.dist, cfg.world_size, cfg.rank)
+    ]
     if args.validate:
-        val_loader = build_data(cfg.val_dataset, args)
-        train_loader.append(val_loader)
+        val_dataset = obj_from_dict(cfg.data.val, datasets)
+        data_loaders.append(
+            build_dataloader(
+                val_dataset, cfg.data.imgs_per_gpu, cfg.data.workers_per_gpu,
+                len(cfg.device_ids), args.dist, cfg.world_size, cfg.rank))
 
     # build model
-    model = Detector(**cfg.model, **cfg.meta_params)
+    model = build_detector(
+        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     if args.dist:
-        model = model.cuda()
-        broadcast_params(model)
+        model = MMDistributedDataParallel(
+            model, device_ids=[cfg.rank], broadcast_buffers=False).cuda()
     else:
-        device_ids = args.rank % torch.cuda.device_count()
-        model = MMDataParallel(model, device_ids=device_ids).cuda()
+        model = MMDataParallel(model, device_ids=cfg.device_ids).cuda()
 
-    # register hooks
+    # build runner
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
                     cfg.log_level)
-    optimizer_stepper = DistOptimizerStepperHook(
-        **cfg.grad_clip_config) if args.dist else cfg.grad_clip_config
-    runner.register_training_hooks(cfg.lr_policy, optimizer_stepper,
+    # register hooks
+    optimizer_config = DistOptimizerHook(
+        **cfg.optimizer_config) if args.dist else cfg.optimizer_config
+    runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
     if args.dist:
         runner.register_hook(DistSamplerSeedHook())
+
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
-    runner.run(train_loader, cfg.workflow, cfg.max_epoch, args=args)
+    runner.run(data_loaders, cfg.workflow, cfg.total_epochs, args=args)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

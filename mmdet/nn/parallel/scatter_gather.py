@@ -14,14 +14,24 @@ def scatter(inputs, target_gpus, dim=0):
     def scatter_map(obj):
         if isinstance(obj, torch.Tensor):
             return OrigScatter.apply(target_gpus, None, dim, obj)
-        if isinstance(obj, DataContainer) and isinstance(obj.data, list):
-            return Scatter.forward(target_gpus, obj.data)
+        if isinstance(obj, DataContainer):
+            # print('data container', obj)
+            if obj.cpu_only:
+                return obj.data
+            else:
+                return Scatter.forward(target_gpus, obj.data)
         if isinstance(obj, tuple) and len(obj) > 0:
             return list(zip(*map(scatter_map, obj)))
         if isinstance(obj, list) and len(obj) > 0:
-            return list(map(list, zip(*map(scatter_map, obj))))
+            # print('list', obj)
+            out = list(map(list, zip(*map(scatter_map, obj))))
+            # print('list out', out)
+            return out
         if isinstance(obj, dict) and len(obj) > 0:
-            return list(map(type(obj), zip(*map(scatter_map, obj.items()))))
+            # print('dict\n', obj)
+            out = list(map(type(obj), zip(*map(scatter_map, obj.items()))))
+            # print('dict output\n', out)
+            return out
         return [obj for targets in target_gpus]
 
     # After scatter_map is called, a scatter_map cell will exist. This cell

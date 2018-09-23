@@ -1,7 +1,3 @@
-import cvbase as cvb
-import numpy as np
-import pycocotools.mask as mask_utils
-
 import mmcv
 
 
