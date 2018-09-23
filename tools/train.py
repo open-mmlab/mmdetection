@@ -34,7 +34,7 @@ def parse_losses(losses):
     return loss, log_vars
 
 
-def batch_processor(model, data, train_mode, args=None):
+def batch_processor(model, data, train_mode):
     losses = model(**data)
     loss, log_vars = parse_losses(losses)
 
@@ -115,7 +115,7 @@ def main():
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
-    runner.run(data_loaders, cfg.workflow, cfg.total_epochs, args=args)
+    runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
 
 
 if __name__ == '__main__':
