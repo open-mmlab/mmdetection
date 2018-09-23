@@ -29,7 +29,7 @@ class ImageTransform(object):
         self.size_divisor = size_divisor
 
     def __call__(self, img, scale, flip=False):
-        img, scale_factor = mmcv.imrescale(img, scale, True)
+        img, scale_factor = mmcv.imrescale(img, scale, return_scale=True)
         img_shape = img.shape
         img = mmcv.imnorm(img, self.mean, self.std, self.to_rgb)
         if flip:
@@ -39,76 +39,20 @@ class ImageTransform(object):
         img = img.transpose(2, 0, 1)
         return img, img_shape, scale_factor
 
-        # img, scale = cvb.resize_keep_ar(img_or_path, max_long_edge,
-        #                                 max_short_edge, True)
-        # shape_scale = np.array(img.shape + (scale, ), dtype=np.float32)
-        # if flip:
-        #     img = img[:, ::-1, :].copy()
-        # if self.color_order == 'RGB':
-        #     img = cvb.bgr2rgb(img)
-        # img = img.astype(np.float32)
-        # img -= self.color_mean
-        # img /= self.color_std
-        # if self.size_divisor is None:
-        #     padded_img = img
-        # else:
-        #     pad_h = int(np.ceil(
-        #         img.shape[0] / self.size_divisor)) * self.size_divisor
-        #     pad_w = int(np.ceil(
-        #         img.shape[1] / self.size_divisor)) * self.size_divisor
-        #     padded_img = cvb.pad_img(img, (pad_h, pad_w), pad_val=0)
-        # padded_img = padded_img.transpose(2, 0, 1)
-        # return padded_img, shape_scale
 
+def bbox_flip(bboxes, img_shape):
+    """Flip bboxes horizontally.
 
-class ImageCrop(object):
-    """crop image patches and resize patches into fixed size
-    1. (read and) flip image (if needed)
-    2. crop image patches according to given bboxes
-    3. resize patches into fixed size (default 224x224)
-    4. normalize the image (if needed)
-    5. transpose to (c, h, w) (if needed)
+    Args:
+        bboxes(ndarray): shape (..., 4*k)
+        img_shape(tuple): (height, width)
     """
-
-    def __init__(self,
-                 normalize=True,
-                 transpose=True,
-                 color_order='RGB',
-                 color_mean=(0, 0, 0),
-                 color_std=(1, 1, 1)):
-        self.normalize = normalize
-        self.transpose = transpose
-
-        assert color_order in ['RGB', 'BGR']
-        self.color_order = color_order
-        self.color_mean = np.array(color_mean, dtype=np.float32)
-        self.color_std = np.array(color_std, dtype=np.float32)
-
-    def __call__(self,
-                 img_or_path,
-                 bboxes,
-                 crop_size,
-                 scale_ratio=1.0,
-                 flip=False):
-        img = cvb.read_img(img_or_path)
-        if flip:
-            img = img[:, ::-1, :].copy()
-        crop_imgs = cvb.crop_img(
-            img,
-            bboxes[:, :4],
-            scale_ratio=scale_ratio,
-            pad_fill=self.color_mean)
-        processed_crop_imgs_list = []
-        for i in range(len(crop_imgs)):
-            crop_img = crop_imgs[i]
-            crop_img = cvb.resize(crop_img, crop_size)
-            crop_img = crop_img.astype(np.float32)
-            crop_img -= self.color_mean
-            crop_img /= self.color_std
-            processed_crop_imgs_list.append(crop_img)
-        processed_crop_imgs = np.stack(processed_crop_imgs_list, axis=0)
-        processed_crop_imgs = processed_crop_imgs.transpose(0, 3, 1, 2)
-        return processed_crop_imgs
+    assert bboxes.shape[-1] % 4 == 0
+    w = img_shape[1]
+    flipped = bboxes.copy()
+    flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
+    flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+    return flipped
 
 
 class BboxTransform(object):
@@ -124,7 +68,7 @@ class BboxTransform(object):
     def __call__(self, bboxes, img_shape, scale_factor, flip=False):
         gt_bboxes = bboxes * scale_factor
         if flip:
-            gt_bboxes = mmcv.bbox_flip(gt_bboxes, img_shape)
+            gt_bboxes = bbox_flip(gt_bboxes, img_shape)
         gt_bboxes[:, 0::2] = np.clip(gt_bboxes[:, 0::2], 0, img_shape[1])
         gt_bboxes[:, 1::2] = np.clip(gt_bboxes[:, 1::2], 0, img_shape[0])
         if self.max_num_gts is None:
@@ -159,42 +103,6 @@ class PolyMaskTransform(object):
         ]
         gt_mask_polys = np.concatenate(gt_mask_polys)
         return gt_mask_polys, gt_poly_lens, num_polys_per_mask
-
-
-class MaskTransform(object):
-    """Preprocess masks
-    1. resize masks to expected size and stack to a single array
-    2. flip the masks (if needed)
-    3. pad the masks (if needed)
-    """
-
-    def __init__(self, max_num_gts, pad_size=None):
-        self.max_num_gts = max_num_gts
-        self.pad_size = pad_size
-
-    def __call__(self, masks, img_size, flip=False):
-        max_long_edge = max(img_size)
-        max_short_edge = min(img_size)
-        masks = [
-            cvb.resize_keep_ar(
-                mask,
-                max_long_edge,
-                max_short_edge,
-                interpolation=cvb.INTER_NEAREST) for mask in masks
-        ]
-        masks = np.stack(masks, axis=0)
-        if flip:
-            masks = masks[:, ::-1, :]
-        if self.pad_size is None:
-            pad_h = masks.shape[1]
-            pad_w = masks.shape[2]
-        else:
-            pad_size = self.pad_size if self.pad_size > 0 else max_long_edge
-            pad_h = pad_w = pad_size
-        padded_masks = np.zeros(
-            (self.max_num_gts, pad_h, pad_w), dtype=masks.dtype)
-        padded_masks[:masks.shape[0], :masks.shape[1], :masks.shape[2]] = masks
-        return padded_masks
 
 
 class Numpy2Tensor(object):

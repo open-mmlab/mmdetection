@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 
 from .transforms import (ImageTransform, BboxTransform, PolyMaskTransform,
                          Numpy2Tensor)
-from .utils import show_ann, random_scale
+from .utils import to_tensor, show_ann, random_scale
 from .utils import DataContainer as DC
 
 
@@ -71,6 +71,7 @@ def parse_ann_info(ann_info, cat2label, with_mask=True):
 
 
 class CocoDataset(Dataset):
+
     def __init__(self,
                  ann_file,
                  img_prefix,
@@ -227,27 +228,28 @@ class CocoDataset(Dataset):
                         ann['mask_polys'], ann['poly_lens'],
                         img_info['height'], img_info['width'], flip)
 
-            ori_shape = (img_info['height'], img_info['width'])
+            ori_shape = (img_info['height'], img_info['width'], 3)
             img_meta = dict(
-                ori_shape=DC(ori_shape),
-                img_shape=DC(img_shape),
-                scale_factor=DC(scale_factor),
-                flip=DC(flip))
+                ori_shape=ori_shape,
+                img_shape=img_shape,
+                scale_factor=scale_factor,
+                flip=flip)
 
             data = dict(
-                img=DC(img, stack=True),
-                img_meta=img_meta,
-                gt_bboxes=DC(gt_bboxes))
+                img=DC(to_tensor(img), stack=True),
+                img_meta=DC(img_meta, cpu_only=True),
+                gt_bboxes=DC(to_tensor(gt_bboxes)))
             if self.proposals is not None:
-                data['proposals'] = DC(proposals)
+                data['proposals'] = DC(to_tensor(proposals))
             if self.with_label:
-                data['gt_labels'] = DC(gt_labels)
+                data['gt_labels'] = DC(to_tensor(gt_labels))
             if self.with_crowd:
-                data['gt_bboxes_ignore'] = DC(gt_bboxes_ignore)
+                data['gt_bboxes_ignore'] = DC(to_tensor(gt_bboxes_ignore))
             if self.with_mask:
-                data['gt_mask_polys'] = DC(gt_mask_polys)
-                data['gt_poly_lens'] = DC(gt_poly_lens)
-                data['num_polys_per_mask'] = DC(num_polys_per_mask)
+                data['gt_masks'] = dict(
+                    polys=DC(gt_mask_polys, cpu_only=True),
+                    poly_lens=DC(gt_poly_lens, cpu_only=True),
+                    polys_per_mask=DC(num_polys_per_mask, cpu_only=True))
             return data
 
     def prepare_test_img(self, idx):
@@ -258,37 +260,37 @@ class CocoDataset(Dataset):
                     if self.proposals is not None else None)
 
         def prepare_single(img, scale, flip, proposal=None):
-            _img, _img_shape, _scale_factor = self.img_transform(
+            _img, img_shape, scale_factor = self.img_transform(
                 img, scale, flip)
-            img, img_shape, scale_factor = self.numpy2tensor(
-                _img, _img_shape, _scale_factor)
-            ori_shape = (img_info['height'], img_info['width'])
-            img_meta = dict(
-                ori_shape=ori_shape,
+            _img = to_tensor(_img)
+            _img_meta = dict(
+                ori_shape=(img_info['height'], img_info['width'], 3),
                 img_shape=img_shape,
                 scale_factor=scale_factor,
                 flip=flip)
             if proposal is not None:
-                proposal = self.bbox_transform(proposal, _scale_factor, flip)
-                proposal = self.numpy2tensor(proposal)
-            return img, img_meta, proposal
+                _proposal = self.bbox_transform(proposal, scale_factor, flip)
+                _proposal = to_tensor(_proposal)
+            else:
+                _proposal = None
+            return _img, _img_meta, _proposal
 
         imgs = []
         img_metas = []
         proposals = []
         for scale in self.img_scales:
-            img, img_meta, proposal = prepare_single(img, scale, False,
-                                                     proposal)
-            imgs.append(img)
-            img_metas.append(img_meta)
-            proposals.append(proposal)
+            _img, _img_meta, _proposal = prepare_single(
+                img, scale, False, proposal)
+            imgs.append(_img)
+            img_metas.append(DC(_img_meta, cpu_only=True))
+            proposals.append(_proposal)
             if self.flip_ratio > 0:
-                img, img_meta, prop = prepare_single(img, scale, True,
-                                                     proposal)
-                imgs.append(img)
-                img_metas.append(img_meta)
-                proposals.append(prop)
-        if self.proposals is None:
-            return imgs, img_metas
-        else:
-            return imgs, img_metas, proposals
+                _img, _img_meta, _proposal = prepare_single(
+                    img, scale, True, proposal)
+                imgs.append(_img)
+                img_metas.append(DC(_img_meta, cpu_only=True))
+                proposals.append(_proposal)
+        data = dict(img=imgs, img_meta=img_metas)
+        if self.proposals is not None:
+            data['proposals'] = proposals
+        return data

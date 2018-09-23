@@ -7,8 +7,6 @@ import numpy as np
 from torch.distributed import get_world_size, get_rank
 from torch.utils.data.sampler import Sampler
 
-__all__ = ['GroupSampler', 'DistributedGroupSampler']
-
 
 class GroupSampler(Sampler):
 
