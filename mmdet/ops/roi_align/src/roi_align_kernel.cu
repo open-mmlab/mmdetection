@@ -1,14 +1,10 @@
 #include <ATen/ATen.h>
+#include <THC/THCAtomics.cuh>
 
-#include <cuda.h>
-#include <cuda_runtime.h>
+using namespace at;  // temporal fix for pytorch<=0.4.1 (see #9848)
 
-#include <math.h>
-#include <stdio.h>
-#include <vector>
-
-#define CUDA_1D_KERNEL_LOOP(i, n)                                              \
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;                   \
+#define CUDA_1D_KERNEL_LOOP(i, n)                            \
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; \
        i += blockDim.x * gridDim.x)
 
 #define THREADS_PER_BLOCK 1024
@@ -28,10 +24,8 @@ __device__ scalar_t bilinear_interpolate(const scalar_t *bottom_data,
     return 0;
   }
 
-  if (y <= 0)
-    y = 0;
-  if (x <= 0)
-    x = 0;
+  if (y <= 0) y = 0;
+  if (x <= 0) x = 0;
 
   int y_low = (int)y;
   int x_low = (int)x;
@@ -69,12 +63,13 @@ __device__ scalar_t bilinear_interpolate(const scalar_t *bottom_data,
 }
 
 template <typename scalar_t>
-__global__ void
-ROIAlignForward(const int nthreads, const scalar_t *bottom_data,
-                const scalar_t *bottom_rois, const scalar_t spatial_scale,
-                const int sample_num, const int channels, const int height,
-                const int width, const int pooled_height,
-                const int pooled_width, scalar_t *top_data) {
+__global__ void ROIAlignForward(const int nthreads, const scalar_t *bottom_data,
+                                const scalar_t *bottom_rois,
+                                const scalar_t spatial_scale,
+                                const int sample_num, const int channels,
+                                const int height, const int width,
+                                const int pooled_height, const int pooled_width,
+                                scalar_t *top_data) {
   CUDA_1D_KERNEL_LOOP(index, nthreads) {
     // (n, c, ph, pw) is an element in the aligned output
     int pw = index % pooled_width;
@@ -101,7 +96,7 @@ ROIAlignForward(const int nthreads, const scalar_t *bottom_data,
 
     int sample_num_h = (sample_num > 0)
                            ? sample_num
-                           : ceil(roi_height / pooled_height); // e.g., = 2
+                           : ceil(roi_height / pooled_height);  // e.g., = 2
     int sample_num_w =
         (sample_num > 0) ? sample_num : ceil(roi_width / pooled_width);
 
@@ -137,17 +132,17 @@ int ROIAlignForwardLaucher(const at::Tensor features, const at::Tensor rois,
                            const int pooled_height, const int pooled_width,
                            at::Tensor output) {
   const int output_size = num_rois * pooled_height * pooled_width * channels;
-  AT_DISPATCH_FLOATING_TYPES(
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       features.type(), "ROIAlignLaucherForward", ([&] {
         const scalar_t *bottom_data = features.data<scalar_t>();
         const scalar_t *rois_data = rois.data<scalar_t>();
         scalar_t *top_data = output.data<scalar_t>();
 
-        ROIAlignForward<
-            scalar_t><<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
-            output_size, bottom_data, rois_data, scalar_t(spatial_scale),
-            sample_num, channels, height, width, pooled_height, pooled_width,
-            top_data);
+        ROIAlignForward<scalar_t>
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
+                output_size, bottom_data, rois_data, scalar_t(spatial_scale),
+                sample_num, channels, height, width, pooled_height,
+                pooled_width, top_data);
       }));
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err) {
@@ -159,11 +154,12 @@ int ROIAlignForwardLaucher(const at::Tensor features, const at::Tensor rois,
 }
 
 template <typename scalar_t>
-__device__ void
-bilinear_interpolate_gradient(const int height, const int width, scalar_t y,
-                              scalar_t x, scalar_t &w1, scalar_t &w2,
-                              scalar_t &w3, scalar_t &w4, int &x_low,
-                              int &x_high, int &y_low, int &y_high) {
+__device__ void bilinear_interpolate_gradient(const int height, const int width,
+                                              scalar_t y, scalar_t x,
+                                              scalar_t &w1, scalar_t &w2,
+                                              scalar_t &w3, scalar_t &w4,
+                                              int &x_low, int &x_high,
+                                              int &y_low, int &y_high) {
   // deal with cases that inverse elements are out of feature map boundary
   if (y < -1.0 || y > height || x < -1.0 || x > width) {
     w1 = w2 = w3 = w4 = 0.;
@@ -171,10 +167,8 @@ bilinear_interpolate_gradient(const int height, const int width, scalar_t y,
     return;
   }
 
-  if (y <= 0)
-    y = 0;
-  if (x <= 0)
-    x = 0;
+  if (y <= 0) y = 0;
+  if (x <= 0) x = 0;
 
   y_low = (int)y;
   x_low = (int)x;
@@ -204,12 +198,11 @@ bilinear_interpolate_gradient(const int height, const int width, scalar_t y,
 }
 
 template <typename scalar_t>
-__global__ void
-ROIAlignBackward(const int nthreads, const scalar_t *top_diff,
-                 const scalar_t *bottom_rois, const scalar_t spatial_scale,
-                 const int sample_num, const int channels, const int height,
-                 const int width, const int pooled_height,
-                 const int pooled_width, scalar_t *bottom_diff) {
+__global__ void ROIAlignBackward(
+    const int nthreads, const scalar_t *top_diff, const scalar_t *bottom_rois,
+    const scalar_t spatial_scale, const int sample_num, const int channels,
+    const int height, const int width, const int pooled_height,
+    const int pooled_width, scalar_t *bottom_diff) {
   CUDA_1D_KERNEL_LOOP(index, nthreads) {
     // (n, c, ph, pw) is an element in the aligned output
     int pw = index % pooled_width;
@@ -239,7 +232,7 @@ ROIAlignBackward(const int nthreads, const scalar_t *top_diff,
 
     int sample_num_h = (sample_num > 0)
                            ? sample_num
-                           : ceil(roi_height / pooled_height); // e.g., = 2
+                           : ceil(roi_height / pooled_height);  // e.g., = 2
     int sample_num_w =
         (sample_num > 0) ? sample_num : ceil(roi_width / pooled_width);
 
@@ -279,13 +272,6 @@ ROIAlignBackward(const int nthreads, const scalar_t *top_diff,
   }
 }
 
-template <>
-__global__ void ROIAlignBackward<double>(
-    const int nthreads, const double *top_diff, const double *bottom_rois,
-    const double spatial_scale, const int sample_num, const int channels,
-    const int height, const int width, const int pooled_height,
-    const int pooled_width, double *bottom_diff) {}
-
 int ROIAlignBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
                             const float spatial_scale, const int sample_num,
                             const int channels, const int height,
@@ -294,6 +280,7 @@ int ROIAlignBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
                             at::Tensor bottom_grad) {
   const int output_size = num_rois * pooled_height * pooled_width * channels;
 
+  // TODO: use AT_DISPATCH_FLOATING_TYPES_AND_HALF when atomicAdd is resolved
   AT_DISPATCH_FLOATING_TYPES(
       top_grad.type(), "ROIAlignLaucherBackward", ([&] {
         const scalar_t *top_diff = top_grad.data<scalar_t>();
@@ -304,10 +291,11 @@ int ROIAlignBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
           exit(-1);
         }
 
-        ROIAlignBackward<
-            scalar_t><<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
-            output_size, top_diff, rois_data, spatial_scale, sample_num,
-            channels, height, width, pooled_height, pooled_width, bottom_diff);
+        ROIAlignBackward<scalar_t>
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
+                output_size, top_diff, rois_data, spatial_scale, sample_num,
+                channels, height, width, pooled_height, pooled_width,
+                bottom_diff);
       }));
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err) {

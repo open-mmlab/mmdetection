@@ -4,7 +4,7 @@ from torch.autograd import gradcheck
 import os.path as osp
 import sys
 sys.path.append(osp.abspath(osp.join(__file__, '../../')))
-from roi_pooling import RoIPool
+from roi_pool import RoIPool
 
 feat = torch.randn(4, 16, 15, 15, requires_grad=True).cuda()
 rois = torch.Tensor([[0, 0, 0, 50, 50], [0, 10, 30, 43, 55],
