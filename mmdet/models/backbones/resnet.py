@@ -1,7 +1,7 @@
 import math
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from torchpack import load_checkpoint
+from mmcv.torchpack import load_checkpoint
 
 
 def conv3x3(in_planes, out_planes, stride=1, dilation=1):
