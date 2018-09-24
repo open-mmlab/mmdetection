@@ -15,8 +15,8 @@ class MMDistributedDataParallel(nn.Module):
         self.dim = dim
         self.broadcast_buffers = broadcast_buffers
 
-        self.first_synced = False
         self.broadcast_bucket_size = 32 * 1024 * 1024
+        self._sync_params()
 
     def _dist_broadcast_coalesced(self, tensors, buffer_size):
         for tensors in _take_tensors(tensors, buffer_size):
@@ -26,7 +26,7 @@ class MMDistributedDataParallel(nn.Module):
                     tensors, _unflatten_dense_tensors(flat_tensors, tensors)):
                 tensor.copy_(synced)
 
-    def sync_params(self):
+    def _sync_params(self):
         module_states = list(self.module.state_dict().values())
         if len(module_states) > 0:
             self._dist_broadcast_coalesced(module_states,
@@ -41,9 +41,6 @@ class MMDistributedDataParallel(nn.Module):
         return scatter_kwargs(inputs, kwargs, device_ids, dim=self.dim)
 
     def forward(self, *inputs, **kwargs):
-        if not self.first_synced:
-            self.sync_params()
-            self.first_synced = True
         inputs, kwargs = self.scatter(inputs, kwargs,
                                       [torch.cuda.current_device()])
         return self.module(*inputs[0], **kwargs[0])
