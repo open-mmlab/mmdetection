@@ -95,10 +95,7 @@ def main():
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     if dist:
-        model = MMDistributedDataParallel(
-            model,
-            device_ids=[torch.cuda.current_device()],
-            broadcast_buffers=False).cuda()
+        model = MMDistributedDataParallel(model).cuda()
     else:
         model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
 
