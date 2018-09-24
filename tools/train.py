@@ -77,7 +77,7 @@ def main():
     else:
         dist = True
         print('Enabled distributed training.')
-        init_dist(args.launcher, **cfg.dist_args)
+        init_dist(args.launcher, **cfg.dist_params)
 
     # prepare data loaders
     train_dataset = obj_from_dict(cfg.data.train, datasets)
