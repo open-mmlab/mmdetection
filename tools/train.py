@@ -39,9 +39,7 @@ def batch_processor(model, data, train_mode):
     loss, log_vars = parse_losses(losses)
 
     outputs = dict(
-        loss=loss / args.world_size,
-        log_vars=log_vars,
-        num_samples=len(data['img'].data))
+        loss=loss, log_vars=log_vars, num_samples=len(data['img'].data))
 
     return outputs
 
@@ -54,61 +52,65 @@ def parse_args():
         action='store_true',
         help='whether to add a validate phase')
     parser.add_argument(
-        '--dist', action='store_true', help='use distributed training or not')
-    parser.add_argument('--world-size', default=1, type=int)
-    parser.add_argument('--rank', default=0, type=int)
+        '--gpus', type=int, default=1, help='number of gpus to use')
+    parser.add_argument(
+        '--launcher',
+        choices=['none', 'pytorch', 'slurm', 'mpi'],
+        default='none',
+        help='job launcher')
+    parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
 
     return args
 
 
-args = parse_args()
-
-
 def main():
-    # get config from file
+    args = parse_args()
+
     cfg = Config.fromfile(args.config)
-    cfg.update(world_size=args.world_size, rank=args.rank)
+    cfg.update(gpus=args.gpus)
 
     # init distributed environment if necessary
-    if args.dist:
-        print('Enable distributed training.')
-        init_dist(args.world_size, args.rank, **cfg.dist_params)
-    else:
+    if args.launcher == 'none':
+        dist = False
         print('Disabled distributed training.')
+    else:
+        dist = True
+        print('Enabled distributed training.')
+        init_dist(args.launcher, **cfg.dist_args)
 
     # prepare data loaders
     train_dataset = obj_from_dict(cfg.data.train, datasets)
     data_loaders = [
-        build_dataloader(
-            train_dataset, cfg.data.imgs_per_gpu, cfg.data.workers_per_gpu,
-            len(cfg.device_ids), args.dist, cfg.world_size, cfg.rank)
+        build_dataloader(train_dataset, cfg.data.imgs_per_gpu,
+                         cfg.data.workers_per_gpu, cfg.gpus, dist)
     ]
     if args.validate:
         val_dataset = obj_from_dict(cfg.data.val, datasets)
         data_loaders.append(
-            build_dataloader(
-                val_dataset, cfg.data.imgs_per_gpu, cfg.data.workers_per_gpu,
-                len(cfg.device_ids), args.dist, cfg.world_size, cfg.rank))
+            build_dataloader(val_dataset, cfg.data.imgs_per_gpu,
+                             cfg.data.workers_per_gpu, cfg.gpus, dist))
 
     # build model
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
-    if args.dist:
+    if dist:
         model = MMDistributedDataParallel(
-            model, device_ids=[cfg.rank], broadcast_buffers=False).cuda()
+            model,
+            device_ids=[torch.cuda.current_device()],
+            broadcast_buffers=False).cuda()
     else:
-        model = MMDataParallel(model, device_ids=cfg.device_ids).cuda()
+        model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
 
     # build runner
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
                     cfg.log_level)
     # register hooks
     optimizer_config = DistOptimizerHook(
-        **cfg.optimizer_config) if args.dist else cfg.optimizer_config
+        **cfg.optimizer_config) if dist else cfg.optimizer_config
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
-    if args.dist:
+    if dist:
         runner.register_hook(DistSamplerSeedHook())
 
     if cfg.resume_from:

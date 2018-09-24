@@ -1,5 +1,6 @@
 from functools import partial
 
+from mmcv.torchpack import get_dist_info
 from torch.utils.data import DataLoader
 
 from .collate import collate
@@ -11,10 +12,9 @@ def build_dataloader(dataset,
                      workers_per_gpu,
                      num_gpus,
                      dist=True,
-                     world_size=1,
-                     rank=0,
                      **kwargs):
     if dist:
+        rank, world_size = get_dist_info()
         sampler = DistributedGroupSampler(dataset, imgs_per_gpu, world_size,
                                           rank)
         batch_size = imgs_per_gpu
