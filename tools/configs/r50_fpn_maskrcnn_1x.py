@@ -103,7 +103,11 @@ data = dict(
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
-        flip_ratio=0.5),
+        flip_ratio=0.5,
+        with_mask=True,
+        with_crowd=True,
+        with_label=True,
+        test_mode=False),
     test=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_val2017.json',
@@ -111,7 +115,10 @@ data = dict(
         img_scale=(1333, 800),
         flip_ratio=0,
         img_norm_cfg=img_norm_cfg,
-        size_divisor=32))
+        size_divisor=32,
+        with_mask=False,
+        with_label=False,
+        test_mode=True))
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
@@ -120,12 +127,12 @@ lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=500,
-    warmup_ratio=0.333,
+    warmup_ratio=1.0 / 3,
     step=[8, 11])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=50,
+    interval=20,
     hooks=[
         dict(type='TextLoggerHook'),
         # ('TensorboardLoggerHook', dict(log_dir=work_dir + '/log')),
@@ -133,7 +140,8 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 12
-dist_params = dict(backend='nccl')
+device_ids = range(8)
+dist_params = dict(backend='nccl', port='29500')
 log_level = 'INFO'
 work_dir = './work_dirs/fpn_mask_rcnn_r50_1x'
 load_from = None

@@ -109,7 +109,7 @@ class BBoxHead(nn.Module):
             # TODO: add clip here
 
         if rescale:
-            bboxes /= scale_factor.float()
+            bboxes /= scale_factor
 
         if nms_cfg is None:
             return bboxes, scores

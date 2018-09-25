@@ -13,11 +13,6 @@ from pycocotools.cocoeval import COCOeval
 
 from ..eval import eval_recalls
 
-__all__ = [
-    'EmptyCacheHook', 'DistEvalHook', 'DistEvalRecallHook',
-    'CocoDistEvalmAPHook'
-]
-
 
 class EmptyCacheHook(Hook):
 
