@@ -1,93 +1,85 @@
 import torch
-import numpy as np
-from ..bbox_ops import (bbox_assign, bbox_transform, bbox_sampling)
+
+from ..bbox_ops import bbox_assign, bbox_transform, bbox_sampling
+from ..utils import multi_apply
 
 
-def anchor_target(anchor_list, valid_flag_list, featmap_sizes, gt_bboxes_list,
-                  img_metas, target_means, target_stds, cfg):
+def anchor_target(anchor_list, valid_flag_list, gt_bboxes_list, img_metas,
+                  target_means, target_stds, cfg):
     """Compute regression and classification targets for anchors.
 
-    There may be multiple feature levels, 
-
     Args:
-        anchor_list(list): anchors of each feature map level
-        featmap_sizes(list): feature map sizes
-        gt_bboxes_list(list): ground truth bbox of images in a mini-batch
-        img_shapes(list): shape of each image in a mini-batch
-        cfg(dict): configs
+        anchor_list (list[list]): Multi level anchors of each image.
+        valid_flag_list (list[list]): Multi level valid flags of each image.
+        gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
+        img_metas (list[dict]): Meta info of each image.
+        target_means (Iterable): Mean value of regression targets.
+        target_stds (Iterable): Std value of regression targets.
+        cfg (dict): RPN train configs.
 
     Returns:
         tuple
     """
     num_imgs = len(img_metas)
-    num_levels = len(featmap_sizes)
-    if len(anchor_list) == num_levels:
-        all_anchors = torch.cat(anchor_list, 0)
-        anchor_nums = [anchors.size(0) for anchors in anchor_list]
-        use_isomerism_anchors = False
-    elif len(anchor_list) == num_imgs:
-        # using different anchors for different images
-        all_anchors_list = [
-            torch.cat(anchor_list[img_id], 0) for img_id in range(num_imgs)
-        ]
-        anchor_nums = [anchors.size(0) for anchors in anchor_list[0]]
-        use_isomerism_anchors = True
-    else:
-        raise ValueError('length of anchor_list should be equal to number of '
-                         'feature lvls or number of images in a batch')
-    all_labels = []
-    all_label_weights = []
-    all_bbox_targets = []
-    all_bbox_weights = []
-    num_total_sampled = 0
-    for img_id in range(num_imgs):
-        if isinstance(valid_flag_list[img_id], list):
-            valid_flags = torch.cat(valid_flag_list[img_id], 0)
-        else:
-            valid_flags = valid_flag_list[img_id]
-        if use_isomerism_anchors:
-            all_anchors = all_anchors_list[img_id]
-        inside_flags = anchor_inside_flags(all_anchors, valid_flags,
-                                           img_metas[img_id]['img_shape'][:2],
-                                           cfg.allowed_border)
-        if not inside_flags.any():
-            return None
-        gt_bboxes = gt_bboxes_list[img_id]
-        anchor_targets = anchor_target_single(all_anchors, inside_flags,
-                                              gt_bboxes, target_means,
-                                              target_stds, cfg)
-        (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
-         neg_inds) = anchor_targets
-        all_labels.append(labels)
-        all_label_weights.append(label_weights)
-        all_bbox_targets.append(bbox_targets)
-        all_bbox_weights.append(bbox_weights)
-        num_total_sampled += max(pos_inds.numel() + neg_inds.numel(), 1)
-    all_labels = torch.stack(all_labels, 0)
-    all_label_weights = torch.stack(all_label_weights, 0)
-    all_bbox_targets = torch.stack(all_bbox_targets, 0)
-    all_bbox_weights = torch.stack(all_bbox_weights, 0)
-    # split into different feature levels
-    labels_list = []
-    label_weights_list = []
-    bbox_targets_list = []
-    bbox_weights_list = []
-    start = 0
-    for anchor_num in anchor_nums:
-        end = start + anchor_num
-        labels_list.append(all_labels[:, start:end].squeeze(0))
-        label_weights_list.append(all_label_weights[:, start:end].squeeze(0))
-        bbox_targets_list.append(all_bbox_targets[:, start:end].squeeze(0))
-        bbox_weights_list.append(all_bbox_weights[:, start:end].squeeze(0))
-        start = end
+    assert len(anchor_list) == len(valid_flag_list) == num_imgs
+
+    # anchor number of multi levels
+    num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
+    # concat all level anchors and flags to a single tensor
+    for i in range(num_imgs):
+        assert len(anchor_list[i]) == len(valid_flag_list[i])
+        anchor_list[i] = torch.cat(anchor_list[i])
+        valid_flag_list[i] = torch.cat(valid_flag_list[i])
+
+    # compute targets for each image
+    means_replicas = [target_means for _ in range(num_imgs)]
+    stds_replicas = [target_stds for _ in range(num_imgs)]
+    cfg_replicas = [cfg for _ in range(num_imgs)]
+    (all_labels, all_label_weights, all_bbox_targets,
+     all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
+         anchor_target_single, anchor_list, valid_flag_list, gt_bboxes_list,
+         img_metas, means_replicas, stds_replicas, cfg_replicas)
+    # no valid anchors
+    if any([labels is None for labels in all_labels]):
+        return None
+    # sampled anchors of all images
+    num_total_samples = sum([
+        max(pos_inds.numel() + neg_inds.numel(), 1)
+        for pos_inds, neg_inds in zip(pos_inds_list, neg_inds_list)
+    ])
+    # split targets to a list w.r.t. multiple levels
+    labels_list = images_to_levels(all_labels, num_level_anchors)
+    label_weights_list = images_to_levels(all_label_weights, num_level_anchors)
+    bbox_targets_list = images_to_levels(all_bbox_targets, num_level_anchors)
+    bbox_weights_list = images_to_levels(all_bbox_weights, num_level_anchors)
     return (labels_list, label_weights_list, bbox_targets_list,
-            bbox_weights_list, num_total_sampled)
+            bbox_weights_list, num_total_samples)
 
 
-def anchor_target_single(all_anchors, inside_flags, gt_bboxes, target_means,
-                         target_stds, cfg):
+def images_to_levels(target, num_level_anchors):
+    """Convert targets by image to targets by feature level.
+
+    [target_img0, target_img1] -> [target_level0, target_level1, ...]
+    """
+    target = torch.stack(target, 0)
+    level_targets = []
+    start = 0
+    for n in num_level_anchors:
+        end = start + n
+        level_targets.append(target[:, start:end].squeeze(0))
+        start = end
+    return level_targets
+
+
+def anchor_target_single(flat_anchors, valid_flags, gt_bboxes, img_meta,
+                         target_means, target_stds, cfg):
+    inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
+                                       img_meta['img_shape'][:2],
+                                       cfg.allowed_border)
+    if not inside_flags.any():
+        return (None, ) * 6
     # assign gt and sample anchors
-    anchors = all_anchors[inside_flags, :]
+    anchors = flat_anchors[inside_flags, :]
     assigned_gt_inds, argmax_overlaps, max_overlaps = bbox_assign(
         anchors,
         gt_bboxes,
@@ -120,7 +112,7 @@ def anchor_target_single(all_anchors, inside_flags, gt_bboxes, target_means,
         label_weights[neg_inds] = 1.0
 
     # map up to original set of anchors
-    num_total_anchors = all_anchors.size(0)
+    num_total_anchors = flat_anchors.size(0)
     labels = unmap(labels, num_total_anchors, inside_flags)
     label_weights = unmap(label_weights, num_total_anchors, inside_flags)
     bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
@@ -130,25 +122,18 @@ def anchor_target_single(all_anchors, inside_flags, gt_bboxes, target_means,
             neg_inds)
 
 
-def anchor_inside_flags(all_anchors, valid_flags, img_shape, allowed_border=0):
+def anchor_inside_flags(flat_anchors, valid_flags, img_shape,
+                        allowed_border=0):
     img_h, img_w = img_shape[:2]
     if allowed_border >= 0:
         inside_flags = valid_flags & \
-            (all_anchors[:, 0] >= -allowed_border) & \
-            (all_anchors[:, 1] >= -allowed_border) & \
-            (all_anchors[:, 2] < img_w + allowed_border) & \
-            (all_anchors[:, 3] < img_h + allowed_border)
+            (flat_anchors[:, 0] >= -allowed_border) & \
+            (flat_anchors[:, 1] >= -allowed_border) & \
+            (flat_anchors[:, 2] < img_w + allowed_border) & \
+            (flat_anchors[:, 3] < img_h + allowed_border)
     else:
         inside_flags = valid_flags
     return inside_flags
-
-
-def unique(tensor):
-    if tensor.is_cuda:
-        u_tensor = np.unique(tensor.cpu().numpy())
-        return tensor.new_tensor(u_tensor)
-    else:
-        return torch.unique(tensor)
 
 
 def unmap(data, count, inds, fill=0):
