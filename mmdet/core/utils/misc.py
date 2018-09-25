@@ -1,8 +1,10 @@
+from functools import partial
+
 import mmcv
 import numpy as np
-import torch
+from six.moves import map, zip
 
-__all__ = ['tensor2imgs', 'unique', 'unmap', 'results2json']
+__all__ = ['tensor2imgs', 'multi_apply', 'unmap', 'results2json']
 
 
 def tensor2imgs(tensor, mean=(0, 0, 0), std=(1, 1, 1), to_rgb=True):
@@ -17,12 +19,10 @@ def tensor2imgs(tensor, mean=(0, 0, 0), std=(1, 1, 1), to_rgb=True):
     return imgs
 
 
-def unique(tensor):
-    if tensor.is_cuda:
-        u_tensor = np.unique(tensor.cpu().numpy())
-        return tensor.new_tensor(u_tensor)
-    else:
-        return torch.unique(tensor)
+def multi_apply(func, *args, **kwargs):
+    pfunc = partial(func, **kwargs) if kwargs else func
+    map_results = map(pfunc, *args)
+    return tuple(map(list, zip(*map_results)))
 
 
 def unmap(data, count, inds, fill=0):
