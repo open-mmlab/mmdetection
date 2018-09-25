@@ -212,7 +212,7 @@ class CocoDataset(Dataset):
             # apply transforms
             flip = True if np.random.rand() < self.flip_ratio else False
             img_scale = random_scale(self.img_scales)  # sample a scale
-            img, img_shape, scale_factor = self.img_transform(
+            img, img_shape, pad_shape, scale_factor = self.img_transform(
                 img, img_scale, flip)
             if self.proposals is not None:
                 proposals = self.bbox_transform(proposals, img_shape,
@@ -232,6 +232,7 @@ class CocoDataset(Dataset):
             img_meta = dict(
                 ori_shape=ori_shape,
                 img_shape=img_shape,
+                pad_shape=pad_shape,
                 scale_factor=scale_factor,
                 flip=flip)
 
@@ -260,12 +261,13 @@ class CocoDataset(Dataset):
                     if self.proposals is not None else None)
 
         def prepare_single(img, scale, flip, proposal=None):
-            _img, img_shape, scale_factor = self.img_transform(
+            _img, img_shape, pad_shape, scale_factor = self.img_transform(
                 img, scale, flip)
             _img = to_tensor(_img)
             _img_meta = dict(
                 ori_shape=(img_info['height'], img_info['width'], 3),
                 img_shape=img_shape,
+                pad_shape=pad_shape,
                 scale_factor=scale_factor,
                 flip=flip)
             if proposal is not None:

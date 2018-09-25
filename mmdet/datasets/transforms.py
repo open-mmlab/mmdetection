@@ -36,8 +36,11 @@ class ImageTransform(object):
             img = mmcv.imflip(img)
         if self.size_divisor is not None:
             img = mmcv.impad_to_multiple(img, self.size_divisor)
+            pad_shape = img.shape
+        else:
+            pad_shape = img_shape
         img = img.transpose(2, 0, 1)
-        return img, img_shape, scale_factor
+        return img, img_shape, pad_shape, scale_factor
 
 
 def bbox_flip(bboxes, img_shape):

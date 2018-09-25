@@ -18,7 +18,6 @@ model = dict(
         type='RPNHead',
         in_channels=256,
         feat_channels=256,
-        coarsest_stride=32,
         anchor_scales=[8],
         anchor_ratios=[0.5, 1.0, 2.0],
         anchor_strides=[4, 8, 16, 32, 64],
