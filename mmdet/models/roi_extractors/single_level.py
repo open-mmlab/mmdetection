@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from mmdet import ops
+from mmdet.core import bbox_assign, bbox_sampling
 
 
 class SingleLevelRoI(nn.Module):
@@ -50,6 +51,36 @@ class SingleLevelRoI(nn.Module):
         target_lvls = torch.floor(torch.log2(scale / self.finest_scale + 1e-6))
         target_lvls = target_lvls.clamp(min=0, max=num_levels - 1).long()
         return target_lvls
+
+    def sample_proposals(self, proposals, gt_bboxes, gt_crowds, gt_labels,
+                         cfg):
+        proposals = proposals[:, :4]
+        assigned_gt_inds, assigned_labels, argmax_overlaps, max_overlaps = \
+            bbox_assign(proposals, gt_bboxes, gt_crowds, gt_labels,
+            cfg.pos_iou_thr, cfg.neg_iou_thr, cfg.pos_iou_thr, cfg.crowd_thr)
+
+        if cfg.add_gt_as_proposals:
+            proposals = torch.cat([gt_bboxes, proposals], dim=0)
+            gt_assign_self = torch.arange(
+                1,
+                len(gt_labels) + 1,
+                dtype=torch.long,
+                device=proposals.device)
+            assigned_gt_inds = torch.cat([gt_assign_self, assigned_gt_inds])
+            assigned_labels = torch.cat([gt_labels, assigned_labels])
+
+        pos_inds, neg_inds = bbox_sampling(
+            assigned_gt_inds, cfg.roi_batch_size, cfg.pos_fraction,
+            cfg.neg_pos_ub, cfg.pos_balance_sampling, max_overlaps,
+            cfg.neg_balance_thr)
+
+        pos_proposals = proposals[pos_inds]
+        neg_proposals = proposals[neg_inds]
+        pos_assigned_gt_inds = assigned_gt_inds[pos_inds] - 1
+        pos_gt_bboxes = gt_bboxes[pos_assigned_gt_inds, :]
+        pos_gt_labels = assigned_labels[pos_inds]
+
+        return (pos_proposals, neg_proposals, pos_assigned_gt_inds, pos_gt_bboxes, pos_gt_labels)
 
     def forward(self, feats, rois):
         """Extract roi features with the roi layer. If multiple feature levels

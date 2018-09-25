@@ -93,11 +93,13 @@ class FCNMaskHead(nn.Module):
         return mask_targets
 
     def loss(self, mask_pred, mask_targets, labels):
+        loss = dict()
         loss_mask = mask_cross_entropy(mask_pred, mask_targets, labels)
-        return loss_mask
+        loss['loss_mask'] = loss_mask
+        return loss
 
     def get_seg_masks(self, mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
-                      ori_scale):
+                      ori_shape):
         """Get segmentation masks from mask_pred and bboxes
         Args:
             mask_pred (Tensor or ndarray): shape (n, #class+1, h, w).
@@ -108,7 +110,7 @@ class FCNMaskHead(nn.Module):
             det_labels (Tensor): shape (n, )
             img_shape (Tensor): shape (3, )
             rcnn_test_cfg (dict): rcnn testing config
-            rescale (bool): whether rescale masks to original image size
+            ori_shape: original image size
         Returns:
             list[list]: encoded masks
         """
@@ -118,8 +120,8 @@ class FCNMaskHead(nn.Module):
         cls_segms = [[] for _ in range(self.num_classes - 1)]
         bboxes = det_bboxes.cpu().numpy()[:, :4]
         labels = det_labels.cpu().numpy() + 1
-        img_h = ori_scale[0]
-        img_w = ori_scale[1]
+        img_h = ori_shape[0]
+        img_w = ori_shape[1]
 
         for i in range(bboxes.shape[0]):
             bbox = bboxes[i, :].astype(int)
