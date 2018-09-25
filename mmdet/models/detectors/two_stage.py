@@ -1,13 +1,14 @@
 import torch
 import torch.nn as nn
 
-from .base import Detector
-from .testing_mixins import RPNTestMixin, BBoxTestMixin
+from .base import BaseDetector
+from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
-from mmdet.core import bbox2roi, bbox2result, sample_proposals
+from mmdet.core import bbox2roi, bbox2result, split_combined_polys, multi_apply
 
 
-class TwoStageDetector(Detector, RPNTestMixin, BBoxTestMixin):
+class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
+                       MaskTestMixin):
 
     def __init__(self,
                  backbone,
@@ -15,13 +16,16 @@ class TwoStageDetector(Detector, RPNTestMixin, BBoxTestMixin):
                  rpn_head=None,
                  bbox_roi_extractor=None,
                  bbox_head=None,
+                 mask_roi_extractor=None,
+                 mask_head=None,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
-        super(Detector, self).__init__()
+        super(TwoStageDetector, self).__init__()
         self.backbone = builder.build_backbone(backbone)
 
         self.with_neck = True if neck is not None else False
+        assert self.with_neck, "TwoStageDetector must be implemented with FPN now."
         if self.with_neck:
             self.neck = builder.build_neck(neck)
 
@@ -34,6 +38,12 @@ class TwoStageDetector(Detector, RPNTestMixin, BBoxTestMixin):
             self.bbox_roi_extractor = builder.build_roi_extractor(
                 bbox_roi_extractor)
             self.bbox_head = builder.build_bbox_head(bbox_head)
+
+        self.with_mask = True if mask_head is not None else False
+        if self.with_mask:
+            self.mask_roi_extractor = builder.build_roi_extractor(
+                mask_roi_extractor)
+            self.mask_head = builder.build_mask_head(mask_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -68,6 +78,7 @@ class TwoStageDetector(Detector, RPNTestMixin, BBoxTestMixin):
                       gt_bboxes,
                       gt_bboxes_ignore,
                       gt_labels,
+                      gt_masks=None,
                       proposals=None):
         losses = dict()
 
@@ -80,54 +91,73 @@ class TwoStageDetector(Detector, RPNTestMixin, BBoxTestMixin):
             rpn_losses = self.rpn_head.loss(*rpn_loss_inputs)
             losses.update(rpn_losses)
 
-            proposal_inputs = rpn_outs + (img_meta, self.self.test_cfg.rpn)
+            proposal_inputs = rpn_outs + (img_meta, self.test_cfg.rpn)
             proposal_list = self.rpn_head.get_proposals(*proposal_inputs)
-
         else:
             proposal_list = proposals
 
-        (pos_inds, neg_inds, pos_proposals, neg_proposals,
-         pos_assigned_gt_inds,
-         pos_gt_bboxes, pos_gt_labels) = sample_proposals(
-             proposal_list, gt_bboxes, gt_bboxes_ignore, gt_labels,
-             self.train_cfg.rcnn)
+        if self.with_bbox:
+            rcnn_train_cfg_list = [
+                self.train_cfg.rcnn for _ in range(len(proposal_list))
+            ]
+            (pos_proposals, neg_proposals, pos_assigned_gt_inds, pos_gt_bboxes,
+             pos_gt_labels) = multi_apply(
+                 self.bbox_roi_extractor.sample_proposals, proposal_list,
+                 gt_bboxes, gt_bboxes_ignore, gt_labels, rcnn_train_cfg_list)
+            labels, label_weights, bbox_targets, bbox_weights = \
+                self.bbox_head.get_bbox_target(pos_proposals, neg_proposals,
+                pos_gt_bboxes, pos_gt_labels, self.train_cfg.rcnn)
 
-        labels, label_weights, bbox_targets, bbox_weights = \
-            self.bbox_head.get_bbox_target(
-                pos_proposals, neg_proposals, pos_gt_bboxes, pos_gt_labels,
+            rois = bbox2roi([
+                torch.cat([pos, neg], dim=0)
+                for pos, neg in zip(pos_proposals, neg_proposals)
+            ])
+            # TODO: a more flexible way to configurate feat maps
+            roi_feats = self.bbox_roi_extractor(
+                x[:self.bbox_roi_extractor.num_inputs], rois)
+            cls_score, bbox_pred = self.bbox_head(roi_feats)
+
+            loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, labels,
+                                            label_weights, bbox_targets,
+                                            bbox_weights)
+            losses.update(loss_bbox)
+
+        if self.with_mask:
+            gt_polys = split_combined_polys(**gt_masks)
+            mask_targets = self.mask_head.get_mask_target(
+                pos_proposals, pos_assigned_gt_inds, gt_polys, img_meta,
                 self.train_cfg.rcnn)
-
-        rois = bbox2roi([
-            torch.cat([pos, neg], dim=0)
-            for pos, neg in zip(pos_proposals, neg_proposals)
-        ])
-        # TODO: a more flexible way to configurate feat maps
-        roi_feats = self.bbox_roi_extractor(
-            x[:self.bbox_roi_extractor.num_inputs], rois)
-        cls_score, bbox_pred = self.bbox_head(roi_feats)
-
-        loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, labels,
-                                        label_weights, bbox_targets,
-                                        bbox_weights)
-        losses.update(loss_bbox)
+            pos_rois = bbox2roi(pos_proposals)
+            mask_feats = self.mask_roi_extractor(
+                x[:self.mask_roi_extractor.num_inputs], pos_rois)
+            mask_pred = self.mask_head(mask_feats)
+            loss_mask = self.mask_head.loss(mask_pred, mask_targets,
+                                            torch.cat(pos_gt_labels))
+            losses.update(loss_mask)
 
         return losses
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         """Test without augmentation."""
+        assert proposals == None, "Fast RCNN hasn't been implemented."
+        assert self.with_bbox, "Bbox head must be implemented."
+
         x = self.extract_feat(img)
-        if proposals is None:
-            proposals = self.simple_test_rpn(x, img_meta)
-        if self.with_bbox:
-            # BUG proposals shape?
-            det_bboxes, det_labels = self.simple_test_bboxes(
-                x, img_meta, [proposals], rescale=rescale)
-            bbox_result = bbox2result(det_bboxes, det_labels,
-                                      self.bbox_head.num_classes)
-            return bbox_result
+
+        proposal_list = self.simple_test_rpn(
+            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
+
+        det_bboxes, det_labels = self.simple_test_bboxes(
+            x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
+        bbox_results = bbox2result(det_bboxes, det_labels,
+                                   self.bbox_head.num_classes)
+
+        if self.with_mask:
+            segm_results = self.simple_test_mask(
+                x, img_meta, det_bboxes, det_labels, rescale=rescale)
+            return bbox_results, segm_results
         else:
-            proposals[:, :4] /= img_meta['scale_factor'].float()
-            return proposals.cpu().numpy()
+            return bbox_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test with augmentations.
@@ -135,15 +165,28 @@ class TwoStageDetector(Detector, RPNTestMixin, BBoxTestMixin):
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
-        proposals = self.aug_test_rpn(
-            self.extract_feats(imgs), img_metas, self.rpn_test_cfg)
+        # recompute self.extract_feats(imgs) because of 'yield' and memory
+        proposal_list = self.aug_test_rpn(
+            self.extract_feats(imgs), img_metas, self.test_cfg.rpn)
         det_bboxes, det_labels = self.aug_test_bboxes(
-            self.extract_feats(imgs), img_metas, proposals, self.rcnn_test_cfg)
+            self.extract_feats(imgs), img_metas, proposal_list,
+            self.test_cfg.rcnn)
+
         if rescale:
             _det_bboxes = det_bboxes
         else:
             _det_bboxes = det_bboxes.clone()
-            _det_bboxes[:, :4] *= img_metas[0]['shape_scale'][0][-1]
-        bbox_result = bbox2result(_det_bboxes, det_labels,
-                                  self.bbox_head.num_classes)
-        return bbox_result
+            _det_bboxes[:, :4] *= img_metas[0][0]['scale_factor']
+        bbox_results = bbox2result(_det_bboxes, det_labels,
+                                   self.bbox_head.num_classes)
+
+        # det_bboxes always keep the original scale
+        if self.with_mask:
+            segm_results = self.aug_test_mask(
+                self.extract_feats(imgs),
+                img_metas,
+                det_bboxes,
+                det_labels)
+            return bbox_results, segm_results
+        else:
+            return bbox_results

@@ -58,7 +58,7 @@ def mask_cross_entropy(pred, target, label):
     inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
     pred_slice = pred[inds, label].squeeze(1)
     return F.binary_cross_entropy_with_logits(
-        pred_slice, target, reduction='sum')[None]
+        pred_slice, target, reduction='elementwise_mean')[None]
 
 
 def weighted_mask_cross_entropy(pred, target, weight, label):
