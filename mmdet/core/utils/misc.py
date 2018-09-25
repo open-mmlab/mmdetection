@@ -4,9 +4,6 @@ import mmcv
 import numpy as np
 from six.moves import map, zip
 
-__all__ = ['tensor2imgs', 'multi_apply', 'unmap', 'results2json']
-
-
 def tensor2imgs(tensor, mean=(0, 0, 0), std=(1, 1, 1), to_rgb=True):
     num_imgs = tensor.size(0)
     mean = np.array(mean, dtype=np.float32)
@@ -48,6 +45,21 @@ def xyxy2xywh(bbox):
     ]
 
 
+def proposal2json(dataset, results):
+    json_results = []
+    for idx in range(len(dataset)):
+        img_id = dataset.img_ids[idx]
+        bboxes = results[idx]
+        for i in range(bboxes.shape[0]):
+            data = dict()
+            data['image_id'] = img_id
+            data['bbox'] = xyxy2xywh(bboxes[i])
+            data['score'] = float(bboxes[i][4])
+            data['category_id'] = 1
+            json_results.append(data)
+    return json_results
+
+
 def det2json(dataset, results):
     json_results = []
     for idx in range(len(dataset)):
@@ -82,21 +94,6 @@ def segm2json(dataset, results):
                 segms[i]['counts'] = segms[i]['counts'].decode()
                 data['segmentation'] = segms[i]
                 json_results.append(data)
-    return json_results
-
-
-def proposal2json(dataset, results):
-    json_results = []
-    for idx in range(len(dataset)):
-        img_id = dataset.img_ids[idx]
-        bboxes = results[idx]
-        for i in range(bboxes.shape[0]):
-            data = dict()
-            data['image_id'] = img_id
-            data['bbox'] = xyxy2xywh(bboxes[i])
-            data['score'] = float(bboxes[i][4])
-            data['category_id'] = 1
-            json_results.append(data)
     return json_results
 
 

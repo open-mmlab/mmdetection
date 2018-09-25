@@ -54,9 +54,9 @@ def merge_aug_bboxes(aug_bboxes, aug_scores, img_metas, rcnn_test_cfg):
     """
     recovered_bboxes = []
     for bboxes, img_info in zip(aug_bboxes, img_metas):
-        img_shape = img_info['img_shape']
-        scale_factor = img_info['scale_factor']
-        flip = img_info['flip']
+        img_shape = img_info[0]['img_shape']
+        scale_factor = img_info[0]['scale_factor']
+        flip = img_info[0]['flip']
         bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip)
         recovered_bboxes.append(bboxes)
     bboxes = torch.stack(recovered_bboxes).mean(dim=0)
@@ -75,7 +75,7 @@ def merge_aug_scores(aug_scores):
         return np.mean(aug_scores, axis=0)
 
 
-def merge_aug_masks(aug_masks, bboxes, img_metas, rcnn_test_cfg, weights=None):
+def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
     """Merge augmented mask prediction.
 
     Args:
@@ -87,7 +87,7 @@ def merge_aug_masks(aug_masks, bboxes, img_metas, rcnn_test_cfg, weights=None):
         tuple: (bboxes, scores)
     """
     recovered_masks = [
-        mask if not img_info['flip'][0] else mask[..., ::-1]
+        mask if not img_info[0]['flip'] else mask[..., ::-1]
         for mask, img_info in zip(aug_masks, img_metas)
     ]
     if weights is None:

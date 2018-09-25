@@ -2,7 +2,7 @@ import mmcv
 
 from mmdet.core import tensor2imgs, bbox_mapping
 from .base import BaseDetector
-from .testing_mixins import RPNTestMixin
+from .test_mixins import RPNTestMixin
 from .. import builder
 
 
