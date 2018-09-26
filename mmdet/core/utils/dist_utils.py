@@ -39,7 +39,7 @@ def _init_dist_slurm(backend, **kwargs):
 
 
 # modified from https://github.com/NVIDIA/apex/blob/master/apex/parallel/distributed.py#L9
-def coalesce_all_reduce(tensors):
+def all_reduce_coalesced(tensors):
     buckets = OrderedDict()
     for tensor in tensors:
         tp = tensor.type()
@@ -64,7 +64,7 @@ def reduce_grads(model, coalesce=True):
         if param.requires_grad and param.grad is not None
     ]
     if coalesce:
-        coalesce_all_reduce(grads)
+        all_reduce_coalesced(grads)
     else:
         for tensor in grads:
             dist.all_reduce(tensor)

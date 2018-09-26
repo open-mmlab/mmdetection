@@ -9,9 +9,10 @@ from mmcv.torchpack import Runner, obj_from_dict
 
 from mmdet import datasets
 from mmdet.core import (init_dist, DistOptimizerHook, DistSamplerSeedHook,
-                        MMDataParallel, MMDistributedDataParallel)
+                        MMDataParallel, MMDistributedDataParallel,
+                        DistEvalRecallHook, CocoDistEvalmAPHook)
 from mmdet.datasets.loader import build_dataloader
-from mmdet.models import build_detector
+from mmdet.models import build_detector, RPN
 
 
 def parse_losses(losses):
@@ -109,6 +110,11 @@ def main():
                                    cfg.checkpoint_config, cfg.log_config)
     if dist:
         runner.register_hook(DistSamplerSeedHook())
+        # register eval hooks
+        if isinstance(model.module, RPN):
+            runner.register_hook(DistEvalRecallHook(cfg.data.val))
+        elif cfg.data.val.type == 'CocoDataset':
+            runner.register_hook(CocoDistEvalmAPHook(cfg.data.val))
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)

@@ -1,14 +1,17 @@
 from .class_names import (voc_classes, imagenet_det_classes,
                           imagenet_vid_classes, coco_classes, dataset_aliases,
                           get_classes)
-from .coco_utils import coco_eval
+from .coco_utils import coco_eval, results2json
+from .eval_hooks import DistEvalHook, DistEvalRecallHook, CocoDistEvalmAPHook
 from .mean_ap import average_precision, eval_map, print_map_summary
 from .recall import (eval_recalls, print_recall_summary, plot_num_recall,
                      plot_iou_recall)
 
 __all__ = [
     'voc_classes', 'imagenet_det_classes', 'imagenet_vid_classes',
-    'coco_classes', 'dataset_aliases', 'get_classes', 'average_precision',
-    'eval_map', 'print_map_summary', 'eval_recalls', 'print_recall_summary',
-    'plot_num_recall', 'plot_iou_recall', 'coco_eval'
+    'coco_classes', 'dataset_aliases', 'get_classes', 'coco_eval',
+    'results2json', 'DistEvalHook', 'DistEvalRecallHook',
+    'CocoDistEvalmAPHook', 'average_precision', 'eval_map',
+    'print_map_summary', 'eval_recalls', 'print_recall_summary',
+    'plot_num_recall', 'plot_iou_recall'
 ]
