@@ -16,7 +16,6 @@ def scatter(inputs, target_gpus, dim=0):
         if isinstance(obj, torch.Tensor):
             return OrigScatter.apply(target_gpus, None, dim, obj)
         if isinstance(obj, DataContainer):
-            # print('data container', obj)
             if obj.cpu_only:
                 return obj.data
             else:
@@ -24,14 +23,10 @@ def scatter(inputs, target_gpus, dim=0):
         if isinstance(obj, tuple) and len(obj) > 0:
             return list(zip(*map(scatter_map, obj)))
         if isinstance(obj, list) and len(obj) > 0:
-            # print('list', obj)
             out = list(map(list, zip(*map(scatter_map, obj))))
-            # print('list out', out)
             return out
         if isinstance(obj, dict) and len(obj) > 0:
-            # print('dict\n', obj)
             out = list(map(type(obj), zip(*map(scatter_map, obj.items()))))
-            # print('dict output\n', out)
             return out
         return [obj for targets in target_gpus]
 
