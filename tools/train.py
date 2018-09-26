@@ -8,10 +8,10 @@ from mmcv import Config
 from mmcv.torchpack import Runner, obj_from_dict
 
 from mmdet import datasets
-from mmdet.core import init_dist, DistOptimizerHook, DistSamplerSeedHook
+from mmdet.core import (init_dist, DistOptimizerHook, DistSamplerSeedHook,
+                        MMDataParallel, MMDistributedDataParallel)
 from mmdet.datasets.loader import build_dataloader
 from mmdet.models import build_detector
-from mmdet.nn.parallel import MMDataParallel, MMDistributedDataParallel
 
 
 def parse_losses(losses):

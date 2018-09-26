@@ -1,6 +1,7 @@
 import torch
-from ._functions import Scatter
 from torch.nn.parallel._functions import Scatter as OrigScatter
+
+from ._functions import Scatter
 from mmdet.datasets.utils import DataContainer
 
 

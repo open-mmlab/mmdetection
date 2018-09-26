@@ -5,10 +5,9 @@ import mmcv
 from mmcv.torchpack import load_checkpoint, parallel_test, obj_from_dict
 
 from mmdet import datasets
-from mmdet.core import results2json, coco_eval
+from mmdet.core import scatter, MMDataParallel, results2json, coco_eval
 from mmdet.datasets.loader import collate, build_dataloader
 from mmdet.models import build_detector, detectors
-from mmdet.nn.parallel import scatter, MMDataParallel
 
 
 def single_test(model, data_loader, show=False):
