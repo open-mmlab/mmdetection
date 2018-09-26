@@ -24,10 +24,11 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         super(TwoStageDetector, self).__init__()
         self.backbone = builder.build_backbone(backbone)
 
-        self.with_neck = True if neck is not None else False
-        assert self.with_neck, "TwoStageDetector must be implemented with FPN now."
-        if self.with_neck:
+        if neck is not None:
+            self.with_neck = True
             self.neck = builder.build_neck(neck)
+        else:
+            raise NotImplementedError
 
         self.with_rpn = True if rpn_head is not None else False
         if self.with_rpn:
@@ -51,8 +52,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print('load model from: {}'.format(pretrained))
+        super(TwoStageDetector, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:
             if isinstance(self.neck, nn.Sequential):
@@ -104,9 +104,10 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
              pos_gt_labels) = multi_apply(
                  self.bbox_roi_extractor.sample_proposals, proposal_list,
                  gt_bboxes, gt_bboxes_ignore, gt_labels, rcnn_train_cfg_list)
-            labels, label_weights, bbox_targets, bbox_weights = \
-                self.bbox_head.get_bbox_target(pos_proposals, neg_proposals,
-                pos_gt_bboxes, pos_gt_labels, self.train_cfg.rcnn)
+            (labels, label_weights, bbox_targets,
+             bbox_weights) = self.bbox_head.get_bbox_target(
+                 pos_proposals, neg_proposals, pos_gt_bboxes, pos_gt_labels,
+                 self.train_cfg.rcnn)
 
             rois = bbox2roi([
                 torch.cat([pos, neg], dim=0)
@@ -139,7 +140,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         """Test without augmentation."""
-        assert proposals == None, "Fast RCNN hasn't been implemented."
+        assert proposals is None, "Fast RCNN hasn't been implemented."
         assert self.with_bbox, "Bbox head must be implemented."
 
         x = self.extract_feat(img)
@@ -152,12 +153,12 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         bbox_results = bbox2result(det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
 
-        if self.with_mask:
+        if not self.with_mask:
+            return bbox_results
+        else:
             segm_results = self.simple_test_mask(
                 x, img_meta, det_bboxes, det_labels, rescale=rescale)
             return bbox_results, segm_results
-        else:
-            return bbox_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test with augmentations.
@@ -165,7 +166,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
-        # recompute self.extract_feats(imgs) because of 'yield' and memory
+        # recompute feats to save memory
         proposal_list = self.aug_test_rpn(
             self.extract_feats(imgs), img_metas, self.test_cfg.rpn)
         det_bboxes, det_labels = self.aug_test_bboxes(
@@ -183,10 +184,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         # det_bboxes always keep the original scale
         if self.with_mask:
             segm_results = self.aug_test_mask(
-                self.extract_feats(imgs),
-                img_metas,
-                det_bboxes,
-                det_labels)
+                self.extract_feats(imgs), img_metas, det_bboxes, det_labels)
             return bbox_results, segm_results
         else:
             return bbox_results

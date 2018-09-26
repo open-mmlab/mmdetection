@@ -24,8 +24,7 @@ class RPN(BaseDetector, RPNTestMixin):
         self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print('load model from: {}'.format(pretrained))
+        super(RPN, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.neck is not None:
             self.neck.init_weights()
