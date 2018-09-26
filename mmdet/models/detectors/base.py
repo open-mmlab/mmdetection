@@ -1,3 +1,4 @@
+import logging
 from abc import ABCMeta, abstractmethod
 
 import torch
@@ -11,10 +12,6 @@ class BaseDetector(nn.Module):
 
     def __init__(self):
         super(BaseDetector, self).__init__()
-
-    @abstractmethod
-    def init_weights(self):
-        pass
 
     @abstractmethod
     def extract_feat(self, imgs):
@@ -38,6 +35,11 @@ class BaseDetector(nn.Module):
     @abstractmethod
     def aug_test(self, imgs, img_metas, **kwargs):
         pass
+
+    def init_weights(self, pretrained=None):
+        if pretrained is not None:
+            logger = logging.getLogger()
+            logger.info('load model from: {}'.format(pretrained))
 
     def forward_test(self, imgs, img_metas, **kwargs):
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:

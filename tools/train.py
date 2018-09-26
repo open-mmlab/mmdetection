@@ -1,6 +1,7 @@
 from __future__ import division
 
 import argparse
+import logging
 from collections import OrderedDict
 
 import torch
@@ -45,9 +46,17 @@ def batch_processor(model, data, train_mode):
     return outputs
 
 
+def get_logger(log_level):
+    logging.basicConfig(
+        format='%(asctime)s - %(levelname)s - %(message)s', level=log_level)
+    logger = logging.getLogger()
+    return logger
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
+    parser.add_argument('--work_dir', help='the dir to save logs and models')
     parser.add_argument(
         '--validate',
         action='store_true',
@@ -69,16 +78,22 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
-    cfg.update(gpus=args.gpus)
+    if args.work_dir is not None:
+        cfg.work_dir = args.work_dir
+    cfg.gpus = args.gpus
+
+    logger = get_logger(cfg.log_level)
 
     # init distributed environment if necessary
     if args.launcher == 'none':
         dist = False
-        print('Disabled distributed training.')
+        logger.info('Disabled distributed training.')
     else:
         dist = True
-        print('Enabled distributed training.')
         init_dist(args.launcher, **cfg.dist_params)
+        if torch.distributed.get_rank() != 0:
+            logger.setLevel('ERROR')
+        logger.info('Enabled distributed training.')
 
     # prepare data loaders
     train_dataset = obj_from_dict(cfg.data.train, datasets)
