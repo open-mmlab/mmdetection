@@ -11,7 +11,7 @@ from mmcv.torchpack import Runner, obj_from_dict
 from mmdet import datasets
 from mmdet.core import (init_dist, DistOptimizerHook, DistSamplerSeedHook,
                         MMDataParallel, MMDistributedDataParallel,
-                        DistEvalRecallHook, CocoDistEvalmAPHook)
+                        CocoDistEvalRecallHook, CocoDistEvalmAPHook)
 from mmdet.datasets.loader import build_dataloader
 from mmdet.models import build_detector, RPN
 
@@ -127,7 +127,7 @@ def main():
         runner.register_hook(DistSamplerSeedHook())
         # register eval hooks
         if isinstance(model.module, RPN):
-            runner.register_hook(DistEvalRecallHook(cfg.data.val))
+            runner.register_hook(CocoDistEvalRecallHook(cfg.data.val))
         elif cfg.data.val.type == 'CocoDataset':
             runner.register_hook(CocoDistEvalmAPHook(cfg.data.val))
 
