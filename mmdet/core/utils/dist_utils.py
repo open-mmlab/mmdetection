@@ -47,11 +47,12 @@ def all_reduce_coalesced(tensors):
             buckets[tp] = []
         buckets[tp].append(tensor)
 
+    world_size = dist.get_world_size()
     for tp in buckets:
         bucket = buckets[tp]
         coalesced = _flatten_dense_tensors(bucket)
         dist.all_reduce(coalesced)
-        coalesced /= dist.get_world_size()
+        coalesced.div_(world_size)
 
         for buf, synced in zip(bucket,
                                _unflatten_dense_tensors(coalesced, bucket)):
@@ -66,8 +67,9 @@ def reduce_grads(model, coalesce=True):
     if coalesce:
         all_reduce_coalesced(grads)
     else:
+        world_size = dist.get_world_size()
         for tensor in grads:
-            dist.all_reduce(tensor)
+            dist.all_reduce(tensor.div_(world_size))
 
 
 class DistOptimizerHook(OptimizerHook):
