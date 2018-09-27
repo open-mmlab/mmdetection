@@ -10,7 +10,7 @@ from mmcv.torchpack import Hook, obj_from_dict
 from pycocotools.cocoeval import COCOeval
 from torch.utils.data import Dataset
 
-from .coco_utils import results2json
+from .coco_utils import results2json, fast_eval_recall
 from .recall import eval_recalls
 from ..parallel import scatter
 from mmdet import datasets
@@ -100,45 +100,21 @@ class DistEvalHook(Hook):
         raise NotImplementedError
 
 
-class DistEvalRecallHook(DistEvalHook):
+class CocoDistEvalRecallHook(DistEvalHook):
 
     def __init__(self,
                  dataset,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05)):
-        super(DistEvalRecallHook, self).__init__(dataset)
+        super(CocoDistEvalRecallHook, self).__init__(dataset)
         self.proposal_nums = np.array(proposal_nums, dtype=np.int32)
         self.iou_thrs = np.array(iou_thrs, dtype=np.float32)
 
     def evaluate(self, runner, results):
         # the official coco evaluation is too slow, here we use our own
         # implementation instead, which may get slightly different results
-        gt_bboxes = []
-        for i in range(len(self.dataset)):
-            img_id = self.dataset.img_ids[i]
-            ann_ids = self.dataset.coco.getAnnIds(imgIds=img_id)
-            ann_info = self.dataset.coco.loadAnns(ann_ids)
-            if len(ann_info) == 0:
-                gt_bboxes.append(np.zeros((0, 4)))
-                continue
-            bboxes = []
-            for ann in ann_info:
-                if ann.get('ignore', False) or ann['iscrowd']:
-                    continue
-                x1, y1, w, h = ann['bbox']
-                bboxes.append([x1, y1, x1 + w - 1, y1 + h - 1])
-            bboxes = np.array(bboxes, dtype=np.float32)
-            if bboxes.shape[0] == 0:
-                bboxes = np.zeros((0, 4))
-            gt_bboxes.append(bboxes)
-
-        recalls = eval_recalls(
-            gt_bboxes,
-            results,
-            self.proposal_nums,
-            self.iou_thrs,
-            print_summary=False)
-        ar = recalls.mean(axis=1)
+        ar = fast_eval_recall(results, self.dataset.coco, self.proposal_nums,
+                              self.iou_thrs)
         for i, num in enumerate(self.proposal_nums):
             runner.log_buffer.output['AR@{}'.format(num)] = ar[i]
         runner.log_buffer.ready = True
