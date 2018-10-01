@@ -116,6 +116,11 @@ def main():
         build_dataloader(train_dataset, cfg.data.imgs_per_gpu,
                          cfg.data.workers_per_gpu, cfg.gpus, dist)
     ]
+    if args.validate:
+        val_dataset = obj_from_dict(cfg.data.test, datasets)
+        data_loaders.append(
+            build_dataloader(val_dataset, cfg.data.imgs_per_gpu,
+                             cfg.data.workers_per_gpu, cfg.gpus, dist))
 
     # build model
     model = build_detector(
@@ -131,10 +136,9 @@ def main():
 
     if args.validate:
         val_dataset = obj_from_dict(cfg.data.test, datasets)
-        runner.register_hook(CocoDistEvalmAPHook(val_dataset))
-        # data_loaders.append(
-        #     build_dataloader(val_dataset, cfg.data.imgs_per_gpu,
-        #                      cfg.data.workers_per_gpu, cfg.gpus, dist))
+        data_loaders.append(
+            build_dataloader(val_dataset, cfg.data.imgs_per_gpu,
+                             cfg.data.workers_per_gpu, cfg.gpus, dist))
 
     # register hooks
     optimizer_config = DistOptimizerHook(
