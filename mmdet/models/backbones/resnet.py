@@ -200,7 +200,8 @@ class ResNet(nn.Module):
                  frozen_stages=-1,
                  style='fb',
                  sync_bn=False,
-                 with_cp=False):
+                 with_cp=False,
+                 strict_frozen=False):
         super(ResNet, self).__init__()
         if not len(layers) == len(strides) == len(dilations):
             raise ValueError(
@@ -241,6 +242,8 @@ class ResNet(nn.Module):
         self.feat_dim = block.expansion * 64 * 2**(len(layers) - 1)
         self.with_cp = with_cp
 
+        self.strict_frozen = strict_frozen
+
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
             logger = logging.getLogger()
@@ -278,6 +281,9 @@ class ResNet(nn.Module):
             for m in self.modules():
                 if isinstance(m, nn.BatchNorm2d):
                     m.eval()
+                    if self.strict_frozen:
+                        for params in m.parameters():
+                            params.requires_grad = False
         if mode and self.frozen_stages >= 0:
             for param in self.conv1.parameters():
                 param.requires_grad = False
@@ -310,7 +316,8 @@ def resnet(depth,
            frozen_stages=-1,
            style='fb',
            sync_bn=False,
-           with_cp=False):
+           with_cp=False,
+           strict_frozen=False):
     """Constructs a ResNet model.
 
     Args:
@@ -324,5 +331,5 @@ def resnet(depth,
         raise KeyError('invalid depth {} for resnet'.format(depth))
     block, layers = resnet_cfg[depth]
     model = ResNet(block, layers[:num_stages], strides, dilations, out_indices,
-                   frozen_stages, style, sync_bn, with_cp)
+                   frozen_stages, style, sync_bn, with_cp, strict_frozen)
     return model
