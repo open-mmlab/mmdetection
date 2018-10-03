@@ -95,7 +95,7 @@ def get_classes(dataset):
 
     if mmcv.is_str(dataset):
         if dataset in alias2name:
-            labels = eval(alias2name[dataset] + '_labels()')
+            labels = eval(alias2name[dataset] + '_classes()')
         else:
             raise ValueError('Unrecognized dataset: {}'.format(dataset))
     else:
