@@ -77,6 +77,7 @@ train_cfg = dict(
         pos_balance_sampling=False,
         neg_pos_ub=512,
         neg_balance_thr=0,
+        min_pos_iou=1.1,
         pos_weight=-1,
         debug=False))
 test_cfg = dict(

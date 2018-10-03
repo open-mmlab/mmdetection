@@ -57,7 +57,7 @@ class SingleLevelRoI(nn.Module):
         proposals = proposals[:, :4]
         assigned_gt_inds, assigned_labels, argmax_overlaps, max_overlaps = \
             bbox_assign(proposals, gt_bboxes, gt_crowds, gt_labels,
-            cfg.pos_iou_thr, cfg.neg_iou_thr, cfg.pos_iou_thr, cfg.crowd_thr)
+            cfg.pos_iou_thr, cfg.neg_iou_thr, cfg.min_pos_iou, cfg.crowd_thr)
 
         if cfg.add_gt_as_proposals:
             proposals = torch.cat([gt_bboxes, proposals], dim=0)
