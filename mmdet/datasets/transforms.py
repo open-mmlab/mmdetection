@@ -31,7 +31,7 @@ class ImageTransform(object):
     def __call__(self, img, scale, flip=False):
         img, scale_factor = mmcv.imrescale(img, scale, return_scale=True)
         img_shape = img.shape
-        img = mmcv.imnorm(img, self.mean, self.std, self.to_rgb)
+        img = mmcv.imnormalize(img, self.mean, self.std, self.to_rgb)
         if flip:
             img = mmcv.imflip(img)
         if self.size_divisor is not None:
