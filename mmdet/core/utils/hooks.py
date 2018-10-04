@@ -1,5 +1,5 @@
 import torch
-from mmcv.torchpack import Hook
+from mmcv.runner import Hook
 
 
 class EmptyCacheHook(Hook):
