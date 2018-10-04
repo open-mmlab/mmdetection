@@ -1,4 +1,4 @@
-from mmcv import torchpack as tp
+from mmcv.runner import obj_from_dict
 from torch import nn
 
 from . import (backbones, necks, roi_extractors, rpn_heads, bbox_heads,
@@ -11,7 +11,7 @@ __all__ = [
 
 
 def _build_module(cfg, parrent=None, default_args=None):
-    return cfg if isinstance(cfg, nn.Module) else tp.obj_from_dict(
+    return cfg if isinstance(cfg, nn.Module) else obj_from_dict(
         cfg, parrent, default_args)
 
 
