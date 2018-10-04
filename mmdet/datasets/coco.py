@@ -5,69 +5,10 @@ import numpy as np
 from pycocotools.coco import COCO
 from torch.utils.data import Dataset
 
-from .transforms import (ImageTransform, BboxTransform, PolyMaskTransform,
+from .transforms import (ImageTransform, BboxTransform, MaskTransform,
                          Numpy2Tensor)
 from .utils import to_tensor, show_ann, random_scale
 from .utils import DataContainer as DC
-
-
-def parse_ann_info(ann_info, cat2label, with_mask=True):
-    """Parse bbox and mask annotation.
-
-    Args:
-        ann_info (list[dict]): Annotation info of an image.
-        cat2label (dict): The mapping from category ids to labels.
-        with_mask (bool): Whether to parse mask annotations.
-
-    Returns:
-        tuple: gt_bboxes, gt_labels and gt_mask_info
-    """
-    gt_bboxes = []
-    gt_labels = []
-    gt_bboxes_ignore = []
-    # each mask consists of one or several polys, each poly is a list of float.
-    if with_mask:
-        gt_mask_polys = []
-        gt_poly_lens = []
-    for i, ann in enumerate(ann_info):
-        if ann.get('ignore', False):
-            continue
-        x1, y1, w, h = ann['bbox']
-        if ann['area'] <= 0 or w < 1 or h < 1:
-            continue
-        bbox = [x1, y1, x1 + w - 1, y1 + h - 1]
-        if ann['iscrowd']:
-            gt_bboxes_ignore.append(bbox)
-        else:
-            gt_bboxes.append(bbox)
-            gt_labels.append(cat2label[ann['category_id']])
-            if with_mask:
-                # Note polys are not resized
-                mask_polys = [
-                    p for p in ann['segmentation'] if len(p) >= 6
-                ]  # valid polygons have >= 3 points (6 coordinates)
-                poly_lens = [len(p) for p in mask_polys]
-                gt_mask_polys.append(mask_polys)
-                gt_poly_lens.extend(poly_lens)
-    if gt_bboxes:
-        gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
-        gt_labels = np.array(gt_labels, dtype=np.int64)
-    else:
-        gt_bboxes = np.zeros((0, 4), dtype=np.float32)
-        gt_labels = np.array([], dtype=np.int64)
-
-    if gt_bboxes_ignore:
-        gt_bboxes_ignore = np.array(gt_bboxes_ignore, dtype=np.float32)
-    else:
-        gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
-
-    ann = dict(
-        bboxes=gt_bboxes, labels=gt_labels, bboxes_ignore=gt_bboxes_ignore)
-
-    if with_mask:
-        ann['mask_polys'] = gt_mask_polys
-        ann['poly_lens'] = gt_poly_lens
-    return ann
 
 
 class CocoDataset(Dataset):
@@ -138,7 +79,7 @@ class CocoDataset(Dataset):
         self.img_transform = ImageTransform(
             size_divisor=self.size_divisor, **self.img_norm_cfg)
         self.bbox_transform = BboxTransform()
-        self.mask_transform = PolyMaskTransform()
+        self.mask_transform = MaskTransform()
         self.numpy2tensor = Numpy2Tensor()
 
     def __len__(self):
@@ -161,6 +102,67 @@ class CocoDataset(Dataset):
         ann_ids = self.coco.getAnnIds(imgIds=img_id)
         ann_info = self.coco.loadAnns(ann_ids)
         return ann_info
+
+    def _parse_ann_info(self, ann_info, with_mask=True):
+        """Parse bbox and mask annotation.
+
+        Args:
+            ann_info (list[dict]): Annotation info of an image.
+            with_mask (bool): Whether to parse mask annotations.
+
+        Returns:
+            dict: A dict containing the following keys: bboxes, bboxes_ignore,
+                labels, masks, mask_polys, poly_lens.
+        """
+        gt_bboxes = []
+        gt_labels = []
+        gt_bboxes_ignore = []
+        # each mask consists of one or several polys, each poly is a list of float.
+        if with_mask:
+            gt_masks = []
+            gt_mask_polys = []
+            gt_poly_lens = []
+        for i, ann in enumerate(ann_info):
+            if ann.get('ignore', False):
+                continue
+            x1, y1, w, h = ann['bbox']
+            if ann['area'] <= 0 or w < 1 or h < 1:
+                continue
+            bbox = [x1, y1, x1 + w - 1, y1 + h - 1]
+            if ann['iscrowd']:
+                gt_bboxes_ignore.append(bbox)
+            else:
+                gt_bboxes.append(bbox)
+                gt_labels.append(self.cat2label[ann['category_id']])
+            if with_mask:
+                gt_masks.append(self.coco.annToMask(ann))
+                mask_polys = [
+                    p for p in ann['segmentation'] if len(p) >= 6
+                ]  # valid polygons have >= 3 points (6 coordinates)
+                poly_lens = [len(p) for p in mask_polys]
+                gt_mask_polys.append(mask_polys)
+                gt_poly_lens.extend(poly_lens)
+        if gt_bboxes:
+            gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
+            gt_labels = np.array(gt_labels, dtype=np.int64)
+        else:
+            gt_bboxes = np.zeros((0, 4), dtype=np.float32)
+            gt_labels = np.array([], dtype=np.int64)
+
+        if gt_bboxes_ignore:
+            gt_bboxes_ignore = np.array(gt_bboxes_ignore, dtype=np.float32)
+        else:
+            gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
+
+        ann = dict(
+            bboxes=gt_bboxes, labels=gt_labels, bboxes_ignore=gt_bboxes_ignore)
+
+        if with_mask:
+            ann['masks'] = gt_masks
+            # poly format is not used in the current implementation
+            ann['mask_polys'] = gt_mask_polys
+            ann['poly_lens'] = gt_poly_lens
+        return ann
 
     def _set_group_flag(self):
         """Set flag according to image aspect ratio.
@@ -200,7 +202,7 @@ class CocoDataset(Dataset):
                     idx = self._rand_another(idx)
                     continue
 
-            ann = parse_ann_info(ann_info, self.cat2label, self.with_mask)
+            ann = self._parse_ann_info(ann_info, self.with_mask)
             gt_bboxes = ann['bboxes']
             gt_labels = ann['labels']
             gt_bboxes_ignore = ann['bboxes_ignore']
@@ -223,10 +225,8 @@ class CocoDataset(Dataset):
                                                    scale_factor, flip)
 
             if self.with_mask:
-                gt_mask_polys, gt_poly_lens, num_polys_per_mask = \
-                    self.mask_transform(
-                        ann['mask_polys'], ann['poly_lens'],
-                        img_info['height'], img_info['width'], flip)
+                gt_masks = self.mask_transform(ann['masks'], pad_shape,
+                                               scale_factor, flip)
 
             ori_shape = (img_info['height'], img_info['width'], 3)
             img_meta = dict(
@@ -247,10 +247,7 @@ class CocoDataset(Dataset):
             if self.with_crowd:
                 data['gt_bboxes_ignore'] = DC(to_tensor(gt_bboxes_ignore))
             if self.with_mask:
-                data['gt_masks'] = dict(
-                    polys=DC(gt_mask_polys, cpu_only=True),
-                    poly_lens=DC(gt_poly_lens, cpu_only=True),
-                    polys_per_mask=DC(num_polys_per_mask, cpu_only=True))
+                data['gt_masks'] = DC(gt_masks, cpu_only=True)
             return data
 
     def prepare_test_img(self, idx):
