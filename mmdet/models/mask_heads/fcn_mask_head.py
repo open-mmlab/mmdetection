@@ -87,9 +87,9 @@ class FCNMaskHead(nn.Module):
         return mask_pred
 
     def get_mask_target(self, pos_proposals, pos_assigned_gt_inds, gt_masks,
-                        img_meta, rcnn_train_cfg):
+                        rcnn_train_cfg):
         mask_targets = mask_target(pos_proposals, pos_assigned_gt_inds,
-                                   gt_masks, img_meta, rcnn_train_cfg)
+                                   gt_masks, rcnn_train_cfg)
         return mask_targets
 
     def loss(self, mask_pred, mask_targets, labels):
@@ -99,8 +99,9 @@ class FCNMaskHead(nn.Module):
         return loss
 
     def get_seg_masks(self, mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
-                      ori_shape):
-        """Get segmentation masks from mask_pred and bboxes
+                      ori_shape, scale_factor, rescale):
+        """Get segmentation masks from mask_pred and bboxes.
+
         Args:
             mask_pred (Tensor or ndarray): shape (n, #class+1, h, w).
                 For single-scale testing, mask_pred is the direct output of
@@ -111,6 +112,7 @@ class FCNMaskHead(nn.Module):
             img_shape (Tensor): shape (3, )
             rcnn_test_cfg (dict): rcnn testing config
             ori_shape: original image size
+
         Returns:
             list[list]: encoded masks
         """
@@ -119,65 +121,34 @@ class FCNMaskHead(nn.Module):
         assert isinstance(mask_pred, np.ndarray)
 
         cls_segms = [[] for _ in range(self.num_classes - 1)]
-        mask_size = mask_pred.shape[-1]
         bboxes = det_bboxes.cpu().numpy()[:, :4]
         labels = det_labels.cpu().numpy() + 1
-        img_h = ori_shape[0]
-        img_w = ori_shape[1]
 
-        scale = (mask_size + 2.0) / mask_size
-        bboxes = np.round(self._bbox_scaling(bboxes, scale)).astype(np.int32)
-        padded_mask = np.zeros(
-            (mask_size + 2, mask_size + 2), dtype=np.float32)
+        if rescale:
+            img_h, img_w = ori_shape[:2]
+        else:
+            img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
+            img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
+            scale_factor = 1.0
 
         for i in range(bboxes.shape[0]):
-            bbox = bboxes[i, :].astype(int)
+            bbox = (bboxes[i, :] / scale_factor).astype(np.int32)
             label = labels[i]
-            w = bbox[2] - bbox[0] + 1
-            h = bbox[3] - bbox[1] + 1
-            w = max(w, 1)
-            h = max(h, 1)
+            w = max(bbox[2] - bbox[0] + 1, 1)
+            h = max(bbox[3] - bbox[1] + 1, 1)
 
             if not self.class_agnostic:
-                padded_mask[1:-1, 1:-1] = mask_pred[i, label, :, :]
+                mask_pred_ = mask_pred[i, label, :, :]
             else:
-                padded_mask[1:-1, 1:-1] = mask_pred[i, 0, :, :]
-            mask = mmcv.imresize(padded_mask, (w, h))
-            mask = np.array(
-                mask > rcnn_test_cfg.mask_thr_binary, dtype=np.uint8)
+                mask_pred_ = mask_pred[i, 0, :, :]
             im_mask = np.zeros((img_h, img_w), dtype=np.uint8)
 
-            x0 = max(bbox[0], 0)
-            x1 = min(bbox[2] + 1, img_w)
-            y0 = max(bbox[1], 0)
-            y1 = min(bbox[3] + 1, img_h)
-
-            im_mask[y0:y1, x0:x1] = mask[(y0 - bbox[1]):(y1 - bbox[1]), (
-                x0 - bbox[0]):(x1 - bbox[0])]
-
+            bbox_mask = mmcv.imresize(mask_pred_, (w, h))
+            bbox_mask = (bbox_mask > rcnn_test_cfg.mask_thr_binary).astype(
+                np.uint8)
+            im_mask[bbox[1]:bbox[1] + h, bbox[0]:bbox[0] + w] = bbox_mask
             rle = mask_util.encode(
                 np.array(im_mask[:, :, np.newaxis], order='F'))[0]
             cls_segms[label - 1].append(rle)
-        return cls_segms
 
-    def _bbox_scaling(self, bboxes, scale, clip_shape=None):
-        """Scaling bboxes and clip the boundary(optional)
-        Args:
-            bboxes(ndarray): shape(..., 4)
-            scale(float): scaling factor
-            clip(None or tuple): (h, w)
-        Returns:
-            ndarray: scaled bboxes
-        """
-        if float(scale) == 1.0:
-            scaled_bboxes = bboxes.copy()
-        else:
-            w = bboxes[..., 2] - bboxes[..., 0] + 1
-            h = bboxes[..., 3] - bboxes[..., 1] + 1
-            dw = (w * (scale - 1)) * 0.5
-            dh = (h * (scale - 1)) * 0.5
-            scaled_bboxes = bboxes + np.stack((-dw, -dh, dw, dh), axis=-1)
-        if clip_shape is not None:
-            return bbox_clip(scaled_bboxes, clip_shape)
-        else:
-            return scaled_bboxes
+        return cls_segms

@@ -4,7 +4,7 @@ import torch.nn as nn
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
-from mmdet.core import bbox2roi, bbox2result, split_combined_polys, multi_apply
+from mmdet.core import bbox2roi, bbox2result, multi_apply
 
 
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
@@ -124,9 +124,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             losses.update(loss_bbox)
 
         if self.with_mask:
-            gt_polys = split_combined_polys(**gt_masks)
             mask_targets = self.mask_head.get_mask_target(
-                pos_proposals, pos_assigned_gt_inds, gt_polys, img_meta,
+                pos_proposals, pos_assigned_gt_inds, gt_masks,
                 self.train_cfg.rcnn)
             pos_rois = bbox2roi(pos_proposals)
             mask_feats = self.mask_roi_extractor(
