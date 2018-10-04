@@ -6,7 +6,7 @@ import time
 import mmcv
 import numpy as np
 import torch
-from mmcv.torchpack import Hook, obj_from_dict
+from mmcv.runner import Hook, obj_from_dict
 from pycocotools.cocoeval import COCOeval
 from torch.utils.data import Dataset
 

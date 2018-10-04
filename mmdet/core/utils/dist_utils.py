@@ -6,7 +6,7 @@ import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 from torch.nn.utils import clip_grad
-from mmcv.torchpack import Hook, OptimizerHook
+from mmcv.runner import Hook, OptimizerHook
 
 
 def init_dist(launcher, backend='nccl', **kwargs):
