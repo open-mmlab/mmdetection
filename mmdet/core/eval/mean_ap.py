@@ -9,9 +9,9 @@ def average_precision(recalls, precisions, mode='area'):
     """Calculate average precision (for single or multiple scales).
 
     Args:
-        recalls(ndarray): shape (num_scales, num_dets) or (num_dets, )
-        precisions(ndarray): shape (num_scales, num_dets) or (num_dets, )
-        mode(str): 'area' or '11points', 'area' means calculating the area
+        recalls (ndarray): shape (num_scales, num_dets) or (num_dets, )
+        precisions (ndarray): shape (num_scales, num_dets) or (num_dets, )
+        mode (str): 'area' or '11points', 'area' means calculating the area
             under precision-recall curve, '11points' means calculating
             the average precision of recalls at [0, 0.1, ..., 1]
 
@@ -60,11 +60,11 @@ def tpfp_imagenet(det_bboxes,
     """Check if detected bboxes are true positive or false positive.
 
     Args:
-        det_bbox(ndarray): the detected bbox
-        gt_bboxes(ndarray): ground truth bboxes of this image
-        gt_ignore(ndarray): indicate if gts are ignored for evaluation or not
-        default_iou_thr(float): the iou thresholds for medium and large bboxes
-        area_ranges(list or None): gt bbox area ranges
+        det_bbox (ndarray): the detected bbox
+        gt_bboxes (ndarray): ground truth bboxes of this image
+        gt_ignore (ndarray): indicate if gts are ignored for evaluation or not
+        default_iou_thr (float): the iou thresholds for medium and large bboxes
+        area_ranges (list or None): gt bbox area ranges
 
     Returns:
         tuple: two arrays (tp, fp) whose elements are 0 and 1
@@ -115,10 +115,10 @@ def tpfp_imagenet(det_bboxes,
                     max_iou = ious[i, j]
                     matched_gt = j
             # there are 4 cases for a det bbox:
-            # 1. this det bbox matches a gt, tp = 1, fp = 0
-            # 2. this det bbox matches an ignored gt, tp = 0, fp = 0
-            # 3. this det bbox matches no gt and within area range, tp = 0, fp = 1
-            # 4. this det bbox matches no gt but is beyond area range, tp = 0, fp = 0
+            # 1. it matches a gt, tp = 1, fp = 0
+            # 2. it matches an ignored gt, tp = 0, fp = 0
+            # 3. it matches no gt and within area range, tp = 0, fp = 1
+            # 4. it matches no gt but is beyond area range, tp = 0, fp = 0
             if matched_gt >= 0:
                 gt_covered[matched_gt] = 1
                 if not (gt_ignore[matched_gt] or gt_area_ignore[matched_gt]):
@@ -137,10 +137,10 @@ def tpfp_default(det_bboxes, gt_bboxes, gt_ignore, iou_thr, area_ranges=None):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
-        det_bbox(ndarray): the detected bbox
-        gt_bboxes(ndarray): ground truth bboxes of this image
-        gt_ignore(ndarray): indicate if gts are ignored for evaluation or not
-        iou_thr(float): the iou thresholds
+        det_bbox (ndarray): the detected bbox
+        gt_bboxes (ndarray): ground truth bboxes of this image
+        gt_ignore (ndarray): indicate if gts are ignored for evaluation or not
+        iou_thr (float): the iou thresholds
 
     Returns:
         tuple: (tp, fp), two arrays whose elements are 0 and 1
@@ -227,15 +227,16 @@ def eval_map(det_results,
     """Evaluate mAP of a dataset.
 
     Args:
-        det_results(list): a list of list, [[cls1_det, cls2_det, ...], ...]
-        gt_bboxes(list): ground truth bboxes of each image, a list of K*4 array
-        gt_labels(list): ground truth labels of each image, a list of K array
-        gt_ignore(list): gt ignore indicators of each image, a list of K array
-        scale_ranges(list, optional): [(min1, max1), (min2, max2), ...]
-        iou_thr(float): IoU threshold
-        dataset(None or str): dataset name, there are minor differences in
+        det_results (list): a list of list, [[cls1_det, cls2_det, ...], ...]
+        gt_bboxes (list): ground truth bboxes of each image, a list of K*4
+            array.
+        gt_labels (list): ground truth labels of each image, a list of K array
+        gt_ignore (list): gt ignore indicators of each image, a list of K array
+        scale_ranges (list, optional): [(min1, max1), (min2, max2), ...]
+        iou_thr (float): IoU threshold
+        dataset (None or str): dataset name, there are minor differences in
             metrics for different datsets, e.g. "voc07", "imagenet_det", etc.
-        print_summary(bool): whether to print the mAP summary
+        print_summary (bool): whether to print the mAP summary
 
     Returns:
         tuple: (mAP, [dict, dict, ...])
@@ -265,7 +266,8 @@ def eval_map(det_results,
                       area_ranges) for j in range(len(cls_dets))
         ]
         tp, fp = tuple(zip(*tpfp))
-        # calculate gt number of each scale, gts ignored or beyond scale are not counted
+        # calculate gt number of each scale, gts ignored or beyond scale
+        # are not counted
         num_gts = np.zeros(num_scales, dtype=int)
         for j, bbox in enumerate(cls_gts):
             if area_ranges is None:

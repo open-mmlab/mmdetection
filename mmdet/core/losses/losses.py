@@ -30,13 +30,13 @@ def sigmoid_focal_loss(pred,
                        weight,
                        gamma=2.0,
                        alpha=0.25,
-                       size_average=True):
+                       reduction='elementwise_mean'):
     pred_sigmoid = pred.sigmoid()
     pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
     weight = (alpha * target + (1 - alpha) * (1 - target)) * weight
     weight = weight * pt.pow(gamma)
     return F.binary_cross_entropy_with_logits(
-        pred, target, weight, size_average=size_average)
+        pred, target, weight, size_average=reduction)
 
 
 def weighted_sigmoid_focal_loss(pred,

@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import (bbox_transform_inv, multiclass_nms, bbox_target,
+from mmdet.core import (delta2bbox, multiclass_nms, bbox_target,
                         weighted_cross_entropy, weighted_smoothl1, accuracy)
 
 
@@ -101,9 +101,8 @@ class BBoxHead(nn.Module):
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
 
         if bbox_pred is not None:
-            bboxes = bbox_transform_inv(rois[:, 1:], bbox_pred,
-                                        self.target_means, self.target_stds,
-                                        img_shape)
+            bboxes = delta2bbox(rois[:, 1:], bbox_pred, self.target_means,
+                                self.target_stds, img_shape)
         else:
             bboxes = rois[:, 1:]
             # TODO: add clip here
