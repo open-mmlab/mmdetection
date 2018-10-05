@@ -20,30 +20,36 @@ def random_choice(gallery, num):
 
 def bbox_assign(proposals,
                 gt_bboxes,
-                gt_crowd_bboxes=None,
+                gt_bboxes_ignore=None,
                 gt_labels=None,
                 pos_iou_thr=0.5,
                 neg_iou_thr=0.5,
                 min_pos_iou=.0,
                 crowd_thr=-1):
-    """Assign a corresponding gt bbox or background to each proposal/anchor
-    This function assign a gt bbox to every proposal, each proposals will be
-    assigned with -1, 0, or a positive number. -1 means don't care, 0 means
-    negative sample, positive number is the index (1-based) of assigned gt.
-    If gt_crowd_bboxes is not None, proposals which have iof(intersection over foreground)
-    with crowd bboxes over crowd_thr will be ignored
+    """Assign a corresponding gt bbox or background to each proposal/anchor.
+
+    Each proposals will be assigned with `-1`, `0`, or a positive integer.
+
+    - -1: don't care
+    - 0: negative sample, no assigned gt
+    - positive integer: positive sample, index (1-based) of assigned gt
+
+    If `gt_bboxes_ignore` is specified, bboxes which have iof (intersection
+    over foreground) with `gt_bboxes_ignore` above `crowd_thr` will be ignored.
+
     Args:
-        proposals(Tensor): proposals or RPN anchors, shape (n, 4)
-        gt_bboxes(Tensor): shape (k, 4)
-        gt_crowd_bboxes(Tensor): shape(m, 4)
-        gt_labels(Tensor, optional): shape (k, )
-        pos_iou_thr(float): iou threshold for positive bboxes
-        neg_iou_thr(float or tuple): iou threshold for negative bboxes
-        min_pos_iou(float): minimum iou for a bbox to be considered as a positive bbox,
-                            for RPN, it is usually set as 0, for Fast R-CNN,
-                            it is usually set as pos_iou_thr
-        crowd_thr: ignore proposals which have iof(intersection over foreground) with
-        crowd bboxes over crowd_thr
+        proposals (Tensor): Proposals or RPN anchors, shape (n, 4).
+        gt_bboxes (Tensor): Ground truth bboxes, shape (k, 4).
+        gt_bboxes_ignore (Tensor, optional): shape(m, 4).
+        gt_labels (Tensor, optional): shape (k, ).
+        pos_iou_thr (float): IoU threshold for positive bboxes.
+        neg_iou_thr (float or tuple): IoU threshold for negative bboxes.
+        min_pos_iou (float): Minimum iou for a bbox to be considered as a
+            positive bbox. For RPN, it is usually set as 0.3, for Fast R-CNN,
+            it is usually set as pos_iou_thr
+        crowd_thr (float): IoF threshold for ignoring bboxes. Negative value
+            for not ignoring any bboxes.
+
     Returns:
         tuple: (assigned_gt_inds, argmax_overlaps, max_overlaps), shape (n, )
     """
@@ -54,20 +60,20 @@ def bbox_assign(proposals,
         raise ValueError('No gt bbox or proposals')
 
     # ignore proposals according to crowd bboxes
-    if (crowd_thr > 0) and (gt_crowd_bboxes is
-                            not None) and (gt_crowd_bboxes.numel() > 0):
-        crowd_overlaps = bbox_overlaps(proposals, gt_crowd_bboxes, mode='iof')
+    if (crowd_thr > 0) and (gt_bboxes_ignore is
+                            not None) and (gt_bboxes_ignore.numel() > 0):
+        crowd_overlaps = bbox_overlaps(proposals, gt_bboxes_ignore, mode='iof')
         crowd_max_overlaps, _ = crowd_overlaps.max(dim=1)
         crowd_bboxes_inds = torch.nonzero(
             crowd_max_overlaps > crowd_thr).long()
         if crowd_bboxes_inds.numel() > 0:
             overlaps[crowd_bboxes_inds, :] = -1
 
-    return bbox_assign_via_overlaps(overlaps, gt_labels, pos_iou_thr,
+    return bbox_assign_wrt_overlaps(overlaps, gt_labels, pos_iou_thr,
                                     neg_iou_thr, min_pos_iou)
 
 
-def bbox_assign_via_overlaps(overlaps,
+def bbox_assign_wrt_overlaps(overlaps,
                              gt_labels=None,
                              pos_iou_thr=0.5,
                              neg_iou_thr=0.5,
