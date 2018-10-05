@@ -11,7 +11,6 @@ from pycocotools.cocoeval import COCOeval
 from torch.utils.data import Dataset
 
 from .coco_utils import results2json, fast_eval_recall
-from .recall import eval_recalls
 from ..parallel import scatter
 from mmdet import datasets
 from mmdet.datasets.loader import collate

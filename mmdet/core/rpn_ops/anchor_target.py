@@ -1,6 +1,6 @@
 import torch
 
-from ..bbox_ops import bbox_assign, bbox_transform, bbox_sampling
+from ..bbox_ops import bbox_assign, bbox2delta, bbox_sampling
 from ..utils import multi_apply
 
 
@@ -99,8 +99,8 @@ def anchor_target_single(flat_anchors, valid_flags, gt_bboxes, img_meta,
     if len(pos_inds) > 0:
         pos_anchors = anchors[pos_inds, :]
         pos_gt_bbox = gt_bboxes[assigned_gt_inds[pos_inds] - 1, :]
-        pos_bbox_targets = bbox_transform(pos_anchors, pos_gt_bbox,
-                                          target_means, target_stds)
+        pos_bbox_targets = bbox2delta(pos_anchors, pos_gt_bbox, target_means,
+                                      target_stds)
         bbox_targets[pos_inds, :] = pos_bbox_targets
         bbox_weights[pos_inds, :] = 1.0
         labels[pos_inds] = 1
