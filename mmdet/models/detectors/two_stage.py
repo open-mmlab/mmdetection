@@ -25,23 +25,19 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         self.backbone = builder.build_backbone(backbone)
 
         if neck is not None:
-            self.with_neck = True
             self.neck = builder.build_neck(neck)
         else:
             raise NotImplementedError
 
-        self.with_rpn = True if rpn_head is not None else False
-        if self.with_rpn:
+        if rpn_head is not None:
             self.rpn_head = builder.build_rpn_head(rpn_head)
 
-        self.with_bbox = True if bbox_head is not None else False
-        if self.with_bbox:
+        if bbox_head is not None:
             self.bbox_roi_extractor = builder.build_roi_extractor(
                 bbox_roi_extractor)
             self.bbox_head = builder.build_bbox_head(bbox_head)
 
-        self.with_mask = True if mask_head is not None else False
-        if self.with_mask:
+        if mask_head is not None:
             self.mask_roi_extractor = builder.build_roi_extractor(
                 mask_roi_extractor)
             self.mask_head = builder.build_mask_head(mask_head)
@@ -50,6 +46,10 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         self.test_cfg = test_cfg
 
         self.init_weights(pretrained=pretrained)
+
+    @property
+    def with_rpn(self):
+        return hasattr(self, 'rpn_head') and self.rpn_head is not None
 
     def init_weights(self, pretrained=None):
         super(TwoStageDetector, self).init_weights(pretrained)

@@ -17,6 +17,18 @@ class BaseDetector(nn.Module):
     def __init__(self):
         super(BaseDetector, self).__init__()
 
+    @property
+    def with_neck(self):
+        return hasattr(self, 'neck') and self.neck is not None
+
+    @property
+    def with_bbox(self):
+        return hasattr(self, 'bbox_head') and self.bbox_head is not None
+
+    @property
+    def with_mask(self):
+        return hasattr(self, 'mask_head') and self.mask_head is not None
+
     @abstractmethod
     def extract_feat(self, imgs):
         pass
