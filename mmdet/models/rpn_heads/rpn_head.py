@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import (AnchorGenerator, anchor_target, bbox_transform_inv,
+from mmdet.core import (AnchorGenerator, anchor_target, delta2bbox,
                         multi_apply, weighted_cross_entropy, weighted_smoothl1,
                         weighted_binary_cross_entropy)
 from mmdet.ops import nms
@@ -225,9 +225,8 @@ class RPNHead(nn.Module):
                 rpn_bbox_pred = rpn_bbox_pred[order, :]
                 anchors = anchors[order, :]
                 scores = scores[order]
-            proposals = bbox_transform_inv(anchors, rpn_bbox_pred,
-                                           self.target_means, self.target_stds,
-                                           img_shape)
+            proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
+                                   self.target_stds, img_shape)
             w = proposals[:, 2] - proposals[:, 0] + 1
             h = proposals[:, 3] - proposals[:, 1] + 1
             valid_inds = torch.nonzero((w >= cfg.min_bbox_size) &

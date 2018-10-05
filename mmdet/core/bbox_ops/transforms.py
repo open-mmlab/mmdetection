@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 
-def bbox_transform(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
+def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
     assert proposals.size() == gt.size()
 
     proposals = proposals.float()
@@ -31,12 +31,12 @@ def bbox_transform(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
     return deltas
 
 
-def bbox_transform_inv(rois,
-                       deltas,
-                       means=[0, 0, 0, 0],
-                       stds=[1, 1, 1, 1],
-                       max_shape=None,
-                       wh_ratio_clip=16 / 1000):
+def delta2bbox(rois,
+               deltas,
+               means=[0, 0, 0, 0],
+               stds=[1, 1, 1, 1],
+               max_shape=None,
+               wh_ratio_clip=16 / 1000):
     means = deltas.new_tensor(means).repeat(1, deltas.size(1) // 4)
     stds = deltas.new_tensor(stds).repeat(1, deltas.size(1) // 4)
     denorm_deltas = deltas * stds + means
@@ -69,10 +69,14 @@ def bbox_transform_inv(rois,
 
 
 def bbox_flip(bboxes, img_shape):
-    """Flip bboxes horizontally
+    """Flip bboxes horizontally.
+
     Args:
-        bboxes(Tensor): shape (..., 4*k)
-        img_shape(Tensor): image shape
+        bboxes(Tensor or ndarray): Shape (..., 4*k)
+        img_shape(tuple): Image shape.
+
+    Returns:
+        Same type as `bboxes`: Flipped bboxes.
     """
     if isinstance(bboxes, torch.Tensor):
         assert bboxes.shape[-1] % 4 == 0
@@ -101,8 +105,11 @@ def bbox_mapping_back(bboxes, img_shape, scale_factor, flip):
 
 def bbox2roi(bbox_list):
     """Convert a list of bboxes to roi format.
+
     Args:
-        bbox_list (Tensor): a list of bboxes corresponding to a list of images
+        bbox_list (list[Tensor]): a list of bboxes corresponding to a batch
+            of images.
+
     Returns:
         Tensor: shape (n, 5), [batch_ind, x1, y1, x2, y2]
     """
@@ -129,11 +136,13 @@ def roi2bbox(rois):
 
 
 def bbox2result(bboxes, labels, num_classes):
-    """Convert detection results to a list of numpy arrays
+    """Convert detection results to a list of numpy arrays.
+
     Args:
         bboxes (Tensor): shape (n, 5)
         labels (Tensor): shape (n, )
         num_classes (int): class number, including background class
+
     Returns:
         list(ndarray): bbox results of each class
     """
