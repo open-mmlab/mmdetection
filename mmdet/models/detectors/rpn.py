@@ -26,13 +26,13 @@ class RPN(BaseDetector, RPNTestMixin):
     def init_weights(self, pretrained=None):
         super(RPN, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
-        if self.neck is not None:
+        if self.with_neck:
             self.neck.init_weights()
         self.rpn_head.init_weights()
 
     def extract_feat(self, img):
         x = self.backbone(img)
-        if self.neck is not None:
+        if self.with_neck:
             x = self.neck(x)
         return x
 
