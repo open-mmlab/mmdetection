@@ -89,7 +89,7 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=1e-3, max_per_img=100, nms_thr=0.5, mask_thr_binary=0.5))
+        score_thr=0.05, max_per_img=100, nms_thr=0.5, mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = '../data/coco/'
