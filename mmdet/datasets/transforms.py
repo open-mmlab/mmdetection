@@ -10,7 +10,8 @@ __all__ = [
 
 
 class ImageTransform(object):
-    """Preprocess an image
+    """Preprocess an image.
+
     1. rescale the image to expected size
     2. normalize the image
     3. flip the image (if needed)
@@ -59,7 +60,8 @@ def bbox_flip(bboxes, img_shape):
 
 
 class BboxTransform(object):
-    """Preprocess gt bboxes
+    """Preprocess gt bboxes.
+
     1. rescale bboxes according to image size
     2. flip bboxes (if needed)
     3. pad the first dimension to `max_num_gts`
@@ -84,17 +86,12 @@ class BboxTransform(object):
 
 
 class PolyMaskTransform(object):
+    """Preprocess polygons."""
 
     def __init__(self):
         pass
 
     def __call__(self, gt_mask_polys, gt_poly_lens, img_h, img_w, flip=False):
-        """
-        Args:
-            gt_mask_polys(list): a list of masks, each mask is a list of polys,
-                each poly is a list of numbers
-            gt_poly_lens(list): a list of int, indicating the size of each poly
-        """
         if flip:
             gt_mask_polys = segms.flip_segms(gt_mask_polys, img_h, img_w)
         num_polys_per_mask = np.array(
@@ -106,6 +103,28 @@ class PolyMaskTransform(object):
         ]
         gt_mask_polys = np.concatenate(gt_mask_polys)
         return gt_mask_polys, gt_poly_lens, num_polys_per_mask
+
+
+class MaskTransform(object):
+    """Preprocess masks.
+
+    1. resize masks to expected size and stack to a single array
+    2. flip the masks (if needed)
+    3. pad the masks (if needed)
+    """
+
+    def __call__(self, masks, pad_shape, scale_factor, flip=False):
+        masks = [
+            mmcv.imrescale(mask, scale_factor, interpolation='nearest')
+            for mask in masks
+        ]
+        if flip:
+            masks = [mask[:, ::-1] for mask in masks]
+        padded_masks = [
+            mmcv.impad(mask, pad_shape[:2], pad_val=0) for mask in masks
+        ]
+        padded_masks = np.stack(padded_masks, axis=0)
+        return padded_masks
 
 
 class Numpy2Tensor(object):

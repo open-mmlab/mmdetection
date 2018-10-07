@@ -5,7 +5,7 @@ from torch.autograd import gradcheck
 import os.path as osp
 import sys
 sys.path.append(osp.abspath(osp.join(__file__, '../../')))
-from roi_align import RoIAlign
+from roi_align import RoIAlign  # noqa: E402
 
 feat_size = 15
 spatial_scale = 1.0 / 8
