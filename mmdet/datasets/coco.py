@@ -117,7 +117,10 @@ class CocoDataset(Dataset):
         gt_bboxes = []
         gt_labels = []
         gt_bboxes_ignore = []
-        # each mask consists of one or several polys, each poly is a list of float.
+        # Two formats are provided.
+        # 1. mask: a binary map of the same size of the image.
+        # 2. polys: each mask consists of one or several polys, each poly is a
+        # list of float.
         if with_mask:
             gt_masks = []
             gt_mask_polys = []

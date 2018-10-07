@@ -13,7 +13,7 @@ from mmdet import datasets, __version__
 from mmdet.core import (init_dist, DistOptimizerHook, DistSamplerSeedHook,
                         MMDataParallel, MMDistributedDataParallel,
                         CocoDistEvalRecallHook, CocoDistEvalmAPHook)
-from mmdet.datasets.loader import build_dataloader
+from mmdet.datasets import build_dataloader
 from mmdet.models import build_detector, RPN
 
 

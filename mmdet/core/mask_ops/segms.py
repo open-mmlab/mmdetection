@@ -1,3 +1,4 @@
+# flake8: noqa
 # This file is copied from Detectron.
 
 # Copyright (c) 2017-present, Facebook, Inc.

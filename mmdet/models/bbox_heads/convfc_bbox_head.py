@@ -43,17 +43,21 @@ class ConvFCRoIHead(BBoxHead):
         self.fc_out_channels = fc_out_channels
 
         # add shared convs and fcs
-        self.shared_convs, self.shared_fcs, last_layer_dim = self._add_conv_fc_branch(
-            self.num_shared_convs, self.num_shared_fcs, self.in_channels, True)
+        self.shared_convs, self.shared_fcs, last_layer_dim = \
+            self._add_conv_fc_branch(
+                self.num_shared_convs, self.num_shared_fcs, self.in_channels,
+                True)
         self.shared_out_channels = last_layer_dim
 
         # add cls specific branch
-        self.cls_convs, self.cls_fcs, self.cls_last_dim = self._add_conv_fc_branch(
-            self.num_cls_convs, self.num_cls_fcs, self.shared_out_channels)
+        self.cls_convs, self.cls_fcs, self.cls_last_dim = \
+            self._add_conv_fc_branch(
+                self.num_cls_convs, self.num_cls_fcs, self.shared_out_channels)
 
         # add reg specific branch
-        self.reg_convs, self.reg_fcs, self.reg_last_dim = self._add_conv_fc_branch(
-            self.num_reg_convs, self.num_reg_fcs, self.shared_out_channels)
+        self.reg_convs, self.reg_fcs, self.reg_last_dim = \
+            self._add_conv_fc_branch(
+                self.num_reg_convs, self.num_reg_fcs, self.shared_out_channels)
 
         if self.num_shared_fcs == 0 and not self.with_avg_pool:
             if self.num_cls_fcs == 0:
