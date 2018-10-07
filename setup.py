@@ -88,7 +88,9 @@ if __name__ == '__main__':
         description='Open MMLab Detection Toolbox',
         long_description=readme(),
         keywords='computer vision, object detection',
+        url='https://github.com/open-mmlab/mmdetection',
         packages=find_packages(),
+        package_data={'mmdet.ops': ['*/*.so']},
         classifiers=[
             'Development Status :: 4 - Beta',
             'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
@@ -99,10 +101,11 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 3.4',
             'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
-            'Topic :: Utilities',
         ],
         license='GPLv3',
         setup_requires=['pytest-runner'],
         tests_require=['pytest'],
-        install_requires=['numpy', 'matplotlib', 'six', 'terminaltables'],
+        install_requires=[
+            'numpy', 'matplotlib', 'six', 'terminaltables', 'pycocotools'
+        ],
         zip_safe=False)
