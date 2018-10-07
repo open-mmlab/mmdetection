@@ -4,8 +4,16 @@ from ..bbox_ops import bbox_assign, bbox2delta, bbox_sampling
 from ..utils import multi_apply
 
 
-def anchor_target(anchor_list, valid_flag_list, gt_bboxes_list, img_metas,
-                  target_means, target_stds, cfg):
+def anchor_target(anchor_list,
+                  valid_flag_list,
+                  gt_bboxes_list,
+                  img_metas,
+                  target_means,
+                  target_stds,
+                  cfg,
+                  gt_labels_list=None,
+                  cls_out_channels=1,
+                  sampling=True):
     """Compute regression and classification targets for anchors.
 
     Args:
@@ -32,28 +40,34 @@ def anchor_target(anchor_list, valid_flag_list, gt_bboxes_list, img_metas,
         valid_flag_list[i] = torch.cat(valid_flag_list[i])
 
     # compute targets for each image
-    means_replicas = [target_means for _ in range(num_imgs)]
-    stds_replicas = [target_stds for _ in range(num_imgs)]
-    cfg_replicas = [cfg for _ in range(num_imgs)]
-    (all_labels, all_label_weights, all_bbox_targets,
-     all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
-         anchor_target_single, anchor_list, valid_flag_list, gt_bboxes_list,
-         img_metas, means_replicas, stds_replicas, cfg_replicas)
+    if gt_labels_list is None:
+        gt_labels_list = [None for _ in range(num_imgs)]
+    (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
+     pos_inds_list, neg_inds_list) = multi_apply(
+         anchor_target_single,
+         anchor_list,
+         valid_flag_list,
+         gt_bboxes_list,
+         gt_labels_list,
+         img_metas,
+         target_means=target_means,
+         target_stds=target_stds,
+         cfg=cfg,
+         cls_out_channels=cls_out_channels,
+         sampling=sampling)
     # no valid anchors
     if any([labels is None for labels in all_labels]):
         return None
     # sampled anchors of all images
-    num_total_samples = sum([
-        max(pos_inds.numel() + neg_inds.numel(), 1)
-        for pos_inds, neg_inds in zip(pos_inds_list, neg_inds_list)
-    ])
+    num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
+    num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
     # split targets to a list w.r.t. multiple levels
     labels_list = images_to_levels(all_labels, num_level_anchors)
     label_weights_list = images_to_levels(all_label_weights, num_level_anchors)
     bbox_targets_list = images_to_levels(all_bbox_targets, num_level_anchors)
     bbox_weights_list = images_to_levels(all_bbox_weights, num_level_anchors)
     return (labels_list, label_weights_list, bbox_targets_list,
-            bbox_weights_list, num_total_samples)
+            bbox_weights_list, num_total_pos, num_total_neg)
 
 
 def images_to_levels(target, num_level_anchors):
@@ -71,8 +85,16 @@ def images_to_levels(target, num_level_anchors):
     return level_targets
 
 
-def anchor_target_single(flat_anchors, valid_flags, gt_bboxes, img_meta,
-                         target_means, target_stds, cfg):
+def anchor_target_single(flat_anchors,
+                         valid_flags,
+                         gt_bboxes,
+                         gt_labels,
+                         img_meta,
+                         target_means,
+                         target_stds,
+                         cfg,
+                         cls_out_channels=1,
+                         sampling=True):
     inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                        img_meta['img_shape'][:2],
                                        cfg.allowed_border)
@@ -86,10 +108,14 @@ def anchor_target_single(flat_anchors, valid_flags, gt_bboxes, img_meta,
         pos_iou_thr=cfg.pos_iou_thr,
         neg_iou_thr=cfg.neg_iou_thr,
         min_pos_iou=cfg.min_pos_iou)
-    pos_inds, neg_inds = bbox_sampling(assigned_gt_inds, cfg.anchor_batch_size,
-                                       cfg.pos_fraction, cfg.neg_pos_ub,
-                                       cfg.pos_balance_sampling, max_overlaps,
-                                       cfg.neg_balance_thr)
+    if sampling:
+        pos_inds, neg_inds = bbox_sampling(
+            assigned_gt_inds, cfg.anchor_batch_size, cfg.pos_fraction,
+            cfg.neg_pos_ub, cfg.pos_balance_sampling, max_overlaps,
+            cfg.neg_balance_thr)
+    else:
+        pos_inds = torch.nonzero(assigned_gt_inds > 0).squeeze(-1).unique()
+        neg_inds = torch.nonzero(assigned_gt_inds == 0).squeeze(-1).unique()
 
     bbox_targets = torch.zeros_like(anchors)
     bbox_weights = torch.zeros_like(anchors)
@@ -103,7 +129,10 @@ def anchor_target_single(flat_anchors, valid_flags, gt_bboxes, img_meta,
                                       target_stds)
         bbox_targets[pos_inds, :] = pos_bbox_targets
         bbox_weights[pos_inds, :] = 1.0
-        labels[pos_inds] = 1
+        if gt_labels is None:
+            labels[pos_inds] = 1
+        else:
+            labels[pos_inds] = gt_labels[assigned_gt_inds[pos_inds] - 1]
         if cfg.pos_weight <= 0:
             label_weights[pos_inds] = 1.0
         else:
@@ -115,11 +144,25 @@ def anchor_target_single(flat_anchors, valid_flags, gt_bboxes, img_meta,
     num_total_anchors = flat_anchors.size(0)
     labels = unmap(labels, num_total_anchors, inside_flags)
     label_weights = unmap(label_weights, num_total_anchors, inside_flags)
+    if cls_out_channels > 1:
+        labels, label_weights = expand_binary_labels(labels, label_weights,
+                                                     cls_out_channels)
     bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
     bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
     return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
             neg_inds)
+
+
+def expand_binary_labels(labels, label_weights, cls_out_channels):
+    bin_labels = labels.new_full(
+        (labels.size(0), cls_out_channels), 0, dtype=torch.float32)
+    inds = torch.nonzero(labels >= 1).squeeze()
+    if inds.numel() > 0:
+        bin_labels[inds, labels[inds] - 1] = 1
+    bin_label_weights = label_weights.view(-1, 1).expand(
+        label_weights.size(0), cls_out_channels)
+    return bin_labels, bin_label_weights
 
 
 def anchor_inside_flags(flat_anchors, valid_flags, img_shape,
