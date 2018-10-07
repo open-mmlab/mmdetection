@@ -4,7 +4,7 @@ import torch.nn as nn
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
-from mmdet.core import bbox2roi, bbox2result, multi_apply
+from mmdet.core import sample_bboxes, bbox2roi, bbox2result, multi_apply
 
 
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
@@ -97,13 +97,14 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             proposal_list = proposals
 
         if self.with_bbox:
-            rcnn_train_cfg_list = [
-                self.train_cfg.rcnn for _ in range(len(proposal_list))
-            ]
             (pos_proposals, neg_proposals, pos_assigned_gt_inds, pos_gt_bboxes,
              pos_gt_labels) = multi_apply(
-                 self.bbox_roi_extractor.sample_proposals, proposal_list,
-                 gt_bboxes, gt_bboxes_ignore, gt_labels, rcnn_train_cfg_list)
+                 sample_bboxes,
+                 proposal_list,
+                 gt_bboxes,
+                 gt_bboxes_ignore,
+                 gt_labels,
+                 cfg=self.train_cfg.rcnn)
             (labels, label_weights, bbox_targets,
              bbox_weights) = self.bbox_head.get_bbox_target(
                  pos_proposals, neg_proposals, pos_gt_bboxes, pos_gt_labels,
