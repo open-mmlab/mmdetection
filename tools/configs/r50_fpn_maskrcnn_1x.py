@@ -144,10 +144,10 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=20,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
-        # ('TensorboardLoggerHook', dict(log_dir=work_dir + '/log')),
+        # dict(type='TensorboardLoggerHook', log_dir=work_dir + '/log')
     ])
 # yapf:enable
 # runtime settings

@@ -90,8 +90,8 @@ def main():
         cfg.work_dir = args.work_dir
     cfg.gpus = args.gpus
     # add mmdet version to checkpoint as meta data
-    cfg.checkpoint_config.meta = dict(mmdet_version=__version__)
-    cfg.checkpoint_config.config = cfg.text
+    cfg.checkpoint_config.meta = dict(
+        mmdet_version=__version__, config=cfg.text)
 
     logger = get_logger(cfg.log_level)
 
