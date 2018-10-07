@@ -160,7 +160,7 @@ class RPNHead(nn.Module):
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_samples) = cls_reg_targets
+         num_total_pos, num_total_neg) = cls_reg_targets
         losses_cls, losses_reg = multi_apply(
             self.loss_single,
             rpn_cls_scores,
@@ -169,7 +169,7 @@ class RPNHead(nn.Module):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples,
+            num_total_samples=num_total_pos + num_total_neg,
             cfg=cfg)
         return dict(loss_rpn_cls=losses_cls, loss_rpn_reg=losses_reg)
 

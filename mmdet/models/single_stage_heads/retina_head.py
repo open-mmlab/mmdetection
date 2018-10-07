@@ -4,9 +4,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from mmdet.core import (AnchorGenerator, multi_apply, delta2bbox,
-                        weighted_smoothl1, weighted_sigmoid_focal_loss,
-                        multiclass_nms, retina_target)
+from mmdet.core import (AnchorGenerator, anchor_target, multi_apply,
+                        delta2bbox, weighted_smoothl1,
+                        weighted_sigmoid_focal_loss, multiclass_nms)
 from ..utils import normal_init, bias_init_with_prob
 
 
@@ -172,20 +172,28 @@ class RetinaHead(nn.Module):
             avg_factor=num_pos_samples)
         return loss_cls, loss_reg
 
-    def loss(self, cls_scores, bbox_preds, gt_bboxes, gt_labels, img_shapes,
+    def loss(self, cls_scores, bbox_preds, gt_bboxes, gt_labels, img_metas,
              cfg):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
 
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_shapes)
-        cls_reg_targets = retina_target(
-            anchor_list, valid_flag_list, gt_bboxes, gt_labels, img_shapes,
-            self.target_means, self.target_stds, self.cls_out_channels, cfg)
+            featmap_sizes, img_metas)
+        cls_reg_targets = anchor_target(
+            anchor_list,
+            valid_flag_list,
+            gt_bboxes,
+            img_metas,
+            self.target_means,
+            self.target_stds,
+            cfg,
+            gt_labels_list=gt_labels,
+            cls_out_channels=self.cls_out_channels,
+            sampling=False)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_pos_samples) = cls_reg_targets
+         num_total_pos, num_total_neg) = cls_reg_targets
 
         losses_cls, losses_reg = multi_apply(
             self.loss_single,
@@ -195,7 +203,7 @@ class RetinaHead(nn.Module):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_pos_samples=num_pos_samples,
+            num_pos_samples=num_total_pos,
             cfg=cfg)
         return dict(loss_cls=losses_cls, loss_reg=losses_reg)
 
