@@ -38,7 +38,8 @@ def _init_dist_slurm(backend, **kwargs):
     raise NotImplementedError
 
 
-# modified from https://github.com/NVIDIA/apex/blob/master/apex/parallel/distributed.py#L9
+# modified from
+# https://github.com/NVIDIA/apex/blob/master/apex/parallel/distributed.py#L9
 def all_reduce_coalesced(tensors):
     buckets = OrderedDict()
     for tensor in tensors:

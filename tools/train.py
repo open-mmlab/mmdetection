@@ -13,7 +13,7 @@ from mmdet import datasets, __version__
 from mmdet.core import (init_dist, DistOptimizerHook, DistSamplerSeedHook,
                         MMDataParallel, MMDistributedDataParallel,
                         CocoDistEvalRecallHook, CocoDistEvalmAPHook)
-from mmdet.datasets.loader import build_dataloader
+from mmdet.datasets import build_dataloader
 from mmdet.models import build_detector, RPN
 
 
@@ -90,7 +90,8 @@ def main():
         cfg.work_dir = args.work_dir
     cfg.gpus = args.gpus
     # add mmdet version to checkpoint as meta data
-    cfg.checkpoint_config.meta = dict(mmdet_version=__version__)
+    cfg.checkpoint_config.meta = dict(
+        mmdet_version=__version__, config=cfg.text)
 
     logger = get_logger(cfg.log_level)
 

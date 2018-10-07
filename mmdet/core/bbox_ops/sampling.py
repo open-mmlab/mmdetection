@@ -78,27 +78,32 @@ def bbox_assign_wrt_overlaps(overlaps,
                              pos_iou_thr=0.5,
                              neg_iou_thr=0.5,
                              min_pos_iou=.0):
-    """Assign a corresponding gt bbox or background to each proposal/anchor
-    This function assign a gt bbox to every proposal, each proposals will be
+    """Assign a corresponding gt bbox or background to each proposal/anchor.
+
+    This method assign a gt bbox to every proposal, each proposals will be
     assigned with -1, 0, or a positive number. -1 means don't care, 0 means
     negative sample, positive number is the index (1-based) of assigned gt.
     The assignment is done in following steps, the order matters:
+
     1. assign every anchor to -1
     2. assign proposals whose iou with all gts < neg_iou_thr to 0
     3. for each anchor, if the iou with its nearest gt >= pos_iou_thr,
     assign it to that bbox
     4. for each gt bbox, assign its nearest proposals(may be more than one)
     to itself
+
     Args:
-        overlaps(Tensor): overlaps between n proposals and k gt_bboxes, shape(n, k)
-        gt_labels(Tensor, optional): shape (k, )
-        pos_iou_thr(float): iou threshold for positive bboxes
-        neg_iou_thr(float or tuple): iou threshold for negative bboxes
-        min_pos_iou(float): minimum iou for a bbox to be considered as a positive bbox,
-                            for RPN, it is usually set as 0, for Fast R-CNN,
-                            it is usually set as pos_iou_thr
+        overlaps (Tensor): Overlaps between n proposals and k gt_bboxes,
+            shape(n, k).
+        gt_labels (Tensor, optional): Labels of k gt_bboxes, shape (k, ).
+        pos_iou_thr (float): IoU threshold for positive bboxes.
+        neg_iou_thr (float or tuple): IoU threshold for negative bboxes.
+        min_pos_iou (float): Minimum IoU for a bbox to be considered as a
+            positive bbox. This argument only affects the 4th step.
+
     Returns:
-        tuple: (assigned_gt_inds, argmax_overlaps, max_overlaps), shape (n, )
+        tuple: (assigned_gt_inds, [assigned_labels], argmax_overlaps,
+            max_overlaps), shape (n, )
     """
     num_bboxes, num_gts = overlaps.size(0), overlaps.size(1)
     # 1. assign -1 by default
@@ -144,8 +149,9 @@ def bbox_assign_wrt_overlaps(overlaps,
         return assigned_gt_inds, assigned_labels, argmax_overlaps, max_overlaps
 
 
-def sample_positives(assigned_gt_inds, num_expected, balance_sampling=True):
-    """Balance sampling for positive bboxes/anchors
+def bbox_sampling_pos(assigned_gt_inds, num_expected, balance_sampling=True):
+    """Balance sampling for positive bboxes/anchors.
+
     1. calculate average positive num for each gt: num_per_gt
     2. sample at most num_per_gt positives for each gt
     3. random sampling from rest anchors if not enough fg
@@ -186,15 +192,16 @@ def sample_positives(assigned_gt_inds, num_expected, balance_sampling=True):
         return sampled_inds
 
 
-def sample_negatives(assigned_gt_inds,
-                     num_expected,
-                     max_overlaps=None,
-                     balance_thr=0,
-                     hard_fraction=0.5):
-    """Balance sampling for negative bboxes/anchors
-    negative samples are split into 2 set: hard(balance_thr <= iou < neg_iou_thr)
-    and easy(iou < balance_thr), around equal number of bg are sampled
-    from each set.
+def bbox_sampling_neg(assigned_gt_inds,
+                      num_expected,
+                      max_overlaps=None,
+                      balance_thr=0,
+                      hard_fraction=0.5):
+    """Balance sampling for negative bboxes/anchors.
+
+    Negative samples are split into 2 set: hard (balance_thr <= iou <
+    neg_iou_thr) and easy(iou < balance_thr). The sampling ratio is controlled
+    by `hard_fraction`.
     """
     neg_inds = torch.nonzero(assigned_gt_inds == 0)
     if neg_inds.numel() != 0:
@@ -247,17 +254,87 @@ def bbox_sampling(assigned_gt_inds,
                   max_overlaps=None,
                   neg_balance_thr=0,
                   neg_hard_fraction=0.5):
+    """Sample positive and negative bboxes given assigned results.
+
+    Args:
+        assigned_gt_inds (Tensor): Assigned gt indices for each bbox.
+        num_expected (int): Expected total samples (pos and neg).
+        pos_fraction (float): Positive sample fraction.
+        neg_pos_ub (float): Negative/Positive upper bound.
+        pos_balance_sampling(bool): Whether to sample positive samples around
+            each gt bbox evenly.
+        max_overlaps (Tensor, optional): For each bbox, the max IoU of all gts.
+            Used for negative balance sampling only.
+        neg_balance_thr (float, optional): IoU threshold for simple/hard
+            negative balance sampling.
+        neg_hard_fraction (float, optional): Fraction of hard negative samples
+            for negative balance sampling.
+
+    Returns:
+        tuple[Tensor]: positive bbox indices, negative bbox indices.
+    """
     num_expected_pos = int(num_expected * pos_fraction)
-    pos_inds = sample_positives(assigned_gt_inds, num_expected_pos,
-                                pos_balance_sampling)
+    pos_inds = bbox_sampling_pos(assigned_gt_inds, num_expected_pos,
+                                 pos_balance_sampling)
+    # We found that sampled indices have duplicated items occasionally.
+    # (mab be a bug of PyTorch)
     pos_inds = pos_inds.unique()
     num_sampled_pos = pos_inds.numel()
     num_neg_max = int(
         neg_pos_ub *
         num_sampled_pos) if num_sampled_pos > 0 else int(neg_pos_ub)
     num_expected_neg = min(num_neg_max, num_expected - num_sampled_pos)
-    neg_inds = sample_negatives(assigned_gt_inds, num_expected_neg,
-                                max_overlaps, neg_balance_thr,
-                                neg_hard_fraction)
+    neg_inds = bbox_sampling_neg(assigned_gt_inds, num_expected_neg,
+                                 max_overlaps, neg_balance_thr,
+                                 neg_hard_fraction)
     neg_inds = neg_inds.unique()
     return pos_inds, neg_inds
+
+
+def sample_bboxes(bboxes, gt_bboxes, gt_bboxes_ignore, gt_labels, cfg):
+    """Sample positive and negative bboxes.
+
+    This is a simple implementation of bbox sampling given candidates and
+    ground truth bboxes, which includes 3 steps.
+
+    1. Assign gt to each bbox.
+    2. Add gt bboxes to the sampling pool (optional).
+    3. Perform positive and negative sampling.
+
+    Args:
+        bboxes (Tensor): Boxes to be sampled from.
+        gt_bboxes (Tensor): Ground truth bboxes.
+        gt_bboxes_ignore (Tensor): Ignored ground truth bboxes. In MS COCO,
+            `crowd` bboxes are considered as ignored.
+        gt_labels (Tensor): Class labels of ground truth bboxes.
+        cfg (dict): Sampling configs.
+
+    Returns:
+        tuple[Tensor]: pos_bboxes, neg_bboxes, pos_assigned_gt_inds,
+            pos_gt_bboxes, pos_gt_labels
+    """
+    bboxes = bboxes[:, :4]
+    assigned_gt_inds, assigned_labels, argmax_overlaps, max_overlaps = \
+        bbox_assign(bboxes, gt_bboxes, gt_bboxes_ignore, gt_labels,
+                    cfg.pos_iou_thr, cfg.neg_iou_thr, cfg.min_pos_iou,
+                    cfg.crowd_thr)
+
+    if cfg.add_gt_as_proposals:
+        bboxes = torch.cat([gt_bboxes, bboxes], dim=0)
+        gt_assign_self = torch.arange(
+            1, len(gt_labels) + 1, dtype=torch.long, device=bboxes.device)
+        assigned_gt_inds = torch.cat([gt_assign_self, assigned_gt_inds])
+        assigned_labels = torch.cat([gt_labels, assigned_labels])
+
+    pos_inds, neg_inds = bbox_sampling(
+        assigned_gt_inds, cfg.roi_batch_size, cfg.pos_fraction, cfg.neg_pos_ub,
+        cfg.pos_balance_sampling, max_overlaps, cfg.neg_balance_thr)
+
+    pos_bboxes = bboxes[pos_inds]
+    neg_bboxes = bboxes[neg_inds]
+    pos_assigned_gt_inds = assigned_gt_inds[pos_inds] - 1
+    pos_gt_bboxes = gt_bboxes[pos_assigned_gt_inds, :]
+    pos_gt_labels = assigned_labels[pos_inds]
+
+    return (pos_bboxes, neg_bboxes, pos_assigned_gt_inds, pos_gt_bboxes,
+            pos_gt_labels)
