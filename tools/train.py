@@ -8,12 +8,12 @@ from collections import OrderedDict
 import numpy as np
 import torch
 from mmcv import Config
-from mmcv.runner import Runner, obj_from_dict
+from mmcv.runner import Runner, obj_from_dict, DistSamplerSeedHook
 
 from mmdet import datasets, __version__
-from mmdet.core import (init_dist, DistOptimizerHook, DistSamplerSeedHook,
-                        MMDataParallel, MMDistributedDataParallel,
-                        CocoDistEvalRecallHook, CocoDistEvalmAPHook)
+from mmdet.core import (init_dist, DistOptimizerHook, MMDataParallel,
+                        MMDistributedDataParallel, CocoDistEvalRecallHook,
+                        CocoDistEvalmAPHook)
 from mmdet.datasets import build_dataloader
 from mmdet.models import build_detector, RPN
 

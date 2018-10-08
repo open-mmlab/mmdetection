@@ -95,7 +95,7 @@ class MaskTransform(object):
             for mask in masks
         ]
         if flip:
-            masks = [mmcv.imflip(mask) for mask in masks]
+            masks = [mask[:, ::-1] for mask in masks]
         padded_masks = [
             mmcv.impad(mask, pad_shape[:2], pad_val=0) for mask in masks
         ]
