@@ -1,6 +1,6 @@
 # model settings
 model = dict(
-    type='FasterRCNN',
+    type='MaskRCNN',
     pretrained='modelzoo://resnet50',
     backbone=dict(
         type='resnet',
@@ -38,7 +38,18 @@ model = dict(
         num_classes=81,
         target_means=[0., 0., 0., 0.],
         target_stds=[0.1, 0.1, 0.2, 0.2],
-        reg_class_agnostic=False))
+        reg_class_agnostic=False),
+    mask_roi_extractor=dict(
+        type='SingleRoIExtractor',
+        roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
+        out_channels=256,
+        featmap_strides=[4, 8, 16, 32]),
+    mask_head=dict(
+        type='FCNMaskHead',
+        num_convs=4,
+        in_channels=256,
+        conv_out_channels=256,
+        num_classes=81))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -56,6 +67,7 @@ train_cfg = dict(
         smoothl1_beta=1 / 9.0,
         debug=False),
     rcnn=dict(
+        mask_size=28,
         pos_iou_thr=0.5,
         neg_iou_thr=0.5,
         crowd_thr=1.1,
@@ -76,10 +88,11 @@ test_cfg = dict(
         max_num=2000,
         nms_thr=0.7,
         min_bbox_size=0),
-    rcnn=dict(score_thr=0.05, max_per_img=100, nms_thr=0.5))
+    rcnn=dict(
+        score_thr=0.05, max_per_img=100, nms_thr=0.5, mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '../data/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
@@ -93,7 +106,7 @@ data = dict(
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0.5,
-        with_mask=False,
+        with_mask=True,
         with_crowd=True,
         with_label=True),
     val=dict(
@@ -104,7 +117,7 @@ data = dict(
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0,
-        with_mask=False,
+        with_mask=True,
         with_crowd=True,
         with_label=True),
     test=dict(
@@ -140,9 +153,9 @@ log_config = dict(
 # runtime settings
 total_epochs = 12
 device_ids = range(8)
-dist_params = dict(backend='gloo')
+dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fpn_faster_rcnn_r50_1x'
+work_dir = './work_dirs/fpn_mask_rcnn_r50_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

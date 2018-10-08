@@ -5,7 +5,6 @@ import torch
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pycocotools.mask as maskUtils
 
 
 def to_tensor(data):
@@ -68,19 +67,3 @@ def show_ann(coco, img, ann_info):
     plt.axis('off')
     coco.showAnns(ann_info)
     plt.show()
-
-
-def draw_bbox_and_segm(img, results, dataset, score_thr=0.5):
-    bbox_results, segm_results = results
-    hi_bboxes = []
-    for cls_bboxes, cls_segms in zip(bbox_results, segm_results):
-        if len(cls_bboxes) == 0:
-            hi_bboxes.append(cls_bboxes)
-            continue
-        inds = np.where(cls_bboxes[:, -1] > score_thr)[0]
-        hi_bboxes.append(cls_bboxes[inds, :])
-        color_mask = np.random.random((1, 3))
-        for i in inds:
-            mask = maskUtils.decode(cls_segms[i]).astype(np.bool)
-            img[mask] = img[mask] * 0.5 + color_mask * 0.5
-    mmcv.draw_bboxes_with_label(np.ascontiguousarray(img), hi_bboxes, dataset)
