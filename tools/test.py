@@ -1,64 +1,92 @@
-import os.path as osp
-import sys
-sys.path.append(osp.abspath(osp.join(__file__, '../../')))
-sys.path.append('/mnt/lustre/pangjiangmiao/sensenet_folder/mmcv')
 import argparse
 
-import numpy as np
 import torch
-
 import mmcv
-from mmcv import Config
-from mmcv.torchpack import load_checkpoint, parallel_test
-from mmdet.core import _data_func, results2json
-from mmdet.datasets import CocoDataset
-from mmdet.datasets.data_engine import build_data
-from mmdet.models import Detector
+from mmcv.runner import load_checkpoint, parallel_test, obj_from_dict
+from mmcv.parallel import scatter, MMDataParallel
+
+from mmdet import datasets
+from mmdet.core import results2json, coco_eval
+from mmdet.datasets import collate, build_dataloader
+from mmdet.models import build_detector, detectors
+
+
+def single_test(model, data_loader, show=False):
+    model.eval()
+    results = []
+    prog_bar = mmcv.ProgressBar(len(data_loader.dataset))
+    for i, data in enumerate(data_loader):
+        with torch.no_grad():
+            result = model(**data, return_loss=False, rescale=not show)
+        results.append(result)
+
+        if show:
+            model.module.show_result(data, result,
+                                     data_loader.dataset.img_norm_cfg)
+
+        batch_size = data['img'][0].size(0)
+        for _ in range(batch_size):
+            prog_bar.update()
+    return results
+
+
+def _data_func(data, device_id):
+    data = scatter(collate([data], samples_per_gpu=1), [device_id])[0]
+    return dict(**data, return_loss=False, rescale=True)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='MMDet test detector')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
-    parser.add_argument('--world_size', default=1, type=int)
+    parser.add_argument('--gpus', default=1, type=int)
     parser.add_argument('--out', help='output result file')
     parser.add_argument(
-        '--out_json', action='store_true', help='get json output file')
+        '--eval',
+        type=str,
+        nargs='+',
+        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
+        help='eval types')
+    parser.add_argument('--show', action='store_true', help='show results')
     args = parser.parse_args()
     return args
 
 
-args = parse_args()
-
-
 def main():
-    cfg = Config.fromfile(args.config)
-    cfg.model['pretrained'] = None
-    # TODO this img_per_gpu
-    cfg.img_per_gpu == 1
+    args = parse_args()
 
-    if args.world_size == 1:
-        # TODO verify this part
-        args.dist = False
-        args.img_per_gpu = cfg.img_per_gpu
-        args.data_workers = cfg.data_workers
-        model = Detector(**cfg.model, **meta_params)
+    cfg = mmcv.Config.fromfile(args.config)
+    cfg.model.pretrained = None
+    cfg.data.test.test_mode = True
+
+    dataset = obj_from_dict(cfg.data.test, datasets, dict(test_mode=True))
+    if args.gpus == 1:
+        model = build_detector(
+            cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
         load_checkpoint(model, args.checkpoint)
-        test_loader = build_data(cfg.test_dataset, args)
-        model = torch.nn.DataParallel(model, device_ids=0)
-        # TODO write single_test
-        outputs = single_test(test_loader, model)
+        model = MMDataParallel(model, device_ids=[0])
+
+        data_loader = build_dataloader(
+            dataset,
+            imgs_per_gpu=1,
+            workers_per_gpu=cfg.data.workers_per_gpu,
+            num_gpus=1,
+            dist=False,
+            shuffle=False)
+        outputs = single_test(model, data_loader, args.show)
     else:
-        test_dataset = CocoDataset(**cfg.test_dataset)
-        model = dict(cfg.model, **cfg.meta_params)
-        outputs = parallel_test(Detector, model,
-                                args.checkpoint, test_dataset, _data_func,
-                                range(args.world_size))
+        model_args = cfg.model.copy()
+        model_args.update(train_cfg=None, test_cfg=cfg.test_cfg)
+        model_type = getattr(detectors, model_args.pop('type'))
+        outputs = parallel_test(model_type, model_args, args.checkpoint,
+                                dataset, _data_func, range(args.gpus))
 
     if args.out:
-        mmcv.dump(outputs, args.out, protocol=4)
-        if args.out_json:
-            results2json(test_dataset, outputs, args.out + '.json')
+        mmcv.dump(outputs, args.out)
+        if args.eval:
+            json_file = args.out + '.json'
+            results2json(dataset, outputs, json_file)
+            coco_eval(json_file, args.eval, dataset.coco)
 
 
 if __name__ == '__main__':

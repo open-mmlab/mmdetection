@@ -1,7 +1,9 @@
+import logging
 import math
+
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from torchpack import load_checkpoint
+from mmcv.runner import load_checkpoint
 
 
 def conv3x3(in_planes, out_planes, stride=1, dilation=1):
@@ -25,7 +27,7 @@ class BasicBlock(nn.Module):
                  stride=1,
                  dilation=1,
                  downsample=None,
-                 style='fb'):
+                 style='pytorch'):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride, dilation)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -64,15 +66,16 @@ class Bottleneck(nn.Module):
                  stride=1,
                  dilation=1,
                  downsample=None,
-                 style='fb',
+                 style='pytorch',
                  with_cp=False):
-        """Bottleneck block
-        if style is "fb", the stride-two layer is the 3x3 conv layer,
-        if style is "msra", the stride-two layer is the first 1x1 conv layer
+        """Bottleneck block.
+
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
+        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottleneck, self).__init__()
-        assert style in ['fb', 'msra']
-        if style == 'fb':
+        assert style in ['pytorch', 'caffe']
+        if style == 'pytorch':
             conv1_stride = 1
             conv2_stride = stride
         else:
@@ -139,7 +142,7 @@ def make_res_layer(block,
                    blocks,
                    stride=1,
                    dilation=1,
-                   style='fb',
+                   style='pytorch',
                    with_cp=False):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
@@ -173,7 +176,12 @@ def make_res_layer(block,
 
 class ResHead(nn.Module):
 
-    def __init__(self, block, num_blocks, stride=2, dilation=1, style='fb'):
+    def __init__(self,
+                 block,
+                 num_blocks,
+                 stride=2,
+                 dilation=1,
+                 style='pytorch'):
         self.layer4 = make_res_layer(
             block,
             1024,
@@ -196,9 +204,10 @@ class ResNet(nn.Module):
                  dilations=(1, 1, 1, 1),
                  out_indices=(0, 1, 2, 3),
                  frozen_stages=-1,
-                 style='fb',
+                 style='pytorch',
                  sync_bn=False,
-                 with_cp=False):
+                 with_cp=False,
+                 strict_frozen=False):
         super(ResNet, self).__init__()
         if not len(layers) == len(strides) == len(dilations):
             raise ValueError(
@@ -234,14 +243,17 @@ class ResNet(nn.Module):
                 style=self.style,
                 with_cp=with_cp)
             self.inplanes = planes * block.expansion
-            setattr(self, layer_name, res_layer)
+            self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
         self.feat_dim = block.expansion * 64 * 2**(len(layers) - 1)
         self.with_cp = with_cp
 
+        self.strict_frozen = strict_frozen
+
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
-            load_checkpoint(self, pretrained, strict=False)
+            logger = logging.getLogger()
+            load_checkpoint(self, pretrained, strict=False, logger=logger)
         elif pretrained is None:
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
@@ -275,6 +287,9 @@ class ResNet(nn.Module):
             for m in self.modules():
                 if isinstance(m, nn.BatchNorm2d):
                     m.eval()
+                    if self.strict_frozen:
+                        for params in m.parameters():
+                            params.requires_grad = False
         if mode and self.frozen_stages >= 0:
             for param in self.conv1.parameters():
                 param.requires_grad = False
@@ -305,9 +320,10 @@ def resnet(depth,
            dilations=(1, 1, 1, 1),
            out_indices=(2, ),
            frozen_stages=-1,
-           style='fb',
+           style='pytorch',
            sync_bn=False,
-           with_cp=False):
+           with_cp=False,
+           strict_frozen=False):
     """Constructs a ResNet model.
 
     Args:
@@ -321,5 +337,5 @@ def resnet(depth,
         raise KeyError('invalid depth {} for resnet'.format(depth))
     block, layers = resnet_cfg[depth]
     model = ResNet(block, layers[:num_stages], strides, dilations, out_indices,
-                   frozen_stages, style, sync_bn, with_cp)
+                   frozen_stages, style, sync_bn, with_cp, strict_frozen)
     return model

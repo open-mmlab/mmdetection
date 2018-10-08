@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import (bbox_transform_inv, multiclass_nms, bbox_target,
+from mmdet.core import (delta2bbox, multiclass_nms, bbox_target,
                         weighted_cross_entropy, weighted_smoothl1, accuracy)
 
 
@@ -60,7 +60,7 @@ class BBoxHead(nn.Module):
         return cls_score, bbox_pred
 
     def get_bbox_target(self, pos_proposals, neg_proposals, pos_gt_bboxes,
-                    pos_gt_labels, rcnn_train_cfg):
+                        pos_gt_labels, rcnn_train_cfg):
         reg_num_classes = 1 if self.reg_class_agnostic else self.num_classes
         cls_reg_targets = bbox_target(
             pos_proposals,
@@ -85,7 +85,7 @@ class BBoxHead(nn.Module):
                 bbox_pred,
                 bbox_targets,
                 bbox_weights,
-                ave_factor=bbox_targets.size(0))
+                avg_factor=bbox_targets.size(0))
         return losses
 
     def get_det_bboxes(self,
@@ -101,15 +101,14 @@ class BBoxHead(nn.Module):
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
 
         if bbox_pred is not None:
-            bboxes = bbox_transform_inv(rois[:, 1:], bbox_pred,
-                                        self.target_means, self.target_stds,
-                                        img_shape)
+            bboxes = delta2bbox(rois[:, 1:], bbox_pred, self.target_means,
+                                self.target_stds, img_shape)
         else:
             bboxes = rois[:, 1:]
             # TODO: add clip here
 
         if rescale:
-            bboxes /= scale_factor.float()
+            bboxes /= scale_factor
 
         if nms_cfg is None:
             return bboxes, scores
