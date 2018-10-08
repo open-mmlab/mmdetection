@@ -50,7 +50,7 @@ test_cfg = dict(
         min_bbox_size=0))
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '../data/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
