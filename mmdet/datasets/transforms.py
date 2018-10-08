@@ -2,11 +2,7 @@ import mmcv
 import numpy as np
 import torch
 
-from mmdet.core.mask import segms
-
-__all__ = [
-    'ImageTransform', 'BboxTransform', 'PolyMaskTransform', 'Numpy2Tensor'
-]
+__all__ = ['ImageTransform', 'BboxTransform', 'MaskTransform', 'Numpy2Tensor']
 
 
 class ImageTransform(object):
@@ -85,26 +81,6 @@ class BboxTransform(object):
             return padded_bboxes
 
 
-class PolyMaskTransform(object):
-    """Preprocess polygons."""
-
-    def __init__(self):
-        pass
-
-    def __call__(self, gt_mask_polys, gt_poly_lens, img_h, img_w, flip=False):
-        if flip:
-            gt_mask_polys = segms.flip_segms(gt_mask_polys, img_h, img_w)
-        num_polys_per_mask = np.array(
-            [len(mask_polys) for mask_polys in gt_mask_polys], dtype=np.int64)
-        gt_poly_lens = np.array(gt_poly_lens, dtype=np.int64)
-        gt_mask_polys = [
-            np.concatenate(mask_polys).astype(np.float32)
-            for mask_polys in gt_mask_polys
-        ]
-        gt_mask_polys = np.concatenate(gt_mask_polys)
-        return gt_mask_polys, gt_poly_lens, num_polys_per_mask
-
-
 class MaskTransform(object):
     """Preprocess masks.
 
@@ -119,7 +95,7 @@ class MaskTransform(object):
             for mask in masks
         ]
         if flip:
-            masks = [mask[:, ::-1] for mask in masks]
+            masks = [mmcv.imflip(mask) for mask in masks]
         padded_masks = [
             mmcv.impad(mask, pad_shape[:2], pad_val=0) for mask in masks
         ]
