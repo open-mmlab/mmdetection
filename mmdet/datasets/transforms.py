@@ -2,7 +2,7 @@ import mmcv
 import numpy as np
 import torch
 
-from mmdet.core.mask_ops import segms
+from mmdet.core.mask import segms
 
 __all__ = [
     'ImageTransform', 'BboxTransform', 'PolyMaskTransform', 'Numpy2Tensor'

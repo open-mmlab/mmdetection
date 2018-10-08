@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 from mmdet.ops import nms
-from ..bbox_ops import bbox_mapping_back
+from ..bbox import bbox_mapping_back
 
 
 def merge_aug_proposals(aug_proposals, img_metas, rpn_test_cfg):
