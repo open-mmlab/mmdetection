@@ -3,9 +3,10 @@ import argparse
 import torch
 import mmcv
 from mmcv.runner import load_checkpoint, parallel_test, obj_from_dict
+from mmcv.parallel import scatter, MMDataParallel
 
 from mmdet import datasets
-from mmdet.core import scatter, MMDataParallel, results2json, coco_eval
+from mmdet.core import results2json, coco_eval
 from mmdet.datasets import collate, build_dataloader
 from mmdet.models import build_detector, detectors
 
@@ -44,17 +45,16 @@ def parse_args():
         '--eval',
         type=str,
         nargs='+',
-        choices=['proposal', 'bbox', 'segm', 'keypoints'],
+        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
         help='eval types')
     parser.add_argument('--show', action='store_true', help='show results')
     args = parser.parse_args()
     return args
 
 
-args = parse_args()
-
-
 def main():
+    args = parse_args()
+
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True

@@ -5,6 +5,11 @@ from .geometry import bbox_overlaps
 
 
 def random_choice(gallery, num):
+    """Random select some elements from the gallery.
+
+    It seems that Pytorch's implementation is slower than numpy so we use numpy
+    to randperm the indices.
+    """
     assert len(gallery) >= num
     if isinstance(gallery, list):
         gallery = np.array(gallery)
@@ -12,9 +17,7 @@ def random_choice(gallery, num):
     np.random.shuffle(cands)
     rand_inds = cands[:num]
     if not isinstance(gallery, np.ndarray):
-        rand_inds = torch.from_numpy(rand_inds).long()
-        if gallery.is_cuda:
-            rand_inds = rand_inds.cuda(gallery.get_device())
+        rand_inds = torch.from_numpy(rand_inds).long().to(gallery.device)
     return gallery[rand_inds]
 
 

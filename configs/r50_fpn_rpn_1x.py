@@ -1,6 +1,6 @@
 # model settings
 model = dict(
-    type='MaskRCNN',
+    type='RPN',
     pretrained='modelzoo://resnet50',
     backbone=dict(
         type='resnet',
@@ -23,33 +23,7 @@ model = dict(
         anchor_strides=[4, 8, 16, 32, 64],
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
-        use_sigmoid_cls=True),
-    bbox_roi_extractor=dict(
-        type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
-        out_channels=256,
-        featmap_strides=[4, 8, 16, 32]),
-    bbox_head=dict(
-        type='SharedFCRoIHead',
-        num_fcs=2,
-        in_channels=256,
-        fc_out_channels=1024,
-        roi_feat_size=7,
-        num_classes=81,
-        target_means=[0., 0., 0., 0.],
-        target_stds=[0.1, 0.1, 0.2, 0.2],
-        reg_class_agnostic=False),
-    mask_roi_extractor=dict(
-        type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
-        out_channels=256,
-        featmap_strides=[4, 8, 16, 32]),
-    mask_head=dict(
-        type='FCNMaskHead',
-        num_convs=4,
-        in_channels=256,
-        conv_out_channels=256,
-        num_classes=81))
+        use_sigmoid_cls=True))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -65,20 +39,6 @@ train_cfg = dict(
         min_pos_iou=0.3,
         pos_weight=-1,
         smoothl1_beta=1 / 9.0,
-        debug=False),
-    rcnn=dict(
-        mask_size=28,
-        pos_iou_thr=0.5,
-        neg_iou_thr=0.5,
-        crowd_thr=1.1,
-        roi_batch_size=512,
-        add_gt_as_proposals=True,
-        pos_fraction=0.25,
-        pos_balance_sampling=False,
-        neg_pos_ub=512,
-        neg_balance_thr=0,
-        min_pos_iou=1.1,
-        pos_weight=-1,
         debug=False))
 test_cfg = dict(
     rpn=dict(
@@ -87,12 +47,10 @@ test_cfg = dict(
         nms_post=2000,
         max_num=2000,
         nms_thr=0.7,
-        min_bbox_size=0),
-    rcnn=dict(
-        score_thr=0.05, max_per_img=100, nms_thr=0.5, mask_thr_binary=0.5))
+        min_bbox_size=0))
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '../data/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
@@ -106,9 +64,9 @@ data = dict(
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0.5,
-        with_mask=True,
-        with_crowd=True,
-        with_label=True),
+        with_mask=False,
+        with_crowd=False,
+        with_label=False),
     val=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_val2017.json',
@@ -117,9 +75,9 @@ data = dict(
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0,
-        with_mask=True,
-        with_crowd=True,
-        with_label=True),
+        with_mask=False,
+        with_crowd=False,
+        with_label=False),
     test=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_val2017.json',
@@ -133,8 +91,8 @@ data = dict(
         test_mode=True))
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+# runner configs
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-# learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
@@ -152,10 +110,9 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 12
-device_ids = range(8)
-dist_params = dict(backend='gloo')
+dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fpn_mask_rcnn_r50_1x'
+work_dir = './work_dirs/fpn_rpn_r50_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
