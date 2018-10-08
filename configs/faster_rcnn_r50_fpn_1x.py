@@ -134,7 +134,7 @@ log_config = dict(
     interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook', log_dir=work_dir + '/log')
+        # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
@@ -142,7 +142,7 @@ total_epochs = 12
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fpn_faster_rcnn_r50_1x'
+work_dir = './work_dirs/faster_rcnn_r50_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
