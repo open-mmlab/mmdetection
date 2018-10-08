@@ -1,6 +1,6 @@
 import torch
 
-from ..bbox_ops import bbox_assign, bbox2delta, bbox_sampling
+from ..bbox import bbox_assign, bbox2delta, bbox_sampling
 from ..utils import multi_apply
 
 
