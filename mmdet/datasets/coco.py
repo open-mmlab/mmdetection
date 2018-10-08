@@ -2,13 +2,13 @@ import os.path as osp
 
 import mmcv
 import numpy as np
+from mmcv.parallel import DataContainer as DC
 from pycocotools.coco import COCO
 from torch.utils.data import Dataset
 
 from .transforms import (ImageTransform, BboxTransform, MaskTransform,
                          Numpy2Tensor)
 from .utils import to_tensor, show_ann, random_scale
-from .utils import DataContainer as DC
 
 
 class CocoDataset(Dataset):
