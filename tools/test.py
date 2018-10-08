@@ -44,17 +44,16 @@ def parse_args():
         '--eval',
         type=str,
         nargs='+',
-        choices=['proposal', 'bbox', 'segm', 'keypoints'],
+        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
         help='eval types')
     parser.add_argument('--show', action='store_true', help='show results')
     args = parser.parse_args()
     return args
 
 
-args = parse_args()
-
-
 def main():
+    args = parse_args()
+
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
