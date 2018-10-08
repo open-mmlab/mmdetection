@@ -109,7 +109,7 @@ log_config = dict(
 # runtime settings
 total_epochs = 12
 device_ids = range(8)
-dist_params = dict(backend='gloo')
+dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/fpn_retinanet_r50_1x'
 load_from = None
