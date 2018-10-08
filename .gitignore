@@ -105,3 +105,5 @@ venv.bak/
 
 # cython generated cpp
 mmdet/ops/nms/*.cpp
+mmdet/version.py
+data

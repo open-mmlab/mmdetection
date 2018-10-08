@@ -6,16 +6,25 @@ import torch.nn as nn
 from mmdet import ops
 
 
-class SingleLevelRoI(nn.Module):
-    """Extract RoI features from a single level feature map. Each RoI is
-    mapped to a level according to its scale."""
+class SingleRoIExtractor(nn.Module):
+    """Extract RoI features from a single level feature map.
+
+    If there are mulitple input feature levels, each RoI is mapped to a level
+    according to its scale.
+
+    Args:
+        roi_layer (dict): Specify RoI layer type and arguments.
+        out_channels (int): Output channels of RoI layers.
+        featmap_strides (int): Strides of input feature maps.
+        finest_scale (int): Scale threshold of mapping to level 0.
+    """
 
     def __init__(self,
                  roi_layer,
                  out_channels,
                  featmap_strides,
                  finest_scale=56):
-        super(SingleLevelRoI, self).__init__()
+        super(SingleRoIExtractor, self).__init__()
         self.roi_layers = self.build_roi_layers(roi_layer, featmap_strides)
         self.out_channels = out_channels
         self.featmap_strides = featmap_strides
@@ -23,6 +32,7 @@ class SingleLevelRoI(nn.Module):
 
     @property
     def num_inputs(self):
+        """int: Input feature map levels."""
         return len(self.featmap_strides)
 
     def init_weights(self):
@@ -38,12 +48,19 @@ class SingleLevelRoI(nn.Module):
         return roi_layers
 
     def map_roi_levels(self, rois, num_levels):
-        """Map rois to corresponding feature levels (0-based) by scales.
+        """Map rois to corresponding feature levels by scales.
 
-        scale < finest_scale: level 0
-        finest_scale <= scale < finest_scale * 2: level 1
-        finest_scale * 2 <= scale < finest_scale * 4: level 2
-        scale >= finest_scale * 4: level 3
+        - scale < finest_scale: level 0
+        - finest_scale <= scale < finest_scale * 2: level 1
+        - finest_scale * 2 <= scale < finest_scale * 4: level 2
+        - scale >= finest_scale * 4: level 3
+
+        Args:
+            rois (Tensor): Input RoIs, shape (k, 5).
+            num_levels (int): Total level number.
+
+        Returns:
+            Tensor: Level index (0-based) of each RoI, shape (k, )
         """
         scale = torch.sqrt(
             (rois[:, 3] - rois[:, 1] + 1) * (rois[:, 4] - rois[:, 2] + 1))
@@ -52,10 +69,6 @@ class SingleLevelRoI(nn.Module):
         return target_lvls
 
     def forward(self, feats, rois):
-        """Extract roi features with the roi layer. If multiple feature levels
-        are used, then rois are mapped to corresponding levels according to
-        their scales.
-        """
         if len(feats) == 1:
             return self.roi_layers[0](feats[0], rois)
 

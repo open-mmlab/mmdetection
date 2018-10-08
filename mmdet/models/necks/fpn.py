@@ -101,7 +101,7 @@ class FPN(nn.Module):
         # build top-down path
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
-            laterals[i - 1] += F.upsample(
+            laterals[i - 1] += F.interpolate(
                 laterals[i], scale_factor=2, mode='nearest')
 
         # build outputs
@@ -111,7 +111,8 @@ class FPN(nn.Module):
         ]
         # part 2: add extra levels
         if self.num_outs > len(outs):
-            # use max pool to get more levels on top of outputs (Faster R-CNN, Mask R-CNN)
+            # use max pool to get more levels on top of outputs
+            # (e.g., Faster R-CNN, Mask R-CNN)
             if not self.add_extra_convs:
                 for i in range(self.num_outs - used_backbone_levels):
                     outs.append(F.max_pool2d(outs[-1], 1, stride=2))

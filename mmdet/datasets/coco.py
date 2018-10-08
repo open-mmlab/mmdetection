@@ -2,75 +2,17 @@ import os.path as osp
 
 import mmcv
 import numpy as np
+from mmcv.parallel import DataContainer as DC
 from pycocotools.coco import COCO
 from torch.utils.data import Dataset
 
-from .transforms import (ImageTransform, BboxTransform, PolyMaskTransform,
+from .transforms import (ImageTransform, BboxTransform, MaskTransform,
                          Numpy2Tensor)
-from .utils import show_ann, random_scale
-from .utils import DataContainer as DC
-
-
-def parse_ann_info(ann_info, cat2label, with_mask=True):
-    """Parse bbox and mask annotation.
-
-    Args:
-        ann_info (list[dict]): Annotation info of an image.
-        cat2label (dict): The mapping from category ids to labels.
-        with_mask (bool): Whether to parse mask annotations.
-
-    Returns:
-        tuple: gt_bboxes, gt_labels and gt_mask_info
-    """
-    gt_bboxes = []
-    gt_labels = []
-    gt_bboxes_ignore = []
-    # each mask consists of one or several polys, each poly is a list of float.
-    if with_mask:
-        gt_mask_polys = []
-        gt_poly_lens = []
-    for i, ann in enumerate(ann_info):
-        if ann.get('ignore', False):
-            continue
-        x1, y1, w, h = ann['bbox']
-        if ann['area'] <= 0 or w < 1 or h < 1:
-            continue
-        bbox = [x1, y1, x1 + w - 1, y1 + h - 1]
-        if ann['iscrowd']:
-            gt_bboxes_ignore.append(bbox)
-        else:
-            gt_bboxes.append(bbox)
-            gt_labels.append(cat2label[ann['category_id']])
-            if with_mask:
-                # Note polys are not resized
-                mask_polys = [
-                    p for p in ann['segmentation'] if len(p) >= 6
-                ]  # valid polygons have >= 3 points (6 coordinates)
-                poly_lens = [len(p) for p in mask_polys]
-                gt_mask_polys.append(mask_polys)
-                gt_poly_lens.extend(poly_lens)
-    if gt_bboxes:
-        gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
-        gt_labels = np.array(gt_labels, dtype=np.int64)
-    else:
-        gt_bboxes = np.zeros((0, 4), dtype=np.float32)
-        gt_labels = np.array([], dtype=np.int64)
-
-    if gt_bboxes_ignore:
-        gt_bboxes_ignore = np.array(gt_bboxes_ignore, dtype=np.float32)
-    else:
-        gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
-
-    ann = dict(
-        bboxes=gt_bboxes, labels=gt_labels, bboxes_ignore=gt_bboxes_ignore)
-
-    if with_mask:
-        ann['mask_polys'] = gt_mask_polys
-        ann['poly_lens'] = gt_poly_lens
-    return ann
+from .utils import to_tensor, show_ann, random_scale
 
 
 class CocoDataset(Dataset):
+
     def __init__(self,
                  ann_file,
                  img_prefix,
@@ -137,7 +79,7 @@ class CocoDataset(Dataset):
         self.img_transform = ImageTransform(
             size_divisor=self.size_divisor, **self.img_norm_cfg)
         self.bbox_transform = BboxTransform()
-        self.mask_transform = PolyMaskTransform()
+        self.mask_transform = MaskTransform()
         self.numpy2tensor = Numpy2Tensor()
 
     def __len__(self):
@@ -160,6 +102,70 @@ class CocoDataset(Dataset):
         ann_ids = self.coco.getAnnIds(imgIds=img_id)
         ann_info = self.coco.loadAnns(ann_ids)
         return ann_info
+
+    def _parse_ann_info(self, ann_info, with_mask=True):
+        """Parse bbox and mask annotation.
+
+        Args:
+            ann_info (list[dict]): Annotation info of an image.
+            with_mask (bool): Whether to parse mask annotations.
+
+        Returns:
+            dict: A dict containing the following keys: bboxes, bboxes_ignore,
+                labels, masks, mask_polys, poly_lens.
+        """
+        gt_bboxes = []
+        gt_labels = []
+        gt_bboxes_ignore = []
+        # Two formats are provided.
+        # 1. mask: a binary map of the same size of the image.
+        # 2. polys: each mask consists of one or several polys, each poly is a
+        # list of float.
+        if with_mask:
+            gt_masks = []
+            gt_mask_polys = []
+            gt_poly_lens = []
+        for i, ann in enumerate(ann_info):
+            if ann.get('ignore', False):
+                continue
+            x1, y1, w, h = ann['bbox']
+            if ann['area'] <= 0 or w < 1 or h < 1:
+                continue
+            bbox = [x1, y1, x1 + w - 1, y1 + h - 1]
+            if ann['iscrowd']:
+                gt_bboxes_ignore.append(bbox)
+            else:
+                gt_bboxes.append(bbox)
+                gt_labels.append(self.cat2label[ann['category_id']])
+            if with_mask:
+                gt_masks.append(self.coco.annToMask(ann))
+                mask_polys = [
+                    p for p in ann['segmentation'] if len(p) >= 6
+                ]  # valid polygons have >= 3 points (6 coordinates)
+                poly_lens = [len(p) for p in mask_polys]
+                gt_mask_polys.append(mask_polys)
+                gt_poly_lens.extend(poly_lens)
+        if gt_bboxes:
+            gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
+            gt_labels = np.array(gt_labels, dtype=np.int64)
+        else:
+            gt_bboxes = np.zeros((0, 4), dtype=np.float32)
+            gt_labels = np.array([], dtype=np.int64)
+
+        if gt_bboxes_ignore:
+            gt_bboxes_ignore = np.array(gt_bboxes_ignore, dtype=np.float32)
+        else:
+            gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
+
+        ann = dict(
+            bboxes=gt_bboxes, labels=gt_labels, bboxes_ignore=gt_bboxes_ignore)
+
+        if with_mask:
+            ann['masks'] = gt_masks
+            # poly format is not used in the current implementation
+            ann['mask_polys'] = gt_mask_polys
+            ann['poly_lens'] = gt_poly_lens
+        return ann
 
     def _set_group_flag(self):
         """Set flag according to image aspect ratio.
@@ -199,7 +205,7 @@ class CocoDataset(Dataset):
                     idx = self._rand_another(idx)
                     continue
 
-            ann = parse_ann_info(ann_info, self.cat2label, self.with_mask)
+            ann = self._parse_ann_info(ann_info, self.with_mask)
             gt_bboxes = ann['bboxes']
             gt_labels = ann['labels']
             gt_bboxes_ignore = ann['bboxes_ignore']
@@ -211,7 +217,7 @@ class CocoDataset(Dataset):
             # apply transforms
             flip = True if np.random.rand() < self.flip_ratio else False
             img_scale = random_scale(self.img_scales)  # sample a scale
-            img, img_shape, scale_factor = self.img_transform(
+            img, img_shape, pad_shape, scale_factor = self.img_transform(
                 img, img_scale, flip)
             if self.proposals is not None:
                 proposals = self.bbox_transform(proposals, img_shape,
@@ -222,32 +228,29 @@ class CocoDataset(Dataset):
                                                    scale_factor, flip)
 
             if self.with_mask:
-                gt_mask_polys, gt_poly_lens, num_polys_per_mask = \
-                    self.mask_transform(
-                        ann['mask_polys'], ann['poly_lens'],
-                        img_info['height'], img_info['width'], flip)
+                gt_masks = self.mask_transform(ann['masks'], pad_shape,
+                                               scale_factor, flip)
 
-            ori_shape = (img_info['height'], img_info['width'])
+            ori_shape = (img_info['height'], img_info['width'], 3)
             img_meta = dict(
-                ori_shape=DC(ori_shape),
-                img_shape=DC(img_shape),
-                scale_factor=DC(scale_factor),
-                flip=DC(flip))
+                ori_shape=ori_shape,
+                img_shape=img_shape,
+                pad_shape=pad_shape,
+                scale_factor=scale_factor,
+                flip=flip)
 
             data = dict(
-                img=DC(img, stack=True),
-                img_meta=img_meta,
-                gt_bboxes=DC(gt_bboxes))
+                img=DC(to_tensor(img), stack=True),
+                img_meta=DC(img_meta, cpu_only=True),
+                gt_bboxes=DC(to_tensor(gt_bboxes)))
             if self.proposals is not None:
-                data['proposals'] = DC(proposals)
+                data['proposals'] = DC(to_tensor(proposals))
             if self.with_label:
-                data['gt_labels'] = DC(gt_labels)
+                data['gt_labels'] = DC(to_tensor(gt_labels))
             if self.with_crowd:
-                data['gt_bboxes_ignore'] = DC(gt_bboxes_ignore)
+                data['gt_bboxes_ignore'] = DC(to_tensor(gt_bboxes_ignore))
             if self.with_mask:
-                data['gt_mask_polys'] = DC(gt_mask_polys)
-                data['gt_poly_lens'] = DC(gt_poly_lens)
-                data['num_polys_per_mask'] = DC(num_polys_per_mask)
+                data['gt_masks'] = DC(gt_masks, cpu_only=True)
             return data
 
     def prepare_test_img(self, idx):
@@ -258,37 +261,38 @@ class CocoDataset(Dataset):
                     if self.proposals is not None else None)
 
         def prepare_single(img, scale, flip, proposal=None):
-            _img, _img_shape, _scale_factor = self.img_transform(
+            _img, img_shape, pad_shape, scale_factor = self.img_transform(
                 img, scale, flip)
-            img, img_shape, scale_factor = self.numpy2tensor(
-                _img, _img_shape, _scale_factor)
-            ori_shape = (img_info['height'], img_info['width'])
-            img_meta = dict(
-                ori_shape=ori_shape,
+            _img = to_tensor(_img)
+            _img_meta = dict(
+                ori_shape=(img_info['height'], img_info['width'], 3),
                 img_shape=img_shape,
+                pad_shape=pad_shape,
                 scale_factor=scale_factor,
                 flip=flip)
             if proposal is not None:
-                proposal = self.bbox_transform(proposal, _scale_factor, flip)
-                proposal = self.numpy2tensor(proposal)
-            return img, img_meta, proposal
+                _proposal = self.bbox_transform(proposal, scale_factor, flip)
+                _proposal = to_tensor(_proposal)
+            else:
+                _proposal = None
+            return _img, _img_meta, _proposal
 
         imgs = []
         img_metas = []
         proposals = []
         for scale in self.img_scales:
-            img, img_meta, proposal = prepare_single(img, scale, False,
-                                                     proposal)
-            imgs.append(img)
-            img_metas.append(img_meta)
-            proposals.append(proposal)
+            _img, _img_meta, _proposal = prepare_single(
+                img, scale, False, proposal)
+            imgs.append(_img)
+            img_metas.append(DC(_img_meta, cpu_only=True))
+            proposals.append(_proposal)
             if self.flip_ratio > 0:
-                img, img_meta, prop = prepare_single(img, scale, True,
-                                                     proposal)
-                imgs.append(img)
-                img_metas.append(img_meta)
-                proposals.append(prop)
-        if self.proposals is None:
-            return imgs, img_metas
-        else:
-            return imgs, img_metas, proposals
+                _img, _img_meta, _proposal = prepare_single(
+                    img, scale, True, proposal)
+                imgs.append(_img)
+                img_metas.append(DC(_img_meta, cpu_only=True))
+                proposals.append(_proposal)
+        data = dict(img=imgs, img_meta=img_metas)
+        if self.proposals is not None:
+            data['proposals'] = proposals
+        return data
