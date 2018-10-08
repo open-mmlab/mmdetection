@@ -7,13 +7,12 @@ import mmcv
 import numpy as np
 import torch
 from mmcv.runner import Hook, obj_from_dict
+from mmcv.parallel import scatter, collate
 from pycocotools.cocoeval import COCOeval
 from torch.utils.data import Dataset
 
 from .coco_utils import results2json, fast_eval_recall
-from ..parallel import scatter
 from mmdet import datasets
-from mmdet.datasets.loader import collate
 
 
 class DistEvalHook(Hook):
