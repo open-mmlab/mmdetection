@@ -9,10 +9,10 @@ import numpy as np
 import torch
 from mmcv import Config
 from mmcv.runner import Runner, obj_from_dict, DistSamplerSeedHook
+from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
 from mmdet import datasets, __version__
-from mmdet.core import (init_dist, DistOptimizerHook, MMDataParallel,
-                        MMDistributedDataParallel, CocoDistEvalRecallHook,
+from mmdet.core import (init_dist, DistOptimizerHook, CocoDistEvalRecallHook,
                         CocoDistEvalmAPHook)
 from mmdet.datasets import build_dataloader
 from mmdet.models import build_detector, RPN
