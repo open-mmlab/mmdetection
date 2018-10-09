@@ -1,0 +1,199 @@
+# Benchmark and Model Zoo
+
+## Environment
+
+### Hardware
+
+- 8 NVIDIA Tesla V100 GPUs
+- Intel Xeon 4114 CPU @ 2.20GHz
+
+### Software environment
+
+- Python 3.6
+- PyTorch 0.4.1
+- CUDA 9.0.176
+- CUDNN 7.0.4
+- NCCL 2.1.15
+
+
+## Common settings
+
+- All baselines were trained using 8 GPU with a batch size of 16 (2 images per GPU).
+- All models were trained on `coco_2017_train`, and tested on the `coco_2017_val`.
+- We use distributed training and BN layer stats are fixed.
+- We adopt the same training schedules as Detectron. 1x indicates 12 epochs and 2x indicates 24 epochs, which corresponds to slightly less iterations than Detectron and the difference can be ignored.
+- All pytorch-style pretrained backbones on ImageNet are from PyTorch model zoo.
+- We report the training GPU memory as the maximum value of `torch.cuda.max_memory_cached()`
+for all 8 GPUs. Note that this value is usually less than what `nvidia-smi` shows, but
+closer to the actual requirements.
+- We report the inference time with a single GPU. This is the overall time including
+data loading, network forwarding and post processing.
+- The training memory and time of 2x schedule is simply copied from 1x. It should be very close than
+the actual memory and time.
+
+
+## Baselines
+
+We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More models with different backbones will be added to the model zoo.
+
+### RPN
+
+| Backbone           | Type | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (s/im) | AR1000 | Download |
+| ------------------ | ---- | ------- | -------- | ---------- | -------- | ------ | -------- |
+| R-50-FPN (caffe)   | RPN  | 1x      | 4.5      | 0.379      |          | 58.2   |          |
+| R-50-FPN (pytorch) | RPN  | 1x      | 4.8      | 0.407      |          | 57.1   |          |
+| R-50-FPN (pytorch) | RPN  | 2x      | 4.8      | 0.407      |          | 57.6   |          |
+
+### Fast R-CNN (coming soon)
+
+| Backbone           | Type | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (s/im) | box AP | Download |
+| ------------------ | ---- | ------- | -------- | ---------- | -------- | ------ | -------- |
+| R-50-FPN (caffe)   | Fast | 1x      |          |            |          |        |          |
+| R-50-FPN (pytorch) | Fast | 1x      |          |            |          |        |          |
+| R-50-FPN (pytorch) | Fast | 2x      |          |            |          |        |          |
+
+### Faster R-CNN
+
+| Backbone           | Type   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (s/im) | box AP | Download |
+| ------------------ | ------ | ------- | -------- | ---------- | -------- | ------ | -------- |
+| R-50-FPN (caffe)   | Faster | 1x      | 4.9      | 0.525      |          | 36.7   |          |
+| R-50-FPN (pytorch) | Faster | 1x      | 5.1      | 0.554      |          | 36.4   |          |
+| R-50-FPN (pytorch) | Faster | 2x      | 5.1      | 0.554      |          | 37.7   |          |
+
+### Mask R-CNN
+
+| Backbone           | Type | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (s/im) | box AP | mask AP | Download |
+| ------------------ | ---- | ------- | -------- | ---------- | -------- | ------ | ------- | -------- |
+| R-50-FPN (caffe)   | Mask | 1x      | 5.9      | 0.658      |          | 37.5   | 34.4    |          |
+| R-50-FPN (pytorch) | Mask | 1x      | 5.8      | 0.690      |          | 37.3   | 34.2    |          |
+| R-50-FPN (pytorch) | Mask | 2x      | 5.8      | 0.690      |          | 38.6   | 35.1    |          |
+
+### RetinaNet (coming soon)
+
+| Backbone           | Type      | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (s/im) | box AP | mask AP | Download |
+| ------------------ | --------- | ------- | --------- | ---------- | -------- | ------ | ------- | -------- |
+| R-50-FPN (caffe)   | RetinaNet | 1x      |           |            |          |        |         |          |
+| R-50-FPN (pytorch) | RetinaNet | 1x      |           |            |          |        |         |          |
+| R-50-FPN (pytorch) | RetinaNet | 2x      |           |            |          |        |         |          |
+
+
+## Comparison with Detectron
+
+We compare mmdetection with [Detectron](https://github.com/facebookresearch/Detectron)
+and [Detectron.pytorch](https://github.com/roytseng-tw/Detectron.pytorch),
+a third-party port of Detectron to Pytorch. The backbone used is R-50-FPN.
+
+### Performance
+
+Detectron and Detectron.pytorch use caffe-style ResNet as the backbone.
+To simply utilize the PyTorch model zoo, we use pytorch-style ResNet in our experiments.
+
+We find that pytorch-style ResNet usually converges slower than caffe-style ResNet,
+thus leading to slightly lower results in 1x schedule, but the final results
+of 2x schedule is higher.
+
+We report results using both caffe-style (weights converted from
+[here](https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md#imagenet-pretrained-models))
+and pytorch-style (weights from the official model zoo) ResNet backbone,
+indicated as *pytorch-style results* / *caffe-style results*.
+
+<table>
+  <tr>
+    <th>Type</th>
+    <th>Lr schd</th>
+    <th>Detectron</th>
+    <th>Detectron.pytorch</th>
+    <th>mmdetection</th>
+  </tr>
+  <tr>
+    <td rowspan="2">RPN</td>
+    <td>1x</td>
+    <td>57.2</td>
+    <td>-</td>
+    <td>57.1 / 58.2</td>
+  </tr>
+  <tr>
+    <td>2x</td>
+    <td>-</td>
+    <td>-</td>
+    <td>57.6 / -</td>
+  </tr>
+  <tr>
+    <td rowspan="2">Faster R-CNN</td>
+    <td>1x</td>
+    <td>36.7</td>
+    <td>37.1</td>
+    <td>36.4 / 36.7</td>
+  </tr>
+  <tr>
+    <td>2x</td>
+    <td>37.9</td>
+    <td>-</td>
+    <td>37.7 / -</td>
+  </tr>
+  <tr>
+    <td rowspan="2">Mask R-CNN</td>
+    <td>1x</td>
+    <td>37.7 &amp; 33.9</td>
+    <td>37.7 &amp; 33.7</td>
+    <td>37.3 &amp; 34.2 / 37.5 &amp; 34.4</td>
+  </tr>
+  <tr>
+    <td>2x</td>
+    <td>38.6 &amp; 34.5</td>
+    <td>-</td>
+    <td>38.6 &amp; 35.1 / -</td>
+  </tr>
+</table>
+
+### Speed
+
+
+<table>
+  <tr>
+    <th>Type</th>
+    <th>Detectron (P100<sup>1</sup>)</th>
+    <th>Detectron.pytorch (XP<sup>2</sup>)</th>
+    <th>mmdetection<sup>3</sup> (V100 / XP / 1080Ti)</th>
+  </tr>
+  <tr>
+    <td>RPN</td>
+    <td>0.416</td>
+    <td>-</td>
+    <td>0.407 / 0.413 / - </td>
+  </tr>
+  <tr>
+    <td>Faster R-CNN</td>
+    <td>0.544</td>
+    <td>1.015</td>
+    <td>0.554 / 0.579 / - </td>
+  </tr>
+  <tr>
+    <td>Mask R-CNN</td>
+    <td>0.889</td>
+    <td>1.435</td>
+    <td>0.690 / 0.732 / 0.794</td>
+  </tr>
+</table>
+
+\*1. Detectron reports the speed on Facebook's Big Basin servers (P100),
+on our V100 servers it is slower so we use the official reported values.
+
+\*2. Detectron.pytorch does not report the runtime and we encountered some issue to
+run it on V100, so we report the speed on TITAN XP.
+
+\*3. The speed of pytorch-style ResNet is approximately 5% slower than caffe-style,
+and we report the pytorch-style results here.
+
+### Training memory
+
+We perform various tests and there is no doubt that mmdetection is more memory
+efficient than Detectron, and the main cause is the deep learning framework itself, not our efforts.
+Besides, Caffe2 and PyTorch have different apis to obtain memory usage
+whose implementation is not exactly the same.
+
+`nvidia-smi` shows a larger memory usage for both detectron and mmdetection, e.g.,
+we observe a much higher memory usage when we train Mask R-CNN with 2 images per GPU using detectron (10.6G) and mmdetection (9.3G), which is obviously more than actually required.
+
+**Note**: With mmdetection, we can train R-50 FPN Mask R-CNN with **4** images per GPU (TITAN XP, 12G),
+which is a promising result.
