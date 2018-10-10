@@ -47,7 +47,7 @@ test_cfg = dict(
     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '../data/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
@@ -103,7 +103,7 @@ log_config = dict(
     interval=20,
     hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook', log_dir=work_dir + '/log')
+        # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
@@ -111,7 +111,7 @@ total_epochs = 12
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fpn_retinanet_r50_1x'
+work_dir = './work_dirs/retinanet_r50_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
