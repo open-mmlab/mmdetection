@@ -39,7 +39,13 @@ def parse_args():
     parser = argparse.ArgumentParser(description='MMDet test detector')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
-    parser.add_argument('--gpus', default=1, type=int)
+    parser.add_argument(
+        '--gpus', default=1, type=int, help='GPU number used for testing')
+    parser.add_argument(
+        '--proc_per_gpu',
+        default=1,
+        type=int,
+        help='Number of processes per GPU')
     parser.add_argument('--out', help='output result file')
     parser.add_argument(
         '--eval',
@@ -54,6 +60,9 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
+        raise ValueError('The output file must be a pkl file.')
 
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
@@ -78,15 +87,27 @@ def main():
         model_args = cfg.model.copy()
         model_args.update(train_cfg=None, test_cfg=cfg.test_cfg)
         model_type = getattr(detectors, model_args.pop('type'))
-        outputs = parallel_test(model_type, model_args, args.checkpoint,
-                                dataset, _data_func, range(args.gpus))
+        outputs = parallel_test(
+            model_type,
+            model_args,
+            args.checkpoint,
+            dataset,
+            _data_func,
+            range(args.gpus),
+            workers_per_gpu=args.proc_per_gpu)
 
     if args.out:
+        print('writing results to {}'.format(args.out))
         mmcv.dump(outputs, args.out)
-        if args.eval:
-            json_file = args.out + '.json'
-            results2json(dataset, outputs, json_file)
-            coco_eval(json_file, args.eval, dataset.coco)
+        eval_types = args.eval
+        if eval_types:
+            print('Starting evaluate {}'.format(' and '.join(eval_types)))
+            if eval_types == ['proposal_fast']:
+                result_file = args.out
+            else:
+                result_file = args.out + '.json'
+                results2json(dataset, outputs, result_file)
+            coco_eval(result_file, eval_types, dataset.coco)
 
 
 if __name__ == '__main__':
