@@ -5,7 +5,7 @@ from .rpn import RPN
 from .fast_rcnn import FastRCNN
 from .faster_rcnn import FasterRCNN
 from .mask_rcnn import MaskRCNN
-from .retina_net import RetinaNet
+from .retinanet import RetinaNet
 
 __all__ = [
     'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
