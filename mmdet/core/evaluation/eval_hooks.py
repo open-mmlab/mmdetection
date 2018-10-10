@@ -55,6 +55,10 @@ class DistEvalHook(Hook):
                 shutil.rmtree(self.lock_dir)
             mmcv.mkdir_or_exist(self.lock_dir)
 
+    def after_run(self, runner):
+        if runner.rank == 0:
+            shutil.rmtree(self.lock_dir)
+
     def after_train_epoch(self, runner):
         if not self.every_n_epochs(runner, self.interval):
             return
