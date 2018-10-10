@@ -1,0 +1,13 @@
+dist: trusty
+language: python
+
+install:
+  - pip install flake8
+
+python:
+  - "2.7"
+  - "3.5"
+  - "3.6"
+
+script:
+  - flake8

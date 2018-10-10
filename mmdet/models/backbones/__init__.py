@@ -1,3 +1,3 @@
-from .resnet import resnet
+from .resnet import ResNet
 
-__all__ = ['resnet']
+__all__ = ['ResNet']
