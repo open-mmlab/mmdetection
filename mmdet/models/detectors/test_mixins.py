@@ -135,6 +135,11 @@ class MaskTestMixin(object):
 
             ori_shape = img_metas[0][0]['ori_shape']
             segm_result = self.mask_head.get_seg_masks(
-                merged_masks, det_bboxes, det_labels, self.test_cfg.rcnn,
-                ori_shape)
+                merged_masks,
+                det_bboxes,
+                det_labels,
+                self.test_cfg.rcnn,
+                ori_shape,
+                scale_factor=1.0,
+                rescale=False)
         return segm_result
