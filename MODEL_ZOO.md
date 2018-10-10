@@ -73,7 +73,7 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 
 ### RetinaNet (coming soon)
 
-| Backbone           | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
+| Backbone | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
 |:--------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
 | R-50-FPN | caffe   | 1x      |          |                     |                |        |          |
 | R-50-FPN | pytorch | 1x      |          |                     |                |        |          |
