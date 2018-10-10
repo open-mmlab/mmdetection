@@ -53,8 +53,14 @@ class CocoDataset(Dataset):
         # color channel order and normalize configs
         self.img_norm_cfg = img_norm_cfg
         # proposals
-        self.proposals = mmcv.load(
-            proposal_file) if proposal_file is not None else None
+        # TODO: revise _filter_imgs to be more flexible
+        if proposal_file is not None:
+            self.proposals = mmcv.load(proposal_file)
+            ori_ids = self.coco.getImgIds()
+            sorted_idx = [ori_ids.index(id) for id in self.img_ids]
+            self.proposals = [self.proposals[idx] for idx in sorted_idx]
+        else:
+            self.proposals = None
         self.num_max_proposals = num_max_proposals
         # flip ratio
         self.flip_ratio = flip_ratio
@@ -271,7 +277,8 @@ class CocoDataset(Dataset):
                 scale_factor=scale_factor,
                 flip=flip)
             if proposal is not None:
-                _proposal = self.bbox_transform(proposal, scale_factor, flip)
+                _proposal = self.bbox_transform(proposal, img_shape,
+                                                scale_factor, flip)
                 _proposal = to_tensor(_proposal)
             else:
                 _proposal = None
