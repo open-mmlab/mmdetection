@@ -55,6 +55,9 @@ def parse_args():
 def main():
     args = parse_args()
 
+    if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
+        raise ValueError('The output file must be a pkl file.')
+
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
@@ -82,11 +85,17 @@ def main():
                                 dataset, _data_func, range(args.gpus))
 
     if args.out:
+        print('writing results to {}'.format(args.out))
         mmcv.dump(outputs, args.out)
-        if args.eval:
-            json_file = args.out + '.json'
-            results2json(dataset, outputs, json_file)
-            coco_eval(json_file, args.eval, dataset.coco)
+        eval_types = args.eval
+        if eval_types:
+            print('Starting evaluate {}'.format(' and '.join(eval_types)))
+            if eval_types == ['proposal_fast']:
+                result_file = args.out
+            else:
+                result_file = args.out + '.json'
+                results2json(dataset, outputs, result_file)
+            coco_eval(result_file, eval_types, dataset.coco)
 
 
 if __name__ == '__main__':

@@ -16,8 +16,8 @@ def coco_eval(result_file, result_types, coco, max_dets=(100, 300, 1000)):
         coco = COCO(coco)
     assert isinstance(coco, COCO)
 
-    if res_type == 'proposal_fast':
-        ar = fast_eval_recall(result_file, coco, max_dets)
+    if result_types == ['proposal_fast']:
+        ar = fast_eval_recall(result_file, coco, np.array(max_dets))
         for i, num in enumerate(max_dets):
             print('AR@{}\t= {:.4f}'.format(num, ar[i]))
         return
