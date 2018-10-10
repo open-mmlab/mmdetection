@@ -55,6 +55,10 @@ class DistEvalHook(Hook):
                 shutil.rmtree(self.lock_dir)
             mmcv.mkdir_or_exist(self.lock_dir)
 
+    def after_run(self, runner):
+        if runner.rank == 0:
+            shutil.rmtree(self.lock_dir)
+
     def after_train_epoch(self, runner):
         if not self.every_n_epochs(runner, self.interval):
             return
@@ -70,7 +74,7 @@ class DistEvalHook(Hook):
             # compute output
             with torch.no_grad():
                 result = runner.model(
-                    **data_gpu, return_loss=False, rescale=True)
+                    return_loss=False, rescale=True, **data_gpu)
             results[idx] = result
 
             batch_size = runner.world_size
