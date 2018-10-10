@@ -32,7 +32,7 @@ def single_test(model, data_loader, show=False):
 
 def _data_func(data, device_id):
     data = scatter(collate([data], samples_per_gpu=1), [device_id])[0]
-    return dict(**data, return_loss=False, rescale=True)
+    return dict(return_loss=False, rescale=True, **data)
 
 
 def parse_args():
