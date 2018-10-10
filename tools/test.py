@@ -3,11 +3,11 @@ import argparse
 import torch
 import mmcv
 from mmcv.runner import load_checkpoint, parallel_test, obj_from_dict
-from mmcv.parallel import scatter, MMDataParallel
+from mmcv.parallel import scatter, collate, MMDataParallel
 
 from mmdet import datasets
 from mmdet.core import results2json, coco_eval
-from mmdet.datasets import collate, build_dataloader
+from mmdet.datasets import build_dataloader
 from mmdet.models import build_detector, detectors
 
 
@@ -17,7 +17,7 @@ def single_test(model, data_loader, show=False):
     prog_bar = mmcv.ProgressBar(len(data_loader.dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(**data, return_loss=False, rescale=not show)
+            result = model(return_loss=False, rescale=not show, **data)
         results.append(result)
 
         if show:
@@ -32,7 +32,7 @@ def single_test(model, data_loader, show=False):
 
 def _data_func(data, device_id):
     data = scatter(collate([data], samples_per_gpu=1), [device_id])[0]
-    return dict(**data, return_loss=False, rescale=True)
+    return dict(return_loss=False, rescale=True, **data)
 
 
 def parse_args():
