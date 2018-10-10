@@ -38,46 +38,46 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 
 ### RPN
 
-| Backbone           | Type | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | AR1000 | Download |
-| ------------------ | ---- | ------- | -------- | ---------- | -------- | ------ | -------- |
-| R-50-FPN (caffe)   | RPN  | 1x      | 4.5      | 0.379      | 14.4     | 58.2   | -        |
-| R-50-FPN (pytorch) | RPN  | 1x      | 4.8      | 0.407      | 14.5     | 57.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/rpn_r50_fpn_1x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/rpn_r50_fpn_1x_20181010_results.pkl.json) |
-| R-50-FPN (pytorch) | RPN  | 2x      | 4.8      | 0.407      | 14.5     | 57.6   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/rpn_r50_fpn_2x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/rpn_r50_fpn_2x_20181010_results.pkl.json) |
+| Backbone | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | AR1000 | Download |
+|:--------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
+| R-50-FPN | caffe   | 1x      | 4.5      | 0.379               | 14.4           | 58.2   | -        |
+| R-50-FPN | pytorch | 1x      | 4.8      | 0.407               | 14.5           | 57.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/rpn_r50_fpn_1x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/rpn_r50_fpn_1x_20181010_results.pkl.json) |
+| R-50-FPN | pytorch | 2x      | 4.8      | 0.407               | 14.5           | 57.6   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/rpn_r50_fpn_2x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/rpn_r50_fpn_2x_20181010_results.pkl.json) |
 
 ### Faster R-CNN
 
-| Backbone           | Type   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
-| ------------------ | ------ | ------- | -------- | ---------- | -------- | ------ | -------- |
-| R-50-FPN (caffe)   | Faster | 1x      | 4.9      | 0.525      | 10.0     | 36.7   | -        |
-| R-50-FPN (pytorch) | Faster | 1x      | 5.1      | 0.554      | 9.9      | 36.4   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/faster_rcnn_r50_fpn_1x_20181010_results.pkl.json) |
-| R-50-FPN (pytorch) | Faster | 2x      | 5.1      | 0.554      | 9.9      | 37.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_2x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/faster_rcnn_r50_fpn_2x_20181010_results.pkl.json) |
+| Backbone | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
+|:--------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
+| R-50-FPN | caffe   | 1x      | 4.9      | 0.525               | 10.0           | 36.7   | -        |
+| R-50-FPN | pytorch | 1x      | 5.1      | 0.554               | 9.9            | 36.4   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/faster_rcnn_r50_fpn_1x_20181010_results.pkl.json) |
+| R-50-FPN | pytorch | 2x      | 5.1      | 0.554               | 9.9            | 37.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_2x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/faster_rcnn_r50_fpn_2x_20181010_results.pkl.json) |
 
 ### Mask R-CNN
 
-| Backbone           | Type | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
-| ------------------ | ---- | ------- | -------- | ---------- | -------- | ------ | ------- | -------- |
-| R-50-FPN (caffe)   | Mask | 1x      | 5.9      | 0.658      | 7.7      | 37.5   | 34.4    | -        |
-| R-50-FPN (pytorch) | Mask | 1x      | 5.8      | 0.690      | 7.7      | 37.3   | 34.2    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_1x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/mask_rcnn_r50_fpn_1x_20181010_results.pkl.json) |
-| R-50-FPN (pytorch) | Mask | 2x      | 5.8      | 0.690      | 7.7      | 38.6   | 35.1    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_2x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/mask_rcnn_r50_fpn_2x_20181010_results.pkl.json) |
+| Backbone | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
+|:--------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:-------:|:--------:|
+| R-50-FPN | caffe   | 1x      | 5.9      | 0.658               | 7.7            | 37.5   | 34.4    | -        |
+| R-50-FPN | pytorch | 1x      | 5.8      | 0.690               | 7.7            | 37.3   | 34.2    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_1x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/mask_rcnn_r50_fpn_1x_20181010_results.pkl.json) |
+| R-50-FPN | pytorch | 2x      | 5.8      | 0.690               | 7.7            | 38.6   | 35.1    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_2x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/mask_rcnn_r50_fpn_2x_20181010_results.pkl.json) |
 
 ### Fast R-CNN (with pre-computed proposals) (coming soon)
 
-| Backbone           | Type   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
-| ------------------ | ------ | ------- | -------- | ---------- | -------- | ------ | ------ | -------- |
-| R-50-FPN (caffe)   | Faster | 1x      |          |            |          |        |        |          |
-| R-50-FPN (pytorch) | Faster | 1x      |          |            |          |        |        |          |
-| R-50-FPN (pytorch) | Faster | 2x      |          |            |          |        |        |          |
-| R-50-FPN (caffe)   | Mask   | 1x      |          |            |          |        |        |          |
-| R-50-FPN (pytorch) | Mask   | 1x      |          |            |          |        |        |          |
-| R-50-FPN (pytorch) | Mask   | 2x      |          |            |          |        |        |          |
+| Backbone | Style   | Type   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
+|:--------:|:-------:|:------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:-------:|:--------:|
+| R-50-FPN | caffe   | Faster | 1x      |          |                     |                |        |         |          |
+| R-50-FPN | pytorch | Faster | 1x      |          |                     |                |        |         |          |
+| R-50-FPN | pytorch | Faster | 2x      |          |                     |                |        |         |          |
+| R-50-FPN | caffe   | Mask   | 1x      |          |                     |                |        |         |          |
+| R-50-FPN | pytorch | Mask   | 1x      |          |                     |                |        |         |          |
+| R-50-FPN | pytorch | Mask   | 2x      |          |                     |                |        |         |          |
 
 ### RetinaNet (coming soon)
 
-| Backbone           | Type      | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
-| ------------------ | --------- | ------- | --------- | ---------- | -------- | ------ | ------- | -------- |
-| R-50-FPN (caffe)   | RetinaNet | 1x      |           |            |          |        |         |          |
-| R-50-FPN (pytorch) | RetinaNet | 1x      |           |            |          |        |         |          |
-| R-50-FPN (pytorch) | RetinaNet | 2x      |           |            |          |        |         |          |
+| Backbone           | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
+|:--------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
+| R-50-FPN | caffe   | 1x      |          |                     |                |        |          |
+| R-50-FPN | pytorch | 1x      |          |                     |                |        |          |
+| R-50-FPN | pytorch | 2x      |          |                     |                |        |          |
 
 
 ## Comparison with Detectron
@@ -85,6 +85,12 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 We compare mmdetection with [Detectron](https://github.com/facebookresearch/Detectron)
 and [Detectron.pytorch](https://github.com/roytseng-tw/Detectron.pytorch),
 a third-party port of Detectron to Pytorch. The backbone used is R-50-FPN.
+
+In general, mmdetection has 3 advantages over Detectron.
+
+- **Higher performance** (especially in terms of mask AP)
+- **Faster training speed**
+- **Memory efficient**
 
 ### Performance
 
