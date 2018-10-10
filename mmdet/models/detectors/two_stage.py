@@ -147,7 +147,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         proposal_list = self.simple_test_rpn(
             x, img_meta,
-            self.test_cfg.rpn) if proposals is None else proposals[0]
+            self.test_cfg.rpn) if proposals is None else proposals
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
