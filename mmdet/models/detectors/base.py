@@ -34,11 +34,9 @@ class BaseDetector(nn.Module):
         pass
 
     def extract_feats(self, imgs):
-        if isinstance(imgs, torch.Tensor):
-            return self.extract_feat(imgs)
-        elif isinstance(imgs, list):
-            for img in imgs:
-                yield self.extract_feat(img)
+        assert isinstance(imgs, list)
+        for img in imgs:
+            yield self.extract_feat(img)
 
     @abstractmethod
     def forward_train(self, imgs, img_metas, **kwargs):
