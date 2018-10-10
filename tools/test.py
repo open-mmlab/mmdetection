@@ -17,7 +17,7 @@ def single_test(model, data_loader, show=False):
     prog_bar = mmcv.ProgressBar(len(data_loader.dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(**data, return_loss=False, rescale=not show)
+            result = model(return_loss=False, rescale=not show, **data)
         results.append(result)
 
         if show:
