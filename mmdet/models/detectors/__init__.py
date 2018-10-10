@@ -1,6 +1,6 @@
 from .base import BaseDetector
 from .rpn import RPN
-from .faster_rcnn import FastRCNN
+from .fast_rcnn import FastRCNN
 from .faster_rcnn import FasterRCNN
 from .mask_rcnn import MaskRCNN
 
