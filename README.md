@@ -3,8 +3,8 @@
 
 ## Introduction
 
-`mmdetection` is an open source object detection toolbox based on PyTorch. It is
-a part of the open-mmlab project developed by Multimedia Laboratory, CUHK.
+mmdetection is an open source object detection toolbox based on PyTorch. It is
+a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
 
 ### Major features
 
@@ -14,7 +14,7 @@ a part of the open-mmlab project developed by Multimedia Laboratory, CUHK.
   
 - **Support of multiple frameworks out of box**
 
-  The toolbox directly supports popular detection frameworks, *e.g.* Faster RCNN, Mask RCNN, RetinaNet, etc. (see the release plan for more)
+  The toolbox directly supports popular detection frameworks, *e.g.* Faster RCNN, Mask RCNN, RetinaNet, etc.
 
 - **Efficient**
 
@@ -25,8 +25,8 @@ a part of the open-mmlab project developed by Multimedia Laboratory, CUHK.
 
   This was the codebase of the *MMDet* team, who won the [COCO Detection 2018 challenge](http://cocodataset.org/#detection-leaderboard). 
 
-Apart from mmdetection, we also released a library `mmcv` for computer vision research,
-which is heavily depended on by mmdetection.
+Apart from mmdetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research,
+which is heavily depended on by this toolbox.
 
 ## License
 
@@ -34,8 +34,8 @@ This project is released under the [GPLv3 license](LICENSE).
 
 ## Benchmark and model zoo
 
-We provide our baseline results and the comparision with other popular detection projects
-such as Detectron. Results and models are available in the [Model zoo](MODEL_ZOO.md).
+We provide our baseline results and the comparision with Detectron, the most
+popular detection projects. Results and models are available in the [Model zoo](MODEL_ZOO.md).
 
 ## Installation
 
@@ -106,15 +106,15 @@ To perform evaluation after testing, add `--eval <EVAL_TYPES>`. Supported types 
 - segm: eval mask AP with the official code provided by COCO.
 - keypoints: eval keypoint AP with the official code provided by COCO.
 
-For example, to evaluate Mask R-CNN with 8 GPUs and save the result as results.pkl.
+For example, to evaluate Mask R-CNN with 8 GPUs and save the result as `results.pkl`.
 
 ```shell
 python tools/test.py configs/mask_rcnn_r50_fpn_1x.py <CHECKPOINT_FILE> --gpus 8 --out results.pkl --eval bbox segm
 ```
 
-Note: Multiple GPU testing cannot achieves linear acceleration.
+Note: Multiple GPU testing cannot achieve linear acceleration.
 
-We also provide the ability to visualize the results when testing. Add the argument `--show` as below.
+It is also convenient to visualize the results during testing by adding an argument `--show`.
 
 ```shell
 python tools/test.py <CONFIG_FILE> <CHECKPOINT_FILE> --show
@@ -123,7 +123,7 @@ python tools/test.py <CONFIG_FILE> <CHECKPOINT_FILE> --show
 
 ## Train a model
 
-`mmdetection` implements distributed training and non-distributed training,
+mmdetection implements distributed training and non-distributed training,
 which uses `MMDistributedDataParallel` and `MMDataParallel` respectively.
 
 We suggest using distributed training even on a single machine, which is faster,
@@ -131,7 +131,7 @@ and non-distributed training are left for debugging or other purposes.
 
 ### Distributed training
 
-`mmdetection` potentially supports multiple launch methods, e.g., PyTorch’s built-in launch utility, slurm and MPI.
+mmdetection potentially supports multiple launch methods, e.g., PyTorch’s built-in launch utility, slurm and MPI.
 
 We provide a training script using the launch utility provided by PyTorch.
 
