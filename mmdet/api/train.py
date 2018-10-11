@@ -1,9 +1,7 @@
 from __future__ import division
 
-import random
 from collections import OrderedDict
 
-import numpy as np
 import torch
 from mmcv.runner import Runner, DistSamplerSeedHook
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
@@ -43,13 +41,6 @@ def batch_processor(model, data, train_mode):
         loss=loss, log_vars=log_vars, num_samples=len(data['img'].data))
 
     return outputs
-
-
-def set_random_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
 
 
 def train_detector(model,
