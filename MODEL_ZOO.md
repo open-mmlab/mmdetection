@@ -60,16 +60,16 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 | R-50-FPN | pytorch | 1x      | 5.8      | 0.690               | 7.7            | 37.3   | 34.2    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_1x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/mask_rcnn_r50_fpn_1x_20181010_results.pkl.json) |
 | R-50-FPN | pytorch | 2x      | 5.8      | 0.690               | 7.7            | 38.6   | 35.1    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_2x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/mask_rcnn_r50_fpn_2x_20181010_results.pkl.json) |
 
-### Fast R-CNN (with pre-computed proposals) (coming soon)
+### Fast R-CNN (with pre-computed proposals)
 
 | Backbone | Style   | Type   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
 |:--------:|:-------:|:------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:-------:|:--------:|
-| R-50-FPN | caffe   | Faster | 1x      |          |                     |                |        |         |          |
-| R-50-FPN | pytorch | Faster | 1x      |          |                     |                |        |         |          |
-| R-50-FPN | pytorch | Faster | 2x      |          |                     |                |        |         |          |
-| R-50-FPN | caffe   | Mask   | 1x      |          |                     |                |        |         |          |
-| R-50-FPN | pytorch | Mask   | 1x      |          |                     |                |        |         |          |
-| R-50-FPN | pytorch | Mask   | 2x      |          |                     |                |        |         |          |
+| R-50-FPN | caffe   | Faster | 1x      | 3.5      | 0.35                | 14.6           | 36.6   | -       | -        |
+| R-50-FPN | pytorch | Faster | 1x      | 4.0      | 0.38                | 14.5           | 35.8   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fast_rcnn_r50_fpn_1x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/fast_rcnn_r50_fpn_1x_20181010_results.pkl.json) |
+| R-50-FPN | pytorch | Faster | 2x      | 4.0      | 0.38                | 14.5           | 37.1   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fast_rcnn_r50_fpn_2x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/fast_rcnn_r50_fpn_2x_20181010_results.pkl.json) |
+| R-50-FPN | caffe   | Mask   | 1x      | 5.4      | 0.47                | 10.7           | 37.3   | 34.5    | -        |
+| R-50-FPN | pytorch | Mask   | 1x      | 5.3      | 0.50                | 10.6           | 36.8   | 34.1    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fast_mask_rcnn_r50_fpn_1x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/fast_mask_rcnn_r50_fpn_1x_20181010_results.pkl.json) |
+| R-50-FPN | pytorch | Mask   | 2x      | 5.3      | 0.50                | 10.6           | 37.9   | 34.8    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fast_mask_rcnn_r50_fpn_2x_20181010.pth) \| [result](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/results/fast_mask_rcnn_r50_fpn_2x_20181010_results.pkl.json) |
 
 ### RetinaNet (coming soon)
 
@@ -95,8 +95,9 @@ In general, mmdetection has 3 advantages over Detectron.
 ### Performance
 
 Detectron and Detectron.pytorch use caffe-style ResNet as the backbone.
-To simply utilize the PyTorch model zoo, we use pytorch-style ResNet in our experiments.
+In order to utilize the PyTorch model zoo, we use pytorch-style ResNet in our experiments.
 
+In the meanwhile, we train models with caffe-style ResNet in 1x experiments for comparison.
 We find that pytorch-style ResNet usually converges slower than caffe-style ResNet,
 thus leading to slightly lower results in 1x schedule, but the final results
 of 2x schedule is higher.
@@ -153,6 +154,32 @@ indicated as *pytorch-style results* / *caffe-style results*.
     <td>-</td>
     <td>38.6 &amp; 35.1 / -</td>
   </tr>
+  <tr>
+    <td rowspan="2">Fast R-CNN</td>
+    <td>1x</td>
+    <td>36.4</td>
+    <td>-</td>
+    <td>35.8 / 36.6</td>
+  </tr>
+  <tr>
+    <td>2x</td>
+    <td>36.8</td>
+    <td>-</td>
+    <td>37.1 / -</td>
+  </tr>
+  <tr>
+    <td rowspan="2">Fast R-CNN (w/mask)</td>
+    <td>1x</td>
+    <td>37.3 &amp; 33.7</td>
+    <td>-</td>
+    <td>36.8 &amp; 34.1 / 37.3 &amp; 34.5</td>
+  </tr>
+  <tr>
+    <td>2x</td>
+    <td>37.7 &amp; 34.0</td>
+    <td>-</td>
+    <td>37.9 &amp; 34.8 / -</td>
+  </tr>
 </table>
 
 ### Training Speed
@@ -183,6 +210,18 @@ The training speed is measure with s/iter. The lower, the better.
     <td>0.889</td>
     <td>1.435</td>
     <td>0.690 / 0.732</td>
+  </tr>
+  <tr>
+    <td>Fast R-CNN</td>
+    <td>0.285</td>
+    <td>-</td>
+    <td>0.375 / 0.398</td>
+  </tr>
+  <tr>
+    <td>Fast R-CNN (w/mask)</td>
+    <td>0.377</td>
+    <td>-</td>
+    <td>0.504 / 0.574</td>
   </tr>
 </table>
 
@@ -225,6 +264,18 @@ The inference speed is measured with fps (img/s) on a single GPU. The higher, th
     <td>8.5</td>
     <td></td>
     <td>7.7 / 7.4</td>
+  </tr>
+  <tr>
+    <td>Fast R-CNN</td>
+    <td>12.5</td>
+    <td></td>
+    <td>14.5 / 14.1</td>
+  </tr>
+  <tr>
+    <td>Fast R-CNN (w/mask)</td>
+    <td>9.9</td>
+    <td></td>
+    <td>10.6 / 10.3</td>
   </tr>
 </table>
 
