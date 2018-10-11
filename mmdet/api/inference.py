@@ -34,7 +34,7 @@ def inference_detector(model, imgs, cfg, device='cuda:0'):
         img = mmcv.imread(img)
         data = _prepare_data(img, img_transform, cfg, device)
         with torch.no_grad():
-            result = model(**data, return_loss=False, rescale=True)
+            result = model(return_loss=False, rescale=True, **data)
         yield result
 
 
