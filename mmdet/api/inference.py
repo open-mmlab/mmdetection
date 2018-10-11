@@ -27,7 +27,7 @@ def inference_detector(model, imgs, cfg, device='cuda:0'):
 
     imgs = imgs if isinstance(imgs, list) else [imgs]
     img_transform = ImageTransform(
-        **cfg.img_norm_cfg, size_divisor=cfg.data.test.size_divisor)
+        size_divisor=cfg.data.test.size_divisor, **cfg.img_norm_cfg)
     model = model.to(device)
     model.eval()
     for img in imgs:
