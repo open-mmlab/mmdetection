@@ -15,7 +15,7 @@ resource.setrlimit(resource.RLIMIT_NOFILE, (4096, rlimit[1]))
 def build_dataloader(dataset,
                      imgs_per_gpu,
                      workers_per_gpu,
-                     num_gpus,
+                     num_gpus=1,
                      dist=True,
                      **kwargs):
     if dist:

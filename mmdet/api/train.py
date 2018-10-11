@@ -1,6 +1,5 @@
 from __future__ import division
 
-import logging
 import random
 from collections import OrderedDict
 
@@ -9,11 +8,11 @@ import torch
 from mmcv.runner import Runner, DistSamplerSeedHook
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
-from mmdet import __version__
-from mmdet.core import (init_dist, DistOptimizerHook, CocoDistEvalRecallHook,
+from mmdet.core import (DistOptimizerHook, CocoDistEvalRecallHook,
                         CocoDistEvalmAPHook)
 from mmdet.datasets import build_dataloader
 from mmdet.models import RPN
+from .env import get_root_logger
 
 
 def parse_losses(losses):
@@ -46,13 +45,6 @@ def batch_processor(model, data, train_mode):
     return outputs
 
 
-def get_logger(log_level):
-    logging.basicConfig(
-        format='%(asctime)s - %(levelname)s - %(message)s', level=log_level)
-    logger = logging.getLogger()
-    return logger
-
-
 def set_random_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -60,58 +52,72 @@ def set_random_seed(seed):
     torch.cuda.manual_seed_all(seed)
 
 
-def train_detector(model, dataset, cfg):
-    # save mmdet version in checkpoint as meta data
-    cfg.checkpoint_config.meta = dict(
-        mmdet_version=__version__, config=cfg.text)
+def train_detector(model,
+                   dataset,
+                   cfg,
+                   distributed=False,
+                   validate=False,
+                   logger=None):
+    if logger is None:
+        logger = get_root_logger(cfg.log_level)
 
-    logger = get_logger(cfg.log_level)
-
-    # set random seed if specified
-    if cfg.seed is not None:
-        logger.info('Set random seed to {}'.format(cfg.seed))
-        set_random_seed(cfg.seed)
-
-    # init distributed environment if necessary
-    if cfg.launcher == 'none':
-        dist = False
-        logger.info('Non-distributed training.')
+    # start training
+    if distributed:
+        _dist_train(model, dataset, cfg, validate=validate)
     else:
-        dist = True
-        init_dist(cfg.launcher, **cfg.dist_params)
-        if torch.distributed.get_rank() != 0:
-            logger.setLevel('ERROR')
-        logger.info('Distributed training.')
+        _non_dist_train(model, dataset, cfg, validate=validate)
 
+
+def _dist_train(model, dataset, cfg, validate=False):
     # prepare data loaders
     data_loaders = [
-        build_dataloader(dataset, cfg.data.imgs_per_gpu,
-                         cfg.data.workers_per_gpu, cfg.gpus, dist)
+        build_dataloader(
+            dataset,
+            cfg.data.imgs_per_gpu,
+            cfg.data.workers_per_gpu,
+            dist=True)
     ]
-
     # put model on gpus
-    if dist:
-        model = MMDistributedDataParallel(model.cuda())
-    else:
-        model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
-
+    model = MMDistributedDataParallel(model.cuda())
     # build runner
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
                     cfg.log_level)
-
     # register hooks
-    optimizer_config = DistOptimizerHook(
-        **cfg.optimizer_config) if dist else cfg.optimizer_config
+    optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
-    if dist:
-        runner.register_hook(DistSamplerSeedHook())
-        # register eval hooks
-        if cfg.validate:
-            if isinstance(model.module, RPN):
-                runner.register_hook(CocoDistEvalRecallHook(cfg.data.val))
-            elif cfg.data.val.type == 'CocoDataset':
-                runner.register_hook(CocoDistEvalmAPHook(cfg.data.val))
+    runner.register_hook(DistSamplerSeedHook())
+    # register eval hooks
+    if validate:
+        if isinstance(model.module, RPN):
+            runner.register_hook(CocoDistEvalRecallHook(cfg.data.val))
+        elif cfg.data.val.type == 'CocoDataset':
+            runner.register_hook(CocoDistEvalmAPHook(cfg.data.val))
+
+    if cfg.resume_from:
+        runner.resume(cfg.resume_from)
+    elif cfg.load_from:
+        runner.load_checkpoint(cfg.load_from)
+    runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+
+
+def _non_dist_train(model, dataset, cfg, validate=False):
+    # prepare data loaders
+    data_loaders = [
+        build_dataloader(
+            dataset,
+            cfg.data.imgs_per_gpu,
+            cfg.data.workers_per_gpu,
+            cfg.gpus,
+            dist=False)
+    ]
+    # put model on gpus
+    model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
+    # build runner
+    runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
+                    cfg.log_level)
+    runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
+                                   cfg.checkpoint_config, cfg.log_config)
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
