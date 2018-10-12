@@ -39,7 +39,7 @@ popular detection projects. Results and models are available in the [Model zoo](
 
 ## Installation
 
-Requirements:
+### Requirements
 
 - Linux (tested on Ubuntu 16.04 and CentOS 7.2)
 - Python 2.7+ or 3.4+
@@ -49,29 +49,34 @@ Requirements:
 
 > Note: Though mmdetection is compatible with Python 2/3, python 3 is recommended and we do not promise future support for Python 2.
 
-Clone the Detectron repository.
+### Install mmdetection
+
+a. Install PyTorch 0.4.1 and torchvision following the [official instructions](https://pytorch.org/).
+
+b. Clone the Detectron repository.
 
 ```shell
 git clone https://github.com/open-mmlab/mmdetection.git
 ```
 
-Compile cuda extensions.
+c. Compile cuda extensions.
 
 ```shell
 cd mmdetection
 ./compile.sh  # or "PYTHON=python3 ./compile.sh" if you use system python3 without virtual environments
 ```
 
-Install mmdetection (other dependencies will be installed automatically).
+d. Install mmdetection (other dependencies will be installed automatically).
 
 ```shell
 python(3) setup.py install  # add --user if you want to install it locally
 # or "pip install ."
 ```
 
-> Note: You need to run the installing step each time you pull updates from github. Git commit id will be written to the version number and also saved in trained models.
+Note: You need to run the last step each time you pull updates from github.
+The git commit id will be written to the version number and also saved in trained models.
 
-Prepare COCO dataset
+### Prepare COCO dataset.
 
 It is recommended to symlink the dataset root to `$MMDETECTION/data`.
 
@@ -91,6 +96,18 @@ mmdetection
 
 
 ## Inference with pretrained models
+
+### Test a dataset
+
+- [x] single GPU testing
+- [x] multiple GPU testing
+- [x] visualize detection results
+
+We allow to run one or multiple processes on each GPU, e.g. 8 processes on 8 GPU
+or 16 processes on 8 GPU. When the GPU workload is not very heavy for a single
+process, running multiple processes will accelerate the testing, which is specified
+with the argument `--proc_per_gpu <PROCESS_NUM>`.
+
 
 To test a dataset and save the results.
 
@@ -112,12 +129,39 @@ For example, to evaluate Mask R-CNN with 8 GPUs and save the result as `results.
 python tools/test.py configs/mask_rcnn_r50_fpn_1x.py <CHECKPOINT_FILE> --gpus 8 --out results.pkl --eval bbox segm
 ```
 
-Note: Multiple GPU testing cannot achieve linear acceleration.
-
 It is also convenient to visualize the results during testing by adding an argument `--show`.
 
 ```shell
 python tools/test.py <CONFIG_FILE> <CHECKPOINT_FILE> --show
+```
+
+### Test image(s)
+
+We provide some high-level apis (experimental) to test an image.
+
+```python
+import mmcv
+from mmcv.runner import load_checkpoint
+from mmdet.models import build_detector
+from mmdet.apis import inference_detector, show_result
+
+cfg = mmcv.Config.fromfile('configs/faster_rcnn_r50_fpn_1x.py')
+cfg.model.pretrained = None
+
+# construct the model and load checkpoint
+model = build_detector(cfg.model, test_cfg=cfg.test_cfg)
+_ = load_checkpoint(model, 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth')
+
+# test a single image
+img = mmcv.imread('test.jpg')
+result = inference_detector(model, img, cfg)
+show_result(img, result)
+
+# test a list of images
+imgs = ['test1.jpg', 'test2.jpg']
+for i, result in enumerate(inference_detector(model, imgs, cfg, device='cuda:0')):
+    print(i, imgs[i])
+    show_result(imgs[i], result)
 ```
 
 
@@ -157,8 +201,6 @@ Expected results in WORK_DIR:
 - a symbol link to the latest checkpoint
 
 
-## High-level APIs
+## Technical details
 
-We are working on a set of high-level APIs to make it more convenient to
-integrate mmdetection into other projects or act as a hands-on tool for
-beginners.
+Some implementation details and project structures are described in the [technical details](TECHNICAL_DETAILS.md).
