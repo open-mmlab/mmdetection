@@ -30,6 +30,50 @@ such as `SingleStageDetector` and `TwoStageDetector`.
 Following some basic pipelines (e.g., two-stage detectors), the model structure
 can be customized through config files with no pains.
 
+If we want to implement some new components, e.g, the path aggregation
+FPN structure in [Path Aggregation Network for Instance Segmentation](https://arxiv.org/abs/1803.01534), there are two things to do.
+
+1. create a new file in `mmdet/models/necks/pafpn.py`.
+
+    ```python
+    class PAFPN(nn.Module):
+
+        def __init__(self,
+                    in_channels,
+                    out_channels,
+                    num_outs,
+                    start_level=0,
+                    end_level=-1,
+                    add_extra_convs=False):
+            pass
+        
+        def forward(self, inputs):
+            # implementation is ignored
+            pass
+    ```
+
+2. modify the config file from
+
+    ```python
+    neck=dict(
+        type='FPN',
+        in_channels=[256, 512, 1024, 2048],
+        out_channels=256,
+        num_outs=5)
+    ```
+
+    to
+
+    ```python
+    neck=dict(
+        type='PAFPN',
+        in_channels=[256, 512, 1024, 2048],
+        out_channels=256,
+        num_outs=5)
+    ```
+
+We will release more components (backbones, necks, heads) for research purpose.
+
 ### Write a new model
 
 To write a new detection pipeline, you need to inherit from `BaseDetector`,
