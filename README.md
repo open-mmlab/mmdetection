@@ -42,12 +42,10 @@ popular detection projects. Results and models are available in the [Model zoo](
 ### Requirements
 
 - Linux (tested on Ubuntu 16.04 and CentOS 7.2)
-- Python 2.7+ or 3.4+
+- Python 3.4+
 - PyTorch 0.4.1 and torchvision
-- OpenCV
+- Cython
 - [mmcv](https://github.com/open-mmlab/mmcv)
-
-> Note: Though mmdetection is compatible with Python 2/3, python 3 is recommended and we do not promise future support for Python 2.
 
 ### Install mmdetection
 
@@ -63,6 +61,7 @@ c. Compile cuda extensions.
 
 ```shell
 cd mmdetection
+pip install cython  # or "conda install cython" if you prefer conda
 ./compile.sh  # or "PYTHON=python3 ./compile.sh" if you use system python3 without virtual environments
 ```
 
@@ -93,6 +92,9 @@ mmdetection
 │   │   ├── test2017
 
 ```
+
+> [Here](https://gist.github.com/hellock/bf23cd7348c727d69d48682cb6909047) is
+a script for setting up mmdetection with conda for reference.
 
 
 ## Inference with pretrained models
