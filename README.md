@@ -10,8 +10,8 @@ a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http
 
 - **Modular Design**
 
-  One can easily construct a customized object detection framework by combining different components. 
-  
+  One can easily construct a customized object detection framework by combining different components.
+
 - **Support of multiple frameworks out of box**
 
   The toolbox directly supports popular detection frameworks, *e.g.* Faster RCNN, Mask RCNN, RetinaNet, etc.
@@ -20,10 +20,10 @@ a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http
 
   All basic bbox and mask operations run on GPUs now.
   The training speed is about 5% ~ 20% faster than Detectron for different models.
-  
+
 - **State of the art**
 
-  This was the codebase of the *MMDet* team, who won the [COCO Detection 2018 challenge](http://cocodataset.org/#detection-leaderboard). 
+  This was the codebase of the *MMDet* team, who won the [COCO Detection 2018 challenge](http://cocodataset.org/#detection-leaderboard).
 
 Apart from mmdetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research,
 which is heavily depended on by this toolbox.
@@ -51,7 +51,7 @@ popular detection projects. Results and models are available in the [Model zoo](
 
 a. Install PyTorch 0.4.1 and torchvision following the [official instructions](https://pytorch.org/).
 
-b. Clone the Detectron repository.
+b. Clone the mmdetection repository.
 
 ```shell
 git clone https://github.com/open-mmlab/mmdetection.git
