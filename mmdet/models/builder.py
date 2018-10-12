@@ -2,7 +2,7 @@ from mmcv.runner import obj_from_dict
 from torch import nn
 
 from . import (backbones, necks, roi_extractors, rpn_heads, bbox_heads,
-               mask_heads, single_stage_heads, detectors)
+               mask_heads, single_stage_heads)
 
 __all__ = [
     'build_backbone', 'build_neck', 'build_rpn_head', 'build_roi_extractor',
@@ -53,4 +53,5 @@ def build_single_stage_head(cfg):
 
 
 def build_detector(cfg, train_cfg=None, test_cfg=None):
+    from . import detectors
     return build(cfg, detectors, dict(train_cfg=train_cfg, test_cfg=test_cfg))
