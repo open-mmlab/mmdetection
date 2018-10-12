@@ -102,3 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# cython generated cpp
+mmdet/ops/nms/*.cpp
+mmdet/version.py
+data
