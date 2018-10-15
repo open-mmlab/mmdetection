@@ -210,8 +210,10 @@ class CocoDataset(Dataset):
                 if len(proposals) == 0:
                     idx = self._rand_another(idx)
                     continue
-                assert proposals.shape[1] == 4 or proposals.shape[
-                    1] == 5, 'proposals should have shapes (n, 4) or (n, 5)'
+                if not (proposals.shape[1] == 4 or proposals.shape[1] == 5):
+                    raise AssertionError(
+                        'proposals should have shapes (n, 4) or (n, 5), '
+                        'but found {}'.format(proposals.shape))
                 if proposals.shape[1] == 5:
                     scores = proposals[:, 4]
                     proposals = proposals[:, :4]
@@ -274,8 +276,10 @@ class CocoDataset(Dataset):
         img = mmcv.imread(osp.join(self.img_prefix, img_info['file_name']))
         if self.proposals is not None:
             proposal = self.proposals[idx][:self.num_max_proposals]
-            assert proposal.shape[1] == 4 or proposal.shape[
-                1] == 5, 'proposals should have shape (n, 4) or (n, 5)'
+            if not (proposal.shape[1] == 4 or proposal.shape[1] == 5):
+                raise AssertionError(
+                    'proposals should have shapes (n, 4) or (n, 5), '
+                    'but found {}'.format(proposal.shape))
 
         def prepare_single(img, scale, flip, proposal=None):
             _img, img_shape, pad_shape, scale_factor = self.img_transform(
