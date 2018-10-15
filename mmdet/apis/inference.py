@@ -23,19 +23,29 @@ def _prepare_data(img, img_transform, cfg, device):
     return dict(img=[img], img_meta=[img_meta])
 
 
-def inference_detector(model, imgs, cfg, device='cuda:0'):
+def _inference_single(model, img, img_transform, cfg, device):
+    img = mmcv.imread(img)
+    data = _prepare_data(img, img_transform, cfg, device)
+    with torch.no_grad():
+        result = model(return_loss=False, rescale=True, **data)
+    return result
 
-    imgs = imgs if isinstance(imgs, list) else [imgs]
+
+def _inference_generator(model, imgs, img_transform, cfg, device):
+    for img in imgs:
+        yield _inference_single(model, img, img_transform, cfg, device)
+
+
+def inference_detector(model, imgs, cfg, device='cuda:0'):
     img_transform = ImageTransform(
         size_divisor=cfg.data.test.size_divisor, **cfg.img_norm_cfg)
     model = model.to(device)
     model.eval()
-    for img in imgs:
-        img = mmcv.imread(img)
-        data = _prepare_data(img, img_transform, cfg, device)
-        with torch.no_grad():
-            result = model(return_loss=False, rescale=True, **data)
-        yield result
+
+    if not isinstance(imgs, list):
+        return _inference_single(model, imgs, img_transform, cfg, device)
+    else:
+        return _inference_generator(model, imgs, img_transform, cfg, device)
 
 
 def show_result(img, result, dataset='coco', score_thr=0.3):
@@ -46,6 +56,7 @@ def show_result(img, result, dataset='coco', score_thr=0.3):
     ]
     labels = np.concatenate(labels)
     bboxes = np.vstack(result)
+    img = mmcv.imread(img)
     mmcv.imshow_det_bboxes(
         img.copy(),
         bboxes,

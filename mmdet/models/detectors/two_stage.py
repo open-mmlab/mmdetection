@@ -140,7 +140,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         """Test without augmentation."""
-        assert proposals is None, "Fast RCNN hasn't been implemented."
         assert self.with_bbox, "Bbox head must be implemented."
 
         x = self.extract_feat(img)

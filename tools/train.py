@@ -5,8 +5,8 @@ from mmcv import Config
 from mmcv.runner import obj_from_dict
 
 from mmdet import datasets, __version__
-from mmdet.api import (train_detector, init_dist, get_root_logger,
-                       set_random_seed)
+from mmdet.apis import (train_detector, init_dist, get_root_logger,
+                        set_random_seed)
 from mmdet.models import build_detector
 
 

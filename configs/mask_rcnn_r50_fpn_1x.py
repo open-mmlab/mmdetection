@@ -77,7 +77,7 @@ train_cfg = dict(
         pos_balance_sampling=False,
         neg_pos_ub=512,
         neg_balance_thr=0,
-        min_pos_iou=1.1,
+        min_pos_iou=0.5,
         pos_weight=-1,
         debug=False))
 test_cfg = dict(
@@ -152,7 +152,6 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 12
-device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/mask_rcnn_r50_fpn_1x'
