@@ -203,13 +203,20 @@ class CocoDataset(Dataset):
 
             # load proposals if necessary
             if self.proposals is not None:
-                proposals = self.proposals[idx][:self.num_max_proposals, :4]
+                proposals = self.proposals[idx][:self.num_max_proposals]
                 # TODO: Handle empty proposals properly. Currently images with
                 # no proposals are just ignored, but they can be used for
                 # training in concept.
                 if len(proposals) == 0:
                     idx = self._rand_another(idx)
                     continue
+                assert proposals.shape[1] == 4 or proposals.shape[
+                    1] == 5, 'proposals should have shapes (n, 4) or (n, 5)'
+                if proposals.shape[1] == 5:
+                    scores = proposals[:, 4]
+                    proposals = proposals[:, :4]
+                else:
+                    scores = None
 
             ann = self._parse_ann_info(ann_info, self.with_mask)
             gt_bboxes = ann['bboxes']
@@ -228,6 +235,8 @@ class CocoDataset(Dataset):
             if self.proposals is not None:
                 proposals = self.bbox_transform(proposals, img_shape,
                                                 scale_factor, flip)
+                proposals = np.hstack([proposals, scores[:, None]
+                                       ]) if scores is not None else proposals
             gt_bboxes = self.bbox_transform(gt_bboxes, img_shape, scale_factor,
                                             flip)
             gt_bboxes_ignore = self.bbox_transform(gt_bboxes_ignore, img_shape,
@@ -263,8 +272,10 @@ class CocoDataset(Dataset):
         """Prepare an image for testing (multi-scale and flipping)"""
         img_info = self.img_infos[idx]
         img = mmcv.imread(osp.join(self.img_prefix, img_info['file_name']))
-        proposal = (self.proposals[idx][:, :4]
-                    if self.proposals is not None else None)
+        if self.proposals is not None:
+            proposal = self.proposals[idx][:self.num_max_proposals]
+            assert proposal.shape[1] == 4 or proposal.shape[
+                1] == 5, 'proposals should have shape (n, 4) or (n, 5)'
 
         def prepare_single(img, scale, flip, proposal=None):
             _img, img_shape, pad_shape, scale_factor = self.img_transform(
@@ -277,8 +288,15 @@ class CocoDataset(Dataset):
                 scale_factor=scale_factor,
                 flip=flip)
             if proposal is not None:
+                if proposal.shape[1] == 5:
+                    score = proposal[:, 4]
+                    proposal = proposal[:, :4]
+                else:
+                    score = None
                 _proposal = self.bbox_transform(proposal, img_shape,
                                                 scale_factor, flip)
+                _proposal = np.hstack([_proposal, score[:, None]
+                                       ]) if score is not None else _proposal
                 _proposal = to_tensor(_proposal)
             else:
                 _proposal = None
