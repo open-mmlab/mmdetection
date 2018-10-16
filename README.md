@@ -206,3 +206,19 @@ Expected results in WORK_DIR:
 ## Technical details
 
 Some implementation details and project structures are described in the [technical details](TECHNICAL_DETAILS.md).
+
+## Citation
+
+If you use our codebase or models in your research, please cite this project.
+We will release a paper or technical report later.
+
+```
+@misc{mmdetection2018,
+  author =       {Kai Chen and Jiangmiao Pang and Jiaqi Wang and Yu Xiong and Xiaoxiao Li
+                  and Shuyang Sun and Wansen Feng and Ziwei Liu and Jianping Shi and
+                  Wanli Ouyang and Chen Change Loy and Dahua Lin},
+  title =        {mmdetection},
+  howpublished = {\url{https://github.com/open-mmlab/mmdetection}},
+  year =         {2018}
+}
+```
