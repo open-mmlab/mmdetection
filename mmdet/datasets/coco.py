@@ -280,6 +280,8 @@ class CocoDataset(Dataset):
                 raise AssertionError(
                     'proposals should have shapes (n, 4) or (n, 5), '
                     'but found {}'.format(proposal.shape))
+        else:
+            proposal = None
 
         def prepare_single(img, scale, flip, proposal=None):
             _img, img_shape, pad_shape, scale_factor = self.img_transform(
