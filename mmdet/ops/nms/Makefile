@@ -5,4 +5,4 @@ all:
 	$(PYTHON) setup.py build_ext --inplace
 
 clean:
-	rm *.so
+	rm -f *.so
