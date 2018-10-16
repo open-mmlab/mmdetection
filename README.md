@@ -172,9 +172,6 @@ for i, result in enumerate(inference_detector(model, imgs, cfg, device='cuda:0')
 mmdetection implements distributed training and non-distributed training,
 which uses `MMDistributedDataParallel` and `MMDataParallel` respectively.
 
-We suggest using distributed training even on a single machine, which is faster,
-and non-distributed training are left for debugging or other purposes.
-
 ### Distributed training
 
 mmdetection potentially supports multiple launch methods, e.g., PyTorch’s built-in launch utility, slurm and MPI.
@@ -202,6 +199,9 @@ Expected results in WORK_DIR:
 - saved checkpoints (every k epochs, defaults=1)
 - a symbol link to the latest checkpoint
 
+> **Note**
+> 1. We recommend using distributed training with NCCL2 even on a single machine, which is faster. Non-distributed training is for debugging or other purposes.
+> 2. The default learning rate is for 8 GPUs. If you use less or more than 8 GPUs, you need to set the learning rate proportional to the GPU num. E.g., modify lr to 0.01 for 4 GPUs or 0.04 for 16 GPUs.
 
 ## Technical details
 
