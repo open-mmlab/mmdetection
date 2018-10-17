@@ -215,7 +215,7 @@ class CocoDataset(Dataset):
                         'proposals should have shapes (n, 4) or (n, 5), '
                         'but found {}'.format(proposals.shape))
                 if proposals.shape[1] == 5:
-                    scores = proposals[:, 4]
+                    scores = proposals[:, 4, None]
                     proposals = proposals[:, :4]
                 else:
                     scores = None
@@ -237,8 +237,8 @@ class CocoDataset(Dataset):
             if self.proposals is not None:
                 proposals = self.bbox_transform(proposals, img_shape,
                                                 scale_factor, flip)
-                proposals = np.hstack([proposals, scores[:, None]
-                                       ]) if scores is not None else proposals
+                proposals = np.hstack(
+                    [proposals, scores]) if scores is not None else proposals
             gt_bboxes = self.bbox_transform(gt_bboxes, img_shape, scale_factor,
                                             flip)
             gt_bboxes_ignore = self.bbox_transform(gt_bboxes_ignore, img_shape,
@@ -295,14 +295,14 @@ class CocoDataset(Dataset):
                 flip=flip)
             if proposal is not None:
                 if proposal.shape[1] == 5:
-                    score = proposal[:, 4]
+                    score = proposal[:, 4, None]
                     proposal = proposal[:, :4]
                 else:
                     score = None
                 _proposal = self.bbox_transform(proposal, img_shape,
                                                 scale_factor, flip)
-                _proposal = np.hstack([_proposal, score[:, None]
-                                       ]) if score is not None else _proposal
+                _proposal = np.hstack(
+                    [_proposal, score]) if score is not None else _proposal
                 _proposal = to_tensor(_proposal)
             else:
                 _proposal = None

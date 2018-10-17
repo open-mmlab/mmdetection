@@ -1,6 +1,6 @@
 import torch
 
-from ..bbox import bbox_assign, bbox2delta, bbox_sampling
+from ..bbox import assign_and_sample, bbox2delta
 from ..utils import multi_apply
 
 
@@ -80,27 +80,20 @@ def anchor_target_single(flat_anchors, valid_flags, gt_bboxes, img_meta,
         return (None, ) * 6
     # assign gt and sample anchors
     anchors = flat_anchors[inside_flags, :]
-    assigned_gt_inds, argmax_overlaps, max_overlaps = bbox_assign(
-        anchors,
-        gt_bboxes,
-        pos_iou_thr=cfg.pos_iou_thr,
-        neg_iou_thr=cfg.neg_iou_thr,
-        min_pos_iou=cfg.min_pos_iou)
-    pos_inds, neg_inds = bbox_sampling(assigned_gt_inds, cfg.anchor_batch_size,
-                                       cfg.pos_fraction, cfg.neg_pos_ub,
-                                       cfg.pos_balance_sampling, max_overlaps,
-                                       cfg.neg_balance_thr)
+    _, sampling_result = assign_and_sample(anchors, gt_bboxes, None, None, cfg)
 
+    num_valid_anchors = anchors.shape[0]
     bbox_targets = torch.zeros_like(anchors)
     bbox_weights = torch.zeros_like(anchors)
-    labels = torch.zeros_like(assigned_gt_inds)
-    label_weights = torch.zeros_like(assigned_gt_inds, dtype=anchors.dtype)
+    labels = anchors.new_zeros((num_valid_anchors, ))
+    label_weights = anchors.new_zeros((num_valid_anchors, ))
 
+    pos_inds = sampling_result.pos_inds
+    neg_inds = sampling_result.neg_inds
     if len(pos_inds) > 0:
-        pos_anchors = anchors[pos_inds, :]
-        pos_gt_bbox = gt_bboxes[assigned_gt_inds[pos_inds] - 1, :]
-        pos_bbox_targets = bbox2delta(pos_anchors, pos_gt_bbox, target_means,
-                                      target_stds)
+        pos_bbox_targets = bbox2delta(sampling_result.pos_bboxes,
+                                      sampling_result.pos_gt_bboxes,
+                                      target_means, target_stds)
         bbox_targets[pos_inds, :] = pos_bbox_targets
         bbox_weights[pos_inds, :] = 1.0
         labels[pos_inds] = 1
