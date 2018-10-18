@@ -30,7 +30,7 @@ which is heavily depended on by this toolbox.
 
 ## License
 
-This project is released under the [GPLv3 license](LICENSE).
+This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Benchmark and model zoo
 
