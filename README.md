@@ -32,6 +32,12 @@ which is heavily depended on by this toolbox.
 
 This project is released under the [GPLv3 license](LICENSE).
 
+## Updates
+
+v0.5.1 (20/10/2018)
+- Add BBoxAssigner and BBoxSampler, the `train_cfg` field in config files are restructured.
+- `ConvFCRoIHead` / `SharedFCRoIHead` are renamed to `ConvFCBBoxHead` / `SharedFCBBoxHead` for consistency.
+
 ## Benchmark and model zoo
 
 We provide our baseline results and the comparision with Detectron, the most
