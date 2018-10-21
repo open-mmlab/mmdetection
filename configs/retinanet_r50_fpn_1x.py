@@ -30,9 +30,8 @@ model = dict(
         target_stds=[1.0, 1.0, 1.0, 1.0]))
 # training and testing settings
 train_cfg = dict(
-    pos_iou_thr=0.5,
-    neg_iou_thr=0.4,
-    min_pos_iou=0.4,
+    assigner=dict(
+        pos_iou_thr=0.5, neg_iou_thr=0.4, min_pos_iou=0.4, ignore_iof_thr=-1),
     smoothl1_beta=0.11,
     gamma=2.0,
     alpha=0.25,
