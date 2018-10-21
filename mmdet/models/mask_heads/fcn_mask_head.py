@@ -86,8 +86,11 @@ class FCNMaskHead(nn.Module):
         mask_pred = self.conv_logits(x)
         return mask_pred
 
-    def get_mask_target(self, pos_proposals, pos_assigned_gt_inds, gt_masks,
-                        rcnn_train_cfg):
+    def get_target(self, sampling_results, gt_masks, rcnn_train_cfg):
+        pos_proposals = [res.pos_bboxes for res in sampling_results]
+        pos_assigned_gt_inds = [
+            res.pos_assigned_gt_inds for res in sampling_results
+        ]
         mask_targets = mask_target(pos_proposals, pos_assigned_gt_inds,
                                    gt_masks, rcnn_train_cfg)
         return mask_targets

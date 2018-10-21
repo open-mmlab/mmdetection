@@ -4,7 +4,7 @@ import torch.nn as nn
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
-from mmdet.core import sample_bboxes, bbox2roi, bbox2result, multi_apply
+from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply)
 
 
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
@@ -80,10 +80,11 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       gt_labels,
                       gt_masks=None,
                       proposals=None):
-        losses = dict()
-
         x = self.extract_feat(img)
 
+        losses = dict()
+
+        # RPN forward and loss
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
@@ -96,44 +97,43 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         else:
             proposal_list = proposals
 
+        # assign gts and sample proposals
+        if self.with_bbox or self.with_mask:
+            assign_results, sampling_results = multi_apply(
+                assign_and_sample,
+                proposal_list,
+                gt_bboxes,
+                gt_bboxes_ignore,
+                gt_labels,
+                cfg=self.train_cfg.rcnn)
+
+        # bbox head forward and loss
         if self.with_bbox:
-            (pos_proposals, neg_proposals, pos_assigned_gt_inds, pos_gt_bboxes,
-             pos_gt_labels) = multi_apply(
-                 sample_bboxes,
-                 proposal_list,
-                 gt_bboxes,
-                 gt_bboxes_ignore,
-                 gt_labels,
-                 cfg=self.train_cfg.rcnn)
-            (labels, label_weights, bbox_targets,
-             bbox_weights) = self.bbox_head.get_bbox_target(
-                 pos_proposals, neg_proposals, pos_gt_bboxes, pos_gt_labels,
-                 self.train_cfg.rcnn)
-
-            rois = bbox2roi([
-                torch.cat([pos, neg], dim=0)
-                for pos, neg in zip(pos_proposals, neg_proposals)
-            ])
-            # TODO: a more flexible way to configurate feat maps
-            roi_feats = self.bbox_roi_extractor(
+            rois = bbox2roi([res.bboxes for res in sampling_results])
+            # TODO: a more flexible way to decide which feature maps to use
+            bbox_feats = self.bbox_roi_extractor(
                 x[:self.bbox_roi_extractor.num_inputs], rois)
-            cls_score, bbox_pred = self.bbox_head(roi_feats)
+            cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
-            loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, labels,
-                                            label_weights, bbox_targets,
-                                            bbox_weights)
+            bbox_targets = self.bbox_head.get_target(
+                sampling_results, gt_bboxes, gt_labels, self.train_cfg.rcnn)
+            loss_bbox = self.bbox_head.loss(cls_score, bbox_pred,
+                                            *bbox_targets)
             losses.update(loss_bbox)
 
+        # mask head forward and loss
         if self.with_mask:
-            mask_targets = self.mask_head.get_mask_target(
-                pos_proposals, pos_assigned_gt_inds, gt_masks,
-                self.train_cfg.rcnn)
-            pos_rois = bbox2roi(pos_proposals)
+            pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
             mask_feats = self.mask_roi_extractor(
                 x[:self.mask_roi_extractor.num_inputs], pos_rois)
             mask_pred = self.mask_head(mask_feats)
+
+            mask_targets = self.mask_head.get_target(
+                sampling_results, gt_masks, self.train_cfg.rcnn)
+            pos_labels = torch.cat(
+                [res.pos_gt_labels for res in sampling_results])
             loss_mask = self.mask_head.loss(mask_pred, mask_targets,
-                                            torch.cat(pos_gt_labels))
+                                            pos_labels)
             losses.update(loss_mask)
 
         return losses
@@ -145,8 +145,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         x = self.extract_feat(img)
 
         proposal_list = self.simple_test_rpn(
-            x, img_meta,
-            self.test_cfg.rpn) if proposals is None else proposals
+            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)

@@ -59,16 +59,20 @@ class BBoxHead(nn.Module):
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
 
-    def get_bbox_target(self, pos_proposals, neg_proposals, pos_gt_bboxes,
-                        pos_gt_labels, rcnn_train_cfg):
-        reg_num_classes = 1 if self.reg_class_agnostic else self.num_classes
+    def get_target(self, sampling_results, gt_bboxes, gt_labels,
+                   rcnn_train_cfg):
+        pos_proposals = [res.pos_bboxes for res in sampling_results]
+        neg_proposals = [res.neg_bboxes for res in sampling_results]
+        pos_gt_bboxes = [res.pos_gt_bboxes for res in sampling_results]
+        pos_gt_labels = [res.pos_gt_labels for res in sampling_results]
+        reg_classes = 1 if self.reg_class_agnostic else self.num_classes
         cls_reg_targets = bbox_target(
             pos_proposals,
             neg_proposals,
             pos_gt_bboxes,
             pos_gt_labels,
             rcnn_train_cfg,
-            reg_num_classes,
+            reg_classes,
             target_means=self.target_means,
             target_stds=self.target_stds)
         return cls_reg_targets
