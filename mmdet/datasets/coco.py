@@ -8,8 +8,11 @@ class CocoDataset(CustomDataset):
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)
-        cat_ids = self.coco.getCatIds()
-        self.cat2label = {cat_id: i + 1 for i, cat_id in enumerate(cat_ids)}
+        self.cat_ids = self.coco.getCatIds()
+        self.cat2label = {
+            cat_id: i + 1
+            for i, cat_id in enumerate(self.cat_ids)
+        }
         self.img_ids = self.coco.getImgIds()
         img_infos = []
         for i in self.img_ids:
