@@ -259,19 +259,31 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         ms_bbox_result.append(bbox_result)
 
         if self.with_mask:
-            aug_masks = []
-            for i in range(self.num_stages):
-                mask_roi_extractor = self.mask_roi_extractor[i]
-                mask_feats = mask_roi_extractor(
-                    x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
-                mask_pred = self.mask_head[i](mask_feats)
-                aug_masks.append(mask_pred.sigmoid().cpu().numpy())
-            merged_masks = merge_aug_masks(
-                aug_masks, [img_meta[0]] * self.num_stages, self.test_cfg.rcnn)
-            segm_result = self.mask_head[-1].get_seg_masks(
-                merged_masks, _bboxes, det_labels, rcnn_test_cfg, ori_shape,
-                scale_factor, rescale)
+            if det_bboxes.shape[0] == 0:
+                segm_result = [[] for _ in range(mask_head.num_classes - 1)]
+            else:
+                _bboxes = (det_bboxes[:, :4] * img_shape[-1]
+                           if rescale else det_bboxes)
+                mask_rois = bbox2roi([_bboxes])
+                aug_masks = []
+                for i in range(self.num_stages):
+                    mask_roi_extractor = self.mask_roi_extractor[i]
+                    mask_feats = mask_roi_extractor(
+                        x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
+                    mask_pred = self.mask_head[i](mask_feats)
+                    aug_masks.append(mask_pred.sigmoid().cpu().numpy())
+                merged_masks = merge_aug_masks(aug_masks,
+                                               [img_meta[0]] * self.num_stages,
+                                               self.test_cfg.rcnn)
+                segm_result = self.mask_head[-1].get_seg_masks(
+                    merged_masks, _bboxes, det_labels, rcnn_test_cfg,
+                    ori_shape, scale_factor, rescale)
             ms_segm_result.append(segm_result)
+
+        if not self.test_cfg.keep_all_stages:
+            ms_bbox_result = ms_bbox_result[0]
+            if self.with_mask:
+                ms_segm_result = ms_segm_result[0]
 
         if not self.with_mask:
             return ms_bbox_result
