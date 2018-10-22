@@ -229,7 +229,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                             [] for _ in range(mask_head.num_classes - 1)
                         ]
                     else:
-                        _bboxes = (det_bboxes[:, :4] * img_shape[-1]
+                        _bboxes = (det_bboxes[:, :4] * scale_factor
                                    if rescale else det_bboxes)
                         mask_rois = bbox2roi([_bboxes])
                         mask_feats = mask_block(
@@ -260,9 +260,11 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [[] for _ in range(mask_head.num_classes - 1)]
+                segm_result = [
+                    [] for _ in range(self.mask_head[-1].num_classes - 1)
+                ]
             else:
-                _bboxes = (det_bboxes[:, :4] * img_shape[-1]
+                _bboxes = (det_bboxes[:, :4] * scale_factor
                            if rescale else det_bboxes)
                 mask_rois = bbox2roi([_bboxes])
                 aug_masks = []
@@ -273,7 +275,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     mask_pred = self.mask_head[i](mask_feats)
                     aug_masks.append(mask_pred.sigmoid().cpu().numpy())
                 merged_masks = merge_aug_masks(aug_masks,
-                                               [img_meta[0]] * self.num_stages,
+                                               [img_meta] * self.num_stages,
                                                self.test_cfg.rcnn)
                 segm_result = self.mask_head[-1].get_seg_masks(
                     merged_masks, _bboxes, det_labels, rcnn_test_cfg,
