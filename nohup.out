@@ -1,0 +1,21 @@
+2018-10-22 12:28:29,794 - INFO - Distributed training: True
+2018-10-22 12:28:30,352 - INFO - load model from: modelzoo://resnet50
+2018-10-22 12:28:30,655 - WARNING - unexpected key in source state_dict: fc.weight, fc.bias
+
+missing keys in source state_dict: layer3.5.bn2.num_batches_tracked, layer3.0.bn3.num_batches_tracked, layer2.0.bn3.num_batches_tracked, layer2.1.bn3.num_batches_tracked, layer4.0.bn1.num_batches_tracked, layer4.2.bn2.num_batches_tracked, layer1.0.bn2.num_batches_tracked, layer2.2.bn3.num_batches_tracked, layer3.1.bn1.num_batches_tracked, layer2.2.bn1.num_batches_tracked, layer2.2.bn2.num_batches_tracked, layer3.4.bn1.num_batches_tracked, layer3.0.bn1.num_batches_tracked, layer4.0.bn3.num_batches_tracked, layer3.5.bn1.num_batches_tracked, layer1.0.bn1.num_batches_tracked, layer2.3.bn2.num_batches_tracked, layer2.3.bn3.num_batches_tracked, layer3.4.bn3.num_batches_tracked, layer1.1.bn1.num_batches_tracked, layer3.2.bn2.num_batches_tracked, layer1.1.bn2.num_batches_tracked, layer4.1.bn2.num_batches_tracked, layer3.2.bn3.num_batches_tracked, layer3.4.bn2.num_batches_tracked, layer3.3.bn2.num_batches_tracked, layer3.3.bn1.num_batches_tracked, layer2.0.bn1.num_batches_tracked, layer3.3.bn3.num_batches_tracked, layer3.0.downsample.1.num_batches_tracked, layer4.1.bn1.num_batches_tracked, layer2.0.bn2.num_batches_tracked, layer4.2.bn1.num_batches_tracked, layer2.0.downsample.1.num_batches_tracked, layer1.0.bn3.num_batches_tracked, layer1.2.bn2.num_batches_tracked, layer2.1.bn1.num_batches_tracked, layer2.3.bn1.num_batches_tracked, layer4.0.bn2.num_batches_tracked, layer1.0.downsample.1.num_batches_tracked, layer3.5.bn3.num_batches_tracked, layer3.1.bn2.num_batches_tracked, layer1.1.bn3.num_batches_tracked, layer1.2.bn1.num_batches_tracked, layer4.2.bn3.num_batches_tracked, layer3.2.bn1.num_batches_tracked, layer3.0.bn2.num_batches_tracked, layer2.1.bn2.num_batches_tracked, layer4.1.bn3.num_batches_tracked, bn1.num_batches_tracked, layer3.1.bn3.num_batches_tracked, layer1.2.bn3.num_batches_tracked, layer4.0.downsample.1.num_batches_tracked
+
+loading annotations into memory...
+loading annotations into memory...
+Done (t=16.99s)
+creating index...
+Done (t=17.19s)
+creating index...
+index created!
+index created!
+2018-10-22 12:28:54,283 - INFO - Start running, host: root@facedet-zwd, work_dir: /workspace/data/MM_det/mmdetection/work_dirs/faster_rcnn_r50_fpn_1x
+2018-10-22 12:28:54,283 - INFO - workflow: [('train', 1)], max: 12 epochs
+2018-10-22 12:29:36,001 - INFO - Epoch [1][50/29317]	lr: 0.00020, time: 0.834, data_time: 0.166, loss_rpn_cls: 0.6298, loss_rpn_reg: 0.0788, loss_cls: 1.2115, acc: 87.5352, loss_reg: 0.0508, loss: 1.9708
+2018-10-22 12:30:17,060 - INFO - Epoch [1][100/29317]	lr: 0.00023, time: 0.821, data_time: 0.145, loss_rpn_cls: 0.3411, loss_rpn_reg: 0.0663, loss_cls: 0.4157, acc: 95.2988, loss_reg: 0.1009, loss: 0.9239
+2018-10-22 12:30:58,080 - INFO - Epoch [1][150/29317]	lr: 0.00027, time: 0.820, data_time: 0.140, loss_rpn_cls: 0.2187, loss_rpn_reg: 0.0631, loss_cls: 0.4537, acc: 93.9199, loss_reg: 0.1328, loss: 0.8682
+2018-10-22 12:31:40,275 - INFO - Epoch [1][200/29317]	lr: 0.00030, time: 0.844, data_time: 0.139, loss_rpn_cls: 0.2297, loss_rpn_reg: 0.0721, loss_cls: 0.5135, acc: 92.4297, loss_reg: 0.1668, loss: 0.9820
+2018-10-22 12:32:21,650 - INFO - Epoch [1][250/29317]	lr: 0.00033, time: 0.827, data_time: 0.146, loss_rpn_cls: 0.1752, loss_rpn_reg: 0.0592, loss_cls: 0.4480, acc: 93.4922, loss_reg: 0.1483, loss: 0.8308
