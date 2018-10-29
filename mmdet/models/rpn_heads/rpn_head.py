@@ -66,6 +66,8 @@ class RPNHead(nn.Module):
         self.rpn_cls = nn.Conv2d(feat_channels, out_channels, 1)
         self.rpn_reg = nn.Conv2d(feat_channels, self.num_anchors * 4, 1)
         self.debug_imgs = None
+        self.target_means = target_means
+        self.target_stds = target_stds
 
     def init_weights(self):
         normal_init(self.rpn_conv, std=0.01)
@@ -120,11 +122,11 @@ class RPNHead(nn.Module):
 
         return anchor_list, valid_flag_list
 
-    def list_transpose(l):
+    def list_transpose(self, l):
         return list(map(list, zip(*l)))
-    def inner_product(v1_x ,v1_y, v2_x, v2_y):
+    def inner_product(self, v1_x ,v1_y, v2_x, v2_y):
         return v1_x * v2_x + v1_y * v2_y
-    def cal_angles(rpn_bbox_pred, bbox_targets, bbox_weights, anchors):
+    def cal_angles(self, rpn_bbox_pred, bbox_targets, bbox_weights, anchors):
         '''
             Input: [batch * num_anchors, 4] for first three variables
                    [num_anchors_per_level, 4] for anchors
@@ -135,8 +137,8 @@ class RPNHead(nn.Module):
         num_anchors = len(anchors)
         batch = int(len(rpn_bbox_pred) / num_anchors)
         #print("the shape of anchors {}".format(anchors.size(0)))
-        means=[.0, .0, .0, .0]
-        stds=[1.0, 1.0, 1.0, 1.0]
+        means=self.target_means
+        stds=self.target_stds
         means = anchors.new_tensor(means).repeat(anchors.size(0), 1)
         stds = anchors.new_tensor(stds).repeat(anchors.size(0), 1)
         # [anchors for every batch, 4]
