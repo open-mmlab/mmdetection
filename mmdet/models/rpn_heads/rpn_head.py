@@ -136,15 +136,12 @@ class RPNHead(nn.Module):
         #Denorm the pred
         num_anchors = len(anchors)
         batch = int(len(rpn_bbox_pred) / num_anchors)
-        #print("the shape of anchors {}".format(anchors.size(0)))
         means=self.target_means
         stds=self.target_stds
         means = anchors.new_tensor(means).repeat(anchors.size(0), 1)
         stds = anchors.new_tensor(stds).repeat(anchors.size(0), 1)
         # [anchors for every batch, 4]
-        #print(rpn_bbox_pred[1*num_anchors:2*num_anchors].shape)
-        #print("qwe")
-        #print(bbox_targets)
+        angles = 0
         for b in range(batch):
             # denorm
             tmp_rpn_bbox_pred = rpn_bbox_pred[b*num_anchors:(b+1)*num_anchors] * stds + means
@@ -172,9 +169,10 @@ class RPNHead(nn.Module):
                         torch.sqrt(self.inner_product(target_dx, target_dy, target_dx, target_dy))
             cos_angle = Inner_product / L2_norm
             cos_angle = torch.clamp(cos_angle, min=(-1+1e-7), max=(1-1e-7))
-            angle = torch.acos(cos_angle)
+            angle = torch.sum(torch.acos(cos_angle))
+        angles += angle
             
-        return torch.sum(angle)
+        return angles
 
     def loss_single(self, rpn_cls_score, rpn_bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, anchors, num_total_samples, cfg):
