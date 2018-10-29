@@ -200,7 +200,7 @@ class RPNHead(nn.Module):
             bbox_weights,
             beta=cfg.smoothl1_beta,
             avg_factor=num_total_samples)
-        preds_angles = cal_angles(rpn_bbox_pred, bbox_targets, bbox_weights, anchors[0])
+        preds_angles = self.cal_angles(rpn_bbox_pred, bbox_targets, bbox_weights, anchors[0])
         loss_angels = weighted_angel_losses(
             preds_angles,
             bbox_weights)
@@ -219,7 +219,7 @@ class RPNHead(nn.Module):
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_samples) = cls_reg_targets
-        anchor_list_ = list_transpose(anchor_list)
+        anchor_list_ = self.list_transpose(anchor_list)
         losses_cls, losses_reg, loss_angels = multi_apply(
             self.loss_single,
             rpn_cls_scores,
