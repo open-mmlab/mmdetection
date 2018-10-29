@@ -28,7 +28,7 @@ def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
 def weighted_angel_losses(preds_angles, bbox_weights, avg_factor=None, PI=PI):
     if avg_factor is None:
         avg_factor = torch.sum(bbox_weights > 0).float().item() / 4 + 1e-6
-    loss = preds_angles / PI
+    loss = preds_angles / PI / 8
     return torch.div(loss, avg_factor)
 
 def sigmoid_focal_loss(pred,
