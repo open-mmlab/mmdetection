@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from mmdet.core import (AnchorGenerator, anchor_target, delta2bbox,
                         multi_apply, weighted_cross_entropy, weighted_smoothl1,
-                        weighted_binary_cross_entropy)
+                        weighted_binary_cross_entropy, weighted_angel_losses)
 from mmdet.ops import nms
 from ..utils import normal_init
 
@@ -120,6 +120,58 @@ class RPNHead(nn.Module):
 
         return anchor_list, valid_flag_list
 
+    def list_transpose(l):
+        return list(map(list, zip(*l)))
+    def inner_product(v1_x ,v1_y, v2_x, v2_y):
+        return v1_x * v2_x + v1_y * v2_y
+    def cal_angles(rpn_bbox_pred, bbox_targets, bbox_weights, anchors):
+        '''
+            Input: [batch * num_anchors, 4] for first three variables
+                   [num_anchors_per_level, 4] for anchors
+            Return:
+                   [batch * num_anchors] 
+        '''
+        #Denorm the pred
+        num_anchors = len(anchors)
+        batch = int(len(rpn_bbox_pred) / num_anchors)
+        #print("the shape of anchors {}".format(anchors.size(0)))
+        means=[.0, .0, .0, .0]
+        stds=[1.0, 1.0, 1.0, 1.0]
+        means = anchors.new_tensor(means).repeat(anchors.size(0), 1)
+        stds = anchors.new_tensor(stds).repeat(anchors.size(0), 1)
+        # [anchors for every batch, 4]
+        #print(rpn_bbox_pred[1*num_anchors:2*num_anchors].shape)
+        #print("qwe")
+        #print(bbox_targets)
+        for b in range(batch):
+            # denorm
+            tmp_rpn_bbox_pred = rpn_bbox_pred[b*num_anchors:(b+1)*num_anchors] * stds + means
+            tmp_bbox_targets = bbox_targets[b*num_anchors:(b+1)*num_anchors] * stds + means
+            tmp_weights = bbox_weights[b*num_anchors:(b+1)*num_anchors]
+            # find the valid index
+            pos = tmp_weights[:, 0] > 0
+            pred_dx = tmp_rpn_bbox_pred[:, 0]
+            pred_dy = tmp_rpn_bbox_pred[:, 1]
+            target_dx = tmp_bbox_targets[:, 0]
+            target_dy = tmp_bbox_targets[:, 1]
+            anchor_w = anchors[:, 2] - anchors[:, 0]
+            anchor_h = anchors[:, 3] - anchors[:, 1]
+            pred_dx = pred_dx * anchor_w
+            pred_dy = pred_dy * anchor_h
+            target_dx = target_dx * anchor_w
+            target_dy = target_dy * anchor_h
+            # Narrow down them by weights
+            pred_dx = pred_dx[pos]
+            pred_dy = pred_dy[pos]
+            target_dx = target_dx[pos]
+            target_dy = target_dy[pos]
+            Inner_product = inner_product(pred_dx, pred_dy, target_dx, target_dy)
+            L2_norm = torch.sqrt(inner_product(pred_dx, pred_dy, pred_dx, pred_dy)) * \
+                        torch.sqrt(inner_product(target_dx, target_dy, target_dx, target_dy))
+            angle = torch.acos(Inner_product / L2_norm)
+            
+        return torch.sum(angle)
+
     def loss_single(self, rpn_cls_score, rpn_bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
         # classification loss
@@ -146,7 +198,11 @@ class RPNHead(nn.Module):
             bbox_weights,
             beta=cfg.smoothl1_beta,
             avg_factor=num_total_samples)
-        return loss_cls, loss_reg
+        preds_angles = cal_angles(rpn_bbox_pred, bbox_targets, bbox_weights, anchors[0])
+        loss_angels = weighted_angel_losses(
+            preds_angles,
+            bbox_weights)
+        return loss_cls, loss_reg, loss_angels
 
     def loss(self, rpn_cls_scores, rpn_bbox_preds, gt_bboxes, img_shapes, cfg):
         featmap_sizes = [featmap.size()[-2:] for featmap in rpn_cls_scores]
@@ -161,7 +217,8 @@ class RPNHead(nn.Module):
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_samples) = cls_reg_targets
-        losses_cls, losses_reg = multi_apply(
+        anchor_list_ = list_transpose(anchor_list)
+        losses_cls, losses_reg, loss_angels = multi_apply(
             self.loss_single,
             rpn_cls_scores,
             rpn_bbox_preds,
@@ -169,9 +226,10 @@ class RPNHead(nn.Module):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
+            anchor_list_,
             num_total_samples=num_total_samples,
             cfg=cfg)
-        return dict(loss_rpn_cls=losses_cls, loss_rpn_reg=losses_reg)
+        return dict(loss_rpn_cls=losses_cls, loss_rpn_reg=losses_reg, loss_rpn_angles=loss_angels)
 
     def get_proposals(self, rpn_cls_scores, rpn_bbox_preds, img_meta, cfg):
         num_imgs = len(img_meta)

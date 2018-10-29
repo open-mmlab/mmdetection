@@ -1,6 +1,7 @@
 # TODO merge naive and weighted loss.
 import torch
 import torch.nn.functional as F
+import math.pi as PI
 
 
 def weighted_nll_loss(pred, label, weight, avg_factor=None):
@@ -24,6 +25,11 @@ def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
         pred, label.float(), weight.float(),
         reduction='sum')[None] / avg_factor
 
+def weighted_anglel_losses(preds_angles, bbox_weights, avg_factor=None, PI=PI):
+    if avg_factor is None:
+        avg_factor = torch.sum(bbox_weights > 0).float().item() / 4 + 1e-6
+    loss = preds_angles / PI
+    return torch.div(loss, avg_factor)
 
 def sigmoid_focal_loss(pred,
                        target,
