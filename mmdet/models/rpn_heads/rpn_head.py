@@ -170,7 +170,9 @@ class RPNHead(nn.Module):
             Inner_product = self.inner_product(pred_dx, pred_dy, target_dx, target_dy)
             L2_norm = torch.sqrt(self.inner_product(pred_dx, pred_dy, pred_dx, pred_dy)) * \
                         torch.sqrt(self.inner_product(target_dx, target_dy, target_dx, target_dy))
-            angle = torch.acos(Inner_product / L2_norm)
+            cos_angle = Inner_product / L2_norm
+            cos_angle = torch.clamp(cos_angle, min=(-1+1e-7), max=(1-1e-7))
+            angle = torch.acos(cos_angle)
             
         return torch.sum(angle)
 
