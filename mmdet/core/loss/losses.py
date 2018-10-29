@@ -1,7 +1,7 @@
 # TODO merge naive and weighted loss.
 import torch
 import torch.nn.functional as F
-import math.pi as PI
+from math import pi as PI
 
 
 def weighted_nll_loss(pred, label, weight, avg_factor=None):
