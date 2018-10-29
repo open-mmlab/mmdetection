@@ -167,15 +167,15 @@ class RPNHead(nn.Module):
             pred_dy = pred_dy[pos]
             target_dx = target_dx[pos]
             target_dy = target_dy[pos]
-            Inner_product = inner_product(pred_dx, pred_dy, target_dx, target_dy)
-            L2_norm = torch.sqrt(inner_product(pred_dx, pred_dy, pred_dx, pred_dy)) * \
-                        torch.sqrt(inner_product(target_dx, target_dy, target_dx, target_dy))
+            Inner_product = self.inner_product(pred_dx, pred_dy, target_dx, target_dy)
+            L2_norm = torch.sqrt(self.inner_product(pred_dx, pred_dy, pred_dx, pred_dy)) * \
+                        torch.sqrt(self.inner_product(target_dx, target_dy, target_dx, target_dy))
             angle = torch.acos(Inner_product / L2_norm)
             
         return torch.sum(angle)
 
     def loss_single(self, rpn_cls_score, rpn_bbox_pred, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples, cfg):
+                    bbox_targets, bbox_weights, anchors, num_total_samples, cfg):
         # classification loss
         labels = labels.contiguous().view(-1)
         label_weights = label_weights.contiguous().view(-1)
@@ -212,6 +212,8 @@ class RPNHead(nn.Module):
 
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_shapes)
+        # anchor_list -> batch * level_anchor(5) * anchors_per * 4
+        anchor_list_ = self.list_transpose(anchor_list)
         cls_reg_targets = anchor_target(
             anchor_list, valid_flag_list, gt_bboxes, img_shapes,
             self.target_means, self.target_stds, cfg)
@@ -219,7 +221,6 @@ class RPNHead(nn.Module):
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_samples) = cls_reg_targets
-        anchor_list_ = self.list_transpose(anchor_list)
         losses_cls, losses_reg, loss_angels = multi_apply(
             self.loss_single,
             rpn_cls_scores,
