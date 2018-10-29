@@ -30,7 +30,7 @@ class RPNHead(nn.Module):
         target_stds (Iterable): Std values of regression targets.
         use_sigmoid_cls (bool): Whether to use sigmoid loss for classification.
             (softmax by default)
-    """
+    """  # noqa: W605
 
     def __init__(self,
                  in_channels,
