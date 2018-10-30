@@ -1,1 +1,1 @@
-./tools/dist_train.sh configs/faster_rcnn_r50_fpn_1x.py 2 
+./tools/dist_train.sh configs/faster_rcnn_r50_fpn_1x_voc.py 2 -validate 
