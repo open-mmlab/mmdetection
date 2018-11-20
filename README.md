@@ -34,6 +34,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
 
+v0.5.2 (21/10/2018)
+- Add support for custom datasets.
+- Add a script to convert PASCAL VOC annotations to the expected format.
+
 v0.5.1 (20/10/2018)
 - Add BBoxAssigner and BBoxSampler, the `train_cfg` field in config files are restructured.
 - `ConvFCRoIHead` / `SharedFCRoIHead` are renamed to `ConvFCBBoxHead` / `SharedFCBBoxHead` for consistency.
@@ -208,6 +212,48 @@ Expected results in WORK_DIR:
 > **Note**
 > 1. We recommend using distributed training with NCCL2 even on a single machine, which is faster. Non-distributed training is for debugging or other purposes.
 > 2. The default learning rate is for 8 GPUs. If you use less or more than 8 GPUs, you need to set the learning rate proportional to the GPU num. E.g., modify lr to 0.01 for 4 GPUs or 0.04 for 16 GPUs.
+
+### Train on custom datasets
+
+We define a simple annotation format.
+
+The annotation of a dataset is a list of dict, each dict corresponds to an image.
+There are 3 field `filename` (relative path), `width`, `height` for testing,
+and an additional field `ann` for training. `ann` is also a dict containing at least 2 fields:
+`bboxes` and `labels`, both of which are numpy arrays. Some datasets may provide
+annotations like crowd/difficult/ignored bboxes, we use `bboxes_ignore` and `labels_ignore`
+to cover them.
+
+Here is an example.
+```
+[
+    {
+        'filename': 'a.jpg',
+        'width': 1280,
+        'height': 720,
+        'ann': {
+            'bboxes': <np.ndarray> (n, 4),
+            'labels': <np.ndarray> (n, ),
+            'bboxes_ignore': <np.ndarray> (k, 4),
+            'labels_ignore': <np.ndarray> (k, 4) (optional field)
+        }
+    },
+    ...
+]
+```
+
+There are two ways to work with custom datasets.
+
+- online conversion
+
+  You can write a new Dataset class inherited from `CustomDataset`, and overwrite two methods
+  `load_annotations(self, ann_file)` and `get_ann_info(self, idx)`, like [CocoDataset](mmdet/datasets/coco.py).
+
+- offline conversion
+
+  You can convert the annotation format to the expected format above and save it to
+  a pickle file, like [pascal_voc.py](tools/convert_datasets/pascal_voc.py).
+  Then you can simply use `CustomDataset`.
 
 ## Technical details
 
