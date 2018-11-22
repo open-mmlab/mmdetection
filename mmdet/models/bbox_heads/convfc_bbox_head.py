@@ -11,7 +11,7 @@ class ConvFCBBoxHead(BBoxHead):
                                 /-> cls convs -> cls fcs -> cls
     shared convs -> shared fcs
                                 \-> reg convs -> reg fcs -> reg
-    """
+    """  # noqa: W605
 
     def __init__(self,
                  num_shared_convs=0,
