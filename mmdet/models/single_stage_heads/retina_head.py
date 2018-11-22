@@ -258,6 +258,11 @@ class RetinaHead(nn.Module):
             bbox_pred = bbox_pred.permute(1, 2, 0).contiguous().view(-1, 4)
             proposals = delta2bbox(anchors, bbox_pred, self.target_means,
                                    self.target_stds, img_shape)
+            if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
+                maxscores, _ = scores.max(dim=1)
+                _, topk_inds = maxscores.topk(cfg.nms_pre)
+                proposals = proposals[topk_inds, :]
+                scores = scores[topk_inds, :]
             mlvl_proposals.append(proposals)
             mlvl_scores.append(scores)
         mlvl_proposals = torch.cat(mlvl_proposals)
