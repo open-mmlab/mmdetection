@@ -1,46 +1,41 @@
 # model settings
 model = dict(
-    type='FastRCNN',
+    type='FasterRCNN',
     pretrained='modelzoo://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
-        num_stages=4,
-        out_indices=(0, 1, 2, 3),
+        num_stages=3,
+        strides=(1, 2, 2),
+        dilations=(1, 1, 1),
+        out_indices=(2, ),
         frozen_stages=1,
         style='pytorch'),
-    neck=dict(
-        type='FPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
-        num_outs=5),
-    upper_neck=None,
+    neck=None,
+    upper_neck=dict(
+        type='ResUpperNeck',
+        depth=50,
+        layer_indicate=3,
+        stride=2,
+        dilation=1,
+        style='pytorch',
+        bn_eval=True,
+        bn_frozen=False,
+        with_cp=False),
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
-        out_channels=256,
-        featmap_strides=[4, 8, 16, 32]),
+        roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
+        out_channels=1024,
+        featmap_strides=[16]),
     bbox_head=dict(
-        type='SharedFCBBoxHead',
-        num_fcs=2,
-        in_channels=256,
-        fc_out_channels=1024,
+        type='BBoxHead',
+        with_avg_pool=True,
         roi_feat_size=7,
+        in_channels=2048,
         num_classes=81,
         target_means=[0., 0., 0., 0.],
         target_stds=[0.1, 0.1, 0.2, 0.2],
-        reg_class_agnostic=False),
-    mask_roi_extractor=dict(
-        type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
-        out_channels=256,
-        featmap_strides=[4, 8, 16, 32]),
-    mask_head=dict(
-        type='FCNMaskHead',
-        num_convs=4,
-        in_channels=256,
-        conv_out_channels=256,
-        num_classes=81))
+        reg_class_agnostic=False))
 # model training and testing settings
 train_cfg = dict(
     rcnn=dict(
@@ -56,15 +51,12 @@ train_cfg = dict(
             add_gt_as_proposals=True,
             pos_balance_sampling=False,
             neg_balance_thr=0),
-        mask_size=28,
         pos_weight=-1,
         debug=False))
-test_cfg = dict(
-    rcnn=dict(
-        score_thr=0.05, max_per_img=100, nms_thr=0.5, mask_thr_binary=0.5))
+test_cfg = dict(rcnn=dict(score_thr=0.05, max_per_img=100, nms_thr=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = '/mnt/SSD/dataset/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
@@ -79,7 +71,7 @@ data = dict(
         size_divisor=32,
         proposal_file=data_root + 'proposals/rpn_r50_fpn_1x_train2017.pkl',
         flip_ratio=0.5,
-        with_mask=True,
+        with_mask=False,
         with_crowd=True,
         with_label=True),
     val=dict(
@@ -91,7 +83,7 @@ data = dict(
         proposal_file=data_root + 'proposals/rpn_r50_fpn_1x_val2017.pkl',
         size_divisor=32,
         flip_ratio=0,
-        with_mask=True,
+        with_mask=False,
         with_crowd=True,
         with_label=True),
     test=dict(
@@ -129,7 +121,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fast_mask_rcnn_r50_fpn_1x'
+work_dir = './work_dirs/faster_rcnn_r50_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

@@ -13,6 +13,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
     def __init__(self,
                  backbone,
                  neck=None,
+                 upper_neck=None,
                  rpn_head=None,
                  bbox_roi_extractor=None,
                  bbox_head=None,
@@ -27,7 +28,10 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if neck is not None:
             self.neck = builder.build_neck(neck)
         else:
-            raise NotImplementedError
+            assert upper_neck is not None
+
+        if upper_neck is not None:
+            self.upper_neck = builder.build_upper_neck(upper_neck)
 
         if rpn_head is not None:
             self.rpn_head = builder.build_rpn_head(rpn_head)
@@ -60,6 +64,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                     m.init_weights()
             else:
                 self.neck.init_weights()
+        if self.with_upper_neck:
+            self.upper_neck.init_weights(pretrained=pretrained)
         if self.with_rpn:
             self.rpn_head.init_weights()
         if self.with_bbox:
@@ -116,6 +122,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             # TODO: a more flexible way to decide which feature maps to use
             bbox_feats = self.bbox_roi_extractor(
                 x[:self.bbox_roi_extractor.num_inputs], rois)
+            if self.with_upper_neck:
+                bbox_feats = self.upper_neck(bbox_feats)
             cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
             bbox_targets = self.bbox_head.get_target(

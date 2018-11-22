@@ -6,6 +6,7 @@ class FasterRCNN(TwoStageDetector):
     def __init__(self,
                  backbone,
                  neck,
+                 upper_neck,
                  rpn_head,
                  bbox_roi_extractor,
                  bbox_head,
@@ -13,11 +14,12 @@ class FasterRCNN(TwoStageDetector):
                  test_cfg,
                  pretrained=None):
         super(FasterRCNN, self).__init__(
-                    backbone=backbone,
-                    neck=neck,
-                    rpn_head=rpn_head,
-                    bbox_roi_extractor=bbox_roi_extractor,
-                    bbox_head=bbox_head,
-                    train_cfg=train_cfg,
-                    test_cfg=test_cfg,
-                    pretrained=pretrained)
+            backbone=backbone,
+            neck=neck,
+            upper_neck=upper_neck,
+            rpn_head=rpn_head,
+            bbox_roi_extractor=bbox_roi_extractor,
+            bbox_head=bbox_head,
+            train_cfg=train_cfg,
+            test_cfg=test_cfg,
+            pretrained=pretrained)

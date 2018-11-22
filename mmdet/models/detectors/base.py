@@ -21,6 +21,10 @@ class BaseDetector(nn.Module):
         return hasattr(self, 'neck') and self.neck is not None
 
     @property
+    def with_upper_neck(self):
+        return hasattr(self, 'upper_neck') and self.upper_neck is not None
+
+    @property
     def with_bbox(self):
         return hasattr(self, 'bbox_head') and self.bbox_head is not None
 

@@ -37,6 +37,8 @@ class BBoxTestMixin(object):
         rois = bbox2roi(proposals)
         roi_feats = self.bbox_roi_extractor(
             x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
+        if self.with_upper_neck:
+            roi_feats = self.upper_neck(roi_feats)
         cls_score, bbox_pred = self.bbox_head(roi_feats)
         img_shape = img_meta[0]['img_shape']
         scale_factor = img_meta[0]['scale_factor']
@@ -65,6 +67,8 @@ class BBoxTestMixin(object):
             # recompute feature maps to save GPU memory
             roi_feats = self.bbox_roi_extractor(
                 x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
+            if self.with_upper_neck:
+                roi_feats = self.upper_neck(roi_feats)
             cls_score, bbox_pred = self.bbox_head(roi_feats)
             bboxes, scores = self.bbox_head.get_det_bboxes(
                 rois,

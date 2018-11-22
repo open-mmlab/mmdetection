@@ -1,12 +1,13 @@
 from mmcv.runner import obj_from_dict
 from torch import nn
 
-from . import (backbones, necks, roi_extractors, rpn_heads, bbox_heads,
-               mask_heads)
+from . import (backbones, necks, upper_necks, roi_extractors, rpn_heads,
+               bbox_heads, mask_heads)
 
 __all__ = [
-    'build_backbone', 'build_neck', 'build_rpn_head', 'build_roi_extractor',
-    'build_bbox_head', 'build_mask_head', 'build_detector'
+    'build_backbone', 'build_neck', 'build_upper_neck', 'build_rpn_head',
+    'build_roi_extractor', 'build_bbox_head', 'build_mask_head',
+    'build_detector'
 ]
 
 
@@ -29,6 +30,10 @@ def build_backbone(cfg):
 
 def build_neck(cfg):
     return build(cfg, necks)
+
+
+def build_upper_neck(cfg):
+    return build(cfg, upper_necks)
 
 
 def build_rpn_head(cfg):
