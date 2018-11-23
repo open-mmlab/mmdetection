@@ -22,16 +22,16 @@ model = dict(
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
+        octave_base_scale=4,
         scales_per_octave=3,
-        anchor_scale=4,
-        anchor_ratios=[1.0, 2.0, 0.5],
+        anchor_ratios=[0.5, 1.0, 2.0],
         anchor_strides=[8, 16, 32, 64, 128],
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0]))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
-        pos_iou_thr=0.5, neg_iou_thr=0.4, min_pos_iou=0.4, ignore_iof_thr=-1),
+        pos_iou_thr=0.5, neg_iou_thr=0.4, min_pos_iou=0, ignore_iof_thr=-1),
     smoothl1_beta=0.11,
     gamma=2.0,
     alpha=0.25,
@@ -99,7 +99,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=20,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
