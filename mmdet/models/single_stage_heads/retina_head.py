@@ -23,6 +23,14 @@ class RetinaHead(nn.Module):
         stacked_convs (int): Number of convolutional layers added for cls and
             reg branch.
         feat_channels (int): Number of channels for the RPN feature map.
+        scales_per_octave (int): Number of anchor scales per octave.
+        octave_base_scale (int): Base octave scale. Anchor scales are computed
+            as `s*2^(i/n)`, for i in [0, n-1], where s is `octave_base_scale`
+            and n is `scales_per_octave`.
+        anchor_ratios (Iterable): Anchor aspect ratios.
+        anchor_strides (Iterable): Anchor strides.
+        target_means (Iterable): Mean values of regression targets.
+        target_stds (Iterable): Std values of regression targets.
     """
 
     def __init__(self,
@@ -30,30 +38,32 @@ class RetinaHead(nn.Module):
                  num_classes,
                  stacked_convs=4,
                  feat_channels=256,
+                 octave_base_scale=4,
                  scales_per_octave=3,
-                 anchor_scale=4,
-                 anchor_ratios=[1.0, 2.0, 0.5],
+                 anchor_ratios=[0.5, 1.0, 2.0],
                  anchor_strides=[8, 16, 32, 64, 128],
-                 target_means=[.0, .0, .0, .0],
-                 target_stds=[1.0, 1.0, 1.0, 1.0]):
+                 anchor_base_sizes=None,
+                 target_means=(.0, .0, .0, .0),
+                 target_stds=(1.0, 1.0, 1.0, 1.0)):
         super(RetinaHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
+        self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
-        self.anchor_scale = anchor_scale
-        self.anchor_strides = anchor_strides
         self.anchor_ratios = anchor_ratios
+        self.anchor_strides = anchor_strides
+        self.anchor_base_sizes = list(
+            anchor_strides) if anchor_base_sizes is None else anchor_base_sizes
         self.target_means = target_means
         self.target_stds = target_stds
+
         self.anchor_generators = []
-        for anchor_stride in self.anchor_strides:
-            octave_scales = np.array([
-                2**(octave / float(scales_per_octave))
-                for octave in range(scales_per_octave)
-            ])
-            octave_scales = octave_scales * anchor_scale
+        for anchor_base in self.anchor_base_sizes:
+            octave_scales = np.array(
+                [2**(i / scales_per_octave) for i in range(scales_per_octave)])
+            anchor_scales = octave_scales * octave_base_scale
             self.anchor_generators.append(
-                AnchorGenerator(anchor_stride, octave_scales, anchor_ratios))
+                AnchorGenerator(anchor_base, anchor_scales, anchor_ratios))
         self.relu = nn.ReLU(inplace=True)
         self.num_anchors = int(
             len(self.anchor_ratios) * self.scales_per_octave)
