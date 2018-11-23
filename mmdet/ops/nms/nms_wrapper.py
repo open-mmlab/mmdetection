@@ -9,7 +9,9 @@ from .cpu_soft_nms import cpu_soft_nms
 def nms(dets, thresh, device_id=None):
     """Dispatch to either CPU or GPU NMS implementations."""
 
+    is_tensor = False
     if isinstance(dets, torch.Tensor):
+        is_tensor = True
         if dets.is_cuda:
             device_id = dets.get_device()
         dets = dets.detach().cpu().numpy()
@@ -21,7 +23,7 @@ def nms(dets, thresh, device_id=None):
         inds = (gpu_nms(dets, thresh, device_id=device_id)
                 if device_id is not None else cpu_nms(dets, thresh))
 
-    if isinstance(dets, torch.Tensor):
+    if is_tensor:
         return dets.new_tensor(inds, dtype=torch.long)
     else:
         return np.array(inds, dtype=np.int)
