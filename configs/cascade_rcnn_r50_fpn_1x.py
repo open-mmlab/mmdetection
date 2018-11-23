@@ -128,7 +128,7 @@ train_cfg = dict(
             pos_weight=-1,
             debug=False)
     ],
-    loss_weight=[1, 0.5, 0.4])
+    stage_loss_weights=[1, 0.5, 0.25])
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,
