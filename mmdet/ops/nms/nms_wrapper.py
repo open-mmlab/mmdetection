@@ -12,14 +12,14 @@ def nms(dets, thresh, device_id=None):
     if isinstance(dets, torch.Tensor):
         if dets.is_cuda:
             device_id = dets.get_device()
-        dets = dets.detach().cpu().numpy()
-    assert isinstance(dets, np.ndarray)
+        _dets = dets.detach().cpu().numpy()
+    assert isinstance(_dets, np.ndarray)
 
-    if dets.shape[0] == 0:
+    if _dets.shape[0] == 0:
         inds = []
     else:
-        inds = (gpu_nms(dets, thresh, device_id=device_id)
-                if device_id is not None else cpu_nms(dets, thresh))
+        inds = (gpu_nms(_dets, thresh, device_id=device_id)
+                if device_id is not None else cpu_nms(_dets, thresh))
 
     if isinstance(dets, torch.Tensor):
         return dets.new_tensor(inds, dtype=torch.long)
