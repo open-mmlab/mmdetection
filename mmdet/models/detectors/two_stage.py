@@ -65,6 +65,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if self.with_bbox:
             self.bbox_roi_extractor.init_weights()
             self.bbox_head.init_weights()
+        if self.with_mask:
+            self.mask_roi_extractor.init_weights()
+            self.mask_head.init_weights()
 
     def extract_feat(self, img):
         x = self.backbone(img)

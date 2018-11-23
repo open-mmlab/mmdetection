@@ -25,12 +25,12 @@ def build_dataloader(dataset,
         batch_size = imgs_per_gpu
         num_workers = workers_per_gpu
     else:
-        sampler = GroupSampler(dataset, imgs_per_gpu)
+        if not kwargs.get('shuffle', True):
+            sampler = None
+        else:
+            sampler = GroupSampler(dataset, imgs_per_gpu)
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
-
-    if not kwargs.get('shuffle', True):
-        sampler = None
 
     data_loader = DataLoader(
         dataset,
