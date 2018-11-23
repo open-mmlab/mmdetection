@@ -13,6 +13,9 @@ def nms(dets, thresh, device_id=None):
         if dets.is_cuda:
             device_id = dets.get_device()
         _dets = dets.detach().cpu().numpy()
+    else:
+        _dets = dets.copy()
+        
     assert isinstance(_dets, np.ndarray)
 
     if _dets.shape[0] == 0:
