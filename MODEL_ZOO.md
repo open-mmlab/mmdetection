@@ -79,6 +79,14 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 | R-50-FPN | pytorch | 1x      |          |                     |                |        |          |
 | R-50-FPN | pytorch | 2x      |          |                     |                |        |          |
 
+### Cascade R-CNN
+
+| Backbone | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
+|:--------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
+| R-50-FPN | caffe   | 1x      | 5.0      | 0.592               | 8.1            | 40.3   | -        |
+| R-50-FPN | pytorch | 1x      | 5.5      | 0.622               | 8.0            | 40.3   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_r50_fpn_1x_20181123-c019abac.pth) |
+| R-50-FPN | pytorch | 20e     | 5.5      | 0.622               | 8.0            | 41.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_r50_fpn_20e_20181123-c4cad178.pth) |
+
 
 ## Comparison with Detectron
 
