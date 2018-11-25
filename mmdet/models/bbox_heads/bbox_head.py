@@ -171,10 +171,10 @@ class BBoxHead(nn.Module):
             rois (Tensor): shape (n, 4) or (n, 5)
             label (Tensor): shape (n, )
             bbox_pred (Tensor): shape (n, 4*(#class+1)) or (n, 4)
-            img_shape (Tensor): shape (3, )
+            img_meta (dict): Image meta info.
 
         Returns:
-            Tensor: same shape as input rois
+            Tensor: Regressed bboxes, the same shape as input rois.
         """
         assert rois.size(1) == 4 or rois.size(1) == 5
 
