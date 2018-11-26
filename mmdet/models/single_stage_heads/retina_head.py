@@ -31,7 +31,7 @@ class RetinaHead(nn.Module):
         anchor_strides (Iterable): Anchor strides.
         target_means (Iterable): Mean values of regression targets.
         target_stds (Iterable): Std values of regression targets.
-    """
+    """  # noqa: W605
 
     def __init__(self,
                  in_channels,
