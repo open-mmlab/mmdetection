@@ -60,7 +60,10 @@ train_cfg = dict(
         debug=False))
 test_cfg = dict(
     rcnn=dict(
-        score_thr=0.05, max_per_img=100, nms_thr=0.5, mask_thr_binary=0.5))
+        score_thr=0.05,
+        nms=dict(type='nms', iou_thr=0.5),
+        max_per_img=100,
+        mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
