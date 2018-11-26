@@ -100,7 +100,7 @@ class BBoxHead(nn.Module):
                        img_shape,
                        scale_factor,
                        rescale=False,
-                       nms_cfg=None):
+                       cfg=None):
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
@@ -115,12 +115,11 @@ class BBoxHead(nn.Module):
         if rescale:
             bboxes /= scale_factor
 
-        if nms_cfg is None:
+        if cfg is None:
             return bboxes, scores
         else:
             det_bboxes, det_labels = multiclass_nms(
-                bboxes, scores, nms_cfg.score_thr, nms_cfg.nms_thr,
-                nms_cfg.max_per_img)
+                bboxes, scores, cfg.score_thr, cfg.nms, cfg.max_per_img)
 
             return det_bboxes, det_labels
 
