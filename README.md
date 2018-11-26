@@ -6,6 +6,8 @@
 mmdetection is an open source object detection toolbox based on PyTorch. It is
 a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
 
+![demo image](demo/coco_test_12510.jpg)
+
 ### Major features
 
 - **Modular Design**
@@ -33,6 +35,9 @@ which is heavily depended on by this toolbox.
 This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
+
+v0.5.3 (26/11/2018)
+- Add Cascade R-CNN and Cascade Mask R-CNN.
 
 v0.5.2 (21/10/2018)
 - Add support for custom datasets.

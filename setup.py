@@ -93,7 +93,7 @@ if __name__ == '__main__':
         package_data={'mmdet.ops': ['*/*.so']},
         classifiers=[
             'Development Status :: 4 - Beta',
-            'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+            'License :: OSI Approved :: Apache Software License',
             'Operating System :: OS Independent',
             'Programming Language :: Python :: 2',
             'Programming Language :: Python :: 2.7',
