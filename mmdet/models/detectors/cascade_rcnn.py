@@ -248,7 +248,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 rois = bbox_head.regress_by_class(rois, bbox_label, bbox_pred,
                                                   img_meta[0])
 
-        cls_score = sum(ms_scores) / len(ms_scores)
+        cls_score = sum(ms_scores) / self.num_stages
         det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
             rois,
             cls_score,
@@ -286,14 +286,21 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             ms_segm_result['ensemble'] = segm_result
 
         if not self.test_cfg.keep_all_stages:
-            ms_bbox_result = ms_bbox_result['ensemble']
             if self.with_mask:
-                ms_segm_result = ms_segm_result['ensemble']
-
-        if not self.with_mask:
-            return ms_bbox_result
+                results = (ms_bbox_result['ensemble'],
+                           ms_segm_result['ensemble'])
+            else:
+                results = ms_bbox_result['ensemble']
         else:
-            return ms_bbox_result, ms_segm_result
+            if self.with_mask:
+                results = {
+                    stage: (ms_bbox_result[stage], ms_segm_result[stage])
+                    for stage in ms_bbox_result
+                }
+            else:
+                results = ms_bbox_result
+
+        return results
 
     def aug_test(self, img, img_meta, proposals=None, rescale=False):
         raise NotImplementedError
