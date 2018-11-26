@@ -84,16 +84,16 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 | Backbone | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
 |:--------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
 | R-50-FPN | caffe   | 1x      | 5.0      | 0.592               | 8.1            | 40.3   | -        |
-| R-50-FPN | pytorch | 1x      | 5.5      | 0.622               | 8.0            | 40.3   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_r50_fpn_1x_20181123-8364f8e1.pth) |
-| R-50-FPN | pytorch | 20e     | 5.5      | 0.622               | 8.0            | 41.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_r50_fpn_20e_20181123-0f2313ff.pth) |
+| R-50-FPN | pytorch | 1x      | 5.5      | 0.622               | 8.0            | 40.3   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_r50_fpn_1x_20181123-b1987c4a.pth) |
+| R-50-FPN | pytorch | 20e     | 5.5      | 0.622               | 8.0            | 41.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_r50_fpn_20e_20181123-db483a09.pth) |
 
 ### Cascade Mask R-CNN
 
 | Backbone | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
 |:--------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:-------:|:--------:|
 | R-50-FPN | caffe   | 1x      | 7.5      | 0.880               | 5.8            | 41.0   | 35.6    | -        |
-| R-50-FPN | pytorch | 1x      | 7.6      | 0.910               | 5.7            | 41.3   | 35.7    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_r50_fpn_1x_20181123-cd2f2bc6.pth) |
-| R-50-FPN | pytorch | 20e     | 7.6      | 0.910               | 5.7            | 42.4   | 36.6    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_r50_fpn_20e_20181123-53811412.pth) |
+| R-50-FPN | pytorch | 1x      | 7.6      | 0.910               | 5.7            | 41.3   | 35.7    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_r50_fpn_1x_20181123-88b170c9.pth) |
+| R-50-FPN | pytorch | 20e     | 7.6      | 0.910               | 5.7            | 42.4   | 36.6    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_r50_fpn_20e_20181123-6e0c9713.pth) |
 
 
 ## Comparison with Detectron
