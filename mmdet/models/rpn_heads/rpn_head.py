@@ -234,13 +234,13 @@ class RPNHead(nn.Module):
             proposals = proposals[valid_inds, :]
             scores = scores[valid_inds]
             proposals = torch.cat([proposals, scores.unsqueeze(-1)], dim=-1)
-            nms_keep = nms(proposals, cfg.nms_thr)[:cfg.nms_post]
-            proposals = proposals[nms_keep, :]
+            proposals, _ = nms(proposals, cfg.nms_thr)
+            proposals = proposals[:cfg.nms_post, :]
             mlvl_proposals.append(proposals)
         proposals = torch.cat(mlvl_proposals, 0)
         if cfg.nms_across_levels:
-            nms_keep = nms(proposals, cfg.nms_thr)[:cfg.max_num]
-            proposals = proposals[nms_keep, :]
+            proposals, _ = nms(proposals, cfg.nms_thr)
+            proposals = proposals[:cfg.max_num, :]
         else:
             scores = proposals[:, 4]
             _, order = scores.sort(0, descending=True)

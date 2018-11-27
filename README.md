@@ -38,6 +38,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 v0.5.3 (26/11/2018)
 - Add Cascade R-CNN and Cascade Mask R-CNN.
+- Add support for Soft-NMS in config files.
 
 v0.5.2 (21/10/2018)
 - Add support for custom datasets.

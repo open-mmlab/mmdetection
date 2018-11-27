@@ -81,7 +81,11 @@ test_cfg = dict(
         max_num=2000,
         nms_thr=0.7,
         min_bbox_size=0),
-    rcnn=dict(score_thr=0.05, max_per_img=100, nms_thr=0.5))
+    rcnn=dict(
+        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=100)
+    # soft-nms is also supported for rcnn testing
+    # e.g., nms=dict(type='soft_nms', iou_thr=0.5, min_score=0.05)
+)
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
