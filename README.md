@@ -41,6 +41,7 @@ v0.5.4 (27/11/2018)
 
 v0.5.3 (26/11/2018)
 - Add Cascade R-CNN and Cascade Mask R-CNN.
+- Add support for Soft-NMS in config files.
 
 v0.5.2 (21/10/2018)
 - Add support for custom datasets.
