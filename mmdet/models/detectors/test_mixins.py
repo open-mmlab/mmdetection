@@ -47,7 +47,7 @@ class BBoxTestMixin(object):
             img_shape,
             scale_factor,
             rescale=rescale,
-            nms_cfg=rcnn_test_cfg)
+            cfg=rcnn_test_cfg)
         return det_bboxes, det_labels
 
     def aug_test_bboxes(self, feats, img_metas, proposal_list, rcnn_test_cfg):
@@ -73,15 +73,15 @@ class BBoxTestMixin(object):
                 img_shape,
                 scale_factor,
                 rescale=False,
-                nms_cfg=None)
+                cfg=None)
             aug_bboxes.append(bboxes)
             aug_scores.append(scores)
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = merge_aug_bboxes(
-            aug_bboxes, aug_scores, img_metas, self.test_cfg.rcnn)
+            aug_bboxes, aug_scores, img_metas, rcnn_test_cfg)
         det_bboxes, det_labels = multiclass_nms(
-            merged_bboxes, merged_scores, self.test_cfg.rcnn.score_thr,
-            self.test_cfg.rcnn.nms_thr, self.test_cfg.rcnn.max_per_img)
+            merged_bboxes, merged_scores, rcnn_test_cfg.score_thr,
+            rcnn_test_cfg.nms, rcnn_test_cfg.max_per_img)
         return det_bboxes, det_labels
 
 
