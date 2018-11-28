@@ -1,12 +1,10 @@
 from __future__ import division
 
 import argparse
-import copy
 from mmcv import Config
 from mmcv.runner import obj_from_dict
 
 from mmdet import datasets, __version__
-from mmdet.datasets import ConcatDataset
 from mmdet.apis import (train_detector, init_dist, get_root_logger,
                         set_random_seed)
 from mmdet.models import build_detector
@@ -36,24 +34,6 @@ def parse_args():
     args = parser.parse_args()
 
     return args
-
-
-def get_train_dataset(cfg):
-    if isinstance(cfg.data.train['ann_file'], list) or isinstance(cfg.data.train['ann_file'], tuple):
-        ann_files = cfg.data.train['ann_file']
-        train_datasets = []
-        for ann_file in ann_files:
-            data_info = copy.deepcopy(cfg.data.train)
-            data_info['ann_file'] = ann_file
-            train_dset = obj_from_dict(data_info, datasets)            
-            train_datasets.append(train_dset)
-        if len(train_datasets) > 1:
-            train_dataset = ConcatDataset(train_datasets)            
-        else:
-            train_dataset = train_datasets[0]
-    else:
-        train_dataset = obj_from_dict(cfg.data.train, datasets)
-    return train_dataset
 
 
 def main():
@@ -87,7 +67,7 @@ def main():
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
-    train_dataset = get_train_dataset(cfg)
+    train_dataset = datasets.get_dataset(cfg.data.train)
     train_detector(
         model,
         train_dataset,
