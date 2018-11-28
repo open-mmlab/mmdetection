@@ -5,6 +5,7 @@ from .utils import to_tensor, random_scale, show_ann, get_dataset
 from .concat_dataset import ConcatDataset
 
 __all__ = [
-    'CustomDataset', 'CocoDataset', 'GroupSampler', 'DistributedGroupSampler', 'ConcatDataset',
-    'build_dataloader', 'to_tensor', 'random_scale', 'show_ann', 'get_dataset'
+    'CustomDataset', 'CocoDataset', 'GroupSampler', 'DistributedGroupSampler',
+    'ConcatDataset', 'build_dataloader', 'to_tensor', 'random_scale',
+    'show_ann', 'get_dataset'
 ]

@@ -5,7 +5,7 @@ from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
 class ConcatDataset(_ConcatDataset):
     """
-    Same as torch.utils.data.dataset.ConcatDataset, but 
+    Same as torch.utils.data.dataset.ConcatDataset, but
     concat the group flag for image aspect ratio.
     """
     def __init__(self, datasets):
@@ -13,7 +13,7 @@ class ConcatDataset(_ConcatDataset):
         flag: Images with aspect ratio greater than 1 will be set as group 1,
               otherwise group 0.
         """
-        super(ConcatDataset, self).__init__(datasets)        
+        super(ConcatDataset, self).__init__(datasets)
         if hasattr(datasets[0], 'flag'):
             flags = []
             for i in range(0, len(datasets)):
@@ -27,4 +27,3 @@ class ConcatDataset(_ConcatDataset):
         else:
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
         return dataset_idx, sample_idx
-
