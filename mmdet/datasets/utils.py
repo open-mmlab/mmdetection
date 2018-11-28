@@ -1,11 +1,13 @@
 from collections import Sequence
-
+import copy
 import mmcv
+from mmcv.runner import obj_from_dict
 import torch
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+from .concat_dataset import ConcatDataset
+from .. import datasets
 
 def to_tensor(data):
     """Convert objects of various python types to :obj:`torch.Tensor`.
@@ -67,3 +69,21 @@ def show_ann(coco, img, ann_info):
     plt.axis('off')
     coco.showAnns(ann_info)
     plt.show()
+
+
+def get_dataset(data_cfg):
+    if isinstance(data_cfg['ann_file'], list) or isinstance(data_cfg['ann_file'], tuple):
+        ann_files = data_cfg['ann_file']
+        dsets = []
+        for ann_file in ann_files:
+            data_info = copy.deepcopy(data_cfg)
+            data_info['ann_file'] = ann_file
+            dset = obj_from_dict(data_info, datasets)
+            dsets.append(dset)
+        if len(dsets) > 1:
+            dset = ConcatDataset(dsets)            
+        else:
+            dset = dsets[0]
+    else:
+        dset = obj_from_dict(data_cfg, datasets)
+    return dset
