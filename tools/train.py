@@ -2,7 +2,6 @@ from __future__ import division
 
 import argparse
 from mmcv import Config
-from mmcv.runner import obj_from_dict
 
 from mmdet import datasets, __version__
 from mmdet.apis import (train_detector, init_dist, get_root_logger,
