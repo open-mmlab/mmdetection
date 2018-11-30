@@ -16,7 +16,7 @@ model = dict(
         type='ResUpperNeck',
         depth=50,
         layer_indicate=3,
-        stride=2,
+        stride=1,
         dilation=1,
         style='pytorch',
         bn_eval=True,
@@ -25,7 +25,7 @@ model = dict(
     rpn_head=dict(
         type='RPNHead',
         in_channels=1024,
-        feat_channels=512,
+        feat_channels=1024,
         anchor_scales=[2, 4, 8, 16, 32],
         anchor_ratios=[0.5, 1.0, 2.0],
         anchor_strides=[16],
@@ -34,7 +34,7 @@ model = dict(
         use_sigmoid_cls=True),
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
+        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
         out_channels=1024,
         featmap_strides=[16]),
     bbox_head=dict(
@@ -91,7 +91,7 @@ test_cfg = dict(
     rcnn=dict(score_thr=0.05, max_per_img=100, nms_thr=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '/mnt/SSD/dataset/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
@@ -153,7 +153,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/faster_rcnn_r50_fpn_1x'
+work_dir = './work_dirs/faster_rcnn_r50_c4_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
