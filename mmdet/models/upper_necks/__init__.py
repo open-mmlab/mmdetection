@@ -1,3 +1,3 @@
-from .res_upper_neck import ResUpperNeck
+from .res_layer import ResLayer
 
-__all__ = ['ResUpperNeck']
+__all__ = ['ResLayer']

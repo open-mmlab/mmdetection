@@ -8,7 +8,7 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 
 
-class ResUpperNeck(nn.Module):
+class ResLayer(nn.Module):
     """Simplest RoI head, with only two fc layers for classification and
     regression respectively"""
 
@@ -21,7 +21,7 @@ class ResUpperNeck(nn.Module):
                  bn_eval=True,
                  bn_frozen=False,
                  with_cp=False):
-        super(ResUpperNeck, self).__init__()
+        super(ResLayer, self).__init__()
         self.bn_eval = bn_eval
         self.bn_frozen = bn_frozen
         self.layer_indicate = layer_indicate
@@ -60,7 +60,7 @@ class ResUpperNeck(nn.Module):
         return out
 
     def train(self, mode=True):
-        super(ResUpperNeck, self).train(mode)
+        super(ResLayer, self).train(mode)
         if self.bn_eval:
             for m in self.modules():
                 if isinstance(m, nn.BatchNorm2d):
