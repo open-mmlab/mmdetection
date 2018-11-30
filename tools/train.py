@@ -3,7 +3,8 @@ from __future__ import division
 import argparse
 from mmcv import Config
 
-from mmdet import datasets, __version__
+from mmdet import __version__
+from mmdet.datasets import get_dataset
 from mmdet.apis import (train_detector, init_dist, get_root_logger,
                         set_random_seed)
 from mmdet.models import build_detector
@@ -66,7 +67,7 @@ def main():
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
-    train_dataset = datasets.get_dataset(cfg.data.train)
+    train_dataset = get_dataset(cfg.data.train)
     train_detector(
         model,
         train_dataset,
