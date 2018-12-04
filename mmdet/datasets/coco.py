@@ -14,6 +14,8 @@ class CocoDataset(CustomDataset):
             for i, cat_id in enumerate(self.cat_ids)
         }
         self.img_ids = self.coco.getImgIds()
+        if not self.test_mode:
+            self.img_ids = self.img_ids * self.dataset_scale_factor
         img_infos = []
         for i in self.img_ids:
             info = self.coco.loadImgs([i])[0]

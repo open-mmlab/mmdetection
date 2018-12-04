@@ -3,11 +3,14 @@ import torch
 
 class AnchorGenerator(object):
 
-    def __init__(self, base_size, scales, ratios, scale_major=True):
+    def __init__(self, base_size, scales, ratios, scale_major=True,
+                 ctr=None, clamp_size=None):
         self.base_size = base_size
         self.scales = torch.Tensor(scales)
         self.ratios = torch.Tensor(ratios)
         self.scale_major = scale_major
+        self.ctr = ctr
+        self.clamp_size = clamp_size
         self.base_anchors = self.gen_base_anchors()
 
     @property
@@ -20,8 +23,11 @@ class AnchorGenerator(object):
 
         w = base_anchor[2] - base_anchor[0] + 1
         h = base_anchor[3] - base_anchor[1] + 1
-        x_ctr = base_anchor[0] + 0.5 * (w - 1)
-        y_ctr = base_anchor[1] + 0.5 * (h - 1)
+        if self.ctr:
+            x_ctr, y_ctr = self.ctr
+        else:
+            x_ctr = base_anchor[0] + 0.5 * (w - 1)
+            y_ctr = base_anchor[1] + 0.5 * (h - 1)
 
         h_ratios = torch.sqrt(self.ratios)
         w_ratios = 1 / h_ratios
@@ -31,6 +37,10 @@ class AnchorGenerator(object):
         else:
             ws = (w * self.scales[:, None] * w_ratios[None, :]).view(-1)
             hs = (h * self.scales[:, None] * h_ratios[None, :]).view(-1)
+
+        if self.clamp_size:
+            ws = ws.clamp(max=self.clamp_size)
+            hs = hs.clamp(max=self.clamp_size)
 
         base_anchors = torch.stack(
             [
