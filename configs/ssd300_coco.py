@@ -31,7 +31,6 @@ train_cfg = dict(
     neg_pos_ratio=3,
     debug=False)
 test_cfg = dict(
-    nms_pre=200,
     nms=dict(type='nms', iou_thr=0.45),
     min_bbox_size=0,
     score_thr=0.02,
