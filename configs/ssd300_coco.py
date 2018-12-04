@@ -1,10 +1,8 @@
 # model settings
 model = dict(
     type='SingleStageDetector',
-    pretrained='data/vgg_backbone.pth',  # caffe convert vgg
-    backbone=dict(
-        type='VggNet',
-        vggtype='SSD300'),
+    pretrained='data/vgg_backbone.pth',
+    backbone=dict(type='VggNet', vggtype='SSD300'),
     neck=dict(
         type='SSDNeck',
         out_dims=(256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256),
@@ -19,11 +17,13 @@ model = dict(
         max_sizes=(45, 99, 153, 207, 261, 315),
         aspect_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
         target_means=(.0, .0, .0, .0),
-        target_stds=(0.1, 0.1, 0.2, 0.2)
-    ))
+        target_stds=(0.1, 0.1, 0.2, 0.2)))
 train_cfg = dict(
     assigner=dict(
-        pos_iou_thr=0.5, neg_iou_thr=0.5, min_pos_iou=0., ignore_iof_thr=-1,
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+        min_pos_iou=0.,
+        ignore_iof_thr=-1,
         gt_unique_best=True),
     smoothl1_beta=1.,
     allowed_border=-1,
@@ -40,8 +40,7 @@ test_cfg = dict(
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
+img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 data = dict(
     imgs_per_gpu=4,
     workers_per_gpu=2,
@@ -86,6 +85,7 @@ data = dict(
         keep_ratio_rescale=False))
 # optimizer
 optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
+# optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
