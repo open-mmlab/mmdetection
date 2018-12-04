@@ -97,8 +97,9 @@ class BBoxAssigner(object):
         num_bboxes, num_gts = overlaps.size(0), overlaps.size(1)
 
         # 1. assign -1 by default
-        assigned_gt_inds = overlaps.new_full(
-            (num_bboxes, ), -1, dtype=torch.long)
+        assigned_gt_inds = overlaps.new_full((num_bboxes, ),
+                                             -1,
+                                             dtype=torch.long)
 
         assert overlaps.size() == (num_bboxes, num_gts)
         # for each anchor, which gt best overlaps with it

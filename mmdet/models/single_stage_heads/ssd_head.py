@@ -10,19 +10,6 @@ from mmdet.core import (AnchorGenerator, anchor_target, multi_apply,
 
 
 class SSDHead(nn.Module):
-    """Head of RetinaNet.
-
-            / conf_layers - retina_cls (3x3 conv)
-    input -
-            \ loc_layers - retina_reg (3x3 conv)
-
-    Args:
-        in_channels (int): Number of channels in the input feature map.
-        num_classes (int): Class number (including background).
-        stacked_convs (int): Number of convolutional layers added for cls and
-            reg branch.
-        feat_channels (int): Number of channels for the RPN feature map.
-    """
 
     def __init__(self,
                  in_channels=(512, 1024, 512, 256, 256, 256),
@@ -42,10 +29,20 @@ class SSDHead(nn.Module):
         loc_layers = []
         conf_layers = []
         for k, v in enumerate(in_channels):
-            loc_layers += [nn.Conv2d(in_channels[k], num_anchors[k] * 4,
-                                     kernel_size=3, padding=1)]
-            conf_layers += [nn.Conv2d(in_channels[k], num_anchors[k] *
-                                      num_classes, kernel_size=3, padding=1)]
+            loc_layers += [
+                nn.Conv2d(
+                    in_channels[k],
+                    num_anchors[k] * 4,
+                    kernel_size=3,
+                    padding=1)
+            ]
+            conf_layers += [
+                nn.Conv2d(
+                    in_channels[k],
+                    num_anchors[k] * num_classes,
+                    kernel_size=3,
+                    padding=1)
+            ]
         self.loc_layers = nn.ModuleList(loc_layers)
         self.conf_layers = nn.ModuleList(conf_layers)
 
@@ -61,11 +58,13 @@ class SSDHead(nn.Module):
             for r in aspect_ratios[k]:
                 anchor_ratios += [1 / r, r]  # 4 or 6 ratio
             ctr = ((stride - 1) / 2, (stride - 1) / 2)
-            anchor_generator = AnchorGenerator(base_size, scales,
-                                               anchor_ratios,
-                                               scale_major=False,
-                                               ctr=ctr,
-                                               clamp_size=300)
+            anchor_generator = AnchorGenerator(
+                base_size,
+                scales,
+                anchor_ratios,
+                scale_major=False,
+                ctr=ctr,
+                clamp_size=300)
             indices = list(range(len(anchor_ratios)))
             indices.insert(1, len(indices))
             anchor_generator.base_anchors = torch.index_select(
@@ -85,8 +84,8 @@ class SSDHead(nn.Module):
     def forward(self, feats):
         cls_scores = []
         bbox_preds = []
-        for feat, reg_conv, cls_conv in zip(
-                feats, self.loc_layers, self.conf_layers):
+        for feat, reg_conv, cls_conv in zip(feats, self.loc_layers,
+                                            self.conf_layers):
             cls_scores.append(cls_conv(feat))
             bbox_preds.append(reg_conv(feat))
         return cls_scores, bbox_preds
@@ -132,8 +131,8 @@ class SSDHead(nn.Module):
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_pos_samples, cfg):
-        loss_cls_all = F.cross_entropy(cls_score, labels,
-                                       reduction='none') * label_weights
+        loss_cls_all = F.cross_entropy(
+            cls_score, labels, reduction='none') * label_weights
         pos_label_inds = (labels > 0).nonzero().view(-1)
         neg_label_inds = (labels == 0).nonzero().view(-1)
 
@@ -180,17 +179,21 @@ class SSDHead(nn.Module):
          num_total_pos, num_total_neg) = cls_reg_targets
 
         num_images = len(img_metas)
-        all_cls_scores = torch.cat([s.permute(0, 2, 3, 1).contiguous().view(
-            num_images, -1, self.cls_out_channels) for s in cls_scores], 1)
+        all_cls_scores = torch.cat([
+            s.permute(0, 2, 3, 1).contiguous().view(
+                num_images, -1, self.cls_out_channels) for s in cls_scores
+        ], 1)
         all_labels = torch.cat(labels_list, -1).view(num_images, -1)
-        all_label_weights = torch.cat(
-            label_weights_list, -1).view(num_images, -1)
-        all_bbox_preds = torch.cat([b.permute(0, 2, 3, 1).contiguous().view(
-            num_images, -1, 4) for b in bbox_preds], -2)
-        all_bbox_targets = torch.cat(
-            bbox_targets_list, -2).view(num_images, -1, 4)
-        all_bbox_weights = torch.cat(
-            bbox_weights_list, -2).view(num_images, -1, 4)
+        all_label_weights = torch.cat(label_weights_list, -1).view(
+            num_images, -1)
+        all_bbox_preds = torch.cat([
+            b.permute(0, 2, 3, 1).contiguous().view(num_images, -1, 4)
+            for b in bbox_preds
+        ], -2)
+        all_bbox_targets = torch.cat(bbox_targets_list, -2).view(
+            num_images, -1, 4)
+        all_bbox_weights = torch.cat(bbox_weights_list, -2).view(
+            num_images, -1, 4)
 
         losses_cls, losses_reg = multi_apply(
             self.loss_single,

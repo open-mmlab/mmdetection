@@ -29,7 +29,8 @@ class ImageTransform(object):
         if keep_ratio:
             img, scale_factor = mmcv.imrescale(img, scale, return_scale=True)
         else:
-            img, w_scale, h_scale = mmcv.imresize(img, scale, return_scale=True)
+            img, w_scale, h_scale = mmcv.imresize(
+                img, scale, return_scale=True)
             scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
                                     dtype=np.float32)
         img_shape = img.shape

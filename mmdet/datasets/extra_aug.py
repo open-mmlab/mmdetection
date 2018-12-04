@@ -47,8 +47,7 @@ class PhotoMetricDistortion(object):
 
         # random hue
         if random.randint(2):
-            img[..., 0] += random.uniform(-self.hue_delta,
-                                          self.hue_delta)
+            img[..., 0] += random.uniform(-self.hue_delta, self.hue_delta)
             img[..., 0][img[..., 0] > 360] -= 360
             img[..., 0][img[..., 0] < 0] += 360
 
@@ -71,10 +70,7 @@ class PhotoMetricDistortion(object):
 
 class Expand(object):
 
-    def __init__(self,
-                 mean=(104, 117, 123),
-                 min_ratio=1,
-                 max_ratio=4):
+    def __init__(self, mean=(104, 117, 123), min_ratio=1, max_ratio=4):
         self.mean = mean
         self.min_ratio = min_ratio
         self.max_ratio = max_ratio
@@ -85,11 +81,11 @@ class Expand(object):
 
         h, w, c = img.shape
         ratio = random.uniform(self.min_ratio, self.max_ratio)
-        expand_img = np.full((int(h * ratio),
-                              int(w * ratio), c), self.mean).astype(img.dtype)
+        expand_img = np.full((int(h * ratio), int(w * ratio), c),
+                             self.mean).astype(img.dtype)
         left = int(random.uniform(0, w * ratio - w))
         top = int(random.uniform(0, h * ratio - h))
-        expand_img[top: top + h, left: left + w] = img
+        expand_img[top:top + h, left:left + w] = img
         img = expand_img
         boxes += np.tile((left, top), 2)
         return img, boxes, labels
@@ -125,22 +121,23 @@ class RandomCrop:
 
                 patch = np.array((int(left), int(top), int(left + new_w),
                                   int(top + new_h)))
-                overlaps = bbox_overlaps(patch.reshape(-1, 4),
-                                         boxes.reshape(-1, 4)).reshape(-1)
+                overlaps = bbox_overlaps(
+                    patch.reshape(-1, 4), boxes.reshape(-1, 4)).reshape(-1)
                 if overlaps.min() < min_iou:
                     continue
 
                 # center of boxes should inside the crop img
                 center = (boxes[:, :2] + boxes[:, 2:]) / 2
-                mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[
-                    1]) * (center[:, 0] < patch[2]) * (center[:, 1] < patch[3])
+                mask = (center[:, 0] > patch[0]) * (
+                    center[:, 1] > patch[1]) * (center[:, 0] < patch[2]) * (
+                        center[:, 1] < patch[3])
                 if not mask.any():
                     continue
                 boxes = boxes[mask]
                 labels = labels[mask]
 
                 # adjust boxes
-                img = img[patch[1]: patch[3], patch[0]: patch[2]]
+                img = img[patch[1]:patch[3], patch[0]:patch[2]]
                 boxes[:, 2:] = boxes[:, 2:].clip(max=patch[2:])
                 boxes[:, :2] = boxes[:, :2].clip(min=patch[:2])
                 boxes -= np.tile(patch[:2], 2)
@@ -150,9 +147,7 @@ class RandomCrop:
 
 class ExtraAugmentation(object):
 
-    def __init__(self,
-                 mean=(104, 117, 123),
-                 to_rgb=False):
+    def __init__(self, mean=(104, 117, 123), to_rgb=False):
         if to_rgb:
             self.mean = mean[::-1]
         else:
@@ -166,4 +161,3 @@ class ExtraAugmentation(object):
         img, boxes, labels = self.expand(img, boxes, labels)
         img, boxes, labels = self.random_crop(img, boxes, labels)
         return img, boxes, labels
-

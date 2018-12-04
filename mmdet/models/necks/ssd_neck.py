@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 
 class SSDNeck(nn.Module):
+
     def __init__(self,
                  out_dims=(256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256),
                  l2_dim=512,
@@ -33,8 +34,7 @@ class SSDNeck(nn.Module):
             k = kernel_sizes[num_layers % 2]
             if out_dims[i] == 'S':
                 out_dim = out_dims[i + 1]
-                conv = nn.Conv2d(self.in_dim, out_dim, k, stride=2,
-                                 padding=1)
+                conv = nn.Conv2d(self.in_dim, out_dim, k, stride=2, padding=1)
             else:
                 out_dim = out_dims[i]
                 conv = nn.Conv2d(self.in_dim, out_dim, k, stride=1, padding=0)
@@ -59,6 +59,7 @@ class SSDNeck(nn.Module):
 
 
 class L2Norm(nn.Module):
+
     def __init__(self, n_dims, scale=20.):
         super(L2Norm, self).__init__()
         self.n_dims = n_dims

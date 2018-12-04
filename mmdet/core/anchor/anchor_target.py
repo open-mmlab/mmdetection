@@ -152,8 +152,8 @@ def anchor_target_single(flat_anchors,
         labels = unmap(labels, num_total_anchors, inside_flags)
         label_weights = unmap(label_weights, num_total_anchors, inside_flags)
         if cls_out_channels > 1:
-            labels, label_weights = expand_binary_labels(labels, label_weights,
-                                                         cls_out_channels)
+            labels, label_weights = expand_binary_labels(
+                labels, label_weights, cls_out_channels)
         bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
         bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
@@ -162,8 +162,9 @@ def anchor_target_single(flat_anchors,
 
 
 def expand_binary_labels(labels, label_weights, cls_out_channels):
-    bin_labels = labels.new_full(
-        (labels.size(0), cls_out_channels), 0, dtype=torch.float32)
+    bin_labels = labels.new_full((labels.size(0), cls_out_channels),
+                                 0,
+                                 dtype=torch.float32)
     inds = torch.nonzero(labels >= 1).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds] - 1] = 1

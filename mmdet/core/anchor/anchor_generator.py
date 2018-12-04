@@ -3,8 +3,13 @@ import torch
 
 class AnchorGenerator(object):
 
-    def __init__(self, base_size, scales, ratios, scale_major=True,
-                 ctr=None, clamp_size=None):
+    def __init__(self,
+                 base_size,
+                 scales,
+                 ratios,
+                 scale_major=True,
+                 ctr=None,
+                 clamp_size=None):
         self.base_size = base_size
         self.scales = torch.Tensor(scales)
         self.ratios = torch.Tensor(ratios)
@@ -42,12 +47,11 @@ class AnchorGenerator(object):
             ws = ws.clamp(max=self.clamp_size)
             hs = hs.clamp(max=self.clamp_size)
 
-        base_anchors = torch.stack(
-            [
-                x_ctr - 0.5 * (ws - 1), y_ctr - 0.5 * (hs - 1),
-                x_ctr + 0.5 * (ws - 1), y_ctr + 0.5 * (hs - 1)
-            ],
-            dim=-1).round()
+        base_anchors = torch.stack([
+            x_ctr - 0.5 * (ws - 1), y_ctr - 0.5 * (hs - 1),
+            x_ctr + 0.5 * (ws - 1), y_ctr + 0.5 * (hs - 1)
+        ],
+                                   dim=-1).round()
 
         return base_anchors
 
