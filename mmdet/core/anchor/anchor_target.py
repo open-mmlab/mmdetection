@@ -1,6 +1,6 @@
 import torch
 
-from ..bbox import assign_and_sample, BBoxAssigner, SamplingResult, bbox2delta
+from ..bbox import assign_and_sample, build_assigner, PseudoSampler, bbox2delta
 from ..utils import multi_apply
 
 
@@ -107,16 +107,12 @@ def anchor_target_single(flat_anchors,
         assign_result, sampling_result = assign_and_sample(
             anchors, gt_bboxes, None, None, cfg)
     else:
-        bbox_assigner = BBoxAssigner(**cfg.assigner)
+        bbox_assigner = build_assigner(cfg.assigner)
         assign_result = bbox_assigner.assign(anchors, gt_bboxes, None,
                                              gt_labels)
-        pos_inds = torch.nonzero(
-            assign_result.gt_inds > 0).squeeze(-1).unique()
-        neg_inds = torch.nonzero(
-            assign_result.gt_inds == 0).squeeze(-1).unique()
-        gt_flags = anchors.new_zeros(anchors.shape[0], dtype=torch.uint8)
-        sampling_result = SamplingResult(pos_inds, neg_inds, anchors,
-                                         gt_bboxes, assign_result, gt_flags)
+        bbox_sampler = PseudoSampler()
+        sampling_result = bbox_sampler.sample(assign_result, anchors,
+                                              gt_bboxes)
 
     num_valid_anchors = anchors.shape[0]
     bbox_targets = torch.zeros_like(anchors)
