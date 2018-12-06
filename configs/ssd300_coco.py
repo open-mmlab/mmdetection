@@ -2,7 +2,11 @@
 model = dict(
     type='SingleStageDetector',
     pretrained='data/vgg_backbone.pth',
-    backbone=dict(type='VggNet', vggtype='SSD300'),
+    backbone=dict(type='SSDVGG', depth=16,
+                  with_last_pool=False,
+                 ceil_mode=True,
+                 out_indices=(3, 4),
+                 out_feature_indices=(22, 34)),
     neck=dict(
         type='SSDNeck',
         out_dims=(256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256),
@@ -31,6 +35,7 @@ train_cfg = dict(
     neg_pos_ratio=3,
     debug=False)
 test_cfg = dict(
+    nms_pre=200,
     nms=dict(type='nms', iou_thr=0.45),
     min_bbox_size=0,
     score_thr=0.02,
@@ -84,8 +89,7 @@ data = dict(
         keep_ratio_rescale=False))
 # optimizer
 optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-# optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-optimizer_config = dict()
+optimizer_config = None
 # learning policy
 lr_config = dict(
     policy='step',
@@ -106,7 +110,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/faster_rcnn_r50_fpn_1x'
+work_dir = './work_dirs/ssd300_coco'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

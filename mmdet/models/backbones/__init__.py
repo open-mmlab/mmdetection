@@ -1,4 +1,5 @@
 from .resnet import ResNet
-from .vggnet import VggNet
+from .vgg import VGG
+from .ssd_vgg import SSDVGG
 
-__all__ = ['ResNet', 'VggNet']
+__all__ = ['ResNet', 'VGG', 'SSDVGG']
