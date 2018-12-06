@@ -16,17 +16,12 @@ class SSDVGG(VGG):
             ceil_mode=ceil_mode,
             out_indices=out_indices)
         self.features.add_module(
-            str(len(self.features)),
-            nn.MaxPool2d(kernel_size=3, stride=1, padding=1))
+            'pool5', nn.MaxPool2d(kernel_size=3, stride=1, padding=1))
         self.features.add_module(
-            str(len(self.features)),
-            nn.Conv2d(512, 1024, kernel_size=3, padding=6, dilation=6))
-        self.features.add_module(
-            str(len(self.features)), nn.ReLU(inplace=True))
-        self.features.add_module(
-            str(len(self.features)), nn.Conv2d(1024, 1024, kernel_size=1))
-        self.features.add_module(
-            str(len(self.features)), nn.ReLU(inplace=True))
+            'conv6', nn.Conv2d(512, 1024, kernel_size=3, padding=6, dilation=6))
+        self.features.add_module('relu6', nn.ReLU(inplace=True))
+        self.features.add_module('conv7', nn.Conv2d(1024, 1024, kernel_size=1))
+        self.features.add_module('relu7', nn.ReLU(inplace=True))
         self.out_feature_indices = out_feature_indices
 
     def forward(self, x):
