@@ -101,9 +101,8 @@ class CustomDataset(Dataset):
 
         # if use extra augmentation
         if extra_aug is not None:
-            self.extra_aug = ExtraAugmentation(img_norm_cfg.mean,
-                                               img_norm_cfg.to_rgb,
-                                               **extra_aug)
+            self.extra_aug = ExtraAugmentation(
+                img_norm_cfg.mean, img_norm_cfg.to_rgb, **extra_aug)
         # image rescale if keep ratio
         self.keep_ratio_rescale = keep_ratio_rescale
 
