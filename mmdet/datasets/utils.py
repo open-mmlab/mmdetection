@@ -75,10 +75,8 @@ def show_ann(coco, img, ann_info):
 
 
 def get_dataset(data_cfg):
-    repeat_times = None
     if data_cfg['type'] == 'RepeatDataset':
-        repeat_times = data_cfg['repeat_times']
-        data_cfg = data_cfg['dataset']
+        return RepeatDataset(get_dataset(data_cfg['type']), data_cfg['times'])
 
     if isinstance(data_cfg['ann_file'], (list, tuple)):
         ann_files = data_cfg['ann_file']
@@ -114,7 +112,4 @@ def get_dataset(data_cfg):
         dset = ConcatDataset(dsets)
     else:
         dset = dsets[0]
-
-    if repeat_times is not None:
-        dset = RepeatDataset(dset, repeat_times)
     return dset
