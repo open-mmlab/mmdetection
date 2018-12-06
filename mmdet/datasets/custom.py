@@ -47,12 +47,7 @@ class CustomDataset(Dataset):
                  with_label=True,
                  test_mode=False,
                  extra_aug=None,
-                 keep_ratio_rescale=True,
-                 dataset_scale_factor=1.):
-        # in test mode or not
-        self.test_mode = test_mode
-        # if scale the base dataset
-        self.dataset_scale_factor = dataset_scale_factor
+                 keep_ratio_rescale=True):
         # load annotations (and proposals)
         self.img_infos = self.load_annotations(ann_file)
         if proposal_file is not None:
@@ -91,6 +86,8 @@ class CustomDataset(Dataset):
         self.with_crowd = with_crowd
         # with label is False for RPN
         self.with_label = with_label
+        # in test mode or not
+        self.test_mode = test_mode
 
         # set group flag for the sampler
         if not self.test_mode:
@@ -105,7 +102,8 @@ class CustomDataset(Dataset):
         # if use extra augmentation
         if extra_aug is not None:
             self.extra_aug = ExtraAugmentation(img_norm_cfg.mean,
-                                               img_norm_cfg.to_rgb)
+                                               img_norm_cfg.to_rgb,
+                                               **extra_aug)
         # image rescale if keep ratio
         self.keep_ratio_rescale = keep_ratio_rescale
 

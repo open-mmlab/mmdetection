@@ -128,8 +128,8 @@ class BBoxAssigner(object):
                 if self.gt_unique_best:
                     assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
                 else:
-                    assigned_gt_inds[overlaps[:, i] == gt_max_overlaps[i]] \
-                        = i + 1
+                    assigned_gt_inds[overlaps[:, i] ==
+                                     gt_max_overlaps[i]] = i + 1
 
         if gt_labels is not None:
             assigned_labels = assigned_gt_inds.new_zeros((num_bboxes, ))

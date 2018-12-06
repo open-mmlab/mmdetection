@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import xavier_init, constant_init
 
 
 class SSDNeck(nn.Module):
@@ -18,9 +19,7 @@ class SSDNeck(nn.Module):
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.xavier_uniform_(m.weight)
-                if getattr(m, 'bias') is not None:
-                    nn.init.constant_(m.bias, 0)
+                xavier_init(m, distribution='uniform')
 
     def _make_layer(self, out_dims):
         layers = []
@@ -60,12 +59,13 @@ class SSDNeck(nn.Module):
 
 class L2Norm(nn.Module):
 
-    def __init__(self, n_dims, scale=20.):
+    def __init__(self, n_dims, scale=20., eps=1e-10):
         super(L2Norm, self).__init__()
         self.n_dims = n_dims
         self.weight = nn.Parameter(torch.Tensor(self.n_dims))
-        nn.init.constant_(self.weight, scale)
+        self.eps = eps
+        constant_init(self, scale)
 
     def forward(self, x):
-        norm = x.pow(2).sum(1, keepdim=True).sqrt() + 1e-10
+        norm = x.pow(2).sum(1, keepdim=True).sqrt() + self.eps
         return self.weight[None, :, None, None].expand_as(x) * x / norm

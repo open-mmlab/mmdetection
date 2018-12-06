@@ -147,17 +147,25 @@ class RandomCrop:
 
 class ExtraAugmentation(object):
 
-    def __init__(self, mean=(104, 117, 123), to_rgb=False):
+    def __init__(self,
+                 mean=(104, 117, 123),
+                 to_rgb=False,
+                 photo_metric_distortion=True,
+                 expand=True,
+                 random_crop=True):
         if to_rgb:
             self.mean = mean[::-1]
         else:
             self.mean = mean
-        self.photo_metric_distortion = PhotoMetricDistortion()
-        self.expand = Expand(self.mean)
-        self.random_crop = RandomCrop()
+        self.transforms = []
+        if photo_metric_distortion:
+            self.transforms.append(PhotoMetricDistortion())
+        if expand:
+            self.transforms.append(Expand(self.mean))
+        if random_crop:
+            self.transforms.append(RandomCrop())
 
     def __call__(self, img, boxes, labels):
-        img, boxes, labels = self.photo_metric_distortion(img, boxes, labels)
-        img, boxes, labels = self.expand(img, boxes, labels)
-        img, boxes, labels = self.random_crop(img, boxes, labels)
+        for transform in self.transforms:
+            img, boxes, labels = transform(img, boxes, labels)
         return img, boxes, labels
