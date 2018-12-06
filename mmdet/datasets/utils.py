@@ -8,6 +8,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 from .concat_dataset import ConcatDataset
+from .repeat_dataset import RepeatDataset
 from .. import datasets
 
 
@@ -74,6 +75,10 @@ def show_ann(coco, img, ann_info):
 
 
 def get_dataset(data_cfg):
+    if data_cfg['type'] == 'RepeatDataset':
+        return RepeatDataset(
+            get_dataset(data_cfg['dataset']), data_cfg['times'])
+
     if isinstance(data_cfg['ann_file'], (list, tuple)):
         ann_files = data_cfg['ann_file']
         num_dset = len(ann_files)
