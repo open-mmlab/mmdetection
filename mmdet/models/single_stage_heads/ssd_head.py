@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import xavier_init, constant_init
 
 from mmdet.core import (AnchorGenerator, anchor_target, multi_apply,
                         delta2bbox, weighted_smoothl1, multiclass_nms)
@@ -13,52 +14,48 @@ class SSDHead(nn.Module):
 
     def __init__(self,
                  in_channels=(512, 1024, 512, 256, 256, 256),
-                 num_classes=21,
+                 num_classes=81,
                  anchor_strides=(8, 16, 32, 64, 100, 300),
                  min_sizes=(30, 60, 111, 162, 213, 264),
                  max_sizes=(60, 111, 162, 213, 264, 315),
-                 aspect_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
+                 anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0)):
         super(SSDHead, self).__init__()
         # construct head
-        num_anchors = [len(ratios) * 2 + 2 for ratios in aspect_ratios]
+        num_anchors = [len(ratios) * 2 + 2 for ratios in anchor_ratios]
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.cls_out_channels = num_classes
-        loc_layers = []
-        conf_layers = []
-        for k, v in enumerate(in_channels):
-            loc_layers += [
+        reg_convs = []
+        cls_convs = []
+        for k in range(len(in_channels)):
+            reg_convs.append(
                 nn.Conv2d(
                     in_channels[k],
                     num_anchors[k] * 4,
                     kernel_size=3,
-                    padding=1)
-            ]
-            conf_layers += [
+                    padding=1))
+            cls_convs.append(
                 nn.Conv2d(
                     in_channels[k],
                     num_anchors[k] * num_classes,
                     kernel_size=3,
-                    padding=1)
-            ]
-        self.loc_layers = nn.ModuleList(loc_layers)
-        self.conf_layers = nn.ModuleList(conf_layers)
+                    padding=1))
+        self.reg_convs = nn.ModuleList(reg_convs)
+        self.cls_convs = nn.ModuleList(cls_convs)
 
         self.anchor_generators = []
         self.anchor_strides = anchor_strides
         for k in range(len(anchor_strides)):
             base_size = min_sizes[k]
-            s_k = base_size / 300
-            s_k_prime = np.sqrt(s_k * (max_sizes[k] / 300))
-            scales = [1., s_k_prime / s_k]  # based on s_k
-            anchor_ratios = [1.]
-            for r in aspect_ratios[k]:
-                anchor_ratios += [1 / r, r]  # 4 or 6 ratio
+            scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
+            ratios = [1.]
+            for r in anchor_ratios[k]:
+                ratios += [1 / r, r]  # 4 or 6 ratio
             anchor_generator = AnchorGenerator(
-                base_size, scales, anchor_ratios, scale_major=False)
-            indices = list(range(len(anchor_ratios)))
+                base_size, scales, ratios, scale_major=False)
+            indices = list(range(len(ratios)))
             indices.insert(1, len(indices))
             anchor_generator.base_anchors = torch.index_select(
                 anchor_generator.base_anchors, 0, torch.LongTensor(indices))
@@ -70,15 +67,15 @@ class SSDHead(nn.Module):
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.xavier_uniform_(m.weight)
+                xavier_init(m, distribution='uniform')
                 if getattr(m, 'bias') is not None:
-                    nn.init.constant_(m.bias, 0)
+                    constant_init(m, 0)
 
     def forward(self, feats):
         cls_scores = []
         bbox_preds = []
-        for feat, reg_conv, cls_conv in zip(feats, self.loc_layers,
-                                            self.conf_layers):
+        for feat, reg_conv, cls_conv in zip(feats, self.reg_convs,
+                                            self.cls_convs):
             cls_scores.append(cls_conv(feat))
             bbox_preds.append(reg_conv(feat))
         return cls_scores, bbox_preds
@@ -165,7 +162,7 @@ class SSDHead(nn.Module):
             gt_labels_list=gt_labels,
             cls_out_channels=self.cls_out_channels,
             sampling=False,
-            need_unmap=False)
+            unmap=False)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,

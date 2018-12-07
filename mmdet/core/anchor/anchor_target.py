@@ -14,7 +14,7 @@ def anchor_target(anchor_list,
                   gt_labels_list=None,
                   cls_out_channels=1,
                   sampling=True,
-                  need_unmap=True):
+                  unmap=True):
     """Compute regression and classification targets for anchors.
 
     Args:
@@ -56,7 +56,7 @@ def anchor_target(anchor_list,
          cfg=cfg,
          cls_out_channels=cls_out_channels,
          sampling=sampling,
-         need_unmap=need_unmap)
+         unmap=unmap)
     # no valid anchors
     if any([labels is None for labels in all_labels]):
         return None
@@ -97,7 +97,7 @@ def anchor_target_single(flat_anchors,
                          cfg,
                          cls_out_channels=1,
                          sampling=True,
-                         need_unmap=True):
+                         unmap=True):
     inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                        img_meta['img_shape'][:2],
                                        cfg.allowed_border)
@@ -147,7 +147,7 @@ def anchor_target_single(flat_anchors,
         label_weights[neg_inds] = 1.0
 
     # map up to original set of anchors
-    if need_unmap:
+    if unmap:
         num_total_anchors = flat_anchors.size(0)
         labels = unmap(labels, num_total_anchors, inside_flags)
         label_weights = unmap(label_weights, num_total_anchors, inside_flags)

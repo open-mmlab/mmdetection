@@ -20,7 +20,6 @@ class SSDVGG(VGG):
                  ceil_mode=True,
                  out_indices=(3, 4),
                  out_feature_indices=(22, 34),
-                 l2_dim=512,
                  l2_norm_scale=20.):
         super(SSDVGG, self).__init__(
             depth,
@@ -48,7 +47,9 @@ class SSDVGG(VGG):
 
         self.inplanes = 1024
         self.extra = self._make_extra_layers(self.extra_setting[input_size])
-        self.l2_norm = L2Norm(l2_dim, l2_norm_scale)
+        self.l2_norm = L2Norm(
+            self.features[out_feature_indices[0] - 1].out_channels,
+            l2_norm_scale)
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
@@ -69,6 +70,8 @@ class SSDVGG(VGG):
             if isinstance(m, nn.Conv2d):
                 xavier_init(m, distribution='uniform')
 
+        constant_init(self.l2_norm, self.l2_norm.scale)
+
     def forward(self, x):
         outs = []
         for i, layer in enumerate(self.features):
@@ -76,7 +79,7 @@ class SSDVGG(VGG):
             if i in self.out_feature_indices:
                 outs.append(x)
         for i, layer in enumerate(self.extra):
-            x = F.relu(layer(x))
+            x = F.relu(layer(x), inplace=True)
             if i % 2 == 1:
                 outs.append(x)
         outs[0] = self.l2_norm(outs[0])
@@ -117,7 +120,7 @@ class L2Norm(nn.Module):
         self.n_dims = n_dims
         self.weight = nn.Parameter(torch.Tensor(self.n_dims))
         self.eps = eps
-        constant_init(self, scale)
+        self.scale = scale
 
     def forward(self, x):
         norm = x.pow(2).sum(1, keepdim=True).sqrt() + self.eps

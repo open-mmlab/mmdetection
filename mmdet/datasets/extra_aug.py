@@ -9,16 +9,12 @@ class PhotoMetricDistortion(object):
 
     def __init__(self,
                  brightness_delta=32,
-                 contrast_lower=0.5,
-                 contrast_upper=1.5,
-                 saturation_lower=0.5,
-                 saturation_upper=1.5,
+                 contrast_range=(0.5, 1.5),
+                 saturation_range=(0.5, 1.5),
                  hue_delta=18):
         self.brightness_delta = brightness_delta
-        self.contrast_lower = contrast_lower
-        self.contrast_upper = contrast_upper
-        self.saturation_lower = saturation_lower
-        self.saturation_upper = saturation_upper
+        self.contrast_lower, self.contrast_upper = contrast_range
+        self.saturation_lower, self.saturation_upper = saturation_range
         self.hue_delta = hue_delta
 
     def __call__(self, img, boxes, labels):
@@ -57,23 +53,25 @@ class PhotoMetricDistortion(object):
         # random contrast
         if mode == 0:
             if random.randint(2):
-                alpha = np.random.uniform(self.contrast_lower,
-                                          self.contrast_upper)
+                alpha = random.uniform(self.contrast_lower,
+                                       self.contrast_upper)
                 img *= alpha
 
         # randomly swap channels
         if random.randint(2):
-            img = img[..., np.random.permutation(3)]
+            img = img[..., random.permutation(3)]
 
         return img, boxes, labels
 
 
 class Expand(object):
 
-    def __init__(self, mean=(104, 117, 123), min_ratio=1, max_ratio=4):
-        self.mean = mean
-        self.min_ratio = min_ratio
-        self.max_ratio = max_ratio
+    def __init__(self, mean=(0, 0, 0), to_rgb=True, ratio_range=(1, 4)):
+        if to_rgb:
+            self.mean = mean[::-1]
+        else:
+            self.mean = mean
+        self.min_ratio, self.max_ratio = ratio_range
 
     def __call__(self, img, boxes, labels):
         if random.randint(2):
@@ -91,7 +89,7 @@ class Expand(object):
         return img, boxes, labels
 
 
-class RandomCrop:
+class RandomCrop(object):
 
     def __init__(self,
                  min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
@@ -148,24 +146,20 @@ class RandomCrop:
 class ExtraAugmentation(object):
 
     def __init__(self,
-                 mean=(104, 117, 123),
-                 to_rgb=False,
-                 photo_metric_distortion=True,
-                 expand=True,
-                 random_crop=True):
-        if to_rgb:
-            self.mean = mean[::-1]
-        else:
-            self.mean = mean
+                 photo_metric_distortion=None,
+                 expand=None,
+                 random_crop=None):
         self.transforms = []
-        if photo_metric_distortion:
-            self.transforms.append(PhotoMetricDistortion())
-        if expand:
-            self.transforms.append(Expand(self.mean))
-        if random_crop:
-            self.transforms.append(RandomCrop())
+        if photo_metric_distortion is not None:
+            self.transforms.append(
+                PhotoMetricDistortion(**photo_metric_distortion))
+        if expand is not None:
+            self.transforms.append(Expand(**expand))
+        if random_crop is not None:
+            self.transforms.append(RandomCrop(**random_crop))
 
     def __call__(self, img, boxes, labels):
+        img = img.astype(np.float32)
         for transform in self.transforms:
             img, boxes, labels = transform(img, boxes, labels)
         return img, boxes, labels

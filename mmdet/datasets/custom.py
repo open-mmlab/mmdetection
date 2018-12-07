@@ -47,7 +47,7 @@ class CustomDataset(Dataset):
                  with_label=True,
                  test_mode=False,
                  extra_aug=None,
-                 keep_ratio_rescale=True):
+                 resize_keep_ratio=True):
         # load annotations (and proposals)
         self.img_infos = self.load_annotations(ann_file)
         if proposal_file is not None:
@@ -101,10 +101,9 @@ class CustomDataset(Dataset):
 
         # if use extra augmentation
         if extra_aug is not None:
-            self.extra_aug = ExtraAugmentation(
-                img_norm_cfg.mean, img_norm_cfg.to_rgb, **extra_aug)
+            self.extra_aug = ExtraAugmentation(**extra_aug)
         # image rescale if keep ratio
-        self.keep_ratio_rescale = keep_ratio_rescale
+        self.resize_keep_ratio = resize_keep_ratio
 
     def __len__(self):
         return len(self.img_infos)
@@ -186,14 +185,14 @@ class CustomDataset(Dataset):
 
         # extra augmentation
         if self.extra_aug is not None:
-            img, gt_bboxes, gt_labels = self.extra_aug(
-                img.astype(np.float32), gt_bboxes, gt_labels)
+            img, gt_bboxes, gt_labels = self.extra_aug(img, gt_bboxes,
+                                                       gt_labels)
 
         # apply transforms
         flip = True if np.random.rand() < self.flip_ratio else False
         img_scale = random_scale(self.img_scales)  # sample a scale
         img, img_shape, pad_shape, scale_factor = self.img_transform(
-            img, img_scale, flip, keep_ratio=self.keep_ratio_rescale)
+            img, img_scale, flip, keep_ratio=self.resize_keep_ratio)
         img = img.copy()
         if self.proposals is not None:
             proposals = self.bbox_transform(proposals, img_shape, scale_factor,
@@ -246,7 +245,7 @@ class CustomDataset(Dataset):
 
         def prepare_single(img, scale, flip, proposal=None):
             _img, img_shape, pad_shape, scale_factor = self.img_transform(
-                img, scale, flip, keep_ratio=self.keep_ratio_rescale)
+                img, scale, flip, keep_ratio=self.resize_keep_ratio)
             _img = to_tensor(_img)
             _img_meta = dict(
                 ori_shape=(img_info['height'], img_info['width'], 3),
@@ -262,8 +261,8 @@ class CustomDataset(Dataset):
                     score = None
                 _proposal = self.bbox_transform(proposal, img_shape,
                                                 scale_factor, flip)
-                _proposal = np.hstack(
-                    [_proposal, score]) if score is not None else _proposal
+                _proposal = np.hstack([_proposal, score
+                                       ]) if score is not None else _proposal
                 _proposal = to_tensor(_proposal)
             else:
                 _proposal = None
