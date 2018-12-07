@@ -7,16 +7,7 @@ from .repeat_dataset import RepeatDataset
 from .extra_aug import ExtraAugmentation
 
 __all__ = [
-    'CustomDataset',
-    'CocoDataset',
-    'GroupSampler',
-    'DistributedGroupSampler',
-    'build_dataloader',
-    'to_tensor',
-    'random_scale',
-    'show_ann',
-    'get_dataset',
-    'ExtraAugmentation',
-    'ConcatDataset',
-    'RepeatDataset',
+    'CustomDataset', 'CocoDataset', 'GroupSampler', 'DistributedGroupSampler',
+    'build_dataloader', 'to_tensor', 'random_scale', 'show_ann', 'get_dataset',
+    'ConcatDataset', 'RepeatDataset', 'ExtraAugmentation'
 ]
