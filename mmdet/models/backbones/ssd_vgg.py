@@ -3,8 +3,8 @@ import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import VGG
-from mmcv.cnn import xavier_init, constant_init, kaiming_init, normal_init
+from mmcv.cnn import (VGG, xavier_init, constant_init, kaiming_init,
+                      normal_init)
 from mmcv.runner import load_checkpoint
 
 
@@ -30,8 +30,7 @@ class SSDVGG(VGG):
         assert input_size in (300, 512)
         # TODO: support 512
         if input_size == 512:
-            print('current not support SSD512')
-            exit()
+            raise NotImplementedError
 
         self.features.add_module(
             str(len(self.features)),
@@ -49,7 +48,7 @@ class SSDVGG(VGG):
 
         self.inplanes = 1024
         self.extra = self._make_extra_layers(self.extra_setting[input_size])
-        self.l2norm = L2Norm(l2_dim, l2_norm_scale)
+        self.l2_norm = L2Norm(l2_dim, l2_norm_scale)
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
@@ -80,7 +79,7 @@ class SSDVGG(VGG):
             x = F.relu(layer(x))
             if i % 2 == 1:
                 outs.append(x)
-        outs[0] = self.l2norm(outs[0])
+        outs[0] = self.l2_norm(outs[0])
         if len(outs) == 1:
             return outs[0]
         else:
