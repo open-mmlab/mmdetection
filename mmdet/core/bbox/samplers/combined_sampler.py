@@ -1,5 +1,3 @@
-from mmcv.runner import obj_from_dict
-
 from .random_sampler import RandomSampler
 from ..assign_sampling import build_sampler
 
