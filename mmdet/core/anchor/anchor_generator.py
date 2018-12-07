@@ -51,7 +51,7 @@ class AnchorGenerator(object):
             x_ctr - 0.5 * (ws - 1), y_ctr - 0.5 * (hs - 1),
             x_ctr + 0.5 * (ws - 1), y_ctr + 0.5 * (hs - 1)
         ],
-                                   dim=-1).round()
+            dim=-1).round()
 
         return base_anchors
 
