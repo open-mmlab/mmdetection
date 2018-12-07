@@ -93,7 +93,7 @@ data = dict(
         keep_ratio_rescale=False))
 # optimizer
 optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer_config = None
+optimizer_config = dict()
 # learning policy
 lr_config = dict(
     policy='step',
