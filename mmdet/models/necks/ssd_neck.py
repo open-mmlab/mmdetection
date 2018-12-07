@@ -6,14 +6,18 @@ from mmcv.cnn import xavier_init, constant_init
 
 class SSDNeck(nn.Module):
 
+    arch_setting = {
+        300: (256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256),
+    }
+
     def __init__(self,
-                 out_dims=(256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256),
+                 input_size,
                  l2_dim=512,
                  in_dim=1024,
                  l2_norm_scale=20.):
         super(SSDNeck, self).__init__()
         self.in_dim = in_dim
-        self.neck = self._make_layer(out_dims)
+        self.neck = self._make_layer(self.arch_setting[input_size])
         self.l2norm = L2Norm(l2_dim, l2_norm_scale)
 
     def init_weights(self):
