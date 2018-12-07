@@ -8,5 +8,5 @@ from .repeat_dataset import RepeatDataset
 __all__ = [
     'CustomDataset', 'CocoDataset', 'GroupSampler', 'DistributedGroupSampler',
     'build_dataloader', 'to_tensor', 'random_scale', 'show_ann',
-    'get_dataset', 'ExtraAugmentation', 'ConcatDataset', 'RepeatDataset',
+    'get_dataset', 'ConcatDataset', 'RepeatDataset',
 ]
