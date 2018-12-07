@@ -65,12 +65,9 @@ data = dict(
             with_label=True,
             test_mode=False,
             extra_aug=dict(
-                photo_metric_distortion=True,
-                expand=True,
-                random_crop=True
-            ),
+                photo_metric_distortion=True, expand=True, random_crop=True),
             keep_ratio_rescale=False),
-        repeat_times=10),
+        times=10),
     val=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_val2017.json',

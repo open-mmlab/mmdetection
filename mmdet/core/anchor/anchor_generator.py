@@ -2,7 +2,7 @@ import torch
 
 
 class AnchorGenerator(object):
-    
+
     def __init__(self,
                  base_size,
                  scales,
