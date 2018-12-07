@@ -28,11 +28,13 @@ class BBoxAssigner(object):
                  pos_iou_thr,
                  neg_iou_thr,
                  min_pos_iou=.0,
-                 ignore_iof_thr=-1):
+                 ignore_iof_thr=-1,
+                 gt_unique_best=False):
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
         self.ignore_iof_thr = ignore_iof_thr
+        self.gt_unique_best = gt_unique_best
 
     def assign(self, bboxes, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
         """Assign gt to bboxes.
@@ -95,8 +97,9 @@ class BBoxAssigner(object):
         num_bboxes, num_gts = overlaps.size(0), overlaps.size(1)
 
         # 1. assign -1 by default
-        assigned_gt_inds = overlaps.new_full(
-            (num_bboxes, ), -1, dtype=torch.long)
+        assigned_gt_inds = overlaps.new_full((num_bboxes, ),
+                                             -1,
+                                             dtype=torch.long)
 
         assert overlaps.size() == (num_bboxes, num_gts)
         # for each anchor, which gt best overlaps with it
@@ -122,7 +125,11 @@ class BBoxAssigner(object):
         # 4. assign fg: for each gt, proposals with highest IoU
         for i in range(num_gts):
             if gt_max_overlaps[i] >= self.min_pos_iou:
-                assigned_gt_inds[overlaps[:, i] == gt_max_overlaps[i]] = i + 1
+                if self.gt_unique_best:
+                    assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
+                else:
+                    assigned_gt_inds[overlaps[:, i] ==
+                                     gt_max_overlaps[i]] = i + 1
 
         if gt_labels is not None:
             assigned_labels = assigned_gt_inds.new_zeros((num_bboxes, ))
