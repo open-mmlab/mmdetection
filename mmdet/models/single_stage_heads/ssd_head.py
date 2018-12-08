@@ -13,10 +13,11 @@ from mmdet.core import (AnchorGenerator, anchor_target, multi_apply,
 class SSDHead(nn.Module):
 
     def __init__(self,
+                 input_size=300,
                  in_channels=(512, 1024, 512, 256, 256, 256),
                  num_classes=81,
                  anchor_strides=(8, 16, 32, 64, 100, 300),
-                 ratio_range=(0.1, 0.9),
+                 basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0)):
@@ -44,18 +45,17 @@ class SSDHead(nn.Module):
         self.reg_convs = nn.ModuleList(reg_convs)
         self.cls_convs = nn.ModuleList(cls_convs)
 
-        min_ratio, max_ratio = ratio_range
+        min_ratio, max_ratio = basesize_ratio_range
         min_ratio = int(min_ratio * 100)
         max_ratio = int(max_ratio * 100)
         step = int(np.floor(max_ratio - min_ratio) / 4)
-        min_dim = 300
         min_sizes = []
         max_sizes = []
         for r in range(int(min_ratio), int(max_ratio) + 1, step):
-            min_sizes.append(min_dim * r / 100)
-            max_sizes.append(min_dim * (r + step) / 100)
-        min_sizes.insert(0, min_dim * 7 / 100)
-        max_sizes.insert(0, min_dim * 15 / 100)
+            min_sizes.append(input_size * r / 100)
+            max_sizes.append(input_size * (r + step) / 100)
+        min_sizes.insert(0, input_size * 7 / 100)
+        max_sizes.insert(0, input_size * 15 / 100)
         self.anchor_generators = []
         self.anchor_strides = anchor_strides
         for k in range(len(anchor_strides)):
