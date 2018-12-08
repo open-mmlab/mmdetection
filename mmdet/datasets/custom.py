@@ -102,6 +102,9 @@ class CustomDataset(Dataset):
         # if use extra augmentation
         if extra_aug is not None:
             self.extra_aug = ExtraAugmentation(**extra_aug)
+        else:
+            self.extra_aug = None
+
         # image rescale if keep ratio
         self.resize_keep_ratio = resize_keep_ratio
 
