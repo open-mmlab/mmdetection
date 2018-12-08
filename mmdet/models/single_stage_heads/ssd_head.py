@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init, constant_init
+from mmcv.cnn import xavier_init
 
 from mmdet.core import (AnchorGenerator, anchor_target, multi_apply,
                         delta2bbox, weighted_smoothl1, multiclass_nms)
@@ -29,17 +29,17 @@ class SSDHead(nn.Module):
         self.cls_out_channels = num_classes
         reg_convs = []
         cls_convs = []
-        for k in range(len(in_channels)):
+        for i in range(len(in_channels)):
             reg_convs.append(
                 nn.Conv2d(
-                    in_channels[k],
-                    num_anchors[k] * 4,
+                    in_channels[i],
+                    num_anchors[i] * 4,
                     kernel_size=3,
                     padding=1))
             cls_convs.append(
                 nn.Conv2d(
-                    in_channels[k],
-                    num_anchors[k] * num_classes,
+                    in_channels[i],
+                    num_anchors[i] * num_classes,
                     kernel_size=3,
                     padding=1))
         self.reg_convs = nn.ModuleList(reg_convs)
@@ -67,9 +67,7 @@ class SSDHead(nn.Module):
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
-                if getattr(m, 'bias') is not None:
-                    constant_init(m, 0)
+                xavier_init(m, distribution='uniform', bias=0)
 
     def forward(self, feats):
         cls_scores = []
@@ -162,7 +160,7 @@ class SSDHead(nn.Module):
             gt_labels_list=gt_labels,
             cls_out_channels=self.cls_out_channels,
             sampling=False,
-            unmap=False)
+            unmap_outputs=False)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,

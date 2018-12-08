@@ -72,7 +72,7 @@ data = dict(
                     to_rgb=img_norm_cfg['to_rgb'],
                     ratio_range=(1, 4)),
                 random_crop=dict(
-                    min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), crop_start_point=0.3)),
+                    min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3)),
             resize_keep_ratio=False),
         times=10),
     val=dict(
