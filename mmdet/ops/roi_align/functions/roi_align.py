@@ -1,4 +1,4 @@
-from torch.autograd import Function, Variable
+from torch.autograd import Function
 
 from .. import roi_align_cuda
 
@@ -49,11 +49,11 @@ class RoIAlignFunction(Function):
 
         grad_input = grad_rois = None
         if ctx.needs_input_grad[0]:
-            grad_input = Variable(
-                rois.new(batch_size, num_channels, data_height, data_width)
-                .zero_())
-            roi_align_cuda.backward(grad_output, rois, out_h, out_w,
-                                    spatial_scale, sample_num, grad_input)
+            grad_input = rois.new_zeros(batch_size, num_channels, data_height,
+                                        data_width)
+            roi_align_cuda.backward(grad_output.contiguous(), rois, out_h,
+                                    out_w, spatial_scale, sample_num,
+                                    grad_input)
 
         return grad_input, grad_rois, None, None, None
 
