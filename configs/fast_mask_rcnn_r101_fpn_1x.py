@@ -1,10 +1,10 @@
 # model settings
 model = dict(
     type='FastRCNN',
-    pretrained='modelzoo://resnet50',
+    pretrained='modelzoo://resnet101',
     backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=101,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
@@ -14,7 +14,6 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5),
-    upper_neck=None,
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
@@ -132,7 +131,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fast_mask_rcnn_r50_fpn_1x'
+work_dir = './work_dirs/fast_mask_rcnn_r101_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

@@ -306,14 +306,13 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         raise NotImplementedError
 
     def show_result(self, data, result, img_norm_cfg, **kwargs):
-        # TODO: show segmentation masks
         if self.with_mask:
             ms_bbox_result, ms_segm_result = result
+            if isinstance(ms_bbox_result, dict):
+                result = (ms_bbox_result['ensemble'],
+                          ms_segm_result['ensemble'])
         else:
-            ms_bbox_result = result
-        if isinstance(ms_bbox_result, dict):
-            bbox_result = ms_bbox_result['ensemble']
-        else:
-            bbox_result = ms_bbox_result
-        super(CascadeRCNN, self).show_result(data, bbox_result, img_norm_cfg,
+            if isinstance(result, dict):
+                result = result['ensemble']
+        super(CascadeRCNN, self).show_result(data, result, img_norm_cfg,
                                              **kwargs)
