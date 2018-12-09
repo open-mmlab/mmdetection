@@ -42,8 +42,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             self.bbox_head = builder.build_bbox_head(bbox_head)
 
         if mask_head is not None:
-            self.mask_roi_extractor = builder.build_roi_extractor(
-                mask_roi_extractor)
+            if mask_roi_extractor is not None:
+                self.mask_roi_extractor = builder.build_roi_extractor(
+                    mask_roi_extractor)
             self.mask_head = builder.build_mask_head(mask_head)
 
         self.train_cfg = train_cfg
@@ -71,8 +72,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if self.with_bbox:
             self.bbox_roi_extractor.init_weights()
             self.bbox_head.init_weights()
-        if self.with_mask:
+        if self.with_mask_roi_extractor:
             self.mask_roi_extractor.init_weights()
+        if self.with_mask:
             self.mask_head.init_weights()
 
     def extract_feat(self, img):
@@ -118,7 +120,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         # bbox head forward and loss
         if self.with_bbox:
-            rois = bbox2roi([res.bboxes for res in sampling_results])
+            rois, rois_index = bbox2roi(
+                [(res.pos_bboxes, res.neg_bboxes) for res in sampling_results],
+                return_index=True)
             # TODO: a more flexible way to decide which feature maps to use
             bbox_feats = self.bbox_roi_extractor(
                 x[:self.bbox_roi_extractor.num_inputs], rois)
@@ -134,9 +138,16 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         # mask head forward and loss
         if self.with_mask:
-            pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-            mask_feats = self.mask_roi_extractor(
-                x[:self.mask_roi_extractor.num_inputs], pos_rois)
+            if self.with_mask_roi_extractor:
+                pos_rois = bbox2roi(
+                    [res.pos_bboxes for res in sampling_results])
+                mask_feats = self.mask_roi_extractor(
+                    x[:self.mask_roi_extractor.num_inputs], pos_rois)
+                if self.with_upper_neck:
+                    mask_feats = self.upper_neck(mask_feats)
+            else:
+                pos_inds = (rois_index == 0)
+                mask_feats = bbox_feats[pos_inds]
             mask_pred = self.mask_head(mask_feats)
 
             mask_targets = self.mask_head.get_target(
