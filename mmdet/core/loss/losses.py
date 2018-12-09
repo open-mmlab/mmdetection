@@ -35,7 +35,8 @@ def sigmoid_focal_loss(pred,
     pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
     weight = (alpha * target + (1 - alpha) * (1 - target)) * weight
     weight = weight * pt.pow(gamma)
-    loss = F.binary_cross_entropy_with_logits(pred, target, reduction='none')
+    loss = F.binary_cross_entropy_with_logits(
+        pred, target, reduction='none') * weight
     reduction_enum = F._Reduction.get_enum(reduction)
     # none: 0, mean:1, sum: 2
     if reduction_enum == 0:
