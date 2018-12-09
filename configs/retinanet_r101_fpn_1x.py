@@ -31,7 +31,11 @@ model = dict(
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
-        pos_iou_thr=0.5, neg_iou_thr=0.4, min_pos_iou=0, ignore_iof_thr=-1),
+        type='MaxIoUAssigner',
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.4,
+        min_pos_iou=0,
+        ignore_iof_thr=-1),
     smoothl1_beta=0.11,
     gamma=2.0,
     alpha=0.25,
