@@ -14,7 +14,6 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5),
-    upper_neck=None,
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),

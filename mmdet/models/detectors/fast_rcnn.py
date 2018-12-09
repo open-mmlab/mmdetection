@@ -5,12 +5,12 @@ class FastRCNN(TwoStageDetector):
 
     def __init__(self,
                  backbone,
-                 neck,
-                 upper_neck,
                  bbox_roi_extractor,
                  bbox_head,
                  train_cfg,
                  test_cfg,
+                 neck=None,
+                 upper_neck=None,
                  mask_roi_extractor=None,
                  mask_head=None,
                  pretrained=None):

@@ -5,13 +5,13 @@ class FasterRCNN(TwoStageDetector):
 
     def __init__(self,
                  backbone,
-                 neck,
-                 upper_neck,
                  rpn_head,
                  bbox_roi_extractor,
                  bbox_head,
                  train_cfg,
                  test_cfg,
+                 neck=None,
+                 upper_neck=None,
                  pretrained=None):
         super(FasterRCNN, self).__init__(
             backbone=backbone,
