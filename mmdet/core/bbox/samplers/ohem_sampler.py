@@ -21,8 +21,12 @@ class OHEMSampler(BaseSampler):
         self.bbox_roi_extractor = bbox_roi_extractor
         self.bbox_head = bbox_head
 
-    def _sample_pos(self, assign_result, num_expected, bboxes=None,
-                    feats=None, **kwargs):
+    def _sample_pos(self,
+                    assign_result,
+                    num_expected,
+                    bboxes=None,
+                    feats=None,
+                    **kwargs):
         """Hard sample some positive samples."""
         pos_inds = torch.nonzero(assign_result.gt_inds > 0)
         if pos_inds.numel() != 0:
@@ -42,12 +46,16 @@ class OHEMSampler(BaseSampler):
                     label_weights=cls_score.new_ones(cls_score.size(0)),
                     bbox_targets=None,
                     bbox_weights=None,
-                    reduction=False)['loss_cls']
+                    reduce=False)['loss_cls']
                 _, topk_loss_pos_inds = loss_pos.topk(num_expected)
             return pos_inds[topk_loss_pos_inds]
 
-    def _sample_neg(self, assign_result, num_expected, bboxes=None,
-                    feats=None, **kwargs):
+    def _sample_neg(self,
+                    assign_result,
+                    num_expected,
+                    bboxes=None,
+                    feats=None,
+                    **kwargs):
         """Hard sample some negative samples."""
         neg_inds = torch.nonzero(assign_result.gt_inds == 0)
         if neg_inds.numel() != 0:
@@ -67,6 +75,6 @@ class OHEMSampler(BaseSampler):
                     label_weights=cls_score.new_ones(cls_score.size(0)),
                     bbox_targets=None,
                     bbox_weights=None,
-                    reduction=False)['loss_cls']
+                    reduce=False)['loss_cls']
                 _, topk_loss_neg_inds = loss_neg.topk(num_expected)
             return neg_inds[topk_loss_neg_inds]
