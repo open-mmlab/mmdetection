@@ -34,7 +34,7 @@ class RandomSampler(BaseSampler):
             rand_inds = torch.from_numpy(rand_inds).long().to(gallery.device)
         return gallery[rand_inds]
 
-    def _sample_pos(self, assign_result, num_expected):
+    def _sample_pos(self, assign_result, num_expected, bboxes=None):
         """Randomly sample some positive samples."""
         pos_inds = torch.nonzero(assign_result.gt_inds > 0)
         if pos_inds.numel() != 0:
@@ -44,7 +44,7 @@ class RandomSampler(BaseSampler):
         else:
             return self.random_choice(pos_inds, num_expected)
 
-    def _sample_neg(self, assign_result, num_expected):
+    def _sample_neg(self, assign_result, num_expected, bboxes=None):
         """Randomly sample some negative samples."""
         neg_inds = torch.nonzero(assign_result.gt_inds == 0)
         if neg_inds.numel() != 0:

@@ -103,7 +103,10 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         # assign gts and sample proposals
         if self.with_bbox or self.with_mask:
             bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)
-            bbox_sampler = build_sampler(self.train_cfg.rcnn.sampler)
+            bbox_sampler = build_sampler(
+                self.train_cfg.rcnn.sampler,
+                dict(bbox_roi_extractor=self.bbox_roi_extractor,
+                     bbox_head=self.bbox_head))
             num_imgs = img.size(0)
             assign_results = []
             sampling_results = []
@@ -117,9 +120,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                         proposal_list[i],
                         gt_bboxes[i],
                         gt_labels[i],
-                        [xx[i][None] for xx in x],
-                        self.bbox_roi_extractor,
-                        self.bbox_head)
+                        feats=[xx[i][None] for xx in x])
                 else:
                     sampling_result = bbox_sampler.sample(
                         assign_result, proposal_list[i], gt_bboxes[i],
