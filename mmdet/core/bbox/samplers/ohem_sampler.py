@@ -22,7 +22,7 @@ class OHEMSampler(BaseSampler):
         self.bbox_head = bbox_head
 
     def _sample_pos(self, assign_result, num_expected, bboxes=None,
-                    feats=None):
+                    feats=None, **kwargs):
         """Hard sample some positive samples."""
         pos_inds = torch.nonzero(assign_result.gt_inds > 0)
         if pos_inds.numel() != 0:
@@ -35,7 +35,7 @@ class OHEMSampler(BaseSampler):
                 bbox_feats = self.bbox_roi_extractor(
                     feats[:self.bbox_roi_extractor.num_inputs], rois)
                 cls_score, _ = self.bbox_head(bbox_feats)
-                loss_all = self.bbox_head.loss(
+                loss_pos = self.bbox_head.loss(
                     cls_score=cls_score,
                     bbox_pred=None,
                     labels=assign_result.labels[pos_inds],
@@ -43,11 +43,11 @@ class OHEMSampler(BaseSampler):
                     bbox_targets=None,
                     bbox_weights=None,
                     reduction='none')['loss_cls']
-                _, topk_loss_pos_inds = loss_all.topk(num_expected)
+                _, topk_loss_pos_inds = loss_pos.topk(num_expected)
             return pos_inds[topk_loss_pos_inds]
 
     def _sample_neg(self, assign_result, num_expected, bboxes=None,
-                    feats=None):
+                    feats=None, **kwargs):
         """Hard sample some negative samples."""
         neg_inds = torch.nonzero(assign_result.gt_inds == 0)
         if neg_inds.numel() != 0:
@@ -60,7 +60,7 @@ class OHEMSampler(BaseSampler):
                 bbox_feats = self.bbox_roi_extractor(
                     feats[:self.bbox_roi_extractor.num_inputs], rois)
                 cls_score, _ = self.bbox_head(bbox_feats)
-                loss_all = self.bbox_head.loss(
+                loss_neg = self.bbox_head.loss(
                     cls_score=cls_score,
                     bbox_pred=None,
                     labels=assign_result.labels[neg_inds],
@@ -68,5 +68,5 @@ class OHEMSampler(BaseSampler):
                     bbox_targets=None,
                     bbox_weights=None,
                     reduction='none')['loss_cls']
-                _, topk_loss_neg_inds = loss_all.topk(num_expected)
+                _, topk_loss_neg_inds = loss_neg.topk(num_expected)
             return neg_inds[topk_loss_neg_inds]
