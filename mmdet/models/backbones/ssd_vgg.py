@@ -11,6 +11,7 @@ from mmcv.runner import load_checkpoint
 class SSDVGG(VGG):
     extra_setting = {
         300: (256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256),
+        512: (256, 'S', 512, 128, 'S', 256, 128, 'S', 256, 128, 'S', 256, 128),
     }
 
     def __init__(self,
@@ -27,9 +28,7 @@ class SSDVGG(VGG):
             ceil_mode=ceil_mode,
             out_indices=out_indices)
         assert input_size in (300, 512)
-        # TODO: support 512
-        if input_size == 512:
-            raise NotImplementedError
+        self.input_size = input_size
 
         self.features.add_module(
             str(len(self.features)),
@@ -109,6 +108,8 @@ class SSDVGG(VGG):
             layers.append(conv)
             self.inplanes = outplanes[i]
             num_layers += 1
+        if self.input_size == 512:
+            layers.append(nn.Conv2d(self.inplanes, 256, 4, padding=1))
 
         return nn.Sequential(*layers)
 
@@ -125,3 +126,4 @@ class L2Norm(nn.Module):
     def forward(self, x):
         norm = x.pow(2).sum(1, keepdim=True).sqrt() + self.eps
         return self.weight[None, :, None, None].expand_as(x) * x / norm
+

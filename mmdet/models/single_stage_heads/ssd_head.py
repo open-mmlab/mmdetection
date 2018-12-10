@@ -54,8 +54,12 @@ class SSDHead(nn.Module):
         for r in range(int(min_ratio), int(max_ratio) + 1, step):
             min_sizes.append(int(input_size * r / 100))
             max_sizes.append(int(input_size * (r + step) / 100))
-        min_sizes.insert(0, int(input_size * 7 / 100))
-        max_sizes.insert(0, int(input_size * 15 / 100))
+        if input_size == 300:
+            min_sizes.insert(0, int(input_size * 7 / 100))
+            max_sizes.insert(0, int(input_size * 15 / 100))
+        elif input_size == 512:
+            min_sizes.insert(0, int(input_size * 4 / 100))
+            max_sizes.insert(0, int(input_size * 10 / 100))
         self.anchor_generators = []
         self.anchor_strides = anchor_strides
         for k in range(len(anchor_strides)):
