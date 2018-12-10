@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 from .transforms import (ImageTransform, BboxTransform, MaskTransform,
                          Numpy2Tensor)
 from .utils import to_tensor, random_scale
+from .extra_aug import ExtraAugmentation
 
 
 class CustomDataset(Dataset):
@@ -44,7 +45,9 @@ class CustomDataset(Dataset):
                  with_mask=True,
                  with_crowd=True,
                  with_label=True,
-                 test_mode=False):
+                 test_mode=False,
+                 extra_aug=None,
+                 resize_keep_ratio=True):
         # load annotations (and proposals)
         self.img_infos = self.load_annotations(ann_file)
         if proposal_file is not None:
@@ -95,6 +98,15 @@ class CustomDataset(Dataset):
         self.bbox_transform = BboxTransform()
         self.mask_transform = MaskTransform()
         self.numpy2tensor = Numpy2Tensor()
+
+        # if use extra augmentation
+        if extra_aug is not None:
+            self.extra_aug = ExtraAugmentation(**extra_aug)
+        else:
+            self.extra_aug = None
+
+        # image rescale if keep ratio
+        self.resize_keep_ratio = resize_keep_ratio
 
     def __len__(self):
         return len(self.img_infos)
@@ -174,11 +186,17 @@ class CustomDataset(Dataset):
         if len(gt_bboxes) == 0:
             return None
 
+        # extra augmentation
+        if self.extra_aug is not None:
+            img, gt_bboxes, gt_labels = self.extra_aug(img, gt_bboxes,
+                                                       gt_labels)
+
         # apply transforms
         flip = True if np.random.rand() < self.flip_ratio else False
         img_scale = random_scale(self.img_scales)  # sample a scale
         img, img_shape, pad_shape, scale_factor = self.img_transform(
-            img, img_scale, flip)
+            img, img_scale, flip, keep_ratio=self.resize_keep_ratio)
+        img = img.copy()
         if self.proposals is not None:
             proposals = self.bbox_transform(proposals, img_shape, scale_factor,
                                             flip)
@@ -230,7 +248,7 @@ class CustomDataset(Dataset):
 
         def prepare_single(img, scale, flip, proposal=None):
             _img, img_shape, pad_shape, scale_factor = self.img_transform(
-                img, scale, flip)
+                img, scale, flip, keep_ratio=self.resize_keep_ratio)
             _img = to_tensor(_img)
             _img_meta = dict(
                 ori_shape=(img_info['height'], img_info['width'], 3),
