@@ -114,17 +114,12 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 assign_result = bbox_assigner.assign(
                     proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
                     gt_labels[i])
-                if self.train_cfg.rcnn.sampler.type == 'OHEMSampler':
-                    sampling_result = bbox_sampler.sample(
-                        assign_result,
-                        proposal_list[i],
-                        gt_bboxes[i],
-                        gt_labels[i],
-                        feats=[xx[i][None] for xx in x])
-                else:
-                    sampling_result = bbox_sampler.sample(
-                        assign_result, proposal_list[i], gt_bboxes[i],
-                        gt_labels[i])
+                sampling_result = bbox_sampler.sample(
+                    assign_result,
+                    proposal_list[i],
+                    gt_bboxes[i],
+                    gt_labels[i],
+                    feats=[xx[i][None] for xx in x])
                 assign_results.append(assign_result)
                 sampling_results.append(sampling_result)
 

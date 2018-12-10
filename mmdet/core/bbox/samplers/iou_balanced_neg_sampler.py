@@ -19,7 +19,7 @@ class IoUBalancedNegSampler(RandomSampler):
         self.hard_thr = hard_thr
         self.hard_fraction = hard_fraction
 
-    def _sample_neg(self, assign_result, num_expected, bboxes=None):
+    def _sample_neg(self, assign_result, num_expected, **kwargs):
         neg_inds = torch.nonzero(assign_result.gt_inds == 0)
         if neg_inds.numel() != 0:
             neg_inds = neg_inds.squeeze(1)
