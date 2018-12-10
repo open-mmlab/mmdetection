@@ -116,7 +116,8 @@ class ConvFCBBoxHead(BBoxHead):
                 if self.normalize is not None:
                     branch_fcs.append(nn.Sequential(
                         nn.Linear(fc_in_channels, self.fc_out_channels, False),
-                        build_norm_layer(self.normalize, self.fc_out_channels)))
+                        build_norm_layer(self.normalize, self.fc_out_channels))
+                    )
                 else:
                     branch_fcs.append(
                         nn.Linear(fc_in_channels, self.fc_out_channels))
