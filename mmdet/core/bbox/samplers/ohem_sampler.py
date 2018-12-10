@@ -42,7 +42,7 @@ class OHEMSampler(BaseSampler):
                     label_weights=cls_score.new_ones(cls_score.size(0)),
                     bbox_targets=None,
                     bbox_weights=None,
-                    reduction='none')['loss_cls']
+                    reduction=False)['loss_cls']
                 _, topk_loss_pos_inds = loss_pos.topk(num_expected)
             return pos_inds[topk_loss_pos_inds]
 
@@ -67,6 +67,6 @@ class OHEMSampler(BaseSampler):
                     label_weights=cls_score.new_ones(cls_score.size(0)),
                     bbox_targets=None,
                     bbox_weights=None,
-                    reduction='none')['loss_cls']
+                    reduction=False)['loss_cls']
                 _, topk_loss_neg_inds = loss_neg.topk(num_expected)
             return neg_inds[topk_loss_neg_inds]
