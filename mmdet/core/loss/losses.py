@@ -11,13 +11,13 @@ def weighted_nll_loss(pred, label, weight, avg_factor=None):
 
 
 def weighted_cross_entropy(pred, label, weight, avg_factor=None,
-                           reduction='elementwise_sum'):
+                           reduction=True):
     if avg_factor is None:
         avg_factor = max(torch.sum(weight > 0).float().item(), 1.)
     raw = F.cross_entropy(pred, label, reduction='none')
-    if reduction == 'elementwise_sum':
+    if reduction:
         return torch.sum(raw * weight)[None] / avg_factor
-    elif reduction == 'none':
+    else:
         return raw * weight / avg_factor
 
 
