@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 from .bbox_head import BBoxHead
-from ..utils import ConvModule
+from ..utils import ConvModule, build_norm_layer
 
 
 class ConvFCBBoxHead(BBoxHead):
@@ -113,8 +113,13 @@ class ConvFCBBoxHead(BBoxHead):
             for i in range(num_branch_fcs):
                 fc_in_channels = (last_layer_dim
                                   if i == 0 else self.fc_out_channels)
-                branch_fcs.append(
-                    nn.Linear(fc_in_channels, self.fc_out_channels))
+                if self.normalize is not None:
+                    branch_fcs.append(nn.Sequential(
+                        nn.Linear(fc_in_channels, self.fc_out_channels, False),
+                        build_norm_layer(self.normalize, self.fc_out_channels)))
+                else:
+                    branch_fcs.append(
+                        nn.Linear(fc_in_channels, self.fc_out_channels))
             last_layer_dim = self.fc_out_channels
         return branch_convs, branch_fcs, last_layer_dim
 
@@ -124,7 +129,8 @@ class ConvFCBBoxHead(BBoxHead):
             for m in module_list.modules():
                 if isinstance(m, nn.Linear):
                     nn.init.xavier_uniform_(m.weight)
-                    nn.init.constant_(m.bias, 0)
+                    if m.bias is not None:
+                        nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         # shared part
