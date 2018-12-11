@@ -10,8 +10,9 @@ class RandomSampler(BaseSampler):
                  num,
                  pos_fraction,
                  neg_pos_ub=-1,
-                 add_gt_as_proposals=True):
-        super(RandomSampler, self).__init__()
+                 add_gt_as_proposals=True,
+                 context=None):
+        super(RandomSampler, self).__init__(context)
         self.num = num
         self.pos_fraction = pos_fraction
         self.neg_pos_ub = neg_pos_ub

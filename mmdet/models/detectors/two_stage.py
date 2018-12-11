@@ -104,9 +104,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if self.with_bbox or self.with_mask:
             bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)
             bbox_sampler = build_sampler(
-                self.train_cfg.rcnn.sampler,
-                bbox_roi_extractor=self.bbox_roi_extractor,
-                bbox_head=self.bbox_head)
+                self.train_cfg.rcnn.sampler, context=self)
             num_imgs = img.size(0)
             assign_results = []
             sampling_results = []

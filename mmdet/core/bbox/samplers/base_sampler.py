@@ -7,7 +7,8 @@ from .sampling_result import SamplingResult
 
 class BaseSampler(metaclass=ABCMeta):
 
-    def __init__(self):
+    def __init__(self, context):
+        self.context = context
         self.pos_sampler = self
         self.neg_sampler = self
 
@@ -19,7 +20,11 @@ class BaseSampler(metaclass=ABCMeta):
     def _sample_neg(self, assign_result, num_expected, **kwargs):
         pass
 
-    def sample(self, assign_result, bboxes, gt_bboxes, gt_labels=None,
+    def sample(self,
+               assign_result,
+               bboxes,
+               gt_bboxes,
+               gt_labels=None,
                **kwargs):
         """Sample positive and negative bboxes.
 
