@@ -6,6 +6,8 @@
 mmdetection is an open source object detection toolbox based on PyTorch. It is
 a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
 
+![demo image](demo/coco_test_12510.jpg)
+
 ### Major features
 
 - **Modular Design**
@@ -34,6 +36,13 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
 
+v0.5.4 (27/11/2018)
+- Add SingleStageDetector and RetinaNet.
+
+v0.5.3 (26/11/2018)
+- Add Cascade R-CNN and Cascade Mask R-CNN.
+- Add support for Soft-NMS in config files.
+
 v0.5.2 (21/10/2018)
 - Add support for custom datasets.
 - Add a script to convert PASCAL VOC annotations to the expected format.
@@ -44,67 +53,23 @@ v0.5.1 (20/10/2018)
 
 ## Benchmark and model zoo
 
-We provide our baseline results and the comparision with Detectron, the most
-popular detection projects. Results and models are available in the [Model zoo](MODEL_ZOO.md).
+Supported methods and backbones are shown in the below table.
+Results and models are available in the [Model zoo](MODEL_ZOO.md).
+
+|                    | ResNet   | ResNeXt  | SENet    | VGG      |
+|--------------------|:--------:|:--------:|:--------:|:--------:|
+| RPN                | ✓        | ☐        | ☐        | ✗        |
+| Fast R-CNN         | ✓        | ☐        | ☐        | ✗        |
+| Faster R-CNN       | ✓        | ☐        | ☐        | ✗        |
+| Mask R-CNN         | ✓        | ☐        | ☐        | ✗        |
+| Cascade R-CNN      | ✓        | ☐        | ☐        | ✗        |
+| Cascade Mask R-CNN | ✓        | ☐        | ☐        | ✗        |
+| SSD                | ✗        | ✗        | ✗        | ☐        |
+| RetinaNet          | ✓        | ☐        | ☐        | ✗        |
 
 ## Installation
 
-### Requirements
-
-- Linux (tested on Ubuntu 16.04 and CentOS 7.2)
-- Python 3.4+
-- PyTorch 0.4.1 and torchvision
-- Cython
-- [mmcv](https://github.com/open-mmlab/mmcv)
-
-### Install mmdetection
-
-a. Install PyTorch 0.4.1 and torchvision following the [official instructions](https://pytorch.org/).
-
-b. Clone the mmdetection repository.
-
-```shell
-git clone https://github.com/open-mmlab/mmdetection.git
-```
-
-c. Compile cuda extensions.
-
-```shell
-cd mmdetection
-pip install cython  # or "conda install cython" if you prefer conda
-./compile.sh  # or "PYTHON=python3 ./compile.sh" if you use system python3 without virtual environments
-```
-
-d. Install mmdetection (other dependencies will be installed automatically).
-
-```shell
-python(3) setup.py install  # add --user if you want to install it locally
-# or "pip install ."
-```
-
-Note: You need to run the last step each time you pull updates from github.
-The git commit id will be written to the version number and also saved in trained models.
-
-### Prepare COCO dataset.
-
-It is recommended to symlink the dataset root to `$MMDETECTION/data`.
-
-```
-mmdetection
-├── mmdet
-├── tools
-├── configs
-├── data
-│   ├── coco
-│   │   ├── annotations
-│   │   ├── train2017
-│   │   ├── val2017
-│   │   ├── test2017
-
-```
-
-> [Here](https://gist.github.com/hellock/bf23cd7348c727d69d48682cb6909047) is
-a script for setting up mmdetection with conda for reference.
+Please refer to [INSTALL.md](INSTALL.md) for installation and dataset preparation.
 
 
 ## Inference with pretrained models
@@ -128,12 +93,9 @@ python tools/test.py <CONFIG_FILE> <CHECKPOINT_FILE> --gpus <GPU_NUM> --out <OUT
 ```
 
 To perform evaluation after testing, add `--eval <EVAL_TYPES>`. Supported types are:
-
-- proposal_fast: eval recalls of proposals with our own codes. (supposed to get the same results as the official evaluation)
-- proposal: eval recalls of proposals with the official code provided by COCO.
-- bbox: eval box AP with the official code provided by COCO.
-- segm: eval mask AP with the official code provided by COCO.
-- keypoints: eval keypoint AP with the official code provided by COCO.
+`[proposal_fast, proposal, bbox, segm, keypoints]`.
+`proposal_fast` denotes evaluating proposal recalls with our own implementation,
+others denote evaluating the corresponding metric with the official coco api.
 
 For example, to evaluate Mask R-CNN with 8 GPUs and save the result as `results.pkl`.
 
@@ -182,7 +144,7 @@ for i, result in enumerate(inference_detector(model, imgs, cfg, device='cuda:0')
 mmdetection implements distributed training and non-distributed training,
 which uses `MMDistributedDataParallel` and `MMDataParallel` respectively.
 
-### Distributed training
+### Distributed training (Single or Multiples machines)
 
 mmdetection potentially supports multiple launch methods, e.g., PyTorch’s built-in launch utility, slurm and MPI.
 
@@ -197,21 +159,18 @@ Supported arguments are:
 - --validate: perform evaluation every k (default=1) epochs during the training.
 - --work_dir <WORK_DIR>: if specified, the path in config file will be overwritten.
 
-### Non-distributed training
-
-```shell
-python tools/train.py <CONFIG_FILE> --gpus <GPU_NUM> --work_dir <WORK_DIR> --validate
-```
-
 Expected results in WORK_DIR:
 
 - log file
 - saved checkpoints (every k epochs, defaults=1)
 - a symbol link to the latest checkpoint
 
-> **Note**
-> 1. We recommend using distributed training with NCCL2 even on a single machine, which is faster. Non-distributed training is for debugging or other purposes.
-> 2. The default learning rate is for 8 GPUs. If you use less or more than 8 GPUs, you need to set the learning rate proportional to the GPU num. E.g., modify lr to 0.01 for 4 GPUs or 0.04 for 16 GPUs.
+**Important**: The default learning rate is for 8 GPUs. If you use less or more than 8 GPUs, you need to set the learning rate proportional to the GPU num. E.g., modify lr to 0.01 for 4 GPUs or 0.04 for 16 GPUs.
+
+### Non-distributed training
+
+Please refer to `tools/train.py` for non-distributed training, which is not recommended
+and left for debugging. Even on a single machine, distributed training is preferred.
 
 ### Train on custom datasets
 

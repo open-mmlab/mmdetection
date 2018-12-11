@@ -160,7 +160,7 @@ class RPNHead(nn.Module):
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_samples) = cls_reg_targets
+         num_total_pos, num_total_neg) = cls_reg_targets
         losses_cls, losses_reg = multi_apply(
             self.loss_single,
             rpn_cls_scores,
@@ -169,7 +169,7 @@ class RPNHead(nn.Module):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples,
+            num_total_samples=num_total_pos + num_total_neg,
             cfg=cfg)
         return dict(loss_rpn_cls=losses_cls, loss_rpn_reg=losses_reg)
 
@@ -234,13 +234,13 @@ class RPNHead(nn.Module):
             proposals = proposals[valid_inds, :]
             scores = scores[valid_inds]
             proposals = torch.cat([proposals, scores.unsqueeze(-1)], dim=-1)
-            nms_keep = nms(proposals, cfg.nms_thr)[:cfg.nms_post]
-            proposals = proposals[nms_keep, :]
+            proposals, _ = nms(proposals, cfg.nms_thr)
+            proposals = proposals[:cfg.nms_post, :]
             mlvl_proposals.append(proposals)
         proposals = torch.cat(mlvl_proposals, 0)
         if cfg.nms_across_levels:
-            nms_keep = nms(proposals, cfg.nms_thr)[:cfg.max_num]
-            proposals = proposals[nms_keep, :]
+            proposals, _ = nms(proposals, cfg.nms_thr)
+            proposals = proposals[:cfg.max_num, :]
         else:
             scores = proposals[:, 4]
             _, order = scores.sort(0, descending=True)

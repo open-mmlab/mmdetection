@@ -6,43 +6,58 @@ from .cpu_nms import cpu_nms
 from .cpu_soft_nms import cpu_soft_nms
 
 
-def nms(dets, thresh, device_id=None):
+def nms(dets, iou_thr, device_id=None):
     """Dispatch to either CPU or GPU NMS implementations."""
-
-    tensor_device = None
     if isinstance(dets, torch.Tensor):
-        tensor_device = dets.device
+        is_tensor = True
         if dets.is_cuda:
             device_id = dets.get_device()
-        dets = dets.detach().cpu().numpy()
-    assert isinstance(dets, np.ndarray)
+        dets_np = dets.detach().cpu().numpy()
+    elif isinstance(dets, np.ndarray):
+        is_tensor = False
+        dets_np = dets
+    else:
+        raise TypeError(
+            'dets must be either a Tensor or numpy array, but got {}'.format(
+                type(dets)))
 
-    if dets.shape[0] == 0:
+    if dets_np.shape[0] == 0:
         inds = []
     else:
-        inds = (gpu_nms(dets, thresh, device_id=device_id)
-                if device_id is not None else cpu_nms(dets, thresh))
+        inds = (gpu_nms(dets_np, iou_thr, device_id=device_id)
+                if device_id is not None else cpu_nms(dets_np, iou_thr))
 
-    if tensor_device:
-        return torch.Tensor(inds).long().to(tensor_device)
+    if is_tensor:
+        inds = dets.new_tensor(inds, dtype=torch.long)
     else:
-        return np.array(inds, dtype=np.int)
+        inds = np.array(inds, dtype=np.int64)
+    return dets[inds, :], inds
 
 
-def soft_nms(dets, Nt=0.3, method=1, sigma=0.5, min_score=0):
+def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
     if isinstance(dets, torch.Tensor):
-        _dets = dets.detach().cpu().numpy()
+        is_tensor = True
+        dets_np = dets.detach().cpu().numpy()
+    elif isinstance(dets, np.ndarray):
+        is_tensor = False
+        dets_np = dets
     else:
-        _dets = dets.copy()
-    assert isinstance(_dets, np.ndarray)
+        raise TypeError(
+            'dets must be either a Tensor or numpy array, but got {}'.format(
+                type(dets)))
 
+    method_codes = {'linear': 1, 'gaussian': 2}
+    if method not in method_codes:
+        raise ValueError('Invalid method for SoftNMS: {}'.format(method))
     new_dets, inds = cpu_soft_nms(
-        _dets, Nt=Nt, method=method, sigma=sigma, threshold=min_score)
+        dets_np,
+        iou_thr,
+        method=method_codes[method],
+        sigma=sigma,
+        min_score=min_score)
 
-    if isinstance(dets, torch.Tensor):
-        return dets.new_tensor(
-            inds, dtype=torch.long), dets.new_tensor(new_dets)
+    if is_tensor:
+        return dets.new_tensor(new_dets), dets.new_tensor(
+            inds, dtype=torch.long)
     else:
-        return np.array(
-            inds, dtype=np.int), np.array(
-                new_dets, dtype=np.float32)
+        return new_dets.astype(np.float32), inds.astype(np.int64)

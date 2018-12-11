@@ -25,10 +25,3 @@ class MaskRCNN(TwoStageDetector):
             train_cfg=train_cfg,
             test_cfg=test_cfg,
             pretrained=pretrained)
-
-    def show_result(self, data, result, img_norm_cfg, **kwargs):
-        # TODO: show segmentation masks
-        assert isinstance(result, tuple)
-        assert len(result) == 2  # (bbox_results, segm_results)
-        super(MaskRCNN, self).show_result(data, result[0], img_norm_cfg,
-                                          **kwargs)

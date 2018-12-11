@@ -5,9 +5,9 @@ sys.path.insert(0, '/mnt/lustre/pangjiangmiao/codebase/mmdet')
 
 import argparse
 from mmcv import Config
-from mmcv.runner import obj_from_dict
 
-from mmdet import datasets, __version__
+from mmdet import __version__
+from mmdet.datasets import get_dataset
 from mmdet.apis import (train_detector, init_dist, get_root_logger,
                         set_random_seed)
 from mmdet.models import build_detector
@@ -74,13 +74,7 @@ def main():
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
 
-    import torch.distributed as dist
-    if dist.get_rank() == 0:
-        with open('/mnt/lustre/pangjiangmiao/r50_32x4d_mmdet.txt', 'w') as f:
-            for k in model.state_dict().keys():
-                if 'num_batches_tracked' in k: continue
-                f.writelines('{}\n'.format(k))
-    train_dataset = obj_from_dict(cfg.data.train, datasets)
+    train_dataset = get_dataset(cfg.data.train)
     train_detector(
         model,
         train_dataset,
