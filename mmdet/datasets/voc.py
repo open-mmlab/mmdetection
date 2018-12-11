@@ -20,7 +20,7 @@ class VOCDataset(CustomDataset):
         self.cat2label = {cat: i + 1 for i, cat in enumerate(self.CLASSES)}
 
     def load_annotations(self, ann_file):
-        self.img_infos = []
+        img_infos = []
         img_ids = mmcv.list_from_file(ann_file)
         for img_id in img_ids:
             filename = 'JPEGImages/{}.jpg'.format(img_id)
@@ -31,9 +31,9 @@ class VOCDataset(CustomDataset):
             size = root.find('size')
             width = int(size.find('width').text)
             height = int(size.find('height').text)
-            self.img_infos.append(
+            img_infos.append(
                 dict(id=img_id, filename=filename, width=width, height=height))
-        return self.img_infos
+        return img_infos
 
     def get_ann_info(self, idx):
         img_id = self.img_infos[idx]['id']
