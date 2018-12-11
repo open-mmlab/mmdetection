@@ -1,4 +1,7 @@
 from __future__ import division
+import sys
+sys.path.insert(0, '/mnt/lustre/pangjiangmiao/codebase/mmcv')
+sys.path.insert(0, '/mnt/lustre/pangjiangmiao/codebase/mmdet')
 
 import argparse
 from mmcv import Config
@@ -14,6 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
     parser.add_argument('--work_dir', help='the dir to save logs and models')
+    parser.add_argument('--resume_from', help='the checkpoint to resume from')
     parser.add_argument(
         '--validate',
         action='store_true',
@@ -43,6 +47,8 @@ def main():
     # update configs according to CLI args
     if args.work_dir is not None:
         cfg.work_dir = args.work_dir
+    if args.resume_from is not None:
+        cfg.resume_from = args.resume_from
     cfg.gpus = args.gpus
     if cfg.checkpoint_config is not None:
         # save mmdet version in checkpoints as meta data
@@ -67,6 +73,13 @@ def main():
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+
+    import torch.distributed as dist
+    if dist.get_rank() == 0:
+        with open('/mnt/lustre/pangjiangmiao/r50_32x4d_mmdet.txt', 'w') as f:
+            for k in model.state_dict().keys():
+                if 'num_batches_tracked' in k: continue
+                f.writelines('{}\n'.format(k))
     train_dataset = obj_from_dict(cfg.data.train, datasets)
     train_detector(
         model,
