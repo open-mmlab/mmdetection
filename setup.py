@@ -12,7 +12,7 @@ def readme():
 
 MAJOR = 0
 MINOR = 5
-PATCH = 2
+PATCH = 4
 SUFFIX = ''
 SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
 
@@ -93,7 +93,7 @@ if __name__ == '__main__':
         package_data={'mmdet.ops': ['*/*.so']},
         classifiers=[
             'Development Status :: 4 - Beta',
-            'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+            'License :: OSI Approved :: Apache Software License',
             'Operating System :: OS Independent',
             'Programming Language :: Python :: 2',
             'Programming Language :: Python :: 2.7',

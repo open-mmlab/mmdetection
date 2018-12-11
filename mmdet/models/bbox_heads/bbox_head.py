@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -99,7 +100,7 @@ class BBoxHead(nn.Module):
                        img_shape,
                        scale_factor,
                        rescale=False,
-                       nms_cfg=None):
+                       cfg=None):
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
@@ -114,11 +115,80 @@ class BBoxHead(nn.Module):
         if rescale:
             bboxes /= scale_factor
 
-        if nms_cfg is None:
+        if cfg is None:
             return bboxes, scores
         else:
             det_bboxes, det_labels = multiclass_nms(
-                bboxes, scores, nms_cfg.score_thr, nms_cfg.nms_thr,
-                nms_cfg.max_per_img)
+                bboxes, scores, cfg.score_thr, cfg.nms, cfg.max_per_img)
 
             return det_bboxes, det_labels
+
+    def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
+        """Refine bboxes during training.
+
+        Args:
+            rois (Tensor): Shape (n*bs, 5), where n is image number per GPU,
+                and bs is the sampled RoIs per image.
+            labels (Tensor): Shape (n*bs, ).
+            bbox_preds (Tensor): Shape (n*bs, 4) or (n*bs, 4*#class).
+            pos_is_gts (list[Tensor]): Flags indicating if each positive bbox
+                is a gt bbox.
+            img_metas (list[dict]): Meta info of each image.
+
+        Returns:
+            list[Tensor]: Refined bboxes of each image in a mini-batch.
+        """
+        img_ids = rois[:, 0].long().unique(sorted=True)
+        assert img_ids.numel() == len(img_metas)
+
+        bboxes_list = []
+        for i in range(len(img_metas)):
+            inds = torch.nonzero(rois[:, 0] == i).squeeze()
+            num_rois = inds.numel()
+
+            bboxes_ = rois[inds, 1:]
+            label_ = labels[inds]
+            bbox_pred_ = bbox_preds[inds]
+            img_meta_ = img_metas[i]
+            pos_is_gts_ = pos_is_gts[i]
+
+            bboxes = self.regress_by_class(bboxes_, label_, bbox_pred_,
+                                           img_meta_)
+            # filter gt bboxes
+            pos_keep = 1 - pos_is_gts_
+            keep_inds = pos_is_gts_.new_ones(num_rois)
+            keep_inds[:len(pos_is_gts_)] = pos_keep
+
+            bboxes_list.append(bboxes[keep_inds])
+
+        return bboxes_list
+
+    def regress_by_class(self, rois, label, bbox_pred, img_meta):
+        """Regress the bbox for the predicted class. Used in Cascade R-CNN.
+
+        Args:
+            rois (Tensor): shape (n, 4) or (n, 5)
+            label (Tensor): shape (n, )
+            bbox_pred (Tensor): shape (n, 4*(#class+1)) or (n, 4)
+            img_meta (dict): Image meta info.
+
+        Returns:
+            Tensor: Regressed bboxes, the same shape as input rois.
+        """
+        assert rois.size(1) == 4 or rois.size(1) == 5
+
+        if not self.reg_class_agnostic:
+            label = label * 4
+            inds = torch.stack((label, label + 1, label + 2, label + 3), 1)
+            bbox_pred = torch.gather(bbox_pred, 1, inds)
+        assert bbox_pred.size(1) == 4
+
+        if rois.size(1) == 4:
+            new_rois = delta2bbox(rois, bbox_pred, self.target_means,
+                                  self.target_stds, img_meta['img_shape'])
+        else:
+            bboxes = delta2bbox(rois[:, 1:], bbox_pred, self.target_means,
+                                self.target_stds, img_meta['img_shape'])
+            new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
+
+        return new_rois

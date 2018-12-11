@@ -1,9 +1,12 @@
 from .custom import CustomDataset
 from .coco import CocoDataset
 from .loader import GroupSampler, DistributedGroupSampler, build_dataloader
-from .utils import to_tensor, random_scale, show_ann
+from .utils import to_tensor, random_scale, show_ann, get_dataset
+from .concat_dataset import ConcatDataset
+from .repeat_dataset import RepeatDataset
 
 __all__ = [
     'CustomDataset', 'CocoDataset', 'GroupSampler', 'DistributedGroupSampler',
-    'build_dataloader', 'to_tensor', 'random_scale', 'show_ann'
+    'build_dataloader', 'to_tensor', 'random_scale', 'show_ann',
+    'get_dataset', 'ConcatDataset', 'RepeatDataset',
 ]
