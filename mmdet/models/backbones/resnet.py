@@ -219,9 +219,13 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         if depth not in self.arch_settings:
             raise KeyError('invalid depth {} for resnet'.format(depth))
+        self.depth = depth,
+        self.num_stages = num_stages,
+        self.strides = strides,
+        self.dilations = dilations,
         assert num_stages >= 1 and num_stages <= 4
-        block, stage_blocks = self.arch_settings[depth]
-        stage_blocks = stage_blocks[:num_stages]
+        self.block, self.stage_blocks = self.arch_settings[depth]
+        self.stage_blocks = self.stage_blocks[:num_stages]
         assert len(strides) == len(dilations) == num_stages
         assert max(out_indices) < num_stages
 
@@ -240,12 +244,12 @@ class ResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         self.res_layers = []
-        for i, num_blocks in enumerate(stage_blocks):
+        for i, num_blocks in enumerate(self.stage_blocks):
             stride = strides[i]
             dilation = dilations[i]
             planes = 64 * 2**i
             res_layer = make_res_layer(
-                block,
+                self.block,
                 self.inplanes,
                 planes,
                 num_blocks,
@@ -253,12 +257,13 @@ class ResNet(nn.Module):
                 dilation=dilation,
                 style=self.style,
                 with_cp=with_cp)
-            self.inplanes = planes * block.expansion
+            self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
 
-        self.feat_dim = block.expansion * 64 * 2**(len(stage_blocks) - 1)
+        self.feat_dim = self.block.expansion * 64 * 2**(
+            len(self.stage_blocks) - 1)
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
