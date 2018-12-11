@@ -11,15 +11,14 @@ class OHEMSampler(BaseSampler):
                  pos_fraction,
                  neg_pos_ub=-1,
                  add_gt_as_proposals=True,
-                 bbox_roi_extractor=None,
-                 bbox_head=None):
-        super(OHEMSampler, self).__init__()
+                 context=None):
+        super(OHEMSampler, self).__init__(context)
         self.num = num
         self.pos_fraction = pos_fraction
         self.neg_pos_ub = neg_pos_ub
         self.add_gt_as_proposals = add_gt_as_proposals
-        self.bbox_roi_extractor = bbox_roi_extractor
-        self.bbox_head = bbox_head
+        self.bbox_roi_extractor = context.bbox_roi_extractor
+        self.bbox_head = context.bbox_head
 
     def hard_mining(self, inds, num_expected, bboxes, labels, feats):
         # hard mining from the gallery.
