@@ -16,9 +16,9 @@ model = dict(
         type='SSDHead',
         input_size=300,
         in_channels=(512, 1024, 512, 256, 256, 256),
-        num_classes=81,
+        num_classes=21,
         anchor_strides=(8, 16, 32, 64, 100, 300),
-        basesize_ratio_range=(0.15, 0.9),
+        basesize_ratio_range=(0.2, 0.9),
         anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
         target_means=(.0, .0, .0, .0),
         target_stds=(0.1, 0.1, 0.2, 0.2)))
@@ -42,8 +42,8 @@ test_cfg = dict(
     max_per_img=200)
 # model training and testing settings
 # dataset settings
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+dataset_type = 'VOCDataset'
+data_root = 'data/VOCdevkit/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 data = dict(
     imgs_per_gpu=8,
@@ -52,8 +52,11 @@ data = dict(
         type='RepeatDataset',
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
+            ann_file=[
+                data_root + 'VOC2007/ImageSets/Main/trainval.txt',
+                data_root + 'VOC2012/ImageSets/Main/trainval.txt'
+            ],
+            img_prefix=[data_root + 'VOC2007/', data_root + 'VOC2012/'],
             img_scale=(300, 300),
             img_norm_cfg=img_norm_cfg,
             size_divisor=None,
@@ -75,11 +78,11 @@ data = dict(
                 random_crop=dict(
                     min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3)),
             resize_keep_ratio=False),
-        times=10),
+        times=20),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
+        img_prefix=data_root + 'VOC2007/',
         img_scale=(300, 300),
         img_norm_cfg=img_norm_cfg,
         size_divisor=None,
@@ -90,8 +93,8 @@ data = dict(
         resize_keep_ratio=False),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
+        img_prefix=data_root + 'VOC2007/',
         img_scale=(300, 300),
         img_norm_cfg=img_norm_cfg,
         size_divisor=None,
@@ -123,7 +126,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/ssd300_coco'
+work_dir = './work_dirs/ssd300_voc'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
