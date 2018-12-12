@@ -106,7 +106,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             bbox_sampler = build_sampler(
                 self.train_cfg.rcnn.sampler, context=self)
             num_imgs = img.size(0)
-            assign_results = []
             sampling_results = []
             for i in range(num_imgs):
                 assign_result = bbox_assigner.assign(
@@ -118,7 +117,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                     gt_bboxes[i],
                     gt_labels[i],
                     feats=[lvl_feat[i][None] for lvl_feat in x])
-                assign_results.append(assign_result)
                 sampling_results.append(sampling_result)
 
         # bbox head forward and loss
