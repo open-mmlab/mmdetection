@@ -194,7 +194,7 @@ Here is an example.
             'bboxes': <np.ndarray> (n, 4),
             'labels': <np.ndarray> (n, ),
             'bboxes_ignore': <np.ndarray> (k, 4),
-            'labels_ignore': <np.ndarray> (k, 4) (optional field)
+            'labels_ignore': <np.ndarray> (k, ) (optional field)
         }
     },
     ...
@@ -206,12 +206,12 @@ There are two ways to work with custom datasets.
 - online conversion
 
   You can write a new Dataset class inherited from `CustomDataset`, and overwrite two methods
-  `load_annotations(self, ann_file)` and `get_ann_info(self, idx)`, like [CocoDataset](mmdet/datasets/coco.py).
+  `load_annotations(self, ann_file)` and `get_ann_info(self, idx)`, like [CocoDataset](mmdet/datasets/coco.py) and [VOCDataset](mmdet/datasets/voc.py).
 
 - offline conversion
 
   You can convert the annotation format to the expected format above and save it to
-  a pickle file, like [pascal_voc.py](tools/convert_datasets/pascal_voc.py).
+  a pickle or json file, like [pascal_voc.py](tools/convert_datasets/pascal_voc.py).
   Then you can simply use `CustomDataset`.
 
 ## Technical details
