@@ -9,17 +9,16 @@ class OHEMSampler(BaseSampler):
     def __init__(self,
                  num,
                  pos_fraction,
-                 neg_pos_ub,
-                 add_gt_as_proposals,
                  context,
+                 neg_pos_ub=-1,
+                 add_gt_as_proposals=True,
                  **kwargs):
         super(OHEMSampler, self).__init__(num, pos_fraction, neg_pos_ub,
-                                          add_gt_as_proposals, **kwargs)
+                                          add_gt_as_proposals)
         self.bbox_roi_extractor = context.bbox_roi_extractor
         self.bbox_head = context.bbox_head
 
     def hard_mining(self, inds, num_expected, bboxes, labels, feats):
-        # hard mining from the gallery.
         with torch.no_grad():
             rois = bbox2roi([bboxes])
             bbox_feats = self.bbox_roi_extractor(
@@ -42,7 +41,7 @@ class OHEMSampler(BaseSampler):
                     bboxes=None,
                     feats=None,
                     **kwargs):
-        # Hard sample some positive samples
+        # Sample some hard positive samples
         pos_inds = torch.nonzero(assign_result.gt_inds > 0)
         if pos_inds.numel() != 0:
             pos_inds = pos_inds.squeeze(1)
@@ -58,7 +57,7 @@ class OHEMSampler(BaseSampler):
                     bboxes=None,
                     feats=None,
                     **kwargs):
-        # Hard sample some negative samples
+        # Sample some hard negative samples
         neg_inds = torch.nonzero(assign_result.gt_inds == 0)
         if neg_inds.numel() != 0:
             neg_inds = neg_inds.squeeze(1)
