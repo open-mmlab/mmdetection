@@ -55,8 +55,12 @@ class SSDHead(nn.Module):
             min_sizes.append(int(input_size * r / 100))
             max_sizes.append(int(input_size * (r + step) / 100))
         if input_size == 300:
-            min_sizes.insert(0, int(input_size * 7 / 100))
-            max_sizes.insert(0, int(input_size * 15 / 100))
+            if basesize_ratio_range[0] == 0.15:
+                min_sizes.insert(0, int(input_size * 7 / 100))
+                max_sizes.insert(0, int(input_size * 15 / 100))
+            elif basesize_ratio_range[0] == 0.2:
+                min_sizes.insert(0, int(input_size * 10 / 100))
+                max_sizes.insert(0, int(input_size * 20 / 100))
         elif input_size == 512:
             min_sizes.insert(0, int(input_size * 4 / 100))
             max_sizes.insert(0, int(input_size * 10 / 100))
