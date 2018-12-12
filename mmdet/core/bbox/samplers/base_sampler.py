@@ -58,9 +58,8 @@ class BaseSampler(metaclass=ABCMeta):
             gt_flags = torch.cat([gt_ones, gt_flags])
 
         num_expected_pos = int(self.num * self.pos_fraction)
-        kwargs.update(dict(bboxes=bboxes))
-        pos_inds = self.pos_sampler._sample_pos(assign_result,
-                                                num_expected_pos, **kwargs)
+        pos_inds = self.pos_sampler._sample_pos(
+            assign_result, num_expected_pos, bboxes=bboxes, **kwargs)
         # We found that sampled indices have duplicated items occasionally.
         # (may be a bug of PyTorch)
         pos_inds = pos_inds.unique()
@@ -71,8 +70,8 @@ class BaseSampler(metaclass=ABCMeta):
             neg_upper_bound = int(self.neg_pos_ub * _pos)
             if num_expected_neg > neg_upper_bound:
                 num_expected_neg = neg_upper_bound
-        neg_inds = self.neg_sampler._sample_neg(assign_result,
-                                                num_expected_neg, **kwargs)
+        neg_inds = self.neg_sampler._sample_neg(
+            assign_result, num_expected_neg, bboxes=bboxes, **kwargs)
         neg_inds = neg_inds.unique()
 
         return SamplingResult(pos_inds, neg_inds, bboxes, gt_bboxes,
