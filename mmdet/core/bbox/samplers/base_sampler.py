@@ -7,8 +7,16 @@ from .sampling_result import SamplingResult
 
 class BaseSampler(metaclass=ABCMeta):
 
-    def __init__(self, context):
-        self.context = context
+    def __init__(self,
+                 num,
+                 pos_fraction,
+                 neg_pos_ub=-1,
+                 add_gt_as_proposals=True,
+                 **kwargs):
+        self.num = num
+        self.pos_fraction = pos_fraction
+        self.neg_pos_ub = neg_pos_ub
+        self.add_gt_as_proposals = add_gt_as_proposals
         self.pos_sampler = self
         self.neg_sampler = self
 

@@ -9,14 +9,12 @@ class OHEMSampler(BaseSampler):
     def __init__(self,
                  num,
                  pos_fraction,
-                 neg_pos_ub=-1,
-                 add_gt_as_proposals=True,
-                 context=None):
-        super(OHEMSampler, self).__init__(context)
-        self.num = num
-        self.pos_fraction = pos_fraction
-        self.neg_pos_ub = neg_pos_ub
-        self.add_gt_as_proposals = add_gt_as_proposals
+                 neg_pos_ub,
+                 add_gt_as_proposals,
+                 context,
+                 **kwargs):
+        super(OHEMSampler, self).__init__(num, pos_fraction, neg_pos_ub,
+                                          add_gt_as_proposals, **kwargs)
         self.bbox_roi_extractor = context.bbox_roi_extractor
         self.bbox_head = context.bbox_head
 
