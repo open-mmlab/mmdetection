@@ -56,6 +56,8 @@ def weighted_sigmoid_focal_loss(pred,
 def mask_cross_entropy(pred, target, label):
     num_rois = pred.size()[0]
     inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
+    if pred.shape[1] == 1:
+        label.zero_()
     pred_slice = pred[inds, label].squeeze(1)
     return F.binary_cross_entropy_with_logits(
         pred_slice, target, reduction='elementwise_mean')[None]
