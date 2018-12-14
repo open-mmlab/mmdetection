@@ -19,7 +19,7 @@ model = dict(
         in_channels=(512, 1024, 512, 256, 256, 256, 256),
         num_classes=21,
         anchor_strides=(8, 16, 32, 64, 128, 256, 512),
-        basesize_ratio_range=(0.1, 0.9),
+        basesize_ratio_range=(0.15, 0.9),
         anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2, 3], [2], [2]),
         target_means=(.0, .0, .0, .0),
         target_stds=(0.1, 0.1, 0.2, 0.2)))
@@ -47,8 +47,8 @@ dataset_type = 'VOCDataset'
 data_root = 'data/VOCdevkit/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 data = dict(
-    imgs_per_gpu=8,
-    workers_per_gpu=3,
+    imgs_per_gpu=4,
+    workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
         times=20,
@@ -105,7 +105,7 @@ data = dict(
         test_mode=True,
         resize_keep_ratio=False))
 # optimizer
-optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(
