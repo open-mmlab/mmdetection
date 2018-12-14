@@ -55,15 +55,19 @@ class SSDHead(nn.Module):
             min_sizes.append(int(input_size * r / 100))
             max_sizes.append(int(input_size * (r + step) / 100))
         if input_size == 300:
-            if basesize_ratio_range[0] == 0.15:
+            if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
                 min_sizes.insert(0, int(input_size * 7 / 100))
                 max_sizes.insert(0, int(input_size * 15 / 100))
-            elif basesize_ratio_range[0] == 0.2:
+            elif basesize_ratio_range[0] == 0.2:  # SSD300 VOC
                 min_sizes.insert(0, int(input_size * 10 / 100))
                 max_sizes.insert(0, int(input_size * 20 / 100))
         elif input_size == 512:
-            min_sizes.insert(0, int(input_size * 4 / 100))
-            max_sizes.insert(0, int(input_size * 10 / 100))
+            if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
+                min_sizes.insert(0, int(input_size * 4 / 100))
+                max_sizes.insert(0, int(input_size * 10 / 100))
+            elif basesize_ratio_range[0] == 0.15:  # SSD512 VOC
+                min_sizes.insert(0, int(input_size * 7 / 100))
+                max_sizes.insert(0, int(input_size * 15 / 100))
         self.anchor_generators = []
         self.anchor_strides = anchor_strides
         for k in range(len(anchor_strides)):
