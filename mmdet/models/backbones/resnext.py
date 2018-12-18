@@ -23,15 +23,17 @@ class Bottleneck(nn.Module):
                  base_width=4,
                  style='pytorch',
                  with_cp=False):
-        """Bottleneck block.
+        """Bottleneck block for ResNeXt.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
 
-        width = planes if groups == 1 else math.floor(
-            planes * (base_width / 64)) * groups
+        if groups == 1:
+            width = planes
+        else:
+            width = math.floor(planes * (base_width / 64)) * groups
 
         if style == 'pytorch':
             conv1_stride = 1
@@ -39,6 +41,7 @@ class Bottleneck(nn.Module):
         else:
             conv1_stride = stride
             conv2_stride = 1
+
         self.conv1 = nn.Conv2d(
             inplanes, width, kernel_size=1, stride=conv1_stride, bias=False)
         self.bn1 = nn.BatchNorm2d(width)
