@@ -10,12 +10,10 @@ class RandomSampler(BaseSampler):
                  num,
                  pos_fraction,
                  neg_pos_ub=-1,
-                 add_gt_as_proposals=True):
-        super(RandomSampler, self).__init__()
-        self.num = num
-        self.pos_fraction = pos_fraction
-        self.neg_pos_ub = neg_pos_ub
-        self.add_gt_as_proposals = add_gt_as_proposals
+                 add_gt_as_proposals=True,
+                 **kwargs):
+        super(RandomSampler, self).__init__(num, pos_fraction, neg_pos_ub,
+                                            add_gt_as_proposals)
 
     @staticmethod
     def random_choice(gallery, num):
@@ -34,7 +32,7 @@ class RandomSampler(BaseSampler):
             rand_inds = torch.from_numpy(rand_inds).long().to(gallery.device)
         return gallery[rand_inds]
 
-    def _sample_pos(self, assign_result, num_expected):
+    def _sample_pos(self, assign_result, num_expected, **kwargs):
         """Randomly sample some positive samples."""
         pos_inds = torch.nonzero(assign_result.gt_inds > 0)
         if pos_inds.numel() != 0:
@@ -44,7 +42,7 @@ class RandomSampler(BaseSampler):
         else:
             return self.random_choice(pos_inds, num_expected)
 
-    def _sample_neg(self, assign_result, num_expected):
+    def _sample_neg(self, assign_result, num_expected, **kwargs):
         """Randomly sample some negative samples."""
         neg_inds = torch.nonzero(assign_result.gt_inds == 0)
         if neg_inds.numel() != 0:

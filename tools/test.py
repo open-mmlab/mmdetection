@@ -14,15 +14,16 @@ from mmdet.models import build_detector, detectors
 def single_test(model, data_loader, show=False):
     model.eval()
     results = []
-    prog_bar = mmcv.ProgressBar(len(data_loader.dataset))
+    dataset = data_loader.dataset
+    prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
         results.append(result)
 
         if show:
-            model.module.show_result(data, result,
-                                     data_loader.dataset.img_norm_cfg)
+            model.module.show_result(data, result, dataset.img_norm_cfg,
+                                     dataset.CLASSES)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
