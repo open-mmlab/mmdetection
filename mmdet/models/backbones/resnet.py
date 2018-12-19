@@ -77,19 +77,21 @@ class Bottleneck(nn.Module):
         """
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
+        self.inplanes = inplanes
+        self.planes = planes
         if style == 'pytorch':
-            conv1_stride = 1
-            conv2_stride = stride
+            self.conv1_stride = 1
+            self.conv2_stride = stride
         else:
-            conv1_stride = stride
-            conv2_stride = 1
+            self.conv1_stride = stride
+            self.conv2_stride = 1
         self.conv1 = nn.Conv2d(
-            inplanes, planes, kernel_size=1, stride=conv1_stride, bias=False)
+            inplanes, planes, kernel_size=1, stride=self.conv1_stride, bias=False)
         self.conv2 = nn.Conv2d(
             planes,
             planes,
             kernel_size=3,
-            stride=conv2_stride,
+            stride=self.conv2_stride,
             padding=dilation,
             dilation=dilation,
             bias=False)
