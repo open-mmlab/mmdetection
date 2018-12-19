@@ -1,11 +1,7 @@
 import math
-import logging
 
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-
-from mmcv.cnn import constant_init, kaiming_init
-from mmcv.runner import load_checkpoint
 
 from .resnet import ResNet
 
