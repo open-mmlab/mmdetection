@@ -82,7 +82,7 @@ which defines the following abstract methods.
 - `extract_feat()`: given an image batch of shape (n, c, h, w), extract the feature map(s).
 - `forward_train()`: forward method of the training mode
 - `simple_test()`: single scale testing without augmentation
-- `aug_test()`: testing without augmentation (multi-scale, flip, etc.)
+- `aug_test()`: testing with augmentation (multi-scale, flip, etc.)
 
 [TwoStageDetector](https://github.com/hellock/mmdetection/blob/master/mmdet/models/detectors/two_stage.py)
 is a good example which shows how to do that.
@@ -96,4 +96,4 @@ Each process keeps an isolated model, data loader, and optimizer.
 Model parameters are only synchronized once at the begining.
 After a forward and backward pass, gradients will be allreduced among all GPUs,
 and the optimizer will update model parameters.
-Since the gradients are allreduced, the model parameter stays the same for all processes after the iteration.
+Since the gradients are all reduced, the model parameter stays the same for all processes after the iteration.
