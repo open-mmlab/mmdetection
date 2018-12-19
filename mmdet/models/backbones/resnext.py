@@ -67,7 +67,7 @@ class Bottleneck(nn.Module):
     def forward(self, x):
 
         def _inner_forward(x):
-            residual = x
+            identity = x
 
             out = self.conv1(x)
             out = self.bn1(out)
@@ -81,9 +81,9 @@ class Bottleneck(nn.Module):
             out = self.bn3(out)
 
             if self.downsample is not None:
-                residual = self.downsample(x)
+                identity = self.downsample(x)
 
-            out += residual
+            out += identity
 
             return out
 
@@ -188,8 +188,8 @@ class ResNeXt(ResNet):
         self.inplanes = 64
         self.res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
-            stride = self.strides[0][i]
-            dilation = self.dilations[0][i]
+            stride = self.strides[i]
+            dilation = self.dilations[i]
             planes = 64 * 2**i
             res_layer = make_res_layer(
                 self.block,
