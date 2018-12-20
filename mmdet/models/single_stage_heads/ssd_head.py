@@ -72,12 +72,14 @@ class SSDHead(nn.Module):
         self.anchor_strides = anchor_strides
         for k in range(len(anchor_strides)):
             base_size = min_sizes[k]
+            stride = anchor_strides[k]
+            ctr = ((stride - 1) / 2., (stride - 1) / 2.)
             scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
             ratios = [1.]
             for r in anchor_ratios[k]:
                 ratios += [1 / r, r]  # 4 or 6 ratio
             anchor_generator = AnchorGenerator(
-                base_size, scales, ratios, scale_major=False)
+                base_size, scales, ratios, scale_major=False, ctr=ctr)
             indices = list(range(len(ratios)))
             indices.insert(1, len(indices))
             anchor_generator.base_anchors = torch.index_select(
