@@ -96,4 +96,4 @@ Each process keeps an isolated model, data loader, and optimizer.
 Model parameters are only synchronized once at the begining.
 After a forward and backward pass, gradients will be allreduced among all GPUs,
 and the optimizer will update model parameters.
-Since the gradients are all reduced, the model parameter stays the same for all processes after the iteration.
+Since the gradients are allreduced, the model parameter stays the same for all processes after the iteration.
