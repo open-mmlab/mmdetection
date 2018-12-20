@@ -51,7 +51,7 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
-        times=20,
+        times=10,
         dataset=dict(
             type=dataset_type,
             ann_file=[
@@ -113,7 +113,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[8, 11])
+    step=[16, 20])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -124,7 +124,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 24
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/ssd300_voc'
