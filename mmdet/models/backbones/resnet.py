@@ -86,7 +86,11 @@ class Bottleneck(nn.Module):
             self.conv1_stride = stride
             self.conv2_stride = 1
         self.conv1 = nn.Conv2d(
-            inplanes, planes, kernel_size=1, stride=self.conv1_stride, bias=False)
+            inplanes,
+            planes,
+            kernel_size=1,
+            stride=self.conv1_stride,
+            bias=False)
         self.conv2 = nn.Conv2d(
             planes,
             planes,

@@ -1,7 +1,6 @@
 import math
 
 import torch.nn as nn
-import torch.utils.checkpoint as cp
 
 from .resnet import ResNet
 from .resnet import Bottleneck as _Bottleneck
