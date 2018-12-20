@@ -99,11 +99,12 @@ class BaseDetector(nn.Module):
 
         if isinstance(dataset, str):
             class_names = get_classes(dataset)
-        elif isinstance(dataset, list):
+        elif isinstance(dataset, (list, tuple)) or dataset is None:
             class_names = dataset
         else:
-            raise TypeError('dataset must be a valid dataset name or a list'
-                            ' of class names, not {}'.format(type(dataset)))
+            raise TypeError(
+                'dataset must be a valid dataset name or a sequence'
+                ' of class names, not {}'.format(type(dataset)))
 
         for img, img_meta in zip(imgs, img_metas):
             h, w, _ = img_meta['img_shape']

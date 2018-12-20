@@ -32,6 +32,8 @@ class CustomDataset(Dataset):
     The `ann` field is optional for testing.
     """
 
+    CLASSES = None
+
     def __init__(self,
                  ann_file,
                  img_prefix,
@@ -45,6 +47,8 @@ class CustomDataset(Dataset):
                  with_crowd=True,
                  with_label=True,
                  test_mode=False):
+        # prefix of images path
+        self.img_prefix = img_prefix
         # load annotations (and proposals)
         self.img_infos = self.load_annotations(ann_file)
         if proposal_file is not None:
@@ -58,8 +62,6 @@ class CustomDataset(Dataset):
             if self.proposals is not None:
                 self.proposals = [self.proposals[i] for i in valid_inds]
 
-        # prefix of images path
-        self.img_prefix = img_prefix
         # (long_edge, short_edge) or [(long1, short1), (long2, short2), ...]
         self.img_scales = img_scale if isinstance(img_scale,
                                                   list) else [img_scale]

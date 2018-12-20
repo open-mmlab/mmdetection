@@ -15,6 +15,8 @@ def parse_args():
     parser.add_argument('config', help='train config file path')
     parser.add_argument('--work_dir', help='the dir to save logs and models')
     parser.add_argument(
+        '--resume_from', help='the checkpoint file to resume from')
+    parser.add_argument(
         '--validate',
         action='store_true',
         help='whether to evaluate the checkpoint during training')
@@ -43,6 +45,8 @@ def main():
     # update configs according to CLI args
     if args.work_dir is not None:
         cfg.work_dir = args.work_dir
+    if args.resume_from is not None:
+        cfg.resume_from = args.resume_from
     cfg.gpus = args.gpus
     if cfg.checkpoint_config is not None:
         # save mmdet version in checkpoints as meta data
@@ -67,6 +71,7 @@ def main():
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+
     train_dataset = get_dataset(cfg.data.train)
     train_detector(
         model,
