@@ -4,7 +4,7 @@ import torch.nn as nn
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
-from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply)
+from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
 
 
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
@@ -102,13 +102,22 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         # assign gts and sample proposals
         if self.with_bbox or self.with_mask:
-            assign_results, sampling_results = multi_apply(
-                assign_and_sample,
-                proposal_list,
-                gt_bboxes,
-                gt_bboxes_ignore,
-                gt_labels,
-                cfg=self.train_cfg.rcnn)
+            bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)
+            bbox_sampler = build_sampler(
+                self.train_cfg.rcnn.sampler, context=self)
+            num_imgs = img.size(0)
+            sampling_results = []
+            for i in range(num_imgs):
+                assign_result = bbox_assigner.assign(
+                    proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
+                    gt_labels[i])
+                sampling_result = bbox_sampler.sample(
+                    assign_result,
+                    proposal_list[i],
+                    gt_bboxes[i],
+                    gt_labels[i],
+                    feats=[lvl_feat[i][None] for lvl_feat in x])
+                sampling_results.append(sampling_result)
 
         # bbox head forward and loss
         if self.with_bbox:
