@@ -58,14 +58,14 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 
 |                    | ResNet   | ResNeXt  | SENet    | VGG      |
 |--------------------|:--------:|:--------:|:--------:|:--------:|
-| RPN                | ✓        | ☐        | ☐        | ✗        |
-| Fast R-CNN         | ✓        | ☐        | ☐        | ✗        |
-| Faster R-CNN       | ✓        | ☐        | ☐        | ✗        |
-| Mask R-CNN         | ✓        | ☐        | ☐        | ✗        |
-| Cascade R-CNN      | ✓        | ☐        | ☐        | ✗        |
-| Cascade Mask R-CNN | ✓        | ☐        | ☐        | ✗        |
+| RPN                | ✓        | ✓        | ☐        | ✗        |
+| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        |
+| Faster R-CNN       | ✓        | ✓        | ☐        | ✗        |
+| Mask R-CNN         | ✓        | ✓        | ☐        | ✗        |
+| Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        |
+| Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        |
 | SSD                | ✗        | ✗        | ✗        | ☐        |
-| RetinaNet          | ✓        | ☐        | ☐        | ✗        |
+| RetinaNet          | ✓        | ✓        | ☐        | ✗        |
 
 ## Installation
 
