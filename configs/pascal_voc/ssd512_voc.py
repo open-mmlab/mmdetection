@@ -1,3 +1,4 @@
+benchmark = True
 # model settings
 input_size = 512
 model = dict(

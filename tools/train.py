@@ -8,6 +8,7 @@ from mmdet.datasets import get_dataset
 from mmdet.apis import (train_detector, init_dist, get_root_logger,
                         set_random_seed)
 from mmdet.models import build_detector
+import torch
 
 
 def parse_args():
@@ -42,6 +43,9 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    # set benchmark
+    if cfg.get('benchmark', False):
+        torch.backends.cudnn.benchmark = True
     # update configs according to CLI args
     if args.work_dir is not None:
         cfg.work_dir = args.work_dir
