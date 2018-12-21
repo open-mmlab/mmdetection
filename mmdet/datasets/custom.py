@@ -47,9 +47,9 @@ class CustomDataset(Dataset):
                  with_mask=True,
                  with_crowd=True,
                  with_label=True,
-                 test_mode=False,
                  extra_aug=None,
-                 resize_keep_ratio=True):
+                 resize_keep_ratio=True,
+                 test_mode=False):
         # prefix of images path
         self.img_prefix = img_prefix
 
