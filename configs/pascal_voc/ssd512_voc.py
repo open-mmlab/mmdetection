@@ -1,4 +1,3 @@
-benchmark = True
 # model settings
 input_size = 512
 model = dict(
@@ -24,6 +23,7 @@ model = dict(
         anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2, 3], [2], [2]),
         target_means=(.0, .0, .0, .0),
         target_stds=(0.1, 0.1, 0.2, 0.2)))
+cudnn_benchmark = True
 train_cfg = dict(
     assigner=dict(
         type='MaxIoUAssigner',
