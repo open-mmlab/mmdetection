@@ -145,7 +145,29 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 
 **Notes:**
 
+- The `20e` schedule in Cascade (Mask) R-CNN indicates decreasing the lr at 16 and 19 epochs, with a total of 20 epochs.
 - Cascade Mask R-CNN with X-101-64x4d-FPN was trained using 16 GPU with a batch size of 16 (1 images per GPU).
+
+### SSD
+
+| Backbone | Size | Style  | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
+|:--------:|:----:|:------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
+| VGG16    | 300  | caffe  | 120e    | 3.5      | 0.286               | 22.9 / 29.2    | 25.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd300_coco_vgg16_caffe_120e_20181221-84d7110b.pth)  |
+| VGG16    | 512  | caffe  | 120e    | 6.3      | 0.458               | 17.3 / 21.2    | 29.3   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd512_coco_vgg16_caffe_120e_20181221-d48b0be8.pth) |
+
+### SSD (PASCAL VOC)
+
+| Backbone | Size | Style  | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
+|:--------:|:----:|:------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
+| VGG16    | 300  | caffe  | 240e    | 1.2      | 0.189               | 40.1 / 58.0    | 77.8   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd300_voc_vgg16_caffe_240e_20181221-2f05dd40.pth)  |
+| VGG16    | 512  | caffe  | 240e    | 2.9      | 0.261               | 28.1 / 36.2    | 80.4   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd512_voc_vgg16_caffe_240e_20181221-7652ee18.pth) |
+
+**Notes:**
+
+- `cudnn.benchmark` is set as `True` for SSD training and testing.
+- Inference time is reported for batch size = 1 and batch size = 8.
+- The speed difference between VOC and COCO is caused by model parameters and nms.
+
 
 ## Comparison with Detectron
 

@@ -3,11 +3,12 @@ import torch
 
 class AnchorGenerator(object):
 
-    def __init__(self, base_size, scales, ratios, scale_major=True):
+    def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None):
         self.base_size = base_size
         self.scales = torch.Tensor(scales)
         self.ratios = torch.Tensor(ratios)
         self.scale_major = scale_major
+        self.ctr = ctr
         self.base_anchors = self.gen_base_anchors()
 
     @property
@@ -15,13 +16,13 @@ class AnchorGenerator(object):
         return self.base_anchors.size(0)
 
     def gen_base_anchors(self):
-        base_anchor = torch.Tensor(
-            [0, 0, self.base_size - 1, self.base_size - 1])
-
-        w = base_anchor[2] - base_anchor[0] + 1
-        h = base_anchor[3] - base_anchor[1] + 1
-        x_ctr = base_anchor[0] + 0.5 * (w - 1)
-        y_ctr = base_anchor[1] + 0.5 * (h - 1)
+        w = self.base_size
+        h = self.base_size
+        if self.ctr is None:
+            x_ctr = 0.5 * (w - 1)
+            y_ctr = 0.5 * (h - 1)
+        else:
+            x_ctr, y_ctr = self.ctr
 
         h_ratios = torch.sqrt(self.ratios)
         w_ratios = 1 / h_ratios
