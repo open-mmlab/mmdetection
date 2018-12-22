@@ -36,6 +36,12 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
 
+v0.5.5 (22/12/2018)
+- Add SSD for COCO and PASCAL VOC.
+- Add ResNeXt backbones and detection models.
+- Refactoring for Samplers/Assigners and add OHEM.
+- Add VOC dataset and evaluation scripts.
+
 v0.5.4 (27/11/2018)
 - Add SingleStageDetector and RetinaNet.
 
@@ -64,7 +70,7 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 | Mask R-CNN         | ✓        | ✓        | ☐        | ✗        |
 | Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        |
 | Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        |
-| SSD                | ✗        | ✗        | ✗        | ☐        |
+| SSD                | ✗        | ✗        | ✗        | ✓        |
 | RetinaNet          | ✓        | ✓        | ☐        | ✗        |
 
 ## Installation
