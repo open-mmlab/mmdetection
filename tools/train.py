@@ -43,8 +43,8 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
-    # set benchmark
-    if cfg.get('benchmark', False):
+    # set cudnn_benchmark
+    if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
     # update configs according to CLI args
     if args.work_dir is not None:
