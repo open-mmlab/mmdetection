@@ -1,6 +1,6 @@
 import torch
 
-from ..bbox import assign_and_sample, BBoxAssigner, SamplingResult, bbox2delta
+from ..bbox import assign_and_sample, build_assigner, PseudoSampler, bbox2delta
 from ..utils import multi_apply
 
 
@@ -13,7 +13,8 @@ def anchor_target(anchor_list,
                   cfg,
                   gt_labels_list=None,
                   cls_out_channels=1,
-                  sampling=True):
+                  sampling=True,
+                  unmap_outputs=True):
     """Compute regression and classification targets for anchors.
 
     Args:
@@ -54,7 +55,8 @@ def anchor_target(anchor_list,
          target_stds=target_stds,
          cfg=cfg,
          cls_out_channels=cls_out_channels,
-         sampling=sampling)
+         sampling=sampling,
+         unmap_outputs=unmap_outputs)
     # no valid anchors
     if any([labels is None for labels in all_labels]):
         return None
@@ -94,7 +96,8 @@ def anchor_target_single(flat_anchors,
                          target_stds,
                          cfg,
                          cls_out_channels=1,
-                         sampling=True):
+                         sampling=True,
+                         unmap_outputs=True):
     inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                        img_meta['img_shape'][:2],
                                        cfg.allowed_border)
@@ -107,16 +110,12 @@ def anchor_target_single(flat_anchors,
         assign_result, sampling_result = assign_and_sample(
             anchors, gt_bboxes, None, None, cfg)
     else:
-        bbox_assigner = BBoxAssigner(**cfg.assigner)
+        bbox_assigner = build_assigner(cfg.assigner)
         assign_result = bbox_assigner.assign(anchors, gt_bboxes, None,
                                              gt_labels)
-        pos_inds = torch.nonzero(
-            assign_result.gt_inds > 0).squeeze(-1).unique()
-        neg_inds = torch.nonzero(
-            assign_result.gt_inds == 0).squeeze(-1).unique()
-        gt_flags = anchors.new_zeros(anchors.shape[0], dtype=torch.uint8)
-        sampling_result = SamplingResult(pos_inds, neg_inds, anchors,
-                                         gt_bboxes, assign_result, gt_flags)
+        bbox_sampler = PseudoSampler()
+        sampling_result = bbox_sampler.sample(assign_result, anchors,
+                                              gt_bboxes)
 
     num_valid_anchors = anchors.shape[0]
     bbox_targets = torch.zeros_like(anchors)
@@ -144,14 +143,15 @@ def anchor_target_single(flat_anchors,
         label_weights[neg_inds] = 1.0
 
     # map up to original set of anchors
-    num_total_anchors = flat_anchors.size(0)
-    labels = unmap(labels, num_total_anchors, inside_flags)
-    label_weights = unmap(label_weights, num_total_anchors, inside_flags)
-    if cls_out_channels > 1:
-        labels, label_weights = expand_binary_labels(labels, label_weights,
-                                                     cls_out_channels)
-    bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
-    bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
+    if unmap_outputs:
+        num_total_anchors = flat_anchors.size(0)
+        labels = unmap(labels, num_total_anchors, inside_flags)
+        label_weights = unmap(label_weights, num_total_anchors, inside_flags)
+        if cls_out_channels > 1:
+            labels, label_weights = expand_binary_labels(labels, label_weights,
+                                                         cls_out_channels)
+        bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
+        bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
     return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
             neg_inds)

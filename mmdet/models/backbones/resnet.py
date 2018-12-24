@@ -53,7 +53,7 @@ class BasicBlock(nn.Module):
         assert not with_cp
 
     def forward(self, x):
-        residual = x
+        identity = x
 
         out = self.conv1(x)
         out = getattr(self, self.norm_names[0])(out)
@@ -63,9 +63,9 @@ class BasicBlock(nn.Module):
         out = getattr(self, self.norm_names[1])(out)
 
         if self.downsample is not None:
-            residual = self.downsample(x)
+            identity = self.downsample(x)
 
-        out += residual
+        out += identity
         out = self.relu(out)
 
         return out
@@ -83,25 +83,31 @@ class Bottleneck(nn.Module):
                  style='pytorch',
                  with_cp=False,
                  normalize=dict(type='BN')):
-        """Bottleneck block.
+        """Bottleneck block for ResNet.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
+        self.inplanes = inplanes
+        self.planes = planes
         if style == 'pytorch':
-            conv1_stride = 1
-            conv2_stride = stride
+            self.conv1_stride = 1
+            self.conv2_stride = stride
         else:
-            conv1_stride = stride
-            conv2_stride = 1
+            self.conv1_stride = stride
+            self.conv2_stride = 1
         self.conv1 = nn.Conv2d(
-            inplanes, planes, kernel_size=1, stride=conv1_stride, bias=False)
+            inplanes,
+            planes,
+            kernel_size=1,
+            stride=self.conv1_stride,
+            bias=False)
         self.conv2 = nn.Conv2d(
             planes,
             planes,
             kernel_size=3,
-            stride=conv2_stride,
+            stride=self.conv2_stride,
             padding=dilation,
             dilation=dilation,
             bias=False)
@@ -127,7 +133,7 @@ class Bottleneck(nn.Module):
     def forward(self, x):
 
         def _inner_forward(x):
-            residual = x
+            identity = x
 
             out = self.conv1(x)
             out = getattr(self, self.norm_names[0])(out)
@@ -141,9 +147,9 @@ class Bottleneck(nn.Module):
             out = getattr(self, self.norm_names[2])(out)
 
             if self.downsample is not None:
-                residual = self.downsample(x)
+                identity = self.downsample(x)
 
-            out += residual
+            out += identity
 
             return out
 
@@ -243,11 +249,19 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         if depth not in self.arch_settings:
             raise KeyError('invalid depth {} for resnet'.format(depth))
+        self.depth = depth
+        self.num_stages = num_stages
         assert num_stages >= 1 and num_stages <= 4
-        block, stage_blocks = self.arch_settings[depth]
-        self.stage_blocks = stage_blocks[:num_stages]
         assert len(strides) == len(dilations) == num_stages
         assert max(out_indices) < num_stages
+        self.strides = strides
+        self.dilations = dilations
+        assert len(strides) == len(dilations) == num_stages
+        self.out_indices = out_indices
+        assert max(out_indices) < num_stages
+        self.style = style
+        self.with_cp = with_cp
+        self.frozen_stages = frozen_stages
 
         assert isinstance(normalize, dict) and 'type' in normalize
         assert normalize['type'] in ['BN', 'GN']
@@ -256,17 +270,15 @@ class ResNet(nn.Module):
         else:
             assert (set(['type', 'bn_eval', 'bn_frozen'])
                     == set(normalize))
-
-        self.out_indices = out_indices
-        self.style = style
-        self.with_cp = with_cp
-        self.frozen_stages = frozen_stages
         if normalize['type'] == 'BN':
             self.bn_eval = normalize['bn_eval']
             self.bn_frozen = normalize['bn_frozen']
         self.normalize = normalize
 
+        self.block, stage_blocks = self.arch_settings[depth]
+        self.stage_blocks = stage_blocks[:num_stages]
         self.inplanes = 64
+
         self.conv1 = nn.Conv2d(
             3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         stem_norm = build_norm_layer(normalize, 64)
@@ -276,12 +288,12 @@ class ResNet(nn.Module):
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         self.res_layers = []
-        for i, num_blocks in enumerate(stage_blocks):
+        for i, num_blocks in enumerate(self.stage_blocks):
             stride = strides[i]
             dilation = dilations[i]
             planes = 64 * 2**i
             res_layer = make_res_layer(
-                block,
+                self.block,
                 self.inplanes,
                 planes,
                 num_blocks,
@@ -290,12 +302,13 @@ class ResNet(nn.Module):
                 style=self.style,
                 with_cp=with_cp,
                 normalize=normalize)
-            self.inplanes = planes * block.expansion
+            self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
 
-        self.feat_dim = block.expansion * 64 * 2**(len(stage_blocks) - 1)
+        self.feat_dim = self.block.expansion * 64 * 2**(
+            len(self.stage_blocks) - 1)
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
