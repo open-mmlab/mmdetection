@@ -25,8 +25,14 @@ class ImageTransform(object):
         self.to_rgb = to_rgb
         self.size_divisor = size_divisor
 
-    def __call__(self, img, scale, flip=False):
-        img, scale_factor = mmcv.imrescale(img, scale, return_scale=True)
+    def __call__(self, img, scale, flip=False, keep_ratio=True):
+        if keep_ratio:
+            img, scale_factor = mmcv.imrescale(img, scale, return_scale=True)
+        else:
+            img, w_scale, h_scale = mmcv.imresize(
+                img, scale, return_scale=True)
+            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
+                                    dtype=np.float32)
         img_shape = img.shape
         img = mmcv.imnormalize(img, self.mean, self.std, self.to_rgb)
         if flip:

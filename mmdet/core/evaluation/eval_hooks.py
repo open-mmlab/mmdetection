@@ -12,6 +12,7 @@ from pycocotools.cocoeval import COCOeval
 from torch.utils.data import Dataset
 
 from .coco_utils import results2json, fast_eval_recall
+from .mean_ap import eval_map
 from mmdet import datasets
 
 
@@ -100,6 +101,44 @@ class DistEvalHook(Hook):
 
     def evaluate(self):
         raise NotImplementedError
+
+
+class DistEvalmAPHook(DistEvalHook):
+
+    def evaluate(self, runner, results):
+        gt_bboxes = []
+        gt_labels = []
+        gt_ignore = [] if self.dataset.with_crowd else None
+        for i in range(len(self.dataset)):
+            ann = self.dataset.get_ann_info(i)
+            bboxes = ann['bboxes']
+            labels = ann['labels']
+            if gt_ignore is not None:
+                ignore = np.concatenate([
+                    np.zeros(bboxes.shape[0], dtype=np.bool),
+                    np.ones(ann['bboxes_ignore'].shape[0], dtype=np.bool)
+                ])
+                gt_ignore.append(ignore)
+                bboxes = np.vstack([bboxes, ann['bboxes_ignore']])
+                labels = np.concatenate([labels, ann['labels_ignore']])
+            gt_bboxes.append(bboxes)
+            gt_labels.append(labels)
+        # If the dataset is VOC2007, then use 11 points mAP evaluation.
+        if hasattr(self.dataset, 'year') and self.dataset.year == 2007:
+            ds_name = 'voc07'
+        else:
+            ds_name = self.dataset.CLASSES
+        mean_ap, eval_results = eval_map(
+            results,
+            gt_bboxes,
+            gt_labels,
+            gt_ignore=gt_ignore,
+            scale_ranges=None,
+            iou_thr=0.5,
+            dataset=ds_name,
+            print_summary=True)
+        runner.log_buffer.output['mAP'] = mean_ap
+        runner.log_buffer.ready = True
 
 
 class CocoDistEvalRecallHook(DistEvalHook):
