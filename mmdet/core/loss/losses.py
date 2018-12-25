@@ -92,6 +92,8 @@ def accuracy(pred, target, topk=1):
     if isinstance(topk, int):
         topk = (topk, )
         return_single = True
+    else:
+        return_single = False
 
     maxk = max(topk)
     _, pred_label = pred.topk(maxk, 1, True, True)
