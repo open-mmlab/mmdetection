@@ -33,7 +33,7 @@ class BasicBlock(nn.Module):
                  downsample=None,
                  style='pytorch',
                  with_cp=False,
-                 normalize=dict(type='GN')):
+                 normalize=dict(type='BN')):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride, dilation)
 
@@ -252,16 +252,14 @@ class ResNet(nn.Module):
         self.depth = depth
         self.num_stages = num_stages
         assert num_stages >= 1 and num_stages <= 4
-        assert len(strides) == len(dilations) == num_stages
-        assert max(out_indices) < num_stages
         self.strides = strides
         self.dilations = dilations
         assert len(strides) == len(dilations) == num_stages
         self.out_indices = out_indices
         assert max(out_indices) < num_stages
         self.style = style
-        self.with_cp = with_cp
         self.frozen_stages = frozen_stages
+        self.with_cp = with_cp
 
         assert isinstance(normalize, dict) and 'type' in normalize
         assert normalize['type'] in ['BN', 'GN']
@@ -357,7 +355,7 @@ class ResNet(nn.Module):
         if mode and self.frozen_stages >= 0:
             for param in self.conv1.parameters():
                 param.requires_grad = False
- 
+
             stem_norm = getattr(self, self.stem_norm_name)
             stem_norm.eval()
             for param in stem_norm.parameters():
@@ -447,7 +445,8 @@ class ResNetClassifier(ResNet):
             if 'blobs' in cf_state:
                 cf_state = cf_state['blobs']
             for i, (py_k, cf_k) in enumerate(mapping.items(), 1):
-                print('[{}/{}] Loading {} to {}'.format(i, len(mapping), cf_k, py_k))
+                print('[{}/{}] Loading {} to {}'.format(
+                    i, len(mapping), cf_k, py_k))
                 assert py_k in py_state and cf_k in cf_state
                 py_state[py_k] = torch.Tensor(cf_state[cf_k])
         self.load_state_dict(py_state)
