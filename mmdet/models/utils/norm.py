@@ -15,21 +15,23 @@ def build_norm_layer(cfg, num_features):
     """
     assert isinstance(cfg, dict) and 'type' in cfg
     cfg_ = cfg.copy()
+
     layer_type = cfg_.pop('type')
-    frozen = cfg_.pop('frozen') if 'frozen' in cfg_ else False
-
-    # args name matching
-    if layer_type == 'GN':
-        assert 'num_groups' in cfg
-        cfg_.setdefault('num_channels', num_features)
-    elif layer_type == 'BN':
-        cfg_.setdefault('num_features', num_features)
-    cfg_.setdefault('eps', 1e-5)
-
     if layer_type not in norm_cfg:
         raise KeyError('Unrecognized norm type {}'.format(layer_type))
     elif norm_cfg[layer_type] is None:
         raise NotImplementedError
+
+    frozen = cfg_.pop('frozen', False)
+    # args name matching
+    if layer_type in ['GN']:
+        assert 'num_groups' in cfg
+        cfg_.setdefault('num_channels', num_features)
+    elif layer_type in ['BN']:
+        cfg_.setdefault('num_features', num_features)
+    else:
+        raise NotImplementedError
+    cfg_.setdefault('eps', 1e-5)
 
     norm = norm_cfg[layer_type](**cfg_)
     if frozen:
