@@ -53,7 +53,8 @@ class ConvModule(nn.Module):
 
         if self.with_norm:
             norm_channels = out_channels if self.activate_last else in_channels
-            self.norm = build_norm_layer(normalize, norm_channels)
+            self.norm, norm = build_norm_layer(normalize, norm_channels)
+            self.add_module(self.norm, norm)
 
         if self.with_activatation:
             assert activation in ['relu'], 'Only ReLU supported.'
@@ -73,12 +74,12 @@ class ConvModule(nn.Module):
         if self.activate_last:
             x = self.conv(x)
             if norm and self.with_norm:
-                x = self.norm(x)
+                x = getattr(self, self.norm)(x)
             if activate and self.with_activatation:
                 x = self.activate(x)
         else:
             if norm and self.with_norm:
-                x = self.norm(x)
+                x = getattr(self, self.norm)(x)
             if activate and self.with_activatation:
                 x = self.activate(x)
             x = self.conv(x)
