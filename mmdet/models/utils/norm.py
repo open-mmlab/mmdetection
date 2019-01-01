@@ -1,10 +1,16 @@
 import torch.nn as nn
 
 
-norm_cfg = {'BN': nn.BatchNorm2d, 'SyncBN': None, 'GN': nn.GroupNorm}
+norm_cfg = {
+    # format: layer_type: (abbreation, module)
+    'BN': ('bn', nn.BatchNorm2d),
+    'SyncBN': ('bn', None),
+    'GN': ('gn', nn.GroupNorm),
+    # and potentially 'SN'
+}
 
 
-def build_norm_layer(cfg, num_features):
+def build_norm_layer(cfg, num_features, postfix=''):
     """
     cfg should contain:
         type (str): identify norm layer type.
@@ -19,22 +25,24 @@ def build_norm_layer(cfg, num_features):
     layer_type = cfg_.pop('type')
     if layer_type not in norm_cfg:
         raise KeyError('Unrecognized norm type {}'.format(layer_type))
-    elif norm_cfg[layer_type] is None:
-        raise NotImplementedError
+    else:
+        abbr, norm_layer = norm_cfg[layer_type]
+        if norm_layer is None:
+            raise NotImplementedError
+
+    assert isinstance(postfix, (int, str))
+    name = abbr + str(postfix)
 
     frozen = cfg_.pop('frozen', False)
-    # args name matching
-    if layer_type in ['GN']:
-        assert 'num_groups' in cfg
-        cfg_.setdefault('num_channels', num_features)
-    elif layer_type in ['BN']:
-        cfg_.setdefault('num_features', num_features)
-    else:
-        raise NotImplementedError
     cfg_.setdefault('eps', 1e-5)
+    if layer_type != 'GN':
+        layer = norm_layer(num_features, **cfg_)
+    else:
+        assert 'num_groups' in cfg_
+        layer = norm_layer(num_channels=num_features, **cfg_)
 
-    norm = norm_cfg[layer_type](**cfg_)
     if frozen:
-        for param in norm.parameters():
+        for param in layer.parameters():
             param.requires_grad = False
-    return norm
+
+    return name, layer
