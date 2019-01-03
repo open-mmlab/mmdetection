@@ -11,13 +11,22 @@ norm_cfg = {
 
 
 def build_norm_layer(cfg, num_features, postfix=''):
-    """
-    cfg should contain:
-        type (str): identify norm layer type.
-        layer args: args needed to instantiate a norm layer.
-        frozen (bool): [optional] whether stop gradient updates
-            of norm layer, it is helpful to set frozen mode
-            in backbone's norms.
+    """ Build normalization layer
+
+    Args:
+        cfg (dict): cfg should contain:
+            type (str): identify norm layer type.
+            layer args: args needed to instantiate a norm layer.
+            frozen (bool): [optional] whether stop gradient updates
+                of norm layer, it is helpful to set frozen mode
+                in backbone's norms.
+        num_features (int): number of channels from input
+        postfix (int, str): appended into norm abbreation to
+            create named layer.
+
+    Returns:
+        name (str): abbreation + postfix
+        layer (nn.Module): created norm layer
     """
     assert isinstance(cfg, dict) and 'type' in cfg
     cfg_ = cfg.copy()
