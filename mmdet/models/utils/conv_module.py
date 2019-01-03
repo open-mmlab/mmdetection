@@ -53,8 +53,8 @@ class ConvModule(nn.Module):
 
         if self.with_norm:
             norm_channels = out_channels if self.activate_last else in_channels
-            self.norm, norm = build_norm_layer(normalize, norm_channels)
-            self.add_module(self.norm, norm)
+            self.norm_name, norm = build_norm_layer(normalize, norm_channels)
+            self.add_module(self.norm_name, norm)
 
         if self.with_activatation:
             assert activation in ['relu'], 'Only ReLU supported.'
@@ -63,6 +63,10 @@ class ConvModule(nn.Module):
 
         # Default using msra init
         self.init_weights()
+
+    @property
+    def norm(self):
+        return getattr(self, self.norm_name)
 
     def init_weights(self):
         nonlinearity = 'relu' if self.activation is None else self.activation
@@ -74,12 +78,12 @@ class ConvModule(nn.Module):
         if self.activate_last:
             x = self.conv(x)
             if norm and self.with_norm:
-                x = getattr(self, self.norm)(x)
+                x = self.norm(x)
             if activate and self.with_activatation:
                 x = self.activate(x)
         else:
             if norm and self.with_norm:
-                x = getattr(self, self.norm)(x)
+                x = self.norm(x)
             if activate and self.with_activatation:
                 x = self.activate(x)
             x = self.conv(x)

@@ -35,9 +35,8 @@ class BasicBlock(nn.Module):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride, dilation)
 
-        # build_norm_layer return: (norm_name, norm_layer)
-        self.norm1, norm1 = build_norm_layer(normalize, planes, postfix=1)
-        self.norm2, norm2 = build_norm_layer(normalize, planes, postfix=2)
+        self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
         self.add_module(self.norm1, norm1)
         self.add_module(self.norm2, norm2)
 
@@ -48,15 +47,23 @@ class BasicBlock(nn.Module):
         self.dilation = dilation
         assert not with_cp
 
+    @property
+    def norm1(self):
+        return getattr(self, self.norm1_name)
+
+    @property
+    def norm2(self):
+        return getattr(self, self.norm2_name)
+
     def forward(self, x):
         identity = x
 
         out = self.conv1(x)
-        out = getattr(self, self.norm1)(out)
+        out = self.norm1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        out = getattr(self, self.norm2)(out)
+        out = self.norm2(out)
 
         if self.downsample is not None:
             identity = self.downsample(x)
@@ -108,14 +115,14 @@ class Bottleneck(nn.Module):
             dilation=dilation,
             bias=False)
 
-        # build_norm_layer return: (norm_name, norm_layer)
-        self.norm1, norm1 = build_norm_layer(normalize, planes, postfix=1)
-        self.norm2, norm2 = build_norm_layer(normalize, planes, postfix=2)
-        self.norm3, norm3 = build_norm_layer(normalize, planes*self.expansion,
-                                             postfix=3)
-        self.add_module(self.norm1, norm1)
-        self.add_module(self.norm2, norm2)
-        self.add_module(self.norm3, norm3)
+        self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
+        self.norm3_name, norm3 = build_norm_layer(normalize,
+                                                  planes * self.expansion,
+                                                  postfix=3)
+        self.add_module(self.norm1_name, norm1)
+        self.add_module(self.norm2_name, norm2)
+        self.add_module(self.norm3_name, norm3)
 
         self.conv3 = nn.Conv2d(
             planes, planes * self.expansion, kernel_size=1, bias=False)
@@ -126,21 +133,33 @@ class Bottleneck(nn.Module):
         self.with_cp = with_cp
         self.normalize = normalize
 
+    @property
+    def norm1(self):
+        return getattr(self, self.norm1_name)
+
+    @property
+    def norm2(self):
+        return getattr(self, self.norm2_name)
+
+    @property
+    def norm3(self):
+        return getattr(self, self.norm3_name)
+
     def forward(self, x):
 
         def _inner_forward(x):
             identity = x
 
             out = self.conv1(x)
-            out = getattr(self, self.norm1)(out)
+            out = self.norm1(out)
             out = self.relu(out)
 
             out = self.conv2(out)
-            out = getattr(self, self.norm2)(out)
+            out = self.norm2(out)
             out = self.relu(out)
 
             out = self.conv3(out)
-            out = getattr(self, self.norm3)(out)
+            out = self.norm3(out)
 
             if self.downsample is not None:
                 identity = self.downsample(x)
@@ -293,17 +312,21 @@ class ResNet(nn.Module):
         self.feat_dim = self.block.expansion * 64 * 2**(
             len(self.stage_blocks) - 1)
 
+    @property
+    def norm1(self):
+        return getattr(self, self.norm1_name)
+
     def _make_stem_layer(self):
         self.conv1 = nn.Conv2d(
             3, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        self.stem_norm, stem_norm = build_norm_layer(self.normalize,
-                                                     64, postfix=1)
-        self.add_module(self.stem_norm, stem_norm)
+        self.norm1_name, norm1 = build_norm_layer(self.normalize,
+                                                  64, postfix=1)
+        self.add_module(self.norm1_name, norm1)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         if self.frozen_stages >= 0:
-            for m in [self.conv1, stem_norm]:
+            for m in [self.conv1, self.norm1]:
                 for param in m.parameters():
                     param.requires_grad = False
 
@@ -327,15 +350,16 @@ class ResNet(nn.Module):
             # zero init for last norm layer https://arxiv.org/abs/1706.02677
             if self.zero_init_residual:
                 for m in self.modules():
-                    if isinstance(m, (Bottleneck, BasicBlock)):
-                        last_norm = getattr(m, m.norm_names[-1])
-                        constant_init(last_norm, 0)
+                    if isinstance(m, Bottleneck):
+                        constant_init(m.norm3, 0)
+                    elif isinstance(m, BasicBlock):
+                        constant_init(m.norm2, 0)
         else:
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
         x = self.conv1(x)
-        x = getattr(self, self.stem_norm)(x)
+        x = self.norm1(x)
         x = self.relu(x)
         x = self.maxpool(x)
         outs = []
