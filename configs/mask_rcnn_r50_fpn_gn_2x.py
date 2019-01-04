@@ -9,6 +9,7 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         style='pytorch',
+        # Note: eval_mode and frozen are required args for backbone
         normalize=dict(
             type='GN',
             num_groups=32,
