@@ -37,8 +37,8 @@ class BasicBlock(nn.Module):
 
         self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
-        self.add_module(self.norm1, norm1)
-        self.add_module(self.norm2, norm2)
+        self.add_module(self.norm1_name, norm1)
+        self.add_module(self.norm2_name, norm2)
 
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
@@ -325,12 +325,12 @@ class ResNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
+    def _freeze_stages(self):
         if self.frozen_stages >= 0:
             for m in [self.conv1, self.norm1]:
                 for param in m.parameters():
                     param.requires_grad = False
 
-    def _freeze_stages(self):
         for i in range(1, self.frozen_stages + 1):
             m = getattr(self, 'layer{}'.format(i))
             for param in m.parameters():
