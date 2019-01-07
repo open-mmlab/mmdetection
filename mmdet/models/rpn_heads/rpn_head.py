@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from mmdet.core import (AnchorGenerator, anchor_target, delta2bbox,
                         multi_apply, weighted_cross_entropy, weighted_smoothl1,
-                        weighted_binary_cross_entropy, weighted_angel_losses)
+                        weighted_binary_cross_entropy)
 from mmdet.ops import nms
 from ..utils import normal_init
 
@@ -66,8 +66,6 @@ class RPNHead(nn.Module):
         self.rpn_cls = nn.Conv2d(feat_channels, out_channels, 1)
         self.rpn_reg = nn.Conv2d(feat_channels, self.num_anchors * 4, 1)
         self.debug_imgs = None
-        self.target_means = target_means
-        self.target_stds = target_stds
 
     def init_weights(self):
         normal_init(self.rpn_conv, std=0.01)
@@ -122,60 +120,8 @@ class RPNHead(nn.Module):
 
         return anchor_list, valid_flag_list
 
-    def list_transpose(self, l):
-        return list(map(list, zip(*l)))
-    def inner_product(self, v1_x ,v1_y, v2_x, v2_y):
-        return v1_x * v2_x + v1_y * v2_y
-    def cal_angles(self, rpn_bbox_pred, bbox_targets, bbox_weights, anchors):
-        '''
-            Input: [batch * num_anchors, 4] for first three variables
-                   [num_anchors_per_level, 4] for anchors
-            Return:
-                   [batch * num_anchors] 
-        '''
-        #Denorm the pred
-        num_anchors = len(anchors)
-        batch = int(len(rpn_bbox_pred) / num_anchors)
-        means=self.target_means
-        stds=self.target_stds
-        means = anchors.new_tensor(means).repeat(anchors.size(0), 1)
-        stds = anchors.new_tensor(stds).repeat(anchors.size(0), 1)
-        # [anchors for every batch, 4]
-        angles = 0
-        for b in range(batch):
-            # denorm
-            tmp_rpn_bbox_pred = rpn_bbox_pred[b*num_anchors:(b+1)*num_anchors] * stds + means
-            tmp_bbox_targets = bbox_targets[b*num_anchors:(b+1)*num_anchors] * stds + means
-            tmp_weights = bbox_weights[b*num_anchors:(b+1)*num_anchors]
-            # find the valid index
-            pos = tmp_weights[:, 0] > 0
-            pred_dx = tmp_rpn_bbox_pred[:, 0]
-            pred_dy = tmp_rpn_bbox_pred[:, 1]
-            target_dx = tmp_bbox_targets[:, 0]
-            target_dy = tmp_bbox_targets[:, 1]
-            anchor_w = anchors[:, 2] - anchors[:, 0]
-            anchor_h = anchors[:, 3] - anchors[:, 1]
-            pred_dx = pred_dx * anchor_w
-            pred_dy = pred_dy * anchor_h
-            target_dx = target_dx * anchor_w
-            target_dy = target_dy * anchor_h
-            # Narrow down them by weights
-            pred_dx = pred_dx[pos]
-            pred_dy = pred_dy[pos]
-            target_dx = target_dx[pos]
-            target_dy = target_dy[pos]
-            Inner_product = self.inner_product(pred_dx, pred_dy, target_dx, target_dy)
-            L2_norm = torch.sqrt(self.inner_product(pred_dx, pred_dy, pred_dx, pred_dy)) * \
-                        torch.sqrt(self.inner_product(target_dx, target_dy, target_dx, target_dy))
-            cos_angle = Inner_product / L2_norm
-            cos_angle = torch.clamp(cos_angle, min=(-1+1e-7), max=(1-1e-7))
-            angle = torch.sum(torch.acos(cos_angle))
-        angles += angle
-            
-        return angles
-
     def loss_single(self, rpn_cls_score, rpn_bbox_pred, labels, label_weights,
-                    bbox_targets, bbox_weights, anchors, num_total_samples, cfg):
+                    bbox_targets, bbox_weights, num_total_samples, cfg):
         # classification loss
         labels = labels.contiguous().view(-1)
         label_weights = label_weights.contiguous().view(-1)
@@ -200,11 +146,7 @@ class RPNHead(nn.Module):
             bbox_weights,
             beta=cfg.smoothl1_beta,
             avg_factor=num_total_samples)
-        preds_angles = self.cal_angles(rpn_bbox_pred, bbox_targets, bbox_weights, anchors[0])
-        loss_angels = weighted_angel_losses(
-            preds_angles,
-            bbox_weights)
-        return loss_cls, loss_reg, loss_angels
+        return loss_cls, loss_reg
 
     def loss(self, rpn_cls_scores, rpn_bbox_preds, gt_bboxes, img_shapes, cfg):
         featmap_sizes = [featmap.size()[-2:] for featmap in rpn_cls_scores]
@@ -212,16 +154,14 @@ class RPNHead(nn.Module):
 
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_shapes)
-        # anchor_list -> batch * level_anchor(5) * anchors_per * 4
-        anchor_list_ = self.list_transpose(anchor_list)
         cls_reg_targets = anchor_target(
             anchor_list, valid_flag_list, gt_bboxes, img_shapes,
             self.target_means, self.target_stds, cfg)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_samples) = cls_reg_targets
-        losses_cls, losses_reg, loss_angels = multi_apply(
+         num_total_pos, num_total_neg) = cls_reg_targets
+        losses_cls, losses_reg = multi_apply(
             self.loss_single,
             rpn_cls_scores,
             rpn_bbox_preds,
@@ -229,10 +169,9 @@ class RPNHead(nn.Module):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            anchor_list_,
-            num_total_samples=num_total_samples,
+            num_total_samples=num_total_pos + num_total_neg,
             cfg=cfg)
-        return dict(loss_rpn_cls=losses_cls, loss_rpn_reg=losses_reg, loss_rpn_angles=loss_angels)
+        return dict(loss_rpn_cls=losses_cls, loss_rpn_reg=losses_reg)
 
     def get_proposals(self, rpn_cls_scores, rpn_bbox_preds, img_meta, cfg):
         num_imgs = len(img_meta)
@@ -295,13 +234,13 @@ class RPNHead(nn.Module):
             proposals = proposals[valid_inds, :]
             scores = scores[valid_inds]
             proposals = torch.cat([proposals, scores.unsqueeze(-1)], dim=-1)
-            nms_keep = nms(proposals, cfg.nms_thr)[:cfg.nms_post]
-            proposals = proposals[nms_keep, :]
+            proposals, _ = nms(proposals, cfg.nms_thr)
+            proposals = proposals[:cfg.nms_post, :]
             mlvl_proposals.append(proposals)
         proposals = torch.cat(mlvl_proposals, 0)
         if cfg.nms_across_levels:
-            nms_keep = nms(proposals, cfg.nms_thr)[:cfg.max_num]
-            proposals = proposals[nms_keep, :]
+            proposals, _ = nms(proposals, cfg.nms_thr)
+            proposals = proposals[:cfg.max_num, :]
         else:
             scores = proposals[:, 4]
             _, order = scores.sort(0, descending=True)

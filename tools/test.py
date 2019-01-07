@@ -14,15 +14,16 @@ from mmdet.models import build_detector, detectors
 def single_test(model, data_loader, show=False):
     model.eval()
     results = []
-    prog_bar = mmcv.ProgressBar(len(data_loader.dataset))
+    dataset = data_loader.dataset
+    prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
         results.append(result)
 
         if show:
-            model.module.show_result(data, result,
-                                     data_loader.dataset.img_norm_cfg)
+            model.module.show_result(data, result, dataset.img_norm_cfg,
+                                     dataset=dataset.CLASSES)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -65,6 +66,9 @@ def main():
         raise ValueError('The output file must be a pkl file.')
 
     cfg = mmcv.Config.fromfile(args.config)
+    # set cudnn_benchmark
+    if cfg.get('cudnn_benchmark', False):
+        torch.backends.cudnn.benchmark = True
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
@@ -104,10 +108,19 @@ def main():
             print('Starting evaluate {}'.format(' and '.join(eval_types)))
             if eval_types == ['proposal_fast']:
                 result_file = args.out
+                coco_eval(result_file, eval_types, dataset.coco)
             else:
-                result_file = args.out + '.json'
-                results2json(dataset, outputs, result_file)
-            coco_eval(result_file, eval_types, dataset.coco)
+                if not isinstance(outputs[0], dict):
+                    result_file = args.out + '.json'
+                    results2json(dataset, outputs, result_file)
+                    coco_eval(result_file, eval_types, dataset.coco)
+                else:
+                    for name in outputs[0]:
+                        print('\nEvaluating {}'.format(name))
+                        outputs_ = [out[name] for out in outputs]
+                        result_file = args.out + '.{}.json'.format(name)
+                        results2json(dataset, outputs_, result_file)
+                        coco_eval(result_file, eval_types, dataset.coco)
 
 
 if __name__ == '__main__':

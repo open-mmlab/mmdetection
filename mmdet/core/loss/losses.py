@@ -1,7 +1,6 @@
 # TODO merge naive and weighted loss.
 import torch
 import torch.nn.functional as F
-from math import pi as PI
 
 
 def weighted_nll_loss(pred, label, weight, avg_factor=None):
@@ -11,11 +10,15 @@ def weighted_nll_loss(pred, label, weight, avg_factor=None):
     return torch.sum(raw * weight)[None] / avg_factor
 
 
-def weighted_cross_entropy(pred, label, weight, avg_factor=None):
+def weighted_cross_entropy(pred, label, weight, avg_factor=None,
+                           reduce=True):
     if avg_factor is None:
         avg_factor = max(torch.sum(weight > 0).float().item(), 1.)
     raw = F.cross_entropy(pred, label, reduction='none')
-    return torch.sum(raw * weight)[None] / avg_factor
+    if reduce:
+        return torch.sum(raw * weight)[None] / avg_factor
+    else:
+        return raw * weight / avg_factor
 
 
 def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
@@ -25,11 +28,6 @@ def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
         pred, label.float(), weight.float(),
         reduction='sum')[None] / avg_factor
 
-def weighted_angel_losses(preds_angles, bbox_weights, avg_factor=None, PI=PI):
-    if avg_factor is None:
-        avg_factor = torch.sum(bbox_weights > 0).float().item() / 4 + 1e-6
-    loss = preds_angles / PI / 16
-    return torch.div(loss, avg_factor)
 
 def sigmoid_focal_loss(pred,
                        target,
@@ -94,6 +92,8 @@ def accuracy(pred, target, topk=1):
     if isinstance(topk, int):
         topk = (topk, )
         return_single = True
+    else:
+        return_single = False
 
     maxk = max(topk)
     _, pred_label = pred.topk(maxk, 1, True, True)
