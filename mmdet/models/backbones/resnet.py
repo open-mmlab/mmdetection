@@ -344,7 +344,7 @@ class ResNet(nn.Module):
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
                     kaiming_init(m)
-                elif isinstance(m, (nn.BatchNorm, nn.GroupNorm)):
+                elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                     constant_init(m, 1)
 
             # zero init for last norm layer https://arxiv.org/abs/1706.02677
