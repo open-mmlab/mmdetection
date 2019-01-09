@@ -94,6 +94,7 @@ class Bottleneck(nn.Module):
         assert style in ['pytorch', 'caffe']
         self.inplanes = inplanes
         self.planes = planes
+        self.normalize = normalize
         if style == 'pytorch':
             self.conv1_stride = 1
             self.conv2_stride = stride
