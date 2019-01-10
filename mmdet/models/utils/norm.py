@@ -31,13 +31,6 @@ def build_norm_layer(cfg, num_features, postfix=''):
     assert isinstance(cfg, dict) and 'type' in cfg
     cfg_ = cfg.copy()
 
-    # eval_mode is supported and popped out for processing in module
-    # having pretrained weight only (e.g. backbone)
-    # raise an exception if eval_mode is in here
-    if 'eval_mode' in cfg:
-        raise Exception('eval_mode for modules without pretrained weights '
-                        'is not supported')
-
     layer_type = cfg_.pop('type')
     if layer_type not in norm_cfg:
         raise KeyError('Unrecognized norm type {}'.format(layer_type))
