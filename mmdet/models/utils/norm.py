@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 norm_cfg = {
-    # format: layer_type: (abbreation, module)
+    # format: layer_type: (abbreviation, module)
     'BN': ('bn', nn.BatchNorm2d),
     'SyncBN': ('bn', None),
     'GN': ('gn', nn.GroupNorm),

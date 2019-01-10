@@ -30,9 +30,6 @@ class Bottleneck(_Bottleneck):
         self.norm3_name, norm3 = build_norm_layer(self.normalize,
                                                   self.planes * self.expansion,
                                                   postfix=3)
-        self.add_module(self.norm1_name, norm1)
-        self.add_module(self.norm2_name, norm2)
-        self.add_module(self.norm3_name, norm3)
 
         self.conv1 = nn.Conv2d(
             self.inplanes,
@@ -40,6 +37,7 @@ class Bottleneck(_Bottleneck):
             kernel_size=1,
             stride=self.conv1_stride,
             bias=False)
+        self.add_module(self.norm1_name, norm1)
         self.conv2 = nn.Conv2d(
             width,
             width,
@@ -49,8 +47,10 @@ class Bottleneck(_Bottleneck):
             dilation=self.dilation,
             groups=groups,
             bias=False)
+        self.add_module(self.norm2_name, norm2)
         self.conv3 = nn.Conv2d(
             width, self.planes * self.expansion, kernel_size=1, bias=False)
+        self.add_module(self.norm3_name, norm3)
 
 
 def make_res_layer(block,
