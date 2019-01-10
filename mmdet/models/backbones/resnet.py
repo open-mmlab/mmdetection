@@ -33,15 +33,16 @@ class BasicBlock(nn.Module):
                  with_cp=False,
                  normalize=dict(type='BN')):
         super(BasicBlock, self).__init__()
-        self.conv1 = conv3x3(inplanes, planes, stride, dilation)
 
         self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
+
+        self.conv1 = conv3x3(inplanes, planes, stride, dilation)
         self.add_module(self.norm1_name, norm1)
+        self.conv2 = conv3x3(planes, planes)
         self.add_module(self.norm2_name, norm2)
 
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(planes, planes)
         self.downsample = downsample
         self.stride = stride
         self.dilation = dilation
@@ -101,12 +102,20 @@ class Bottleneck(nn.Module):
         else:
             self.conv1_stride = stride
             self.conv2_stride = 1
+
+        self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
+        self.norm3_name, norm3 = build_norm_layer(normalize,
+                                                  planes * self.expansion,
+                                                  postfix=3)
+
         self.conv1 = nn.Conv2d(
             inplanes,
             planes,
             kernel_size=1,
             stride=self.conv1_stride,
             bias=False)
+        self.add_module(self.norm1_name, norm1)
         self.conv2 = nn.Conv2d(
             planes,
             planes,
@@ -115,18 +124,11 @@ class Bottleneck(nn.Module):
             padding=dilation,
             dilation=dilation,
             bias=False)
-
-        self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
-        self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
-        self.norm3_name, norm3 = build_norm_layer(normalize,
-                                                  planes * self.expansion,
-                                                  postfix=3)
-        self.add_module(self.norm1_name, norm1)
         self.add_module(self.norm2_name, norm2)
-        self.add_module(self.norm3_name, norm3)
-
         self.conv3 = nn.Conv2d(
             planes, planes * self.expansion, kernel_size=1, bias=False)
+        self.add_module(self.norm3_name, norm3)
+
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
