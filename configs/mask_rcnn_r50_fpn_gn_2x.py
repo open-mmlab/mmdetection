@@ -1,4 +1,9 @@
 # model settings
+normalize = dict(
+    type='GN',
+    num_groups=32,
+    frozen=False)
+
 model = dict(
     type='MaskRCNN',
     pretrained='tools/resnet50-GN.path',
@@ -9,20 +14,13 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         style='pytorch',
-        # Note: eval_mode and frozen are required args for backbone
-        normalize=dict(
-            type='GN',
-            num_groups=32,
-            eval_mode=False,
-            frozen=False)),
+        normalize=normalize),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5,
-        normalize=dict(
-            type='GN',
-            num_groups=32)),
+        normalize=normalize),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -50,9 +48,7 @@ model = dict(
         target_means=[0., 0., 0., 0.],
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
-        normalize=dict(
-            type='GN',
-            num_groups=32)),
+        normalize=normalize),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -64,9 +60,7 @@ model = dict(
         in_channels=256,
         conv_out_channels=256,
         num_classes=81,
-        normalize=dict(
-            type='GN',
-            num_groups=32)))
+        normalize=normalize))
 
 # model training and testing settings
 train_cfg = dict(
