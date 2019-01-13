@@ -7,7 +7,7 @@ class RPNTestMixin(object):
     def simple_test_rpn(self, x, img_meta, rpn_test_cfg):
         rpn_outs = self.rpn_head(x)
         proposal_inputs = rpn_outs + (img_meta, rpn_test_cfg)
-        proposal_list = self.rpn_head.get_proposals(*proposal_inputs)
+        proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         return proposal_list
 
     def aug_test_rpn(self, feats, img_metas, rpn_test_cfg):
