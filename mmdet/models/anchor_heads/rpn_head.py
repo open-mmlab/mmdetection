@@ -33,8 +33,10 @@ class RPNHead(AnchorHead):
         return rpn_cls_score, rpn_bbox_pred
 
     def loss(self, cls_scores, bbox_preds, gt_bboxes, img_metas, cfg):
-        return super(RPNHead, self).loss(cls_scores, bbox_preds, gt_bboxes,
-                                         None, img_metas, cfg)
+        losses = super(RPNHead, self).loss(cls_scores, bbox_preds, gt_bboxes,
+                                           None, img_metas, cfg)
+        return dict(
+            loss_rpn_cls=losses['loss_cls'], loss_rpn_reg=losses['loss_reg'])
 
     def get_bboxes_single(self,
                           cls_scores,

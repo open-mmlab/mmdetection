@@ -12,7 +12,7 @@ def anchor_target(anchor_list,
                   target_stds,
                   cfg,
                   gt_labels_list=None,
-                  cls_out_channels=1,
+                  label_channels=1,
                   sampling=True,
                   unmap_outputs=True):
     """Compute regression and classification targets for anchors.
@@ -54,7 +54,7 @@ def anchor_target(anchor_list,
          target_means=target_means,
          target_stds=target_stds,
          cfg=cfg,
-         cls_out_channels=cls_out_channels,
+         label_channels=label_channels,
          sampling=sampling,
          unmap_outputs=unmap_outputs)
     # no valid anchors
@@ -95,7 +95,7 @@ def anchor_target_single(flat_anchors,
                          target_means,
                          target_stds,
                          cfg,
-                         cls_out_channels=1,
+                         label_channels=1,
                          sampling=True,
                          unmap_outputs=True):
     inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
@@ -147,9 +147,9 @@ def anchor_target_single(flat_anchors,
         num_total_anchors = flat_anchors.size(0)
         labels = unmap(labels, num_total_anchors, inside_flags)
         label_weights = unmap(label_weights, num_total_anchors, inside_flags)
-        if cls_out_channels > 1:
-            labels, label_weights = expand_binary_labels(labels, label_weights,
-                                                         cls_out_channels)
+        if label_channels > 1:
+            labels, label_weights = expand_binary_labels(
+                labels, label_weights, label_channels)
         bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
         bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
@@ -157,14 +157,14 @@ def anchor_target_single(flat_anchors,
             neg_inds)
 
 
-def expand_binary_labels(labels, label_weights, cls_out_channels):
+def expand_binary_labels(labels, label_weights, label_channels):
     bin_labels = labels.new_full(
-        (labels.size(0), cls_out_channels), 0, dtype=torch.float32)
+        (labels.size(0), label_channels), 0, dtype=torch.float32)
     inds = torch.nonzero(labels >= 1).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds] - 1] = 1
     bin_label_weights = label_weights.view(-1, 1).expand(
-        label_weights.size(0), cls_out_channels)
+        label_weights.size(0), label_channels)
     return bin_labels, bin_label_weights
 
 
