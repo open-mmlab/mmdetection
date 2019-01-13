@@ -30,7 +30,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             raise NotImplementedError
 
         if rpn_head is not None:
-            self.rpn_head = builder.build_rpn_head(rpn_head)
+            self.rpn_head = builder.build_anchor_head(rpn_head)
 
         if bbox_head is not None:
             self.bbox_roi_extractor = builder.build_roi_extractor(
@@ -96,7 +96,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             losses.update(rpn_losses)
 
             proposal_inputs = rpn_outs + (img_meta, self.test_cfg.rpn)
-            proposal_list = self.rpn_head.get_proposals(*proposal_inputs)
+            proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         else:
             proposal_list = proposals
 
