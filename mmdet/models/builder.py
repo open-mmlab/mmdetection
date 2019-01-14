@@ -1,14 +1,8 @@
 from mmcv.runner import obj_from_dict
 from torch import nn
 
-from . import (backbones, necks, roi_extractors, rpn_heads, bbox_heads,
-               mask_heads, single_stage_heads)
-
-__all__ = [
-    'build_backbone', 'build_neck', 'build_rpn_head', 'build_roi_extractor',
-    'build_bbox_head', 'build_mask_head', 'build_single_stage_head',
-    'build_detector'
-]
+from . import (backbones, necks, roi_extractors, anchor_heads, bbox_heads,
+               mask_heads)
 
 
 def _build_module(cfg, parrent=None, default_args=None):
@@ -32,8 +26,8 @@ def build_neck(cfg):
     return build(cfg, necks)
 
 
-def build_rpn_head(cfg):
-    return build(cfg, rpn_heads)
+def build_anchor_head(cfg):
+    return build(cfg, anchor_heads)
 
 
 def build_roi_extractor(cfg):
@@ -46,10 +40,6 @@ def build_bbox_head(cfg):
 
 def build_mask_head(cfg):
     return build(cfg, mask_heads)
-
-
-def build_single_stage_head(cfg):
-    return build(cfg, single_stage_heads)
 
 
 def build_detector(cfg, train_cfg=None, test_cfg=None):

@@ -18,7 +18,7 @@ class RPN(BaseDetector, RPNTestMixin):
         super(RPN, self).__init__()
         self.backbone = builder.build_backbone(backbone)
         self.neck = builder.build_neck(neck) if neck is not None else None
-        self.rpn_head = builder.build_rpn_head(rpn_head)
+        self.rpn_head = builder.build_anchor_head(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.init_weights(pretrained=pretrained)
