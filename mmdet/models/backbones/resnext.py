@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from .resnet import ResNet
 from .resnet import Bottleneck as _Bottleneck
+from ..registry import BACKBONES
 
 
 class Bottleneck(_Bottleneck):
@@ -92,6 +93,7 @@ def make_res_layer(block,
     return nn.Sequential(*layers)
 
 
+@BACKBONES.register_module
 class ResNeXt(ResNet):
     """ResNeXt backbone.
 

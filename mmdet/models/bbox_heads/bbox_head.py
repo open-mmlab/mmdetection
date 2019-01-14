@@ -4,8 +4,10 @@ import torch.nn.functional as F
 
 from mmdet.core import (delta2bbox, multiclass_nms, bbox_target,
                         weighted_cross_entropy, weighted_smoothl1, accuracy)
+from ..registry import HEADS
 
 
+@HEADS.register_module
 class BBoxHead(nn.Module):
     """Simplest RoI head, with only two fc layers for classification and
     regression respectively"""
@@ -78,8 +80,14 @@ class BBoxHead(nn.Module):
             target_stds=self.target_stds)
         return cls_reg_targets
 
-    def loss(self, cls_score, bbox_pred, labels, label_weights, bbox_targets,
-             bbox_weights, reduce=True):
+    def loss(self,
+             cls_score,
+             bbox_pred,
+             labels,
+             label_weights,
+             bbox_targets,
+             bbox_weights,
+             reduce=True):
         losses = dict()
         if cls_score is not None:
             losses['loss_cls'] = weighted_cross_entropy(
