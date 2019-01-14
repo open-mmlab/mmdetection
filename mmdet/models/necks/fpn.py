@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import xavier_init
 
 from ..utils import ConvModule
-from ..utils import xavier_init
 from ..registry import NECKS
 
 
