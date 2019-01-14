@@ -6,7 +6,7 @@ normalize = dict(
 
 model = dict(
     type='MaskRCNN',
-    pretrained='tools/resnet50-GN.path',
+    pretrained='open-mmlab://contrib/resnet50_gn',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -167,14 +167,14 @@ log_config = dict(
     interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
+        # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
 total_epochs = 24
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_gn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
