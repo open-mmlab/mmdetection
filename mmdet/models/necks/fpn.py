@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from ..utils import ConvModule
-from ..utils import xavier_init
+from mmcv.cnn import xavier_init
 
 
 class FPN(nn.Module):
