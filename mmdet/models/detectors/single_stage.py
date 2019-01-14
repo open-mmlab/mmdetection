@@ -2,9 +2,11 @@ import torch.nn as nn
 
 from .base import BaseDetector
 from .. import builder
+from ..registry import DETECTORS
 from mmdet.core import bbox2result
 
 
+@DETECTORS.register_module
 class SingleStageDetector(BaseDetector):
 
     def __init__(self,
@@ -18,7 +20,7 @@ class SingleStageDetector(BaseDetector):
         self.backbone = builder.build_backbone(backbone)
         if neck is not None:
             self.neck = builder.build_neck(neck)
-        self.bbox_head = builder.build_anchor_head(bbox_head)
+        self.bbox_head = builder.build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.init_weights(pretrained=pretrained)

@@ -6,10 +6,12 @@ import torch.nn as nn
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
+from ..registry import DETECTORS
 from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply,
                         merge_aug_masks)
 
 
+@DETECTORS.register_module
 class CascadeRCNN(BaseDetector, RPNTestMixin):
 
     def __init__(self,

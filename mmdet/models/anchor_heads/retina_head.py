@@ -3,9 +3,11 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 
 from .anchor_head import AnchorHead
+from ..registry import HEADS
 from ..utils import bias_init_with_prob
 
 
+@HEADS.register_module
 class RetinaHead(AnchorHead):
 
     def __init__(self,
