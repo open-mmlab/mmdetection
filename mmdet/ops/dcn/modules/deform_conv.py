@@ -2,10 +2,11 @@ import math
 
 import torch
 import torch.nn as nn
+from mmcv.cnn import uniform_init
 from torch.nn.modules.module import Module
 from torch.nn.modules.utils import _pair
 
-from ..functions.deform_conv import deform_conv_function
+from ..functions.deform_conv import deform_conv
 
 
 class DeformConv(Module):
@@ -37,9 +38,9 @@ class DeformConv(Module):
         for k in self.kernel_size:
             n *= k
         stdv = 1. / math.sqrt(n)
-        self.weight.data.uniform_(-stdv, stdv)
+        uniform_init(self, -stdv, stdv)
 
     def forward(self, input, offset):
-        return deform_conv_function(input, offset, self.weight, self.stride,
-                                    self.padding, self.dilation,
-                                    self.num_deformable_groups)
+        return deform_conv(input, offset, self.weight, self.stride,
+                           self.padding, self.dilation,
+                           self.num_deformable_groups)
