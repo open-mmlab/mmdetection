@@ -2,7 +2,6 @@ import math
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import uniform_init
 from torch.nn.modules.module import Module
 from torch.nn.modules.utils import _pair
 
@@ -38,7 +37,7 @@ class DeformConv(Module):
         for k in self.kernel_size:
             n *= k
         stdv = 1. / math.sqrt(n)
-        uniform_init(self, -stdv, stdv)
+        self.weight.data.uniform_(-stdv, stdv)
 
     def forward(self, input, offset):
         return deform_conv(input, offset, self.weight, self.stride,

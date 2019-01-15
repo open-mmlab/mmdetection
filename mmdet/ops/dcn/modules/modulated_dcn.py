@@ -6,7 +6,6 @@ from __future__ import print_function
 import math
 
 import torch
-from mmcv.cnn import uniform_init
 from torch import nn
 from torch.nn.modules.utils import _pair
 
@@ -47,7 +46,8 @@ class ModulatedDeformConv(nn.Module):
         for k in self.kernel_size:
             n *= k
         stdv = 1. / math.sqrt(n)
-        uniform_init(self, -stdv, stdv)
+        self.weight.data.uniform_(-stdv, stdv)
+        self.bias.data.zero_()
 
     def forward(self, input, offset, mask):
         return modulated_deform_conv(input, offset, mask, self.weight,
