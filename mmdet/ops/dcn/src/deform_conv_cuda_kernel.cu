@@ -58,6 +58,8 @@
  * \author Yuwen Xiong, Haozhi Qi, Jifeng Dai, Xizhou Zhu, Han Hu, Dazhi Cheng
  */
 
+// modify from https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch/blob/mmdetection/mmdet/ops/dcn/src/deform_conv_cuda_kernel.cu
+
 #include <ATen/ATen.h>
 #include <THC/THCAtomics.cuh>
 #include <stdio.h>
