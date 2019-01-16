@@ -6,8 +6,10 @@ import torch.nn.functional as F
 from mmcv.cnn import (VGG, xavier_init, constant_init, kaiming_init,
                       normal_init)
 from mmcv.runner import load_checkpoint
+from ..registry import BACKBONES
 
 
+@BACKBONES.register_module
 class SSDVGG(VGG):
     extra_setting = {
         300: (256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256),
