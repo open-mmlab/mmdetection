@@ -144,7 +144,7 @@ class SSDHead(AnchorHead):
             self.target_stds,
             cfg,
             gt_labels_list=gt_labels,
-            cls_out_channels=self.cls_out_channels,
+            label_channels=1,
             sampling=False,
             unmap_outputs=False)
         if cls_reg_targets is None:
