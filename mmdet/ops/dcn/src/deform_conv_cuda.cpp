@@ -1,3 +1,5 @@
+// modify from https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch/blob/mmdetection/mmdet/ops/dcn/src/deform_conv_cuda.c
+
 #include <torch/torch.h>
 
 #include <cmath>
@@ -37,10 +39,6 @@ void shape_check(at::Tensor input, at::Tensor offset,
                  int dilationW, int deformable_group)
 {
 
-    //  AT_CHECK(weight->nDimension == 4, 5,
-    //             "4D weight tensor (nOutputPlane,nInputPlane,kH,kW) expected, "
-    //             "but got: %s",
-    //             weight->nDimension);
     AT_CHECK(weight.ndimension() == 4,
              "4D weight tensor (nOutputPlane,nInputPlane,kH,kW) expected, "
              "but got: %s",
@@ -53,10 +51,6 @@ void shape_check(at::Tensor input, at::Tensor offset,
              "kernel size should be greater than zero, but got kH: %d kW: %d",
              kH, kW);
 
-    //  AT_CHECK((weight->size[2] == kH && weight->size[3] == kW), 9,
-    //             "kernel size should be consistent with weight, ",
-    //             "but got kH: %d kW: %d weight.size(2): %d, weight.size(3): %d", kH,
-    //             kW, weight->size[2], weight->size[3]);
     AT_CHECK((weight.size(2) == kH &&
               weight.size(3) == kW),
              "kernel size should be consistent with weight, ",
@@ -70,7 +64,6 @@ void shape_check(at::Tensor input, at::Tensor offset,
              "dilation should be greater than 0, but got dilationH: %d dilationW: %d",
              dilationH, dilationW);
 
-    //  int ndim = input->nDimension;
     int ndim = input.ndimension();
     int dimf = 0;
     int dimh = 1;
@@ -86,10 +79,6 @@ void shape_check(at::Tensor input, at::Tensor offset,
     AT_CHECK(ndim == 3 || ndim == 4,
              "3D or 4D input tensor expected but got: %s", ndim);
 
-    //  long nInputPlane = weight->size[1];
-    //  long inputHeight = input->size[dimh];
-    //  long inputWidth = input->size[dimw];
-    //  long nOutputPlane = weight->size[0];
     long nInputPlane = weight.size(1);
     long inputHeight = input.size(dimh);
     long inputWidth = input.size(dimw);
@@ -114,10 +103,6 @@ void shape_check(at::Tensor input, at::Tensor offset,
     AT_CHECK((inputHeight >= kH && inputWidth >= kW),
              "input image is smaller than kernel");
 
-    //  AT_CHECK(
-    //      (offset->size[2] == outputHeight && offset->size[3] == outputWidth), 3,
-    //      "invalid spatial size of offset, expected height: %d width: %d, but got height: %d width: %d", outputHeight, outputWidth,
-    //      offset->size[2], offset->size[3]);
     AT_CHECK(
         (offset.size(2) == outputHeight && offset.size(3) == outputWidth),
         "invalid spatial size of offset, expected height: %d width: %d, but got height: %d width: %d",
@@ -152,9 +137,6 @@ int deform_conv_forward_cuda(at::Tensor input, at::Tensor weight,
     // todo: add new output buffer and transpose it to output (or directly transpose output)
     // todo: possibly change data indexing because of parallel_imgs
 
-    // THCAssertSameGPU(THCudaTensor_checkGPU(state, 6, input, weight, offset,
-    //                                        output, columns, ones));
-
     shape_check(input, offset, NULL, weight, kH, kW, dH, dW, padH, padW,
                 dilationH, dilationW, deformable_group);
 
@@ -185,8 +167,6 @@ int deform_conv_forward_cuda(at::Tensor input, at::Tensor weight,
 
     AT_CHECK((offset.size(0) == batchSize), "invalid batch size of offset");
 
-    // bias = bias ? THCudaTensor_newContiguous(state, bias) : bias;
-
     output = output.view({batchSize / im2col_step, im2col_step, nOutputPlane, outputHeight, outputWidth});
     columns = at::zeros({nInputPlane * kW * kH, im2col_step * outputHeight * outputWidth}, input.type());
 
@@ -212,7 +192,6 @@ int deform_conv_forward_cuda(at::Tensor input, at::Tensor weight,
             output_buffer[elt].flatten(1).addmm_(weight.flatten(1), columns).view_as(output_buffer[elt]);
     }
 
-    // the reason I use seemingly redundant output_buffer is that THCudaTensor API handles successive transpose and resize poorly
     output_buffer = output_buffer.view(
         {batchSize / im2col_step, nOutputPlane, im2col_step, outputHeight, outputWidth});
     output_buffer.transpose_(1, 2);
@@ -238,9 +217,6 @@ int deform_conv_backward_input_cuda(
     at::Tensor columns, int kW, int kH, int dW, int dH, int padW, int padH,
     int dilationW, int dilationH, int deformable_group, int im2col_step)
 {
-
-    // THCAssertSameGPU(THCudaTensor_checkGPU(state, 6, input, gradOutput, weight,
-    //                                        offset, columns, gradInput));
 
     shape_check(input, offset, &gradOutput, weight, kH, kW, dH, dW, padH,
                 padW, dilationH, dilationW, deformable_group);
@@ -341,8 +317,6 @@ int deform_conv_backward_parameters_cuda(
     // todo: transpose and reshape outGrad
     // todo: reshape columns
     // todo: add im2col_step as input
-    // THCAssertSameGPU(THCudaTensor_checkGPU(state, 5, input, offset, gradOutput,
-    //                                        gradWeight, columns));
 
     shape_check(input, offset, &gradOutput, gradWeight, kH, kW, dH, dW,
                 padH, padW, dilationH, dilationW, deformable_group);
@@ -402,8 +376,9 @@ int deform_conv_backward_parameters_cuda(
             inputWidth, kH, kW, padH, padW, dH, dW, dilationH, dilationW,
             im2col_step, deformable_group, columns);
 
-        gradWeight.copy_(gradWeight.flatten(1).addmm_(
-            gradOutputBuffer[elt].flatten(1), columns.transpose(1, 0), 1.0, scale).view_as(gradWeight));
+        gradWeight = gradWeight.flatten(1).addmm_(
+                                              gradOutputBuffer[elt].flatten(1), columns.transpose(1, 0), 1.0, scale)
+                         .view_as(gradWeight);
     }
 
     input = input.view({batchSize, nInputPlane, inputHeight, inputWidth});

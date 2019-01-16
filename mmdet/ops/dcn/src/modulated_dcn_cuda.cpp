@@ -1,11 +1,12 @@
+// author: Charles Shang
+// https://github.com/torch/cunn/blob/master/lib/THCUNN/generic/SpatialConvolutionMM.cu
+
+// modify from https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch/blob /mmdetection/mmdet/ops/dcn/src/modulated_dcn_cuda.c
+
 #include <torch/torch.h>
 
 #include <cmath>
 #include <vector>
-
-// author: Charles Shang
-// https://github.com/torch/cunn/blob/master/lib/THCUNN/generic/SpatialConvolutionMM.cu
-
 
 void modulated_deformable_im2col_cuda(const at::Tensor data_im, const at::Tensor data_offset,
                                       const at::Tensor data_mask, const int batch_size, const int channels,
@@ -32,7 +33,6 @@ void modulated_deformable_col2im_coord_cuda(const at::Tensor data_col, const at:
                                             const int dilation_h, const int dilation_w,
                                             const int deformable_group, at::Tensor grad_offset,
                                             at::Tensor grad_mask);
-
 
 void DeformablePSROIPoolForward(const at::Tensor data,
                                 const at::Tensor bbox,
@@ -76,18 +76,16 @@ void DeformablePSROIPoolBackwardAcc(const at::Tensor out_grad,
                                     const int sample_per_part,
                                     const float trans_std);
 
-
 void modulated_deform_conv_cuda_forward(at::Tensor input, at::Tensor weight,
-                         at::Tensor bias, at::Tensor ones,
-                         at::Tensor offset, at::Tensor mask,
-                         at::Tensor output, at::Tensor columns,
-                         int kernel_h, int kernel_w,
-                         const int stride_h, const int stride_w,
-                         const int pad_h, const int pad_w,
-                         const int dilation_h, const int dilation_w,
-                         const int deformable_group)
+                                        at::Tensor bias, at::Tensor ones,
+                                        at::Tensor offset, at::Tensor mask,
+                                        at::Tensor output, at::Tensor columns,
+                                        int kernel_h, int kernel_w,
+                                        const int stride_h, const int stride_w,
+                                        const int pad_h, const int pad_w,
+                                        const int dilation_h, const int dilation_w,
+                                        const int deformable_group)
 {
-    // THCAssertSameGPU(THCudaTensor_checkGPU(state, 8, input, weight, bias, ones, offset, mask, output, columns));
     AT_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
     AT_CHECK(weight.is_contiguous(), "weight tensor has to be contiguous");
 
@@ -103,10 +101,10 @@ void modulated_deform_conv_cuda_forward(at::Tensor input, at::Tensor weight,
 
     if (kernel_h_ != kernel_h || kernel_w_ != kernel_w)
         AT_ERROR("Input shape and kernel shape wont match: (%d x %d vs %d x %d).",
-        kernel_h_, kernel_w, kernel_h_, kernel_w_);
+                 kernel_h_, kernel_w, kernel_h_, kernel_w_);
     if (channels != channels_kernel)
         AT_ERROR("Input shape and kernel channels wont match: (%d vs %d).",
-        channels, channels_kernel);
+                 channels, channels_kernel);
 
     const int height_out = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
     const int width_out = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
@@ -144,20 +142,18 @@ void modulated_deform_conv_cuda_forward(at::Tensor input, at::Tensor weight,
 }
 
 void modulated_deform_conv_cuda_backward(at::Tensor input, at::Tensor weight,
-                          at::Tensor bias, at::Tensor ones,
-                          at::Tensor offset, at::Tensor mask,
-                          at::Tensor columns,
-                          at::Tensor grad_input, at::Tensor grad_weight,
-                          at::Tensor grad_bias, at::Tensor grad_offset,
-                          at::Tensor grad_mask, at::Tensor grad_output,
-                          int kernel_h, int kernel_w,
-                          int stride_h, int stride_w,
-                          int pad_h, int pad_w,
-                          int dilation_h, int dilation_w,
-                          int deformable_group)
+                                         at::Tensor bias, at::Tensor ones,
+                                         at::Tensor offset, at::Tensor mask,
+                                         at::Tensor columns,
+                                         at::Tensor grad_input, at::Tensor grad_weight,
+                                         at::Tensor grad_bias, at::Tensor grad_offset,
+                                         at::Tensor grad_mask, at::Tensor grad_output,
+                                         int kernel_h, int kernel_w,
+                                         int stride_h, int stride_w,
+                                         int pad_h, int pad_w,
+                                         int dilation_h, int dilation_w,
+                                         int deformable_group)
 {
-    // THCAssertSameGPU(THCudaTensor_checkGPU(state, 13, input, weight, bias, ones, offset, mask, columns,
-    //                                        grad_input, grad_weight, grad_bias, grad_offset, grad_mask, grad_output));
     AT_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
     AT_CHECK(weight.is_contiguous(), "weight tensor has to be contiguous");
 
@@ -171,10 +167,10 @@ void modulated_deform_conv_cuda_backward(at::Tensor input, at::Tensor weight,
     const int kernel_w_ = weight.size(3);
     if (kernel_h_ != kernel_h || kernel_w_ != kernel_w)
         AT_ERROR("Input shape and kernel shape wont match: (%d x %d vs %d x %d).",
-        kernel_h_, kernel_w, kernel_h_, kernel_w_);
+                 kernel_h_, kernel_w, kernel_h_, kernel_w_);
     if (channels != channels_kernel)
         AT_ERROR("Input shape and kernel channels wont match: (%d vs %d).",
-        channels, channels_kernel);
+                 channels, channels_kernel);
 
     const int height_out = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
     const int width_out = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
@@ -220,12 +216,11 @@ void modulated_deform_conv_cuda_backward(at::Tensor input, at::Tensor weight,
 
         grad_bias = grad_bias.view({-1, 1}).addmm_(grad_output[b].flatten(1), ones.view({-1, 1})).view(-1);
     }
-
 }
 
-void deform_psroi_pooling_cuda_forward(at::Tensor  input, at::Tensor  bbox,
-                                       at::Tensor  trans,
-                                       at::Tensor  out, at::Tensor  top_count,
+void deform_psroi_pooling_cuda_forward(at::Tensor input, at::Tensor bbox,
+                                       at::Tensor trans,
+                                       at::Tensor out, at::Tensor top_count,
                                        const int no_trans,
                                        const float spatial_scale,
                                        const int output_dim,
@@ -236,18 +231,17 @@ void deform_psroi_pooling_cuda_forward(at::Tensor  input, at::Tensor  bbox,
                                        const float trans_std)
 {
     AT_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
-    // THCAssertSameGPU(THCudaTensor_checkGPU(state, 5, input, bbox, trans, out, top_count));
 
     const int batch = input.size(0);
     const int channels = input.size(1);
     const int height = input.size(2);
     const int width = input.size(3);
-    const int channels_trans = no_trans? 2 : trans.size(1);
+    const int channels_trans = no_trans ? 2 : trans.size(1);
 
     const int num_bbox = bbox.size(0);
     if (num_bbox != out.size(0))
         AT_ERROR("Output shape and bbox number wont match: (%d vs %d).",
-                out.size(0), num_bbox);
+                 out.size(0), num_bbox);
 
     DeformablePSROIPoolForward(input, bbox, trans, out, top_count,
                                batch, channels, height, width,
@@ -263,10 +257,10 @@ void deform_psroi_pooling_cuda_forward(at::Tensor  input, at::Tensor  bbox,
                                trans_std);
 }
 
-void deform_psroi_pooling_cuda_backward(at::Tensor  out_grad,
-                                        at::Tensor  input, at::Tensor  bbox,
-                                        at::Tensor  trans, at::Tensor  top_count,
-                                        at::Tensor  input_grad, at::Tensor  trans_grad,
+void deform_psroi_pooling_cuda_backward(at::Tensor out_grad,
+                                        at::Tensor input, at::Tensor bbox,
+                                        at::Tensor trans, at::Tensor top_count,
+                                        at::Tensor input_grad, at::Tensor trans_grad,
                                         const int no_trans,
                                         const float spatial_scale,
                                         const int output_dim,
@@ -278,19 +272,17 @@ void deform_psroi_pooling_cuda_backward(at::Tensor  out_grad,
 {
     AT_CHECK(out_grad.is_contiguous(), "out_grad tensor has to be contiguous");
     AT_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
-    // THCAssertSameGPU(THCudaTensor_checkGPU(state, 7, input, bbox, trans, out_grad, top_count,
-    //                 input_grad, trans_grad));
 
     const int batch = input.size(0);
     const int channels = input.size(1);
     const int height = input.size(2);
     const int width = input.size(3);
-    const int channels_trans = no_trans? 2 : trans.size(1);
+    const int channels_trans = no_trans ? 2 : trans.size(1);
 
     const int num_bbox = bbox.size(0);
     if (num_bbox != out_grad.size(0))
         AT_ERROR("Output shape and bbox number wont match: (%d vs %d).",
-                out_grad.size(0), num_bbox);
+                 out_grad.size(0), num_bbox);
 
     DeformablePSROIPoolBackwardAcc(out_grad,
                                    input,
