@@ -7,8 +7,10 @@ from mmcv.cnn import xavier_init
 from mmdet.core import (AnchorGenerator, anchor_target, weighted_smoothl1,
                         multi_apply)
 from .anchor_head import AnchorHead
+from ..registry import HEADS
 
 
+@HEADS.register_module
 class SSDHead(AnchorHead):
 
     def __init__(self,

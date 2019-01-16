@@ -1,9 +1,11 @@
 import torch.nn as nn
 
 from .bbox_head import BBoxHead
+from ..registry import HEADS
 from ..utils import ConvModule
 
 
+@HEADS.register_module
 class ConvFCBBoxHead(BBoxHead):
     """More general bbox head, with shared conv and fc layers and two optional
     separated branches.
@@ -165,6 +167,7 @@ class ConvFCBBoxHead(BBoxHead):
         return cls_score, bbox_pred
 
 
+@HEADS.register_module
 class SharedFCBBoxHead(ConvFCBBoxHead):
 
     def __init__(self, num_fcs=2, fc_out_channels=1024, *args, **kwargs):

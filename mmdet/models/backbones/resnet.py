@@ -7,6 +7,8 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from ..utils import build_norm_layer
 
+from ..registry import BACKBONES
+
 
 def conv3x3(in_planes, out_planes, stride=1, dilation=1):
     "3x3 convolution with padding"
@@ -222,6 +224,7 @@ def make_res_layer(block,
     return nn.Sequential(*layers)
 
 
+@BACKBONES.register_module
 class ResNet(nn.Module):
     """ResNet backbone.
 

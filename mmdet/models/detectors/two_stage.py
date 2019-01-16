@@ -4,9 +4,11 @@ import torch.nn as nn
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
+from ..registry import DETECTORS
 from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
 
 
+@DETECTORS.register_module
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                        MaskTestMixin):
 
@@ -30,17 +32,17 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             raise NotImplementedError
 
         if rpn_head is not None:
-            self.rpn_head = builder.build_anchor_head(rpn_head)
+            self.rpn_head = builder.build_head(rpn_head)
 
         if bbox_head is not None:
             self.bbox_roi_extractor = builder.build_roi_extractor(
                 bbox_roi_extractor)
-            self.bbox_head = builder.build_bbox_head(bbox_head)
+            self.bbox_head = builder.build_head(bbox_head)
 
         if mask_head is not None:
             self.mask_roi_extractor = builder.build_roi_extractor(
                 mask_roi_extractor)
-            self.mask_head = builder.build_mask_head(mask_head)
+            self.mask_head = builder.build_head(mask_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
