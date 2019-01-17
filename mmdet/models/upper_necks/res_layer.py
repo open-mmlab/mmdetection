@@ -4,13 +4,13 @@ import torch.nn as nn
 
 from ..backbones import ResNet, make_res_layer
 
+from ..registry import UPPERNECKS
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 
 
+@UPPERNECKS.register_module
 class ResLayer(nn.Module):
-    """Simplest RoI head, with only two fc layers for classification and
-    regression respectively"""
 
     def __init__(self,
                  depth,
