@@ -18,12 +18,12 @@ class ResLayer(nn.Module):
                  stride=2,
                  dilation=1,
                  style='pytorch',
-                 bn_eval=True,
-                 bn_frozen=False,
+                 normalize=dict(type='BN', frozen=False),
+                 norm_eval=True,
                  with_cp=False):
         super(ResLayer, self).__init__()
-        self.bn_eval = bn_eval
-        self.bn_frozen = bn_frozen
+        self.norm_eval = norm_eval
+        self.normalize = normalize
         self.layer_indicate = layer_indicate
         block, stage_blocks = ResNet.arch_settings[depth]
         stage_block = stage_blocks[layer_indicate]
@@ -38,7 +38,8 @@ class ResLayer(nn.Module):
             stride=stride,
             dilation=dilation,
             style=style,
-            with_cp=with_cp)
+            with_cp=with_cp,
+            normalize=self.normalize)
         setattr(self, 'layer{}'.format(layer_indicate + 1), res_layer)
 
     def init_weights(self, pretrained=None):
@@ -61,10 +62,7 @@ class ResLayer(nn.Module):
 
     def train(self, mode=True):
         super(ResLayer, self).train(mode)
-        if self.bn_eval:
+        if self.norm_eval:
             for m in self.modules():
                 if isinstance(m, nn.BatchNorm2d):
                     m.eval()
-                    if self.bn_frozen:
-                        for params in m.parameters():
-                            params.requires_grad = False
