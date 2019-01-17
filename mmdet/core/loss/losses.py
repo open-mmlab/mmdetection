@@ -10,11 +10,15 @@ def weighted_nll_loss(pred, label, weight, avg_factor=None):
     return torch.sum(raw * weight)[None] / avg_factor
 
 
-def weighted_cross_entropy(pred, label, weight, avg_factor=None):
+def weighted_cross_entropy(pred, label, weight, avg_factor=None,
+                           reduce=True):
     if avg_factor is None:
         avg_factor = max(torch.sum(weight > 0).float().item(), 1.)
     raw = F.cross_entropy(pred, label, reduction='none')
-    return torch.sum(raw * weight)[None] / avg_factor
+    if reduce:
+        return torch.sum(raw * weight)[None] / avg_factor
+    else:
+        return raw * weight / avg_factor
 
 
 def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
@@ -88,6 +92,8 @@ def accuracy(pred, target, topk=1):
     if isinstance(topk, int):
         topk = (topk, )
         return_single = True
+    else:
+        return_single = False
 
     maxk = max(topk)
     _, pred_label = pred.topk(maxk, 1, True, True)

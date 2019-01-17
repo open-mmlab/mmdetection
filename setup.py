@@ -12,7 +12,7 @@ def readme():
 
 MAJOR = 0
 MINOR = 5
-PATCH = 4
+PATCH = 5
 SUFFIX = ''
 SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         long_description=readme(),
         keywords='computer vision, object detection',
         url='https://github.com/open-mmlab/mmdetection',
-        packages=find_packages(),
+        packages=find_packages(exclude=('configs', 'tools', 'demo',)),
         package_data={'mmdet.ops': ['*/*.so']},
         classifiers=[
             'Development Status :: 4 - Beta',

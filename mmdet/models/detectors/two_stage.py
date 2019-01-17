@@ -4,9 +4,11 @@ import torch.nn as nn
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
-from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply)
+from ..registry import DETECTORS
+from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
 
 
+@DETECTORS.register_module
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                        MaskTestMixin):
 
@@ -34,18 +36,18 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             self.upper_neck = builder.build_upper_neck(upper_neck)
 
         if rpn_head is not None:
-            self.rpn_head = builder.build_rpn_head(rpn_head)
+            self.rpn_head = builder.build_head(rpn_head)
 
         if bbox_head is not None:
             self.bbox_roi_extractor = builder.build_roi_extractor(
                 bbox_roi_extractor)
-            self.bbox_head = builder.build_bbox_head(bbox_head)
+            self.bbox_head = builder.build_head(bbox_head)
 
         if mask_head is not None:
             if mask_roi_extractor is not None:
                 self.mask_roi_extractor = builder.build_roi_extractor(
                     mask_roi_extractor)
-            self.mask_head = builder.build_mask_head(mask_head)
+            self.mask_head = builder.build_head(mask_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -104,19 +106,28 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             losses.update(rpn_losses)
 
             proposal_inputs = rpn_outs + (img_meta, self.test_cfg.rpn)
-            proposal_list = self.rpn_head.get_proposals(*proposal_inputs)
+            proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         else:
             proposal_list = proposals
 
         # assign gts and sample proposals
         if self.with_bbox or self.with_mask:
-            assign_results, sampling_results = multi_apply(
-                assign_and_sample,
-                proposal_list,
-                gt_bboxes,
-                gt_bboxes_ignore,
-                gt_labels,
-                cfg=self.train_cfg.rcnn)
+            bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)
+            bbox_sampler = build_sampler(
+                self.train_cfg.rcnn.sampler, context=self)
+            num_imgs = img.size(0)
+            sampling_results = []
+            for i in range(num_imgs):
+                assign_result = bbox_assigner.assign(
+                    proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
+                    gt_labels[i])
+                sampling_result = bbox_sampler.sample(
+                    assign_result,
+                    proposal_list[i],
+                    gt_bboxes[i],
+                    gt_labels[i],
+                    feats=[lvl_feat[i][None] for lvl_feat in x])
+                sampling_results.append(sampling_result)
 
         # bbox head forward and loss
         if self.with_bbox:
