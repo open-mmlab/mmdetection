@@ -276,7 +276,7 @@ int deform_conv_backward_input_cuda(
 
     for (int elt = 0; elt < batchSize / im2col_step; elt++)
     {
-        columns = columns.addmm_(weight.flatten(1).transpose(0, 1), gradOutputBuffer[elt].flatten(1));
+        columns = columns.addmm_(weight.flatten(1).transpose(0, 1), gradOutputBuffer[elt].flatten(1), 0.0f, 1.0f);
 
         deformable_col2im_coord(
             columns, input[elt], offset[elt],
