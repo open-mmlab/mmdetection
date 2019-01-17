@@ -36,6 +36,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
 
+v0.5.6 (17/01/2019)
+- Add support for Group Normalization.
+- Unify RPNHead and single stage heads (RetinaHead, SSDHead) with AnchorHead.
+
 v0.5.5 (22/12/2018)
 - Add SSD for COCO and PASCAL VOC.
 - Add ResNeXt backbones and detection models.
@@ -72,6 +76,12 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 | Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        |
 | SSD                | ✗        | ✗        | ✗        | ✓        |
 | RetinaNet          | ✓        | ✓        | ☐        | ✗        |
+
+Other features
+- [x] Group Normalization
+- [x] OHEM
+- [x] Soft-NMS
+
 
 ## Installation
 
