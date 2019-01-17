@@ -3,10 +3,10 @@ normalize = dict(type='GN', num_groups=32, frozen=False)
 
 model = dict(
     type='MaskRCNN',
-    pretrained='open-mmlab://detectron/resnet50_gn',
+    pretrained='open-mmlab://detectron/resnet101_gn',
     backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=101,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
@@ -171,7 +171,7 @@ log_config = dict(
 total_epochs = 24
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_gn_2x'
+work_dir = './work_dirs/mask_rcnn_r101_fpn_gn_2x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
