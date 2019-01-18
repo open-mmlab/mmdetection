@@ -103,62 +103,33 @@ def bbox_mapping_back(bboxes, img_shape, scale_factor, flip):
     return new_bboxes
 
 
-def bbox2roi(bbox_list, return_index=False):
+def bbox2roi(bbox_list):
     """Convert a list of bboxes to roi format.
-
     Args:
-        bbox_list (list[Tensor] or list[tuple(Tensor)]): a list of bboxes
-        or tuple of bboxes corresponding to a batch of images.
-
+        bbox_list (list[Tensor]): a list of bboxes corresponding to a batch
+            of images.
     Returns:
-        if return_index = False
-            Tensor: shape (n, 5), [batch_ind, x1, y1, x2, y2]
-        else
-            Tensor: shape (n, 5), [batch_ind, x1, y1, x2, y2]
-            Tensor: sgape (n, ), which tuple the bbox belongs to
+        Tensor: shape (n, 5), [batch_ind, x1, y1, x2, y2]
     """
-
     rois_list = []
-    index_list = []
     for img_id, bboxes in enumerate(bbox_list):
-        if not isinstance(bboxes, tuple):
-            bboxes = (bboxes, )
-        index = []
-        for i, bbox_ in enumerate(bboxes):
-            index_ = bbox_.new_full((bbox_.size(0), ), i, dtype=torch.int32)
-            index.append(index_)
-        bboxes = torch.cat(bboxes, 0)
-        index = torch.cat(index, 0)
         if bboxes.size(0) > 0:
             img_inds = bboxes.new_full((bboxes.size(0), 1), img_id)
             rois = torch.cat([img_inds, bboxes[:, :4]], dim=-1)
         else:
             rois = bboxes.new_zeros((0, 5))
         rois_list.append(rois)
-        index_list.append(index)
     rois = torch.cat(rois_list, 0)
-    index = torch.cat(index_list, 0)
-    if return_index:
-        return rois, index
     return rois
 
 
-def roi2bbox(rois, index=None):
+def roi2bbox(rois):
     bbox_list = []
     img_ids = torch.unique(rois[:, 0].cpu(), sorted=True)
     for img_id in img_ids:
         inds = (rois[:, 0] == img_id.item())
         bbox = rois[inds, 1:]
-        if index is not None:
-            split_bbox = []
-            batch_index = index[inds]
-            unique_index = torch.unique(batch_index.cpu(), sorted=True)
-            for i in unique_index:
-                inds_ = (batch_index == i.item())
-                split_bbox.append(bbox[inds_])
-            bbox_list.append(tuple(split_bbox))
-        else:
-            bbox_list.append(bbox)
+        bbox_list.append(bbox)
     return bbox_list
 
 

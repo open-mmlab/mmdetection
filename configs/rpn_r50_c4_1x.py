@@ -11,6 +11,7 @@ model = dict(
         out_indices=(2, ),
         frozen_stages=1,
         style='pytorch'),
+    neck=None,
     rpn_head=dict(
         type='RPNHead',
         in_channels=1024,

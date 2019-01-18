@@ -38,7 +38,7 @@ class Registry(object):
 
 BACKBONES = Registry('backbone')
 NECKS = Registry('neck')
-UPPERNECKS = Registry('upper_neck')
+UPPER_NECKS = Registry('upper_neck')
 ROI_EXTRACTORS = Registry('roi_extractor')
 HEADS = Registry('head')
 DETECTORS = Registry('detector')
