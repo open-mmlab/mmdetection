@@ -3,7 +3,6 @@ from torch.autograd import Function
 from torch.nn.modules.utils import _pair
 
 from .. import deform_conv_cuda
-from .. import modulated_dcn_cuda as _backend
 
 
 class DeformConvFunction(Function):
@@ -124,7 +123,7 @@ class ModulatedDeformConvFunction(Function):
         output = input.new(
             *ModulatedDeformConvFunction._infer_shape(ctx, input, weight))
         ctx._bufs = [input.new(), input.new()]
-        _backend.modulated_deform_conv_cuda_forward(
+        deform_conv_cuda.modulated_deform_conv_cuda_forward(
             input, weight, bias, ctx._bufs[0], offset, mask, output,
             ctx._bufs[1], weight.shape[2], weight.shape[3], ctx.stride,
             ctx.stride, ctx.padding, ctx.padding, ctx.dilation, ctx.dilation,
@@ -141,7 +140,7 @@ class ModulatedDeformConvFunction(Function):
         grad_mask = torch.zeros_like(mask)
         grad_weight = torch.zeros_like(weight)
         grad_bias = torch.zeros_like(bias)
-        _backend.modulated_deform_conv_cuda_backward(
+        deform_conv_cuda.modulated_deform_conv_cuda_backward(
             input, weight, bias, ctx._bufs[0], offset, mask, ctx._bufs[1],
             grad_input, grad_weight, grad_bias, grad_offset, grad_mask,
             grad_output, weight.shape[2], weight.shape[3], ctx.stride,

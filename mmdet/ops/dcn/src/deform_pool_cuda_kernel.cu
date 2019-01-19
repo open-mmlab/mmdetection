@@ -289,18 +289,18 @@ void DeformablePSROIPoolForward(const at::Tensor data,
   const int channels_each_class = no_trans ? output_dim : output_dim / num_classes;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-    data.type(), "deformable_psroi_pool_forward", ([&] {
-    const scalar_t *bottom_data = data.data<scalar_t>();
-    const scalar_t *bottom_rois = bbox.data<scalar_t>();
-    const scalar_t *bottom_trans = no_trans ? NULL : trans.data<scalar_t>();
-    scalar_t *top_data = out.data<scalar_t>();
-    scalar_t *top_count_data = top_count.data<scalar_t>();
+      data.type(), "deformable_psroi_pool_forward", ([&] {
+        const scalar_t *bottom_data = data.data<scalar_t>();
+        const scalar_t *bottom_rois = bbox.data<scalar_t>();
+        const scalar_t *bottom_trans = no_trans ? NULL : trans.data<scalar_t>();
+        scalar_t *top_data = out.data<scalar_t>();
+        scalar_t *top_count_data = top_count.data<scalar_t>();
 
-    DeformablePSROIPoolForwardKernel<<<GET_BLOCKS(count), CUDA_NUM_THREADS>>>(
-      count, bottom_data, (scalar_t)spatial_scale, channels, height, width, pooled_height, pooled_width,
-      bottom_rois, bottom_trans, no_trans, (scalar_t)trans_std, sample_per_part, output_dim,
-      group_size, part_size, num_classes, channels_each_class, top_data, top_count_data);
-  }));
+        DeformablePSROIPoolForwardKernel<<<GET_BLOCKS(count), CUDA_NUM_THREADS>>>(
+            count, bottom_data, (scalar_t)spatial_scale, channels, height, width, pooled_height, pooled_width,
+            bottom_rois, bottom_trans, no_trans, (scalar_t)trans_std, sample_per_part, output_dim,
+            group_size, part_size, num_classes, channels_each_class, top_data, top_count_data);
+      }));
 
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
@@ -355,7 +355,6 @@ void DeformablePSROIPoolBackwardAcc(const at::Tensor out_grad,
             bottom_data, bottom_rois, bottom_trans, no_trans, (scalar_t)trans_std, sample_per_part,
             group_size, part_size, num_classes, channels_each_class);
       }));
-
 
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
