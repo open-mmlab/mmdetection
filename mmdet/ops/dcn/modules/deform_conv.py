@@ -16,7 +16,7 @@ class DeformConv(nn.Module):
                  stride=1,
                  padding=0,
                  dilation=1,
-                 num_deformable_groups=1):
+                 deformable_groups=1):
         super(DeformConv, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -24,7 +24,7 @@ class DeformConv(nn.Module):
         self.stride = _pair(stride)
         self.padding = _pair(padding)
         self.dilation = _pair(dilation)
-        self.num_deformable_groups = num_deformable_groups
+        self.deformable_groups = deformable_groups
 
         self.weight = nn.Parameter(
             torch.Tensor(out_channels, in_channels, *self.kernel_size))
@@ -41,7 +41,7 @@ class DeformConv(nn.Module):
     def forward(self, input, offset):
         return deform_conv(input, offset, self.weight, self.stride,
                            self.padding, self.dilation,
-                           self.num_deformable_groups)
+                           self.deformable_groups)
 
 
 class ModulatedDeformConv(nn.Module):
@@ -54,7 +54,7 @@ class ModulatedDeformConv(nn.Module):
                  padding,
                  dilation=1,
                  deformable_groups=1,
-                 no_bias=True):
+                 bias=False):
         super(ModulatedDeformConv, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -63,13 +63,12 @@ class ModulatedDeformConv(nn.Module):
         self.padding = padding
         self.dilation = dilation
         self.deformable_groups = deformable_groups
-        self.no_bias = no_bias
 
         self.weight = nn.Parameter(
             torch.Tensor(out_channels, in_channels, *self.kernel_size))
         self.bias = nn.Parameter(torch.zeros(out_channels))
         self.reset_parameters()
-        if self.no_bias:
+        if not bias:
             self.bias.requires_grad = False
 
     def reset_parameters(self):
@@ -96,10 +95,10 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
                  padding,
                  dilation=1,
                  deformable_groups=1,
-                 no_bias=False):
+                 bias=True):
         super(ModulatedDeformConvPack,
               self).__init__(in_channels, out_channels, kernel_size, stride,
-                             padding, dilation, deformable_groups, no_bias)
+                             padding, dilation, deformable_groups, bias)
 
         self.conv_offset_mask = nn.Conv2d(
             self.in_channels,

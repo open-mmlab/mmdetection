@@ -1,7 +1,7 @@
 import torch
 from torch.autograd import Function
 
-from .. import modulated_dcn_cuda as _backend
+from .. import deform_pool_cuda
 
 
 class DeformRoIPoolingFunction(Function):
@@ -36,7 +36,7 @@ class DeformRoIPoolingFunction(Function):
             *DeformRoIPoolingFunction._infer_shape(ctx, data, rois))
         output_count = data.new(
             *DeformRoIPoolingFunction._infer_shape(ctx, data, rois))
-        _backend.deform_psroi_pooling_cuda_forward(
+        deform_pool_cuda.deform_psroi_pooling_cuda_forward(
             data, rois, offset, output, output_count, ctx.no_trans,
             ctx.spatial_scale, ctx.output_dim, ctx.group_size, ctx.pooled_size,
             ctx.part_size, ctx.sample_per_part, ctx.trans_std)
@@ -63,7 +63,7 @@ class DeformRoIPoolingFunction(Function):
         grad_input = torch.zeros_like(data)
         grad_offset = torch.zeros_like(offset)
 
-        _backend.deform_psroi_pooling_cuda_backward(
+        deform_pool_cuda.deform_psroi_pooling_cuda_backward(
             grad_output, data, rois, offset, output_count, grad_input,
             grad_offset, ctx.no_trans, ctx.spatial_scale, ctx.output_dim,
             ctx.group_size, ctx.pooled_size, ctx.part_size,
