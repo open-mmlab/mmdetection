@@ -71,7 +71,7 @@ class ModulatedDeformConv(nn.Module):
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_channels))
         else:
-            self.bias = nn.Parameter(torch.Tensor([0]))  # fake tensor
+            self.register_parameter('bias', None)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -80,14 +80,13 @@ class ModulatedDeformConv(nn.Module):
             n *= k
         stdv = 1. / math.sqrt(n)
         self.weight.data.uniform_(-stdv, stdv)
-        if self.with_bias:
+        if self.bias is not None:
             self.bias.data.zero_()
 
     def forward(self, input, offset, mask):
         return modulated_deform_conv(input, offset, mask, self.weight,
                                      self.bias, self.stride, self.padding,
-                                     self.dilation, self.deformable_groups,
-                                     self.with_bias)
+                                     self.dilation, self.deformable_groups)
 
 
 class ModulatedDeformConvPack(ModulatedDeformConv):
@@ -110,8 +109,8 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
             self.deformable_groups * 3 * self.kernel_size[0] *
             self.kernel_size[1],
             kernel_size=self.kernel_size,
-            stride=(self.stride, self.stride),
-            padding=(self.padding, self.padding),
+            stride=_pair(self.stride),
+            padding=_pair(self.padding),
             bias=True)
         self.init_offset()
 
@@ -126,5 +125,4 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
         mask = torch.sigmoid(mask)
         return modulated_deform_conv(input, offset, mask, self.weight,
                                      self.bias, self.stride, self.padding,
-                                     self.dilation, self.deformable_groups,
-                                     self.with_bias)
+                                     self.dilation, self.deformable_groups)
