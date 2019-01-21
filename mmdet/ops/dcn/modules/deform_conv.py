@@ -17,8 +17,8 @@ class DeformConv(nn.Module):
                  padding=0,
                  dilation=1,
                  deformable_groups=1,
-                 bias=None):
-        assert bias is None
+                 bias=False):
+        assert not bias
         super(DeformConv, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
