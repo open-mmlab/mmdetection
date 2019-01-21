@@ -6,8 +6,9 @@ import torch
 from mmcv.runner import Runner, DistSamplerSeedHook
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
-from mmdet.core import (DistOptimizerHook, DistEvalmAPHook,
-                        CocoDistEvalRecallHook, CocoDistEvalmAPHook)
+from mmdet.core import (DistOptimizerHook, Fp16PrepareHook, Fp16OptimizerHook,
+                        DistEvalmAPHook, CocoDistEvalRecallHook,
+                        CocoDistEvalmAPHook)
 from mmdet.datasets import build_dataloader
 from mmdet.models import RPN
 from .env import get_root_logger
@@ -70,11 +71,23 @@ def _dist_train(model, dataset, cfg, validate=False):
     ]
     # put model on gpus
     model = MMDistributedDataParallel(model.cuda())
+
+    # fp16 setting
+    fp16 = cfg.get('fp16', None)
+    if fp16 is not None:
+        fp16_prepare_hook = Fp16PrepareHook(cfg.optimizer)
+        optimizer_config = Fp16OptimizerHook(**cfg.optimizer_config,
+                                             **cfg.fp16)
+        cfg.optimizer = None
+    else:
+        optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
+
     # build runner
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
                     cfg.log_level)
     # register hooks
-    optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
+    if fp16:
+        runner.register_hook(fp16_prepare_hook)
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
     runner.register_hook(DistSamplerSeedHook())
@@ -108,10 +121,23 @@ def _non_dist_train(model, dataset, cfg, validate=False):
     ]
     # put model on gpus
     model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
+
+    # fp16 setting
+    fp16 = cfg.get('fp16', None)
+    if fp16 is not None:
+        fp16_prepare_hook = Fp16PrepareHook(cfg.optimizer, distribute=False)
+        optimizer_config = Fp16OptimizerHook(
+            **cfg.optimizer_config, **cfg.fp16, distribute=False)
+        cfg.optimizer = None
+    else:
+        optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
+
     # build runner
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
                     cfg.log_level)
-    runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
+    if fp16:
+        runner.register_hook(fp16_prepare_hook)
+    runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
 
     if cfg.resume_from:

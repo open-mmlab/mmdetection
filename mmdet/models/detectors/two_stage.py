@@ -123,7 +123,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         # bbox head forward and loss
         if self.with_bbox:
-            rois = bbox2roi([res.bboxes for res in sampling_results])
+            rois = bbox2roi([res.bboxes for res in sampling_results]).type_as(
+                x[0])
             # TODO: a more flexible way to decide which feature maps to use
             bbox_feats = self.bbox_roi_extractor(
                 x[:self.bbox_roi_extractor.num_inputs], rois)
@@ -137,7 +138,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         # mask head forward and loss
         if self.with_mask:
-            pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
+            pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results]).type_as(x[0])
             mask_feats = self.mask_roi_extractor(
                 x[:self.mask_roi_extractor.num_inputs], pos_rois)
             mask_pred = self.mask_head(mask_feats)

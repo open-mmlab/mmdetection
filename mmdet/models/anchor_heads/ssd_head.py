@@ -109,7 +109,7 @@ class SSDHead(AnchorHead):
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
         loss_cls_all = F.cross_entropy(
-            cls_score, labels, reduction='none') * label_weights
+            cls_score.float(), labels, reduction='none') * label_weights
         pos_inds = (labels > 0).nonzero().view(-1)
         neg_inds = (labels == 0).nonzero().view(-1)
 
@@ -123,7 +123,7 @@ class SSDHead(AnchorHead):
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
 
         loss_reg = weighted_smoothl1(
-            bbox_pred,
+            bbox_pred.float(),
             bbox_targets,
             bbox_weights,
             beta=cfg.smoothl1_beta,

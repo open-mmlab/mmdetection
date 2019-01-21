@@ -126,7 +126,7 @@ class FCNMaskHead(nn.Module):
             list[list]: encoded masks
         """
         if isinstance(mask_pred, torch.Tensor):
-            mask_pred = mask_pred.sigmoid().cpu().numpy()
+            mask_pred = mask_pred.float().sigmoid().cpu().numpy()
         assert isinstance(mask_pred, np.ndarray)
 
         cls_segms = [[] for _ in range(self.num_classes - 1)]
