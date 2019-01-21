@@ -29,10 +29,11 @@ class DeformConvFunction(Function):
 
         ctx.save_for_backward(input, offset, weight)
 
-        output = input.new(*DeformConvFunction._output_size(
-            input, weight, ctx.padding, ctx.dilation, ctx.stride))
+        output = input.new_empty(
+            DeformConvFunction._output_size(input, weight, ctx.padding,
+                                            ctx.dilation, ctx.stride))
 
-        ctx.bufs_ = [input.new(), input.new()]  # columns, ones
+        ctx.bufs_ = [input.new_empty(0), input.new_empty(0)]  # columns, ones
 
         if not input.is_cuda:
             raise NotImplementedError
@@ -110,24 +111,26 @@ class ModulatedDeformConvFunction(Function):
                 stride,
                 padding,
                 dilation=1,
-                deformable_groups=1):
+                deformable_groups=1,
+                with_bias=False):
         ctx.stride = stride
         ctx.padding = padding
         ctx.dilation = dilation
         ctx.deformable_groups = deformable_groups
+        ctx.with_bias = with_bias
         if not input.is_cuda:
             raise NotImplementedError
         if weight.requires_grad or mask.requires_grad or offset.requires_grad \
                 or input.requires_grad:
             ctx.save_for_backward(input, offset, mask, weight, bias)
-        output = input.new(
-            *ModulatedDeformConvFunction._infer_shape(ctx, input, weight))
-        ctx._bufs = [input.new(), input.new()]
+        output = input.new_empty(
+            ModulatedDeformConvFunction._infer_shape(ctx, input, weight))
+        ctx._bufs = [input.new_empty(0), input.new_empty(0)]
         deform_conv_cuda.modulated_deform_conv_cuda_forward(
             input, weight, bias, ctx._bufs[0], offset, mask, output,
             ctx._bufs[1], weight.shape[2], weight.shape[3], ctx.stride,
             ctx.stride, ctx.padding, ctx.padding, ctx.dilation, ctx.dilation,
-            ctx.deformable_groups)
+            ctx.deformable_groups, ctx.with_bias)
         return output
 
     @staticmethod
@@ -145,10 +148,10 @@ class ModulatedDeformConvFunction(Function):
             grad_input, grad_weight, grad_bias, grad_offset, grad_mask,
             grad_output, weight.shape[2], weight.shape[3], ctx.stride,
             ctx.stride, ctx.padding, ctx.padding, ctx.dilation, ctx.dilation,
-            ctx.deformable_groups)
+            ctx.deformable_groups, ctx.with_bias)
 
         return (grad_input, grad_offset, grad_mask, grad_weight, grad_bias,
-                None, None, None, None)
+                None, None, None, None, None)
 
     @staticmethod
     def _infer_shape(ctx, input, weight):

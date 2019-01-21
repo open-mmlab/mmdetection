@@ -32,20 +32,20 @@ class DeformRoIPoolingFunction(Function):
         if not data.is_cuda:
             raise NotImplementedError
 
-        output = data.new(
-            *DeformRoIPoolingFunction._infer_shape(ctx, data, rois))
-        output_count = data.new(
-            *DeformRoIPoolingFunction._infer_shape(ctx, data, rois))
+        output = data.new_empty(
+            DeformRoIPoolingFunction._infer_shape(ctx, data, rois))
+        output_count = data.new_empty(
+            DeformRoIPoolingFunction._infer_shape(ctx, data, rois))
         deform_pool_cuda.deform_psroi_pooling_cuda_forward(
             data, rois, offset, output, output_count, ctx.no_trans,
             ctx.spatial_scale, ctx.output_dim, ctx.group_size, ctx.pooled_size,
             ctx.part_size, ctx.sample_per_part, ctx.trans_std)
 
-        # if data.requires_grad or rois.requires_grad or offset.requires_grad:
-        #     ctx.save_for_backward(data, rois, offset, output_count)
-        ctx.data = data
-        ctx.rois = rois
-        ctx.offset = offset
+        if data.requires_grad or rois.requires_grad or offset.requires_grad:
+            ctx.save_for_backward(data, rois, offset)
+        # ctx.data = data
+        # ctx.rois = rois
+        # ctx.offset = offset
         ctx.output_count = output_count
 
         return output
@@ -55,10 +55,10 @@ class DeformRoIPoolingFunction(Function):
         if not grad_output.is_cuda:
             raise NotImplementedError
 
-        # data, rois, offset, output_count = ctx.saved_tensors
-        data = ctx.data
-        rois = ctx.rois
-        offset = ctx.offset
+        data, rois, offset = ctx.saved_tensors
+        # data = ctx.data
+        # rois = ctx.rois
+        # offset = ctx.offset
         output_count = ctx.output_count
         grad_input = torch.zeros_like(data)
         grad_offset = torch.zeros_like(offset)

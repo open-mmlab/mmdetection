@@ -421,7 +421,7 @@ void modulated_deform_conv_cuda_forward(at::Tensor input, at::Tensor weight,
                                         const int stride_h, const int stride_w,
                                         const int pad_h, const int pad_w,
                                         const int dilation_h, const int dilation_w,
-                                        const int deformable_group)
+                                        const int deformable_group, const bool with_bias)
 {
     AT_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
     AT_CHECK(weight.is_contiguous(), "weight tensor has to be contiguous");
@@ -454,27 +454,23 @@ void modulated_deform_conv_cuda_forward(at::Tensor input, at::Tensor weight,
     }
 
     // resize output
-    output = output.view({batch, channels_out, height_out, width_out});
+    output = output.view({batch, channels_out, height_out, width_out}).zero_();
     // resize temporary columns
     columns = at::zeros({channels * kernel_h * kernel_w, 1 * height_out * width_out}, input.type());
 
     for (int b = 0; b < batch; b++)
     {
-        // Do Bias first:
-        // M,N,K are dims of matrix A and B
-        // (see http://docs.nvidia.com/cuda/cublas/#cublas-lt-t-gt-gemm)
-        // (N x 1) (1 x M)
-        output[b] = output[b].flatten(1).addmm_(bias.view({-1, 1}), ones.view({1, -1}), 0.0f, 1.0f).view_as(output[b]);
-
         modulated_deformable_im2col_cuda(input[b], offset[b], mask[b],
                                          1, channels, height, width,
                                          height_out, width_out, kernel_h, kernel_w,
                                          pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w,
                                          deformable_group, columns);
 
-        //(k * m)  x  (m * n)
-        // Y = WC
         output[b] = output[b].flatten(1).addmm_(weight.flatten(1), columns).view_as(output[b]);
+    }
+
+    if (with_bias){
+        output += bias.view({1, bias.size(0), 1, 1});
     }
 }
 
@@ -489,7 +485,7 @@ void modulated_deform_conv_cuda_backward(at::Tensor input, at::Tensor weight,
                                          int stride_h, int stride_w,
                                          int pad_h, int pad_w,
                                          int dilation_h, int dilation_w,
-                                         int deformable_group)
+                                         int deformable_group, const bool with_bias)
 {
     AT_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
     AT_CHECK(weight.is_contiguous(), "weight tensor has to be contiguous");
@@ -551,7 +547,9 @@ void modulated_deform_conv_cuda_backward(at::Tensor input, at::Tensor weight,
 
         grad_weight = grad_weight.flatten(1).addmm_(grad_output[b].flatten(1), columns.transpose(0, 1)).view_as(grad_weight);
 
-        grad_bias = grad_bias.view({-1, 1}).addmm_(grad_output[b].flatten(1), ones.view({-1, 1})).view(-1);
+        if (with_bias){
+            grad_bias = grad_bias.view({-1, 1}).addmm_(grad_output[b].flatten(1), ones.view({-1, 1})).view(-1);
+        }
     }
 }
 
