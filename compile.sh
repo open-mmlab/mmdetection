@@ -32,4 +32,3 @@ if [ -d "build" ]; then
     rm -r build
 fi
 $PYTHON setup.py build_ext --inplace
-$PYTHON setup_modulated.py build_ext --inplace
