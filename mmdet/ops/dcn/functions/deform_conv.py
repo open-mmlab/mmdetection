@@ -107,17 +107,18 @@ class ModulatedDeformConvFunction(Function):
                 offset,
                 mask,
                 weight,
-                bias,
-                stride,
-                padding,
+                bias=None,
+                stride=1,
+                padding=0,
                 dilation=1,
-                deformable_groups=1,
-                with_bias=False):
+                deformable_groups=1):
         ctx.stride = stride
         ctx.padding = padding
         ctx.dilation = dilation
         ctx.deformable_groups = deformable_groups
-        ctx.with_bias = with_bias
+        ctx.with_bias = bias is not None
+        if not ctx.with_bias:
+            bias = input.new_empty(1)  # fake tensor
         if not input.is_cuda:
             raise NotImplementedError
         if weight.requires_grad or mask.requires_grad or offset.requires_grad \
@@ -149,9 +150,11 @@ class ModulatedDeformConvFunction(Function):
             grad_output, weight.shape[2], weight.shape[3], ctx.stride,
             ctx.stride, ctx.padding, ctx.padding, ctx.dilation, ctx.dilation,
             ctx.deformable_groups, ctx.with_bias)
+        if not ctx.with_bias:
+            grad_bias = None
 
         return (grad_input, grad_offset, grad_mask, grad_weight, grad_bias,
-                None, None, None, None, None)
+                None, None, None, None)
 
     @staticmethod
     def _infer_shape(ctx, input, weight):

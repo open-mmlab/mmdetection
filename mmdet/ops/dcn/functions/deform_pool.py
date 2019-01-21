@@ -43,9 +43,6 @@ class DeformRoIPoolingFunction(Function):
 
         if data.requires_grad or rois.requires_grad or offset.requires_grad:
             ctx.save_for_backward(data, rois, offset)
-        # ctx.data = data
-        # ctx.rois = rois
-        # ctx.offset = offset
         ctx.output_count = output_count
 
         return output
@@ -56,9 +53,6 @@ class DeformRoIPoolingFunction(Function):
             raise NotImplementedError
 
         data, rois, offset = ctx.saved_tensors
-        # data = ctx.data
-        # rois = ctx.rois
-        # offset = ctx.offset
         output_count = ctx.output_count
         grad_input = torch.zeros_like(data)
         grad_offset = torch.zeros_like(offset)
