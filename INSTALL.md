@@ -4,13 +4,13 @@
 
 - Linux (tested on Ubuntu 16.04 and CentOS 7.2)
 - Python 3.4+
-- PyTorch 0.4.1
+- PyTorch 1.0
 - Cython
-- [mmcv](https://github.com/open-mmlab/mmcv)
+- [mmcv](https://github.com/open-mmlab/mmcv) >= 0.2.2
 
 ### Install mmdetection
 
-a. Install PyTorch 0.4.1 and torchvision following the [official instructions](https://pytorch.org/).
+a. Install PyTorch 1.0 and torchvision following the [official instructions](https://pytorch.org/).
 
 b. Clone the mmdetection repository.
 
