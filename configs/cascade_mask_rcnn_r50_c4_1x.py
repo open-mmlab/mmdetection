@@ -11,14 +11,17 @@ model = dict(
         dilations=(1, 1, 1),
         out_indices=(2, ),
         frozen_stages=1,
+        normalize=dict(type='BN', frozen=True),
+        norm_eval=True,
         style='pytorch'),
     upper_neck=dict(
         type='ResLayer',
         depth=50,
         stage=3,
-        stride=1,
+        stride=2,
         dilation=1,
         style='pytorch',
+        normalize=dict(type='BN', frozen=True),
         norm_eval=True,
         with_cp=False),
     rpn_head=dict(
@@ -33,7 +36,7 @@ model = dict(
         use_sigmoid_cls=True),
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
+        roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
         out_channels=1024,
         featmap_strides=[16]),
     bbox_head=[
@@ -145,9 +148,9 @@ train_cfg = dict(
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,
-        nms_pre=6000,
-        nms_post=1000,
-        max_num=1000,
+        nms_pre=12000,
+        nms_post=2000,
+        max_num=2000,
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
