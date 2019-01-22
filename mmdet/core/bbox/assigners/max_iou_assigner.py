@@ -88,8 +88,8 @@ class MaxIoUAssigner(BaseAssigner):
         """Assign w.r.t. the overlaps of bboxes with gts.
 
         Args:
-            overlaps (Tensor): Overlaps between n bboxes and k gt_bboxes,
-                shape(n, k).
+            overlaps (Tensor): Overlaps between k gt_bboxes and n bboxes,
+                shape(k, n).
             gt_labels (Tensor, optional): Labels of k gt_bboxes, shape (k, ).
 
         Returns:
