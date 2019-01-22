@@ -5,6 +5,9 @@ import torch.utils.checkpoint as cp
 
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
+
+from mmdet.ops import DeformConv, ModulatedDeformConv
+from ..registry import BACKBONES
 from ..utils import build_norm_layer
 
 
@@ -86,16 +89,20 @@ class Bottleneck(nn.Module):
                  downsample=None,
                  style='pytorch',
                  with_cp=False,
-                 normalize=dict(type='BN')):
+                 normalize=dict(type='BN'),
+                 dcn=None):
         """Bottleneck block for ResNet.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
+        assert dcn is None or isinstance(dcn, dict)
         self.inplanes = inplanes
         self.planes = planes
         self.normalize = normalize
+        self.dcn = dcn
+        self.with_dcn = dcn is not None
         if style == 'pytorch':
             self.conv1_stride = 1
             self.conv2_stride = stride
@@ -105,9 +112,8 @@ class Bottleneck(nn.Module):
 
         self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
-        self.norm3_name, norm3 = build_norm_layer(normalize,
-                                                  planes * self.expansion,
-                                                  postfix=3)
+        self.norm3_name, norm3 = build_norm_layer(
+            normalize, planes * self.expansion, postfix=3)
 
         self.conv1 = nn.Conv2d(
             inplanes,
@@ -116,14 +122,44 @@ class Bottleneck(nn.Module):
             stride=self.conv1_stride,
             bias=False)
         self.add_module(self.norm1_name, norm1)
-        self.conv2 = nn.Conv2d(
-            planes,
-            planes,
-            kernel_size=3,
-            stride=self.conv2_stride,
-            padding=dilation,
-            dilation=dilation,
-            bias=False)
+        fallback_on_stride = False
+        self.with_modulated_dcn = False
+        if self.with_dcn:
+            fallback_on_stride = dcn.get('fallback_on_stride', False)
+            self.with_modulated_dcn = dcn.get('modulated', False)
+        if not self.with_dcn or fallback_on_stride:
+            self.conv2 = nn.Conv2d(
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False)
+        else:
+            deformable_groups = dcn.get('deformable_groups', 1)
+            if not self.with_modulated_dcn:
+                conv_op = DeformConv
+                offset_channels = 18
+            else:
+                conv_op = ModulatedDeformConv
+                offset_channels = 27
+            self.conv2_offset = nn.Conv2d(
+                planes,
+                deformable_groups * offset_channels,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation)
+            self.conv2 = conv_op(
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                deformable_groups=deformable_groups,
+                bias=False)
         self.add_module(self.norm2_name, norm2)
         self.conv3 = nn.Conv2d(
             planes, planes * self.expansion, kernel_size=1, bias=False)
@@ -157,7 +193,16 @@ class Bottleneck(nn.Module):
             out = self.norm1(out)
             out = self.relu(out)
 
-            out = self.conv2(out)
+            if not self.with_dcn:
+                out = self.conv2(out)
+            elif self.with_modulated_dcn:
+                offset_mask = self.conv2_offset(out)
+                offset = offset_mask[:, :18, :, :]
+                mask = offset_mask[:, -9:, :, :].sigmoid()
+                out = self.conv2(out, offset, mask)
+            else:
+                offset = self.conv2_offset(out)
+                out = self.conv2(out, offset)
             out = self.norm2(out)
             out = self.relu(out)
 
@@ -189,7 +234,8 @@ def make_res_layer(block,
                    dilation=1,
                    style='pytorch',
                    with_cp=False,
-                   normalize=dict(type='BN')):
+                   normalize=dict(type='BN'),
+                   dcn=None):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
         downsample = nn.Sequential(
@@ -212,16 +258,25 @@ def make_res_layer(block,
             downsample,
             style=style,
             with_cp=with_cp,
-            normalize=normalize))
+            normalize=normalize,
+            dcn=dcn))
     inplanes = planes * block.expansion
     for i in range(1, blocks):
         layers.append(
-            block(inplanes, planes, 1, dilation, style=style,
-                  with_cp=with_cp, normalize=normalize))
+            block(
+                inplanes,
+                planes,
+                1,
+                dilation,
+                style=style,
+                with_cp=with_cp,
+                normalize=normalize,
+                dcn=dcn))
 
     return nn.Sequential(*layers)
 
 
+@BACKBONES.register_module
 class ResNet(nn.Module):
     """ResNet backbone.
 
@@ -262,10 +317,10 @@ class ResNet(nn.Module):
                  out_indices=(0, 1, 2, 3),
                  style='pytorch',
                  frozen_stages=-1,
-                 normalize=dict(
-                     type='BN',
-                     frozen=False),
+                 normalize=dict(type='BN', frozen=False),
                  norm_eval=True,
+                 dcn=None,
+                 stage_with_dcn=(False, False, False, False),
                  with_cp=False,
                  zero_init_residual=True):
         super(ResNet, self).__init__()
@@ -276,7 +331,8 @@ class ResNet(nn.Module):
         assert num_stages >= 1 and num_stages <= 4
         self.strides = strides
         self.dilations = dilations
-        assert len(strides) == len(dilations) == num_stages
+        assert len(strides) == len(dilations) == len(
+            stage_with_dcn) == num_stages
         self.out_indices = out_indices
         assert max(out_indices) < num_stages
         self.style = style
@@ -284,6 +340,8 @@ class ResNet(nn.Module):
         self.normalize = normalize
         self.with_cp = with_cp
         self.norm_eval = norm_eval
+        self.dcn = dcn
+        self.stage_with_dcn = stage_with_dcn
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
@@ -295,6 +353,7 @@ class ResNet(nn.Module):
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = strides[i]
             dilation = dilations[i]
+            dcn = self.dcn if self.stage_with_dcn[i] else None
             planes = 64 * 2**i
             res_layer = make_res_layer(
                 self.block,
@@ -305,7 +364,8 @@ class ResNet(nn.Module):
                 dilation=dilation,
                 style=self.style,
                 with_cp=with_cp,
-                normalize=normalize)
+                normalize=normalize,
+                dcn=dcn)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
@@ -323,8 +383,8 @@ class ResNet(nn.Module):
     def _make_stem_layer(self):
         self.conv1 = nn.Conv2d(
             3, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        self.norm1_name, norm1 = build_norm_layer(self.normalize,
-                                                  64, postfix=1)
+        self.norm1_name, norm1 = build_norm_layer(
+            self.normalize, 64, postfix=1)
         self.add_module(self.norm1_name, norm1)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -350,6 +410,12 @@ class ResNet(nn.Module):
                     kaiming_init(m)
                 elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                     constant_init(m, 1)
+
+            if self.dcn is not None:
+                for m in self.modules():
+                    if isinstance(m, Bottleneck) and hasattr(
+                            m, 'conv2_offset'):
+                        constant_init(m.conv2_offset, 0)
 
             if self.zero_init_residual:
                 for m in self.modules():
