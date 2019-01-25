@@ -69,7 +69,7 @@ class MaxIoUAssigner(BaseAssigner):
         if bboxes.shape[0] == 0 or gt_bboxes.shape[0] == 0:
             raise ValueError('No gt or bboxes')
         bboxes = bboxes[:, :4]
-        overlaps = bbox_overlaps(bboxes, gt_bboxes)
+        overlaps = bbox_overlaps(gt_bboxes, bboxes)
 
         if (self.ignore_iof_thr > 0) and (gt_bboxes_ignore is not None) and (
                 gt_bboxes_ignore.numel() > 0):
@@ -88,8 +88,8 @@ class MaxIoUAssigner(BaseAssigner):
         """Assign w.r.t. the overlaps of bboxes with gts.
 
         Args:
-            overlaps (Tensor): Overlaps between n bboxes and k gt_bboxes,
-                shape(n, k).
+            overlaps (Tensor): Overlaps between k gt_bboxes and n bboxes,
+                shape(k, n).
             gt_labels (Tensor, optional): Labels of k gt_bboxes, shape (k, ).
 
         Returns:
@@ -98,19 +98,18 @@ class MaxIoUAssigner(BaseAssigner):
         if overlaps.numel() == 0:
             raise ValueError('No gt or proposals')
 
-        num_bboxes, num_gts = overlaps.size(0), overlaps.size(1)
+        num_gts, num_bboxes = overlaps.size(0), overlaps.size(1)
 
         # 1. assign -1 by default
         assigned_gt_inds = overlaps.new_full(
             (num_bboxes, ), -1, dtype=torch.long)
 
-        assert overlaps.size() == (num_bboxes, num_gts)
         # for each anchor, which gt best overlaps with it
         # for each anchor, the max iou of all gts
-        max_overlaps, argmax_overlaps = overlaps.max(dim=1)
+        max_overlaps, argmax_overlaps = overlaps.max(dim=0)
         # for each gt, which anchor best overlaps with it
         # for each gt, the max iou of all proposals
-        gt_max_overlaps, gt_argmax_overlaps = overlaps.max(dim=0)
+        gt_max_overlaps, gt_argmax_overlaps = overlaps.max(dim=1)
 
         # 2. assign negative: below
         if isinstance(self.neg_iou_thr, float):
@@ -129,7 +128,7 @@ class MaxIoUAssigner(BaseAssigner):
         for i in range(num_gts):
             if gt_max_overlaps[i] >= self.min_pos_iou:
                 if self.gt_max_assign_all:
-                    max_iou_inds = overlaps[:, i] == gt_max_overlaps[i]
+                    max_iou_inds = overlaps[i, :] == gt_max_overlaps[i]
                     assigned_gt_inds[max_iou_inds] = i + 1
                 else:
                     assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1

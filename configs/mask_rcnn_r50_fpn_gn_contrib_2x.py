@@ -3,7 +3,7 @@ normalize = dict(type='GN', num_groups=32, frozen=False)
 
 model = dict(
     type='MaskRCNN',
-    pretrained='open-mmlab://detectron/resnet50_gn',
+    pretrained='open-mmlab://contrib/resnet50_gn',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -111,7 +111,7 @@ test_cfg = dict(
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
     imgs_per_gpu=2,
     workers_per_gpu=2,
@@ -171,7 +171,7 @@ log_config = dict(
 total_epochs = 24
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_gn_2x'
+work_dir = './work_dirs/mask_rcnn_r50_fpn_gn_contrib_2x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
