@@ -1,9 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from ..utils import ConvModule
 from mmcv.cnn import xavier_init
 
+from ..utils import ConvModule
+from ..registry import NECKS
 
+
+@NECKS.register_module
 class FPN(nn.Module):
 
     def __init__(self,
