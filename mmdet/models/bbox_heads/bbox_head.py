@@ -110,7 +110,7 @@ class BBoxHead(nn.Module):
                        rescale=False,
                        cfg=None):
         if isinstance(cls_score, list):
-            cls_score = sum(cls_score).float() / float(len(cls_score))
+            cls_score = sum(cls_score.float()) / float(len(cls_score))
         scores = F.softmax(
             cls_score.float(), dim=1) if cls_score is not None else None
 
