@@ -2,8 +2,9 @@ import math
 
 import torch.nn as nn
 
-from .resnet import ResNet
+from mmdet.ops import DeformConv, ModulatedDeformConv
 from .resnet import Bottleneck as _Bottleneck
+from .resnet import ResNet
 from ..registry import BACKBONES
 from ..utils import build_norm_layer
 
@@ -22,15 +23,12 @@ class Bottleneck(_Bottleneck):
         else:
             width = math.floor(self.planes * (base_width / 64)) * groups
 
-        self.norm1_name, norm1 = build_norm_layer(self.normalize,
-                                                  width,
-                                                  postfix=1)
-        self.norm2_name, norm2 = build_norm_layer(self.normalize,
-                                                  width,
-                                                  postfix=2)
-        self.norm3_name, norm3 = build_norm_layer(self.normalize,
-                                                  self.planes * self.expansion,
-                                                  postfix=3)
+        self.norm1_name, norm1 = build_norm_layer(
+            self.normalize, width, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(
+            self.normalize, width, postfix=2)
+        self.norm3_name, norm3 = build_norm_layer(
+            self.normalize, self.planes * self.expansion, postfix=3)
 
         self.conv1 = nn.Conv2d(
             self.inplanes,
@@ -39,15 +37,46 @@ class Bottleneck(_Bottleneck):
             stride=self.conv1_stride,
             bias=False)
         self.add_module(self.norm1_name, norm1)
-        self.conv2 = nn.Conv2d(
-            width,
-            width,
-            kernel_size=3,
-            stride=self.conv2_stride,
-            padding=self.dilation,
-            dilation=self.dilation,
-            groups=groups,
-            bias=False)
+        fallback_on_stride = False
+        self.with_modulated_dcn = False
+        if self.with_dcn:
+            fallback_on_stride = self.dcn.get('fallback_on_stride', False)
+            self.with_modulated_dcn = self.dcn.get('modulated', False)
+        if not self.with_dcn or fallback_on_stride:
+            self.conv2 = nn.Conv2d(
+                width,
+                width,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=self.dilation,
+                dilation=self.dilation,
+                groups=groups,
+                bias=False)
+        else:
+            deformable_groups = self.dcn.get('deformable_groups', 1)
+            if not self.with_modulated_dcn:
+                conv_op = DeformConv
+                offset_channels = 18
+            else:
+                conv_op = ModulatedDeformConv
+                offset_channels = 27
+            self.conv2_offset = nn.Conv2d(
+                width,
+                deformable_groups * offset_channels,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=self.dilation,
+                dilation=self.dilation)
+            self.conv2 = conv_op(
+                width,
+                width,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=self.dilation,
+                dilation=self.dilation,
+                groups=groups,
+                deformable_groups=deformable_groups,
+                bias=False)
         self.add_module(self.norm2_name, norm2)
         self.conv3 = nn.Conv2d(
             width, self.planes * self.expansion, kernel_size=1, bias=False)
@@ -64,7 +93,8 @@ def make_res_layer(block,
                    base_width=4,
                    style='pytorch',
                    with_cp=False,
-                   normalize=dict(type='BN')):
+                   normalize=dict(type='BN'),
+                   dcn=None):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
         downsample = nn.Sequential(
@@ -89,7 +119,8 @@ def make_res_layer(block,
             base_width=base_width,
             style=style,
             with_cp=with_cp,
-            normalize=normalize))
+            normalize=normalize,
+            dcn=dcn))
     inplanes = planes * block.expansion
     for i in range(1, blocks):
         layers.append(
@@ -102,7 +133,8 @@ def make_res_layer(block,
                 base_width=base_width,
                 style=style,
                 with_cp=with_cp,
-                normalize=normalize))
+                normalize=normalize,
+                dcn=dcn))
 
     return nn.Sequential(*layers)
 

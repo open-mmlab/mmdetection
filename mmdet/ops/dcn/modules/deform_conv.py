@@ -16,6 +16,7 @@ class DeformConv(nn.Module):
                  stride=1,
                  padding=0,
                  dilation=1,
+                 groups=1,
                  deformable_groups=1,
                  bias=False):
         assert not bias
@@ -26,10 +27,12 @@ class DeformConv(nn.Module):
         self.stride = _pair(stride)
         self.padding = _pair(padding)
         self.dilation = _pair(dilation)
+        self.groups = groups
         self.deformable_groups = deformable_groups
 
         self.weight = nn.Parameter(
-            torch.Tensor(out_channels, in_channels, *self.kernel_size))
+            torch.Tensor(out_channels, in_channels // self.groups,
+                         *self.kernel_size))
 
         self.reset_parameters()
 
@@ -42,7 +45,8 @@ class DeformConv(nn.Module):
 
     def forward(self, input, offset):
         return deform_conv(input, offset, self.weight, self.stride,
-                           self.padding, self.dilation, self.deformable_groups)
+                           self.padding, self.dilation, self.groups,
+                           self.deformable_groups)
 
 
 class ModulatedDeformConv(nn.Module):
@@ -54,6 +58,7 @@ class ModulatedDeformConv(nn.Module):
                  stride=1,
                  padding=0,
                  dilation=1,
+                 groups=1,
                  deformable_groups=1,
                  bias=True):
         super(ModulatedDeformConv, self).__init__()
@@ -63,11 +68,13 @@ class ModulatedDeformConv(nn.Module):
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
+        self.groups = groups
         self.deformable_groups = deformable_groups
         self.with_bias = bias
 
         self.weight = nn.Parameter(
-            torch.Tensor(out_channels, in_channels, *self.kernel_size))
+            torch.Tensor(out_channels, in_channels // groups,
+                         *self.kernel_size))
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_channels))
         else:
@@ -84,9 +91,9 @@ class ModulatedDeformConv(nn.Module):
             self.bias.data.zero_()
 
     def forward(self, input, offset, mask):
-        return modulated_deform_conv(input, offset, mask, self.weight,
-                                     self.bias, self.stride, self.padding,
-                                     self.dilation, self.deformable_groups)
+        return modulated_deform_conv(
+            input, offset, mask, self.weight, self.bias, self.stride,
+            self.padding, self.dilation, self.groups, self.deformable_groups)
 
 
 class ModulatedDeformConvPack(ModulatedDeformConv):
@@ -98,14 +105,15 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
                  stride=1,
                  padding=0,
                  dilation=1,
+                 groups=1,
                  deformable_groups=1,
                  bias=True):
-        super(ModulatedDeformConvPack,
-              self).__init__(in_channels, out_channels, kernel_size, stride,
-                             padding, dilation, deformable_groups, bias)
+        super(ModulatedDeformConvPack, self).__init__(
+            in_channels, out_channels, kernel_size, stride, padding, dilation,
+            groups, deformable_groups, bias)
 
         self.conv_offset_mask = nn.Conv2d(
-            self.in_channels,
+            self.in_channels // self.groups,
             self.deformable_groups * 3 * self.kernel_size[0] *
             self.kernel_size[1],
             kernel_size=self.kernel_size,
@@ -123,6 +131,6 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
         o1, o2, mask = torch.chunk(out, 3, dim=1)
         offset = torch.cat((o1, o2), dim=1)
         mask = torch.sigmoid(mask)
-        return modulated_deform_conv(input, offset, mask, self.weight,
-                                     self.bias, self.stride, self.padding,
-                                     self.dilation, self.deformable_groups)
+        return modulated_deform_conv(
+            input, offset, mask, self.weight, self.bias, self.stride,
+            self.padding, self.dilation, self.groups, self.deformable_groups)
