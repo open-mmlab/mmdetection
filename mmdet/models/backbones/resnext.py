@@ -53,6 +53,7 @@ class Bottleneck(_Bottleneck):
                 groups=groups,
                 bias=False)
         else:
+            groups = self.dcn.get('groups', 1)
             deformable_groups = self.dcn.get('deformable_groups', 1)
             if not self.with_modulated_dcn:
                 conv_op = DeformConv
@@ -194,7 +195,8 @@ class ResNeXt(ResNet):
                 base_width=self.base_width,
                 style=self.style,
                 with_cp=self.with_cp,
-                normalize=self.normalize)
+                normalize=self.normalize,
+                dcn=self.dcn)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
