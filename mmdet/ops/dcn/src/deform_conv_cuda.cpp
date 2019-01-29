@@ -601,7 +601,8 @@ void modulated_deform_conv_cuda_backward(at::Tensor input, at::Tensor weight,
 
         columns = columns.view({group, columns.size(0) / group, columns.size(1)});
         grad_weight = grad_weight.view({group, grad_weight.size(0) / group, grad_weight.size(1), grad_weight.size(2), grad_weight.size(3)});
-        grad_bias = grad_bias.view({group, grad_bias.size(0) / group});
+        if (with_bias)
+            grad_bias = grad_bias.view({group, grad_bias.size(0) / group});
 
         for (int g = 0; g < group; g++){
             grad_weight[g] = grad_weight[g].flatten(1).addmm_(grad_output[b][g].flatten(1), columns[g].transpose(0, 1)).view_as(grad_weight[g]);
@@ -612,7 +613,8 @@ void modulated_deform_conv_cuda_backward(at::Tensor input, at::Tensor weight,
 
         columns = columns.view({columns.size(0) * columns.size(1), columns.size(2)});
         grad_weight = grad_weight.view({grad_weight.size(0) * grad_weight.size(1), grad_weight.size(2), grad_weight.size(3), grad_weight.size(4)});
-        grad_bias = grad_bias.view({grad_bias.size(0) * grad_bias.size(1)});
+        if (with_bias)
+            grad_bias = grad_bias.view({grad_bias.size(0) * grad_bias.size(1)});
     }
     grad_output = grad_output.view({grad_output.size(0) * grad_output.size(1), grad_output.size(2), grad_output.size(3), grad_output.size(4)});
 }

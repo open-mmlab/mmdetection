@@ -21,6 +21,13 @@ class DeformConv(nn.Module):
                  bias=False):
         assert not bias
         super(DeformConv, self).__init__()
+
+        assert in_channels % groups == 0, \
+            'in_channels {} cannot be divisible by groups {}'.format(
+                in_channels, groups)
+        assert out_channels % groups == 0, \
+            'out_channels {} cannot be divisible by groups {}'.format(
+                out_channels, groups)
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = _pair(kernel_size)
