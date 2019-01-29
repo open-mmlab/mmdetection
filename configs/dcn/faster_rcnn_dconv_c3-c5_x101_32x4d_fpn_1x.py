@@ -162,4 +162,3 @@ work_dir = './work_dirs/faster_rcnn_dconv_c3-c5_x101_32x4d_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-
