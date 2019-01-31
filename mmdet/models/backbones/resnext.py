@@ -183,6 +183,7 @@ class ResNeXt(ResNet):
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = self.strides[i]
             dilation = self.dilations[i]
+            dcn = self.dcn if self.stage_with_dcn[i] else None
             planes = 64 * 2**i
             res_layer = make_res_layer(
                 self.block,
@@ -196,7 +197,7 @@ class ResNeXt(ResNet):
                 style=self.style,
                 with_cp=self.with_cp,
                 normalize=self.normalize,
-                dcn=self.dcn)
+                dcn=dcn)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
