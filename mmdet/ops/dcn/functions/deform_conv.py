@@ -15,6 +15,7 @@ class DeformConvFunction(Function):
                 stride=1,
                 padding=0,
                 dilation=1,
+                groups=1,
                 deformable_groups=1,
                 im2col_step=64):
         if input is not None and input.dim() != 4:
@@ -24,6 +25,7 @@ class DeformConvFunction(Function):
         ctx.stride = _pair(stride)
         ctx.padding = _pair(padding)
         ctx.dilation = _pair(dilation)
+        ctx.groups = groups
         ctx.deformable_groups = deformable_groups
         ctx.im2col_step = im2col_step
 
@@ -45,7 +47,8 @@ class DeformConvFunction(Function):
                 input, weight, offset, output, ctx.bufs_[0], ctx.bufs_[1],
                 weight.size(3), weight.size(2), ctx.stride[1], ctx.stride[0],
                 ctx.padding[1], ctx.padding[0], ctx.dilation[1],
-                ctx.dilation[0], ctx.deformable_groups, cur_im2col_step)
+                ctx.dilation[0], ctx.groups, ctx.deformable_groups,
+                cur_im2col_step)
         return output
 
     @staticmethod
@@ -69,7 +72,8 @@ class DeformConvFunction(Function):
                     grad_offset, weight, ctx.bufs_[0], weight.size(3),
                     weight.size(2), ctx.stride[1], ctx.stride[0],
                     ctx.padding[1], ctx.padding[0], ctx.dilation[1],
-                    ctx.dilation[0], ctx.deformable_groups, cur_im2col_step)
+                    ctx.dilation[0], ctx.groups, ctx.deformable_groups,
+                    cur_im2col_step)
 
             if ctx.needs_input_grad[2]:
                 grad_weight = torch.zeros_like(weight)
@@ -78,9 +82,11 @@ class DeformConvFunction(Function):
                     grad_weight, ctx.bufs_[0], ctx.bufs_[1], weight.size(3),
                     weight.size(2), ctx.stride[1], ctx.stride[0],
                     ctx.padding[1], ctx.padding[0], ctx.dilation[1],
-                    ctx.dilation[0], ctx.deformable_groups, 1, cur_im2col_step)
+                    ctx.dilation[0], ctx.groups, ctx.deformable_groups, 1,
+                    cur_im2col_step)
 
-        return grad_input, grad_offset, grad_weight, None, None, None, None
+        return (grad_input, grad_offset, grad_weight, None, None, None, None,
+                None)
 
     @staticmethod
     def _output_size(input, weight, padding, dilation, stride):
@@ -111,10 +117,12 @@ class ModulatedDeformConvFunction(Function):
                 stride=1,
                 padding=0,
                 dilation=1,
+                groups=1,
                 deformable_groups=1):
         ctx.stride = stride
         ctx.padding = padding
         ctx.dilation = dilation
+        ctx.groups = groups
         ctx.deformable_groups = deformable_groups
         ctx.with_bias = bias is not None
         if not ctx.with_bias:
@@ -131,7 +139,7 @@ class ModulatedDeformConvFunction(Function):
             input, weight, bias, ctx._bufs[0], offset, mask, output,
             ctx._bufs[1], weight.shape[2], weight.shape[3], ctx.stride,
             ctx.stride, ctx.padding, ctx.padding, ctx.dilation, ctx.dilation,
-            ctx.deformable_groups, ctx.with_bias)
+            ctx.groups, ctx.deformable_groups, ctx.with_bias)
         return output
 
     @staticmethod
@@ -149,12 +157,12 @@ class ModulatedDeformConvFunction(Function):
             grad_input, grad_weight, grad_bias, grad_offset, grad_mask,
             grad_output, weight.shape[2], weight.shape[3], ctx.stride,
             ctx.stride, ctx.padding, ctx.padding, ctx.dilation, ctx.dilation,
-            ctx.deformable_groups, ctx.with_bias)
+            ctx.groups, ctx.deformable_groups, ctx.with_bias)
         if not ctx.with_bias:
             grad_bias = None
 
         return (grad_input, grad_offset, grad_mask, grad_weight, grad_bias,
-                None, None, None, None)
+                None, None, None, None, None)
 
     @staticmethod
     def _infer_shape(ctx, input, weight):
