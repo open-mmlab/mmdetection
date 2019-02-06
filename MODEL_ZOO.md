@@ -10,11 +10,17 @@
 ### Software environment
 
 - Python 3.6 / 3.7
-- PyTorch 0.4.1
+- PyTorch 1.0
 - CUDA 9.0.176
 - CUDNN 7.0.4
 - NCCL 2.1.15
 
+Note: The train time was measured with PyTorch 0.4.1. We will update it later, which should be about 0.02s ~ 0.05s faster.
+
+## Mirror sites
+
+We use AWS as the main site to host our model zoo, and maintain a mirror on aliyun.
+You can replace `https://s3.ap-northeast-2.amazonaws.com` with `https://open-mmlab.oss-cn-beijing.aliyuncs.com` in model urls.
 
 ## Common settings
 
