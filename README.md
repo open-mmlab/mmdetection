@@ -36,6 +36,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
 
+v0.5.7 (06/02/2019)
+- Add support for Deformable ConvNet v2. (Many thanks to the authors and [@chengdazhi](https://github.com/chengdazhi))
+- This is the last release based on PyTorch 0.4.1.
+
 v0.5.6 (17/01/2019)
 - Add support for Group Normalization.
 - Unify RPNHead and single stage heads (RetinaHead, SSDHead) with AnchorHead.
