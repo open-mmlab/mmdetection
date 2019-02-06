@@ -1,6 +1,8 @@
 from .two_stage import TwoStageDetector
+from ..registry import DETECTORS
 
 
+@DETECTORS.register_module
 class MaskRCNN(TwoStageDetector):
 
     def __init__(self,

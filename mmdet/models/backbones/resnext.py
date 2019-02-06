@@ -2,8 +2,11 @@ import math
 
 import torch.nn as nn
 
-from .resnet import ResNet
+from mmdet.ops import DeformConv, ModulatedDeformConv
 from .resnet import Bottleneck as _Bottleneck
+from .resnet import ResNet
+from ..registry import BACKBONES
+from ..utils import build_norm_layer
 
 
 class Bottleneck(_Bottleneck):
@@ -20,26 +23,65 @@ class Bottleneck(_Bottleneck):
         else:
             width = math.floor(self.planes * (base_width / 64)) * groups
 
+        self.norm1_name, norm1 = build_norm_layer(
+            self.normalize, width, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(
+            self.normalize, width, postfix=2)
+        self.norm3_name, norm3 = build_norm_layer(
+            self.normalize, self.planes * self.expansion, postfix=3)
+
         self.conv1 = nn.Conv2d(
             self.inplanes,
             width,
             kernel_size=1,
             stride=self.conv1_stride,
             bias=False)
-        self.bn1 = nn.BatchNorm2d(width)
-        self.conv2 = nn.Conv2d(
-            width,
-            width,
-            kernel_size=3,
-            stride=self.conv2_stride,
-            padding=self.dilation,
-            dilation=self.dilation,
-            groups=groups,
-            bias=False)
-        self.bn2 = nn.BatchNorm2d(width)
+        self.add_module(self.norm1_name, norm1)
+        fallback_on_stride = False
+        self.with_modulated_dcn = False
+        if self.with_dcn:
+            fallback_on_stride = self.dcn.get('fallback_on_stride', False)
+            self.with_modulated_dcn = self.dcn.get('modulated', False)
+        if not self.with_dcn or fallback_on_stride:
+            self.conv2 = nn.Conv2d(
+                width,
+                width,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=self.dilation,
+                dilation=self.dilation,
+                groups=groups,
+                bias=False)
+        else:
+            groups = self.dcn.get('groups', 1)
+            deformable_groups = self.dcn.get('deformable_groups', 1)
+            if not self.with_modulated_dcn:
+                conv_op = DeformConv
+                offset_channels = 18
+            else:
+                conv_op = ModulatedDeformConv
+                offset_channels = 27
+            self.conv2_offset = nn.Conv2d(
+                width,
+                deformable_groups * offset_channels,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=self.dilation,
+                dilation=self.dilation)
+            self.conv2 = conv_op(
+                width,
+                width,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=self.dilation,
+                dilation=self.dilation,
+                groups=groups,
+                deformable_groups=deformable_groups,
+                bias=False)
+        self.add_module(self.norm2_name, norm2)
         self.conv3 = nn.Conv2d(
             width, self.planes * self.expansion, kernel_size=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(self.planes * self.expansion)
+        self.add_module(self.norm3_name, norm3)
 
 
 def make_res_layer(block,
@@ -51,7 +93,9 @@ def make_res_layer(block,
                    groups=1,
                    base_width=4,
                    style='pytorch',
-                   with_cp=False):
+                   with_cp=False,
+                   normalize=dict(type='BN'),
+                   dcn=None):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
         downsample = nn.Sequential(
@@ -61,7 +105,7 @@ def make_res_layer(block,
                 kernel_size=1,
                 stride=stride,
                 bias=False),
-            nn.BatchNorm2d(planes * block.expansion),
+            build_norm_layer(normalize, planes * block.expansion)[1],
         )
 
     layers = []
@@ -75,7 +119,9 @@ def make_res_layer(block,
             groups=groups,
             base_width=base_width,
             style=style,
-            with_cp=with_cp))
+            with_cp=with_cp,
+            normalize=normalize,
+            dcn=dcn))
     inplanes = planes * block.expansion
     for i in range(1, blocks):
         layers.append(
@@ -87,11 +133,14 @@ def make_res_layer(block,
                 groups=groups,
                 base_width=base_width,
                 style=style,
-                with_cp=with_cp))
+                with_cp=with_cp,
+                normalize=normalize,
+                dcn=dcn))
 
     return nn.Sequential(*layers)
 
 
+@BACKBONES.register_module
 class ResNeXt(ResNet):
     """ResNeXt backbone.
 
@@ -108,11 +157,14 @@ class ResNeXt(ResNet):
             the first 1x1 conv layer.
         frozen_stages (int): Stages to be frozen (all param fixed). -1 means
             not freezing any parameters.
-        bn_eval (bool): Whether to set BN layers to eval mode, namely, freeze
-            running stats (mean and var).
-        bn_frozen (bool): Whether to freeze weight and bias of BN layers.
+        normalize (dict): dictionary to construct and config norm layer.
+        norm_eval (bool): Whether to set norm layers to eval mode, namely,
+            freeze running stats (mean and var). Note: Effect on Batch Norm
+            and its variants only.
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
+        zero_init_residual (bool): whether to use zero init for last norm layer
+            in resblocks to let them behave as identity.
     """
 
     arch_settings = {
@@ -131,6 +183,7 @@ class ResNeXt(ResNet):
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = self.strides[i]
             dilation = self.dilations[i]
+            dcn = self.dcn if self.stage_with_dcn[i] else None
             planes = 64 * 2**i
             res_layer = make_res_layer(
                 self.block,
@@ -142,8 +195,12 @@ class ResNeXt(ResNet):
                 groups=self.groups,
                 base_width=self.base_width,
                 style=self.style,
-                with_cp=self.with_cp)
+                with_cp=self.with_cp,
+                normalize=self.normalize,
+                dcn=dcn)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
+
+        self._freeze_stages()

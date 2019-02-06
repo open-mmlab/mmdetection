@@ -4,8 +4,10 @@ from mmdet.core import tensor2imgs, bbox_mapping
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
+from ..registry import DETECTORS
 
 
+@DETECTORS.register_module
 class RPN(BaseDetector, RPNTestMixin):
 
     def __init__(self,
@@ -18,7 +20,7 @@ class RPN(BaseDetector, RPNTestMixin):
         super(RPN, self).__init__()
         self.backbone = builder.build_backbone(backbone)
         self.neck = builder.build_neck(neck) if neck is not None else None
-        self.rpn_head = builder.build_rpn_head(rpn_head)
+        self.rpn_head = builder.build_head(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.init_weights(pretrained=pretrained)

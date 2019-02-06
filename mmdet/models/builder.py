@@ -1,57 +1,51 @@
-from mmcv.runner import obj_from_dict
+import mmcv
 from torch import nn
 
-from . import (backbones, necks, roi_extractors, rpn_heads, bbox_heads,
-               mask_heads, single_stage_heads)
-
-__all__ = [
-    'build_backbone', 'build_neck', 'build_rpn_head', 'build_roi_extractor',
-    'build_bbox_head', 'build_mask_head', 'build_single_stage_head',
-    'build_detector'
-]
+from .registry import BACKBONES, NECKS, ROI_EXTRACTORS, HEADS, DETECTORS
 
 
-def _build_module(cfg, parrent=None, default_args=None):
-    return cfg if isinstance(cfg, nn.Module) else obj_from_dict(
-        cfg, parrent, default_args)
+def _build_module(cfg, registry, default_args):
+    assert isinstance(cfg, dict) and 'type' in cfg
+    assert isinstance(default_args, dict) or default_args is None
+    args = cfg.copy()
+    obj_type = args.pop('type')
+    if mmcv.is_str(obj_type):
+        if obj_type not in registry.module_dict:
+            raise KeyError('{} is not in the {} registry'.format(
+                obj_type, registry.name))
+        obj_type = registry.module_dict[obj_type]
+    elif not isinstance(obj_type, type):
+        raise TypeError('type must be a str or valid type, but got {}'.format(
+            type(obj_type)))
+    if default_args is not None:
+        for name, value in default_args.items():
+            args.setdefault(name, value)
+    return obj_type(**args)
 
 
-def build(cfg, parrent=None, default_args=None):
+def build(cfg, registry, default_args=None):
     if isinstance(cfg, list):
-        modules = [_build_module(cfg_, parrent, default_args) for cfg_ in cfg]
+        modules = [_build_module(cfg_, registry, default_args) for cfg_ in cfg]
         return nn.Sequential(*modules)
     else:
-        return _build_module(cfg, parrent, default_args)
+        return _build_module(cfg, registry, default_args)
 
 
 def build_backbone(cfg):
-    return build(cfg, backbones)
+    return build(cfg, BACKBONES)
 
 
 def build_neck(cfg):
-    return build(cfg, necks)
-
-
-def build_rpn_head(cfg):
-    return build(cfg, rpn_heads)
+    return build(cfg, NECKS)
 
 
 def build_roi_extractor(cfg):
-    return build(cfg, roi_extractors)
+    return build(cfg, ROI_EXTRACTORS)
 
 
-def build_bbox_head(cfg):
-    return build(cfg, bbox_heads)
-
-
-def build_mask_head(cfg):
-    return build(cfg, mask_heads)
-
-
-def build_single_stage_head(cfg):
-    return build(cfg, single_stage_heads)
+def build_head(cfg):
+    return build(cfg, HEADS)
 
 
 def build_detector(cfg, train_cfg=None, test_cfg=None):
-    from . import detectors
-    return build(cfg, detectors, dict(train_cfg=train_cfg, test_cfg=test_cfg))
+    return build(cfg, DETECTORS, dict(train_cfg=train_cfg, test_cfg=test_cfg))
