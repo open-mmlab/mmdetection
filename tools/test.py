@@ -23,7 +23,7 @@ def single_test(model, data_loader, show=False):
 
         if show:
             model.module.show_result(data, result, dataset.img_norm_cfg,
-                                     dataset.CLASSES)
+                                     dataset=dataset.CLASSES)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -66,6 +66,9 @@ def main():
         raise ValueError('The output file must be a pkl file.')
 
     cfg = mmcv.Config.fromfile(args.config)
+    # set cudnn_benchmark
+    if cfg.get('cudnn_benchmark', False):
+        torch.backends.cudnn.benchmark = True
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 

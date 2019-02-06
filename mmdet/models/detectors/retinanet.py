@@ -1,6 +1,8 @@
 from .single_stage import SingleStageDetector
+from ..registry import DETECTORS
 
 
+@DETECTORS.register_module
 class RetinaNet(SingleStageDetector):
 
     def __init__(self,

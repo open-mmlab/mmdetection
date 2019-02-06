@@ -6,10 +6,12 @@ import torch.nn as nn
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
+from ..registry import DETECTORS
 from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply,
                         merge_aug_masks)
 
 
+@DETECTORS.register_module
 class CascadeRCNN(BaseDetector, RPNTestMixin):
 
     def __init__(self,
@@ -37,7 +39,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             raise NotImplementedError
 
         if rpn_head is not None:
-            self.rpn_head = builder.build_rpn_head(rpn_head)
+            self.rpn_head = builder.build_head(rpn_head)
 
         if bbox_head is not None:
             self.bbox_roi_extractor = nn.ModuleList()
@@ -52,7 +54,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             for roi_extractor, head in zip(bbox_roi_extractor, bbox_head):
                 self.bbox_roi_extractor.append(
                     builder.build_roi_extractor(roi_extractor))
-                self.bbox_head.append(builder.build_bbox_head(head))
+                self.bbox_head.append(builder.build_head(head))
 
         if mask_head is not None:
             self.mask_roi_extractor = nn.ModuleList()
@@ -67,7 +69,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             for roi_extractor, head in zip(mask_roi_extractor, mask_head):
                 self.mask_roi_extractor.append(
                     builder.build_roi_extractor(roi_extractor))
-                self.mask_head.append(builder.build_mask_head(head))
+                self.mask_head.append(builder.build_head(head))
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -123,7 +125,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             losses.update(rpn_losses)
 
             proposal_inputs = rpn_outs + (img_meta, self.test_cfg.rpn)
-            proposal_list = self.rpn_head.get_proposals(*proposal_inputs)
+            proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         else:
             proposal_list = proposals
 
