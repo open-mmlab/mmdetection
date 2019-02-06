@@ -1,8 +1,6 @@
 #include <ATen/ATen.h>
 #include <THC/THCAtomics.cuh>
 
-using namespace at;  // temporal fix for pytorch<=0.4.1 (see #9848)
-
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; \
        i += blockDim.x * gridDim.x)
@@ -100,11 +98,7 @@ int ROIPoolForwardLaucher(const at::Tensor features, const at::Tensor rois,
                 channels, height, width, pooled_h, pooled_w, top_data,
                 argmax_data);
       }));
-  cudaError_t err = cudaGetLastError();
-  if (cudaSuccess != err) {
-    fprintf(stderr, "cudaCheckError() failed : %s\n", cudaGetErrorString(err));
-    exit(-1);
-  }
+  THCudaCheck(cudaGetLastError());
   return 1;
 }
 
@@ -139,8 +133,7 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
                            const int pooled_w, at::Tensor bottom_grad) {
   const int output_size = num_rois * pooled_h * pooled_w * channels;
 
-  // TODO: use AT_DISPATCH_FLOATING_TYPES_AND_HALF when atomicAdd is resolved
-  AT_DISPATCH_FLOATING_TYPES(
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       top_grad.type(), "ROIPoolLaucherBackward", ([&] {
         const scalar_t *top_diff = top_grad.data<scalar_t>();
         const scalar_t *rois_data = rois.data<scalar_t>();
@@ -158,11 +151,6 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
                 scalar_t(spatial_scale), channels, height, width, pooled_h,
                 pooled_w, bottom_diff);
       }));
-  cudaError_t err = cudaGetLastError();
-  if (cudaSuccess != err) {
-    fprintf(stderr, "cudaCheckError() failed : %s\n", cudaGetErrorString(err));
-    exit(-1);
-  }
-
+  THCudaCheck(cudaGetLastError());
   return 1;
 }
