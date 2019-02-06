@@ -16,7 +16,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
             foreground).
 
     Returns:
-        ious(Tensor): shape (n, k) if is_aligned == False else shape (n, 1)
+        ious(Tensor): shape (m, n) if is_aligned == False else shape (m, 1)
     """
 
     assert mode in ['iou', 'iof']

@@ -78,6 +78,7 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 | RetinaNet          | ✓        | ✓        | ☐        | ✗        |
 
 Other features
+- [x] DCNv2
 - [x] Group Normalization
 - [x] OHEM
 - [x] Soft-NMS
