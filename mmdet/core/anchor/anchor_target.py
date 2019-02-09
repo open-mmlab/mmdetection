@@ -158,8 +158,7 @@ def anchor_target_single(flat_anchors,
 
 
 def expand_binary_labels(labels, label_weights, label_channels):
-    bin_labels = labels.new_full(
-        (labels.size(0), label_channels), 0, dtype=torch.float32)
+    bin_labels = labels.new_full((labels.size(0), label_channels), 0)
     inds = torch.nonzero(labels >= 1).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds] - 1] = 1
