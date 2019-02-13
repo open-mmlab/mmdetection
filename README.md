@@ -184,7 +184,7 @@ We provide a training script using the launch utility provided by PyTorch.
 Supported arguments are:
 
 - --validate: perform evaluation every k (default=1) epochs during the training.
-- --work_dir <WORK_DIR>: if specified, the path in config file will be overwritten.
+- --work_dir <WORK_DIR>: if specified, the path in config file will be replaced.
 
 Expected results in WORK_DIR:
 
