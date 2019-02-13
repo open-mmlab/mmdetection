@@ -22,9 +22,7 @@ class Registry(object):
             module (:obj:`nn.Module`): Module to be registered.
         """
         if not issubclass(module_class, nn.Module):
-            raise TypeError(
-                'module must be a child of nn.Module, but got {}'.format(
-                    type(module_class)))
+            raise TypeError(f'module must be a child of nn.Module, but got {module_class}')
         module_name = module_class.__name__
         if module_name in self._module_dict:
             raise KeyError('{} is already registered in {}'.format(
