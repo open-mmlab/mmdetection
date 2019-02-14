@@ -71,7 +71,7 @@ class RPN(BaseDetector, RPNTestMixin):
         # TODO: remove this restriction
         return proposal_list[0].cpu().numpy()
 
-    def show_result(self, data, result, img_norm_cfg):
+    def show_result(self, data, result, img_norm_cfg, dataset=None, top_k=20):
         """Show RPN proposals on the image.
 
         Although we assume batch size is 1, this method supports arbitrary
@@ -84,4 +84,4 @@ class RPN(BaseDetector, RPNTestMixin):
         for img, img_meta in zip(imgs, img_metas):
             h, w, _ = img_meta['img_shape']
             img_show = img[:h, :w, :]
-            mmcv.imshow_bboxes(img_show, result, top_k=20)
+            mmcv.imshow_bboxes(img_show, result, top_k=top_k)
