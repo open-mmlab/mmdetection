@@ -2,7 +2,7 @@
 fp16 = dict(loss_scale=512)
 
 # model settings
-normalize = dict(type='BN_FP16')
+normalize = dict(type='BN', fp16=True)
 
 model = dict(
     type='MaskRCNN',

@@ -36,13 +36,44 @@ def bn_convert_float(module):
     return module
 
 
-class WrapedBN(nn.BatchNorm2d):
+class WrappedBN(nn.BatchNorm2d):
+
+    def __init__(self,
+                 num_features,
+                 eps=1e-5,
+                 momentum=0.1,
+                 affine=True,
+                 track_running_stats=True,
+                 fp16=False):
+        super(WrappedBN, self).__init__(
+            num_features,
+            eps=eps,
+            momentum=momentum,
+            affine=affine,
+            track_running_stats=track_running_stats)
+        self.fp16 = fp16
 
     def forward(self, input):
-        return super(WrapedBN, self).forward(input.float()).half()
+        if self.fp16:
+            return super(WrappedBN, self).forward(input.float()).half()
+        else:
+            return super(WrappedBN, self).forward(input)
 
 
-class WrapedGN(nn.GroupNorm):
+class WrappedGN(nn.GroupNorm):
+
+    def __init__(self,
+                 num_groups,
+                 num_channels,
+                 eps=1e-5,
+                 affine=True,
+                 fp16=False):
+        super(WrappedGN, self).__init__(
+            num_groups, num_channels, eps=eps, affine=affine)
+        self.fp16 = fp16
 
     def forward(self, input):
-        return super(WrapedGN, self).forward(input.float()).half()
+        if self.fp16:
+            return super(WrappedGN, self).forward(input.float()).half()
+        else:
+            return super(WrappedGN, self).forward(input)
