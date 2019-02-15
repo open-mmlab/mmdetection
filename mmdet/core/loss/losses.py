@@ -35,6 +35,7 @@ def sigmoid_focal_loss(pred,
                        alpha=0.25,
                        reduction='mean'):
     pred_sigmoid = pred.float().sigmoid()
+    target = target.type_as(pred)
     pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
     weight = (alpha * target + (1 - alpha) * (1 - target)) * weight
     weight = weight * pt.pow(gamma)

@@ -11,8 +11,8 @@ def readme():
 
 
 MAJOR = 0
-MINOR = 5
-PATCH = 6
+MINOR = 6
+PATCH = 'rc0'
 SUFFIX = ''
 SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
 
