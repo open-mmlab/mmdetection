@@ -34,8 +34,10 @@ class BasicBlock(nn.Module):
                  downsample=None,
                  style='pytorch',
                  with_cp=False,
-                 normalize=dict(type='BN')):
+                 normalize=dict(type='BN'),
+                 dcn=None):
         super(BasicBlock, self).__init__()
+        assert dcn is None, "Not implemented yet."
 
         self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
