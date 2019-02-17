@@ -331,8 +331,7 @@ class ResNet(nn.Module):
         assert num_stages >= 1 and num_stages <= 4
         self.strides = strides
         self.dilations = dilations
-        assert len(strides) == len(dilations) == len(
-            stage_with_dcn) == num_stages
+        assert len(strides) == len(dilations) == num_stages
         self.out_indices = out_indices
         assert max(out_indices) < num_stages
         self.style = style
@@ -342,6 +341,8 @@ class ResNet(nn.Module):
         self.norm_eval = norm_eval
         self.dcn = dcn
         self.stage_with_dcn = stage_with_dcn
+        if dcn is not None:
+            assert len(stage_with_dcn) == num_stages
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
