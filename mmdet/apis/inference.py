@@ -10,7 +10,9 @@ from mmdet.core import get_classes
 def _prepare_data(img, img_transform, cfg, device):
     ori_shape = img.shape
     img, img_shape, pad_shape, scale_factor = img_transform(
-        img, scale=cfg.data.test.img_scale)
+        img,
+        scale=cfg.data.test.img_scale,
+        keep_ratio=cfg.data.test.get('resize_keep_ratio', True))
     img = to_tensor(img).to(device).unsqueeze(0)
     img_meta = [
         dict(
