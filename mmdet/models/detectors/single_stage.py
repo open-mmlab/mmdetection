@@ -42,11 +42,17 @@ class SingleStageDetector(BaseDetector):
             x = self.neck(x)
         return x
 
-    def forward_train(self, img, img_metas, gt_bboxes, gt_labels):
+    def forward_train(self,
+                      img,
+                      img_metas,
+                      gt_bboxes,
+                      gt_labels,
+                      gt_bboxes_ignore=None):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
         loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
-        losses = self.bbox_head.loss(*loss_inputs)
+        losses = self.bbox_head.loss(
+            *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
     def simple_test(self, img, img_meta, rescale=False):
