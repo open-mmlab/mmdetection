@@ -109,8 +109,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                       img,
                       img_meta,
                       gt_bboxes,
-                      gt_bboxes_ignore,
                       gt_labels,
+                      gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None):
         x = self.extract_feat(img)
@@ -121,7 +121,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             rpn_outs = self.rpn_head(x)
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
                                           self.train_cfg.rpn)
-            rpn_losses = self.rpn_head.loss(*rpn_loss_inputs)
+            rpn_losses = self.rpn_head.loss(
+                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
             losses.update(rpn_losses)
 
             proposal_inputs = rpn_outs + (img_meta, self.test_cfg.rpn)
