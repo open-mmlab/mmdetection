@@ -185,14 +185,14 @@ class CustomDataset(Dataset):
         if self.with_crowd:
             gt_bboxes_ignore = ann['bboxes_ignore']
 
-        # skip the image if there is no valid gt bbox
-        if len(gt_bboxes) == 0:
-            return None
-
         # extra augmentation
         if self.extra_aug is not None:
             img, gt_bboxes, gt_labels = self.extra_aug(img, gt_bboxes,
                                                        gt_labels)
+
+        # skip the image if there is no valid gt bbox
+        if len(gt_bboxes) == 0:
+            return None
 
         # apply transforms
         flip = True if np.random.rand() < self.flip_ratio else False

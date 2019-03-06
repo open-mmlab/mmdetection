@@ -1,5 +1,7 @@
+import albumentations as A
 import mmcv
 import numpy as np
+from mmcv.runner import obj_from_dict
 from numpy import random
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -143,12 +145,28 @@ class RandomCrop(object):
                 return img, boxes, labels
 
 
+class Albumentation(object):
+
+    def __init__(self, **kwargs):
+        self.transform = self.transform_from_dict(**kwargs)
+
+    def transform_from_dict(self, **kwargs):
+        if 'transforms' in kwargs:
+            kwargs['transforms'] = [self.transform_from_dict(**transform) for transform in kwargs['transforms']]
+        return obj_from_dict(kwargs, A)
+
+    def __call__(self, img, bboxes, labels):
+        data = self.transform(image=img, bboxes=bboxes, labels=labels)
+        return data['image'], np.array(data['bboxes'], dtype=np.float32), np.array(data['labels'], dtype=np.int)
+
+
 class ExtraAugmentation(object):
 
     def __init__(self,
                  photo_metric_distortion=None,
                  expand=None,
-                 random_crop=None):
+                 random_crop=None,
+                 albumentation=None):
         self.transforms = []
         if photo_metric_distortion is not None:
             self.transforms.append(
@@ -157,9 +175,12 @@ class ExtraAugmentation(object):
             self.transforms.append(Expand(**expand))
         if random_crop is not None:
             self.transforms.append(RandomCrop(**random_crop))
+        if albumentation is not None:
+            self.transforms.append(Albumentation(**albumentation))
 
     def __call__(self, img, boxes, labels):
         img = img.astype(np.float32)
         for transform in self.transforms:
             img, boxes, labels = transform(img, boxes, labels)
         return img, boxes, labels
+
