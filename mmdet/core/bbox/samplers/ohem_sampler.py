@@ -12,7 +12,7 @@ class OHEMSampler(BaseSampler):
                  context,
                  neg_pos_ub=-1,
                  add_gt_as_proposals=True,
-                 stages = 0,
+                 stages=0,
                  **kwargs):
         super(OHEMSampler, self).__init__(num, pos_fraction, neg_pos_ub,
                                           add_gt_as_proposals)

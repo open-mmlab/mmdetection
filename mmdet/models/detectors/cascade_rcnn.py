@@ -138,7 +138,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             if self.with_bbox or self.with_mask:
                 bbox_assigner = build_assigner(rcnn_train_cfg.assigner)
                 bbox_sampler = build_sampler(
-                    rcnn_train_cfg.sampler, context=self, stages = i)
+                    rcnn_train_cfg.sampler, context=self, stages=i)
                 num_imgs = img.size(0)
                 if gt_bboxes_ignore is None:
                     gt_bboxes_ignore = [None for _ in range(num_imgs)]
