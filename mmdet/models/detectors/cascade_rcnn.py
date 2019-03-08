@@ -7,7 +7,7 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply,
+from mmdet.core import (bbox2roi, bbox2result,
                         merge_aug_masks)
 from mmdet.core import build_assigner, build_sampler
 
