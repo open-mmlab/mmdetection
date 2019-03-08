@@ -142,7 +142,6 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 num_imgs = img.size(0)
                 if gt_bboxes_ignore is None:
                     gt_bboxes_ignore = [None for _ in range(num_imgs)]
-                
                 for j in range(num_imgs):
                     assign_result = bbox_assigner.assign(
                         proposal_list[j], gt_bboxes[j], gt_bboxes_ignore[j],
