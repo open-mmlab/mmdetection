@@ -12,11 +12,16 @@ class OHEMSampler(BaseSampler):
                  context,
                  neg_pos_ub=-1,
                  add_gt_as_proposals=True,
+                 stages = 0,
                  **kwargs):
         super(OHEMSampler, self).__init__(num, pos_fraction, neg_pos_ub,
                                           add_gt_as_proposals)
-        self.bbox_roi_extractor = context.bbox_roi_extractor
-        self.bbox_head = context.bbox_head
+        if not hasattr(context, "num_stages"):
+            self.bbox_roi_extractor = context.bbox_roi_extractor
+            self.bbox_head = context.bbox_head
+        else:
+            self.bbox_roi_extractor = context.bbox_roi_extractor[stages]
+            self.bbox_head = context.bbox_head[stages]
 
     def hard_mining(self, inds, num_expected, bboxes, labels, feats):
         with torch.no_grad():
