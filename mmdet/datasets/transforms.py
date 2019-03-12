@@ -76,8 +76,8 @@ class BboxTransform(object):
         gt_bboxes = bboxes * scale_factor
         if flip:
             gt_bboxes = bbox_flip(gt_bboxes, img_shape)
-        gt_bboxes[:, 0::2] = np.clip(gt_bboxes[:, 0::2], 0, img_shape[1])
-        gt_bboxes[:, 1::2] = np.clip(gt_bboxes[:, 1::2], 0, img_shape[0])
+        gt_bboxes[:, 0::2] = np.clip(gt_bboxes[:, 0::2], 0, img_shape[1] - 1)
+        gt_bboxes[:, 1::2] = np.clip(gt_bboxes[:, 1::2], 0, img_shape[0] - 1)
         if self.max_num_gts is None:
             return gt_bboxes
         else:
