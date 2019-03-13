@@ -162,7 +162,9 @@ show_result(img, result)
 imgs = ['test1.jpg', 'test2.jpg']
 for i, result in enumerate(inference_detector(model, imgs, cfg, device='cuda:0')):
     print(i, imgs[i])
-    show_result(imgs[i], result)
+    # bbox:result[0]
+    # segms:result[1]
+    show_result(imgs[i], result[0])
 ```
 
 
