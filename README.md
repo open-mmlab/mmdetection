@@ -153,11 +153,6 @@ cfg.model.pretrained = None
 model = build_detector(cfg.model, test_cfg=cfg.test_cfg)
 _ = load_checkpoint(model, 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth')
 
-# if your model contains mask branch.
-# then results[0] is bboxex, result[1] is mask segms
-# you should use result[0] instead of result to visualize bbox
-# mask visualization is in process.
-
 # test a single image
 img = mmcv.imread('test.jpg')
 result = inference_detector(model, img, cfg)
