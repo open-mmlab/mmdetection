@@ -53,7 +53,7 @@ def inference_detector(model, imgs, cfg, device='cuda:0'):
 def show_result(img, result, dataset='coco', score_thr=0.3):
     class_names = get_classes(dataset)
     labels = [
-        np.full(bbox.shape[0], i, dtype=np.int32)
+        np.full(len(bbox), i, dtype=np.int32)
         for i, bbox in enumerate(result)
     ]
     labels = np.concatenate(labels)
