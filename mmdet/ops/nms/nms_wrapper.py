@@ -57,7 +57,7 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
         min_score=min_score)
 
     if is_tensor:
-        return dets.new_tensor(new_dets), dets.new_tensor(
-            inds, dtype=torch.long)
+        return dets.new_tensor(new_dets, device=dets.device), dets.new_tensor(
+            inds, dtype=torch.long, device=dets.device)
     else:
         return new_dets.astype(np.float32), inds.astype(np.int64)
