@@ -1,6 +1,6 @@
 from torch.autograd import Function
 
-from .. import roi_align_cuda
+from .. import roi_align_cuda, roi_align_cpu
 
 
 class RoIAlignFunction(Function):
@@ -31,8 +31,8 @@ class RoIAlignFunction(Function):
             roi_align_cuda.forward(features, rois, out_h, out_w, spatial_scale,
                                    sample_num, output)
         else:
-            raise NotImplementedError
-
+            roi_align_cpu.forward(features, rois, out_h, out_w, spatial_scale,
+                                  sample_num, output)
         return output
 
     @staticmethod

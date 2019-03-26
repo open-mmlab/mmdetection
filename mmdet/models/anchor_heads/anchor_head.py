@@ -218,10 +218,10 @@ class AnchorHead(nn.Module):
                    rescale=False):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
-
         mlvl_anchors = [
             self.anchor_generators[i].grid_anchors(cls_scores[i].size()[-2:],
-                                                   self.anchor_strides[i])
+                                                   self.anchor_strides[i],
+                                                   device=cls_scores[i].device)
             for i in range(num_levels)
         ]
         result_list = []

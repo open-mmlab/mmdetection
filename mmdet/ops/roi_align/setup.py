@@ -10,3 +10,13 @@ setup(
         ]),
     ],
     cmdclass={'build_ext': BuildExtension})
+
+
+setup(
+    name='roi_align_cpu',
+    ext_modules=[
+        CUDAExtension('roi_align_cpu', [
+            'src/roi_align_cpu.cpp'
+        ]),
+    ],
+    cmdclass={'build_ext': BuildExtension})
