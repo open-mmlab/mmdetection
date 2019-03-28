@@ -7,9 +7,8 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import (bbox2roi, bbox2result,
+from mmdet.core import (build_assigner, bbox2roi, bbox2result, build_sampler,
                         merge_aug_masks)
-from mmdet.core import build_assigner, build_sampler
 
 
 @DETECTORS.register_module
@@ -30,6 +29,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
         super(CascadeRCNN, self).__init__()
+        
         self.num_stages = num_stages
         self.backbone = builder.build_backbone(backbone)
 
@@ -109,8 +109,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                       img,
                       img_meta,
                       gt_bboxes,
-                      gt_bboxes_ignore,
                       gt_labels,
+                      gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None):
         x = self.extract_feat(img)
@@ -121,7 +121,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             rpn_outs = self.rpn_head(x)
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
                                           self.train_cfg.rpn)
-            rpn_losses = self.rpn_head.loss(*rpn_loss_inputs)
+            rpn_losses = self.rpn_head.loss(
+            *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
             losses.update(rpn_losses)
 
             proposal_inputs = rpn_outs + (img_meta, self.test_cfg.rpn)
@@ -130,6 +131,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             proposal_list = proposals
 
         for i in range(self.num_stages):
+            self.current_stage = i
             rcnn_train_cfg = self.train_cfg.rcnn[i]
             lw = self.train_cfg.stage_loss_weights[i]
 
@@ -138,10 +140,11 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             if self.with_bbox or self.with_mask:
                 bbox_assigner = build_assigner(rcnn_train_cfg.assigner)
                 bbox_sampler = build_sampler(
-                    rcnn_train_cfg.sampler, context=self, stages=i)
+                    rcnn_train_cfg.sampler, context=self)
                 num_imgs = img.size(0)
                 if gt_bboxes_ignore is None:
                     gt_bboxes_ignore = [None for _ in range(num_imgs)]
+                
                 for j in range(num_imgs):
                     assign_result = bbox_assigner.assign(
                         proposal_list[j], gt_bboxes[j], gt_bboxes_ignore[j],
