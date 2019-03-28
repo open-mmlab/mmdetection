@@ -29,8 +29,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
         super(CascadeRCNN, self).__init__()
-        
-        self.num_stages=num_stages
+
+        self.num_stages = num_stages
         self.backbone = builder.build_backbone(backbone)
 
         if neck is not None:
