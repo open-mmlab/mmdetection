@@ -30,7 +30,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         assert bbox_head is not None
         super(CascadeRCNN, self).__init__()
         
-        self.num_stages = num_stages
+        self.num_stages=num_stages
         self.backbone = builder.build_backbone(backbone)
 
         if neck is not None:
@@ -122,7 +122,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
                                           self.train_cfg.rpn)
             rpn_losses = self.rpn_head.loss(
-            *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
             losses.update(rpn_losses)
 
             proposal_inputs = rpn_outs + (img_meta, self.test_cfg.rpn)
@@ -144,7 +144,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 num_imgs = img.size(0)
                 if gt_bboxes_ignore is None:
                     gt_bboxes_ignore = [None for _ in range(num_imgs)]
-                
+
                 for j in range(num_imgs):
                     assign_result = bbox_assigner.assign(
                         proposal_list[j], gt_bboxes[j], gt_bboxes_ignore[j],

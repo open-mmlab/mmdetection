@@ -19,7 +19,8 @@ class OHEMSampler(BaseSampler):
             self.bbox_roi_extractor = context.bbox_roi_extractor
             self.bbox_head = context.bbox_head
         else:
-            self.bbox_roi_extractor = context.bbox_roi_extractor[context.current_stage]
+            self.bbox_roi_extractor = context.bbox_roi_extractor[
+                context.current_stage]
             self.bbox_head = context.bbox_head[context.current_stage]
 
     def hard_mining(self, inds, num_expected, bboxes, labels, feats):
