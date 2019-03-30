@@ -60,3 +60,15 @@ mmdetection
 ### Scripts
 Just for reference, [Here](https://gist.github.com/hellock/bf23cd7348c727d69d48682cb6909047) is
 a script for setting up mmdetection with conda.
+
+### Notice
+You need to rerun `python(3) setup.py install` once you made any modifications to mmdetection.
+As alternative approaches, you can also insert following code to the main file
+```python
+import os, sys
+sys.path.insert(0, os.path.join(os.getcwd(), '../'))
+```
+or run following command in the terminal of corresponding folder.
+```shell
+export PYTHONPATH=`pwd`:$PYTHONPATH
+```
