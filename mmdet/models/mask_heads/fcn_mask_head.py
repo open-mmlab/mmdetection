@@ -49,7 +49,7 @@ class FCNMaskHead(nn.Module):
                 ConvModule(
                     in_channels,
                     self.conv_out_channels,
-                    3,
+                    self.conv_kernel_size,
                     padding=padding,
                     normalize=normalize,
                     bias=self.with_bias))

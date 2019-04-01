@@ -38,7 +38,11 @@ class RPN(BaseDetector, RPNTestMixin):
             x = self.neck(x)
         return x
 
-    def forward_train(self, img, img_meta, gt_bboxes=None):
+    def forward_train(self,
+                      img,
+                      img_meta,
+                      gt_bboxes=None,
+                      gt_bboxes_ignore=None):
         if self.train_cfg.rpn.get('debug', False):
             self.rpn_head.debug_imgs = tensor2imgs(img)
 
@@ -46,7 +50,8 @@ class RPN(BaseDetector, RPNTestMixin):
         rpn_outs = self.rpn_head(x)
 
         rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta, self.train_cfg.rpn)
-        losses = self.rpn_head.loss(*rpn_loss_inputs)
+        losses = self.rpn_head.loss(
+            *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
     def simple_test(self, img, img_meta, rescale=False):
