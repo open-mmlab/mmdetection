@@ -147,10 +147,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             bbox_roi_extractor = self.bbox_roi_extractor[i]
             bbox_head = self.bbox_head[i]
 
-            rois = bbox2roi([res.bboxes for res in sampling_results]).type_as(
-                x[0])
+            rois = bbox2roi([res.bboxes for res in sampling_results])
             bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
-                                            rois)
+                                            rois.type_as(x[0]))
             cls_score, bbox_pred = bbox_head(bbox_feats)
 
             bbox_targets = bbox_head.get_target(sampling_results, gt_bboxes,
@@ -210,7 +209,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             bbox_head = self.bbox_head[i]
 
             bbox_feats = bbox_roi_extractor(
-                x[:len(bbox_roi_extractor.featmap_strides)], rois)
+                x[:len(bbox_roi_extractor.featmap_strides)],
+                rois.type_as(x[0]))
             cls_score, bbox_pred = bbox_head(bbox_feats)
             ms_scores.append(cls_score)
 
@@ -240,7 +240,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                         mask_rois = bbox2roi([_bboxes])
                         mask_feats = mask_roi_extractor(
                             x[:len(mask_roi_extractor.featmap_strides)],
-                            mask_rois)
+                            mask_rois.type_as(x[0]))
                         mask_pred = mask_head(mask_feats)
                         segm_result = mask_head.get_seg_masks(
                             mask_pred, _bboxes, det_labels, rcnn_test_cfg,
