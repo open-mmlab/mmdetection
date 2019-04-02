@@ -126,5 +126,8 @@ class L2Norm(nn.Module):
         self.scale = scale
 
     def forward(self, x):
-        norm = x.pow(2).sum(1, keepdim=True).sqrt() + self.eps
-        return self.weight[None, :, None, None].expand_as(x) * x / norm
+        # normalization layer convert to FP32
+        float_x = x.float()
+        norm = float_x.pow(2).sum(1, keepdim=True).sqrt() + self.eps
+        return (self.weight[None, :, None, None].float().expand_as(float_x) *
+                float_x / norm).type_as(x)

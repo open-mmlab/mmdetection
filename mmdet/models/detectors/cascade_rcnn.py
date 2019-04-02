@@ -147,7 +147,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             bbox_roi_extractor = self.bbox_roi_extractor[i]
             bbox_head = self.bbox_head[i]
 
-            rois = bbox2roi([res.bboxes for res in sampling_results])
+            rois = bbox2roi([res.bboxes for res in sampling_results]).type_as(
+                x[0])
             bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                             rois)
             cls_score, bbox_pred = bbox_head(bbox_feats)
@@ -156,15 +157,15 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                                                 gt_labels, rcnn_train_cfg)
             loss_bbox = bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
             for name, value in loss_bbox.items():
-                losses['s{}.{}'.format(i, name)] = (value * lw if
-                                                    'loss' in name else value)
+                losses['s{}.{}'.format(
+                    i, name)] = (value * lw if 'loss' in name else value)
 
             # mask head forward and loss
             if self.with_mask:
                 mask_roi_extractor = self.mask_roi_extractor[i]
                 mask_head = self.mask_head[i]
                 pos_rois = bbox2roi(
-                    [res.pos_bboxes for res in sampling_results])
+                    [res.pos_bboxes for res in sampling_results]).type_as(x[0])
                 mask_feats = mask_roi_extractor(
                     x[:mask_roi_extractor.num_inputs], pos_rois)
                 mask_pred = mask_head(mask_feats)
@@ -174,9 +175,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     [res.pos_gt_labels for res in sampling_results])
                 loss_mask = mask_head.loss(mask_pred, mask_targets, pos_labels)
                 for name, value in loss_mask.items():
-                    losses['s{}.{}'.format(i, name)] = (value * lw
-                                                        if 'loss' in name else
-                                                        value)
+                    losses['s{}.{}'.format(
+                        i, name)] = (value * lw if 'loss' in name else value)
 
             # refine bboxes
             if i < self.num_stages - 1:
@@ -185,6 +185,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 with torch.no_grad():
                     proposal_list = bbox_head.refine_bboxes(
                         rois, roi_labels, bbox_pred, pos_is_gts, img_meta)
+                    proposal_list = [p.float() for p in proposal_list]
 
         return losses
 
