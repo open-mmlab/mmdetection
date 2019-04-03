@@ -278,7 +278,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 for i in range(self.num_stages):
                     mask_roi_extractor = self.mask_roi_extractor[i]
                     mask_feats = mask_roi_extractor(
-                        x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
+                        x[:len(mask_roi_extractor.featmap_strides)],
+                        mask_rois.type_as(x[0]))
                     mask_pred = self.mask_head[i](mask_feats)
                     aug_masks.append(mask_pred.sigmoid().cpu().numpy())
                 merged_masks = merge_aug_masks(aug_masks,
