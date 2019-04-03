@@ -76,9 +76,9 @@ def _dist_train(model, dataset, cfg, validate=False):
     # fp16 setting
     fp16 = cfg.get('fp16', None)
     if fp16 is not None:
-        fp16_prepare_hook = Fp16PrepareHook(cfg.optimizer)
+        fp16_prepare_hook = Fp16PrepareHook(cfg.optimizer, **fp16.fp16_prepare)
         optimizer_config = Fp16OptimizerHook(**cfg.optimizer_config,
-                                             **cfg.fp16)
+                                             **fp16.fp16_optimizer)
         cfg.optimizer = None
     else:
         optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
@@ -127,12 +127,13 @@ def _non_dist_train(model, dataset, cfg, validate=False):
     # fp16 setting
     fp16 = cfg.get('fp16', None)
     if fp16 is not None:
-        fp16_prepare_hook = Fp16PrepareHook(cfg.optimizer, distribute=False)
+        fp16_prepare_hook = Fp16PrepareHook(
+            cfg.optimizer, distribute=False, **fp16.fp16_prepare)
         optimizer_config = Fp16OptimizerHook(
-            **cfg.optimizer_config, **cfg.fp16, distribute=False)
+            **cfg.optimizer_config, **fp16.fp16_optimizer, distribute=False)
         cfg.optimizer = None
     else:
-        optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
+        optimizer_config = cfg.optimizer_config
 
     # build runner
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,

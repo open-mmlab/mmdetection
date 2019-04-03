@@ -9,16 +9,15 @@ from ..utils.dist_utils import DistOptimizerHook, allreduce_grads
 
 class Fp16PrepareHook(Hook):
 
-    def __init__(self, optimizer, distribute=True):
+    def __init__(self, optimizer, distribute=True, convert_bn=True):
         self.optimizer = optimizer
         self.distribute = distribute
+        self.convert_bn = convert_bn
 
     def before_run(self, runner):
         model = runner.model.module
         # fp32 weight copy
-        param_copy = [
-            param.data.clone() for param in model.parameters()
-        ]
+        param_copy = [param.data.clone() for param in model.parameters()]
         for param, net_param in zip(param_copy, model.parameters()):
             param.requires_grad = net_param.requires_grad
             if self.distribute:
@@ -26,7 +25,8 @@ class Fp16PrepareHook(Hook):
         # convert model to fp16
         model.backbone = nn.Sequential(ToFP16(), model.backbone)
         model.half()
-        bn_convert_float(model)  # bn should be in fp32
+        if self.convert_bn:
+            bn_convert_float(model)  # bn should be in fp32
         runner.init_optimizer(self.optimizer)
         optim = getattr(torch.optim, self.optimizer['type'])
         self.optimizer.pop('type')
