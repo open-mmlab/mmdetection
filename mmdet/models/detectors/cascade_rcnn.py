@@ -7,7 +7,7 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply,
+from mmdet.core import (build_assigner, bbox2roi, bbox2result, build_sampler,
                         merge_aug_masks)
 
 
@@ -131,17 +131,31 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             proposal_list = proposals
 
         for i in range(self.num_stages):
+            self.current_stage = i
             rcnn_train_cfg = self.train_cfg.rcnn[i]
             lw = self.train_cfg.stage_loss_weights[i]
 
             # assign gts and sample proposals
-            assign_results, sampling_results = multi_apply(
-                assign_and_sample,
-                proposal_list,
-                gt_bboxes,
-                gt_bboxes_ignore,
-                gt_labels,
-                cfg=rcnn_train_cfg)
+            sampling_results = []
+            if self.with_bbox or self.with_mask:
+                bbox_assigner = build_assigner(rcnn_train_cfg.assigner)
+                bbox_sampler = build_sampler(
+                    rcnn_train_cfg.sampler, context=self)
+                num_imgs = img.size(0)
+                if gt_bboxes_ignore is None:
+                    gt_bboxes_ignore = [None for _ in range(num_imgs)]
+
+                for j in range(num_imgs):
+                    assign_result = bbox_assigner.assign(
+                        proposal_list[j], gt_bboxes[j], gt_bboxes_ignore[j],
+                        gt_labels[j])
+                    sampling_result = bbox_sampler.sample(
+                        assign_result,
+                        proposal_list[j],
+                        gt_bboxes[j],
+                        gt_labels[j],
+                        feats=[lvl_feat[j][None] for lvl_feat in x])
+                    sampling_results.append(sampling_result)
 
             # bbox head forward and loss
             bbox_roi_extractor = self.bbox_roi_extractor[i]
