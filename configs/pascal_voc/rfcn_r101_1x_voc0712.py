@@ -125,10 +125,15 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
-lr_config = dict(policy='step', step=[3])  # actual epoch = 3 * 3 = 9
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=1000,
+    warmup_ratio=5e-5,
+    step=[3])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -139,10 +144,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 4  # actual epoch = 4 * 3 = 12
+total_epochs = 8  # actual epoch = 4 * 3 = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/rfcn_r50_1x_voc0712'
+work_dir = './work_dirs/rfcn_r101_1x_voc0712'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
