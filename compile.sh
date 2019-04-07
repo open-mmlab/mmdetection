@@ -18,8 +18,10 @@ $PYTHON setup.py build_ext --inplace
 
 echo "Building nms op..."
 cd ../nms
-make clean
-make PYTHON=${PYTHON}
+if [ -d "build" ]; then
+    rm -r build
+fi
+$PYTHON setup.py build_ext --inplace
 
 echo "Building dcn..."
 cd ../dcn
