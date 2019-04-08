@@ -11,6 +11,7 @@ def anchor_target(anchor_list,
                   target_means,
                   target_stds,
                   cfg,
+                  gt_bboxes_ignore_list=None,
                   gt_labels_list=None,
                   label_channels=1,
                   sampling=True,
@@ -41,6 +42,8 @@ def anchor_target(anchor_list,
         valid_flag_list[i] = torch.cat(valid_flag_list[i])
 
     # compute targets for each image
+    if gt_bboxes_ignore_list is None:
+        gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
     if gt_labels_list is None:
         gt_labels_list = [None for _ in range(num_imgs)]
     (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
@@ -49,6 +52,7 @@ def anchor_target(anchor_list,
          anchor_list,
          valid_flag_list,
          gt_bboxes_list,
+         gt_bboxes_ignore_list,
          gt_labels_list,
          img_metas,
          target_means=target_means,
@@ -90,6 +94,7 @@ def images_to_levels(target, num_level_anchors):
 def anchor_target_single(flat_anchors,
                          valid_flags,
                          gt_bboxes,
+                         gt_bboxes_ignore,
                          gt_labels,
                          img_meta,
                          target_means,
@@ -108,11 +113,11 @@ def anchor_target_single(flat_anchors,
 
     if sampling:
         assign_result, sampling_result = assign_and_sample(
-            anchors, gt_bboxes, None, None, cfg)
+            anchors, gt_bboxes, gt_bboxes_ignore, None, cfg)
     else:
         bbox_assigner = build_assigner(cfg.assigner)
-        assign_result = bbox_assigner.assign(anchors, gt_bboxes, None,
-                                             gt_labels)
+        assign_result = bbox_assigner.assign(anchors, gt_bboxes,
+                                             gt_bboxes_ignore, gt_labels)
         bbox_sampler = PseudoSampler()
         sampling_result = bbox_sampler.sample(assign_result, anchors,
                                               gt_bboxes)
@@ -158,8 +163,7 @@ def anchor_target_single(flat_anchors,
 
 
 def expand_binary_labels(labels, label_weights, label_channels):
-    bin_labels = labels.new_full(
-        (labels.size(0), label_channels), 0, dtype=torch.float32)
+    bin_labels = labels.new_full((labels.size(0), label_channels), 0)
     inds = torch.nonzero(labels >= 1).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds] - 1] = 1

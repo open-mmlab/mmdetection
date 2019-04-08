@@ -3,6 +3,9 @@
 
 ## Introduction
 
+The master branch works with **PyTorch 1.0**. If you would like to use PyTorch 0.4.1,
+please checkout to the [pytorch-0.4.1](https://github.com/open-mmlab/mmdetection/tree/pytorch-0.4.1) branch.
+
 mmdetection is an open source object detection toolbox based on PyTorch. It is
 a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
 
@@ -35,6 +38,13 @@ which is heavily depended on by this toolbox.
 This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
+
+v0.6rc0(06/02/2019)
+- Migrate to PyTorch 1.0.
+
+v0.5.7 (06/02/2019)
+- Add support for Deformable ConvNet v2. (Many thanks to the authors and [@chengdazhi](https://github.com/chengdazhi))
+- This is the last release based on PyTorch 0.4.1.
 
 v0.5.6 (17/01/2019)
 - Add support for Group Normalization.
@@ -174,7 +184,7 @@ We provide a training script using the launch utility provided by PyTorch.
 Supported arguments are:
 
 - --validate: perform evaluation every k (default=1) epochs during the training.
-- --work_dir <WORK_DIR>: if specified, the path in config file will be overwritten.
+- --work_dir <WORK_DIR>: if specified, the path in config file will be replaced.
 
 Expected results in WORK_DIR:
 
