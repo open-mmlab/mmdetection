@@ -1,7 +1,7 @@
 # model settings
 model = dict(
     type='MaskRCNN',
-    pretrained='open-mmlab://resnet50_caffe',
+    pretrained='modelzoo://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -12,14 +12,14 @@ model = dict(
         frozen_stages=1,
         normalize=dict(type='BN', frozen=True),
         norm_eval=True,
-        style='caffe'),
-    shared_head=dict(
+        style='pytorch'),
+    upper_neck=dict(
         type='ResLayer',
         depth=50,
         stage=3,
         stride=2,
         dilation=1,
-        style='caffe',
+        style='pytorch',
         normalize=dict(type='BN', frozen=True),
         norm_eval=True,
         with_cp=False),
@@ -104,9 +104,9 @@ test_cfg = dict(
         mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '/mnt/SSD/dataset/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
     imgs_per_gpu=2,
     workers_per_gpu=2,
@@ -166,7 +166,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/mnt/gv7/wjq/debug/work_dirs/mask_rcnn_r50_c4_1x/'
+work_dir = './work_dirs/mask_rcnn_r50_c4_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
