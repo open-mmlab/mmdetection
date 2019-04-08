@@ -15,7 +15,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
     def __init__(self,
                  backbone,
                  neck=None,
-                 upper_neck=None,
+                 shared_head=None,
                  rpn_head=None,
                  bbox_roi_extractor=None,
                  bbox_head=None,
@@ -30,8 +30,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if neck is not None:
             self.neck = builder.build_neck(neck)
 
-        if upper_neck is not None:
-            self.upper_neck = builder.build_upper_neck(upper_neck)
+        if shared_head is not None:
+            self.shared_head = builder.build_shared_head(shared_head)
 
         if rpn_head is not None:
             self.rpn_head = builder.build_head(rpn_head)
@@ -69,8 +69,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                     m.init_weights()
             else:
                 self.neck.init_weights()
-        if self.with_upper_neck:
-            self.upper_neck.init_weights(pretrained=pretrained)
+        if self.with_shared_head:
+            self.shared_head.init_weights(pretrained=pretrained)
         if self.with_rpn:
             self.rpn_head.init_weights()
         if self.with_bbox:
@@ -140,8 +140,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             # TODO: a more flexible way to decide which feature maps to use
             bbox_feats = self.bbox_roi_extractor(
                 x[:self.bbox_roi_extractor.num_inputs], rois)
-            if self.with_upper_neck:
-                bbox_feats = self.upper_neck(bbox_feats)
+            if self.with_shared_head:
+                bbox_feats = self.shared_head(bbox_feats)
             cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
             bbox_targets = self.bbox_head.get_target(
@@ -157,8 +157,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                     [res.pos_bboxes for res in sampling_results])
                 mask_feats = self.mask_roi_extractor(
                     x[:self.mask_roi_extractor.num_inputs], pos_rois)
-                if self.with_upper_neck:
-                    mask_feats = self.upper_neck(mask_feats)
+                if self.with_shared_head:
+                    mask_feats = self.shared_head(mask_feats)
             else:
                 pos_inds = []
                 device = bbox_feats.device

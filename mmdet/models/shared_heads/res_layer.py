@@ -5,10 +5,10 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 
 from ..backbones import ResNet, make_res_layer
-from ..registry import UPPER_NECKS
+from ..registry import SHARED_HEADS
 
 
-@UPPER_NECKS.register_module
+@SHARED_HEADS.register_module
 class ResLayer(nn.Module):
 
     def __init__(self,

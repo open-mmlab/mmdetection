@@ -18,7 +18,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                  num_stages,
                  backbone,
                  neck=None,
-                 upper_neck=None,
+                 shared_head=None,
                  rpn_head=None,
                  bbox_roi_extractor=None,
                  bbox_head=None,
@@ -40,8 +40,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         if rpn_head is not None:
             self.rpn_head = builder.build_head(rpn_head)
 
-        if upper_neck is not None:
-            self.upper_neck = builder.build_upper_neck(upper_neck)
+        if shared_head is not None:
+            self.shared_head = builder.build_shared_head(shared_head)
 
         if bbox_head is not None:
             self.bbox_roi_extractor = nn.ModuleList()
@@ -100,8 +100,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 self.neck.init_weights()
         if self.with_rpn:
             self.rpn_head.init_weights()
-        if self.with_upper_neck:
-            self.upper_neck.init_weights(pretrained=pretrained)
+        if self.with_shared_head:
+            self.shared_head.init_weights(pretrained=pretrained)
         for i in range(self.num_stages):
             if self.with_bbox:
                 self.bbox_roi_extractor[i].init_weights()
@@ -176,8 +176,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             rois = bbox2roi([res.bboxes for res in sampling_results])
             bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                             rois)
-            if self.with_upper_neck:
-                bbox_feats = self.upper_neck(bbox_feats)
+            if self.with_shared_head:
+                bbox_feats = self.shared_head(bbox_feats)
             cls_score, bbox_pred = bbox_head(bbox_feats)
 
             bbox_targets = bbox_head.get_target(sampling_results, gt_bboxes,
@@ -195,8 +195,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                         [res.pos_bboxes for res in sampling_results])
                     mask_feats = mask_roi_extractor(
                         x[:mask_roi_extractor.num_inputs], pos_rois)
-                    if self.with_upper_neck:
-                        mask_feats = self.upper_neck(mask_feats)
+                    if self.with_shared_head:
+                        mask_feats = self.shared_head(mask_feats)
                 else:
                     pos_inds = []
                     device = bbox_feats.device
@@ -256,8 +256,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
             bbox_feats = bbox_roi_extractor(
                 x[:len(bbox_roi_extractor.featmap_strides)], rois)
-            if self.with_upper_neck:
-                bbox_feats = self.upper_neck(bbox_feats)
+            if self.with_shared_head:
+                bbox_feats = self.shared_head(bbox_feats)
 
             cls_score, bbox_pred = bbox_head(bbox_feats)
             ms_scores.append(cls_score)
@@ -289,8 +289,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                         mask_feats = mask_roi_extractor(
                             x[:len(mask_roi_extractor.featmap_strides)],
                             mask_rois)
-                        if self.with_upper_neck:
-                            mask_feats = self.upper_neck(mask_feats, i)
+                        if self.with_shared_head:
+                            mask_feats = self.shared_head(mask_feats, i)
                         mask_pred = mask_head(mask_feats)
                         segm_result = mask_head.get_seg_masks(
                             mask_pred, _bboxes, det_labels, rcnn_test_cfg,
@@ -329,8 +329,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     mask_roi_extractor = self.mask_roi_extractor[i]
                     mask_feats = mask_roi_extractor(
                         x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
-                    if self.with_upper_neck:
-                        mask_feats = self.upper_neck(mask_feats)
+                    if self.with_shared_head:
+                        mask_feats = self.shared_head(mask_feats)
                     mask_pred = self.mask_head[i](mask_feats)
                     aug_masks.append(mask_pred.sigmoid().cpu().numpy())
                 merged_masks = merge_aug_masks(aug_masks,

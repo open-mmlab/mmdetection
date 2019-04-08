@@ -12,14 +12,14 @@ class FastRCNN(TwoStageDetector):
                  train_cfg,
                  test_cfg,
                  neck=None,
-                 upper_neck=None,
+                 shared_head=None,
                  mask_roi_extractor=None,
                  mask_head=None,
                  pretrained=None):
         super(FastRCNN, self).__init__(
             backbone=backbone,
             neck=neck,
-            upper_neck=upper_neck,
+            shared_head=shared_head,
             bbox_roi_extractor=bbox_roi_extractor,
             bbox_head=bbox_head,
             train_cfg=train_cfg,

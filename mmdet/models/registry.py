@@ -22,9 +22,8 @@ class Registry(object):
             module (:obj:`nn.Module`): Module to be registered.
         """
         if not issubclass(module_class, nn.Module):
-            raise TypeError(
-                'module must be a child of nn.Module, but got {}'.format(
-                    module_class))
+            raise TypeError('module must be a child of nn.Module, but got {}'.
+                            format(module_class))
         module_name = module_class.__name__
         if module_name in self._module_dict:
             raise KeyError('{} is already registered in {}'.format(
@@ -38,7 +37,7 @@ class Registry(object):
 
 BACKBONES = Registry('backbone')
 NECKS = Registry('neck')
-UPPER_NECKS = Registry('upper_neck')
+SHARED_HEADS = Registry('shared_head')
 ROI_EXTRACTORS = Registry('roi_extractor')
 HEADS = Registry('head')
 DETECTORS = Registry('detector')

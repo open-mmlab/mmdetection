@@ -37,8 +37,8 @@ class BBoxTestMixin(object):
         rois = bbox2roi(proposals)
         roi_feats = self.bbox_roi_extractor(
             x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
-        if self.with_upper_neck:
-            roi_feats = self.upper_neck(roi_feats)
+        if self.with_shared_head:
+            roi_feats = self.shared_head(roi_feats)
         cls_score, bbox_pred = self.bbox_head(roi_feats)
         img_shape = img_meta[0]['img_shape']
         scale_factor = img_meta[0]['scale_factor']
@@ -67,8 +67,8 @@ class BBoxTestMixin(object):
             # recompute feature maps to save GPU memory
             roi_feats = self.bbox_roi_extractor(
                 x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
-            if self.with_upper_neck:
-                roi_feats = self.upper_neck(roi_feats)
+            if self.with_shared_head:
+                roi_feats = self.shared_head(roi_feats)
             cls_score, bbox_pred = self.bbox_head(roi_feats)
             bboxes, scores = self.bbox_head.get_det_bboxes(
                 rois,
@@ -111,8 +111,8 @@ class MaskTestMixin(object):
             mask_roi_extractor = self.mask_roi_extractor
             mask_feats = mask_roi_extractor(
                 x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
-            if self.with_upper_neck:
-                mask_feats = self.upper_neck(mask_feats)
+            if self.with_shared_head:
+                mask_feats = self.shared_head(mask_feats)
             mask_pred = self.mask_head(mask_feats)
             segm_result = self.mask_head.get_seg_masks(
                 mask_pred, _bboxes, det_labels, self.test_cfg.rcnn, ori_shape,
@@ -134,8 +134,8 @@ class MaskTestMixin(object):
                 mask_rois = bbox2roi([_bboxes])
                 mask_feats = mask_roi_extractor(
                     x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
-                if self.with_upper_neck:
-                    mask_feats = self.upper_neck(mask_feats)
+                if self.with_shared_head:
+                    mask_feats = self.shared_head(mask_feats)
                 mask_pred = self.mask_head(mask_feats)
                 # convert to numpy array to save memory
                 aug_masks.append(mask_pred.sigmoid().cpu().numpy())

@@ -15,12 +15,12 @@ class MaskRCNN(TwoStageDetector):
                  train_cfg,
                  test_cfg,
                  neck=None,
-                 upper_neck=None,
+                 shared_head=None,
                  pretrained=None):
         super(MaskRCNN, self).__init__(
             backbone=backbone,
             neck=neck,
-            upper_neck=upper_neck,
+            shared_head=shared_head,
             rpn_head=rpn_head,
             bbox_roi_extractor=bbox_roi_extractor,
             bbox_head=bbox_head,

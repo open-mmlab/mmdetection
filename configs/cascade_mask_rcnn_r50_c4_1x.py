@@ -14,7 +14,7 @@ model = dict(
         normalize=dict(type='BN', frozen=True),
         norm_eval=True,
         style='pytorch'),
-    upper_neck=dict(
+    shared_head=dict(
         type='ResLayer',
         depth=50,
         stage=3,
