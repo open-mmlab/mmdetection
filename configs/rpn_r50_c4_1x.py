@@ -10,6 +10,8 @@ model = dict(
         dilations=(1, 1, 1),
         out_indices=(2, ),
         frozen_stages=1,
+        normalize=dict(type='BN', frozen=True),
+        norm_eval=True,
         style='pytorch'),
     neck=None,
     rpn_head=dict(
