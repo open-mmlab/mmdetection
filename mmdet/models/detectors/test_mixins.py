@@ -108,10 +108,7 @@ class MaskTestMixin(object):
             _bboxes = (det_bboxes[:, :4] * scale_factor
                        if rescale else det_bboxes)
             mask_rois = bbox2roi([_bboxes])
-            if not self.shared_roi_extractor:
-                mask_roi_extractor = self.mask_roi_extractor
-            else:
-                mask_roi_extractor = self.bbox_roi_extractor
+            mask_roi_extractor = self.mask_roi_extractor
             mask_feats = mask_roi_extractor(
                 x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
             if self.with_upper_neck:
@@ -127,10 +124,7 @@ class MaskTestMixin(object):
             segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
         else:
             aug_masks = []
-            if not self.shared_roi_extractor:
-                mask_roi_extractor = self.mask_roi_extractor
-            else:
-                mask_roi_extractor = self.bbox_roi_extractor
+            mask_roi_extractor = self.mask_roi_extractor
             for x, img_meta in zip(feats, img_metas):
                 img_shape = img_meta[0]['img_shape']
                 scale_factor = img_meta[0]['scale_factor']

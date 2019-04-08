@@ -105,9 +105,11 @@ def bbox_mapping_back(bboxes, img_shape, scale_factor, flip):
 
 def bbox2roi(bbox_list):
     """Convert a list of bboxes to roi format.
+
     Args:
         bbox_list (list[Tensor]): a list of bboxes corresponding to a batch
             of images.
+
     Returns:
         Tensor: shape (n, 5), [batch_ind, x1, y1, x2, y2]
     """

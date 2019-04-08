@@ -19,7 +19,8 @@ class ResLayer(nn.Module):
                  style='pytorch',
                  normalize=dict(type='BN', frozen=False),
                  norm_eval=True,
-                 with_cp=False):
+                 with_cp=False,
+                 dcn=None):
         super(ResLayer, self).__init__()
         self.norm_eval = norm_eval
         self.normalize = normalize
@@ -38,7 +39,8 @@ class ResLayer(nn.Module):
             dilation=dilation,
             style=style,
             with_cp=with_cp,
-            normalize=self.normalize)
+            normalize=self.normalize,
+            dcn=dcn)
         self.add_module('layer{}'.format(stage + 1), res_layer)
 
     def init_weights(self, pretrained=None):

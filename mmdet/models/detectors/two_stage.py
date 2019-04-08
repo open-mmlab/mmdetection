@@ -48,6 +48,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 self.shared_roi_extractor = False
             else:
                 self.shared_roi_extractor = True
+                self.mask_roi_extractor = self.bbox_roi_extractor
             self.mask_head = builder.build_head(mask_head)
 
         self.train_cfg = train_cfg
