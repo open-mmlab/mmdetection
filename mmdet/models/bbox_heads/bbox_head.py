@@ -62,8 +62,7 @@ class BBoxHead(nn.Module):
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
 
-    def get_target(self, sampling_results, gt_bboxes, gt_labels,
-                   rcnn_train_cfg):
+    def get_target(self, sampling_results, rcnn_train_cfg):
         pos_proposals = [res.pos_bboxes for res in sampling_results]
         neg_proposals = [res.neg_bboxes for res in sampling_results]
         pos_gt_bboxes = [res.pos_gt_bboxes for res in sampling_results]
