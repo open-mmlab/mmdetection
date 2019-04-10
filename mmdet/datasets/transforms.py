@@ -123,9 +123,11 @@ class SegMapTransform(object):
     def __init__(self, size_divisor=None):
         self.size_divisor = size_divisor
 
-    def __call__(self, img, scale, flip=False):
-        img, scale_factor = mmcv.imrescale(
-            img, scale, return_scale=True, interpolation='nearest')
+    def __call__(self, img, scale, flip=False, keep_ratio=True):
+        if keep_ratio:
+            img = mmcv.imrescale(img, scale, interpolation='nearest')
+        else:
+            img = mmcv.imresize(img, scale, interpolation='nearest')
         if flip:
             img = mmcv.imflip(img)
         if self.size_divisor is not None:
