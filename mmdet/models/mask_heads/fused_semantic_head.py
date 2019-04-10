@@ -9,6 +9,7 @@ from ..utils import ConvModule
 @HEADS.register_module
 class FusedSemanticHead(nn.Module):
     """Multi-level fused semantic segmentation head.
+
     in_1 -> 1x1 conv ---
                         |
     in_2 -> 1x1 conv -- |
@@ -18,7 +19,7 @@ class FusedSemanticHead(nn.Module):
     in_4 -> 1x1 conv -----> 3x3 convs (*4)
                         |                  \-> 1x1 conv (feature)
     in_5 -> 1x1 conv ---
-    """
+    """  # noqa: W605
 
     def __init__(self,
                  num_ins,

@@ -245,5 +245,5 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/htc_x101_32x4d_fpn_20e'
 load_from = None
-resume_from = None 
+resume_from = None
 workflow = [('train', 1)]
