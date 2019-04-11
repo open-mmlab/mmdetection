@@ -34,7 +34,8 @@ class DistEvalHook(Hook):
             return
         runner.model.eval()
         results = [None for _ in range(len(self.dataset))]
-        prog_bar = mmcv.ProgressBar(len(self.dataset))
+        if runner.rank == 0:
+            prog_bar = mmcv.ProgressBar(len(self.dataset))
         for idx in range(runner.rank, len(self.dataset), runner.world_size):
             data = self.dataset[idx]
             data_gpu = scatter(
@@ -48,8 +49,9 @@ class DistEvalHook(Hook):
             results[idx] = result
 
             batch_size = runner.world_size
-            for _ in range(batch_size):
-                prog_bar.update()
+            if runner.rank == 0:
+                for _ in range(batch_size):
+                    prog_bar.update()
 
         if runner.rank == 0:
             print('\n')
