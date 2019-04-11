@@ -150,7 +150,13 @@ class CocoDistEvalmAPHook(DistEvalHook):
             cocoEval.evaluate()
             cocoEval.accumulate()
             cocoEval.summarize()
-            field = '{}_mAP'.format(res_type)
-            runner.log_buffer.output[field] = cocoEval.stats[0]
+            metrics = ['mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l']
+            for i in range(len(metrics)):
+                key = '{}_{}'.format(res_type, metrics[i])
+                val = float('{:.3f}'.format(cocoEval.stats[i]))
+                runner.log_buffer.output[key] = val
+            runner.log_buffer.output['{}_mAP_copypaste'.format(res_type)] = (
+                '{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
+                '{ap[4]:.3f} {ap[5]:.3f}').format(ap=cocoEval.stats[:6])
         runner.log_buffer.ready = True
         os.remove(tmp_file)
