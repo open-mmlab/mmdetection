@@ -129,8 +129,8 @@ class AnchorHead(nn.Module):
                     bbox_targets, bbox_weights, num_total_samples, cfg):
         # classification loss
         if self.use_sigmoid_cls:
-            labels = labels.reshape(-1, self.cls_out_channels)
-            label_weights = label_weights.reshape(-1, self.cls_out_channels)
+            labels = labels.reshape(-1, 1)
+            label_weights = label_weights.reshape(-1, 1)
         else:
             labels = labels.reshape(-1)
             label_weights = label_weights.reshape(-1)
