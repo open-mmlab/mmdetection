@@ -47,3 +47,9 @@ The results on COCO 2017val is shown in the below table. (results on test-dev ar
 - In the HTC paper and COCO 2018 Challenge, `score_thr` is set to 0.001 for both baselines and HTC.
 - We use 8 GPUs with 2 images/GPU for R-50 and R-101 models, and 16 GPUs with 1 image/GPU for X-101 models.
 If you would like to train X-101 HTC with 8 GPUs, you need to change the lr from 0.02 to 0.01.
+
+We also provide a powerful HTC with DCN and multi-scale training model. No testing augmentation is used.
+
+| Backbone         | Style   | DCN   | training scales | Lr schd | box AP | mask AP | Download |
+|:----------------:|:-------:|:-----:|:---------------:|:-------:|:------:|:-------:|:--------:|
+| X-101-64x4d-FPN  | pytorch | c3-c5 | 400~1400        | 20e     | 50.7   | 43.9    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_dconv_c3-c5_mstrain_400_1400_x101_64x4d_fpn_20e_20190408-0e50669c.pth) |
