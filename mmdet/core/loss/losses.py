@@ -2,6 +2,8 @@
 import torch
 import torch.nn.functional as F
 
+from ...ops import sigmoid_focal_loss
+
 
 def weighted_nll_loss(pred, label, weight, avg_factor=None):
     if avg_factor is None:
@@ -28,12 +30,12 @@ def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
         reduction='sum')[None] / avg_factor
 
 
-def sigmoid_focal_loss(pred,
-                       target,
-                       weight,
-                       gamma=2.0,
-                       alpha=0.25,
-                       reduction='mean'):
+def py_sigmoid_focal_loss(pred,
+                          target,
+                          weight,
+                          gamma=2.0,
+                          alpha=0.25,
+                          reduction='mean'):
     pred_sigmoid = pred.sigmoid()
     target = target.type_as(pred)
     pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
@@ -60,9 +62,9 @@ def weighted_sigmoid_focal_loss(pred,
                                 num_classes=80):
     if avg_factor is None:
         avg_factor = torch.sum(weight > 0).float().item() / num_classes + 1e-6
-    return sigmoid_focal_loss(
-        pred, target, weight, gamma=gamma, alpha=alpha,
-        reduction='sum')[None] / avg_factor
+    return torch.sum(
+        sigmoid_focal_loss(pred, target, gamma, alpha, 'none') * weight.view(
+            -1, 1))[None] / avg_factor
 
 
 def mask_cross_entropy(pred, target, label):

@@ -152,9 +152,6 @@ def anchor_target_single(flat_anchors,
         num_total_anchors = flat_anchors.size(0)
         labels = unmap(labels, num_total_anchors, inside_flags)
         label_weights = unmap(label_weights, num_total_anchors, inside_flags)
-        if label_channels > 1:
-            labels, label_weights = expand_binary_labels(
-                labels, label_weights, label_channels)
         bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
         bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
