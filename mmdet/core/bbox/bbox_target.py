@@ -57,9 +57,6 @@ def bbox_target_single(pos_bboxes,
         bbox_weights[:num_pos, :] = 1
     if num_neg > 0:
         label_weights[-num_neg:] = 1.0
-    if reg_classes > 1:
-        bbox_targets, bbox_weights = expand_target(bbox_targets, bbox_weights,
-                                                   labels, reg_classes)
 
     return labels, label_weights, bbox_targets, bbox_weights
 
