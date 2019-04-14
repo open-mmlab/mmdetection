@@ -12,7 +12,7 @@ def readme():
 
 MAJOR = 0
 MINOR = 6
-PATCH = 'rc0'
+PATCH = 0
 SUFFIX = ''
 SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
 
@@ -106,7 +106,7 @@ if __name__ == '__main__':
         setup_requires=['pytest-runner'],
         tests_require=['pytest'],
         install_requires=[
-            'mmcv', 'numpy', 'matplotlib', 'six', 'terminaltables',
+            'mmcv>=0.2.5', 'numpy', 'matplotlib', 'six', 'terminaltables',
             'pycocotools'
         ],
         zip_safe=False)
