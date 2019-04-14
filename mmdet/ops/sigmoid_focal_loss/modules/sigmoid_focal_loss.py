@@ -1,6 +1,6 @@
 from torch import nn
 
-from ..functions.sigmoid_focal_loss import sigmoid_focal_loss_cuda
+from ..functions.sigmoid_focal_loss import sigmoid_focal_loss
 
 
 class SigmoidFocalLoss(nn.Module):
@@ -12,9 +12,7 @@ class SigmoidFocalLoss(nn.Module):
 
     def forward(self, logits, targets):
         assert logits.is_cuda
-        loss_func = sigmoid_focal_loss_cuda
-
-        loss = loss_func(logits, targets, self.gamma, self.alpha)
+        loss = sigmoid_focal_loss(logits, targets, self.gamma, self.alpha)
         return loss.sum()
 
     def __repr__(self):

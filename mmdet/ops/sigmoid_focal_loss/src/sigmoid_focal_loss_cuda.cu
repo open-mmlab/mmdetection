@@ -23,7 +23,7 @@
 template <typename T>
 __global__ void SigmoidFocalLossForward(const int nthreads, 
     const T* logits,
-    const int* targets,
+    const long* targets,
     const int num_classes,
     const float gamma, 
     const float alpha,
@@ -64,7 +64,7 @@ __global__ void SigmoidFocalLossForward(const int nthreads,
 template <typename T>
 __global__ void SigmoidFocalLossBackward(const int nthreads,
                 const T* logits,
-                const int* targets,
+                const long* targets,
                 const T* d_losses,
                 const int num_classes,
                 const float gamma,
@@ -131,7 +131,7 @@ at::Tensor SigmoidFocalLoss_forward_cuda(
     SigmoidFocalLossForward<scalar_t><<<grid, block>>>(
          losses_size,
          logits.contiguous().data<scalar_t>(),
-	 targets.contiguous().data<int>(),
+	 targets.contiguous().data<long>(),
          num_classes,
 	 gamma,
 	 alpha,
@@ -174,7 +174,7 @@ at::Tensor SigmoidFocalLoss_backward_cuda(
     SigmoidFocalLossBackward<scalar_t><<<grid, block>>>(
          d_logits_size,
          logits.contiguous().data<scalar_t>(),
-	 targets.contiguous().data<int>(),
+	 targets.contiguous().data<long>(),
 	 d_losses.contiguous().data<scalar_t>(),
          num_classes,
 	 gamma,
