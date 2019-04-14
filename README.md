@@ -39,6 +39,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
 
+v0.6.0 (14/04/2019)
+- Various minor fixes and user experience improvements.
+- Replace NMS and SigmoidFocalLoss with Pytorch CUDA extensions.
+
 v0.6rc0(06/02/2019)
 - Migrate to PyTorch 1.0.
 
