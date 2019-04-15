@@ -23,7 +23,7 @@ def weighted_cross_entropy(pred, label, weight, avg_factor=None, reduce=True):
 
 
 def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
-    if pred.size() != label.size():
+    if pred.dim() != label.dim():
         label, weight = _expand_binary_labels(label, weight, pred.size(-1))
     if avg_factor is None:
         avg_factor = max(torch.sum(weight > 0).float().item(), 1.)
