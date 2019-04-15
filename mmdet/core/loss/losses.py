@@ -23,7 +23,7 @@ def weighted_cross_entropy(pred, label, weight, avg_factor=None, reduce=True):
 
 
 def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
-    if pred.size(-1) != label.size(-1):
+    if pred.size() != label.size():
         label, weight = _expand_binary_labels(label, weight, pred.size(-1))
     if avg_factor is None:
         avg_factor = max(torch.sum(weight > 0).float().item(), 1.)
@@ -66,7 +66,7 @@ def weighted_sigmoid_focal_loss(pred,
         avg_factor = torch.sum(weight > 0).float().item() / num_classes + 1e-6
     return torch.sum(
         sigmoid_focal_loss(pred, target, gamma, alpha, 'none') *
-        weight)[None] / avg_factor
+        weight.view(-1, 1))[None] / avg_factor
 
 
 def mask_cross_entropy(pred, target, label):
@@ -121,7 +121,7 @@ def accuracy(pred, target, topk=1):
 
 def _expand_binary_labels(labels, label_weights, label_channels):
     bin_labels = labels.new_full((labels.size(0), label_channels), 0)
-    inds = torch.nonzero(labels.squeeze() >= 1).squeeze()
+    inds = torch.nonzero(labels >= 1).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds] - 1] = 1
     bin_label_weights = label_weights.view(-1, 1).expand(
