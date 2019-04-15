@@ -63,8 +63,8 @@ def weighted_sigmoid_focal_loss(pred,
     if avg_factor is None:
         avg_factor = torch.sum(weight > 0).float().item() / num_classes + 1e-6
     return torch.sum(
-        sigmoid_focal_loss(pred, target, gamma, alpha, 'none') * weight.view(
-            -1, 1))[None] / avg_factor
+        sigmoid_focal_loss(pred, target, gamma, alpha, 'none') *
+        weight)[None] / avg_factor
 
 
 def mask_cross_entropy(pred, target, label):
