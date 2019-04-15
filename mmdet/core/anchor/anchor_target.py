@@ -159,16 +159,6 @@ def anchor_target_single(flat_anchors,
             neg_inds)
 
 
-def expand_binary_labels(labels, label_weights, label_channels):
-    bin_labels = labels.new_full((labels.size(0), label_channels), 0)
-    inds = torch.nonzero(labels >= 1).squeeze()
-    if inds.numel() > 0:
-        bin_labels[inds, labels[inds] - 1] = 1
-    bin_label_weights = label_weights.view(-1, 1).expand(
-        label_weights.size(0), label_channels)
-    return bin_labels, bin_label_weights
-
-
 def anchor_inside_flags(flat_anchors, valid_flags, img_shape,
                         allowed_border=0):
     img_h, img_w = img_shape[:2]
