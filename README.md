@@ -40,7 +40,8 @@ This project is released under the [Apache 2.0 license](LICENSE).
 ## Updates
 
 v0.6.0 (14/04/2019)
-- Various minor fixes and user experience improvements.
+- Up to 30% speedup compared to the model zoo.
+- Support both PyTorch stable and nightly version.
 - Replace NMS and SigmoidFocalLoss with Pytorch CUDA extensions.
 
 v0.6rc0(06/02/2019)
