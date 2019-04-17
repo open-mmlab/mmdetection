@@ -11,7 +11,6 @@ model = dict(
         out_indices=(2, ),
         frozen_stages=1,
         normalize=dict(type='BN', frozen=True),
-        stage_with_dcn=(False, False, False),
         norm_eval=True,
         style='caffe'),
     neck=None,

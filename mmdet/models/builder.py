@@ -1,7 +1,7 @@
 import mmcv
 from torch import nn
 
-from .registry import (BACKBONES, NECKS, SHARED_HEADS, ROI_EXTRACTORS, HEADS,
+from .registry import (BACKBONES, NECKS, ROI_EXTRACTORS, SHARED_HEADS, HEADS,
                        DETECTORS)
 
 
@@ -40,12 +40,12 @@ def build_neck(cfg):
     return build(cfg, NECKS)
 
 
-def build_shared_head(cfg):
-    return build(cfg, SHARED_HEADS)
-
-
 def build_roi_extractor(cfg):
     return build(cfg, ROI_EXTRACTORS)
+
+
+def build_shared_head(cfg):
+    return build(cfg, SHARED_HEADS)
 
 
 def build_head(cfg):
