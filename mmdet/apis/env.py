@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import subprocess
 
 import numpy as np
 import torch
@@ -34,8 +35,19 @@ def _init_dist_mpi(backend, **kwargs):
     raise NotImplementedError
 
 
-def _init_dist_slurm(backend, **kwargs):
-    raise NotImplementedError
+def _init_dist_slurm(backend, port=29500, **kwargs):
+    proc_id = int(os.environ['SLURM_PROCID'])
+    ntasks = int(os.environ['SLURM_NTASKS'])
+    node_list = os.environ['SLURM_NODELIST']
+    num_gpus = torch.cuda.device_count()
+    torch.cuda.set_device(proc_id % num_gpus)
+    addr = subprocess.getoutput(
+        'scontrol show hostname {} | head -n1'.format(node_list))
+    os.environ['MASTER_PORT'] = str(port)
+    os.environ['MASTER_ADDR'] = addr
+    os.environ['WORLD_SIZE'] = str(ntasks)
+    os.environ['RANK'] = str(proc_id)
+    dist.init_process_group(backend=backend)
 
 
 def set_random_seed(seed):
