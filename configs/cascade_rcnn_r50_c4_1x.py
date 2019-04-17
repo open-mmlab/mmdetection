@@ -23,8 +23,7 @@ model = dict(
         dilation=1,
         style='caffe',
         normalize=dict(type='BN', frozen=True),
-        norm_eval=True,
-        with_cp=False),
+        norm_eval=True),
     rpn_head=dict(
         type='RPNHead',
         in_channels=1024,

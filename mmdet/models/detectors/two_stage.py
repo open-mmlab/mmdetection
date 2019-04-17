@@ -45,9 +45,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             if mask_roi_extractor is not None:
                 self.mask_roi_extractor = builder.build_roi_extractor(
                     mask_roi_extractor)
-                self.shared_roi_extractor = False
+                self.share_roi_extractor = False
             else:
-                self.shared_roi_extractor = True
+                self.share_roi_extractor = True
                 self.mask_roi_extractor = self.bbox_roi_extractor
             self.mask_head = builder.build_head(mask_head)
 
@@ -78,7 +78,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             self.bbox_head.init_weights()
         if self.with_mask:
             self.mask_head.init_weights()
-            if not self.shared_roi_extractor:
+            if not self.share_roi_extractor:
                 self.mask_roi_extractor.init_weights()
 
     def extract_feat(self, img):
@@ -152,7 +152,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         # mask head forward and loss
         if self.with_mask:
-            if not self.shared_roi_extractor:
+            if not self.share_roi_extractor:
                 pos_rois = bbox2roi(
                     [res.pos_bboxes for res in sampling_results])
                 mask_feats = self.mask_roi_extractor(

@@ -22,8 +22,7 @@ model = dict(
         dilation=1,
         style='caffe',
         normalize=dict(type='BN', frozen=True),
-        norm_eval=True,
-        with_cp=False),
+        norm_eval=True),
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),

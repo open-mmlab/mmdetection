@@ -66,7 +66,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             for head in mask_head:
                 self.mask_head.append(builder.build_head(head))
             if mask_roi_extractor is not None:
-                self.shared_roi_extractor = False
+                self.share_roi_extractor = False
                 self.mask_roi_extractor = nn.ModuleList()
                 if not isinstance(mask_roi_extractor, list):
                     mask_roi_extractor = [
@@ -77,7 +77,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     self.mask_roi_extractor.append(
                         builder.build_roi_extractor(roi_extractor))
             else:
-                self.shared_roi_extractor = True
+                self.share_roi_extractor = True
                 self.mask_roi_extractor = self.bbox_roi_extractor
 
         self.train_cfg = train_cfg
@@ -107,7 +107,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 self.bbox_roi_extractor[i].init_weights()
                 self.bbox_head[i].init_weights()
             if self.with_mask:
-                if not self.shared_roi_extractor:
+                if not self.share_roi_extractor:
                     self.mask_roi_extractor[i].init_weights()
                 self.mask_head[i].init_weights()
 
@@ -189,7 +189,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
             # mask head forward and loss
             if self.with_mask:
-                if not self.shared_roi_extractor:
+                if not self.share_roi_extractor:
                     mask_roi_extractor = self.mask_roi_extractor[i]
                     pos_rois = bbox2roi(
                         [res.pos_bboxes for res in sampling_results])
@@ -198,6 +198,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     if self.with_shared_head:
                         mask_feats = self.shared_head(mask_feats)
                 else:
+                    # reuse positive bbox feats
                     pos_inds = []
                     device = bbox_feats.device
                     for res in sampling_results:
