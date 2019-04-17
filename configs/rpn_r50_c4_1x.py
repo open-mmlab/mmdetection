@@ -1,7 +1,7 @@
 # model settings
 model = dict(
     type='RPN',
-    pretrained='modelzoo://resnet50',
+    pretrained='open-mmlab://resnet50_caffe',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -13,7 +13,7 @@ model = dict(
         normalize=dict(type='BN', frozen=True),
         stage_with_dcn=(False, False, False),
         norm_eval=True,
-        style='pytorch'),
+        style='caffe'),
     neck=None,
     rpn_head=dict(
         type='RPNHead',
@@ -56,7 +56,7 @@ test_cfg = dict(
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 data = dict(
     imgs_per_gpu=2,
     workers_per_gpu=2,
