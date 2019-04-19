@@ -94,10 +94,16 @@ class BBoxHead(nn.Module):
                 cls_score, labels, label_weights, reduce=reduce)
             losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
+            pos_inds = labels > 0
+            if self.reg_class_agnostic:
+                pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), 4)[pos_inds]
+            else:
+                pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), -1,
+                                               4)[pos_inds, labels[pos_inds]]
             losses['loss_reg'] = weighted_smoothl1(
-                bbox_pred,
-                bbox_targets,
-                bbox_weights,
+                pos_bbox_pred,
+                bbox_targets[pos_inds],
+                bbox_weights[pos_inds],
                 avg_factor=bbox_targets.size(0))
         return losses
 
