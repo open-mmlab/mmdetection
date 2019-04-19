@@ -15,6 +15,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
     def __init__(self,
                  backbone,
                  neck=None,
+                 shared_head=None,
                  rpn_head=None,
                  bbox_roi_extractor=None,
                  bbox_head=None,
@@ -28,8 +29,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         if neck is not None:
             self.neck = builder.build_neck(neck)
-        else:
-            raise NotImplementedError
+
+        if shared_head is not None:
+            self.shared_head = builder.build_shared_head(shared_head)
 
         if rpn_head is not None:
             self.rpn_head = builder.build_head(rpn_head)
@@ -40,8 +42,13 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             self.bbox_head = builder.build_head(bbox_head)
 
         if mask_head is not None:
-            self.mask_roi_extractor = builder.build_roi_extractor(
-                mask_roi_extractor)
+            if mask_roi_extractor is not None:
+                self.mask_roi_extractor = builder.build_roi_extractor(
+                    mask_roi_extractor)
+                self.share_roi_extractor = False
+            else:
+                self.share_roi_extractor = True
+                self.mask_roi_extractor = self.bbox_roi_extractor
             self.mask_head = builder.build_head(mask_head)
 
         self.train_cfg = train_cfg
@@ -62,14 +69,17 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                     m.init_weights()
             else:
                 self.neck.init_weights()
+        if self.with_shared_head:
+            self.shared_head.init_weights(pretrained=pretrained)
         if self.with_rpn:
             self.rpn_head.init_weights()
         if self.with_bbox:
             self.bbox_roi_extractor.init_weights()
             self.bbox_head.init_weights()
         if self.with_mask:
-            self.mask_roi_extractor.init_weights()
             self.mask_head.init_weights()
+            if not self.share_roi_extractor:
+                self.mask_roi_extractor.init_weights()
 
     def extract_feat(self, img):
         x = self.backbone(img)
@@ -130,6 +140,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             # TODO: a more flexible way to decide which feature maps to use
             bbox_feats = self.bbox_roi_extractor(
                 x[:self.bbox_roi_extractor.num_inputs], rois)
+            if self.with_shared_head:
+                bbox_feats = self.shared_head(bbox_feats)
             cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
             bbox_targets = self.bbox_head.get_target(
@@ -140,9 +152,29 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         # mask head forward and loss
         if self.with_mask:
-            pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-            mask_feats = self.mask_roi_extractor(
-                x[:self.mask_roi_extractor.num_inputs], pos_rois)
+            if not self.share_roi_extractor:
+                pos_rois = bbox2roi(
+                    [res.pos_bboxes for res in sampling_results])
+                mask_feats = self.mask_roi_extractor(
+                    x[:self.mask_roi_extractor.num_inputs], pos_rois)
+                if self.with_shared_head:
+                    mask_feats = self.shared_head(mask_feats)
+            else:
+                pos_inds = []
+                device = bbox_feats.device
+                for res in sampling_results:
+                    pos_inds.append(
+                        torch.ones(
+                            res.pos_bboxes.shape[0],
+                            device=device,
+                            dtype=torch.uint8))
+                    pos_inds.append(
+                        torch.zeros(
+                            res.neg_bboxes.shape[0],
+                            device=device,
+                            dtype=torch.uint8))
+                pos_inds = torch.cat(pos_inds)
+                mask_feats = bbox_feats[pos_inds]
             mask_pred = self.mask_head(mask_feats)
 
             mask_targets = self.mask_head.get_target(

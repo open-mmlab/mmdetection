@@ -195,11 +195,11 @@ int deform_conv_forward_cuda(at::Tensor input, at::Tensor weight,
                         outputHeight, outputWidth});
   columns = at::zeros(
       {nInputPlane * kW * kH, im2col_step * outputHeight * outputWidth},
-      input.type());
+      input.options());
 
   if (ones.ndimension() != 2 ||
       ones.size(0) * ones.size(1) < outputHeight * outputWidth) {
-    ones = at::ones({outputHeight, outputWidth}, input.type());
+    ones = at::ones({outputHeight, outputWidth}, input.options());
   }
 
   input = input.view({batchSize / im2col_step, im2col_step, nInputPlane,
@@ -211,7 +211,7 @@ int deform_conv_forward_cuda(at::Tensor input, at::Tensor weight,
   at::Tensor output_buffer =
       at::zeros({batchSize / im2col_step, nOutputPlane,
                  im2col_step * outputHeight, outputWidth},
-                output.type());
+                output.options());
 
   output_buffer = output_buffer.view(
       {output_buffer.size(0), group, output_buffer.size(1) / group,
@@ -299,7 +299,7 @@ int deform_conv_backward_input_cuda(at::Tensor input, at::Tensor offset,
   gradInput = gradInput.view({batchSize, nInputPlane, inputHeight, inputWidth});
   columns = at::zeros(
       {nInputPlane * kW * kH, im2col_step * outputHeight * outputWidth},
-      input.type());
+      input.options());
 
   // change order of grad output
   gradOutput = gradOutput.view({batchSize / im2col_step, im2col_step,
@@ -414,7 +414,7 @@ int deform_conv_backward_parameters_cuda(
 
   columns = at::zeros(
       {nInputPlane * kW * kH, im2col_step * outputHeight * outputWidth},
-      input.type());
+      input.options());
 
   gradOutput = gradOutput.view({batchSize / im2col_step, im2col_step,
                                 nOutputPlane, outputHeight, outputWidth});
@@ -518,7 +518,7 @@ void modulated_deform_conv_cuda_forward(
   if (ones.ndimension() != 2 ||
       ones.size(0) * ones.size(1) < height_out * width_out) {
     // Resize plane and fill with ones...
-    ones = at::ones({height_out, width_out}, input.type());
+    ones = at::ones({height_out, width_out}, input.options());
   }
 
   // resize output
@@ -526,7 +526,7 @@ void modulated_deform_conv_cuda_forward(
   // resize temporary columns
   columns =
       at::zeros({channels * kernel_h * kernel_w, 1 * height_out * width_out},
-                input.type());
+                input.options());
 
   output = output.view({output.size(0), group, output.size(1) / group,
                         output.size(2), output.size(3)});
@@ -597,12 +597,12 @@ void modulated_deform_conv_cuda_backward(
   if (ones.ndimension() != 2 ||
       ones.size(0) * ones.size(1) < height_out * width_out) {
     // Resize plane and fill with ones...
-    ones = at::ones({height_out, width_out}, input.type());
+    ones = at::ones({height_out, width_out}, input.options());
   }
 
   grad_input = grad_input.view({batch, channels, height, width});
   columns = at::zeros({channels * kernel_h * kernel_w, height_out * width_out},
-                      input.type());
+                      input.options());
 
   grad_output =
       grad_output.view({grad_output.size(0), group, grad_output.size(1) / group,

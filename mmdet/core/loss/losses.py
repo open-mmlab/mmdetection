@@ -2,6 +2,8 @@
 import torch
 import torch.nn.functional as F
 
+from ...ops import sigmoid_focal_loss
+
 
 def weighted_nll_loss(pred, label, weight, avg_factor=None):
     if avg_factor is None:
@@ -21,6 +23,8 @@ def weighted_cross_entropy(pred, label, weight, avg_factor=None, reduce=True):
 
 
 def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
+    if pred.dim() != label.dim():
+        label, weight = _expand_binary_labels(label, weight, pred.size(-1))
     if avg_factor is None:
         avg_factor = max(torch.sum(weight > 0).float().item(), 1.)
     return F.binary_cross_entropy_with_logits(
@@ -28,12 +32,12 @@ def weighted_binary_cross_entropy(pred, label, weight, avg_factor=None):
         reduction='sum')[None] / avg_factor
 
 
-def sigmoid_focal_loss(pred,
-                       target,
-                       weight,
-                       gamma=2.0,
-                       alpha=0.25,
-                       reduction='mean'):
+def py_sigmoid_focal_loss(pred,
+                          target,
+                          weight,
+                          gamma=2.0,
+                          alpha=0.25,
+                          reduction='mean'):
     pred_sigmoid = pred.sigmoid()
     target = target.type_as(pred)
     pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
@@ -60,9 +64,9 @@ def weighted_sigmoid_focal_loss(pred,
                                 num_classes=80):
     if avg_factor is None:
         avg_factor = torch.sum(weight > 0).float().item() / num_classes + 1e-6
-    return sigmoid_focal_loss(
-        pred, target, weight, gamma=gamma, alpha=alpha,
-        reduction='sum')[None] / avg_factor
+    return torch.sum(
+        sigmoid_focal_loss(pred, target, gamma, alpha, 'none') * weight.view(
+            -1, 1))[None] / avg_factor
 
 
 def mask_cross_entropy(pred, target, label):
@@ -113,3 +117,13 @@ def accuracy(pred, target, topk=1):
         correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
         res.append(correct_k.mul_(100.0 / pred.size(0)))
     return res[0] if return_single else res
+
+
+def _expand_binary_labels(labels, label_weights, label_channels):
+    bin_labels = labels.new_full((labels.size(0), label_channels), 0)
+    inds = torch.nonzero(labels >= 1).squeeze()
+    if inds.numel() > 0:
+        bin_labels[inds, labels[inds] - 1] = 1
+    bin_label_weights = label_weights.view(-1, 1).expand(
+        label_weights.size(0), label_channels)
+    return bin_labels, bin_label_weights
