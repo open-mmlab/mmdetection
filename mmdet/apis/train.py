@@ -3,13 +3,12 @@ from __future__ import division
 from collections import OrderedDict
 
 import torch
-from mmcv.runner import Runner, DistSamplerSeedHook
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmcv.runner import Runner, DistSamplerSeedHook
 
 from mmdet.core import (DistOptimizerHook, Fp16PrepareHook, Fp16OptimizerHook,
                         DistEvalmAPHook, CocoDistEvalRecallHook,
                         CocoDistEvalmAPHook)
-from mmdet.core.utils.memory_statistic import MemHook
 from mmdet.datasets import build_dataloader
 from mmdet.models import RPN
 from .env import get_root_logger
@@ -92,7 +91,6 @@ def _dist_train(model, dataset, cfg, validate=False):
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
     runner.register_hook(DistSamplerSeedHook())
-    runner.register_hook(MemHook())
     # register eval hooks
     if validate:
         if isinstance(model.module, RPN):
