@@ -5,10 +5,10 @@
 We provide config files to reproduce the results in the CVPR 2019 paper for [Hybrid Task Cascade](https://arxiv.org/abs/1901.07518).
 
 ```
-@article{chen2019hybrid,
+@inproceedings{chen2019hybrid,
   title={Hybrid task cascade for instance segmentation},
   author={Chen, Kai and Pang, Jiangmiao and Wang, Jiaqi and Xiong, Yu and Li, Xiaoxiao and Sun, Shuyang and Feng, Wansen and Liu, Ziwei and Shi, Jianping and Ouyang, Wanli and Chen Change Loy and Dahua Lin},
-  journal={arXiv preprint arXiv:1901.07518},
+  booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
   year={2019}
 }
 ```

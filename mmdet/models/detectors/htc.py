@@ -21,6 +21,8 @@ class HybridTaskCascade(CascadeRCNN):
                  mask_info_flow=True,
                  **kwargs):
         super(HybridTaskCascade, self).__init__(num_stages, backbone, **kwargs)
+        assert self.with_bbox and self.with_mask
+        assert not self.with_shared_head  # shared head not supported
         if semantic_head is not None:
             self.semantic_roi_extractor = builder.build_roi_extractor(
                 semantic_roi_extractor)
@@ -50,11 +52,14 @@ class HybridTaskCascade(CascadeRCNN):
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                         rois)
+        # semantic feature fusion
+        # element-wise sum for original features and pooled semantic features
         if self.with_semantic and 'bbox' in self.semantic_fusion:
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
-            bbox_semantic_feat = F.avg_pool2d(
-                bbox_semantic_feat, kernel_size=2, stride=2)
+            if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
+                bbox_semantic_feat = F.adaptive_avg_pool2d(
+                    bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
 
         cls_score, bbox_pred = bbox_head(bbox_feats)
@@ -76,10 +81,20 @@ class HybridTaskCascade(CascadeRCNN):
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
         mask_feats = mask_roi_extractor(x[:mask_roi_extractor.num_inputs],
                                         pos_rois)
+
+        # semantic feature fusion
+        # element-wise sum for original features and pooled semantic features
         if self.with_semantic and 'mask' in self.semantic_fusion:
             mask_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              pos_rois)
+            if mask_semantic_feat.shape[-2:] != mask_feats.shape[-2:]:
+                mask_semantic_feat = F.adaptive_avg_pool2d(
+                    mask_semantic_feat, mask_feats.shape[-2:])
             mask_feats += mask_semantic_feat
+
+        # mask information flow
+        # forward all previous mask heads to obtain last_feat, and fuse it
+        # with the normal mask feature
         if self.mask_info_flow:
             last_feat = None
             for i in range(stage):
@@ -88,6 +103,7 @@ class HybridTaskCascade(CascadeRCNN):
             mask_pred = mask_head(mask_feats, last_feat, return_feat=False)
         else:
             mask_pred = mask_head(mask_feats)
+
         mask_targets = mask_head.get_target(sampling_results, gt_masks,
                                             rcnn_train_cfg)
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
@@ -102,8 +118,9 @@ class HybridTaskCascade(CascadeRCNN):
         if self.with_semantic and 'bbox' in self.semantic_fusion:
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
-            bbox_semantic_feat = F.avg_pool2d(
-                bbox_semantic_feat, kernel_size=2, stride=2)
+            if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
+                bbox_semantic_feat = F.adaptive_avg_pool2d(
+                    bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
         cls_score, bbox_pred = bbox_head(bbox_feats)
         return cls_score, bbox_pred
@@ -117,6 +134,9 @@ class HybridTaskCascade(CascadeRCNN):
         if self.with_semantic and 'mask' in self.semantic_fusion:
             mask_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              mask_rois)
+            if mask_semantic_feat.shape[-2:] != mask_feats.shape[-2:]:
+                mask_semantic_feat = F.adaptive_avg_pool2d(
+                    mask_semantic_feat, mask_feats.shape[-2:])
             mask_feats += mask_semantic_feat
         if self.mask_info_flow:
             last_feat = None
@@ -146,6 +166,7 @@ class HybridTaskCascade(CascadeRCNN):
 
         losses = dict()
 
+        # RPN part, the same as normal two-stage detectors
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
@@ -159,6 +180,8 @@ class HybridTaskCascade(CascadeRCNN):
         else:
             proposal_list = proposals
 
+        # semantic segmentation part
+        # 2 outputs: segmentation prediction and embedded features
         if self.with_semantic:
             semantic_pred, semantic_feat = self.semantic_head(x)
             loss_seg = self.semantic_head.loss(semantic_pred, gt_semantic_seg)
@@ -204,6 +227,8 @@ class HybridTaskCascade(CascadeRCNN):
 
             # mask head forward and loss
             if self.with_mask:
+                # interleaved execution: use regressed bboxes by the box branch
+                # to train the mask branch
                 if self.interleaved:
                     pos_is_gts = [res.pos_is_gt for res in sampling_results]
                     with torch.no_grad():
@@ -229,7 +254,7 @@ class HybridTaskCascade(CascadeRCNN):
                     losses['s{}.{}'.format(
                         i, name)] = (value * lw if 'loss' in name else value)
 
-            # refine bboxes
+            # refine bboxes (same as Cascade R-CNN)
             if i < self.num_stages - 1 and not self.interleaved:
                 pos_is_gts = [res.pos_is_gt for res in sampling_results]
                 with torch.no_grad():
