@@ -6,7 +6,7 @@ from mmcv.runner import load_checkpoint, parallel_test, obj_from_dict
 from mmcv.parallel import scatter, collate, MMDataParallel
 
 from mmdet import datasets
-from mmdet.core import results2json, coco_eval
+from mmdet.core import results2json, coco_eval, wrap_fp16_model
 from mmdet.datasets import build_dataloader
 from mmdet.models import build_detector, detectors
 
@@ -22,8 +22,8 @@ def single_test(model, data_loader, show=False):
         results.append(result)
 
         if show:
-            model.module.show_result(data, result, dataset.img_norm_cfg,
-                                     dataset=dataset.CLASSES)
+            model.module.show_result(
+                data, result, dataset.img_norm_cfg, dataset=dataset.CLASSES)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -73,9 +73,13 @@ def main():
     cfg.data.test.test_mode = True
 
     dataset = obj_from_dict(cfg.data.test, datasets, dict(test_mode=True))
+    fp16 = cfg.get('fp16', None)
+    assert fp16 is not None and args.gpus == 1
     if args.gpus == 1:
         model = build_detector(
             cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+        if fp16 is not None:
+            wrap_fp16_model(model, **fp16.fp16_prepare)
         load_checkpoint(model, args.checkpoint)
         model = MMDataParallel(model, device_ids=[0])
 

@@ -36,6 +36,14 @@ def bn_convert_float(module):
     return module
 
 
+def wrap_fp16_model(model, convert_bn):
+    # convert model to fp16
+    model.backbone = nn.Sequential(ToFP16(), model.backbone)
+    model.half()
+    if convert_bn:
+        bn_convert_float(model)  # bn should be in fp32
+
+
 class WrappedBN(nn.BatchNorm2d):
 
     def __init__(self,

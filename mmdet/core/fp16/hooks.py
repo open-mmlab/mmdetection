@@ -1,9 +1,8 @@
 import torch
 import torch.distributed as dist
-import torch.nn as nn
 from mmcv.runner import Hook
 
-from .utils import bn_convert_float, copy_in_params, ToFP16, set_grad
+from .utils import copy_in_params, set_grad, wrap_fp16_model
 from ..utils.dist_utils import DistOptimizerHook, allreduce_grads
 
 
@@ -23,10 +22,7 @@ class Fp16PrepareHook(Hook):
             if self.distribute:
                 dist.broadcast(param, 0)
         # convert model to fp16
-        model.backbone = nn.Sequential(ToFP16(), model.backbone)
-        model.half()
-        if self.convert_bn:
-            bn_convert_float(model)  # bn should be in fp32
+        wrap_fp16_model(model, convert_bn=self.convert_bn)
         runner.init_optimizer(self.optimizer)
         optim = getattr(torch.optim, self.optimizer['type'])
         self.optimizer.pop('type')
