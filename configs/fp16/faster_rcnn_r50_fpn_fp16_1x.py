@@ -3,8 +3,6 @@ fp16 = dict(
     fp16_prepare=dict(convert_bn=True), fp16_optimizer=dict(loss_scale=512))
 
 # model settings
-normalize = dict(type='BN', fp16=True)
-
 model = dict(
     type='FasterRCNN',
     pretrained='modelzoo://resnet50',
@@ -14,8 +12,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        style='pytorch',
-        normalize=normalize),
+        style='pytorch'),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],

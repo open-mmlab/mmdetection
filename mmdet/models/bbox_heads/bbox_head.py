@@ -116,15 +116,14 @@ class BBoxHead(nn.Module):
                        rescale=False,
                        cfg=None):
         if isinstance(cls_score, list):
-            cls_score = sum(cls_score.float()) / float(len(cls_score))
-        scores = F.softmax(
-            cls_score.float(), dim=1) if cls_score is not None else None
+            cls_score = sum(cls_score) / float(len(cls_score))
+        scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
 
         if bbox_pred is not None:
-            bboxes = delta2bbox(rois[:, 1:], bbox_pred.float(),
-                                self.target_means, self.target_stds, img_shape)
+            bboxes = delta2bbox(rois[:, 1:], bbox_pred, self.target_means,
+                                self.target_stds, img_shape)
         else:
-            bboxes = rois[:, 1:].float()
+            bboxes = rois[:, 1:]
             # TODO: add clip here
 
         if rescale:
@@ -192,7 +191,7 @@ class BBoxHead(nn.Module):
         """
         assert rois.size(1) == 4 or rois.size(1) == 5
 
-        bbox_pred = bbox_pred.float()  # for FP16
+        bbox_pred = bbox_pred  # for FP16
         if not self.reg_class_agnostic:
             label = label * 4
             inds = torch.stack((label, label + 1, label + 2, label + 3), 1)

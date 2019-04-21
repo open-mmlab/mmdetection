@@ -1,11 +1,10 @@
-from mmdet.core.fp16 import WrappedBN, WrappedGN
+import torch.nn as nn
 
 norm_cfg = {
     # format: layer_type: (abbreviation, module)
-    # wrapped is for FP16
-    'BN': ('bn', WrappedBN),
+    'BN': ('bn', nn.BatchNorm2d),
     'SyncBN': ('bn', None),
-    'GN': ('gn', WrappedGN),
+    'GN': ('gn', nn.GroupNorm),
     # and potentially 'SN'
 }
 

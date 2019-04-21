@@ -233,7 +233,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 with torch.no_grad():
                     proposal_list = bbox_head.refine_bboxes(
                         rois, roi_labels, bbox_pred, pos_is_gts, img_meta)
-                    proposal_list = [p.float() for p in proposal_list]
+                    proposal_list = [p for p in proposal_list]
 
         return losses
 
@@ -337,7 +337,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     if self.with_shared_head:
                         mask_feats = self.shared_head(mask_feats)
                     mask_pred = self.mask_head[i](mask_feats)
-                    aug_masks.append(mask_pred.float().sigmoid().cpu().numpy())
+                    aug_masks.append(mask_pred.sigmoid().cpu().numpy())
                 merged_masks = merge_aug_masks(aug_masks,
                                                [img_meta] * self.num_stages,
                                                self.test_cfg.rcnn)

@@ -69,20 +69,18 @@ class RPNHead(AnchorHead):
             rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
             if self.use_sigmoid_cls:
                 rpn_cls_score = rpn_cls_score.reshape(-1)
-                scores = rpn_cls_score.float().sigmoid()
+                scores = rpn_cls_score.sigmoid()
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
-                scores = rpn_cls_score.float().softmax(dim=1)[:, 1]
-            rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1,
-                                                                   4).float()
+                scores = rpn_cls_score.softmax(dim=1)[:, 1]
+            rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
                 _, topk_inds = scores.topk(cfg.nms_pre)
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
                 anchors = anchors[topk_inds, :]
                 scores = scores[topk_inds]
-            proposals = delta2bbox(anchors, rpn_bbox_pred,
-                                   self.target_means, self.target_stds,
-                                   img_shape)
+            proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
+                                   self.target_stds, img_shape)
             if cfg.min_bbox_size > 0:
                 w = proposals[:, 2] - proposals[:, 0] + 1
                 h = proposals[:, 3] - proposals[:, 1] + 1
