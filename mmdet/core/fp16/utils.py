@@ -2,7 +2,6 @@ from collections import abc
 
 import numpy as np
 import torch
-import torch.nn as nn
 
 
 # copy updated param from fp32_weight to fp16 net
