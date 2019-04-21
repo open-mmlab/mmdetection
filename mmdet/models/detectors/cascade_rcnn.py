@@ -233,7 +233,6 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 with torch.no_grad():
                     proposal_list = bbox_head.refine_bboxes(
                         rois, roi_labels, bbox_pred, pos_is_gts, img_meta)
-                    proposal_list = [p for p in proposal_list]
 
         return losses
 

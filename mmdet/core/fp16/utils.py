@@ -81,7 +81,7 @@ def register_float_func(detector):
     # convert torch.half input to torch.float
     # e.g. class_scores, bbox_preds
     patch_funcs = ('loss', 'get_bboxes', 'get_det_bboxes', 'refine_bboxes',
-                   'regress_by_class')
+                   'regress_by_class', 'get_seg_masks')
     for m in detector.modules():
         for func in patch_funcs:
             if hasattr(m, func):

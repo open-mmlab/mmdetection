@@ -191,7 +191,6 @@ class BBoxHead(nn.Module):
         """
         assert rois.size(1) == 4 or rois.size(1) == 5
 
-        bbox_pred = bbox_pred  # for FP16
         if not self.reg_class_agnostic:
             label = label * 4
             inds = torch.stack((label, label + 1, label + 2, label + 3), 1)
