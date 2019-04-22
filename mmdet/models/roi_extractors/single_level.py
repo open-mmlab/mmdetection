@@ -71,6 +71,7 @@ class SingleRoIExtractor(nn.Module):
         return target_lvls
 
     def forward(self, feats, rois):
+        rois = rois.type_as(feats[0])
         if len(feats) == 1:
             return self.roi_layers[0](feats[0], rois)
 

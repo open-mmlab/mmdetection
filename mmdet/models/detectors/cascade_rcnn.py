@@ -175,7 +175,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
             rois = bbox2roi([res.bboxes for res in sampling_results])
             bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
-                                            rois.type_as(x[0]))
+                                            rois)
             if self.with_shared_head:
                 bbox_feats = self.shared_head(bbox_feats)
             cls_score, bbox_pred = bbox_head(bbox_feats)
@@ -191,9 +191,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             if self.with_mask:
                 if not self.share_roi_extractor:
                     mask_roi_extractor = self.mask_roi_extractor[i]
-                    pos_rois = bbox2roi([
-                        res.pos_bboxes for res in sampling_results
-                    ]).type_as(x[0])
+                    pos_rois = bbox2roi(
+                        [res.pos_bboxes for res in sampling_results])
                     mask_feats = mask_roi_extractor(
                         x[:mask_roi_extractor.num_inputs], pos_rois)
                     if self.with_shared_head:
@@ -257,8 +256,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             bbox_head = self.bbox_head[i]
 
             bbox_feats = bbox_roi_extractor(
-                x[:len(bbox_roi_extractor.featmap_strides)],
-                rois.type_as(x[0]))
+                x[:len(bbox_roi_extractor.featmap_strides)], rois)
             if self.with_shared_head:
                 bbox_feats = self.shared_head(bbox_feats)
 
@@ -291,7 +289,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                         mask_rois = bbox2roi([_bboxes])
                         mask_feats = mask_roi_extractor(
                             x[:len(mask_roi_extractor.featmap_strides)],
-                            mask_rois.type_as(x[0]))
+                            mask_rois)
                         if self.with_shared_head:
                             mask_feats = self.shared_head(mask_feats, i)
                         mask_pred = mask_head(mask_feats)
@@ -331,8 +329,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 for i in range(self.num_stages):
                     mask_roi_extractor = self.mask_roi_extractor[i]
                     mask_feats = mask_roi_extractor(
-                        x[:len(mask_roi_extractor.featmap_strides)],
-                        mask_rois.type_as(x[0]))
+                        x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
                     if self.with_shared_head:
                         mask_feats = self.shared_head(mask_feats)
                     mask_pred = self.mask_head[i](mask_feats)

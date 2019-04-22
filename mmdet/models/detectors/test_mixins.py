@@ -36,8 +36,7 @@ class BBoxTestMixin(object):
         """Test only det bboxes without augmentation."""
         rois = bbox2roi(proposals)
         roi_feats = self.bbox_roi_extractor(
-            x[:len(self.bbox_roi_extractor.featmap_strides)],
-            rois.type_as(x[0]))
+            x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
         if self.with_shared_head:
             roi_feats = self.shared_head(roi_feats)
         cls_score, bbox_pred = self.bbox_head(roi_feats)
@@ -108,7 +107,7 @@ class MaskTestMixin(object):
             # rescale it back to the testing scale to obtain RoIs.
             _bboxes = (det_bboxes[:, :4] * scale_factor
                        if rescale else det_bboxes)
-            mask_rois = bbox2roi([_bboxes]).type_as(x[0])
+            mask_rois = bbox2roi([_bboxes])
             mask_feats = self.mask_roi_extractor(
                 x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
             if self.with_shared_head:

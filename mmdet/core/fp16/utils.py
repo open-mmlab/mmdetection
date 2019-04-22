@@ -43,13 +43,16 @@ def convert(inputs, src_type, dst_type, min_dim=0):
         return inputs
 
 
-def patch_forward_module(old_forward):
+def patch_forward_module(old_forward, src_type, dst_type, convert_output):
     # conver input to fp32
     # convert output to fp16
 
-    def new_forward(x):
-        old_output = old_forward(convert(x, x.dtype, torch.float, min_dim=0))
-        return convert(old_output, torch.float, x.dtype, min_dim=0)
+    def new_forward(*args, **kwargs):
+        output = old_forward(*convert(args, src_type, dst_type, min_dim=0),
+                             **convert(kwargs, dst_type, src_type, min_dim=0))
+        if convert_output:
+            output = convert(output, dst_type, src_type, min_dim=0)
+        return output
 
     return new_forward
 
@@ -95,7 +98,8 @@ def register_float_func(detector):
 def bn_convert_float(module):
     if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
         module.float()
-        module.forward = patch_forward_module(module.forward)
+        module.forward = patch_forward_module(
+            module.forward, torch.half, torch.float, convert_output=True)
     for child in module.children():
         bn_convert_float(child)
     return module
