@@ -133,6 +133,7 @@ class FCNMaskHead(nn.Module):
         if isinstance(mask_pred, torch.Tensor):
             mask_pred = mask_pred.sigmoid().cpu().numpy()
         assert isinstance(mask_pred, np.ndarray)
+        mask_pred = mask_pred.astype(np.float32)
 
         cls_segms = [[] for _ in range(self.num_classes - 1)]
         bboxes = det_bboxes.cpu().numpy()[:, :4]
