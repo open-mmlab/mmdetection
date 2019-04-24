@@ -2,6 +2,7 @@
 import torch
 import torch.nn.functional as F
 
+from ..bbox import delta2bbox
 from ...ops import sigmoid_focal_loss
 
 
@@ -98,6 +99,63 @@ def weighted_smoothl1(pred, target, weight, beta=1.0, avg_factor=None):
         avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
     loss = smooth_l1_loss(pred, target, beta, reduction='none')
     return torch.sum(loss * weight)[None] / avg_factor
+
+
+def bounded_iou_loss(pred,
+                     target_means,
+                     target_stds,
+                     rois,
+                     gts,
+                     weights,
+                     beta=0.2,
+                     avg_factor=None,
+                     eps=1e-3):
+    """Improving Object Localization with Fitness NMS and Bounded IoU Loss,
+    https://arxiv.org/abs/1711.00164
+    """
+
+    inds = torch.nonzero(weights[:, 0] > 0)
+    if avg_factor is None:
+        avg_factor = inds.numel() + 1e-6
+
+    if inds.numel() > 0:
+        inds = inds.squeeze(1)
+    else:
+        return (pred * weights).sum()[None] / avg_factor
+
+    pred_ = pred[inds, :]
+    rois_ = rois[inds, :]
+    gts_ = gts[inds, :]
+    pred_bboxes = delta2bbox(
+        rois_, pred_, target_means, target_stds, wh_ratio_clip=1e-6)
+    pred_ctrx = (pred_bboxes[:, 0] + pred_bboxes[:, 2]) * 0.5
+    pred_ctry = (pred_bboxes[:, 1] + pred_bboxes[:, 3]) * 0.5
+    pred_w = pred_bboxes[:, 2] - pred_bboxes[:, 0] + 1
+    pred_h = pred_bboxes[:, 3] - pred_bboxes[:, 1] + 1
+    with torch.no_grad():
+        gt_ctrx = (gts_[:, 0] + gts_[:, 2]) * 0.5
+        gt_ctry = (gts_[:, 1] + gts_[:, 3]) * 0.5
+        gt_w = gts_[:, 2] - gts_[:, 0] + 1
+        gt_h = gts_[:, 3] - gts_[:, 1] + 1
+
+    dx = gt_ctrx - pred_ctrx
+    dy = gt_ctry - pred_ctry
+
+    loss_dx = 1 - torch.max(
+        (gt_w - 2 * dx.abs()) / (gt_w + 2 * dx.abs() + eps),
+        torch.zeros_like(dx))
+    loss_dy = 1 - torch.max(
+        (gt_h - 2 * dy.abs()) / (gt_h + 2 * dy.abs() + eps),
+        torch.zeros_like(dy))
+    loss_dw = 1 - torch.min(gt_w / (pred_w + eps), pred_w / (gt_w + eps))
+    loss_dh = 1 - torch.min(gt_h / (pred_h + eps), pred_h / (gt_h + eps))
+    loss_comb = torch.stack([loss_dx, loss_dy, loss_dw, loss_dh], dim=-1).view(
+        loss_dx.size(0), -1)
+
+    loss = torch.where(loss_comb < beta, 0.5 * loss_comb * loss_comb / beta,
+                       loss_comb - 0.5 * beta)
+    loss = loss.sum()[None] / avg_factor
+    return loss
 
 
 def accuracy(pred, target, topk=1):
