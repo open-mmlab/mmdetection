@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from mmdet import ops
+from mmdet.core import auto_fp16
 from ..registry import ROI_EXTRACTORS
 
 
@@ -70,8 +71,8 @@ class SingleRoIExtractor(nn.Module):
         target_lvls = target_lvls.clamp(min=0, max=num_levels - 1).long()
         return target_lvls
 
+    @auto_fp16(apply_to=('rois', ))
     def forward(self, feats, rois):
-        rois = rois.type_as(feats[0])
         if len(feats) == 1:
             return self.roi_layers[0](feats[0], rois)
 

@@ -3,7 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from mmdet.core import (delta2bbox, multiclass_nms, bbox_target,
-                        weighted_cross_entropy, weighted_smoothl1, accuracy)
+                        weighted_cross_entropy, weighted_smoothl1, accuracy,
+                        force_fp32)
 from ..registry import HEADS
 
 
@@ -80,6 +81,7 @@ class BBoxHead(nn.Module):
             target_stds=self.target_stds)
         return cls_reg_targets
 
+    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
              cls_score,
              bbox_pred,
@@ -107,6 +109,7 @@ class BBoxHead(nn.Module):
                 avg_factor=bbox_targets.size(0))
         return losses
 
+    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def get_det_bboxes(self,
                        rois,
                        cls_score,
@@ -137,6 +140,7 @@ class BBoxHead(nn.Module):
 
             return det_bboxes, det_labels
 
+    @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
         """Refine bboxes during training.
 
@@ -177,6 +181,7 @@ class BBoxHead(nn.Module):
 
         return bboxes_list
 
+    @force_fp32(apply_to=('bbox_pred', ))
     def regress_by_class(self, rois, label, bbox_pred, img_meta):
         """Regress the bbox for the predicted class. Used in Cascade R-CNN.
 

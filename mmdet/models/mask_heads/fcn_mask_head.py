@@ -6,7 +6,7 @@ import torch.nn as nn
 
 from ..registry import HEADS
 from ..utils import ConvModule
-from mmdet.core import mask_cross_entropy, mask_target
+from mmdet.core import mask_cross_entropy, mask_target, force_fp32
 
 
 @HEADS.register_module
@@ -102,6 +102,7 @@ class FCNMaskHead(nn.Module):
                                    gt_masks, rcnn_train_cfg)
         return mask_targets
 
+    @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, mask_targets, labels):
         loss = dict()
         if self.class_agnostic:

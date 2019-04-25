@@ -1,4 +1,5 @@
 from collections import abc
+from inspect import getfullargspec
 
 import numpy as np
 import torch
@@ -57,44 +58,6 @@ def patch_forward_module(old_forward, src_type, dst_type, convert_output):
     return new_forward
 
 
-def patch_forward_models(old_forward):
-    # conver input images to fp16
-
-    def new_forward(*args, **kwargs):
-        old_output = old_forward(
-            *convert(args, torch.float, torch.half, min_dim=2),
-            **convert(kwargs, torch.float, torch.half, min_dim=2))
-        return old_output
-
-    return new_forward
-
-
-def patch_func(old_func, src_type, dst_type):
-    # convert input from src_type to dst_type
-
-    def new_func(*args, **kwargs):
-        old_output = old_func(*convert(args, src_type, dst_type, min_dim=0),
-                              **convert(kwargs, src_type, dst_type, min_dim=0))
-        return old_output
-
-    return new_func
-
-
-def register_float_func(detector):
-    # convert torch.half input to torch.float
-    # e.g. class_scores, bbox_preds
-    patch_funcs = ('loss', 'get_bboxes', 'get_det_bboxes', 'refine_bboxes',
-                   'regress_by_class', 'get_seg_masks')
-    for m in detector.modules():
-        for func in patch_funcs:
-            if hasattr(m, func):
-                setattr(m, func,
-                        patch_func(getattr(m, func), torch.half, torch.float))
-        for child in m.children():
-            register_float_func(child)
-
-
-# convert batch norm layer to fp32
 def bn_convert_float(module):
     if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
         module.float()
@@ -107,8 +70,86 @@ def bn_convert_float(module):
 
 def wrap_fp16_model(model, convert_bn):
     # convert model to fp16
-    model.forward = patch_forward_models(model.forward)
     model.half()
     if convert_bn:
         bn_convert_float(model)  # bn should be in fp32
-    register_float_func(model)
+
+
+def auto_fp16(apply_to=None, out_fp32=False):
+
+    def auto_fp16_wrapper(old_func):
+
+        def new_func(*args, **kwargs):
+            args_info = getfullargspec(old_func)
+            num_args = len(args)
+            num_kwargs = len(kwargs)
+            arg_names = args_info.args[:num_args]
+            # convert args
+            if num_args > 0:
+                new_args = []
+                for i, arg in enumerate(arg_names):
+                    if arg in apply_to:
+                        new_args.append(
+                            convert(args[i], torch.float, torch.half))
+                    else:
+                        new_args.append(args[i])
+            else:
+                new_args = args
+            # convert kwargs
+            if num_kwargs > 0:
+                new_kwargs = dict()
+                for k, v in kwargs.items():
+                    if k in apply_to:
+                        new_kwargs[k] = convert(v, torch.float, torch.half)
+                    else:
+                        new_kwargs[k] = v
+            else:
+                new_kwargs = kwargs
+            output = old_func(*new_args, **new_kwargs)
+            if out_fp32:
+                output = convert(output, torch.half, torch.float)
+            return output
+
+        return new_func
+
+    return auto_fp16_wrapper
+
+
+def force_fp32(apply_to=None, out_fp16=False):
+
+    def force_fp32_wrapper(old_func):
+
+        def new_func(*args, **kwargs):
+            args_info = getfullargspec(old_func)
+            num_args = len(args)
+            num_kwargs = len(kwargs)
+            arg_names = args_info.args[:num_args]
+            # convert args
+            if num_args > 0:
+                new_args = []
+                for i, arg in enumerate(arg_names):
+                    if arg in apply_to:
+                        new_args.append(
+                            convert(args[i], torch.half, torch.float))
+                    else:
+                        new_args.append(args[i])
+            else:
+                new_args = args
+            # convert kwargs
+            if num_kwargs > 0:
+                new_kwargs = dict()
+                for k, v in kwargs.items():
+                    if k in apply_to:
+                        new_kwargs[k] = convert(v, torch.half, torch.float)
+                    else:
+                        new_kwargs[k] = v
+            else:
+                new_kwargs = kwargs
+            output = old_func(*new_args, **new_kwargs)
+            if out_fp16:
+                output = convert(output, torch.float, torch.half)
+            return output
+
+        return new_func
+
+    return force_fp32_wrapper

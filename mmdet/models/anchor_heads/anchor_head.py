@@ -7,7 +7,7 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (AnchorGenerator, anchor_target, delta2bbox,
                         multi_apply, weighted_cross_entropy, weighted_smoothl1,
-                        weighted_binary_cross_entropy,
+                        weighted_binary_cross_entropy, force_fp32,
                         weighted_sigmoid_focal_loss, multiclass_nms)
 from ..registry import HEADS
 
@@ -165,6 +165,7 @@ class AnchorHead(nn.Module):
             avg_factor=num_total_samples)
         return loss_cls, loss_reg
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
              cls_scores,
              bbox_preds,
@@ -210,6 +211,7 @@ class AnchorHead(nn.Module):
             cfg=cfg)
         return dict(loss_cls=losses_cls, loss_reg=losses_reg)
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg,
                    rescale=False):
         assert len(cls_scores) == len(bbox_preds)
