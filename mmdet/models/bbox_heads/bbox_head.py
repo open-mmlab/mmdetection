@@ -34,6 +34,7 @@ class BBoxHead(nn.Module):
         self.target_means = target_means
         self.target_stds = target_stds
         self.reg_class_agnostic = reg_class_agnostic
+        self.fp16_enabled = False
 
         in_channels = self.in_channels
         if self.with_avg_pool:

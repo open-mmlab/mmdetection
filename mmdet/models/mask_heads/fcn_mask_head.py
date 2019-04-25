@@ -39,6 +39,7 @@ class FCNMaskHead(nn.Module):
         self.class_agnostic = class_agnostic
         self.normalize = normalize
         self.with_bias = normalize is None
+        self.fp16_enabled = False
 
         self.convs = nn.ModuleList()
         for i in range(self.num_convs):

@@ -80,6 +80,8 @@ def auto_fp16(apply_to=None, out_fp32=False):
     def auto_fp16_wrapper(old_func):
 
         def new_func(*args, **kwargs):
+            if not args[0].fp16_enabled:
+                return old_func(*args, **kwargs)
             args_info = getfullargspec(old_func)
             num_args = len(args)
             num_kwargs = len(kwargs)
@@ -120,6 +122,8 @@ def force_fp32(apply_to=None, out_fp16=False):
     def force_fp32_wrapper(old_func):
 
         def new_func(*args, **kwargs):
+            if not args[0].fp16_enabled:
+                return old_func(*args, **kwargs)
             args_info = getfullargspec(old_func)
             num_args = len(args)
             num_kwargs = len(kwargs)

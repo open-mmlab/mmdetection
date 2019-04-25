@@ -32,6 +32,7 @@ class SingleRoIExtractor(nn.Module):
         self.out_channels = out_channels
         self.featmap_strides = featmap_strides
         self.finest_scale = finest_scale
+        self.fp16_enabled = False
 
     @property
     def num_inputs(self):

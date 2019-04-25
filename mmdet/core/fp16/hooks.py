@@ -15,6 +15,9 @@ class Fp16PrepareHook(Hook):
 
     def before_run(self, runner):
         model = runner.model.module
+        for m in model.modules():
+            if hasattr(m, 'fp16_enabled'):
+                m.fp16_enabled = True
         # fp32 weight copy
         param_copy = [param.data.clone() for param in model.parameters()]
         for param, net_param in zip(param_copy, model.parameters()):

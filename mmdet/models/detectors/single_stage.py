@@ -23,6 +23,7 @@ class SingleStageDetector(BaseDetector):
         self.bbox_head = builder.build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.fp16_enabled = False
         self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):

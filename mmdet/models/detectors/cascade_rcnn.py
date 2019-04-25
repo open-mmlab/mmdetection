@@ -82,6 +82,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.fp16_enabled = False
 
         self.init_weights(pretrained=pretrained)
 
