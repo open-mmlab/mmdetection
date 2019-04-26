@@ -16,6 +16,7 @@ model = dict(
         out_channels=256,
         start_level=1,
         add_extra_convs=True,
+        extra_convs_on_inputs=False,
         num_outs=5),
     bbox_head=dict(
         type='FCOSHead',
@@ -42,7 +43,7 @@ test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
     score_thr=0.05,
-    nms=dict(type='nms', iou_thr=0.5),
+    nms=dict(type='nms', iou_thr=0.6),
     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
