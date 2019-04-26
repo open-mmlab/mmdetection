@@ -154,6 +154,10 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 - The `20e` schedule in Cascade (Mask) R-CNN indicates decreasing the lr at 16 and 19 epochs, with a total of 20 epochs.
 - Cascade Mask R-CNN with X-101-64x4d-FPN was trained using 16 GPU with a batch size of 16 (1 images per GPU).
 
+### Hybrid Task Cascade (HTC)
+
+Please refer to [HTC](configs/htc/README.md) for details.
+
 ### SSD
 
 | Backbone | Size | Style  | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
