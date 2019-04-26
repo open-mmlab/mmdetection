@@ -1,5 +1,10 @@
 from __future__ import division
 
+import os.path as osp
+import sys
+
+sys.path.insert(0, osp.abspath(osp.join(__file__, '../../')))
+
 import argparse
 from mmcv import Config
 
@@ -34,6 +39,7 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--load', default=None)
     args = parser.parse_args()
 
     return args
@@ -43,6 +49,7 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    cfg.load_from = args.load
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True

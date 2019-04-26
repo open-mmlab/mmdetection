@@ -127,3 +127,36 @@ def _expand_binary_labels(labels, label_weights, label_channels):
     bin_label_weights = label_weights.view(-1, 1).expand(
         label_weights.size(0), label_channels)
     return bin_labels, bin_label_weights
+
+
+def iou_loss(pred, target, reduction='mean'):
+    pred_left = pred[:, 0]
+    pred_top = pred[:, 1]
+    pred_right = pred[:, 2]
+    pred_bottom = pred[:, 3]
+
+    target_left = target[:, 0]
+    target_top = target[:, 1]
+    target_right = target[:, 2]
+    target_bottom = target[:, 3]
+
+    pred_area = (pred_left + pred_right) * (pred_top + pred_bottom)
+    target_area = (target_left + target_right) * (target_top + target_bottom)
+
+    w_intersect = torch.min(pred_left, target_left) + torch.min(
+        pred_right, target_right)
+    h_intersect = torch.min(pred_top, target_top) + torch.min(
+        pred_bottom, target_bottom)
+
+    area_intersect = w_intersect * h_intersect
+    area_union = pred_area + target_area - area_intersect
+    iou = (area_intersect + 1.) / (area_union + 1.)
+    loss = -iou.log()
+
+    reduction_enum = F._Reduction.get_enum(reduction)
+    if reduction_enum == 0:
+        return loss
+    elif reduction_enum == 1:
+        return loss.mean()
+    elif reduction_enum == 2:
+        return loss.sum()
