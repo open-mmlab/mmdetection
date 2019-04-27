@@ -12,6 +12,7 @@ class HTCMaskHead(FCNMaskHead):
             self.conv_out_channels,
             self.conv_out_channels,
             1,
+            conv_cfg=self.conv_cfg,
             normalize=self.normalize,
             bias=self.with_bias)
 
