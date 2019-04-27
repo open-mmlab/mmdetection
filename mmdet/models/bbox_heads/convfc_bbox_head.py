@@ -24,6 +24,7 @@ class ConvFCBBoxHead(BBoxHead):
                  num_reg_fcs=0,
                  conv_out_channels=256,
                  fc_out_channels=1024,
+                 conv_cfg=None,
                  normalize=None,
                  *args,
                  **kwargs):
@@ -44,6 +45,7 @@ class ConvFCBBoxHead(BBoxHead):
         self.num_reg_fcs = num_reg_fcs
         self.conv_out_channels = conv_out_channels
         self.fc_out_channels = fc_out_channels
+        self.conv_cfg = conv_cfg
         self.normalize = normalize
         self.with_bias = normalize is None
 
@@ -101,6 +103,7 @@ class ConvFCBBoxHead(BBoxHead):
                         self.conv_out_channels,
                         3,
                         padding=1,
+                        conv_cfg=self.conv_cfg,
                         normalize=self.normalize,
                         bias=self.with_bias))
             last_layer_dim = self.conv_out_channels

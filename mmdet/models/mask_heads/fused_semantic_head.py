@@ -30,6 +30,7 @@ class FusedSemanticHead(nn.Module):
                  num_classes=183,
                  ignore_label=255,
                  loss_weight=0.2,
+                 conv_cfg=None,
                  normalize=None):
         super(FusedSemanticHead, self).__init__()
         self.num_ins = num_ins
@@ -40,6 +41,7 @@ class FusedSemanticHead(nn.Module):
         self.num_classes = num_classes
         self.ignore_label = ignore_label
         self.loss_weight = loss_weight
+        self.conv_cfg = conv_cfg
         self.normalize = normalize
         self.with_bias = normalize is None
 
@@ -50,6 +52,7 @@ class FusedSemanticHead(nn.Module):
                     self.in_channels,
                     self.in_channels,
                     1,
+                    conv_cfg=self.conv_cfg,
                     normalize=self.normalize,
                     bias=self.with_bias,
                     inplace=False))
@@ -63,12 +66,14 @@ class FusedSemanticHead(nn.Module):
                     conv_out_channels,
                     3,
                     padding=1,
+                    conv_cfg=self.conv_cfg,
                     normalize=self.normalize,
                     bias=self.with_bias))
         self.conv_embedding = ConvModule(
             conv_out_channels,
             conv_out_channels,
             1,
+            conv_cfg=self.conv_cfg,
             normalize=self.normalize,
             bias=self.with_bias)
         self.conv_logits = nn.Conv2d(conv_out_channels, self.num_classes, 1)

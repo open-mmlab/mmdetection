@@ -3,7 +3,42 @@ import warnings
 import torch.nn as nn
 from mmcv.cnn import kaiming_init, constant_init
 
+from .conv_ws import ConvWS2d
 from .norm import build_norm_layer
+
+conv_cfg = {
+    'Conv': nn.Conv2d,
+    'ConvWS': ConvWS2d,
+    # TODO: octave conv
+}
+
+
+def build_conv_layer(cfg, *args, **kwargs):
+    """ Build convolution layer
+
+    Args:
+        cfg (None or dict): cfg should contain:
+            type (str): identify conv layer type.
+            layer args: args needed to instantiate a conv layer.
+
+    Returns:
+        layer (nn.Module): created conv layer
+    """
+    if cfg is None:
+        cfg_ = dict(type='Conv')
+    else:
+        assert isinstance(cfg, dict) and 'type' in cfg
+        cfg_ = cfg.copy()
+
+    layer_type = cfg_.pop('type')
+    if layer_type not in conv_cfg:
+        raise KeyError('Unrecognized norm type {}'.format(layer_type))
+    else:
+        conv_layer = conv_cfg[layer_type]
+
+    layer = conv_layer(*args, **kwargs, **cfg_)
+
+    return layer
 
 
 class ConvModule(nn.Module):
@@ -17,11 +52,14 @@ class ConvModule(nn.Module):
                  dilation=1,
                  groups=1,
                  bias=True,
+                 conv_cfg=None,
                  normalize=None,
                  activation='relu',
                  inplace=True,
                  activate_last=True):
         super(ConvModule, self).__init__()
+        assert conv_cfg is None or isinstance(conv_cfg, dict)
+        assert normalize is None or isinstance(normalize, dict)
         self.with_norm = normalize is not None
         self.with_activatation = activation is not None
         self.with_bias = bias
@@ -31,7 +69,8 @@ class ConvModule(nn.Module):
         if self.with_norm and self.with_bias:
             warnings.warn('ConvModule has norm and bias at the same time')
 
-        self.conv = nn.Conv2d(
+        self.conv = build_conv_layer(
+            conv_cfg,
             in_channels,
             out_channels,
             kernel_size,
