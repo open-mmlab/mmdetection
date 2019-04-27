@@ -47,7 +47,7 @@ class Fp16OptimizerHook(DistOptimizerHook):
        2. Copy gradient from FP16 model weight to FP32 weight copy
        3. Update FP32 weight copy parameters
        4. Copy updated parameters from FP32 weight copy to FP16 model weight
-       
+
     Args:
         loss_scale(float): Scall factor multiplied with loss
         distribute(bool): If use distribute training
