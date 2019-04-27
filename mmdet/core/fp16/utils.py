@@ -1,8 +1,10 @@
+import functools
 from collections import abc
 from inspect import getfullargspec
 
 import numpy as np
 import torch
+import torch.nn as nn
 
 
 # copy updated param from fp32_weight to fp16 net
@@ -23,14 +25,10 @@ def set_grad(fp16_net, fp32_weight):
 
 def convert(inputs, src_type, dst_type, min_dim=0):
     if isinstance(inputs, torch.Tensor):
-        # some tensor don't need to convert to fp16, e.g. gt_bboxes
-        # these tensors' dim are usually smaller or equal to 2
-        if inputs.dim() > min_dim and inputs.dtype == src_type:
-            inputs = inputs.to(dst_type)
+        return inputs.to(dst_type)
+    elif isinstance(inputs, str):
         return inputs
-    if isinstance(inputs, str):
-        return inputs
-    if isinstance(inputs, np.ndarray):
+    elif isinstance(inputs, np.ndarray):
         return inputs
     elif isinstance(inputs, abc.Mapping):
         return type(inputs)({
@@ -59,7 +57,7 @@ def patch_forward_module(old_forward, src_type, dst_type, convert_output):
 
 
 def bn_convert_float(module):
-    if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
+    if isinstance(module, (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
         module.float()
         module.forward = patch_forward_module(
             module.forward, torch.half, torch.float, convert_output=True)
@@ -76,9 +74,12 @@ def wrap_fp16_model(model, convert_bn):
 
 
 def auto_fp16(apply_to=None, out_fp32=False):
+    # convert tensor from torch.float to torch.half
+    # only convert the tensor specified in apply_to
 
     def auto_fp16_wrapper(old_func):
 
+        @functools.wraps(old_func)
         def new_func(*args, **kwargs):
             if not args[0].fp16_enabled:
                 return old_func(*args, **kwargs)
@@ -86,7 +87,7 @@ def auto_fp16(apply_to=None, out_fp32=False):
             num_args = len(args)
             num_kwargs = len(kwargs)
             arg_names = args_info.args[:num_args]
-            # convert args
+            # convert the args specified in apply_to
             if num_args > 0:
                 new_args = []
                 for i, arg in enumerate(arg_names):
@@ -97,7 +98,7 @@ def auto_fp16(apply_to=None, out_fp32=False):
                         new_args.append(args[i])
             else:
                 new_args = args
-            # convert kwargs
+            # convert the kwargs specified in apply_to
             if num_kwargs > 0:
                 new_kwargs = dict()
                 for k, v in kwargs.items():
@@ -118,9 +119,12 @@ def auto_fp16(apply_to=None, out_fp32=False):
 
 
 def force_fp32(apply_to=None, out_fp16=False):
+    # convert tensor from torch.half to torch.float
+    # only convert the tensor specified in apply_to
 
     def force_fp32_wrapper(old_func):
 
+        @functools.wraps(old_func)
         def new_func(*args, **kwargs):
             if not args[0].fp16_enabled:
                 return old_func(*args, **kwargs)
@@ -128,7 +132,7 @@ def force_fp32(apply_to=None, out_fp16=False):
             num_args = len(args)
             num_kwargs = len(kwargs)
             arg_names = args_info.args[:num_args]
-            # convert args
+            # convert the args specified in apply_to
             if num_args > 0:
                 new_args = []
                 for i, arg in enumerate(arg_names):
@@ -139,7 +143,7 @@ def force_fp32(apply_to=None, out_fp16=False):
                         new_args.append(args[i])
             else:
                 new_args = args
-            # convert kwargs
+            # convert the kwargs specified in apply_to
             if num_kwargs > 0:
                 new_kwargs = dict()
                 for k, v in kwargs.items():

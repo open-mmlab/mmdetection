@@ -7,6 +7,7 @@ from mmcv.cnn import (VGG, xavier_init, constant_init, kaiming_init,
                       normal_init)
 from mmcv.runner import load_checkpoint
 from ..registry import BACKBONES
+from ...core.fp16 import force_fp32
 
 
 @BACKBONES.register_module
@@ -126,8 +127,8 @@ class L2Norm(nn.Module):
         self.scale = scale
 
     def forward(self, x):
-        # normalization layer convert to FP32
-        float_x = x.float()
-        norm = float_x.pow(2).sum(1, keepdim=True).sqrt() + self.eps
-        return (self.weight[None, :, None, None].float().expand_as(float_x) *
-                float_x / norm).type_as(x)
+        # normalization layer convert to FP32 in FP16 training
+        x_float = x.float()
+        norm = x_float.pow(2).sum(1, keepdim=True).sqrt() + self.eps
+        return (self.weight[None, :, None, None].float().expand_as(x_float) *
+                x_float / norm).type_as(x)

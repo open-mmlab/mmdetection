@@ -74,7 +74,8 @@ def main():
 
     dataset = obj_from_dict(cfg.data.test, datasets, dict(test_mode=True))
     fp16 = cfg.get('fp16', None)
-    assert fp16 is not None and args.gpus == 1
+    if fp16 is not None:
+        assert args.gpus == 1  # TODO: FP16 parallel test
     if args.gpus == 1:
         model = build_detector(
             cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)

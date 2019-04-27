@@ -7,6 +7,14 @@ from ..utils.dist_utils import DistOptimizerHook, allreduce_grads
 
 
 class Fp16PrepareHook(Hook):
+    """This hook initialize the necessary condition for mix precision training,
+    e.g. copy master fp32 weight, convert bn layer to fp32
+
+    Args:
+        optimizer(int): Original optimizer
+        distribute(bool): If use distribute training
+        convert_bn(bool): If convert bn layer to fp32
+    """  # noqa: W605
 
     def __init__(self, optimizer, distribute=True, convert_bn=True):
         self.optimizer = optimizer
@@ -33,6 +41,17 @@ class Fp16PrepareHook(Hook):
 
 
 class Fp16OptimizerHook(DistOptimizerHook):
+    """FP16 optimizer used for mix precision training, there are some extra
+       steps compared with normal FP32 optimizer, e.g.
+       1. Loss scale
+       2. Copy gradient from FP16 model weight to FP32 weight copy
+       3. Update FP32 weight copy parameters
+       4. Copy updated parameters from FP32 weight copy to FP16 model weight
+       
+    Args:
+        loss_scale(float): Scall factor multiplied with loss
+        distribute(bool): If use distribute training
+    """  # noqa: W605
 
     def __init__(self, grad_clip=None, loss_scale=512., distribute=True):
         super(Fp16OptimizerHook, self).__init__(grad_clip)
