@@ -96,6 +96,7 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 Other features
 - [x] DCNv2
 - [x] Group Normalization
+- [x] Weight Standardization
 - [x] OHEM
 - [x] Soft-NMS
 
