@@ -18,7 +18,7 @@ def convert(in_file, out_file):
     for key, val in in_state_dict.items():
         # Use ConvModule instead of nn.Conv2d in RetinaNet
         # cls_convs.0.weight -> cls_convs.0.conv.weight
-        m = re.search('(cls_convs|reg_convs).\d.(weight|bias)', key)
+        m = re.search(r'(cls_convs|reg_convs).\d.(weight|bias)', key)
         if m is not None:
             param = m.groups()[1]
             new_key = key.replace(param, 'conv.{}'.format(param))
