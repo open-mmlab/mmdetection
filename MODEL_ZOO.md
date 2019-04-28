@@ -109,15 +109,15 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 | Backbone | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
 |:--------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
 | R-50-FPN | caffe   | 1x      | 6.7      | 0.468               | 9.4            | 35.8   | -        |
-| R-50-FPN | pytorch | 1x      | 6.9      | 0.496               | 9.1            | 35.6   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r50_fpn_1x_20181125-3d3c2142.pth) |
-| R-50-FPN | pytorch | 2x      | 6.9      | 0.496               | 9.1            | 36.5   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r50_fpn_2x_20181125-e0dbec97.pth) |
+| R-50-FPN | pytorch | 1x      | 6.9      | 0.496               | 9.1            | 35.6   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r50_fpn_1x_20181125-7b0c2548.pth) |
+| R-50-FPN | pytorch | 2x      | 6.9      | 0.496               | 9.1            | 36.5   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r50_fpn_2x_20181125-8b724df2.pth) |
 | R-101-FPN | caffe   | 1x      | 9.2      | 0.614               | 8.2            | 37.8   | -        |
-| R-101-FPN | pytorch | 1x      | 9.6      | 0.643               | 8.1            | 37.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r101_fpn_1x_20181129-f738a02f.pth) |
-| R-101-FPN | pytorch | 2x      | 9.6      | 0.643               | 8.1            | 38.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r101_fpn_2x_20181129-f654534b.pth) |
-| X-101-32x4d-FPN | pytorch | 1x| 10.8     | 0.792               | 6.7            | 38.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_x101_32x4d_fpn_1x_20181218-c140fb82.pth)
-| X-101-32x4d-FPN | pytorch | 2x| 10.8     | 0.792               | 6.7            | 39.3   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_x101_32x4d_fpn_2x_20181218-605dcd0a.pth)
-| X-101-64x4d-FPN | pytorch | 1x| 14.6     | 1.128               | 5.3            | 40.0   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_x101_64x4d_fpn_1x_20181218-2f6f778b.pth)
-| X-101-64x4d-FPN | pytorch | 2x| 14.6     | 1.128               | 5.3            | 39.6   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_x101_64x4d_fpn_2x_20181218-2f598dc5.pth)
+| R-101-FPN | pytorch | 1x      | 9.6      | 0.643               | 8.1            | 37.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r101_fpn_1x_20181129-f016f384.pth) |
+| R-101-FPN | pytorch | 2x      | 9.6      | 0.643               | 8.1            | 38.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r101_fpn_2x_20181129-72c14526.pth) |
+| X-101-32x4d-FPN | pytorch | 1x| 10.8     | 0.792               | 6.7            | 38.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_x101_32x4d_fpn_1x_20181218-c84d7dfc.pth)
+| X-101-32x4d-FPN | pytorch | 2x| 10.8     | 0.792               | 6.7            | 39.3   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_x101_32x4d_fpn_2x_20181218-8596452d.pth)
+| X-101-64x4d-FPN | pytorch | 1x| 14.6     | 1.128               | 5.3            | 40.0   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_x101_64x4d_fpn_1x_20181218-a0a22662.pth)
+| X-101-64x4d-FPN | pytorch | 2x| 14.6     | 1.128               | 5.3            | 39.6   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_x101_64x4d_fpn_2x_20181218-5e88d045.pth)
 
 ### Cascade R-CNN
 
