@@ -16,11 +16,13 @@ class RetinaHead(AnchorHead):
                  stacked_convs=4,
                  octave_base_scale=4,
                  scales_per_octave=3,
+                 conv_cfg=None,
                  normalize=None,
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
+        self.conv_cfg = conv_cfg
         self.normalize = normalize
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
@@ -46,6 +48,7 @@ class RetinaHead(AnchorHead):
                     3,
                     stride=1,
                     padding=1,
+                    conv_cfg=self.conv_cfg,
                     normalize=self.normalize,
                     bias=self.normalize is None))
             self.reg_convs.append(
@@ -55,6 +58,7 @@ class RetinaHead(AnchorHead):
                     3,
                     stride=1,
                     padding=1,
+                    conv_cfg=self.conv_cfg,
                     normalize=self.normalize,
                     bias=self.normalize is None))
         self.retina_cls = nn.Conv2d(
