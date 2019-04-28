@@ -22,6 +22,7 @@ class FCNMaskHead(nn.Module):
                  upsample_ratio=2,
                  num_classes=81,
                  class_agnostic=False,
+                 conv_cfg=None,
                  normalize=None):
         super(FCNMaskHead, self).__init__()
         if upsample_method not in [None, 'deconv', 'nearest', 'bilinear']:
@@ -37,6 +38,7 @@ class FCNMaskHead(nn.Module):
         self.upsample_ratio = upsample_ratio
         self.num_classes = num_classes
         self.class_agnostic = class_agnostic
+        self.conv_cfg = conv_cfg
         self.normalize = normalize
         self.with_bias = normalize is None
 
@@ -51,13 +53,16 @@ class FCNMaskHead(nn.Module):
                     self.conv_out_channels,
                     self.conv_kernel_size,
                     padding=padding,
+                    conv_cfg=conv_cfg,
                     normalize=normalize,
                     bias=self.with_bias))
+        upsample_in_channels = (self.conv_out_channels
+                                if self.num_convs > 0 else in_channels)
         if self.upsample_method is None:
             self.upsample = None
         elif self.upsample_method == 'deconv':
             self.upsample = nn.ConvTranspose2d(
-                self.conv_out_channels,
+                upsample_in_channels,
                 self.conv_out_channels,
                 self.upsample_ratio,
                 stride=self.upsample_ratio)
@@ -66,7 +71,10 @@ class FCNMaskHead(nn.Module):
                 scale_factor=self.upsample_ratio, mode=self.upsample_method)
 
         out_channels = 1 if self.class_agnostic else self.num_classes
-        self.conv_logits = nn.Conv2d(self.conv_out_channels, out_channels, 1)
+        logits_in_channel = (self.conv_out_channels
+                             if self.upsample_method == 'deconv' else
+                             upsample_in_channels)
+        self.conv_logits = nn.Conv2d(logits_in_channel, out_channels, 1)
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 

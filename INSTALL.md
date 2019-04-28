@@ -6,7 +6,7 @@
 - Python 3.4+
 - PyTorch 1.0
 - Cython
-- [mmcv](https://github.com/open-mmlab/mmcv) >= 0.2.2
+- [mmcv](https://github.com/open-mmlab/mmcv)
 
 ### Install mmdetection
 
