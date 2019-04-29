@@ -421,12 +421,14 @@ class ResNet(nn.Module):
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
+            self.norm1.eval()
             for m in [self.conv1, self.norm1]:
                 for param in m.parameters():
                     param.requires_grad = False
 
         for i in range(1, self.frozen_stages + 1):
             m = getattr(self, 'layer{}'.format(i))
+            m.eval()
             for param in m.parameters():
                 param.requires_grad = False
 
