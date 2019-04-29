@@ -127,7 +127,7 @@ def _non_dist_train(model, dataset, cfg, validate=False):
     if fp16_cfg is not None:
         fp16_prepare_hook = Fp16PrepareHook(cfg.optimizer)
         optimizer_config = Fp16OptimizerHook(
-            **cfg.optimizer_config, **fp16_cfg, distribute=False)
+            **cfg.optimizer_config, **fp16_cfg, distributed=False)
         cfg.optimizer = None
     else:
         optimizer_config = cfg.optimizer_config

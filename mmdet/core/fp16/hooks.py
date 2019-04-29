@@ -16,10 +16,11 @@ class Fp16PrepareHook(Hook):
     """
 
     def __init__(self, optimizer):
-        self.optimizer = optimizer.copy()
+        self.optimizer = optimizer
 
     def before_run(self, runner):
         model = runner.model.module
+        # set fp16 flag
         for m in model.modules():
             if hasattr(m, 'fp16_enabled'):
                 m.fp16_enabled = True
@@ -29,10 +30,12 @@ class Fp16PrepareHook(Hook):
             param.requires_grad = net_param.requires_grad
         # convert model to fp16
         wrap_fp16_model(model)
-        runner.init_optimizer(self.optimizer)
-        optim = getattr(torch.optim, self.optimizer['type'])
-        self.optimizer.pop('type')
-        runner.optimizer = optim(param_copy, **self.optimizer)
+        # wrap fp16 optimizer
+        optimizer = self.optimizer.copy()
+        runner.init_optimizer(optimizer)
+        optim = getattr(torch.optim, optimizer['type'])
+        optimizer.pop('type')
+        runner.optimizer = optim(param_copy, **optimizer)
 
 
 class Fp16OptimizerHook(OptimizerHook):
@@ -54,12 +57,12 @@ class Fp16OptimizerHook(OptimizerHook):
                  coalesce=True,
                  bucket_size_mb=-1,
                  loss_scale=512.,
-                 distribute=True):
+                 distributed=True):
         self.grad_clip = grad_clip
         self.coalesce = coalesce
         self.bucket_size_mb = bucket_size_mb
         self.loss_scale = loss_scale
-        self.distribute = distribute
+        self.distributed = distributed
 
     def after_train_iter(self, runner):
         fp32_weight = runner.optimizer.param_groups[0]['params']
@@ -68,7 +71,7 @@ class Fp16OptimizerHook(OptimizerHook):
         scaled_loss = runner.outputs['loss'] * self.loss_scale
         scaled_loss.backward()
         set_grad(runner.model, fp32_weight)
-        if self.distribute:
+        if self.distributed:
             allreduce_grads(fp32_weight, self.coalesce, self.bucket_size_mb)
         for p in fp32_weight:
             if p.grad is not None:
