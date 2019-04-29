@@ -1,6 +1,5 @@
 # fp16 settings
-fp16 = dict(
-    fp16_prepare=dict(convert_bn=True), fp16_optimizer=dict(loss_scale=512))
+fp16 = dict(loss_scale=512.)
 
 model = dict(
     type='MaskRCNN',

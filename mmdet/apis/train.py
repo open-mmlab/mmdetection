@@ -73,11 +73,11 @@ def _dist_train(model, dataset, cfg, validate=False):
     model = MMDistributedDataParallel(model.cuda())
 
     # fp16 setting
-    fp16 = cfg.get('fp16', None)
-    if fp16 is not None:
-        fp16_prepare_hook = Fp16PrepareHook(cfg.optimizer, **fp16.fp16_prepare)
+    fp16_cfg = cfg.get('fp16', None)
+    if fp16_cfg is not None:
+        fp16_prepare_hook = Fp16PrepareHook(cfg.optimizer)
         optimizer_config = Fp16OptimizerHook(**cfg.optimizer_config,
-                                             **fp16.fp16_optimizer)
+                                             **fp16_cfg)
         cfg.optimizer = None
     else:
         optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
@@ -86,7 +86,7 @@ def _dist_train(model, dataset, cfg, validate=False):
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
                     cfg.log_level)
     # register hooks
-    if fp16:
+    if fp16_cfg is not None:
         runner.register_hook(fp16_prepare_hook)
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
@@ -123,12 +123,11 @@ def _non_dist_train(model, dataset, cfg, validate=False):
     model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
 
     # fp16 setting
-    fp16 = cfg.get('fp16', None)
-    if fp16 is not None:
-        fp16_prepare_hook = Fp16PrepareHook(
-            cfg.optimizer, distribute=False, **fp16.fp16_prepare)
+    fp16_cfg = cfg.get('fp16', None)
+    if fp16_cfg is not None:
+        fp16_prepare_hook = Fp16PrepareHook(cfg.optimizer)
         optimizer_config = Fp16OptimizerHook(
-            **cfg.optimizer_config, **fp16.fp16_optimizer, distribute=False)
+            **cfg.optimizer_config, **fp16_cfg, distribute=False)
         cfg.optimizer = None
     else:
         optimizer_config = cfg.optimizer_config
@@ -136,7 +135,7 @@ def _non_dist_train(model, dataset, cfg, validate=False):
     # build runner
     runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
                     cfg.log_level)
-    if fp16:
+    if fp16_cfg is not None:
         runner.register_hook(fp16_prepare_hook)
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)

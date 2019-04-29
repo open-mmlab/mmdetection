@@ -7,22 +7,6 @@ import torch
 import torch.nn as nn
 
 
-# copy updated param from fp32_weight to fp16 net
-def copy_in_params(fp16_net, fp32_weight):
-    for net_param, fp32_weight_param in zip(fp16_net.parameters(),
-                                            fp32_weight):
-        net_param.data.copy_(fp32_weight_param.data)
-
-
-# copy gradient from fp16 net to fp32 weight copy
-def set_grad(fp16_net, fp32_weight):
-    for param, param_w_grad in zip(fp32_weight, fp16_net.parameters()):
-        if param_w_grad.grad is not None:
-            if param.grad is None:
-                param.grad = param.data.new(*param.data.size())
-            param.grad.data.copy_(param_w_grad.grad.data)
-
-
 def convert(inputs, src_type, dst_type, min_dim=0):
     if isinstance(inputs, torch.Tensor):
         return inputs.to(dst_type)
@@ -64,13 +48,6 @@ def bn_convert_float(module):
     for child in module.children():
         bn_convert_float(child)
     return module
-
-
-def wrap_fp16_model(model, convert_bn):
-    # convert model to fp16
-    model.half()
-    if convert_bn:
-        bn_convert_float(model)  # bn should be in fp32
 
 
 def auto_fp16(apply_to=None, out_fp32=False):
