@@ -71,7 +71,18 @@ def _dist_train(model, dataset, cfg, validate=False):
     # put model on gpus
     model = MMDistributedDataParallel(model.cuda())
     # build runner
-    runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
+    params = []
+    for k, v in model.module.named_parameters():
+        if not v.requires_grad:
+            continue
+        lr = cfg.optimizer.lr
+        weight_decay = cfg.optimizer.weight_decay
+        if 'bias' in k:
+            lr = lr * 2
+            weight_decay = 0
+        params += [{"params": [v], "lr": lr, "weight_decay": weight_decay}]
+    optimizer = torch.optim.SGD(params, lr, momentum=cfg.optimizer.momentum)
+    runner = Runner(model, batch_processor, optimizer, cfg.work_dir,
                     cfg.log_level)
     # register hooks
     optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
@@ -108,8 +119,20 @@ def _non_dist_train(model, dataset, cfg, validate=False):
     ]
     # put model on gpus
     model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
+    params = []
+    for k, v in model.module.named_parameters():
+        if not v.requires_grad:
+            continue
+        lr = cfg.optimizer.lr
+        weight_decay = cfg.optimizer.weight_decay
+        if 'bias' in k:
+            lr = lr * 2
+            weight_decay = 0
+        params += [{"params": [v], "lr": lr, "weight_decay": weight_decay}]
+    optimizer = torch.optim.SGD(params, lr, momentum=cfg.optimizer.momentum)
+
     # build runner
-    runner = Runner(model, batch_processor, cfg.optimizer, cfg.work_dir,
+    runner = Runner(model, batch_processor, optimizer, cfg.work_dir,
                     cfg.log_level)
     runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
