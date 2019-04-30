@@ -83,8 +83,8 @@ We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More m
 | R-101-FPN | pytorch | 1x      | 9.1      | 0.825               | 6.7            | 39.4   | 35.9    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r101_fpn_1x_20181129-34ad1961.pth) |
 | R-101-FPN | pytorch | 2x      | 9.1      | 0.825               | 6.7            | 40.4   | 36.6    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r101_fpn_2x_20181129-a254bdfc.pth) |
 | X-101-32x4d-FPN | pytorch | 1x| 10.9     | 0.972               | 5.8            | 41.2   | 37.2    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_32x4d_fpn_1x_20181218-44e635cc.pth)
-| X-101-64x4d-FPN | pytorch | 2x| 10.9     | 0.972               | 5.8            | 41.4   | 37.1    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_32x4d_fpn_2x_20181218-f023dffa.pth)
-| X-101-32x4d-FPN | pytorch | 1x| 14.1     | 1.302               | 4.7            | 42.2   | 38.1    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_64x4d_fpn_1x_20181218-cb159987.pth)
+| X-101-32x4d-FPN | pytorch | 2x| 10.9     | 0.972               | 5.8            | 41.4   | 37.1    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_32x4d_fpn_2x_20181218-f023dffa.pth)
+| X-101-64x4d-FPN | pytorch | 1x| 14.1     | 1.302               | 4.7            | 42.2   | 38.1    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_64x4d_fpn_1x_20181218-cb159987.pth)
 | X-101-64x4d-FPN | pytorch | 2x| 14.1     | 1.302               | 4.7            | 42.0   | 37.8    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_64x4d_fpn_2x_20181218-ea936e44.pth)
 
 ### Fast R-CNN (with pre-computed proposals)
