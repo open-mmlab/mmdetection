@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
+from mmcv.cnn import caffe2_xavier_init
 
 from ..registry import NECKS
 from ..utils import ConvModule
@@ -90,7 +90,7 @@ class FPN(nn.Module):
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
+                caffe2_xavier_init(m)
 
     def forward(self, inputs):
         assert len(inputs) == len(self.in_channels)
@@ -128,5 +128,5 @@ class FPN(nn.Module):
                     outs.append(self.fpn_convs[used_backbone_levels](outs[-1]))
                 for i in range(used_backbone_levels + 1, self.num_outs):
                     # BUG: we should add relu before each extra conv
-                    outs.append(self.fpn_convs[i](outs[-1]))
+                    outs.append(self.fpn_convs[i](F.relu(outs[-1])))
         return tuple(outs)
