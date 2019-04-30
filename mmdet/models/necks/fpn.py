@@ -17,6 +17,7 @@ class FPN(nn.Module):
                  end_level=-1,
                  add_extra_convs=False,
                  extra_convs_on_inputs=True,
+                 conv_cfg=None,
                  normalize=None,
                  activation=None):
         super(FPN, self).__init__()
@@ -49,6 +50,7 @@ class FPN(nn.Module):
                 in_channels[i],
                 out_channels,
                 1,
+                conv_cfg=conv_cfg,
                 normalize=normalize,
                 bias=self.with_bias,
                 activation=self.activation,
@@ -58,6 +60,7 @@ class FPN(nn.Module):
                 out_channels,
                 3,
                 padding=1,
+                conv_cfg=conv_cfg,
                 normalize=normalize,
                 bias=self.with_bias,
                 activation=self.activation,

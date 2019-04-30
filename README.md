@@ -91,10 +91,12 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 | Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        |
 | SSD                | ✗        | ✗        | ✗        | ✓        |
 | RetinaNet          | ✓        | ✓        | ☐        | ✗        |
+| Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        |
 
 Other features
 - [x] DCNv2
 - [x] Group Normalization
+- [x] Weight Standardization
 - [x] OHEM
 - [x] Soft-NMS
 

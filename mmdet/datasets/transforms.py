@@ -2,7 +2,10 @@ import mmcv
 import numpy as np
 import torch
 
-__all__ = ['ImageTransform', 'BboxTransform', 'MaskTransform', 'Numpy2Tensor']
+__all__ = [
+    'ImageTransform', 'BboxTransform', 'MaskTransform', 'SegMapTransform',
+    'Numpy2Tensor'
+]
 
 
 class ImageTransform(object):
@@ -107,6 +110,29 @@ class MaskTransform(object):
         ]
         padded_masks = np.stack(padded_masks, axis=0)
         return padded_masks
+
+
+class SegMapTransform(object):
+    """Preprocess semantic segmentation maps.
+
+    1. rescale the segmentation map to expected size
+    3. flip the image (if needed)
+    4. pad the image (if needed)
+    """
+
+    def __init__(self, size_divisor=None):
+        self.size_divisor = size_divisor
+
+    def __call__(self, img, scale, flip=False, keep_ratio=True):
+        if keep_ratio:
+            img = mmcv.imrescale(img, scale, interpolation='nearest')
+        else:
+            img = mmcv.imresize(img, scale, interpolation='nearest')
+        if flip:
+            img = mmcv.imflip(img)
+        if self.size_divisor is not None:
+            img = mmcv.impad_to_multiple(img, self.size_divisor)
+        return img
 
 
 class Numpy2Tensor(object):

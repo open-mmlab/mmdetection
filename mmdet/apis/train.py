@@ -3,12 +3,13 @@ from __future__ import division
 from collections import OrderedDict
 
 import torch
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import Runner, DistSamplerSeedHook
+from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
-from mmdet.core import (DistOptimizerHook, Fp16PrepareHook, Fp16OptimizerHook,
-                        DistEvalmAPHook, CocoDistEvalRecallHook,
-                        CocoDistEvalmAPHook)
+from mmdet import datasets
+from mmdet.core import (DistOptimizerHook, DistEvalmAPHook,
+                        CocoDistEvalRecallHook, CocoDistEvalmAPHook,
+                        Fp16PrepareHook, Fp16OptimizerHook)
 from mmdet.datasets import build_dataloader
 from mmdet.models import RPN
 from .env import get_root_logger
@@ -93,14 +94,16 @@ def _dist_train(model, dataset, cfg, validate=False):
     runner.register_hook(DistSamplerSeedHook())
     # register eval hooks
     if validate:
+        val_dataset_cfg = cfg.data.val
         if isinstance(model.module, RPN):
             # TODO: implement recall hooks for other datasets
-            runner.register_hook(CocoDistEvalRecallHook(cfg.data.val))
+            runner.register_hook(CocoDistEvalRecallHook(val_dataset_cfg))
         else:
-            if cfg.data.val.type == 'CocoDataset':
-                runner.register_hook(CocoDistEvalmAPHook(cfg.data.val))
+            dataset_type = getattr(datasets, val_dataset_cfg.type)
+            if issubclass(dataset_type, datasets.CocoDataset):
+                runner.register_hook(CocoDistEvalmAPHook(val_dataset_cfg))
             else:
-                runner.register_hook(DistEvalmAPHook(cfg.data.val))
+                runner.register_hook(DistEvalmAPHook(val_dataset_cfg))
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
