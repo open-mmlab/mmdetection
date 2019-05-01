@@ -10,7 +10,7 @@
 ### Software environment
 
 - Python 3.6 / 3.7
-- PyTorch 1.0
+- PyTorch Nightly
 - CUDA 9.0.176
 - CUDNN 7.0.4
 - NCCL 2.1.15
