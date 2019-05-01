@@ -351,13 +351,13 @@ The training speed is measure with s/iter. The lower, the better.
     <td>Fast R-CNN</td>
     <td>0.285</td>
     <td>-</td>
-    <td>0.375 / 0.398</td>
+    <td>0.250 / 0.242</td>
   </tr>
   <tr>
     <td>Fast R-CNN (w/mask)</td>
     <td>0.377</td>
     <td>-</td>
-    <td>0.250 / 0.242</td>
+    <td>0.346 / 0.328</td>
   </tr>
 </table>
 
