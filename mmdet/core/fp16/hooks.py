@@ -1,7 +1,7 @@
 import torch
 from mmcv.runner import Hook, OptimizerHook
 
-from .utils import bn_convert_float
+from .utils import patch_norm_fp32
 from ..utils.dist_utils import allreduce_grads
 
 
@@ -101,4 +101,4 @@ def set_grad(fp16_net, fp32_weight):
 def wrap_fp16_model(model):
     # convert model to fp16
     model.half()
-    bn_convert_float(model)  # bn should be in fp32
+    patch_norm_fp32(model)  # bn should be in fp32

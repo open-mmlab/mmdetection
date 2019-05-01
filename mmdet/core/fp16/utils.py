@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 
-def convert(inputs, src_type, dst_type, min_dim=0):
+def cast_tensor_type(inputs, src_type, dst_type, min_dim=0):
     if isinstance(inputs, torch.Tensor):
         return inputs.to(dst_type)
     elif isinstance(inputs, str):
@@ -16,37 +16,37 @@ def convert(inputs, src_type, dst_type, min_dim=0):
         return inputs
     elif isinstance(inputs, abc.Mapping):
         return type(inputs)({
-            k: convert(v, src_type, dst_type, min_dim)
+            k: cast_tensor_type(v, src_type, dst_type, min_dim)
             for k, v in inputs.items()
         })
     elif isinstance(inputs, abc.Iterable):
-        return type(inputs)(
-            convert(item, src_type, dst_type, min_dim) for item in inputs)
+        return type(inputs)(cast_tensor_type(item, src_type, dst_type, min_dim)
+                            for item in inputs)
     else:
         return inputs
 
 
 def patch_forward_module(old_forward, src_type, dst_type, convert_output):
-    # conver input to fp32
-    # convert output to fp16
+    # conver input from src_type to dst_type
 
     def new_forward(*args, **kwargs):
-        output = old_forward(*convert(args, src_type, dst_type, min_dim=0),
-                             **convert(kwargs, dst_type, src_type, min_dim=0))
+        output = old_forward(
+            *cast_tensor_type(args, src_type, dst_type, min_dim=0),
+            **cast_tensor_type(kwargs, dst_type, src_type, min_dim=0))
         if convert_output:
-            output = convert(output, dst_type, src_type, min_dim=0)
+            output = cast_tensor_type(output, dst_type, src_type, min_dim=0)
         return output
 
     return new_forward
 
 
-def bn_convert_float(module):
+def patch_norm_fp32(module):
     if isinstance(module, (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
         module.float()
         module.forward = patch_forward_module(
             module.forward, torch.half, torch.float, convert_output=True)
     for child in module.children():
-        bn_convert_float(child)
+        patch_norm_fp32(child)
     return module
 
 
@@ -70,7 +70,7 @@ def auto_fp16(apply_to=None, out_fp32=False):
                 for i, arg in enumerate(arg_names):
                     if arg in apply_to:
                         new_args.append(
-                            convert(args[i], torch.float, torch.half))
+                            cast_tensor_type(args[i], torch.float, torch.half))
                     else:
                         new_args.append(args[i])
             else:
@@ -80,14 +80,15 @@ def auto_fp16(apply_to=None, out_fp32=False):
                 new_kwargs = dict()
                 for k, v in kwargs.items():
                     if k in apply_to:
-                        new_kwargs[k] = convert(v, torch.float, torch.half)
+                        new_kwargs[k] = cast_tensor_type(
+                            v, torch.float, torch.half)
                     else:
                         new_kwargs[k] = v
             else:
                 new_kwargs = kwargs
             output = old_func(*new_args, **new_kwargs)
             if out_fp32:
-                output = convert(output, torch.half, torch.float)
+                output = cast_tensor_type(output, torch.half, torch.float)
             return output
 
         return new_func
@@ -115,7 +116,7 @@ def force_fp32(apply_to=None, out_fp16=False):
                 for i, arg in enumerate(arg_names):
                     if arg in apply_to:
                         new_args.append(
-                            convert(args[i], torch.half, torch.float))
+                            cast_tensor_type(args[i], torch.half, torch.float))
                     else:
                         new_args.append(args[i])
             else:
@@ -125,14 +126,15 @@ def force_fp32(apply_to=None, out_fp16=False):
                 new_kwargs = dict()
                 for k, v in kwargs.items():
                     if k in apply_to:
-                        new_kwargs[k] = convert(v, torch.half, torch.float)
+                        new_kwargs[k] = cast_tensor_type(
+                            v, torch.half, torch.float)
                     else:
                         new_kwargs[k] = v
             else:
                 new_kwargs = kwargs
             output = old_func(*new_args, **new_kwargs)
             if out_fp16:
-                output = convert(output, torch.float, torch.half)
+                output = cast_tensor_type(output, torch.float, torch.half)
             return output
 
         return new_func
