@@ -15,8 +15,6 @@
 - CUDNN 7.0.4
 - NCCL 2.1.15
 
-Note: The train time was measured with PyTorch 0.4.1. We will update it later, which should be about 0.02s ~ 0.05s faster.
-
 ## Mirror sites
 
 We use AWS as the main site to host our model zoo, and maintain a mirror on aliyun.
@@ -40,7 +38,7 @@ It should be very close to the actual memory and time.
 
 ## Baselines
 
-We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More models with different backbones will be added to the model zoo.
+More models with different backbones will be added to the model zoo.
 
 ### RPN
 
