@@ -96,6 +96,11 @@ class GARPNHead(GuidedAnchorHead):
                 -1, 4)[mask_inds, :]
             shape_pred = shape_pred.permute(1, 2, 0).reshape(-1,
                                                              2)[mask_inds, :]
+            if scores.dim() == 0:
+                rpn_bbox_pred = rpn_bbox_pred.unsqueeze(0)
+                anchors = anchors.unsqueeze(0)
+                scores = scores.unsqueeze(0)
+                shape_pred = shape_pred.unsqueeze(0)
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
                 _, topk_inds = scores.topk(cfg.nms_pre)
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]

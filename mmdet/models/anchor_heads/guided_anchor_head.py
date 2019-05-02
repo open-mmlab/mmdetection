@@ -434,6 +434,11 @@ class GuidedAnchorHead(nn.Module):
             shape_pred = shape_pred[mask_inds, :]
             scores = scores[mask_inds, :]
             bbox_pred = bbox_pred[mask_inds, :]
+            if scores.dim() == 0:
+                anchors = anchors.unsqueeze(0)
+                shape_pred = shape_pred.unsqueeze(0)
+                scores = scores.unsqueeze(0)
+                bbox_pred = bbox_pred.unsqueeze(0)
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
                 if self.cls_sigmoid_loss:
