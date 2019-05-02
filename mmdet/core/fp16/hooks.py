@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from mmcv.runner import Hook, OptimizerHook
 
-from .utils import patch_forward_module
+from .utils import cast_tensor_type
 from ..utils.dist_utils import allreduce_grads
 
 
@@ -111,3 +111,31 @@ def patch_norm_fp32(module):
     for child in module.children():
         patch_norm_fp32(child)
     return module
+
+
+def patch_forward_module(old_forward, src_type, dst_type, convert_output):
+    """Patch the forward function of a module.
+
+    Args:
+        old_forward (func): original forward function.
+        src_type (torch.dtype): the args' type of the old_forward that we want
+        to convert from.
+        dst_type (torch.dtype): the args' type of the old_forward that we want
+        to convert to.
+        convert_output (bool): if convert the output of the old_forward to
+        src_type.
+
+    Returns:
+        func: a new forward function
+    """
+
+    # conver input from src_type to dst_type
+
+    def new_forward(*args, **kwargs):
+        output = old_forward(*cast_tensor_type(args, src_type, dst_type),
+                             **cast_tensor_type(kwargs, src_type, dst_type))
+        if convert_output:
+            output = cast_tensor_type(output, dst_type, src_type)
+        return output
+
+    return new_forward
