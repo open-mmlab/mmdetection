@@ -16,6 +16,7 @@ class BaseDetector(nn.Module):
 
     def __init__(self):
         super(BaseDetector, self).__init__()
+        self.fp16_enabled = False
 
     @property
     def with_neck(self):

@@ -4,10 +4,9 @@ from inspect import getfullargspec
 
 import numpy as np
 import torch
-import torch.nn as nn
 
 
-def cast_tensor_type(inputs, src_type, dst_type, min_dim=0):
+def cast_tensor_type(inputs, src_type, dst_type):
     if isinstance(inputs, torch.Tensor):
         return inputs.to(dst_type)
     elif isinstance(inputs, str):
@@ -16,43 +15,48 @@ def cast_tensor_type(inputs, src_type, dst_type, min_dim=0):
         return inputs
     elif isinstance(inputs, abc.Mapping):
         return type(inputs)({
-            k: cast_tensor_type(v, src_type, dst_type, min_dim)
+            k: cast_tensor_type(v, src_type, dst_type)
             for k, v in inputs.items()
         })
     elif isinstance(inputs, abc.Iterable):
-        return type(inputs)(cast_tensor_type(item, src_type, dst_type, min_dim)
-                            for item in inputs)
+        return type(inputs)(
+            cast_tensor_type(item, src_type, dst_type) for item in inputs)
     else:
         return inputs
 
 
 def patch_forward_module(old_forward, src_type, dst_type, convert_output):
+    """Patch the forward function of a module.
+
+    Args:
+        old_forward (func): original forward function.
+        src_type (torch.dtype): the args' type of the old_forward that we want
+        to convert from.
+        dst_type (torch.dtype): the args' type of the old_forward that we want
+        to convert to.
+        convert_output (bool): if convert the output of the old_forward to
+        src_type.
+
+    Returns:
+        func: a new forward function
+    """
+
     # conver input from src_type to dst_type
 
     def new_forward(*args, **kwargs):
-        output = old_forward(
-            *cast_tensor_type(args, src_type, dst_type, min_dim=0),
-            **cast_tensor_type(kwargs, dst_type, src_type, min_dim=0))
+        output = old_forward(*cast_tensor_type(args, src_type, dst_type),
+                             **cast_tensor_type(kwargs, src_type, dst_type))
         if convert_output:
-            output = cast_tensor_type(output, dst_type, src_type, min_dim=0)
+            output = cast_tensor_type(output, dst_type, src_type)
         return output
 
     return new_forward
 
 
-def patch_norm_fp32(module):
-    if isinstance(module, (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
-        module.float()
-        module.forward = patch_forward_module(
-            module.forward, torch.half, torch.float, convert_output=True)
-    for child in module.children():
-        patch_norm_fp32(child)
-    return module
-
-
 def auto_fp16(apply_to=None, out_fp32=False):
     # convert tensor from torch.float to torch.half
     # only convert the tensor specified in apply_to
+    # if apply_to is None, then apply all tensors in args
 
     def auto_fp16_wrapper(old_func):
 
@@ -61,6 +65,7 @@ def auto_fp16(apply_to=None, out_fp32=False):
             if not args[0].fp16_enabled:
                 return old_func(*args, **kwargs)
             args_info = getfullargspec(old_func)
+            cast_args = args_info.args if apply_to is None else apply_to
             num_args = len(args)
             num_kwargs = len(kwargs)
             arg_names = args_info.args[:num_args]
@@ -68,7 +73,7 @@ def auto_fp16(apply_to=None, out_fp32=False):
             if num_args > 0:
                 new_args = []
                 for i, arg in enumerate(arg_names):
-                    if arg in apply_to:
+                    if arg in cast_args:
                         new_args.append(
                             cast_tensor_type(args[i], torch.float, torch.half))
                     else:
@@ -99,6 +104,7 @@ def auto_fp16(apply_to=None, out_fp32=False):
 def force_fp32(apply_to=None, out_fp16=False):
     # convert tensor from torch.half to torch.float
     # only convert the tensor specified in apply_to
+    # if apply_to is None, then apply all tensors in args
 
     def force_fp32_wrapper(old_func):
 
@@ -109,12 +115,13 @@ def force_fp32(apply_to=None, out_fp16=False):
             args_info = getfullargspec(old_func)
             num_args = len(args)
             num_kwargs = len(kwargs)
+            cast_args = args_info.args if apply_to is None else apply_to
             arg_names = args_info.args[:num_args]
             # convert the args specified in apply_to
             if num_args > 0:
                 new_args = []
                 for i, arg in enumerate(arg_names):
-                    if arg in apply_to:
+                    if arg in cast_args:
                         new_args.append(
                             cast_tensor_type(args[i], torch.half, torch.float))
                     else:
