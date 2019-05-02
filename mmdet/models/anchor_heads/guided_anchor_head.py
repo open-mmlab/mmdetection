@@ -414,8 +414,7 @@ class GuidedAnchorHead(nn.Module):
             )[-2:] == shape_pred.size()[-2:] == loc_pred.size()[-2:]
             loc_pred = loc_pred.sigmoid()
             loc_mask = loc_pred >= cfg.loc_filter_thr
-            mask = loc_mask.permute(1, 2, 0).expand(
-                loc_mask.size(0), loc_mask.size(1), self.num_anchors)
+            mask = loc_mask.permute(1, 2, 0).expand(-1, -1, self.num_anchors)
             mask = mask.contiguous().view(-1)
             mask_inds = mask.nonzero()
             if mask_inds.numel() == 0:
