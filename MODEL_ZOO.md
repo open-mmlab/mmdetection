@@ -15,8 +15,6 @@
 - CUDNN 7.0.4
 - NCCL 2.1.15
 
-Note: The train time was measured with PyTorch 0.4.1. We will update it later, which should be about 0.02s ~ 0.05s faster.
-
 ## Mirror sites
 
 We use AWS as the main site to host our model zoo, and maintain a mirror on aliyun.
@@ -40,7 +38,7 @@ It should be very close to the actual memory and time.
 
 ## Baselines
 
-We released RPN, Faster R-CNN and Mask R-CNN models in the first version. More models with different backbones will be added to the model zoo.
+More models with different backbones will be added to the model zoo.
 
 ### RPN
 
@@ -335,31 +333,31 @@ The training speed is measure with s/iter. The lower, the better.
     <td>RPN</td>
     <td>0.416</td>
     <td>-</td>
-    <td>0.407 / 0.413</td>
+    <td>0.276 / 0.253</td>
   </tr>
   <tr>
     <td>Faster R-CNN</td>
     <td>0.544</td>
     <td>1.015</td>
-    <td>0.554 / 0.579</td>
+    <td>0.353 / 0.333</td>
   </tr>
   <tr>
     <td>Mask R-CNN</td>
     <td>0.889</td>
     <td>1.435</td>
-    <td>0.690 / 0.732</td>
+    <td>0.453 / 0.430</td>
   </tr>
   <tr>
     <td>Fast R-CNN</td>
     <td>0.285</td>
     <td>-</td>
-    <td>0.375 / 0.398</td>
+    <td>0.250 / 0.242</td>
   </tr>
   <tr>
     <td>Fast R-CNN (w/mask)</td>
     <td>0.377</td>
     <td>-</td>
-    <td>0.504 / 0.574</td>
+    <td>0.346 / 0.328</td>
   </tr>
 </table>
 
@@ -389,31 +387,31 @@ The inference speed is measured with fps (img/s) on a single GPU. The higher, th
     <td>RPN</td>
     <td>12.5</td>
     <td>-</td>
-    <td>14.5 / 15.4</td>
+    <td>17.7 / 16.9</td>
   </tr>
   <tr>
     <td>Faster R-CNN</td>
     <td>10.3</td>
     <td></td>
-    <td>9.9 / 9.8</td>
+    <td>12.5 / 12.9</td>
   </tr>
   <tr>
     <td>Mask R-CNN</td>
     <td>8.5</td>
     <td></td>
-    <td>7.7 / 7.4</td>
+    <td>9.6 / 9.9</td>
   </tr>
   <tr>
     <td>Fast R-CNN</td>
     <td>12.5</td>
     <td></td>
-    <td>14.5 / 14.1</td>
+    <td>16.5 / 18.4</td>
   </tr>
   <tr>
     <td>Fast R-CNN (w/mask)</td>
     <td>9.9</td>
     <td></td>
-    <td>10.6 / 10.3</td>
+    <td>12.7 / 12.8</td>
   </tr>
 </table>
 
