@@ -1,9 +1,9 @@
 import argparse
 
-import torch
 import mmcv
-from mmcv.runner import load_checkpoint, parallel_test, obj_from_dict
+import torch
 from mmcv.parallel import scatter, collate, MMDataParallel
+from mmcv.runner import load_checkpoint, parallel_test, obj_from_dict
 
 from mmdet import datasets
 from mmdet.core import results2json, coco_eval, wrap_fp16_model
@@ -73,14 +73,14 @@ def main():
     cfg.data.test.test_mode = True
 
     dataset = obj_from_dict(cfg.data.test, datasets, dict(test_mode=True))
-    fp16 = cfg.get('fp16', None)
-    if fp16 is not None:
+    fp16_cfg = cfg.get('fp16', None)
+    if fp16_cfg is not None:
         assert args.gpus == 1  # TODO: FP16 parallel test
     if args.gpus == 1:
         model = build_detector(
             cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-        if fp16 is not None:
-            wrap_fp16_model(model, **fp16.fp16_prepare)
+        if fp16_cfg is not None:
+            wrap_fp16_model(model)
         load_checkpoint(model, args.checkpoint)
         model = MMDataParallel(model, device_ids=[0])
 
