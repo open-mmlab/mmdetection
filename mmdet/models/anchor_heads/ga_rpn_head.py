@@ -104,10 +104,10 @@ class GARPNHead(GuidedAnchorHead):
                 shape_pred = shape_pred[topk_inds, :]
             anchor_deltas = shape_pred.new_full((shape_pred.size(0), 4), 0)
             anchor_deltas[:, 2:] = shape_pred
-            pred_anchors = delta2bbox(anchors, anchor_deltas,
-                                      self.anchoring_means,
-                                      self.anchoring_stds, img_shape)
-            proposals = delta2bbox(pred_anchors, rpn_bbox_pred,
+            guided_anchors = delta2bbox(anchors, anchor_deltas,
+                                        self.anchoring_means,
+                                        self.anchoring_stds)
+            proposals = delta2bbox(guided_anchors, rpn_bbox_pred,
                                    self.target_means, self.target_stds,
                                    img_shape)
             if cfg.min_bbox_size > 0:

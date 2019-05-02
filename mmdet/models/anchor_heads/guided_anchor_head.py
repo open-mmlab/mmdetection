@@ -109,10 +109,13 @@ class GuidedAnchorHead(nn.Module):
         self.conv_cls = nn.Conv2d(self.feat_channels,
                                   self.num_anchors * self.cls_out_channels, 1)
         self.conv_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
+        # self.extra_rpn_conv = nn.Conv2d(
+        #     self.feat_channels, self.feat_channels, 3, padding=1)
 
     def init_weights(self):
         normal_init(self.conv_cls, std=0.01)
         normal_init(self.conv_reg, std=0.01)
+        # normal_init(self.extra_rpn_conv, std=0.01)
 
         normal_init(self.conv_offset, std=0.1)
         normal_init(self.conv_adaption, std=0.01)
@@ -126,6 +129,7 @@ class GuidedAnchorHead(nn.Module):
         shape_pred = self.conv_shape(x)
         offset = self.conv_offset(shape_pred.detach())
         x = self.relu(self.conv_adaption(x, offset))
+        # x = self.relu(self.extra_rpn_conv(x))
         cls_score = self.conv_cls(x)
         bbox_pred = self.conv_reg(x)
         return cls_score, bbox_pred, shape_pred, loc_pred
@@ -364,7 +368,6 @@ class GuidedAnchorHead(nn.Module):
         assert len(cls_scores) == len(bbox_preds) == len(shape_preds) == len(
             loc_preds)
         num_levels = len(cls_scores)
-
         mlvl_anchors = [
             self.base_approx_generators[i].grid_anchors(
                 cls_scores[i].size()[-2:], self.anchor_strides[i])
@@ -410,7 +413,7 @@ class GuidedAnchorHead(nn.Module):
             assert cls_score.size()[-2:] == bbox_pred.size(
             )[-2:] == shape_pred.size()[-2:] == loc_pred.size()[-2:]
             loc_pred = loc_pred.sigmoid()
-            loc_mask = loc_pred > cfg.loc_filter_thr
+            loc_mask = loc_pred >= cfg.loc_filter_thr
             mask = loc_mask.permute(1, 2, 0).expand(
                 loc_mask.size(0), loc_mask.size(1), self.num_anchors)
             mask = mask.contiguous().view(-1)
@@ -429,7 +432,7 @@ class GuidedAnchorHead(nn.Module):
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = anchors[mask_inds, :]
             shape_pred = shape_pred[mask_inds, :]
-            cls_score = cls_score[mask_inds, :]
+            scores = scores[mask_inds, :]
             bbox_pred = bbox_pred[mask_inds, :]
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
@@ -446,7 +449,7 @@ class GuidedAnchorHead(nn.Module):
             anchor_deltas[:, 2:] = shape_pred
             guided_anchors = delta2bbox(anchors, anchor_deltas,
                                         self.anchoring_means,
-                                        self.anchoring_stds, img_shape)
+                                        self.anchoring_stds)
             bboxes = delta2bbox(guided_anchors, bbox_pred, self.target_means,
                                 self.target_stds, img_shape)
             mlvl_bboxes.append(bboxes)
