@@ -6,7 +6,7 @@ setup(
     ext_modules=[
         CUDAExtension('masked_conv2d_cuda', [
             'src/masked_conv2d_cuda.cpp',
-            'src/masked_conv2d_cuda.cu',
+            'src/masked_conv2d_kernel.cu',
         ]),
     ],
     cmdclass={'build_ext': BuildExtension})
