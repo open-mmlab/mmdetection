@@ -27,11 +27,8 @@ You can replace `https://s3.ap-northeast-2.amazonaws.com/open-mmlab` with `https
 - We use distributed training and BN layer stats are fixed.
 - We adopt the same training schedules as Detectron. 1x indicates 12 epochs and 2x indicates 24 epochs, which corresponds to slightly less iterations than Detectron and the difference can be ignored.
 - All pytorch-style pretrained backbones on ImageNet are from PyTorch model zoo.
-- We report the training GPU memory as the maximum value of `torch.cuda.max_memory_allocated()`
-for all 8 GPUs. Note that this value is usually less than what `nvidia-smi` shows, but
-closer to the actual requirements.
-- We report the inference time as the overall time including data loading,
-network forwarding and post processing.
+- For fair comparison with other codebases, we report the GPU memory as the maximum value of `torch.cuda.max_memory_allocated()` for all 8 GPUs. Note that this value is usually less than what `nvidia-smi` shows.
+- We report the inference time as the overall time including data loading, network forwarding and post processing.
 
 
 ## Baselines
@@ -187,7 +184,6 @@ Please refer to [HTC](configs/htc/README.md) for details.
 **Notes:**
 - (d) means pretrained model converted from Detectron, and (c) means the contributed model pretrained by [@thangvubk](https://github.com/thangvubk).
 - The `3x` schedule is epoch [28, 34, 36].
-- The memory is measured with `torch.cuda.max_memory_allocated()` instead of `torch.cuda.max_memory_cached()`.
 
 ### Deformable Convolution v2
 
@@ -210,10 +206,9 @@ Please refer to [HTC](configs/htc/README.md) for details.
 **Notes:**
 
 - `dconv` and `mdconv` denote (modulated) deformable convolution, `c3-c5` means adding dconv in resnet stage 3 to 5. `dpool` and `mdpool` denote (modulated) deformable roi pooling.
-- The memory is measured with `torch.cuda.max_memory_allocated()`. The batch size is 16 (2 images per GPU).
 - The dcn ops are modified from https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch, which should be more memory efficient and slightly faster.
 
-## Comparison with Detectron
+## Comparison with Detectron and maskrcnn-benchmark
 
 We compare mmdetection with [Detectron](https://github.com/facebookresearch/Detectron)
 and [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark). The backbone used is R-50-FPN.
@@ -227,17 +222,14 @@ In general, mmdetection has 3 advantages over Detectron.
 ### Performance
 
 Detectron and maskrcnn-benchmark use caffe-style ResNet as the backbone.
-In order to utilize the PyTorch model zoo, we use pytorch-style ResNet in our experiments.
-
-In the meanwhile, we train models with caffe-style ResNet in 1x experiments for comparison.
-We find that pytorch-style ResNet usually converges slower than caffe-style ResNet,
-thus leading to slightly lower results in 1x schedule, but the final results
-of 2x schedule is higher.
-
 We report results using both caffe-style (weights converted from
 [here](https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md#imagenet-pretrained-models))
 and pytorch-style (weights from the official model zoo) ResNet backbone,
 indicated as *pytorch-style results* / *caffe-style results*.
+
+We find that pytorch-style ResNet usually converges slower than caffe-style ResNet,
+thus leading to slightly lower results in 1x schedule, but the final results
+of 2x schedule is higher.
 
 <table>
   <tr>
@@ -322,7 +314,7 @@ The training speed is measure with s/iter. The lower, the better.
   <tr>
     <th>Type</th>
     <th>Detectron (P100<sup>1</sup>)</th>
-    <th>maskrcnn-benchmark(V100)</th>
+    <th>maskrcnn-benchmark (V100)</th>
     <th>mmdetection (V100<sup>2</sup>)</th>
   </tr>
   <tr>
@@ -357,11 +349,9 @@ The training speed is measure with s/iter. The lower, the better.
   </tr>
 </table>
 
-\*1. Detectron reports the speed on Facebook's Big Basin servers (P100),
-on our V100 servers it is slower so we use the official reported values.
+\*1. Facebook's Big Basin servers (P100/V100) is slightly faster than the servers we use. mmdetection can also run slightly faster on FB's servers.
 
-\*2. The speed of pytorch-style ResNet is approximately 5% slower than caffe-style,
-and we report the caffe-style results here.
+\*2. For fair comparison, we list the caffe-style results here.
 
 
 ### Inference Speed
@@ -409,23 +399,12 @@ The inference speed is measured with fps (img/s) on a single GPU. The higher, th
 
 ### Training memory
 
-We perform various tests and there is no doubt that mmdetection is more memory
-efficient than Detectron, and the main cause is the deep learning framework itself, not our efforts.
-Besides, Caffe2 and PyTorch have different apis to obtain memory usage
-whose implementation is not exactly the same.
-
-`nvidia-smi` shows a larger memory usage for both detectron and mmdetection, e.g.,
-we observe a much higher memory usage when we train Mask R-CNN with 2 images per GPU using detectron (10.6G) and mmdetection (9.3G), which is obviously more than actually required.
-
-> With mmdetection, we can train R-50 FPN Mask R-CNN with **4** images per GPU (TITAN XP, 12G),
-which is a promising result.
-
 <table>
   <tr>
     <th>Type</th>
-    <th>Detectron (P100)</th>
-    <th>maskrcnn-benchmark (V100)</th>
-    <th>mmdetection (V100)</th>
+    <th>Detectron</th>
+    <th>maskrcnn-benchmark</th>
+    <th>mmdetection</th>
   </tr>
   <tr>
     <td>RPN</td>
@@ -458,4 +437,12 @@ which is a promising result.
     <td>3.4</td>
   </tr>
 </table>
+
+There is no doubt that maskrcnn-benchmark and mmdetection is more memory efficient than Detectron,
+and the main advantage is PyTorch itself. We also perform some memory optimizations to push it forward.
+
+Note that Caffe2 and PyTorch have different apis to obtain memory usage with different implementations.
+For all codebases, `nvidia-smi` shows a larger memory usage than the reported number in the above table.
+
+
 
