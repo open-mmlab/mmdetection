@@ -5,7 +5,7 @@ from mmcv.cnn import normal_init
 
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, Scale
-from ...core.anchor import fcos_target
+from ...core.anchor import centerness_target, fcos_target
 from ...core.loss import sigmoid_focal_loss, iou_loss
 from ...core.post_processing import singleclass_nms
 from ...core.utils import multi_apply
@@ -97,39 +97,39 @@ class FCOSHead(nn.Module):
         all_level_centers = self.get_centers(featmap_sizes, self.strides,
                                              cls_scores[0].dtype,
                                              cls_scores[0].device)
-        labels, bbox_targets, centerness_targets = fcos_target(
+        labels, bbox_targets = fcos_target(
             all_level_centers, self.regress_ranges, gt_bboxes, gt_labels)
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and centerness
         flatten_cls_scores = [
-            cls_score.permute(0, 2, 3, 1).reshape(num_imgs, -1,
-                                                  self.num_classes)
+            cls_score.permute(0, 2, 3, 1).reshape(-1, self.num_classes)
             for cls_score in cls_scores
         ]
         flatten_bbox_preds = [
-            bbox_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1, 4)
+            bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
             for bbox_pred in bbox_preds
         ]
         flatten_centerness = [
-            centerness.permute(0, 2, 3, 1).reshape(num_imgs, -1)
+            centerness.permute(0, 2, 3, 1).reshape(-1)
             for centerness in centernesses
         ]
-        flatten_cls_scores = torch.cat(flatten_cls_scores, 1).reshape(
-            -1, self.num_classes)
-        flatten_bbox_preds = torch.cat(flatten_bbox_preds, 1).reshape(-1, 4)
-        flatten_centerness = torch.cat(flatten_centerness, 1).reshape(-1)
+        flatten_cls_scores = torch.cat(flatten_cls_scores)
+        flatten_bbox_preds = torch.cat(flatten_bbox_preds)
+        flatten_centerness = torch.cat(flatten_centerness)
+        flatten_labels = torch.cat(labels)
+        flatten_bbox_targets = torch.cat(bbox_targets)
 
-        pos_inds = labels.nonzero().reshape(-1)
+        pos_inds = flatten_labels.nonzero().reshape(-1)
         num_pos = len(pos_inds)
         loss_cls = sigmoid_focal_loss(
-            flatten_cls_scores, labels, cfg.gamma, cfg.alpha,
+            flatten_cls_scores, flatten_labels, cfg.gamma, cfg.alpha,
             'none').sum()[None] / (num_pos + num_imgs)
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
-        pos_bbox_targets = bbox_targets[pos_inds]
+        pos_bbox_targets = flatten_bbox_targets[pos_inds]
         pos_centerness = flatten_centerness[pos_inds]
-        pos_centerness_targets = centerness_targets[pos_inds]
+        pos_centerness_targets = centerness_target(pos_bbox_targets)
 
         if num_pos > 0:
             loss_reg = (
@@ -141,6 +141,7 @@ class FCOSHead(nn.Module):
         else:
             loss_reg = pos_bbox_preds.sum()[None]
             loss_centerness = pos_centerness.sum()[None]
+
         return dict(
             loss_cls=loss_cls,
             loss_reg=loss_reg,

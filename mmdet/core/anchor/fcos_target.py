@@ -17,17 +17,30 @@ def fcos_target(centers, regress_ranges, gt_bboxes_list, gt_labels_list):
     concat_regress_ranges = torch.cat(expanded_regress_ranges, dim=0)
     concat_centers = torch.cat(centers, dim=0)
     # get labels and bbox_targets of each image
-    labels_list, bbox_targets_list, centerness_targets_list = multi_apply(
+    labels_list, bbox_targets_list = multi_apply(
         fcos_target_single,
         gt_bboxes_list,
         gt_labels_list,
         centers=concat_centers,
         regress_ranges=concat_regress_ranges)
 
-    concat_labels = torch.cat(labels_list, 0)
-    concat_bbox_targets = torch.cat(bbox_targets_list)
-    concat_centerness_targets = torch.cat(centerness_targets_list)
-    return concat_labels, concat_bbox_targets, concat_centerness_targets
+    # split to per img, per level
+    num_centers = [center.size(0) for center in centers]
+    labels_list = [labels.split(num_centers, 0) for labels in labels_list]
+    bbox_targets_list = [
+        bbox_targets.split(num_centers, 0)
+        for bbox_targets in bbox_targets_list
+    ]
+
+    # concat per level image
+    concat_lvl_labels = []
+    concat_lvl_bbox_targets = []
+    for i in range(num_levels):
+        concat_lvl_labels.append(
+            torch.cat([labels[i] for labels in labels_list]))
+        concat_lvl_bbox_targets.append(
+            torch.cat([bbox_targets[i] for bbox_targets in bbox_targets_list]))
+    return concat_lvl_labels, concat_lvl_bbox_targets
 
 
 def fcos_target_single(gt_bboxes, gt_labels, centers, regress_ranges):
@@ -68,10 +81,12 @@ def fcos_target_single(gt_bboxes, gt_labels, centers, regress_ranges):
     labels[min_area == INF] = 0
     bbox_targets = bbox_targets[range(num_centers), min_area_inds]
 
-    left_right = bbox_targets[:, [0, 2]]
-    top_bottom = bbox_targets[:, [1, 3]]
-    centerness_targets = torch.sqrt(
-        (left_right.min(-1)[0] / left_right.max(-1)[0]) *
-        (top_bottom.min(-1)[0] / top_bottom.max(-1)[0]))
+    return labels, bbox_targets
 
-    return labels, bbox_targets, centerness_targets
+
+def centerness_target(pos_bbox_targets):
+    left_right = pos_bbox_targets[:, [0, 2]]
+    top_bottom = pos_bbox_targets[:, [1, 3]]
+    centerness_targets = (left_right.min(dim=-1)[0] / left_right.max(
+        dim=-1)[0]) * (top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
+    return torch.sqrt(centerness_targets)
