@@ -3,15 +3,15 @@
 #include <cmath>
 #include <vector>
 
-// int MaskedIm2colForwardLaucher(const at::Tensor im, const int height, const int width,
-//                                const int channels, const int kernel_h, const int kernel_w, const int pad_h,
-//                                const int pad_w, const at::Tensor mask_h_idx,
-//                                const at::Tensor mask_w_idx, const int mask_cnt, at::Tensor col);
+int MaskedIm2colForwardLaucher(const at::Tensor im, const int height, const int width,
+                               const int channels, const int kernel_h, const int kernel_w, const int pad_h,
+                               const int pad_w, const at::Tensor mask_h_idx,
+                               const at::Tensor mask_w_idx, const int mask_cnt, at::Tensor col);
 
-// int MaskedCol2ImForwardLaucher(const at::Tensor col, const int height, const int width,
-//                                const int channels, const at::Tensor mask_h_idx,
-//                                const at::Tensor mask_w_idx, const int mask_cnt,
-//                                at::Tensor im);
+int MaskedCol2ImForwardLaucher(const at::Tensor col, const int height, const int width,
+                               const int channels, const at::Tensor mask_h_idx,
+                               const at::Tensor mask_w_idx, const int mask_cnt,
+                               at::Tensor im);
 
 #define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x, " must be a CUDAtensor ")
 #define CHECK_CONTIGUOUS(x) \

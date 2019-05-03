@@ -53,13 +53,13 @@ __global__ void MaskedIm2colForward(const int n, const scalar_t *data_im,
     }
 }
 
-int aaa(const at::Tensor bottom_data,
-        const int height, const int width,
-        const int channels,
-        const int kernel_h, const int kernel_w,
-        const int pad_h, const int pad_w,
-        const at::Tensor mask_h_idx, const at::Tensor mask_w_idx,
-        const int mask_cnt, at::Tensor top_data)
+int MaskedIm2colForwardLaucher(const at::Tensor bottom_data,
+                               const int height, const int width,
+                               const int channels,
+                               const int kernel_h, const int kernel_w,
+                               const int pad_h, const int pad_w,
+                               const at::Tensor mask_h_idx, const at::Tensor mask_w_idx,
+                               const int mask_cnt, at::Tensor top_data)
 {
     const int output_size = mask_cnt * channels;
 
