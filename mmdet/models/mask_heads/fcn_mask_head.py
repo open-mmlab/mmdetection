@@ -6,7 +6,7 @@ import torch.nn as nn
 
 from ..registry import HEADS
 from ..utils import ConvModule
-from mmdet.core import mask_cross_entropy, mask_target, force_fp32
+from mmdet.core import mask_cross_entropy, mask_target, force_fp32, auto_fp16
 
 
 @HEADS.register_module
@@ -87,6 +87,7 @@ class FCNMaskHead(nn.Module):
                 m.weight, mode='fan_out', nonlinearity='relu')
             nn.init.constant_(m.bias, 0)
 
+    @auto_fp16()
     def forward(self, x):
         for conv in self.convs:
             x = conv(x)
