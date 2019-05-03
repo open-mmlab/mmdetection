@@ -384,13 +384,13 @@ The inference speed is measured with fps (img/s) on a single GPU. The higher, th
   <tr>
     <td>Faster R-CNN</td>
     <td>10.3</td>
-    <td>-</td>
+    <td>7.9</td>
     <td>12.9</td>
   </tr>
   <tr>
     <td>Mask R-CNN</td>
     <td>8.5</td>
-    <td>-</td>
+    <td>7.7</td>
     <td>9.9</td>
   </tr>
   <tr>
@@ -419,3 +419,43 @@ we observe a much higher memory usage when we train Mask R-CNN with 2 images per
 
 > With mmdetection, we can train R-50 FPN Mask R-CNN with **4** images per GPU (TITAN XP, 12G),
 which is a promising result.
+
+<table>
+  <tr>
+    <th>Type</th>
+    <th>Detectron (P100)</th>
+    <th>maskrcnn-benchmark (V100)</th>
+    <th>mmdetection (V100)</th>
+  </tr>
+  <tr>
+    <td>RPN</td>
+    <td>6.4</td>
+    <td>-</td>
+    <td>3.3</td>
+  </tr>
+  <tr>
+    <td>Faster R-CNN</td>
+    <td>7.2</td>
+    <td>4.4</td>
+    <td>3.6</td>
+  </tr>
+  <tr>
+    <td>Mask R-CNN</td>
+    <td>8.6</td>
+    <td>5.2</td>
+    <td>3.8</td>
+  </tr>
+  <tr>
+    <td>Fast R-CNN</td>
+    <td>6.0</td>
+    <td>-</td>
+    <td>3.3</td>
+  </tr>
+  <tr>
+    <td>Fast R-CNN (w/mask)</td>
+    <td>7.9</td>
+    <td>-</td>
+    <td>3.4</td>
+  </tr>
+</table>
+
