@@ -71,9 +71,9 @@ test_cfg = dict(
     loc_filter_thr=0)
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = '/mnt/SSD/dataset/coco/'
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 data = dict(
     imgs_per_gpu=2,
     workers_per_gpu=2,

@@ -29,7 +29,7 @@ model = dict(
         roi_feat_size=7,
         num_classes=81,
         target_means=[0., 0., 0., 0.],
-        target_stds=[0.1, 0.1, 0.2, 0.2],
+        target_stds=[0.05, 0.05, 0.1, 0.1],
         reg_class_agnostic=False))
 # model training and testing settings
 train_cfg = dict(
@@ -50,7 +50,7 @@ train_cfg = dict(
         debug=False))
 test_cfg = dict(
     rcnn=dict(
-        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=100))
+        score_thr=1e-3, nms=dict(type='nms', iou_thr=0.5), max_per_img=100))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
