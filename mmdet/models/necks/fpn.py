@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
+from mmdet.core import auto_fp16
 from ..utils import ConvModule
 from ..registry import NECKS
 
@@ -28,6 +29,7 @@ class FPN(nn.Module):
         self.num_outs = num_outs
         self.activation = activation
         self.with_bias = normalize is None
+        self.fp16_enabled = False
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -95,6 +97,7 @@ class FPN(nn.Module):
             if isinstance(m, nn.Conv2d):
                 xavier_init(m, distribution='uniform')
 
+    @auto_fp16()
     def forward(self, inputs):
         assert len(inputs) == len(self.in_channels)
 

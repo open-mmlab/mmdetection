@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from mmdet.core import (delta2bbox, multiclass_nms, bbox_target,
                         weighted_cross_entropy, weighted_smoothl1, accuracy,
-                        force_fp32)
+                        force_fp32, auto_fp16)
 from ..registry import HEADS
 
 
@@ -56,6 +56,7 @@ class BBoxHead(nn.Module):
             nn.init.normal_(self.fc_reg.weight, 0, 0.001)
             nn.init.constant_(self.fc_reg.bias, 0)
 
+    @auto_fp16()
     def forward(self, x):
         if self.with_avg_pool:
             x = self.avg_pool(x)
