@@ -8,7 +8,7 @@ int MaskedIm2colForwardLaucher(const at::Tensor im, const int height, const int 
                                const int pad_w, const at::Tensor mask_h_idx,
                                const at::Tensor mask_w_idx, const int mask_cnt, at::Tensor col);
 
-int MaskedCol2ImForwardLaucher(const at::Tensor col, const int height, const int width,
+int MaskedCol2imForwardLaucher(const at::Tensor col, const int height, const int width,
                                const int channels, const at::Tensor mask_h_idx,
                                const at::Tensor mask_w_idx, const int mask_cnt,
                                at::Tensor im);
