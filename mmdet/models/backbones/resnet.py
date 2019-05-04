@@ -47,8 +47,8 @@ class BasicBlock(nn.Module):
             planes,
             3,
             stride=1,
-            padding=dilation,
-            dilation=dilation,
+            padding=1,
+            dilation=1,
             bias=False)
         self.add_module(self.norm2_name, norm2)
 
