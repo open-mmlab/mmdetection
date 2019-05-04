@@ -298,14 +298,22 @@ class GuidedAnchorHead(nn.Module):
          base_approxs_list, guided_anchors_list) = self.get_anchors(
              featmap_sizes, shape_preds, img_metas)
 
+        sampling = False if not hasattr(cfg, 'ga_sampler') else True
         shape_targets = ga_shape_target(
-            approxs_list, valid_flag_list, base_approxs_list, gt_bboxes,
-            img_metas, self.approxs_per_octave, cfg)
+            approxs_list,
+            valid_flag_list,
+            base_approxs_list,
+            gt_bboxes,
+            img_metas,
+            self.approxs_per_octave,
+            cfg,
+            sampling=sampling)
         if shape_targets is None:
             return None
         (bbox_anchors_list, bbox_gts_list, anchor_weights_list,
          all_inside_flags, anchor_fg_num, anchor_ng_num) = shape_targets
-        anchor_total_num = anchor_fg_num + anchor_ng_num
+        anchor_total_num = (anchor_fg_num
+                            if not sampling else anchor_fg_num + anchor_ng_num)
 
         sampling = False if self.cls_focal_loss else True
         label_channels = self.cls_out_channels if self.cls_sigmoid_loss else 1
