@@ -215,4 +215,4 @@ class ResNeXt(ResNet):
             self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
 
-            self._freeze_stages()
+        self._freeze_stages()
