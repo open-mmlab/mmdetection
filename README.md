@@ -99,6 +99,7 @@ Other features
 - [x] Weight Standardization
 - [x] OHEM
 - [x] Soft-NMS
+- [ ] Mixed Precision (FP16) Training (coming soon)
 
 
 ## Installation
@@ -106,7 +107,7 @@ Other features
 Please refer to [INSTALL.md](INSTALL.md) for installation and dataset preparation.
 
 
-## Inference with pretrained models
+## Get Started
 
 Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage of mmdetection.
 
