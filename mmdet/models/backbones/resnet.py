@@ -2,6 +2,7 @@ import logging
 
 import torch.nn as nn
 import torch.utils.checkpoint as cp
+from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
@@ -395,8 +396,6 @@ class ResNet(nn.Module):
             self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
 
-        self._freeze_stages()
-
         self.feat_dim = self.block.expansion * 64 * 2**(
             len(self.stage_blocks) - 1)
 
@@ -440,7 +439,7 @@ class ResNet(nn.Module):
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
                     kaiming_init(m)
-                elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
                     constant_init(m, 1)
 
             if self.dcn is not None:
@@ -473,8 +472,9 @@ class ResNet(nn.Module):
 
     def train(self, mode=True):
         super(ResNet, self).train(mode)
+        self._freeze_stages()
         if mode and self.norm_eval:
             for m in self.modules():
                 # trick: eval have effect on BatchNorm only
-                if isinstance(m, nn.BatchNorm2d):
+                if isinstance(m, _BatchNorm):
                     m.eval()
