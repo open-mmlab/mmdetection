@@ -17,6 +17,6 @@ class MaskedConv2d(Conv2d):
               self).__init__(in_channels, out_channels, kernel_size, stride,
                              padding, dilation, groups, bias)
 
-    def forward(self, input, mask):
+    def forward_test(self, input, mask):
         return MaskedConv2dFunction.apply(input, mask, self.weight, self.bias,
                                           self.padding)
