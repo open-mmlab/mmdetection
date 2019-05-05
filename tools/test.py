@@ -1,10 +1,5 @@
 import argparse
 
-import os.path as osp
-import sys
-
-sys.path.insert(0, osp.abspath(osp.join(__file__, '../../')))
-
 import torch
 import mmcv
 from mmcv.runner import load_checkpoint, parallel_test, obj_from_dict

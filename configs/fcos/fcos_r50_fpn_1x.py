@@ -16,8 +16,9 @@ model = dict(
         out_channels=256,
         start_level=1,
         add_extra_convs=True,
-        extra_convs_on_inputs=False,
-        num_outs=5),
+        extra_convs_on_inputs=False,  # use P5
+        num_outs=5,
+        relu_extra_convs=True),
     bbox_head=dict(
         type='FCOSHead',
         num_classes=81,
@@ -51,8 +52,8 @@ data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 data = dict(
-    imgs_per_gpu=2,
-    workers_per_gpu=2,
+    imgs_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
@@ -88,6 +89,7 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
+caffe2_initialize = True
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
 # learning policy
@@ -108,7 +110,7 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 12
-device_ids = range(8)
+device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/fcos_r50_fpn_1x'

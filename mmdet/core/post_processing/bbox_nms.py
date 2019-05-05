@@ -3,7 +3,8 @@ import torch
 from mmdet.ops.nms import nms_wrapper
 
 
-def multiclass_nms(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
+def multiclass_nms(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1,
+                   score_cofficient=None):
     """NMS for multi-class bboxes.
 
     Args:
@@ -14,6 +15,7 @@ def multiclass_nms(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
         nms_thr (float): NMS IoU threshold
         max_num (int): if there are more than max_num bboxes after NMS,
             only top max_num will be kept.
+        score_cofficient (Tensor): multipily with score to help nms sorting
 
     Returns:
         tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
@@ -34,6 +36,8 @@ def multiclass_nms(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
         else:
             _bboxes = multi_bboxes[cls_inds, i * 4:(i + 1) * 4]
         _scores = multi_scores[cls_inds, i]
+        if score_cofficient is not None:
+            _scores *= score_cofficient[cls_inds]
         cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
         cls_dets, _ = nms_op(cls_dets, **nms_cfg_)
         cls_labels = multi_bboxes.new_full((cls_dets.shape[0], ),
@@ -51,61 +55,6 @@ def multiclass_nms(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
             labels = labels[inds]
     else:
         bboxes = multi_bboxes.new_zeros((0, 5))
-        labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
-
-    return bboxes, labels
-
-
-def singleclass_nms(multi_bboxes,
-                    multi_scores,
-                    multi_labels,
-                    num_classes,
-                    nms_cfg,
-                    max_num=-1):
-    """NMS for single-class bboxes.
-
-    Args:
-        multi_bboxes (Tensor): shape (n, 4)
-        multi_scores (Tensor): shape (n,  )
-        multi_labels (Tensor): shape (n,  )
-        num_classes (Int): number of classes
-        score_thr (float): bbox threshold, bboxes with scores lower than it
-            will not be considered.
-        nms_thr (float): NMS IoU threshold
-        max_num (int): if there are more than max_num bboxes after NMS,
-            only top max_num will be kept.
-
-    Returns:
-        tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
-            are 0-based.
-    """
-    nms_cfg_ = nms_cfg.copy()
-    nms_type = nms_cfg_.pop('type', 'nms')
-    nms_op = getattr(nms_wrapper, nms_type)
-    bboxes, labels = [], []
-    for i in range(1, num_classes):
-        cls_inds = (multi_labels == i).nonzero().view(-1)
-        if cls_inds.numel() == 0:
-            continue
-        # get bboxes and scores of this class
-        _bboxes = multi_bboxes[cls_inds]
-        _scores = multi_scores[cls_inds]
-        _labels = multi_labels[cls_inds]
-        cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
-        cls_dets, nms_keep = nms_op(cls_dets, **nms_cfg_)
-        cls_labels = _labels[nms_keep]
-        bboxes.append(cls_dets)
-        labels.append(cls_labels - 1)
-    if bboxes:
-        bboxes = torch.cat(bboxes)
-        labels = torch.cat(labels)
-        if bboxes.shape[0] > max_num:
-            _, inds = bboxes[:, -1].sort(descending=True)
-            inds = inds[:max_num]
-            bboxes = bboxes[inds]
-            labels = labels[inds]
-    else:
-        bboxes = bboxes.new_zeros((0, 5))
         labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
 
     return bboxes, labels

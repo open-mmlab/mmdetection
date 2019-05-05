@@ -3,12 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
+from mmdet.core import (centerness_target, fcos_target, sigmoid_focal_loss,
+                        iou_loss, multi_apply, multiclass_nms)
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, Scale
-from ...core.anchor import centerness_target, fcos_target
-from ...core.loss import sigmoid_focal_loss, iou_loss
-from ...core.post_processing import singleclass_nms
-from ...core.utils import multi_apply
 
 INF = 1e8
 
@@ -124,7 +122,7 @@ class FCOSHead(nn.Module):
         num_pos = len(pos_inds)
         loss_cls = sigmoid_focal_loss(
             flatten_cls_scores, flatten_labels, cfg.gamma, cfg.alpha,
-            'none').sum()[None] / (num_pos + num_imgs)
+            'none').sum()[None] / (num_pos + num_imgs)  # avoid num_pos is 0
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_bbox_targets = flatten_bbox_targets[pos_inds]
@@ -192,35 +190,23 @@ class FCOSHead(nn.Module):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_centers)
         mlvl_bboxes = []
         mlvl_scores = []
-        mlvl_labels = []
+        mlvl_centerness = []
         for cls_score, bbox_pred, centerness, centers in zip(
                 cls_scores, bbox_preds, centernesses, mlvl_centers):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            cls_score = cls_score.permute(1, 2, 0).reshape(
-                -1, self.num_classes)
-            centerness = centerness.permute(1, 2, 0).reshape(-1)
-            centerness = centerness.sigmoid()
-            scores = cls_score.sigmoid()
+            scores = cls_score.permute(1, 2, 0).reshape(
+                -1, self.num_classes).sigmoid()
+            centerness = centerness.permute(1, 2, 0).reshape(-1).sigmoid()
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
-
-            candidate_mask = scores > cfg.score_thr
-            num_candidates = candidate_mask.sum().float()
-            scores *= centerness[..., None]
-
-            scores = scores[candidate_mask]
-            candidate_mask_nonzero = candidate_mask.nonzero()
-            candidate_inds = candidate_mask_nonzero[:, 0]
-            labels = candidate_mask_nonzero[:, 1] + 1
-            bbox_pred = bbox_pred[candidate_inds]
-            centers = centers[candidate_inds]
-            if nms_pre > 0 and num_candidates > nms_pre:
-                _, topk_inds = scores.topk(nms_pre)
-                scores = scores[topk_inds]
-                bbox_pred = bbox_pred[topk_inds, :]
-                labels = labels[topk_inds]
+            if nms_pre > 0 and scores.shape[0] > nms_pre:
+                max_scores, _ = (scores * centerness[:, None]).max(dim=1)
+                _, topk_inds = max_scores.topk(nms_pre)
                 centers = centers[topk_inds, :]
+                bbox_pred = bbox_pred[topk_inds, :]
+                scores = scores[topk_inds, :]
+                centerness = centerness[topk_inds]
 
             x1 = centers[:, 0] - bbox_pred[:, 0]
             y1 = centers[:, 1] - bbox_pred[:, 1]
@@ -234,15 +220,21 @@ class FCOSHead(nn.Module):
 
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-            mlvl_labels.append(labels)
+            mlvl_centerness.append(centerness)
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
-        mlvl_labels = torch.cat(mlvl_labels)
-        det_bboxes, det_labels = singleclass_nms(mlvl_bboxes, mlvl_scores,
-                                                 mlvl_labels, self.num_classes,
-                                                 cfg.nms, cfg.max_per_img)
+        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
+        mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
+        mlvl_centerness = torch.cat(mlvl_centerness)
+        det_bboxes, det_labels = multiclass_nms(
+            mlvl_bboxes,
+            mlvl_scores,
+            cfg.score_thr,
+            cfg.nms,
+            cfg.max_per_img,
+            score_cofficient=mlvl_centerness)
         return det_bboxes, det_labels
 
     def get_centers(self, feat_sizes, strides, dtype, device):

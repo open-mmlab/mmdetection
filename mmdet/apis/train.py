@@ -3,11 +3,12 @@ from __future__ import division
 from collections import OrderedDict
 
 import torch
-from mmcv.runner import Runner, DistSamplerSeedHook
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmcv.runner import Runner, DistSamplerSeedHook
 
 from mmdet.core import (DistOptimizerHook, DistEvalmAPHook,
-                        CocoDistEvalRecallHook, CocoDistEvalmAPHook)
+                        CocoDistEvalRecallHook, CocoDistEvalmAPHook,
+                        caffe2_initialize)
 from mmdet.datasets import build_dataloader
 from mmdet.models import RPN
 from .env import get_root_logger
@@ -71,17 +72,10 @@ def _dist_train(model, dataset, cfg, validate=False):
     # put model on gpus
     model = MMDistributedDataParallel(model.cuda())
     # build runner
-    params = []
-    for k, v in model.module.named_parameters():
-        if not v.requires_grad:
-            continue
-        lr = cfg.optimizer.lr
-        weight_decay = cfg.optimizer.weight_decay
-        if 'bias' in k:
-            lr = lr * 2
-            weight_decay = 0
-        params += [{"params": [v], "lr": lr, "weight_decay": weight_decay}]
-    optimizer = torch.optim.SGD(params, lr, momentum=cfg.optimizer.momentum)
+    if cfg.get('caffe2_initialize', False):
+        optimizer = caffe2_initialize(model, cfg.optimizer)
+    else:
+        optimizer = cfg.optimizer
     runner = Runner(model, batch_processor, optimizer, cfg.work_dir,
                     cfg.log_level)
     # register hooks
@@ -119,19 +113,11 @@ def _non_dist_train(model, dataset, cfg, validate=False):
     ]
     # put model on gpus
     model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
-    params = []
-    for k, v in model.module.named_parameters():
-        if not v.requires_grad:
-            continue
-        lr = cfg.optimizer.lr
-        weight_decay = cfg.optimizer.weight_decay
-        if 'bias' in k:
-            lr = lr * 2
-            weight_decay = 0
-        params += [{"params": [v], "lr": lr, "weight_decay": weight_decay}]
-    optimizer = torch.optim.SGD(params, lr, momentum=cfg.optimizer.momentum)
-
     # build runner
+    if cfg.get('caffe2_initialize', False):
+        optimizer = caffe2_initialize(model, cfg.optimizer)
+    else:
+        optimizer = cfg.optimizer
     runner = Runner(model, batch_processor, optimizer, cfg.work_dir,
                     cfg.log_level)
     runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,

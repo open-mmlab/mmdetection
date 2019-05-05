@@ -85,6 +85,7 @@ def fcos_target_single(gt_bboxes, gt_labels, centers, regress_ranges):
 
 
 def centerness_target(pos_bbox_targets):
+    # only calculate pos centerness targets, otherwise there may be nan
     left_right = pos_bbox_targets[:, [0, 2]]
     top_bottom = pos_bbox_targets[:, [1, 3]]
     centerness_targets = (left_right.min(dim=-1)[0] / left_right.max(
