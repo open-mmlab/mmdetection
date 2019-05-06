@@ -2,39 +2,60 @@
 
 ### Requirements
 
-- Linux (tested on Ubuntu 16.04 and CentOS 7.2)
-- Python 3.4+
-- PyTorch 1.0
-- Cython
+- Linux
+- Python 3.5+ ([Say goodbye to Python2](https://python3statement.org/))
+- PyTorch 1.0+ or PyTorch-nightly
+- CUDA 9.0+
+- NCCL 2+
+- GCC 4.9+
 - [mmcv](https://github.com/open-mmlab/mmcv)
+
+We have tested the following versions of OS and softwares:
+
+- OS: Ubuntu 16.04/18.04 and CentOS 7.2
+- CUDA: 9.0/9.2/10.0
+- NCCL: 2.1.15/2.2.13/2.3.7/2.4.2
+- GCC: 4.9/5.3/5.4/7.3
 
 ### Install mmdetection
 
-a. Install PyTorch 1.0 and torchvision following the [official instructions](https://pytorch.org/).
+a. Create a conda virtual environment and activate it. Then install Cython.
 
-b. Clone the mmdetection repository.
+```shell
+conda create -n open-mmlab python=3.7 -y
+source activate open-mmlab
+
+conda install cython
+```
+
+b. Install PyTorch stable or nightly and torchvision following the [official instructions](https://pytorch.org/).
+
+c. Clone the mmdetection repository.
 
 ```shell
 git clone https://github.com/open-mmlab/mmdetection.git
-```
-
-c. Compile cuda extensions.
-
-```shell
 cd mmdetection
-pip install cython  # or "conda install cython" if you prefer conda
-./compile.sh  # or "PYTHON=python3 ./compile.sh" if you use system python3 without virtual environments
 ```
 
-d. Install mmdetection (other dependencies will be installed automatically).
+d. Compile cuda extensions.
 
 ```shell
-python(3) setup.py install  # add --user if you want to install it locally
-# or "pip install ."
+./compile.sh
 ```
 
-Note: You need to run the last step each time you pull updates from github.
-The git commit id will be written to the version number and also saved in trained models.
+e. Install mmdetection (other dependencies will be installed automatically).
+
+```shell
+python setup.py develop
+# or "pip install -e ."
+```
+
+Note:
+
+1. It is recommended that you run the step e each time you pull some updates from github. If there are some updates of the C/CUDA codes, you also need to run step d.
+The git commit id will be written to the version number with step e, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
+
+2. Following the above instructions, mmdetection is installed on `dev` mode, any modifications to the code will take effect without installing it again.
 
 ### Prepare COCO dataset.
 
@@ -58,7 +79,7 @@ mmdetection
 ```
 
 ### Scripts
-Just for reference, [Here](https://gist.github.com/hellock/bf23cd7348c727d69d48682cb6909047) is
+[Here](https://gist.github.com/hellock/bf23cd7348c727d69d48682cb6909047) is
 a script for setting up mmdetection with conda.
 
 ### Notice
