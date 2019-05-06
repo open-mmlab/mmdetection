@@ -52,8 +52,8 @@ python setup.py develop
 
 Note:
 
-1. It is recommended that you run the step e each time you pull some updates from github, if there is some updates of the C/CUDA codes, you need to also run both step d.
-The git commit id will be written to the version number with step e, and it will also be saved in trained models.
+1. It is recommended that you run the step e each time you pull some updates from github. If there are some updates of the C/CUDA codes, you also need to run step d.
+The git commit id will be written to the version number with step e, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
 
 2. Following the above instructions, mmdetection is installed on `dev` mode, any modifications to the code will take effect without installing it again.
 
