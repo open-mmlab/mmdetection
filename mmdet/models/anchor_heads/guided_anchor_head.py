@@ -32,8 +32,8 @@ class GuidedAnchorHead(nn.Module):
         target_means (Iterable): Mean values of regression targets.
         target_stds (Iterable): Std values of regression targets.
         loc_filter_thr (float): threshold to filter out unconcerned regions
-        cls_sigmoid_loss (bool): Whether to use sigmoid loss for classification.
-            (softmax by default)
+        cls_sigmoid_loss (bool): Whether to use sigmoid loss for 
+        classification. (softmax by default)
         cls_focal_loss (bool): Whether to use focal loss for classification.
     """  # noqa: W605
 

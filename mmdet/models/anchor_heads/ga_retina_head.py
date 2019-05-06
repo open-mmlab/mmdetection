@@ -1,4 +1,3 @@
-import numpy as np
 import torch.nn as nn
 from mmcv.cnn import normal_init
 

@@ -52,10 +52,10 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                gt_labels=None):
         """Assign gt to approxs.
 
-        This method assign a gt bbox to each group of approxs (bboxes), 
+        This method assign a gt bbox to each group of approxs (bboxes),
         each group of approxs is represent by a base approx (bbox) and
-        will be assigned with -1, 0, or a positive number. 
-        -1 means don't care, 0 means negative sample, 
+        will be assigned with -1, 0, or a positive number.
+        -1 means don't care, 0 means negative sample,
         positive number is the index (1-based) of assigned gt.
         The assignment is done in following steps, the order matters.
 
@@ -68,9 +68,9 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
            one) to itself
 
         Args:
-            approxs (Tensor): Bounding boxes to be assigned, 
+            approxs (Tensor): Bounding boxes to be assigned,
         shape(approxs_per_octave*n, 4).
-            base_approxs (Tensor): Base Bounding boxes to be assigned, 
+            base_approxs (Tensor): Base Bounding boxes to be assigned,
         shape(n, 4).
             approxs_per_octave (int): number of approxs per octave
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
@@ -81,6 +81,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
+
         if base_approxs.shape[0] == 0 or gt_bboxes.shape[0] == 0:
             raise ValueError('No gt or approxs')
         num_base_approxs = base_approxs.size(0)
