@@ -22,13 +22,17 @@ class GuidedAnchorHead(nn.Module):
     Args:
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of channels of the feature map.
-        anchor_scales (Iterable): Anchor scales.
-        octave_ratios (Iterable): Anchor aspect ratios.
+        octave_base_scale: base octave scale of each level of feature map.
+        scales_per_octave: number of octave scales in each level of feature map
+        octave_ratios (Iterable): octave aspect ratios.
         anchor_strides (Iterable): Anchor strides.
         anchor_base_sizes (Iterable): Anchor base sizes.
+        anchoring_means (Iterable): Mean values of anchoring targets.
+        anchoring_stds (Iterable): Std values of anchoring targets.
         target_means (Iterable): Mean values of regression targets.
         target_stds (Iterable): Std values of regression targets.
-    .cls_sigmoid_loss (bool): Whether to use sigmoid loss for classification.
+        loc_filter_thr (float): threshold to filter out unconcerned regions
+        cls_sigmoid_loss (bool): Whether to use sigmoid loss for classification.
             (softmax by default)
         cls_focal_loss (bool): Whether to use focal loss for classification.
     """  # noqa: W605
@@ -143,14 +147,17 @@ class GuidedAnchorHead(nn.Module):
         return multi_apply(self.forward_single, feats)
 
     def get_anchors(self, featmap_sizes, shape_preds, img_metas):
-        """Get anchors according to feature map sizes.
+        """Get approxs according to feature map sizes and predict guided
+        anchors.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
+            shape_preds (list[tensor]): Multi-level shape predictions
             img_metas (list[dict]): Image meta info.
 
         Returns:
-            tuple: anchors of each image, valid flags of each image
+            tuple: approxs of each image, valid flags of each image,
+            base approxs of each image, guided anchors of each image
         """
         num_imgs = len(img_metas)
         num_levels = len(featmap_sizes)

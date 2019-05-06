@@ -50,15 +50,17 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                gt_bboxes,
                gt_bboxes_ignore=None,
                gt_labels=None):
-        """Assign gt to bboxes.
+        """Assign gt to approxs.
 
-        This method assign a gt bbox to every bbox (proposal/anchor), each bbox
-        will be assigned with -1, 0, or a positive number. -1 means don't care,
-        0 means negative sample, positive number is the index (1-based) of
-        assigned gt.
+        This method assign a gt bbox to each group of approxs (bboxes), 
+        each group of approxs is represent by a base approx (bbox) and
+        will be assigned with -1, 0, or a positive number. 
+        -1 means don't care, 0 means negative sample, 
+        positive number is the index (1-based) of assigned gt.
         The assignment is done in following steps, the order matters.
 
         1. assign every bbox to -1
+        2. use the max IoU of each group of approxs to assign
         2. assign proposals whose iou with all gts < neg_iou_thr to 0
         3. for each bbox, if the iou with its nearest gt >= pos_iou_thr,
            assign it to that bbox
@@ -66,7 +68,11 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
            one) to itself
 
         Args:
-            bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
+            approxs (Tensor): Bounding boxes to be assigned, 
+        shape(approxs_per_octave*n, 4).
+            base_approxs (Tensor): Base Bounding boxes to be assigned, 
+        shape(n, 4).
+            approxs_per_octave (int): number of approxs per octave
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
