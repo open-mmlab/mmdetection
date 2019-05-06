@@ -36,3 +36,10 @@ if [ -d "build" ]; then
     rm -r build
 fi
 $PYTHON setup.py build_ext --inplace
+
+echo "Building masked conv op..."
+cd ../masked_conv
+if [ -d "build" ]; then
+    rm -r build
+fi
+$PYTHON setup.py build_ext --inplace

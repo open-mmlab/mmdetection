@@ -37,9 +37,10 @@ def anchor_target(anchor_list,
     num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
     # concat all level anchors and flags to a single tensor
     for i in range(num_imgs):
-        assert len(anchor_list[i]) == len(valid_flag_list[i])
+        if isinstance(valid_flag_list[i], list):
+            assert len(anchor_list[i]) == len(valid_flag_list[i])
+            valid_flag_list[i] = torch.cat(valid_flag_list[i])
         anchor_list[i] = torch.cat(anchor_list[i])
-        valid_flag_list[i] = torch.cat(valid_flag_list[i])
 
     # compute targets for each image
     if gt_bboxes_ignore_list is None:
