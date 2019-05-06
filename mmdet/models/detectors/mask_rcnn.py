@@ -12,6 +12,7 @@ class MaskRCNN(TwoStageDetector):
                  bbox_head,
                  mask_roi_extractor,
                  mask_head,
+                 mask_iou_head,
                  train_cfg,
                  test_cfg,
                  neck=None,
@@ -26,6 +27,7 @@ class MaskRCNN(TwoStageDetector):
             bbox_head=bbox_head,
             mask_roi_extractor=mask_roi_extractor,
             mask_head=mask_head,
+            mask_iou_head=mask_iou_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
             pretrained=pretrained)

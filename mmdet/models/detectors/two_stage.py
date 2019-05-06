@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 
+from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
 
 
 @DETECTORS.register_module
@@ -21,6 +21,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                  bbox_head=None,
                  mask_roi_extractor=None,
                  mask_head=None,
+                 mask_iou_head=None,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
@@ -51,6 +52,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 self.mask_roi_extractor = self.bbox_roi_extractor
             self.mask_head = builder.build_head(mask_head)
 
+        if mask_iou_head is not None:
+            self.mask_iou_head = builder.build_head(mask_iou_head)
+
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
@@ -80,6 +84,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             self.mask_head.init_weights()
             if not self.share_roi_extractor:
                 self.mask_roi_extractor.init_weights()
+        if self.with_mask_iou:
+            self.mask_iou_head.init_weights()
 
     def extract_feat(self, img):
         x = self.backbone(img)
@@ -108,7 +114,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
             losses.update(rpn_losses)
 
-            proposal_inputs = rpn_outs + (img_meta, self.test_cfg.rpn)
+            proposal_inputs = rpn_outs + (img_meta,
+                                          self.train_cfg.rpn_proposal)
             proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         else:
             proposal_list = proposals
@@ -185,6 +192,16 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                                             pos_labels)
             losses.update(loss_mask)
 
+            if self.with_mask_iou:
+                pos_mask_pred = mask_pred[range(mask_pred.size(0)), pos_labels]
+                mask_iou_pred = self.mask_iou_head(mask_feats, pos_mask_pred)
+                pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.
+                                                        size(0)), pos_labels]
+                mask_iou_targets = self.mask_iou_head.get_target(
+                    pos_mask_pred, mask_targets)
+                loss_mask_iou = self.mask_iou_head.loss(
+                    pos_mask_iou_pred, mask_iou_targets)
+                losses.update(loss_mask_iou)
         return losses
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
@@ -204,9 +221,15 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if not self.with_mask:
             return bbox_results
         else:
-            segm_results = self.simple_test_mask(
+            segm_results, mask_pred = self.simple_test_mask(
                 x, img_meta, det_bboxes, det_labels, rescale=rescale)
-            return bbox_results, segm_results
+
+        if self.with_mask_iou:
+            if det_bboxes.shape[0] > 0:
+                mask_ious = self.mask_iou_head(x, mask_pred)
+                det_bboxes[:, -1] *= mask_ious[range(det_bboxes.
+                                                     size(0)), det_labels]
+        return bbox_results, segm_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test with augmentations.
