@@ -221,12 +221,14 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if not self.with_mask:
             return bbox_results
         else:
-            segm_results, mask_pred = self.simple_test_mask(
+            segm_results, mask_feats, mask_pred = self.simple_test_mask(
                 x, img_meta, det_bboxes, det_labels, rescale=rescale)
 
         if self.with_mask_iou:
             if det_bboxes.shape[0] > 0:
-                mask_ious = self.mask_iou_head(x, mask_pred)
+                mask_ious = self.mask_iou_head(
+                    mask_feats,
+                    mask_pred[range(det_bboxes.size(0)), det_labels])
                 det_bboxes[:, -1] *= mask_ious[range(det_bboxes.
                                                      size(0)), det_labels]
         return bbox_results, segm_results
