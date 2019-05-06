@@ -22,7 +22,7 @@ We have tested the following versions of OS and softwares:
 a. Create a conda virtual environment and activate it. Then install Cython.
 
 ```shell
-conda create -n open-mmlab python=3.6 -y
+conda create -n open-mmlab python=3.7 -y
 source activate open-mmlab
 
 conda install cython
