@@ -74,7 +74,10 @@ class GARPNHead(GuidedAnchorHead):
             loc_pred = loc_preds[idx].sigmoid()
             assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size(
             )[-2:] == shape_pred.size()[-2:] == loc_pred.size()[-2:]
-            loc_mask = loc_pred[0] >= cfg.loc_filter_thr
+            if not loc_pred.requires_grad:
+                loc_mask = loc_pred[0] >= self.loc_filter_thr
+            else:
+                loc_mask = loc_pred[0] >= 0.0
             mask = loc_mask[..., None].expand(
                 loc_mask.size(0), loc_mask.size(1), self.num_anchors)
             mask = mask.contiguous().view(-1)

@@ -33,6 +33,7 @@ model = dict(
         anchoring_stds=[1.0, 1.0, 1.0, 1.0],
         target_means=(.0, .0, .0, .0),
         target_stds=[1.0, 1.0, 1.0, 1.0],
+        loc_filter_thr=0.01,
         loc_focal_loss=True))
 # training and testing settings
 train_cfg = dict(
@@ -52,7 +53,7 @@ train_cfg = dict(
         type='MaxIoUAssigner',
         pos_iou_thr=0.5,
         neg_iou_thr=0.5,
-        min_pos_iou=0.5,
+        min_pos_iou=0.0,
         ignore_iof_thr=-1),
     smoothl1_beta=0.04,
     gamma=2.0,
@@ -67,8 +68,7 @@ test_cfg = dict(
     min_bbox_size=0,
     score_thr=0.05,
     nms=dict(type='nms', iou_thr=0.5),
-    max_per_img=100,
-    loc_filter_thr=0)
+    max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

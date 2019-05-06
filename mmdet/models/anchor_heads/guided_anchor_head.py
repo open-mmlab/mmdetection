@@ -10,7 +10,7 @@ from mmdet.core import (AnchorGenerator, anchor_target, ga_loc_target,
                         weighted_smoothl1, weighted_sigmoid_focal_loss,
                         weighted_cross_entropy, weighted_binary_cross_entropy,
                         bounded_iou_loss, multiclass_nms)
-from mmdet.ops import DeformConv
+from mmdet.ops import DeformConv, MaskedConv2d
 from ..registry import HEADS
 from ..utils import bias_init_with_prob
 
@@ -46,6 +46,7 @@ class GuidedAnchorHead(nn.Module):
                  anchoring_stds=[1.0, 1.0, 1.0, 1.0],
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
+                 loc_filter_thr=0.01,
                  loc_focal_loss=True,
                  cls_sigmoid_loss=False,
                  cls_focal_loss=False):
@@ -66,6 +67,7 @@ class GuidedAnchorHead(nn.Module):
         self.anchoring_stds = anchoring_stds
         self.target_means = target_means
         self.target_stds = target_stds
+        self.loc_filter_thr = loc_filter_thr
         self.loc_focal_loss = loc_focal_loss
         assert self.loc_focal_loss, 'only focal loss is supported in loc'
         self.cls_sigmoid_loss = cls_sigmoid_loss
@@ -106,11 +108,10 @@ class GuidedAnchorHead(nn.Module):
             kernel_size=3,
             padding=1,
             deformable_groups=deformable_groups)
-        self.conv_cls = nn.Conv2d(self.feat_channels,
-                                  self.num_anchors * self.cls_out_channels, 1)
-        self.conv_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
-        # self.extra_rpn_conv = nn.Conv2d(
-        #     self.feat_channels, self.feat_channels, 3, padding=1)
+        self.conv_cls = MaskedConv2d(
+            self.feat_channels, self.num_anchors * self.cls_out_channels, 1)
+        self.conv_reg = MaskedConv2d(self.feat_channels, self.num_anchors * 4,
+                                     1)
 
     def init_weights(self):
         normal_init(self.conv_cls, std=0.01)
@@ -129,9 +130,13 @@ class GuidedAnchorHead(nn.Module):
         shape_pred = self.conv_shape(x)
         offset = self.conv_offset(shape_pred.detach())
         x = self.relu(self.conv_adaption(x, offset))
-        # x = self.relu(self.extra_rpn_conv(x))
-        cls_score = self.conv_cls(x)
-        bbox_pred = self.conv_reg(x)
+        if not x.requires_grad:
+            mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr
+            cls_score = self.conv_cls.forward_test(x, mask)
+            bbox_pred = self.conv_reg.forward_test(x, mask)
+        else:
+            cls_score = self.conv_cls(x)
+            bbox_pred = self.conv_reg(x)
         return cls_score, bbox_pred, shape_pred, loc_pred
 
     def forward(self, feats):
@@ -421,7 +426,10 @@ class GuidedAnchorHead(nn.Module):
             assert cls_score.size()[-2:] == bbox_pred.size(
             )[-2:] == shape_pred.size()[-2:] == loc_pred.size()[-2:]
             loc_pred = loc_pred.sigmoid()
-            loc_mask = loc_pred >= cfg.loc_filter_thr
+            if not loc_pred.requires_grad:
+                loc_mask = loc_pred >= self.loc_filter_thr
+            else:
+                loc_mask = loc_pred >= 0.0
             mask = loc_mask.permute(1, 2, 0).expand(-1, -1, self.num_anchors)
             mask = mask.contiguous().view(-1)
             mask_inds = mask.nonzero()

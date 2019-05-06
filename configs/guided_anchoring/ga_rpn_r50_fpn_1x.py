@@ -29,6 +29,7 @@ model = dict(
         anchoring_stds=[0.07, 0.07, 0.14, 0.14],
         target_means=(.0, .0, .0, .0),
         target_stds=[0.07, 0.07, 0.11, 0.11],
+        loc_filter_thr=0.01,
         loc_focal_loss=True,
         cls_sigmoid_loss=True,
         cls_focal_loss=False))
@@ -72,8 +73,7 @@ test_cfg = dict(
         nms_post=2000,
         max_num=2000,
         nms_thr=0.7,
-        min_bbox_size=0,
-        loc_filter_thr=0))
+        min_bbox_size=0))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

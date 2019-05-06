@@ -3,7 +3,7 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 
 from .guided_anchor_head import GuidedAnchorHead
-from mmdet.ops import DeformConv
+from mmdet.ops import DeformConv, MaskedConv2d
 from ..registry import HEADS
 from ..utils import bias_init_with_prob
 
@@ -58,12 +58,12 @@ class GARetinaHead(GuidedAnchorHead):
             kernel_size=3,
             padding=1,
             deformable_groups=deformable_groups)
-        self.retina_cls = nn.Conv2d(
+        self.retina_cls = MaskedConv2d(
             self.feat_channels,
             self.num_anchors * self.cls_out_channels,
             3,
             padding=1)
-        self.retina_reg = nn.Conv2d(
+        self.retina_reg = MaskedConv2d(
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
 
     def init_weights(self):
@@ -99,6 +99,11 @@ class GARetinaHead(GuidedAnchorHead):
         offset_reg = self.conv_offset_reg(shape_pred.detach())
         reg_feat = self.relu(self.conv_adaption_reg(reg_feat, offset_reg))
 
-        cls_score = self.retina_cls(cls_feat)
-        bbox_pred = self.retina_reg(reg_feat)
+        if not x.requires_grad:
+            mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr
+            cls_score = self.retina_cls.forward_test(cls_feat, mask)
+            bbox_pred = self.retina_reg.forward_test(reg_feat, mask)
+        else:
+            cls_score = self.retina_cls(cls_feat)
+            bbox_pred = self.retina_reg(reg_feat)
         return cls_score, bbox_pred, shape_pred, loc_pred
