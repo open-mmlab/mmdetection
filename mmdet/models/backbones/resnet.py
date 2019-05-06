@@ -9,7 +9,7 @@ from mmcv.runner import load_checkpoint
 
 from mmdet.ops import DeformConv, ModulatedDeformConv
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
+from ..utils import build_conv_layer, build_norm_layer, convert_batchnorm
 
 
 class BasicBlock(nn.Module):
@@ -474,9 +474,12 @@ class ResNet(nn.Module):
 
     def train(self, mode=True):
         super(ResNet, self).train(mode)
-        self._freeze_stages()
-        if mode and self.norm_eval:
-            for m in self.modules():
-                # trick: eval have effect on BatchNorm only
-                if isinstance(m, _BatchNorm):
-                    m.eval()
+        if mode:
+            self._freeze_stages()
+            if self.norm_eval:
+                for m in self.modules():
+                    # trick: eval have effect on BatchNorm only
+                    if isinstance(m, _BatchNorm):
+                        m.eval()
+        else:
+            convert_batchnorm(self)
