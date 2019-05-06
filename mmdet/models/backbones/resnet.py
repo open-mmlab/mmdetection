@@ -7,7 +7,7 @@ from torch.nn.modules.batchnorm import _BatchNorm
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 
-from mmdet.ops import DeformConv, ModulatedDeformConv
+from mmdet.ops import DeformConv, ModulatedDeformConv, ContextBlock
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer, convert_batchnorm
 
@@ -25,9 +25,11 @@ class BasicBlock(nn.Module):
                  with_cp=False,
                  conv_cfg=None,
                  normalize=dict(type='BN'),
-                 dcn=None):
+                 dcn=None,
+                 gcb=None):
         super(BasicBlock, self).__init__()
         assert dcn is None, "Not implemented yet."
+        assert gcb is None, "Not implemented yet."
 
         self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
@@ -99,7 +101,8 @@ class Bottleneck(nn.Module):
                  with_cp=False,
                  conv_cfg=None,
                  normalize=dict(type='BN'),
-                 dcn=None):
+                 dcn=None,
+                 gcb=None):
         """Bottleneck block for ResNet.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
@@ -107,12 +110,15 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
         assert dcn is None or isinstance(dcn, dict)
+        assert gcb is None or isinstance(gcb, dict)
         self.inplanes = inplanes
         self.planes = planes
         self.conv_cfg = conv_cfg
         self.normalize = normalize
         self.dcn = dcn
         self.with_dcn = dcn is not None
+        self.gcb =  gcb
+        self.with_gcb = gcb is not None
         if style == 'pytorch':
             self.conv1_stride = 1
             self.conv2_stride = stride
@@ -188,6 +194,22 @@ class Bottleneck(nn.Module):
         self.dilation = dilation
         self.with_cp = with_cp
         self.normalize = normalize
+        if self.with_gcb:
+            gcb_inplanes = planes * self.expansion
+            gcb_ratio = gcb.get('ratio', None)
+            if gcb_ratio is not None:
+                gcb_planes = int(gcb_inplanes * gcb_ratio)
+            else:
+                gcb_planes = None
+            pool = gcb.get('pool', 'att')
+            fusions = gcb.get('fusions', 'channel_add')
+            fusions = fusions if isinstance(fusions, list) else [fusions]
+            self.context_block = ContextBlock(
+                inplanes=gcb_inplanes,
+                planes=gcb_planes,
+                pool=pool,
+                fusions=fusions,
+            )
 
     @property
     def norm1(self):
@@ -226,6 +248,9 @@ class Bottleneck(nn.Module):
             out = self.conv3(out)
             out = self.norm3(out)
 
+            if self.with_gcb:
+                out = self.context_block(out)
+
             if self.downsample is not None:
                 identity = self.downsample(x)
 
@@ -253,7 +278,8 @@ def make_res_layer(block,
                    with_cp=False,
                    conv_cfg=None,
                    normalize=dict(type='BN'),
-                   dcn=None):
+                   dcn=None,
+                   gcb=None):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
         downsample = nn.Sequential(
@@ -279,7 +305,8 @@ def make_res_layer(block,
             with_cp=with_cp,
             conv_cfg=conv_cfg,
             normalize=normalize,
-            dcn=dcn))
+            dcn=dcn,
+            gcb=gcb))
     inplanes = planes * block.expansion
     for i in range(1, blocks):
         layers.append(
@@ -292,7 +319,8 @@ def make_res_layer(block,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
                 normalize=normalize,
-                dcn=dcn))
+                dcn=dcn,
+                gcb=gcb))
 
     return nn.Sequential(*layers)
 
@@ -343,6 +371,8 @@ class ResNet(nn.Module):
                  norm_eval=True,
                  dcn=None,
                  stage_with_dcn=(False, False, False, False),
+                 gcb=None,
+                 stage_with_gcb=(False, False, False, False),
                  with_cp=False,
                  zero_init_residual=True):
         super(ResNet, self).__init__()
@@ -366,6 +396,10 @@ class ResNet(nn.Module):
         self.stage_with_dcn = stage_with_dcn
         if dcn is not None:
             assert len(stage_with_dcn) == num_stages
+        self.gcb = gcb
+        self.stage_with_gcb = stage_with_gcb
+        if gcb is not None:
+            assert len(stage_with_gcb) == num_stages
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
@@ -378,6 +412,7 @@ class ResNet(nn.Module):
             stride = strides[i]
             dilation = dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
+            gcb = self.gcb if self.stage_with_gcb[i] else None
             planes = 64 * 2**i
             res_layer = make_res_layer(
                 self.block,
@@ -390,7 +425,8 @@ class ResNet(nn.Module):
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
                 normalize=normalize,
-                dcn=dcn)
+                dcn=dcn,
+                gcb=gcb)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
