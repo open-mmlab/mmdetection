@@ -59,7 +59,8 @@ class MaskIoUHead(nn.Module):
         normal_init(self.mask_iou, std=0.01)
 
     def forward(self, x, mask_pred):
-        mask_pred_pooled = self.max_pool(mask_pred.sigmoid().unsqueeze(1))
+        mask_pred = mask_pred.sigmoid()
+        mask_pred_pooled = self.max_pool(mask_pred.unsqueeze(1))
         x = torch.cat((x, mask_pred_pooled), 1)
         for conv in self.convs:
             x = self.relu(conv(x))
