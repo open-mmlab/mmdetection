@@ -70,10 +70,12 @@ class MaskIoUHead(nn.Module):
         mask_iou = self.mask_iou(x)
         return mask_iou
 
-    def get_target(self, mask_pred, mask_targets):
+    def get_target(self, mask_pred, mask_targets, area_ratios):
+        assert mask_targets.size(0) == area_ratios.size(0)
         mask_pred = (mask_pred > 0.5).float()  # binarize mask pred
         mask_overlaps = (mask_pred * mask_targets).sum((-1, -2))
-        mask_unions = (mask_pred + mask_targets).clamp(max=1.).sum((-1, -2))
+        full_areas = mask_targets.sum((-1, -2)) / area_ratios
+        mask_unions = mask_pred.sum((-1, -2)) + full_areas - mask_overlaps
         mask_iou_targets = mask_overlaps / mask_unions
         return mask_iou_targets
 
@@ -86,6 +88,3 @@ class MaskIoUHead(nn.Module):
         else:
             loss['loss_mask_iou'] = mask_iou_pred * 0
         return loss
-
-    def set_mask_confidence(self, det_bboxes):
-        pass

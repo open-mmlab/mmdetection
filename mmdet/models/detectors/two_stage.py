@@ -184,7 +184,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 mask_feats = bbox_feats[pos_inds]
             mask_pred = self.mask_head(mask_feats)
 
-            mask_targets = self.mask_head.get_target(
+            mask_targets, area_ratios = self.mask_head.get_target(
                 sampling_results, gt_masks, self.train_cfg.rcnn)
             pos_labels = torch.cat(
                 [res.pos_gt_labels for res in sampling_results])
@@ -198,7 +198,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.
                                                         size(0)), pos_labels]
                 mask_iou_targets = self.mask_iou_head.get_target(
-                    pos_mask_pred, mask_targets)
+                    pos_mask_pred, mask_targets, area_ratios)
                 loss_mask_iou = self.mask_iou_head.loss(
                     pos_mask_iou_pred, mask_iou_targets)
                 losses.update(loss_mask_iou)
