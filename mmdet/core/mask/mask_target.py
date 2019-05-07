@@ -24,6 +24,7 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
     if num_pos > 0:
         proposals_np = pos_proposals.cpu().numpy()
         pos_assigned_gt_inds = pos_assigned_gt_inds.cpu().numpy()
+        gt_mask_sums = gt_masks.sum((-1, -2)) + 1e-7  # avoid zero
         for i in range(num_pos):
             gt_mask = gt_masks[pos_assigned_gt_inds[i]]
             bbox = proposals_np[i, :].astype(np.int32)
@@ -31,15 +32,15 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
             w = np.maximum(x2 - x1 + 1, 1)
             h = np.maximum(y2 - y1 + 1, 1)
             # mask is uint8 both before and after resizing
-            target = mmcv.imresize(gt_mask[y1:y1 + h, x1:x1 + w],
-                                   (mask_size, mask_size))
-            ratio = gt_mask[y1:y1 + h, x1:x1 + w].sum() / gt_mask.sum()
+            proposal_area = gt_mask[y1:y1 + h, x1:x1 + w]
+            target = mmcv.imresize(proposal_area, (mask_size, mask_size))
+            ratio = proposal_area.sum() / gt_mask_sums[pos_assigned_gt_inds[i]]
             mask_targets.append(target)
             area_ratios.append(ratio)
         mask_targets = torch.from_numpy(np.stack(mask_targets)).float().to(
             pos_proposals.device)
         area_ratios = torch.from_numpy(np.stack(area_ratios)).float().to(
-            pos_proposals.device)
+            pos_proposals.device) + 1e-7  # avoid zero
     else:
         mask_targets = pos_proposals.new_zeros((0, mask_size, mask_size))
         area_ratios = pos_proposals.new_zeros((0, ))
