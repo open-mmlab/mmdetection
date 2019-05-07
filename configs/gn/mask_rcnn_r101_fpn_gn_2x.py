@@ -1,5 +1,5 @@
 # model settings
-normalize = dict(type='GN', num_groups=32, frozen=False)
+normalize = dict(type='GN', num_groups=32, requires_grad=True)
 
 model = dict(
     type='MaskRCNN',

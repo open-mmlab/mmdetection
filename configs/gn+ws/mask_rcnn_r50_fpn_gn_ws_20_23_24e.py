@@ -1,6 +1,6 @@
 # model settings
 conv_cfg = dict(type='ConvWS')
-normalize = dict(type='GN', num_groups=32, frozen=False)
+normalize = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
     type='MaskRCNN',
     pretrained='open-mmlab://jhu/resnet50_gn_ws',
