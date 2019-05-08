@@ -7,41 +7,46 @@ from ..utils.dist_utils import allreduce_grads
 
 
 class Fp16PrepareHook(Hook):
-    """FP16 prepare hook.
+    """FP16 preparation hook.
 
     This hook initializes the necessary condition for FP16 training,
     e.g. copy master fp32 weight, convert bn layer to fp32.
 
     Args:
-        optimizer (dict): Original optimizer config.
+        optimizer_cfg (dict): Original optimizer config.
     """
 
-    def __init__(self, optimizer):
-        self.optimizer = optimizer
+    def __init__(self, optimizer_cfg):
+        self.optimizer_cfg = optimizer_cfg
 
     def before_run(self, runner):
         model = runner.model.module
-        # fp32 weight copy
-        param_copy = [param.data.clone() for param in model.parameters()]
-        for param, net_param in zip(param_copy, model.parameters()):
-            param.requires_grad = net_param.requires_grad
+        # keep a copy of fp32 weights
+        param_copy = []
+        for param in model.parameters():
+            copied = param.data.clone()
+            copied.requires_grad = param.requires_grad
+            param_copy.append(copied)
         # convert model to fp16
         wrap_fp16_model(model)
-        # construct fp16 optimizer
-        optimizer_cfg = self.optimizer.copy()
+        # use the fp32 weights to build the optimizer
+        optimizer_cfg = self.optimizer_cfg.copy()
         optimizer_type = optimizer_cfg.pop('type')
         optimizer_cls = getattr(torch.optim, optimizer_type)
         runner.optimizer = optimizer_cls(param_copy, **optimizer_cfg)
 
 
 class Fp16OptimizerHook(OptimizerHook):
-    """ FP16 optimizer hook.
+    """FP16 optimizer hook.
 
-    Compared with normal FP32 optimizer, there are some extra steps. e.g.
-       1. Scale loss.
-       2. Copy gradient from FP16 model to FP32 weight copy.
-       3. Update FP32 weight copy parameters.
-       4. Copy updated parameters from FP32 weight copy to FP16 model.
+    The steps of fp16 optimizer is as follows.
+    1. Scale the loss value.
+    2. BP in the fp16 model.
+    2. Copy gradients from fp16 model to fp32 weights.
+    3. Update fp32 weights.
+    4. Copy updated parameters from fp32 weights to fp16 model.
+
+    Refer to https://arxiv.org/abs/1710.03740 for more details.
 
     Args:
         loss_scale (float): Scale factor multiplied with loss.
@@ -59,45 +64,50 @@ class Fp16OptimizerHook(OptimizerHook):
         self.loss_scale = loss_scale
         self.distributed = distributed
 
+    def copy_grads_to_fp32(self, fp16_net, fp32_weights):
+        """Copy gradients from fp16 model to fp32 weight copy."""
+        for fp32_param, fp16_param in zip(fp32_weights, fp16_net.parameters()):
+            if fp16_param.grad is not None:
+                if fp32_param.grad is None:
+                    fp32_param.grad = fp32_param.data.new(*fp32_param.size())
+                fp32_param.grad.copy_(fp16_param.grad)
+
+    def copy_params_to_fp16(self, fp16_net, fp32_weights):
+        """Copy updated params from fp32 weight copy to fp16 model."""
+        for fp16_param, fp32_param in zip(fp16_net.parameters(), fp32_weights):
+            fp16_param.data.copy_(fp32_param.data)
+
     def after_train_iter(self, runner):
-        fp32_weight = runner.optimizer.param_groups[0]['params']
+        # clear grads of last iteration
         runner.model.zero_grad()
         runner.optimizer.zero_grad()
+        # scale the loss value
         scaled_loss = runner.outputs['loss'] * self.loss_scale
         scaled_loss.backward()
-        set_grad(runner.model, fp32_weight)
+        # copy fp16 grads in the model to fp32 params in the optimizer
+        fp32_weights = runner.optimizer.param_groups[0]['params']
+        self.copy_grads_to_fp32(runner.model, fp32_weights)
+        # allreduce grads
         if self.distributed:
-            allreduce_grads(fp32_weight, self.coalesce, self.bucket_size_mb)
-        for p in fp32_weight:
-            if p.grad is not None:
-                p.grad.div_(self.loss_scale)
+            allreduce_grads(fp32_weights, self.coalesce, self.bucket_size_mb)
+        # scale the gradients back
+        for param in fp32_weights:
+            if param.grad is not None:
+                param.grad.div_(self.loss_scale)
         if self.grad_clip is not None:
-            self.clip_grads(fp32_weight)
+            self.clip_grads(fp32_weights)
+        # update fp32 params
         runner.optimizer.step()
-        copy_in_params(runner.model, fp32_weight)
-
-
-# copy updated param from fp32_weight to fp16 net
-def copy_in_params(fp16_net, fp32_weight):
-    for net_param, fp32_weight_param in zip(fp16_net.parameters(),
-                                            fp32_weight):
-        net_param.data.copy_(fp32_weight_param.data)
-
-
-# copy gradient from fp16 net to fp32 weight copy
-def set_grad(fp16_net, fp32_weight):
-    for param_fp32, param_fp16 in zip(fp32_weight, fp16_net.parameters()):
-        if param_fp16.grad is not None:
-            if param_fp32.grad is None:
-                param_fp32.grad = param_fp32.data.new(*param_fp32.data.size())
-            param_fp32.grad.data.copy_(param_fp16.grad.data)
+        # copy fp32 params to the fp16 model
+        self.copy_params_to_fp16(runner.model, fp32_weights)
 
 
 def wrap_fp16_model(model):
     # convert model to fp16
     model.half()
-    patch_norm_fp32(model)  # bn should be in fp32
-    # set fp16 flag
+    # patch the normalization layers to make it work in fp32 mode
+    patch_norm_fp32(model)
+    # set `fp16_enabled` flag
     for m in model.modules():
         if hasattr(m, 'fp16_enabled'):
             m.fp16_enabled = True
@@ -106,36 +116,32 @@ def wrap_fp16_model(model):
 def patch_norm_fp32(module):
     if isinstance(module, (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
         module.float()
-        module.forward = patch_forward_module(
-            module.forward, torch.half, torch.float, convert_output=True)
+        module = patch_forward_method(module, torch.half, torch.float)
     for child in module.children():
         patch_norm_fp32(child)
     return module
 
 
-def patch_forward_module(old_forward, src_type, dst_type, convert_output):
-    """Patch the forward function of a module.
+def patch_forward_method(module, src_type, dst_type, convert_output=True):
+    """Patch the forward method of a module.
 
     Args:
-        old_forward (func): original forward function.
-        src_type (torch.dtype): the args' type of the old_forward that we want
-        to convert from.
-        dst_type (torch.dtype): the args' type of the old_forward that we want
-        to convert to.
-        convert_output (bool): if convert the output of the old_forward to
-        src_type.
+        module (:obj:`nn.Module`): The module to be patched.
+        src_type (torch.dtype): Type of input arguments to be converted from.
+        dst_type (torch.dtype): Type of input arguments to be converted to.
+        convert_output (bool): Whether to convert the output back to src_type.
 
     Returns:
-        func: a new forward function
+        nn.Module: The patched module.
     """
 
-    # conver input from src_type to dst_type
-
     def new_forward(*args, **kwargs):
-        output = old_forward(*cast_tensor_type(args, src_type, dst_type),
-                             **cast_tensor_type(kwargs, src_type, dst_type))
+        output = module.forward(*cast_tensor_type(args, src_type, dst_type),
+                                **cast_tensor_type(kwargs, src_type, dst_type))
         if convert_output:
             output = cast_tensor_type(output, dst_type, src_type)
         return output
 
-    return new_forward
+    module.forward = new_forward
+
+    return module
