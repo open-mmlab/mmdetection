@@ -163,14 +163,7 @@ test_cfg = dict(
     rcnn=dict(
         score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=100),
     keep_all_stages=False)
-# NOTE:
 # dataset settings
-# if you use zip format to store all images of coco, please use CocoZipDataset
-# dataset_type = 'CocoZipDataset'
-# data_root = '/hdfs/resrchvc/v-tich/cls/data/coco/'
-# img_norm_cfg = dict(
-#     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=False)
-# else
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
