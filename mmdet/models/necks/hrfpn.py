@@ -61,7 +61,9 @@ class HRFPN(nn.Module):
         outs = []
         outs.append(inputs[0])
         for i in range(1, len(inputs)):
-            outs.append(F.interpolate(inputs[i], scale_factor=2**i, mode='bilinear'))
+            outs.append(F.interpolate(inputs[i],
+                                      scale_factor=2**i,
+                                      mode='bilinear'))
         out = torch.cat(outs, dim=1)
         if out.requires_grad and self.with_cp:
             out = checkpoint(self.reduction_conv, out)
@@ -69,7 +71,8 @@ class HRFPN(nn.Module):
             out = self.reduction_conv(out)
         outs = [out]
         for i in range(1, 5):
-            outs.append(self.pooling(out, kernel_size=2**i, stride=2**i))
+            outs.append(self.pooling(out, kernel_size=2**i,
+                                     stride=2**i))
         outputs = []
         if self.share_conv:
             for i in range(5):

@@ -3,4 +3,5 @@ from .resnext import ResNeXt
 from .ssd_vgg import SSDVGG
 from .hrnet import HighResolutionNet
 
-__all__ = ['ResNet', 'make_res_layer', 'ResNeXt', 'SSDVGG', 'HighResolutionNet']
+__all__ = ['ResNet', 'make_res_layer', 'ResNeXt', 'SSDVGG',
+           'HighResolutionNet']
