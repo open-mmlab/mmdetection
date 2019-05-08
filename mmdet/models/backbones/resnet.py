@@ -117,7 +117,7 @@ class Bottleneck(nn.Module):
         self.normalize = normalize
         self.dcn = dcn
         self.with_dcn = dcn is not None
-        self.gcb =  gcb
+        self.gcb = gcb
         self.with_gcb = gcb is not None
         if style == 'pytorch':
             self.conv1_stride = 1
