@@ -72,7 +72,7 @@ class MaxIoUAssigner(BaseAssigner):
         """
         if bboxes.shape[0] == 0 or gt_bboxes.shape[0] == 0:
             raise ValueError('No gt or bboxes')
-        #put on cup
+        # trun the assign op to cup
         if gt_bboxes.shape[0] > 0:
             bboxes = bboxes.cpu()
             gt_bboxes = gt_bboxes.cpu()
@@ -97,7 +97,7 @@ class MaxIoUAssigner(BaseAssigner):
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 
         assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
-        #back to cuda
+        # trun the assign results back to cuda
         assign_result.gt_inds = assign_result.gt_inds.cuda()
         assign_result.max_overlaps = assign_result.max_overlaps.cuda()
         if assign_result.labels is not None:
