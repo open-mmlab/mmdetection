@@ -9,9 +9,6 @@ from ..utils.dist_utils import allreduce_grads
 class Fp16PrepareHook(Hook):
     """FP16 preparation hook.
 
-    This hook initializes the necessary condition for FP16 training,
-    e.g. copy master fp32 weight, convert bn layer to fp32.
-
     Args:
         optimizer_cfg (dict): Original optimizer config.
     """
@@ -116,32 +113,31 @@ def wrap_fp16_model(model):
 def patch_norm_fp32(module):
     if isinstance(module, (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
         module.float()
-        module = patch_forward_method(module, torch.half, torch.float)
+        module.forward = patch_forward_method(module.forward, torch.half,
+                                              torch.float)
     for child in module.children():
         patch_norm_fp32(child)
     return module
 
 
-def patch_forward_method(module, src_type, dst_type, convert_output=True):
+def patch_forward_method(func, src_type, dst_type, convert_output=True):
     """Patch the forward method of a module.
 
     Args:
-        module (:obj:`nn.Module`): The module to be patched.
+        func (callable): The original forward method.
         src_type (torch.dtype): Type of input arguments to be converted from.
         dst_type (torch.dtype): Type of input arguments to be converted to.
         convert_output (bool): Whether to convert the output back to src_type.
 
     Returns:
-        nn.Module: The patched module.
+        callable: The patched forward method.
     """
 
     def new_forward(*args, **kwargs):
-        output = module.forward(*cast_tensor_type(args, src_type, dst_type),
-                                **cast_tensor_type(kwargs, src_type, dst_type))
+        output = func(*cast_tensor_type(args, src_type, dst_type),
+                      **cast_tensor_type(kwargs, src_type, dst_type))
         if convert_output:
             output = cast_tensor_type(output, dst_type, src_type)
         return output
 
-    module.forward = new_forward
-
-    return module
+    return new_forward
