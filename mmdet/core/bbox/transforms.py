@@ -28,7 +28,7 @@ def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
     stds = deltas.new_tensor(stds).unsqueeze(0)
     deltas = deltas.sub_(means).div_(stds)
 
-    return deltas.gpu()#turn back to gpu if the operation is in cpu（）
+    return deltas.cuda()#turn back to gpu if the operation is in cpu（）
 
 
 def delta2bbox(rois,
@@ -65,7 +65,7 @@ def delta2bbox(rois,
         x2 = x2.clamp(min=0, max=max_shape[1] - 1)
         y2 = y2.clamp(min=0, max=max_shape[0] - 1)
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view_as(deltas)
-    return bboxes.gpu()
+    return bboxes.cuda()
 
 
 def bbox_flip(bboxes, img_shape):
