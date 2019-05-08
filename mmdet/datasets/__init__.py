@@ -7,12 +7,10 @@ from .utils import to_tensor, random_scale, show_ann, get_dataset
 from .concat_dataset import ConcatDataset
 from .repeat_dataset import RepeatDataset
 from .extra_aug import ExtraAugmentation
-from .zip_dataset import ZipDataset
-from .coco_zip import CocoZipDataset
+
 
 __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset', 'GroupSampler',
     'DistributedGroupSampler', 'build_dataloader', 'to_tensor', 'random_scale',
     'show_ann', 'get_dataset', 'ConcatDataset', 'RepeatDataset',
-    'ExtraAugmentation', 'CocoZipDataset', 'ZipDataset'
-]
+    'ExtraAugmentation']
