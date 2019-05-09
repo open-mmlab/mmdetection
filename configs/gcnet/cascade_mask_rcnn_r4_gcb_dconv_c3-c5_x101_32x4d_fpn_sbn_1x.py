@@ -236,7 +236,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/cascade_mask_rcnn_r4_ct_dconv_c3-c5_x101_32x4d_sbn_fpn_1x'
+work_dir = './work_dirs/cascade_mask_rcnn_r4_ct_dconv_c3-c5_x101_32x4d_sbn_fpn_1x' # noqa: E501
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
