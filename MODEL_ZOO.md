@@ -242,7 +242,7 @@ of 2x schedule is higher.
     <td>1x</td>
     <td>36.7</td>
     <td>36.8</td>
-    <td>36.4 / 36.7</td>
+    <td>36.4 / 36.6</td>
   </tr>
   <tr>
     <td>2x</td>
@@ -255,13 +255,13 @@ of 2x schedule is higher.
     <td>1x</td>
     <td>37.7 &amp; 33.9</td>
     <td>37.8 &amp; 34.2</td>
-    <td>37.3 &amp; 34.2 / 37.5 &amp; 34.4</td>
+    <td>37.3 &amp; 34.2 / 37.4 &amp; 34.3</td>
   </tr>
   <tr>
     <td>2x</td>
     <td>38.6 &amp; 34.5</td>
     <td>-</td>
-    <td>38.6 &amp; 35.1 / -</td>
+    <td>38.5 &amp; 35.1 / -</td>
   </tr>
   <tr>
     <td rowspan="2">Fast R-CNN</td>
@@ -360,13 +360,13 @@ The inference speed is measured with fps (img/s) on a single GPU. The higher, th
     <td>Faster R-CNN</td>
     <td>10.3</td>
     <td>7.9</td>
-    <td>12.9</td>
+    <td>13.5</td>
   </tr>
   <tr>
     <td>Mask R-CNN</td>
     <td>8.5</td>
     <td>7.7</td>
-    <td>9.9</td>
+    <td>10.2</td>
   </tr>
   <tr>
     <td>Fast R-CNN</td>
