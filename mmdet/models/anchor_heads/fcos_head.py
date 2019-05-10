@@ -25,7 +25,7 @@ class FCOSHead(nn.Module):
                  normalize=dict(type='GN', num_groups=32, frozen=False)):
         super(FCOSHead, self).__init__()
 
-        self.num_classes = num_classes - 1
+        self.cls_out_channels = num_classes - 1
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
@@ -59,7 +59,7 @@ class FCOSHead(nn.Module):
                     normalize=self.normalize,
                     bias=self.normalize is None))
         self.fcos_cls = nn.Conv2d(
-            self.feat_channels, self.num_classes, 3, stride=1, padding=1)
+            self.feat_channels, self.cls_out_channels, 3, stride=1, padding=1)
         self.fcos_reg = nn.Conv2d(
             self.feat_channels, 4, 3, stride=1, padding=1)
         self.fcos_centerness = nn.Conv2d(
@@ -113,7 +113,7 @@ class FCOSHead(nn.Module):
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and centerness
         flatten_cls_scores = [
-            cls_score.permute(0, 2, 3, 1).reshape(-1, self.num_classes)
+            cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)
             for cls_score in cls_scores
         ]
         flatten_bbox_preds = [
@@ -213,7 +213,7 @@ class FCOSHead(nn.Module):
                 cls_scores, bbox_preds, centernesses, mlvl_centers):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.num_classes).sigmoid()
+                -1, self.cls_out_channels).sigmoid()
             centerness = centerness.permute(1, 2, 0).reshape(-1).sigmoid()
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
