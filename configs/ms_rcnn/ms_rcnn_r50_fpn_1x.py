@@ -8,7 +8,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        normalize=dict(type='BN', frozen=True),
+        normalize=dict(type='BN', requires_grad=False),
         style='caffe'),
     neck=dict(
         type='FPN',
@@ -147,8 +147,7 @@ data = dict(
         with_label=True),
     test=dict(
         type=dataset_type,
-        # ann_file=data_root + 'annotations/instances_val2017.json',
-        ann_file='data/val_0_20.json',
+        ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
