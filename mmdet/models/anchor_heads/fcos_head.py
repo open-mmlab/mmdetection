@@ -25,6 +25,7 @@ class FCOSHead(nn.Module):
                  normalize=dict(type='GN', num_groups=32, frozen=False)):
         super(FCOSHead, self).__init__()
 
+        self.num_classes = num_classes
         self.cls_out_channels = num_classes - 1
         self.in_channels = in_channels
         self.feat_channels = feat_channels
@@ -225,7 +226,7 @@ class FCOSHead(nn.Module):
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 centerness = centerness[topk_inds]
-            bboxes = distance2bbox(bbox_pred, centers, max_shape=img_shape)
+            bboxes = distance2bbox(centers, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
