@@ -6,7 +6,7 @@ from pycocotools.cocoeval import COCOeval
 from .recall import eval_recalls
 
 
-def coco_eval(result_file, result_types, coco, max_dets=(100, 300, 1000)):
+def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
     for res_type in result_types:
         assert res_type in [
             'proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'
@@ -17,16 +17,20 @@ def coco_eval(result_file, result_types, coco, max_dets=(100, 300, 1000)):
     assert isinstance(coco, COCO)
 
     if result_types == ['proposal_fast']:
-        ar = fast_eval_recall(result_file, coco, np.array(max_dets))
+        ar = fast_eval_recall(result_files, coco, np.array(max_dets))
         for i, num in enumerate(max_dets):
             print('AR@{}\t= {:.4f}'.format(num, ar[i]))
         return
 
-    assert result_file.endswith('.json')
-    coco_dets = coco.loadRes(result_file)
-
-    img_ids = coco.getImgIds()
     for res_type in result_types:
+        if res_type == 'proposal':
+            result_file = result_files['bbox']
+        else:
+            result_file = result_files[res_type]
+        assert result_file.endswith('.json')
+
+        coco_dets = coco.loadRes(result_file)
+        img_ids = coco.getImgIds()
         iou_type = 'bbox' if res_type == 'proposal' else res_type
         cocoEval = COCOeval(coco, coco_dets, iou_type)
         cocoEval.params.imgIds = img_ids
@@ -97,7 +101,7 @@ def proposal2json(dataset, results):
             data['score'] = float(bboxes[i][4])
             data['category_id'] = 1
             json_results.append(data)
-    return json_results
+    return dict(proposal=json_results)
 
 
 def det2json(dataset, results):
@@ -114,27 +118,43 @@ def det2json(dataset, results):
                 data['score'] = float(bboxes[i][4])
                 data['category_id'] = dataset.cat_ids[label]
                 json_results.append(data)
-    return json_results
+    return dict(bbox=json_results)
 
 
 def segm2json(dataset, results):
-    json_results = []
+    bbox_json_results = []
+    segm_json_results = []
     for idx in range(len(dataset)):
         img_id = dataset.img_ids[idx]
-        det, seg = results[idx]
+        det, (seg, mask_scores) = results[idx]
         for label in range(len(det)):
+            # bbox results
             bboxes = det[label]
-            segms = seg[label]
             for i in range(bboxes.shape[0]):
                 data = dict()
                 data['image_id'] = img_id
                 data['bbox'] = xyxy2xywh(bboxes[i])
                 data['score'] = float(bboxes[i][4])
                 data['category_id'] = dataset.cat_ids[label]
+                bbox_json_results.append(data)
+
+            # segm results
+            segms = seg[label]
+            if mask_scores is not None:
+                mask_score = mask_scores[label]
+            for i in range(bboxes.shape[0]):
+                data = dict()
+                data['image_id'] = img_id
+                data['bbox'] = xyxy2xywh(bboxes[i])
+                if mask_scores is not None:
+                    data['score'] = float(mask_score[i])
+                else:
+                    data['score'] = float(bboxes[i][4])
+                data['category_id'] = dataset.cat_ids[label]
                 segms[i]['counts'] = segms[i]['counts'].decode()
                 data['segmentation'] = segms[i]
-                json_results.append(data)
-    return json_results
+                segm_json_results.append(data)
+    return dict(bbox=bbox_json_results, segm=segm_json_results)
 
 
 def results2json(dataset, results, out_file):
@@ -146,4 +166,9 @@ def results2json(dataset, results, out_file):
         json_results = proposal2json(dataset, results)
     else:
         raise TypeError('invalid type of results')
-    mmcv.dump(json_results, out_file)
+    result_files = dict()
+    for eval_type, json_result in json_results.items():
+        result_file = '{}.{}.json'.format(out_file, eval_type)
+        mmcv.dump(json_result, result_file)
+        result_files[eval_type] = result_file
+    return result_files

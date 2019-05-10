@@ -184,7 +184,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 mask_feats = bbox_feats[pos_inds]
             mask_pred = self.mask_head(mask_feats)
 
-            mask_targets, area_ratios = self.mask_head.get_target(
+            mask_targets = self.mask_head.get_target(
                 sampling_results, gt_masks, self.train_cfg.rcnn)
             pos_labels = torch.cat(
                 [res.pos_gt_labels for res in sampling_results])
@@ -198,7 +198,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.
                                                         size(0)), pos_labels]
                 mask_iou_targets = self.mask_iou_head.get_target(
-                    pos_mask_pred, mask_targets, area_ratios)
+                    sampling_results, gt_masks, pos_mask_pred, mask_targets)
                 loss_mask_iou = self.mask_iou_head.loss(
                     pos_mask_iou_pred, mask_iou_targets)
                 losses.update(loss_mask_iou)
@@ -215,25 +215,21 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
+        bbox_results = bbox2result(det_bboxes, det_labels,
+                                   self.bbox_head.num_classes)
+        if not self.with_mask:
+            return bbox_results
 
         if self.with_mask:
             segm_results, mask_feats, mask_pred = self.simple_test_mask(
                 x, img_meta, det_bboxes, det_labels, rescale=rescale)
 
-        if self.with_mask_iou:
-            if det_bboxes.shape[0] > 0:
-                mask_ious = self.mask_iou_head(
-                    mask_feats,
-                    mask_pred[range(det_bboxes.size(0)), det_labels + 1])
-                det_bboxes[:, -1] *= mask_ious[range(det_bboxes.
-                                                     size(0)), det_labels + 1]
-
-        bbox_results = bbox2result(det_bboxes, det_labels,
-                                   self.bbox_head.num_classes)
-        if not self.with_mask:
-            return bbox_results
-        else:
-            return bbox_results, segm_results
+            mask_scores = None
+            if self.with_mask_iou:
+                if det_bboxes.shape[0] > 0:
+                    mask_scores = self.mask_iou_head.get_mask_scores(
+                        mask_feats, mask_pred, det_bboxes, det_labels)
+            return bbox_results, (segm_results, mask_scores)
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test with augmentations.

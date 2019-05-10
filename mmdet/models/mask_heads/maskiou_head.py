@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
 
+from mmdet.core import mask_iou_target
 from ..registry import HEADS
 
 
@@ -70,14 +71,13 @@ class MaskIoUHead(nn.Module):
         mask_iou = self.mask_iou(x)
         return mask_iou
 
-    def get_target(self, mask_pred, mask_targets, area_ratios):
-        assert mask_targets.size(0) == area_ratios.size(0)
-        mask_pred = (mask_pred > 0.5).float()  # binarize mask pred
-        mask_overlaps = (mask_pred * mask_targets).sum((-1, -2))
-        full_areas = mask_targets.sum((-1, -2)) / area_ratios
-        mask_unions = mask_pred.sum((-1, -2)) + full_areas - mask_overlaps
-        mask_iou_targets = mask_overlaps / mask_unions
-        return mask_iou_targets
+    def get_target(self, sampling_results, gt_masks, mask_pred, mask_targets):
+        pos_proposals = [res.pos_bboxes for res in sampling_results]
+        pos_assigned_gt_inds = [
+            res.pos_assigned_gt_inds for res in sampling_results
+        ]
+        return mask_iou_target(pos_proposals, pos_assigned_gt_inds, gt_masks,
+                               mask_pred, mask_targets)
 
     def loss(self, mask_iou_pred, mask_iou_targets):
         loss = dict()
@@ -88,3 +88,13 @@ class MaskIoUHead(nn.Module):
         else:
             loss['loss_mask_iou'] = mask_iou_pred * 0
         return loss
+
+    def get_mask_scores(self, mask_feats, mask_pred, det_bboxes, det_labels):
+        inds = range(det_labels.size(0))
+        mask_ious = self.forward(mask_feats, mask_pred[inds, det_labels + 1])
+        mask_scores = mask_ious[inds, det_labels + 1] * det_bboxes[inds, -1]
+        mask_scores = mask_scores.cpu().numpy()
+        det_labels = det_labels.cpu().numpy()
+        return [
+            mask_scores[det_labels == i] for i in range(self.num_classes - 1)
+        ]
