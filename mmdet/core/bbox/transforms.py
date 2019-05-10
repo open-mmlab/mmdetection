@@ -154,3 +154,16 @@ def bbox2result(bboxes, labels, num_classes):
         bboxes = bboxes.cpu().numpy()
         labels = labels.cpu().numpy()
         return [bboxes[labels == i, :] for i in range(num_classes - 1)]
+
+
+def distance2bbox(centers, distance, max_shape=None):
+    x1 = centers[:, 0] - distance[:, 0]
+    y1 = centers[:, 1] - distance[:, 1]
+    x2 = centers[:, 0] + distance[:, 2]
+    y2 = centers[:, 1] + distance[:, 3]
+    if max_shape is not None:
+        x1 = x1.clamp(min=0, max=max_shape[1] - 1)
+        y1 = y1.clamp(min=0, max=max_shape[0] - 1)
+        x2 = x2.clamp(min=0, max=max_shape[1] - 1)
+        y2 = y2.clamp(min=0, max=max_shape[0] - 1)
+    return torch.stack([x1, y1, x2, y2], -1)
