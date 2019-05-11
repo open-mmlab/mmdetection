@@ -2,7 +2,6 @@
 import torch
 import torch.nn.functional as F
 
-from ..bbox import delta2bbox
 from ...ops import sigmoid_focal_loss
 
 
