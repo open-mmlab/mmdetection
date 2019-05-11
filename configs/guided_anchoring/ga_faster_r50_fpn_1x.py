@@ -8,7 +8,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        normalize=dict(type='BN', frozen=True),
+        normalize=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='caffe'),
     neck=dict(
@@ -81,6 +81,13 @@ train_cfg = dict(
         center_ratio=0.2,
         ignore_ratio=0.5,
         debug=False),
+    rpn_proposal=dict(
+        nms_across_levels=False,
+        nms_pre=2000,
+        nms_post=2000,
+        max_num=300,
+        nms_thr=0.7,
+        min_bbox_size=0),
     rcnn=dict(
         assigner=dict(
             type='MaxIoUAssigner',
