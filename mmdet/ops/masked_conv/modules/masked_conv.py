@@ -1,8 +1,8 @@
-from torch.nn import Conv2d
-from ..functions.masked_conv import MaskedConv2dFunction
+import torch.nn as nn
+from ..functions.masked_conv import masked_conv2d
 
 
-class MaskedConv2d(Conv2d):
+class MaskedConv2d(nn.Conv2d):
 
     def __init__(self,
                  in_channels,
@@ -17,6 +17,9 @@ class MaskedConv2d(Conv2d):
               self).__init__(in_channels, out_channels, kernel_size, stride,
                              padding, dilation, groups, bias)
 
-    def forward_test(self, input, mask):
-        return MaskedConv2dFunction.apply(input, mask, self.weight, self.bias,
-                                          self.padding)
+    def forward(self, input, mask=None):
+        if mask is None:  # fallback to the normal Conv2d
+            return super(MaskedConv2d, self).forward(input)
+        else:
+            return masked_conv2d(input, mask, self.weight, self.bias,
+                                 self.padding)

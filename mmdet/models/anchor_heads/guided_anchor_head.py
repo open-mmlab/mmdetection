@@ -134,10 +134,10 @@ class GuidedAnchorHead(nn.Module):
         shape_pred = self.conv_shape(x)
         offset = self.conv_offset(shape_pred.detach())
         x = self.relu(self.conv_adaption(x, offset))
-        if not x.requires_grad:
+        if not self.training:
             mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr
-            cls_score = self.conv_cls.forward_test(x, mask)
-            bbox_pred = self.conv_reg.forward_test(x, mask)
+            cls_score = self.conv_cls(x, mask)
+            bbox_pred = self.conv_reg(x, mask)
         else:
             cls_score = self.conv_cls(x)
             bbox_pred = self.conv_reg(x)

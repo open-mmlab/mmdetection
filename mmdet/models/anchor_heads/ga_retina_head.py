@@ -124,8 +124,8 @@ class GARetinaHead(GuidedAnchorHead):
 
         if not self.training:
             mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr
-            cls_score = self.retina_cls.forward_test(cls_feat, mask)
-            bbox_pred = self.retina_reg.forward_test(reg_feat, mask)
+            cls_score = self.retina_cls(cls_feat, mask)
+            bbox_pred = self.retina_reg(reg_feat, mask)
         else:
             cls_score = self.retina_cls(cls_feat)
             bbox_pred = self.retina_reg(reg_feat)
