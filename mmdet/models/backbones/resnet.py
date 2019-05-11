@@ -47,9 +47,7 @@ class BasicBlock(nn.Module):
             planes,
             planes,
             3,
-            stride=stride,
-            padding=dilation,
-            dilation=dilation,
+            padding=1,
             bias=False)
         self.add_module(self.norm2_name, norm2)
 
@@ -310,8 +308,8 @@ class ResNet(nn.Module):
         style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
             layer is the 3x3 conv layer, otherwise the stride-two layer is
             the first 1x1 conv layer.
-        frozen_stages (int): Stages to be frozen (all param fixed). -1 means
-            not freezing any parameters.
+        frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
+            -1 means not freezing any parameters.
         normalize (dict): dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
@@ -339,7 +337,7 @@ class ResNet(nn.Module):
                  style='pytorch',
                  frozen_stages=-1,
                  conv_cfg=None,
-                 normalize=dict(type='BN', frozen=False),
+                 normalize=dict(type='BN', requires_grad=True),
                  norm_eval=True,
                  dcn=None,
                  stage_with_dcn=(False, False, False, False),

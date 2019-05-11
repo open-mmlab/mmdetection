@@ -1,6 +1,6 @@
 # model settings
 conv_cfg = dict(type='ConvWS')
-normalize = dict(type='GN', num_groups=32, frozen=False)
+normalize = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
     type='FasterRCNN',
     pretrained='open-mmlab://jhu/resnet50_gn_ws',
@@ -68,6 +68,13 @@ train_cfg = dict(
         pos_weight=-1,
         smoothl1_beta=1 / 9.0,
         debug=False),
+    rpn_proposal=dict(
+        nms_across_levels=False,
+        nms_pre=2000,
+        nms_post=2000,
+        max_num=2000,
+        nms_thr=0.7,
+        min_bbox_size=0),
     rcnn=dict(
         assigner=dict(
             type='MaxIoUAssigner',
@@ -86,9 +93,9 @@ train_cfg = dict(
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,
-        nms_pre=2000,
-        nms_post=2000,
-        max_num=2000,
+        nms_pre=1000,
+        nms_post=1000,
+        max_num=1000,
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
