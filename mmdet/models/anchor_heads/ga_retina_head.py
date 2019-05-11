@@ -2,16 +2,24 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 
 from .guided_anchor_head import GuidedAnchorHead
-from mmdet.ops import DeformConv, MaskedConv2d
 from ..registry import HEADS
-from ..utils import bias_init_with_prob
+from ..utils import bias_init_with_prob, ConvModule
+from mmdet.ops import DeformConv, MaskedConv2d
 
 
 @HEADS.register_module
 class GARetinaHead(GuidedAnchorHead):
 
-    def __init__(self, num_classes, in_channels, stacked_convs=4, **kwargs):
+    def __init__(self,
+                 num_classes,
+                 in_channels,
+                 stacked_convs=4,
+                 conv_cfg=None,
+                 normalize=None,
+                 **kwargs):
         self.stacked_convs = stacked_convs
+        self.conv_cfg = conv_cfg
+        self.normalize = normalize
         super(GARetinaHead, self).__init__(
             num_classes,
             in_channels,
@@ -26,9 +34,25 @@ class GARetinaHead(GuidedAnchorHead):
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
-                nn.Conv2d(chn, self.feat_channels, 3, stride=1, padding=1))
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    normalize=self.normalize,
+                    bias=self.normalize is None))
             self.reg_convs.append(
-                nn.Conv2d(chn, self.feat_channels, 3, stride=1, padding=1))
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    normalize=self.normalize,
+                    bias=self.normalize is None))
 
         self.conv_loc = nn.Conv2d(self.feat_channels, 1, 1)
         self.conv_shape = nn.Conv2d(self.feat_channels, self.num_anchors * 2,
@@ -67,9 +91,9 @@ class GARetinaHead(GuidedAnchorHead):
 
     def init_weights(self):
         for m in self.cls_convs:
-            normal_init(m, std=0.01)
+            normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
-            normal_init(m, std=0.01)
+            normal_init(m.conv, std=0.01)
 
         normal_init(self.conv_offset_cls, std=0.1)
         normal_init(self.conv_adaption_cls, std=0.01)
@@ -86,9 +110,9 @@ class GARetinaHead(GuidedAnchorHead):
         cls_feat = x
         reg_feat = x
         for cls_conv in self.cls_convs:
-            cls_feat = self.relu(cls_conv(cls_feat))
+            cls_feat = cls_conv(cls_feat)
         for reg_conv in self.reg_convs:
-            reg_feat = self.relu(reg_conv(reg_feat))
+            reg_feat = reg_conv(reg_feat)
 
         loc_pred = self.conv_loc(cls_feat)
         shape_pred = self.conv_shape(reg_feat)
@@ -98,7 +122,7 @@ class GARetinaHead(GuidedAnchorHead):
         offset_reg = self.conv_offset_reg(shape_pred.detach())
         reg_feat = self.relu(self.conv_adaption_reg(reg_feat, offset_reg))
 
-        if not x.requires_grad:
+        if not self.training:
             mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr
             cls_score = self.retina_cls.forward_test(cls_feat, mask)
             bbox_pred = self.retina_reg.forward_test(reg_feat, mask)
