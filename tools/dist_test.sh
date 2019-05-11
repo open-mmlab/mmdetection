@@ -7,4 +7,4 @@ CHECKPOINT=$2
 GPUS=$3
 
 $PYTHON -m torch.distributed.launch --nproc_per_node=$GPUS \
-    $(dirname "$0")/test_new.py $CONFIG $CHECKPOINT --launcher pytorch ${@:4}
+    $(dirname "$0")/test.py $CONFIG $CHECKPOINT --launcher pytorch ${@:4}

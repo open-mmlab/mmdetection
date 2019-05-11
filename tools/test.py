@@ -167,7 +167,7 @@ def main():
 
     rank, _ = get_dist_info()
     if args.out and rank == 0:
-        print('writing results to {}'.format(args.out))
+        print('\nwriting results to {}'.format(args.out))
         mmcv.dump(outputs, args.out)
         eval_types = args.eval
         if eval_types:
