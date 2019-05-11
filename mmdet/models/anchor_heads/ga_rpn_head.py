@@ -53,8 +53,8 @@ class GARPNHead(GuidedAnchorHead):
         return dict(
             loss_rpn_cls=losses['loss_cls'],
             loss_rpn_reg=losses['loss_reg'],
-            loss_rpn_shape=losses['loss_shape'],
-            loss_rpn_loc=losses['loss_loc'])
+            loss_anchor_shape=losses['loss_shape'],
+            loss_anchor_loc=losses['loss_loc'])
 
     def get_bboxes_single(self,
                           cls_scores,

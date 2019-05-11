@@ -15,6 +15,35 @@ from ..registry import HEADS
 from ..utils import bias_init_with_prob
 
 
+class FeatureAdaption(nn.Module):
+
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size=3,
+                 adaption_groups=4):
+        super(FeatureAdaption, self).__init__()
+        offset_channels = kernel_size * kernel_size * 2
+        self.conv_offset = nn.Conv2d(
+            2, adaption_groups * offset_channels, 1, bias=False)
+        self.conv_adaption = DeformConv(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            padding=int((kernel_size - 1) / 2),
+            deformable_groups=adaption_groups)
+        self.relu = nn.ReLU(inplace=True)
+
+    def init_weights(self):
+        normal_init(self.conv_offset, std=0.1)
+        normal_init(self.conv_adaption, std=0.01)
+
+    def forward(self, x, shape):
+        offset = self.conv_offset(shape.detach())
+        x = self.relu(self.conv_adaption(x, offset))
+        return x
+
+
 @HEADS.register_module
 class GuidedAnchorHead(nn.Module):
     """Guided-Anchor-based head (GA-RPN, GA-RetinaNet, etc.).
@@ -46,10 +75,11 @@ class GuidedAnchorHead(nn.Module):
                  octave_ratios=[0.5, 1.0, 2.0],
                  anchor_strides=[4, 8, 16, 32, 64],
                  anchor_base_sizes=None,
-                 anchoring_means=[.0, .0, .0, .0],
-                 anchoring_stds=[1.0, 1.0, 1.0, 1.0],
+                 anchoring_means=(.0, .0, .0, .0),
+                 anchoring_stds=(1.0, 1.0, 1.0, 1.0),
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
+                 adaption_groups=4,
                  loc_filter_thr=0.01,
                  loc_focal_loss=True,
                  cls_sigmoid_loss=False,
@@ -71,9 +101,9 @@ class GuidedAnchorHead(nn.Module):
         self.anchoring_stds = anchoring_stds
         self.target_means = target_means
         self.target_stds = target_stds
+        self.adaption_groups = adaption_groups
         self.loc_filter_thr = loc_filter_thr
         self.loc_focal_loss = loc_focal_loss
-        assert self.loc_focal_loss, 'only focal loss is supported in loc'
         self.cls_sigmoid_loss = cls_sigmoid_loss
         self.cls_focal_loss = cls_focal_loss
 
@@ -99,19 +129,11 @@ class GuidedAnchorHead(nn.Module):
         self.conv_loc = nn.Conv2d(self.feat_channels, 1, 1)
         self.conv_shape = nn.Conv2d(self.feat_channels, self.num_anchors * 2,
                                     1)
-        deformable_groups = 4
-        offset_channels = 3 * 3 * 2
-        self.conv_offset = nn.Conv2d(
-            self.num_anchors * 2,
-            deformable_groups * offset_channels,
-            1,
-            bias=False)
-        self.conv_adaption = DeformConv(
+        self.feature_adaption = FeatureAdaption(
             self.feat_channels,
             self.feat_channels,
             kernel_size=3,
-            padding=1,
-            deformable_groups=deformable_groups)
+            adaption_groups=self.adaption_groups)
         self.conv_cls = MaskedConv2d(
             self.feat_channels, self.num_anchors * self.cls_out_channels, 1)
         self.conv_reg = MaskedConv2d(self.feat_channels, self.num_anchors * 4,
@@ -120,20 +142,17 @@ class GuidedAnchorHead(nn.Module):
     def init_weights(self):
         normal_init(self.conv_cls, std=0.01)
         normal_init(self.conv_reg, std=0.01)
-        # normal_init(self.extra_rpn_conv, std=0.01)
-
-        normal_init(self.conv_offset, std=0.1)
-        normal_init(self.conv_adaption, std=0.01)
 
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.conv_loc, std=0.01, bias=bias_cls)
         normal_init(self.conv_shape, std=0.01)
 
+        self.feature_adaption.init_weights()
+
     def forward_single(self, x):
         loc_pred = self.conv_loc(x)
         shape_pred = self.conv_shape(x)
-        offset = self.conv_offset(shape_pred.detach())
-        x = self.relu(self.conv_adaption(x, offset))
+        x = self.feature_adaption(x, shape_pred)
         if not self.training:
             mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr
             cls_score = self.conv_cls(x, mask)
@@ -146,6 +165,44 @@ class GuidedAnchorHead(nn.Module):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
 
+    def get_sampled_anchors(self, featmap_sizes, img_metas):
+        """Get anchors according to feature map sizes.
+
+        Args:
+            featmap_sizes (list[tuple]): Multi-level feature map sizes.
+            img_metas (list[dict]): Image meta info.
+
+        Returns:
+            tuple: anchors of each image, valid flags of each image
+        """
+        num_imgs = len(img_metas)
+        num_levels = len(featmap_sizes)
+
+        # since feature map sizes of all images are the same, we only compute
+        # anchors for one time
+        multi_level_approxs = []
+        for i in range(num_levels):
+            approxs = self.approx_generators[i].grid_anchors(
+                featmap_sizes[i], self.anchor_strides[i])
+            multi_level_approxs.append(approxs)
+        approxs_list = [multi_level_approxs for _ in range(num_imgs)]
+
+        # for each image, we compute valid flags of multi level anchors
+        valid_flag_list = []
+        for img_id, img_meta in enumerate(img_metas):
+            multi_level_flags = []
+            for i in range(num_levels):
+                anchor_stride = self.anchor_strides[i]
+                feat_h, feat_w = featmap_sizes[i]
+                h, w, _ = img_meta['pad_shape']
+                valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
+                valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
+                flags = self.approx_generators[i].valid_flags(
+                    (feat_h, feat_w), (valid_feat_h, valid_feat_w))
+                multi_level_flags.append(flags)
+            valid_flag_list.append(multi_level_flags)
+        return approxs_list, valid_flag_list
+
     def get_anchors(self, featmap_sizes, shape_preds, img_metas):
         """Get approxs according to feature map sizes and predict guided
         anchors.
@@ -156,40 +213,25 @@ class GuidedAnchorHead(nn.Module):
             img_metas (list[dict]): Image meta info.
 
         Returns:
-            tuple: approxs of each image, valid flags of each image,
-            base approxs of each image, guided anchors of each image
+            tuple: base approxs of each image, guided anchors of each image
         """
         num_imgs = len(img_metas)
         num_levels = len(featmap_sizes)
 
         # since feature map sizes of all images are the same, we only compute
         # anchors for one time
-        multi_level_approxs = []
         multi_level_base_approxs = []
         for i in range(num_levels):
-            approxs = self.approx_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i])
             base_approxs = self.base_approx_generators[i].grid_anchors(
                 featmap_sizes[i], self.anchor_strides[i])
-            multi_level_approxs.append(approxs)
             multi_level_base_approxs.append(base_approxs)
-        approxs_list = [multi_level_approxs for _ in range(num_imgs)]
         base_approxs_list = [multi_level_base_approxs for _ in range(num_imgs)]
 
-        # for each image, we compute valid flags of multi level anchors
-        valid_flag_list = []
+        # for each image, we compute multi level predicted anchors
         guided_anchors_list = []
         for img_id, img_meta in enumerate(img_metas):
-            multi_level_flags = []
             multi_level_guided_anchors = []
             for i in range(num_levels):
-                anchor_stride = self.anchor_strides[i]
-                feat_h, feat_w = featmap_sizes[i]
-                h, w, _ = img_meta['pad_shape']
-                valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
-                valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
-                flags = self.approx_generators[i].valid_flags(
-                    (feat_h, feat_w), (valid_feat_h, valid_feat_w))
                 # calculate predicted anchors
                 anchor_deltas = shape_preds[i][img_id].permute(
                     1, 2, 0).contiguous().view(-1, 2).detach()
@@ -203,11 +245,8 @@ class GuidedAnchorHead(nn.Module):
                     self.anchoring_stds,
                     wh_ratio_clip=1e-6)
                 multi_level_guided_anchors.append(guided_anchors)
-                multi_level_flags.append(flags)
-            valid_flag_list.append(multi_level_flags)
             guided_anchors_list.append(multi_level_guided_anchors)
-        return (approxs_list, valid_flag_list, base_approxs_list,
-                guided_anchors_list)
+        return base_approxs_list, guided_anchors_list
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
@@ -315,9 +354,10 @@ class GuidedAnchorHead(nn.Module):
             self.anchor_strides,
             center_ratio=cfg.center_ratio,
             ignore_ratio=cfg.ignore_ratio)
-        (approxs_list, valid_flag_list,
-         base_approxs_list, guided_anchors_list) = self.get_anchors(
-             featmap_sizes, shape_preds, img_metas)
+        approxs_list, valid_flag_list = self.get_sampled_anchors(
+            featmap_sizes, img_metas)
+        base_approxs_list, guided_anchors_list = self.get_anchors(
+            featmap_sizes, shape_preds, img_metas)
 
         sampling = False if not hasattr(cfg, 'ga_sampler') else True
         shape_targets = ga_shape_target(
@@ -332,9 +372,9 @@ class GuidedAnchorHead(nn.Module):
         if shape_targets is None:
             return None
         (bbox_anchors_list, bbox_gts_list, anchor_weights_list,
-         all_inside_flags, anchor_fg_num, anchor_ng_num) = shape_targets
+         all_inside_flags, anchor_fg_num, anchor_bg_num) = shape_targets
         anchor_total_num = (anchor_fg_num
-                            if not sampling else anchor_fg_num + anchor_ng_num)
+                            if not sampling else anchor_fg_num + anchor_bg_num)
 
         sampling = False if self.cls_focal_loss else True
         label_channels = self.cls_out_channels if self.cls_sigmoid_loss else 1
