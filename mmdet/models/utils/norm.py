@@ -45,7 +45,7 @@ def build_norm_layer(cfg, num_features, postfix=''):
     if layer_type != 'GN':
         layer = norm_layer(num_features, **cfg_)
         if layer_type == 'SyncBN':
-            layer.ddp_gpu_size = 1
+            layer._specify_ddp_gpu_num(1)
     else:
         assert 'num_groups' in cfg_
         layer = norm_layer(num_channels=num_features, **cfg_)
