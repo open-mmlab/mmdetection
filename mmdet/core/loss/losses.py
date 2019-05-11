@@ -101,60 +101,67 @@ def weighted_smoothl1(pred, target, weight, beta=1.0, avg_factor=None):
     return torch.sum(loss * weight)[None] / avg_factor
 
 
-def bounded_iou_loss(pred,
-                     target_means,
-                     target_stds,
-                     rois,
-                     gts,
-                     weights,
-                     beta=0.2,
-                     avg_factor=None,
-                     eps=1e-3):
+def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3, reduction='mean'):
+    pred_ctrx = (pred[:, 0] + pred[:, 2]) * 0.5
+    pred_ctry = (pred[:, 1] + pred[:, 3]) * 0.5
+    pred_w = pred[:, 2] - pred[:, 0] + 1
+    pred_h = pred[:, 3] - pred[:, 1] + 1
+    with torch.no_grad():
+        target_ctrx = (target[:, 0] + target[:, 2]) * 0.5
+        target_ctry = (target[:, 1] + target[:, 3]) * 0.5
+        target_w = target[:, 2] - target[:, 0] + 1
+        target_h = target[:, 3] - target[:, 1] + 1
+
+    dx = target_ctrx - pred_ctrx
+    dy = target_ctry - pred_ctry
+
+    loss_dx = 1 - torch.max(
+        (target_w - 2 * dx.abs()) / (target_w + 2 * dx.abs() + eps),
+        torch.zeros_like(dx))
+    loss_dy = 1 - torch.max(
+        (target_h - 2 * dy.abs()) / (target_h + 2 * dy.abs() + eps),
+        torch.zeros_like(dy))
+    loss_dw = 1 - torch.min(target_w / (pred_w + eps),
+                            pred_w / (target_w + eps))
+    loss_dh = 1 - torch.min(target_h / (pred_h + eps),
+                            pred_h / (target_h + eps))
+    loss_comb = torch.stack([loss_dx, loss_dy, loss_dw, loss_dh], dim=-1).view(
+        loss_dx.size(0), -1)
+
+    loss = torch.where(loss_comb < beta, 0.5 * loss_comb * loss_comb / beta,
+                       loss_comb - 0.5 * beta)
+    reduction_enum = F._Reduction.get_enum(reduction)
+    # none: 0, mean:1, sum: 2
+    if reduction_enum == 0:
+        return loss
+    elif reduction_enum == 1:
+        return loss.sum() / pred.numel()
+    elif reduction_enum == 2:
+        return loss.sum()
+
+
+def weighted_bounded_iou_loss(pred,
+                              target,
+                              weight,
+                              beta=0.2,
+                              eps=1e-3,
+                              avg_factor=None):
     """Improving Object Localization with Fitness NMS and Bounded IoU Loss,
     https://arxiv.org/abs/1711.00164
     """
 
-    inds = torch.nonzero(weights[:, 0] > 0)
+    inds = torch.nonzero(weight[:, 0] > 0)
     if avg_factor is None:
         avg_factor = inds.numel() + 1e-6
 
     if inds.numel() > 0:
         inds = inds.squeeze(1)
     else:
-        return (pred * weights).sum()[None] / avg_factor
+        return (pred * weight).sum()[None] / avg_factor
 
-    pred_ = pred[inds, :]
-    rois_ = rois[inds, :]
-    gts_ = gts[inds, :]
-    pred_bboxes = delta2bbox(
-        rois_, pred_, target_means, target_stds, wh_ratio_clip=1e-6)
-    pred_ctrx = (pred_bboxes[:, 0] + pred_bboxes[:, 2]) * 0.5
-    pred_ctry = (pred_bboxes[:, 1] + pred_bboxes[:, 3]) * 0.5
-    pred_w = pred_bboxes[:, 2] - pred_bboxes[:, 0] + 1
-    pred_h = pred_bboxes[:, 3] - pred_bboxes[:, 1] + 1
-    with torch.no_grad():
-        gt_ctrx = (gts_[:, 0] + gts_[:, 2]) * 0.5
-        gt_ctry = (gts_[:, 1] + gts_[:, 3]) * 0.5
-        gt_w = gts_[:, 2] - gts_[:, 0] + 1
-        gt_h = gts_[:, 3] - gts_[:, 1] + 1
-
-    dx = gt_ctrx - pred_ctrx
-    dy = gt_ctry - pred_ctry
-
-    loss_dx = 1 - torch.max(
-        (gt_w - 2 * dx.abs()) / (gt_w + 2 * dx.abs() + eps),
-        torch.zeros_like(dx))
-    loss_dy = 1 - torch.max(
-        (gt_h - 2 * dy.abs()) / (gt_h + 2 * dy.abs() + eps),
-        torch.zeros_like(dy))
-    loss_dw = 1 - torch.min(gt_w / (pred_w + eps), pred_w / (gt_w + eps))
-    loss_dh = 1 - torch.min(gt_h / (pred_h + eps), pred_h / (gt_h + eps))
-    loss_comb = torch.stack([loss_dx, loss_dy, loss_dw, loss_dh], dim=-1).view(
-        loss_dx.size(0), -1)
-
-    loss = torch.where(loss_comb < beta, 0.5 * loss_comb * loss_comb / beta,
-                       loss_comb - 0.5 * beta)
-    loss = loss.sum()[None] / avg_factor
+    loss = bounded_iou_loss(
+        pred[inds], target[inds], beta=beta, eps=eps, reduction='sum')
+    loss = loss[None] / avg_factor
     return loss
 
 

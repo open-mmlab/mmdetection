@@ -9,7 +9,7 @@ from mmdet.core import (AnchorGenerator, anchor_target, ga_loc_target,
                         ga_shape_target, delta2bbox, multi_apply,
                         weighted_smoothl1, weighted_sigmoid_focal_loss,
                         weighted_cross_entropy, weighted_binary_cross_entropy,
-                        bounded_iou_loss, multiclass_nms)
+                        weighted_bounded_iou_loss, multiclass_nms)
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..registry import HEADS
 from ..utils import bias_init_with_prob
@@ -257,13 +257,22 @@ class GuidedAnchorHead(nn.Module):
         anchor_weights = anchor_weights.contiguous().view(-1, 4)
         bbox_deltas = bbox_anchors.new_full(bbox_anchors.size(), 0)
         bbox_deltas[:, 2:] += shape_pred
-        loss_shape = bounded_iou_loss(
-            bbox_deltas,
+        # filter out negative samples to speed-up weighted_bounded_iou_loss
+        inds = torch.nonzero(anchor_weights[:, 0] > 0).squeeze(1)
+        bbox_deltas_ = bbox_deltas[inds]
+        bbox_anchors_ = bbox_anchors[inds]
+        bbox_gts_ = bbox_gts[inds]
+        anchor_weights_ = anchor_weights[inds]
+        pred_anchors_ = delta2bbox(
+            bbox_anchors_,
+            bbox_deltas_,
             self.anchoring_means,
             self.anchoring_stds,
-            bbox_anchors,
-            bbox_gts,
-            anchor_weights,
+            wh_ratio_clip=1e-6)
+        loss_shape = weighted_bounded_iou_loss(
+            pred_anchors_,
+            bbox_gts_,
+            anchor_weights_,
             beta=0.2,
             avg_factor=anchor_total_num)
         return loss_shape
