@@ -17,10 +17,10 @@ class FPN(nn.Module):
                  end_level=-1,
                  add_extra_convs=False,
                  extra_convs_on_inputs=True,
+                 relu_before_extra_convs=False,
                  conv_cfg=None,
                  normalize=None,
                  activation=None,
-                 relu_extra_convs=False,
                  caffe2_xavier_initialize=False):
         super(FPN, self).__init__()
         assert isinstance(in_channels, list)
@@ -30,7 +30,7 @@ class FPN(nn.Module):
         self.num_outs = num_outs
         self.activation = activation
         self.with_bias = normalize is None
-        self.relu_extra_convs = relu_extra_convs
+        self.relu_before_extra_convs = relu_before_extra_convs
         self.caffe2_xavier_initialize = caffe2_xavier_initialize
 
         if end_level == -1:
@@ -137,8 +137,7 @@ class FPN(nn.Module):
                 else:
                     outs.append(self.fpn_convs[used_backbone_levels](outs[-1]))
                 for i in range(used_backbone_levels + 1, self.num_outs):
-                    # BUG: we should add relu before each extra conv
-                    if self.relu_extra_convs:
+                    if self.relu_before_extra_convs:
                         outs.append(self.fpn_convs[i](F.relu(outs[-1])))
                     else:
                         outs.append(self.fpn_convs[i](outs[-1]))

@@ -157,6 +157,16 @@ def bbox2result(bboxes, labels, num_classes):
 
 
 def distance2bbox(centers, distance, max_shape=None):
+    """Decode distance prediction to bounding box.
+
+    Args:
+        centers (Tensor): shape (n, 2).
+        distance (Tensor): shape (n, 4).
+        max_shape (tuple): shape of the image.
+
+    Returns:
+        BBox (Tensor): Decoded bbox.
+    """
     x1 = centers[:, 0] - distance[:, 0]
     y1 = centers[:, 1] - distance[:, 1]
     x2 = centers[:, 0] + distance[:, 2]

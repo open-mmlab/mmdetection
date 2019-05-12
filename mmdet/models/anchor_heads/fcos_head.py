@@ -60,13 +60,11 @@ class FCOSHead(nn.Module):
                     normalize=self.normalize,
                     bias=self.normalize is None))
         self.fcos_cls = nn.Conv2d(
-            self.feat_channels, self.cls_out_channels, 3, stride=1, padding=1)
-        self.fcos_reg = nn.Conv2d(
-            self.feat_channels, 4, 3, stride=1, padding=1)
-        self.fcos_centerness = nn.Conv2d(
-            self.feat_channels, 1, 3, stride=1, padding=1)
+            self.feat_channels, self.cls_out_channels, 3, padding=1)
+        self.fcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
+        self.fcos_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
 
-        self.scales = nn.ModuleList([Scale(1.0) for _ in range(5)])
+        self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
 
     def init_weights(self):
         for m in self.cls_convs:
@@ -92,6 +90,7 @@ class FCOSHead(nn.Module):
 
         for reg_layer in self.reg_convs:
             reg_feat = reg_layer(reg_feat)
+        # scale the bbox_pred of different level
         bbox_pred = scale(self.fcos_reg(reg_feat)).exp()
         return cls_score, bbox_pred, centerness
 
@@ -130,8 +129,9 @@ class FCOSHead(nn.Module):
         flatten_centerness = torch.cat(flatten_centerness)
         flatten_labels = torch.cat(labels)
         flatten_bbox_targets = torch.cat(bbox_targets)
+        # repeat centers to align with bbox_preds
         flatten_centers = torch.cat(
-            [centers.repeat(num_imgs, 2) for centers in all_level_centers])
+            [centers.repeat(num_imgs, 1) for centers in all_level_centers])
 
         pos_inds = flatten_labels.nonzero().reshape(-1)
         num_pos = len(pos_inds)
@@ -149,6 +149,7 @@ class FCOSHead(nn.Module):
             pos_decoded_bbox_preds = distance2bbox(pos_centers, pos_bbox_preds)
             pos_decoded_target_preds = distance2bbox(pos_centers,
                                                      pos_bbox_targets)
+            # centerness weighted iou loss
             loss_reg = ((iou_loss(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
@@ -246,16 +247,26 @@ class FCOSHead(nn.Module):
             score_cofficient=mlvl_centerness)
         return det_bboxes, det_labels
 
-    def get_centers(self, feat_sizes, dtype, device):
+    def get_centers(self, featmap_sizes, dtype, device):
+        """Get centers according to feature map sizes.
+
+        Args:
+            featmap_sizes (list[tuple]): Multi-level feature map sizes.
+            dtype (torch.dtype): Type of centers.
+            device (torch.device): Device of centers.
+
+        Returns:
+            tuple: centers of each image.
+        """
         mlvl_centers = []
-        for i in range(len(feat_sizes)):
+        for i in range(len(featmap_sizes)):
             mlvl_centers.append(
-                self.get_centers_single(feat_sizes[i], self.strides[i], dtype,
-                                        device))
+                self.get_centers_single(featmap_sizes[i], self.strides[i],
+                                        dtype, device))
         return mlvl_centers
 
-    def get_centers_single(self, feat_size, stride, dtype, device):
-        h, w = feat_size
+    def get_centers_single(self, featmap_size, stride, dtype, device):
+        h, w = featmap_size
         x_range = torch.arange(
             0, w * stride, stride, dtype=dtype, device=device)
         y_range = torch.arange(
