@@ -17,7 +17,7 @@ class ResLayer(nn.Module):
                  stride=2,
                  dilation=1,
                  style='pytorch',
-                 normalize=dict(type='BN', frozen=False),
+                 normalize=dict(type='BN', requires_grad=True),
                  norm_eval=True,
                  with_cp=False,
                  dcn=None):
