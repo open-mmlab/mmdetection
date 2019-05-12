@@ -67,7 +67,7 @@ class RPNHead(AnchorHead):
             assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
             anchors = mlvl_anchors[idx]
             rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
-            if self.use_sigmoid_cls:
+            if self.cls_sigmoid_loss:
                 rpn_cls_score = rpn_cls_score.reshape(-1)
                 scores = rpn_cls_score.sigmoid()
             else:
