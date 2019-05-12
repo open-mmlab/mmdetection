@@ -105,9 +105,9 @@ class FCOSHead(nn.Module):
              gt_bboxes_ignore=None):
         assert len(cls_scores) == len(bbox_preds) == len(centernesses)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        all_level_centers = self.get_centers(
-            featmap_sizes, bbox_preds[0].dtype, bbox_preds[0].device)
-        labels, bbox_targets = self.fcos_target(all_level_centers, gt_bboxes,
+        all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
+                                           bbox_preds[0].device)
+        labels, bbox_targets = self.fcos_target(all_level_points, gt_bboxes,
                                                 gt_labels)
 
         num_imgs = cls_scores[0].size(0)
@@ -129,9 +129,9 @@ class FCOSHead(nn.Module):
         flatten_centerness = torch.cat(flatten_centerness)
         flatten_labels = torch.cat(labels)
         flatten_bbox_targets = torch.cat(bbox_targets)
-        # repeat centers to align with bbox_preds
-        flatten_centers = torch.cat(
-            [centers.repeat(num_imgs, 1) for centers in all_level_centers])
+        # repeat points to align with bbox_preds
+        flatten_points = torch.cat(
+            [points.repeat(num_imgs, 1) for points in all_level_points])
 
         pos_inds = flatten_labels.nonzero().reshape(-1)
         num_pos = len(pos_inds)
@@ -145,9 +145,9 @@ class FCOSHead(nn.Module):
         pos_centerness_targets = self.centerness_target(pos_bbox_targets)
 
         if num_pos > 0:
-            pos_centers = flatten_centers[pos_inds]
-            pos_decoded_bbox_preds = distance2bbox(pos_centers, pos_bbox_preds)
-            pos_decoded_target_preds = distance2bbox(pos_centers,
+            pos_points = flatten_points[pos_inds]
+            pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
+            pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
             # centerness weighted iou loss
             loss_reg = ((iou_loss(
@@ -177,8 +177,8 @@ class FCOSHead(nn.Module):
         num_levels = len(cls_scores)
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        mlvl_centers = self.get_centers(featmap_sizes, bbox_preds[0].dtype,
-                                        bbox_preds[0].device)
+        mlvl_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
+                                      bbox_preds[0].device)
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -194,7 +194,7 @@ class FCOSHead(nn.Module):
             scale_factor = img_metas[img_id]['scale_factor']
             det_bboxes = self.get_bboxes_single(
                 cls_score_list, bbox_pred_list, centerness_pred_list,
-                mlvl_centers, img_shape, scale_factor, cfg, rescale)
+                mlvl_points, img_shape, scale_factor, cfg, rescale)
             result_list.append(det_bboxes)
         return result_list
 
@@ -202,17 +202,17 @@ class FCOSHead(nn.Module):
                           cls_scores,
                           bbox_preds,
                           centernesses,
-                          mlvl_centers,
+                          mlvl_points,
                           img_shape,
                           scale_factor,
                           cfg,
                           rescale=False):
-        assert len(cls_scores) == len(bbox_preds) == len(mlvl_centers)
+        assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_centerness = []
-        for cls_score, bbox_pred, centerness, centers in zip(
-                cls_scores, bbox_preds, centernesses, mlvl_centers):
+        for cls_score, bbox_pred, centerness, points in zip(
+                cls_scores, bbox_preds, centernesses, mlvl_points):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
@@ -223,11 +223,11 @@ class FCOSHead(nn.Module):
             if nms_pre > 0 and scores.shape[0] > nms_pre:
                 max_scores, _ = (scores * centerness[:, None]).max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                centers = centers[topk_inds, :]
+                points = points[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 centerness = centerness[topk_inds]
-            bboxes = distance2bbox(centers, bbox_pred, max_shape=img_shape)
+            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
@@ -247,59 +247,59 @@ class FCOSHead(nn.Module):
             score_cofficient=mlvl_centerness)
         return det_bboxes, det_labels
 
-    def get_centers(self, featmap_sizes, dtype, device):
-        """Get centers according to feature map sizes.
+    def get_points(self, featmap_sizes, dtype, device):
+        """Get points according to feature map sizes.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            dtype (torch.dtype): Type of centers.
-            device (torch.device): Device of centers.
+            dtype (torch.dtype): Type of points.
+            device (torch.device): Device of points.
 
         Returns:
-            tuple: centers of each image.
+            tuple: points of each image.
         """
-        mlvl_centers = []
+        mlvl_points = []
         for i in range(len(featmap_sizes)):
-            mlvl_centers.append(
-                self.get_centers_single(featmap_sizes[i], self.strides[i],
-                                        dtype, device))
-        return mlvl_centers
+            mlvl_points.append(
+                self.get_points_single(featmap_sizes[i], self.strides[i],
+                                       dtype, device))
+        return mlvl_points
 
-    def get_centers_single(self, featmap_size, stride, dtype, device):
+    def get_points_single(self, featmap_size, stride, dtype, device):
         h, w = featmap_size
         x_range = torch.arange(
             0, w * stride, stride, dtype=dtype, device=device)
         y_range = torch.arange(
             0, h * stride, stride, dtype=dtype, device=device)
         y, x = torch.meshgrid(y_range, x_range)
-        centers = torch.stack(
+        points = torch.stack(
             (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
-        return centers
+        return points
 
-    def fcos_target(self, centers, gt_bboxes_list, gt_labels_list):
-        assert len(centers) == len(self.regress_ranges)
-        num_levels = len(centers)
-        # expand regress ranges to align with centers
+    def fcos_target(self, points, gt_bboxes_list, gt_labels_list):
+        assert len(points) == len(self.regress_ranges)
+        num_levels = len(points)
+        # expand regress ranges to align with points
         expanded_regress_ranges = [
-            centers[i].new_tensor(self.regress_ranges[i])[None].expand_as(
-                centers[i]) for i in range(num_levels)
+            points[i].new_tensor(self.regress_ranges[i])[None].expand_as(
+                points[i]) for i in range(num_levels)
         ]
-        # concat all levels centers and regress ranges
+        # concat all levels points and regress ranges
         concat_regress_ranges = torch.cat(expanded_regress_ranges, dim=0)
-        concat_centers = torch.cat(centers, dim=0)
+        concat_points = torch.cat(points, dim=0)
         # get labels and bbox_targets of each image
         labels_list, bbox_targets_list = multi_apply(
             self.fcos_target_single,
             gt_bboxes_list,
             gt_labels_list,
-            centers=concat_centers,
+            points=concat_points,
             regress_ranges=concat_regress_ranges)
 
         # split to per img, per level
-        num_centers = [center.size(0) for center in centers]
-        labels_list = [labels.split(num_centers, 0) for labels in labels_list]
+        num_points = [center.size(0) for center in points]
+        labels_list = [labels.split(num_points, 0) for labels in labels_list]
         bbox_targets_list = [
-            bbox_targets.split(num_centers, 0)
+            bbox_targets.split(num_points, 0)
             for bbox_targets in bbox_targets_list
         ]
 
@@ -314,22 +314,21 @@ class FCOSHead(nn.Module):
                     [bbox_targets[i] for bbox_targets in bbox_targets_list]))
         return concat_lvl_labels, concat_lvl_bbox_targets
 
-    def fcos_target_single(self, gt_bboxes, gt_labels, centers,
-                           regress_ranges):
-        num_centers = centers.size(0)
+    def fcos_target_single(self, gt_bboxes, gt_labels, points, regress_ranges):
+        num_points = points.size(0)
         num_gts = gt_labels.size(0)
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
             gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
         # TODO: figure out why these two different
-        # areas = areas[None].expand(num_centers, num_gts)
-        areas = areas[None].repeat(num_centers, 1)
+        # areas = areas[None].expand(num_points, num_gts)
+        areas = areas[None].repeat(num_points, 1)
         regress_ranges = regress_ranges[:, None, :].expand(
-            num_centers, num_gts, 2)
-        gt_bboxes = gt_bboxes[None].expand(num_centers, num_gts, 4)
-        xs, ys = centers[:, 0], centers[:, 1]
-        xs = xs[:, None].expand(num_centers, num_gts)
-        ys = ys[:, None].expand(num_centers, num_gts)
+            num_points, num_gts, 2)
+        gt_bboxes = gt_bboxes[None].expand(num_points, num_gts, 4)
+        xs, ys = points[:, 0], points[:, 1]
+        xs = xs[:, None].expand(num_points, num_gts)
+        ys = ys[:, None].expand(num_points, num_gts)
 
         left = xs - gt_bboxes[..., 0]
         right = gt_bboxes[..., 2] - xs
@@ -353,7 +352,7 @@ class FCOSHead(nn.Module):
 
         labels = gt_labels[min_area_inds]
         labels[min_area == INF] = 0
-        bbox_targets = bbox_targets[range(num_centers), min_area_inds]
+        bbox_targets = bbox_targets[range(num_points), min_area_inds]
 
         return labels, bbox_targets
 
