@@ -8,7 +8,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        normalize=dict(type='BN', frozen=True),
+        normalize=dict(type='BN', requires_grad=False),
         style='caffe'),
     neck=dict(
         type='FPN',

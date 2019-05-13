@@ -22,7 +22,7 @@ class FCOSHead(nn.Module):
                  strides=(4, 8, 16, 32, 64),
                  regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 512),
                                  (512, INF)),
-                 normalize=dict(type='GN', num_groups=32, frozen=False)):
+                 normalize=dict(type='GN', num_groups=32, requires_grad=True)):
         super(FCOSHead, self).__init__()
 
         self.num_classes = num_classes
