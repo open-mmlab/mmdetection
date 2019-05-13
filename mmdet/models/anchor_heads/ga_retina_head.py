@@ -4,7 +4,7 @@ from mmcv.cnn import normal_init
 from .guided_anchor_head import GuidedAnchorHead, FeatureAdaption
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, ConvModule
-from mmdet.ops import DeformConv, MaskedConv2d
+from mmdet.ops import MaskedConv2d
 
 
 @HEADS.register_module

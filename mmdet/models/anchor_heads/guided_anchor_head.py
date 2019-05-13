@@ -5,11 +5,10 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (AnchorGenerator, anchor_target, ga_loc_target,
-                        ga_shape_target, delta2bbox, multi_apply,
-                        weighted_smoothl1, weighted_sigmoid_focal_loss,
-                        weighted_cross_entropy, weighted_binary_cross_entropy,
-                        weighted_bounded_iou_loss, multiclass_nms)
+from mmdet.core import (
+    AnchorGenerator, anchor_target, ga_loc_target, ga_shape_target, delta2bbox,
+    multi_apply, weighted_sigmoid_focal_loss, weighted_binary_cross_entropy,
+    weighted_bounded_iou_loss, multiclass_nms)
 from mmdet.ops import DeformConv, MaskedConv2d
 from .anchor_head import AnchorHead
 from ..registry import HEADS
@@ -165,8 +164,8 @@ class GuidedAnchorHead(AnchorHead):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
 
-    def get_sampled_anchors(self, featmap_sizes, img_metas):
-        """Get anchors according to feature map sizes.
+    def get_sampled_approxs(self, featmap_sizes, img_metas):
+        """Get sampled approxs according to feature map sizes.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
@@ -204,7 +203,7 @@ class GuidedAnchorHead(AnchorHead):
         return approxs_list, valid_flag_list
 
     def get_anchors(self, featmap_sizes, shape_preds, img_metas):
-        """Get approxs according to feature map sizes and predict guided
+        """Get square approx according to feature map sizes and guided
         anchors.
 
         Args:
@@ -314,7 +313,7 @@ class GuidedAnchorHead(AnchorHead):
             self.anchor_strides,
             center_ratio=cfg.center_ratio,
             ignore_ratio=cfg.ignore_ratio)
-        approxs_list, valid_flag_list = self.get_sampled_anchors(
+        approxs_list, valid_flag_list = self.get_sampled_approxs(
             featmap_sizes, img_metas)
         squares_list, guided_anchors_list = self.get_anchors(
             featmap_sizes, shape_preds, img_metas)
