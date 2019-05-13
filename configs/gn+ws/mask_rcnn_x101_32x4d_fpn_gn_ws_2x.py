@@ -1,6 +1,6 @@
 # model settings
 conv_cfg = dict(type='ConvWS')
-normalize = dict(type='GN', num_groups=32, requires_grad=True)
+norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
     type='MaskRCNN',
     pretrained='open-mmlab://jhu/resnext101_32x4d_gn_ws',
@@ -14,14 +14,14 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         conv_cfg=conv_cfg,
-        normalize=normalize),
+        norm_cfg=norm_cfg),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5,
         conv_cfg=conv_cfg,
-        normalize=normalize),
+        norm_cfg=norm_cfg),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -50,7 +50,7 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         conv_cfg=conv_cfg,
-        normalize=normalize),
+        norm_cfg=norm_cfg),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -63,7 +63,7 @@ model = dict(
         conv_out_channels=256,
         num_classes=81,
         conv_cfg=conv_cfg,
-        normalize=normalize))
+        norm_cfg=norm_cfg))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(

@@ -23,13 +23,13 @@ class BasicBlock(nn.Module):
                  style='pytorch',
                  with_cp=False,
                  conv_cfg=None,
-                 normalize=dict(type='BN'),
+                 norm_cfg=dict(type='BN'),
                  dcn=None):
         super(BasicBlock, self).__init__()
         assert dcn is None, "Not implemented yet."
 
-        self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
-        self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
 
         self.conv1 = build_conv_layer(
             conv_cfg,
@@ -95,7 +95,7 @@ class Bottleneck(nn.Module):
                  style='pytorch',
                  with_cp=False,
                  conv_cfg=None,
-                 normalize=dict(type='BN'),
+                 norm_cfg=dict(type='BN'),
                  dcn=None):
         """Bottleneck block for ResNet.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
@@ -106,21 +106,26 @@ class Bottleneck(nn.Module):
         assert dcn is None or isinstance(dcn, dict)
         self.inplanes = inplanes
         self.planes = planes
+        self.stride = stride
+        self.dilation = dilation
+        self.downsample = downsample
+        self.style = style
+        self.with_cp = with_cp
         self.conv_cfg = conv_cfg
-        self.normalize = normalize
+        self.norm_cfg = norm_cfg
         self.dcn = dcn
         self.with_dcn = dcn is not None
-        if style == 'pytorch':
+        if self.style == 'pytorch':
             self.conv1_stride = 1
             self.conv2_stride = stride
         else:
             self.conv1_stride = stride
             self.conv2_stride = 1
 
-        self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
-        self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
         self.norm3_name, norm3 = build_norm_layer(
-            normalize, planes * self.expansion, postfix=3)
+            norm_cfg, planes * self.expansion, postfix=3)
 
         self.conv1 = build_conv_layer(
             conv_cfg,
@@ -180,11 +185,6 @@ class Bottleneck(nn.Module):
         self.add_module(self.norm3_name, norm3)
 
         self.relu = nn.ReLU(inplace=True)
-        self.downsample = downsample
-        self.stride = stride
-        self.dilation = dilation
-        self.with_cp = with_cp
-        self.normalize = normalize
 
     @property
     def norm1(self):
@@ -249,7 +249,7 @@ def make_res_layer(block,
                    style='pytorch',
                    with_cp=False,
                    conv_cfg=None,
-                   normalize=dict(type='BN'),
+                   norm_cfg=dict(type='BN'),
                    dcn=None):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
@@ -261,7 +261,7 @@ def make_res_layer(block,
                 kernel_size=1,
                 stride=stride,
                 bias=False),
-            build_norm_layer(normalize, planes * block.expansion)[1],
+            build_norm_layer(norm_cfg, planes * block.expansion)[1],
         )
 
     layers = []
@@ -275,7 +275,7 @@ def make_res_layer(block,
             style=style,
             with_cp=with_cp,
             conv_cfg=conv_cfg,
-            normalize=normalize,
+            norm_cfg=norm_cfg,
             dcn=dcn))
     inplanes = planes * block.expansion
     for i in range(1, blocks):
@@ -288,7 +288,7 @@ def make_res_layer(block,
                 style=style,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
+                norm_cfg=norm_cfg,
                 dcn=dcn))
 
     return nn.Sequential(*layers)
@@ -309,7 +309,7 @@ class ResNet(nn.Module):
             the first 1x1 conv layer.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
             -1 means not freezing any parameters.
-        normalize (dict): dictionary to construct and config norm layer.
+        norm_cfg (dict): dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
@@ -336,7 +336,7 @@ class ResNet(nn.Module):
                  style='pytorch',
                  frozen_stages=-1,
                  conv_cfg=None,
-                 normalize=dict(type='BN', requires_grad=True),
+                 norm_cfg=dict(type='BN', requires_grad=True),
                  norm_eval=True,
                  dcn=None,
                  stage_with_dcn=(False, False, False, False),
@@ -356,7 +356,7 @@ class ResNet(nn.Module):
         self.style = style
         self.frozen_stages = frozen_stages
         self.conv_cfg = conv_cfg
-        self.normalize = normalize
+        self.norm_cfg = norm_cfg
         self.with_cp = with_cp
         self.norm_eval = norm_eval
         self.dcn = dcn
@@ -386,7 +386,7 @@ class ResNet(nn.Module):
                 style=self.style,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
+                norm_cfg=norm_cfg,
                 dcn=dcn)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
@@ -411,8 +411,7 @@ class ResNet(nn.Module):
             stride=2,
             padding=3,
             bias=False)
-        self.norm1_name, norm1 = build_norm_layer(
-            self.normalize, 64, postfix=1)
+        self.norm1_name, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
         self.add_module(self.norm1_name, norm1)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
