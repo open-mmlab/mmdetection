@@ -15,11 +15,11 @@ class GARetinaHead(GuidedAnchorHead):
                  in_channels,
                  stacked_convs=4,
                  conv_cfg=None,
-                 normalize=None,
+                 norm_cfg=None,
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
-        self.normalize = normalize
+        self.norm_cfg = norm_cfg
         GuidedAnchorHead.__init__(
             self,
             num_classes,
@@ -42,8 +42,7 @@ class GARetinaHead(GuidedAnchorHead):
                     stride=1,
                     padding=1,
                     conv_cfg=self.conv_cfg,
-                    normalize=self.normalize,
-                    bias=self.normalize is None))
+                    norm_cfg=self.norm_cfg))
             self.reg_convs.append(
                 ConvModule(
                     chn,
@@ -52,8 +51,7 @@ class GARetinaHead(GuidedAnchorHead):
                     stride=1,
                     padding=1,
                     conv_cfg=self.conv_cfg,
-                    normalize=self.normalize,
-                    bias=self.normalize is None))
+                    norm_cfg=self.norm_cfg))
 
         self.conv_loc = nn.Conv2d(self.feat_channels, 1, 1)
         self.conv_shape = nn.Conv2d(self.feat_channels, self.num_anchors * 2,
