@@ -25,8 +25,8 @@ class AnchorHead(nn.Module):
         anchor_base_sizes (Iterable): Anchor base sizes.
         target_means (Iterable): Mean values of regression targets.
         target_stds (Iterable): Std values of regression targets.
-        cls_sigmoid_loss (bool): Whether to use sigmoid loss for classification.
-            (softmax by default)
+        cls_sigmoid_loss (bool): Whether to use sigmoid loss for
+            classification. (softmax by default)
         cls_focal_loss (bool): Whether to use focal loss for classification.
     """  # noqa: W605
 
