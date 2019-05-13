@@ -11,6 +11,7 @@ from mmdet.core import (AnchorGenerator, anchor_target, ga_loc_target,
                         weighted_cross_entropy, weighted_binary_cross_entropy,
                         weighted_bounded_iou_loss, multiclass_nms)
 from mmdet.ops import DeformConv, MaskedConv2d
+from .anchor_head import AnchorHead
 from ..registry import HEADS
 from ..utils import bias_init_with_prob
 
@@ -21,17 +22,17 @@ class FeatureAdaption(nn.Module):
                  in_channels,
                  out_channels,
                  kernel_size=3,
-                 adaption_groups=4):
+                 deformable_groups=4):
         super(FeatureAdaption, self).__init__()
         offset_channels = kernel_size * kernel_size * 2
         self.conv_offset = nn.Conv2d(
-            2, adaption_groups * offset_channels, 1, bias=False)
+            2, deformable_groups * offset_channels, 1, bias=False)
         self.conv_adaption = DeformConv(
             in_channels,
             out_channels,
             kernel_size=kernel_size,
-            padding=int((kernel_size - 1) / 2),
-            deformable_groups=adaption_groups)
+            padding=(kernel_size - 1) // 2,
+            deformable_groups=deformable_groups)
         self.relu = nn.ReLU(inplace=True)
 
     def init_weights(self):
@@ -45,7 +46,7 @@ class FeatureAdaption(nn.Module):
 
 
 @HEADS.register_module
-class GuidedAnchorHead(nn.Module):
+class GuidedAnchorHead(AnchorHead):
     """Guided-Anchor-based head (GA-RPN, GA-RetinaNet, etc.).
 
     Args:
@@ -62,7 +63,7 @@ class GuidedAnchorHead(nn.Module):
         target_stds (Iterable): Std values of regression targets.
         loc_filter_thr (float): threshold to filter out unconcerned regions
         cls_sigmoid_loss (bool): Whether to use sigmoid loss for
-        classification. (softmax by default)
+            classification. (softmax by default)
         cls_focal_loss (bool): Whether to use focal loss for classification.
     """  # noqa: W605
 
@@ -79,12 +80,12 @@ class GuidedAnchorHead(nn.Module):
                  anchoring_stds=(1.0, 1.0, 1.0, 1.0),
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
-                 adaption_groups=4,
+                 deformable_groups=4,
                  loc_filter_thr=0.01,
                  loc_focal_loss=True,
                  cls_sigmoid_loss=False,
                  cls_focal_loss=False):
-        super(GuidedAnchorHead, self).__init__()
+        super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
@@ -101,19 +102,18 @@ class GuidedAnchorHead(nn.Module):
         self.anchoring_stds = anchoring_stds
         self.target_means = target_means
         self.target_stds = target_stds
-        self.adaption_groups = adaption_groups
+        self.deformable_groups = deformable_groups
         self.loc_filter_thr = loc_filter_thr
         self.loc_focal_loss = loc_focal_loss
         self.cls_sigmoid_loss = cls_sigmoid_loss
         self.cls_focal_loss = cls_focal_loss
-
         self.approx_generators = []
-        self.base_approx_generators = []
+        self.square_generators = []
         for anchor_base in self.anchor_base_sizes:
             self.approx_generators.append(
                 AnchorGenerator(anchor_base, self.octave_scales,
                                 self.octave_ratios))
-            self.base_approx_generators.append(
+            self.square_generators.append(
                 AnchorGenerator(anchor_base, [self.octave_scales[0]], [1.0]))
         # one anchor per location
         self.num_anchors = 1
@@ -133,7 +133,7 @@ class GuidedAnchorHead(nn.Module):
             self.feat_channels,
             self.feat_channels,
             kernel_size=3,
-            adaption_groups=self.adaption_groups)
+            deformable_groups=self.deformable_groups)
         self.conv_cls = MaskedConv2d(
             self.feat_channels, self.num_anchors * self.cls_out_channels, 1)
         self.conv_reg = MaskedConv2d(self.feat_channels, self.num_anchors * 4,
@@ -220,12 +220,12 @@ class GuidedAnchorHead(nn.Module):
 
         # since feature map sizes of all images are the same, we only compute
         # anchors for one time
-        multi_level_base_approxs = []
+        multi_level_squares = []
         for i in range(num_levels):
-            base_approxs = self.base_approx_generators[i].grid_anchors(
+            squares = self.square_generators[i].grid_anchors(
                 featmap_sizes[i], self.anchor_strides[i])
-            multi_level_base_approxs.append(base_approxs)
-        base_approxs_list = [multi_level_base_approxs for _ in range(num_imgs)]
+            multi_level_squares.append(squares)
+        squares_list = [multi_level_squares for _ in range(num_imgs)]
 
         # for each image, we compute multi level predicted anchors
         guided_anchors_list = []
@@ -235,58 +235,18 @@ class GuidedAnchorHead(nn.Module):
                 # calculate predicted anchors
                 anchor_deltas = shape_preds[i][img_id].permute(
                     1, 2, 0).contiguous().view(-1, 2).detach()
-                base_approxs = base_approxs_list[img_id][i]
-                bbox_deltas = anchor_deltas.new_full(base_approxs.size(), 0)
+                squares = squares_list[img_id][i]
+                bbox_deltas = anchor_deltas.new_full(squares.size(), 0)
                 bbox_deltas[:, 2:] = anchor_deltas
                 guided_anchors = delta2bbox(
-                    base_approxs,
+                    squares,
                     bbox_deltas,
                     self.anchoring_means,
                     self.anchoring_stds,
                     wh_ratio_clip=1e-6)
                 multi_level_guided_anchors.append(guided_anchors)
             guided_anchors_list.append(multi_level_guided_anchors)
-        return base_approxs_list, guided_anchors_list
-
-    def loss_single(self, cls_score, bbox_pred, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples, cfg):
-        # classification loss
-        labels = labels.reshape(-1)
-        label_weights = label_weights.reshape(-1)
-        cls_score = cls_score.permute(0, 2, 3, 1).reshape(
-            -1, self.cls_out_channels)
-        if self.cls_sigmoid_loss:
-            if self.cls_focal_loss:
-                cls_criterion = weighted_sigmoid_focal_loss
-            else:
-                cls_criterion = weighted_binary_cross_entropy
-        else:
-            if self.cls_focal_loss:
-                raise NotImplementedError
-            else:
-                cls_criterion = weighted_cross_entropy
-        if self.cls_focal_loss:
-            loss_cls = cls_criterion(
-                cls_score,
-                labels,
-                label_weights,
-                gamma=cfg.gamma,
-                alpha=cfg.alpha,
-                avg_factor=num_total_samples)
-        else:
-            loss_cls = cls_criterion(
-                cls_score, labels, label_weights, avg_factor=num_total_samples)
-        # regression loss
-        bbox_targets = bbox_targets.reshape(-1, 4)
-        bbox_weights = bbox_weights.reshape(-1, 4)
-        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
-        loss_reg = weighted_smoothl1(
-            bbox_pred,
-            bbox_targets,
-            bbox_weights,
-            beta=cfg.smoothl1_beta,
-            avg_factor=num_total_samples)
-        return loss_cls, loss_reg
+        return squares_list, guided_anchors_list
 
     def loss_shape_single(self, shape_pred, bbox_anchors, bbox_gts,
                           anchor_weights, anchor_total_num):
@@ -356,14 +316,14 @@ class GuidedAnchorHead(nn.Module):
             ignore_ratio=cfg.ignore_ratio)
         approxs_list, valid_flag_list = self.get_sampled_anchors(
             featmap_sizes, img_metas)
-        base_approxs_list, guided_anchors_list = self.get_anchors(
+        squares_list, guided_anchors_list = self.get_anchors(
             featmap_sizes, shape_preds, img_metas)
 
         sampling = False if not hasattr(cfg, 'ga_sampler') else True
         shape_targets = ga_shape_target(
             approxs_list,
             valid_flag_list,
-            base_approxs_list,
+            squares_list,
             gt_bboxes,
             img_metas,
             self.approxs_per_octave,
@@ -438,8 +398,8 @@ class GuidedAnchorHead(nn.Module):
             loc_preds)
         num_levels = len(cls_scores)
         mlvl_anchors = [
-            self.base_approx_generators[i].grid_anchors(
-                cls_scores[i].size()[-2:], self.anchor_strides[i])
+            self.square_generators[i].grid_anchors(cls_scores[i].size()[-2:],
+                                                   self.anchor_strides[i])
             for i in range(num_levels)
         ]
         result_list = []

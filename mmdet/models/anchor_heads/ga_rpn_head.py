@@ -13,22 +13,22 @@ from ..registry import HEADS
 class GARPNHead(GuidedAnchorHead):
 
     def __init__(self, in_channels, **kwargs):
-        super(GARPNHead, self).__init__(2, in_channels, **kwargs)
+        GuidedAnchorHead.__init__(self, 2, in_channels, **kwargs)
 
     def _init_layers(self):
         self.rpn_conv = nn.Conv2d(
             self.in_channels, self.feat_channels, 3, padding=1)
-        super(GARPNHead, self)._init_layers()
+        GuidedAnchorHead._init_layers(self)
 
     def init_weights(self):
         normal_init(self.rpn_conv, std=0.01)
-        super(GARPNHead, self).init_weights()
+        GuidedAnchorHead.init_weights(self)
 
     def forward_single(self, x):
         x = self.rpn_conv(x)
         x = F.relu(x, inplace=True)
         (cls_score, bbox_pred, shape_pred,
-         loc_pred) = super(GARPNHead, self).forward_single(x)
+         loc_pred) = GuidedAnchorHead.forward_single(self, x)
         return cls_score, bbox_pred, shape_pred, loc_pred
 
     def loss(self,
@@ -40,7 +40,8 @@ class GARPNHead(GuidedAnchorHead):
              img_metas,
              cfg,
              gt_bboxes_ignore=None):
-        losses = super(GARPNHead, self).loss(
+        losses = GuidedAnchorHead.loss(
+            self,
             cls_scores,
             bbox_preds,
             shape_preds,
