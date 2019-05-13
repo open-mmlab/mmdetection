@@ -62,7 +62,7 @@ class GuidedAnchorHead(AnchorHead):
         target_means (Iterable): Mean values of regression targets.
         target_stds (Iterable): Std values of regression targets.
         loc_filter_thr (float): threshold to filter out unconcerned regions
-        cls_sigmoid_loss (bool): Whether to use sigmoid loss for
+        use_sigmoid_cls (bool): Whether to use sigmoid loss for
             classification. (softmax by default)
         cls_focal_loss (bool): Whether to use focal loss for classification.
     """  # noqa: W605
@@ -83,7 +83,7 @@ class GuidedAnchorHead(AnchorHead):
                  deformable_groups=4,
                  loc_filter_thr=0.01,
                  loc_focal_loss=True,
-                 cls_sigmoid_loss=False,
+                 use_sigmoid_cls=False,
                  cls_focal_loss=False):
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
@@ -105,7 +105,7 @@ class GuidedAnchorHead(AnchorHead):
         self.deformable_groups = deformable_groups
         self.loc_filter_thr = loc_filter_thr
         self.loc_focal_loss = loc_focal_loss
-        self.cls_sigmoid_loss = cls_sigmoid_loss
+        self.use_sigmoid_cls = use_sigmoid_cls
         self.cls_focal_loss = cls_focal_loss
         self.approx_generators = []
         self.square_generators = []
@@ -117,7 +117,7 @@ class GuidedAnchorHead(AnchorHead):
                 AnchorGenerator(anchor_base, [self.octave_scales[0]], [1.0]))
         # one anchor per location
         self.num_anchors = 1
-        if self.cls_sigmoid_loss:
+        if self.use_sigmoid_cls:
             self.cls_out_channels = self.num_classes - 1
         else:
             self.cls_out_channels = self.num_classes
@@ -337,7 +337,7 @@ class GuidedAnchorHead(AnchorHead):
                             if not sampling else anchor_fg_num + anchor_bg_num)
 
         sampling = False if self.cls_focal_loss else True
-        label_channels = self.cls_out_channels if self.cls_sigmoid_loss else 1
+        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = anchor_target(
             guided_anchors_list,
             all_inside_flags,
@@ -456,7 +456,7 @@ class GuidedAnchorHead(AnchorHead):
             shape_pred = shape_pred.permute(1, 2, 0).reshape(-1, 2)
             cls_score = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels)
-            if self.cls_sigmoid_loss:
+            if self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
             else:
                 scores = cls_score.softmax(-1)
@@ -472,7 +472,7 @@ class GuidedAnchorHead(AnchorHead):
                 bbox_pred = bbox_pred.unsqueeze(0)
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
-                if self.cls_sigmoid_loss:
+                if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
                     max_scores, _ = scores[:, 1:].max(dim=1)
@@ -494,7 +494,7 @@ class GuidedAnchorHead(AnchorHead):
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
-        if self.cls_sigmoid_loss:
+        if self.use_sigmoid_cls:
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
         det_bboxes, det_labels = multiclass_nms(

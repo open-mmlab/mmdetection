@@ -31,7 +31,7 @@ class RetinaHead(AnchorHead):
             num_classes,
             in_channels,
             anchor_scales=anchor_scales,
-            cls_sigmoid_loss=True,
+            use_sigmoid_cls=True,
             cls_focal_loss=True,
             **kwargs)
 

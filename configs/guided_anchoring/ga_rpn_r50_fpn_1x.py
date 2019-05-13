@@ -31,7 +31,7 @@ model = dict(
         target_stds=[0.07, 0.07, 0.11, 0.11],
         loc_filter_thr=0.01,
         loc_focal_loss=True,
-        cls_sigmoid_loss=True,
+        use_sigmoid_cls=True,
         cls_focal_loss=False))
 # model training and testing settings
 train_cfg = dict(

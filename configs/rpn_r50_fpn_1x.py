@@ -23,7 +23,7 @@ model = dict(
         anchor_strides=[4, 8, 16, 32, 64],
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
-        cls_sigmoid_loss=True))
+        use_sigmoid_cls=True))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(

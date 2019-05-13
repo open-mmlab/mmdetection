@@ -24,7 +24,7 @@ class GARetinaHead(GuidedAnchorHead):
             self,
             num_classes,
             in_channels,
-            cls_sigmoid_loss=True,
+            use_sigmoid_cls=True,
             cls_focal_loss=True,
             **kwargs)
 

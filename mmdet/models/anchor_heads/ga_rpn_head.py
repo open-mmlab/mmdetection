@@ -89,7 +89,7 @@ class GARPNHead(GuidedAnchorHead):
                 mask_inds = mask_inds.squeeze()
             anchors = mlvl_anchors[idx][mask_inds]
             rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
-            if self.cls_sigmoid_loss:
+            if self.use_sigmoid_cls:
                 rpn_cls_score = rpn_cls_score.reshape(-1)
                 scores = rpn_cls_score.sigmoid()
             else:
