@@ -47,8 +47,16 @@ class FeatureAdaption(nn.Module):
 @HEADS.register_module
 class GuidedAnchorHead(AnchorHead):
     """Guided-Anchor-based head (GA-RPN, GA-RetinaNet, etc.).
-
+        This GuidedAnchorHead will predict high-quality feature guided
+        anchors and locations where anchors will be kept in inference.
+        There are mainly 3 categories of bounding-boxes.
+        - Sampled (9) pairs for target assignment. (approxes)
+        - The square boxes where the predicted anchors are based on.
+            (squares)
+        - Guided anchors.
+        Please refer to https://arxiv.org/abs/1901.03278 for more details.
     Args:
+        num_classes (int): Number of classes.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of channels of the feature map.
         octave_base_scale: base octave scale of each level of feature map.
@@ -60,7 +68,11 @@ class GuidedAnchorHead(AnchorHead):
         anchoring_stds (Iterable): Std values of anchoring targets.
         target_means (Iterable): Mean values of regression targets.
         target_stds (Iterable): Std values of regression targets.
-        loc_filter_thr (float): threshold to filter out unconcerned regions
+        deformable_groups: (int): group number of DCN in
+            FeatureAdaption module.
+        loc_filter_thr (float): threshold to filter out unconcerned regions.
+        loc_focal_loss (bool): Whether to use focal loss for location
+            prediction.
         use_sigmoid_cls (bool): Whether to use sigmoid loss for
             classification. (softmax by default)
         cls_focal_loss (bool): Whether to use focal loss for classification.
@@ -152,6 +164,7 @@ class GuidedAnchorHead(AnchorHead):
         loc_pred = self.conv_loc(x)
         shape_pred = self.conv_shape(x)
         x = self.feature_adaption(x, shape_pred)
+        # masked conv is only used during inference for speed-up
         if not self.training:
             mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr
             cls_score = self.conv_cls(x, mask)
@@ -172,13 +185,13 @@ class GuidedAnchorHead(AnchorHead):
             img_metas (list[dict]): Image meta info.
 
         Returns:
-            tuple: anchors of each image, valid flags of each image
+            tuple: approxes of each image, valid flags of each image
         """
         num_imgs = len(img_metas)
         num_levels = len(featmap_sizes)
 
         # since feature map sizes of all images are the same, we only compute
-        # anchors for one time
+        # approxes for one time
         multi_level_approxs = []
         for i in range(num_levels):
             approxs = self.approx_generators[i].grid_anchors(
@@ -186,7 +199,7 @@ class GuidedAnchorHead(AnchorHead):
             multi_level_approxs.append(approxs)
         approxs_list = [multi_level_approxs for _ in range(num_imgs)]
 
-        # for each image, we compute valid flags of multi level anchors
+        # for each image, we compute valid flags of multi level approxes
         valid_flag_list = []
         for img_id, img_meta in enumerate(img_metas):
             multi_level_flags = []
@@ -203,7 +216,7 @@ class GuidedAnchorHead(AnchorHead):
         return approxs_list, valid_flag_list
 
     def get_anchors(self, featmap_sizes, shape_preds, img_metas):
-        """Get square approx according to feature map sizes and guided
+        """Get squares according to feature map sizes and guided
         anchors.
 
         Args:
@@ -212,13 +225,13 @@ class GuidedAnchorHead(AnchorHead):
             img_metas (list[dict]): Image meta info.
 
         Returns:
-            tuple: base approxs of each image, guided anchors of each image
+            tuple: square approxs of each image, guided anchors of each image
         """
         num_imgs = len(img_metas)
         num_levels = len(featmap_sizes)
 
         # since feature map sizes of all images are the same, we only compute
-        # anchors for one time
+        # squares for one time
         multi_level_squares = []
         for i in range(num_levels):
             squares = self.square_generators[i].grid_anchors(
@@ -226,12 +239,12 @@ class GuidedAnchorHead(AnchorHead):
             multi_level_squares.append(squares)
         squares_list = [multi_level_squares for _ in range(num_imgs)]
 
-        # for each image, we compute multi level predicted anchors
+        # for each image, we compute multi level guided anchors
         guided_anchors_list = []
         for img_id, img_meta in enumerate(img_metas):
             multi_level_guided_anchors = []
             for i in range(num_levels):
-                # calculate predicted anchors
+                # calculate guided anchors
                 anchor_deltas = shape_preds[i][img_id].permute(
                     1, 2, 0).contiguous().view(-1, 2).detach()
                 squares = squares_list[img_id][i]

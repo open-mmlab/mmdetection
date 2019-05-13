@@ -3,6 +3,10 @@ from ..functions.masked_conv import masked_conv2d
 
 
 class MaskedConv2d(nn.Conv2d):
+    """A MaskedConv2d which inherits the official Conv2d.
+    The masked forward doesn't implement the backward function and only
+    supports the stride parameter to be 1 currently.
+    """  # noqa: W605
 
     def __init__(self,
                  in_channels,
