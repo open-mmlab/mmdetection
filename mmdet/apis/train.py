@@ -75,11 +75,12 @@ def build_optimizer(model, optimizer_cfg):
                 - any arguments of the corresponding optimizer type, e.g.,
                   weight_decay, momentum, etc.
                 - paramwise_options: a dict with 3 accepted fileds
-                  (bias_lr_mult, bias_decay_mult, norm_layer_weight_decay).
+                  (bias_lr_mult, bias_decay_mult, norm_decay_mult).
                   `bias_lr_mult` and `bias_decay_mult` will be multiplied to
-                  the weight decay of all bias parameters as a factor, and
-                  `norm_layer_weight_decay` will be set as the weight decay
-                  for all normalization layers' (BN, GN, etc.) weight and bias.
+                  the lr and weight decay respectively for all bias parameters
+                  (except for the normalization layers), and
+                  `norm_decay_mult` will be multiplied to the weight decay
+                  for all weight and bias parameters of normalization layers.
 
     Returns:
         torch.optim.Optimizer: The initialized optimizer.
