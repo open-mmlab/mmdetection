@@ -1,4 +1,5 @@
 # model settings
+norm_cfg = dict(type='BN', requires_grad=False)
 model = dict(
     type='CascadeRCNN',
     num_stages=3,
@@ -11,7 +12,7 @@ model = dict(
         dilations=(1, 1, 1),
         out_indices=(2, ),
         frozen_stages=1,
-        normalize=dict(type='BN', requires_grad=False),
+        norm_cfg=norm_cfg,
         norm_eval=True,
         style='caffe'),
     shared_head=dict(
@@ -21,7 +22,7 @@ model = dict(
         stride=2,
         dilation=1,
         style='caffe',
-        normalize=dict(type='BN', requires_grad=False),
+        norm_cfg=norm_cfg,
         norm_eval=True),
     rpn_head=dict(
         type='RPNHead',
