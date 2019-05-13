@@ -31,8 +31,8 @@ class RetinaHead(AnchorHead):
             num_classes,
             in_channels,
             anchor_scales=anchor_scales,
-            use_sigmoid_cls=True,
-            use_focal_loss=True,
+            cls_sigmoid_loss=True,
+            cls_focal_loss=True,
             **kwargs)
 
     def _init_layers(self):

@@ -25,9 +25,9 @@ class AnchorHead(nn.Module):
         anchor_base_sizes (Iterable): Anchor base sizes.
         target_means (Iterable): Mean values of regression targets.
         target_stds (Iterable): Std values of regression targets.
-        use_sigmoid_cls (bool): Whether to use sigmoid loss for classification.
+        cls_sigmoid_loss (bool): Whether to use sigmoid loss for classification.
             (softmax by default)
-        use_focal_loss (bool): Whether to use focal loss for classification.
+        cls_focal_loss (bool): Whether to use focal loss for classification.
     """  # noqa: W605
 
     def __init__(self,
@@ -40,8 +40,8 @@ class AnchorHead(nn.Module):
                  anchor_base_sizes=None,
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
-                 use_sigmoid_cls=False,
-                 use_focal_loss=False):
+                 cls_sigmoid_loss=False,
+                 cls_focal_loss=False):
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -53,8 +53,8 @@ class AnchorHead(nn.Module):
             anchor_strides) if anchor_base_sizes is None else anchor_base_sizes
         self.target_means = target_means
         self.target_stds = target_stds
-        self.use_sigmoid_cls = use_sigmoid_cls
-        self.use_focal_loss = use_focal_loss
+        self.cls_sigmoid_loss = cls_sigmoid_loss
+        self.cls_focal_loss = cls_focal_loss
 
         self.anchor_generators = []
         for anchor_base in self.anchor_base_sizes:
@@ -62,7 +62,7 @@ class AnchorHead(nn.Module):
                 AnchorGenerator(anchor_base, anchor_scales, anchor_ratios))
 
         self.num_anchors = len(self.anchor_ratios) * len(self.anchor_scales)
-        if self.use_sigmoid_cls:
+        if self.cls_sigmoid_loss:
             self.cls_out_channels = self.num_classes - 1
         else:
             self.cls_out_channels = self.num_classes
@@ -132,17 +132,17 @@ class AnchorHead(nn.Module):
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3, 1).reshape(
             -1, self.cls_out_channels)
-        if self.use_sigmoid_cls:
-            if self.use_focal_loss:
+        if self.cls_sigmoid_loss:
+            if self.cls_focal_loss:
                 cls_criterion = weighted_sigmoid_focal_loss
             else:
                 cls_criterion = weighted_binary_cross_entropy
         else:
-            if self.use_focal_loss:
+            if self.cls_focal_loss:
                 raise NotImplementedError
             else:
                 cls_criterion = weighted_cross_entropy
-        if self.use_focal_loss:
+        if self.cls_focal_loss:
             loss_cls = cls_criterion(
                 cls_score,
                 labels,
@@ -178,8 +178,8 @@ class AnchorHead(nn.Module):
 
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas)
-        sampling = False if self.use_focal_loss else True
-        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
+        sampling = False if self.cls_focal_loss else True
+        label_channels = self.cls_out_channels if self.cls_sigmoid_loss else 1
         cls_reg_targets = anchor_target(
             anchor_list,
             valid_flag_list,
@@ -196,7 +196,7 @@ class AnchorHead(nn.Module):
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
-        num_total_samples = (num_total_pos if self.use_focal_loss else
+        num_total_samples = (num_total_pos if self.cls_focal_loss else
                              num_total_pos + num_total_neg)
         losses_cls, losses_reg = multi_apply(
             self.loss_single,
@@ -252,14 +252,14 @@ class AnchorHead(nn.Module):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             cls_score = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels)
-            if self.use_sigmoid_cls:
+            if self.cls_sigmoid_loss:
                 scores = cls_score.sigmoid()
             else:
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
-                if self.use_sigmoid_cls:
+                if self.cls_sigmoid_loss:
                     max_scores, _ = scores.max(dim=1)
                 else:
                     max_scores, _ = scores[:, 1:].max(dim=1)
@@ -275,7 +275,7 @@ class AnchorHead(nn.Module):
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
-        if self.use_sigmoid_cls:
+        if self.cls_sigmoid_loss:
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
         det_bboxes, det_labels = multiclass_nms(
