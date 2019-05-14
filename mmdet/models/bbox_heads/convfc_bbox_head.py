@@ -25,7 +25,7 @@ class ConvFCBBoxHead(BBoxHead):
                  conv_out_channels=256,
                  fc_out_channels=1024,
                  conv_cfg=None,
-                 normalize=None,
+                 norm_cfg=None,
                  *args,
                  **kwargs):
         super(ConvFCBBoxHead, self).__init__(*args, **kwargs)
@@ -46,8 +46,7 @@ class ConvFCBBoxHead(BBoxHead):
         self.conv_out_channels = conv_out_channels
         self.fc_out_channels = fc_out_channels
         self.conv_cfg = conv_cfg
-        self.normalize = normalize
-        self.with_bias = normalize is None
+        self.norm_cfg = norm_cfg
 
         # add shared convs and fcs
         self.shared_convs, self.shared_fcs, last_layer_dim = \
@@ -104,8 +103,7 @@ class ConvFCBBoxHead(BBoxHead):
                         3,
                         padding=1,
                         conv_cfg=self.conv_cfg,
-                        normalize=self.normalize,
-                        bias=self.with_bias))
+                        norm_cfg=self.norm_cfg))
             last_layer_dim = self.conv_out_channels
         # add branch specific fc layers
         branch_fcs = nn.ModuleList()

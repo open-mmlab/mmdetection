@@ -19,7 +19,7 @@ class FPN(nn.Module):
                  extra_convs_on_inputs=True,
                  relu_before_extra_convs=False,
                  conv_cfg=None,
-                 normalize=None,
+                 norm_cfg=None,
                  activation=None,
                  caffe2_xavier_initialize=False):
         super(FPN, self).__init__()
@@ -29,7 +29,6 @@ class FPN(nn.Module):
         self.num_ins = len(in_channels)
         self.num_outs = num_outs
         self.activation = activation
-        self.with_bias = normalize is None
         self.relu_before_extra_convs = relu_before_extra_convs
         self.caffe2_xavier_initialize = caffe2_xavier_initialize
 
@@ -55,8 +54,7 @@ class FPN(nn.Module):
                 out_channels,
                 1,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
-                bias=self.with_bias,
+                norm_cfg=norm_cfg,
                 activation=self.activation,
                 inplace=False)
             fpn_conv = ConvModule(
@@ -65,8 +63,7 @@ class FPN(nn.Module):
                 3,
                 padding=1,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
-                bias=self.with_bias,
+                norm_cfg=norm_cfg,
                 activation=self.activation,
                 inplace=False)
 
@@ -87,8 +84,8 @@ class FPN(nn.Module):
                     3,
                     stride=2,
                     padding=1,
-                    normalize=normalize,
-                    bias=self.with_bias,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
                     activation=self.activation,
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)

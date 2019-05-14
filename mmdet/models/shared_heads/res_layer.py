@@ -17,13 +17,13 @@ class ResLayer(nn.Module):
                  stride=2,
                  dilation=1,
                  style='pytorch',
-                 normalize=dict(type='BN', requires_grad=True),
+                 norm_cfg=dict(type='BN', requires_grad=True),
                  norm_eval=True,
                  with_cp=False,
                  dcn=None):
         super(ResLayer, self).__init__()
         self.norm_eval = norm_eval
-        self.normalize = normalize
+        self.norm_cfg = norm_cfg
         self.stage = stage
         block, stage_blocks = ResNet.arch_settings[depth]
         stage_block = stage_blocks[stage]
@@ -39,7 +39,7 @@ class ResLayer(nn.Module):
             dilation=dilation,
             style=style,
             with_cp=with_cp,
-            normalize=self.normalize,
+            norm_cfg=self.norm_cfg,
             dcn=dcn)
         self.add_module('layer{}'.format(stage + 1), res_layer)
 
