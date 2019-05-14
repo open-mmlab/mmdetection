@@ -5,7 +5,7 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 
 from ..registry import BACKBONES
-from ..utils import build_norm_layer, build_conv_layer, ConvModule
+from ..utils import build_norm_layer, build_conv_layer
 from .resnet import BasicBlock, Bottleneck
 
 
