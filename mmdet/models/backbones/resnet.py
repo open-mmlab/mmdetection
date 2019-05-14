@@ -108,7 +108,6 @@ class Bottleneck(nn.Module):
         self.planes = planes
         self.stride = stride
         self.dilation = dilation
-        self.downsample = downsample
         self.style = style
         self.with_cp = with_cp
         self.conv_cfg = conv_cfg
@@ -185,6 +184,7 @@ class Bottleneck(nn.Module):
         self.add_module(self.norm3_name, norm3)
 
         self.relu = nn.ReLU(inplace=True)
+        self.downsample = downsample
 
     @property
     def norm1(self):
