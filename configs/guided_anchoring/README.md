@@ -43,6 +43,6 @@ The results on COCO 2017 val is shown in the below table. (results on test-dev a
 |  GA-RetinaNet  | R-50-FPN | caffe |   1x    |    -     |          -          |      10.7      |    -    |  37.0  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/guided_anchoring/ga_retinanet_r50_caffe_fpn_1x-29905101.pth) |
 
 
-- In the Guided Anchoring paper, `score_thr` is set to 0.001 for both baselines and Guided Anchoring.
+- In the Guided Anchoring paper, `score_thr` is set to 0.001 in Fast/Faster RCNN and 0.05 in RetinaNet for both baselines and Guided Anchoring .
 - We use 8 Tesla V100 GPUs with 2 images/GPU for training.
 - Inference time is evaluated on a single Tesla V100 GPU.
