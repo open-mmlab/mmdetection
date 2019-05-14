@@ -48,9 +48,9 @@ def plot_curve(log_dicts, args):
         print('plot curve of {}, metric is {}'.format(args.json_logs[i],
                                                       metric))
         epochs = log_dict.keys()
-        assert metric in log_dict[list(
-            epochs)[0]], '{} does not contains metric {}'.format(
-                args.json_logs[i], metric)
+        assert metric in log_dict[list(epochs)
+                                  [0]], '{} does not contain metric {}'.format(
+                                      args.json_logs[i], metric)
 
         if metric in ('bbox_mAP', 'segm_mAP'):
             xs = np.arange(1, max(epochs) + 1)
@@ -61,11 +61,12 @@ def plot_curve(log_dicts, args):
             ax.set_xticks(xs)
             plt.title('{} v.s. epoch'.format(metric))
             plt.xlabel('epoch')
+            plt.ylabel(metric)
             plt.plot(xs, ys, label=legend[i], marker='o')
         elif metric in ('loss', ):
             xs = []
             ys = []
-            num_iters_per_epoch = log_dict[1]['iter'][-1]
+            num_iters_per_epoch = log_dict[list(epochs)[0]]['iter'][-1]
             for epoch in epochs:
                 iters = log_dict[epoch]['iter']
                 if log_dict[epoch]['mode'][-1] == 'val':
@@ -76,15 +77,15 @@ def plot_curve(log_dicts, args):
             ys = np.concatenate(ys)
             plt.title('{} v.s. iter'.format(metric))
             plt.xlabel('iter')
+            plt.ylabel(metric)
             plt.plot(xs, ys, label=legend[i], linewidth=0.5)
         plt.legend()
-    plt.ylabel(metric)
     out = args.out
     if out is None:
         if not osp.exists('analysis_log_res'):
             os.mkdir('analysis_log_res')
         out = 'analysis_log_res/{}.pdf'.format(metric)
-    print('save curve into: {}'.format(out))
+    print('save curve to: {}'.format(out))
     plt.savefig(out)
     plt.cla()
 
@@ -126,11 +127,13 @@ def main():
     args = parse_args()
 
     json_logs = args.json_logs
-    log_dicts = [dict() for _ in json_logs]
+    for json_log in json_logs:
+        assert json_log.endswith('.json')
 
     # convert the json log into log_dict, key is epoch, value is a sub dict
     # keys of sub dict is different metrics, e.g. memory, bbox_mAP
     # value of sub dict is a list of corresponding values of all iterations
+    log_dicts = [dict() for _ in json_logs]
     for json_log, log_dict in zip(json_logs, log_dicts):
         with open(json_log, 'r') as log_file:
             for l in log_file:
