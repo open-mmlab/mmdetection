@@ -3,7 +3,7 @@
 
 ## Introduction
 
-The master branch works with **PyTorch 1.0** or higher. If you would like to use PyTorch 0.4.1,
+The master branch works with **PyTorch 1.1** or higher. If you would like to use PyTorch 0.4.1,
 please checkout to the [pytorch-0.4.1](https://github.com/open-mmlab/mmdetection/tree/pytorch-0.4.1) branch.
 
 mmdetection is an open source object detection toolbox based on PyTorch. It is
