@@ -19,6 +19,7 @@ class HRFPN(nn.Module):
         pooling_type (str): pooling for generating feature pyramids
             from {MAX, AVG}
     """
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -36,11 +37,13 @@ class HRFPN(nn.Module):
         self.norm_cfg = norm_cfg
 
         self.reduction_conv = ConvModule(
-            sum(in_channels), out_channels,
-            kernel_size=1, activation=None,
+            sum(in_channels),
+            out_channels,
+            kernel_size=1,
+            activation=None,
             conv_cfg=self.conv_cfg,
-            norm_cfg=self.norm_cfg
-        )
+            norm_cfg=self.norm_cfg)
+
         self.fpn_conv = nn.ModuleList()
         for i in range(self.num_levels):
             self.fpn_conv.append(
@@ -65,9 +68,8 @@ class HRFPN(nn.Module):
         assert len(inputs) == len(self.in_channels)
         outs = [inputs[0]]
         for i in range(1, len(inputs)):
-            outs.append(F.interpolate(inputs[i],
-                                      scale_factor=2**i,
-                                      mode='bilinear'))
+            outs.append(
+                F.interpolate(inputs[i], scale_factor=2**i, mode='bilinear'))
         out = torch.cat(outs, dim=1)
         if out.requires_grad and self.with_cp:
             out = checkpoint(self.reduction_conv, out)
@@ -75,8 +77,7 @@ class HRFPN(nn.Module):
             out = self.reduction_conv(out)
         outs = [out]
         for i in range(1, self.num_levels):
-            outs.append(self.pooling(out, kernel_size=2**i,
-                                     stride=2**i))
+            outs.append(self.pooling(out, kernel_size=2**i, stride=2**i))
         outputs = []
 
         for i in range(self.num_levels):
