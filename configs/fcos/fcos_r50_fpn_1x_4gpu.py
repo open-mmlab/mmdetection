@@ -1,10 +1,10 @@
 # model settings
 model = dict(
-    type='SingleStageDetector',
-    pretrained='open-mmlab://resnet101_caffe',
+    type='FCOS',
+    pretrained='open-mmlab://resnet50_caffe',
     backbone=dict(
         type='ResNet',
-        depth=101,
+        depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
@@ -59,8 +59,7 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
-        img_scale=[(1333, 640), (1333, 800)],
-        multiscale_mode='value',
+        img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0.5,
@@ -104,7 +103,7 @@ lr_config = dict(
     warmup='constant',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[16, 22])
+    step=[8, 11])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -115,11 +114,11 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 24
+total_epochs = 12
 device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_r101_fpn_2x'
+work_dir = './work_dirs/fcos_r50_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
