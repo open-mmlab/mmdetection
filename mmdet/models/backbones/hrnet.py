@@ -359,7 +359,7 @@ class HRNet(nn.Module):
                                 self.conv_cfg,
                                 inchannels,
                                 outchannels,
-                                kernel_size=3, 
+                                kernel_size=3,
                                 stride=2,
                                 padding=1,
                                 bias=False),
