@@ -90,7 +90,7 @@ class SSDHead(AnchorHead):
         self.target_means = target_means
         self.target_stds = target_stds
         self.use_sigmoid_cls = False
-        self.use_focal_loss = False
+        self.cls_focal_loss = False
 
     def init_weights(self):
         for m in self.modules():

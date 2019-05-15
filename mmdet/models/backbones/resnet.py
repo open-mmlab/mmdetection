@@ -9,7 +9,7 @@ from mmcv.runner import load_checkpoint
 
 from mmdet.ops import DeformConv, ModulatedDeformConv, ContextBlock
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer, convert_batchnorm
+from ..utils import build_conv_layer, build_norm_layer
 
 
 class BasicBlock(nn.Module):
@@ -24,15 +24,15 @@ class BasicBlock(nn.Module):
                  style='pytorch',
                  with_cp=False,
                  conv_cfg=None,
-                 normalize=dict(type='BN'),
+                 norm_cfg=dict(type='BN'),
                  dcn=None,
                  gcb=None):
         super(BasicBlock, self).__init__()
         assert dcn is None, "Not implemented yet."
         assert gcb is None, "Not implemented yet."
 
-        self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
-        self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
 
         self.conv1 = build_conv_layer(
             conv_cfg,
@@ -49,9 +49,7 @@ class BasicBlock(nn.Module):
             planes,
             planes,
             3,
-            stride=stride,
-            padding=dilation,
-            dilation=dilation,
+            padding=1,
             bias=False)
         self.add_module(self.norm2_name, norm2)
 
@@ -100,7 +98,7 @@ class Bottleneck(nn.Module):
                  style='pytorch',
                  with_cp=False,
                  conv_cfg=None,
-                 normalize=dict(type='BN'),
+                 norm_cfg=dict(type='BN'),
                  dcn=None,
                  gcb=None):
         """Bottleneck block for ResNet.
@@ -113,23 +111,27 @@ class Bottleneck(nn.Module):
         assert gcb is None or isinstance(gcb, dict)
         self.inplanes = inplanes
         self.planes = planes
+        self.stride = stride
+        self.dilation = dilation
+        self.style = style
+        self.with_cp = with_cp
         self.conv_cfg = conv_cfg
-        self.normalize = normalize
+        self.norm_cfg = norm_cfg
         self.dcn = dcn
         self.with_dcn = dcn is not None
         self.gcb = gcb
         self.with_gcb = gcb is not None
-        if style == 'pytorch':
+        if self.style == 'pytorch':
             self.conv1_stride = 1
             self.conv2_stride = stride
         else:
             self.conv1_stride = stride
             self.conv2_stride = 1
 
-        self.norm1_name, norm1 = build_norm_layer(normalize, planes, postfix=1)
-        self.norm2_name, norm2 = build_norm_layer(normalize, planes, postfix=2)
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
         self.norm3_name, norm3 = build_norm_layer(
-            normalize, planes * self.expansion, postfix=3)
+            norm_cfg, planes * self.expansion, postfix=3)
 
         self.conv1 = build_conv_layer(
             conv_cfg,
@@ -190,10 +192,6 @@ class Bottleneck(nn.Module):
 
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
-        self.stride = stride
-        self.dilation = dilation
-        self.with_cp = with_cp
-        self.normalize = normalize
         if self.with_gcb:
             gcb_inplanes = planes * self.expansion
             gcb_ratio = gcb.get('ratio', None)
@@ -277,7 +275,7 @@ def make_res_layer(block,
                    style='pytorch',
                    with_cp=False,
                    conv_cfg=None,
-                   normalize=dict(type='BN'),
+                   norm_cfg=dict(type='BN'),
                    dcn=None,
                    gcb=None):
     downsample = None
@@ -290,7 +288,7 @@ def make_res_layer(block,
                 kernel_size=1,
                 stride=stride,
                 bias=False),
-            build_norm_layer(normalize, planes * block.expansion)[1],
+            build_norm_layer(norm_cfg, planes * block.expansion)[1],
         )
 
     layers = []
@@ -304,7 +302,7 @@ def make_res_layer(block,
             style=style,
             with_cp=with_cp,
             conv_cfg=conv_cfg,
-            normalize=normalize,
+            norm_cfg=norm_cfg,
             dcn=dcn,
             gcb=gcb))
     inplanes = planes * block.expansion
@@ -318,7 +316,7 @@ def make_res_layer(block,
                 style=style,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
+                norm_cfg=norm_cfg,
                 dcn=dcn,
                 gcb=gcb))
 
@@ -338,9 +336,9 @@ class ResNet(nn.Module):
         style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
             layer is the 3x3 conv layer, otherwise the stride-two layer is
             the first 1x1 conv layer.
-        frozen_stages (int): Stages to be frozen (all param fixed). -1 means
-            not freezing any parameters.
-        normalize (dict): dictionary to construct and config norm layer.
+        frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
+            -1 means not freezing any parameters.
+        norm_cfg (dict): dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
@@ -367,7 +365,7 @@ class ResNet(nn.Module):
                  style='pytorch',
                  frozen_stages=-1,
                  conv_cfg=None,
-                 normalize=dict(type='BN', frozen=False),
+                 norm_cfg=dict(type='BN', requires_grad=True),
                  norm_eval=True,
                  dcn=None,
                  stage_with_dcn=(False, False, False, False),
@@ -389,7 +387,7 @@ class ResNet(nn.Module):
         self.style = style
         self.frozen_stages = frozen_stages
         self.conv_cfg = conv_cfg
-        self.normalize = normalize
+        self.norm_cfg = norm_cfg
         self.with_cp = with_cp
         self.norm_eval = norm_eval
         self.dcn = dcn
@@ -424,7 +422,7 @@ class ResNet(nn.Module):
                 style=self.style,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
+                norm_cfg=norm_cfg,
                 dcn=dcn,
                 gcb=gcb)
             self.inplanes = planes * self.block.expansion
@@ -450,8 +448,7 @@ class ResNet(nn.Module):
             stride=2,
             padding=3,
             bias=False)
-        self.norm1_name, norm1 = build_norm_layer(
-            self.normalize, 64, postfix=1)
+        self.norm1_name, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
         self.add_module(self.norm1_name, norm1)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -510,12 +507,9 @@ class ResNet(nn.Module):
 
     def train(self, mode=True):
         super(ResNet, self).train(mode)
-        if mode:
-            self._freeze_stages()
-            if self.norm_eval:
-                for m in self.modules():
-                    # trick: eval have effect on BatchNorm only
-                    if isinstance(m, _BatchNorm):
-                        m.eval()
-        else:
-            convert_batchnorm(self)
+        self._freeze_stages()
+        if mode and self.norm_eval:
+            for m in self.modules():
+                # trick: eval have effect on BatchNorm only
+                if isinstance(m, _BatchNorm):
+                    m.eval()

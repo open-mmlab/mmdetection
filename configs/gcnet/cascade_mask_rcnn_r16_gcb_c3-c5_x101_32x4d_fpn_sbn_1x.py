@@ -1,4 +1,6 @@
 # model settings
+norm_cfg = dict(type='SyncBN', requires_grad=True)
+
 model = dict(
     type='CascadeRCNN',
     num_stages=3,
@@ -16,14 +18,14 @@ model = dict(
             ratio=1./16.,
         ),
         stage_with_gcb=(False, True, True, True),
-        normalize=dict(type='SyncBN', frozen=False),
         norm_eval=False,
-    ),
+        norm_cfg=norm_cfg),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
-        num_outs=5),
+        num_outs=5,
+        norm_cfg=norm_cfg),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -41,35 +43,44 @@ model = dict(
         featmap_strides=[4, 8, 16, 32]),
     bbox_head=[
         dict(
-            type='SharedFCBBoxHead',
-            num_fcs=2,
+            type='ConvFCBBoxHead',
+            num_shared_convs=4,
+            num_shared_fcs=1,
             in_channels=256,
+            conv_out_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
             num_classes=81,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.1, 0.1, 0.2, 0.2],
-            reg_class_agnostic=True),
+            reg_class_agnostic=False,
+            norm_cfg=norm_cfg),
         dict(
-            type='SharedFCBBoxHead',
-            num_fcs=2,
+            type='ConvFCBBoxHead',
+            num_shared_convs=4,
+            num_shared_fcs=1,
             in_channels=256,
+            conv_out_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
             num_classes=81,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.05, 0.05, 0.1, 0.1],
-            reg_class_agnostic=True),
+            reg_class_agnostic=False,
+            norm_cfg=norm_cfg),
         dict(
-            type='SharedFCBBoxHead',
-            num_fcs=2,
+            type='ConvFCBBoxHead',
+            num_shared_convs=4,
+            num_shared_fcs=1,
             in_channels=256,
+            conv_out_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
             num_classes=81,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.033, 0.033, 0.067, 0.067],
-            reg_class_agnostic=True)
+            reg_class_agnostic=False,
+            norm_cfg=norm_cfg),
     ],
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
@@ -81,7 +92,9 @@ model = dict(
         num_convs=4,
         in_channels=256,
         conv_out_channels=256,
-        num_classes=81))
+        num_classes=81,
+        norm_cfg=norm_cfg))
+
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -101,6 +114,13 @@ train_cfg = dict(
         pos_weight=-1,
         smoothl1_beta=1 / 9.0,
         debug=False),
+    rpn_proposal=dict(
+        nms_across_levels=False,
+        nms_pre=2000,
+        nms_post=2000,
+        max_num=2000,
+        nms_thr=0.7,
+        min_bbox_size=0),
     rcnn=[
         dict(
             assigner=dict(
@@ -155,9 +175,9 @@ train_cfg = dict(
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,
-        nms_pre=2000,
-        nms_post=2000,
-        max_num=2000,
+        nms_pre=1000,
+        nms_post=1000,
+        max_num=1000,
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
@@ -230,7 +250,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/cascade_mask_rcnn_r16_ct_c3-c5_x101_32x4d_sbn_fpn_1x'
+work_dir = './work_dirs/cascade_mask_rcnn_r16_ct_c3-c5_x101_32x4d_fpn_sbn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

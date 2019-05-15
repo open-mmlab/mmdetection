@@ -23,7 +23,7 @@ class FCNMaskHead(nn.Module):
                  num_classes=81,
                  class_agnostic=False,
                  conv_cfg=None,
-                 normalize=None):
+                 norm_cfg=None):
         super(FCNMaskHead, self).__init__()
         if upsample_method not in [None, 'deconv', 'nearest', 'bilinear']:
             raise ValueError(
@@ -39,8 +39,7 @@ class FCNMaskHead(nn.Module):
         self.num_classes = num_classes
         self.class_agnostic = class_agnostic
         self.conv_cfg = conv_cfg
-        self.normalize = normalize
-        self.with_bias = normalize is None
+        self.norm_cfg = norm_cfg
 
         self.convs = nn.ModuleList()
         for i in range(self.num_convs):
@@ -54,8 +53,7 @@ class FCNMaskHead(nn.Module):
                     self.conv_kernel_size,
                     padding=padding,
                     conv_cfg=conv_cfg,
-                    normalize=normalize,
-                    bias=self.with_bias))
+                    norm_cfg=norm_cfg))
         upsample_in_channels = (self.conv_out_channels
                                 if self.num_convs > 0 else in_channels)
         if self.upsample_method is None:

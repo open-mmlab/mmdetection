@@ -1,5 +1,5 @@
 # model settings
-normalize = dict(type='GN', num_groups=32, frozen=False)
+norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 
 model = dict(
     type='MaskRCNN',
@@ -11,13 +11,13 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         style='pytorch',
-        normalize=normalize),
+        norm_cfg=norm_cfg),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5,
-        normalize=normalize),
+        norm_cfg=norm_cfg),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -45,7 +45,7 @@ model = dict(
         target_means=[0., 0., 0., 0.],
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
-        normalize=normalize),
+        norm_cfg=norm_cfg),
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -57,7 +57,7 @@ model = dict(
         in_channels=256,
         conv_out_channels=256,
         num_classes=81,
-        normalize=normalize))
+        norm_cfg=norm_cfg))
 
 # model training and testing settings
 train_cfg = dict(
@@ -78,6 +78,13 @@ train_cfg = dict(
         pos_weight=-1,
         smoothl1_beta=1 / 9.0,
         debug=False),
+    rpn_proposal=dict(
+        nms_across_levels=False,
+        nms_pre=2000,
+        nms_post=2000,
+        max_num=2000,
+        nms_thr=0.7,
+        min_bbox_size=0),
     rcnn=dict(
         assigner=dict(
             type='MaxIoUAssigner',
@@ -97,9 +104,9 @@ train_cfg = dict(
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,
-        nms_pre=2000,
-        nms_post=2000,
-        max_num=2000,
+        nms_pre=1000,
+        nms_post=1000,
+        max_num=1000,
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
