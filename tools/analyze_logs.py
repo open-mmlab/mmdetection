@@ -34,17 +34,16 @@ def cal_train_time(log_dicts, args):
 def plot_curve(log_dicts, args):
     if args.backend is not None:
         plt.switch_backend(args.backend)
-    if args.style is not None:
-        sns.set_style(args.style)
-    # if legend is None, use fn_key as legend
+    sns.set_style(args.style)
+    # if legend is None, use {filename}_{key} as legend
     legend = args.legend
     if legend is None:
         legend = []
         for json_log in args.json_logs:
-            for metric in args.key:
+            for metric in args.keys:
                 legend.append('{}_{}'.format(json_log, metric))
-    assert len(legend) == (len(args.json_logs) * len(args.key))
-    metrics = args.key
+    assert len(legend) == (len(args.json_logs) * len(args.keys))
+    metrics = args.keys
 
     num_metrics = len(metrics)
     for i, log_dict in enumerate(log_dicts):
@@ -93,46 +92,53 @@ def plot_curve(log_dicts, args):
 
 
 def parse_args():
+
+    def add_plot_parser(parser):
+        parser.add_argument(
+            'json_logs',
+            type=str,
+            nargs='+',
+            help='path of train log in json format')
+        parser.add_argument(
+            '--keys',
+            type=str,
+            nargs='+',
+            default=['bbox_mAP'],
+            help='the metric that you want to plot')
+        parser.add_argument('--title', type=str, help='title of figure')
+        parser.add_argument(
+            '--legend',
+            type=str,
+            nargs='+',
+            default=None,
+            help='legend of each plot')
+        parser.add_argument(
+            '--backend', type=str, default=None, help='backend of plt')
+        parser.add_argument(
+            '--style', type=str, default='dark', help='style of plt')
+        parser.add_argument('--out', type=str, default=None)
+
+    def add_time_parser(parser):
+        parser.add_argument(
+            'json_logs',
+            type=str,
+            nargs='+',
+            help='path of train log in json format')
+        parser.add_argument(
+            '--include-outliers',
+            action='store_true',
+            help='include the first value of every epoch when computing '
+            'the average time')
+
     parser = argparse.ArgumentParser(description='Analyze Json Log')
     # currently only support plot curve and calculate train time
     subparsers = parser.add_subparsers(dest='which', help='task parser')
     parser_plt = subparsers.add_parser(
         'plot_curve', help='parser for plot curve')
-    parser_plt.add_argument(
-        'json_logs',
-        type=str,
-        nargs='+',
-        help='path of train log in json format')
-    parser_plt.add_argument(
-        '--key',
-        type=str,
-        nargs='+',
-        default=['bbox_mAP'],
-        help='the metric that you want to plot')
-    parser_plt.add_argument('--title', type=str, help='title of figure')
-    parser_plt.add_argument(
-        '--legend',
-        type=str,
-        nargs='+',
-        default=None,
-        help='legend of each plot')
-    parser_plt.add_argument(
-        '--backend', type=str, default=None, help='backend of plt')
-    parser_plt.add_argument(
-        '--style', type=str, default=None, help='style of plt')
-    parser_plt.add_argument('--out', type=str, default=None)
-
-    parser_cal_time = subparsers.add_parser(
+    parser_time = subparsers.add_parser(
         'cal_train_time', help='parser for calculate average train time')
-    parser_cal_time.add_argument(
-        'json_logs',
-        type=str,
-        nargs='+',
-        help='path of train log in json format')
-    parser_cal_time.add_argument(
-        '--include-outliers',
-        action='store_true',
-        help='whether to reserve the time of first iter of every epoch')
+    add_plot_parser(parser_plt)
+    add_time_parser(parser_time)
     args = parser.parse_args()
     return args
 
