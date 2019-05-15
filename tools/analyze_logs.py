@@ -1,136 +1,144 @@
 import argparse
 import json
-import os
-import os.path as osp
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-sns.set_style('dark')
-
-plt.switch_backend('Agg')
-
 
 def cal_train_time(log_dicts, args):
     for i, log_dict in enumerate(log_dicts):
         print('{}Analyze train time of {}{}'.format('-' * 5, args.json_logs[i],
                                                     '-' * 5))
-        epochs = log_dict.keys()
         all_times = []
-        for epoch in epochs:
-            epoch_times = log_dict[epoch]['time']
-            if not args.include_outliers:
-                epoch_times = epoch_times[1:]
-            all_times.append(epoch_times)
+        for epoch in log_dict.keys():
+            if args.include_outliers:
+                all_times.append(log_dict[epoch]['time'])
+            else:
+                all_times.append(log_dict[epoch]['time'][1:])
         all_times = np.array(all_times)
-        ave_time_over_epoch = all_times.mean(-1)
-        slowest_epoch = ave_time_over_epoch.argmax()
-        fastest_epoch = ave_time_over_epoch.argmin()
-        std_over_epoch = ave_time_over_epoch.std()
+        epoch_ave_time = all_times.mean(-1)
+        slowest_epoch = epoch_ave_time.argmax()
+        fastest_epoch = epoch_ave_time.argmin()
+        std_over_epoch = epoch_ave_time.std()
         print('slowest epoch {:02d}, average time is {:.4f}'.format(
-            slowest_epoch + 1, ave_time_over_epoch[slowest_epoch]))
+            slowest_epoch + 1, epoch_ave_time[slowest_epoch]))
         print('fastest epoch {:02d}, average time is {:.4f}'.format(
-            fastest_epoch + 1, ave_time_over_epoch[fastest_epoch]))
+            fastest_epoch + 1, epoch_ave_time[fastest_epoch]))
         print('time std over epochs is {:.4f}'.format(std_over_epoch))
         print('average iter time: {:.4f} s/iter'.format(np.mean(all_times)))
         print()
 
 
 def plot_curve(log_dicts, args):
-    # if legend is None, use file name of json logs as legend
-    legend = args.legend if args.legend is not None else args.json_logs
-    assert len(legend) == len(args.json_logs)
-    metric = args.key
+    if args.backend is not None:
+        plt.switch_backend(args.backend)
+    if args.style is not None:
+        sns.set_style(args.style)
+    # if legend is None, use fn_key as legend
+    legend = args.legend
+    if legend is None:
+        legend = []
+        for json_log in args.json_logs:
+            for metric in args.key:
+                legend.append('{}_{}'.format(json_log, metric))
+    assert len(legend) == (len(args.json_logs) * len(args.key))
+    metrics = args.key
 
+    num_metrics = len(metrics)
     for i, log_dict in enumerate(log_dicts):
-        print('plot curve of {}, metric is {}'.format(args.json_logs[i],
-                                                      metric))
         epochs = log_dict.keys()
-        assert metric in log_dict[list(epochs)
-                                  [0]], '{} does not contain metric {}'.format(
-                                      args.json_logs[i], metric)
+        for j, metric in enumerate(metrics):
+            print('plot curve of {}, metric is {}'.format(
+                args.json_logs[i], metric))
+            assert metric in log_dict[list(
+                epochs)[0]], '{} does not contain metric {}'.format(
+                    args.json_logs[i], metric)
 
-        if metric in ('bbox_mAP', 'segm_mAP'):
-            xs = np.arange(1, max(epochs) + 1)
-            ys = []
-            for epoch in epochs:
-                ys += log_dict[epoch][metric]
-            ax = plt.gca()
-            ax.set_xticks(xs)
-            plt.title('{} v.s. epoch'.format(metric))
-            plt.xlabel('epoch')
-            plt.ylabel(metric)
-            plt.plot(xs, ys, label=legend[i], marker='o')
-        elif metric in ('loss', ):
-            xs = []
-            ys = []
-            num_iters_per_epoch = log_dict[list(epochs)[0]]['iter'][-1]
-            for epoch in epochs:
-                iters = log_dict[epoch]['iter']
-                if log_dict[epoch]['mode'][-1] == 'val':
-                    iters = iters[:-1]
-                xs.append(np.array(iters) + (epoch - 1) * num_iters_per_epoch)
-                ys.append(np.array(log_dict[epoch]['loss']))
-            xs = np.concatenate(xs)
-            ys = np.concatenate(ys)
-            plt.title('{} v.s. iter'.format(metric))
-            plt.xlabel('iter')
-            plt.ylabel(metric)
-            plt.plot(xs, ys, label=legend[i], linewidth=0.5)
-        plt.legend()
-    out = args.out
-    if out is None:
-        if not osp.exists('analysis_log_res'):
-            os.mkdir('analysis_log_res')
-        out = 'analysis_log_res/{}.pdf'.format(metric)
-    print('save curve to: {}'.format(out))
-    plt.savefig(out)
-    plt.cla()
+            if 'mAP' in metric:
+                xs = np.arange(1, max(epochs) + 1)
+                ys = []
+                for epoch in epochs:
+                    ys += log_dict[epoch][metric]
+                ax = plt.gca()
+                ax.set_xticks(xs)
+                plt.xlabel('epoch')
+                plt.plot(xs, ys, label=legend[i * num_metrics + j], marker='o')
+            else:
+                xs = []
+                ys = []
+                num_iters_per_epoch = log_dict[list(epochs)[0]]['iter'][-1]
+                for epoch in epochs:
+                    iters = log_dict[epoch]['iter']
+                    if log_dict[epoch]['mode'][-1] == 'val':
+                        iters = iters[:-1]
+                    xs.append(
+                        np.array(iters) + (epoch - 1) * num_iters_per_epoch)
+                    ys.append(np.array(log_dict[epoch][metric][:len(iters)]))
+                xs = np.concatenate(xs)
+                ys = np.concatenate(ys)
+                plt.xlabel('iter')
+                plt.plot(
+                    xs, ys, label=legend[i * num_metrics + j], linewidth=0.5)
+            plt.legend()
+        if args.title is not None:
+            plt.title(args.title)
+    if args.out is None:
+        plt.show()
+    else:
+        print('save curve to: {}'.format(args.out))
+        plt.savefig(args.out)
+        plt.cla()
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Analyze Json Log')
-    parser.add_argument(
-        'task',
-        type=str,
-        choices=['plot_curve', 'cal_train_time'],
-        help='currently support plot curve and calculate average train time')
-    parser.add_argument(
+    # currently only support plot curve and calculate train time
+    subparsers = parser.add_subparsers(dest='which', help='task parser')
+    parser_plt = subparsers.add_parser(
+        'plot_curve', help='parser for plot curve')
+    parser_plt.add_argument(
         'json_logs',
         type=str,
         nargs='+',
         help='path of train log in json format')
-    parser.add_argument(
+    parser_plt.add_argument(
         '--key',
         type=str,
-        choices=['bbox_mAP', 'segm_mAP', 'loss'],
-        default='bbox_mAP',
+        nargs='+',
+        default=['bbox_mAP'],
         help='the metric that you want to plot')
-    parser.add_argument(
+    parser_plt.add_argument('--title', type=str, help='title of figure')
+    parser_plt.add_argument(
         '--legend',
         type=str,
         nargs='+',
         default=None,
         help='legend of each plot')
-    parser.add_argument(
-        '--include_outliers',
+    parser_plt.add_argument(
+        '--backend', type=str, default=None, help='backend of plt')
+    parser_plt.add_argument(
+        '--style', type=str, default=None, help='style of plt')
+    parser_plt.add_argument('--out', type=str, default=None)
+
+    parser_cal_time = subparsers.add_parser(
+        'cal_train_time', help='parser for calculate average train time')
+    parser_cal_time.add_argument(
+        'json_logs',
+        type=str,
+        nargs='+',
+        help='path of train log in json format')
+    parser_cal_time.add_argument(
+        '--include-outliers',
         action='store_true',
         help='whether to reserve the time of first iter of every epoch')
-    parser.add_argument('--out', type=str, default=None)
     args = parser.parse_args()
     return args
 
 
-def main():
-    args = parse_args()
-
-    json_logs = args.json_logs
-    for json_log in json_logs:
-        assert json_log.endswith('.json')
-
-    # convert the json log into log_dict, key is epoch, value is a sub dict
+def load_json_logs(json_logs):
+    # load and convert json_logs to log_dict, key is epoch, value is a sub dict
     # keys of sub dict is different metrics, e.g. memory, bbox_mAP
     # value of sub dict is a list of corresponding values of all iterations
     log_dicts = [dict() for _ in json_logs]
@@ -143,8 +151,19 @@ def main():
                     log_dict[epoch] = defaultdict(list)
                 for k, v in log.items():
                     log_dict[epoch][k].append(v)
+    return log_dicts
 
-    eval(args.task)(log_dicts, args)
+
+def main():
+    args = parse_args()
+
+    json_logs = args.json_logs
+    for json_log in json_logs:
+        assert json_log.endswith('.json')
+
+    log_dicts = load_json_logs(json_logs)
+
+    eval(args.which)(log_dicts, args)
 
 
 if __name__ == '__main__':
