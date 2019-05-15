@@ -22,9 +22,9 @@ def cal_train_time(log_dicts, args):
         slowest_epoch = epoch_ave_time.argmax()
         fastest_epoch = epoch_ave_time.argmin()
         std_over_epoch = epoch_ave_time.std()
-        print('slowest epoch {:02d}, average time is {:.4f}'.format(
+        print('slowest epoch {}, average time is {:.4f}'.format(
             slowest_epoch + 1, epoch_ave_time[slowest_epoch]))
-        print('fastest epoch {:02d}, average time is {:.4f}'.format(
+        print('fastest epoch {}, average time is {:.4f}'.format(
             fastest_epoch + 1, epoch_ave_time[fastest_epoch]))
         print('time std over epochs is {:.4f}'.format(std_over_epoch))
         print('average iter time: {:.4f} s/iter'.format(np.mean(all_times)))
@@ -47,12 +47,12 @@ def plot_curve(log_dicts, args):
 
     num_metrics = len(metrics)
     for i, log_dict in enumerate(log_dicts):
-        epochs = log_dict.keys()
+        epochs = list(log_dict.keys())
         for j, metric in enumerate(metrics):
             print('plot curve of {}, metric is {}'.format(
                 args.json_logs[i], metric))
-            assert metric in log_dict[list(
-                epochs)[0]], '{} does not contain metric {}'.format(
+            assert metric in log_dict[
+                epochs[0]], '{} does not contain metric {}'.format(
                     args.json_logs[i], metric)
 
             if 'mAP' in metric:
@@ -67,7 +67,7 @@ def plot_curve(log_dicts, args):
             else:
                 xs = []
                 ys = []
-                num_iters_per_epoch = log_dict[list(epochs)[0]]['iter'][-1]
+                num_iters_per_epoch = log_dict[epochs[0]]['iter'][-1]
                 for epoch in epochs:
                     iters = log_dict[epoch]['iter']
                     if log_dict[epoch]['mode'][-1] == 'val':
@@ -132,11 +132,12 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description='Analyze Json Log')
     # currently only support plot curve and calculate train time
-    subparsers = parser.add_subparsers(dest='which', help='task parser')
+    subparsers = parser.add_subparsers(dest='task', help='task parser')
     parser_plt = subparsers.add_parser(
-        'plot_curve', help='parser for plot curve')
+        'plot_curve', help='parser for plotting curves')
     parser_time = subparsers.add_parser(
-        'cal_train_time', help='parser for calculate average train time')
+        'cal_train_time',
+        help='parser for computing the average time per training iteration')
     add_plot_parser(parser_plt)
     add_time_parser(parser_time)
     args = parser.parse_args()
@@ -169,7 +170,7 @@ def main():
 
     log_dicts = load_json_logs(json_logs)
 
-    eval(args.which)(log_dicts, args)
+    eval(args.task)(log_dicts, args)
 
 
 if __name__ == '__main__':
