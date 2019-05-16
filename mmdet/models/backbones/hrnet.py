@@ -25,7 +25,7 @@ class HRModule(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN')):
         super(HRModule, self).__init__()
-        self._check_branches(num_branches, blocks, num_blocks, in_channels,
+        self._check_branches(num_branches, num_blocks, in_channels,
                              num_channels)
 
         self.in_channels = in_channels
@@ -35,7 +35,7 @@ class HRModule(nn.Module):
         self.norm_cfg = norm_cfg
         self.conv_cfg = conv_cfg
         self.with_cp = with_cp
-        self.branches = self._make_branches(num_branches, num_blocks,
+        self.branches = self._make_branches(num_branches, blocks, num_blocks,
                                             num_channels)
         self.fuse_layers = self._make_fuse_layers()
         self.relu = nn.ReLU(inplace=False)
@@ -67,27 +67,30 @@ class HRModule(nn.Module):
         if stride != 1 or \
                 self.in_channels[branch_index] != \
                 num_channels[branch_index] * block.expansion:
-            downsample = ConvModule(
-                self.in_channels[branch_index],
-                num_channels[branch_index] * block.expansion,
-                kernel_size=1,
-                stride=stride,
-                bias=False,
-                activation=None,
-                conv_cfg=self.conv_cfg,
-                norm_cfg=self.norm_cfg
-            )
+            downsample = nn.Sequential(
+                build_conv_layer(
+                    self.conv_cfg,
+                    self.in_channels[branch_index],
+                    num_channels[branch_index] * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
+                build_norm_layer(
+                    self.norm_cfg,
+                    num_channels[branch_index] * block.expansion
+                )[1])
 
         layers = []
         layers.append(
             block(self.in_channels[branch_index],
                   num_channels[branch_index],
                   stride,
-                  downsample,
+                  downsample=downsample,
                   with_cp=self.with_cp,
                   norm_cfg=self.norm_cfg,
                   conv_cfg=self.conv_cfg))
-        self.num_inchannels[branch_index] = \
+        self.in_channels[branch_index] = \
             num_channels[branch_index] * block.expansion
         for i in range(1, num_blocks[branch_index]):
             layers.append(
@@ -143,30 +146,38 @@ class HRModule(nn.Module):
                     for k in range(i - j):
                         if k == i - j - 1:
                             conv_downsamples.append(
-                                ConvModule(
-                                    in_channels[j],
-                                    in_channels[i],
-                                    kernel_size=3,
-                                    stride=2,
-                                    padding=1,
-                                    bias=False,
-                                    activation=None,
-                                    conv_cfg=self.conv_cfg,
-                                    norm_cfg=self.norm_cfg
+                                nn.Sequential(
+                                    build_conv_layer(
+                                        self.conv_cfg,
+                                        in_channels[j],
+                                        in_channels[i],
+                                        kernel_size=3,
+                                        stride=2,
+                                        padding=1,
+                                        bias=False,
+                                    ),
+                                    build_norm_layer(
+                                        self.norm_cfg,
+                                        in_channels[i]
+                                    )[1]
                                 ))
                         else:
                             conv_downsamples.append(
-                                ConvModule(
-                                    in_channels[j],
-                                    in_channels[j],
-                                    kernel_size=3,
-                                    stride=2,
-                                    padding=1,
-                                    bias=False,
-                                    activation='relu',
-                                    inplace=False,
-                                    norm_cfg=self.norm_cfg,
-                                    conv_cfg=self.conv_cfg,
+                                nn.Sequential(
+                                    build_conv_layer(
+                                        self.conv_cfg,
+                                        in_channels[j],
+                                        in_channels[j],
+                                        kernel_size=3,
+                                        stride=2,
+                                        padding=1,
+                                        bias=False,
+                                    ),
+                                    build_norm_layer(
+                                        self.norm_cfg,
+                                        in_channels[j],
+                                    )[1],
+                                    nn.ReLU(inplace=False)
                                 ))
                     fuse_layer.append(nn.Sequential(*conv_downsamples))
             fuse_layers.append(nn.ModuleList(fuse_layer))
@@ -330,17 +341,20 @@ class HRNet(nn.Module):
             if i < num_branches_pre:
                 if num_channels_cur_layer[i] != num_channels_pre_layer[i]:
                     transition_layers.append(
-                        ConvModule(
-                            num_channels_pre_layer[i],
-                            num_channels_cur_layer[i],
-                            kernel_size=3,
-                            stride=1,
-                            padding=1,
-                            bias=False,
-                            conv_cfg=self.conv_cfg,
-                            norm_cfg=self.norm_cfg,
-                            activation='relu'
-                        ))
+                        nn.Sequential(
+                            build_conv_layer(
+                                self.conv_cfg,
+                                num_channels_pre_layer[i],
+                                num_channels_cur_layer[i],
+                                kernel_size=3,
+                                stride=1,
+                                padding=1,
+                                bias=False,
+                            ),
+                            build_norm_layer(
+                                self.norm_cfg,
+                                num_channels_cur_layer[i],
+                            )[1]))
                 else:
                     transition_layers.append(None)
             else:
@@ -350,16 +364,20 @@ class HRNet(nn.Module):
                     out_channels = num_channels_cur_layer[i] \
                         if j == i - num_branches_pre else in_channels
                     conv3x3s.append(
-                        ConvModule(
-                            in_channels,
-                            out_channels,
-                            kernel_size=3,
-                            stride=2,
-                            padding=1,
-                            bias=False,
-                            conv_cfg=self.conv_cfg,
-                            norm_cfg=self.norm_cfg,
-                            activation='relu'
+                        nn.Sequential(
+                            build_conv_layer(
+                                self.conv_cfg,
+                                in_channels,
+                                out_channels,
+                                kernel_size=3,
+                                stride=2,
+                                padding=1,
+                                bias=False,
+                            ),
+                            build_norm_layer(
+                                self.norm_cfg,
+                                out_channels
+                            )[1],
                         ))
                 transition_layers.append(nn.Sequential(*conv3x3s))
 
@@ -368,16 +386,19 @@ class HRNet(nn.Module):
     def _make_layer(self, block, inplanes, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or inplanes != planes * block.expansion:
-            downsample = ConvModule(
-                inplanes,
-                planes * block.expansion,
-                kernel_size=1,
-                stride=stride,
-                bias=False,
-                activation=None,
-                norm_cfg=self.norm_cfg,
-                conv_cfg=self.conv_cfg
-            )
+            downsample = nn.Sequential(
+                build_conv_layer(
+                    self.conv_cfg,
+                    inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
+                build_norm_layer(
+                    self.norm_cfg,
+                    planes * block.expansion,
+                )[1])
 
         layers = []
         layers.append(
