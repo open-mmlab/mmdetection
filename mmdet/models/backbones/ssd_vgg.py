@@ -117,14 +117,37 @@ class SSDVGG(VGG):
 
 
 class L2Norm(nn.Module):
-
-    def __init__(self, n_dims, scale=20., eps=1e-10):
+    def __init__(self, n_channels, scale):
         super(L2Norm, self).__init__()
-        self.n_dims = n_dims
-        self.weight = nn.Parameter(torch.Tensor(self.n_dims))
-        self.eps = eps
-        self.scale = scale
+        self.n_channels = n_channels
+        self.scale = scale or None
+        self.eps = 1e-10
+        self.weight = nn.Parameter(torch.Tensor(self.n_channels))
 
     def forward(self, x):
-        norm = x.pow(2).sum(1, keepdim=True).sqrt() + self.eps
-        return self.weight[None, :, None, None].expand_as(x) * x / norm
+        if self.training:
+            norm = x.pow(2).sum(dim=1, keepdim=True).sqrt() + self.eps
+            x = torch.div(x, norm)
+            out = self.weight.unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(x) * x
+            return out
+        else:
+            return L2NormFunction.apply(x, self.weight, L2NormParams(self.eps, 0, 0))
+
+class L2NormFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, weight, l2NormParams):
+        norm = x.pow(2).sum(dim=1, keepdim=True).sqrt() + l2NormParams.eps
+        x = torch.div(x, norm)
+        out = weight.unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(x) * x
+        return out
+
+    @staticmethod
+    def symbolic(g, x, weight, l2NormParams):
+        return g.op("Normalize", x, weight, eps_f=l2NormParams.eps,
+                    across_spatial_i=l2NormParams.across_spatial, channel_shared_i=l2NormParams.channel_shared)
+
+class L2NormParams:
+    def __init__(self,  eps, across_spatial=1, channel_shared=1):
+        self.eps = eps
+        self.across_spatial = across_spatial
+        self.channel_shared = channel_shared

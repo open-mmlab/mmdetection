@@ -66,15 +66,16 @@ class PhotoMetricDistortion(object):
 
 class Expand(object):
 
-    def __init__(self, mean=(0, 0, 0), to_rgb=True, ratio_range=(1, 4)):
+    def __init__(self, mean=(0, 0, 0), to_rgb=True, ratio_range=(1, 4), prob=0.5):
         if to_rgb:
             self.mean = mean[::-1]
         else:
             self.mean = mean
         self.min_ratio, self.max_ratio = ratio_range
+        self.prob = prob
 
     def __call__(self, img, boxes, labels):
-        if random.randint(2):
+        if random.uniform(0, 1) > self.prob:
             return img, boxes, labels
 
         h, w, c = img.shape

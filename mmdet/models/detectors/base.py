@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 import mmcv
 import numpy as np
+import torch
 import torch.nn as nn
 import pycocotools.mask as maskUtils
 
@@ -16,6 +17,7 @@ class BaseDetector(nn.Module):
 
     def __init__(self):
         super(BaseDetector, self).__init__()
+        self._export_mode = False
 
     @property
     def with_neck(self):
@@ -79,7 +81,14 @@ class BaseDetector(nn.Module):
         else:
             return self.aug_test(imgs, img_metas, **kwargs)
 
-    def forward(self, img, img_meta, return_loss=True, **kwargs):
+    def onnx_export(self, img, img_meta, export_name='', **kwargs):
+        self._export_mode = True
+        self.img_metas = img_meta
+        torch.onnx.export(self, img, export_name, verbose=False)
+
+    def forward(self, img, img_meta=[None], return_loss=True, **kwargs): #passing None here is a hack to fool the jit engine
+        if self._export_mode:
+            return self.forward_export(img)
         if return_loss:
             return self.forward_train(img, img_meta, **kwargs)
         else:

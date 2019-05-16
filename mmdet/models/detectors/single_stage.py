@@ -55,6 +55,12 @@ class SingleStageDetector(BaseDetector):
             *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
+    def forward_export(self, img):
+        x = self.extract_feat(img)
+        outs = self.bbox_head(x)
+        bbox_result = self.bbox_head.export_forward(*outs, self.test_cfg, True, self.img_metas, x, img)
+        return bbox_result
+
     def simple_test(self, img, img_meta, rescale=False):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
@@ -64,7 +70,10 @@ class SingleStageDetector(BaseDetector):
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
         ]
-        return bbox_results[0]
+        if len(bbox_results):
+            return bbox_results[0]
+        else:
+            return None
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError
