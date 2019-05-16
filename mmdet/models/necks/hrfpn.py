@@ -39,23 +39,26 @@ class HRFPN(nn.Module):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
 
-        self.reduction_conv = ConvModule(
-            sum(in_channels),
-            out_channels,
-            kernel_size=1,
-            activation=None,
-            conv_cfg=self.conv_cfg,
-            norm_cfg=self.norm_cfg)
+        self.reduction_conv = nn.Sequential(
+            build_conv_layer(
+                self.conv_cfg,
+                sum(in_channels),
+                out_channels,
+                kernel_size=1
+            ))
 
         self.fpn_conv = nn.ModuleList()
         for i in range(self.num_outs):
             self.fpn_conv.append(
-                build_conv_layer(
-                    self.conv_cfg,
+                ConvModule(
                     out_channels,
                     out_channels,
                     kernel_size=3,
-                    padding=1))
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=None,
+                    activation=None
+                ))
 
         if pooling_type == 'MAX':
             self.pooling = F.max_pool2d

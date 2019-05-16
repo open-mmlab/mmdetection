@@ -195,13 +195,12 @@ class HRModule(nn.Module):
 
         for i in range(len(self.fuse_layers)):
             y = 0
-
             for j in range(self.num_branches):
                 if i == j:
                     y += x[j]
                 else:
                     y += self.fuse_layers[i][j](x[j])
-                x_fuse.append(self.relu(y))
+            x_fuse.append(self.relu(y))
 
         return x_fuse
 
@@ -405,7 +404,7 @@ class HRNet(nn.Module):
             block(inplanes,
                   planes,
                   stride,
-                  downsample,
+                  downsample=downsample,
                   with_cp=self.with_cp,
                   norm_cfg=self.norm_cfg,
                   conv_cfg=self.conv_cfg))
