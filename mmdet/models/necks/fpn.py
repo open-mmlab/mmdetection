@@ -20,8 +20,7 @@ class FPN(nn.Module):
                  relu_before_extra_convs=False,
                  conv_cfg=None,
                  norm_cfg=None,
-                 activation=None,
-                 caffe2_xavier_initialize=False):
+                 activation=None):
         super(FPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -30,7 +29,6 @@ class FPN(nn.Module):
         self.num_outs = num_outs
         self.activation = activation
         self.relu_before_extra_convs = relu_before_extra_convs
-        self.caffe2_xavier_initialize = caffe2_xavier_initialize
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -94,10 +92,7 @@ class FPN(nn.Module):
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                if self.caffe2_xavier_initialize:
-                    caffe2_xavier_init(m)
-                else:
-                    xavier_init(m, distribution='uniform')
+                xavier_init(m, distribution='uniform')
 
     def forward(self, inputs):
         assert len(inputs) == len(self.in_channels)
