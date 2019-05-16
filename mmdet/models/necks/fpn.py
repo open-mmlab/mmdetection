@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init, caffe2_xavier_init
+from mmcv.cnn import xavier_init
 
 from ..registry import NECKS
 from ..utils import ConvModule
