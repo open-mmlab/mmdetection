@@ -50,14 +50,12 @@ class HRFPN(nn.Module):
         self.fpn_conv = nn.ModuleList()
         for i in range(self.num_outs):
             self.fpn_conv.append(
-                ConvModule(
+                build_conv_layer(
+                    self.conv_cfg,
                     out_channels,
                     out_channels,
                     kernel_size=3,
                     padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=None,
-                    activation=None
                 ))
 
         if pooling_type == 'MAX':
