@@ -10,6 +10,7 @@ from ..registry import NECKS
 
 @NECKS.register_module
 class HRFPN(nn.Module):
+
     """HRFPN (High Resolution Feature Pyrmamids)
     arXiv: https://arxiv.org/abs/1904.04514
 
@@ -23,6 +24,7 @@ class HRFPN(nn.Module):
     def __init__(self,
                  in_channels,
                  out_channels,
+                 num_outs=5,
                  pooling_type='AVG',
                  conv_cfg=None,
                  norm_cfg=None,
@@ -31,7 +33,8 @@ class HRFPN(nn.Module):
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.num_levels = len(in_channels)
+        self.num_ins = len(in_channels)
+        self.num_outs = num_outs
         self.with_cp = with_cp
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -45,7 +48,7 @@ class HRFPN(nn.Module):
             norm_cfg=self.norm_cfg)
 
         self.fpn_conv = nn.ModuleList()
-        for i in range(self.num_levels):
+        for i in range(self.num_outs):
             self.fpn_conv.append(
                 build_conv_layer(
                     self.conv_cfg,
@@ -65,9 +68,9 @@ class HRFPN(nn.Module):
                 caffe2_xavier_init(m)
 
     def forward(self, inputs):
-        assert len(inputs) == len(self.in_channels)
+        assert len(inputs) == self.num_ins
         outs = [inputs[0]]
-        for i in range(1, len(inputs)):
+        for i in range(1, self.num_ins):
             outs.append(
                 F.interpolate(inputs[i], scale_factor=2**i, mode='bilinear'))
         out = torch.cat(outs, dim=1)
@@ -76,11 +79,11 @@ class HRFPN(nn.Module):
         else:
             out = self.reduction_conv(out)
         outs = [out]
-        for i in range(1, self.num_levels):
+        for i in range(1, self.num_outs):
             outs.append(self.pooling(out, kernel_size=2**i, stride=2**i))
         outputs = []
 
-        for i in range(self.num_levels):
+        for i in range(self.num_outs):
             if outs[i].requires_grad and self.with_cp:
                 tmp_out = checkpoint(self.fpn_conv[i], outs[i])
             else:

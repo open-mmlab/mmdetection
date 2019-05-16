@@ -5,43 +5,42 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 
 from ..registry import BACKBONES
-from ..utils import build_norm_layer, build_conv_layer
+from ..utils import build_norm_layer, build_conv_layer, ConvModule
 from .resnet import BasicBlock, Bottleneck
 
 
-class HighResolutionModule(nn.Module):
+class HRModule(nn.Module):
+
+    """ High-Resolution Module for HRNet. In this module, every branch
+    has 4 BasicBlocks/Bottlenecks. Fusion/Exchange is in this module.
+    """
     def __init__(self,
                  num_branches,
                  blocks,
                  num_blocks,
-                 num_inchannels,
+                 in_channels,
                  num_channels,
-                 fuse_method,
-                 multi_scale_output=True,
+                 multiscale_output=True,
                  with_cp=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN')):
-        """ High-Resolution Module for HRNet. In this module, every branch
-        has 4 BasicBlocks/Bottlenecks. Fusion/Exchange is in this module.
-        """
-        super(HighResolutionModule, self).__init__()
-        self._check_branches(num_branches, blocks, num_blocks, num_inchannels,
+        super(HRModule, self).__init__()
+        self._check_branches(num_branches, blocks, num_blocks, in_channels,
                              num_channels)
 
-        self.num_inchannels = num_inchannels
-        self.fuse_method = fuse_method
+        self.in_channels = in_channels
         self.num_branches = num_branches
 
-        self.multi_scale_output = multi_scale_output
+        self.multiscale_output = multiscale_output
         self.norm_cfg = norm_cfg
         self.conv_cfg = conv_cfg
         self.with_cp = with_cp
-        self.branches = self._make_branches(num_branches, blocks, num_blocks,
+        self.branches = self._make_branches(num_branches, num_blocks,
                                             num_channels)
         self.fuse_layers = self._make_fuse_layers()
-        self.relu = nn.ReLU(False)
+        self.relu = nn.ReLU(inplace=False)
 
-    def _check_branches(self, num_branches, blocks, num_blocks, num_inchannels,
+    def _check_branches(self, num_branches, num_blocks, in_channels,
                         num_channels):
         if num_branches != len(num_blocks):
             error_msg = 'NUM_BRANCHES({}) <> NUM_BLOCKS({})'.format(
@@ -53,9 +52,9 @@ class HighResolutionModule(nn.Module):
                 num_branches, len(num_channels))
             raise ValueError(error_msg)
 
-        if num_branches != len(num_inchannels):
+        if num_branches != len(in_channels):
             error_msg = 'NUM_BRANCHES({}) <> NUM_INCHANNELS({})'.format(
-                num_branches, len(num_inchannels))
+                num_branches, len(in_channels))
             raise ValueError(error_msg)
 
     def _make_one_branch(self,
@@ -66,36 +65,36 @@ class HighResolutionModule(nn.Module):
                          stride=1):
         downsample = None
         if stride != 1 or \
-                self.num_inchannels[branch_index] != \
+                self.in_channels[branch_index] != \
                 num_channels[branch_index] * block.expansion:
-            downsample = nn.Sequential(
-                build_conv_layer(self.conv_cfg,
-                                 self.num_inchannels[branch_index],
-                                 num_channels[branch_index] * block.expansion,
-                                 kernel_size=1,
-                                 stride=stride,
-                                 bias=False),
-                build_norm_layer(self.norm_cfg, num_channels[branch_index] *
-                                 block.expansion)[1],
+            downsample = ConvModule(
+                self.in_channels[branch_index],
+                num_channels[branch_index] * block.expansion,
+                kernel_size=1,
+                stride=stride,
+                bias=False,
+                activation=None,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg
             )
 
         layers = []
         layers.append(
-            block(self.num_inchannels[branch_index],
+            block(self.in_channels[branch_index],
                   num_channels[branch_index],
                   stride,
                   downsample,
                   with_cp=self.with_cp,
-                  norm_cfg=self.normalize,
+                  norm_cfg=self.norm_cfg,
                   conv_cfg=self.conv_cfg))
         self.num_inchannels[branch_index] = \
             num_channels[branch_index] * block.expansion
         for i in range(1, num_blocks[branch_index]):
             layers.append(
-                block(self.num_inchannels[branch_index],
+                block(self.in_channels[branch_index],
                       num_channels[branch_index],
                       with_cp=self.with_cp,
-                      norm_cfg=self.normalize,
+                      norm_cfg=self.norm_cfg,
                       conv_cfg=self.conv_cfg))
 
         return nn.Sequential(*layers)
@@ -114,66 +113,65 @@ class HighResolutionModule(nn.Module):
             return None
 
         num_branches = self.num_branches
-        num_inchannels = self.num_inchannels
+        in_channels = self.in_channels
         fuse_layers = []
-        for i in range(num_branches if self.multi_scale_output else 1):
+        num_out_branches = num_branches if self.multiscale_output else 1
+        for i in range(num_out_branches):
             fuse_layer = []
             for j in range(num_branches):
                 if j > i:
                     fuse_layer.append(
                         nn.Sequential(
-                            build_conv_layer(self.conv_cfg,
-                                             num_inchannels[j],
-                                             num_inchannels[i],
-                                             kernel_size=1,
-                                             stride=1,
-                                             padding=0,
-                                             bias=False),
-                            build_norm_layer(self.norm_cfg,
-                                             num_inchannels[i])[1],
-                            nn.Upsample(scale_factor=2**(j - i),
-                                        mode='nearest')))
+                            build_conv_layer(
+                                self.conv_cfg,
+                                in_channels[j],
+                                in_channels[i],
+                                kernel_size=1,
+                                stride=1,
+                                padding=0,
+                                bias=False),
+                            build_norm_layer(
+                                self.norm_cfg,
+                                in_channels[i])[1],
+                            nn.Upsample(
+                                scale_factor=2**(j - i),
+                                mode='nearest')))
                 elif j == i:
                     fuse_layer.append(None)
                 else:
-                    conv3x3s = []
+                    conv_downsamples = []
                     for k in range(i - j):
                         if k == i - j - 1:
-                            num_outchannels_conv3x3 = num_inchannels[i]
-                            conv3x3s.append(
-                                nn.Sequential(
-                                    build_conv_layer(self.conv_cfg,
-                                                     num_inchannels[j],
-                                                     num_outchannels_conv3x3,
-                                                     kernel_size=3,
-                                                     stride=2,
-                                                     paddinfg=1,
-                                                     bias=False),
-                                    build_norm_layer(
-                                        self.norm_cfg,
-                                        num_outchannels_conv3x3)[1]))
+                            conv_downsamples.append(
+                                ConvModule(
+                                    in_channels[j],
+                                    in_channels[i],
+                                    kernel_size=3,
+                                    stride=2,
+                                    padding=1,
+                                    bias=False,
+                                    activation=None,
+                                    conv_cfg=self.conv_cfg,
+                                    norm_cfg=self.norm_cfg
+                                ))
                         else:
-                            num_outchannels_conv3x3 = num_inchannels[j]
-                            conv3x3s.append(
-                                nn.Sequential(
-                                    build_conv_layer(self.conv_cfg,
-                                                     num_inchannels[j],
-                                                     num_outchannels_conv3x3,
-                                                     kernel_size=3,
-                                                     stride=2,
-                                                     padding=1,
-                                                     bias=False),
-                                    build_norm_layer(
-                                        self.norm_cfg,
-                                        num_outchannels_conv3x3)[1],
-                                    nn.ReLU(False)))
-                    fuse_layer.append(nn.Sequential(*conv3x3s))
+                            conv_downsamples.append(
+                                ConvModule(
+                                    in_channels[j],
+                                    in_channels[j],
+                                    kernel_size=3,
+                                    stride=2,
+                                    padding=1,
+                                    bias=False,
+                                    activation='relu',
+                                    inplace=False,
+                                    norm_cfg=self.norm_cfg,
+                                    conv_cfg=self.conv_cfg,
+                                ))
+                    fuse_layer.append(nn.Sequential(*conv_downsamples))
             fuse_layers.append(nn.ModuleList(fuse_layer))
 
         return nn.ModuleList(fuse_layers)
-
-    def get_num_inchannels(self):
-        return self.num_inchannels
 
     def forward(self, x):
         if self.num_branches == 1:
@@ -183,23 +181,23 @@ class HighResolutionModule(nn.Module):
             x[i] = self.branches[i](x[i])
 
         x_fuse = []
+
         for i in range(len(self.fuse_layers)):
-            if i == 0:
-                y = x[0]
-            else:
-                y = self.fuse_layers[i][0](x[0])
-            for j in range(1, self.num_branches):
+            y = 0
+
+            for j in range(self.num_branches):
                 if i == j:
-                    y = y + x[j]
+                    y += x[j]
                 else:
-                    y = y + self.fuse_layers[i][j](x[j])
-            x_fuse.append(self.relu(y))
+                    y += self.fuse_layers[i][j](x[j])
+                x_fuse.append(self.relu(y))
 
         return x_fuse
 
 
 @BACKBONES.register_module
 class HRNet(nn.Module):
+
     """HRNet backbone.
     High-Resolution Representations for Labeling Pixels and Regions
     arXiv: https://arxiv.org/abs/1904.04514
@@ -229,14 +227,13 @@ class HRNet(nn.Module):
             zero_init_residual=False,
     ):
         super(HRNet, self).__init__()
-        self.norm_eval = norm_eval
-        self.norm_cfg = norm_cfg
+        self.extra = extra
         self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.norm_eval = norm_eval
         self.with_cp = with_cp
         self.zero_init_residual = zero_init_residual
-        # for
-        self.extra = extra
-        # stem network
+
         # stem net
         self.norm1_name, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(self.norm_cfg, 64, postfix=2)
@@ -280,7 +277,7 @@ class HRNet(nn.Module):
 
         block = self.blocks_dict[block_type]
         num_channels = [
-            num_channels[i] * block.expansion for i in range(len(num_channels))
+            channel * block.expansion for channel in num_channels
         ]
         self.transition1 = self._make_transition_layer([stage1_out_channels],
                                                        num_channels)
@@ -294,7 +291,7 @@ class HRNet(nn.Module):
 
         block = self.blocks_dict[block_type]
         num_channels = [
-            num_channels[i] * block.expansion for i in range(len(num_channels))
+            channel * block.expansion for channel in num_channels
         ]
         self.transition2 = self._make_transition_layer(pre_stage_channels,
                                                        num_channels)
@@ -308,7 +305,7 @@ class HRNet(nn.Module):
 
         block = self.blocks_dict[block_type]
         num_channels = [
-            num_channels[i] * block.expansion for i in range(len(num_channels))
+            channel * block.expansion for channel in num_channels
         ]
         self.transition3 = self._make_transition_layer(pre_stage_channels,
                                                        num_channels)
@@ -333,38 +330,37 @@ class HRNet(nn.Module):
             if i < num_branches_pre:
                 if num_channels_cur_layer[i] != num_channels_pre_layer[i]:
                     transition_layers.append(
-                        nn.Sequential(
-                            build_conv_layer(
-                                self.conv_cfg,
-                                num_channels_pre_layer[i],
-                                num_channels_cur_layer[i],
-                                kernel_size=3,
-                                stride=1,
-                                padding=1,
-                                bias=False),
-                            build_norm_layer(self.norm_cfg,
-                                             num_channels_cur_layer[i])[1],
-                            nn.ReLU(inplace=True)))
+                        ConvModule(
+                            num_channels_pre_layer[i],
+                            num_channels_cur_layer[i],
+                            kernel_size=3,
+                            stride=1,
+                            padding=1,
+                            bias=False,
+                            conv_cfg=self.conv_cfg,
+                            norm_cfg=self.norm_cfg,
+                            activation='relu'
+                        ))
                 else:
                     transition_layers.append(None)
             else:
                 conv3x3s = []
                 for j in range(i + 1 - num_branches_pre):
-                    inchannels = num_channels_pre_layer[-1]
-                    outchannels = num_channels_cur_layer[i] \
-                        if j == i - num_branches_pre else inchannels
+                    in_channels = num_channels_pre_layer[-1]
+                    out_channels = num_channels_cur_layer[i] \
+                        if j == i - num_branches_pre else in_channels
                     conv3x3s.append(
-                        nn.Sequential(
-                            build_conv_layer(
-                                self.conv_cfg,
-                                inchannels,
-                                outchannels,
-                                kernel_size=3,
-                                stride=2,
-                                padding=1,
-                                bias=False),
-                            build_norm_layer(self.norm_cfg, outchannels)[1],
-                            nn.ReLU(inplace=True)))
+                        ConvModule(
+                            in_channels,
+                            out_channels,
+                            kernel_size=3,
+                            stride=2,
+                            padding=1,
+                            bias=False,
+                            conv_cfg=self.conv_cfg,
+                            norm_cfg=self.norm_cfg,
+                            activation='relu'
+                        ))
                 transition_layers.append(nn.Sequential(*conv3x3s))
 
         return nn.ModuleList(transition_layers)
@@ -372,15 +368,15 @@ class HRNet(nn.Module):
     def _make_layer(self, block, inplanes, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                build_conv_layer(
-                    self.conv_cfg,
-                    inplanes,
-                    planes * block.expansion,
-                    kernel_size=1,
-                    stride=stride,
-                    bias=False),
-                build_norm_layer(self.norm_cfg, planes * block.expansion)[1],
+            downsample = ConvModule(
+                inplanes,
+                planes * block.expansion,
+                kernel_size=1,
+                stride=stride,
+                bias=False,
+                activation=None,
+                norm_cfg=self.norm_cfg,
+                conv_cfg=self.conv_cfg
             )
 
         layers = []
@@ -405,38 +401,35 @@ class HRNet(nn.Module):
 
     def _make_stage(self,
                     layer_config,
-                    num_inchannels,
-                    multi_scale_output=True):
+                    in_channels,
+                    multiscale_output=True):
         num_modules = layer_config['num_modules']
         num_branches = layer_config['num_branches']
         num_blocks = layer_config['num_blocks']
         num_channels = layer_config['num_channels']
         block = self.blocks_dict[layer_config['block']]
-        fuse_method = layer_config['fuse_method']
 
-        modules = []
+        hr_modules = []
         for i in range(num_modules):
             # multi_scale_output is only used last module
-            if not multi_scale_output and i == num_modules - 1:
-                reset_multi_scale_output = False
+            if not multiscale_output and i == num_modules - 1:
+                reset_multiscale_output = False
             else:
-                reset_multi_scale_output = True
+                reset_multiscale_output = True
 
-            modules.append(
-                HighResolutionModule(
+            hr_modules.append(
+                HRModule(
                     num_branches,
                     block,
                     num_blocks,
-                    num_inchannels,
+                    in_channels,
                     num_channels,
-                    fuse_method,
-                    reset_multi_scale_output,
+                    reset_multiscale_output,
                     with_cp=self.with_cp,
                     norm_cfg=self.norm_cfg,
                     conv_cfg=self.conv_cfg))
-            num_inchannels = modules[-1].get_num_inchannels()
 
-        return nn.Sequential(*modules), num_inchannels
+        return nn.Sequential(*hr_modules), in_channels
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
@@ -459,7 +452,7 @@ class HRNet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
-        # h, w = x.size(2), x.size(3)
+
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.relu(x)
