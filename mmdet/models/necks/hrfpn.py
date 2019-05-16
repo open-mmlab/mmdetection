@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.utils.checkpoint import checkpoint
 from mmcv.cnn.weight_init import caffe2_xavier_init
 
-from ..utils import build_conv_layer, ConvModule
+from ..utils import build_conv_layer
 from ..registry import NECKS
 
 
