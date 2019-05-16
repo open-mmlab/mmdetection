@@ -16,7 +16,8 @@ class ContextBlock(nn.Module):
         super(ContextBlock, self).__init__()
         assert pooling_method in ['avg', 'att']
         assert isinstance(fusion_methods, (list, tuple))
-        assert all([f in ['channel_add', 'channel_mul'] for f in fusion_methods])
+        valid_fusion_methods = ['channel_add', 'channel_mul']
+        assert all([f in valid_fusion_methods for f in fusion_methods])
         assert len(fusion_methods) > 0, 'at least one fusion should be used'
         self.inplanes = inplanes
         self.planes = planes
