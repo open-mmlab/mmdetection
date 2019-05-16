@@ -18,7 +18,7 @@ class FPN(nn.Module):
                  add_extra_convs=False,
                  extra_convs_on_inputs=True,
                  conv_cfg=None,
-                 normalize=None,
+                 norm_cfg=None,
                  activation=None):
         super(FPN, self).__init__()
         assert isinstance(in_channels, list)
@@ -27,7 +27,6 @@ class FPN(nn.Module):
         self.num_ins = len(in_channels)
         self.num_outs = num_outs
         self.activation = activation
-        self.with_bias = normalize is None
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -51,8 +50,7 @@ class FPN(nn.Module):
                 out_channels,
                 1,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
-                bias=self.with_bias,
+                norm_cfg=norm_cfg,
                 activation=self.activation,
                 inplace=False)
             fpn_conv = ConvModule(
@@ -61,8 +59,7 @@ class FPN(nn.Module):
                 3,
                 padding=1,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
-                bias=self.with_bias,
+                norm_cfg=norm_cfg,
                 activation=self.activation,
                 inplace=False)
 
@@ -83,8 +80,8 @@ class FPN(nn.Module):
                     3,
                     stride=2,
                     padding=1,
-                    normalize=normalize,
-                    bias=self.with_bias,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
                     activation=self.activation,
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)

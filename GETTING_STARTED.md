@@ -14,19 +14,17 @@ and also some high-level apis for easier integration to other projects.
 - [x] multiple GPU testing
 - [x] visualize detection results
 
-You can use the following command to test a dataset.
+You can use the following commands to test a dataset.
 
 ```shell
-python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--gpus ${GPU_NUM}] [--proc_per_gpu ${PROC_NUM}] [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}] [--show]
+# single-gpu testing
+python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}] [--show]
+
+# multi-gpu testing
+./tools/dist_test.sh ${CONFIG_FILE} ${CHECKPOINT_FILE} ${GPU_NUM} [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}]
 ```
 
-Positional arguments:
-- `CONFIG_FILE`: Path to the config file of the corresponding model.
-- `CHECKPOINT_FILE`: Path to the checkpoint file.
-
 Optional arguments:
-- `GPU_NUM`: Number of GPUs used for testing. (default: 1)
-- `PROC_NUM`: Number of processes on each GPU. (default: 1)
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
 - `EVAL_METRICS`: Items to be evaluated on the results. Allowed values are: `proposal_fast`, `proposal`, `bbox`, `segm`, `keypoints`.
 - `--show`: If specified, detection results will be ploted on the images and shown in a new window. Only applicable for single GPU testing.
@@ -51,12 +49,12 @@ python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
     --out results.pkl --eval bbox mask
 ```
 
-3. Test Mask R-CNN with 8 GPUs and 2 processes per GPU, and evaluate the bbox and mask AP.
+3. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
 
 ```shell
-python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
+./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    --gpus 8 --proc_per_gpu 2 --out results.pkl --eval bbox mask
+    8 --out results.pkl --eval bbox mask
 ```
 
 ### High-level APIs for testing images.
