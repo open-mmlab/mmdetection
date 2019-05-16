@@ -12,21 +12,22 @@ def last_zero_init(m):
 
 class ContextBlock(nn.Module):
 
-    def __init__(self, inplanes, planes, pool, fusions):
+    def __init__(self, inplanes, planes, pooling_method, fusion_methods):
         super(ContextBlock, self).__init__()
-        assert pool in ['avg', 'att']
-        assert all([f in ['channel_add', 'channel_mul'] for f in fusions])
-        assert len(fusions) > 0, 'at least one fusion should be used'
+        assert pooling_method in ['avg', 'att']
+        assert isinstance(fusion_methods, (list, tuple))
+        assert all([f in ['channel_add', 'channel_mul'] for f in fusion_methods])
+        assert len(fusion_methods) > 0, 'at least one fusion should be used'
         self.inplanes = inplanes
         self.planes = planes
-        self.pool = pool
-        self.fusions = fusions
-        if 'att' in pool:
+        self.pooling_method = pooling_method
+        self.fusion_methods = fusion_methods
+        if pooling_method == 'att':
             self.conv_mask = nn.Conv2d(inplanes, 1, kernel_size=1)
             self.softmax = nn.Softmax(dim=2)
         else:
             self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        if 'channel_add' in fusions:
+        if 'channel_add' in fusion_methods:
             self.channel_add_conv = nn.Sequential(
                 nn.Conv2d(self.inplanes, self.planes, kernel_size=1),
                 nn.LayerNorm([self.planes, 1, 1]),
@@ -35,7 +36,7 @@ class ContextBlock(nn.Module):
             )
         else:
             self.channel_add_conv = None
-        if 'channel_mul' in fusions:
+        if 'channel_mul' in fusion_methods:
             self.channel_mul_conv = nn.Sequential(
                 nn.Conv2d(self.inplanes, self.planes, kernel_size=1),
                 nn.LayerNorm([self.planes, 1, 1]),
@@ -47,7 +48,7 @@ class ContextBlock(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        if self.pool == 'att':
+        if self.pooling_method == 'att':
             kaiming_init(self.conv_mask, mode='fan_in')
             self.conv_mask.inited = True
 
@@ -58,7 +59,7 @@ class ContextBlock(nn.Module):
 
     def spatial_pool(self, x):
         batch, channel, height, width = x.size()
-        if self.pool == 'att':
+        if self.pooling_method == 'att':
             input_x = x
             # [N, C, H * W]
             input_x = input_x.view(batch, channel, height * width)
@@ -71,7 +72,7 @@ class ContextBlock(nn.Module):
             # [N, 1, H * W]
             context_mask = self.softmax(context_mask)
             # [N, 1, H * W, 1]
-            context_mask = context_mask.unsqueeze(3)
+            context_mask = context_mask.unsqueeze(-1)
             # [N, 1, C, 1]
             context = torch.matmul(input_x, context_mask)
             # [N, C, 1, 1]
@@ -86,12 +87,11 @@ class ContextBlock(nn.Module):
         # [N, C, 1, 1]
         context = self.spatial_pool(x)
 
+        out = x
         if self.channel_mul_conv is not None:
             # [N, C, 1, 1]
             channel_mul_term = torch.sigmoid(self.channel_mul_conv(context))
-            out = x * channel_mul_term
-        else:
-            out = x
+            out = out * channel_mul_term
         if self.channel_add_conv is not None:
             # [N, C, 1, 1]
             channel_add_term = self.channel_add_conv(context)
