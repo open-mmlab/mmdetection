@@ -46,7 +46,7 @@ python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
 ```shell
 python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    --out results.pkl --eval bbox mask
+    --out results.pkl --eval bbox segm
 ```
 
 3. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
@@ -54,7 +54,7 @@ python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
 ```shell
 ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --out results.pkl --eval bbox mask
+    8 --out results.pkl --eval bbox segm
 ```
 
 ### High-level APIs for testing images.
