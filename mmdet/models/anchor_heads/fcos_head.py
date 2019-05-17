@@ -22,6 +22,7 @@ class FCOSHead(nn.Module):
                  strides=(4, 8, 16, 32, 64),
                  regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 512),
                                  (512, INF)),
+                 conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)):
         super(FCOSHead, self).__init__()
 
@@ -32,6 +33,7 @@ class FCOSHead(nn.Module):
         self.stacked_convs = stacked_convs
         self.strides = strides
         self.regress_ranges = regress_ranges
+        self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
 
         self._init_layers()
@@ -48,6 +50,7 @@ class FCOSHead(nn.Module):
                     3,
                     stride=1,
                     padding=1,
+                    conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
             self.reg_convs.append(
@@ -57,6 +60,7 @@ class FCOSHead(nn.Module):
                     3,
                     stride=1,
                     padding=1,
+                    conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
         self.fcos_cls = nn.Conv2d(

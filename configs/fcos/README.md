@@ -22,4 +22,4 @@
 | X-101-64x4d-FPN | caffe   |2x | 9.7      | 0.892               | 7.0            | 42.8   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fcos/fcos_x101_64x4d_fpn_2x-a36c0872.pth) |
 
 **Notes:**
-- We use 4 GPUs with 4 images/GPU for R-50 and R-101 models, and 8 GPUs with 2 image/GPU for X-101 models.
+- To be consistent with the author's implementation, we use 4 GPUs with 4 images/GPU for R-50 and R-101 models, and 8 GPUs with 2 image/GPU for X-101 models.
