@@ -154,8 +154,12 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=0.0001,
-                 paramwise_options=dict(norm_decay_mult=0))
+optimizer = dict(
+    type='SGD',
+    lr=0.02,
+    momentum=0.9,
+    weight_decay=0.0001,
+    paramwise_options=dict(norm_decay_mult=0))
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
