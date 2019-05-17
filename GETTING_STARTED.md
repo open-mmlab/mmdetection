@@ -62,28 +62,23 @@ python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
 Here is an example of building the model and test given images.
 
 ```python
-import mmcv
-from mmcv.runner import load_checkpoint
-from mmdet.models import build_detector
-from mmdet.apis import inference_detector, show_result
+from mmdet.apis import init_detector, inference_detector, show_result
 
-cfg = mmcv.Config.fromfile('configs/faster_rcnn_r50_fpn_1x.py')
-cfg.model.pretrained = None
+config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
+checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
 
-# construct the model and load checkpoint
-model = build_detector(cfg.model, test_cfg=cfg.test_cfg)
-_ = load_checkpoint(model, 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth')
+# build the model from a config file and a checkpoint file
+model = init_detector(config_file, checkpoint_file)
 
-# test a single image
-img = mmcv.imread('test.jpg')
-result = inference_detector(model, img, cfg)
-show_result(img, result)
+# test a single image and show the results
+img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
+result = inference_detector(model, img)
+show_result(img, result, model.CLASSES)
 
-# test a list of images
+# test a list of images and write the results to image files
 imgs = ['test1.jpg', 'test2.jpg']
-for i, result in enumerate(inference_detector(model, imgs, cfg, device='cuda:0')):
-    print(i, imgs[i])
-    show_result(imgs[i], result)
+for i, result in enumerate(inference_detector(model, imgs, device='cuda:0')):
+    show_result(imgs[i], result, model.CLASSES, out_file='result_{}.jpg'.format(i))
 ```
 
 
