@@ -117,7 +117,7 @@ total_epochs = 12
 device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_r50_fpn_1x'
+work_dir = './work_dirs/fcos_r50_caffe_fpn_gn_1x_4gpu'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
