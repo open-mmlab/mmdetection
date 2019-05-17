@@ -92,6 +92,7 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 | SSD                | ✗        | ✗        | ✗        | ✓        |
 | RetinaNet          | ✓        | ✓        | ☐        | ✗        |
 | Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        |
+| FCOS               | ✓        | ✓        | ☐        | ✗        |
 
 Other features
 - [x] DCNv2

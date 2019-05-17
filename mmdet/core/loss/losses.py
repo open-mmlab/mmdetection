@@ -2,6 +2,7 @@
 import torch
 import torch.nn.functional as F
 
+from ..bbox import bbox_overlaps
 from ...ops import sigmoid_focal_loss
 
 
@@ -127,3 +128,16 @@ def _expand_binary_labels(labels, label_weights, label_channels):
     bin_label_weights = label_weights.view(-1, 1).expand(
         label_weights.size(0), label_channels)
     return bin_labels, bin_label_weights
+
+
+def iou_loss(pred_bboxes, target_bboxes, reduction='mean'):
+    ious = bbox_overlaps(pred_bboxes, target_bboxes, is_aligned=True)
+    loss = -ious.log()
+
+    reduction_enum = F._Reduction.get_enum(reduction)
+    if reduction_enum == 0:
+        return loss
+    elif reduction_enum == 1:
+        return loss.mean()
+    elif reduction_enum == 2:
+        return loss.sum()

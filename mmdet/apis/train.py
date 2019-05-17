@@ -39,9 +39,8 @@ def batch_processor(model, data, train_mode):
     losses = model(**data)
     loss, log_vars = parse_losses(losses)
 
-    outputs = dict(loss=loss,
-                   log_vars=log_vars,
-                   num_samples=len(data['img'].data))
+    outputs = dict(
+        loss=loss, log_vars=log_vars, num_samples=len(data['img'].data))
 
     return outputs
 
@@ -135,10 +134,11 @@ def build_optimizer(model, optimizer_cfg):
 def _dist_train(model, dataset, cfg, validate=False):
     # prepare data loaders
     data_loaders = [
-        build_dataloader(dataset,
-                         cfg.data.imgs_per_gpu,
-                         cfg.data.workers_per_gpu,
-                         dist=True)
+        build_dataloader(
+            dataset,
+            cfg.data.imgs_per_gpu,
+            cfg.data.workers_per_gpu,
+            dist=True)
     ]
     # put model on gpus
     model = MMDistributedDataParallel(model.cuda())
@@ -174,11 +174,12 @@ def _dist_train(model, dataset, cfg, validate=False):
 def _non_dist_train(model, dataset, cfg, validate=False):
     # prepare data loaders
     data_loaders = [
-        build_dataloader(dataset,
-                         cfg.data.imgs_per_gpu,
-                         cfg.data.workers_per_gpu,
-                         cfg.gpus,
-                         dist=False)
+        build_dataloader(
+            dataset,
+            cfg.data.imgs_per_gpu,
+            cfg.data.workers_per_gpu,
+            cfg.gpus,
+            dist=False)
     ]
     # put model on gpus
     model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
