@@ -248,7 +248,7 @@ class FCOSHead(nn.Module):
             cfg.score_thr,
             cfg.nms,
             cfg.max_per_img,
-            score_cofficient=mlvl_centerness)
+            score_factors=mlvl_centerness)
         return det_bboxes, det_labels
 
     def get_points(self, featmap_sizes, dtype, device):
