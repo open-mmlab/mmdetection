@@ -192,7 +192,6 @@ class HRModule(nn.Module):
             x[i] = self.branches[i](x[i])
 
         x_fuse = []
-
         for i in range(len(self.fuse_layers)):
             y = 0
             for j in range(self.num_branches):
@@ -201,7 +200,6 @@ class HRModule(nn.Module):
                 else:
                     y += self.fuse_layers[i][j](x[j])
             x_fuse.append(self.relu(y))
-
         return x_fuse
 
 
@@ -353,7 +351,9 @@ class HRNet(nn.Module):
                             build_norm_layer(
                                 self.norm_cfg,
                                 num_channels_cur_layer[i],
-                            )[1]))
+                            )[1],
+                            nn.ReLU(inplace=True)
+                        ))
                 else:
                     transition_layers.append(None)
             else:
@@ -377,6 +377,7 @@ class HRNet(nn.Module):
                                 self.norm_cfg,
                                 out_channels
                             )[1],
+                            nn.ReLU(inplace=True)
                         ))
                 transition_layers.append(nn.Sequential(*conv3x3s))
 
