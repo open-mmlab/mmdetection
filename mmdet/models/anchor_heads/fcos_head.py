@@ -320,7 +320,7 @@ class FCOSHead(nn.Module):
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
             gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
-        # TODO: figure out why these two different
+        # TODO: figure out why these two are different
         # areas = areas[None].expand(num_points, num_gts)
         areas = areas[None].repeat(num_points, 1)
         regress_ranges = regress_ranges[:, None, :].expand(
@@ -339,13 +339,14 @@ class FCOSHead(nn.Module):
         # condition1: inside a gt bbox
         inside_gt_bbox_mask = bbox_targets.min(-1)[0] > 0
 
-        # condition2: regress limited to the regress range
+        # condition2: limit the regression range for each location
         max_regress_distance = bbox_targets.max(-1)[0]
         inside_regress_range = (
             max_regress_distance >= regress_ranges[..., 0]) & (
                 max_regress_distance <= regress_ranges[..., 1])
 
-        # condition3: if one center inside multi gts, choose smallest area gt
+        # if there are still more than one objects for a location,
+        # we choose the one with minimal area
         areas[inside_gt_bbox_mask == 0] = INF
         areas[inside_regress_range == 0] = INF
         min_area, min_area_inds = areas.min(dim=1)
