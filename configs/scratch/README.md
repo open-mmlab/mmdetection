@@ -16,4 +16,4 @@
 | Model        | Backbone  | Style   | Lr schd | box AP | mask AP | Download |
 |:------------:|:---------:|:-------:|:-------:|:------:|:-------:|:--------:|
 | Faster R-CNN | R-50-FPN  | pytorch | 6x      |        |         | [model]() |
-| Mask R-CNN   | R-50-FPN  | pytorch | 6x      | 40.6   | 36.9    | [model]() |
+| Mask R-CNN   | R-50-FPN  | pytorch | 6x      | 41.0   | 37.4    | [model]() |

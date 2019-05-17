@@ -10,6 +10,7 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=-1,
         style='pytorch',
+        zero_init_residual=False,
         norm_cfg=norm_cfg),
     neck=dict(
         type='FPN',
