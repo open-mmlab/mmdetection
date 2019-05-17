@@ -1,7 +1,7 @@
 # model settings
 model = dict(
     type='MaskRCNN',
-    pretrained='hrnetv2_pretrained/hrnetv2_w32_imagenet_pretrained.pth',
+    pretrained='open-mmlab://msra/hrnetv2_w32',
     backbone=dict(
         type='HRNet',
         extra=dict(
