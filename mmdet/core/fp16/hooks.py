@@ -1,36 +1,10 @@
+import copy
 import torch
 import torch.nn as nn
-from mmcv.runner import Hook, OptimizerHook
+from mmcv.runner import OptimizerHook
 
 from .utils import cast_tensor_type
 from ..utils.dist_utils import allreduce_grads
-
-
-class Fp16PrepareHook(Hook):
-    """FP16 preparation hook.
-
-    Args:
-        optimizer_cfg (dict): Original optimizer config.
-    """
-
-    def __init__(self, optimizer_cfg):
-        self.optimizer_cfg = optimizer_cfg
-
-    def before_run(self, runner):
-        model = runner.model.module
-        # keep a copy of fp32 weights
-        param_copy = []
-        for param in model.parameters():
-            copied = param.data.clone()
-            copied.requires_grad = param.requires_grad
-            param_copy.append(copied)
-        # convert model to fp16
-        wrap_fp16_model(model)
-        # use the fp32 weights to build the optimizer
-        optimizer_cfg = self.optimizer_cfg.copy()
-        optimizer_type = optimizer_cfg.pop('type')
-        optimizer_cls = getattr(torch.optim, optimizer_type)
-        runner.optimizer = optimizer_cls(param_copy, **optimizer_cfg)
 
 
 class Fp16OptimizerHook(OptimizerHook):
@@ -61,12 +35,19 @@ class Fp16OptimizerHook(OptimizerHook):
         self.loss_scale = loss_scale
         self.distributed = distributed
 
+    def before_run(self, runner):
+        # keep a copy of fp32 weights
+        runner.optimizer.param_groups = copy.deepcopy(
+            runner.optimizer.param_groups)
+        # convert model to fp16
+        wrap_fp16_model(runner.model)
+
     def copy_grads_to_fp32(self, fp16_net, fp32_weights):
         """Copy gradients from fp16 model to fp32 weight copy."""
         for fp32_param, fp16_param in zip(fp32_weights, fp16_net.parameters()):
             if fp16_param.grad is not None:
                 if fp32_param.grad is None:
-                    fp32_param.grad = fp32_param.data.new(*fp32_param.size())
+                    fp32_param.grad = fp32_param.data.new(fp32_param.size())
                 fp32_param.grad.copy_(fp16_param.grad)
 
     def copy_params_to_fp16(self, fp16_net, fp32_weights):
@@ -82,7 +63,9 @@ class Fp16OptimizerHook(OptimizerHook):
         scaled_loss = runner.outputs['loss'] * self.loss_scale
         scaled_loss.backward()
         # copy fp16 grads in the model to fp32 params in the optimizer
-        fp32_weights = runner.optimizer.param_groups[0]['params']
+        fp32_weights = []
+        for param_group in runner.optimizer.param_groups:
+            fp32_weights += param_group['params']
         self.copy_grads_to_fp32(runner.model, fp32_weights)
         # allreduce grads
         if self.distributed:

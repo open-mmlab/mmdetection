@@ -3,8 +3,8 @@ import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
 from mmdet.core import auto_fp16
-from ..utils import ConvModule
 from ..registry import NECKS
+from ..utils import ConvModule
 
 
 @NECKS.register_module
@@ -18,8 +18,9 @@ class FPN(nn.Module):
                  end_level=-1,
                  add_extra_convs=False,
                  extra_convs_on_inputs=True,
+                 relu_before_extra_convs=False,
                  conv_cfg=None,
-                 normalize=None,
+                 norm_cfg=None,
                  activation=None):
         super(FPN, self).__init__()
         assert isinstance(in_channels, list)
@@ -28,7 +29,7 @@ class FPN(nn.Module):
         self.num_ins = len(in_channels)
         self.num_outs = num_outs
         self.activation = activation
-        self.with_bias = normalize is None
+        self.relu_before_extra_convs = relu_before_extra_convs
         self.fp16_enabled = False
 
         if end_level == -1:
@@ -53,8 +54,7 @@ class FPN(nn.Module):
                 out_channels,
                 1,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
-                bias=self.with_bias,
+                norm_cfg=norm_cfg,
                 activation=self.activation,
                 inplace=False)
             fpn_conv = ConvModule(
@@ -63,8 +63,7 @@ class FPN(nn.Module):
                 3,
                 padding=1,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
-                bias=self.with_bias,
+                norm_cfg=norm_cfg,
                 activation=self.activation,
                 inplace=False)
 
@@ -85,8 +84,8 @@ class FPN(nn.Module):
                     3,
                     stride=2,
                     padding=1,
-                    normalize=normalize,
-                    bias=self.with_bias,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
                     activation=self.activation,
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)
@@ -133,6 +132,8 @@ class FPN(nn.Module):
                 else:
                     outs.append(self.fpn_convs[used_backbone_levels](outs[-1]))
                 for i in range(used_backbone_levels + 1, self.num_outs):
-                    # BUG: we should add relu before each extra conv
-                    outs.append(self.fpn_convs[i](outs[-1]))
+                    if self.relu_before_extra_convs:
+                        outs.append(self.fpn_convs[i](F.relu(outs[-1])))
+                    else:
+                        outs.append(self.fpn_convs[i](outs[-1]))
         return tuple(outs)

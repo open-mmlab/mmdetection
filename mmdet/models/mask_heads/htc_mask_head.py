@@ -13,8 +13,7 @@ class HTCMaskHead(FCNMaskHead):
             self.conv_out_channels,
             1,
             conv_cfg=self.conv_cfg,
-            normalize=self.normalize,
-            bias=self.with_bias)
+            norm_cfg=self.norm_cfg)
 
     def init_weights(self):
         super(HTCMaskHead, self).init_weights()

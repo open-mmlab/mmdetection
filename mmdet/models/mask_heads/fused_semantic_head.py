@@ -32,7 +32,7 @@ class FusedSemanticHead(nn.Module):
                  ignore_label=255,
                  loss_weight=0.2,
                  conv_cfg=None,
-                 normalize=None):
+                 norm_cfg=None):
         super(FusedSemanticHead, self).__init__()
         self.num_ins = num_ins
         self.fusion_level = fusion_level
@@ -43,8 +43,7 @@ class FusedSemanticHead(nn.Module):
         self.ignore_label = ignore_label
         self.loss_weight = loss_weight
         self.conv_cfg = conv_cfg
-        self.normalize = normalize
-        self.with_bias = normalize is None
+        self.norm_cfg = norm_cfg
         self.fp16_enabled = False
 
         self.lateral_convs = nn.ModuleList()
@@ -55,8 +54,7 @@ class FusedSemanticHead(nn.Module):
                     self.in_channels,
                     1,
                     conv_cfg=self.conv_cfg,
-                    normalize=self.normalize,
-                    bias=self.with_bias,
+                    norm_cfg=self.norm_cfg,
                     inplace=False))
 
         self.convs = nn.ModuleList()
@@ -69,15 +67,13 @@ class FusedSemanticHead(nn.Module):
                     3,
                     padding=1,
                     conv_cfg=self.conv_cfg,
-                    normalize=self.normalize,
-                    bias=self.with_bias))
+                    norm_cfg=self.norm_cfg))
         self.conv_embedding = ConvModule(
             conv_out_channels,
             conv_out_channels,
             1,
             conv_cfg=self.conv_cfg,
-            normalize=self.normalize,
-            bias=self.with_bias)
+            norm_cfg=self.norm_cfg)
         self.conv_logits = nn.Conv2d(conv_out_channels, self.num_classes, 1)
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_label)

@@ -1,4 +1,5 @@
 # model settings
+norm_cfg = dict(type='BN', requires_grad=False)
 model = dict(
     type='FastRCNN',
     pretrained='open-mmlab://resnet50_caffe',
@@ -10,7 +11,7 @@ model = dict(
         dilations=(1, 1, 1),
         out_indices=(2, ),
         frozen_stages=1,
-        normalize=dict(type='BN', frozen=True),
+        norm_cfg=norm_cfg,
         norm_eval=True,
         style='caffe'),
     shared_head=dict(
@@ -20,7 +21,7 @@ model = dict(
         stride=2,
         dilation=1,
         style='caffe',
-        normalize=dict(type='BN', frozen=True),
+        norm_cfg=norm_cfg,
         norm_eval=True),
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
@@ -82,8 +83,8 @@ data = dict(
         img_prefix=data_root + 'val2017/',
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
-        proposal_file=data_root + 'proposals/rpn_r50_c4_1x_val2017.pkl',
         size_divisor=32,
+        proposal_file=data_root + 'proposals/rpn_r50_c4_1x_val2017.pkl',
         flip_ratio=0,
         with_mask=False,
         with_crowd=True,
@@ -123,7 +124,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fast_rcnn_r50_c4_1x'
+work_dir = './work_dirs/fast_rcnn_r50_caffe_c4_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
