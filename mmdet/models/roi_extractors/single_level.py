@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 from mmdet import ops
-from mmdet.core import auto_fp16, force_fp32
+from mmdet.core import force_fp32
 from ..registry import ROI_EXTRACTORS
 
 
