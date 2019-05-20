@@ -5,6 +5,9 @@ from ..utils import unmap, multi_apply
 
 
 def calc_region(bbox, ratio, featmap_size=None):
+    """Calculate a region inside each bounding-box w.r.t. to a ratio.
+    region_edge = bbox_edge * ratio
+    """
     x1 = torch.round((1 - ratio) * bbox[0] + ratio * bbox[2]).long()
     y1 = torch.round((1 - ratio) * bbox[1] + ratio * bbox[3]).long()
     x2 = torch.round(ratio * bbox[0] + (1 - ratio) * bbox[2]).long()
@@ -23,6 +26,20 @@ def ga_loc_target(gt_bboxes_list,
                   anchor_strides,
                   center_ratio=0.2,
                   ignore_ratio=0.5):
+    """Compute location targets for guided anchoring.
+    Each feature map is divided into positive, negative and ignore regions.
+
+    Args:
+        gt_bboxes_list (list[Tensor]): Gt bboxes of each image.
+        featmap_sizes (list[tuple]): Multi level sizes of each feature maps.
+        anchor_scale (int): Anchor scale.
+        anchor_strides ([list[int]]): Multi level anchor strides.
+        center_ratio (float): Ratio of center region.
+        ignore_ratio (float): Ratio of ignore region.
+
+    Returns:
+        tuple
+    """
     img_per_gpu = len(gt_bboxes_list)
     num_lvls = len(featmap_sizes)
     r1 = (1 - center_ratio) / 2
@@ -89,7 +106,7 @@ def ga_loc_target(gt_bboxes_list,
 
 def ga_shape_target(approx_list,
                     valid_flag_list,
-                    base_approx_list,
+                    square_list,
                     gt_bboxes_list,
                     img_metas,
                     approxs_per_octave,
@@ -97,21 +114,35 @@ def ga_shape_target(approx_list,
                     gt_bboxes_ignore_list=None,
                     sampling=True,
                     unmap_outputs=True):
+    """Compute guided anchoring targets.
 
+    Args:
+        approx_list (list[list]): Multi level approxs of each image.
+        valid_flag_list (list[list]): Multi level valid flags of each image.
+        square_list (list[list]): Multi level squares of each image.
+        gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
+        img_metas (list[dict]): Meta info of each image.
+        approxs_per_octave (int): number of approxs per octave
+        cfg (dict): RPN train configs.
+        gt_bboxes_ignore_list (list[Tensor]): ignore list of gt bboxes.
+        sampling (bool): sampling or not.
+        unmap_outputs (bool): unmap outputs or not.
+
+    Returns:
+        tuple
+    """
     num_imgs = len(img_metas)
     assert len(approx_list) == len(valid_flag_list) == len(
-        base_approx_list) == num_imgs
+        square_list) == num_imgs
     # anchor number of multi levels
-    num_level_base_approxs = [
-        approxs.size(0) for approxs in base_approx_list[0]
-    ]
+    num_level_squares = [squares.size(0) for squares in square_list[0]]
     # concat all level anchors and flags to a single tensor
     for i in range(num_imgs):
         if isinstance(valid_flag_list, list):
             assert len(approx_list[i]) == len(valid_flag_list[i])
             valid_flag_list[i] = torch.cat(valid_flag_list[i])
         approx_list[i] = torch.cat(approx_list[i])
-        base_approx_list[i] = torch.cat(base_approx_list[i])
+        square_list[i] = torch.cat(square_list[i])
 
     # compute targets for each image
     if gt_bboxes_ignore_list is None:
@@ -121,7 +152,7 @@ def ga_shape_target(approx_list,
          ga_shape_target_single,
          approx_list,
          valid_flag_list,
-         base_approx_list,
+         square_list,
          gt_bboxes_list,
          gt_bboxes_ignore_list,
          img_metas,
@@ -136,11 +167,9 @@ def ga_shape_target(approx_list,
     num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
     num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
     # split targets to a list w.r.t. multiple levels
-    bbox_anchors_list = images_to_levels(all_bbox_anchors,
-                                         num_level_base_approxs)
-    bbox_gts_list = images_to_levels(all_bbox_gts, num_level_base_approxs)
-    bbox_weights_list = images_to_levels(all_bbox_weights,
-                                         num_level_base_approxs)
+    bbox_anchors_list = images_to_levels(all_bbox_anchors, num_level_squares)
+    bbox_gts_list = images_to_levels(all_bbox_gts, num_level_squares)
+    bbox_weights_list = images_to_levels(all_bbox_weights, num_level_squares)
     return (bbox_anchors_list, bbox_gts_list, bbox_weights_list,
             all_inside_flags, num_total_pos, num_total_neg)
 
@@ -162,7 +191,7 @@ def images_to_levels(target, num_level_anchors):
 
 def ga_shape_target_single(flat_approxs,
                            valid_flags,
-                           flat_base_approxs,
+                           flat_squares,
                            gt_bboxes,
                            gt_bboxes_ignore,
                            img_meta,
@@ -170,6 +199,22 @@ def ga_shape_target_single(flat_approxs,
                            cfg,
                            sampling=True,
                            unmap_outputs=True):
+    """Compute guided anchoring targets.
+
+    Args:
+        flat_approxs (Tensor): flat approxs of a single image.
+        valid_flags (Tensor): valid flags of a single image.
+        flat_squares (Tensor): flat squares of a single image.
+        gt_bboxes (Tensor): Ground truth bboxes of a single image.
+        img_meta (dict): Meta info of a single image.
+        approxs_per_octave (int): number of approxs per octave
+        cfg (dict): RPN train configs.
+        sampling (bool): sampling or not.
+        unmap_outputs (bool): unmap outputs or not.
+
+    Returns:
+        tuple
+    """
     # split valid_flags by different scales and ratios
     inside_flags_list = []
     for i in range(approxs_per_octave):
@@ -187,28 +232,26 @@ def ga_shape_target_single(flat_approxs,
     expand_inside_flags = inside_flags[:, None].expand(
         -1, approxs_per_octave).reshape(-1)
     approxs = flat_approxs[expand_inside_flags, :]
-    base_approxs = flat_base_approxs[inside_flags, :]
+    squares = flat_squares[inside_flags, :]
 
     if sampling:
         bbox_assigner = build_assigner(cfg.ga_assigner)
         bbox_sampler = build_sampler(cfg.ga_sampler)
-        assign_result = bbox_assigner.assign(approxs, base_approxs,
-                                             approxs_per_octave, gt_bboxes,
-                                             gt_bboxes_ignore)
-        sampling_result = bbox_sampler.sample(assign_result, base_approxs,
+        assign_result = bbox_assigner.assign(
+            approxs, squares, approxs_per_octave, gt_bboxes, gt_bboxes_ignore)
+        sampling_result = bbox_sampler.sample(assign_result, squares,
                                               gt_bboxes)
     else:
         bbox_assigner = build_assigner(cfg.ga_assigner)
-        assign_result = bbox_assigner.assign(approxs, base_approxs,
-                                             approxs_per_octave, gt_bboxes,
-                                             gt_bboxes_ignore)
+        assign_result = bbox_assigner.assign(
+            approxs, squares, approxs_per_octave, gt_bboxes, gt_bboxes_ignore)
         bbox_sampler = PseudoSampler()
-        sampling_result = bbox_sampler.sample(assign_result, base_approxs,
+        sampling_result = bbox_sampler.sample(assign_result, squares,
                                               gt_bboxes)
 
-    bbox_anchors = torch.zeros_like(base_approxs)
-    bbox_gts = torch.zeros_like(base_approxs)
-    bbox_weights = torch.zeros_like(base_approxs)
+    bbox_anchors = torch.zeros_like(squares)
+    bbox_gts = torch.zeros_like(squares)
+    bbox_weights = torch.zeros_like(squares)
 
     pos_inds = sampling_result.pos_inds
     neg_inds = sampling_result.neg_inds
@@ -219,7 +262,7 @@ def ga_shape_target_single(flat_approxs,
 
     # map up to original set of anchors
     if unmap_outputs:
-        num_total_anchors = flat_base_approxs.size(0)
+        num_total_anchors = flat_squares.size(0)
         bbox_anchors = unmap(bbox_anchors, num_total_anchors, inside_flags)
         bbox_gts = unmap(bbox_gts, num_total_anchors, inside_flags)
         bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
