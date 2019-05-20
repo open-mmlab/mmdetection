@@ -2,6 +2,7 @@ from .backbones import *  # noqa: F401,F403
 from .necks import *  # noqa: F401,F403
 from .roi_extractors import *  # noqa: F401,F403
 from .anchor_heads import *  # noqa: F401,F403
+from .anchorfree_heads import *
 from .shared_heads import *  # noqa: F401,F403
 from .bbox_heads import *  # noqa: F401,F403
 from .mask_heads import *  # noqa: F401,F403
