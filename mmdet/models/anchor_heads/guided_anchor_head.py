@@ -218,17 +218,25 @@ class GuidedAnchorHead(AnchorHead):
             valid_flag_list.append(multi_level_flags)
         return approxs_list, valid_flag_list
 
-    def get_anchors(self, featmap_sizes, shape_preds, img_metas):
+    def get_anchors(self,
+                    featmap_sizes,
+                    shape_preds,
+                    loc_preds,
+                    img_metas,
+                    use_loc_filter=False):
         """Get squares according to feature map sizes and guided
         anchors.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            shape_preds (list[tensor]): Multi-level shape predictions
+            shape_preds (list[tensor]): Multi-level shape predictions.
+            loc_preds (list[tensor]): Multi-level location predictions.
             img_metas (list[dict]): Image meta info.
+            use_loc_filter (bool): Use loc filter or not.
 
         Returns:
-            tuple: square approxs of each image, guided anchors of each image
+            tuple: square approxs of each image, guided anchors of each image,
+                loc masks of each image
         """
         num_imgs = len(img_metas)
         num_levels = len(featmap_sizes)
@@ -244,24 +252,62 @@ class GuidedAnchorHead(AnchorHead):
 
         # for each image, we compute multi level guided anchors
         guided_anchors_list = []
+        loc_mask_list = []
         for img_id, img_meta in enumerate(img_metas):
             multi_level_guided_anchors = []
+            multi_level_loc_mask = []
             for i in range(num_levels):
-                # calculate guided anchors
-                anchor_deltas = shape_preds[i][img_id].permute(
-                    1, 2, 0).contiguous().view(-1, 2).detach()
                 squares = squares_list[img_id][i]
-                bbox_deltas = anchor_deltas.new_full(squares.size(), 0)
-                bbox_deltas[:, 2:] = anchor_deltas
-                guided_anchors = delta2bbox(
+                shape_pred = shape_preds[i][img_id]
+                loc_pred = loc_preds[i][img_id]
+                guided_anchors, loc_mask = self.get_guided_anchors_single(
                     squares,
-                    bbox_deltas,
-                    self.anchoring_means,
-                    self.anchoring_stds,
-                    wh_ratio_clip=1e-6)
+                    shape_pred,
+                    loc_pred,
+                    use_loc_filter=use_loc_filter)
                 multi_level_guided_anchors.append(guided_anchors)
+                multi_level_loc_mask.append(loc_mask)
             guided_anchors_list.append(multi_level_guided_anchors)
-        return squares_list, guided_anchors_list
+            loc_mask_list.append(multi_level_loc_mask)
+        return squares_list, guided_anchors_list, loc_mask_list
+
+    def get_guided_anchors_single(self,
+                                  squares,
+                                  shape_pred,
+                                  loc_pred,
+                                  use_loc_filter=False):
+        """Get guided anchors and loc masks for a single level.
+
+        Args:
+            square (tensor): Squares of a single level.
+            shape_pred (tensor): Shape predections of a single level.
+            loc_pred (tensor): Loc predections of a single level.
+            use_loc_filter (list[tensor]): Use loc filter or not.
+
+        Returns:
+            tuple: guided anchors, location masks
+        """
+        # calculate location filtering mask
+        loc_pred = loc_pred.sigmoid().detach()
+        if use_loc_filter:
+            loc_mask = loc_pred >= self.loc_filter_thr
+        else:
+            loc_mask = loc_pred >= 0.0
+        mask = loc_mask.permute(1, 2, 0).expand(-1, -1, self.num_anchors)
+        mask = mask.contiguous().view(-1)
+        # calculate guided anchors
+        squares = squares[mask]
+        anchor_deltas = shape_pred.permute(1, 2, 0).contiguous().view(
+            -1, 2).detach()[mask]
+        bbox_deltas = anchor_deltas.new_full(squares.size(), 0)
+        bbox_deltas[:, 2:] = anchor_deltas
+        guided_anchors = delta2bbox(
+            squares,
+            bbox_deltas,
+            self.anchoring_means,
+            self.anchoring_stds,
+            wh_ratio_clip=1e-6)
+        return guided_anchors, mask
 
     def loss_shape_single(self, shape_pred, bbox_anchors, bbox_gts,
                           anchor_weights, anchor_total_num):
@@ -331,9 +377,8 @@ class GuidedAnchorHead(AnchorHead):
             ignore_ratio=cfg.ignore_ratio)
         approxs_list, valid_flag_list = self.get_sampled_approxs(
             featmap_sizes, img_metas)
-        squares_list, guided_anchors_list = self.get_anchors(
-            featmap_sizes, shape_preds, img_metas)
-
+        squares_list, guided_anchors_list, _ = self.get_anchors(
+            featmap_sizes, shape_preds, loc_preds, img_metas)
         sampling = False if not hasattr(cfg, 'ga_sampler') else True
         shape_targets = ga_shape_target(
             approxs_list,
@@ -412,11 +457,13 @@ class GuidedAnchorHead(AnchorHead):
         assert len(cls_scores) == len(bbox_preds) == len(shape_preds) == len(
             loc_preds)
         num_levels = len(cls_scores)
-        mlvl_anchors = [
-            self.square_generators[i].grid_anchors(cls_scores[i].size()[-2:],
-                                                   self.anchor_strides[i])
-            for i in range(num_levels)
-        ]
+        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        _, guided_anchors, loc_masks = self.get_anchors(
+            featmap_sizes,
+            shape_preds,
+            loc_preds,
+            img_metas,
+            use_loc_filter=True)
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -425,26 +472,25 @@ class GuidedAnchorHead(AnchorHead):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
-            shape_pred_list = [
-                shape_preds[i][img_id].detach() for i in range(num_levels)
+            guided_anchor_list = [
+                guided_anchors[img_id][i].detach() for i in range(num_levels)
             ]
-            loc_pred_list = [
-                loc_preds[i][img_id].detach() for i in range(num_levels)
+            loc_mask_list = [
+                loc_masks[img_id][i].detach() for i in range(num_levels)
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             proposals = self.get_bboxes_single(
-                cls_score_list, bbox_pred_list, shape_pred_list, loc_pred_list,
-                mlvl_anchors, img_shape, scale_factor, cfg, rescale)
+                cls_score_list, bbox_pred_list, guided_anchor_list,
+                loc_mask_list, img_shape, scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
     def get_bboxes_single(self,
                           cls_scores,
                           bbox_preds,
-                          shape_preds,
-                          loc_preds,
                           mlvl_anchors,
+                          mlvl_masks,
                           img_shape,
                           scale_factor,
                           cfg,
@@ -452,23 +498,11 @@ class GuidedAnchorHead(AnchorHead):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
-        for cls_score, bbox_pred, shape_pred, loc_pred, anchors in zip(
-                cls_scores, bbox_preds, shape_preds, loc_preds, mlvl_anchors):
-            assert cls_score.size()[-2:] == bbox_pred.size(
-            )[-2:] == shape_pred.size()[-2:] == loc_pred.size()[-2:]
-            loc_pred = loc_pred.sigmoid()
-            if not loc_pred.requires_grad:
-                loc_mask = loc_pred >= self.loc_filter_thr
-            else:
-                loc_mask = loc_pred >= 0.0
-            mask = loc_mask.permute(1, 2, 0).expand(-1, -1, self.num_anchors)
-            mask = mask.contiguous().view(-1)
-            mask_inds = mask.nonzero()
-            if mask_inds.numel() == 0:
+        for cls_score, bbox_pred, anchors, mask in zip(
+                cls_scores, bbox_preds, mlvl_anchors, mlvl_masks):
+            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            if mask.sum() == 0:
                 continue
-            else:
-                mask_inds = mask_inds.squeeze()
-            shape_pred = shape_pred.permute(1, 2, 0).reshape(-1, 2)
             cls_score = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels)
             if self.use_sigmoid_cls:
@@ -476,13 +510,10 @@ class GuidedAnchorHead(AnchorHead):
             else:
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            anchors = anchors[mask_inds, :]
-            shape_pred = shape_pred[mask_inds, :]
-            scores = scores[mask_inds, :]
-            bbox_pred = bbox_pred[mask_inds, :]
+            scores = scores[mask, :]
+            bbox_pred = bbox_pred[mask, :]
             if scores.dim() == 0:
                 anchors = anchors.unsqueeze(0)
-                shape_pred = shape_pred.unsqueeze(0)
                 scores = scores.unsqueeze(0)
                 bbox_pred = bbox_pred.unsqueeze(0)
             nms_pre = cfg.get('nms_pre', -1)
@@ -495,13 +526,7 @@ class GuidedAnchorHead(AnchorHead):
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-                shape_pred = shape_pred[topk_inds, :]
-            anchor_deltas = shape_pred.new_full((shape_pred.size(0), 4), 0)
-            anchor_deltas[:, 2:] = shape_pred
-            guided_anchors = delta2bbox(anchors, anchor_deltas,
-                                        self.anchoring_means,
-                                        self.anchoring_stds)
-            bboxes = delta2bbox(guided_anchors, bbox_pred, self.target_means,
+            bboxes = delta2bbox(anchors, bbox_pred, self.target_means,
                                 self.target_stds, img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)

@@ -60,9 +60,8 @@ class GARPNHead(GuidedAnchorHead):
     def get_bboxes_single(self,
                           cls_scores,
                           bbox_preds,
-                          shape_preds,
-                          loc_preds,
                           mlvl_anchors,
+                          mlvl_masks,
                           img_shape,
                           scale_factor,
                           cfg,
@@ -71,23 +70,11 @@ class GARPNHead(GuidedAnchorHead):
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
-            shape_pred = shape_preds[idx]
-            loc_pred = loc_preds[idx].sigmoid()
-            assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size(
-            )[-2:] == shape_pred.size()[-2:] == loc_pred.size()[-2:]
-            if not loc_pred.requires_grad:
-                loc_mask = loc_pred[0] >= self.loc_filter_thr
-            else:
-                loc_mask = loc_pred[0] >= 0.0
-            mask = loc_mask[..., None].expand(
-                loc_mask.size(0), loc_mask.size(1), self.num_anchors)
-            mask = mask.contiguous().view(-1)
-            mask_inds = mask.nonzero()
-            if mask_inds.numel() == 0:
+            anchors = mlvl_anchors[idx]
+            mask = mlvl_masks[idx]
+            assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
+            if mask.sum() == 0:
                 continue
-            else:
-                mask_inds = mask_inds.squeeze()
-            anchors = mlvl_anchors[idx][mask_inds]
             rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
             if self.use_sigmoid_cls:
                 rpn_cls_score = rpn_cls_score.reshape(-1)
@@ -95,30 +82,20 @@ class GARPNHead(GuidedAnchorHead):
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
                 scores = rpn_cls_score.softmax(dim=1)[:, 1]
-            scores = scores[mask_inds]
-            rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(
-                -1, 4)[mask_inds, :]
-            shape_pred = shape_pred.permute(1, 2, 0).reshape(-1,
-                                                             2)[mask_inds, :]
+            scores = scores[mask]
+            rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1,
+                                                                   4)[mask, :]
             if scores.dim() == 0:
                 rpn_bbox_pred = rpn_bbox_pred.unsqueeze(0)
                 anchors = anchors.unsqueeze(0)
                 scores = scores.unsqueeze(0)
-                shape_pred = shape_pred.unsqueeze(0)
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
                 _, topk_inds = scores.topk(cfg.nms_pre)
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
                 anchors = anchors[topk_inds, :]
                 scores = scores[topk_inds]
-                shape_pred = shape_pred[topk_inds, :]
-            anchor_deltas = shape_pred.new_full((shape_pred.size(0), 4), 0)
-            anchor_deltas[:, 2:] = shape_pred
-            guided_anchors = delta2bbox(anchors, anchor_deltas,
-                                        self.anchoring_means,
-                                        self.anchoring_stds)
-            proposals = delta2bbox(guided_anchors, rpn_bbox_pred,
-                                   self.target_means, self.target_stds,
-                                   img_shape)
+            proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
+                                   self.target_stds, img_shape)
             if cfg.min_bbox_size > 0:
                 w = proposals[:, 2] - proposals[:, 0] + 1
                 h = proposals[:, 3] - proposals[:, 1] + 1
