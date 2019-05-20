@@ -12,10 +12,7 @@ from .ssd_export_helpers import (get_proposals, PriorBox,
 from ..registry import HEADS
 
 
-<<<<<<< 4c0f93dbec858592c2b72607a41e49fbe1d7f3dc
 # TODO: add loss evaluator for SSD
-=======
->>>>>>> Fix formatting
 @HEADS.register_module
 class SSDHead(AnchorHead):
 
