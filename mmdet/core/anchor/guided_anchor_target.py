@@ -234,20 +234,14 @@ def ga_shape_target_single(flat_approxs,
     approxs = flat_approxs[expand_inside_flags, :]
     squares = flat_squares[inside_flags, :]
 
+    bbox_assigner = build_assigner(cfg.ga_assigner)
+    assign_result = bbox_assigner.assign(approxs, squares, approxs_per_octave,
+                                         gt_bboxes, gt_bboxes_ignore)
     if sampling:
-        bbox_assigner = build_assigner(cfg.ga_assigner)
         bbox_sampler = build_sampler(cfg.ga_sampler)
-        assign_result = bbox_assigner.assign(
-            approxs, squares, approxs_per_octave, gt_bboxes, gt_bboxes_ignore)
-        sampling_result = bbox_sampler.sample(assign_result, squares,
-                                              gt_bboxes)
     else:
-        bbox_assigner = build_assigner(cfg.ga_assigner)
-        assign_result = bbox_assigner.assign(
-            approxs, squares, approxs_per_octave, gt_bboxes, gt_bboxes_ignore)
         bbox_sampler = PseudoSampler()
-        sampling_result = bbox_sampler.sample(assign_result, squares,
-                                              gt_bboxes)
+    sampling_result = bbox_sampler.sample(assign_result, squares, gt_bboxes)
 
     bbox_anchors = torch.zeros_like(squares)
     bbox_gts = torch.zeros_like(squares)
