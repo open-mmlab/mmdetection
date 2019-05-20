@@ -11,24 +11,26 @@ from ..registry import HEADS
 
 @HEADS.register_module
 class GARPNHead(GuidedAnchorHead):
+    """Guided-Anchor-based RPN head.
+    """
 
     def __init__(self, in_channels, **kwargs):
-        GuidedAnchorHead.__init__(self, 2, in_channels, **kwargs)
+        super(GARPNHead, self).__init__(2, in_channels, **kwargs)
 
     def _init_layers(self):
         self.rpn_conv = nn.Conv2d(
             self.in_channels, self.feat_channels, 3, padding=1)
-        GuidedAnchorHead._init_layers(self)
+        super(GARPNHead, self)._init_layers()
 
     def init_weights(self):
         normal_init(self.rpn_conv, std=0.01)
-        GuidedAnchorHead.init_weights(self)
+        super(GARPNHead, self).init_weights()
 
     def forward_single(self, x):
         x = self.rpn_conv(x)
         x = F.relu(x, inplace=True)
         (cls_score, bbox_pred, shape_pred,
-         loc_pred) = GuidedAnchorHead.forward_single(self, x)
+         loc_pred) = super(GARPNHead, self).forward_single(x)
         return cls_score, bbox_pred, shape_pred, loc_pred
 
     def loss(self,
@@ -40,8 +42,7 @@ class GARPNHead(GuidedAnchorHead):
              img_metas,
              cfg,
              gt_bboxes_ignore=None):
-        losses = GuidedAnchorHead.loss(
-            self,
+        losses = super(GARPNHead, self).loss(
             cls_scores,
             bbox_preds,
             shape_preds,

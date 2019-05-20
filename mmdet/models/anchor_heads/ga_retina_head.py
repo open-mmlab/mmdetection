@@ -9,6 +9,8 @@ from mmdet.ops import MaskedConv2d
 
 @HEADS.register_module
 class GARetinaHead(GuidedAnchorHead):
+    """Guided-Anchor-based RetinaNet head.
+    """
 
     def __init__(self,
                  num_classes,
@@ -20,8 +22,7 @@ class GARetinaHead(GuidedAnchorHead):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        GuidedAnchorHead.__init__(
-            self,
+        super(GARetinaHead, self).__init__(
             num_classes,
             in_channels,
             use_sigmoid_cls=True,
@@ -105,9 +106,8 @@ class GARetinaHead(GuidedAnchorHead):
 
         if not self.training:
             mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr
-            cls_score = self.retina_cls(cls_feat, mask)
-            bbox_pred = self.retina_reg(reg_feat, mask)
         else:
-            cls_score = self.retina_cls(cls_feat)
-            bbox_pred = self.retina_reg(reg_feat)
+            mask = None
+        cls_score = self.retina_cls(cls_feat, mask)
+        bbox_pred = self.retina_reg(reg_feat, mask)
         return cls_score, bbox_pred, shape_pred, loc_pred
