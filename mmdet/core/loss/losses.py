@@ -102,6 +102,9 @@ def weighted_smoothl1(pred, target, weight, beta=1.0, avg_factor=None):
 
 
 def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3, reduction='mean'):
+    """Improving Object Localization with Fitness NMS and Bounded IoU Loss,
+    https://arxiv.org/abs/1711.00164
+    """
     pred_ctrx = (pred[:, 0] + pred[:, 2]) * 0.5
     pred_ctry = (pred[:, 1] + pred[:, 3]) * 0.5
     pred_w = pred[:, 2] - pred[:, 0] + 1
@@ -146,10 +149,6 @@ def weighted_bounded_iou_loss(pred,
                               beta=0.2,
                               eps=1e-3,
                               avg_factor=None):
-    """Improving Object Localization with Fitness NMS and Bounded IoU Loss,
-    https://arxiv.org/abs/1711.00164
-    """
-
     inds = torch.nonzero(weight[:, 0] > 0)
     if avg_factor is None:
         avg_factor = inds.numel() + 1e-6

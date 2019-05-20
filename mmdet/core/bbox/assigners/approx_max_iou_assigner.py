@@ -45,7 +45,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
 
     def assign(self,
                approxs,
-               base_approxs,
+               squares,
                approxs_per_octave,
                gt_bboxes,
                gt_bboxes_ignore=None,
@@ -70,7 +70,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         Args:
             approxs (Tensor): Bounding boxes to be assigned,
         shape(approxs_per_octave*n, 4).
-            base_approxs (Tensor): Base Bounding boxes to be assigned,
+            squares (Tensor): Base Bounding boxes to be assigned,
         shape(n, 4).
             approxs_per_octave (int): number of approxs per octave
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
@@ -82,21 +82,21 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
             :obj:`AssignResult`: The assign result.
         """
 
-        if base_approxs.shape[0] == 0 or gt_bboxes.shape[0] == 0:
+        if squares.shape[0] == 0 or gt_bboxes.shape[0] == 0:
             raise ValueError('No gt or approxs')
-        num_base_approxs = base_approxs.size(0)
+        num_squares = squares.size(0)
         num_gts = gt_bboxes.size(0)
-        # re-organize anchors by approxs_per_octave x num_base_approxs
+        # re-organize anchors by approxs_per_octave x num_squares
         approxs = torch.transpose(
-            approxs.view(num_base_approxs, approxs_per_octave, 4), 0,
+            approxs.view(num_squares, approxs_per_octave, 4), 0,
             1).contiguous().view(-1, 4)
         all_overlaps = bbox_overlaps(approxs, gt_bboxes)
 
-        overlaps, _ = all_overlaps.view(approxs_per_octave, num_base_approxs,
+        overlaps, _ = all_overlaps.view(approxs_per_octave, num_squares,
                                         num_gts).max(dim=0)
         overlaps = torch.transpose(overlaps, 0, 1)
 
-        bboxes = base_approxs[:, :4]
+        bboxes = squares[:, :4]
 
         if (self.ignore_iof_thr > 0) and (gt_bboxes_ignore is not None) and (
                 gt_bboxes_ignore.numel() > 0):
