@@ -13,24 +13,6 @@ We provide config files to reproduce the results in the CVPR 2019 paper for [Reg
 }
 ```
 
-## Dataset
-
-Guided Anchoring requires COCO dataset for training. You need to download and extract it in the COCO dataset path.
-The directory should be like this.
-
-```
-mmdetection
-├── mmdet
-├── tools
-├── configs
-├── data
-│   ├── coco
-│   │   ├── annotations
-│   │   ├── train2017
-│   │   ├── val2017
-│   │   ├── test2017
-```
-
 ## Results and Models
 
 The results on COCO 2017 val is shown in the below table. (results on test-dev are usually slightly higher than val).
@@ -44,5 +26,3 @@ The results on COCO 2017 val is shown in the below table. (results on test-dev a
 
 
 - In the Guided Anchoring paper, `score_thr` is set to 0.001 in Fast/Faster RCNN and 0.05 in RetinaNet for both baselines and Guided Anchoring .
-- We use 8 Tesla V100 GPUs with 2 images/GPU for training.
-- Inference time is evaluated on a single Tesla V100 GPU.
