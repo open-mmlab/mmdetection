@@ -6,6 +6,11 @@ import mmcv
 
 
 class WIDERDataset(XMLDataset):
+    """
+    Reader for the WIDER dataset in PASCAL VOC format.
+    Conversion scripts can be found in
+    https://github.com/akofman/wider-face-pascal-voc-annotations
+    """
     CLASSES = ('face',)
 
     def __init__(self, **kwargs):
@@ -25,6 +30,7 @@ class WIDERDataset(XMLDataset):
             height = int(size.find('height').text)
             folder = root.find('folder').text
             img_infos.append(
-                dict(id=img_id, filename=osp.join(folder, filename), width=width, height=height))
+                dict(id=img_id, filename=osp.join(folder, filename),
+                     width=width, height=height))
 
         return img_infos

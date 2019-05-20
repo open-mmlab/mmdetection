@@ -10,9 +10,9 @@ def get_proposals(img_metas, cls_scores, bbox_preds, priors,
     bbox_pred_list = bbox_preds.tolist()
     assert len(cls_score_list) == len(bbox_pred_list)
     for img_id in range(len(img_metas)):
-        cls_score =
+        cls_score = \
             torch.Tensor(cls_score_list[img_id]).detach().to(priors.device)
-        bbox_pred =
+        bbox_pred = \
             torch.Tensor(bbox_pred_list[img_id]).detach().to(priors.device)
         img_shape = img_metas[img_id]['img_shape']
         scale_factor = img_metas[img_id]['scale_factor']
@@ -125,7 +125,8 @@ class DetectionOutput(torch.autograd.Function):
 
         return g.op("DetectionOutput", bbox_preds, cls_scores, priors,
                     num_classes_i=cls_out_channels, background_label_id_i=0,
-                    top_k_i=cfg['max_per_img'], keep_top_k_i=cfg['max_per_img'],
+                    top_k_i=cfg['max_per_img'],
+                    keep_top_k_i=cfg['max_per_img'],
                     confidence_threshold_f=cfg['score_thr'],
                     nms_threshold_f=cfg['nms']['iou_thr'],
                     eta_f=1, share_location_i=1,
@@ -139,15 +140,15 @@ class DetectionOutput(torch.autograd.Function):
         proposals = get_proposals(img_metas, cls_scores, bbox_preds, priors,
                                   cfg, rescale, cls_out_channels,
                                   use_sigmoid_cls, target_means, target_stds)
-        batch_size = len(proposals)
-        output =
-            torch.zeros(batch_size, 1, cfg.max_per_img, 7).to(cls_scores.device)
-        for img_id in range(0, batch_size):
+        b_s = len(proposals)
+        output = \
+            torch.zeros(b_s, 1, cfg.max_per_img, 7).to(cls_scores.device)
+        for img_id in range(0, b_s):
             bboxes, labels = proposals[img_id]
             coords = bboxes[:, :4]
             scores = bboxes[:, 4]
             labels = labels.float()
-            output_for_img =
+            output_for_img = \
                 torch.zeros(scores.size()[0], 7).to(cls_scores.device)
             output_for_img[:, 0] = img_id
             output_for_img[:, 1] = labels

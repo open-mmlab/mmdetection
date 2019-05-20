@@ -58,7 +58,9 @@ class SingleStageDetector(BaseDetector):
     def forward_export(self, img):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
-        bbox_result = self.bbox_head.export_forward(*outs, self.test_cfg, True, self.img_metas, x, img)
+        bbox_result = self.bbox_head.export_forward(*outs, self.test_cfg,
+                                                    True, self.img_metas,
+                                                    x, img)
         return bbox_result
 
     def simple_test(self, img, img_meta, rescale=False):

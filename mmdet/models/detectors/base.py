@@ -86,7 +86,8 @@ class BaseDetector(nn.Module):
         self.img_metas = img_meta
         torch.onnx.export(self, img, export_name, verbose=False)
 
-    def forward(self, img, img_meta=[None], return_loss=True, **kwargs): #passing None here is a hack to fool the jit engine
+    # passing None here is a hack to fool the jit engine
+    def forward(self, img, img_meta=[None], return_loss=True, **kwargs):
         if self._export_mode:
             return self.forward_export(img)
         if return_loss:

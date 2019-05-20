@@ -1,7 +1,9 @@
 import mmcv
 
+
 def wider_classes():
     return ['face']
+
 
 def voc_classes():
     return [
@@ -84,7 +86,8 @@ dataset_aliases = {
     'voc': ['voc', 'pascal_voc', 'voc07', 'voc12'],
     'imagenet_det': ['det', 'imagenet_det', 'ilsvrc_det'],
     'imagenet_vid': ['vid', 'imagenet_vid', 'ilsvrc_vid'],
-    'coco': ['coco', 'mscoco', 'ms_coco'], 'wider' : ['WIDERDataset', 'wider', 'WDIER']
+    'coco': ['coco', 'mscoco', 'ms_coco'],
+    'wider': ['WIDERDataset', 'wider', 'WDIER']
 }
 
 

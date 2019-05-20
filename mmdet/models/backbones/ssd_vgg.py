@@ -128,10 +128,13 @@ class L2Norm(nn.Module):
         if self.training:
             norm = x.pow(2).sum(dim=1, keepdim=True).sqrt() + self.eps
             x = torch.div(x, norm)
-            out = self.weight.unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(x) * x
+            out = self.weight.unsqueeze(0).unsqueeze(2).unsqueeze(3)
+            out = out.expand_as(x) * x
             return out
         else:
-            return L2NormFunction.apply(x, self.weight, L2NormParams(self.eps, 0, 0))
+            return L2NormFunction.apply(x, self.weight,
+                                        L2NormParams(self.eps, 0, 0))
+
 
 class L2NormFunction(torch.autograd.Function):
     @staticmethod
@@ -144,7 +147,9 @@ class L2NormFunction(torch.autograd.Function):
     @staticmethod
     def symbolic(g, x, weight, l2NormParams):
         return g.op("Normalize", x, weight, eps_f=l2NormParams.eps,
-                    across_spatial_i=l2NormParams.across_spatial, channel_shared_i=l2NormParams.channel_shared)
+                    across_spatial_i=l2NormParams.across_spatial,
+                    channel_shared_i=l2NormParams.channel_shared)
+
 
 class L2NormParams:
     def __init__(self,  eps, across_spatial=1, channel_shared=1):

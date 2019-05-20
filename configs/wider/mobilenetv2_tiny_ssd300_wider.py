@@ -14,13 +14,16 @@ model = dict(
     bbox_head=dict(
         type='SSDHead',
         input_size=input_size,
-        in_channels=(360,),
+        in_channels=(int(width_mult*480),),
         num_classes=2,
         anchor_strides=(16,),
-        anchor_widths=([9.4, 25.1, 14.7, 34.7, 143.0, 77.4, 128.8, 51.1, 75.6],),
-        anchor_heights=([15.0, 39.6, 25.5, 63.2, 227.5, 162.9, 124.5, 105.1, 72.6],),
+        anchor_widths=([9.4, 25.1, 14.7, 34.7, 143.0,
+                        77.4, 128.8, 51.1, 75.6],),
+        anchor_heights=([15.0, 39.6, 25.5, 63.2, 227.5,
+                         162.9, 124.5, 105.1, 72.6],),
         target_means=(.0, .0, .0, .0),
         target_stds=(0.1, 0.1, 0.2, 0.2),
+        loss_balancing=True,
         depthwise_heads=True))
 cudnn_benchmark = True
 train_cfg = dict(

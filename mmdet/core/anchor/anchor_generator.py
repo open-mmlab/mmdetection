@@ -6,7 +6,7 @@ class AnchorGenerator(object):
     def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None,
                  widths=None, heights=None):
         self.base_size = base_size
-        if not widths is None and not heights is None:
+        if widths is not None and heights is not None:
             self.clustered = True
             assert len(heights) == len(widths)
             self.heights = torch.Tensor(heights)

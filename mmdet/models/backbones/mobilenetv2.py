@@ -34,7 +34,8 @@ class InvertedResidual(nn.Module):
         if expand_ratio == 1:
             self.conv = nn.Sequential(
                 # dw
-                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False),
+                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1,
+                          groups=hidden_dim, bias=False),
                 nn.BatchNorm2d(hidden_dim),
                 activation(inplace=True),
                 # pw-linear
@@ -48,7 +49,8 @@ class InvertedResidual(nn.Module):
                 nn.BatchNorm2d(hidden_dim),
                 activation(inplace=True),
                 # dw
-                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False),
+                nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1,
+                          groups=hidden_dim, bias=False),
                 nn.BatchNorm2d(hidden_dim),
                 activation(inplace=True),
                 # pw-linear
@@ -56,7 +58,6 @@ class InvertedResidual(nn.Module):
                 nn.BatchNorm2d(oup),
             ]
         self.conv = nn.Sequential(*self.conv)
-
 
     def forward(self, x):
         if self.use_res_connect:
@@ -93,7 +94,10 @@ class SSDMobilenetV2(nn.Module):
 
         # building first layer
         input_channel = int(input_channel * self.width_mult)
-        self.last_channel = int(last_channel * self.width_mult) if self.width_mult > 1.0 else last_channel
+        if self.width_mult > 1.0:
+            self.last_channel = int(last_channel * self.width_mult)
+        else:
+            self.last_channel = last_channel
         self.bn_first = nn.BatchNorm2d(3)
         self.features = [conv_bn(3, input_channel, 2)]
         # building inverted residual blocks
@@ -101,9 +105,11 @@ class SSDMobilenetV2(nn.Module):
             output_channel = c * self.width_mult
             for i in range(n):
                 if i == 0:
-                    self.features.append(block(input_channel, output_channel, s, t, self.activation_class))
+                    self.features.append(block(input_channel, output_channel,
+                                               s, t, self.activation_class))
                 else:
-                    self.features.append(block(input_channel, output_channel, 1, t, self.activation_class))
+                    self.features.append(block(input_channel, output_channel,
+                                               1, t, self.activation_class))
                 input_channel = output_channel
         # make it nn.Sequential
         self.features = nn.Sequential(*self.features)
@@ -127,7 +133,8 @@ class SSDMobilenetV2(nn.Module):
                             v = v[:int(v.shape[0]*self.width_mult), ]
                         elif len(v.shape) == 4 and v.shape[2] == 1:
                             assert v.shape[2] == v.shape[3] and v.shape[2] == 1
-                            v = v[:int(v.shape[0]*self.width_mult), :int(v.shape[1]*self.width_mult), ]
+                            v = v[:int(v.shape[0]*self.width_mult),
+                                  :int(v.shape[1]*self.width_mult), ]
                     elif 'features.0.' in k:  # process the first conv
                         if len(v.shape):
                             v = v[:int(v.shape[0]*self.width_mult), ]
