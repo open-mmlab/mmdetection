@@ -261,8 +261,8 @@ def eval_map(det_results,
         cls_dets, cls_gts, cls_gt_ignore = get_cls_results(
             det_results, gt_bboxes, gt_labels, gt_ignore, i)
         # calculate tp and fp for each image
-        tpfp_func = (tpfp_imagenet
-                     if dataset in ['det', 'vid'] else tpfp_default)
+        tpfp_func = (
+            tpfp_imagenet if dataset in ['det', 'vid'] else tpfp_default)
         tpfp = [
             tpfp_func(cls_dets[j], cls_gts[j], cls_gt_ignore[j], iou_thr,
                       area_ranges) for j in range(len(cls_dets))

@@ -94,8 +94,8 @@ class ConvFCBBoxHead(BBoxHead):
         branch_convs = nn.ModuleList()
         if num_branch_convs > 0:
             for i in range(num_branch_convs):
-                conv_in_channels = (last_layer_dim
-                                    if i == 0 else self.conv_out_channels)
+                conv_in_channels = (
+                    last_layer_dim if i == 0 else self.conv_out_channels)
                 branch_convs.append(
                     ConvModule(
                         conv_in_channels,
@@ -114,8 +114,8 @@ class ConvFCBBoxHead(BBoxHead):
                     or self.num_shared_fcs == 0) and not self.with_avg_pool:
                 last_layer_dim *= (self.roi_feat_size * self.roi_feat_size)
             for i in range(num_branch_fcs):
-                fc_in_channels = (last_layer_dim
-                                  if i == 0 else self.fc_out_channels)
+                fc_in_channels = (
+                    last_layer_dim if i == 0 else self.fc_out_channels)
                 branch_fcs.append(
                     nn.Linear(fc_in_channels, self.fc_out_channels))
             last_layer_dim = self.fc_out_channels
