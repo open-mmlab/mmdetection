@@ -11,8 +11,7 @@ from ..registry import HEADS
 
 @HEADS.register_module
 class GARPNHead(GuidedAnchorHead):
-    """Guided-Anchor-based RPN head.
-    """
+    """Guided-Anchor-based RPN head."""
 
     def __init__(self, in_channels, **kwargs):
         super(GARPNHead, self).__init__(2, in_channels, **kwargs)

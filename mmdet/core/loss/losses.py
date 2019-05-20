@@ -103,7 +103,14 @@ def weighted_smoothl1(pred, target, weight, beta=1.0, avg_factor=None):
 
 def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3, reduction='mean'):
     """Improving Object Localization with Fitness NMS and Bounded IoU Loss,
-    https://arxiv.org/abs/1711.00164
+    https://arxiv.org/abs/1711.00164.
+
+    Args:
+        pred (tensor): Predicted bboxes.
+        target (tensor): Target bboxes.
+        beta (float): beta parameter in smoothl1.
+        eps (float): eps to avoid NaN.
+        reduction (str): Reduction type.
     """
     pred_ctrx = (pred[:, 0] + pred[:, 2]) * 0.5
     pred_ctry = (pred[:, 1] + pred[:, 3]) * 0.5

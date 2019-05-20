@@ -5,8 +5,15 @@ from ..utils import unmap, multi_apply
 
 
 def calc_region(bbox, ratio, featmap_size=None):
-    """Calculate a region inside each bounding-box w.r.t. to a ratio.
+    """Calculate a region inside each bounding-box w.r.t. to a size
+    ratio.
+
     region_edge = bbox_edge * ratio
+
+    Args:
+        bbox (Tensor): Source bboxes to calculate regions.
+        ratio (float): Size ratio for regions.
+        featmap_size (tuple): Size of the feature map.
     """
     x1 = torch.round((1 - ratio) * bbox[0] + ratio * bbox[2]).long()
     y1 = torch.round((1 - ratio) * bbox[1] + ratio * bbox[3]).long()
@@ -27,6 +34,7 @@ def ga_loc_target(gt_bboxes_list,
                   center_ratio=0.2,
                   ignore_ratio=0.5):
     """Compute location targets for guided anchoring.
+
     Each feature map is divided into positive, negative and ignore regions.
 
     Args:

@@ -9,8 +9,7 @@ from mmdet.ops import MaskedConv2d
 
 @HEADS.register_module
 class GARetinaHead(GuidedAnchorHead):
-    """Guided-Anchor-based RetinaNet head.
-    """
+    """Guided-Anchor-based RetinaNet head."""
 
     def __init__(self,
                  num_classes,

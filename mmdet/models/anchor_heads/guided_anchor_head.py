@@ -123,11 +123,13 @@ class GuidedAnchorHead(AnchorHead):
         self.approx_generators = []
         self.square_generators = []
         for anchor_base in self.anchor_base_sizes:
+            # Generators for approxs
             self.approx_generators.append(
                 AnchorGenerator(anchor_base, self.octave_scales,
                                 self.octave_ratios))
+            # Generators for squares
             self.square_generators.append(
-                AnchorGenerator(anchor_base, [self.octave_scales[0]], [1.0]))
+                AnchorGenerator(anchor_base, [self.octave_base_scale], [1.0]))
         # one anchor per location
         self.num_anchors = 1
         if self.use_sigmoid_cls:
