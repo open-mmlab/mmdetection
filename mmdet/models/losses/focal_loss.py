@@ -6,6 +6,7 @@ from ..registry import LOSSES
 
 @LOSSES.register_module
 class FocalLoss(CrossEntropyLoss):
+
     def __init__(self, gamma=2.0, alpha=0.25, *args, **kwargs):
         super(FocalLoss, self).__init__(*args, **kwargs)
         assert self.use_sigmoid is True, 'Only sigmoid focaloss supported now.'
@@ -15,13 +16,14 @@ class FocalLoss(CrossEntropyLoss):
 
     def forward(self, cls_score, label, label_weight, *args, **kwargs):
         if self.use_sigmoid:
-            loss_cls = self.loss_weight * self.cls_criterion(cls_score,
-                                                             label,
-                                                             label_weight,
-                                                             gamma=self.gamma,
-                                                             alpha=self.alpha,
-                                                             *args,
-                                                             **kwargs)
+            loss_cls = self.loss_weight * self.cls_criterion(
+                cls_score,
+                label,
+                label_weight,
+                gamma=self.gamma,
+                alpha=self.alpha,
+                *args,
+                **kwargs)
         else:
             raise NotImplementedError()
         return loss_cls

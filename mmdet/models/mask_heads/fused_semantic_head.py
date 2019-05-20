@@ -47,28 +47,31 @@ class FusedSemanticHead(nn.Module):
         self.lateral_convs = nn.ModuleList()
         for i in range(self.num_ins):
             self.lateral_convs.append(
-                ConvModule(self.in_channels,
-                           self.in_channels,
-                           1,
-                           conv_cfg=self.conv_cfg,
-                           norm_cfg=self.norm_cfg,
-                           inplace=False))
+                ConvModule(
+                    self.in_channels,
+                    self.in_channels,
+                    1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg,
+                    inplace=False))
 
         self.convs = nn.ModuleList()
         for i in range(self.num_convs):
             in_channels = self.in_channels if i == 0 else conv_out_channels
             self.convs.append(
-                ConvModule(in_channels,
-                           conv_out_channels,
-                           3,
-                           padding=1,
-                           conv_cfg=self.conv_cfg,
-                           norm_cfg=self.norm_cfg))
-        self.conv_embedding = ConvModule(conv_out_channels,
-                                         conv_out_channels,
-                                         1,
-                                         conv_cfg=self.conv_cfg,
-                                         norm_cfg=self.norm_cfg)
+                ConvModule(
+                    in_channels,
+                    conv_out_channels,
+                    3,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg))
+        self.conv_embedding = ConvModule(
+            conv_out_channels,
+            conv_out_channels,
+            1,
+            conv_cfg=self.conv_cfg,
+            norm_cfg=self.norm_cfg)
         self.conv_logits = nn.Conv2d(conv_out_channels, self.num_classes, 1)
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_label)
@@ -81,10 +84,8 @@ class FusedSemanticHead(nn.Module):
         fused_size = tuple(x.shape[-2:])
         for i, feat in enumerate(feats):
             if i != self.fusion_level:
-                feat = F.interpolate(feat,
-                                     size=fused_size,
-                                     mode='bilinear',
-                                     align_corners=True)
+                feat = F.interpolate(
+                    feat, size=fused_size, mode='bilinear', align_corners=True)
                 x += self.lateral_convs[i](feat)
 
         for i in range(self.num_convs):

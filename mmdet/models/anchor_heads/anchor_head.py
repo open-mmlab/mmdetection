@@ -38,12 +38,12 @@ class AnchorHead(nn.Module):
                  anchor_base_sizes=None,
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
-                 loss_cls=dict(type='CrossEntropyLoss',
-                               use_sigmoid=True,
-                               loss_weight=1.0),
-                 loss_bbox=dict(type='SmoothL1Loss',
-                                beta=1.0 / 9.0,
-                                loss_weight=1.0)):
+                 loss_cls=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=True,
+                     loss_weight=1.0),
+                 loss_bbox=dict(
+                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)):
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -134,20 +134,19 @@ class AnchorHead(nn.Module):
         # classification loss
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
-        cls_score = cls_score.permute(0, 2, 3,
-                                      1).reshape(-1, self.cls_out_channels)
-        loss_cls = self.loss_cls(cls_score,
-                                 labels,
-                                 label_weights,
-                                 avg_factor=num_total_samples)
+        cls_score = cls_score.permute(0, 2, 3, 1).reshape(
+            -1, self.cls_out_channels)
+        loss_cls = self.loss_cls(
+            cls_score, labels, label_weights, avg_factor=num_total_samples)
         # regression loss
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
-        loss_bbox = self.loss_bbox(bbox_pred,
-                                   bbox_targets,
-                                   bbox_weights,
-                                   avg_factor=num_total_samples)
+        loss_bbox = self.loss_bbox(
+            bbox_pred,
+            bbox_targets,
+            bbox_weights,
+            avg_factor=num_total_samples)
         return loss_cls, loss_bbox
 
     def loss(self,
@@ -180,8 +179,8 @@ class AnchorHead(nn.Module):
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_bbox_targets
-        num_total_samples = (num_total_pos +
-                             num_total_neg if self.sampling else num_total_pos)
+        num_total_samples = (num_total_pos + num_total_neg
+                             if self.sampling else num_total_pos)
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
@@ -234,8 +233,8 @@ class AnchorHead(nn.Module):
         for cls_score, bbox_pred, anchors in zip(cls_scores, bbox_preds,
                                                  mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            cls_score = cls_score.permute(1, 2,
-                                          0).reshape(-1, self.cls_out_channels)
+            cls_score = cls_score.permute(1, 2, 0).reshape(
+                -1, self.cls_out_channels)
             if self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
             else:
@@ -262,7 +261,6 @@ class AnchorHead(nn.Module):
         if self.use_sigmoid_cls:
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
-        det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                cfg.score_thr, cfg.nms,
-                                                cfg.max_per_img)
+        det_bboxes, det_labels = multiclass_nms(
+            mlvl_bboxes, mlvl_scores, cfg.score_thr, cfg.nms, cfg.max_per_img)
         return det_bboxes, det_labels

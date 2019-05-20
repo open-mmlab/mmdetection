@@ -11,14 +11,13 @@ from ..registry import HEADS
 
 @HEADS.register_module
 class RPNHead(AnchorHead):
+
     def __init__(self, in_channels, **kwargs):
         super(RPNHead, self).__init__(2, in_channels, **kwargs)
 
     def _init_layers(self):
-        self.rpn_conv = nn.Conv2d(self.in_channels,
-                                  self.feat_channels,
-                                  3,
-                                  padding=1)
+        self.rpn_conv = nn.Conv2d(
+            self.in_channels, self.feat_channels, 3, padding=1)
         self.rpn_cls = nn.Conv2d(self.feat_channels,
                                  self.num_anchors * self.cls_out_channels, 1)
         self.rpn_bbox = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
@@ -42,15 +41,16 @@ class RPNHead(AnchorHead):
              img_metas,
              cfg,
              gt_bboxes_ignore=None):
-        losses = super(RPNHead, self).loss(cls_scores,
-                                           bbox_preds,
-                                           gt_bboxes,
-                                           None,
-                                           img_metas,
-                                           cfg,
-                                           gt_bboxes_ignore=gt_bboxes_ignore)
-        return dict(loss_rpn_cls=losses['loss_cls'],
-                    loss_rpn_bbox=losses['loss_bbox'])
+        losses = super(RPNHead, self).loss(
+            cls_scores,
+            bbox_preds,
+            gt_bboxes,
+            None,
+            img_metas,
+            cfg,
+            gt_bboxes_ignore=gt_bboxes_ignore)
+        return dict(
+            loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
     def get_bboxes_single(self,
                           cls_scores,

@@ -13,6 +13,7 @@ INF = 1e8
 
 @HEADS.register_module
 class FCOSHead(nn.Module):
+
     def __init__(self,
                  num_classes,
                  in_channels,
@@ -43,27 +44,27 @@ class FCOSHead(nn.Module):
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
-                ConvModule(chn,
-                           self.feat_channels,
-                           3,
-                           stride=1,
-                           padding=1,
-                           conv_cfg=self.conv_cfg,
-                           norm_cfg=self.norm_cfg,
-                           bias=self.norm_cfg is None))
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
             self.reg_convs.append(
-                ConvModule(chn,
-                           self.feat_channels,
-                           3,
-                           stride=1,
-                           padding=1,
-                           conv_cfg=self.conv_cfg,
-                           norm_cfg=self.norm_cfg,
-                           bias=self.norm_cfg is None))
-        self.fcos_cls = nn.Conv2d(self.feat_channels,
-                                  self.cls_out_channels,
-                                  3,
-                                  padding=1)
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
+        self.fcos_cls = nn.Conv2d(
+            self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.fcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
         self.fcos_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
 
@@ -153,20 +154,21 @@ class FCOSHead(nn.Module):
             pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
             # centerness weighted iou loss
-            loss_reg = (
-                (iou_loss(pos_decoded_bbox_preds,
-                          pos_decoded_target_preds,
-                          reduction='none') * pos_centerness_targets).sum() /
-                pos_centerness_targets.sum())[None]
+            loss_reg = ((iou_loss(
+                pos_decoded_bbox_preds,
+                pos_decoded_target_preds,
+                reduction='none') * pos_centerness_targets).sum() /
+                        pos_centerness_targets.sum())[None]
             loss_centerness = F.binary_cross_entropy_with_logits(
                 pos_centerness, pos_centerness_targets, reduction='mean')[None]
         else:
             loss_reg = pos_bbox_preds.sum()[None]
             loss_centerness = pos_centerness.sum()[None]
 
-        return dict(loss_cls=loss_cls,
-                    loss_reg=loss_reg,
-                    loss_centerness=loss_centerness)
+        return dict(
+            loss_cls=loss_cls,
+            loss_reg=loss_reg,
+            loss_centerness=loss_centerness)
 
     def get_bboxes(self,
                    cls_scores,
@@ -194,10 +196,9 @@ class FCOSHead(nn.Module):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                centerness_pred_list,
-                                                mlvl_points, img_shape,
-                                                scale_factor, cfg, rescale)
+            det_bboxes = self.get_bboxes_single(
+                cls_score_list, bbox_pred_list, centerness_pred_list,
+                mlvl_points, img_shape, scale_factor, cfg, rescale)
             result_list.append(det_bboxes)
         return result_list
 
@@ -241,12 +242,13 @@ class FCOSHead(nn.Module):
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
-        det_bboxes, det_labels = multiclass_nms(mlvl_bboxes,
-                                                mlvl_scores,
-                                                cfg.score_thr,
-                                                cfg.nms,
-                                                cfg.max_per_img,
-                                                score_factors=mlvl_centerness)
+        det_bboxes, det_labels = multiclass_nms(
+            mlvl_bboxes,
+            mlvl_scores,
+            cfg.score_thr,
+            cfg.nms,
+            cfg.max_per_img,
+            score_factors=mlvl_centerness)
         return det_bboxes, det_labels
 
     def get_points(self, featmap_sizes, dtype, device):
@@ -269,16 +271,10 @@ class FCOSHead(nn.Module):
 
     def get_points_single(self, featmap_size, stride, dtype, device):
         h, w = featmap_size
-        x_range = torch.arange(0,
-                               w * stride,
-                               stride,
-                               dtype=dtype,
-                               device=device)
-        y_range = torch.arange(0,
-                               h * stride,
-                               stride,
-                               dtype=dtype,
-                               device=device)
+        x_range = torch.arange(
+            0, w * stride, stride, dtype=dtype, device=device)
+        y_range = torch.arange(
+            0, h * stride, stride, dtype=dtype, device=device)
         y, x = torch.meshgrid(y_range, x_range)
         points = torch.stack(
             (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
@@ -326,8 +322,8 @@ class FCOSHead(nn.Module):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
 
-        areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (gt_bboxes[:, 3] -
-                                                           gt_bboxes[:, 1] + 1)
+        areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
+            gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
         # TODO: figure out why these two are different
         # areas = areas[None].expand(num_points, num_gts)
         areas = areas[None].repeat(num_points, 1)
@@ -369,7 +365,7 @@ class FCOSHead(nn.Module):
         # only calculate pos centerness targets, otherwise there may be nan
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
-        centerness_targets = (left_right.min(dim=-1)[0] / left_right.max(
-            dim=-1)[0]) * (top_bottom.min(dim=-1)[0] /
-                           top_bottom.max(dim=-1)[0])
+        centerness_targets = (
+            left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
+                top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
         return torch.sqrt(centerness_targets)

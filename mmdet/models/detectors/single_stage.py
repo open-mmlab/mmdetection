@@ -8,6 +8,7 @@ from mmdet.core import bbox2result
 
 @DETECTORS.register_module
 class SingleStageDetector(BaseDetector):
+
     def __init__(self,
                  backbone,
                  neck=None,
@@ -50,8 +51,8 @@ class SingleStageDetector(BaseDetector):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
         loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
-        losses = self.bbox_head.loss(*loss_inputs,
-                                     gt_bboxes_ignore=gt_bboxes_ignore)
+        losses = self.bbox_head.loss(
+            *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
     def simple_test(self, img, img_meta, rescale=False):

@@ -124,8 +124,7 @@ def show_result(img, result, class_names, score_thr=0.3, out_file=None):
         segms = mmcv.concat_list(segm_result)
         inds = np.where(bboxes[:, -1] > score_thr)[0]
         for i in inds:
-            color_mask = np.random.randint(
-                0, 256, (1, 3), dtype=np.uint8)
+            color_mask = np.random.randint(0, 256, (1, 3), dtype=np.uint8)
             mask = maskUtils.decode(segms[i]).astype(np.bool)
             img[mask] = img[mask] * 0.5 + color_mask * 0.5
     # draw bounding boxes

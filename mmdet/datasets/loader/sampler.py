@@ -139,8 +139,8 @@ class DistributedGroupSampler(Sampler):
 
         indices = [
             indices[j] for i in list(
-                torch.randperm(len(indices) // self.samples_per_gpu,
-                               generator=g))
+                torch.randperm(
+                    len(indices) // self.samples_per_gpu, generator=g))
             for j in range(i * self.samples_per_gpu, (i + 1) *
                            self.samples_per_gpu)
         ]

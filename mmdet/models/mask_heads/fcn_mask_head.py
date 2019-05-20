@@ -12,6 +12,7 @@ from mmdet.core import mask_target
 
 @HEADS.register_module
 class FCNMaskHead(nn.Module):
+
     def __init__(self,
                  num_convs=4,
                  roi_feat_size=14,
@@ -24,9 +25,8 @@ class FCNMaskHead(nn.Module):
                  class_agnostic=False,
                  conv_cfg=None,
                  norm_cfg=None,
-                 loss_mask=dict(type='CrossEntropyLoss',
-                                use_mask=True,
-                                loss_weight=1.0)):
+                 loss_mask=dict(
+                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(FCNMaskHead, self).__init__()
         if upsample_method not in [None, 'deconv', 'nearest', 'bilinear']:
             raise ValueError(
@@ -51,24 +51,26 @@ class FCNMaskHead(nn.Module):
                            if i == 0 else self.conv_out_channels)
             padding = (self.conv_kernel_size - 1) // 2
             self.convs.append(
-                ConvModule(in_channels,
-                           self.conv_out_channels,
-                           self.conv_kernel_size,
-                           padding=padding,
-                           conv_cfg=conv_cfg,
-                           norm_cfg=norm_cfg))
+                ConvModule(
+                    in_channels,
+                    self.conv_out_channels,
+                    self.conv_kernel_size,
+                    padding=padding,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg))
         upsample_in_channels = (self.conv_out_channels
                                 if self.num_convs > 0 else in_channels)
         if self.upsample_method is None:
             self.upsample = None
         elif self.upsample_method == 'deconv':
-            self.upsample = nn.ConvTranspose2d(upsample_in_channels,
-                                               self.conv_out_channels,
-                                               self.upsample_ratio,
-                                               stride=self.upsample_ratio)
+            self.upsample = nn.ConvTranspose2d(
+                upsample_in_channels,
+                self.conv_out_channels,
+                self.upsample_ratio,
+                stride=self.upsample_ratio)
         else:
-            self.upsample = nn.Upsample(scale_factor=self.upsample_ratio,
-                                        mode=self.upsample_method)
+            self.upsample = nn.Upsample(
+                scale_factor=self.upsample_ratio, mode=self.upsample_method)
 
         out_channels = 1 if self.class_agnostic else self.num_classes
         logits_in_channel = (self.conv_out_channels
@@ -82,9 +84,8 @@ class FCNMaskHead(nn.Module):
         for m in [self.upsample, self.conv_logits]:
             if m is None:
                 continue
-            nn.init.kaiming_normal_(m.weight,
-                                    mode='fan_out',
-                                    nonlinearity='relu')
+            nn.init.kaiming_normal_(
+                m.weight, mode='fan_out', nonlinearity='relu')
             nn.init.constant_(m.bias, 0)
 
     def forward(self, x):

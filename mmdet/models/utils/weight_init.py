@@ -31,13 +31,11 @@ def kaiming_init(module,
                  distribution='normal'):
     assert distribution in ['uniform', 'normal']
     if distribution == 'uniform':
-        nn.init.kaiming_uniform_(module.weight,
-                                 mode=mode,
-                                 nonlinearity=nonlinearity)
+        nn.init.kaiming_uniform_(
+            module.weight, mode=mode, nonlinearity=nonlinearity)
     else:
-        nn.init.kaiming_normal_(module.weight,
-                                mode=mode,
-                                nonlinearity=nonlinearity)
+        nn.init.kaiming_normal_(
+            module.weight, mode=mode, nonlinearity=nonlinearity)
     if hasattr(module, 'bias'):
         nn.init.constant_(module.bias, bias)
 

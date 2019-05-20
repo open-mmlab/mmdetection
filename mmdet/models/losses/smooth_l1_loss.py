@@ -6,6 +6,7 @@ from ..registry import LOSSES
 
 @LOSSES.register_module
 class SmoothL1Loss(nn.Module):
+
     def __init__(self, beta=1.0, loss_weight=1.0):
         super(SmoothL1Loss, self).__init__()
         self.beta = beta

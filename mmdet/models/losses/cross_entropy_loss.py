@@ -7,6 +7,7 @@ from ..registry import LOSSES
 
 @LOSSES.register_module
 class CrossEntropyLoss(nn.Module):
+
     def __init__(self, use_sigmoid=False, use_mask=False, loss_weight=1.0):
         super(CrossEntropyLoss, self).__init__()
         assert (use_sigmoid is False) or (use_mask is False)

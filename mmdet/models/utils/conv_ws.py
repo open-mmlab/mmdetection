@@ -19,6 +19,7 @@ def conv_ws_2d(input,
 
 
 class ConvWS2d(nn.Conv2d):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -29,14 +30,15 @@ class ConvWS2d(nn.Conv2d):
                  groups=1,
                  bias=True,
                  eps=1e-5):
-        super(ConvWS2d, self).__init__(in_channels,
-                                       out_channels,
-                                       kernel_size,
-                                       stride=stride,
-                                       padding=padding,
-                                       dilation=dilation,
-                                       groups=groups,
-                                       bias=bias)
+        super(ConvWS2d, self).__init__(
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=groups,
+            bias=bias)
         self.eps = eps
 
     def forward(self, x):

@@ -22,11 +22,12 @@ class BBoxHead(nn.Module):
                  target_means=[0., 0., 0., 0.],
                  target_stds=[0.1, 0.1, 0.2, 0.2],
                  reg_class_agnostic=False,
-                 loss_cls=dict(type='CrossEntropyLoss',
-                               use_sigmoid=False,
-                               loss_weight=1.0),
-                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
-                                loss_weight=1.0)):
+                 loss_cls=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=False,
+                     loss_weight=1.0),
+                 loss_bbox=dict(
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
         super(BBoxHead, self).__init__()
         assert with_cls or with_bbox
         self.with_avg_pool = with_avg_pool
@@ -77,14 +78,15 @@ class BBoxHead(nn.Module):
         pos_gt_bboxes = [res.pos_gt_bboxes for res in sampling_results]
         pos_gt_labels = [res.pos_gt_labels for res in sampling_results]
         reg_classes = 1 if self.reg_class_agnostic else self.num_classes
-        cls_bbox_targets = bbox_target(pos_proposals,
-                                       neg_proposals,
-                                       pos_gt_bboxes,
-                                       pos_gt_labels,
-                                       rcnn_train_cfg,
-                                       reg_classes,
-                                       target_means=self.target_means,
-                                       target_stds=self.target_stds)
+        cls_bbox_targets = bbox_target(
+            pos_proposals,
+            neg_proposals,
+            pos_gt_bboxes,
+            pos_gt_labels,
+            rcnn_train_cfg,
+            reg_classes,
+            target_means=self.target_means,
+            target_stds=self.target_stds)
         return cls_bbox_targets
 
     def loss(self,
@@ -97,10 +99,8 @@ class BBoxHead(nn.Module):
              reduce=True):
         losses = dict()
         if cls_score is not None:
-            losses['loss_cls'] = self.loss_cls(cls_score,
-                                               labels,
-                                               label_weights,
-                                               reduce=reduce)
+            losses['loss_cls'] = self.loss_cls(
+                cls_score, labels, label_weights, reduce=reduce)
             losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0
@@ -141,9 +141,8 @@ class BBoxHead(nn.Module):
         if cfg is None:
             return bboxes, scores
         else:
-            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
+            det_bboxes, det_labels = multiclass_nms(
+                bboxes, scores, cfg.score_thr, cfg.nms, cfg.max_per_img)
 
             return det_bboxes, det_labels
 

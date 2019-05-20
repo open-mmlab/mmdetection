@@ -13,6 +13,7 @@ from ..registry import HEADS
 # TODO: add loss evaluator for SSD
 @HEADS.register_module
 class SSDHead(AnchorHead):
+
     def __init__(self,
                  input_size=300,
                  num_classes=81,
@@ -32,15 +33,17 @@ class SSDHead(AnchorHead):
         cls_convs = []
         for i in range(len(in_channels)):
             reg_convs.append(
-                nn.Conv2d(in_channels[i],
-                          num_anchors[i] * 4,
-                          kernel_size=3,
-                          padding=1))
+                nn.Conv2d(
+                    in_channels[i],
+                    num_anchors[i] * 4,
+                    kernel_size=3,
+                    padding=1))
             cls_convs.append(
-                nn.Conv2d(in_channels[i],
-                          num_anchors[i] * num_classes,
-                          kernel_size=3,
-                          padding=1))
+                nn.Conv2d(
+                    in_channels[i],
+                    num_anchors[i] * num_classes,
+                    kernel_size=3,
+                    padding=1))
         self.reg_convs = nn.ModuleList(reg_convs)
         self.cls_convs = nn.ModuleList(cls_convs)
 
@@ -77,11 +80,8 @@ class SSDHead(AnchorHead):
             ratios = [1.]
             for r in anchor_ratios[k]:
                 ratios += [1 / r, r]  # 4 or 6 ratio
-            anchor_generator = AnchorGenerator(base_size,
-                                               scales,
-                                               ratios,
-                                               scale_major=False,
-                                               ctr=ctr)
+            anchor_generator = AnchorGenerator(
+                base_size, scales, ratios, scale_major=False, ctr=ctr)
             indices = list(range(len(ratios)))
             indices.insert(1, len(indices))
             anchor_generator.base_anchors = torch.index_select(
@@ -109,8 +109,8 @@ class SSDHead(AnchorHead):
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
-        loss_cls_all = F.cross_entropy(cls_score, labels,
-                                       reduction='none') * label_weights
+        loss_cls_all = F.cross_entropy(
+            cls_score, labels, reduction='none') * label_weights
         pos_inds = (labels > 0).nonzero().view(-1)
         neg_inds = (labels == 0).nonzero().view(-1)
 
@@ -123,11 +123,12 @@ class SSDHead(AnchorHead):
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
 
-        loss_bbox = weighted_smoothl1(bbox_pred,
-                                      bbox_targets,
-                                      bbox_weights,
-                                      beta=cfg.smoothl1_beta,
-                                      avg_factor=num_total_samples)
+        loss_bbox = weighted_smoothl1(
+            bbox_pred,
+            bbox_targets,
+            bbox_weights,
+            beta=cfg.smoothl1_beta,
+            avg_factor=num_total_samples)
         return loss_cls[None], loss_bbox
 
     def loss(self,
@@ -167,24 +168,25 @@ class SSDHead(AnchorHead):
                 num_images, -1, self.cls_out_channels) for s in cls_scores
         ], 1)
         all_labels = torch.cat(labels_list, -1).view(num_images, -1)
-        all_label_weights = torch.cat(label_weights_list,
-                                      -1).view(num_images, -1)
+        all_label_weights = torch.cat(label_weights_list, -1).view(
+            num_images, -1)
         all_bbox_preds = torch.cat([
             b.permute(0, 2, 3, 1).reshape(num_images, -1, 4)
             for b in bbox_preds
         ], -2)
-        all_bbox_targets = torch.cat(bbox_targets_list,
-                                     -2).view(num_images, -1, 4)
-        all_bbox_weights = torch.cat(bbox_weights_list,
-                                     -2).view(num_images, -1, 4)
+        all_bbox_targets = torch.cat(bbox_targets_list, -2).view(
+            num_images, -1, 4)
+        all_bbox_weights = torch.cat(bbox_weights_list, -2).view(
+            num_images, -1, 4)
 
-        losses_cls, losses_bbox = multi_apply(self.loss_single,
-                                              all_cls_scores,
-                                              all_bbox_preds,
-                                              all_labels,
-                                              all_label_weights,
-                                              all_bbox_targets,
-                                              all_bbox_weights,
-                                              num_total_samples=num_total_pos,
-                                              cfg=cfg)
+        losses_cls, losses_bbox = multi_apply(
+            self.loss_single,
+            all_cls_scores,
+            all_bbox_preds,
+            all_labels,
+            all_label_weights,
+            all_bbox_targets,
+            all_bbox_weights,
+            num_total_samples=num_total_pos,
+            cfg=cfg)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
