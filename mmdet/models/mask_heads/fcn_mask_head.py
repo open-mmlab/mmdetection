@@ -43,8 +43,8 @@ class FCNMaskHead(nn.Module):
 
         self.convs = nn.ModuleList()
         for i in range(self.num_convs):
-            in_channels = (self.in_channels
-                           if i == 0 else self.conv_out_channels)
+            in_channels = (
+                self.in_channels if i == 0 else self.conv_out_channels)
             padding = (self.conv_kernel_size - 1) // 2
             self.convs.append(
                 ConvModule(
@@ -54,8 +54,8 @@ class FCNMaskHead(nn.Module):
                     padding=padding,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg))
-        upsample_in_channels = (self.conv_out_channels
-                                if self.num_convs > 0 else in_channels)
+        upsample_in_channels = (
+            self.conv_out_channels if self.num_convs > 0 else in_channels)
         if self.upsample_method is None:
             self.upsample = None
         elif self.upsample_method == 'deconv':
@@ -69,9 +69,9 @@ class FCNMaskHead(nn.Module):
                 scale_factor=self.upsample_ratio, mode=self.upsample_method)
 
         out_channels = 1 if self.class_agnostic else self.num_classes
-        logits_in_channel = (self.conv_out_channels
-                             if self.upsample_method == 'deconv' else
-                             upsample_in_channels)
+        logits_in_channel = (
+            self.conv_out_channels
+            if self.upsample_method == 'deconv' else upsample_in_channels)
         self.conv_logits = nn.Conv2d(logits_in_channel, out_channels, 1)
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None

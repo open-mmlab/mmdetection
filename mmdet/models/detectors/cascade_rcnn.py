@@ -186,8 +186,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                                                 gt_labels, rcnn_train_cfg)
             loss_bbox = bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
             for name, value in loss_bbox.items():
-                losses['s{}.{}'.format(
-                    i, name)] = (value * lw if 'loss' in name else value)
+                losses['s{}.{}'.format(i, name)] = (
+                    value * lw if 'loss' in name else value)
 
             # mask head forward and loss
             if self.with_mask:
@@ -224,8 +224,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     [res.pos_gt_labels for res in sampling_results])
                 loss_mask = mask_head.loss(mask_pred, mask_targets, pos_labels)
                 for name, value in loss_mask.items():
-                    losses['s{}.{}'.format(
-                        i, name)] = (value * lw if 'loss' in name else value)
+                    losses['s{}.{}'.format(i, name)] = (
+                        value * lw if 'loss' in name else value)
 
             # refine bboxes
             if i < self.num_stages - 1:
@@ -286,8 +286,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                             [] for _ in range(mask_head.num_classes - 1)
                         ]
                     else:
-                        _bboxes = (det_bboxes[:, :4] * scale_factor
-                                   if rescale else det_bboxes)
+                        _bboxes = (
+                            det_bboxes[:, :4] * scale_factor
+                            if rescale else det_bboxes)
                         mask_rois = bbox2roi([_bboxes])
                         mask_feats = mask_roi_extractor(
                             x[:len(mask_roi_extractor.featmap_strides)],
@@ -324,8 +325,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     [] for _ in range(self.mask_head[-1].num_classes - 1)
                 ]
             else:
-                _bboxes = (det_bboxes[:, :4] * scale_factor
-                           if rescale else det_bboxes)
+                _bboxes = (
+                    det_bboxes[:, :4] * scale_factor
+                    if rescale else det_bboxes)
                 mask_rois = bbox2roi([_bboxes])
                 aug_masks = []
                 for i in range(self.num_stages):
