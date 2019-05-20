@@ -47,14 +47,16 @@ class FeatureAdaption(nn.Module):
 @HEADS.register_module
 class GuidedAnchorHead(AnchorHead):
     """Guided-Anchor-based head (GA-RPN, GA-RetinaNet, etc.).
-        This GuidedAnchorHead will predict high-quality feature guided
-        anchors and locations where anchors will be kept in inference.
-        There are mainly 3 categories of bounding-boxes.
-        - Sampled (9) pairs for target assignment. (approxes)
-        - The square boxes where the predicted anchors are based on.
-            (squares)
-        - Guided anchors.
-        Please refer to https://arxiv.org/abs/1901.03278 for more details.
+
+    This GuidedAnchorHead will predict high-quality feature guided
+    anchors and locations where anchors will be kept in inference.
+    There are mainly 3 categories of bounding-boxes.
+    - Sampled (9) pairs for target assignment. (approxes)
+    - The square boxes where the predicted anchors are based on.
+        (squares)
+    - Guided anchors.
+    Please refer to https://arxiv.org/abs/1901.03278 for more details.
+
     Args:
         num_classes (int): Number of classes.
         in_channels (int): Number of channels in the input feature map.
@@ -76,7 +78,7 @@ class GuidedAnchorHead(AnchorHead):
         use_sigmoid_cls (bool): Whether to use sigmoid loss for
             classification. (softmax by default)
         cls_focal_loss (bool): Whether to use focal loss for classification.
-    """  # noqa: W605
+    """
 
     def __init__(self,
                  num_classes,
