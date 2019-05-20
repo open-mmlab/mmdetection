@@ -9,7 +9,6 @@ from ..registry import DETECTORS
 
 @DETECTORS.register_module
 class RPN(BaseDetector, RPNTestMixin):
-
     def __init__(self,
                  backbone,
                  neck,
@@ -29,7 +28,11 @@ class RPN(BaseDetector, RPNTestMixin):
         super(RPN, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:
-            self.neck.init_weights()
+            if isinstance(self.neck, nn.Sequential):
+                for m in self.neck:
+                    m.init_weights()
+            else:
+                self.neck.init_weights()
         self.rpn_head.init_weights()
 
     def extract_feat(self, img):
@@ -50,8 +53,8 @@ class RPN(BaseDetector, RPNTestMixin):
         rpn_outs = self.rpn_head(x)
 
         rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta, self.train_cfg.rpn)
-        losses = self.rpn_head.loss(
-            *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        losses = self.rpn_head.loss(*rpn_loss_inputs,
+                                    gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
     def simple_test(self, img, img_meta, rescale=False):
@@ -64,8 +67,8 @@ class RPN(BaseDetector, RPNTestMixin):
         return proposal_list[0].cpu().numpy()
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        proposal_list = self.aug_test_rpn(
-            self.extract_feats(imgs), img_metas, self.test_cfg.rpn)
+        proposal_list = self.aug_test_rpn(self.extract_feats(imgs), img_metas,
+                                          self.test_cfg.rpn)
         if not rescale:
             for proposals, img_meta in zip(proposal_list, img_metas[0]):
                 img_shape = img_meta['img_shape']

@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import (delta2bbox, multiclass_nms, bbox_target,
-                        weighted_cross_entropy, weighted_smoothl1, accuracy)
+from mmdet.core import (delta2bbox, multiclass_nms, bbox_target, accuracy)
+from ..builder import build_loss
 from ..registry import HEADS
 
 
@@ -15,24 +15,32 @@ class BBoxHead(nn.Module):
     def __init__(self,
                  with_avg_pool=False,
                  with_cls=True,
-                 with_reg=True,
+                 with_bbox=True,
                  roi_feat_size=7,
                  in_channels=256,
                  num_classes=81,
                  target_means=[0., 0., 0., 0.],
                  target_stds=[0.1, 0.1, 0.2, 0.2],
-                 reg_class_agnostic=False):
+                 reg_class_agnostic=False,
+                 loss_cls=dict(type='CrossEntropyLoss',
+                               use_sigmoid=False,
+                               loss_weight=1.0),
+                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
+                                loss_weight=1.0)):
         super(BBoxHead, self).__init__()
-        assert with_cls or with_reg
+        assert with_cls or with_bbox
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
-        self.with_reg = with_reg
+        self.with_bbox = with_bbox
         self.roi_feat_size = roi_feat_size
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.target_means = target_means
         self.target_stds = target_stds
         self.reg_class_agnostic = reg_class_agnostic
+
+        self.loss_cls = build_loss(loss_cls)
+        self.loss_bbox = build_loss(loss_bbox)
 
         in_channels = self.in_channels
         if self.with_avg_pool:
@@ -41,25 +49,25 @@ class BBoxHead(nn.Module):
             in_channels *= (self.roi_feat_size * self.roi_feat_size)
         if self.with_cls:
             self.fc_cls = nn.Linear(in_channels, num_classes)
-        if self.with_reg:
-            out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
-            self.fc_reg = nn.Linear(in_channels, out_dim_reg)
+        if self.with_bbox:
+            out_dim_bbox = 4 if reg_class_agnostic else 4 * num_classes
+            self.fc_bbox = nn.Linear(in_channels, out_dim_bbox)
         self.debug_imgs = None
 
     def init_weights(self):
         if self.with_cls:
             nn.init.normal_(self.fc_cls.weight, 0, 0.01)
             nn.init.constant_(self.fc_cls.bias, 0)
-        if self.with_reg:
-            nn.init.normal_(self.fc_reg.weight, 0, 0.001)
-            nn.init.constant_(self.fc_reg.bias, 0)
+        if self.with_bbox:
+            nn.init.normal_(self.fc_bbox.weight, 0, 0.001)
+            nn.init.constant_(self.fc_bbox.bias, 0)
 
     def forward(self, x):
         if self.with_avg_pool:
             x = self.avg_pool(x)
         x = x.view(x.size(0), -1)
         cls_score = self.fc_cls(x) if self.with_cls else None
-        bbox_pred = self.fc_reg(x) if self.with_reg else None
+        bbox_pred = self.fc_bbox(x) if self.with_bbox else None
         return cls_score, bbox_pred
 
     def get_target(self, sampling_results, gt_bboxes, gt_labels,
@@ -69,16 +77,15 @@ class BBoxHead(nn.Module):
         pos_gt_bboxes = [res.pos_gt_bboxes for res in sampling_results]
         pos_gt_labels = [res.pos_gt_labels for res in sampling_results]
         reg_classes = 1 if self.reg_class_agnostic else self.num_classes
-        cls_reg_targets = bbox_target(
-            pos_proposals,
-            neg_proposals,
-            pos_gt_bboxes,
-            pos_gt_labels,
-            rcnn_train_cfg,
-            reg_classes,
-            target_means=self.target_means,
-            target_stds=self.target_stds)
-        return cls_reg_targets
+        cls_bbox_targets = bbox_target(pos_proposals,
+                                       neg_proposals,
+                                       pos_gt_bboxes,
+                                       pos_gt_labels,
+                                       rcnn_train_cfg,
+                                       reg_classes,
+                                       target_means=self.target_means,
+                                       target_stds=self.target_stds)
+        return cls_bbox_targets
 
     def loss(self,
              cls_score,
@@ -90,8 +97,10 @@ class BBoxHead(nn.Module):
              reduce=True):
         losses = dict()
         if cls_score is not None:
-            losses['loss_cls'] = weighted_cross_entropy(
-                cls_score, labels, label_weights, reduce=reduce)
+            losses['loss_cls'] = self.loss_cls(cls_score,
+                                               labels,
+                                               label_weights,
+                                               reduce=reduce)
             losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0
@@ -100,7 +109,7 @@ class BBoxHead(nn.Module):
             else:
                 pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), -1,
                                                4)[pos_inds, labels[pos_inds]]
-            losses['loss_reg'] = weighted_smoothl1(
+            losses['loss_bbox'] = self.loss_bbox(
                 pos_bbox_pred,
                 bbox_targets[pos_inds],
                 bbox_weights[pos_inds],
@@ -132,8 +141,9 @@ class BBoxHead(nn.Module):
         if cfg is None:
             return bboxes, scores
         else:
-            det_bboxes, det_labels = multiclass_nms(
-                bboxes, scores, cfg.score_thr, cfg.nms, cfg.max_per_img)
+            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
+                                                    cfg.score_thr, cfg.nms,
+                                                    cfg.max_per_img)
 
             return det_bboxes, det_labels
 

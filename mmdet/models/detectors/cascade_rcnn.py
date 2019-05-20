@@ -13,7 +13,6 @@ from mmdet.core import (build_assigner, bbox2roi, bbox2result, build_sampler,
 
 @DETECTORS.register_module
 class CascadeRCNN(BaseDetector, RPNTestMixin):
-
     def __init__(self,
                  num_stages,
                  backbone,
@@ -133,8 +132,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             rpn_outs = self.rpn_head(x)
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
                                           self.train_cfg.rpn)
-            rpn_losses = self.rpn_head.loss(
-                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+            rpn_losses = self.rpn_head.loss(*rpn_loss_inputs,
+                                            gt_bboxes_ignore=gt_bboxes_ignore)
             losses.update(rpn_losses)
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
@@ -153,8 +152,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             sampling_results = []
             if self.with_bbox or self.with_mask:
                 bbox_assigner = build_assigner(rcnn_train_cfg.assigner)
-                bbox_sampler = build_sampler(
-                    rcnn_train_cfg.sampler, context=self)
+                bbox_sampler = build_sampler(rcnn_train_cfg.sampler,
+                                             context=self)
                 num_imgs = img.size(0)
                 if gt_bboxes_ignore is None:
                     gt_bboxes_ignore = [None for _ in range(num_imgs)]
@@ -205,15 +204,13 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     device = bbox_feats.device
                     for res in sampling_results:
                         pos_inds.append(
-                            torch.ones(
-                                res.pos_bboxes.shape[0],
-                                device=device,
-                                dtype=torch.uint8))
+                            torch.ones(res.pos_bboxes.shape[0],
+                                       device=device,
+                                       dtype=torch.uint8))
                         pos_inds.append(
-                            torch.zeros(
-                                res.neg_bboxes.shape[0],
-                                device=device,
-                                dtype=torch.uint8))
+                            torch.zeros(res.neg_bboxes.shape[0],
+                                        device=device,
+                                        dtype=torch.uint8))
                     pos_inds = torch.cat(pos_inds)
                     mask_feats = bbox_feats[pos_inds]
                 mask_head = self.mask_head[i]
@@ -282,12 +279,12 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     mask_roi_extractor = self.mask_roi_extractor[i]
                     mask_head = self.mask_head[i]
                     if det_bboxes.shape[0] == 0:
-                        segm_result = [
-                            [] for _ in range(mask_head.num_classes - 1)
-                        ]
+                        segm_result = [[]
+                                       for _ in range(mask_head.num_classes -
+                                                      1)]
                     else:
-                        _bboxes = (det_bboxes[:, :4] * scale_factor
-                                   if rescale else det_bboxes)
+                        _bboxes = (det_bboxes[:, :4] *
+                                   scale_factor if rescale else det_bboxes)
                         mask_rois = bbox2roi([_bboxes])
                         mask_feats = mask_roi_extractor(
                             x[:len(mask_roi_extractor.featmap_strides)],
@@ -320,12 +317,12 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [
-                    [] for _ in range(self.mask_head[-1].num_classes - 1)
-                ]
+                segm_result = [[]
+                               for _ in range(self.mask_head[-1].num_classes -
+                                              1)]
             else:
-                _bboxes = (det_bboxes[:, :4] * scale_factor
-                           if rescale else det_bboxes)
+                _bboxes = (det_bboxes[:, :4] *
+                           scale_factor if rescale else det_bboxes)
                 mask_rois = bbox2roi([_bboxes])
                 aug_masks = []
                 for i in range(self.num_stages):

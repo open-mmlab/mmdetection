@@ -5,15 +5,13 @@ from ..utils import ConvModule
 
 @HEADS.register_module
 class HTCMaskHead(FCNMaskHead):
-
     def __init__(self, *args, **kwargs):
         super(HTCMaskHead, self).__init__(*args, **kwargs)
-        self.conv_res = ConvModule(
-            self.conv_out_channels,
-            self.conv_out_channels,
-            1,
-            conv_cfg=self.conv_cfg,
-            norm_cfg=self.norm_cfg)
+        self.conv_res = ConvModule(self.conv_out_channels,
+                                   self.conv_out_channels,
+                                   1,
+                                   conv_cfg=self.conv_cfg,
+                                   norm_cfg=self.norm_cfg)
 
     def init_weights(self):
         super(HTCMaskHead, self).init_weights()

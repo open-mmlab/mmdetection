@@ -10,7 +10,6 @@ from mmdet.core import (bbox2roi, bbox2result, build_assigner, build_sampler,
 
 @DETECTORS.register_module
 class HybridTaskCascade(CascadeRCNN):
-
     def __init__(self,
                  num_stages,
                  backbone,
@@ -98,8 +97,9 @@ class HybridTaskCascade(CascadeRCNN):
         if self.mask_info_flow:
             last_feat = None
             for i in range(stage):
-                last_feat = self.mask_head[i](
-                    mask_feats, last_feat, return_logits=False)
+                last_feat = self.mask_head[i](mask_feats,
+                                              last_feat,
+                                              return_logits=False)
             mask_pred = mask_head(mask_feats, last_feat, return_feat=False)
         else:
             mask_pred = mask_head(mask_feats)
@@ -171,8 +171,8 @@ class HybridTaskCascade(CascadeRCNN):
             rpn_outs = self.rpn_head(x)
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
                                           self.train_cfg.rpn)
-            rpn_losses = self.rpn_head.loss(
-                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+            rpn_losses = self.rpn_head.loss(*rpn_loss_inputs,
+                                            gt_bboxes_ignore=gt_bboxes_ignore)
             losses.update(rpn_losses)
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
@@ -205,9 +205,10 @@ class HybridTaskCascade(CascadeRCNN):
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
 
             for j in range(num_imgs):
-                assign_result = bbox_assigner.assign(
-                    proposal_list[j], gt_bboxes[j], gt_bboxes_ignore[j],
-                    gt_labels[j])
+                assign_result = bbox_assigner.assign(proposal_list[j],
+                                                     gt_bboxes[j],
+                                                     gt_bboxes_ignore[j],
+                                                     gt_labels[j])
                 sampling_result = bbox_sampler.sample(
                     assign_result,
                     proposal_list[j],
@@ -308,12 +309,12 @@ class HybridTaskCascade(CascadeRCNN):
                 if self.with_mask:
                     mask_head = self.mask_head[i]
                     if det_bboxes.shape[0] == 0:
-                        segm_result = [
-                            [] for _ in range(mask_head.num_classes - 1)
-                        ]
+                        segm_result = [[]
+                                       for _ in range(mask_head.num_classes -
+                                                      1)]
                     else:
-                        _bboxes = (det_bboxes[:, :4] * scale_factor
-                                   if rescale else det_bboxes)
+                        _bboxes = (det_bboxes[:, :4] *
+                                   scale_factor if rescale else det_bboxes)
                         mask_pred = self._mask_forward_test(
                             i, x, _bboxes, semantic_feat=semantic_feat)
                         segm_result = mask_head.get_seg_masks(
@@ -341,12 +342,12 @@ class HybridTaskCascade(CascadeRCNN):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [
-                    [] for _ in range(self.mask_head[-1].num_classes - 1)
-                ]
+                segm_result = [[]
+                               for _ in range(self.mask_head[-1].num_classes -
+                                              1)]
             else:
-                _bboxes = (det_bboxes[:, :4] * scale_factor
-                           if rescale else det_bboxes)
+                _bboxes = (det_bboxes[:, :4] *
+                           scale_factor if rescale else det_bboxes)
 
                 mask_rois = bbox2roi([_bboxes])
                 aug_masks = []

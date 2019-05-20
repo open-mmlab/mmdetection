@@ -10,7 +10,6 @@ from ..registry import SHARED_HEADS
 
 @SHARED_HEADS.register_module
 class ResLayer(nn.Module):
-
     def __init__(self,
                  depth,
                  stage=3,
@@ -30,17 +29,16 @@ class ResLayer(nn.Module):
         planes = 64 * 2**stage
         inplanes = 64 * 2**(stage - 1) * block.expansion
 
-        res_layer = make_res_layer(
-            block,
-            inplanes,
-            planes,
-            stage_block,
-            stride=stride,
-            dilation=dilation,
-            style=style,
-            with_cp=with_cp,
-            norm_cfg=self.norm_cfg,
-            dcn=dcn)
+        res_layer = make_res_layer(block,
+                                   inplanes,
+                                   planes,
+                                   stage_block,
+                                   stride=stride,
+                                   dilation=dilation,
+                                   style=style,
+                                   with_cp=with_cp,
+                                   norm_cfg=self.norm_cfg,
+                                   dcn=dcn)
         self.add_module('layer{}'.format(stage + 1), res_layer)
 
     def init_weights(self, pretrained=None):
