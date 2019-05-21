@@ -94,7 +94,7 @@ class BaseDetector(nn.Module):
                     data,
                     result,
                     img_norm_cfg,
-                    dataset='coco',
+                    dataset=None,
                     score_thr=0.3):
         if isinstance(result, tuple):
             bbox_result, segm_result = result
@@ -106,9 +106,11 @@ class BaseDetector(nn.Module):
         imgs = tensor2imgs(img_tensor, **img_norm_cfg)
         assert len(imgs) == len(img_metas)
 
-        if isinstance(dataset, str):
+        if dataset is None:
+            class_names = self.CLASSES
+        elif isinstance(dataset, str):
             class_names = get_classes(dataset)
-        elif isinstance(dataset, (list, tuple)) or dataset is None:
+        elif isinstance(dataset, (list, tuple)):
             class_names = dataset
         else:
             raise TypeError(

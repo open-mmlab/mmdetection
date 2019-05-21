@@ -1,24 +1,22 @@
 # model settings
-conv_cfg = dict(type='ConvWS')
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
     type='FasterRCNN',
-    pretrained='open-mmlab://jhu/resnet50_gn_ws',
+    pretrained=None,
     backbone=dict(
         type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
+        frozen_stages=-1,
         style='pytorch',
-        conv_cfg=conv_cfg,
+        zero_init_residual=False,
         norm_cfg=norm_cfg),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5,
-        conv_cfg=conv_cfg,
         norm_cfg=norm_cfg),
     rpn_head=dict(
         type='RPNHead',
@@ -47,7 +45,6 @@ model = dict(
         target_means=[0., 0., 0., 0.],
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
-        conv_cfg=conv_cfg,
         norm_cfg=norm_cfg))
 # model training and testing settings
 train_cfg = dict(
@@ -88,6 +85,7 @@ train_cfg = dict(
             pos_fraction=0.25,
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
+        mask_size=28,
         pos_weight=-1,
         debug=False))
 test_cfg = dict(
@@ -142,15 +140,20 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+optimizer = dict(
+    type='SGD',
+    lr=0.02,
+    momentum=0.9,
+    weight_decay=0.0001,
+    paramwise_options=dict(norm_decay_mult=0))
+optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=500,
-    warmup_ratio=1.0 / 3,
-    step=[8, 11])
+    warmup_ratio=0.1,
+    step=[65, 71])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -161,10 +164,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 73
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/faster_rcnn_r50_fpn_gn_ws_1x'
+work_dir = './work_dirs/scratch_faster_rcnn_r50_fpn_gn_6x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

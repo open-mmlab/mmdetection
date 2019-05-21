@@ -26,10 +26,7 @@ def single_gpu_test(model, data_loader, show=False):
         results.append(result)
 
         if show:
-            model.module.show_result(data,
-                                     result,
-                                     dataset.img_norm_cfg,
-                                     dataset=dataset.CLASSES)
+            model.module.show_result(data, result, dataset.img_norm_cfg)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -66,15 +63,12 @@ def collect_results(result_part, size, tmpdir=None):
     if tmpdir is None:
         MAX_LEN = 512
         # 32 is whitespace
-        dir_tensor = torch.full((MAX_LEN, ),
-                                32,
-                                dtype=torch.uint8,
-                                device='cuda')
+        dir_tensor = torch.full(
+            (MAX_LEN, ), 32, dtype=torch.uint8, device='cuda')
         if rank == 0:
             tmpdir = tempfile.mkdtemp()
-            tmpdir = torch.tensor(bytearray(tmpdir.encode()),
-                                  dtype=torch.uint8,
-                                  device='cuda')
+            tmpdir = torch.tensor(
+                bytearray(tmpdir.encode()), dtype=torch.uint8, device='cuda')
             dir_tensor[:len(tmpdir)] = tmpdir
         dist.broadcast(dir_tensor, 0)
         tmpdir = dir_tensor.cpu().numpy().tobytes().decode().rstrip()
@@ -116,10 +110,11 @@ def parse_args():
         help='eval types')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument('--tmpdir', help='tmp dir for writing some results')
-    parser.add_argument('--launcher',
-                        choices=['none', 'pytorch', 'slurm', 'mpi'],
-                        default='none',
-                        help='job launcher')
+    parser.add_argument(
+        '--launcher',
+        choices=['none', 'pytorch', 'slurm', 'mpi'],
+        default='none',
+        help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
     return args
@@ -148,11 +143,12 @@ def main():
     # build the dataloader
     # TODO: support multiple images per gpu (only minor changes are needed)
     dataset = get_dataset(cfg.data.test)
-    data_loader = build_dataloader(dataset,
-                                   imgs_per_gpu=1,
-                                   workers_per_gpu=cfg.data.workers_per_gpu,
-                                   dist=distributed,
-                                   shuffle=False)
+    data_loader = build_dataloader(
+        dataset,
+        imgs_per_gpu=1,
+        workers_per_gpu=cfg.data.workers_per_gpu,
+        dist=distributed,
+        shuffle=False)
 
     # build the model and load checkpoint
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)

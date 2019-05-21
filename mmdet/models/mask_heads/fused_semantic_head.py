@@ -85,10 +85,7 @@ class FusedSemanticHead(nn.Module):
         for i, feat in enumerate(feats):
             if i != self.fusion_level:
                 feat = F.interpolate(
-                    feat,
-                    size=fused_size,
-                    mode='bilinear',
-                    align_corners=True)
+                    feat, size=fused_size, mode='bilinear', align_corners=True)
                 x += self.lateral_convs[i](feat)
 
         for i in range(self.num_convs):

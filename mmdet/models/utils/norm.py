@@ -1,10 +1,9 @@
 import torch.nn as nn
 
-
 norm_cfg = {
     # format: layer_type: (abbreviation, module)
     'BN': ('bn', nn.BatchNorm2d),
-    'SyncBN': ('bn', None),
+    'SyncBN': ('bn', nn.SyncBatchNorm),
     'GN': ('gn', nn.GroupNorm),
     # and potentially 'SN'
 }
@@ -44,6 +43,8 @@ def build_norm_layer(cfg, num_features, postfix=''):
     cfg_.setdefault('eps', 1e-5)
     if layer_type != 'GN':
         layer = norm_layer(num_features, **cfg_)
+        if layer_type == 'SyncBN':
+            layer._specify_ddp_gpu_num(1)
     else:
         assert 'num_groups' in cfg_
         layer = norm_layer(num_channels=num_features, **cfg_)

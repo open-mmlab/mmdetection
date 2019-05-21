@@ -25,10 +25,8 @@ def build_dataloader(dataset,
             sampler = DistributedGroupSampler(dataset, imgs_per_gpu,
                                               world_size, rank)
         else:
-            sampler = DistributedSampler(dataset,
-                                         world_size,
-                                         rank,
-                                         shuffle=False)
+            sampler = DistributedSampler(
+                dataset, world_size, rank, shuffle=False)
         batch_size = imgs_per_gpu
         num_workers = workers_per_gpu
     else:
@@ -36,13 +34,13 @@ def build_dataloader(dataset,
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
-    data_loader = DataLoader(dataset,
-                             batch_size=batch_size,
-                             sampler=sampler,
-                             num_workers=num_workers,
-                             collate_fn=partial(collate,
-                                                samples_per_gpu=imgs_per_gpu),
-                             pin_memory=False,
-                             **kwargs)
+    data_loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        sampler=sampler,
+        num_workers=num_workers,
+        collate_fn=partial(collate, samples_per_gpu=imgs_per_gpu),
+        pin_memory=False,
+        **kwargs)
 
     return data_loader

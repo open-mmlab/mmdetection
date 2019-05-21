@@ -3,7 +3,12 @@ import torch
 from mmdet.ops.nms import nms_wrapper
 
 
-def multiclass_nms(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
+def multiclass_nms(multi_bboxes,
+                   multi_scores,
+                   score_thr,
+                   nms_cfg,
+                   max_num=-1,
+                   score_factors=None):
     """NMS for multi-class bboxes.
 
     Args:
@@ -14,6 +19,8 @@ def multiclass_nms(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
         nms_thr (float): NMS IoU threshold
         max_num (int): if there are more than max_num bboxes after NMS,
             only top max_num will be kept.
+        score_factors (Tensor): The factors multiplied to scores before
+            applying NMS
 
     Returns:
         tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
@@ -34,6 +41,8 @@ def multiclass_nms(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
         else:
             _bboxes = multi_bboxes[cls_inds, i * 4:(i + 1) * 4]
         _scores = multi_scores[cls_inds, i]
+        if score_factors is not None:
+            _scores *= score_factors[cls_inds]
         cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
         cls_dets, _ = nms_op(cls_dets, **nms_cfg_)
         cls_labels = multi_bboxes.new_full(
