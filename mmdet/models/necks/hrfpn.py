@@ -4,13 +4,12 @@ import torch.nn.functional as F
 from torch.utils.checkpoint import checkpoint
 from mmcv.cnn.weight_init import caffe2_xavier_init
 
-from ..utils import build_conv_layer
+from ..utils import ConvModule
 from ..registry import NECKS
 
 
 @NECKS.register_module
 class HRFPN(nn.Module):
-
     """HRFPN (High Resolution Feature Pyrmamids)
     arXiv: https://arxiv.org/abs/1904.04514
 
@@ -39,23 +38,24 @@ class HRFPN(nn.Module):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
 
-        self.reduction_conv = nn.Sequential(
-            build_conv_layer(
-                self.conv_cfg,
-                sum(in_channels),
-                out_channels,
-                kernel_size=1
-            ))
+        self.reduction_conv = ConvModule(
+            sum(in_channels),
+            out_channels,
+            kernel_size=1,
+            conv_cfg=self.conv_cfg,
+            activation=None
+        )
 
-        self.fpn_conv = nn.ModuleList()
+        self.fpn_convs = nn.ModuleList()
         for i in range(self.num_outs):
-            self.fpn_conv.append(
-                build_conv_layer(
-                    self.conv_cfg,
+            self.fpn_convs.append(
+                ConvModule(
                     out_channels,
                     out_channels,
                     kernel_size=3,
                     padding=1,
+                    conv_cfg=self.conv_cfg,
+                    activation=None
                 ))
 
         if pooling_type == 'MAX':
@@ -86,8 +86,8 @@ class HRFPN(nn.Module):
 
         for i in range(self.num_outs):
             if outs[i].requires_grad and self.with_cp:
-                tmp_out = checkpoint(self.fpn_conv[i], outs[i])
+                tmp_out = checkpoint(self.fpn_convs[i], outs[i])
             else:
-                tmp_out = self.fpn_conv[i](outs[i])
+                tmp_out = self.fpn_convs[i](outs[i])
             outputs.append(tmp_out)
         return tuple(outputs)

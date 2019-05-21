@@ -10,10 +10,10 @@ from .resnet import BasicBlock, Bottleneck
 
 
 class HRModule(nn.Module):
-
     """ High-Resolution Module for HRNet. In this module, every branch
     has 4 BasicBlocks/Bottlenecks. Fusion/Exchange is in this module.
     """
+
     def __init__(self,
                  num_branches,
                  blocks,
@@ -205,7 +205,6 @@ class HRModule(nn.Module):
 
 @BACKBONES.register_module
 class HRNet(nn.Module):
-
     """HRNet backbone.
     High-Resolution Representations for Labeling Pixels and Regions
     arXiv: https://arxiv.org/abs/1904.04514
@@ -232,7 +231,7 @@ class HRNet(nn.Module):
             norm_cfg=dict(type='BN'),
             norm_eval=True,
             with_cp=False,
-            zero_init_residual=False,
+            zero_init_residual=False
     ):
         super(HRNet, self).__init__()
         self.extra = extra
@@ -357,12 +356,12 @@ class HRNet(nn.Module):
                 else:
                     transition_layers.append(None)
             else:
-                conv3x3s = []
+                conv_downsamples = []
                 for j in range(i + 1 - num_branches_pre):
                     in_channels = num_channels_pre_layer[-1]
                     out_channels = num_channels_cur_layer[i] \
                         if j == i - num_branches_pre else in_channels
-                    conv3x3s.append(
+                    conv_downsamples.append(
                         nn.Sequential(
                             build_conv_layer(
                                 self.conv_cfg,
@@ -379,7 +378,7 @@ class HRNet(nn.Module):
                             )[1],
                             nn.ReLU(inplace=True)
                         ))
-                transition_layers.append(nn.Sequential(*conv3x3s))
+                transition_layers.append(nn.Sequential(*conv_downsamples))
 
         return nn.ModuleList(transition_layers)
 
