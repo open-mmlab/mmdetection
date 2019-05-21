@@ -16,8 +16,13 @@ class HRFPN(nn.Module):
     Args:
         in_channels (list): number of channels for each branch.
         out_channels (int): output channels of feature pyramids.
+        num_outs (int): number of output stages.
         pooling_type (str): pooling for generating feature pyramids
-            from {MAX, AVG}
+            from {MAX, AVG}.
+        conv_cfg (dict): dictionary to construct and config conv layer.
+        norm_cfg (dict): dictionary to construct and config norm layer.
+        with_cp  (bool): Use checkpoint or not. Using checkpoint will save some
+            memory while slowing down the training speed.
     """
 
     def __init__(self,

@@ -27,11 +27,11 @@ Faster R-CNN
 | Backbone|#Params|GFLOPs|Lr sched|mAP|Download|
 | :--:|:--:|:--:|:--:|:--:|:--:|
 | HRNetV2-W18 |26.2M|159.1| 1x | 36.1 | [model](https://1drv.ms/u/s!Avk3cZ0cr1Jeake7zkUDn0zJE8w)|
-| HRNetV2-W18 |26.2M|159.1| 2x | 38.1 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JeaeLG5k4Ic7WzHHc)|
+| HRNetV2-W18 |26.2M|159.1| 20-23-24e | 38.1 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JeaeLG5k4Ic7WzHHc)|
 | HRNetV2-W32 |45.0M|245.3| 1x | 39.5 | [model](https://1drv.ms/u/s!Avk3cZ0cr1Jea028vq-D4fP8Hac)|
-| HRNetV2-W32 |45.0M|245.3| 2x | 40.8 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JebPbIUQndxFZGf84)|
+| HRNetV2-W32 |45.0M|245.3| 20-23-24e | 40.8 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JebPbIUQndxFZGf84)|
 | HRNetV2-W40 |60.5M|314.9| 1x | 40.4 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JebW7qRwQSWGHhaXw)|
-| HRNetV2-W40 |60.5M|314.9| 2x | 41.4 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JebwOjVjwjUxzAWso)|
+| HRNetV2-W40 |60.5M|314.9| 20-23-24e | 41.4 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JebwOjVjwjUxzAWso)|
 
 
 Mask R-CNN
@@ -39,9 +39,9 @@ Mask R-CNN
 |Backbone|Lr sched|mask mAP|box mAP|Download|
 |:--:|:--:|:--:|:--:|:--:|
 | HRNetV2-W18 | 1x | 34.2 | 37.3 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JebvCt1X1LUiWEMs8)|
-| HRNetV2-W18 | 2x | 35.7 | 39.2 | [model](https://1drv.ms/u/s!Avk3cZ0cr1Jec5coSg_yGhQVJUk)|
+| HRNetV2-W18 | 20-23-24e | 35.7 | 39.2 | [model](https://1drv.ms/u/s!Avk3cZ0cr1Jec5coSg_yGhQVJUk)|
 | HRNetV2-W32 | 1x | 36.8 | 40.7 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JedCa_MG1Qage0JkE)|
-| HRNetV2-W32 | 2x | 37.6 | 42.1 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JedUGjiRI3Ld3Vbqs)|
+| HRNetV2-W32 | 20-23-24e | 37.6 | 42.1 | [model](https://1drv.ms/u/s!Avk3cZ0cr1JedUGjiRI3Ld3Vbqs)|
 
 Cascade R-CNN
 
