@@ -29,7 +29,7 @@ class BBoxHead(nn.Module):
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
         super(BBoxHead, self).__init__()
-        assert with_cls or with_bbox
+        assert with_cls or with_reg
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
         self.with_reg = with_reg
