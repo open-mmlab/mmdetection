@@ -1,6 +1,4 @@
 # model settings
-norm_cfg = dict(type='SyncBN', requires_grad=True)
-
 model = dict(
     type='MaskRCNN',
     pretrained='modelzoo://resnet50',
@@ -12,11 +10,9 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         gcb=dict(
-            ratio=1./4.,
+            ratio=1./16.,
         ),
-        stage_with_gcb=(False, True, True, True),
-        norm_eval=False,
-        norm_cfg=norm_cfg),
+        stage_with_gcb=(False, True, True, True)),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -177,7 +173,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r4_ct_c3-c5_r50_fpn_sbn_1x'
+work_dir = './work_dirs/mask_rcnn_r16_ct_c3-c5_r50_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
