@@ -26,16 +26,15 @@ class MaskIoUHead(nn.Module):
 
         self.convs = nn.ModuleList()
         for i in range(num_convs):
-            in_channels = (self.in_channels + 1
-                           if i == 0 else self.conv_out_channels)
+            in_channels = (self.in_channels +
+                           1 if i == 0 else self.conv_out_channels)
             stride = 2 if i == num_convs - 1 else 1
             self.convs.append(
-                nn.Conv2d(
-                    in_channels,
-                    self.conv_out_channels,
-                    3,
-                    stride=stride,
-                    padding=1))
+                nn.Conv2d(in_channels,
+                          self.conv_out_channels,
+                          3,
+                          stride=stride,
+                          padding=1))
 
         self.fcs = nn.ModuleList()
         for i in range(num_fcs):
@@ -51,12 +50,11 @@ class MaskIoUHead(nn.Module):
         for conv in self.convs:
             kaiming_init(conv)
         for fc in self.fcs:
-            kaiming_init(
-                fc,
-                a=1,
-                mode='fan_in',
-                nonlinearity='leaky_relu',
-                distribution='uniform')
+            kaiming_init(fc,
+                         a=1,
+                         mode='fan_in',
+                         nonlinearity='leaky_relu',
+                         distribution='uniform')
         normal_init(self.mask_iou, std=0.01)
 
     def forward(self, x, mask_pred):
@@ -71,13 +69,14 @@ class MaskIoUHead(nn.Module):
         mask_iou = self.mask_iou(x)
         return mask_iou
 
-    def get_target(self, sampling_results, gt_masks, mask_pred, mask_targets):
+    def get_target(self, sampling_results, gt_masks, mask_pred, mask_targets,
+                   rcnn_train_cfg):
         pos_proposals = [res.pos_bboxes for res in sampling_results]
         pos_assigned_gt_inds = [
             res.pos_assigned_gt_inds for res in sampling_results
         ]
         return mask_iou_target(pos_proposals, pos_assigned_gt_inds, gt_masks,
-                               mask_pred, mask_targets)
+                               mask_pred, mask_targets, rcnn_train_cfg)
 
     def loss(self, mask_iou_pred, mask_iou_targets):
         loss = dict()

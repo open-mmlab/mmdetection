@@ -23,10 +23,7 @@ def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
         return
 
     for res_type in result_types:
-        if res_type == 'proposal':
-            result_file = result_files['bbox']
-        else:
-            result_file = result_files[res_type]
+        result_file = result_files[res_type]
         assert result_file.endswith('.json')
 
         coco_dets = coco.loadRes(result_file)
@@ -101,7 +98,7 @@ def proposal2json(dataset, results):
             data['score'] = float(bboxes[i][4])
             data['category_id'] = 1
             json_results.append(data)
-    return dict(proposal=json_results)
+    return json_results
 
 
 def det2json(dataset, results):
@@ -118,7 +115,7 @@ def det2json(dataset, results):
                 data['score'] = float(bboxes[i][4])
                 data['category_id'] = dataset.cat_ids[label]
                 json_results.append(data)
-    return dict(bbox=json_results)
+    return json_results
 
 
 def segm2json(dataset, results):
@@ -154,21 +151,27 @@ def segm2json(dataset, results):
                 segms[i]['counts'] = segms[i]['counts'].decode()
                 data['segmentation'] = segms[i]
                 segm_json_results.append(data)
-    return dict(bbox=bbox_json_results, segm=segm_json_results)
+    return bbox_json_results, segm_json_results
 
 
 def results2json(dataset, results, out_file):
+    result_files = dict()
     if isinstance(results[0], list):
         json_results = det2json(dataset, results)
+        result_files['bbox'] = '{}.{}.json'.format(out_file, 'bbox')
+        result_files['proposal'] = '{}.{}.json'.format(out_file, 'bbox')
+        mmcv.dump(json_results, result_files['bbox'])
     elif isinstance(results[0], tuple):
         json_results = segm2json(dataset, results)
+        result_files['bbox'] = '{}.{}.json'.format(out_file, 'bbox')
+        result_files['proposal'] = '{}.{}.json'.format(out_file, 'bbox')
+        result_files['segm'] = '{}.{}.json'.format(out_file, 'segm')
+        mmcv.dump(json_results[0], result_files['bbox'])
+        mmcv.dump(json_results[1], result_files['segm'])
     elif isinstance(results[0], np.ndarray):
         json_results = proposal2json(dataset, results)
+        result_files['proposal'] = '{}.{}.json'.format(out_file, 'proposal')
+        mmcv.dump(json_results, result_files['proposal'])
     else:
         raise TypeError('invalid type of results')
-    result_files = dict()
-    for eval_type, json_result in json_results.items():
-        result_file = '{}.{}.json'.format(out_file, eval_type)
-        mmcv.dump(json_result, result_file)
-        result_files[eval_type] = result_file
     return result_files

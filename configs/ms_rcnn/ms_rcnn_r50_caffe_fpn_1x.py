@@ -1,6 +1,6 @@
 # model settings
 model = dict(
-    type='MaskRCNN',
+    type='MaskScoringRCNN',
     pretrained='open-mmlab://resnet50_caffe',
     backbone=dict(
         type='ResNet',
@@ -8,7 +8,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        normalize=dict(type='BN', requires_grad=False),
+        norm_cfg=dict(type='BN', requires_grad=False),
         style='caffe'),
     neck=dict(
         type='FPN',
@@ -101,6 +101,7 @@ train_cfg = dict(
             add_gt_as_proposals=True),
         mask_size=28,
         pos_weight=-1,
+        mask_thr_binary=0.5,
         debug=False))
 test_cfg = dict(
     rpn=dict(

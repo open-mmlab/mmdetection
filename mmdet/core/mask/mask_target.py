@@ -37,12 +37,12 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
 
 
 def mask_iou_target(pos_proposals_list, pos_assigned_gt_inds_list,
-                    gt_masks_list, mask_preds, mask_targets):
+                    gt_masks_list, mask_preds, mask_targets, cfg):
     area_ratios = map(mask_iou_target_single, pos_proposals_list,
                       pos_assigned_gt_inds_list, gt_masks_list)
     area_ratios = torch.cat(list(area_ratios))
     assert mask_targets.size(0) == area_ratios.size(0)
-    mask_pred = (mask_preds > 0.5).float()  # binarize mask pred
+    mask_pred = (mask_preds > cfg.mask_thr_binary).float()
     mask_overlaps = (mask_pred * mask_targets).sum((-1, -2))
     full_areas = mask_targets.sum((-1, -2)) / area_ratios
     mask_unions = mask_pred.sum((-1, -2)) + full_areas - mask_overlaps

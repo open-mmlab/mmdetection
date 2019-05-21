@@ -16,7 +16,6 @@ class MaskRCNN(TwoStageDetector):
                  test_cfg,
                  neck=None,
                  shared_head=None,
-                 mask_iou_head=None,
                  pretrained=None):
         super(MaskRCNN, self).__init__(
             backbone=backbone,
@@ -27,7 +26,6 @@ class MaskRCNN(TwoStageDetector):
             bbox_head=bbox_head,
             mask_roi_extractor=mask_roi_extractor,
             mask_head=mask_head,
-            mask_iou_head=mask_iou_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
             pretrained=pretrained)

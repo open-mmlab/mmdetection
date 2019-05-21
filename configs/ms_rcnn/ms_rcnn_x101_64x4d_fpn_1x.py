@@ -1,6 +1,6 @@
 # model settings
 model = dict(
-    type='MaskRCNN',
+    type='MaskScoringRCNN',
     pretrained='open-mmlab://resnext101_64x4d',
     backbone=dict(
         type='ResNeXt',
@@ -102,6 +102,7 @@ train_cfg = dict(
             add_gt_as_proposals=True),
         mask_size=28,
         pos_weight=-1,
+        mask_thr_binary=0.5,
         debug=False))
 test_cfg = dict(
     rpn=dict(
