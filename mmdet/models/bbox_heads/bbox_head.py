@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import (delta2bbox, multiclass_nms, bbox_target, accuracy)
+from mmdet.core import delta2bbox, multiclass_nms, bbox_target, accuracy
 from ..builder import build_loss
 from ..registry import HEADS
 

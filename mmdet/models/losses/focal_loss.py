@@ -1,15 +1,20 @@
 from mmdet.core import weighted_sigmoid_focal_loss
 
-from .cross_entropy_loss import CrossEntropyLoss
 from ..registry import LOSSES
 
 
 @LOSSES.register_module
-class FocalLoss(CrossEntropyLoss):
+class FocalLoss(nn.Module):
 
-    def __init__(self, gamma=2.0, alpha=0.25, *args, **kwargs):
-        super(FocalLoss, self).__init__(*args, **kwargs)
-        assert self.use_sigmoid is True, 'Only sigmoid focaloss supported now.'
+    def __init__(self,
+                 use_sigmoid=False,
+                 loss_weight=1.0,
+                 gamma=2.0,
+                 alpha=0.25):
+        super(FocalLoss, self).__init__()
+        assert use_sigmoid is True, 'Only sigmoid focaloss supported now.'
+        self.use_sigmoid = use_sigmoid
+        self.loss_weight = loss_weight
         self.gamma = gamma
         self.alpha = alpha
         self.cls_criterion = weighted_sigmoid_focal_loss
@@ -25,5 +30,5 @@ class FocalLoss(CrossEntropyLoss):
                 *args,
                 **kwargs)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
         return loss_cls
