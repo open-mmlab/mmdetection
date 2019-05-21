@@ -63,7 +63,7 @@ class ConvFCBBoxHead(BBoxHead):
         # add reg specific branch
         self.reg_convs, self.reg_fcs, self.reg_last_dim = \
             self._add_conv_fc_branch(
-                self.num_bbox_convs, self.num_bbox_fcs, self.shared_out_channels)
+              self.num_bbox_convs, self.num_bbox_fcs, self.shared_out_channels)
 
         if self.num_shared_fcs == 0 and not self.with_avg_pool:
             if self.num_cls_fcs == 0:
