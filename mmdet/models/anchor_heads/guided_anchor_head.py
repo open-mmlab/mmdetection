@@ -61,8 +61,10 @@ class GuidedAnchorHead(AnchorHead):
         num_classes (int): Number of classes.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of channels of the feature map.
-        octave_base_scale: base octave scale of each level of feature map.
-        scales_per_octave: number of octave scales in each level of feature map
+        octave_base_scale (int): Base octave scale of each level of
+            feature map.
+        scales_per_octave (int): Number of octave scales in each level of
+            feature map
         octave_ratios (Iterable): octave aspect ratios.
         anchor_strides (Iterable): Anchor strides.
         anchor_base_sizes (Iterable): Anchor base sizes.
