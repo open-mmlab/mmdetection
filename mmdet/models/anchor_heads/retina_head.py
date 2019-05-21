@@ -59,7 +59,7 @@ class RetinaHead(AnchorHead):
             self.num_anchors * self.cls_out_channels,
             3,
             padding=1)
-        self.retina_bbox = nn.Conv2d(
+        self.retina_reg = nn.Conv2d(
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
 
     def init_weights(self):
@@ -69,7 +69,7 @@ class RetinaHead(AnchorHead):
             normal_init(m.conv, std=0.01)
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.retina_cls, std=0.01, bias=bias_cls)
-        normal_init(self.retina_bbox, std=0.01)
+        normal_init(self.retina_reg, std=0.01)
 
     def forward_single(self, x):
         cls_feat = x
@@ -79,5 +79,5 @@ class RetinaHead(AnchorHead):
         for reg_conv in self.reg_convs:
             reg_feat = reg_conv(reg_feat)
         cls_score = self.retina_cls(cls_feat)
-        bbox_pred = self.retina_bbox(reg_feat)
+        bbox_pred = self.retina_reg(reg_feat)
         return cls_score, bbox_pred
