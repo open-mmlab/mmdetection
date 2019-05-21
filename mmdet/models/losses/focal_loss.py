@@ -1,3 +1,4 @@
+import torch.nn as nn
 from mmdet.core import weighted_sigmoid_focal_loss
 
 from ..registry import LOSSES
