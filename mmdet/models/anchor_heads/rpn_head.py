@@ -20,18 +20,18 @@ class RPNHead(AnchorHead):
             self.in_channels, self.feat_channels, 3, padding=1)
         self.rpn_cls = nn.Conv2d(self.feat_channels,
                                  self.num_anchors * self.cls_out_channels, 1)
-        self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
+        self.rpn_bbox = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
 
     def init_weights(self):
         normal_init(self.rpn_conv, std=0.01)
         normal_init(self.rpn_cls, std=0.01)
-        normal_init(self.rpn_reg, std=0.01)
+        normal_init(self.rpn_bbox, std=0.01)
 
     def forward_single(self, x):
         x = self.rpn_conv(x)
         x = F.relu(x, inplace=True)
         rpn_cls_score = self.rpn_cls(x)
-        rpn_bbox_pred = self.rpn_reg(x)
+        rpn_bbox_pred = self.rpn_bbox(x)
         return rpn_cls_score, rpn_bbox_pred
 
     def loss(self,
@@ -50,7 +50,7 @@ class RPNHead(AnchorHead):
             cfg,
             gt_bboxes_ignore=gt_bboxes_ignore)
         return dict(
-            loss_rpn_cls=losses['loss_cls'], loss_rpn_reg=losses['loss_reg'])
+            loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
     def get_bboxes_single(self,
                           cls_scores,

@@ -4,9 +4,10 @@ import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
 
+from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule
-from mmdet.core import mask_cross_entropy, mask_target
+from mmdet.core import mask_target
 
 
 @HEADS.register_module
@@ -23,7 +24,9 @@ class FCNMaskHead(nn.Module):
                  num_classes=81,
                  class_agnostic=False,
                  conv_cfg=None,
-                 norm_cfg=None):
+                 norm_cfg=None,
+                 loss_mask=dict(
+                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(FCNMaskHead, self).__init__()
         if upsample_method not in [None, 'deconv', 'nearest', 'bilinear']:
             raise ValueError(
@@ -40,6 +43,7 @@ class FCNMaskHead(nn.Module):
         self.class_agnostic = class_agnostic
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.loss_mask = build_loss(loss_mask)
 
         self.convs = nn.ModuleList()
         for i in range(self.num_convs):
@@ -106,10 +110,10 @@ class FCNMaskHead(nn.Module):
     def loss(self, mask_pred, mask_targets, labels):
         loss = dict()
         if self.class_agnostic:
-            loss_mask = mask_cross_entropy(mask_pred, mask_targets,
-                                           torch.zeros_like(labels))
+            loss_mask = self.loss_mask(mask_pred, mask_targets,
+                                       torch.zeros_like(labels))
         else:
-            loss_mask = mask_cross_entropy(mask_pred, mask_targets, labels)
+            loss_mask = self.loss_mask(mask_pred, mask_targets, labels)
         loss['loss_mask'] = loss_mask
         return loss
 
