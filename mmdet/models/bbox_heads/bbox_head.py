@@ -15,7 +15,7 @@ class BBoxHead(nn.Module):
     def __init__(self,
                  with_avg_pool=False,
                  with_cls=True,
-                 with_bbox=True,
+                 with_reg=True,
                  roi_feat_size=7,
                  in_channels=256,
                  num_classes=81,
@@ -32,7 +32,7 @@ class BBoxHead(nn.Module):
         assert with_cls or with_bbox
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
-        self.with_bbox = with_bbox
+        self.with_reg = with_reg
         self.roi_feat_size = roi_feat_size
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -50,25 +50,25 @@ class BBoxHead(nn.Module):
             in_channels *= (self.roi_feat_size * self.roi_feat_size)
         if self.with_cls:
             self.fc_cls = nn.Linear(in_channels, num_classes)
-        if self.with_bbox:
-            out_dim_bbox = 4 if reg_class_agnostic else 4 * num_classes
-            self.fc_bbox = nn.Linear(in_channels, out_dim_bbox)
+        if self.with_reg:
+            out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
+            self.fc_reg = nn.Linear(in_channels, out_dim_reg)
         self.debug_imgs = None
 
     def init_weights(self):
         if self.with_cls:
             nn.init.normal_(self.fc_cls.weight, 0, 0.01)
             nn.init.constant_(self.fc_cls.bias, 0)
-        if self.with_bbox:
-            nn.init.normal_(self.fc_bbox.weight, 0, 0.001)
-            nn.init.constant_(self.fc_bbox.bias, 0)
+        if self.with_reg:
+            nn.init.normal_(self.fc_reg.weight, 0, 0.001)
+            nn.init.constant_(self.fc_reg.bias, 0)
 
     def forward(self, x):
         if self.with_avg_pool:
             x = self.avg_pool(x)
         x = x.view(x.size(0), -1)
         cls_score = self.fc_cls(x) if self.with_cls else None
-        bbox_pred = self.fc_bbox(x) if self.with_bbox else None
+        bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
 
     def get_target(self, sampling_results, gt_bboxes, gt_labels,
@@ -78,7 +78,7 @@ class BBoxHead(nn.Module):
         pos_gt_bboxes = [res.pos_gt_bboxes for res in sampling_results]
         pos_gt_labels = [res.pos_gt_labels for res in sampling_results]
         reg_classes = 1 if self.reg_class_agnostic else self.num_classes
-        cls_bbox_targets = bbox_target(
+        cls_reg_targets = bbox_target(
             pos_proposals,
             neg_proposals,
             pos_gt_bboxes,
@@ -87,7 +87,7 @@ class BBoxHead(nn.Module):
             reg_classes,
             target_means=self.target_means,
             target_stds=self.target_stds)
-        return cls_bbox_targets
+        return cls_reg_targets
 
     def loss(self,
              cls_score,

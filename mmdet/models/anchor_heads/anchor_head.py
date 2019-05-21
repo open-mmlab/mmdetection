@@ -76,15 +76,15 @@ class AnchorHead(nn.Module):
     def _init_layers(self):
         self.conv_cls = nn.Conv2d(self.feat_channels,
                                   self.num_anchors * self.cls_out_channels, 1)
-        self.conv_bbox = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
+        self.conv_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
 
     def init_weights(self):
         normal_init(self.conv_cls, std=0.01)
-        normal_init(self.conv_bbox, std=0.01)
+        normal_init(self.conv_reg, std=0.01)
 
     def forward_single(self, x):
         cls_score = self.conv_cls(x)
-        bbox_pred = self.conv_bbox(x)
+        bbox_pred = self.conv_reg(x)
         return cls_score, bbox_pred
 
     def forward(self, feats):
@@ -163,7 +163,7 @@ class AnchorHead(nn.Module):
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        cls_bbox_targets = anchor_target(
+        cls_reg_targets = anchor_target(
             anchor_list,
             valid_flag_list,
             gt_bboxes,
@@ -175,10 +175,10 @@ class AnchorHead(nn.Module):
             gt_labels_list=gt_labels,
             label_channels=label_channels,
             sampling=self.sampling)
-        if cls_bbox_targets is None:
+        if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_pos, num_total_neg) = cls_bbox_targets
+         num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (
             num_total_pos + num_total_neg if self.sampling else num_total_pos)
         losses_cls, losses_bbox = multi_apply(
