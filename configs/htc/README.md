@@ -34,7 +34,7 @@ mmdetection
 
 ## Results and Models
 
-The results on COCO 2017val is shown in the below table. (results on test-dev are usually slightly higher than val)
+The results on COCO 2017val are shown in the below table. (results on test-dev are usually slightly higher than val)
 
 | Backbone  | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
 |:---------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:-------:|:--------:|
