@@ -18,6 +18,7 @@ class BFP(nn.Module):
                  end_level=-1,
                  add_extra_convs=False,
                  extra_convs_on_inputs=True,
+                 relu_before_extra_convs=False,
                  conv_cfg=None,
                  norm_cfg=None,
                  refine_level=2,
@@ -30,6 +31,7 @@ class BFP(nn.Module):
         self.num_ins = len(in_channels)
         self.num_outs = num_outs
         self.activation = activation
+        self.relu_before_extra_convs = relu_before_extra_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
 
@@ -91,8 +93,8 @@ class BFP(nn.Module):
                     3,
                     stride=2,
                     padding=1,
-                    normalize=normalize,
-                    bias=self.with_bias,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg,
                     activation=self.activation,
                     inplace=False)
                 self.extra_convs.append(extra_conv)
@@ -147,8 +149,11 @@ class BFP(nn.Module):
                 else:
                     outs.append(self.extra_convs[0](outs[-1]))
                 for i in range(used_backbone_levels + 1, self.num_outs):
-                    # BUG: we should add relu before each extra conv
-                    outs.append(self.extra_convs[i - used_backbone_levels](
-                        outs[-1]))
+                    if self.relu_before_extra_convs:
+                        outs.append(self.extra_convs[i - used_backbone_levels](
+                            F.relu(outs[-1])))
+                    else:
+                        outs.append(self.extra_convs[i - used_backbone_levels](
+                            outs[-1]))
 
         return tuple(outs)
