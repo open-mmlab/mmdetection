@@ -12,23 +12,23 @@ def last_zero_init(m):
 
 class ContextBlock(nn.Module):
 
-    def __init__(self, inplanes, planes, pooling_method, fusion_methods):
+    def __init__(self, inplanes, planes, pooling_type, fusion_types):
         super(ContextBlock, self).__init__()
-        assert pooling_method in ['avg', 'att']
-        assert isinstance(fusion_methods, (list, tuple))
+        assert pooling_type in ['avg', 'att']
+        assert isinstance(fusion_types, (list, tuple))
         valid_fusion_methods = ['channel_add', 'channel_mul']
-        assert all([f in valid_fusion_methods for f in fusion_methods])
-        assert len(fusion_methods) > 0, 'at least one fusion should be used'
+        assert all([f in valid_fusion_methods for f in fusion_types])
+        assert len(fusion_types) > 0, 'at least one fusion should be used'
         self.inplanes = inplanes
         self.planes = planes
-        self.pooling_method = pooling_method
-        self.fusion_methods = fusion_methods
-        if pooling_method == 'att':
+        self.pooling_type = pooling_type
+        self.fusion_types = fusion_types
+        if pooling_type == 'att':
             self.conv_mask = nn.Conv2d(inplanes, 1, kernel_size=1)
             self.softmax = nn.Softmax(dim=2)
         else:
             self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        if 'channel_add' in fusion_methods:
+        if 'channel_add' in fusion_types:
             self.channel_add_conv = nn.Sequential(
                 nn.Conv2d(self.inplanes, self.planes, kernel_size=1),
                 nn.LayerNorm([self.planes, 1, 1]),
@@ -37,7 +37,7 @@ class ContextBlock(nn.Module):
             )
         else:
             self.channel_add_conv = None
-        if 'channel_mul' in fusion_methods:
+        if 'channel_mul' in fusion_types:
             self.channel_mul_conv = nn.Sequential(
                 nn.Conv2d(self.inplanes, self.planes, kernel_size=1),
                 nn.LayerNorm([self.planes, 1, 1]),
@@ -49,7 +49,7 @@ class ContextBlock(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        if self.pooling_method == 'att':
+        if self.pooling_type == 'att':
             kaiming_init(self.conv_mask, mode='fan_in')
             self.conv_mask.inited = True
 
@@ -60,7 +60,7 @@ class ContextBlock(nn.Module):
 
     def spatial_pool(self, x):
         batch, channel, height, width = x.size()
-        if self.pooling_method == 'att':
+        if self.pooling_type == 'att':
             input_x = x
             # [N, C, H * W]
             input_x = input_x.view(batch, channel, height * width)

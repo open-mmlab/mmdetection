@@ -194,15 +194,15 @@ class Bottleneck(nn.Module):
                 gcb_planes = int(gcb_inplanes * gcb_ratio)
             else:
                 gcb_planes = None
-            pooling_method = gcb.get('pooling_method', 'att')
-            fusion_methods = gcb.get('fusion_methods', 'channel_add')
-            if not isinstance(fusion_methods, (list, tuple)):
-                fusion_methods = [fusion_methods]
+            pooling_type = gcb.get('pooling_type', 'att')
+            fusion_types = gcb.get('fusion_types', 'channel_add')
+            if not isinstance(fusion_types, (list, tuple)):
+                fusion_types = [fusion_types]
             self.context_block = ContextBlock(
                 inplanes=gcb_inplanes,
                 planes=gcb_planes,
-                pooling_method=pooling_method,
-                fusion_methods=fusion_methods,
+                pooling_type=pooling_type,
+                fusion_types=fusion_types,
             )
 
     @property
