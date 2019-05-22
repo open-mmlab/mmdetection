@@ -9,6 +9,10 @@ from ..registry import NECKS
 
 @NECKS.register_module
 class BFP(nn.Module):
+    """BFP (Balanced Feature Pyrmamids)
+
+    arXiv: https://arxiv.org/pdf/1904.02701.pdf (CVPR 2019)
+    """
 
     def __init__(self,
                  in_channels,
