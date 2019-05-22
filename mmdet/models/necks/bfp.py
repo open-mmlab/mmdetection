@@ -19,9 +19,9 @@ class BFP(nn.Module):
                  add_extra_convs=False,
                  extra_convs_on_inputs=True,
                  conv_cfg=None,
+                 norm_cfg=None,
                  refine_level=2,
                  refine_type=None,
-                 normalize=None,
                  activation=None):
         super(BFP, self).__init__()
         assert refine_type in [None, 'conv', 'non_local']
@@ -29,10 +29,9 @@ class BFP(nn.Module):
         self.out_channels = out_channels
         self.num_ins = len(in_channels)
         self.num_outs = num_outs
-        self.normalize = normalize
         self.activation = activation
-        self.with_bias = normalize is None
         self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -66,15 +65,15 @@ class BFP(nn.Module):
                 out_channels,
                 3,
                 padding=1,
-                bias=normalize is None,
                 conv_cfg=self.conv_cfg,
-                normalize=normalize,
+                norm_cfg=self.norm_cfg,
                 activation=activation)
         elif self.refine_type == 'non_local':
             self.refine = NonLocalBlock2D(
                 out_channels,
                 reduction=1,
-                normalize=normalize,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg,
                 activation=activation)
 
         # add extra conv layers (e.g., RetinaNet)

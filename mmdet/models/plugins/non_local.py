@@ -11,14 +11,14 @@ class NonLocalBlock2D(nn.Module):
     def __init__(self,
                  in_channels,
                  reduction=2,
-                 normalize=None,
+                 conv_cfg=None,
+                 norm_cfg=None,
                  activation=None,
                  mode='embedded_gaussian'):
         super(NonLocalBlock2D, self).__init__()
         self.in_channels = in_channels
         self.reduction = reduction
         self.inter_channels = in_channels // reduction
-        self.with_bias = normalize is None
         self.mode = mode
         assert mode in ['embedded_gaussian']
 
@@ -26,30 +26,30 @@ class NonLocalBlock2D(nn.Module):
             self.in_channels,
             self.inter_channels,
             kernel_size=1,
-            normalize=normalize,
-            activation=activation,
-            bias=self.with_bias)
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            activation=activation)
         self.theta = ConvModule(
             self.in_channels,
             self.inter_channels,
             kernel_size=1,
-            normalize=normalize,
-            activation=activation,
-            bias=self.with_bias)
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            activation=activation)
         self.phi = ConvModule(
             self.in_channels,
             self.inter_channels,
             kernel_size=1,
-            normalize=normalize,
-            activation=activation,
-            bias=self.with_bias)
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            activation=activation)
         self.conv_mask = ConvModule(
             self.inter_channels,
             self.in_channels,
             kernel_size=1,
-            normalize=normalize,
-            activation=activation,
-            bias=self.with_bias)
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            activation=activation)
 
         self.init_weights()
 
