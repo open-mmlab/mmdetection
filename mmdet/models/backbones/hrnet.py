@@ -3,6 +3,7 @@ import logging
 import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
+from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..registry import BACKBONES
 from ..utils import build_norm_layer, build_conv_layer
@@ -74,31 +75,30 @@ class HRModule(nn.Module):
                     num_channels[branch_index] * block.expansion,
                     kernel_size=1,
                     stride=stride,
-                    bias=False,
-                ),
-                build_norm_layer(
-                    self.norm_cfg,
-                    num_channels[branch_index] * block.expansion
-                )[1])
+                    bias=False),
+                build_norm_layer(self.norm_cfg, num_channels[branch_index] *
+                                 block.expansion)[1])
 
         layers = []
         layers.append(
-            block(self.in_channels[branch_index],
-                  num_channels[branch_index],
-                  stride,
-                  downsample=downsample,
-                  with_cp=self.with_cp,
-                  norm_cfg=self.norm_cfg,
-                  conv_cfg=self.conv_cfg))
+            block(
+                self.in_channels[branch_index],
+                num_channels[branch_index],
+                stride,
+                downsample=downsample,
+                with_cp=self.with_cp,
+                norm_cfg=self.norm_cfg,
+                conv_cfg=self.conv_cfg))
         self.in_channels[branch_index] = \
             num_channels[branch_index] * block.expansion
         for i in range(1, num_blocks[branch_index]):
             layers.append(
-                block(self.in_channels[branch_index],
-                      num_channels[branch_index],
-                      with_cp=self.with_cp,
-                      norm_cfg=self.norm_cfg,
-                      conv_cfg=self.conv_cfg))
+                block(
+                    self.in_channels[branch_index],
+                    num_channels[branch_index],
+                    with_cp=self.with_cp,
+                    norm_cfg=self.norm_cfg,
+                    conv_cfg=self.conv_cfg))
 
         return nn.Sequential(*layers)
 
@@ -133,12 +133,9 @@ class HRModule(nn.Module):
                                 stride=1,
                                 padding=0,
                                 bias=False),
-                            build_norm_layer(
-                                self.norm_cfg,
-                                in_channels[i])[1],
+                            build_norm_layer(self.norm_cfg, in_channels[i])[1],
                             nn.Upsample(
-                                scale_factor=2**(j - i),
-                                mode='nearest')))
+                                scale_factor=2**(j - i), mode='nearest')))
                 elif j == i:
                     fuse_layer.append(None)
                 else:
@@ -154,13 +151,9 @@ class HRModule(nn.Module):
                                         kernel_size=3,
                                         stride=2,
                                         padding=1,
-                                        bias=False,
-                                    ),
-                                    build_norm_layer(
-                                        self.norm_cfg,
-                                        in_channels[i]
-                                    )[1]
-                                ))
+                                        bias=False),
+                                    build_norm_layer(self.norm_cfg,
+                                                     in_channels[i])[1]))
                         else:
                             conv_downsamples.append(
                                 nn.Sequential(
@@ -171,14 +164,10 @@ class HRModule(nn.Module):
                                         kernel_size=3,
                                         stride=2,
                                         padding=1,
-                                        bias=False,
-                                    ),
-                                    build_norm_layer(
-                                        self.norm_cfg,
-                                        in_channels[j],
-                                    )[1],
-                                    nn.ReLU(inplace=False)
-                                ))
+                                        bias=False),
+                                    build_norm_layer(self.norm_cfg,
+                                                     in_channels[j])[1],
+                                    nn.ReLU(inplace=False)))
                     fuse_layer.append(nn.Sequential(*conv_downsamples))
             fuse_layers.append(nn.ModuleList(fuse_layer))
 
@@ -206,6 +195,7 @@ class HRModule(nn.Module):
 @BACKBONES.register_module
 class HRNet(nn.Module):
     """HRNet backbone.
+
     High-Resolution Representations for Labeling Pixels and Regions
     arXiv: https://arxiv.org/abs/1904.04514
 
@@ -224,15 +214,13 @@ class HRNet(nn.Module):
 
     blocks_dict = {'BASIC': BasicBlock, 'BOTTLENECK': Bottleneck}
 
-    def __init__(
-            self,
-            extra,
-            conv_cfg=None,
-            norm_cfg=dict(type='BN'),
-            norm_eval=True,
-            with_cp=False,
-            zero_init_residual=False
-    ):
+    def __init__(self,
+                 extra,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN'),
+                 norm_eval=True,
+                 with_cp=False,
+                 zero_init_residual=False):
         super(HRNet, self).__init__()
         self.extra = extra
         self.conv_cfg = conv_cfg
@@ -283,9 +271,7 @@ class HRNet(nn.Module):
         block_type = self.stage2_cfg['block']
 
         block = self.blocks_dict[block_type]
-        num_channels = [
-            channel * block.expansion for channel in num_channels
-        ]
+        num_channels = [channel * block.expansion for channel in num_channels]
         self.transition1 = self._make_transition_layer([stage1_out_channels],
                                                        num_channels)
         self.stage2, pre_stage_channels = self._make_stage(
@@ -297,9 +283,7 @@ class HRNet(nn.Module):
         block_type = self.stage3_cfg['block']
 
         block = self.blocks_dict[block_type]
-        num_channels = [
-            channel * block.expansion for channel in num_channels
-        ]
+        num_channels = [channel * block.expansion for channel in num_channels]
         self.transition2 = self._make_transition_layer(pre_stage_channels,
                                                        num_channels)
         self.stage3, pre_stage_channels = self._make_stage(
@@ -311,9 +295,7 @@ class HRNet(nn.Module):
         block_type = self.stage4_cfg['block']
 
         block = self.blocks_dict[block_type]
-        num_channels = [
-            channel * block.expansion for channel in num_channels
-        ]
+        num_channels = [channel * block.expansion for channel in num_channels]
         self.transition3 = self._make_transition_layer(pre_stage_channels,
                                                        num_channels)
         self.stage4, pre_stage_channels = self._make_stage(
@@ -345,14 +327,10 @@ class HRNet(nn.Module):
                                 kernel_size=3,
                                 stride=1,
                                 padding=1,
-                                bias=False,
-                            ),
-                            build_norm_layer(
-                                self.norm_cfg,
-                                num_channels_cur_layer[i],
-                            )[1],
-                            nn.ReLU(inplace=True)
-                        ))
+                                bias=False),
+                            build_norm_layer(self.norm_cfg,
+                                             num_channels_cur_layer[i])[1],
+                            nn.ReLU(inplace=True)))
                 else:
                     transition_layers.append(None)
             else:
@@ -370,14 +348,9 @@ class HRNet(nn.Module):
                                 kernel_size=3,
                                 stride=2,
                                 padding=1,
-                                bias=False,
-                            ),
-                            build_norm_layer(
-                                self.norm_cfg,
-                                out_channels
-                            )[1],
-                            nn.ReLU(inplace=True)
-                        ))
+                                bias=False),
+                            build_norm_layer(self.norm_cfg, out_channels)[1],
+                            nn.ReLU(inplace=True)))
                 transition_layers.append(nn.Sequential(*conv_downsamples))
 
         return nn.ModuleList(transition_layers)
@@ -392,37 +365,32 @@ class HRNet(nn.Module):
                     planes * block.expansion,
                     kernel_size=1,
                     stride=stride,
-                    bias=False,
-                ),
-                build_norm_layer(
-                    self.norm_cfg,
-                    planes * block.expansion,
-                )[1])
+                    bias=False),
+                build_norm_layer(self.norm_cfg, planes * block.expansion)[1])
 
         layers = []
         layers.append(
-            block(inplanes,
-                  planes,
-                  stride,
-                  downsample=downsample,
-                  with_cp=self.with_cp,
-                  norm_cfg=self.norm_cfg,
-                  conv_cfg=self.conv_cfg))
+            block(
+                inplanes,
+                planes,
+                stride,
+                downsample=downsample,
+                with_cp=self.with_cp,
+                norm_cfg=self.norm_cfg,
+                conv_cfg=self.conv_cfg))
         inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(
-                block(inplanes,
-                      planes,
-                      with_cp=self.with_cp,
-                      norm_cfg=self.norm_cfg,
-                      conv_cfg=self.conv_cfg))
+                block(
+                    inplanes,
+                    planes,
+                    with_cp=self.with_cp,
+                    norm_cfg=self.norm_cfg,
+                    conv_cfg=self.conv_cfg))
 
         return nn.Sequential(*layers)
 
-    def _make_stage(self,
-                    layer_config,
-                    in_channels,
-                    multiscale_output=True):
+    def _make_stage(self, layer_config, in_channels, multiscale_output=True):
         num_modules = layer_config['num_modules']
         num_branches = layer_config['num_branches']
         num_blocks = layer_config['num_blocks']
@@ -431,7 +399,7 @@ class HRNet(nn.Module):
 
         hr_modules = []
         for i in range(num_modules):
-            # multi_scale_output is only used last module
+            # multi_scale_output is only used for the last module
             if not multiscale_output and i == num_modules - 1:
                 reset_multiscale_output = False
             else:
@@ -459,7 +427,7 @@ class HRNet(nn.Module):
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
                     kaiming_init(m)
-                elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
                     constant_init(m, 1)
 
             if self.zero_init_residual:
@@ -512,5 +480,5 @@ class HRNet(nn.Module):
         if mode and self.norm_eval:
             for m in self.modules():
                 # trick: eval have effect on BatchNorm only
-                if isinstance(m, nn.BatchNorm2d):
+                if isinstance(m, _BatchNorm):
                     m.eval()
