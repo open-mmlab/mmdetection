@@ -36,7 +36,13 @@ model = dict(
         num_classes=81,
         target_means=[0., 0., 0., 0.],
         target_stds=[0.1, 0.1, 0.2, 0.2],
-        reg_class_agnostic=False))
+        reg_class_agnostic=False,
+        loss_cls=dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=False,
+            loss_weight=1.0),
+        loss_bbox=dict(
+            type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
     rcnn=dict(
@@ -83,8 +89,8 @@ data = dict(
         img_prefix=data_root + 'val2017/',
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
-        proposal_file=data_root + 'proposals/rpn_r50_c4_1x_val2017.pkl',
         size_divisor=32,
+        proposal_file=data_root + 'proposals/rpn_r50_c4_1x_val2017.pkl',
         flip_ratio=0,
         with_mask=False,
         with_crowd=True,
@@ -124,7 +130,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fast_rcnn_r50_c4_1x'
+work_dir = './work_dirs/fast_rcnn_r50_caffe_c4_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

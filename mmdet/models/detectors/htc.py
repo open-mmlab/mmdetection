@@ -224,8 +224,8 @@ class HybridTaskCascade(CascadeRCNN):
             roi_labels = bbox_targets[0]
 
             for name, value in loss_bbox.items():
-                losses['s{}.{}'.format(
-                    i, name)] = (value * lw if 'loss' in name else value)
+                losses['s{}.{}'.format(i, name)] = (
+                    value * lw if 'loss' in name else value)
 
             # mask head forward and loss
             if self.with_mask:
@@ -253,8 +253,8 @@ class HybridTaskCascade(CascadeRCNN):
                                                      gt_masks, rcnn_train_cfg,
                                                      semantic_feat)
                 for name, value in loss_mask.items():
-                    losses['s{}.{}'.format(
-                        i, name)] = (value * lw if 'loss' in name else value)
+                    losses['s{}.{}'.format(i, name)] = (
+                        value * lw if 'loss' in name else value)
 
             # refine bboxes (same as Cascade R-CNN)
             if i < self.num_stages - 1 and not self.interleaved:
@@ -312,8 +312,9 @@ class HybridTaskCascade(CascadeRCNN):
                             [] for _ in range(mask_head.num_classes - 1)
                         ]
                     else:
-                        _bboxes = (det_bboxes[:, :4] * scale_factor
-                                   if rescale else det_bboxes)
+                        _bboxes = (
+                            det_bboxes[:, :4] * scale_factor
+                            if rescale else det_bboxes)
                         mask_pred = self._mask_forward_test(
                             i, x, _bboxes, semantic_feat=semantic_feat)
                         segm_result = mask_head.get_seg_masks(
@@ -345,8 +346,9 @@ class HybridTaskCascade(CascadeRCNN):
                     [] for _ in range(self.mask_head[-1].num_classes - 1)
                 ]
             else:
-                _bboxes = (det_bboxes[:, :4] * scale_factor
-                           if rescale else det_bboxes)
+                _bboxes = (
+                    det_bboxes[:, :4] * scale_factor
+                    if rescale else det_bboxes)
 
                 mask_rois = bbox2roi([_bboxes])
                 aug_masks = []
