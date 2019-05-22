@@ -11,6 +11,7 @@ from ..registry import NECKS
 @NECKS.register_module
 class HRFPN(nn.Module):
     """HRFPN (High Resolution Feature Pyrmamids)
+
     arXiv: https://arxiv.org/abs/1904.04514
 
     Args:
@@ -48,8 +49,7 @@ class HRFPN(nn.Module):
             out_channels,
             kernel_size=1,
             conv_cfg=self.conv_cfg,
-            activation=None
-        )
+            activation=None)
 
         self.fpn_convs = nn.ModuleList()
         for i in range(self.num_outs):
@@ -60,8 +60,7 @@ class HRFPN(nn.Module):
                     kernel_size=3,
                     padding=1,
                     conv_cfg=self.conv_cfg,
-                    activation=None
-                ))
+                    activation=None))
 
         if pooling_type == 'MAX':
             self.pooling = F.max_pool2d
