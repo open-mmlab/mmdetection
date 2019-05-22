@@ -112,6 +112,10 @@ Please refer to [INSTALL.md](INSTALL.md) for installation and dataset preparatio
 
 Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage of mmdetection.
 
+## Contributing
+
+We appreciate all contributions to improve mmdetection. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for the contributing guideline.
+
 
 ## Citation
 

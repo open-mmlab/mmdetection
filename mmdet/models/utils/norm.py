@@ -1,6 +1,5 @@
 import torch.nn as nn
 
-
 norm_cfg = {
     # format: layer_type: (abbreviation, module)
     'BN': ('bn', nn.BatchNorm2d),

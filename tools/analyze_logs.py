@@ -51,8 +51,8 @@ def plot_curve(log_dicts, args):
         for j, metric in enumerate(metrics):
             print('plot curve of {}, metric is {}'.format(
                 args.json_logs[i], metric))
-            assert metric in log_dict[
-                epochs[0]], '{} does not contain metric {}'.format(
+            assert metric in log_dict[epochs[
+                0]], '{} does not contain metric {}'.format(
                     args.json_logs[i], metric)
 
             if 'mAP' in metric:

@@ -43,12 +43,7 @@ class BasicBlock(nn.Module):
             bias=False)
         self.add_module(self.norm1_name, norm1)
         self.conv2 = build_conv_layer(
-            conv_cfg,
-            planes,
-            planes,
-            3,
-            padding=1,
-            bias=False)
+            conv_cfg, planes, planes, 3, padding=1, bias=False)
         self.add_module(self.norm2_name, norm2)
 
         self.relu = nn.ReLU(inplace=True)
