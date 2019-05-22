@@ -66,8 +66,8 @@ def weighted_sigmoid_focal_loss(pred,
     if avg_factor is None:
         avg_factor = torch.sum(weight > 0).float().item() / num_classes + 1e-6
     return torch.sum(
-        sigmoid_focal_loss(pred, target, gamma, alpha, 'none') * weight.view(
-            -1, 1))[None] / avg_factor
+        sigmoid_focal_loss(pred, target, gamma, alpha, 'none') *
+        weight.view(-1, 1))[None] / avg_factor
 
 
 def mask_cross_entropy(pred, target, label):
@@ -99,6 +99,42 @@ def weighted_smoothl1(pred, target, weight, beta=1.0, avg_factor=None):
         avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
     loss = smooth_l1_loss(pred, target, beta, reduction='none')
     return torch.sum(loss * weight)[None] / avg_factor
+
+
+def balanced_l1_loss(pred,
+                     target,
+                     weight=None,
+                     alpha=0.5,
+                     gamma=1.5,
+                     beta=1.0,
+                     avg_factor=None,
+                     reduction='none'):
+    assert beta > 0
+    assert pred.size() == target.size() and target.numel() > 0
+
+    diff = torch.abs(pred - target)
+    b = np.e**(gamma / alpha) - 1
+    loss = torch.where(
+        diff < beta, alpha / b *
+        (b * diff + 1) * torch.log(b * diff / beta + 1) - alpha * diff,
+        gamma * diff + gamma / b - alpha * beta)
+
+    reduction = F._Reduction.get_enum(reduction)
+    # none: 0, elementwise_mean:1, sum: 2
+    if reduction == 1:
+        loss = loss.sum() / pred.numel()
+    elif reduction == 2:
+        loss = loss.sum()
+
+    if weight is not None:
+        loss = torch.sum(loss * weight)[None]
+        if avg_factor is None:
+            avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
+
+    if avg_factor is not None:
+        loss /= avg_factor
+
+    return loss
 
 
 def accuracy(pred, target, topk=1):
