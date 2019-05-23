@@ -17,7 +17,7 @@ from ..utils import bias_init_with_prob
 
 class FeatureAdaption(nn.Module):
     """Feature Adaption Module.
-    
+
     Feature Adaption Module is implemented based on DCN v1.
     It uses anchor shape prediction rather than feature map to
     predict offsets of deformable conv layer.

@@ -228,7 +228,7 @@ def ga_shape_target_single(flat_approxs,
     """Compute guided anchoring targets.
 
     This function returns sampled anchors and gt bboxes directly
-    rather than calculates regression tagets.
+    rather than calculates regression targets.
 
     Args:
         flat_approxs (Tensor): flat approxs of a single image,
