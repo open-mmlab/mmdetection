@@ -5,15 +5,17 @@ from ..utils import unmap, multi_apply
 
 
 def calc_region(bbox, ratio, featmap_size=None):
-    """Calculate a region inside each bounding-box w.r.t. to a size
-    ratio.
+    """Calculate a proportional bbox region.
 
-    region_edge = bbox_edge * ratio
+    The bbox center are fixed and the new h' and w' is h * ratio and w * ratio.
 
     Args:
-        bbox (Tensor): Source bboxes to calculate regions.
-        ratio (float): Size ratio for regions.
-        featmap_size (tuple): Size of the feature map.
+        bbox (Tensor): Bboxes to calculate regions, shape (n, 4)
+        ratio (float): Ratio of the output region.
+        featmap_size (tuple): Feature map size used for clipping the boundary.
+
+    Returns:
+        tuple: x1, y1, x2, y2
     """
     x1 = torch.round((1 - ratio) * bbox[0] + ratio * bbox[2]).long()
     y1 = torch.round((1 - ratio) * bbox[1] + ratio * bbox[3]).long()
