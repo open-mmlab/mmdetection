@@ -386,6 +386,7 @@ class GuidedAnchorHead(AnchorHead):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.approx_generators)
 
+        # get loc targets
         loc_targets, loc_weights, loc_avg_factor = ga_loc_target(
             gt_bboxes,
             featmap_sizes,
@@ -393,10 +394,15 @@ class GuidedAnchorHead(AnchorHead):
             self.anchor_strides,
             center_ratio=cfg.center_ratio,
             ignore_ratio=cfg.ignore_ratio)
+
+        # get sampled approxes
         approxs_list, inside_flag_list = self.get_sampled_approxs(
             featmap_sizes, img_metas, cfg)
+        # get squares and guided anchors
         squares_list, guided_anchors_list, _ = self.get_anchors(
             featmap_sizes, shape_preds, loc_preds, img_metas)
+
+        # get shape targets
         sampling = False if not hasattr(cfg, 'ga_sampler') else True
         shape_targets = ga_shape_target(approxs_list,
                                         inside_flag_list,
@@ -413,6 +419,7 @@ class GuidedAnchorHead(AnchorHead):
         anchor_total_num = (anchor_fg_num if not sampling else anchor_fg_num +
                             anchor_bg_num)
 
+        # get anchor targets
         sampling = False if self.cls_focal_loss else True
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = anchor_target(guided_anchors_list,
@@ -432,6 +439,8 @@ class GuidedAnchorHead(AnchorHead):
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (num_total_pos if self.cls_focal_loss else
                              num_total_pos + num_total_neg)
+
+        # get classification and bbox regression losses
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
@@ -442,12 +451,16 @@ class GuidedAnchorHead(AnchorHead):
             bbox_weights_list,
             num_total_samples=num_total_samples,
             cfg=cfg)
+
+        # get anchor location loss
         losses_loc, = multi_apply(self.loss_loc_single,
                                   loc_preds,
                                   loc_targets,
                                   loc_weights,
                                   loc_avg_factor=loc_avg_factor,
                                   cfg=cfg)
+
+        # get anchor shape loss
         losses_shape, = multi_apply(self.loss_shape_single,
                                     shape_preds,
                                     bbox_anchors_list,
@@ -471,6 +484,7 @@ class GuidedAnchorHead(AnchorHead):
             loc_preds)
         num_levels = len(cls_scores)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        # get guided anchors
         _, guided_anchors, loc_masks = self.get_anchors(
             featmap_sizes,
             shape_preds,
