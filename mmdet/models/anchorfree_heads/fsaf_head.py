@@ -6,13 +6,12 @@ from mmdet.core import (multi_apply, multiclass_nms, distance2bbox, xyxy2xcycwh,
                         weighted_sigmoid_focal_loss, select_iou_loss)
 
 from ..registry import HEADS
-from ..utils import bias_init_with_prob
+from ..utils import bias_init_with_prob, ConvModule
 
 
 @HEADS.register_module
 class FSAFHead(nn.Module):
-    """
-    Feature Selective Anchor-Free Head
+    """Feature Selective Anchor-Free Head
 
     Args:
         in_channels (int): Number of channels in the input feature map.
@@ -28,7 +27,9 @@ class FSAFHead(nn.Module):
                  feat_channels=256,
                  stacked_convs=4,
                  norm_factor=4.0,
-                 feat_strides=[8, 16, 32, 64, 128]
+                 feat_strides=[8, 16, 32, 64, 128],
+                 conv_cfg=None,
+                 norm_cfg=None
                  ):
         super(FSAFHead, self).__init__()
         self.num_classes = num_classes
@@ -38,6 +39,8 @@ class FSAFHead(nn.Module):
         self.norm_factor = norm_factor
         self.feat_strides = feat_strides
         self.cls_out_channels = self.num_classes - 1
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
 
         self._init_layers()
 
@@ -49,8 +52,26 @@ class FSAFHead(nn.Module):
             chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
                 nn.Conv2d(chn, self.feat_channels, 3, stride=1, padding=1))
+            # self.cls_convs.append(
+            #     ConvModule(
+            #         chn,
+            #         self.feat_channels,
+            #         3,
+            #         stride=1,
+            #         padding=1,
+            #         conv_cfg=self.conv_cfg,
+            #         norm_cfg=self.norm_cfg))
             self.reg_convs.append(
                 nn.Conv2d(chn, self.feat_channels, 3, stride=1, padding=1))
+            # self.reg_convs.append(
+            #     ConvModule(
+            #         chn,
+            #         self.feat_channels,
+            #         3,
+            #         stride=1,
+            #         padding=1,
+            #         conv_cfg=self.conv_cfg,
+            #         norm_cfg=self.norm_cfg))
         self.fsaf_cls = nn.Conv2d(
             self.feat_channels,
             self.cls_out_channels,
@@ -62,8 +83,10 @@ class FSAFHead(nn.Module):
     def init_weights(self):
         for m in self.cls_convs:
             normal_init(m, std=0.01)
+            # normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
             normal_init(m, std=0.01)
+            # normal_init(m.conv, std=0.01)
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.fsaf_cls, std=0.01, bias=bias_cls)
         normal_init(self.fsaf_reg, std=0.01, bias=0.1)
@@ -98,7 +121,7 @@ class FSAFHead(nn.Module):
             avg_factor=num_total_samples
         )
         # localization loss
-        if bbox_targets.size()[0] == 0:
+        if bbox_targets.size(0) == 0:
             loss_reg = bbox_pred.new_zeros(1)
         else:
             bbox_pred = bbox_pred.permute(0, 2, 3, 1)
@@ -237,28 +260,18 @@ class FSAFHead(nn.Module):
                 boxes = gt_bboxes[inds, :]
                 classes = gt_labels[inds]
                 proj_boxes = boxes / stride
-                ig_boxes = xyxy2xcycwh(proj_boxes)
-                ig_boxes[:, 2:] *= cfg.ignore_scale
-                ig_boxes = xcycwh2xyxy(ig_boxes)
-                pos_boxes = xyxy2xcycwh(proj_boxes)
-                pos_boxes[:, 2:] *= cfg.pos_scale
-                pos_boxes = xcycwh2xyxy(pos_boxes)
-                ig_x1 = torch.floor(ig_boxes[:, 0]).clamp(0, w - 1).int()
-                ig_y1 = torch.floor(ig_boxes[:, 1]).clamp(0, h - 1).int()
-                ig_x2 = torch.ceil(ig_boxes[:, 2]).clamp(1, w).int()
-                ig_y2 = torch.ceil(ig_boxes[:, 3]).clamp(1, h).int()
-                pos_x1 = torch.floor(pos_boxes[:, 0]).clamp(0, w - 1).int()
-                pos_y1 = torch.floor(pos_boxes[:, 1]).clamp(0, h - 1).int()
-                pos_x2 = torch.ceil(pos_boxes[:, 2]).clamp(1, w).int()
-                pos_y2 = torch.ceil(pos_boxes[:, 3]).clamp(1, h).int()
+                ig_x1, ig_y1, ig_x2, ig_y2 = self.prop_box_bounds(
+                    proj_boxes, cfg.ignore_scale, w, h)
+                pos_x1, pos_y1, pos_x2, pos_y2 = self.prop_box_bounds(
+                    proj_boxes, cfg.pos_scale, w, h)
                 for i in range(len(inds)):
                     # setup classification ground-truth
                     _labels[pos_y1[i]:pos_y2[i], pos_x1[i]:pos_x2[i]] = classes[i]
                     _label_weights[ig_y1[i]:ig_y2[i], ig_x1[i]:ig_x2[i]] = 0.
                     _label_weights[pos_y1[i]:pos_y2[i], pos_x1[i]:pos_x2[i]] = 1.
                     # setup localization ground-truth
-                    locs_x = torch.arange(pos_x1[i], pos_x2[i], device=device).long()
-                    locs_y = torch.arange(pos_y1[i], pos_y2[i], device=device).long()
+                    locs_x = torch.arange(pos_x1[i], pos_x2[i], device=device, dtype=torch.long)
+                    locs_y = torch.arange(pos_y1[i], pos_y2[i], device=device, dtype=torch.long)
                     shift_x = (locs_x.float() + 0.5) * stride
                     shift_y = (locs_y.float() + 0.5) * stride
                     shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
@@ -288,13 +301,8 @@ class FSAFHead(nn.Module):
                 if len(inds) > 0:
                     boxes = gt_bboxes[inds, :]
                     proj_boxes = boxes / stride
-                    ig_boxes = xyxy2xcycwh(proj_boxes)
-                    ig_boxes[:, 2:] *= cfg.ignore_scale
-                    ig_boxes = xcycwh2xyxy(ig_boxes)
-                    ig_x1 = torch.floor(ig_boxes[:, 0]).clamp(0, w - 1).int()
-                    ig_y1 = torch.floor(ig_boxes[:, 1]).clamp(0, h - 1).int()
-                    ig_x2 = torch.ceil(ig_boxes[:, 2]).clamp(1, w).int()
-                    ig_y2 = torch.ceil(ig_boxes[:, 3]).clamp(1, h).int()
+                    ig_x1, ig_y1, ig_x2, ig_y2 = self.prop_box_bounds(
+                        proj_boxes, cfg.ignore_scale, w, h)
                     for i in range(len(inds)):
                         label_weights[lvl][ig_y1[i]:ig_y2[i], ig_x1[i]:ig_x2[i]] = 0.
             # upper pyramid if exists
@@ -303,13 +311,8 @@ class FSAFHead(nn.Module):
                 if len(inds) > 0:
                     boxes = gt_bboxes[inds, :]
                     proj_boxes = boxes / stride
-                    ig_boxes = xyxy2xcycwh(proj_boxes)
-                    ig_boxes[:, 2:] *= cfg.ignore_scale
-                    ig_boxes = xcycwh2xyxy(ig_boxes)
-                    ig_x1 = torch.floor(ig_boxes[:, 0]).clamp(0, w - 1).int()
-                    ig_y1 = torch.floor(ig_boxes[:, 1]).clamp(0, h - 1).int()
-                    ig_x2 = torch.ceil(ig_boxes[:, 2]).clamp(1, w).int()
-                    ig_y2 = torch.ceil(ig_boxes[:, 3]).clamp(1, h).int()
+                    ig_x1, ig_y1, ig_x2, ig_y2 = self.prop_box_bounds(
+                        proj_boxes, cfg.ignore_scale, w, h)
                     for i in range(len(inds)):
                         label_weights[lvl][ig_y1[i]:ig_y2[i], ig_x1[i]:ig_x2[i]] = 0.
 
@@ -317,9 +320,9 @@ class FSAFHead(nn.Module):
         num_pos = 0
         num_neg = 0
         for lvl in range(num_levels):
-            npos = bbox_targets[lvl].size()[0]
+            npos = bbox_targets[lvl].size(0)
             num_pos += npos
-            num_neg += (label_weights[lvl].nonzero().size()[0] - npos)
+            num_neg += (label_weights[lvl].nonzero().size(0) - npos)
         return (labels, label_weights, bbox_targets, bbox_locs,
                 num_pos, num_neg)
 
@@ -331,7 +334,7 @@ class FSAFHead(nn.Module):
                           cfg):
         if cfg.online_select:
             num_levels = len(cls_score_list)
-            num_boxes = gt_bboxes.size()[0]
+            num_boxes = gt_bboxes.size(0)
             feat_losses = gt_bboxes.new_zeros((num_boxes, num_levels))
             device = bbox_pred_list[0].device
             for lvl in range(num_levels):
@@ -342,19 +345,13 @@ class FSAFHead(nn.Module):
                 h, w = cls_score.size()[:2]
 
                 proj_boxes = gt_bboxes / stride
-                pos_boxes = xyxy2xcycwh(proj_boxes)
-                pos_boxes[:, 2:] *= cfg.pos_scale
-                pos_boxes = xcycwh2xyxy(pos_boxes)
-                x1 = torch.floor(pos_boxes[:, 0]).clamp(0, w - 1).int()
-                y1 = torch.floor(pos_boxes[:, 1]).clamp(0, h - 1).int()
-                x2 = torch.ceil(pos_boxes[:, 2]).clamp(1, w).int()
-                y2 = torch.ceil(pos_boxes[:, 3]).clamp(1, h).int()
+                x1, y1, x2, y2 = self.prop_box_bounds(proj_boxes, cfg.pos_scale, w, h)
 
                 for i in range(num_boxes):
-                    locs_x = torch.arange(x1[i], x2[i], device=device).long()
-                    locs_y = torch.arange(y1[i], y2[i], device=device).long()
+                    locs_x = torch.arange(x1[i], x2[i], device=device, dtype=torch.long)
+                    locs_y = torch.arange(y1[i], y2[i], device=device, dtype=torch.long)
                     locs_xx, locs_yy = self._meshgrid(locs_x, locs_y)
-                    avg_factor = locs_xx.size()[0]
+                    avg_factor = locs_xx.size(0)
                     # classification focal loss
                     scores = cls_score[locs_yy, locs_xx, :]
                     labels = gt_labels[i].repeat(avg_factor)
@@ -386,6 +383,20 @@ class FSAFHead(nn.Module):
             feat_levels = torch.floor(lvl0 + torch.log2(s / s0 + 1e-6))
             feat_levels = torch.clamp(feat_levels, 0, num_levels - 1).int()
         return feat_levels
+
+    def prop_box_bounds(self, boxes, scale, width, height):
+        """Compute proportional box regions.
+
+        Box centers are fixed. Box w and h scaled by scale.
+        """
+        prop_boxes = xyxy2xcycwh(boxes)
+        prop_boxes[:, 2:] *= scale
+        prop_boxes = xcycwh2xyxy(prop_boxes)
+        x1 = torch.floor(prop_boxes[:, 0]).clamp(0, width - 1).int()
+        y1 = torch.floor(prop_boxes[:, 1]).clamp(0, height - 1).int()
+        x2 = torch.ceil(prop_boxes[:, 2]).clamp(1, width).int()
+        y2 = torch.ceil(prop_boxes[:, 3]).clamp(1, height).int()
+        return x1, y1, x2, y2
 
     def images_to_levels(self, target, num_imgs, num_levels, is_cls=True):
         level_target = []
@@ -479,10 +490,7 @@ class FSAFHead(nn.Module):
         points = torch.stack((shift_xx, shift_yy), dim=-1)
         return points
 
-    def _meshgrid(self, x, y, row_major=True):
+    def _meshgrid(self, x, y):
         xx = x.repeat(len(y))
         yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
-        if row_major:
-            return xx, yy
-        else:
-            return yy, xx
+        return xx, yy

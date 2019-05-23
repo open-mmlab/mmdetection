@@ -71,12 +71,13 @@ def delta2bbox(rois,
 def distance2bbox(points,
                   dists,
                   max_shape=None):
+    """Bounding box decoding from predicted distances."""
     dl = dists[:, 0::4]
     dt = dists[:, 1::4]
     dr = dists[:, 2::4]
     db = dists[:, 3::4]
-    cx = points[:, 0].unsqueeze(1).expand_as(dl)
-    cy = points[:, 1].unsqueeze(1).expand_as(dt)
+    cx = points[:, 0].unsqueeze(1)
+    cy = points[:, 1].unsqueeze(1)
     x1 = cx - dl
     y1 = cy - dt
     x2 = cx + dr
