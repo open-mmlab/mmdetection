@@ -168,7 +168,7 @@ def weighted_iou_loss(pred,
     else:
         return (pred * weight).sum()[None] / avg_factor
 
-    if style is 'bounded':
+    if style == 'bounded':
         loss = bounded_iou_loss(
             pred[inds], target[inds], beta=beta, eps=eps, reduction='sum')
     else:
