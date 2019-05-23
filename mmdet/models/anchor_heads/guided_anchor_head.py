@@ -16,6 +16,18 @@ from ..utils import bias_init_with_prob
 
 
 class FeatureAdaption(nn.Module):
+    """Feature Adaption Module.
+    
+    Feature Adaption Module is implemented based on DCN v1.
+    It uses anchor shape prediction rather than feature map to
+    predict offsets of deformable conv layer.
+
+    Args:
+        in_channels (int): Number of channels in the input feature map.
+        out_channels (int): Number of channels in the output feature map.
+        kernel_size (int): Deformable conv kernel size.
+        deformable_groups (int): Deformable conv group size.
+    """
 
     def __init__(self,
                  in_channels,
@@ -73,14 +85,13 @@ class GuidedAnchorHead(AnchorHead):
         anchoring_stds (Iterable): Std values of anchoring targets.
         target_means (Iterable): Mean values of regression targets.
         target_stds (Iterable): Std values of regression targets.
-        deformable_groups: (int): group number of DCN in
+        deformable_groups: (int): Group number of DCN in
             FeatureAdaption module.
-        loc_filter_thr (float): threshold to filter out unconcerned regions.
-        loc_focal_loss (bool): Whether to use focal loss for location
-            prediction.
-        use_sigmoid_cls (bool): Whether to use sigmoid loss for
-            classification. (softmax by default)
-        cls_focal_loss (bool): Whether to use focal loss for classification.
+        loc_filter_thr (float): Threshold to filter out unconcerned regions.
+        loss_loc (dict): Config of location loss.
+        loss_shape (dict): Config of anchor shape loss.
+        loss_cls (dict): Config of classification loss.
+        loss_bbox (dict): Config of bbox regression loss.
     """
 
     def __init__(self,
@@ -530,8 +541,10 @@ class GuidedAnchorHead(AnchorHead):
                                                        mlvl_anchors,
                                                        mlvl_masks):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            # if no location is kept, end.
             if mask.sum() == 0:
                 continue
+            # reshape scores and bbox_pred
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
@@ -539,12 +552,15 @@ class GuidedAnchorHead(AnchorHead):
             else:
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            # filter scores, bbox_pred w.r.t. mask.
+            # anchors are filtered in get_anchors() beforehand.
             scores = scores[mask, :]
             bbox_pred = bbox_pred[mask, :]
             if scores.dim() == 0:
                 anchors = anchors.unsqueeze(0)
                 scores = scores.unsqueeze(0)
                 bbox_pred = bbox_pred.unsqueeze(0)
+            # filter anchors, bbox_pred, scores w.r.t. scores
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
                 if self.use_sigmoid_cls:
@@ -566,6 +582,7 @@ class GuidedAnchorHead(AnchorHead):
         if self.use_sigmoid_cls:
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
+        # multi class NMS
         det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

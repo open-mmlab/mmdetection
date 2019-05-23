@@ -73,6 +73,7 @@ class GARPNHead(GuidedAnchorHead):
             anchors = mlvl_anchors[idx]
             mask = mlvl_masks[idx]
             assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
+            # if no location is kept, end.
             if mask.sum() == 0:
                 continue
             rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
@@ -82,6 +83,8 @@ class GARPNHead(GuidedAnchorHead):
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
                 scores = rpn_cls_score.softmax(dim=1)[:, 1]
+            # filter scores, bbox_pred w.r.t. mask.
+            # anchors are filtered in get_anchors() beforehand.
             scores = scores[mask]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1,
                                                                    4)[mask, :]
@@ -89,13 +92,16 @@ class GARPNHead(GuidedAnchorHead):
                 rpn_bbox_pred = rpn_bbox_pred.unsqueeze(0)
                 anchors = anchors.unsqueeze(0)
                 scores = scores.unsqueeze(0)
+            # filter anchors, bbox_pred, scores w.r.t. scores
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
                 _, topk_inds = scores.topk(cfg.nms_pre)
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
                 anchors = anchors[topk_inds, :]
                 scores = scores[topk_inds]
+            # get proposals w.r.t. anchors and rpn_bbox_pred
             proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
                                    self.target_stds, img_shape)
+            # filter out too small bboxes
             if cfg.min_bbox_size > 0:
                 w = proposals[:, 2] - proposals[:, 0] + 1
                 h = proposals[:, 3] - proposals[:, 1] + 1
@@ -104,11 +110,13 @@ class GARPNHead(GuidedAnchorHead):
                 proposals = proposals[valid_inds, :]
                 scores = scores[valid_inds]
             proposals = torch.cat([proposals, scores.unsqueeze(-1)], dim=-1)
+            # NMS in current level
             proposals, _ = nms(proposals, cfg.nms_thr)
             proposals = proposals[:cfg.nms_post, :]
             mlvl_proposals.append(proposals)
         proposals = torch.cat(mlvl_proposals, 0)
         if cfg.nms_across_levels:
+            # NMS across multi levels
             proposals, _ = nms(proposals, cfg.nms_thr)
             proposals = proposals[:cfg.max_num, :]
         else:

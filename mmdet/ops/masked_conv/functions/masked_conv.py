@@ -15,7 +15,7 @@ class MaskedConv2dFunction(Function):
         pad_h, pad_w = _pair(padding)
         stride_h, stride_w = _pair(stride)
         if stride_h != 1 or stride_w != 1:
-            raise NotImplementedError(
+            raise ValueError(
                 'Stride could not only be 1 in masked_conv2d currently.')
         if not features.is_cuda:
             raise NotImplementedError
@@ -34,9 +34,10 @@ class MaskedConv2dFunction(Function):
         mask_w_idx = mask_inds[:, 1].contiguous()
         data_col = features.new_zeros(in_channel * kernel_h * kernel_w,
                                       mask_inds.size(0))
-        masked_conv2d_cuda.masked_im2col_forward(
-            features, mask_h_idx, mask_w_idx, kernel_h, kernel_w, pad_h, pad_w,
-            data_col)
+        masked_conv2d_cuda.masked_im2col_forward(features, mask_h_idx,
+                                                 mask_w_idx, kernel_h,
+                                                 kernel_w, pad_h, pad_w,
+                                                 data_col)
 
         masked_output = torch.addmm(1, bias[:, None], 1,
                                     weight.view(out_channel, -1), data_col)
