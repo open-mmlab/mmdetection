@@ -19,7 +19,7 @@
 | R-50      | caffe   | Y       | N       | 1x      | 6.9      | 0.396               | 13.6           | 36.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fcos/fcos_r50_caffe_fpn_gn_1x_4gpu_20190516-9f253a93.pth) |
 | R-50      | caffe   | Y       | N       | 2x      | -        | -                   | -              | 36.9   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fcos/fcos_r50_caffe_fpn_gn_2x_4gpu_20190516_-93484354.pth) |
 | R-101     | caffe   | Y       | N       | 1x      | 10.4     | 0.558               | 11.6           | 39.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fcos/fcos_r101_caffe_fpn_gn_1x_4gpu_20190516-e4889733.pth) |
-| R-101     | caffe   | Y       | N       | 2x      | -        | -                   | -          |    | () |
+| R-101     | caffe   | Y       | N       | 2x      | -        | -                   | -              | 39.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/fcos/fcos_r101_caffe_fpn_gn_2x_4gpu_20190516-c03af97b.pth) |
 
 
 | Backbone  | Style   | GN  | MS train | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
