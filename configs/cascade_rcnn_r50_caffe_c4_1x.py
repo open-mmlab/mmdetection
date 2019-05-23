@@ -33,7 +33,9 @@ model = dict(
         anchor_strides=[16],
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
-        use_sigmoid_cls=True),
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -48,7 +50,15 @@ model = dict(
             num_classes=81,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.1, 0.1, 0.2, 0.2],
-            reg_class_agnostic=True),
+            reg_class_agnostic=True,
+            loss_cls=dict(
+                type='CrossEntropyLoss',
+                use_sigmoid=False,
+                loss_weight=1.0),
+            loss_bbox=dict(
+                type='SmoothL1Loss',
+                beta=1.0,
+                loss_weight=1.0)),
         dict(
             type='BBoxHead',
             with_avg_pool=True,
@@ -57,7 +67,15 @@ model = dict(
             num_classes=81,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.05, 0.05, 0.1, 0.1],
-            reg_class_agnostic=True),
+            reg_class_agnostic=True,
+            loss_cls=dict(
+                type='CrossEntropyLoss',
+                use_sigmoid=False,
+                loss_weight=1.0),
+            loss_bbox=dict(
+                type='SmoothL1Loss',
+                beta=1.0,
+                loss_weight=1.0)),
         dict(
             type='BBoxHead',
             with_avg_pool=True,
@@ -66,7 +84,15 @@ model = dict(
             num_classes=81,
             target_means=[0., 0., 0., 0.],
             target_stds=[0.033, 0.033, 0.067, 0.067],
-            reg_class_agnostic=True)
+            reg_class_agnostic=True,
+            loss_cls=dict(
+                type='CrossEntropyLoss',
+                use_sigmoid=False,
+                loss_weight=1.0),
+            loss_bbox=dict(
+                type='SmoothL1Loss',
+                beta=1.0,
+                loss_weight=1.0)),
     ])
 # model training and testing settings
 train_cfg = dict(
@@ -85,7 +111,6 @@ train_cfg = dict(
             add_gt_as_proposals=False),
         allowed_border=0,
         pos_weight=-1,
-        smoothl1_beta=1 / 9.0,
         debug=False),
     rpn_proposal=dict(
         nms_across_levels=False,

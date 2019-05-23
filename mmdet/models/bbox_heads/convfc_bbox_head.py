@@ -29,8 +29,8 @@ class ConvFCBBoxHead(BBoxHead):
                  *args,
                  **kwargs):
         super(ConvFCBBoxHead, self).__init__(*args, **kwargs)
-        assert (num_shared_convs + num_shared_fcs + num_cls_convs + num_cls_fcs
-                + num_reg_convs + num_reg_fcs > 0)
+        assert (num_shared_convs + num_shared_fcs + num_cls_convs +
+                num_cls_fcs + num_reg_convs + num_reg_fcs > 0)
         if num_cls_convs > 0 or num_reg_convs > 0:
             assert num_shared_fcs == 0
         if not self.with_cls:
@@ -76,8 +76,8 @@ class ConvFCBBoxHead(BBoxHead):
         if self.with_cls:
             self.fc_cls = nn.Linear(self.cls_last_dim, self.num_classes)
         if self.with_reg:
-            out_dim_reg = (4 if self.reg_class_agnostic else
-                           4 * self.num_classes)
+            out_dim_reg = (4 if self.reg_class_agnostic else 4 *
+                           self.num_classes)
             self.fc_reg = nn.Linear(self.reg_last_dim, out_dim_reg)
 
     def _add_conv_fc_branch(self,
@@ -94,8 +94,8 @@ class ConvFCBBoxHead(BBoxHead):
         branch_convs = nn.ModuleList()
         if num_branch_convs > 0:
             for i in range(num_branch_convs):
-                conv_in_channels = (last_layer_dim
-                                    if i == 0 else self.conv_out_channels)
+                conv_in_channels = (
+                    last_layer_dim if i == 0 else self.conv_out_channels)
                 branch_convs.append(
                     ConvModule(
                         conv_in_channels,
@@ -114,8 +114,8 @@ class ConvFCBBoxHead(BBoxHead):
                     or self.num_shared_fcs == 0) and not self.with_avg_pool:
                 last_layer_dim *= (self.roi_feat_size * self.roi_feat_size)
             for i in range(num_branch_fcs):
-                fc_in_channels = (last_layer_dim
-                                  if i == 0 else self.fc_out_channels)
+                fc_in_channels = (
+                    last_layer_dim if i == 0 else self.fc_out_channels)
                 branch_fcs.append(
                     nn.Linear(fc_in_channels, self.fc_out_channels))
             last_layer_dim = self.fc_out_channels

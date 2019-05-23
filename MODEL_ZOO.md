@@ -214,6 +214,10 @@ Please refer to [Weight Standardization](configs/gn+ws/README.md) for details.
 
 Please refer to [Deformable Convolutional Networks](configs/dcn/README.md) for details.
 
+### Guided Anchoring
+
+Please refer to [Guided Anchoring](configs/guided_anchoring/README.md) for details.
+
 
 ## Comparison with Detectron and maskrcnn-benchmark
 

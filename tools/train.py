@@ -77,7 +77,8 @@ def main():
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
-            mmdet_version=__version__, config=cfg.text,
+            mmdet_version=__version__,
+            config=cfg.text,
             classes=train_dataset.CLASSES)
     # add an attribute for visualization convenience
     model.CLASSES = train_dataset.CLASSES
