@@ -18,6 +18,7 @@ We have tested the following versions of OS and softwares:
 - GCC: 4.9/5.3/5.4/7.3
 
 ### Install mmdetection
+#### Native installation
 
 a. Create a conda virtual environment and activate it. Then install Cython.
 
@@ -56,6 +57,17 @@ Note:
 The git commit id will be written to the version number with step e, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
 
 2. Following the above instructions, mmdetection is installed on `dev` mode, any modifications to the code will take effect without installing it again.
+
+#### Installation with docker
+a. Pull cuda image
+```bash
+docker pull nvidia/cuda
+```
+
+b. Build image from project root
+```bash
+make mmdetection
+```
 
 ### Prepare COCO dataset.
 
