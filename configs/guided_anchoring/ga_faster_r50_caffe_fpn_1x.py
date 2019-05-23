@@ -30,9 +30,17 @@ model = dict(
         target_means=(.0, .0, .0, .0),
         target_stds=[0.07, 0.07, 0.11, 0.11],
         loc_filter_thr=0.01,
-        loc_focal_loss=True,
-        use_sigmoid_cls=True,
-        cls_focal_loss=False),
+        loss_loc=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_shape=dict(
+            type='IoULoss', style='bounded', beta=0.2, loss_weight=1.0),
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
@@ -47,7 +55,10 @@ model = dict(
         num_classes=81,
         target_means=[0., 0., 0., 0.],
         target_stds=[0.05, 0.05, 0.1, 0.1],
-        reg_class_agnostic=False))
+        reg_class_agnostic=False,
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -77,7 +88,6 @@ train_cfg = dict(
             add_gt_as_proposals=False),
         allowed_border=-1,
         pos_weight=-1,
-        smoothl1_beta=1.0,
         center_ratio=0.2,
         ignore_ratio=0.5,
         debug=False),

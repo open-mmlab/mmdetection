@@ -53,7 +53,7 @@ class GARPNHead(GuidedAnchorHead):
             gt_bboxes_ignore=gt_bboxes_ignore)
         return dict(
             loss_rpn_cls=losses['loss_cls'],
-            loss_rpn_reg=losses['loss_reg'],
+            loss_rpn_bbox=losses['loss_bbox'],
             loss_anchor_shape=losses['loss_shape'],
             loss_anchor_loc=losses['loss_loc'])
 

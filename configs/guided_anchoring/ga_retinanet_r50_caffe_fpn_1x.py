@@ -34,7 +34,21 @@ model = dict(
         target_means=(.0, .0, .0, .0),
         target_stds=[1.0, 1.0, 1.0, 1.0],
         loc_filter_thr=0.01,
-        loc_focal_loss=True))
+        loss_loc=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_shape=dict(
+            type='IoULoss', style='bounded', beta=0.2, loss_weight=1.0),
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=0.04, loss_weight=1.0)))
 # training and testing settings
 train_cfg = dict(
     ga_assigner=dict(
@@ -55,9 +69,6 @@ train_cfg = dict(
         neg_iou_thr=0.5,
         min_pos_iou=0.0,
         ignore_iof_thr=-1),
-    smoothl1_beta=0.04,
-    gamma=2.0,
-    alpha=0.25,
     allowed_border=-1,
     pos_weight=-1,
     center_ratio=0.2,

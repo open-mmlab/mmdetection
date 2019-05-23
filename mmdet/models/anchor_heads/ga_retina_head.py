@@ -21,12 +21,7 @@ class GARetinaHead(GuidedAnchorHead):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        super(GARetinaHead, self).__init__(
-            num_classes,
-            in_channels,
-            use_sigmoid_cls=True,
-            cls_focal_loss=True,
-            **kwargs)
+        super(GARetinaHead, self).__init__(num_classes, in_channels, **kwargs)
 
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)

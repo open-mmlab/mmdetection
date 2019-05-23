@@ -150,12 +150,15 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3, reduction='mean'):
         return loss.sum()
 
 
-def weighted_bounded_iou_loss(pred,
-                              target,
-                              weight,
-                              beta=0.2,
-                              eps=1e-3,
-                              avg_factor=None):
+def weighted_iou_loss(pred,
+                      target,
+                      weight,
+                      style='naive',
+                      beta=0.2,
+                      eps=1e-3,
+                      avg_factor=None):
+    assert style in ['bounded', 'naive'
+                     ], 'only support bounded iou loss and naive iou loss'
     inds = torch.nonzero(weight[:, 0] > 0)
     if avg_factor is None:
         avg_factor = inds.numel() + 1e-6
@@ -165,8 +168,11 @@ def weighted_bounded_iou_loss(pred,
     else:
         return (pred * weight).sum()[None] / avg_factor
 
-    loss = bounded_iou_loss(
-        pred[inds], target[inds], beta=beta, eps=eps, reduction='sum')
+    if style is 'bounded':
+        loss = bounded_iou_loss(
+            pred[inds], target[inds], beta=beta, eps=eps, reduction='sum')
+    else:
+        loss = iou_loss(pred[inds], target[inds], reduction='sum')
     loss = loss[None] / avg_factor
     return loss
 

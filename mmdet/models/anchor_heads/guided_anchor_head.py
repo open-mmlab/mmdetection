@@ -5,11 +5,11 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (
-    AnchorGenerator, anchor_target, ga_loc_target, ga_shape_target, delta2bbox,
-    multi_apply, weighted_sigmoid_focal_loss, weighted_binary_cross_entropy,
-    weighted_bounded_iou_loss, multiclass_nms)
+from mmdet.core import (AnchorGenerator, anchor_target, ga_loc_target,
+                        ga_shape_target, delta2bbox, multi_apply,
+                        multiclass_nms)
 from mmdet.ops import DeformConv, MaskedConv2d
+from ..builder import build_loss
 from .anchor_head import AnchorHead
 from ..registry import HEADS
 from ..utils import bias_init_with_prob
@@ -97,9 +97,19 @@ class GuidedAnchorHead(AnchorHead):
                  target_stds=(1.0, 1.0, 1.0, 1.0),
                  deformable_groups=4,
                  loc_filter_thr=0.01,
-                 loc_focal_loss=True,
-                 use_sigmoid_cls=False,
-                 cls_focal_loss=False):
+                 loss_loc=dict(
+                     type='FocalLoss',
+                     use_sigmoid=True,
+                     gamma=2.0,
+                     alpha=0.25,
+                     loss_weight=1.0),
+                 loss_shape=dict(type='IoULoss', beta=0.2, loss_weight=1.0),
+                 loss_cls=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=True,
+                     loss_weight=1.0),
+                 loss_bbox=dict(
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -119,9 +129,6 @@ class GuidedAnchorHead(AnchorHead):
         self.target_stds = target_stds
         self.deformable_groups = deformable_groups
         self.loc_filter_thr = loc_filter_thr
-        self.loc_focal_loss = loc_focal_loss
-        self.use_sigmoid_cls = use_sigmoid_cls
-        self.cls_focal_loss = cls_focal_loss
         self.approx_generators = []
         self.square_generators = []
         for anchor_base in self.anchor_base_sizes:
@@ -134,10 +141,19 @@ class GuidedAnchorHead(AnchorHead):
                 AnchorGenerator(anchor_base, [self.octave_base_scale], [1.0]))
         # one anchor per location
         self.num_anchors = 1
+        self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
+        self.cls_focal_loss = loss_cls['type'] in ['FocalLoss']
+        self.loc_focal_loss = loss_loc['type'] in ['FocalLoss']
         if self.use_sigmoid_cls:
             self.cls_out_channels = self.num_classes - 1
         else:
             self.cls_out_channels = self.num_classes
+
+        # build losses
+        self.loss_loc = build_loss(loss_loc)
+        self.loss_shape = build_loss(loss_shape)
+        self.loss_cls = build_loss(loss_cls)
+        self.loss_bbox = build_loss(loss_bbox)
 
         self._init_layers()
 
@@ -331,30 +347,20 @@ class GuidedAnchorHead(AnchorHead):
             self.anchoring_means,
             self.anchoring_stds,
             wh_ratio_clip=1e-6)
-        loss_shape = weighted_bounded_iou_loss(
+        loss_shape = self.loss_shape(
             pred_anchors_,
             bbox_gts_,
             anchor_weights_,
-            beta=0.2,
             avg_factor=anchor_total_num)
         return loss_shape
 
     def loss_loc_single(self, loc_pred, loc_target, loc_weight, loc_avg_factor,
                         cfg):
-        if self.loc_focal_loss:
-            loss_loc = weighted_sigmoid_focal_loss(
-                loc_pred.reshape(-1, 1),
-                loc_target.reshape(-1, 1).long(),
-                loc_weight.reshape(-1, 1),
-                avg_factor=loc_avg_factor)
-        else:
-            loss_loc = weighted_binary_cross_entropy(
-                loc_pred.reshape(-1, 1),
-                loc_target.reshape(-1, 1).long(),
-                loc_weight.reshape(-1, 1),
-                avg_factor=loc_avg_factor)
-        if hasattr(cfg, 'loc_weight'):
-            loss_loc = loss_loc * cfg.loc_weight
+        loss_loc = self.loss_loc(
+            loc_pred.reshape(-1, 1),
+            loc_target.reshape(-1, 1).long(),
+            loc_weight.reshape(-1, 1),
+            avg_factor=loc_avg_factor)
         return loss_loc
 
     def loss(self,
@@ -418,7 +424,7 @@ class GuidedAnchorHead(AnchorHead):
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (num_total_pos if self.cls_focal_loss else
                              num_total_pos + num_total_neg)
-        losses_cls, losses_reg = multi_apply(
+        losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
             bbox_preds,
@@ -444,7 +450,7 @@ class GuidedAnchorHead(AnchorHead):
             anchor_total_num=anchor_total_num)
         return dict(
             loss_cls=losses_cls,
-            loss_reg=losses_reg,
+            loss_bbox=losses_bbox,
             loss_shape=losses_shape,
             loss_loc=losses_loc)
 
