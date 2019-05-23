@@ -58,7 +58,12 @@ def ga_loc_target(gt_bboxes_list,
     for lvl_id in range(num_lvls):
         h, w = featmap_sizes[lvl_id]
         loc_targets = torch.zeros(
-            img_per_gpu, 1, h, w, device='cuda', dtype=torch.float32)
+            img_per_gpu,
+            1,
+            h,
+            w,
+            device=gt_bboxes_list[0].device,
+            dtype=torch.float32)
         loc_weights = torch.full_like(loc_targets, -1)
         ignore_map = torch.zeros_like(loc_targets)
         all_loc_targets.append(loc_targets)
