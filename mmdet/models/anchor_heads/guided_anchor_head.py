@@ -5,9 +5,9 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (AnchorGenerator, anchor_target, ga_loc_target,
-                        ga_shape_target, delta2bbox, multi_apply,
-                        multiclass_nms)
+from mmdet.core import (AnchorGenerator, anchor_target, anchor_inside_flags,
+                        ga_loc_target, ga_shape_target, delta2bbox,
+                        multi_apply, multiclass_nms)
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import build_loss
 from .anchor_head import AnchorHead
@@ -198,7 +198,7 @@ class GuidedAnchorHead(AnchorHead):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
 
-    def get_sampled_approxs(self, featmap_sizes, img_metas):
+    def get_sampled_approxs(self, featmap_sizes, img_metas, cfg):
         """Get sampled approxs according to feature map sizes.
 
         Args:
@@ -206,7 +206,7 @@ class GuidedAnchorHead(AnchorHead):
             img_metas (list[dict]): Image meta info.
 
         Returns:
-            tuple: approxes of each image, valid flags of each image
+            tuple: approxes of each image, inside flags of each image
         """
         num_imgs = len(img_metas)
         num_levels = len(featmap_sizes)
@@ -221,10 +221,12 @@ class GuidedAnchorHead(AnchorHead):
         approxs_list = [multi_level_approxs for _ in range(num_imgs)]
 
         # for each image, we compute valid flags of multi level approxes
-        valid_flag_list = []
+        inside_flag_list = []
         for img_id, img_meta in enumerate(img_metas):
             multi_level_flags = []
+            multi_level_approxs = approxs_list[img_id]
             for i in range(num_levels):
+                approxs = multi_level_approxs[i]
                 anchor_stride = self.anchor_strides[i]
                 feat_h, feat_w = featmap_sizes[i]
                 h, w, _ = img_meta['pad_shape']
@@ -232,9 +234,21 @@ class GuidedAnchorHead(AnchorHead):
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.approx_generators[i].valid_flags(
                     (feat_h, feat_w), (valid_feat_h, valid_feat_w))
-                multi_level_flags.append(flags)
-            valid_flag_list.append(multi_level_flags)
-        return approxs_list, valid_flag_list
+                inside_flags_list = []
+                for i in range(self.approxs_per_octave):
+                    split_valid_flags = flags[i::self.approxs_per_octave]
+                    split_approxs = approxs[i::self.approxs_per_octave, :]
+                    inside_flags = anchor_inside_flags(
+                        split_approxs, split_valid_flags,
+                        img_meta['img_shape'][:2], cfg.allowed_border)
+                    inside_flags_list.append(inside_flags)
+                # inside_flag for a position is true if any anchor in this
+                # position is true
+                inside_flags = (torch.stack(inside_flags_list, 0).sum(dim=0) >
+                                0)
+                multi_level_flags.append(inside_flags)
+            inside_flag_list.append(multi_level_flags)
+        return approxs_list, inside_flag_list
 
     def get_anchors(self,
                     featmap_sizes,
@@ -383,14 +397,14 @@ class GuidedAnchorHead(AnchorHead):
             self.anchor_strides,
             center_ratio=cfg.center_ratio,
             ignore_ratio=cfg.ignore_ratio)
-        approxs_list, valid_flag_list = self.get_sampled_approxs(
-            featmap_sizes, img_metas)
+        approxs_list, inside_flag_list = self.get_sampled_approxs(
+            featmap_sizes, img_metas, cfg)
         squares_list, guided_anchors_list, _ = self.get_anchors(
             featmap_sizes, shape_preds, loc_preds, img_metas)
         sampling = False if not hasattr(cfg, 'ga_sampler') else True
         shape_targets = ga_shape_target(
             approxs_list,
-            valid_flag_list,
+            inside_flag_list,
             squares_list,
             gt_bboxes,
             img_metas,
@@ -399,8 +413,8 @@ class GuidedAnchorHead(AnchorHead):
             sampling=sampling)
         if shape_targets is None:
             return None
-        (bbox_anchors_list, bbox_gts_list, anchor_weights_list,
-         all_inside_flags, anchor_fg_num, anchor_bg_num) = shape_targets
+        (bbox_anchors_list, bbox_gts_list, anchor_weights_list, anchor_fg_num,
+         anchor_bg_num) = shape_targets
         anchor_total_num = (anchor_fg_num
                             if not sampling else anchor_fg_num + anchor_bg_num)
 
@@ -408,7 +422,7 @@ class GuidedAnchorHead(AnchorHead):
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = anchor_target(
             guided_anchors_list,
-            all_inside_flags,
+            inside_flag_list,
             gt_bboxes,
             img_metas,
             self.target_means,

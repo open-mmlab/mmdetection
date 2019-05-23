@@ -113,7 +113,7 @@ def ga_loc_target(gt_bboxes_list,
 
 
 def ga_shape_target(approx_list,
-                    valid_flag_list,
+                    inside_flag_list,
                     square_list,
                     gt_bboxes_list,
                     img_metas,
@@ -126,7 +126,7 @@ def ga_shape_target(approx_list,
 
     Args:
         approx_list (list[list]): Multi level approxs of each image.
-        valid_flag_list (list[list]): Multi level valid flags of each image.
+        inside_flag_list (list[list]): Multi level inside flags of each image.
         square_list (list[list]): Multi level squares of each image.
         gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
         img_metas (list[dict]): Meta info of each image.
@@ -140,27 +140,29 @@ def ga_shape_target(approx_list,
         tuple
     """
     num_imgs = len(img_metas)
-    assert len(approx_list) == len(valid_flag_list) == len(
+    assert len(approx_list) == len(inside_flag_list) == len(
         square_list) == num_imgs
     # anchor number of multi levels
     num_level_squares = [squares.size(0) for squares in square_list[0]]
     # concat all level anchors and flags to a single tensor
+    inside_flag_flat_list = []
+    approx_flat_list = []
+    square_flat_list = []
     for i in range(num_imgs):
-        if isinstance(valid_flag_list, list):
-            assert len(approx_list[i]) == len(valid_flag_list[i])
-            valid_flag_list[i] = torch.cat(valid_flag_list[i])
-        approx_list[i] = torch.cat(approx_list[i])
-        square_list[i] = torch.cat(square_list[i])
+        assert len(square_list[i]) == len(inside_flag_list[i])
+        inside_flag_flat_list.append(torch.cat(inside_flag_list[i]))
+        approx_flat_list.append(torch.cat(approx_list[i]))
+        square_flat_list.append(torch.cat(square_list[i]))
 
     # compute targets for each image
     if gt_bboxes_ignore_list is None:
         gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-    (all_bbox_anchors, all_bbox_gts, all_bbox_weights, all_inside_flags,
-     pos_inds_list, neg_inds_list) = multi_apply(
+    (all_bbox_anchors, all_bbox_gts, all_bbox_weights, pos_inds_list,
+     neg_inds_list) = multi_apply(
          ga_shape_target_single,
-         approx_list,
-         valid_flag_list,
-         square_list,
+         approx_flat_list,
+         inside_flag_flat_list,
+         square_flat_list,
          gt_bboxes_list,
          gt_bboxes_ignore_list,
          img_metas,
@@ -178,8 +180,8 @@ def ga_shape_target(approx_list,
     bbox_anchors_list = images_to_levels(all_bbox_anchors, num_level_squares)
     bbox_gts_list = images_to_levels(all_bbox_gts, num_level_squares)
     bbox_weights_list = images_to_levels(all_bbox_weights, num_level_squares)
-    return (bbox_anchors_list, bbox_gts_list, bbox_weights_list,
-            all_inside_flags, num_total_pos, num_total_neg)
+    return (bbox_anchors_list, bbox_gts_list, bbox_weights_list, num_total_pos,
+            num_total_neg)
 
 
 def images_to_levels(target, num_level_anchors):
@@ -198,7 +200,7 @@ def images_to_levels(target, num_level_anchors):
 
 
 def ga_shape_target_single(flat_approxs,
-                           valid_flags,
+                           inside_flags,
                            flat_squares,
                            gt_bboxes,
                            gt_bboxes_ignore,
@@ -211,7 +213,7 @@ def ga_shape_target_single(flat_approxs,
 
     Args:
         flat_approxs (Tensor): flat approxs of a single image.
-        valid_flags (Tensor): valid flags of a single image.
+        inside_flags (Tensor): inside flags of a single image.
         flat_squares (Tensor): flat squares of a single image.
         gt_bboxes (Tensor): Ground truth bboxes of a single image.
         img_meta (dict): Meta info of a single image.
@@ -223,17 +225,6 @@ def ga_shape_target_single(flat_approxs,
     Returns:
         tuple
     """
-    # split valid_flags by different scales and ratios
-    inside_flags_list = []
-    for i in range(approxs_per_octave):
-        split_valid_flags = valid_flags[i::approxs_per_octave]
-        split_approxs = flat_approxs[i::approxs_per_octave, :]
-        inside_flags = anchor_inside_flags(split_approxs, split_valid_flags,
-                                           img_meta['img_shape'][:2],
-                                           cfg.allowed_border)
-        inside_flags_list.append(inside_flags)
-    # inside_flag for a position is true if any anchor in this position is true
-    inside_flags = (torch.stack(inside_flags_list, 0).sum(dim=0) > 0)
     if not inside_flags.any():
         return (None, ) * 6
     # assign gt and sample anchors
@@ -269,19 +260,4 @@ def ga_shape_target_single(flat_approxs,
         bbox_gts = unmap(bbox_gts, num_total_anchors, inside_flags)
         bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
-    return (bbox_anchors, bbox_gts, bbox_weights, inside_flags, pos_inds,
-            neg_inds)
-
-
-def anchor_inside_flags(flat_anchors, valid_flags, img_shape,
-                        allowed_border=0):
-    img_h, img_w = img_shape[:2]
-    if allowed_border >= 0:
-        inside_flags = valid_flags & \
-            (flat_anchors[:, 0] >= -allowed_border) & \
-            (flat_anchors[:, 1] >= -allowed_border) & \
-            (flat_anchors[:, 2] < img_w + allowed_border) & \
-            (flat_anchors[:, 3] < img_h + allowed_border)
-    else:
-        inside_flags = valid_flags
-    return inside_flags
+    return (bbox_anchors, bbox_gts, bbox_weights, pos_inds, neg_inds)
