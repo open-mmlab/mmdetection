@@ -22,22 +22,19 @@ class IoUBalancedNegSampler(RandomSampler):
             set to -1 if all using IoU balanced sampling.
         floor_fraction (float): sampling fraction of proposals under floor_thr.
         num_bins (int): number of bins in IoU balanced sampling.
-
-    Returns:
-        Tensor
     """
 
     def __init__(self,
                  num,
                  pos_fraction,
                  floor_thr=-1,
-                 floor_fraction=-1,
+                 floor_fraction=0,
                  num_bins=3,
                  **kwargs):
         super(IoUBalancedNegSampler, self).__init__(num, pos_fraction,
                                                     **kwargs)
         assert floor_thr >= 0 or floor_thr == -1
-        assert 0 <= floor_fraction <= 1 or floor_fraction == -1
+        assert 0 <= floor_fraction <= 1
         assert num_bins >= 1
 
         self.floor_thr = floor_thr

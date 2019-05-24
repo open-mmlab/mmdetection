@@ -22,9 +22,6 @@ class BFP(nn.Module):
             multi-level features from bottom to top.
         refine_type (str): type of method for refining features,
             currently support [None, 'conv', 'non_local'].
-
-    Returns:
-        tuple
     """
 
     def __init__(self,
