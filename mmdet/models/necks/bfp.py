@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
-from ..plugins import NonLocalBlock2D
+from ..plugins import NonLocal2D
 from ..utils import ConvModule
 from ..registry import NECKS
 
@@ -18,7 +18,8 @@ class BFP(nn.Module):
         num_levels (int): number of input branches.
         conv_cfg (dict): dictionary to construct and config conv layer.
         norm_cfg (dict): dictionary to construct and config norm layer.
-        refine_level (int): index of corresponding level of BSF.
+        refine_level (int): index of integration and refine level of BSF in
+            multi-level features from bottom to top.
         refine_type (str): type of method for refining features,
             currently support [None, 'conv', 'non_local'].
 
@@ -29,10 +30,10 @@ class BFP(nn.Module):
     def __init__(self,
                  in_channels,
                  num_levels,
-                 conv_cfg=None,
-                 norm_cfg=None,
                  refine_level=2,
-                 refine_type=None):
+                 refine_type=None,
+                 conv_cfg=None,
+                 norm_cfg=None):
         super(BFP, self).__init__()
         assert refine_type in [None, 'conv', 'non_local']
 
@@ -53,14 +54,14 @@ class BFP(nn.Module):
         self.refine_type = refine_type
 
         self.gather_ops = []
-        self.scatter_rops = []
+        self.scatter_ops = []
         for i in range(self.num_levels):
             if i < self.refine_level:
                 self.gather_ops.append(F.adaptive_max_pool2d)
-                self.scatter_rops.append(F.interpolate)
+                self.scatter_ops.append(F.interpolate)
             else:
                 self.gather_ops.append(F.interpolate)
-                self.scatter_rops.append(F.adaptive_max_pool2d)
+                self.scatter_ops.append(F.adaptive_max_pool2d)
 
         if self.refine_type == 'conv':
             self.refine = ConvModule(
@@ -71,7 +72,7 @@ class BFP(nn.Module):
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
         elif self.refine_type == 'non_local':
-            self.refine = NonLocalBlock2D(
+            self.refine = NonLocal2D(
                 self.channels,
                 reduction=1,
                 conv_cfg=self.conv_cfg,
@@ -85,33 +86,31 @@ class BFP(nn.Module):
     def forward(self, inputs):
         assert len(inputs) == self.num_levels
 
-        gather_params = []
-        scatter_params = []
+        feats = []
         for i in range(self.num_levels):
             if i < self.refine_level:
-                gather_params.append(
-                    dict(output_size=inputs[self.refine_level].size()[2:]))
-                scatter_params.append(
-                    dict(size=inputs[i].size()[2:], mode='nearest'))
+                feats.append(self.gather_ops[i](
+                    inputs[i],
+                    output_size=inputs[self.refine_level].size()[2:]))
             else:
-                gather_params.append(
-                    dict(
-                        size=inputs[self.refine_level].size()[2:],
-                        mode='nearest'))
-                scatter_params.append(dict(output_size=inputs[i].size()[2:]))
-
-        feats = [
-            self.gather_ops[i](inputs[i], **gather_params[i])
-            for i in range(self.num_levels)
-        ]
+                feats.append(self.gather_ops[i](
+                    inputs[i],
+                    size=inputs[self.refine_level].size()[2:],
+                    mode='nearest'))
 
         bsf = sum(feats) / len(feats)
         if self.refine_type is not None:
             bsf = self.refine(bsf)
 
-        outs = [
-            self.scatter_rops[i](bsf, **scatter_params[i]) + inputs[i]
-            for i in range(self.num_levels)
-        ]
+        outs = []
+        for i in range(self.num_levels):
+            if i < self.refine_level:
+                outs.append(self.scatter_ops[i]
+                            (bsf, size=inputs[i].size()[2:], mode='nearest') +
+                            inputs[i])
+            else:
+                outs.append(self.scatter_ops[i]
+                            (bsf, output_size=inputs[i].size()[2:]) +
+                            inputs[i])
 
         return tuple(outs)
