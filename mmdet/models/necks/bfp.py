@@ -37,7 +37,7 @@ class BFP(nn.Module):
             self.channels = in_channels[0]
             assert len(set(in_channels)) == 1
         elif isinstance(in_channels, int):
-            self.channels = channels
+            self.channels = in_channels
         else:
             raise TypeError(
                 'The in_channels should be int or list but found {}.'.format(

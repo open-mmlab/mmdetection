@@ -120,6 +120,11 @@ def balanced_l1_loss(pred,
         (b * diff + 1) * torch.log(b * diff / beta + 1) - alpha * diff,
         gamma * diff + gamma / b - alpha * beta)
 
+    if weight is not None:
+        loss = torch.sum(loss * weight)[None]
+        if avg_factor is None:
+            avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
+
     reduction = F._Reduction.get_enum(reduction)
     # none: 0, elementwise_mean:1, sum: 2
     if reduction == 1:
@@ -127,13 +132,10 @@ def balanced_l1_loss(pred,
     elif reduction == 2:
         loss = loss.sum()
 
-    if weight is not None:
-        loss = torch.sum(loss * weight)[None]
-        if avg_factor is None:
-            avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
-
     if avg_factor is not None:
         loss /= avg_factor
+
+    return loss
 
 
 def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3, reduction='mean'):
