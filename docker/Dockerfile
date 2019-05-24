@@ -15,12 +15,15 @@ RUN apt-get update && \
             python3-pip && \
       rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+COPY ./requirements.txt /workspace/requirements.txt
+RUN pip3 install -r /workspace/requirements.txt
+
 COPY . /workspace/
 
-RUN pip3 install -r /workspace/requirements.txt
 RUN cd /workspace/ && \
     PYTHON=python3 bash ./compile.sh && \
     pip3 install -e . && \
     cd ..
 
+RUN mkdir /.cache && chmod -R a+rw /.cache/
 WORKDIR /workspace
