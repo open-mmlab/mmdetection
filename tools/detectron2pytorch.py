@@ -78,8 +78,8 @@ def convert(src, dst, depth):
 def main():
     parser = argparse.ArgumentParser(description='Convert model keys')
     parser.add_argument('src', help='src detectron model path')
-    parser.add_argument('depth', type=int, help='ResNet model depth')
     parser.add_argument('dst', help='save path')
+    parser.add_argument('depth', type=int, help='ResNet model depth')
     args = parser.parse_args()
     convert(args.src, args.dst, args.depth)
 
