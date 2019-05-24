@@ -28,12 +28,7 @@ class RetinaHead(AnchorHead):
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
         anchor_scales = octave_scales * octave_base_scale
         super(RetinaHead, self).__init__(
-            num_classes,
-            in_channels,
-            anchor_scales=anchor_scales,
-            use_sigmoid_cls=True,
-            cls_focal_loss=True,
-            **kwargs)
+            num_classes, in_channels, anchor_scales=anchor_scales, **kwargs)
 
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)
