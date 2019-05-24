@@ -7,6 +7,7 @@ from ..utils import ConvModule
 
 
 class NonLocalBlock2D(nn.Module):
+
     def __init__(self,
                  in_channels,
                  reduction=2,
