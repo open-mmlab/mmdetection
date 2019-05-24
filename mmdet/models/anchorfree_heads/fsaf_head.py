@@ -51,27 +51,23 @@ class FSAFHead(nn.Module):
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
-                nn.Conv2d(chn, self.feat_channels, 3, stride=1, padding=1))
-            # self.cls_convs.append(
-            #     ConvModule(
-            #         chn,
-            #         self.feat_channels,
-            #         3,
-            #         stride=1,
-            #         padding=1,
-            #         conv_cfg=self.conv_cfg,
-            #         norm_cfg=self.norm_cfg))
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg))
             self.reg_convs.append(
-                nn.Conv2d(chn, self.feat_channels, 3, stride=1, padding=1))
-            # self.reg_convs.append(
-            #     ConvModule(
-            #         chn,
-            #         self.feat_channels,
-            #         3,
-            #         stride=1,
-            #         padding=1,
-            #         conv_cfg=self.conv_cfg,
-            #         norm_cfg=self.norm_cfg))
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg))
         self.fsaf_cls = nn.Conv2d(
             self.feat_channels,
             self.cls_out_channels,
@@ -82,11 +78,9 @@ class FSAFHead(nn.Module):
 
     def init_weights(self):
         for m in self.cls_convs:
-            normal_init(m, std=0.01)
-            # normal_init(m.conv, std=0.01)
+            normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
-            normal_init(m, std=0.01)
-            # normal_init(m.conv, std=0.01)
+            normal_init(m.conv, std=0.01)
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.fsaf_cls, std=0.01, bias=bias_cls)
         normal_init(self.fsaf_reg, std=0.01, bias=0.1)
@@ -95,9 +89,9 @@ class FSAFHead(nn.Module):
         cls_feat = x
         reg_feat = x
         for cls_conv in self.cls_convs:
-            cls_feat = self.relu(cls_conv(cls_feat))
+            cls_feat = cls_conv(cls_feat)
         for reg_conv in self.reg_convs:
-            reg_feat = self.relu(reg_conv(reg_feat))
+            reg_feat = reg_conv(reg_feat)
         cls_score = self.fsaf_cls(cls_feat)
         bbox_pred = self.relu(self.fsaf_reg(reg_feat))
         return cls_score, bbox_pred
