@@ -222,4 +222,3 @@ def iou_loss(pred_bboxes, target_bboxes, reduction='mean'):
         return loss.mean()
     elif reduction_enum == 2:
         return loss.sum()
-
