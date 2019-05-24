@@ -7,7 +7,6 @@ from ..utils import ConvModule
 
 
 class NonLocalBlock2D(nn.Module):
-
     def __init__(self,
                  in_channels,
                  reduction=2,
@@ -26,22 +25,16 @@ class NonLocalBlock2D(nn.Module):
             self.in_channels,
             self.inter_channels,
             kernel_size=1,
-            conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg,
             activation=activation)
         self.theta = ConvModule(
             self.in_channels,
             self.inter_channels,
             kernel_size=1,
-            conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg,
             activation=activation)
         self.phi = ConvModule(
             self.in_channels,
             self.inter_channels,
             kernel_size=1,
-            conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg,
             activation=activation)
         self.conv_mask = ConvModule(
             self.inter_channels,
@@ -57,15 +50,20 @@ class NonLocalBlock2D(nn.Module):
         constant_init(self.conv_mask.conv, 0)
 
     def embedded_gaussian(self, x):
+        # x: [N, C, H, W]
         batch_size = x.size(0)
 
         g_x = self.g(x).view(batch_size, self.inter_channels, -1)
         g_x = g_x.permute(0, 2, 1)
+        # g_x: [N, HxW, C]
         theta_x = self.theta(x).view(batch_size, self.inter_channels, -1)
         theta_x = theta_x.permute(0, 2, 1)
+        # theta_x: [N, HxW, C]
         phi_x = self.phi(x).view(batch_size, self.inter_channels, -1)
+        # phi_x: [N, C, HxW]
 
         map_t_p = torch.matmul(theta_x, phi_x)
+        # map_t_p: [N, HxW, HxW]
         mask_t_p = F.softmax(map_t_p, dim=-1)
 
         map_ = torch.matmul(mask_t_p, g_x)
@@ -79,5 +77,5 @@ class NonLocalBlock2D(nn.Module):
         if self.mode == 'embedded_gaussian':
             output = self.embedded_gaussian(x)
         else:
-            raise NotImplementedError("The code has not been implemented.")
+            raise NotImplementedError('The code has not been implemented.')
         return output

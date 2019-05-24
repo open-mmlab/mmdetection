@@ -45,8 +45,8 @@ def py_sigmoid_focal_loss(pred,
     pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
     weight = (alpha * target + (1 - alpha) * (1 - target)) * weight
     weight = weight * pt.pow(gamma)
-    loss = F.binary_cross_entropy_with_logits(pred, target,
-                                              reduction='none') * weight
+    loss = F.binary_cross_entropy_with_logits(
+        pred, target, reduction='none') * weight
     reduction_enum = F._Reduction.get_enum(reduction)
     # none: 0, mean:1, sum: 2
     if reduction_enum == 0:
@@ -75,9 +75,8 @@ def mask_cross_entropy(pred, target, label):
     num_rois = pred.size()[0]
     inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
     pred_slice = pred[inds, label].squeeze(1)
-    return F.binary_cross_entropy_with_logits(pred_slice,
-                                              target,
-                                              reduction='mean')[None]
+    return F.binary_cross_entropy_with_logits(
+        pred_slice, target, reduction='mean')[None]
 
 
 def smooth_l1_loss(pred, target, beta=1.0, reduction='mean'):
@@ -135,6 +134,7 @@ def balanced_l1_loss(pred,
 
     if avg_factor is not None:
         loss /= avg_factor
+
 
 def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3, reduction='mean'):
     """Improving Object Localization with Fitness NMS and Bounded IoU Loss,
@@ -204,11 +204,8 @@ def weighted_iou_loss(pred,
         return (pred * weight).sum()[None] / avg_factor
 
     if style == 'bounded':
-        loss = bounded_iou_loss(pred[inds],
-                                target[inds],
-                                beta=beta,
-                                eps=eps,
-                                reduction='sum')
+        loss = bounded_iou_loss(
+            pred[inds], target[inds], beta=beta, eps=eps, reduction='sum')
     else:
         loss = iou_loss(pred[inds], target[inds], reduction='sum')
     loss = loss[None] / avg_factor
@@ -239,9 +236,8 @@ def _expand_binary_labels(labels, label_weights, label_channels):
     inds = torch.nonzero(labels >= 1).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds] - 1] = 1
-    bin_label_weights = label_weights.view(-1,
-                                           1).expand(label_weights.size(0),
-                                                     label_channels)
+    bin_label_weights = label_weights.view(-1, 1).expand(
+        label_weights.size(0), label_channels)
     return bin_labels, bin_label_weights
 
 
