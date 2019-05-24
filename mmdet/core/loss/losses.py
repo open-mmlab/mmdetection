@@ -104,11 +104,9 @@ def weighted_smoothl1(pred, target, weight, beta=1.0, avg_factor=None):
 
 def balanced_l1_loss(pred,
                      target,
-                     weight=None,
+                     beta=1.0,
                      alpha=0.5,
                      gamma=1.5,
-                     beta=1.0,
-                     avg_factor=None,
                      reduction='none'):
     assert beta > 0
     assert pred.size() == target.size() and target.numel() > 0
@@ -120,22 +118,29 @@ def balanced_l1_loss(pred,
         (b * diff + 1) * torch.log(b * diff / beta + 1) - alpha * diff,
         gamma * diff + gamma / b - alpha * beta)
 
-    if weight is not None:
-        loss = torch.sum(loss * weight)[None]
-        if avg_factor is None:
-            avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
-
-    reduction = F._Reduction.get_enum(reduction)
+    reduction_enum = F._Reduction.get_enum(reduction)
     # none: 0, elementwise_mean:1, sum: 2
-    if reduction == 1:
-        loss = loss.sum() / pred.numel()
-    elif reduction == 2:
-        loss = loss.sum()
-
-    if avg_factor is not None:
-        loss /= avg_factor
+    if reduction_enum == 0:
+        return loss
+    elif reduction_enum == 1:
+        return loss.sum() / pred.numel()
+    elif reduction_enum == 2:
+        return loss.sum()
 
     return loss
+
+
+def weighted_balanced_l1_loss(pred,
+                              target,
+                              weight,
+                              beta=1.0,
+                              alpha=0.5,
+                              gamma=1.5,
+                              avg_factor=None):
+    if avg_factor is None:
+        avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
+    loss = balanced_l1_loss(pred, target, beta, alpha, gamma, reduction='none')
+    return torch.sum(loss * weight)[None] / avg_factor
 
 
 def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3, reduction='mean'):

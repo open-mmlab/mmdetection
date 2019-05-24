@@ -1,5 +1,5 @@
 import torch.nn as nn
-from mmdet.core import balanced_l1_loss
+from mmdet.core import weighted_balanced_l1_loss
 
 from ..registry import LOSSES
 
@@ -19,7 +19,7 @@ class BalancedL1Loss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self, pred, target, weight, *args, **kwargs):
-        loss_bbox = self.loss_weight * balanced_l1_loss(
+        loss_bbox = self.loss_weight * weighted_balanced_l1_loss(
             pred,
             target,
             weight,
