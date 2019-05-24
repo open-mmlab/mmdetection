@@ -3,6 +3,8 @@ input_size = 300
 width_mult = 0.75
 model = dict(
     type='SingleStageDetector',
+    # The initial imagenet snapshot can be found in
+    # https://github.com/tonylins/pytorch-mobilenet-v2
     pretrained='snapshots/mobilenet_v2.pth.tar',
     backbone=dict(
         type='SSDMobilenetV2',
