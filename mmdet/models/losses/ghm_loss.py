@@ -17,7 +17,8 @@ def _expand_binary_labels(labels, label_weights, label_channels):
 
 @LOSSES.register_module
 class GHMC(nn.Module):
-    def __init__(self,
+    def __init__(
+            self,
             bins=10,
             momentum=0,
             use_sigmoid=True,
@@ -78,7 +79,8 @@ class GHMC(nn.Module):
 
 @LOSSES.register_module
 class GHMR(nn.Module):
-    def __init__(self,
+    def __init__(
+            self,
             mu=0.02,
             bins=10,
             momentum=0,
