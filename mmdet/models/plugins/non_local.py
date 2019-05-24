@@ -36,7 +36,7 @@ class NonLocal2D(nn.Module):
             self.inter_channels,
             kernel_size=1,
             activation=None)
-        self.conv_mask = ConvModule(
+        self.conv_out = ConvModule(
             self.inter_channels,
             self.in_channels,
             kernel_size=1,
@@ -47,7 +47,7 @@ class NonLocal2D(nn.Module):
         self.init_weights()
 
     def init_weights(self):
-        constant_init(self.conv_mask.conv, 0)
+        constant_init(self.conv_out.conv, 0)
 
     def embedded_gaussian(self, x):
         # x: [N, C, H, W]
@@ -68,7 +68,7 @@ class NonLocal2D(nn.Module):
 
         map_ = torch.matmul(mask_t_p, g_x)
         map_ = map_.reshape(n, self.inter_channels, x.size(2), x.size(3))
-        mask = self.conv_mask(map_)
+        mask = self.conv_out(map_)
         final = mask + x
         return final
 
