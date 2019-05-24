@@ -104,8 +104,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             rpn_outs = self.rpn_head(x)
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
                                           self.train_cfg.rpn)
-            rpn_losses = self.rpn_head.loss(*rpn_loss_inputs,
-                                            gt_bboxes_ignore=gt_bboxes_ignore)
+            rpn_losses = self.rpn_head.loss(
+                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
             losses.update(rpn_losses)
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
@@ -118,8 +118,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         # assign gts and sample proposals
         if self.with_bbox or self.with_mask:
             bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)
-            bbox_sampler = build_sampler(self.train_cfg.rcnn.sampler,
-                                         context=self)
+            bbox_sampler = build_sampler(
+                self.train_cfg.rcnn.sampler, context=self)
             num_imgs = img.size(0)
             if gt_bboxes_ignore is None:
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
@@ -168,13 +168,15 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 device = bbox_feats.device
                 for res in sampling_results:
                     pos_inds.append(
-                        torch.ones(res.pos_bboxes.shape[0],
-                                   device=device,
-                                   dtype=torch.uint8))
+                        torch.ones(
+                            res.pos_bboxes.shape[0],
+                            device=device,
+                            dtype=torch.uint8))
                     pos_inds.append(
-                        torch.zeros(res.neg_bboxes.shape[0],
-                                    device=device,
-                                    dtype=torch.uint8))
+                        torch.zeros(
+                            res.neg_bboxes.shape[0],
+                            device=device,
+                            dtype=torch.uint8))
                 pos_inds = torch.cat(pos_inds)
                 mask_feats = bbox_feats[pos_inds]
             mask_pred = self.mask_head(mask_feats)
@@ -217,11 +219,11 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         of imgs[0].
         """
         # recompute feats to save memory
-        proposal_list = self.aug_test_rpn(self.extract_feats(imgs), img_metas,
-                                          self.test_cfg.rpn)
-        det_bboxes, det_labels = self.aug_test_bboxes(self.extract_feats(imgs),
-                                                      img_metas, proposal_list,
-                                                      self.test_cfg.rcnn)
+        proposal_list = self.aug_test_rpn(
+            self.extract_feats(imgs), img_metas, self.test_cfg.rpn)
+        det_bboxes, det_labels = self.aug_test_bboxes(
+            self.extract_feats(imgs), img_metas, proposal_list,
+            self.test_cfg.rcnn)
 
         if rescale:
             _det_bboxes = det_bboxes
@@ -233,9 +235,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         # det_bboxes always keep the original scale
         if self.with_mask:
-            segm_results = self.aug_test_mask(self.extract_feats(imgs),
-                                              img_metas, det_bboxes,
-                                              det_labels)
+            segm_results = self.aug_test_mask(
+                self.extract_feats(imgs), img_metas, det_bboxes, det_labels)
             return bbox_results, segm_results
         else:
             return bbox_results
