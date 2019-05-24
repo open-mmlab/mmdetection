@@ -11,9 +11,9 @@ class IoUBalancedNegSampler(RandomSampler):
 
     Sampling proposals according to their IoU. `floor_fraction` of needed RoIs
     are sampled from proposals whose IoU are lower than `floor_thr` randomly.
-    The others are sampled from proposals whose IoU are higher than `floor_thr`.
-    These proposals are sampled from some bins evenly, which are split by
-    `num_bins` via IoU evenly.
+    The others are sampled from proposals whose IoU are higher than
+    `floor_thr`. These proposals are sampled from some bins evenly, which are
+    split by `num_bins` via IoU evenly.
 
     Args:
         num (int): number of proposals.
