@@ -22,17 +22,27 @@ class NonLocal2D(nn.Module):
         assert mode in ['embedded_gaussian']
 
         self.g = ConvModule(
-            self.in_channels, self.inter_channels, kernel_size=1)
+            self.in_channels,
+            self.inter_channels,
+            kernel_size=1,
+            activation=None)
         self.theta = ConvModule(
-            self.in_channels, self.inter_channels, kernel_size=1)
+            self.in_channels,
+            self.inter_channels,
+            kernel_size=1,
+            activation=None)
         self.phi = ConvModule(
-            self.in_channels, self.inter_channels, kernel_size=1)
+            self.in_channels,
+            self.inter_channels,
+            kernel_size=1,
+            activation=None)
         self.conv_mask = ConvModule(
             self.inter_channels,
             self.in_channels,
             kernel_size=1,
             conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg)
+            norm_cfg=norm_cfg,
+            activation=None)
 
         self.init_weights()
 
