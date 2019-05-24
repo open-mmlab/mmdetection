@@ -9,13 +9,22 @@ class IoUBalancedNegSampler(RandomSampler):
 
     arXiv: https://arxiv.org/pdf/1904.02701.pdf (CVPR 2019)
 
+    Sampling proposals according to their IoU. `floor_fraction` of needed RoIs
+    are sampled from proposals whose IoU are lower than `floor_thr` randomly.
+    The others are sampled from proposals whose IoU are higher than `floor_thr`.
+    These proposals are sampled from some bins evenly, which are split by
+    `num_bins` via IoU evenly.
+
     Args:
-        num: number of proposals.
-        pos_fraction: fraction of positive proposals.
-        floor_thr: threshold (minimum) IoU for IoU balanced sampling,
+        num (int): number of proposals.
+        pos_fraction (float): fraction of positive proposals.
+        floor_thr (float): threshold (minimum) IoU for IoU balanced sampling,
             set to -1 if all using IoU balanced sampling.
-        floor_fraction: sampling fraction of proposals under floor_thr.
-        num_bins: number of bins in IoU balanced sampling.
+        floor_fraction (float): sampling fraction of proposals under floor_thr.
+        num_bins (int): number of bins in IoU balanced sampling.
+
+    Returns:
+        Tensor
     """
 
     def __init__(self,

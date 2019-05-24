@@ -21,6 +21,9 @@ class BFP(nn.Module):
         refine_level (int): index of corresponding level of BSF.
         refine_type (str): type of method for refining features,
             currently support [None, 'conv', 'non_local'].
+
+    Returns:
+        tuple
     """
 
     def __init__(self,
