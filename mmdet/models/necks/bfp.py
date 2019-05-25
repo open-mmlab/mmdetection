@@ -59,6 +59,7 @@ class BFP(nn.Module):
             self.refine = NonLocal2D(
                 self.in_channels,
                 reduction=1,
+                use_scale=False,
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
 
