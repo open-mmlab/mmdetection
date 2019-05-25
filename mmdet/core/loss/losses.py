@@ -1,4 +1,5 @@
 # TODO merge naive and weighted loss.
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -44,8 +45,8 @@ def py_sigmoid_focal_loss(pred,
     pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
     weight = (alpha * target + (1 - alpha) * (1 - target)) * weight
     weight = weight * pt.pow(gamma)
-    loss = F.binary_cross_entropy_with_logits(pred, target,
-                                              reduction='none') * weight
+    loss = F.binary_cross_entropy_with_logits(
+        pred, target, reduction='none') * weight
     reduction_enum = F._Reduction.get_enum(reduction)
     # none: 0, mean:1, sum: 2
     if reduction_enum == 0:
@@ -74,9 +75,8 @@ def mask_cross_entropy(pred, target, label):
     num_rois = pred.size()[0]
     inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
     pred_slice = pred[inds, label].squeeze(1)
-    return F.binary_cross_entropy_with_logits(pred_slice,
-                                              target,
-                                              reduction='mean')[None]
+    return F.binary_cross_entropy_with_logits(
+        pred_slice, target, reduction='mean')[None]
 
 
 def smooth_l1_loss(pred, target, beta=1.0, reduction='mean'):
@@ -99,6 +99,47 @@ def weighted_smoothl1(pred, target, weight, beta=1.0, avg_factor=None):
     if avg_factor is None:
         avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
     loss = smooth_l1_loss(pred, target, beta, reduction='none')
+    return torch.sum(loss * weight)[None] / avg_factor
+
+
+def balanced_l1_loss(pred,
+                     target,
+                     beta=1.0,
+                     alpha=0.5,
+                     gamma=1.5,
+                     reduction='none'):
+    assert beta > 0
+    assert pred.size() == target.size() and target.numel() > 0
+
+    diff = torch.abs(pred - target)
+    b = np.e**(gamma / alpha) - 1
+    loss = torch.where(
+        diff < beta, alpha / b *
+        (b * diff + 1) * torch.log(b * diff / beta + 1) - alpha * diff,
+        gamma * diff + gamma / b - alpha * beta)
+
+    reduction_enum = F._Reduction.get_enum(reduction)
+    # none: 0, elementwise_mean:1, sum: 2
+    if reduction_enum == 0:
+        return loss
+    elif reduction_enum == 1:
+        return loss.sum() / pred.numel()
+    elif reduction_enum == 2:
+        return loss.sum()
+
+    return loss
+
+
+def weighted_balanced_l1_loss(pred,
+                              target,
+                              weight,
+                              beta=1.0,
+                              alpha=0.5,
+                              gamma=1.5,
+                              avg_factor=None):
+    if avg_factor is None:
+        avg_factor = torch.sum(weight > 0).float().item() / 4 + 1e-6
+    loss = balanced_l1_loss(pred, target, beta, alpha, gamma, reduction='none')
     return torch.sum(loss * weight)[None] / avg_factor
 
 
@@ -170,11 +211,8 @@ def weighted_iou_loss(pred,
         return (pred * weight).sum()[None] / avg_factor
 
     if style == 'bounded':
-        loss = bounded_iou_loss(pred[inds],
-                                target[inds],
-                                beta=beta,
-                                eps=eps,
-                                reduction='sum')
+        loss = bounded_iou_loss(
+            pred[inds], target[inds], beta=beta, eps=eps, reduction='sum')
     else:
         loss = iou_loss(pred[inds], target[inds], reduction='sum')
     loss = loss[None] / avg_factor
@@ -205,9 +243,8 @@ def _expand_binary_labels(labels, label_weights, label_channels):
     inds = torch.nonzero(labels >= 1).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds] - 1] = 1
-    bin_label_weights = label_weights.view(-1,
-                                           1).expand(label_weights.size(0),
-                                                     label_channels)
+    bin_label_weights = label_weights.view(-1, 1).expand(
+        label_weights.size(0), label_channels)
     return bin_labels, bin_label_weights
 
 
