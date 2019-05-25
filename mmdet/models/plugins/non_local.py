@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import constant_init
+from mmcv.cnn import constant_init, normal_init
 
 from ..utils import ConvModule
 
@@ -63,8 +63,13 @@ class NonLocal2D(nn.Module):
 
         self.init_weights()
 
-    def init_weights(self):
-        constant_init(self.conv_out.conv, 0)
+    def init_weights(self, std=0.01, zeros_init=True):
+        for m in [self.g, self.theta, self.phi]:
+            normal_init(m, std=std)
+        if zeros_init:
+            constant_init(self.conv_out.conv, 0)
+        else:
+            normal_init(self.conv_out.conv, std=std)
 
     def embedded_gaussian(self, theta_x, phi_x):
         # pairwise_weight: [N, HxW, HxW]
