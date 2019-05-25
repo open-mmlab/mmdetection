@@ -65,7 +65,7 @@ class NonLocal2D(nn.Module):
 
     def init_weights(self, std=0.01, zeros_init=True):
         for m in [self.g, self.theta, self.phi]:
-            normal_init(m, std=std)
+            normal_init(m.conv, std=std)
         if zeros_init:
             constant_init(self.conv_out.conv, 0)
         else:
