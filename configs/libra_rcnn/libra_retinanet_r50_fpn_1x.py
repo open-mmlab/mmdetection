@@ -20,7 +20,7 @@ model = dict(
             num_outs=5),
         dict(
             type='BFP',
-            in_channels=[256, 256, 256, 256, 256],
+            in_channels=256,
             num_levels=5,
             refine_level=1,
             refine_type='non_local')

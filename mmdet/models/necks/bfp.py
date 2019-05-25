@@ -3,8 +3,8 @@ import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
 from ..plugins import NonLocal2D
-from ..utils import ConvModule
 from ..registry import NECKS
+from ..utils import ConvModule
 
 
 @NECKS.register_module
@@ -17,14 +17,15 @@ class BFP(nn.Module):
     https://arxiv.org/pdf/1904.02701.pdf for details.
 
     Args:
-        in_channels (list/int): number of channels for each branch.
-        num_levels (int): number of input branches.
-        conv_cfg (dict): dictionary to construct and config conv layer.
-        norm_cfg (dict): dictionary to construct and config norm layer.
-        refine_level (int): index of integration and refine level of BSF in
+        in_channels (int): Number of input channels (feature maps of all levels
+            should have the same channels).
+        num_levels (int): Number of input feature levels.
+        conv_cfg (dict): The config dict for convolution layers.
+        norm_cfg (dict): The config dict for normalization layers.
+        refine_level (int): Index of integration and refine level of BSF in
             multi-level features from bottom to top.
-        refine_type (str): type of method for refining features,
-            currently support [None, 'conv', 'non_local'].
+        refine_type (str): Type of the refine op, currently support
+            [None, 'conv', 'non_local'].
     """
 
     def __init__(self,
@@ -37,33 +38,26 @@ class BFP(nn.Module):
         super(BFP, self).__init__()
         assert refine_type in [None, 'conv', 'non_local']
 
-        if isinstance(in_channels, list):
-            self.channels = in_channels[0]
-            assert len(set(in_channels)) == 1
-        elif isinstance(in_channels, int):
-            self.channels = in_channels
-        else:
-            raise TypeError(
-                'The in_channels should be int or list but found {}.'.format(
-                    type(in_channels)))
+        self.in_channels = in_channels
         self.num_levels = num_levels
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
 
         self.refine_level = refine_level
         self.refine_type = refine_type
+        assert 0 <= self.refine_level < self.num_levels
 
         if self.refine_type == 'conv':
             self.refine = ConvModule(
-                self.channels,
-                self.channels,
+                self.in_channels,
+                self.in_channels,
                 3,
                 padding=1,
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
         elif self.refine_type == 'non_local':
             self.refine = NonLocal2D(
-                self.channels,
+                self.in_channels,
                 reduction=1,
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
