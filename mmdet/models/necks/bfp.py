@@ -11,7 +11,10 @@ from ..registry import NECKS
 class BFP(nn.Module):
     """BFP (Balanced Feature Pyrmamids)
 
-    arXiv: https://arxiv.org/pdf/1904.02701.pdf (CVPR 2019)
+    BFP takes multi-level features as inputs and gather them into a single one,
+    then refine the gathered feature and scatter the refined results to
+    multi-level features. This module is used in Libra R-CNN (CVPR 2019), see
+    https://arxiv.org/pdf/1904.02701.pdf for details.
 
     Args:
         in_channels (list/int): number of channels for each branch.
@@ -50,16 +53,6 @@ class BFP(nn.Module):
         self.refine_level = refine_level
         self.refine_type = refine_type
 
-        self.gather_ops = []
-        self.scatter_ops = []
-        for i in range(self.num_levels):
-            if i < self.refine_level:
-                self.gather_ops.append(F.adaptive_max_pool2d)
-                self.scatter_ops.append(F.interpolate)
-            else:
-                self.gather_ops.append(F.interpolate)
-                self.scatter_ops.append(F.adaptive_max_pool2d)
-
         if self.refine_type == 'conv':
             self.refine = ConvModule(
                 self.channels,
@@ -83,31 +76,32 @@ class BFP(nn.Module):
     def forward(self, inputs):
         assert len(inputs) == self.num_levels
 
+        # step 1: gather multi-level features by resize and average
         feats = []
+        gather_size = inputs[self.refine_level].size()[2:]
         for i in range(self.num_levels):
             if i < self.refine_level:
-                feats.append(self.gather_ops[i](
-                    inputs[i],
-                    output_size=inputs[self.refine_level].size()[2:]))
+                gathered = F.adaptive_max_pool2d(
+                    inputs[i], output_size=gather_size)
             else:
-                feats.append(self.gather_ops[i](
-                    inputs[i],
-                    size=inputs[self.refine_level].size()[2:],
-                    mode='nearest'))
+                gathered = F.interpolate(
+                    inputs[i], size=gather_size, mode='nearest')
+            feats.append(gathered)
 
         bsf = sum(feats) / len(feats)
+
+        # step 2: refine gathered features
         if self.refine_type is not None:
             bsf = self.refine(bsf)
 
+        # step 3: scatter refined features to multi-levels by a residual path
         outs = []
         for i in range(self.num_levels):
+            out_size = inputs[i].size()[2:]
             if i < self.refine_level:
-                outs.append(self.scatter_ops[i]
-                            (bsf, size=inputs[i].size()[2:], mode='nearest') +
-                            inputs[i])
+                residual = F.interpolate(bsf, size=out_size, mode='nearest')
             else:
-                outs.append(self.scatter_ops[i]
-                            (bsf, output_size=inputs[i].size()[2:]) +
-                            inputs[i])
+                residual = F.adaptive_max_pool2d(bsf, output_size=out_size)
+            outs.append(residual + inputs[i])
 
         return tuple(outs)
