@@ -19,6 +19,7 @@ class IoULoss(nn.Module):
             pred,
             target,
             weight,
+            style=self.style,
             beta=self.beta,
             eps=self.eps,
             *args,
