@@ -17,6 +17,11 @@ def _expand_binary_labels(labels, label_weights, label_channels):
 
 @LOSSES.register_module
 class GHMC(nn.Module):
+    """GHM Classification Loss.
+
+    Details of the theorem can be viewed in the paper
+    "Gradient Harmonized Single-stage Detector"
+    """
     def __init__(
             self,
             bins=10,
@@ -26,21 +31,27 @@ class GHMC(nn.Module):
         super(GHMC, self).__init__()
         self.bins = bins
         self.momentum = momentum
-        self.edges = [float(x) / bins for x in range(bins+1)]
+        self.edges = torch.arange(bins + 1).float().cuda() / bins
         self.edges[-1] += 1e-6
         if momentum > 0:
-            self.acc_sum = [0.0 for _ in range(bins)]
+            self.acc_sum = torch.zeros(bins).cuda()
         self.use_sigmoid = use_sigmoid
         self.loss_weight = loss_weight
 
     def forward(self, pred, target, label_weight, *args, **kwargs):
-        """ Args:
-        pred [batch_num, class_num]:
-            The direct prediction of classification fc layer.
-        target [batch_num, class_num]:
-            Binary class target for each sample.
-        label_weight [batch_num, class_num]:
-            the value is 1 if the sample is valid and 0 if ignored.
+        """Calculate the GHM-C loss.
+
+        Args:
+            pred (float tensor of size [batch_num, class_num]):
+                The direct prediction of classification fc layer.
+            target (float tensor of size [batch_num, class_num]):
+                Binary class target for each sample.
+            label_weight (float tensor of size [batch_num, class_num]):
+                the value is 1 if the sample is valid and 0 if ignored.
+
+        Returns:
+            The gradient harmonized loss.
+
         """
         if not self.use_sigmoid:
             raise NotImplementedError
@@ -80,6 +91,11 @@ class GHMC(nn.Module):
 
 @LOSSES.register_module
 class GHMR(nn.Module):
+    """GHM Regression Loss.
+
+    Details of the theorem can be viewed in the paper
+    "Gradient Harmonized Single-stage Detector"
+    """
     def __init__(
             self,
             mu=0.02,
@@ -89,22 +105,27 @@ class GHMR(nn.Module):
         super(GHMR, self).__init__()
         self.mu = mu
         self.bins = bins
-        self.edges = [float(x) / bins for x in range(bins+1)]
+        self.edges = torch.arange(bins + 1).float().cuda() / bins
         self.edges[-1] = 1e3
         self.momentum = momentum
         if momentum > 0:
-            self.acc_sum = [0.0 for _ in range(bins)]
+            self.acc_sum = torch.zeros(bins).cuda()
         self.loss_weight = loss_weight
 
     def forward(self, pred, target, label_weight, avg_factor=None):
-        """ Args:
-        pred [batch_num, 4 (* class_num)]:
-            The prediction of box regression layer. Channel number can be 4 or
-            (4 * class_num) depending on whether it is class-agnostic.
-        target [batch_num, 4 (* class_num)]:
-            The target regression values with the same size of pred.
-        label_weight [batch_num, 4 (* class_num)]:
-            The weight of each sample, 0 if ignored.
+        """Calculate the GHM-R loss.
+
+        Args:
+            pred (float tensor of size [batch_num, 4 (* class_num)]):
+                The prediction of box regression layer. Channel number can be 4
+                or 4 * class_num depending on whether it is class-agnostic.
+            target (float tensor of size [batch_num, 4 (* class_num)]):
+                The target regression values with the same size of pred.
+            label_weight (float tensor of size [batch_num, 4 (* class_num)]):
+                The weight of each sample, 0 if ignored.
+        Returns:
+            The gradient harmonized loss.
+
         """
         mu = self.mu
         edges = self.edges
