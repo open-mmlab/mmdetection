@@ -15,6 +15,8 @@
 
 | Backbone      | style      | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
 |:-------------:|:----------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:-------:|:--------:|
-| R-50-FPN      | caffe      | 1x      | 4.3      | 0.537               | 10.1           | 37.5   | 35.6    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ms-rcnn/ms_rcnn_r50_caffe_fpn_1x-234dfcbd.pth) |
-| R-101-FPN     | caffe      | 1x      | 6.2      | 0.682               |  9.1           | 40.0   | 37.3    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ms-rcnn/ms_rcnn_r101_caffe_fpn_1x-3aac0304.pth) |
-| R-X101-64x4d  | pytorch    | 1x      | 10.5     | 1.214               |  6.4           | 42.2   | 39.2    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ms-rcnn/ms_rcnn_x101_64x4d_fpn_1x-026b16ae.pth) |
+| R-50-FPN      | caffe      | 1x      | 4.3      | 0.537               | 10.1           | 37.5   | 35.6    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ms-rcnn/ms_rcnn_r50_caffe_fpn_1x_20190525-234dfcbd.pth) |
+| R-50-FPN      | caffe      | 2x      | -        | -                   | -              | 38.2   | 35.9    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ms-rcnn/ms_rcnn_r50_caffe_fpn_2x_20190525-a07be31e.pth) |
+| R-101-FPN     | caffe      | 1x      | 6.2      | 0.682               |  9.1           | 40.0   | 37.3    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ms-rcnn/ms_rcnn_r101_caffe_fpn_1x_20190525-3aac0304.pth) |
+| R-101-FPN     | caffe      | 2x      | -        | -                   |  -             | 40.7   | 37.8    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ms-rcnn/ms_rcnn_r101_caffe_fpn_2x_20190525-4aee1528.pth) |
+| R-X101-64x4d  | pytorch    | 1x      | 10.5     | 1.214               |  6.4           | 42.2   | 39.2    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ms-rcnn/ms_rcnn_x101_64x4d_fpn_1x_20190525-026b16ae.pth) |
