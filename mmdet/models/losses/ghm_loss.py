@@ -20,7 +20,14 @@ class GHMC(nn.Module):
     """GHM Classification Loss.
 
     Details of the theorem can be viewed in the paper
-    "Gradient Harmonized Single-stage Detector"
+    "Gradient Harmonized Single-stage Detector".
+    https://arxiv.org/abs/1811.05181
+
+    Args:
+        bins (int): Number of the unit regions for distribution calculation.
+        momentum (float): The parameter for moving average.
+        use_sigmoid (bool): Can only be true for BCE based loss now.
+        loss_weight (float): The weight of the total GHM-C loss.
     """
     def __init__(
             self,
@@ -36,6 +43,8 @@ class GHMC(nn.Module):
         if momentum > 0:
             self.acc_sum = torch.zeros(bins).cuda()
         self.use_sigmoid = use_sigmoid
+        if not self.use_sigmoid:
+            raise NotImplementedError
         self.loss_weight = loss_weight
 
     def forward(self, pred, target, label_weight, *args, **kwargs):
@@ -48,13 +57,9 @@ class GHMC(nn.Module):
                 Binary class target for each sample.
             label_weight (float tensor of size [batch_num, class_num]):
                 the value is 1 if the sample is valid and 0 if ignored.
-
         Returns:
             The gradient harmonized loss.
-
         """
-        if not self.use_sigmoid:
-            raise NotImplementedError
         # the target should be binary class label
         if pred.dim() != target.dim():
             target, label_weight = _expand_binary_labels(
@@ -95,6 +100,13 @@ class GHMR(nn.Module):
 
     Details of the theorem can be viewed in the paper
     "Gradient Harmonized Single-stage Detector"
+    https://arxiv.org/abs/1811.05181
+
+    Args:
+        mu (float): The parameter for the Authentic Smooth L1 loss.
+        bins (int): Number of the unit regions for distribution calculation.
+        momentum (float): The parameter for moving average.
+        loss_weight (float): The weight of the total GHM-R loss.
     """
     def __init__(
             self,
@@ -125,7 +137,6 @@ class GHMR(nn.Module):
                 The weight of each sample, 0 if ignored.
         Returns:
             The gradient harmonized loss.
-
         """
         mu = self.mu
         edges = self.edges
