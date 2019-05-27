@@ -4,6 +4,23 @@ from torch.nn.modules.utils import _pair
 
 from .. import deform_conv_cuda
 
+def deform_conv_function(input,
+                  offset,
+                  weight,
+                  stride=1,
+                  padding=0,
+                  dilation=1,
+                  deform_groups=1,
+                  im2col_step=64):
+
+    if input is not None and input.dim() != 4:
+        raise ValueError(
+            "Expected 4D tensor as input, got {}D tensor instead.".format(
+                input.dim()))
+
+    f = DeformConvFunction(
+        _pair(stride), _pair(padding), _pair(dilation), deform_groups, im2col_step)
+    return f(input, offset, weight)
 
 class DeformConvFunction(Function):
 
