@@ -9,8 +9,9 @@ from mmdet.models import detectors
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MMDet test detector')
-    parser.add_argument('config', help='test config file path')
+    parser = argparse.ArgumentParser(description='MMDet onnx exporter for \
+                                                  SSD detector')
+    parser.add_argument('config', help='config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('output', help='onnx file')
     args = parser.parse_args()
