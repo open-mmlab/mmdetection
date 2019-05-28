@@ -1,10 +1,9 @@
 import torch.nn as nn
 
-
 norm_cfg = {
     # format: layer_type: (abbreviation, module)
     'BN': ('bn', nn.BatchNorm2d),
-    'SyncBN': ('bn', None),
+    'SyncBN': ('bn', nn.SyncBatchNorm),
     'GN': ('gn', nn.GroupNorm),
     # and potentially 'SN'
 }
@@ -17,15 +16,13 @@ def build_norm_layer(cfg, num_features, postfix=''):
         cfg (dict): cfg should contain:
             type (str): identify norm layer type.
             layer args: args needed to instantiate a norm layer.
-            frozen (bool): [optional] whether stop gradient updates
-                of norm layer, it is helpful to set frozen mode
-                in backbone's norms.
-        num_features (int): number of channels from input
-        postfix (int, str): appended into norm abbreation to
+            requires_grad (bool): [optional] whether stop gradient updates
+        num_features (int): number of channels from input.
+        postfix (int, str): appended into norm abbreviation to
             create named layer.
 
     Returns:
-        name (str): abbreation + postfix
+        name (str): abbreviation + postfix
         layer (nn.Module): created norm layer
     """
     assert isinstance(cfg, dict) and 'type' in cfg
@@ -42,16 +39,17 @@ def build_norm_layer(cfg, num_features, postfix=''):
     assert isinstance(postfix, (int, str))
     name = abbr + str(postfix)
 
-    frozen = cfg_.pop('frozen', False)
+    requires_grad = cfg_.pop('requires_grad', True)
     cfg_.setdefault('eps', 1e-5)
     if layer_type != 'GN':
         layer = norm_layer(num_features, **cfg_)
+        if layer_type == 'SyncBN':
+            layer._specify_ddp_gpu_num(1)
     else:
         assert 'num_groups' in cfg_
         layer = norm_layer(num_channels=num_features, **cfg_)
 
-    if frozen:
-        for param in layer.parameters():
-            param.requires_grad = False
+    for param in layer.parameters():
+        param.requires_grad = requires_grad
 
     return name, layer

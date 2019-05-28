@@ -34,15 +34,15 @@ mmdetection
 
 ## Results and Models
 
-The results on COCO 2017val is shown in the below table. (results on test-dev are usually slightly higher than val)
+The results on COCO 2017val are shown in the below table. (results on test-dev are usually slightly higher than val)
 
 | Backbone  | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
 |:---------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:-------:|:--------:|
-| R-50-FPN  | pytorch | 1x      | 7.4      | 0.936               | 3.5            | 42.2   | 37.3    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r50_fpn_1x_20190408-878c1712.pth) |
-| R-50-FPN  | pytorch | 20e     | -        | -                   | -              | 43.2   | 38.0    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r50_fpn_20e_20190408-c03b7015.pth) |
-| R-101-FPN | pytorch | 20e     | 9.3      | 1.051               | 3.4            | 44.9   | 39.4    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r101_fpn_20e_20190408-a2e586db.pth) |
-| X-101-32x4d-FPN | pytorch |20e| 5.8      | 0.769               | 3.3            | 46.1   | 40.3    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_x101_32x4d_fpn_20e_20190408-9eae4d0b.pth) |
-| X-101-64x4d-FPN | pytorch |20e| 7.5      | 1.120               | 3.0            | 47.0   | 40.9    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_x101_64x4d_fpn_20e_20190408-497f2561.pth) |
+| R-50-FPN  | pytorch | 1x      | 7.4      | 0.936               | 4.1            | 42.1   | 37.3    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r50_fpn_1x_20190408-878c1712.pth) |
+| R-50-FPN  | pytorch | 20e     | -        | -                   | -              | 43.2   | 38.1    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r50_fpn_20e_20190408-c03b7015.pth) |
+| R-101-FPN | pytorch | 20e     | 9.3      | 1.051               | 4.0            | 44.9   | 39.4    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r101_fpn_20e_20190408-a2e586db.pth) |
+| X-101-32x4d-FPN | pytorch |20e| 5.8      | 0.769               | 3.8            | 46.1   | 40.3    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_x101_32x4d_fpn_20e_20190408-9eae4d0b.pth) |
+| X-101-64x4d-FPN | pytorch |20e| 7.5      | 1.120               | 3.5            | 46.9   | 40.8    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_x101_64x4d_fpn_20e_20190408-497f2561.pth) |
 
 - In the HTC paper and COCO 2018 Challenge, `score_thr` is set to 0.001 for both baselines and HTC.
 - We use 8 GPUs with 2 images/GPU for R-50 and R-101 models, and 16 GPUs with 1 image/GPU for X-101 models.

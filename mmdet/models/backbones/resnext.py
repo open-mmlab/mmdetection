@@ -24,11 +24,11 @@ class Bottleneck(_Bottleneck):
             width = math.floor(self.planes * (base_width / 64)) * groups
 
         self.norm1_name, norm1 = build_norm_layer(
-            self.normalize, width, postfix=1)
+            self.norm_cfg, width, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(
-            self.normalize, width, postfix=2)
+            self.norm_cfg, width, postfix=2)
         self.norm3_name, norm3 = build_norm_layer(
-            self.normalize, self.planes * self.expansion, postfix=3)
+            self.norm_cfg, self.planes * self.expansion, postfix=3)
 
         self.conv1 = build_conv_layer(
             self.conv_cfg,
@@ -102,7 +102,7 @@ def make_res_layer(block,
                    style='pytorch',
                    with_cp=False,
                    conv_cfg=None,
-                   normalize=dict(type='BN'),
+                   norm_cfg=dict(type='BN'),
                    dcn=None):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
@@ -114,7 +114,7 @@ def make_res_layer(block,
                 kernel_size=1,
                 stride=stride,
                 bias=False),
-            build_norm_layer(normalize, planes * block.expansion)[1],
+            build_norm_layer(norm_cfg, planes * block.expansion)[1],
         )
 
     layers = []
@@ -130,7 +130,7 @@ def make_res_layer(block,
             style=style,
             with_cp=with_cp,
             conv_cfg=conv_cfg,
-            normalize=normalize,
+            norm_cfg=norm_cfg,
             dcn=dcn))
     inplanes = planes * block.expansion
     for i in range(1, blocks):
@@ -145,7 +145,7 @@ def make_res_layer(block,
                 style=style,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
-                normalize=normalize,
+                norm_cfg=norm_cfg,
                 dcn=dcn))
 
     return nn.Sequential(*layers)
@@ -168,7 +168,7 @@ class ResNeXt(ResNet):
             the first 1x1 conv layer.
         frozen_stages (int): Stages to be frozen (all param fixed). -1 means
             not freezing any parameters.
-        normalize (dict): dictionary to construct and config norm layer.
+        norm_cfg (dict): dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
@@ -208,7 +208,7 @@ class ResNeXt(ResNet):
                 style=self.style,
                 with_cp=self.with_cp,
                 conv_cfg=self.conv_cfg,
-                normalize=self.normalize,
+                norm_cfg=self.norm_cfg,
                 dcn=dcn)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)

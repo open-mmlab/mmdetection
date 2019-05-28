@@ -14,19 +14,17 @@ and also some high-level apis for easier integration to other projects.
 - [x] multiple GPU testing
 - [x] visualize detection results
 
-You can use the following command to test a dataset.
+You can use the following commands to test a dataset.
 
 ```shell
-python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--gpus ${GPU_NUM}] [--proc_per_gpu ${PROC_NUM}] [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}] [--show]
+# single-gpu testing
+python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}] [--show]
+
+# multi-gpu testing
+./tools/dist_test.sh ${CONFIG_FILE} ${CHECKPOINT_FILE} ${GPU_NUM} [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}]
 ```
 
-Positional arguments:
-- `CONFIG_FILE`: Path to the config file of the corresponding model.
-- `CHECKPOINT_FILE`: Path to the checkpoint file.
-
 Optional arguments:
-- `GPU_NUM`: Number of GPUs used for testing. (default: 1)
-- `PROC_NUM`: Number of processes on each GPU. (default: 1)
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
 - `EVAL_METRICS`: Items to be evaluated on the results. Allowed values are: `proposal_fast`, `proposal`, `bbox`, `segm`, `keypoints`.
 - `--show`: If specified, detection results will be ploted on the images and shown in a new window. Only applicable for single GPU testing.
@@ -48,15 +46,15 @@ python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
 ```shell
 python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    --out results.pkl --eval bbox mask
+    --out results.pkl --eval bbox segm
 ```
 
-3. Test Mask R-CNN with 8 GPUs and 2 processes per GPU, and evaluate the bbox and mask AP.
+3. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
 
 ```shell
-python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
+./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    --gpus 8 --proc_per_gpu 2 --out results.pkl --eval bbox mask
+    8 --out results.pkl --eval bbox segm
 ```
 
 ### High-level APIs for testing images.
@@ -64,28 +62,23 @@ python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
 Here is an example of building the model and test given images.
 
 ```python
-import mmcv
-from mmcv.runner import load_checkpoint
-from mmdet.models import build_detector
-from mmdet.apis import inference_detector, show_result
+from mmdet.apis import init_detector, inference_detector, show_result
 
-cfg = mmcv.Config.fromfile('configs/faster_rcnn_r50_fpn_1x.py')
-cfg.model.pretrained = None
+config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
+checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
 
-# construct the model and load checkpoint
-model = build_detector(cfg.model, test_cfg=cfg.test_cfg)
-_ = load_checkpoint(model, 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth')
+# build the model from a config file and a checkpoint file
+model = init_detector(config_file, checkpoint_file)
 
-# test a single image
-img = mmcv.imread('test.jpg')
-result = inference_detector(model, img, cfg)
-show_result(img, result)
+# test a single image and show the results
+img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
+result = inference_detector(model, img)
+show_result(img, result, model.CLASSES)
 
-# test a list of images
+# test a list of images and write the results to image files
 imgs = ['test1.jpg', 'test2.jpg']
-for i, result in enumerate(inference_detector(model, imgs, cfg, device='cuda:0')):
-    print(i, imgs[i])
-    show_result(imgs[i], result)
+for i, result in enumerate(inference_detector(model, imgs, device='cuda:0')):
+    show_result(imgs[i], result, model.CLASSES, out_file='result_{}.jpg'.format(i))
 ```
 
 

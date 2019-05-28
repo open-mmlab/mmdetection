@@ -1,6 +1,6 @@
 # model settings
 conv_cfg = dict(type='ConvWS')
-normalize = dict(type='GN', num_groups=32, frozen=False)
+norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
     type='FasterRCNN',
     pretrained='open-mmlab://jhu/resnet50_gn_ws',
@@ -12,14 +12,14 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         conv_cfg=conv_cfg,
-        normalize=normalize),
+        norm_cfg=norm_cfg),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5,
         conv_cfg=conv_cfg,
-        normalize=normalize),
+        norm_cfg=norm_cfg),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -29,7 +29,9 @@ model = dict(
         anchor_strides=[4, 8, 16, 32, 64],
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
-        use_sigmoid_cls=True),
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
@@ -48,7 +50,10 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         conv_cfg=conv_cfg,
-        normalize=normalize))
+        norm_cfg=norm_cfg,
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -66,8 +71,14 @@ train_cfg = dict(
             add_gt_as_proposals=False),
         allowed_border=0,
         pos_weight=-1,
-        smoothl1_beta=1 / 9.0,
         debug=False),
+    rpn_proposal=dict(
+        nms_across_levels=False,
+        nms_pre=2000,
+        nms_post=2000,
+        max_num=2000,
+        nms_thr=0.7,
+        min_bbox_size=0),
     rcnn=dict(
         assigner=dict(
             type='MaxIoUAssigner',
@@ -86,15 +97,13 @@ train_cfg = dict(
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,
-        nms_pre=2000,
-        nms_post=2000,
-        max_num=2000,
+        nms_pre=1000,
+        nms_post=1000,
+        max_num=1000,
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.05,
-        nms=dict(type='nms', iou_thr=0.5),
-        max_per_img=100))
+        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=100))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

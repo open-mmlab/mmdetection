@@ -3,7 +3,7 @@
 
 ## Introduction
 
-The master branch works with **PyTorch 1.0** or higher. If you would like to use PyTorch 0.4.1,
+The master branch works with **PyTorch 1.1** or higher. If you would like to use PyTorch 0.4.1,
 please checkout to the [pytorch-0.4.1](https://github.com/open-mmlab/mmdetection/tree/pytorch-0.4.1) branch.
 
 mmdetection is an open source object detection toolbox based on PyTorch. It is
@@ -92,6 +92,8 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 | SSD                | ✗        | ✗        | ✗        | ✓        |
 | RetinaNet          | ✓        | ✓        | ☐        | ✗        |
 | Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        |
+| FCOS               | ✓        | ✓        | ☐        | ✗        |
+| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        |
 
 Other features
 - [x] DCNv2
@@ -110,6 +112,10 @@ Please refer to [INSTALL.md](INSTALL.md) for installation and dataset preparatio
 ## Get Started
 
 Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage of mmdetection.
+
+## Contributing
+
+We appreciate all contributions to improve mmdetection. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for the contributing guideline.
 
 
 ## Citation
