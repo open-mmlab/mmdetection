@@ -214,10 +214,13 @@ Please refer to [Weight Standardization](configs/gn+ws/README.md) for details.
 
 Please refer to [Deformable Convolutional Networks](configs/dcn/README.md) for details.
 
+### Libra R-CNN
+
+Please refer to [Libra R-CNN](configs/libra_rcnn/README.md) for details.
+
 ### Guided Anchoring
 
 Please refer to [Guided Anchoring](configs/guided_anchoring/README.md) for details.
-
 
 ## Comparison with Detectron and maskrcnn-benchmark
 
@@ -454,6 +457,3 @@ and the main advantage is PyTorch itself. We also perform some memory optimizati
 
 Note that Caffe2 and PyTorch have different apis to obtain memory usage with different implementations.
 For all codebases, `nvidia-smi` shows a larger memory usage than the reported number in the above table.
-
-
-
