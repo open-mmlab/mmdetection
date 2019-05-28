@@ -1,9 +1,10 @@
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 from mmcv.cnn import normal_init
-from mmdet.core import (multi_apply, multiclass_nms, distance2bbox, xyxy2xcycwh, xcycwh2xyxy,
-                        weighted_sigmoid_focal_loss, select_iou_loss)
+from mmdet.core import (multi_apply, multiclass_nms, distance2bbox,
+                        xyxy2xcycwh, xcycwh2xyxy, weighted_sigmoid_focal_loss,
+                        select_iou_loss)
 
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, ConvModule
@@ -29,8 +30,7 @@ class FSAFHead(nn.Module):
                  norm_factor=4.0,
                  feat_strides=[8, 16, 32, 64, 128],
                  conv_cfg=None,
-                 norm_cfg=None
-                 ):
+                 norm_cfg=None):
         super(FSAFHead, self).__init__()
         self.num_classes = num_classes
         self.in_channels = in_channels
@@ -69,12 +69,8 @@ class FSAFHead(nn.Module):
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg))
         self.fsaf_cls = nn.Conv2d(
-            self.feat_channels,
-            self.cls_out_channels,
-            3,
-            padding=1)
-        self.fsaf_reg = nn.Conv2d(
-            self.feat_channels, 4, 3, padding=1)
+            self.feat_channels, self.cls_out_channels, 3, padding=1)
+        self.fsaf_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
 
     def init_weights(self):
         for m in self.cls_convs:
@@ -104,28 +100,27 @@ class FSAFHead(nn.Module):
         # classification loss
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
-        cls_score = cls_score.permute(0, 2, 3, 1).reshape(
-            -1, self.cls_out_channels)
+        cls_score = cls_score.permute(0, 2, 3,
+                                      1).reshape(-1, self.cls_out_channels)
         loss_cls = weighted_sigmoid_focal_loss(
             cls_score,
             labels,
             label_weights,
             cfg.gamma,
             cfg.alpha,
-            avg_factor=num_total_samples
-        )
+            avg_factor=num_total_samples)
         # localization loss
         if bbox_targets.size(0) == 0:
             loss_reg = bbox_pred.new_zeros(1)
         else:
             bbox_pred = bbox_pred.permute(0, 2, 3, 1)
-            bbox_pred = bbox_pred[bbox_locs[:, 0], bbox_locs[:, 1], bbox_locs[:, 2], :]
+            bbox_pred = bbox_pred[bbox_locs[:, 0], bbox_locs[:, 1],
+                                  bbox_locs[:, 2], :]
             loss_reg = select_iou_loss(
                 bbox_pred,
                 bbox_targets,
                 cfg.bbox_reg_weight,
-                avg_factor=num_total_samples
-            )
+                avg_factor=num_total_samples)
         return loss_cls, loss_reg
 
     def loss(self,
@@ -143,8 +138,7 @@ class FSAFHead(nn.Module):
             img_metas,
             cfg,
             gt_labels_list=gt_labels,
-            gt_bboxes_ignore_list=gt_bboxes_ignore
-        )
+            gt_bboxes_ignore_list=gt_bboxes_ignore)
         # if cls_reg_targets is None:
         #     return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_locs_list,
@@ -169,8 +163,7 @@ class FSAFHead(nn.Module):
                      img_metas,
                      cfg,
                      gt_labels_list=None,
-                     gt_bboxes_ignore_list=None,
-                     ):
+                     gt_bboxes_ignore_list=None):
         num_imgs = len(img_metas)
         # compute targets for each image
         if gt_bboxes_ignore_list is None:
@@ -184,24 +177,21 @@ class FSAFHead(nn.Module):
         cls_score_list = []
         bbox_pred_list = []
         for img_id in range(num_imgs):
-            cls_score_list.append([
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ])
-            bbox_pred_list.append([
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ])
+            cls_score_list.append(
+                [cls_scores[i][img_id].detach() for i in range(num_levels)])
+            bbox_pred_list.append(
+                [bbox_preds[i][img_id].detach() for i in range(num_levels)])
 
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_locs,
          num_pos_list, num_neg_list) = multi_apply(
-            self.point_target_single,
-            cls_score_list,
-            bbox_pred_list,
-            gt_bboxes,
-            gt_bboxes_ignore_list,
-            gt_labels_list,
-            img_metas,
-            cfg=cfg
-        )
+             self.point_target_single,
+             cls_score_list,
+             bbox_pred_list,
+             gt_bboxes,
+             gt_bboxes_ignore_list,
+             gt_labels_list,
+             img_metas,
+             cfg=cfg)
         # correct image index in bbox_locs
         for i in range(num_imgs):
             for lvl in range(num_levels):
@@ -211,25 +201,23 @@ class FSAFHead(nn.Module):
         num_total_pos = sum([max(num, 1) for num in num_pos_list])
         num_total_neg = sum([max(num, 1) for num in num_neg_list])
         # combine targets to a list w.r.t. multiple levels
-        labels_list = self.images_to_levels(all_labels, num_imgs, num_levels, True)
-        label_weights_list = self.images_to_levels(all_label_weights, num_imgs, num_levels, True)
-        bbox_targets_list = self.images_to_levels(all_bbox_targets, num_imgs, num_levels, False)
-        bbox_locs_list = self.images_to_levels(all_bbox_locs, num_imgs, num_levels, False)
+        labels_list = self.images_to_levels(all_labels, num_imgs, num_levels,
+                                            True)
+        label_weights_list = self.images_to_levels(all_label_weights, num_imgs,
+                                                   num_levels, True)
+        bbox_targets_list = self.images_to_levels(all_bbox_targets, num_imgs,
+                                                  num_levels, False)
+        bbox_locs_list = self.images_to_levels(all_bbox_locs, num_imgs,
+                                               num_levels, False)
         return (labels_list, label_weights_list, bbox_targets_list,
                 bbox_locs_list, num_total_pos, num_total_neg)
 
-    def point_target_single(self,
-                            cls_score_list,
-                            bbox_pred_list,
-                            gt_bboxes,
-                            gt_bboxes_ignore,
-                            gt_labels,
-                            img_meta,
-                            cfg
-                            ):
+    def point_target_single(self, cls_score_list, bbox_pred_list, gt_bboxes,
+                            gt_bboxes_ignore, gt_labels, img_meta, cfg):
         num_levels = len(self.feat_strides)
         assert len(cls_score_list) == len(bbox_pred_list) == num_levels
-        feat_lvls = self.feat_level_select(cls_score_list, bbox_pred_list, gt_bboxes, gt_labels, cfg)
+        feat_lvls = self.feat_level_select(cls_score_list, bbox_pred_list,
+                                           gt_bboxes, gt_labels, cfg)
         labels = []
         label_weights = []
         bbox_targets = []
@@ -244,11 +232,15 @@ class FSAFHead(nn.Module):
             valid_h = min(int(np.ceil(img_h / stride)), h)
             valid_w = min(int(np.ceil(img_w / stride)), w)
 
-            _labels = torch.zeros_like(cls_score_list[lvl][0], dtype=torch.long)
-            _label_weights = torch.zeros_like(cls_score_list[lvl][0], dtype=torch.float)
+            _labels = torch.zeros_like(
+                cls_score_list[lvl][0], dtype=torch.long)
+            _label_weights = torch.zeros_like(
+                cls_score_list[lvl][0], dtype=torch.float)
             _label_weights[:valid_h, :valid_w] = 1.
-            _bbox_targets = bbox_pred_list[lvl].new_zeros((0, 4), dtype=torch.float)
-            _bbox_locs = bbox_pred_list[lvl].new_zeros((0, 3), dtype=torch.long)
+            _bbox_targets = bbox_pred_list[lvl].new_zeros((0, 4),
+                                                          dtype=torch.float)
+            _bbox_locs = bbox_pred_list[lvl].new_zeros((0, 3),
+                                                       dtype=torch.long)
 
             if len(inds) > 0:
                 boxes = gt_bboxes[inds, :]
@@ -260,21 +252,27 @@ class FSAFHead(nn.Module):
                     proj_boxes, cfg.pos_scale, w, h)
                 for i in range(len(inds)):
                     # setup classification ground-truth
-                    _labels[pos_y1[i]:pos_y2[i], pos_x1[i]:pos_x2[i]] = classes[i]
+                    _labels[pos_y1[i]:pos_y2[i], pos_x1[i]:
+                            pos_x2[i]] = classes[i]
                     _label_weights[ig_y1[i]:ig_y2[i], ig_x1[i]:ig_x2[i]] = 0.
-                    _label_weights[pos_y1[i]:pos_y2[i], pos_x1[i]:pos_x2[i]] = 1.
+                    _label_weights[pos_y1[i]:pos_y2[i], pos_x1[i]:
+                                   pos_x2[i]] = 1.
                     # setup localization ground-truth
-                    locs_x = torch.arange(pos_x1[i], pos_x2[i], device=device, dtype=torch.long)
-                    locs_y = torch.arange(pos_y1[i], pos_y2[i], device=device, dtype=torch.long)
+                    locs_x = torch.arange(
+                        pos_x1[i], pos_x2[i], device=device, dtype=torch.long)
+                    locs_y = torch.arange(
+                        pos_y1[i], pos_y2[i], device=device, dtype=torch.long)
                     shift_x = (locs_x.float() + 0.5) * stride
                     shift_y = (locs_y.float() + 0.5) * stride
                     shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
-                    shifts = torch.stack((shift_xx, shift_yy, shift_xx, shift_yy), dim=-1)
+                    shifts = torch.stack(
+                        (shift_xx, shift_yy, shift_xx, shift_yy), dim=-1)
                     shifts[:, 0] = shifts[:, 0] - boxes[i, 0]
                     shifts[:, 1] = shifts[:, 1] - boxes[i, 1]
                     shifts[:, 2] = boxes[i, 2] - shifts[:, 2]
                     shifts[:, 3] = boxes[i, 3] - shifts[:, 3]
-                    _bbox_targets = torch.cat((_bbox_targets, shifts / norm), dim=0)
+                    _bbox_targets = torch.cat((_bbox_targets, shifts / norm),
+                                              dim=0)
                     locs_xx, locs_yy = self._meshgrid(locs_x, locs_y)
                     zeros = torch.zeros_like(locs_xx)
                     locs = torch.stack((zeros, locs_yy, locs_xx), dim=-1)
@@ -298,7 +296,8 @@ class FSAFHead(nn.Module):
                     ig_x1, ig_y1, ig_x2, ig_y2 = self.prop_box_bounds(
                         proj_boxes, cfg.ignore_scale, w, h)
                     for i in range(len(inds)):
-                        label_weights[lvl][ig_y1[i]:ig_y2[i], ig_x1[i]:ig_x2[i]] = 0.
+                        label_weights[lvl][ig_y1[i]:ig_y2[i], ig_x1[i]:
+                                           ig_x2[i]] = 0.
             # upper pyramid if exists
             if lvl < num_levels - 1:
                 inds = torch.nonzero(feat_lvls == lvl + 1).squeeze(-1)
@@ -308,7 +307,8 @@ class FSAFHead(nn.Module):
                     ig_x1, ig_y1, ig_x2, ig_y2 = self.prop_box_bounds(
                         proj_boxes, cfg.ignore_scale, w, h)
                     for i in range(len(inds)):
-                        label_weights[lvl][ig_y1[i]:ig_y2[i], ig_x1[i]:ig_x2[i]] = 0.
+                        label_weights[lvl][ig_y1[i]:ig_y2[i], ig_x1[i]:
+                                           ig_x2[i]] = 0.
 
         # compute number of foreground and background points
         num_pos = 0
@@ -317,15 +317,11 @@ class FSAFHead(nn.Module):
             npos = bbox_targets[lvl].size(0)
             num_pos += npos
             num_neg += (label_weights[lvl].nonzero().size(0) - npos)
-        return (labels, label_weights, bbox_targets, bbox_locs,
-                num_pos, num_neg)
+        return (labels, label_weights, bbox_targets, bbox_locs, num_pos,
+                num_neg)
 
-    def feat_level_select(self,
-                          cls_score_list,
-                          bbox_pred_list,
-                          gt_bboxes,
-                          gt_labels,
-                          cfg):
+    def feat_level_select(self, cls_score_list, bbox_pred_list, gt_bboxes,
+                          gt_labels, cfg):
         if cfg.online_select:
             num_levels = len(cls_score_list)
             num_boxes = gt_bboxes.size(0)
@@ -339,11 +335,14 @@ class FSAFHead(nn.Module):
                 h, w = cls_score.size()[:2]
 
                 proj_boxes = gt_bboxes / stride
-                x1, y1, x2, y2 = self.prop_box_bounds(proj_boxes, cfg.pos_scale, w, h)
+                x1, y1, x2, y2 = self.prop_box_bounds(proj_boxes,
+                                                      cfg.pos_scale, w, h)
 
                 for i in range(num_boxes):
-                    locs_x = torch.arange(x1[i], x2[i], device=device, dtype=torch.long)
-                    locs_y = torch.arange(y1[i], y2[i], device=device, dtype=torch.long)
+                    locs_x = torch.arange(
+                        x1[i], x2[i], device=device, dtype=torch.long)
+                    locs_y = torch.arange(
+                        y1[i], y2[i], device=device, dtype=torch.long)
                     locs_xx, locs_yy = self._meshgrid(locs_x, locs_y)
                     avg_factor = locs_xx.size(0)
                     # classification focal loss
@@ -351,18 +350,21 @@ class FSAFHead(nn.Module):
                     labels = gt_labels[i].repeat(avg_factor)
                     label_weights = torch.ones_like(labels).float()
                     loss_cls = weighted_sigmoid_focal_loss(
-                        scores, labels, label_weights, cfg.gamma, cfg.alpha, avg_factor)
+                        scores, labels, label_weights, cfg.gamma, cfg.alpha,
+                        avg_factor)
                     # localization iou loss
                     deltas = bbox_pred[locs_yy, locs_xx, :]
                     shift_x = (locs_x.float() + 0.5) * stride
                     shift_y = (locs_y.float() + 0.5) * stride
                     shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
-                    shifts = torch.stack((shift_xx, shift_yy, shift_xx, shift_yy), dim=-1)
+                    shifts = torch.stack(
+                        (shift_xx, shift_yy, shift_xx, shift_yy), dim=-1)
                     shifts[:, 0] = shifts[:, 0] - gt_bboxes[i, 0]
                     shifts[:, 1] = shifts[:, 1] - gt_bboxes[i, 1]
                     shifts[:, 2] = gt_bboxes[i, 2] - shifts[:, 2]
                     shifts[:, 3] = gt_bboxes[i, 3] - shifts[:, 3]
-                    loss_loc = select_iou_loss(deltas, shifts / norm, cfg.bbox_reg_weight, avg_factor)
+                    loss_loc = select_iou_loss(deltas, shifts / norm,
+                                               cfg.bbox_reg_weight, avg_factor)
                     feat_losses[i, lvl] = loss_cls + loss_loc
             feat_levels = torch.argmin(feat_losses, dim=1)
         else:
@@ -396,14 +398,14 @@ class FSAFHead(nn.Module):
         level_target = []
         if is_cls:
             for lvl in range(num_levels):
-                level_target.append(torch.stack(
-                    [target[i][lvl] for i in range(num_imgs)], dim=0
-                ))
+                level_target.append(
+                    torch.stack([target[i][lvl] for i in range(num_imgs)],
+                                dim=0))
         else:
             for lvl in range(num_levels):
-                level_target.append(torch.cat(
-                    [target[j][lvl] for j in range(num_imgs)], dim=0
-                ))
+                level_target.append(
+                    torch.cat([target[j][lvl] for j in range(num_imgs)],
+                              dim=0))
         return level_target
 
     def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg,
@@ -414,9 +416,11 @@ class FSAFHead(nn.Module):
         dtype = bbox_preds[0].dtype
 
         mlvl_points = [
-            self.generate_points(bbox_preds[i].size()[-2:], self.feat_strides[i],
-                                 device=device, dtype=dtype)
-            for i in range(num_levels)
+            self.generate_points(
+                bbox_preds[i].size()[-2:],
+                self.feat_strides[i],
+                device=device,
+                dtype=dtype) for i in range(num_levels)
         ]
 
         result_list = []
@@ -425,15 +429,14 @@ class FSAFHead(nn.Module):
                 cls_scores[i][img_id].detach() for i in range(num_levels)
             ]
             bbox_pred_list = [
-                bbox_preds[i][img_id].detach() * self.feat_strides[i] * self.norm_factor
-                for i in range(num_levels)
+                bbox_preds[i][img_id].detach() * self.feat_strides[i] *
+                self.norm_factor for i in range(num_levels)
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             proposals = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                               mlvl_points,
-                                               img_shape, scale_factor,
-                                               cfg, rescale)
+                                               mlvl_points, img_shape,
+                                               scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
@@ -448,10 +451,11 @@ class FSAFHead(nn.Module):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
         mlvl_scores = []
-        for cls_score, bbox_pred, points in zip(cls_scores, bbox_preds, mlvl_points):
+        for cls_score, bbox_pred, points in zip(cls_scores, bbox_preds,
+                                                mlvl_points):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            cls_score = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels)
+            cls_score = cls_score.permute(1, 2,
+                                          0).reshape(-1, self.cls_out_channels)
             scores = cls_score.sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
@@ -470,11 +474,16 @@ class FSAFHead(nn.Module):
         mlvl_scores = torch.cat(mlvl_scores)
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
-        det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes, mlvl_scores, cfg.score_thr, cfg.nms, cfg.max_per_img)
+        det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
+                                                cfg.score_thr, cfg.nms,
+                                                cfg.max_per_img)
         return det_bboxes, det_labels
 
-    def generate_points(self, featmap_size, stride=16, device='cuda', dtype=torch.float32):
+    def generate_points(self,
+                        featmap_size,
+                        stride=16,
+                        device='cuda',
+                        dtype=torch.float32):
         feat_h, feat_w = featmap_size
         shift_x = torch.arange(0, feat_w, device=device, dtype=dtype) + 0.5
         shift_y = torch.arange(0, feat_h, device=device, dtype=dtype) + 0.5

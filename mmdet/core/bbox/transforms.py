@@ -68,10 +68,18 @@ def delta2bbox(rois,
     return bboxes
 
 
-def distance2bbox(points,
-                  dists,
-                  max_shape=None):
-    """Bounding box decoding from predicted distances."""
+def distance2bbox(points, dists, max_shape=None):
+    """Decode distance prediction to bounding box.
+
+    Args:
+        points (Tensor): Shape (n, 2), [x, y].
+        dists (Tensor): Distance from the given point to 4
+            boundaries (left, top, right, bottom).
+        max_shape (tuple): Shape of the image.
+
+    Returns:
+        Tensor: Decoded bboxes.
+    """
     dl = dists[:, 0::4]
     dt = dists[:, 1::4]
     dr = dists[:, 2::4]
