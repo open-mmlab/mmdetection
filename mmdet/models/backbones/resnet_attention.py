@@ -5,12 +5,12 @@ import torch.utils.checkpoint as cp
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmcv.cnn import constant_init
-from ..utils.weight_init import kaiming_init
 from mmcv.runner import load_checkpoint
 
-from mmdet.ops import GeneralizedAttention
+from mmdet.ops import DeformConv, ModulatedDeformConv, GeneralizedAttention
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
+from ..utils.weight_init import kaiming_init
 
 
 class BasicBlock(nn.Module):
