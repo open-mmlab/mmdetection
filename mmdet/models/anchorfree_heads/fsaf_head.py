@@ -3,8 +3,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 from mmdet.core import (multi_apply, multiclass_nms, distance2bbox,
-                        xyxy2xcycwh, xcycwh2xyxy, weighted_sigmoid_focal_loss,
-                        select_iou_loss)
+                        weighted_sigmoid_focal_loss, select_iou_loss)
 
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, ConvModule
@@ -15,11 +14,14 @@ class FSAFHead(nn.Module):
     """Feature Selective Anchor-Free Head
 
     Args:
+        num_classes (int): Number of classes.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of channels of the feature map.
         stacked_convs (int): Number of conv layers before head.
         norm_factor (float): Distance normalization factor.
         feat_strides (Iterable): Feature strides.
+        conv_cfg (dict): The config dict for convolution layers.
+        norm_cfg (dict): The config dict for normalization layers.
     """
 
     def __init__(self,
@@ -380,14 +382,26 @@ class FSAFHead(nn.Module):
             feat_levels = torch.clamp(feat_levels, 0, num_levels - 1).int()
         return feat_levels
 
+    def xyxy2xcycwh(self, xyxy):
+        """Convert [x1 y1 x2 y2] box format to [xc yc w h] format."""
+        return torch.cat(
+            (0.5 * (xyxy[:, 0:2] + xyxy[:, 2:4]), xyxy[:, 2:4] - xyxy[:, 0:2]),
+            dim=1)
+
+    def xcycwh2xyxy(self, xywh):
+        """Convert [xc yc w y] box format to [x1 y1 x2 y2] format."""
+        return torch.cat((xywh[:, 0:2] - 0.5 * xywh[:, 2:4],
+                          xywh[:, 0:2] + 0.5 * xywh[:, 2:4]),
+                         dim=1)
+
     def prop_box_bounds(self, boxes, scale, width, height):
         """Compute proportional box regions.
 
         Box centers are fixed. Box w and h scaled by scale.
         """
-        prop_boxes = xyxy2xcycwh(boxes)
+        prop_boxes = self.xyxy2xcycwh(boxes)
         prop_boxes[:, 2:] *= scale
-        prop_boxes = xcycwh2xyxy(prop_boxes)
+        prop_boxes = self.xcycwh2xyxy(prop_boxes)
         x1 = torch.floor(prop_boxes[:, 0]).clamp(0, width - 1).int()
         y1 = torch.floor(prop_boxes[:, 1]).clamp(0, height - 1).int()
         x2 = torch.ceil(prop_boxes[:, 2]).clamp(1, width).int()

@@ -99,20 +99,6 @@ def distance2bbox(points, dists, max_shape=None):
     return bboxes
 
 
-def xyxy2xcycwh(xyxy):
-    """Convert [x1 y1 x2 y2] box format to [xc yc w h] format."""
-    return torch.cat(
-        (0.5 * (xyxy[:, 0:2] + xyxy[:, 2:4]), xyxy[:, 2:4] - xyxy[:, 0:2]),
-        dim=1)
-
-
-def xcycwh2xyxy(xywh):
-    """Convert [xc yc w y] box format to [x1 y1 x2 y2] format."""
-    return torch.cat(
-        (xywh[:, 0:2] - 0.5 * xywh[:, 2:4], xywh[:, 0:2] + 0.5 * xywh[:, 2:4]),
-        dim=1)
-
-
 def bbox_flip(bboxes, img_shape):
     """Flip bboxes horizontally.
 
