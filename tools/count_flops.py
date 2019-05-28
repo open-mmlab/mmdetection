@@ -14,7 +14,10 @@ def parse_args():
 
 def inp_fun(input_res):
     batch = torch.FloatTensor(1, 3, *input_res).cuda()
-    return dict(img=[batch], img_meta=[{}], rescale=True, return_loss=False)
+    return dict(img=[batch], img_meta=[[{'img_shape': (*input_res, 3),
+                                         'ori_shape': (*input_res, 3),
+                                         'scale_factor': 1.0}]],
+                rescale=True, return_loss=False)
 
 
 def main():
