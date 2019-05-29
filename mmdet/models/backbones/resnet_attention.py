@@ -185,16 +185,20 @@ class Bottleneck(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
 
-
         # gen_attention
         self.use_gen_attention = use_gen_attention
         if self.use_gen_attention:
             non_local_planes = planes
-            self.non_local_block = GeneralizedAttention(non_local_planes,
-                                                        num_head=gen_attention['non_local_num_head'],
-                                                        hard_range=gen_attention['non_local_hard_range'],
-                                                        attention_type=gen_attention['attention_type'],
-                                                        kv_stride=gen_attention['non_local_kv_stride'])
+            num_head = gen_attention['non_local_num_head']
+            hard_range = gen_attention['non_local_hard_range']
+            attention_type = gen_attention['attention_type']
+            kv_stride = gen_attention['non_local_kv_stride']
+            self.non_local_block = GeneralizedAttention(
+                in_dim=non_local_planes,
+                num_head=num_head,
+                hard_range=hard_range,
+                attention_type=attention_type,
+                kv_stride=kv_stride)
 
     @property
     def norm1(self):
@@ -292,7 +296,7 @@ def make_res_layer(block,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             dcn=dcn,
-            gen_attention = gen_attention,
+            gen_attention=gen_attention,
             use_gen_attention=(0 in gen_attention_blocks)))
 
     inplanes = planes * block.expansion
@@ -366,7 +370,8 @@ class ResNetAttention(nn.Module):
                  zero_init_residual=True):
         super(ResNetAttention, self).__init__()
         if depth not in self.arch_settings:
-            raise KeyError('invalid depth {} for ResNetAttention'.format(depth))
+            raise KeyError('invalid depth {} for ResNetAttention'.
+                           format(depth))
         self.depth = depth
         self.num_stages = num_stages
         assert num_stages >= 1 and num_stages <= 4
@@ -466,7 +471,14 @@ class ResNetAttention(nn.Module):
                 if hasattr(m, 'zero_init') and m.zero_init:
                     constant_init(m, 0)
                 if hasattr(m, 'kaiming_init') and m.kaiming_init:
-                    kaiming_init(m, mode='fan_in', nonlinearity='leaky_relu', bias=0, distribution='uniform', a=1, random_bias=False)
+                    kaiming_init(m,
+                                 mode='fan_in',
+                                 nonlinearity='leaky_relu',
+                                 bias=0,
+                                 distribution='uniform',
+                                 a=1,
+                                 random_bias=False)
+
         elif pretrained is None:
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
