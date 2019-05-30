@@ -18,9 +18,15 @@ class RPNTestMixin(object):
             for i, proposals in enumerate(proposal_list):
                 aug_proposals[i].append(proposals)
         # after merging, proposals will be rescaled to the original image size
+        _img_metas = []
+        for i in range(imgs_per_gpu):
+            _img_meta = []
+            for j in range(len(img_metas)):
+                _img_meta.append(img_metas[j][i])
+            _img_metas.append(_img_meta)
         merged_proposals = [
-            merge_aug_proposals(proposals, img_meta, rpn_test_cfg)
-            for proposals, img_meta in zip(aug_proposals, img_metas)
+            merge_aug_proposals(proposals, _img_meta, rpn_test_cfg)
+            for proposals, _img_meta in zip(aug_proposals, _img_metas)
         ]
         return merged_proposals
 
