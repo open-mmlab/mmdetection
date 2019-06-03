@@ -12,7 +12,8 @@ def last_zero_init(m):
 
 class ContextBlock(nn.Module):
 
-    def __init__(self, inplanes, ratio, pooling_type='att', fusion_types=('channel_add',)):
+    def __init__(self, inplanes, ratio,
+                 pooling_type='att', fusion_types=('channel_add',)):
         super(ContextBlock, self).__init__()
         assert pooling_type in ['avg', 'att']
         assert isinstance(fusion_types, (list, tuple))
