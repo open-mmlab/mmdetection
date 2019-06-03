@@ -103,7 +103,8 @@ def make_res_layer(block,
                    with_cp=False,
                    conv_cfg=None,
                    norm_cfg=dict(type='BN'),
-                   dcn=None):
+                   dcn=None,
+                   gcb=None):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
         downsample = nn.Sequential(
@@ -131,7 +132,8 @@ def make_res_layer(block,
             with_cp=with_cp,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
-            dcn=dcn))
+            dcn=dcn,
+            gcb=gcb))
     inplanes = planes * block.expansion
     for i in range(1, blocks):
         layers.append(
@@ -146,7 +148,8 @@ def make_res_layer(block,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
-                dcn=dcn))
+                dcn=dcn,
+                gcb=gcb))
 
     return nn.Sequential(*layers)
 
@@ -195,6 +198,7 @@ class ResNeXt(ResNet):
             stride = self.strides[i]
             dilation = self.dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
+            gcb = self.gcb if self.stage_with_gcb[i] else None
             planes = 64 * 2**i
             res_layer = make_res_layer(
                 self.block,
@@ -209,7 +213,8 @@ class ResNeXt(ResNet):
                 with_cp=self.with_cp,
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg,
-                dcn=dcn)
+                dcn=dcn,
+                gcb=gcb)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
