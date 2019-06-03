@@ -1,6 +1,6 @@
 import torch
-from torch import nn
 from mmcv.cnn import constant_init, kaiming_init
+from torch import nn
 
 
 def last_zero_init(m):
@@ -12,13 +12,16 @@ def last_zero_init(m):
 
 class ContextBlock(nn.Module):
 
-    def __init__(self, inplanes, ratio,
-                 pooling_type='att', fusion_types=('channel_add',)):
+    def __init__(self,
+                 inplanes,
+                 ratio,
+                 pooling_type='att',
+                 fusion_types=('channel_add', )):
         super(ContextBlock, self).__init__()
         assert pooling_type in ['avg', 'att']
         assert isinstance(fusion_types, (list, tuple))
-        valid_fusion_methods = ['channel_add', 'channel_mul']
-        assert all([f in valid_fusion_methods for f in fusion_types])
+        valid_fusion_types = ['channel_add', 'channel_mul']
+        assert all([f in valid_fusion_types for f in fusion_types])
         assert len(fusion_types) > 0, 'at least one fusion should be used'
         self.inplanes = inplanes
         self.ratio = ratio
@@ -34,18 +37,16 @@ class ContextBlock(nn.Module):
             self.channel_add_conv = nn.Sequential(
                 nn.Conv2d(self.inplanes, self.planes, kernel_size=1),
                 nn.LayerNorm([self.planes, 1, 1]),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(self.planes, self.inplanes, kernel_size=1)
-            )
+                nn.ReLU(inplace=True),  # yapf: disable
+                nn.Conv2d(self.planes, self.inplanes, kernel_size=1))
         else:
             self.channel_add_conv = None
         if 'channel_mul' in fusion_types:
             self.channel_mul_conv = nn.Sequential(
                 nn.Conv2d(self.inplanes, self.planes, kernel_size=1),
                 nn.LayerNorm([self.planes, 1, 1]),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(self.planes, self.inplanes, kernel_size=1)
-            )
+                nn.ReLU(inplace=True),  # yapf: disable
+                nn.Conv2d(self.planes, self.inplanes, kernel_size=1))
         else:
             self.channel_mul_conv = None
         self.reset_parameters()
