@@ -86,22 +86,19 @@ data = dict(
     imgs_per_gpu=1,
     workers_per_gpu=1,
     train=dict(
-        type='RepeatDataset',  # to avoid reloading datasets frequently
-        times=2,
-        dataset=dict(
-            type=dataset_type,
-            ann_file=[
-                data_root + 'VOC2007/ImageSets/Main/trainval.txt',
-                data_root + 'VOC2012/ImageSets/Main/trainval.txt'
-            ],
-            img_prefix=[data_root + 'VOC2007/', data_root + 'VOC2012/'],
-            img_scale=(1000, 600),
-            img_norm_cfg=img_norm_cfg,
-            size_divisor=32,
-            flip_ratio=0.5,
-            with_mask=False,
-            with_crowd=True,
-            with_label=True)),
+        type=dataset_type,
+        ann_file=[
+            data_root + 'VOC2007/ImageSets/Main/trainval.txt',
+            data_root + 'VOC2012/ImageSets/Main/trainval.txt'
+        ],
+        img_prefix=[data_root + 'VOC2007/', data_root + 'VOC2012/'],
+        img_scale=(1000, 600),
+        img_norm_cfg=img_norm_cfg,
+        size_divisor=32,
+        flip_ratio=0.5,
+        with_mask=False,
+        with_crowd=True,
+        with_label=True),
     val=dict(
         type=dataset_type,
         ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
@@ -125,7 +122,7 @@ data = dict(
         with_label=False,
         test_mode=True))
 # optimizer
-optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -133,7 +130,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=1000,
     warmup_ratio=5e-5,
-    step=[3])
+    step=[10])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -144,7 +141,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 8  # actual epoch = 4 * 3 = 12
+total_epochs = 15
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/rfcn_r101_1x_voc0712'
