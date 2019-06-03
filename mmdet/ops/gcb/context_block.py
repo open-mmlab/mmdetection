@@ -12,7 +12,7 @@ def last_zero_init(m):
 
 class ContextBlock(nn.Module):
 
-    def __init__(self, inplanes, planes, pooling_type, fusion_types):
+    def __init__(self, inplanes, ratio, pooling_type='att', fusion_types=('channel_add',)):
         super(ContextBlock, self).__init__()
         assert pooling_type in ['avg', 'att']
         assert isinstance(fusion_types, (list, tuple))
@@ -20,7 +20,8 @@ class ContextBlock(nn.Module):
         assert all([f in valid_fusion_methods for f in fusion_types])
         assert len(fusion_types) > 0, 'at least one fusion should be used'
         self.inplanes = inplanes
-        self.planes = planes
+        self.ratio = ratio
+        self.planes = int(inplanes * ratio)
         self.pooling_type = pooling_type
         self.fusion_types = fusion_types
         if pooling_type == 'att':
