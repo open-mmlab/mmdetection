@@ -191,16 +191,18 @@ class Bottleneck(nn.Module):
         if gen_attention is not None:
             self.use_gen_attention = True
             non_local_planes = planes
-            num_head = gen_attention['non_local_num_head']
-            hard_range = gen_attention['non_local_hard_range']
+            num_head = gen_attention['num_head']
+            spatial_range = gen_attention['spatial_range']
             attention_type = gen_attention['attention_type']
-            kv_stride = gen_attention['non_local_kv_stride']
+            kv_stride = gen_attention['kv_stride']
             self.gen_attention_block = GeneralizedAttention(
                 in_dim=non_local_planes,
                 num_head=num_head,
-                hard_range=hard_range,
+                spatial_range=spatial_range,
                 attention_type=attention_type,
                 kv_stride=kv_stride)
+        else:
+            self.use_gen_attention = False
 
 
     @property

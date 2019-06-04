@@ -7,11 +7,31 @@ import numpy as np
 
 from mmcv.cnn import constant_init, kaiming_init
 
+
 class GeneralizedAttention(nn.Module):
+    """GeneralizedAttention module.
+
+    See 'An Empirical Study of Spatial Attention Mechanisms in Deep Networks'
+    (https://arxiv.org/abs/1711.07971) for details.
+
+    Args:
+        in_dim (int): Channels of the input feature map.
+        spatial_range (int): The spatial range. -1 indicates no spatial range constraint.
+        num_head (int): The head number of attention module.
+        position_embedding_dim (int): The embedding dimension of google(sin/cos) embedding.
+        position_magnitude (int): A multiplier acting on coordination difference.
+        kv_stride (int): The feature stride acting on key and value feature map.
+        q_stride (int): The feature stride acting on query feature map.
+        attention_type (str): A binary indicator string for indicating which items in generalized attention module are used.
+                              '1000' indicates 'query and key content'(appr - appr) item ,
+                              '0100' indicates 'query content and relative position'(appr - position) item,
+                              '0010' indicates 'key content only'(bias - appr) item,
+                              '0001' indicates 'relative position only'(bias - position) item.
+    """
 
     def __init__(self,
                  in_dim,
-                 hard_range=-1,
+                 spatial_range=-1,
                  num_head=9,
                  position_embedding_dim=-1,
                  position_magnitude=1,
@@ -28,7 +48,7 @@ class GeneralizedAttention(nn.Module):
         self.position_magnitude = position_magnitude
         self.num_head = num_head
         self.channel_in = in_dim
-        self.local_range = hard_range
+        self.spatial_range = spatial_range
         self.kv_stride = kv_stride
         self.q_stride = q_stride
         self.attention_type = [bool(int(_)) for _ in attention_type]
@@ -86,7 +106,7 @@ class GeneralizedAttention(nn.Module):
         self.proj_conv.kaiming_init = True
         self.gamma = nn.Parameter(torch.zeros(1))
 
-        if self.local_range >= 0:
+        if self.spatial_range >= 0:
             # only works when non local is after 3*3 conv
             if in_dim == 256:
                 max_len = 84
@@ -104,13 +124,13 @@ class GeneralizedAttention(nn.Module):
                     local_constraint_map[
                         iy,
                         ix,
-                        max((iy - self.local_range) //
+                        max((iy - self.spatial_range) //
                             self.kv_stride, 0):
-                        min((iy + self.local_range + 1) //
+                        min((iy + self.spatial_range + 1) //
                             self.kv_stride + 1, max_len),
-                        max((ix - self.local_range) //
+                        max((ix - self.spatial_range) //
                             self.kv_stride, 0):
-                        min((ix + self.local_range + 1) //
+                        min((ix + self.spatial_range + 1) //
                             self.kv_stride + 1, max_len)] = 0
 
             self.local_constraint_map = \
@@ -335,7 +355,7 @@ class GeneralizedAttention(nn.Module):
 
             energy = energy.view(n, num_head, h*w, h_kv*w_kv)
 
-        if self.local_range >= 0:
+        if self.spatial_range >= 0:
             cur_local_constraint_map = \
                 self.local_constraint_map[:h, :w, :h_kv, :w_kv].\
                 contiguous().\

@@ -10,10 +10,10 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         gen_attention=dict(
-            non_local_hard_range=-1,
-            non_local_num_head=8,
+            spatial_range=-1,
+            num_head=8,
             attention_type='1111',
-            non_local_kv_stride=2),
+            kv_stride=2),
         stage_with_gen_attention=[[], [], [0, 1, 2, 3, 4, 5], [0, 1, 2]],
     ),
     neck=dict(
