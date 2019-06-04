@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-
 import torch.nn.functional as F
+
 import math
 import numpy as np
 
@@ -383,8 +383,6 @@ class GeneralizedAttention(nn.Module):
 
     def init_weights(self):
         for m in self.modules():
-            if hasattr(m, 'zero_init') and m.zero_init:
-                constant_init(m, 0)
             if hasattr(m, 'kaiming_init') and m.kaiming_init:
                 kaiming_init(
                     m,
