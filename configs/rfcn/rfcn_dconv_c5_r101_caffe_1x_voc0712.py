@@ -10,10 +10,12 @@ model = dict(
         out_indices=(2, 3),
         frozen_stages=1,
         dilations=(1, 1, 1, 2),
-        dilated_first=(False, False, False, False),
         strides=(1, 2, 2, 1),
         norm_cfg=norm_cfg,
-        style='caffe'),
+        style='caffe',
+        dcn=dict(
+            modulated=False, deformable_groups=4, fallback_on_stride=False),
+        stage_with_dcn=(False, False, False, True)),
     rpn_head=dict(
         type='RPNHead',
         in_channels=1024,
@@ -32,7 +34,7 @@ model = dict(
         in_channels=2048,
         conv_out_channels=1024,
         num_classes=21,
-        reg_class_agnostic=False,
+        reg_class_agnostic=True,
         target_means=[.0, .0, .0, .0],
         target_stds=[0.1, 0.1, 0.2, 0.2],
         loss_cls=dict(
@@ -101,19 +103,22 @@ data = dict(
     imgs_per_gpu=1,
     workers_per_gpu=1,
     train=dict(
-        type=dataset_type,
-        ann_file=[
-            data_root + 'VOC2007/ImageSets/Main/trainval.txt',
-            data_root + 'VOC2012/ImageSets/Main/trainval.txt'
-        ],
-        img_prefix=[data_root + 'VOC2007/', data_root + 'VOC2012/'],
-        img_scale=(1000, 600),
-        img_norm_cfg=img_norm_cfg,
-        size_divisor=32,
-        flip_ratio=0.5,
-        with_mask=False,
-        with_crowd=True,
-        with_label=True),
+        type='RepeatDataset',  # to avoid reloading datasets frequently
+        times=2,
+        dataset=dict(
+            type=dataset_type,
+            ann_file=[
+                data_root + 'VOC2007/ImageSets/Main/trainval.txt',
+                data_root + 'VOC2012/ImageSets/Main/trainval.txt'
+            ],
+            img_prefix=[data_root + 'VOC2007/', data_root + 'VOC2012/'],
+            img_scale=(1000, 600),
+            img_norm_cfg=img_norm_cfg,
+            size_divisor=32,
+            flip_ratio=0.5,
+            with_mask=False,
+            with_crowd=True,
+            with_label=True)),
     val=dict(
         type=dataset_type,
         ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
@@ -145,7 +150,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=1000,
     warmup_ratio=5e-5,
-    step=[10])
+    step=[3])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -156,7 +161,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 15
+total_epochs = 4
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/rfcn_r101_1x_voc0712'
