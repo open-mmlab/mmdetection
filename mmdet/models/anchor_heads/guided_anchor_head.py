@@ -476,22 +476,27 @@ class GuidedAnchorHead(AnchorHead):
             cfg=cfg)
 
         # get anchor location loss
-        losses_loc, = multi_apply(
-            self.loss_loc_single,
-            loc_preds,
-            loc_targets,
-            loc_weights,
-            loc_avg_factor=loc_avg_factor,
-            cfg=cfg)
+        losses_loc = []
+        for i in range(len(loc_preds)):
+            loss_loc = self.loss_loc_single(
+                loc_preds[i],
+                loc_targets[i],
+                loc_weights[i],
+                loc_avg_factor=loc_avg_factor,
+                cfg=cfg)
+            losses_loc.append(loss_loc)
 
         # get anchor shape loss
-        losses_shape, = multi_apply(
-            self.loss_shape_single,
-            shape_preds,
-            bbox_anchors_list,
-            bbox_gts_list,
-            anchor_weights_list,
-            anchor_total_num=anchor_total_num)
+        losses_shape = []
+        for i in range(len(shape_preds)):
+            loss_shape = self.loss_shape_single(
+                shape_preds[i],
+                bbox_anchors_list[i],
+                bbox_gts_list[i],
+                anchor_weights_list[i],
+                anchor_total_num=anchor_total_num)
+            losses_shape.append(loss_shape)
+
         return dict(
             loss_cls=losses_cls,
             loss_bbox=losses_bbox,
