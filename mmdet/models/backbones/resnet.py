@@ -204,7 +204,6 @@ class Bottleneck(nn.Module):
         else:
             self.use_gen_attention = False
 
-
     @property
     def norm1(self):
         return getattr(self, self.norm1_name)
@@ -301,7 +300,8 @@ def make_res_layer(block,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             dcn=dcn,
-            gen_attention=gen_attention if (0 in gen_attention_blocks) else None))
+            gen_attention=gen_attention if
+            (0 in gen_attention_blocks) else None))
 
     inplanes = planes * block.expansion
     for i in range(1, blocks):
@@ -316,7 +316,8 @@ def make_res_layer(block,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
-                gen_attention=gen_attention if (i in gen_attention_blocks) else None))
+                gen_attention=gen_attention if
+                (i in gen_attention_blocks) else None))
 
     return nn.Sequential(*layers)
 

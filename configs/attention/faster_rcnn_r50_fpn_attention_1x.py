@@ -10,10 +10,7 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         gen_attention=dict(
-            spatial_range=-1,
-            num_head=8,
-            attention_type='1111',
-            kv_stride=2),
+            spatial_range=-1, num_head=8, attention_type='1111', kv_stride=2),
         stage_with_gen_attention=[[], [], [0, 1, 2, 3, 4, 5], [0, 1, 2]],
     ),
     neck=dict(
@@ -106,7 +103,7 @@ test_cfg = dict(
 )
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = '/data1/home/zhez/data_local/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
