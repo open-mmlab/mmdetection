@@ -5,11 +5,9 @@ from .modules.deform_conv import (DeformConv, ModulatedDeformConv,
 from .modules.deform_pool import (DeformRoIPooling, DeformRoIPoolingPack,
                                   ModulatedDeformRoIPoolingPack)
 
-from .modules.generalized_attention import GeneralizedAttention
-
 __all__ = [
     'DeformConv', 'DeformConvPack', 'ModulatedDeformConv',
     'ModulatedDeformConvPack', 'DeformRoIPooling', 'DeformRoIPoolingPack',
     'ModulatedDeformRoIPoolingPack', 'deform_conv', 'modulated_deform_conv',
-    'deform_roi_pooling', 'GeneralizedAttention'
+    'deform_roi_pooling'
 ]

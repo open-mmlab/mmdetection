@@ -1,8 +1,7 @@
 from .dcn import (DeformConv, DeformConvPack, ModulatedDeformConv,
                   ModulatedDeformConvPack, DeformRoIPooling,
                   DeformRoIPoolingPack, ModulatedDeformRoIPoolingPack,
-                  deform_conv, modulated_deform_conv, deform_roi_pooling,
-                  GeneralizedAttention)
+                  deform_conv, modulated_deform_conv, deform_roi_pooling)
 from .nms import nms, soft_nms
 from .roi_align import RoIAlign, roi_align
 from .roi_pool import RoIPool, roi_pool
@@ -15,5 +14,5 @@ __all__ = [
     'ModulatedDeformRoIPoolingPack', 'ModulatedDeformConv',
     'ModulatedDeformConvPack', 'deform_conv', 'modulated_deform_conv',
     'deform_roi_pooling', 'SigmoidFocalLoss', 'sigmoid_focal_loss',
-    'MaskedConv2d', 'GeneralizedAttention'
+    'MaskedConv2d'
 ]

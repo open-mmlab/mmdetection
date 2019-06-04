@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import math
 import numpy as np
 
+from mmcv.cnn import constant_init, kaiming_init
 
 class GeneralizedAttention(nn.Module):
 
@@ -131,6 +132,8 @@ class GeneralizedAttention(nn.Module):
                              stride=self.kv_stride)
         else:
             self.kv_downsample = None
+
+        self.init_weights()
 
     def extract_position_embedding(self,
                                    h,
@@ -356,3 +359,16 @@ class GeneralizedAttention(nn.Module):
         out = self.proj_conv(out)
         out = self.gamma * out + x_input
         return out
+
+    def init_weights(self):
+        for m in self.modules():
+            if hasattr(m, 'zero_init') and m.zero_init:
+                constant_init(m, 0)
+            if hasattr(m, 'kaiming_init') and m.kaiming_init:
+                kaiming_init(m,
+                             mode='fan_in',
+                             nonlinearity='leaky_relu',
+                             bias=0,
+                             distribution='uniform',
+                             a=1)
+
