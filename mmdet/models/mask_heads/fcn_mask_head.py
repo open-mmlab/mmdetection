@@ -4,9 +4,10 @@ import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
 
+from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule
-from mmdet.core import mask_cross_entropy, mask_target
+from mmdet.core import mask_target
 
 
 @HEADS.register_module
@@ -22,7 +23,10 @@ class FCNMaskHead(nn.Module):
                  upsample_ratio=2,
                  num_classes=81,
                  class_agnostic=False,
-                 normalize=None):
+                 conv_cfg=None,
+                 norm_cfg=None,
+                 loss_mask=dict(
+                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(FCNMaskHead, self).__init__()
         if upsample_method not in [None, 'deconv', 'nearest', 'bilinear']:
             raise ValueError(
@@ -37,13 +41,14 @@ class FCNMaskHead(nn.Module):
         self.upsample_ratio = upsample_ratio
         self.num_classes = num_classes
         self.class_agnostic = class_agnostic
-        self.normalize = normalize
-        self.with_bias = normalize is None
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.loss_mask = build_loss(loss_mask)
 
         self.convs = nn.ModuleList()
         for i in range(self.num_convs):
-            in_channels = (self.in_channels
-                           if i == 0 else self.conv_out_channels)
+            in_channels = (
+                self.in_channels if i == 0 else self.conv_out_channels)
             padding = (self.conv_kernel_size - 1) // 2
             self.convs.append(
                 ConvModule(
@@ -51,13 +56,15 @@ class FCNMaskHead(nn.Module):
                     self.conv_out_channels,
                     self.conv_kernel_size,
                     padding=padding,
-                    normalize=normalize,
-                    bias=self.with_bias))
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg))
+        upsample_in_channels = (
+            self.conv_out_channels if self.num_convs > 0 else in_channels)
         if self.upsample_method is None:
             self.upsample = None
         elif self.upsample_method == 'deconv':
             self.upsample = nn.ConvTranspose2d(
-                self.conv_out_channels,
+                upsample_in_channels,
                 self.conv_out_channels,
                 self.upsample_ratio,
                 stride=self.upsample_ratio)
@@ -66,7 +73,10 @@ class FCNMaskHead(nn.Module):
                 scale_factor=self.upsample_ratio, mode=self.upsample_method)
 
         out_channels = 1 if self.class_agnostic else self.num_classes
-        self.conv_logits = nn.Conv2d(self.conv_out_channels, out_channels, 1)
+        logits_in_channel = (
+            self.conv_out_channels
+            if self.upsample_method == 'deconv' else upsample_in_channels)
+        self.conv_logits = nn.Conv2d(logits_in_channel, out_channels, 1)
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
@@ -100,10 +110,10 @@ class FCNMaskHead(nn.Module):
     def loss(self, mask_pred, mask_targets, labels):
         loss = dict()
         if self.class_agnostic:
-            loss_mask = mask_cross_entropy(mask_pred, mask_targets,
-                                           torch.zeros_like(labels))
+            loss_mask = self.loss_mask(mask_pred, mask_targets,
+                                       torch.zeros_like(labels))
         else:
-            loss_mask = mask_cross_entropy(mask_pred, mask_targets, labels)
+            loss_mask = self.loss_mask(mask_pred, mask_targets, labels)
         loss['loss_mask'] = loss_mask
         return loss
 

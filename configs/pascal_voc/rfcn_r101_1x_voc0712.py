@@ -20,7 +20,9 @@ model = dict(
         anchor_strides=[16],
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
-        use_sigmoid_cls=True),
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
     bbox_head=dict(
         type='RFCNHead',
         psroipool_size=7,
@@ -29,7 +31,10 @@ model = dict(
         num_classes=21,
         reg_class_agnostic=False,
         target_means=[.0, .0, .0, .0],
-        target_stds=[0.1, 0.1, 0.2, 0.2]))
+        target_stds=[0.1, 0.1, 0.2, 0.2],
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -49,6 +54,13 @@ train_cfg = dict(
         pos_weight=-1,
         smoothl1_beta=1 / 9.0,
         debug=False),
+    rpn_proposal=dict(
+        nms_across_levels=False,
+        nms_pre=6000,
+        nms_post=300,
+        max_num=300,
+        nms_thr=0.7,
+        min_bbox_size=0),
     rcnn=dict(
         assigner=dict(
             type='MaxIoUAssigner',

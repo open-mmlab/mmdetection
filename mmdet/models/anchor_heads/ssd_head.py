@@ -10,6 +10,7 @@ from .anchor_head import AnchorHead
 from ..registry import HEADS
 
 
+# TODO: add loss evaluator for SSD
 @HEADS.register_module
 class SSDHead(AnchorHead):
 
@@ -90,7 +91,7 @@ class SSDHead(AnchorHead):
         self.target_means = target_means
         self.target_stds = target_stds
         self.use_sigmoid_cls = False
-        self.use_focal_loss = False
+        self.cls_focal_loss = False
 
     def init_weights(self):
         for m in self.modules():
@@ -122,13 +123,13 @@ class SSDHead(AnchorHead):
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
 
-        loss_reg = weighted_smoothl1(
+        loss_bbox = weighted_smoothl1(
             bbox_pred,
             bbox_targets,
             bbox_weights,
             beta=cfg.smoothl1_beta,
             avg_factor=num_total_samples)
-        return loss_cls[None], loss_reg
+        return loss_cls[None], loss_bbox
 
     def loss(self,
              cls_scores,
@@ -167,18 +168,18 @@ class SSDHead(AnchorHead):
                 num_images, -1, self.cls_out_channels) for s in cls_scores
         ], 1)
         all_labels = torch.cat(labels_list, -1).view(num_images, -1)
-        all_label_weights = torch.cat(label_weights_list, -1).view(
-            num_images, -1)
+        all_label_weights = torch.cat(label_weights_list,
+                                      -1).view(num_images, -1)
         all_bbox_preds = torch.cat([
             b.permute(0, 2, 3, 1).reshape(num_images, -1, 4)
             for b in bbox_preds
         ], -2)
-        all_bbox_targets = torch.cat(bbox_targets_list, -2).view(
-            num_images, -1, 4)
-        all_bbox_weights = torch.cat(bbox_weights_list, -2).view(
-            num_images, -1, 4)
+        all_bbox_targets = torch.cat(bbox_targets_list,
+                                     -2).view(num_images, -1, 4)
+        all_bbox_weights = torch.cat(bbox_weights_list,
+                                     -2).view(num_images, -1, 4)
 
-        losses_cls, losses_reg = multi_apply(
+        losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             all_cls_scores,
             all_bbox_preds,
@@ -188,4 +189,4 @@ class SSDHead(AnchorHead):
             all_bbox_weights,
             num_total_samples=num_total_pos,
             cfg=cfg)
-        return dict(loss_cls=losses_cls, loss_reg=losses_reg)
+        return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)

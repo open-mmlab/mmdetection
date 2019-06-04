@@ -6,7 +6,7 @@ from mmdet.ops import DeformConv, ModulatedDeformConv
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 from ..registry import BACKBONES
-from ..utils import build_norm_layer
+from ..utils import build_conv_layer, build_norm_layer
 
 
 class Bottleneck(_Bottleneck):
@@ -24,13 +24,14 @@ class Bottleneck(_Bottleneck):
             width = math.floor(self.planes * (base_width / 64)) * groups
 
         self.norm1_name, norm1 = build_norm_layer(
-            self.normalize, width, postfix=1)
+            self.norm_cfg, width, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(
-            self.normalize, width, postfix=2)
+            self.norm_cfg, width, postfix=2)
         self.norm3_name, norm3 = build_norm_layer(
-            self.normalize, self.planes * self.expansion, postfix=3)
+            self.norm_cfg, self.planes * self.expansion, postfix=3)
 
-        self.conv1 = nn.Conv2d(
+        self.conv1 = build_conv_layer(
+            self.conv_cfg,
             self.inplanes,
             width,
             kernel_size=1,
@@ -43,7 +44,8 @@ class Bottleneck(_Bottleneck):
             fallback_on_stride = self.dcn.get('fallback_on_stride', False)
             self.with_modulated_dcn = self.dcn.get('modulated', False)
         if not self.with_dcn or fallback_on_stride:
-            self.conv2 = nn.Conv2d(
+            self.conv2 = build_conv_layer(
+                self.conv_cfg,
                 width,
                 width,
                 kernel_size=3,
@@ -53,6 +55,7 @@ class Bottleneck(_Bottleneck):
                 groups=groups,
                 bias=False)
         else:
+            assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
             groups = self.dcn.get('groups', 1)
             deformable_groups = self.dcn.get('deformable_groups', 1)
             if not self.with_modulated_dcn:
@@ -79,8 +82,12 @@ class Bottleneck(_Bottleneck):
                 deformable_groups=deformable_groups,
                 bias=False)
         self.add_module(self.norm2_name, norm2)
-        self.conv3 = nn.Conv2d(
-            width, self.planes * self.expansion, kernel_size=1, bias=False)
+        self.conv3 = build_conv_layer(
+            self.conv_cfg,
+            width,
+            self.planes * self.expansion,
+            kernel_size=1,
+            bias=False)
         self.add_module(self.norm3_name, norm3)
 
 
@@ -94,18 +101,21 @@ def make_res_layer(block,
                    base_width=4,
                    style='pytorch',
                    with_cp=False,
-                   normalize=dict(type='BN'),
-                   dcn=None):
+                   conv_cfg=None,
+                   norm_cfg=dict(type='BN'),
+                   dcn=None,
+                   gcb=None):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
         downsample = nn.Sequential(
-            nn.Conv2d(
+            build_conv_layer(
+                conv_cfg,
                 inplanes,
                 planes * block.expansion,
                 kernel_size=1,
                 stride=stride,
                 bias=False),
-            build_norm_layer(normalize, planes * block.expansion)[1],
+            build_norm_layer(norm_cfg, planes * block.expansion)[1],
         )
 
     layers = []
@@ -120,8 +130,10 @@ def make_res_layer(block,
             base_width=base_width,
             style=style,
             with_cp=with_cp,
-            normalize=normalize,
-            dcn=dcn))
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            dcn=dcn,
+            gcb=gcb))
     inplanes = planes * block.expansion
     for i in range(1, blocks):
         layers.append(
@@ -134,8 +146,10 @@ def make_res_layer(block,
                 base_width=base_width,
                 style=style,
                 with_cp=with_cp,
-                normalize=normalize,
-                dcn=dcn))
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg,
+                dcn=dcn,
+                gcb=gcb))
 
     return nn.Sequential(*layers)
 
@@ -157,7 +171,7 @@ class ResNeXt(ResNet):
             the first 1x1 conv layer.
         frozen_stages (int): Stages to be frozen (all param fixed). -1 means
             not freezing any parameters.
-        normalize (dict): dictionary to construct and config norm layer.
+        norm_cfg (dict): dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
@@ -184,6 +198,7 @@ class ResNeXt(ResNet):
             stride = self.strides[i]
             dilation = self.dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
+            gcb = self.gcb if self.stage_with_gcb[i] else None
             planes = 64 * 2**i
             res_layer = make_res_layer(
                 self.block,
@@ -196,8 +211,10 @@ class ResNeXt(ResNet):
                 base_width=self.base_width,
                 style=self.style,
                 with_cp=self.with_cp,
-                normalize=self.normalize,
-                dcn=dcn)
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg,
+                dcn=dcn,
+                gcb=gcb)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
