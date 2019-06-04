@@ -28,24 +28,16 @@ def kaiming_init(module,
                  mode='fan_out',
                  nonlinearity='relu',
                  bias=0,
-                 distribution='normal',
-                 a=0,
-                 random_bias=False):
+                 distribution='normal'):
     assert distribution in ['uniform', 'normal']
     if distribution == 'uniform':
         nn.init.kaiming_uniform_(
-            module.weight, a=a, mode=mode, nonlinearity=nonlinearity)
+            module.weight, mode=mode, nonlinearity=nonlinearity)
     else:
         nn.init.kaiming_normal_(
-            module.weight, a=a, mode=mode, nonlinearity=nonlinearity)
-    if hasattr(module, 'bias') and module.bias is not None:
-        if random_bias:
-            if distribution == 'uniform':
-                nn.init.uniform_(module.bias, -np.sqrt(3), np.sqrt(3))
-            else:
-                nn.init.normal_(module.bias, 0, 1)
-        else:
-            nn.init.constant_(module.bias, bias)
+            module.weight, mode=mode, nonlinearity=nonlinearity)
+    if hasattr(module, 'bias'):
+        nn.init.constant_(module.bias, bias)
 
 
 def bias_init_with_prob(prior_prob):
