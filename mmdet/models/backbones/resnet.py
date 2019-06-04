@@ -253,7 +253,7 @@ class Bottleneck(nn.Module):
             out = self.norm2(out)
             out = self.relu(out)
 
-            if self.use_gen_attention:
+            if self.with_gen_attention:
                 out = self.gen_attention_block(out)
 
             out = self.conv3(out)

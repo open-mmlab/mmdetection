@@ -16,17 +16,20 @@ class GeneralizedAttention(nn.Module):
 
     Args:
         in_dim (int): Channels of the input feature map.
-        spatial_range (int): The spatial range. -1 indicates no spatial range constraint.
+        spatial_range (int): The spatial range.
+            -1 indicates no spatial range constraint.
         num_head (int): The head number of attention module.
-        position_embedding_dim (int): The embedding dimension of google(sin/cos) embedding.
-        position_magnitude (int): A multiplier acting on coordination difference.
-        kv_stride (int): The feature stride acting on key and value feature map.
+        position_embedding_dim (int): The position embedding dimension.
+        position_magnitude (int): A multiplier acting on coord difference.
+        kv_stride (int): The feature stride acting on key/value feature map.
         q_stride (int): The feature stride acting on query feature map.
-        attention_type (str): A binary indicator string for indicating which items in generalized attention module are used.
-                              '1000' indicates 'query and key content'(appr - appr) item ,
-                              '0100' indicates 'query content and relative position'(appr - position) item,
-                              '0010' indicates 'key content only'(bias - appr) item,
-                              '0001' indicates 'relative position only'(bias - position) item.
+        attention_type (str): A binary indicator string for indicating which
+            items in generalized attention module are used.
+            '1000' indicates 'query and key content' (appr - appr) item,
+            '0100' indicates 'query content and relative position'
+              (appr - position) item,
+            '0010' indicates 'key content only' (bias - appr) item,
+            '0001' indicates 'relative position only' (bias - position) item.
     """
 
     def __init__(self,
