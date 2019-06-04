@@ -200,14 +200,12 @@ class Bottleneck(nn.Module):
 
         if self.with_gcb:
             gcb_inplanes = planes * self.expansion
-            self.context_block = ContextBlock(
-                inplanes=gcb_inplanes,
-                **gcb
-            )
+            self.context_block = ContextBlock(inplanes=gcb_inplanes, **gcb)
 
         # gen_attention
         if self.with_gen_attention:
-            self.gen_attention_block = GeneralizedAttention(planes, **gen_attention)
+            self.gen_attention_block = GeneralizedAttention(
+                planes, **gen_attention)
 
     @property
     def norm1(self):
