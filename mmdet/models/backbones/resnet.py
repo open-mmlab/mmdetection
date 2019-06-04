@@ -207,17 +207,7 @@ class Bottleneck(nn.Module):
 
         # gen_attention
         if self.with_gen_attention:
-            non_local_planes = planes
-            num_head = gen_attention['num_head']
-            spatial_range = gen_attention['spatial_range']
-            attention_type = gen_attention['attention_type']
-            kv_stride = gen_attention['kv_stride']
-            self.gen_attention_block = GeneralizedAttention(
-                in_dim=non_local_planes,
-                num_head=num_head,
-                spatial_range=spatial_range,
-                attention_type=attention_type,
-                kv_stride=kv_stride)
+            self.gen_attention_block = GeneralizedAttention(planes, **gen_attention)
 
     @property
     def norm1(self):
@@ -391,7 +381,7 @@ class ResNet(nn.Module):
                  gcb=None,
                  stage_with_gcb=(False, False, False, False),
                  gen_attention=None,
-                 stage_with_gen_attention=[[], [], [], []],
+                 stage_with_gen_attention=((), (), (), ()),
                  with_cp=False,
                  zero_init_residual=True):
         super(ResNet, self).__init__()
@@ -434,7 +424,6 @@ class ResNet(nn.Module):
             dcn = self.dcn if self.stage_with_dcn[i] else None
             gcb = self.gcb if self.stage_with_gcb[i] else None
             planes = 64 * 2**i
-            gen_attention_blocks = stage_with_gen_attention[i]
             res_layer = make_res_layer(
                 self.block,
                 self.inplanes,
@@ -449,7 +438,7 @@ class ResNet(nn.Module):
                 dcn=dcn,
                 gcb=gcb,
                 gen_attention=gen_attention,
-                gen_attention_blocks=gen_attention_blocks)
+                gen_attention_blocks=stage_with_gen_attention[i])
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
