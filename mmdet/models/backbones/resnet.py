@@ -189,10 +189,7 @@ class Bottleneck(nn.Module):
         self.downsample = downsample
         if self.with_gcb:
             gcb_inplanes = planes * self.expansion
-            self.context_block = ContextBlock(
-                inplanes=gcb_inplanes,
-                **gcb
-            )
+            self.context_block = ContextBlock(inplanes=gcb_inplanes, **gcb)
 
     @property
     def norm1(self):
@@ -257,6 +254,7 @@ def make_res_layer(block,
                    blocks,
                    stride=1,
                    dilation=1,
+                   dilated_first=True,
                    style='pytorch',
                    with_cp=False,
                    conv_cfg=None,
@@ -277,12 +275,16 @@ def make_res_layer(block,
         )
 
     layers = []
+    if dilation != 1 and not dilated_first:
+        dila_first_block = 1
+    else:
+        dila_first_block = dilation
     layers.append(
         block(
             inplanes,
             planes,
             stride,
-            dilation,
+            dila_first_block,
             downsample,
             style=style,
             with_cp=with_cp,
@@ -346,6 +348,7 @@ class ResNet(nn.Module):
                  num_stages=4,
                  strides=(1, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
+                 dilated_first=(False, False, False, False),
                  out_indices=(0, 1, 2, 3),
                  style='pytorch',
                  frozen_stages=-1,
@@ -366,6 +369,7 @@ class ResNet(nn.Module):
         assert num_stages >= 1 and num_stages <= 4
         self.strides = strides
         self.dilations = dilations
+        self.dilated_first = dilated_first
         assert len(strides) == len(dilations) == num_stages
         self.out_indices = out_indices
         assert max(out_indices) < num_stages
@@ -394,6 +398,7 @@ class ResNet(nn.Module):
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = strides[i]
             dilation = dilations[i]
+            dilated_first = self.dilated_first[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
             gcb = self.gcb if self.stage_with_gcb[i] else None
             planes = 64 * 2**i
@@ -404,6 +409,7 @@ class ResNet(nn.Module):
                 num_blocks,
                 stride=stride,
                 dilation=dilation,
+                dilated_first=dilated_first,
                 style=self.style,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,

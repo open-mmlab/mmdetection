@@ -1,7 +1,8 @@
 # model settings
+norm_cfg = dict(type='BN', requires_grad=False)
 model = dict(
     type='RFCN',
-    pretrained='modelzoo://resnet101',
+    pretrained='open-mmlab://resnet101_caffe',
     backbone=dict(
         type='ResNet',
         depth=101,
@@ -9,8 +10,10 @@ model = dict(
         out_indices=(2, 3),
         frozen_stages=1,
         dilations=(1, 1, 1, 2),
+        dilated_first=(False, False, False, False),
         strides=(1, 2, 2, 1),
-        style='pytorch'),
+        norm_cfg=norm_cfg,
+        style='caffe'),
     rpn_head=dict(
         type='RPNHead',
         in_channels=1024,
@@ -93,7 +96,7 @@ test_cfg = dict(
 dataset_type = 'VOCDataset'
 data_root = 'data/VOCdevkit/'
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    mean = [102.9801, 115.9465, 122.7717], std = [1.0, 1.0, 1.0], to_rgb = False)
 data = dict(
     imgs_per_gpu=1,
     workers_per_gpu=1,
