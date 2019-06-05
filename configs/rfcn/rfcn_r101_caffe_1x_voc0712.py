@@ -25,6 +25,16 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
+    cls_roi_extractor=dict(
+        type='SingleRoIExtractor',
+        roi_layer=dict(type='PSRoIPool', out_size=7, group_size=7),
+        out_channels=21,
+        featmap_strides=[16]),
+    reg_roi_extractor=dict(
+        type='SingleRoIExtractor',
+        roi_layer=dict(type='PSRoIPool', out_size=7, group_size=7),
+        out_channels=4,
+        featmap_strides=[16]),
     bbox_head=dict(
         type='RFCNHead',
         psroipool_size=7,

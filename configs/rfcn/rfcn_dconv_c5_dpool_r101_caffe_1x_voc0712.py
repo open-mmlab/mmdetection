@@ -28,6 +28,32 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
+    cls_roi_extractor=dict(
+        type='SingleRoIExtractor',
+        roi_layer=dict(
+            type='DeformRoIPoolingPack',
+            out_size=7,
+            out_channels=21,
+            no_trans=False,
+            group_size=7,
+            part_size=7,
+            sample_per_part=4,
+            trans_std=0.1),
+        out_channels=21,
+        featmap_strides=[16]),
+    reg_roi_extractor=dict(
+        type='SingleRoIExtractor',
+        roi_layer=dict(
+            type='DeformRoIPoolingPack',
+            out_size=7,
+            out_channels=4,
+            no_trans=False,
+            group_size=7,
+            part_size=7,
+            sample_per_part=4,
+            trans_std=0.1),
+        out_channels=21,
+        featmap_strides=[16]),
     bbox_head=dict(
         type='RFCNHead',
         psroipool_size=7,
@@ -98,7 +124,7 @@ test_cfg = dict(
 dataset_type = 'VOCDataset'
 data_root = 'data/VOCdevkit/'
 img_norm_cfg = dict(
-    mean = [102.9801, 115.9465, 122.7717], std = [1.0, 1.0, 1.0], to_rgb = False)
+    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 data = dict(
     imgs_per_gpu=1,
     workers_per_gpu=1,
@@ -164,7 +190,7 @@ log_config = dict(
 total_epochs = 4
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/rfcn_r101_1x_voc0712'
+work_dir = './work_dirs/rfcn_dconv_c5_dpool_r101_1x_voc0712'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

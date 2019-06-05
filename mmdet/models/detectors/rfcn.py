@@ -10,15 +10,19 @@ class RFCN(BaseDetector, RPNTestMixin):
 
     def __init__(self,
                  backbone,
-                 rpn_head=None,
-                 bbox_head=None,
-                 train_cfg=None,
-                 test_cfg=None,
+                 rpn_head,
+                 bbox_head,
+                 cls_roi_extractor,
+                 reg_roi_extractor,
+                 train_cfg,
+                 test_cfg,
                  pretrained=None):
         super(RFCN, self).__init__()
         self.backbone = builder.build_backbone(backbone)
         self.rpn_head = builder.build_head(rpn_head)
         self.bbox_head = builder.build_head(bbox_head)
+        self.cls_roi_extractor = builder.build_roi_extractor(cls_roi_extractor)
+        self.reg_roi_extractor = builder.build_roi_extractor(reg_roi_extractor)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -66,9 +70,10 @@ class RFCN(BaseDetector, RPNTestMixin):
             gt_bboxes_ignore = [None for _ in range(num_imgs)]
         sampling_results = []
         for i in range(num_imgs):
-            assign_result = bbox_assigner.assign(
-                proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
-                gt_labels[i])
+            assign_result = bbox_assigner.assign(proposal_list[i],
+                                                 gt_bboxes[i],
+                                                 gt_bboxes_ignore[i],
+                                                 gt_labels[i])
             sampling_result = bbox_sampler.sample(
                 assign_result,
                 proposal_list[i],
@@ -78,9 +83,12 @@ class RFCN(BaseDetector, RPNTestMixin):
             sampling_results.append(sampling_result)
 
         rois = bbox2roi([res.bboxes for res in sampling_results])
-        cls_score, bbox_pred = self.bbox_head(layer4_feat, rois)
-        bbox_targets = self.bbox_head.get_target(
-            sampling_results, gt_bboxes, gt_labels, self.train_cfg.rcnn)
+        cls_score, bbox_pred = self.bbox_head(layer4_feat, rois,
+                                              self.cls_roi_extractor,
+                                              self.reg_roi_extractor)
+        bbox_targets = self.bbox_head.get_target(sampling_results, gt_bboxes,
+                                                 gt_labels,
+                                                 self.train_cfg.rcnn)
         loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
         losses.update(loss_bbox)
         return losses

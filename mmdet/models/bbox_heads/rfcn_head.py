@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from mmdet.core import delta2bbox, multiclass_nms, bbox_target, accuracy
-from mmdet.ops import PSRoIPool
 from ..builder import build_loss
 from ..registry import HEADS
 
@@ -40,14 +39,10 @@ class RFCNHead(nn.Module):
         self.conv_rfcn_cls = nn.Conv2d(
             conv_out_channels, psroipool_size * psroipool_size * num_classes,
             1)
-        self.psroi_pooling_cls = PSRoIPool(psroipool_size, 1.0 / 16,
-                                           psroipool_size)
         out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
         self.conv_rfcn_reg = nn.Conv2d(
             conv_out_channels, psroipool_size * psroipool_size * out_dim_reg,
             1)
-        self.psroi_pooling_reg = PSRoIPool(psroipool_size, 1.0 / 16,
-                                           psroipool_size)
         self.avepool = nn.AvgPool2d(psroipool_size)
 
     def init_weights(self):
@@ -56,12 +51,12 @@ class RFCNHead(nn.Module):
         self.conv_rfcn_reg.weight.data.normal_(0, 0.001)
         self.conv_rfcn_reg.bias.data.zero_()
 
-    def forward(self, layer4_feat, rois):
+    def forward(self, layer4_feat, rois, cls_roi_extractor, reg_roi_extractor):
         feat = self.relu(self.conv_new(layer4_feat))
         rfcn_cls = self.conv_rfcn_cls(feat)
         rfcn_reg = self.conv_rfcn_reg(feat)
-        psroi_pooled_cls = self.psroi_pooling_cls(rfcn_cls, rois)
-        psroi_pooled_reg = self.psroi_pooling_reg(rfcn_reg, rois)
+        psroi_pooled_cls = cls_roi_extractor([rfcn_cls], rois)
+        psroi_pooled_reg = reg_roi_extractor([rfcn_reg], rois)
         cls_score = self.avepool(psroi_pooled_cls)[:, :, 0, 0]
         bbox_pred = self.avepool(psroi_pooled_reg)[:, :, 0, 0]
         return cls_score, bbox_pred

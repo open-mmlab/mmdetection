@@ -70,7 +70,7 @@ class DeformRoIPoolingPack(DeformRoIPooling):
             self.offset_fc[-1].bias.data.zero_()
 
     def forward(self, data, rois):
-        assert data.size(1) == self.out_channels
+        # assert data.size(1) == self.out_channels
         if self.no_trans:
             offset = data.new_empty(0)
             return deform_roi_pooling(
