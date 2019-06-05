@@ -183,9 +183,9 @@ Here is an example.
         'height': 720,
         'ann': {
             'bboxes': <np.ndarray, float32> (n, 4),
-            'labels': <np.ndarray, float32> (n, ),
+            'labels': <np.ndarray, int64> (n, ),
             'bboxes_ignore': <np.ndarray, float32> (k, 4),
-            'labels_ignore': <np.ndarray, float32> (k, ) (optional field)
+            'labels_ignore': <np.ndarray, int64> (k, ) (optional field)
         }
     },
     ...
