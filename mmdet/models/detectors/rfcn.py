@@ -101,7 +101,9 @@ class RFCN(BaseDetector, RPNTestMixin):
             self.test_cfg.rpn) if proposals is None else proposals
 
         rois = bbox2roi(proposal_list)
-        cls_score, bbox_pred = self.bbox_head(layer4_feat, rois)
+        cls_score, bbox_pred = self.bbox_head(layer4_feat, rois,
+                                              self.cls_roi_extractor,
+                                              self.reg_roi_extractor)
         img_shape = img_meta[0]['img_shape']
         scale_factor = img_meta[0]['scale_factor']
         det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
