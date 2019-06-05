@@ -1,5 +1,5 @@
 import torch
-from torch.autograd import Function, Variable
+from torch.autograd import Function
 
 from .. import psroi_pooling_cuda
 
