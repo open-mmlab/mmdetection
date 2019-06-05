@@ -171,7 +171,7 @@ log_config = dict(
 total_epochs = 4
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/rfcn_r101_1x_voc0712'
+work_dir = './work_dirs/rfcn_r101_caffe_1x_voc0712'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
