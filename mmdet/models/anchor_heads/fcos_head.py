@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
-from mmdet.core import (sigmoid_focal_loss, iou_loss, multi_apply,
-                        multiclass_nms, distance2bbox)
+from mmdet.core import multi_apply, multiclass_nms, distance2bbox
+from ..losses import iou_loss, sigmoid_focal_loss
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, Scale, ConvModule
 
@@ -140,8 +140,12 @@ class FCOSHead(nn.Module):
         pos_inds = flatten_labels.nonzero().reshape(-1)
         num_pos = len(pos_inds)
         loss_cls = sigmoid_focal_loss(
-            flatten_cls_scores, flatten_labels, cfg.gamma, cfg.alpha,
-            'none').sum()[None] / (num_pos + num_imgs)  # avoid num_pos is 0
+            flatten_cls_scores,
+            flatten_labels,
+            gamma=cfg.gamma,
+            alpha=cfg.alpha,
+            reduction='none').sum()[None] / (num_pos + num_imgs
+                                             )  # avoid num_pos is 0
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_bbox_targets = flatten_bbox_targets[pos_inds]
@@ -196,9 +200,10 @@ class FCOSHead(nn.Module):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self.get_bboxes_single(
-                cls_score_list, bbox_pred_list, centerness_pred_list,
-                mlvl_points, img_shape, scale_factor, cfg, rescale)
+            det_bboxes = self.get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                centerness_pred_list,
+                                                mlvl_points, img_shape,
+                                                scale_factor, cfg, rescale)
             result_list.append(det_bboxes)
         return result_list
 
