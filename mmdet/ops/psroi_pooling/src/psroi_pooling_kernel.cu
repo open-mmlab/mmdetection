@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <vector>
 
-#define CUDA_1D_KERNEL_LOOP(i, n)                                              \
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;                   \
+#define CUDA_1D_KERNEL_LOOP(i, n)                            \
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; \
        i += blockDim.x * gridDim.x)
 
 #define THREADS_PER_BLOCK 1024
@@ -20,12 +20,12 @@ inline int GET_BLOCKS(const int N) {
 }
 
 template <typename scalar_t>
-__global__ void
-PSROIPoolForward(const int nthreads, const scalar_t *bottom_data,
-                 const scalar_t *rois, const scalar_t spatial_scale,
-                 const int channels, const int height, const int width,
-                 const int pooled_h, const int pooled_w, const int group_size,
-                 const int out_chn, scalar_t *top_data, int *mapping_channel) {
+__global__ void PSROIPoolForward(
+    const int nthreads, const scalar_t *bottom_data, const scalar_t *rois,
+    const scalar_t spatial_scale, const int channels, const int height,
+    const int width, const int pooled_h, const int pooled_w,
+    const int group_size, const int out_chn, scalar_t *top_data,
+    int *mapping_channel) {
   CUDA_1D_KERNEL_LOOP(index, nthreads) {
     // (n, ctop, ph, pw) is an element in the pooled output
     int pw = index % pooled_w;
@@ -104,11 +104,11 @@ int PSROIPoolForwardLauncher(const at::Tensor features, const at::Tensor rois,
         scalar_t *top_data = output.data<scalar_t>();
         int *mapping_channel_data = mapping_channel.data<int>();
 
-        PSROIPoolForward<
-            scalar_t><<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
-            output_size, bottom_data, rois_data, scalar_t(spatial_scale),
-            channels, height, width, pooled_h, pooled_w, group_size, out_chn,
-            top_data, mapping_channel_data);
+        PSROIPoolForward<scalar_t>
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
+                output_size, bottom_data, rois_data, scalar_t(spatial_scale),
+                channels, height, width, pooled_h, pooled_w, group_size,
+                out_chn, top_data, mapping_channel_data);
       }));
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err) {
@@ -202,11 +202,11 @@ int PSROIPoolBackwardLauncher(const at::Tensor top_grad, const at::Tensor rois,
           exit(-1);
         }
 
-        PSROIPoolBackward<
-            scalar_t><<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
-            output_size, top_diff, rois_data, mapping_channel_data,
-            scalar_t(spatial_scale), channels, height, width, pooled_h,
-            pooled_w, out_chn, bottom_diff);
+        PSROIPoolBackward<scalar_t>
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
+                output_size, top_diff, rois_data, mapping_channel_data,
+                scalar_t(spatial_scale), channels, height, width, pooled_h,
+                pooled_w, out_chn, bottom_diff);
       }));
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err) {

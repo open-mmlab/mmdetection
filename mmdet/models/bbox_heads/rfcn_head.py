@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+from mmcv.cnn import normal_init
 from .bbox_head import BBoxHead
 from ..builder import build_loss
 from ..registry import HEADS
@@ -44,10 +45,8 @@ class RFCNHead(BBoxHead):
         self.avepool = nn.AvgPool2d(psroipool_size)
 
     def init_weights(self):
-        self.conv_rfcn_cls.weight.data.normal_(0, 0.01)
-        self.conv_rfcn_cls.bias.data.zero_()
-        self.conv_rfcn_reg.weight.data.normal_(0, 0.001)
-        self.conv_rfcn_reg.bias.data.zero_()
+        normal_init(self.conv_rfcn_cls, mean=0, std=0.01)
+        normal_init(self.conv_rfcn_reg, mean=0, std=0.01)
 
     def forward(self, layer4_feat, rois, cls_roi_extractor, reg_roi_extractor):
         feat = self.relu(self.conv_new(layer4_feat))

@@ -29,10 +29,6 @@ class RFCN(BaseDetector, RPNTestMixin):
 
         self.init_weights(pretrained=pretrained)
 
-    @property
-    def with_rpn(self):
-        return hasattr(self, 'rpn_head') and self.rpn_head is not None
-
     def init_weights(self, pretrained=None):
         super(RFCN, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
@@ -40,8 +36,7 @@ class RFCN(BaseDetector, RPNTestMixin):
         self.bbox_head.init_weights()
 
     def extract_feat(self, img):
-        x = self.backbone(img)
-        return x
+        return self.backbone(img)
 
     def forward_train(self,
                       img,
