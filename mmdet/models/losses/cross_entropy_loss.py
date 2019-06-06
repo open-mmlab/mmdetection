@@ -13,8 +13,11 @@ def _expand_binary_labels(labels, label_weights, label_channels):
     inds = torch.nonzero(labels >= 1).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds] - 1] = 1
-    bin_label_weights = label_weights.view(-1, 1).expand(
-        label_weights.size(0), label_channels)
+    if label_weights is None:
+        bin_label_weights = None
+    else:
+        bin_label_weights = label_weights.view(-1, 1).expand(
+            label_weights.size(0), label_channels)
     return bin_labels, bin_label_weights
 
 
@@ -27,8 +30,10 @@ def binary_cross_entropy(pred,
         label, weight = _expand_binary_labels(label, weight, pred.size(-1))
 
     # element-wise losses
+    if weight is not None:
+        weight = weight.float()
     loss = F.binary_cross_entropy_with_logits(
-        pred, label.float(), weight.float(), reduction='none')
+        pred, label.float(), weight, reduction='none')
     # apply weights and do the reduction
     loss = weight_reduce_loss(
         loss, weight=weight, reduction=reduction, avg_factor=avg_factor)
