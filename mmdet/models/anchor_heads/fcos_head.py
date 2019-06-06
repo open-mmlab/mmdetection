@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
 from mmdet.core import multi_apply, multiclass_nms, distance2bbox
-from ..losses import iou_loss, sigmoid_focal_loss
+from ..losses import binary_cross_entropy, iou_loss, sigmoid_focal_loss
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, Scale, ConvModule
 
@@ -144,8 +143,7 @@ class FCOSHead(nn.Module):
             flatten_labels,
             gamma=cfg.gamma,
             alpha=cfg.alpha,
-            reduction='none').sum()[None] / (num_pos + num_imgs
-                                             )  # avoid num_pos is 0
+            avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_bbox_targets = flatten_bbox_targets[pos_inds]
@@ -158,13 +156,13 @@ class FCOSHead(nn.Module):
             pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
             # centerness weighted iou loss
-            loss_reg = ((iou_loss(
+            loss_reg = iou_loss(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
-                reduction='none') * pos_centerness_targets).sum() /
-                        pos_centerness_targets.sum())[None]
-            loss_centerness = F.binary_cross_entropy_with_logits(
-                pos_centerness, pos_centerness_targets, reduction='mean')[None]
+                weight=pos_centerness_targets,
+                avg_factor=pos_centerness_targets.sum())
+            loss_centerness = binary_cross_entropy(pos_centerness,
+                                                   pos_centerness_targets)
         else:
             loss_reg = pos_bbox_preds.sum()[None]
             loss_centerness = pos_centerness.sum()[None]
