@@ -34,7 +34,7 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint)
         if 'CLASSES' in checkpoint['meta']:
-            model.CLASSES = checkpoint['meta']['classes']
+            model.CLASSES = checkpoint['meta']['CLASSES']
         else:
             warnings.warn('Class names are not saved in the checkpoint\'s '
                           'meta data, use COCO classes by default.')
