@@ -4,7 +4,6 @@ import torch.nn.functional as F
 
 import math
 import numpy as np
-
 from mmcv.cnn import kaiming_init
 
 
@@ -18,7 +17,7 @@ class GeneralizedAttention(nn.Module):
         in_dim (int): Channels of the input feature map.
         spatial_range (int): The spatial range.
             -1 indicates no spatial range constraint.
-        num_head (int): The head number of empirical_attention module.
+        num_heads (int): The head number of empirical_attention module.
         position_embedding_dim (int): The position embedding dimension.
         position_magnitude (int): A multiplier acting on coord difference.
         kv_stride (int): The feature stride acting on key/value feature map.
@@ -35,7 +34,7 @@ class GeneralizedAttention(nn.Module):
     def __init__(self,
                  in_dim,
                  spatial_range=-1,
-                 num_head=9,
+                 num_heads=9,
                  position_embedding_dim=-1,
                  position_magnitude=1,
                  kv_stride=2,
@@ -49,14 +48,14 @@ class GeneralizedAttention(nn.Module):
             if position_embedding_dim > 0 else in_dim
 
         self.position_magnitude = position_magnitude
-        self.num_head = num_head
+        self.num_heads = num_heads
         self.channel_in = in_dim
         self.spatial_range = spatial_range
         self.kv_stride = kv_stride
         self.q_stride = q_stride
         self.attention_type = [bool(int(_)) for _ in attention_type]
-        self.qk_embed_dim = in_dim // num_head
-        out_c = self.qk_embed_dim * num_head
+        self.qk_embed_dim = in_dim // num_heads
+        out_c = self.qk_embed_dim * num_heads
 
         if self.attention_type[0] or self.attention_type[1]:
             self.query_conv = nn.Conv2d(
@@ -74,10 +73,10 @@ class GeneralizedAttention(nn.Module):
                 bias=False)
             self.key_conv.kaiming_init = True
 
-        self.v_dim = in_dim // num_head
+        self.v_dim = in_dim // num_heads
         self.value_conv = nn.Conv2d(
             in_channels=in_dim,
-            out_channels=self.v_dim * num_head,
+            out_channels=self.v_dim * num_heads,
             kernel_size=1,
             bias=False)
         self.value_conv.kaiming_init = True
@@ -102,7 +101,7 @@ class GeneralizedAttention(nn.Module):
             self.geom_bias = nn.Parameter(geom_bias_value)
 
         self.proj_conv = nn.Conv2d(
-            in_channels=self.v_dim * num_head,
+            in_channels=self.v_dim * num_heads,
             out_channels=in_dim,
             kernel_size=1,
             bias=True)
@@ -201,7 +200,7 @@ class GeneralizedAttention(nn.Module):
         return embedding_x, embedding_y
 
     def forward(self, x_input):
-        num_head = self.num_head
+        num_heads = self.num_heads
 
         # use empirical_attention
         if self.q_downsample is not None:
@@ -218,12 +217,12 @@ class GeneralizedAttention(nn.Module):
 
         if self.attention_type[0] or self.attention_type[1]:
             proj_query = self.query_conv(x_q).\
-                view((n, num_head, self.qk_embed_dim, h * w))
+                view((n, num_heads, self.qk_embed_dim, h * w))
             proj_query = proj_query.permute(0, 1, 3, 2)
 
         if self.attention_type[0] or self.attention_type[2]:
             proj_key = self.key_conv(x_kv).\
-                view((n, num_head, self.qk_embed_dim, h_kv * w_kv))
+                view((n, num_heads, self.qk_embed_dim, h_kv * w_kv))
 
         if self.attention_type[1] or self.attention_type[3]:
             position_embed_x, position_embed_y = \
@@ -232,15 +231,15 @@ class GeneralizedAttention(nn.Module):
                                                 self.kv_stride,
                                                 x_input.device,
                                                 self.position_embedding_dim)
-            # (n, num_head, w, w_kv, dim)
+            # (n, num_heads, w, w_kv, dim)
             position_feat_x = self.appr_geom_fc_x(position_embed_x).\
-                view(1, w, w_kv, num_head, self.qk_embed_dim).\
+                view(1, w, w_kv, num_heads, self.qk_embed_dim).\
                 permute(0, 3, 1, 2, 4).\
                 repeat(n, 1, 1, 1, 1)
 
-            # (n, num_head, h, h_kv, dim)
+            # (n, num_heads, h, h_kv, dim)
             position_feat_y = self.appr_geom_fc_y(position_embed_y).\
-                view(1, h, h_kv, num_head, self.qk_embed_dim).\
+                view(1, h, h_kv, num_heads, self.qk_embed_dim).\
                 permute(0, 3, 1, 2, 4).\
                 repeat(n, 1, 1, 1, 1)
 
@@ -250,20 +249,20 @@ class GeneralizedAttention(nn.Module):
         # accelerate for saliency only
         if (np.sum(self.attention_type) == 1) and self.attention_type[2]:
             appr_bias = self.appr_bias.\
-                view(1, num_head, 1, self.qk_embed_dim).\
+                view(1, num_heads, 1, self.qk_embed_dim).\
                 repeat(n, 1, 1, 1)
 
             energy = torch.matmul(appr_bias, proj_key).\
-                view(n, num_head, 1, h_kv * w_kv)
+                view(n, num_heads, 1, h_kv * w_kv)
 
             h = 1
             w = 1
         else:
-            # (n, num_head, h*w, h_kv*w_kv), query before key, 540mb for
+            # (n, num_heads, h*w, h_kv*w_kv), query before key, 540mb for
             if not self.attention_type[0]:
                 energy = torch.zeros(
                     n,
-                    num_head,
+                    num_heads,
                     h,
                     w,
                     h_kv,
@@ -278,29 +277,29 @@ class GeneralizedAttention(nn.Module):
             if self.attention_type[0] or self.attention_type[2]:
                 if self.attention_type[0] and self.attention_type[2]:
                     appr_bias = self.appr_bias.\
-                        view(1, num_head, 1, self.qk_embed_dim)
+                        view(1, num_heads, 1, self.qk_embed_dim)
                     energy = torch.matmul(proj_query + appr_bias, proj_key).\
-                        view(n, num_head, h, w, h_kv, w_kv)
+                        view(n, num_heads, h, w, h_kv, w_kv)
 
                 elif self.attention_type[0]:
                     energy = torch.matmul(proj_query, proj_key).\
-                        view(n, num_head, h, w, h_kv, w_kv)
+                        view(n, num_heads, h, w, h_kv, w_kv)
 
                 elif self.attention_type[2]:
                     appr_bias = self.appr_bias.\
-                        view(1, num_head, 1, self.qk_embed_dim).\
+                        view(1, num_heads, 1, self.qk_embed_dim).\
                         repeat(n, 1, 1, 1)
 
                     energy += torch.matmul(appr_bias, proj_key).\
-                        view(n, num_head, 1, 1, h_kv, w_kv)
+                        view(n, num_heads, 1, 1, h_kv, w_kv)
 
             if self.attention_type[1] or self.attention_type[3]:
                 if self.attention_type[1] and self.attention_type[3]:
                     geom_bias = self.geom_bias.\
-                        view(1, num_head, 1, self.qk_embed_dim)
+                        view(1, num_heads, 1, self.qk_embed_dim)
 
                     proj_query_reshape = (proj_query + geom_bias).\
-                        view(n, num_head, h, w, self.qk_embed_dim)
+                        view(n, num_heads, h, w, self.qk_embed_dim)
 
                     energy_x = torch.matmul(
                         proj_query_reshape.permute(0, 1, 3, 2, 4),
@@ -317,7 +316,7 @@ class GeneralizedAttention(nn.Module):
 
                 elif self.attention_type[1]:
                     proj_query_reshape = proj_query.\
-                        view(n, num_head, h, w, self.qk_embed_dim)
+                        view(n, num_heads, h, w, self.qk_embed_dim)
                     proj_query_reshape = proj_query_reshape.\
                         permute(0, 1, 3, 2, 4)
                     position_feat_x_reshape = position_feat_x.\
@@ -337,24 +336,24 @@ class GeneralizedAttention(nn.Module):
 
                 elif self.attention_type[3]:
                     geom_bias = self.geom_bias.\
-                        view(1, num_head, self.qk_embed_dim, 1).\
+                        view(1, num_heads, self.qk_embed_dim, 1).\
                         repeat(n, 1, 1, 1)
 
                     position_feat_x_reshape = position_feat_x.\
-                        view(n, num_head, w*w_kv, self.qk_embed_dim)
+                        view(n, num_heads, w*w_kv, self.qk_embed_dim)
 
                     position_feat_y_reshape = position_feat_y.\
-                        view(n, num_head, h * h_kv, self.qk_embed_dim)
+                        view(n, num_heads, h * h_kv, self.qk_embed_dim)
 
                     energy_x = torch.matmul(position_feat_x_reshape, geom_bias)
-                    energy_x = energy_x.view(n, num_head, 1, w, 1, w_kv)
+                    energy_x = energy_x.view(n, num_heads, 1, w, 1, w_kv)
 
                     energy_y = torch.matmul(position_feat_y_reshape, geom_bias)
-                    energy_y = energy_y.view(n, num_head, h, 1, h_kv, 1)
+                    energy_y = energy_y.view(n, num_heads, h, 1, h_kv, 1)
 
                     energy += energy_x + energy_y
 
-            energy = energy.view(n, num_head, h * w, h_kv * w_kv)
+            energy = energy.view(n, num_heads, h * w, h_kv * w_kv)
 
         if self.spatial_range >= 0:
             cur_local_constraint_map = \
@@ -369,13 +368,13 @@ class GeneralizedAttention(nn.Module):
 
         proj_value = self.value_conv(x_kv)
         proj_value_reshape = proj_value.\
-            view((n, num_head, self.v_dim, h_kv * w_kv)).\
+            view((n, num_heads, self.v_dim, h_kv * w_kv)).\
             permute(0, 1, 3, 2)
 
         out = torch.matmul(attention, proj_value_reshape).\
             permute(0, 1, 3, 2).\
             contiguous().\
-            view(n, self.v_dim * self.num_head, h, w)
+            view(n, self.v_dim * self.num_heads, h, w)
 
         out = self.proj_conv(out)
         out = self.gamma * out + x_input
