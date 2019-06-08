@@ -18,13 +18,13 @@ class GeneralizedAttention(nn.Module):
         in_dim (int): Channels of the input feature map.
         spatial_range (int): The spatial range.
             -1 indicates no spatial range constraint.
-        num_head (int): The head number of attention module.
+        num_head (int): The head number of empirical_attention module.
         position_embedding_dim (int): The position embedding dimension.
         position_magnitude (int): A multiplier acting on coord difference.
         kv_stride (int): The feature stride acting on key/value feature map.
         q_stride (int): The feature stride acting on query feature map.
         attention_type (str): A binary indicator string for indicating which
-            items in generalized attention module are used.
+            items in generalized empirical_attention module are used.
             '1000' indicates 'query and key content' (appr - appr) item,
             '0100' indicates 'query content and relative position'
               (appr - position) item,
@@ -203,7 +203,7 @@ class GeneralizedAttention(nn.Module):
     def forward(self, x_input):
         num_head = self.num_head
 
-        # use attention
+        # use empirical_attention
         if self.q_downsample is not None:
             x_q = self.q_downsample(x_input)
         else:

@@ -10,7 +10,7 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         gen_attention=dict(
-            spatial_range=-1, num_head=8, attention_type='1111', kv_stride=2),
+            spatial_range=-1, num_head=8, attention_type='0010', kv_stride=2),
         stage_with_gen_attention=[[], [], [0, 1, 2, 3, 4, 5], [0, 1, 2]],
     ),
     neck=dict(
@@ -165,7 +165,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/faster_rcnn_r50_fpn_attention_1x'
+work_dir = './work_dirs/faster_rcnn_r50_fpn_attention_0010_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
