@@ -44,8 +44,8 @@ class GeneralizedAttention(nn.Module):
         super(GeneralizedAttention, self).__init__()
 
         # hard range means local range for non-local operation
-        self.position_embedding_dim = position_embedding_dim \
-            if position_embedding_dim > 0 else in_dim
+        self.position_embedding_dim = (
+            position_embedding_dim if position_embedding_dim > 0 else in_dim)
 
         self.position_magnitude = position_magnitude
         self.num_heads = num_heads
@@ -132,39 +132,34 @@ class GeneralizedAttention(nn.Module):
                                                   1) // self.kv_stride +
                                                  1, max_len)] = 0
 
-            self.local_constraint_map = \
-                nn.Parameter(
-                    torch.from_numpy(
-                        local_constraint_map).type(torch.ByteTensor),
-                    requires_grad=False)
+            self.local_constraint_map = nn.Parameter(
+                torch.from_numpy(local_constraint_map).byte(),
+                requires_grad=False)
 
         if self.q_stride > 1:
-            self.q_downsample = \
-                nn.AvgPool2d(kernel_size=1,
-                             stride=self.q_stride)
+            self.q_downsample = nn.AvgPool2d(
+                kernel_size=1, stride=self.q_stride)
         else:
             self.q_downsample = None
 
         if self.kv_stride > 1:
-            self.kv_downsample = \
-                nn.AvgPool2d(kernel_size=1,
-                             stride=self.kv_stride)
+            self.kv_downsample = nn.AvgPool2d(
+                kernel_size=1, stride=self.kv_stride)
         else:
             self.kv_downsample = None
 
         self.init_weights()
 
-    def extract_position_embedding(self,
-                                   h,
-                                   w,
-                                   h_kv,
-                                   w_kv,
-                                   q_stride,
-                                   kv_stride,
-                                   device,
-                                   feat_dim,
-                                   wave_length=1000):
-
+    def get_position_embedding(self,
+                               h,
+                               w,
+                               h_kv,
+                               w_kv,
+                               q_stride,
+                               kv_stride,
+                               device,
+                               feat_dim,
+                               wave_length=1000):
         h_idxs = torch.linspace(0, h - 1, h).cuda(device)
         h_idxs = h_idxs.view((h, 1)) * q_stride
 
@@ -216,21 +211,18 @@ class GeneralizedAttention(nn.Module):
         _, _, h_kv, w_kv = x_kv.shape
 
         if self.attention_type[0] or self.attention_type[1]:
-            proj_query = self.query_conv(x_q).\
-                view((n, num_heads, self.qk_embed_dim, h * w))
+            proj_query = self.query_conv(x_q).view(
+                (n, num_heads, self.qk_embed_dim, h * w))
             proj_query = proj_query.permute(0, 1, 3, 2)
 
         if self.attention_type[0] or self.attention_type[2]:
-            proj_key = self.key_conv(x_kv).\
-                view((n, num_heads, self.qk_embed_dim, h_kv * w_kv))
+            proj_key = self.key_conv(x_kv).view(
+                (n, num_heads, self.qk_embed_dim, h_kv * w_kv))
 
         if self.attention_type[1] or self.attention_type[3]:
-            position_embed_x, position_embed_y = \
-                self.extract_position_embedding(h, w, h_kv, w_kv,
-                                                self.q_stride,
-                                                self.kv_stride,
-                                                x_input.device,
-                                                self.position_embedding_dim)
+            position_embed_x, position_embed_y = self.get_position_embedding(
+                h, w, h_kv, w_kv, self.q_stride, self.kv_stride,
+                x_input.device, self.position_embedding_dim)
             # (n, num_heads, w, w_kv, dim)
             position_feat_x = self.appr_geom_fc_x(position_embed_x).\
                 view(1, w, w_kv, num_heads, self.qk_embed_dim).\
