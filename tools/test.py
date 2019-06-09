@@ -154,7 +154,14 @@ def main():
 
     # build the model and load checkpoint
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
+    if get_local_rank() == 0:
+        checkpoint = load_checkpoint(
+            model, args.checkpoint, map_location='cpu')
+    if distributed:
+        dist.barrier()
+        if get_local_rank() > 0:
+            checkpoint = load_checkpoint(
+                model, args.checkpoint, map_location='cpu')
     # old versions did not save class info in checkpoints, this walkaround is
     # for backward compatibility
     if 'CLASSES' in checkpoint['meta']:
