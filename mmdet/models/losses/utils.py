@@ -35,21 +35,19 @@ def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
     Returns:
         Tensor: Processed loss values.
     """
-    # if weight is not specified, fallback to the standard form
-    if weight is None:
-        loss = reduce_loss(loss, reduction)
-    else:
-        # apply element-wise weight
+    # if weight is specified, apply element-wise weight
+    if weight is not None:
         loss = loss * weight
-        # if avg_factor is not specified, just reduce the loss
-        if avg_factor is None:
-            loss = reduce_loss(loss, reduction)
-        # otherwise average the loss by avg_factor
-        else:
-            if reduction != 'mean':
-                raise ValueError(
-                    'avg_factor can only be used with reduction="mean"')
-            loss = loss.sum() / avg_factor
+
+    # if avg_factor is not specified, just reduce the loss
+    if avg_factor is None:
+        loss = reduce_loss(loss, reduction)
+    # otherwise average the loss by avg_factor
+    else:
+        if reduction != 'mean':
+            raise ValueError(
+                'avg_factor can only be used with reduction="mean"')
+        loss = loss.sum() / avg_factor
     return loss
 
 
