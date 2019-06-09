@@ -30,7 +30,8 @@ class FusedSemanticHead(nn.Module):
                  num_classes=183,
                  ignore_label=255,
                  loss_weight=0.2,
-                 normalize=None):
+                 conv_cfg=None,
+                 norm_cfg=None):
         super(FusedSemanticHead, self).__init__()
         self.num_ins = num_ins
         self.fusion_level = fusion_level
@@ -40,8 +41,8 @@ class FusedSemanticHead(nn.Module):
         self.num_classes = num_classes
         self.ignore_label = ignore_label
         self.loss_weight = loss_weight
-        self.normalize = normalize
-        self.with_bias = normalize is None
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
 
         self.lateral_convs = nn.ModuleList()
         for i in range(self.num_ins):
@@ -50,8 +51,8 @@ class FusedSemanticHead(nn.Module):
                     self.in_channels,
                     self.in_channels,
                     1,
-                    normalize=self.normalize,
-                    bias=self.with_bias,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg,
                     inplace=False))
 
         self.convs = nn.ModuleList()
@@ -63,14 +64,14 @@ class FusedSemanticHead(nn.Module):
                     conv_out_channels,
                     3,
                     padding=1,
-                    normalize=self.normalize,
-                    bias=self.with_bias))
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg))
         self.conv_embedding = ConvModule(
             conv_out_channels,
             conv_out_channels,
             1,
-            normalize=self.normalize,
-            bias=self.with_bias)
+            conv_cfg=self.conv_cfg,
+            norm_cfg=self.norm_cfg)
         self.conv_logits = nn.Conv2d(conv_out_channels, self.num_classes, 1)
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_label)
@@ -84,10 +85,7 @@ class FusedSemanticHead(nn.Module):
         for i, feat in enumerate(feats):
             if i != self.fusion_level:
                 feat = F.interpolate(
-                    feat,
-                    size=fused_size,
-                    mode='bilinear',
-                    align_corners=True)
+                    feat, size=fused_size, mode='bilinear', align_corners=True)
                 x += self.lateral_convs[i](feat)
 
         for i in range(self.num_convs):

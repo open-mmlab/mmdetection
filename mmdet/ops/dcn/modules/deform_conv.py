@@ -59,7 +59,7 @@ class DeformConv(nn.Module):
 class DeformConvPack(DeformConv):
 
     def __init__(self, *args, **kwargs):
-        super(ModulatedDeformConvPack, self).__init__(*args, **kwargs)
+        super(DeformConvPack, self).__init__(*args, **kwargs)
 
         self.conv_offset = nn.Conv2d(
             self.in_channels,
