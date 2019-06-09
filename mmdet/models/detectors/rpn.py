@@ -1,6 +1,7 @@
+import torch
 import mmcv
 
-from mmdet.core import tensor2imgs, bbox_mapping
+from mmdet.core import tensor2imgs, bbox_mapping, get_local_rank
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
@@ -23,7 +24,13 @@ class RPN(BaseDetector, RPNTestMixin):
         self.rpn_head = builder.build_head(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.init_weights(pretrained=pretrained)
+
+        if get_local_rank() == 0:
+            self.init_weights(pretrained=pretrained)
+        if torch.distributed.get_world_size() > 1:
+            torch.distributed.barrier()
+            if get_local_rank() > 0:
+                self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):
         super(RPN, self).init_weights(pretrained)

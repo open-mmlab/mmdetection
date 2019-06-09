@@ -1,5 +1,6 @@
 from functools import partial
 
+import os
 import mmcv
 import numpy as np
 from six.moves import map, zip
@@ -35,3 +36,9 @@ def unmap(data, count, inds, fill=0):
         ret = data.new_full(new_size, fill)
         ret[inds, :] = data
     return ret
+
+
+def get_local_rank():
+    """ Get local rank (int) via environment variable LOCAL_RANK, return 0
+    if not set """
+    return int(os.environ.get('LOCAL_RANK', 0))

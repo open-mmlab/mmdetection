@@ -1,5 +1,6 @@
 from __future__ import division
 
+import logging
 import torch
 import torch.nn as nn
 
@@ -8,7 +9,7 @@ from .test_mixins import RPNTestMixin
 from .. import builder
 from ..registry import DETECTORS
 from mmdet.core import (build_assigner, bbox2roi, bbox2result, build_sampler,
-                        merge_aug_masks)
+                        merge_aug_masks, get_local_rank)
 
 
 @DETECTORS.register_module
@@ -83,7 +84,12 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-        self.init_weights(pretrained=pretrained)
+        if get_local_rank() == 0:
+            self.init_weights(pretrained=pretrained)
+        if torch.distributed.get_world_size() > 1:
+            torch.distributed.barrier()
+            if get_local_rank() > 0:
+                self.init_weights(pretrained=pretrained)
 
     @property
     def with_rpn(self):
@@ -282,13 +288,13 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     mask_roi_extractor = self.mask_roi_extractor[i]
                     mask_head = self.mask_head[i]
                     if det_bboxes.shape[0] == 0:
-                        segm_result = [
-                            [] for _ in range(mask_head.num_classes - 1)
-                        ]
+                        segm_result = [[]
+                                       for _ in range(mask_head.num_classes -
+                                                      1)]
                     else:
                         _bboxes = (
-                            det_bboxes[:, :4] * scale_factor
-                            if rescale else det_bboxes)
+                            det_bboxes[:, :4] *
+                            scale_factor if rescale else det_bboxes)
                         mask_rois = bbox2roi([_bboxes])
                         mask_feats = mask_roi_extractor(
                             x[:len(mask_roi_extractor.featmap_strides)],
@@ -321,13 +327,13 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [
-                    [] for _ in range(self.mask_head[-1].num_classes - 1)
-                ]
+                segm_result = [[]
+                               for _ in range(self.mask_head[-1].num_classes -
+                                              1)]
             else:
                 _bboxes = (
-                    det_bboxes[:, :4] * scale_factor
-                    if rescale else det_bboxes)
+                    det_bboxes[:, :4] *
+                    scale_factor if rescale else det_bboxes)
                 mask_rois = bbox2roi([_bboxes])
                 aug_masks = []
                 for i in range(self.num_stages):

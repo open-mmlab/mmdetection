@@ -5,7 +5,8 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
+from mmdet.core import (bbox2roi, bbox2result, build_assigner, build_sampler,
+                        get_local_rank)
 
 
 @DETECTORS.register_module
@@ -54,7 +55,12 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-        self.init_weights(pretrained=pretrained)
+        if get_local_rank() == 0:
+            self.init_weights(pretrained=pretrained)
+        if torch.distributed.get_world_size() > 1:
+            torch.distributed.barrier()
+            if get_local_rank() > 0:
+                self.init_weights(pretrained=pretrained)
 
     @property
     def with_rpn(self):

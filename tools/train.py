@@ -8,6 +8,7 @@ from mmdet.datasets import get_dataset
 from mmdet.apis import (train_detector, init_dist, get_root_logger,
                         set_random_seed)
 from mmdet.models import build_detector
+from mmdet.core import get_local_rank
 import torch
 
 
@@ -33,8 +34,8 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
+    args.local_rank = get_local_rank()
 
     return args
 
@@ -68,7 +69,6 @@ def main():
     if args.seed is not None:
         logger.info('Set random seed to {}'.format(args.seed))
         set_random_seed(args.seed)
-
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
 

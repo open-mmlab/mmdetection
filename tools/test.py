@@ -10,7 +10,7 @@ from mmcv.runner import load_checkpoint, get_dist_info
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
 from mmdet.apis import init_dist
-from mmdet.core import results2json, coco_eval
+from mmdet.core import results2json, coco_eval, get_local_rank
 from mmdet.datasets import build_dataloader, get_dataset
 from mmdet.models import build_detector
 
@@ -117,8 +117,8 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
+    args.local_rank = get_local_rank()
     return args
 
 

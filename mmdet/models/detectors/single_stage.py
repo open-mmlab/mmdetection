@@ -1,9 +1,10 @@
+import torch
 import torch.nn as nn
 
 from .base import BaseDetector
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import bbox2result
+from mmdet.core import bbox2result, get_local_rank
 
 
 @DETECTORS.register_module
@@ -23,7 +24,13 @@ class SingleStageDetector(BaseDetector):
         self.bbox_head = builder.build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.init_weights(pretrained=pretrained)
+
+        if get_local_rank() == 0:
+            self.init_weights(pretrained=pretrained)
+        if torch.distributed.get_world_size() > 1:
+            torch.distributed.barrier()
+            if get_local_rank() > 0:
+                self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):
         super(SingleStageDetector, self).init_weights(pretrained)
