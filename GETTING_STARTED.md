@@ -68,7 +68,7 @@ config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
 
 # build the model from a config file and a checkpoint file
-model = init_detector(config_file, checkpoint_file, device='cuda:0'))
+model = init_detector(config_file, checkpoint_file, device='cuda:0')
 
 # test a single image and show the results
 img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
