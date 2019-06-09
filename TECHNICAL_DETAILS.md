@@ -46,7 +46,7 @@ FPN structure in [Path Aggregation Network for Instance Segmentation](https://ar
                     end_level=-1,
                     add_extra_convs=False):
             pass
-        
+
         def forward(self, inputs):
             # implementation is ignored
             pass
