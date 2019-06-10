@@ -93,6 +93,7 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 | RetinaNet          | ✓        | ✓        | ☐        | ✗        |
 | Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        |
 | FCOS               | ✓        | ✓        | ☐        | ✗        |
+| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        |
 
 Other features
 - [x] DCNv2

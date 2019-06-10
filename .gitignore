@@ -109,3 +109,9 @@ mmdet/version.py
 data
 .vscode
 .idea
+
+# custom
+*.pkl
+*.pkl.json
+*.log.json
+work_dirs/
