@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
-from mmdet.core import (sigmoid_focal_loss, iou_loss, multi_apply,
-                        multiclass_nms, distance2bbox)
+from mmdet.core import multi_apply, multiclass_nms, distance2bbox
+from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, Scale, ConvModule
 
@@ -22,6 +21,17 @@ class FCOSHead(nn.Module):
                  strides=(4, 8, 16, 32, 64),
                  regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 512),
                                  (512, INF)),
+                 loss_cls=dict(
+                     type='FocalLoss',
+                     use_sigmoid=True,
+                     gamma=2.0,
+                     alpha=0.25,
+                     loss_weight=1.0),
+                 loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+                 loss_centerness=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=True,
+                     loss_weight=1.0),
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)):
         super(FCOSHead, self).__init__()
@@ -33,6 +43,9 @@ class FCOSHead(nn.Module):
         self.stacked_convs = stacked_convs
         self.strides = strides
         self.regress_ranges = regress_ranges
+        self.loss_cls = build_loss(loss_cls)
+        self.loss_bbox = build_loss(loss_bbox)
+        self.loss_centerness = build_loss(loss_centerness)
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
 
@@ -139,9 +152,9 @@ class FCOSHead(nn.Module):
 
         pos_inds = flatten_labels.nonzero().reshape(-1)
         num_pos = len(pos_inds)
-        loss_cls = sigmoid_focal_loss(
-            flatten_cls_scores, flatten_labels, cfg.gamma, cfg.alpha,
-            'none').sum()[None] / (num_pos + num_imgs)  # avoid num_pos is 0
+        loss_cls = self.loss_cls(
+            flatten_cls_scores, flatten_labels,
+            avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_bbox_targets = flatten_bbox_targets[pos_inds]
@@ -154,20 +167,20 @@ class FCOSHead(nn.Module):
             pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
             # centerness weighted iou loss
-            loss_reg = ((iou_loss(
+            loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
-                reduction='none') * pos_centerness_targets).sum() /
-                        pos_centerness_targets.sum())[None]
-            loss_centerness = F.binary_cross_entropy_with_logits(
-                pos_centerness, pos_centerness_targets, reduction='mean')[None]
+                weight=pos_centerness_targets,
+                avg_factor=pos_centerness_targets.sum())
+            loss_centerness = self.loss_centerness(pos_centerness,
+                                                   pos_centerness_targets)
         else:
-            loss_reg = pos_bbox_preds.sum()[None]
-            loss_centerness = pos_centerness.sum()[None]
+            loss_bbox = pos_bbox_preds.sum()
+            loss_centerness = pos_centerness.sum()
 
         return dict(
             loss_cls=loss_cls,
-            loss_reg=loss_reg,
+            loss_bbox=loss_bbox,
             loss_centerness=loss_centerness)
 
     def get_bboxes(self,
@@ -196,9 +209,10 @@ class FCOSHead(nn.Module):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self.get_bboxes_single(
-                cls_score_list, bbox_pred_list, centerness_pred_list,
-                mlvl_points, img_shape, scale_factor, cfg, rescale)
+            det_bboxes = self.get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                centerness_pred_list,
+                                                mlvl_points, img_shape,
+                                                scale_factor, cfg, rescale)
             result_list.append(det_bboxes)
         return result_list
 
