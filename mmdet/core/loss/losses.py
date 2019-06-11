@@ -214,7 +214,7 @@ def weighted_iou_loss(pred,
         loss = bounded_iou_loss(
             pred[inds], target[inds], beta=beta, eps=eps, reduction='sum')
     else:
-        loss = iou_loss(pred[inds], target[inds], reduction='sum')
+        loss = iou_loss(pred[inds], target[inds], eps=eps, reduction='sum')
     loss = loss[None] / avg_factor
     return loss
 
@@ -248,8 +248,8 @@ def _expand_binary_labels(labels, label_weights, label_channels):
     return bin_labels, bin_label_weights
 
 
-def iou_loss(pred_bboxes, target_bboxes, reduction='mean'):
-    ious = bbox_overlaps(pred_bboxes, target_bboxes, is_aligned=True)
+def iou_loss(pred_bboxes, target_bboxes, eps=1e-6, reduction='mean'):
+    ious = bbox_overlaps(pred_bboxes, target_bboxes, is_aligned=True) + eps
     loss = -ious.log()
 
     reduction_enum = F._Reduction.get_enum(reduction)
