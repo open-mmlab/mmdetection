@@ -11,7 +11,7 @@ from ..utils import build_conv_layer, build_norm_layer
 
 class Bottleneck(_Bottleneck):
 
-    def __init__(self, *args, groups=1, base_width=4, **kwargs):
+    def __init__(self, groups=1, base_width=4, *args, **kwargs):
         """Bottleneck block for ResNeXt.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
@@ -121,8 +121,8 @@ def make_res_layer(block,
     layers = []
     layers.append(
         block(
-            inplanes,
-            planes,
+            inplanes=inplanes,
+            planes=planes,
             stride=stride,
             dilation=dilation,
             downsample=downsample,
@@ -138,8 +138,8 @@ def make_res_layer(block,
     for i in range(1, blocks):
         layers.append(
             block(
-                inplanes,
-                planes,
+                inplanes=inplanes,
+                planes=planes,
                 stride=1,
                 dilation=dilation,
                 groups=groups,
