@@ -1,5 +1,6 @@
 from __future__ import division
 
+import os
 import argparse
 from mmcv import Config
 
@@ -35,6 +36,8 @@ def parse_args():
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
+    if os.environ.get('LOCAL_RANK', None) is None:
+        os.environ['LOCAL_RANK'] = str(args.local_rank)
 
     return args
 
