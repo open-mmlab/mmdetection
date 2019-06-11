@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .utils import reduce_loss, weighted_loss
+from .utils import weighted_loss
 from ..registry import LOSSES
 
 
@@ -22,8 +22,6 @@ def balanced_l1_loss(pred,
         diff < beta, alpha / b *
         (b * diff + 1) * torch.log(b * diff / beta + 1) - alpha * diff,
         gamma * diff + gamma / b - alpha * beta)
-
-    loss = reduce_loss(loss, reduction)
 
     return loss
 
