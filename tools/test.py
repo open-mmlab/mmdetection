@@ -1,6 +1,6 @@
+import argparse
 import os
 import os.path as osp
-import argparse
 import shutil
 import tempfile
 
@@ -120,7 +120,7 @@ def parse_args():
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
-    if os.environ.get('LOCAL_RANK', None) is None:
+    if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
     return args
 
