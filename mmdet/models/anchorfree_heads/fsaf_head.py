@@ -113,17 +113,17 @@ class FSAFHead(nn.Module):
             avg_factor=num_total_samples)
         # localization loss
         if bbox_targets.size(0) == 0:
-            loss_reg = bbox_pred.new_zeros(1)
+            loss_bbox = bbox_pred.new_zeros(1)
         else:
             bbox_pred = bbox_pred.permute(0, 2, 3, 1)
             bbox_pred = bbox_pred[bbox_locs[:, 0], bbox_locs[:, 1],
                                   bbox_locs[:, 2], :]
-            loss_reg = select_iou_loss(
+            loss_bbox = select_iou_loss(
                 bbox_pred,
                 bbox_targets,
                 cfg.bbox_reg_weight,
                 avg_factor=num_total_samples)
-        return loss_cls, loss_reg
+        return loss_cls, loss_bbox
 
     def loss(self,
              cls_scores,
@@ -146,7 +146,7 @@ class FSAFHead(nn.Module):
         (labels_list, label_weights_list, bbox_targets_list, bbox_locs_list,
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = num_total_pos
-        losses_cls, losses_reg = multi_apply(
+        losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
             bbox_preds,
@@ -156,7 +156,7 @@ class FSAFHead(nn.Module):
             bbox_locs_list,
             num_total_samples=num_total_samples,
             cfg=cfg)
-        return dict(loss_cls=losses_cls, loss_reg=losses_reg)
+        return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     def point_target(self,
                      cls_scores,
