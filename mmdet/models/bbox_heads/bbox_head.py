@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import delta2bbox, multiclass_nms, bbox_target, accuracy
+from mmdet.core import delta2bbox, multiclass_nms, bbox_target
 from ..builder import build_loss
+from ..losses import accuracy
 from ..registry import HEADS
 
 
@@ -99,8 +100,9 @@ class BBoxHead(nn.Module):
              reduce=True):
         losses = dict()
         if cls_score is not None:
+            avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             losses['loss_cls'] = self.loss_cls(
-                cls_score, labels, label_weights, reduce=reduce)
+                cls_score, labels, label_weights, avg_factor=avg_factor)
             losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0
