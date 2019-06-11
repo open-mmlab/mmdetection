@@ -115,8 +115,7 @@ class GuidedAnchorHead(AnchorHead):
                      alpha=0.25,
                      loss_weight=1.0),
                  loss_shape=dict(
-                     type='IoULoss',
-                     style='bounded',
+                     type='BoundedIoULoss',
                      beta=0.2,
                      loss_weight=1.0),
                  loss_cls=dict(
