@@ -2,11 +2,28 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
-from mmdet.core import (multi_apply, multiclass_nms, distance2bbox,
-                        weighted_sigmoid_focal_loss, select_iou_loss)
+from mmdet.core import multi_apply, multiclass_nms, distance2bbox
 
+from ..losses import sigmoid_focal_loss
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, ConvModule
+
+
+def select_iou_loss(pred, target, weight, avg_factor=None):
+    if avg_factor is None:
+        avg_factor = pred.size(0)
+    assert pred.size(0) == target.size(0)
+    target = target.clamp(min=0.)
+    area_pred = (pred[:, 0] + pred[:, 2]) * (pred[:, 1] + pred[:, 3])
+    area_gt = (target[:, 0] + target[:, 2]) * (target[:, 1] + target[:, 3])
+    area_i = ((torch.min(pred[:, 0], target[:, 0]) +
+               torch.min(pred[:, 2], target[:, 2])) *
+              (torch.min(pred[:, 1], target[:, 1]) +
+               torch.min(pred[:, 3], target[:, 3])))
+    area_u = area_pred + area_gt - area_i
+    iou = area_i / area_u
+    loc_losses = -torch.log(iou.clamp(min=1e-7))
+    return torch.sum(weight * loc_losses) / avg_factor
 
 
 @HEADS.register_module
@@ -104,12 +121,12 @@ class FSAFHead(nn.Module):
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
-        loss_cls = weighted_sigmoid_focal_loss(
+        loss_cls = sigmoid_focal_loss(
             cls_score,
             labels,
-            label_weights,
-            cfg.gamma,
-            cfg.alpha,
+            weight=label_weights,
+            gamma=cfg.gamma,
+            alpha=cfg.alpha,
             avg_factor=num_total_samples)
         # localization loss
         if bbox_targets.size(0) == 0:
@@ -351,9 +368,13 @@ class FSAFHead(nn.Module):
                     scores = cls_score[locs_yy, locs_xx, :]
                     labels = gt_labels[i].repeat(avg_factor)
                     label_weights = torch.ones_like(labels).float()
-                    loss_cls = weighted_sigmoid_focal_loss(
-                        scores, labels, label_weights, cfg.gamma, cfg.alpha,
-                        avg_factor)
+                    loss_cls = sigmoid_focal_loss(
+                        scores,
+                        labels,
+                        weight=label_weights,
+                        gamma=cfg.gamma,
+                        alpha=cfg.alpha,
+                        avg_factor=avg_factor)
                     # localization iou loss
                     deltas = bbox_pred[locs_yy, locs_xx, :]
                     shift_x = (locs_x.float() + 0.5) * stride
