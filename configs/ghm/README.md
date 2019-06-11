@@ -18,4 +18,4 @@
 |    R-50-FPN     | pytorch |   1x    |   3.9    |                     |                |  36.9  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ghm/retinanet_ghm_r50_fpn_1x_20190608-b9aa5862.pth) |
 |    R-101-FPN    | pytorch |   1x    |   5.8    |                     |                |  39.0  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ghm/retinanet_ghm_r101_fpn_1x_20190608-b885b74a.pth) |
 | X-101-32x4d-FPN | pytorch |   1x    |   7.0    |                     |                |  40.5  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ghm/retinanet_ghm_x101_32x4d_fpn_1x_20190608-ed295d22.pth) |
-| X-101-64x4d-FPN | pytorch |   1x    |          |                     |                |        |          |
+| X-101-64x4d-FPN | pytorch |   1x    |   9.9    |                     |                |  41.6  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ghm/retinanet_ghm_x101_32x4d_fpn_1x_20190608-7f2037ce.pth) |
