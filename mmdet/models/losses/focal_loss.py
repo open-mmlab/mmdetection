@@ -13,7 +13,7 @@ class FocalLoss(nn.Module):
                  gamma=2.0,
                  alpha=0.25):
         super(FocalLoss, self).__init__()
-        assert use_sigmoid is True, 'Only sigmoid focaloss supported now.'
+        assert use_sigmoid is True, 'Only sigmoid focal loss supported now.'
         self.use_sigmoid = use_sigmoid
         self.loss_weight = loss_weight
         self.gamma = gamma
