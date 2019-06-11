@@ -121,8 +121,8 @@ def make_res_layer(block,
     layers = []
     layers.append(
         block(
-            inplanes,
-            planes,
+            inplanes=inplanes,
+            planes=planes,
             stride=stride,
             dilation=dilation,
             downsample=downsample,
@@ -138,8 +138,8 @@ def make_res_layer(block,
     for i in range(1, blocks):
         layers.append(
             block(
-                inplanes,
-                planes,
+                inplanes=inplanes,
+                planes=planes,
                 stride=1,
                 dilation=dilation,
                 groups=groups,
