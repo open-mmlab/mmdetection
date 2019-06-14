@@ -16,8 +16,12 @@ mmdetection
 ├── data
 │   ├── WIDER
 │   │   ├── WIDER_train
+│   |   │   ├──0--Parade
+│   |   │   ├── ...
 │   |   │   ├── Annotations
 │   │   ├── WIDER_val
+│   |   │   ├──0--Parade
+│   |   │   ├── ...
 │   |   │   ├── Annotations
 │   │   ├── val.txt
 │   │   ├── train.txt
