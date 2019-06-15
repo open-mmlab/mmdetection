@@ -1,8 +1,7 @@
 # model settings
 model = dict(
     type='GridRCNN',
-    pretrained='/mnt/lustre/share/DSK/model_zoo/pytorch/imagenet/resnet50-19c8e357.pth',
-    #pretrained='modelzoo://resnet50',
+    pretrained='modelzoo://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -172,7 +171,7 @@ log_config = dict(
 total_epochs = 25
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './grid4'
+work_dir = './grid'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
