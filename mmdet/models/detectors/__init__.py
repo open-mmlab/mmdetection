@@ -9,9 +9,10 @@ from .cascade_rcnn import CascadeRCNN
 from .htc import HybridTaskCascade
 from .retinanet import RetinaNet
 from .fcos import FCOS
+from .grid_rcnn import GridRCNN
 
 __all__ = [
     'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',
-    'RetinaNet', 'FCOS'
+    'RetinaNet', 'FCOS', 'GridRCNN'
 ]

@@ -1,8 +1,11 @@
 import torch.nn as nn
+import torch.nn.functional as F
 
 from .bbox_head import BBoxHead
 from ..registry import HEADS
 from ..utils import ConvModule
+
+from mmdet.core import (multiclass_nms, weighted_cross_entropy, accuracy)
 
 
 @HEADS.register_module
@@ -183,3 +186,61 @@ class SharedFCBBoxHead(ConvFCBBoxHead):
             fc_out_channels=fc_out_channels,
             *args,
             **kwargs)
+
+
+@HEADS.register_module
+class SharedFCBBoxHeadGrid(ConvFCBBoxHead):
+
+    def __init__(self, num_fcs=2, fc_out_channels=1024, *args, **kwargs):
+        assert num_fcs >= 1
+        super(SharedFCBBoxHeadGrid, self).__init__(
+            num_shared_convs=0,
+            num_shared_fcs=num_fcs,
+            num_cls_convs=0,
+            num_cls_fcs=0,
+            num_reg_convs=0,
+            num_reg_fcs=0,
+            fc_out_channels=fc_out_channels,
+            *args,
+            **kwargs)
+
+    def loss(self,
+             cls_score,
+             bbox_pred,
+             labels,
+             label_weights,
+             bbox_targets,
+             bbox_weights,
+             reduce=True):
+        losses = dict()
+        if cls_score is not None:
+            losses['loss_cls'] = weighted_cross_entropy(
+                cls_score, labels, label_weights, reduce=reduce)
+            losses['acc'] = accuracy(cls_score, labels)
+        return losses
+
+    def get_det_bboxes(self,
+                       rois,
+                       cls_score,
+                       bbox_pred,
+                       img_shape,
+                       scale_factor,
+                       rescale=False,
+                       cfg=None):
+        if isinstance(cls_score, list):
+            cls_score = sum(cls_score) / float(len(cls_score))
+        scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
+
+        bboxes = rois[:, 1:]
+        if img_shape[0] is not None:
+            bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1] - 1)
+            bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
+
+        if cfg is None:
+            return bboxes, scores
+        else:
+            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
+                                                    cfg.score_thr, cfg.nms,
+                                                    cfg.max_per_img)
+
+            return det_bboxes, det_labels
