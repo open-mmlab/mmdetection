@@ -44,15 +44,13 @@ class GridRCNN(TwoStageDetector):
             self.grid_roi_extractor = self.bbox_roi_extractor
         self.grid_head = builder.build_head(grid_head)
 
-        self.init_weights(pretrained=pretrained)
+        self.init_extra_weights()
 
     @property
     def with_grid(self):
         return hasattr(self, 'grid_head') and self.grid_head is not None
 
-    def init_weights(self, pretrained=None):
-        super(GridRCNN, self).init_weights(pretrained)
-
+    def init_extra_weights(self):
         self.grid_head.init_weights()
         if not self.share_roi_extractor:
             self.grid_roi_extractor.init_weights()

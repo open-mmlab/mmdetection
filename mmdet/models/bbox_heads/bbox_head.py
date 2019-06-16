@@ -134,7 +134,10 @@ class BBoxHead(nn.Module):
             bboxes = delta2bbox(rois[:, 1:], bbox_pred, self.target_means,
                                 self.target_stds, img_shape)
         else:
-            bboxes = rois[:, 1:]
+            bboxes = rois[:, 1:].copy()
+            if img_shape is not None:
+                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1] - 1)
+                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
             # TODO: add clip here
 
         if rescale:
