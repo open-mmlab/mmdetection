@@ -39,8 +39,7 @@ class BasicResBlock(nn.Module):
         self.conv2 = ConvModule(
             in_channels,
             out_channels,
-            kernel_size=3,
-            padding=1,
+            kernel_size=1,
             bias=False,
             activation=None,
             conv_cfg=conv_cfg,
