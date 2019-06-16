@@ -1,29 +1,26 @@
 # model settings
 model = dict(
     type='FasterRCNN',
-    pretrained='open-mmlab://resnext101_64x4d',
+    pretrained='modelzoo://resnet50',
     backbone=dict(
-        type='ResNeXt',
-        depth=101,
-        groups=64,
-        base_width=4,
+        type='ResNet',
+        depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        style='pytorch'),
-    neck=[
-        dict(
-            type='FPN',
-            in_channels=[256, 512, 1024, 2048],
-            out_channels=256,
-            num_outs=5),
-        dict(
-            type='BFP',
-            in_channels=256,
-            num_levels=5,
-            refine_level=2,
-            refine_type='non_local')
-    ],
+        style='pytorch',
+        gen_attention=dict(
+            spatial_range=-1, num_heads=8, attention_type='0010', kv_stride=2),
+        stage_with_gen_attention=[[], [], [0, 1, 2, 3, 4, 5], [0, 1, 2]],
+        dcn=dict(
+            modulated=False, deformable_groups=1, fallback_on_stride=False),
+        stage_with_dcn=(False, True, True, True),
+    ),
+    neck=dict(
+        type='FPN',
+        in_channels=[256, 512, 1024, 2048],
+        out_channels=256,
+        num_outs=5),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -53,12 +50,7 @@ model = dict(
         reg_class_agnostic=False,
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-        loss_bbox=dict(
-            type='BalancedL1Loss',
-            alpha=0.5,
-            gamma=1.5,
-            beta=1.0,
-            loss_weight=1.0)))
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -72,9 +64,9 @@ train_cfg = dict(
             type='RandomSampler',
             num=256,
             pos_fraction=0.5,
-            neg_pos_ub=5,
+            neg_pos_ub=-1,
             add_gt_as_proposals=False),
-        allowed_border=-1,
+        allowed_border=0,
         pos_weight=-1,
         debug=False),
     rpn_proposal=dict(
@@ -92,16 +84,11 @@ train_cfg = dict(
             min_pos_iou=0.5,
             ignore_iof_thr=-1),
         sampler=dict(
-            type='CombinedSampler',
+            type='RandomSampler',
             num=512,
             pos_fraction=0.25,
-            add_gt_as_proposals=True,
-            pos_sampler=dict(type='InstanceBalancedPosSampler'),
-            neg_sampler=dict(
-                type='IoUBalancedNegSampler',
-                floor_thr=-1,
-                floor_fraction=0,
-                num_bins=3)),
+            neg_pos_ub=-1,
+            add_gt_as_proposals=True),
         pos_weight=-1,
         debug=False))
 test_cfg = dict(
@@ -181,7 +168,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/libra_faster_rcnn_x101_64x4d_fpn_1x'
+work_dir = './work_dirs/faster_rcnn_r50_fpn_attention_0010_dcn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

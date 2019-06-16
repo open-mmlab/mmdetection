@@ -40,8 +40,7 @@ model = dict(
             gamma=2.0,
             alpha=0.25,
             loss_weight=1.0),
-        loss_shape=dict(
-            type='IoULoss', style='bounded', beta=0.2, loss_weight=1.0),
+        loss_shape=dict(type='BoundedIoULoss', beta=0.2, loss_weight=1.0),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
