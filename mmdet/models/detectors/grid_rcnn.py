@@ -23,6 +23,7 @@ class GridRCNN(TwoStageDetector):
                  neck=None,
                  shared_head=None,
                  pretrained=None):
+        assert grid_head is not None
         super(GridRCNN, self).__init__(
             backbone=backbone,
             neck=neck,
@@ -34,15 +35,14 @@ class GridRCNN(TwoStageDetector):
             test_cfg=test_cfg,
             pretrained=pretrained)
 
-        if grid_head is not None:
-            if grid_roi_extractor is not None:
-                self.grid_roi_extractor = builder.build_roi_extractor(
-                    grid_roi_extractor)
-                self.share_roi_extractor = False
-            else:
-                self.share_roi_extractor = True
-                self.grid_roi_extractor = self.bbox_roi_extractor
-            self.grid_head = builder.build_head(grid_head)
+        if grid_roi_extractor is not None:
+            self.grid_roi_extractor = builder.build_roi_extractor(
+                grid_roi_extractor)
+            self.share_roi_extractor = False
+        else:
+            self.share_roi_extractor = True
+            self.grid_roi_extractor = self.bbox_roi_extractor
+        self.grid_head = builder.build_head(grid_head)
 
         self.init_weights(pretrained=pretrained)
 
@@ -53,10 +53,9 @@ class GridRCNN(TwoStageDetector):
     def init_weights(self, pretrained=None):
         super(GridRCNN, self).init_weights(pretrained)
 
-        if self.with_grid:
-            self.grid_head.init_weights()
-            if not self.share_roi_extractor:
-                self.grid_roi_extractor.init_weights()
+        self.grid_head.init_weights()
+        if not self.share_roi_extractor:
+            self.grid_roi_extractor.init_weights()
 
     def forward_train(self,
                       img,
@@ -108,8 +107,8 @@ class GridRCNN(TwoStageDetector):
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 sampling_results.append(sampling_result)
 
-        # bbox head forward and loss
         if self.with_bbox:
+            # bbox head forward and loss
             rois = bbox2roi([res.bboxes for res in sampling_results])
             # TODO: a more flexible way to decide which feature maps to use
             bbox_feats = self.bbox_roi_extractor(
@@ -125,8 +124,7 @@ class GridRCNN(TwoStageDetector):
                                             *bbox_targets)
             losses.update(loss_bbox)
 
-        # Grid head forward and loss
-        if self.with_grid:
+            # Grid head forward and loss
             sampling_results = random_jitter(sampling_results, img_meta)
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
             grid_feats = self.grid_roi_extractor(
@@ -165,10 +163,10 @@ class GridRCNN(TwoStageDetector):
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
 
         # pack rois into bboxes
-        gridrois = bbox2roi([det_bboxes[:, :4]])
+        grid_rois = bbox2roi([det_bboxes[:, :4]])
         grid_feats = self.grid_roi_extractor(
-            x[:len(self.grid_roi_extractor.featmap_strides)], gridrois)
-        if gridrois.shape[0] != 0:
+            x[:len(self.grid_roi_extractor.featmap_strides)], grid_rois)
+        if grid_rois.shape[0] != 0:
             self.grid_head.test_mode = True
             _, grid_pred = self.grid_head(grid_feats)
             det_bboxes = self.grid_head.get_bboxes(det_bboxes, grid_pred,
