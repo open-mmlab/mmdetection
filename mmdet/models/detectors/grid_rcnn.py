@@ -46,10 +46,6 @@ class GridRCNN(TwoStageDetector):
 
         self.init_extra_weights()
 
-    @property
-    def with_grid(self):
-        return hasattr(self, 'grid_head') and self.grid_head is not None
-
     def init_extra_weights(self):
         self.grid_head.init_weights()
         if not self.share_roi_extractor:
@@ -83,8 +79,8 @@ class GridRCNN(TwoStageDetector):
         else:
             proposal_list = proposals
 
-        # assign gts and sample proposals
-        if self.with_bbox or self.with_grid:
+        if self.with_bbox:
+            # assign gts and sample proposals
             bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)
             bbox_sampler = build_sampler(
                 self.train_cfg.rcnn.sampler, context=self)
@@ -105,7 +101,6 @@ class GridRCNN(TwoStageDetector):
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 sampling_results.append(sampling_result)
 
-        if self.with_bbox:
             # bbox head forward and loss
             rois = bbox2roi([res.bboxes for res in sampling_results])
             # TODO: a more flexible way to decide which feature maps to use
