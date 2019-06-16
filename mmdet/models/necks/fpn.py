@@ -20,7 +20,8 @@ class FPN(nn.Module):
                  relu_before_extra_convs=False,
                  conv_cfg=None,
                  norm_cfg=None,
-                 activation=None):
+                 activation=None,
+                 with_panet=False):
         super(FPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -42,6 +43,7 @@ class FPN(nn.Module):
         self.end_level = end_level
         self.add_extra_convs = add_extra_convs
         self.extra_convs_on_inputs = extra_convs_on_inputs
+        self.with_panet = with_panet
 
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
@@ -50,7 +52,7 @@ class FPN(nn.Module):
             l_conv = ConvModule(
                 in_channels[i],
                 out_channels,
-                1,
+                kernel_size=1,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 activation=self.activation,
@@ -58,7 +60,7 @@ class FPN(nn.Module):
             fpn_conv = ConvModule(
                 out_channels,
                 out_channels,
-                3,
+                kernel_size=3,
                 padding=1,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
@@ -67,6 +69,35 @@ class FPN(nn.Module):
 
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
+
+        if self.with_panet:
+            self.pan_convs1 = nn.ModuleList()
+            self.pan_convs2 = nn.ModuleList()
+
+            for i in range(self.start_level, self.backbone_end_level-1):
+                pan_conv1 = ConvModule(
+                    out_channels,
+                    out_channels,
+                    kernel_size=3,
+                    stride=2,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    activation=self.activation,
+                    inplace=False)
+                pan_conv2 = ConvModule(
+                    out_channels,
+                    out_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    activation=self.activation,
+                    inplace=False)
+
+                self.pan_convs1.append(pan_conv1)
+                self.pan_convs2.append(pan_conv2)
 
         # add extra conv layers (e.g., RetinaNet)
         extra_levels = num_outs - self.backbone_end_level + self.start_level
@@ -111,9 +142,21 @@ class FPN(nn.Module):
 
         # build outputs
         # part 1: from original levels
-        outs = [
-            self.fpn_convs[i](laterals[i]) for i in range(used_backbone_levels)
-        ]
+        if self.with_panet:
+            middle = [
+                self.fpn_convs[i](laterals[i]) for i in range(used_backbone_levels)
+            ]
+            outs = [middle[0]]
+            for i in range(1, used_backbone_levels):
+                tmp = self.pan_convs1[i-1](outs[-1])
+                tmp = tmp + middle[i]
+                tmp = self.pan_convs2[i-1](tmp)
+                outs.append(tmp)
+        else:
+            outs = [
+                self.fpn_convs[i](laterals[i]) for i in range(used_backbone_levels)
+            ]
+
         # part 2: add extra levels
         if self.num_outs > len(outs):
             # use max pool to get more levels on top of outputs

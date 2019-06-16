@@ -3,7 +3,8 @@ from .losses import (weighted_nll_loss, weighted_cross_entropy,
                      py_sigmoid_focal_loss, weighted_sigmoid_focal_loss,
                      mask_cross_entropy, smooth_l1_loss, weighted_smoothl1,
                      balanced_l1_loss, weighted_balanced_l1_loss, iou_loss,
-                     bounded_iou_loss, weighted_iou_loss, accuracy)
+                     bounded_iou_loss, weighted_iou_loss, accuracy,
+                     generalized_iou_loss, weighted_generalized_iou_loss)
 
 __all__ = [
     'weighted_nll_loss', 'weighted_cross_entropy',
@@ -11,5 +12,6 @@ __all__ = [
     'py_sigmoid_focal_loss', 'weighted_sigmoid_focal_loss',
     'mask_cross_entropy', 'smooth_l1_loss', 'weighted_smoothl1',
     'balanced_l1_loss', 'weighted_balanced_l1_loss', 'bounded_iou_loss',
-    'weighted_iou_loss', 'iou_loss', 'accuracy'
+    'weighted_iou_loss', 'iou_loss', 'accuracy',
+    'weighted_generalized_iou_loss', 'generalized_iou_loss'
 ]

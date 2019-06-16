@@ -260,7 +260,7 @@ def make_res_layer(block,
             build_norm_layer(norm_cfg, planes * block.expansion)[1],
         )
 
-    layers = []
+    layers = list()
     layers.append(
         block(
             inplanes,

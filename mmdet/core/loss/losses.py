@@ -219,6 +219,51 @@ def weighted_iou_loss(pred,
     return loss
 
 
+def generalized_iou_loss(pred, target):
+    assert pred.size() == target.size() and target.numel() > 0
+
+    area1 = (pred[:, 2] - pred[:, 0] + 1) * (pred[:, 3] - pred[:, 1] + 1)
+    area2 = (target[:, 2] - target[:, 0] + 1) * (target[:, 3] - target[:, 1] + 1)
+
+    overlap_lt = torch.max(pred[:, :2], target[:, :2])  # [n, 2]
+    overlap_rb = torch.min(pred[:, 2:], target[:, 2:])
+    overlap_wh = (overlap_rb - overlap_lt + 1).clamp(min=0)
+    overlap = overlap_wh[:, 0] * overlap_wh[:, 1]
+
+    convex_lt = torch.min(pred[:, :2], target[:, :2])
+    convex_rb = torch.max(pred[:, 2:], target[:, 2:])
+    convex_wh = (convex_rb - convex_lt + 1).clamp(min=0)
+    convex = convex_wh[:, 0] * convex_wh[:, 1]
+
+    u = area1 + area2 - overlap
+    ious = overlap / u
+    gious = ious - (convex - u) / convex  # [n]
+
+    return (1 - gious).sum()
+
+
+def weighted_generalized_iou_loss(pred,
+                                  target,
+                                  weight,
+                                  avg_factor=None):
+    """
+
+    :param pred:   [n, 4]
+    :param target: [n, 4]
+    :param weight: [n, 4] 掩码数组，用于区分正负样本（仅正样本贡献reg loss）
+    :param avg_factor: scalar
+    :return:
+    """
+    inds = torch.nonzero(weight[:, 0] > 0)
+    if inds.numel() > 0:
+        inds = inds.squeeze(1)
+    if avg_factor is None:
+        avg_factor = inds.numel() + 1e-6
+    loss = generalized_iou_loss(pred[inds], target[inds])
+
+    return loss[None] / avg_factor
+
+
 def accuracy(pred, target, topk=1):
     if isinstance(topk, int):
         topk = (topk, )
