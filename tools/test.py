@@ -184,16 +184,16 @@ def main():
                 coco_eval(result_file, eval_types, dataset.coco)
             else:
                 if not isinstance(outputs[0], dict):
-                    result_file = args.out + '.json'
-                    results2json(dataset, outputs, result_file)
-                    coco_eval(result_file, eval_types, dataset.coco)
+                    result_files = results2json(dataset, outputs, args.out)
+                    coco_eval(result_files, eval_types, dataset.coco)
                 else:
                     for name in outputs[0]:
                         print('\nEvaluating {}'.format(name))
                         outputs_ = [out[name] for out in outputs]
-                        result_file = args.out + '.{}.json'.format(name)
-                        results2json(dataset, outputs_, result_file)
-                        coco_eval(result_file, eval_types, dataset.coco)
+                        result_file = args.out + '.{}'.format(name)
+                        result_files = results2json(dataset, outputs_,
+                                                    result_file)
+                        coco_eval(result_files, eval_types, dataset.coco)
 
 
 if __name__ == '__main__':
