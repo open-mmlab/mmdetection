@@ -2,9 +2,7 @@ import logging
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from mmcv.cnn import (VGG, xavier_init, constant_init, kaiming_init,
-                      normal_init)
+from mmcv.cnn import (VGG, constant_init, kaiming_init, normal_init)
 from mmcv.runner import load_checkpoint
 from ..registry import BACKBONES
 
@@ -25,7 +23,6 @@ class SSDVGG_M2Det(VGG):
             with_last_pool=with_last_pool,
             ceil_mode=ceil_mode,
             out_indices=out_indices)
-        #assert input_size in (300, 512)
         self.input_size = input_size
 
         self.features.add_module(

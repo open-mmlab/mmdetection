@@ -48,7 +48,7 @@ class SSDHead(AnchorHead):
         self.reg_convs = nn.ModuleList(reg_convs)
         self.cls_convs = nn.ModuleList(cls_convs)
 
-        if ratio_change == False:
+        if not ratio_change:
             min_ratio, max_ratio = basesize_ratio_range
             min_ratio = int(min_ratio * 100)
             max_ratio = int(max_ratio * 100)

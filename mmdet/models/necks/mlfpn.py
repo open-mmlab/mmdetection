@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
+
 from torch.nn import init as init
 
-from ..utils import ConvModule
 from ..registry import NECKS
 
 
@@ -76,9 +75,7 @@ class BasicConv(nn.Module):
             dilation=dilation,
             groups=groups,
             bias=bias)
-        #self.conv = nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size,
-        #        stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias)
-        #self.bn = nn.BatchNorm2d(out_planes,eps=1e-5, momentum=0.01, affine=True) if bn else None
+
         self.bn = nn.GroupNorm(out_planes // 16, out_planes)
         self.relu = nn.ReLU(inplace=True) if relu else None
 
@@ -107,12 +104,14 @@ class TUM(nn.Module):
         self.planes = 2 * self.input_planes
         self.first_level = first_level
         self.scales = scales
-        self.in1 = input_planes + side_channel if not first_level else input_planes
-
+        if first_level:
+            self.in1 = input_planes
+        else:
+            self.in1 = input_planes + side_channel
         self.layers = nn.Sequential()
         self.layers.add_module('{}'.format(len(self.layers)),
                                BasicConv(self.in1, self.planes, 3, 2, 1))
-        if ssd_style_tum == True:
+        if ssd_style_tum:
             for i in range(self.scales - 2):
                 if not i == self.scales - 3:
                     self.layers.add_module(
@@ -239,22 +238,16 @@ class MLFPN(nn.Module):
                     stride=(1, 1))
             ] * self.num_levels)
 
-    #   if we need to conv channel 2048->256
-
-    # self.concat_bn = nn.ModuleList([nn.GroupNorm(int(16),int(256))]*1)   # fuse tum 1/8 and backbone 1/4
-    # for i in range(self.num_scales):
-    #     setattr(self,'mlfpn{}'.format(i+1),
-    #             BasicConv(self.planes * self.num_levels,256,kernel_size=1,stride=1,relu=True,bn=True))
         for i in range(self.num_levels):
             if i == 0:
-                setattr(self, 'unet{}'.format(i + 1),
-                        TUM(first_level=True,
-                            input_planes=self.planes // 2,
-                            is_smooth=self.smooth,
-                            scales=self.num_scales,
-                            side_channel=512,
-                            ssd_style_tum=self.ssd_style_tum)
-                        )  #side channel isn't fixed.
+                setattr(
+                    self, 'unet{}'.format(i + 1),
+                    TUM(first_level=True,
+                        input_planes=self.planes // 2,
+                        is_smooth=self.smooth,
+                        scales=self.num_scales,
+                        side_channel=512,
+                        ssd_style_tum=self.ssd_style_tum))
             else:
                 setattr(
                     self, 'unet{}'.format(i + 1),
@@ -264,10 +257,6 @@ class MLFPN(nn.Module):
                         scales=self.num_scales,
                         side_channel=self.planes,
                         ssd_style_tum=self.ssd_style_tum))
-        #if self.norm == True:
-        #    self.bn_layer = nn.ModuleList([nn.GroupNorm(int(16),int(256))]*self.num_scales)
-        #self.bn_layer = nn.ModuleList([nn.BatchNorm2d(256,eps=1e-5,momentum=0.01,affine=True)]*self.num_levels)
-        #self.bn_4 = nn.GroupNorm(int(16),int(256))
 
     def init_weights(self):
         for key in self.state_dict():
@@ -281,8 +270,8 @@ class MLFPN(nn.Module):
                 self.state_dict()[key][...] = 0
 
     def forward(self, input):
-        if self.base_feature_size == 4:  # Resnet
-            if self.base_choice == 1:  # choice == 1 , 选取第i层
+        if self.base_feature_size == 4:
+            if self.base_choice == 1:
                 base_feature = input[self.base_list[0]]
             elif self.base_choice == 2:
                 if self.backbone_choice == 'ResNet':
@@ -298,8 +287,6 @@ class MLFPN(nn.Module):
                                                   self.up_reduce(input[1]),
                                                   scale_factor=2,
                                                   mode='nearest')), 1)
-            # base_feature = torch.cat(input[self.base_list[0]],F.interpolate(input[self.base_list[1]]))
-
             # tum_outs is the multi-level multi-scale feature
             tum_outs = [
                 getattr(self, 'unet{}'.format(1))(self.leach[0](base_feature),
@@ -314,7 +301,6 @@ class MLFPN(nn.Module):
                 torch.cat([_fx[i - 1] for _fx in tum_outs], 1)
                 for i in range(self.num_scales, 0, -1)
             ]
-
             output = []
 
             for i in range(0, self.num_scales, 1):

@@ -24,8 +24,8 @@ model = dict(
         base_choice=2,
         base_list=[2, 3],
         norm=True,
-        ssd_style_tum=
-        True  # the size of the smallest tum ouput =>( '-2' or '/2')
+        ssd_style_tum=True
+        # the size of the smallest tum ouput =>( '-2' or '/2')
     ),
     bbox_head=dict(
         type='SSDHead',
