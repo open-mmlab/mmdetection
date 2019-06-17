@@ -138,8 +138,8 @@ class CocoDistEvalmAPHook(DistEvalHook):
         tmp_file = osp.join(runner.work_dir, 'temp_0.json')
         results2json(self.dataset, results, tmp_file)
 
-        res_types = ['bbox',
-                     'segm'] if runner.model.module.with_mask else ['bbox']
+        res_types = ['bbox', 'segm'
+                     ] if runner.model.module.with_mask else ['bbox']
         cocoGt = self.dataset.coco
         cocoDt = cocoGt.loadRes(tmp_file)
         imgIds = cocoGt.getImgIds()

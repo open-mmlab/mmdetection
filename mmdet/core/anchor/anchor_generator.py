@@ -33,12 +33,11 @@ class AnchorGenerator(object):
             ws = (w * self.scales[:, None] * w_ratios[None, :]).view(-1)
             hs = (h * self.scales[:, None] * h_ratios[None, :]).view(-1)
 
-        base_anchors = torch.stack(
-            [
-                x_ctr - 0.5 * (ws - 1), y_ctr - 0.5 * (hs - 1),
-                x_ctr + 0.5 * (ws - 1), y_ctr + 0.5 * (hs - 1)
-            ],
-            dim=-1).round()
+        base_anchors = torch.stack([
+            x_ctr - 0.5 * (ws - 1), y_ctr - 0.5 * (hs - 1), x_ctr + 0.5 *
+            (ws - 1), y_ctr + 0.5 * (hs - 1)
+        ],
+                                   dim=-1).round()
 
         return base_anchors
 

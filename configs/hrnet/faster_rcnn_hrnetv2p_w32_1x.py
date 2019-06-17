@@ -9,8 +9,8 @@ model = dict(
                 num_modules=1,
                 num_branches=1,
                 block='BOTTLENECK',
-                num_blocks=(4,),
-                num_channels=(64,)),
+                num_blocks=(4, ),
+                num_channels=(64, )),
             stage2=dict(
                 num_modules=1,
                 num_branches=2,
@@ -29,10 +29,7 @@ model = dict(
                 block='BASIC',
                 num_blocks=(4, 4, 4, 4),
                 num_channels=(32, 64, 128, 256)))),
-    neck=dict(
-        type='HRFPN',
-        in_channels=[32, 64, 128, 256],
-        out_channels=256),
+    neck=dict(type='HRFPN', in_channels=[32, 64, 128, 256], out_channels=256),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -119,8 +116,8 @@ test_cfg = dict(
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
-img_norm_cfg = dict(mean=[123.675, 116.28, 103.53],
-                    std=[58.395, 57.12, 57.375], to_rgb=True)
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
     imgs_per_gpu=2,
     workers_per_gpu=2,

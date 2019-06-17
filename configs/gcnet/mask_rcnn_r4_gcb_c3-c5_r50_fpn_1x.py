@@ -9,9 +9,7 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         style='pytorch',
-        gcb=dict(
-            ratio=1./4.,
-        ),
+        gcb=dict(ratio=1. / 4., ),
         stage_with_gcb=(False, True, True, True)),
     neck=dict(
         type='FPN',

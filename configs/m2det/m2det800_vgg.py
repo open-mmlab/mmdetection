@@ -14,7 +14,7 @@ model = dict(
         l2_norm_scale=20),
     neck=dict(
         type='MLFPN',
-        backbone_choice = "SSD",   # "SSD" or "ResNet"
+        backbone_choice="SSD",  # "SSD" or "ResNet"
         in_channels=[512, 1024, 512, 256, 256, 256],
         planes=256,
         scale_outs_num=6,
@@ -24,7 +24,8 @@ model = dict(
         base_choice=2,
         base_list=[2, 3],
         norm=True,
-        ssd_style_tum = False        # the size of the smallest tum ouput =>( '-2' or '/2')
+        ssd_style_tum=
+        False  # the size of the smallest tum ouput =>( '-2' or '/2')
     ),
     bbox_head=dict(
         type='SSDHead',
@@ -33,7 +34,7 @@ model = dict(
         num_classes=81,
         anchor_strides=(8, 16, 32, 62, 115, 200),
         basesize_ratio_range=(0.04, 1.05),
-        anchor_ratios=([2,3], [2, 3], [2, 3], [2, 3], [2], [2]),
+        anchor_ratios=([2, 3], [2, 3], [2, 3], [2, 3], [2], [2]),
         target_means=(.0, .0, .0, .0),
         target_stds=(0.1, 0.1, 0.2, 0.2),
         ratio_change=True))

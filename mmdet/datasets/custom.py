@@ -218,8 +218,8 @@ class CustomDataset(Dataset):
         img = img.copy()
         if self.with_seg:
             gt_seg = mmcv.imread(
-                osp.join(self.seg_prefix, img_info['file_name'].replace(
-                    'jpg', 'png')),
+                osp.join(self.seg_prefix,
+                         img_info['file_name'].replace('jpg', 'png')),
                 flag='unchanged')
             gt_seg = self.seg_transform(gt_seg.squeeze(), img_scale, flip)
             gt_seg = mmcv.imrescale(
@@ -228,8 +228,8 @@ class CustomDataset(Dataset):
         if self.proposals is not None:
             proposals = self.bbox_transform(proposals, img_shape, scale_factor,
                                             flip)
-            proposals = np.hstack(
-                [proposals, scores]) if scores is not None else proposals
+            proposals = np.hstack([proposals, scores
+                                   ]) if scores is not None else proposals
         gt_bboxes = self.bbox_transform(gt_bboxes, img_shape, scale_factor,
                                         flip)
         if self.with_crowd:
@@ -294,8 +294,8 @@ class CustomDataset(Dataset):
                     score = None
                 _proposal = self.bbox_transform(proposal, img_shape,
                                                 scale_factor, flip)
-                _proposal = np.hstack(
-                    [_proposal, score]) if score is not None else _proposal
+                _proposal = np.hstack([_proposal, score
+                                       ]) if score is not None else _proposal
                 _proposal = to_tensor(_proposal)
             else:
                 _proposal = None

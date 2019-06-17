@@ -23,7 +23,7 @@ class SSDHead(AnchorHead):
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
-                 ratio_change = False):
+                 ratio_change=False):
         super(AnchorHead, self).__init__()
         self.input_size = input_size
         self.num_classes = num_classes
@@ -52,7 +52,8 @@ class SSDHead(AnchorHead):
             min_ratio, max_ratio = basesize_ratio_range
             min_ratio = int(min_ratio * 100)
             max_ratio = int(max_ratio * 100)
-            step = int(np.floor(max_ratio - min_ratio) / (len(in_channels) - 2))
+            step = int(
+                np.floor(max_ratio - min_ratio) / (len(in_channels) - 2))
             min_sizes = []
             max_sizes = []
             for r in range(int(min_ratio), int(max_ratio) + 1, step):
@@ -74,20 +75,56 @@ class SSDHead(AnchorHead):
                     max_sizes.insert(0, int(input_size * 15 / 100))
         else:
             if input_size == 320:
-                min_sizes = [int(0.08 * 320), int(0.15 * 320), int(0.33 * 320), int(0.51 * 320), int(0.69 * 320),
-                             int(0.87 * 320)]
-                max_sizes = [int(0.15 * 320), int(0.33 * 320), int(0.51 * 320), int(0.69 * 320), int(0.87 * 320),
-                             int(1.05 * 320)]
+                min_sizes = [
+                    int(0.08 * 320),
+                    int(0.15 * 320),
+                    int(0.33 * 320),
+                    int(0.51 * 320),
+                    int(0.69 * 320),
+                    int(0.87 * 320)
+                ]
+                max_sizes = [
+                    int(0.15 * 320),
+                    int(0.33 * 320),
+                    int(0.51 * 320),
+                    int(0.69 * 320),
+                    int(0.87 * 320),
+                    int(1.05 * 320)
+                ]
             elif input_size == 512:
-                min_sizes = [int(0.06 * 512), int(0.15 * 512), int(0.33 * 512), int(0.51 * 512), int(0.69 * 512),
-                             int(512 * 0.87)]
-                max_sizes = [int(0.15 * 512), int(512 * 0.33), int(0.51 * 512), int(0.69 * 512), int(512 * 0.87),
-                             int(512 * 1.05)]
+                min_sizes = [
+                    int(0.06 * 512),
+                    int(0.15 * 512),
+                    int(0.33 * 512),
+                    int(0.51 * 512),
+                    int(0.69 * 512),
+                    int(512 * 0.87)
+                ]
+                max_sizes = [
+                    int(0.15 * 512),
+                    int(512 * 0.33),
+                    int(0.51 * 512),
+                    int(0.69 * 512),
+                    int(512 * 0.87),
+                    int(512 * 1.05)
+                ]
             elif input_size == 800:
-                min_sizes = [int(0.04 * 800), int(0.15 * 800), int(0.33 * 800), int(0.51 * 800), int(0.69 * 800),
-                             int(0.87 * 800)]
-                max_sizes = [int(0.15 * 800), int(0.33 * 800), int(0.51 * 800), int(0.69 * 800), int(0.87 * 800),
-                             int(1.05 * 800)]
+                min_sizes = [
+                    int(0.04 * 800),
+                    int(0.15 * 800),
+                    int(0.33 * 800),
+                    int(0.51 * 800),
+                    int(0.69 * 800),
+                    int(0.87 * 800)
+                ]
+                max_sizes = [
+                    int(0.15 * 800),
+                    int(0.33 * 800),
+                    int(0.51 * 800),
+                    int(0.69 * 800),
+                    int(0.87 * 800),
+                    int(1.05 * 800)
+                ]
 
         self.anchor_generators = []
         self.anchor_strides = anchor_strides

@@ -35,11 +35,7 @@ model = dict(
             use_sigmoid=True,
             loss_weight=1.0),
         loss_bbox=dict(
-            type='GHMR',
-            mu=0.02,
-            bins=10,
-            momentum=0.7,
-            loss_weight=10.0)))
+            type='GHMR', mu=0.02, bins=10, momentum=0.7, loss_weight=10.0)))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(

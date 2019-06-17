@@ -62,7 +62,6 @@ class SSDVGG_M2Det(VGG):
         else:
             raise TypeError('pretrained must be a str or None')
 
-
         constant_init(self.l2_norm, self.l2_norm.scale)
 
     def forward(self, x):
@@ -76,7 +75,6 @@ class SSDVGG_M2Det(VGG):
             return outs[0]
         else:
             return tuple(outs)
-
 
 
 class L2Norm(nn.Module):

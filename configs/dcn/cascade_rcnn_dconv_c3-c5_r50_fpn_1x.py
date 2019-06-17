@@ -11,9 +11,7 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         dcn=dict(
-            modulated=False,
-            deformable_groups=1,
-            fallback_on_stride=False),
+            modulated=False, deformable_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)),
     neck=dict(
         type='FPN',
@@ -49,13 +47,8 @@ model = dict(
             target_stds=[0.1, 0.1, 0.2, 0.2],
             reg_class_agnostic=True,
             loss_cls=dict(
-                type='CrossEntropyLoss',
-                use_sigmoid=False,
-                loss_weight=1.0),
-            loss_bbox=dict(
-                type='SmoothL1Loss',
-                beta=1.0,
-                loss_weight=1.0)),
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
         dict(
             type='SharedFCBBoxHead',
             num_fcs=2,
@@ -67,13 +60,8 @@ model = dict(
             target_stds=[0.05, 0.05, 0.1, 0.1],
             reg_class_agnostic=True,
             loss_cls=dict(
-                type='CrossEntropyLoss',
-                use_sigmoid=False,
-                loss_weight=1.0),
-            loss_bbox=dict(
-                type='SmoothL1Loss',
-                beta=1.0,
-                loss_weight=1.0)),
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
         dict(
             type='SharedFCBBoxHead',
             num_fcs=2,
@@ -85,13 +73,8 @@ model = dict(
             target_stds=[0.033, 0.033, 0.067, 0.067],
             reg_class_agnostic=True,
             loss_cls=dict(
-                type='CrossEntropyLoss',
-                use_sigmoid=False,
-                loss_weight=1.0),
-            loss_bbox=dict(
-                type='SmoothL1Loss',
-                beta=1.0,
-                loss_weight=1.0))
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
     ])
 # model training and testing settings
 train_cfg = dict(
