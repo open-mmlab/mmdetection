@@ -22,7 +22,8 @@ class SSDHead(AnchorHead):
                  basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                  target_means=(.0, .0, .0, .0),
-                 target_stds=(1.0, 1.0, 1.0, 1.0)):
+                 target_stds=(1.0, 1.0, 1.0, 1.0),
+                 ratio_change = False):
         super(AnchorHead, self).__init__()
         self.input_size = input_size
         self.num_classes = num_classes
