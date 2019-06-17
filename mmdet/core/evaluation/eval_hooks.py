@@ -135,15 +135,15 @@ class CocoDistEvalRecallHook(DistEvalHook):
 class CocoDistEvalmAPHook(DistEvalHook):
 
     def evaluate(self, runner, results):
-        tmp_file = osp.join(runner.work_dir, 'temp_0.json')
-        results2json(self.dataset, results, tmp_file)
+        tmp_file = osp.join(runner.work_dir, 'temp_0')
+        result_files = results2json(self.dataset, results, tmp_file)
 
-        res_types = ['bbox',
-                     'segm'] if runner.model.module.with_mask else ['bbox']
+        res_types = ['bbox', 'segm'
+                     ] if runner.model.module.with_mask else ['bbox']
         cocoGt = self.dataset.coco
-        cocoDt = cocoGt.loadRes(tmp_file)
         imgIds = cocoGt.getImgIds()
         for res_type in res_types:
+            cocoDt = cocoGt.loadRes(result_files[res_type])
             iou_type = res_type
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.imgIds = imgIds
@@ -159,4 +159,5 @@ class CocoDistEvalmAPHook(DistEvalHook):
                 '{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
                 '{ap[4]:.3f} {ap[5]:.3f}').format(ap=cocoEval.stats[:6])
         runner.log_buffer.ready = True
-        os.remove(tmp_file)
+        for res_type in res_types:
+            os.remove(result_files[res_type])
