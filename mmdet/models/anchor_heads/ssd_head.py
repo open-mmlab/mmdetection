@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
-from mmdet.core import (AnchorGenerator, anchor_target, weighted_smoothl1,
-                        multi_apply)
+from mmdet.core import AnchorGenerator, anchor_target, multi_apply
 from .anchor_head import AnchorHead
+from ..losses import smooth_l1_loss
 from ..registry import HEADS
 
 
@@ -22,8 +22,7 @@ class SSDHead(AnchorHead):
                  basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                  target_means=(.0, .0, .0, .0),
-                 target_stds=(1.0, 1.0, 1.0, 1.0),
-                 ratio_change=False):
+                 target_stds=(1.0, 1.0, 1.0, 1.0)):
         super(AnchorHead, self).__init__()
         self.input_size = input_size
         self.num_classes = num_classes
@@ -47,6 +46,7 @@ class SSDHead(AnchorHead):
                     padding=1))
         self.reg_convs = nn.ModuleList(reg_convs)
         self.cls_convs = nn.ModuleList(cls_convs)
+
         if ratio_change == False:
             min_ratio, max_ratio = basesize_ratio_range
             min_ratio = int(min_ratio * 100)
@@ -87,6 +87,7 @@ class SSDHead(AnchorHead):
                              int(0.87 * 800)]
                 max_sizes = [int(0.15 * 800), int(0.33 * 800), int(0.51 * 800), int(0.69 * 800), int(0.87 * 800),
                              int(1.05 * 800)]
+
         self.anchor_generators = []
         self.anchor_strides = anchor_strides
         for k in range(len(anchor_strides)):
@@ -140,7 +141,7 @@ class SSDHead(AnchorHead):
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
 
-        loss_bbox = weighted_smoothl1(
+        loss_bbox = smooth_l1_loss(
             bbox_pred,
             bbox_targets,
             bbox_weights,
