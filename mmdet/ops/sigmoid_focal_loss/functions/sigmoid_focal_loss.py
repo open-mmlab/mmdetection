@@ -1,4 +1,3 @@
-import torch.nn.functional as F
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 
@@ -8,7 +7,7 @@ from .. import sigmoid_focal_loss_cuda
 class SigmoidFocalLossFunction(Function):
 
     @staticmethod
-    def forward(ctx, input, target, gamma=2.0, alpha=0.25, reduction='mean'):
+    def forward(ctx, input, target, gamma=2.0, alpha=0.25):
         ctx.save_for_backward(input, target)
         num_classes = input.shape[1]
         ctx.num_classes = num_classes
@@ -17,14 +16,7 @@ class SigmoidFocalLossFunction(Function):
 
         loss = sigmoid_focal_loss_cuda.forward(input, target, num_classes,
                                                gamma, alpha)
-        reduction_enum = F._Reduction.get_enum(reduction)
-        # none: 0, mean:1, sum: 2
-        if reduction_enum == 0:
-            return loss
-        elif reduction_enum == 1:
-            return loss.mean()
-        elif reduction_enum == 2:
-            return loss.sum()
+        return loss
 
     @staticmethod
     @once_differentiable

@@ -136,17 +136,17 @@ def segm2json(dataset, results):
                 bbox_json_results.append(data)
 
             # segm results
-            segms = seg[label]
-            if mask_scores is not None:
-                mask_score = mask_scores[label]
+            # some detectors use different score for det and segm
+            if len(seg) == 2:
+                segms = seg[0][label]
+                mask_score = seg[1][label]
+            else:
+                segms = seg[label]
+                mask_score = [bbox[4] for bbox in bboxes]
             for i in range(bboxes.shape[0]):
                 data = dict()
                 data['image_id'] = img_id
-                data['bbox'] = xyxy2xywh(bboxes[i])
-                if mask_scores is not None:
-                    data['score'] = float(mask_score[i])
-                else:
-                    data['score'] = float(bboxes[i][4])
+                data['score'] = float(mask_score[i])
                 data['category_id'] = dataset.cat_ids[label]
                 segms[i]['counts'] = segms[i]['counts'].decode()
                 data['segmentation'] = segms[i]
