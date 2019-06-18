@@ -1,5 +1,7 @@
 
-# mmdetection
+# MMDetection
+
+**News**: We released the technical report on [ArXiv](https://arxiv.org/abs/1906.07155).
 
 ## Introduction
 
@@ -19,18 +21,18 @@ a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http
 
 - **Support of multiple frameworks out of box**
 
-  The toolbox directly supports popular detection frameworks, *e.g.* Faster RCNN, Mask RCNN, RetinaNet, etc.
+  The toolbox directly supports popular and contemporary detection frameworks, *e.g.* Faster RCNN, Mask RCNN, RetinaNet, etc.
 
-- **Efficient**
+- **High efficiency**
 
   All basic bbox and mask operations run on GPUs now.
   The training speed is nearly 2x faster than Detectron and comparable to maskrcnn-benchmark.
 
 - **State of the art**
 
-  This was the codebase of the *MMDet* team, who won the [COCO Detection 2018 challenge](http://cocodataset.org/#detection-leaderboard).
+  This was the codebase of the *MMDet* team, who won the [COCO Detection 2018 challenge](http://cocodataset.org/#detection-leaderboard), and we keep pushing it forward.
 
-Apart from mmdetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research,
+Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research,
 which is heavily depended on by this toolbox.
 
 ## License
@@ -111,25 +113,25 @@ Please refer to [INSTALL.md](INSTALL.md) for installation and dataset preparatio
 
 ## Get Started
 
-Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage of mmdetection.
+Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage of MMDetection.
 
 ## Contributing
 
-We appreciate all contributions to improve mmdetection. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for the contributing guideline.
+We appreciate all contributions to improve MMDetection. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for the contributing guideline.
 
 
 ## Citation
 
-If you use our codebase or models in your research, please cite this project.
-We will release a paper or technical report later.
+If you use this toolbox or benchmark in your research, please cite this project.
 
 ```
-@misc{mmdetection2018,
-  author =       {Kai Chen and Jiangmiao Pang and Jiaqi Wang and Yu Xiong and Xiaoxiao Li
-                  and Shuyang Sun and Wansen Feng and Ziwei Liu and Jianping Shi and
-                  Wanli Ouyang and Chen Change Loy and Dahua Lin},
-  title =        {mmdetection},
-  howpublished = {\url{https://github.com/open-mmlab/mmdetection}},
-  year =         {2018}
+@article{mmdetection,
+  title   = {{MMDetection}: Open MMLab Detection Toolbox and Benchmark},
+  author  = {Kai Chen, Jiaqi Wang, Jiangmiao Pang, Yuhang Cao, Yu Xiong, Xiaoxiao Li,
+             Shuyang Sun, Wansen Feng, Ziwei Liu, Jiarui Xu, Zheng Zhang, Dazhi Cheng,
+             Chenchen Zhu, Tianheng Cheng, Qijie Zhao, Buyu Li, Xin Lu, Rui Zhu, Yue Wu,
+             Jifeng Dai, Jingdong Wang, Jianping Shi, Wanli Ouyang, Chen Change Loy, Dahua Lin},
+  journal = {arXiv preprint arXiv:1906.07155},
+  year    = {2019}
 }
 ```
