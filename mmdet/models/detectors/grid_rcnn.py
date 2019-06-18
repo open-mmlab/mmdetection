@@ -158,14 +158,13 @@ class GridRCNN(TwoStageDetector):
                                           shape[0], max_sample_num_grid)]
             grid_feats = grid_feats[sample_idx]
 
-            grid_pred1, grid_pred2 = self.grid_head(grid_feats)
+            grid_pred = self.grid_head(grid_feats)
 
             grid_targets = self.grid_head.get_target(sampling_results,
                                                      self.train_cfg.rcnn)
             grid_targets = grid_targets[sample_idx]
 
-            loss_grid = self.grid_head.loss(grid_pred1, grid_pred2,
-                                            grid_targets)
+            loss_grid = self.grid_head.loss(grid_pred, grid_targets)
             losses.update(loss_grid)
 
         return losses
@@ -188,8 +187,9 @@ class GridRCNN(TwoStageDetector):
             x[:len(self.grid_roi_extractor.featmap_strides)], grid_rois)
         if grid_rois.shape[0] != 0:
             self.grid_head.test_mode = True
-            _, grid_pred = self.grid_head(grid_feats)
-            det_bboxes = self.grid_head.get_bboxes(det_bboxes, grid_pred,
+            grid_pred = self.grid_head(grid_feats)
+            det_bboxes = self.grid_head.get_bboxes(det_bboxes,
+                                                   grid_pred['fused'],
                                                    img_meta)
             if rescale:
                 det_bboxes[:, :4] /= img_meta[0]['scale_factor']

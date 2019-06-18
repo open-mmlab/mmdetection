@@ -50,11 +50,13 @@ model = dict(
         featmap_strides=[4, 8, 16, 32]),
     grid_head=dict(
         type='GridHead',
+        grid_points=9,
         num_convs=8,
         in_channels=256,
-        conv_out_channels=576,
-        num_grids=9,
-        norm_cfg=dict(type='GN', num_groups=36)))
+        point_feat_channels=64,
+        norm_cfg=dict(type='GN', num_groups=36),
+        loss_grid=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=15)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -94,7 +96,6 @@ train_cfg = dict(
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
         mask_size=56,
-        num_grids=9,
         pos_weight=-1,
         max_num_grid=192,
         debug=False))
