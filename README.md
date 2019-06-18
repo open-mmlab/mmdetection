@@ -126,7 +126,7 @@ If you use this toolbox or benchmark in your research, please cite this project.
 
 ```
 @article{mmdetection,
-  title   = {MMDetection: Open MMLab Detection Toolbox and Benchmark},
+  title   = {{MMDetection}: Open MMLab Detection Toolbox and Benchmark},
   author  = {Kai Chen, Jiaqi Wang, Jiangmiao Pang, Yuhang Cao, Yu Xiong, Xiaoxiao Li,
              Shuyang Sun, Wansen Feng, Ziwei Liu, Jiarui Xu, Zheng Zhang, Dazhi Cheng,
              Chenchen Zhu, Tianheng Cheng, Qijie Zhao, Buyu Li, Xin Lu, Rui Zhu, Yue Wu,
