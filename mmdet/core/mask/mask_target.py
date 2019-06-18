@@ -54,7 +54,6 @@ def mask_iou_target(pos_proposals_list, pos_assigned_gt_inds_list,
     Returns:
         Tensor: mask iou target (length == num positive)
     """
-    # TODO: area_ratio is redundant, full_area can be obtained from gt_masks
     area_ratios = map(mask_iou_target_single, pos_proposals_list,
                       pos_assigned_gt_inds_list, gt_masks_list)
     area_ratios = torch.cat(list(area_ratios))
