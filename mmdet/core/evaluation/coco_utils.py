@@ -123,7 +123,7 @@ def segm2json(dataset, results):
     segm_json_results = []
     for idx in range(len(dataset)):
         img_id = dataset.img_ids[idx]
-        det, (seg, mask_scores) = results[idx]
+        det, seg = results[idx]
         for label in range(len(det)):
             # bbox results
             bboxes = det[label]

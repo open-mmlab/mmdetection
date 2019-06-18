@@ -8,7 +8,12 @@ from ..registry import DETECTORS
 
 @DETECTORS.register_module
 class MaskScoringRCNN(TwoStageDetector):
+    """Mask Scoring RCNN.
 
+    Mask Scoring RCNN is very similar to Mask RCNN but with an extra Mask IoU
+    Head. The head predicts mask IoU to calibrate classification
+    scores to better measure the mask quality.
+    """
     def __init__(self,
                  backbone,
                  rpn_head,
@@ -142,6 +147,7 @@ class MaskScoringRCNN(TwoStageDetector):
                                             pos_labels)
             losses.update(loss_mask)
 
+            # mask iou head forward and loss
             pos_mask_pred = mask_pred[range(mask_pred.size(0)), pos_labels]
             mask_iou_pred = self.mask_iou_head(mask_feats, pos_mask_pred)
             pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)
@@ -168,15 +174,43 @@ class MaskScoringRCNN(TwoStageDetector):
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
         bbox_results = bbox2result(det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
-        if not self.with_mask:
-            return bbox_results
+        segm_results, mask_feats, mask_pred = self.simple_test_mask(
+            x, img_meta, det_bboxes, det_labels, rescale=rescale)
 
-        if self.with_mask:
-            segm_results, mask_feats, mask_pred = self.simple_test_mask(
-                x, img_meta, det_bboxes, det_labels, rescale=rescale)
+        mask_scores = None
+        if det_bboxes.shape[0] > 0:
+            mask_scores = self.mask_iou_head.get_mask_scores(
+                mask_feats, mask_pred, det_bboxes, det_labels)
+        return bbox_results, (segm_results, mask_scores)
 
-            mask_scores = None
-            if det_bboxes.shape[0] > 0:
-                mask_scores = self.mask_iou_head.get_mask_scores(
-                    mask_feats, mask_pred, det_bboxes, det_labels)
-            return bbox_results, (segm_results, mask_scores)
+    # TODO: refactor test_mixins in two stage to reduce code redundancy
+    def simple_test_mask(self,
+                         x,
+                         img_meta,
+                         det_bboxes,
+                         det_labels,
+                         rescale=False):
+        # image shape of the first image in the batch (only one)
+        ori_shape = img_meta[0]['ori_shape']
+        scale_factor = img_meta[0]['scale_factor']
+        mask_pred = None
+        mask_feats = None
+        if det_bboxes.shape[0] == 0:
+            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
+        else:
+            # if det_bboxes is rescaled to the original image size, we need to
+            # rescale it back to the testing scale to obtain RoIs.
+            _bboxes = (
+                det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
+            mask_rois = bbox2roi([_bboxes])
+            mask_feats = self.mask_roi_extractor(
+                x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
+            if self.with_shared_head:
+                mask_feats = self.shared_head(mask_feats)
+            mask_pred = self.mask_head(mask_feats)
+            segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
+                                                       det_labels,
+                                                       self.test_cfg.rcnn,
+                                                       ori_shape, scale_factor,
+                                                       rescale)
+        return segm_result, mask_feats, mask_pred

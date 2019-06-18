@@ -9,7 +9,12 @@ from ..registry import HEADS
 
 @HEADS.register_module
 class MaskIoUHead(nn.Module):
+    """Mask IoU Head.
 
+    Mask IoU Head takes both mask features and predicted mask to regress
+    the mask IoU, which calibrates the cls score to sort segm results during
+    evaluation.
+    """
     def __init__(self,
                  num_convs=4,
                  num_fcs=2,
