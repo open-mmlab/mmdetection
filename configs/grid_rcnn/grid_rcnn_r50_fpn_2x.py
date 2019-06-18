@@ -53,7 +53,8 @@ model = dict(
         num_convs=8,
         in_channels=256,
         conv_out_channels=576,
-        num_grids=9))
+        num_grids=9,
+        norm_cfg=dict(type='GN', num_groups=36)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
