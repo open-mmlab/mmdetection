@@ -10,9 +10,7 @@ from ..registry import DETECTORS
 class MaskScoringRCNN(TwoStageDetector):
     """Mask Scoring RCNN.
 
-    Mask Scoring RCNN is very similar to Mask RCNN but with an extra Mask IoU
-    Head. The head predicts mask IoU to calibrate classification
-    scores to better measure the mask quality.
+    https://arxiv.org/pdf/1903.00241.pdf
     """
     def __init__(self,
                  backbone,
