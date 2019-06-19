@@ -5,8 +5,7 @@
 
 ## Introduction
 
-The master branch works with **PyTorch 1.1** or higher. If you would like to use PyTorch 0.4.1,
-please checkout to the [pytorch-0.4.1](https://github.com/open-mmlab/mmdetection/tree/pytorch-0.4.1) branch.
+The master branch works with **PyTorch 1.1** or higher.
 
 mmdetection is an open source object detection toolbox based on PyTorch. It is
 a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
@@ -17,7 +16,7 @@ a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http
 
 - **Modular Design**
 
-  One can easily construct a customized object detection framework by combining different components.
+  We decompose the detection framework into different components and one can easily construct a customized object detection framework by combining different modules.
 
 - **Support of multiple frameworks out of box**
 
@@ -25,15 +24,13 @@ a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http
 
 - **High efficiency**
 
-  All basic bbox and mask operations run on GPUs now.
-  The training speed is nearly 2x faster than Detectron and comparable to maskrcnn-benchmark.
+  All basic bbox and mask operations run on GPUs now. The training speed is faster than or comparable to other codebases, including [Detectron](https://github.com/facebookresearch/Detectron), [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark) and [SimpleDet](https://github.com/TuSimple/simpledet).
 
 - **State of the art**
 
-  This was the codebase of the *MMDet* team, who won the [COCO Detection 2018 challenge](http://cocodataset.org/#detection-leaderboard), and we keep pushing it forward.
+  The toolbox stems from the codebase developed by the *MMDet* team, who won [COCO Detection Challenge](http://cocodataset.org/#detection-leaderboard) in 2018, and we keep pushing it forward.
 
-Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research,
-which is heavily depended on by this toolbox.
+Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research, which is heavily depended on by this toolbox.
 
 ## License
 
@@ -83,19 +80,23 @@ v0.5.1 (20/10/2018)
 Supported methods and backbones are shown in the below table.
 Results and models are available in the [Model zoo](MODEL_ZOO.md).
 
-|                    | ResNet   | ResNeXt  | SENet    | VGG      |
-|--------------------|:--------:|:--------:|:--------:|:--------:|
-| RPN                | ✓        | ✓        | ☐        | ✗        |
-| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        |
-| Faster R-CNN       | ✓        | ✓        | ☐        | ✗        |
-| Mask R-CNN         | ✓        | ✓        | ☐        | ✗        |
-| Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        |
-| Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        |
-| SSD                | ✗        | ✗        | ✗        | ✓        |
-| RetinaNet          | ✓        | ✓        | ☐        | ✗        |
-| Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        |
-| FCOS               | ✓        | ✓        | ☐        | ✗        |
-| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        |
+|                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet |
+|--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|
+| RPN                | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Faster R-CNN       | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Mask R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
+| SSD                | ✗        | ✗        | ✗        | ✓        | ✗     |
+| RetinaNet          | ✓        | ✓        | ☐        | ✗        | ✓     |
+| GHM                | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
+| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Grid R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     |
+| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     |
 
 Other features
 - [x] DCNv2
@@ -103,6 +104,8 @@ Other features
 - [x] Weight Standardization
 - [x] OHEM
 - [x] Soft-NMS
+- [x] Generalized Attention
+- [x] GCNet
 - [ ] Mixed Precision (FP16) Training (coming soon)
 
 
@@ -118,6 +121,11 @@ Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage of MMDet
 ## Contributing
 
 We appreciate all contributions to improve MMDetection. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for the contributing guideline.
+
+## Acknowledgement
+
+MMDetection is an open source project that is contributed by researchers and engineers from various colledges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
+We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new detectors.
 
 
 ## Citation
@@ -135,3 +143,8 @@ If you use this toolbox or benchmark in your research, please cite this project.
   year    = {2019}
 }
 ```
+
+
+## Contact
+
+This repo is currently maintained by Kai Chen ([@hellock](http://github.com/hellock)), Jiangmiao Pang ([@OceanPang](https://github.com/OceanPang)), Jiaqi Wang ([@myownskyW7](https://github.com/myownskyW7)) and Yuhang Cao ([@yhcao6](https://github.com/yhcao6)).
