@@ -140,8 +140,8 @@ class DoubleConvFCBBoxHead(BBoxHead):
         return branch_fcs
 
     def init_weights(self):
-        normal_init(self.fc_cls, 0.01)
-        normal_init(self.fc_reg, 0.001)
+        normal_init(self.fc_cls, std=0.01)
+        normal_init(self.fc_reg, std=0.001)
 
         for m in self.fc_branch.modules():
             if isinstance(m, nn.Linear):
