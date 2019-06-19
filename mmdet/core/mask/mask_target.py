@@ -40,7 +40,7 @@ def mask_iou_target(pos_proposals_list, pos_assigned_gt_inds_list,
                     gt_masks_list, mask_preds, mask_targets, cfg):
     """Get mask IoU target of each positive proposals.
 
-    Mask IoU target is the ratio of the area of predicted mask and the mask
+    Mask IoU target is the area ratio of the predicted mask and the mask
     of assigned GT instance.
 
     Args:
@@ -56,9 +56,13 @@ def mask_iou_target(pos_proposals_list, pos_assigned_gt_inds_list,
     """
     area_ratios = map(mask_iou_target_single, pos_proposals_list,
                       pos_assigned_gt_inds_list, gt_masks_list)
+    # the order of positive proposal of a batch is just the concatenation of
+    # every image, this should be consistent to mask pred
     area_ratios = torch.cat(list(area_ratios))
     assert mask_targets.size(0) == area_ratios.size(0)
+    # binarize mask pred to 0 and 1
     mask_pred = (mask_preds > cfg.mask_thr_binary).float()
+    # the overlap is just the bit and
     mask_overlaps = (mask_pred * mask_targets).sum((-1, -2))
     full_areas = mask_targets.sum(
         (-1, -2)) / area_ratios  # mask area of the whole instance
@@ -68,13 +72,13 @@ def mask_iou_target(pos_proposals_list, pos_assigned_gt_inds_list,
 
 
 def mask_iou_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks):
-    """Get area ratio of target mask of each positive proposal and its
-    assigned ground truth instance."""
+    """Get area ratio of the gt_mask and the proposal cropped gt_mask."""
     num_pos = pos_proposals.size(0)
     area_ratios = []
     if num_pos > 0:
         proposals_np = pos_proposals.cpu().numpy()
         pos_assigned_gt_inds = pos_assigned_gt_inds.cpu().numpy()
+        # only sum gt mask once to save time
         gt_mask_sums = gt_masks.sum((-1, -2)) + 1e-7  # avoid zero
         for i in range(num_pos):
             gt_mask = gt_masks[pos_assigned_gt_inds[i]]
@@ -82,7 +86,9 @@ def mask_iou_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks):
             x1, y1, x2, y2 = bbox
             w = np.maximum(x2 - x1 + 1, 1)
             h = np.maximum(y2 - y1 + 1, 1)
+            # proposal cropped gt mask
             proposal_area = gt_mask[y1:y1 + h, x1:x1 + w]
+            # area ratio
             ratio = proposal_area.sum() / gt_mask_sums[pos_assigned_gt_inds[i]]
             area_ratios.append(ratio)
         area_ratios = torch.from_numpy(np.stack(area_ratios)).float().to(
