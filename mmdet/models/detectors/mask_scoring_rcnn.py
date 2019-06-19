@@ -10,7 +10,7 @@ from ..registry import DETECTORS
 class MaskScoringRCNN(TwoStageDetector):
     """Mask Scoring RCNN.
 
-    https://arxiv.org/pdf/1903.00241.pdf
+    https://arxiv.org/abs/1903.00241
     """
     def __init__(self,
                  backbone,
