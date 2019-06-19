@@ -1,11 +1,11 @@
 ## WIDER Face Dataset
 
 To use the WIDER Face dataset you need to download it
-and extract to the `data/WIDER` folder. Annotation in the VOC format
+and extract to the `data/WIDERFace` folder. Annotation in the VOC format
 can be found in this [repo](https://github.com/sovrasov/wider-face-pascal-voc-annotations.git).
 You should move the annotation files from `WIDER_train_annotations` and `WIDER_val_annotations` folders
 to the `Annotation` folders inside the corresponding directories `WIDER_train` and `WIDER_val`.
-Also annotation lists `val.txt` and `train.txt` should be copied to `data/WIDER` from `WIDER_train_annotations` and `WIDER_val_annotations`.
+Also annotation lists `val.txt` and `train.txt` should be copied to `data/WIDERFace` from `WIDER_train_annotations` and `WIDER_val_annotations`.
 The directory should be like this:
 
 ```
@@ -14,7 +14,7 @@ mmdetection
 ├── tools
 ├── configs
 ├── data
-│   ├── WIDER
+│   ├── WIDERFace
 │   │   ├── WIDER_train
 │   |   │   ├──0--Parade
 │   |   │   ├── ...
@@ -28,5 +28,5 @@ mmdetection
 
 ```
 
-After that you can train the SSD300 on WIDER by launching training with the `ssd300_wider.py` config or
+After that you can train the SSD300 on WIDER by launching training with the `ssd300_wider_face.py` config or
 create your own config based on the presented one.
