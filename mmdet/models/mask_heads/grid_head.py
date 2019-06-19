@@ -40,12 +40,16 @@ class GridHead(nn.Module):
         if isinstance(norm_cfg, dict) and norm_cfg['type'] == 'GN':
             assert self.conv_out_channels % norm_cfg['num_groups'] == 0
 
+        assert self.grid_points >= 4
         self.grid_size = int(np.sqrt(self.grid_points))
         if self.grid_size * self.grid_size != self.grid_points:
             raise ValueError('grid_points must be a square number')
 
-        self.upsample_ratio = 4  # two deconv
-        self.whole_map_size = self.roi_feat_size * self.upsample_ratio
+        # the predicted heatmap is half of whole_map_size
+        self.whole_map_size = self.roi_feat_size * 4
+
+        # compute point-wise sub-regions
+        self.sub_regions = self.calc_sub_regions()
 
         self.convs = []
         for i in range(self.num_convs):
@@ -146,7 +150,7 @@ class GridHead(nn.Module):
 
     def forward(self, x):
         assert x.shape[-1] == x.shape[-2] == self.roi_feat_size
-        # RoI feature transformation
+        # RoI feature transformation, downsample 2x
         x = self.convs(x)
 
         c = self.point_feat_channels
@@ -182,20 +186,36 @@ class GridHead(nn.Module):
 
         return dict(fused=heatmap, unfused=heatmap_unfused)
 
-    def _reduce_vision(self, x, whole_map_size):
-        # TODO: refactoring
-        quater_size = whole_map_size // 4
-        base = ((0, quater_size * 2), (quater_size, quater_size * 3),
-                (quater_size * 2, quater_size * 4))
-        layers = [
-            x[:, i:i +
-              1][:, :, base[i % 3][0]:base[i % 3][1], base[i //
-                                                           3][0]:base[i //
-                                                                      3][1]]
-            for i in range(9)
-        ]
-        layers = torch.cat(layers, dim=1)
-        return layers
+    def calc_sub_regions(self):
+        """Compute point specific representation regions.
+
+        See Grid R-CNN Plus (https://arxiv.org/abs/1906.05688) for details.
+        """
+        # to make it consistent with the original implementation, half_size
+        # is computed as 2 * quarter_size, which is smaller
+        half_size = self.whole_map_size // 4 * 2
+        sub_regions = []
+        for i in range(self.grid_points):
+            x_idx = i // self.grid_size
+            y_idx = i % self.grid_size
+            if x_idx == 0:
+                sub_x1 = 0
+            elif x_idx == self.grid_size - 1:
+                sub_x1 = half_size
+            else:
+                ratio = x_idx / (self.grid_size - 1) - 0.25
+                sub_x1 = max(int(ratio * self.whole_map_size), 0)
+
+            if y_idx == 0:
+                sub_y1 = 0
+            elif y_idx == self.grid_size - 1:
+                sub_y1 = half_size
+            else:
+                ratio = y_idx / (self.grid_size - 1) - 0.25
+                sub_y1 = max(int(ratio * self.whole_map_size), 0)
+            sub_regions.append(
+                (sub_x1, sub_y1, sub_x1 + half_size, sub_y1 + half_size))
+        return sub_regions
 
     def get_target(self, sampling_results, rcnn_train_cfg):
         # mix all samples (across images) together.
@@ -220,13 +240,17 @@ class GridHead(nn.Module):
         targets = torch.zeros((num_rois, self.grid_points, map_size, map_size),
                               dtype=torch.float)
 
-        # pre-compute interpolation factors for all grid points
+        # pre-compute interpolation factors for all grid points.
+        # the first item is the factor of x-dim, and the second is y-dim.
+        # for a 9-point grid, factors are like (1, 0), (0.5, 0.5), (0, 1)
         factors = []
-        for i in range(self.grid_points):
-            factors.append((1 - i // self.grid_points / (self.grid_points),
-                            1 - i % self.grid_points / (self.grid_points)))
+        for j in range(self.grid_points):
+            x_idx = j // self.grid_size
+            y_idx = j % self.grid_size
+            factors.append((1 - x_idx / (self.grid_size - 1),
+                            1 - y_idx / (self.grid_size - 1)))
 
-        radius = rcnn_train_cfg.get('radius', 1)
+        radius = rcnn_train_cfg.pos_radius
         radius2 = radius**2
         for i in range(num_rois):
             # ignore small bboxes
@@ -235,10 +259,11 @@ class GridHead(nn.Module):
                 continue
             # for each grid point, mark a small circle as positive
             for j in range(self.grid_points):
-                gridpoint_x = factors[j][0] * pos_gt_bboxes[i, 0] + (
-                    1 - factors[j][0]) * pos_gt_bboxes[i, 2]
-                gridpoint_y = factors[j][1] * pos_gt_bboxes[i, 1] + (
-                    1 - factors[j][1]) * pos_gt_bboxes[i, 3]
+                factor_x, factor_y = factors[j]
+                gridpoint_x = factor_x * pos_gt_bboxes[i, 0] + (
+                    1 - factor_x) * pos_gt_bboxes[i, 2]
+                gridpoint_y = factor_y * pos_gt_bboxes[i, 1] + (
+                    1 - factor_y) * pos_gt_bboxes[i, 3]
 
                 cx = int((gridpoint_x - pos_bboxes[i, 0]) / pos_bbox_ws[i] *
                          map_size)
@@ -250,9 +275,15 @@ class GridHead(nn.Module):
                         if x >= 0 and x < map_size and y >= 0 and y < map_size:
                             if (x - cx)**2 + (y - cy)**2 <= radius2:
                                 targets[i, j, y, x] = 1
-        targets = self._reduce_vision(targets, map_size)
-        targets = targets.cuda()
-        return targets
+        # reduce the target heatmap size by a half
+        # proposed in Grid R-CNN Plus (https://arxiv.org/abs/1906.05688).
+        sub_targets = []
+        for i in range(self.grid_points):
+            sub_x1, sub_y1, sub_x2, sub_y2 = self.sub_regions[i]
+            sub_targets.append(targets[:, [i], sub_y1:sub_y2, sub_x1:sub_x2])
+        sub_targets = torch.cat(sub_targets, dim=1)
+        sub_targets = sub_targets.cuda()
+        return sub_targets
 
     def loss(self, grid_pred, grid_targets):
         loss_fused = self.loss_grid(grid_pred['fused'], grid_targets)
@@ -268,28 +299,36 @@ class GridHead(nn.Module):
         det_bboxes = det_bboxes[:, :4]
         grid_pred = grid_pred.sigmoid().cpu()
 
-        # expand pos_bboxes
-        widths = det_bboxes[:, 2] - det_bboxes[:, 0]
-        heights = det_bboxes[:, 3] - det_bboxes[:, 1]
-        x1 = det_bboxes[:, 0] - widths / 2
-        y1 = det_bboxes[:, 1] - heights / 2
+        R, c, h, w = grid_pred.shape
+        half_size = self.whole_map_size // 4 * 2
+        assert h == w == half_size
+        assert c == self.grid_points
 
-        R, C, H, W = grid_pred.shape
-        grid_pred = grid_pred.view(R * C, H * W)
+        # find the point with max scores in the half-sized heatmap
+        grid_pred = grid_pred.view(R * c, h * w)
         pred_scores, pred_position = grid_pred.max(dim=1)
+        xs = pred_position % w
+        ys = pred_position // w
 
-        xs = pred_position % W
-        ys = pred_position // W
-        base = (0, 14, 28)
+        # get the position in the whole heatmap instead of half-sized heatmap
         for i in range(self.grid_points):
-            xs[i::self.grid_points] += base[i // 3]
-            ys[i::self.grid_points] += base[i % 3]
+            xs[i::self.grid_points] += self.sub_regions[i][0]
+            ys[i::self.grid_points] += self.sub_regions[i][1]
+
+        # reshape to (num_rois, grid_points)
         pred_scores, xs, ys = tuple(
-            map(lambda x: x.view(R, C), [pred_scores, xs, ys]))
+            map(lambda x: x.view(R, c), [pred_scores, xs, ys]))
 
-        abs_xs = (xs.float() + 0.5) / W * widths.view(-1, 1) + x1.view(-1, 1)
-        abs_ys = (ys.float() + 0.5) / H * heights.view(-1, 1) + y1.view(-1, 1)
+        # get expanded pos_bboxes
+        widths = (det_bboxes[:, 2] - det_bboxes[:, 0]).unsqueeze(-1)
+        heights = (det_bboxes[:, 3] - det_bboxes[:, 1]).unsqueeze(-1)
+        x1 = (det_bboxes[:, 0] - widths / 2).unsqueeze(-1)
+        y1 = (det_bboxes[:, 1] - heights / 2).unsqueeze(-1)
+        # map the grid point to the absolute coordinates
+        abs_xs = (xs.float() + 0.5) / w * widths + x1
+        abs_ys = (ys.float() + 0.5) / h * heights + y1
 
+        # get the grid points indices that fall on the bbox boundaries
         x1_inds = [i for i in range(self.grid_size)]
         y1_inds = [i * self.grid_size for i in range(self.grid_size)]
         x2_inds = [
@@ -298,23 +337,23 @@ class GridHead(nn.Module):
         ]
         y2_inds = [(i + 1) * self.grid_size - 1 for i in range(self.grid_size)]
 
-        res_dets_x1 = (abs_xs[:, x1_inds] * pred_scores[:, x1_inds]).sum(
+        # voting of all grid points on some boundary
+        bboxes_x1 = (abs_xs[:, x1_inds] * pred_scores[:, x1_inds]).sum(
             dim=1, keepdim=True) / (
                 pred_scores[:, x1_inds].sum(dim=1, keepdim=True))
-        res_dets_y1 = (abs_ys[:, y1_inds] * pred_scores[:, y1_inds]).sum(
+        bboxes_y1 = (abs_ys[:, y1_inds] * pred_scores[:, y1_inds]).sum(
             dim=1, keepdim=True) / (
                 pred_scores[:, y1_inds].sum(dim=1, keepdim=True))
-        res_dets_x2 = (abs_xs[:, x2_inds] * pred_scores[:, x2_inds]).sum(
+        bboxes_x2 = (abs_xs[:, x2_inds] * pred_scores[:, x2_inds]).sum(
             dim=1, keepdim=True) / (
                 pred_scores[:, x2_inds].sum(dim=1, keepdim=True))
-        res_dets_y2 = (abs_ys[:, y2_inds] * pred_scores[:, y2_inds]).sum(
+        bboxes_y2 = (abs_ys[:, y2_inds] * pred_scores[:, y2_inds]).sum(
             dim=1, keepdim=True) / (
                 pred_scores[:, y2_inds].sum(dim=1, keepdim=True))
 
-        det_res = torch.cat(
-            [res_dets_x1, res_dets_y1, res_dets_x2, res_dets_y2, cls_scores],
-            dim=1)
-        det_res[:, [0, 2]].clamp_(min=0, max=img_meta[0]['img_shape'][1] - 1)
-        det_res[:, [1, 3]].clamp_(min=0, max=img_meta[0]['img_shape'][0] - 1)
+        bbox_res = torch.cat(
+            [bboxes_x1, bboxes_y1, bboxes_x2, bboxes_y2, cls_scores], dim=1)
+        bbox_res[:, [0, 2]].clamp_(min=0, max=img_meta[0]['img_shape'][1] - 1)
+        bbox_res[:, [1, 3]].clamp_(min=0, max=img_meta[0]['img_shape'][0] - 1)
 
-        return det_res
+        return bbox_res
