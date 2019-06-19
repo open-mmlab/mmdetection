@@ -179,7 +179,7 @@ class GridRCNN(TwoStageDetector):
             x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
 
         det_bboxes, det_labels = self.simple_test_bboxes(
-            x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
+            x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=False)
 
         # pack rois into bboxes
         grid_rois = bbox2roi([det_bboxes[:, :4]])
