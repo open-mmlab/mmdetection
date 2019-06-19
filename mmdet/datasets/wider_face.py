@@ -1,20 +1,21 @@
-from .xml_style import XMLDataset
 import os.path as osp
 import xml.etree.ElementTree as ET
 
 import mmcv
 
+from .xml_style import XMLDataset
 
-class WIDERDataset(XMLDataset):
+
+class WIDERFaceDataset(XMLDataset):
     """
-    Reader for the WIDER dataset in PASCAL VOC format.
+    Reader for the WIDER Face dataset in PASCAL VOC format.
     Conversion scripts can be found in
-    https://github.com/akofman/wider-face-pascal-voc-annotations
+    https://github.com/sovrasov/wider-face-pascal-voc-annotations
     """
     CLASSES = ('face',)
 
     def __init__(self, **kwargs):
-        super(WIDERDataset, self).__init__(**kwargs)
+        super(WIDERFaceDataset, self).__init__(**kwargs)
 
     def load_annotations(self, ann_file):
         img_infos = []

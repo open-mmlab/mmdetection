@@ -1,7 +1,7 @@
 import mmcv
 
 
-def wider_classes():
+def wider_face_classes():
     return ['face']
 
 
@@ -87,7 +87,7 @@ dataset_aliases = {
     'imagenet_det': ['det', 'imagenet_det', 'ilsvrc_det'],
     'imagenet_vid': ['vid', 'imagenet_vid', 'ilsvrc_vid'],
     'coco': ['coco', 'mscoco', 'ms_coco'],
-    'wider': ['WIDERDataset', 'wider', 'WDIER']
+    'wider_face': ['WIDERFaceDataset', 'wider_face', 'WDIERFace']
 }
 
 

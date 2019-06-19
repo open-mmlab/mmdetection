@@ -44,7 +44,7 @@ test_cfg = dict(
     max_per_img=200)
 # model training and testing settings
 # dataset settings
-dataset_type = 'WIDERDataset'
+dataset_type = 'WIDERFaceDataset'
 data_root = 'data/WIDER/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 data = dict(
