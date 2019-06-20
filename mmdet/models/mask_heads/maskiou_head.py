@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
 
 from ..builder import build_loss
@@ -12,9 +11,7 @@ from ..registry import HEADS
 class MaskIoUHead(nn.Module):
     """Mask IoU Head.
 
-    Mask IoU Head takes both mask features and predicted mask to regress
-    the mask IoU, which calibrates the cls score to sort segm results during
-    evaluation.
+    This head predicts the IoU of predicted masks and corresponding gt masks.
     """
 
     def __init__(self,
@@ -34,8 +31,11 @@ class MaskIoUHead(nn.Module):
 
         self.convs = nn.ModuleList()
         for i in range(num_convs):
-            in_channels = (
-                self.in_channels + 1 if i == 0 else self.conv_out_channels)
+            if i == 0:
+                # concatenation of mask feature and mask prediction
+                in_channels = self.in_channels + 1
+            else:
+                in_channels = self.conv_out_channels
             stride = 2 if i == num_convs - 1 else 1
             self.convs.append(
                 nn.Conv2d(
@@ -68,10 +68,12 @@ class MaskIoUHead(nn.Module):
                 distribution='uniform')
         normal_init(self.fc_mask_iou, std=0.01)
 
-    def forward(self, x, mask_pred):
+    def forward(self, mask_feat, mask_pred):
         mask_pred = mask_pred.sigmoid()
         mask_pred_pooled = self.max_pool(mask_pred.unsqueeze(1))
-        x = torch.cat((x, mask_pred_pooled), 1)
+
+        x = torch.cat((mask_feat, mask_pred_pooled), 1)
+
         for conv in self.convs:
             x = self.relu(conv(x))
         x = x.view(x.size(0), -1)
@@ -81,33 +83,34 @@ class MaskIoUHead(nn.Module):
         return mask_iou
 
     def loss(self, mask_iou_pred, mask_iou_targets):
-        loss = dict()
         pos_inds = mask_iou_targets > 0
         if pos_inds.sum() > 0:
-            loss['loss_mask_iou'] = self.loss_iou(mask_iou_pred[pos_inds],
-                                                  mask_iou_targets[pos_inds])
+            loss_mask_iou = self.loss_iou(mask_iou_pred[pos_inds],
+                                          mask_iou_targets[pos_inds])
         else:
-            loss['loss_mask_iou'] = mask_iou_pred * 0
-        return loss
+            loss_mask_iou = mask_iou_pred * 0
+        return dict(loss_mask_iou=loss_mask_iou)
 
     def get_target(self, sampling_results, gt_masks, mask_pred, mask_targets,
                    rcnn_train_cfg):
         """Compute target of mask IoU.
 
-        Mask IoU target is the IoU of the predicted mask and the gt mask of
-        corresponding gt instance. GT masks are of the same size with image,
-        so firstly compute the area ratio of the gt mask inside the proposal
-        and the gt mask of the corresponding instance, and use it to compute
-        the full area of the instance at the scale of mask pred.
+        Mask IoU target is the IoU of the predicted mask (inside a bbox) and
+        the gt mask of corresponding gt mask (the whole instance).
+        The intersection area is computed inside the bbox, and the gt mask area
+        is computed with two steps, firstly we compute the gt area inside the
+        bbox, then divide it by the area ratio of gt area inside the bbox and
+        the gt area of the whole instance.
 
         Args:
-            sampling_results (list[obj]): sampling results.
-            gt_masks (list[ndarray]): Ground truth mask of each image,
-                shape of gt_masks (num_obj, img_h, img_w).
+            sampling_results (list[:obj:`SamplingResult`]): sampling results.
+            gt_masks (list[ndarray]): Gt masks (the whole instance) of each
+                image, binary maps with the same shape of the input image.
             mask_pred (Tensor): Predicted masks of each positive proposal,
                 shape (num_pos, h, w).
-            mask_targets (Tensor): Target mask of each positive proposal,
-                shape (num_pos, h, w).
+            mask_targets (Tensor): Gt mask of each positive proposal,
+                binary map of the shape (num_pos, h, w).
+            rcnn_train_cfg (dict): Training config for R-CNN part.
 
         Returns:
             Tensor: mask iou target (length == num positive).
@@ -117,26 +120,27 @@ class MaskIoUHead(nn.Module):
             res.pos_assigned_gt_inds for res in sampling_results
         ]
 
-        area_ratios = map(self.get_area_ratio, pos_proposals,
+        # compute the area ratio of gt areas inside the proposals and
+        # the whole instance
+        area_ratios = map(self._get_area_ratio, pos_proposals,
                           pos_assigned_gt_inds, gt_masks)
         area_ratios = torch.cat(list(area_ratios))
         assert mask_targets.size(0) == area_ratios.size(0)
 
         mask_pred = (mask_pred > rcnn_train_cfg.mask_thr_binary).float()
+        mask_pred_areas = mask_pred.sum((-1, -2))
 
-        # mask target is either 0 or 1
-        mask_overlaps = (mask_pred * mask_targets).sum((-1, -2))
+        # mask_pred and mask_targets are binary maps
+        overlap_areas = (mask_pred * mask_targets).sum((-1, -2))
 
-        # mask area of the whole instance
-        full_areas = mask_targets.sum(
-            (-1, -2)) / (area_ratios + 1e-7)  # avoid zero
+        # compute the mask area of the whole instance
+        gt_full_areas = mask_targets.sum((-1, -2)) / (area_ratios + 1e-7)
 
-        mask_unions = mask_pred.sum((-1, -2)) + full_areas - mask_overlaps
-
-        mask_iou_targets = mask_overlaps / mask_unions
+        mask_iou_targets = overlap_areas / (
+            mask_pred_areas + gt_full_areas - overlap_areas)
         return mask_iou_targets
 
-    def get_area_ratio(self, pos_proposals, pos_assigned_gt_inds, gt_masks):
+    def _get_area_ratio(self, pos_proposals, pos_assigned_gt_inds, gt_masks):
         """Compute area ratio of the gt mask inside the proposal and the gt
         mask of the corresponding instance"""
         num_pos = pos_proposals.size(0)
@@ -154,8 +158,7 @@ class MaskIoUHead(nn.Module):
                 gt_mask_in_proposal = gt_mask[y1:y2, x1:x2]
 
                 ratio = gt_mask_in_proposal.sum() / (
-                    gt_instance_mask_area[pos_assigned_gt_inds[i]] + 1e-7
-                )  # avoid zero
+                    gt_instance_mask_area[pos_assigned_gt_inds[i]] + 1e-7)
                 area_ratios.append(ratio)
             area_ratios = torch.from_numpy(np.stack(area_ratios)).float().to(
                 pos_proposals.device)
@@ -163,10 +166,14 @@ class MaskIoUHead(nn.Module):
             area_ratios = pos_proposals.new_zeros((0, ))
         return area_ratios
 
-    def get_mask_scores(self, mask_feats, mask_pred, det_bboxes, det_labels):
+    def get_mask_scores(self, mask_iou_pred, det_bboxes, det_labels):
+        """Get the mask scores.
+
+        mask_score = bbox_score * mask_iou
+        """
         inds = range(det_labels.size(0))
-        mask_ious = self.forward(mask_feats, mask_pred[inds, det_labels + 1])
-        mask_scores = mask_ious[inds, det_labels + 1] * det_bboxes[inds, -1]
+        mask_scores = mask_iou_pred[inds, det_labels +
+                                    1] * det_bboxes[inds, -1]
         mask_scores = mask_scores.cpu().numpy()
         det_labels = det_labels.cpu().numpy()
         return [

@@ -1,6 +1,6 @@
 import torch
 
-from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
+from mmdet.core import bbox2roi, build_assigner, build_sampler
 from .two_stage import TwoStageDetector
 from .. import builder
 from ..registry import DETECTORS
@@ -12,6 +12,7 @@ class MaskScoringRCNN(TwoStageDetector):
 
     https://arxiv.org/abs/1903.00241
     """
+
     def __init__(self,
                  backbone,
                  rpn_head,
@@ -158,30 +159,6 @@ class MaskScoringRCNN(TwoStageDetector):
             losses.update(loss_mask_iou)
         return losses
 
-    # TODO: refactor simple_test in two stage to reduce code redundancy
-    def simple_test(self, img, img_meta, proposals=None, rescale=False):
-        """Test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
-
-        x = self.extract_feat(img)
-
-        proposal_list = self.simple_test_rpn(
-            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
-
-        det_bboxes, det_labels = self.simple_test_bboxes(
-            x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
-        bbox_results = bbox2result(det_bboxes, det_labels,
-                                   self.bbox_head.num_classes)
-        segm_results, mask_feats, mask_pred = self.simple_test_mask(
-            x, img_meta, det_bboxes, det_labels, rescale=rescale)
-
-        mask_scores = None
-        if det_bboxes.shape[0] > 0:
-            mask_scores = self.mask_iou_head.get_mask_scores(
-                mask_feats, mask_pred, det_bboxes, det_labels)
-        return bbox_results, (segm_results, mask_scores)
-
-    # TODO: refactor test_mixins in two stage to reduce code redundancy
     def simple_test_mask(self,
                          x,
                          img_meta,
@@ -191,10 +168,10 @@ class MaskScoringRCNN(TwoStageDetector):
         # image shape of the first image in the batch (only one)
         ori_shape = img_meta[0]['ori_shape']
         scale_factor = img_meta[0]['scale_factor']
-        mask_pred = None
-        mask_feats = None
+
         if det_bboxes.shape[0] == 0:
             segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
+            mask_scores = None
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
@@ -211,4 +188,10 @@ class MaskScoringRCNN(TwoStageDetector):
                                                        self.test_cfg.rcnn,
                                                        ori_shape, scale_factor,
                                                        rescale)
-        return segm_result, mask_feats, mask_pred
+            # get mask scores with mask iou head
+            mask_iou_pred = self.mask_iou_head(
+                mask_feats,
+                mask_pred[range(det_labels.size(0)), det_labels + 1])
+            mask_scores = self.mask_iou_head.get_mask_scores(
+                mask_iou_pred, det_bboxes, det_labels)
+        return segm_result, mask_scores
