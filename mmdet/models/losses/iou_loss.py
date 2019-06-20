@@ -83,7 +83,7 @@ class IoULoss(nn.Module):
                 target,
                 weight=None,
                 avg_factor=None,
-                reduction_override=False,
+                reduction_override=None,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
             return (pred * weight).sum()  # 0

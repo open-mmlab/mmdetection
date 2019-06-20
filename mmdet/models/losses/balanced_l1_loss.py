@@ -51,7 +51,7 @@ class BalancedL1Loss(nn.Module):
                 target,
                 weight=None,
                 avg_factor=None,
-                reduction_override=False,
+                reduction_override=None,
                 **kwargs):
         reduction = reduction_override if reduction_override else \
             self.reduction

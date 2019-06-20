@@ -64,7 +64,7 @@ class FocalLoss(nn.Module):
                 target,
                 weight=None,
                 avg_factor=None,
-                reduction_override=False):
+                reduction_override=None):
         reduction = reduction_override if reduction_override else \
             self.reduction
         if self.use_sigmoid:
