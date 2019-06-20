@@ -77,16 +77,6 @@ class MaskIoUHead(nn.Module):
         mask_iou = self.mask_iou(x)
         return mask_iou
 
-    def get_target(self, sampling_results, gt_masks, mask_pred, mask_targets,
-                   rcnn_train_cfg):
-        pos_proposals = [res.pos_bboxes for res in sampling_results]
-        pos_assigned_gt_inds = [
-            res.pos_assigned_gt_inds for res in sampling_results
-        ]
-        return self.mask_iou_target(pos_proposals, pos_assigned_gt_inds,
-                                    gt_masks, mask_pred, mask_targets,
-                                    rcnn_train_cfg)
-
     def loss(self, mask_iou_pred, mask_iou_targets):
         loss = dict()
         pos_inds = mask_iou_targets > 0
@@ -97,9 +87,9 @@ class MaskIoUHead(nn.Module):
             loss['loss_mask_iou'] = mask_iou_pred * 0
         return loss
 
-    def mask_iou_target(self, pos_proposals_list, pos_assigned_gt_inds_list,
-                        gt_masks_list, mask_preds, mask_targets, cfg):
-        """Compute mask IoU target of each positive proposal.
+    def get_target(self, sampling_results, gt_masks, mask_pred, mask_targets,
+                   rcnn_train_cfg):
+        """Compute target of mask IoU.
 
         Mask IoU target is the IoU of the predicted mask and the gt mask of
         corresponding gt instance. GT masks are of the same size with image,
@@ -108,13 +98,10 @@ class MaskIoUHead(nn.Module):
         the full area of the instance at the scale of mask pred.
 
         Args:
-            pos_proposals_list (list[Tensor]): Positive proposals of each
-                image, shape of each pos proposals (n, 4).
-            pos_assigned_gt_inds_list (list[Tensor]): Positive assigned gt
-                inds of each image, shape of each pos_assigned_gt_inds (n,).
-            gt_masks_list (list[ndarray]): Ground truth mask of each image,
+            sampling_results (list[obj]): sampling results.
+            gt_masks (list[ndarray]): Ground truth mask of each image,
                 shape of gt_masks (num_obj, img_h, img_w).
-            mask_preds (Tensor): Predicted masks of each positive proposal,
+            mask_pred (Tensor): Predicted masks of each positive proposal,
                 shape (num_pos, h, w).
             mask_targets (Tensor): Target mask of each positive proposal,
                 shape (num_pos, h, w).
@@ -122,18 +109,24 @@ class MaskIoUHead(nn.Module):
         Returns:
             Tensor: mask iou target (length == num positive).
         """
-        area_ratios = map(self.get_area_ratio, pos_proposals_list,
-                          pos_assigned_gt_inds_list, gt_masks_list)
+        pos_proposals = [res.pos_bboxes for res in sampling_results]
+        pos_assigned_gt_inds = [
+            res.pos_assigned_gt_inds for res in sampling_results
+        ]
+
+        area_ratios = map(self.get_area_ratio, pos_proposals,
+                          pos_assigned_gt_inds, gt_masks)
         area_ratios = torch.cat(list(area_ratios))
         assert mask_targets.size(0) == area_ratios.size(0)
 
-        mask_pred = (mask_preds > cfg.mask_thr_binary).float()
+        mask_pred = (mask_pred > rcnn_train_cfg.mask_thr_binary).float()
 
         # mask target is either 0 or 1
         mask_overlaps = (mask_pred * mask_targets).sum((-1, -2))
 
         # mask area of the whole instance
-        full_areas = mask_targets.sum((-1, -2)) / area_ratios
+        full_areas = mask_targets.sum(
+            (-1, -2)) / (area_ratios + 1e-7)  # avoid zero
 
         mask_unions = mask_pred.sum((-1, -2)) + full_areas - mask_overlaps
 
@@ -153,19 +146,16 @@ class MaskIoUHead(nn.Module):
             for i in range(num_pos):
                 gt_mask = gt_masks[pos_assigned_gt_inds[i]]
 
-                x1, y1, x2, y2 = proposals_np[i, :].astype(np.int32)
-                w = np.maximum(x2 - x1 + 1, 1)
-                h = np.maximum(y2 - y1 + 1, 1)
-
                 # crop the gt mask inside the proposal
-                gt_mask_in_proposal = gt_mask[y1:y1 + h, x1:x1 + w]
+                x1, y1, x2, y2 = proposals_np[i, :].astype(np.int32)
+                gt_mask_in_proposal = gt_mask[y1:y2, x1:x2]
 
                 ratio = gt_mask_in_proposal.sum() / (
                     gt_instance_mask_area[pos_assigned_gt_inds[i]] + 1e-7
                 )  # avoid zero
                 area_ratios.append(ratio)
             area_ratios = torch.from_numpy(np.stack(area_ratios)).float().to(
-                pos_proposals.device) + 1e-7  # avoid zero
+                pos_proposals.device)
         else:
             area_ratios = pos_proposals.new_zeros((0, ))
         return area_ratios
