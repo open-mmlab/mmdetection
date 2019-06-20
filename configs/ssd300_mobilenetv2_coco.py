@@ -5,7 +5,8 @@ model = dict(
     pretrained='./snapshots/mobilenet_v2.pth.tar',
     backbone=dict(
         type='SSDMobilenetV2',
-        input_size=input_size
+        input_size=input_size,
+        activation_type='relu6'
         ),
     neck=None,
     bbox_head=dict(
@@ -14,7 +15,7 @@ model = dict(
         in_channels=(576, 1280, 512, 256, 256, 128),
         num_classes=81,
         anchor_strides=(16, 30, 60, 100, 150, 300),
-        basesize_ratio_range=(0.15, 0.9),
+        basesize_ratio_range=(0.2, 0.95),
         anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
         target_means=(.0, .0, .0, .0),
         target_stds=(0.1, 0.1, 0.2, 0.2),
@@ -122,7 +123,7 @@ log_config = dict(
 total_epochs = 24
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/ssd300_coco'
+work_dir = './work_dirs/ssd300_mobilenet_v2_coco'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
