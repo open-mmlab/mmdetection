@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
 
+from ..builder import build_loss
 from ..registry import HEADS
 
 
@@ -23,7 +24,8 @@ class MaskIoUHead(nn.Module):
                  in_channels=256,
                  conv_out_channels=256,
                  fc_out_channels=1024,
-                 num_classes=81):
+                 num_classes=81,
+                 loss_iou=dict(type='MSELoss', loss_weight=0.5)):
         super(MaskIoUHead, self).__init__()
         self.in_channels = in_channels
         self.conv_out_channels = conv_out_channels
@@ -49,9 +51,10 @@ class MaskIoUHead(nn.Module):
                 roi_feat_size // 2)**2 if i == 0 else self.fc_out_channels
             self.fcs.append(nn.Linear(in_channels, self.fc_out_channels))
 
-        self.mask_iou = nn.Linear(self.fc_out_channels, self.num_classes)
+        self.fc_mask_iou = nn.Linear(self.fc_out_channels, self.num_classes)
         self.relu = nn.ReLU()
         self.max_pool = nn.MaxPool2d(2, 2)
+        self.loss_iou = build_loss(loss_iou)
 
     def init_weights(self):
         for conv in self.convs:
@@ -63,7 +66,7 @@ class MaskIoUHead(nn.Module):
                 mode='fan_in',
                 nonlinearity='leaky_relu',
                 distribution='uniform')
-        normal_init(self.mask_iou, std=0.01)
+        normal_init(self.fc_mask_iou, std=0.01)
 
     def forward(self, x, mask_pred):
         mask_pred = mask_pred.sigmoid()
@@ -74,15 +77,15 @@ class MaskIoUHead(nn.Module):
         x = x.view(x.size(0), -1)
         for fc in self.fcs:
             x = self.relu(fc(x))
-        mask_iou = self.mask_iou(x)
+        mask_iou = self.fc_mask_iou(x)
         return mask_iou
 
     def loss(self, mask_iou_pred, mask_iou_targets):
         loss = dict()
         pos_inds = mask_iou_targets > 0
         if pos_inds.sum() > 0:
-            loss['loss_mask_iou'] = 0.5 * F.mse_loss(
-                mask_iou_pred[pos_inds], mask_iou_targets[pos_inds])[None]
+            loss['loss_mask_iou'] = self.loss_iou(mask_iou_pred[pos_inds],
+                                                  mask_iou_targets[pos_inds])
         else:
             loss['loss_mask_iou'] = mask_iou_pred * 0
         return loss
@@ -141,7 +144,7 @@ class MaskIoUHead(nn.Module):
             area_ratios = []
             proposals_np = pos_proposals.cpu().numpy()
             pos_assigned_gt_inds = pos_assigned_gt_inds.cpu().numpy()
-            # only sum gt mask once to save time
+            # compute mask areas of gt instances (batch processing for speedup)
             gt_instance_mask_area = gt_masks.sum((-1, -2))
             for i in range(num_pos):
                 gt_mask = gt_masks[pos_assigned_gt_inds[i]]
