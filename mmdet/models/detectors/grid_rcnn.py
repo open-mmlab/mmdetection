@@ -9,6 +9,12 @@ from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
 
 @DETECTORS.register_module
 class GridRCNN(TwoStageDetector):
+    """Grid R-CNN.
+
+    This detector is the implementation of:
+    - Grid R-CNN (https://arxiv.org/abs/1811.12030)
+    - Grid R-CNN Plus: Faster and Better (https://arxiv.org/abs/1906.05688)
+    """
 
     def __init__(self,
                  backbone,
@@ -50,33 +56,30 @@ class GridRCNN(TwoStageDetector):
         if not self.share_roi_extractor:
             self.grid_roi_extractor.init_weights()
 
-    def random_jitter_single(self, sampling_results, img_meta, amplitude=0.15):
-        bboxes = sampling_results.pos_bboxes
-        random_offsets = bboxes.new_empty(bboxes.shape[0],
-                                          4).uniform_(-amplitude, amplitude)
-        # before jittering
-        cxcy = (bboxes[:, 2:4] + bboxes[:, :2]) / 2
-        wh = (bboxes[:, 2:4] - bboxes[:, :2]).abs()
-        # after jittering
-        new_cxcy = cxcy + wh * random_offsets[:, :2]
-        new_wh = wh * (1 + random_offsets[:, 2:])
-        # xywh to xyxy
-        new_x1y1 = (new_cxcy - new_wh / 2)
-        new_x2y2 = (new_cxcy + new_wh / 2)
-        new_bboxes = torch.cat([new_x1y1, new_x2y2], dim=1)
-        # clip bboxes
-        max_shape = img_meta['img_shape']
-        if max_shape is not None:
-            new_bboxes[:, 0::2].clamp_(min=0, max=max_shape[1] - 1)
-            new_bboxes[:, 1::2].clamp_(min=0, max=max_shape[0] - 1)
+    def _random_jitter(self, sampling_results, img_metas, amplitude=0.15):
+        """Ramdom jitter positive proposals for training."""
+        for sampling_result, img_meta in zip(sampling_results, img_metas):
+            bboxes = sampling_result.pos_bboxes
+            random_offsets = bboxes.new_empty(bboxes.shape[0], 4).uniform_(
+                -amplitude, amplitude)
+            # before jittering
+            cxcy = (bboxes[:, 2:4] + bboxes[:, :2]) / 2
+            wh = (bboxes[:, 2:4] - bboxes[:, :2]).abs()
+            # after jittering
+            new_cxcy = cxcy + wh * random_offsets[:, :2]
+            new_wh = wh * (1 + random_offsets[:, 2:])
+            # xywh to xyxy
+            new_x1y1 = (new_cxcy - new_wh / 2)
+            new_x2y2 = (new_cxcy + new_wh / 2)
+            new_bboxes = torch.cat([new_x1y1, new_x2y2], dim=1)
+            # clip bboxes
+            max_shape = img_meta['img_shape']
+            if max_shape is not None:
+                new_bboxes[:, 0::2].clamp_(min=0, max=max_shape[1] - 1)
+                new_bboxes[:, 1::2].clamp_(min=0, max=max_shape[0] - 1)
 
-        sampling_results.pos_bboxes = new_bboxes
+            sampling_result.pos_bboxes = new_bboxes
         return sampling_results
-
-    def random_jitter(self, sampling_results, img_metas):
-        post_sampling_results = map(self.random_jitter_single,
-                                    sampling_results, img_metas)
-        return list(post_sampling_results)
 
     def forward_train(self,
                       img,
@@ -145,7 +148,7 @@ class GridRCNN(TwoStageDetector):
             losses.update(loss_bbox)
 
             # Grid head forward and loss
-            sampling_results = self.random_jitter(sampling_results, img_meta)
+            sampling_results = self._random_jitter(sampling_results, img_meta)
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
             grid_feats = self.grid_roi_extractor(
                 x[:self.grid_roi_extractor.num_inputs], pos_rois)
