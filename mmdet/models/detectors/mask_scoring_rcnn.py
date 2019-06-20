@@ -171,7 +171,7 @@ class MaskScoringRCNN(TwoStageDetector):
 
         if det_bboxes.shape[0] == 0:
             segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
-            mask_scores = None
+            mask_scores = [[] for _ in range(self.mask_head.num_classes - 1)]
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
