@@ -65,8 +65,9 @@ class FocalLoss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None):
-        reduction = reduction_override if reduction_override else \
-            self.reduction
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
         if self.use_sigmoid:
             loss_cls = self.loss_weight * sigmoid_focal_loss(
                 pred,

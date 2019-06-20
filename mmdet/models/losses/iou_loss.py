@@ -87,8 +87,9 @@ class IoULoss(nn.Module):
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
             return (pred * weight).sum()  # 0
-        reduction = reduction_override if reduction_override else \
-            self.reduction
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
         loss = self.loss_weight * iou_loss(
             pred,
             target,

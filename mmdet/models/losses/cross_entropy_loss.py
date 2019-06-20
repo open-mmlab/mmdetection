@@ -80,8 +80,9 @@ class CrossEntropyLoss(nn.Module):
                 avg_factor=None,
                 reduction_override=None,
                 **kwargs):
-        reduction = reduction_override if reduction_override else \
-            self.reduction
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
         loss_cls = self.loss_weight * self.cls_criterion(
             cls_score,
             label,
