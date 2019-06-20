@@ -42,8 +42,6 @@ def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
     # if avg_factor is not specified, just reduce the loss
     if avg_factor is None:
         loss = reduce_loss(loss, reduction)
-    # if avg_factor are specified
-    # if reduction is mean, reduce the loss sum by avg factor
     else:
         # if reduction is mean, then average the loss by avg_factor
         if reduction == 'mean':
