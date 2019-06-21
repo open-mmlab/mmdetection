@@ -243,4 +243,4 @@ class SSDHead(AnchorHead):
         loss_reg = torch.exp(-self.loss_weights[1])*loss_reg + \
             0.5*self.loss_weights[1]
 
-        return (losses_cls, losses_reg)
+        return (loss_cls, loss_reg)
