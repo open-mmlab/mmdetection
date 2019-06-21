@@ -43,14 +43,14 @@ test_cfg = dict(
 # model training and testing settings
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/MS_COCO/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(mean=[0, 0, 0], std=[255, 255, 255], to_rgb=True)
 data = dict(
-    imgs_per_gpu=50,
+    imgs_per_gpu=70,
     workers_per_gpu=3,
     train=dict(
         type='RepeatDataset',
-        times=5,
+        times=1,
         dataset=dict(
             type=dataset_type,
             ann_file=data_root + 'annotations/instances_train2017.json',
@@ -101,14 +101,14 @@ data = dict(
         test_mode=True,
         resize_keep_ratio=False))
 # optimizer
-optimizer = dict(type='SGD', lr=2e-2, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict()
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=5e-4)
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=500,
-    warmup_ratio=1.0 / 3,
+    warmup_ratio=1.0 / 10,
     step=[16, 22])
 checkpoint_config = dict(interval=1)
 # yapf:disable
@@ -120,7 +120,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 24
+total_epochs = 25
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/ssd300_mobilenet_v2_coco'
