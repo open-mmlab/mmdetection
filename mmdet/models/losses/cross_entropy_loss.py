@@ -6,6 +6,18 @@ from .utils import weight_reduce_loss
 from ..registry import LOSSES
 
 
+def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
+    # weighted element-wise losses
+    if weight is not None:
+        weight = weight.float()
+    loss = F.cross_entropy(pred, label, reduction='none')
+    # do the reduction for the weighted loss
+    loss = weight_reduce_loss(
+        loss, weight=weight, reduction=reduction, avg_factor=avg_factor)
+
+    return loss
+
+
 def _expand_binary_labels(labels, label_weights, label_channels):
     bin_labels = labels.new_full((labels.size(0), label_channels), 0)
     inds = torch.nonzero(labels >= 1).squeeze()
@@ -17,18 +29,6 @@ def _expand_binary_labels(labels, label_weights, label_channels):
         bin_label_weights = label_weights.view(-1, 1).expand(
             label_weights.size(0), label_channels)
     return bin_labels, bin_label_weights
-
-
-def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
-    # weighted element-wise losses
-    if weight is not None:
-        weight = weight.float()
-    loss = F.cross_entropy(pred, label, reduction='none')
-    # do the reduction for the weighted loss
-    loss = weight_reduce_loss(
-        loss, weight=weight, reduction=reduction, avg_factor=avg_factor)
-
-    return loss
 
 
 def binary_cross_entropy(pred,
