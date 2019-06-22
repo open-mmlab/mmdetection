@@ -90,7 +90,8 @@ which uses `MMDistributedDataParallel` and `MMDataParallel` respectively.
 All outputs (log files and checkpoints) will be saved to the working directory,
 which is specified by `work_dir` in the config file.
 
-**\*Important\***: The default learning rate in config files is for 8 GPUs. According to the [Linear Scaling Rule](https://arxiv.org/abs/1706.02677), you need to set the learning rate proportional to the GPU num if you use less or more than 8 GPUs, e.g., 0.01 for 4 GPUs and 0.04 for 16 GPUs.
+**\*Important\***: The default learning rate in config files is for 8 GPUs and 2 img/gpu (batch size = 8*2 = 16).
+According to the [Linear Scaling Rule](https://arxiv.org/abs/1706.02677), you need to set the learning rate proportional to the batch size if you use different GPUs or images per GPU, e.g., lr=0.01 for 4 GPUs * 2 img/gpu and lr=0.08 for 16 GPUs * 4 img/gpu.
 
 ### Train with a single GPU
 
