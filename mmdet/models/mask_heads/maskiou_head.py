@@ -155,7 +155,7 @@ class MaskIoUHead(nn.Module):
 
                 # crop the gt mask inside the proposal
                 x1, y1, x2, y2 = proposals_np[i, :].astype(np.int32)
-                gt_mask_in_proposal = gt_mask[y1:y2, x1:x2]
+                gt_mask_in_proposal = gt_mask[y1:y2 + 1, x1:x2 + 1]
 
                 ratio = gt_mask_in_proposal.sum() / (
                     gt_instance_mask_area[pos_assigned_gt_inds[i]] + 1e-7)
