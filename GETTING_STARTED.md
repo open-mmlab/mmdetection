@@ -27,7 +27,7 @@ python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}] [-
 Optional arguments:
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
 - `EVAL_METRICS`: Items to be evaluated on the results. Allowed values are: `proposal_fast`, `proposal`, `bbox`, `segm`, `keypoints`.
-- `--show`: If specified, detection results will be ploted on the images and shown in a new window. Only applicable for single GPU testing.
+- `--show`: If specified, detection results will be ploted on the images and shown in a new window. (Only applicable for single GPU testing.)
 
 Examples:
 
@@ -90,9 +90,8 @@ which uses `MMDistributedDataParallel` and `MMDataParallel` respectively.
 All outputs (log files and checkpoints) will be saved to the working directory,
 which is specified by `work_dir` in the config file.
 
-**\*Important\***: The default learning rate in config files is for 8 GPUs.
-If you use less or more than 8 GPUs, you need to set the learning rate proportional
-to the GPU num, e.g., 0.01 for 4 GPUs and 0.04 for 16 GPUs.
+**\*Important\***: The default learning rate in config files is for 8 GPUs and 2 img/gpu (batch size = 8*2 = 16).
+According to the [Linear Scaling Rule](https://arxiv.org/abs/1706.02677), you need to set the learning rate proportional to the batch size if you use different GPUs or images per GPU, e.g., lr=0.01 for 4 GPUs * 2 img/gpu and lr=0.08 for 16 GPUs * 4 img/gpu.
 
 ### Train with a single GPU
 
@@ -110,9 +109,13 @@ If you want to specify the working directory in the command, you can add an argu
 
 Optional arguments are:
 
-- `--validate` (recommended): Perform evaluation at every k (default=1) epochs during the training.
+- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like `this`[configs/mask_rcnn_r50_fpn_1x.py#L174]) epochs during the training.
 - `--work_dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume_from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
+
+Difference between `resume_from` and `load_from`:
+`resume_from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
+`load_from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
 ### Train with multiple machines
 

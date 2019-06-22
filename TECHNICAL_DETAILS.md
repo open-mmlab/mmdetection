@@ -36,6 +36,9 @@ FPN structure in [Path Aggregation Network for Instance Segmentation](https://ar
 1. create a new file in `mmdet/models/necks/pafpn.py`.
 
     ```python
+    from ..registry import NECKS
+
+    @NECKS.register
     class PAFPN(nn.Module):
 
         def __init__(self,
@@ -97,3 +100,7 @@ Model parameters are only synchronized once at the begining.
 After a forward and backward pass, gradients will be allreduced among all GPUs,
 and the optimizer will update model parameters.
 Since the gradients are allreduced, the model parameter stays the same for all processes after the iteration.
+
+## Other information
+
+For more information, please refer to our [technical report](https://arxiv.org/abs/1906.07155).
