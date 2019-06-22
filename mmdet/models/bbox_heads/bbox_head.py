@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import (delta2bbox, multiclass_nms, bbox_target,
-                        weighted_cross_entropy, weighted_smoothl1, accuracy,
-                        force_fp32, auto_fp16)
+from mmdet.core import (delta2bbox, multiclass_nms, bbox_target, force_fp32,
+                        auto_fp16)
+from ..builder import build_loss
+from ..losses import accuracy
 from ..registry import HEADS
 
 
@@ -22,7 +23,13 @@ class BBoxHead(nn.Module):
                  num_classes=81,
                  target_means=[0., 0., 0., 0.],
                  target_stds=[0.1, 0.1, 0.2, 0.2],
-                 reg_class_agnostic=False):
+                 reg_class_agnostic=False,
+                 loss_cls=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=False,
+                     loss_weight=1.0),
+                 loss_bbox=dict(
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
         super(BBoxHead, self).__init__()
         assert with_cls or with_reg
         self.with_avg_pool = with_avg_pool
@@ -35,6 +42,9 @@ class BBoxHead(nn.Module):
         self.target_stds = target_stds
         self.reg_class_agnostic = reg_class_agnostic
         self.fp16_enabled = False
+
+        self.loss_cls = build_loss(loss_cls)
+        self.loss_bbox = build_loss(loss_bbox)
 
         in_channels = self.in_channels
         if self.with_avg_pool:
@@ -91,11 +101,16 @@ class BBoxHead(nn.Module):
              label_weights,
              bbox_targets,
              bbox_weights,
-             reduce=True):
+             reduction_override=None):
         losses = dict()
         if cls_score is not None:
-            losses['loss_cls'] = weighted_cross_entropy(
-                cls_score, labels, label_weights, reduce=reduce)
+            avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
+            losses['loss_cls'] = self.loss_cls(
+                cls_score,
+                labels,
+                label_weights,
+                avg_factor=avg_factor,
+                reduction_override=reduction_override)
             losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0
@@ -104,11 +119,12 @@ class BBoxHead(nn.Module):
             else:
                 pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), -1,
                                                4)[pos_inds, labels[pos_inds]]
-            losses['loss_reg'] = weighted_smoothl1(
+            losses['loss_bbox'] = self.loss_bbox(
                 pos_bbox_pred,
                 bbox_targets[pos_inds],
                 bbox_weights[pos_inds],
-                avg_factor=bbox_targets.size(0))
+                avg_factor=bbox_targets.size(0),
+                reduction_override=reduction_override)
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
@@ -137,8 +153,9 @@ class BBoxHead(nn.Module):
         if cfg is None:
             return bboxes, scores
         else:
-            det_bboxes, det_labels = multiclass_nms(
-                bboxes, scores, cfg.score_thr, cfg.nms, cfg.max_per_img)
+            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
+                                                    cfg.score_thr, cfg.nms,
+                                                    cfg.max_per_img)
 
             return det_bboxes, det_labels
 

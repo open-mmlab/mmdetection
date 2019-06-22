@@ -50,7 +50,7 @@ class RPNHead(AnchorHead):
             cfg,
             gt_bboxes_ignore=gt_bboxes_ignore)
         return dict(
-            loss_rpn_cls=losses['loss_cls'], loss_rpn_reg=losses['loss_reg'])
+            loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
     def get_bboxes_single(self,
                           cls_scores,

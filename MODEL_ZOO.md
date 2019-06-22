@@ -10,7 +10,7 @@
 ### Software environment
 
 - Python 3.6 / 3.7
-- PyTorch Nightly
+- PyTorch 1.1
 - CUDA 9.0.176
 - CUDNN 7.0.4
 - NCCL 2.1.15
@@ -123,7 +123,7 @@ More models with different backbones will be added to the model zoo.
 | :-------------: | :-----: | :-----: | :------: | :-----------------: | :------------: | :----: | :------------------------------------------------------------------------------------------------------------------------------: |
 |    R-50-FPN     |  caffe  |   1x    |   3.4    |        0.285        |      12.5      |  35.8  |                                                                -                                                                 |
 |    R-50-FPN     | pytorch |   1x    |   3.6    |        0.308        |      12.1      |  35.6  |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r50_fpn_1x_20181125-7b0c2548.pth)     |
-|    R-50-FPN     | pytorch |   2x    |    -     |          -          |       -        |  36.5  |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r50_fpn_2x_20181125-8b724df2.pth)     |
+|    R-50-FPN     | pytorch |   2x    |    -     |          -          |       -        |  36.4  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/retinanet_r50_fpn_2x_20190616-75574209.pth)     |
 |    R-101-FPN    |  caffe  |   1x    |   5.3    |        0.410        |      10.4      |  37.8  |                                                                -                                                                 |
 |    R-101-FPN    | pytorch |   1x    |   5.5    |        0.429        |      10.9      |  37.7  |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r101_fpn_1x_20181129-f016f384.pth)    |
 |    R-101-FPN    | pytorch |   2x    |    -     |          -          |       -        |  38.1  |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/retinanet_r101_fpn_2x_20181129-72c14526.pth)    |
@@ -214,6 +214,13 @@ Please refer to [Weight Standardization](configs/gn+ws/README.md) for details.
 
 Please refer to [Deformable Convolutional Networks](configs/dcn/README.md) for details.
 
+### Libra R-CNN
+
+Please refer to [Libra R-CNN](configs/libra_rcnn/README.md) for details.
+
+### Guided Anchoring
+
+Please refer to [Guided Anchoring](configs/guided_anchoring/README.md) for details.
 
 ## Comparison with Detectron and maskrcnn-benchmark
 
@@ -450,6 +457,3 @@ and the main advantage is PyTorch itself. We also perform some memory optimizati
 
 Note that Caffe2 and PyTorch have different apis to obtain memory usage with different implementations.
 For all codebases, `nvidia-smi` shows a larger memory usage than the reported number in the above table.
-
-
-

@@ -29,7 +29,14 @@ model = dict(
         anchor_ratios=[0.5, 1.0, 2.0],
         anchor_strides=[8, 16, 32, 64, 128],
         target_means=[.0, .0, .0, .0],
-        target_stds=[1.0, 1.0, 1.0, 1.0]))
+        target_stds=[1.0, 1.0, 1.0, 1.0],
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0)))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
@@ -38,9 +45,6 @@ train_cfg = dict(
         neg_iou_thr=0.4,
         min_pos_iou=0,
         ignore_iof_thr=-1),
-    smoothl1_beta=0.11,
-    gamma=2.0,
-    alpha=0.25,
     allowed_border=-1,
     pos_weight=-1,
     debug=False)
@@ -116,7 +120,7 @@ total_epochs = 12
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/retinanet_r50_fpn_1x'
+work_dir = './work_dirs/retinanet_x101_32x4d_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
