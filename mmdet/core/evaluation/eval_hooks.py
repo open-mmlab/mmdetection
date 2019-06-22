@@ -116,9 +116,11 @@ class CocoDistEvalRecallHook(DistEvalHook):
 
     def __init__(self,
                  dataset,
+                 interval=1,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05)):
-        super(CocoDistEvalRecallHook, self).__init__(dataset)
+        super(CocoDistEvalRecallHook, self).__init__(
+            dataset, interval=interval)
         self.proposal_nums = np.array(proposal_nums, dtype=np.int32)
         self.iou_thrs = np.array(iou_thrs, dtype=np.float32)
 
