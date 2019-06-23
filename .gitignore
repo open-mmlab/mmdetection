@@ -20,6 +20,8 @@ parts/
 sdist/
 var/
 wheels/
+checkpoints/
+output/
 *.egg-info/
 .installed.cfg
 *.egg
