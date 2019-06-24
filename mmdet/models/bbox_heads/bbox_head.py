@@ -97,12 +97,16 @@ class BBoxHead(nn.Module):
              label_weights,
              bbox_targets,
              bbox_weights,
-             reduce=True):
+             reduction_override=None):
         losses = dict()
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             losses['loss_cls'] = self.loss_cls(
-                cls_score, labels, label_weights, avg_factor=avg_factor)
+                cls_score,
+                labels,
+                label_weights,
+                avg_factor=avg_factor,
+                reduction_override=reduction_override)
             losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0
@@ -115,7 +119,8 @@ class BBoxHead(nn.Module):
                 pos_bbox_pred,
                 bbox_targets[pos_inds],
                 bbox_weights[pos_inds],
-                avg_factor=bbox_targets.size(0))
+                avg_factor=bbox_targets.size(0),
+                reduction_override=reduction_override)
         return losses
 
     def get_det_bboxes(self,

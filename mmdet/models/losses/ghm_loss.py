@@ -15,6 +15,7 @@ def _expand_binary_labels(labels, label_weights, label_channels):
     return bin_labels, bin_label_weights
 
 
+# TODO: code refactoring to make it consistent with other losses
 @LOSSES.register_module
 class GHMC(nn.Module):
     """GHM Classification Loss.
@@ -90,6 +91,7 @@ class GHMC(nn.Module):
         return loss * self.loss_weight
 
 
+# TODO: code refactoring to make it consistent with other losses
 @LOSSES.register_module
 class GHMR(nn.Module):
     """GHM Regression Loss.
@@ -116,6 +118,7 @@ class GHMR(nn.Module):
             self.acc_sum = torch.zeros(bins).cuda()
         self.loss_weight = loss_weight
 
+    # TODO: support reduction parameter
     def forward(self, pred, target, label_weight, avg_factor=None):
         """Calculate the GHM-R loss.
 

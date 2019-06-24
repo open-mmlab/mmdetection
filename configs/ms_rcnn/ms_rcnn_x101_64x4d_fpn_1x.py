@@ -1,10 +1,12 @@
 # model settings
 model = dict(
-    type='MaskRCNN',
-    pretrained='modelzoo://resnet50',
+    type='MaskScoringRCNN',
+    pretrained='open-mmlab://resnext101_64x4d',
     backbone=dict(
-        type='ResNet',
-        depth=50,
+        type='ResNeXt',
+        depth=101,
+        groups=64,
+        base_width=4,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
@@ -56,7 +58,16 @@ model = dict(
         conv_out_channels=256,
         num_classes=81,
         loss_mask=dict(
-            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)))
+            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)),
+    mask_iou_head=dict(
+        type='MaskIoUHead',
+        num_convs=4,
+        num_fcs=2,
+        roi_feat_size=14,
+        in_channels=256,
+        conv_out_channels=256,
+        fc_out_channels=1024,
+        num_classes=81))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -97,6 +108,7 @@ train_cfg = dict(
             add_gt_as_proposals=True),
         mask_size=28,
         pos_weight=-1,
+        mask_thr_binary=0.5,
         debug=False))
 test_cfg = dict(
     rpn=dict(
@@ -171,12 +183,11 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1)
 # runtime settings
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x'
+work_dir = './work_dirs/ms_rcnn_x101_64x4d_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

@@ -46,7 +46,16 @@ class BalancedL1Loss(nn.Module):
         self.reduction = reduction
         self.loss_weight = loss_weight
 
-    def forward(self, pred, target, weight=None, avg_factor=None, **kwargs):
+    def forward(self,
+                pred,
+                target,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None,
+                **kwargs):
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
         loss_bbox = self.loss_weight * balanced_l1_loss(
             pred,
             target,
@@ -54,7 +63,7 @@ class BalancedL1Loss(nn.Module):
             alpha=self.alpha,
             gamma=self.gamma,
             beta=self.beta,
-            reduction=self.reduction,
+            reduction=reduction,
             avg_factor=avg_factor,
             **kwargs)
         return loss_bbox

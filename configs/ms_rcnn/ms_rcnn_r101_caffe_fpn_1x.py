@@ -1,14 +1,15 @@
 # model settings
 model = dict(
-    type='MaskRCNN',
-    pretrained='modelzoo://resnet50',
+    type='MaskScoringRCNN',
+    pretrained='open-mmlab://resnet101_caffe',
     backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=101,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        style='pytorch'),
+        norm_cfg=dict(type='BN', requires_grad=False),
+        style='caffe'),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -56,7 +57,16 @@ model = dict(
         conv_out_channels=256,
         num_classes=81,
         loss_mask=dict(
-            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)))
+            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)),
+    mask_iou_head=dict(
+        type='MaskIoUHead',
+        num_convs=4,
+        num_fcs=2,
+        roi_feat_size=14,
+        in_channels=256,
+        conv_out_channels=256,
+        fc_out_channels=1024,
+        num_classes=81))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -97,6 +107,7 @@ train_cfg = dict(
             add_gt_as_proposals=True),
         mask_size=28,
         pos_weight=-1,
+        mask_thr_binary=0.5,
         debug=False))
 test_cfg = dict(
     rpn=dict(
@@ -115,7 +126,7 @@ test_cfg = dict(
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 data = dict(
     imgs_per_gpu=2,
     workers_per_gpu=2,
@@ -171,12 +182,11 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1)
 # runtime settings
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x'
+work_dir = './work_dirs/ms_rcnn_r101_caffe_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
