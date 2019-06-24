@@ -3,11 +3,11 @@
 ## Introduction
 
 ```
-@article{huang2019mask,
-  title={Mask Scoring R-CNN},
-  author={Huang, Zhaojin and Huang, Lichao and Gong, Yongchao and Huang, Chang and Wang, Xinggang},
-  journal={arXiv preprint arXiv:1903.00241},
-  year={2019}
+@inproceedings{huang2019msrcnn,
+    title = {Mask Scoring R-CNN},
+    author = {Zhaojin Huang and Lichao Huang and Yongchao Gong and Chang Huang and Xinggang Wang},
+    booktitle = {IEEE Conference on Computer Vision and Pattern Recognition},
+    year = {2019},
 }
 ```
 
