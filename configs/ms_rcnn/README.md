@@ -4,10 +4,10 @@
 
 ```
 @inproceedings{huang2019msrcnn,
-    title = {Mask Scoring R-CNN},
-    author = {Zhaojin Huang and Lichao Huang and Yongchao Gong and Chang Huang and Xinggang Wang},
-    booktitle = {IEEE Conference on Computer Vision and Pattern Recognition},
-    year = {2019},
+    title={Mask Scoring R-CNN},
+    author={Zhaojin Huang and Lichao Huang and Yongchao Gong and Chang Huang and Xinggang Wang},
+    booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
+    year={2019},
 }
 ```
 
