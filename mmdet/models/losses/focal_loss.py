@@ -59,7 +59,15 @@ class FocalLoss(nn.Module):
         self.reduction = reduction
         self.loss_weight = loss_weight
 
-    def forward(self, pred, target, weight=None, avg_factor=None):
+    def forward(self,
+                pred,
+                target,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None):
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
         if self.use_sigmoid:
             loss_cls = self.loss_weight * sigmoid_focal_loss(
                 pred,
@@ -67,7 +75,7 @@ class FocalLoss(nn.Module):
                 weight,
                 gamma=self.gamma,
                 alpha=self.alpha,
-                reduction=self.reduction,
+                reduction=reduction,
                 avg_factor=avg_factor)
         else:
             raise NotImplementedError

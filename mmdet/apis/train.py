@@ -91,8 +91,8 @@ def build_optimizer(model, optimizer_cfg):
     paramwise_options = optimizer_cfg.pop('paramwise_options', None)
     # if no paramwise option is specified, just use the global setting
     if paramwise_options is None:
-        return obj_from_dict(
-            optimizer_cfg, torch.optim, dict(params=model.parameters()))
+        return obj_from_dict(optimizer_cfg, torch.optim,
+                             dict(params=model.parameters()))
     else:
         assert isinstance(paramwise_options, dict)
         # get base lr and weight decay
@@ -154,15 +154,19 @@ def _dist_train(model, dataset, cfg, validate=False):
     # register eval hooks
     if validate:
         val_dataset_cfg = cfg.data.val
+        eval_cfg = cfg.get('evaluation', {})
         if isinstance(model.module, RPN):
             # TODO: implement recall hooks for other datasets
-            runner.register_hook(CocoDistEvalRecallHook(val_dataset_cfg))
+            runner.register_hook(
+                CocoDistEvalRecallHook(val_dataset_cfg, **eval_cfg))
         else:
             dataset_type = getattr(datasets, val_dataset_cfg.type)
             if issubclass(dataset_type, datasets.CocoDataset):
-                runner.register_hook(CocoDistEvalmAPHook(val_dataset_cfg))
+                runner.register_hook(
+                    CocoDistEvalmAPHook(val_dataset_cfg, **eval_cfg))
             else:
-                runner.register_hook(DistEvalmAPHook(val_dataset_cfg))
+                runner.register_hook(
+                    DistEvalmAPHook(val_dataset_cfg, **eval_cfg))
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
