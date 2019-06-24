@@ -9,6 +9,13 @@
   booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
   year={2019}
 }
+
+@article{lu2019grid,
+  title={Grid R-CNN Plus: Faster and Better},
+  author={Lu, Xin and Li, Buyu and Yue, Yuxin and Li, Quanquan and Yan, Junjie},
+  journal={arXiv preprint arXiv:1906.05688},
+  year={2019}
+}
 ```
 
 ## Results and Models
