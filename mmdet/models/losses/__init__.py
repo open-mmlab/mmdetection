@@ -7,6 +7,7 @@ from .ghm_loss import GHMC, GHMR
 from .balanced_l1_loss import balanced_l1_loss, BalancedL1Loss
 from .iou_loss import iou_loss, bounded_iou_loss, IoULoss, BoundedIoULoss
 from .utils import reduce_loss, weight_reduce_loss, weighted_loss
+from .refinedet_multibox_loss import refinedet_multibox_loss
 
 __all__ = [
     'accuracy', 'Accuracy', 'cross_entropy', 'binary_cross_entropy',
@@ -14,5 +15,5 @@ __all__ = [
     'FocalLoss', 'smooth_l1_loss', 'SmoothL1Loss', 'balanced_l1_loss',
     'BalancedL1Loss', 'iou_loss', 'bounded_iou_loss', 'IoULoss',
     'BoundedIoULoss', 'GHMC', 'GHMR', 'reduce_loss', 'weight_reduce_loss',
-    'weighted_loss'
+    'weighted_loss', 'refinedet_multibox_loss'
 ]
