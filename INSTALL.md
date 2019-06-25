@@ -23,7 +23,7 @@ a. Create a conda virtual environment and activate it. Then install Cython.
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
-source activate open-mmlab
+conda activate open-mmlab
 
 conda install cython
 ```
