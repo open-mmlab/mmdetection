@@ -114,7 +114,7 @@ def build_optimizer(model, optimizer_cfg):
             if not param.requires_grad:
                 # FP16 training needs to copy gradient/weight between master
                 # weight copy and model weight, it is convenient to keep all
-                # parameters here to aligh with model.parameters()
+                # parameters here to align with model.parameters()
                 params.append(param_group)
                 continue
 

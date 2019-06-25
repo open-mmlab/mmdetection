@@ -109,7 +109,7 @@ def force_fp32(apply_to=None, out_fp16=False):
         class MyModule2(nn.Module):
 
             # convert pred to fp32
-            @auto_fp16(apply_to=('pred', ))
+            @force_fp32(apply_to=('pred', ))
             def post_process(self, pred, others):
                 pass
     """
