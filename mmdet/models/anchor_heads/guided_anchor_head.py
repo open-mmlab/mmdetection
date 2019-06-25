@@ -164,7 +164,7 @@ class GuidedAnchorHead(AnchorHead):
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
 
-        self.fp16_enabled = True
+        self.fp16_enabled = False
 
         self._init_layers()
 

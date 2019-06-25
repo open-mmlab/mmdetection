@@ -60,7 +60,6 @@ class BaseDetector(nn.Module):
             logger = logging.getLogger()
             logger.info('load model from: {}'.format(pretrained))
 
-    @auto_fp16(apply_to=('img', ))
     def forward_test(self, imgs, img_metas, **kwargs):
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
