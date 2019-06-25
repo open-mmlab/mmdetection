@@ -77,7 +77,7 @@ show_result(img, result, model.CLASSES)
 
 # test a list of images and write the results to image files
 imgs = ['test1.jpg', 'test2.jpg']
-for i, result in enumerate(inference_detector(model, imgs):
+for i, result in enumerate(inference_detector(model, imgs)):
     show_result(imgs[i], result, model.CLASSES, out_file='result_{}.jpg'.format(i))
 ```
 
