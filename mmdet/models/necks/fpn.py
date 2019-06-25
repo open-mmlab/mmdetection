@@ -1,9 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import xavier_init
+
+from ..registry import NECKS
 from ..utils import ConvModule
-from ..utils import xavier_init
 
 
+@NECKS.register_module
 class FPN(nn.Module):
 
     def __init__(self,
@@ -13,7 +16,10 @@ class FPN(nn.Module):
                  start_level=0,
                  end_level=-1,
                  add_extra_convs=False,
-                 normalize=None,
+                 extra_convs_on_inputs=True,
+                 relu_before_extra_convs=False,
+                 conv_cfg=None,
+                 norm_cfg=None,
                  activation=None):
         super(FPN, self).__init__()
         assert isinstance(in_channels, list)
@@ -22,7 +28,7 @@ class FPN(nn.Module):
         self.num_ins = len(in_channels)
         self.num_outs = num_outs
         self.activation = activation
-        self.with_bias = normalize is None
+        self.relu_before_extra_convs = relu_before_extra_convs
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -35,6 +41,7 @@ class FPN(nn.Module):
         self.start_level = start_level
         self.end_level = end_level
         self.add_extra_convs = add_extra_convs
+        self.extra_convs_on_inputs = extra_convs_on_inputs
 
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
@@ -44,8 +51,8 @@ class FPN(nn.Module):
                 in_channels[i],
                 out_channels,
                 1,
-                normalize=normalize,
-                bias=self.with_bias,
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg,
                 activation=self.activation,
                 inplace=False)
             fpn_conv = ConvModule(
@@ -53,32 +60,30 @@ class FPN(nn.Module):
                 out_channels,
                 3,
                 padding=1,
-                normalize=normalize,
-                bias=self.with_bias,
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg,
                 activation=self.activation,
                 inplace=False)
 
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
 
-            # lvl_id = i - self.start_level
-            # setattr(self, 'lateral_conv{}'.format(lvl_id), l_conv)
-            # setattr(self, 'fpn_conv{}'.format(lvl_id), fpn_conv)
-
         # add extra conv layers (e.g., RetinaNet)
         extra_levels = num_outs - self.backbone_end_level + self.start_level
         if add_extra_convs and extra_levels >= 1:
             for i in range(extra_levels):
-                in_channels = (self.in_channels[self.backbone_end_level - 1]
-                               if i == 0 else out_channels)
+                if i == 0 and self.extra_convs_on_inputs:
+                    in_channels = self.in_channels[self.backbone_end_level - 1]
+                else:
+                    in_channels = out_channels
                 extra_fpn_conv = ConvModule(
                     in_channels,
                     out_channels,
                     3,
                     stride=2,
                     padding=1,
-                    normalize=normalize,
-                    bias=self.with_bias,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
                     activation=self.activation,
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)
@@ -118,9 +123,14 @@ class FPN(nn.Module):
                     outs.append(F.max_pool2d(outs[-1], 1, stride=2))
             # add conv layers on top of original feature maps (RetinaNet)
             else:
-                orig = inputs[self.backbone_end_level - 1]
-                outs.append(self.fpn_convs[used_backbone_levels](orig))
+                if self.extra_convs_on_inputs:
+                    orig = inputs[self.backbone_end_level - 1]
+                    outs.append(self.fpn_convs[used_backbone_levels](orig))
+                else:
+                    outs.append(self.fpn_convs[used_backbone_levels](outs[-1]))
                 for i in range(used_backbone_levels + 1, self.num_outs):
-                    # BUG: we should add relu before each extra conv
-                    outs.append(self.fpn_convs[i](outs[-1]))
+                    if self.relu_before_extra_convs:
+                        outs.append(self.fpn_convs[i](F.relu(outs[-1])))
+                    else:
+                        outs.append(self.fpn_convs[i](outs[-1]))
         return tuple(outs)

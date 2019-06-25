@@ -1,3 +1,4 @@
+import mmcv
 import numpy as np
 from terminaltables import AsciiTable
 
@@ -234,8 +235,9 @@ def eval_map(det_results,
         gt_ignore (list): gt ignore indicators of each image, a list of K array
         scale_ranges (list, optional): [(min1, max1), (min2, max2), ...]
         iou_thr (float): IoU threshold
-        dataset (None or str): dataset name, there are minor differences in
-            metrics for different datsets, e.g. "voc07", "imagenet_det", etc.
+        dataset (None or str or list): dataset name or dataset classes, there
+            are minor differences in metrics for different datsets, e.g.
+            "voc07", "imagenet_det", etc.
         print_summary (bool): whether to print the mAP summary
 
     Returns:
@@ -259,8 +261,8 @@ def eval_map(det_results,
         cls_dets, cls_gts, cls_gt_ignore = get_cls_results(
             det_results, gt_bboxes, gt_labels, gt_ignore, i)
         # calculate tp and fp for each image
-        tpfp_func = (tpfp_imagenet
-                     if dataset in ['det', 'vid'] else tpfp_default)
+        tpfp_func = (
+            tpfp_imagenet if dataset in ['det', 'vid'] else tpfp_default)
         tpfp = [
             tpfp_func(cls_dets[j], cls_gts[j], cls_gt_ignore[j], iou_thr,
                       area_ranges) for j in range(len(cls_dets))
@@ -333,7 +335,7 @@ def print_map_summary(mean_ap, results, dataset=None):
     Args:
         mean_ap(float): calculated from `eval_map`
         results(list): calculated from `eval_map`
-        dataset(None or str or list): dataset name.
+        dataset(None or str or list): dataset name or dataset classes.
     """
     num_scales = len(results[0]['ap']) if isinstance(results[0]['ap'],
                                                      np.ndarray) else 1
@@ -353,8 +355,10 @@ def print_map_summary(mean_ap, results, dataset=None):
 
     if dataset is None:
         label_names = [str(i) for i in range(1, num_classes + 1)]
-    else:
+    elif mmcv.is_str(dataset):
         label_names = get_classes(dataset)
+    else:
+        label_names = dataset
 
     if not isinstance(mean_ap, list):
         mean_ap = [mean_ap]

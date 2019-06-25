@@ -7,7 +7,7 @@ class RPNTestMixin(object):
     def simple_test_rpn(self, x, img_meta, rpn_test_cfg):
         rpn_outs = self.rpn_head(x)
         proposal_inputs = rpn_outs + (img_meta, rpn_test_cfg)
-        proposal_list = self.rpn_head.get_proposals(*proposal_inputs)
+        proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         return proposal_list
 
     def aug_test_rpn(self, feats, img_metas, rpn_test_cfg):
@@ -17,10 +17,18 @@ class RPNTestMixin(object):
             proposal_list = self.simple_test_rpn(x, img_meta, rpn_test_cfg)
             for i, proposals in enumerate(proposal_list):
                 aug_proposals[i].append(proposals)
+        # reorganize the order of 'img_metas' to match the dimensions
+        # of 'aug_proposals'
+        aug_img_metas = []
+        for i in range(imgs_per_gpu):
+            aug_img_meta = []
+            for j in range(len(img_metas)):
+                aug_img_meta.append(img_metas[j][i])
+            aug_img_metas.append(aug_img_meta)
         # after merging, proposals will be rescaled to the original image size
         merged_proposals = [
-            merge_aug_proposals(proposals, img_meta, rpn_test_cfg)
-            for proposals, img_meta in zip(aug_proposals, img_metas)
+            merge_aug_proposals(proposals, aug_img_meta, rpn_test_cfg)
+            for proposals, aug_img_meta in zip(aug_proposals, aug_img_metas)
         ]
         return merged_proposals
 
@@ -37,6 +45,8 @@ class BBoxTestMixin(object):
         rois = bbox2roi(proposals)
         roi_feats = self.bbox_roi_extractor(
             x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
+        if self.with_shared_head:
+            roi_feats = self.shared_head(roi_feats)
         cls_score, bbox_pred = self.bbox_head(roi_feats)
         img_shape = img_meta[0]['img_shape']
         scale_factor = img_meta[0]['scale_factor']
@@ -65,6 +75,8 @@ class BBoxTestMixin(object):
             # recompute feature maps to save GPU memory
             roi_feats = self.bbox_roi_extractor(
                 x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
+            if self.with_shared_head:
+                roi_feats = self.shared_head(roi_feats)
             cls_score, bbox_pred = self.bbox_head(roi_feats)
             bboxes, scores = self.bbox_head.get_det_bboxes(
                 rois,
@@ -101,11 +113,13 @@ class MaskTestMixin(object):
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
-            _bboxes = (det_bboxes[:, :4] * scale_factor
-                       if rescale else det_bboxes)
+            _bboxes = (
+                det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
             mask_rois = bbox2roi([_bboxes])
             mask_feats = self.mask_roi_extractor(
                 x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
+            if self.with_shared_head:
+                mask_feats = self.shared_head(mask_feats)
             mask_pred = self.mask_head(mask_feats)
             segm_result = self.mask_head.get_seg_masks(
                 mask_pred, _bboxes, det_labels, self.test_cfg.rcnn, ori_shape,
@@ -127,6 +141,8 @@ class MaskTestMixin(object):
                 mask_feats = self.mask_roi_extractor(
                     x[:len(self.mask_roi_extractor.featmap_strides)],
                     mask_rois)
+                if self.with_shared_head:
+                    mask_feats = self.shared_head(mask_feats)
                 mask_pred = self.mask_head(mask_feats)
                 # convert to numpy array to save memory
                 aug_masks.append(mask_pred.sigmoid().cpu().numpy())
