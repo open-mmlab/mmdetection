@@ -30,4 +30,3 @@
 **Notes:**
 - All models are trained with 8 GPUs instead of 32 GPUs in the original paper.
 - The warming up lasts for 1 epoch and `2x` here indicates 25 epochs.
-- The training speed is about 3 times slower than Faster R-CNN.
