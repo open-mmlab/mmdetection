@@ -4,7 +4,6 @@ import math
 import torch
 import numpy as np
 
-from torch.distributed.distributed_c10d import get_world_size, get_rank
 from torch.utils.data import Sampler
 from torch.utils.data import DistributedSampler as _DistributedSampler
 
@@ -95,6 +94,7 @@ class DistributedGroupSampler(Sampler):
                  samples_per_gpu=1,
                  num_replicas=None,
                  rank=None):
+        from torch.distributed import get_world_size, get_rank
         if num_replicas is None:
             num_replicas = get_world_size()
         if rank is None:
