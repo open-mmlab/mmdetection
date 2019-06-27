@@ -145,11 +145,11 @@ class DoubleConvFCBBoxHead(BBoxHead):
 
         for m in self.fc_branch.modules():
             if isinstance(m, nn.Linear):
-                xavier_init(m)
+                xavier_init(m, distribution='uniform')
 
-    def forward(self, x):
+    def forward(self, x_cls, x_reg):
         # conv head
-        x_conv = self.res_block(x)
+        x_conv = self.res_block(x_reg)
 
         for conv in self.conv_branch:
             x_conv = conv(x_conv)
@@ -161,7 +161,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
         bbox_pred = self.fc_reg(x_conv)
 
         # fc head
-        x_fc = x.view(x.size(0), -1)
+        x_fc = x_cls.view(x_cls.size(0), -1)
         for fc in self.fc_branch:
             x_fc = self.relu(fc(x_fc))
 

@@ -1,6 +1,6 @@
 # model settings
 model = dict(
-    type='FasterRCNN',
+    type='DoubleHeadRCNN',
     pretrained='modelzoo://resnet50',
     backbone=dict(
         type='ResNet',
@@ -44,8 +44,8 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=2.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=2.0)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -85,6 +85,7 @@ train_cfg = dict(
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
         pos_weight=-1,
+        reg_scale_factor=1.3,
         debug=False))
 test_cfg = dict(
     rpn=dict(
