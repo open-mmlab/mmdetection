@@ -109,7 +109,7 @@ If you want to specify the working directory in the command, you can add an argu
 
 Optional arguments are:
 
-- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like `this`[configs/mask_rcnn_r50_fpn_1x.py#L174]) epochs during the training.
+- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](configs/mask_rcnn_r50_fpn_1x.py#L174)) epochs during the training.
 - `--work_dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume_from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
 
