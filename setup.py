@@ -1,7 +1,12 @@
 import os
 import subprocess
 import time
-from setuptools import find_packages, setup
+
+import numpy as np
+from Cython.Build import cythonize
+from Cython.Distutils import build_ext
+from setuptools import find_packages, setup, Extension
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 
 def readme():
@@ -80,6 +85,28 @@ def get_version():
     return locals()['__version__']
 
 
+def make_cuda_ext(name, modpath, sources):
+    mod_prefix = '.'.join(modpath)
+
+    return CUDAExtension(
+        name='{}.{}'.format(mod_prefix, name),
+        sources=[os.path.join(*modpath, p) for p in sources])
+
+
+def make_cython_ext(name, modpath, sources):
+    mod_prefix = '.'.join(modpath)
+    extension = Extension(
+        '{}.{}'.format(mod_prefix, name),
+        [os.path.join(*modpath, p) for p in sources],
+        include_dirs=[np.get_include()],
+        language='c++',
+        extra_compile_args={
+            'cxx': ['-Wno-unused-function', '-Wno-write-strings']}
+    )
+    extension, = cythonize(extension)
+    return extension
+
+
 if __name__ == '__main__':
     write_version_py()
     setup(
@@ -103,10 +130,49 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 3.6',
         ],
         license='Apache License 2.0',
-        setup_requires=['pytest-runner'],
+        setup_requires=['pytest-runner', 'cython', 'torch>=1.1', 'numpy'],
         tests_require=['pytest'],
         install_requires=[
             'mmcv>=0.2.6', 'numpy', 'matplotlib', 'six', 'terminaltables',
-            'pycocotools'
+            'pycocotools', 'torch>=1.1'
         ],
+        ext_modules=[
+            make_cython_ext(
+                name='soft_nms_cpu',
+                modpath=('mmdet', 'ops', 'nms'),
+                sources=['src/soft_nms_cpu.pyx']),
+            make_cuda_ext(
+                name='roi_align_cuda',
+                modpath=('mmdet', 'ops', 'roi_align'),
+                sources=['src/roi_align_cuda.cpp', 'src/roi_align_kernel.cu']),
+            make_cuda_ext(
+                name='roi_pool_cuda',
+                modpath=('mmdet', 'ops', 'roi_pool'),
+                sources=['src/roi_pool_cuda.cpp', 'src/roi_pool_kernel.cu']),
+            make_cuda_ext(
+                name='nms_cpu',
+                modpath=('mmdet', 'ops', 'nms'),
+                sources=['src/nms_cpu.cpp']),
+            make_cuda_ext(
+                name='nms_cuda',
+                modpath=('mmdet', 'ops', 'nms'),
+                sources=['src/nms_cuda.cpp', 'src/nms_kernel.cu']),
+            make_cuda_ext(
+                name='deform_conv_cuda',
+                modpath=('mmdet', 'ops', 'dcn'),
+                sources=['src/deform_conv_cuda.cpp', 'src/deform_conv_cuda_kernel.cu']),
+            make_cuda_ext(
+                name='deform_pool_cuda',
+                modpath=('mmdet', 'ops', 'dcn'),
+                sources=['src/deform_pool_cuda.cpp', 'src/deform_pool_cuda_kernel.cu']),
+            make_cuda_ext(
+                name='sigmoid_focal_loss_cuda',
+                modpath=('mmdet', 'ops', 'sigmoid_focal_loss'),
+                sources=['src/sigmoid_focal_loss.cpp', 'src/sigmoid_focal_loss_cuda.cu']),
+            make_cuda_ext(
+                name='masked_conv2d_cuda',
+                modpath=('mmdet', 'ops', 'masked_conv'),
+                sources=['src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu']),
+        ],
+        cmdclass={'build_ext': BuildExtension},
         zip_safe=False)
