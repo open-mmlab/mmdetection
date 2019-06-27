@@ -4,7 +4,6 @@ import time
 
 import numpy as np
 from Cython.Build import cythonize
-from Cython.Distutils import build_ext
 from setuptools import find_packages, setup, Extension
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
@@ -160,19 +159,23 @@ if __name__ == '__main__':
             make_cuda_ext(
                 name='deform_conv_cuda',
                 modpath=('mmdet', 'ops', 'dcn'),
-                sources=['src/deform_conv_cuda.cpp', 'src/deform_conv_cuda_kernel.cu']),
+                sources=['src/deform_conv_cuda.cpp',
+                         'src/deform_conv_cuda_kernel.cu']),
             make_cuda_ext(
                 name='deform_pool_cuda',
                 modpath=('mmdet', 'ops', 'dcn'),
-                sources=['src/deform_pool_cuda.cpp', 'src/deform_pool_cuda_kernel.cu']),
+                sources=['src/deform_pool_cuda.cpp',
+                         'src/deform_pool_cuda_kernel.cu']),
             make_cuda_ext(
                 name='sigmoid_focal_loss_cuda',
                 modpath=('mmdet', 'ops', 'sigmoid_focal_loss'),
-                sources=['src/sigmoid_focal_loss.cpp', 'src/sigmoid_focal_loss_cuda.cu']),
+                sources=['src/sigmoid_focal_loss.cpp',
+                         'src/sigmoid_focal_loss_cuda.cu']),
             make_cuda_ext(
                 name='masked_conv2d_cuda',
                 modpath=('mmdet', 'ops', 'masked_conv'),
-                sources=['src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu']),
+                sources=['src/masked_conv2d_cuda.cpp',
+                         'src/masked_conv2d_kernel.cu']),
         ],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)
