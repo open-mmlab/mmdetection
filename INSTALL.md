@@ -37,13 +37,7 @@ git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Compile cuda extensions.
-
-```shell
-./compile.sh
-```
-
-e. Install mmdetection (other dependencies will be installed automatically).
+d. Install mmdetection (other dependencies will be installed automatically).
 
 ```shell
 python setup.py develop
