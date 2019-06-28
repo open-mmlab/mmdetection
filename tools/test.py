@@ -11,7 +11,7 @@ from mmcv.runner import load_checkpoint, get_dist_info
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
 from mmdet.apis import init_dist
-from mmdet.core import results2json, coco_eval
+from mmdet.core import results2json, coco_eval, wrap_fp16_model
 from mmdet.datasets import build_dataloader, get_dataset
 from mmdet.models import build_detector
 
@@ -157,6 +157,9 @@ def main():
 
     # build the model and load checkpoint
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+    fp16_cfg = cfg.get('fp16', None)
+    if fp16_cfg is not None:
+        wrap_fp16_model(model)
     checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
     # old versions did not save class info in checkpoints, this walkaround is
     # for backward compatibility
