@@ -22,14 +22,17 @@ def single_gpu_test(model, data_loader, show=False):
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
+        batch_size = len(data['img'][0].data[0])
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
-        results.append(result)
+        if batch_size > 1:
+            results += result
+        else:
+            results.append(result)
 
         if show:
             model.module.show_result(data, result, dataset.img_norm_cfg)
 
-        batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
             prog_bar.update()
     return results
@@ -43,12 +46,15 @@ def multi_gpu_test(model, data_loader, tmpdir=None):
     if rank == 0:
         prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
+        batch_size = len(data['img'][0].data[0])
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
-        results.append(result)
+        if batch_size > 1:
+            results += result
+        else:
+            results.append(result)
 
         if rank == 0:
-            batch_size = data['img'][0].size(0)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 
@@ -146,11 +152,14 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
 
     # build the dataloader
-    # TODO: support multiple images per gpu (only minor changes are needed)
+    # TODO: support batch inference for all models
+    imgs_per_gpu = 1
+    if 'imgs_per_gpu_override' in cfg.data.test:
+        imgs_per_gpu = cfg.data.test.pop('imgs_per_gpu_override')
     dataset = get_dataset(cfg.data.test)
     data_loader = build_dataloader(
         dataset,
-        imgs_per_gpu=1,
+        imgs_per_gpu=imgs_per_gpu,
         workers_per_gpu=cfg.data.workers_per_gpu,
         dist=distributed,
         shuffle=False)

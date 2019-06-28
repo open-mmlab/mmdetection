@@ -48,16 +48,26 @@ class BBoxTestMixin(object):
         if self.with_shared_head:
             roi_feats = self.shared_head(roi_feats)
         cls_score, bbox_pred = self.bbox_head(roi_feats)
-        img_shape = img_meta[0]['img_shape']
-        scale_factor = img_meta[0]['scale_factor']
-        det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
-            rois,
-            cls_score,
-            bbox_pred,
-            img_shape,
-            scale_factor,
-            rescale=rescale,
-            cfg=rcnn_test_cfg)
+        num_per_img = [len(proposal) for proposal in proposals]
+
+        rois = rois.split(num_per_img, 0)
+        cls_scores = cls_score.split(num_per_img, 0)
+        bbox_preds = bbox_pred.split(num_per_img, 0)
+        det_bboxes = []
+        det_labels = []
+        for i in range(len(num_per_img)):
+            img_shape = img_meta[i]['img_shape']
+            scale_factor = img_meta[i]['scale_factor']
+            det_bbox, det_label = self.bbox_head.get_det_bboxes(
+                rois[i],
+                cls_scores[i],
+                bbox_preds[i],
+                img_shape,
+                scale_factor,
+                rescale=rescale,
+                cfg=rcnn_test_cfg)
+            det_bboxes.append(det_bbox)
+            det_labels.append(det_label)
         return det_bboxes, det_labels
 
     def aug_test_bboxes(self, feats, img_metas, proposal_list, rcnn_test_cfg):
@@ -91,9 +101,10 @@ class BBoxTestMixin(object):
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas, rcnn_test_cfg)
-        det_bboxes, det_labels = multiclass_nms(
-            merged_bboxes, merged_scores, rcnn_test_cfg.score_thr,
-            rcnn_test_cfg.nms, rcnn_test_cfg.max_per_img)
+        det_bboxes, det_labels = multiclass_nms(merged_bboxes, merged_scores,
+                                                rcnn_test_cfg.score_thr,
+                                                rcnn_test_cfg.nms,
+                                                rcnn_test_cfg.max_per_img)
         return det_bboxes, det_labels
 
 
@@ -105,26 +116,34 @@ class MaskTestMixin(object):
                          det_bboxes,
                          det_labels,
                          rescale=False):
-        # image shape of the first image in the batch (only one)
-        ori_shape = img_meta[0]['ori_shape']
-        scale_factor = img_meta[0]['scale_factor']
-        if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
-        else:
-            # if det_bboxes is rescaled to the original image size, we need to
-            # rescale it back to the testing scale to obtain RoIs.
-            _bboxes = (
-                det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
-            mask_rois = bbox2roi([_bboxes])
-            mask_feats = self.mask_roi_extractor(
-                x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
-            if self.with_shared_head:
-                mask_feats = self.shared_head(mask_feats)
-            mask_pred = self.mask_head(mask_feats)
-            segm_result = self.mask_head.get_seg_masks(
-                mask_pred, _bboxes, det_labels, self.test_cfg.rcnn, ori_shape,
-                scale_factor, rescale)
-        return segm_result
+        _bboxes = [
+            det_bboxes[i][:, :4] *
+            img_meta[i]['scale_factor'] if rescale else det_bboxes[i][:, :4]
+            for i in range(len(det_bboxes))
+        ]
+        mask_rois = bbox2roi(_bboxes)
+        mask_feats = self.mask_roi_extractor(
+            x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
+        if self.with_shared_head:
+            mask_feats = self.shared_head(mask_feats)
+        mask_pred = self.mask_head(mask_feats)
+
+        num_bboxes_per_image = [len(det_bbox) for det_bbox in det_bboxes]
+        mask_preds = mask_pred.split(num_bboxes_per_image, 0)
+        segm_results = []
+        for i in range(len(num_bboxes_per_image)):
+            if det_bboxes[i].shape[0] == 0:
+                segm_results.append(
+                    [[] for _ in range(self.mask_head.num_classes - 1)])
+            else:
+                ori_shape = img_meta[i]['ori_shape']
+                scale_factor = img_meta[i]['scale_factor']
+                segm_result = self.mask_head.get_seg_masks(
+                    mask_preds[i], _bboxes[i], det_labels[i],
+                    self.test_cfg.rcnn, ori_shape, scale_factor, rescale)
+                segm_results.append(segm_result)
+
+        return segm_results
 
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):
         if det_bboxes.shape[0] == 0:

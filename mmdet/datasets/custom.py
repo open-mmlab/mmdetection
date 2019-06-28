@@ -307,14 +307,18 @@ class CustomDataset(Dataset):
         for scale in self.img_scales:
             _img, _img_meta, _proposal = prepare_single(
                 img, scale, False, proposal)
-            imgs.append(_img)
+            imgs.append(DC(to_tensor(_img), stack=True))
             img_metas.append(DC(_img_meta, cpu_only=True))
+            if _proposal is not None:
+                _proposal = DC(to_tensor(_proposal))
             proposals.append(_proposal)
             if self.flip_ratio > 0:
                 _img, _img_meta, _proposal = prepare_single(
                     img, scale, True, proposal)
-                imgs.append(_img)
+                imgs.append(DC(to_tensor(_img), stack=True))
                 img_metas.append(DC(_img_meta, cpu_only=True))
+                if _proposal is not None:
+                    _proposal = DC(to_tensor(_proposal))
                 proposals.append(_proposal)
         data = dict(img=imgs, img_meta=img_metas)
         if self.proposals is not None:
