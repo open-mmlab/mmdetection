@@ -92,6 +92,7 @@ class SSDHead(AnchorHead):
         self.target_stds = target_stds
         self.use_sigmoid_cls = False
         self.cls_focal_loss = False
+        self.fp16_enabled = False
 
     def init_weights(self):
         for m in self.modules():
