@@ -45,14 +45,14 @@ class SSDHead(AnchorHead):
                     nn.Conv2d(in_channels[i], in_channels[i],
                               kernel_size=3, padding=1, groups=in_channels[i]),
                     nn.BatchNorm2d(in_channels[i]),
-                    nn.ReLU(inplace=True),
+                    nn.ReLU6(inplace=True),
                     nn.Conv2d(in_channels[i], num_anchors[i] * 4,
                               kernel_size=1, padding=0))
                 cls_conv = nn.Sequential(
                     nn.Conv2d(in_channels[i], in_channels[i],
                               kernel_size=3, padding=1, groups=in_channels[i]),
                     nn.BatchNorm2d(in_channels[i]),
-                    nn.ReLU(inplace=True),
+                    nn.ReLU6(inplace=True),
                     nn.Conv2d(in_channels[i], num_anchors[i] * num_classes,
                               kernel_size=1, padding=0))
             else:
