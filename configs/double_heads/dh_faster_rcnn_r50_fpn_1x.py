@@ -31,6 +31,7 @@ model = dict(
         roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
         out_channels=256,
         featmap_strides=[4, 8, 16, 32]),
+    reg_roi_scale_factor=1.3,
     bbox_head=dict(
         type='DoubleConvFCBBoxHead',
         num_convs=4,
@@ -85,7 +86,6 @@ train_cfg = dict(
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
         pos_weight=-1,
-        reg_scale_factor=1.3,
         debug=False))
 test_cfg = dict(
     rpn=dict(

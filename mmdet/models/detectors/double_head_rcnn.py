@@ -2,25 +2,15 @@ import torch
 
 from .two_stage import TwoStageDetector
 from ..registry import DETECTORS
-from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
+from mmdet.core import bbox2roi, build_assigner, build_sampler
 
 
 @DETECTORS.register_module
 class DoubleHeadRCNN(TwoStageDetector):
 
-    def bbox_rescale(self, bboxes, scale_factor):
-        cx = (bboxes[:, 0] + bboxes[:, 2]) * 0.5
-        cy = (bboxes[:, 1] + bboxes[:, 3]) * 0.5
-        w = bboxes[:, 2] - bboxes[:, 0] + 1
-        h = bboxes[:, 3] - bboxes[:, 1] + 1
-        new_w = w * scale_factor
-        new_h = h * scale_factor
-        x1 = cx - new_w * 0.5 + 0.5
-        x2 = cx + new_w * 0.5 - 0.5
-        y1 = cy - new_h * 0.5 + 0.5
-        y2 = cy + new_h * 0.5 - 0.5
-        new_bboxes = torch.stack((x1, y1, x2, y2), dim=-1)
-        return new_bboxes
+    def __init__(self, reg_roi_scale_factor, **kwargs):
+        super().__init__(**kwargs)
+        self.reg_roi_scale_factor = reg_roi_scale_factor
 
     def forward_train(self,
                       img,
@@ -78,11 +68,10 @@ class DoubleHeadRCNN(TwoStageDetector):
             # TODO: a more flexible way to decide which feature maps to use
             bbox_cls_feats = self.bbox_roi_extractor(
                 x[:self.bbox_roi_extractor.num_inputs], rois)
-            enlarged_bboxes = self.bbox_rescale(
-                rois[:, 1:], self.train_cfg.rcnn.reg_scale_factor)
-            reg_rois = torch.cat([rois[:, [0]], enlarged_bboxes], dim=1)
             bbox_reg_feats = self.bbox_roi_extractor(
-                x[:self.bbox_roi_extractor.num_inputs], reg_rois)
+                x[:self.bbox_roi_extractor.num_inputs],
+                rois,
+                roi_scale_factor=self.reg_roi_scale_factor)
             if self.with_shared_head:
                 bbox_cls_feats = self.shared_head(bbox_cls_feats)
                 bbox_reg_feats = self.shared_head(bbox_reg_feats)
@@ -142,13 +131,12 @@ class DoubleHeadRCNN(TwoStageDetector):
                            rescale=False):
         """Test only det bboxes without augmentation."""
         rois = bbox2roi(proposals)
-        enlarged_bboxes = self.bbox_rescale(
-            rois[:, 1:], self.train_cfg.rcnn.reg_scale_factor)
-        reg_rois = torch.cat([rois[:, [0]], enlarged_bboxes], dim=1)
         bbox_cls_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
         bbox_reg_feats = self.bbox_roi_extractor(
-            x[:self.bbox_roi_extractor.num_inputs], reg_rois)
+            x[:self.bbox_roi_extractor.num_inputs],
+            rois,
+            roi_scale_factor=self.reg_roi_scale_factor)
         if self.with_shared_head:
             bbox_cls_feats = self.shared_head(bbox_cls_feats)
             bbox_reg_feats = self.shared_head(bbox_reg_feats)
