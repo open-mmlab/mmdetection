@@ -146,19 +146,32 @@ class SSDMobilenetV2(nn.Module):
         # building last several layers
         self.extra_convs = []
         if not self.single_scale:
-            self.extra_convs.append(conv_1x1_bn(last_channel, 1280))
-            self.extra_convs.append(conv_1x1_bn(1280, 256))
-            self.extra_convs.append(conv_bn(256, 256, 2, groups=256))
-            self.extra_convs.append(conv_1x1_bn(256, 512, groups=1))
-            self.extra_convs.append(conv_1x1_bn(512, 128))
-            self.extra_convs.append(conv_bn(128, 128, 2, groups=128))
-            self.extra_convs.append(conv_1x1_bn(128, 256))
-            self.extra_convs.append(conv_1x1_bn(256, 128))
-            self.extra_convs.append(conv_bn(128, 128, 2, groups=128))
-            self.extra_convs.append(conv_1x1_bn(128, 256))
-            self.extra_convs.append(conv_1x1_bn(256, 64))
-            self.extra_convs.append(conv_bn(64, 64, 2, groups=64))
-            self.extra_convs.append(conv_1x1_bn(64, 128))
+            self.extra_convs.append(conv_1x1_bn(last_channel, 1280,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_1x1_bn(1280, 256,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_bn(256, 256, 2, groups=256,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_1x1_bn(256, 512, groups=1,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_1x1_bn(512, 128,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_bn(128, 128, 2, groups=128,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_1x1_bn(128, 256,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_1x1_bn(256, 128,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_bn(128, 128, 2, groups=128,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_1x1_bn(128, 256,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_1x1_bn(256, 64,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_bn(64, 64, 2, groups=64,
+                                        activation=self.activation_class))
+            self.extra_convs.append(conv_1x1_bn(64, 128,
+                                        activation=self.activation_class))
             self.extra_convs = nn.Sequential(*self.extra_convs)
 
     @property
