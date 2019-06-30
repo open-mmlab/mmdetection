@@ -8,6 +8,7 @@ from mmdet.core import AnchorGenerator, anchor_target, multi_apply
 from .anchor_head import AnchorHead
 from ..losses import smooth_l1_loss
 from ..registry import HEADS
+from ..losses import refinedet_multibox_loss
 
 
 # TODO: add loss evaluator for SSD
@@ -22,9 +23,9 @@ class RefineDetHead(AnchorHead):
                  input_size=300,
                  num_classes=81,
                  in_channels=(512, 512, 1024, 512),
+                 anchor_ratios=[0.5, 1.0, 2.0],
+                 anchor_base_sizes=None,
                  anchor_strides=(8, 16, 32, 64),
-                 basesize_ratio_range=(0.1, 0.9),
-                 anchor_ratios=([2], [2, 3], [2, 3], [2, 3]),
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0)):
         super(AnchorHead, self).__init__()
@@ -32,16 +33,28 @@ class RefineDetHead(AnchorHead):
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.cls_out_channels = num_classes
-        num_anchors = [len(ratios) * 2 + 2 for ratios in anchor_ratios]
+        self.anchor_strides = anchor_strides
+
+        self.anchor_base_sizes = list(
+            anchor_strides) if anchor_base_sizes is None else anchor_base_sizes
+
+        anchor_scales = 1
+
+        self.anchor_generators = []
+        for anchor_base in self.anchor_base_sizes:
+            self.anchor_generators.append(
+                AnchorGenerator(anchor_base, anchor_scales, anchor_ratios))
+
+        num_anchors = len(anchor_ratios) * anchor_scales
 
         # ARM
         reg_convs = []
         cls_convs = []
         for i in range(len(in_channels)):
             reg_convs.append(
-                nn.Conv2d(in_channels[i], num_anchors[i] * 4, kernel_size=3, padding=1))
+                nn.Conv2d(in_channels[i], num_anchors * 4, kernel_size=3, padding=1))
             cls_convs.append(
-                nn.Conv2d(in_channels[i], num_anchors[i] * 2, kernel_size=3, padding=1))
+                nn.Conv2d(in_channels[i], num_anchors * 2, kernel_size=3, padding=1))
         self.arm_reg = nn.ModuleList(reg_convs)
         self.arm_cls = nn.ModuleList(cls_convs)
 
@@ -56,52 +69,11 @@ class RefineDetHead(AnchorHead):
         cls_convs = []
         for i in range(len(in_channels)):
             reg_convs.append(
-                nn.Conv2d(256, num_anchors[i] * 4, kernel_size=3, padding=1))
+                nn.Conv2d(256, num_anchors * 4, kernel_size=3, padding=1))
             cls_convs.append(
-                nn.Conv2d(256, num_anchors[i] * num_classes, kernel_size=3, padding=1))
+                nn.Conv2d(256, num_anchors * num_classes, kernel_size=3, padding=1))
         self.odm_reg = nn.ModuleList(reg_convs)
         self.odm_cls = nn.ModuleList(cls_convs)
-
-        min_ratio, max_ratio = basesize_ratio_range
-        min_ratio = int(min_ratio * 100)
-        max_ratio = int(max_ratio * 100)
-        step = int(np.floor(max_ratio - min_ratio) / (len(in_channels) - 2))
-        min_sizes = []
-        max_sizes = []
-        for r in range(int(min_ratio), int(max_ratio) + 1, step):
-            min_sizes.append(int(input_size * r / 100))
-            max_sizes.append(int(input_size * (r + step) / 100))
-        if input_size == 300:
-            if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
-                min_sizes.insert(0, int(input_size * 7 / 100))
-                max_sizes.insert(0, int(input_size * 15 / 100))
-            elif basesize_ratio_range[0] == 0.2:  # SSD300 VOC
-                min_sizes.insert(0, int(input_size * 10 / 100))
-                max_sizes.insert(0, int(input_size * 20 / 100))
-        elif input_size == 512:
-            if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
-                min_sizes.insert(0, int(input_size * 4 / 100))
-                max_sizes.insert(0, int(input_size * 10 / 100))
-            elif basesize_ratio_range[0] == 0.15:  # SSD512 VOC
-                min_sizes.insert(0, int(input_size * 7 / 100))
-                max_sizes.insert(0, int(input_size * 15 / 100))
-        self.anchor_generators = []
-        self.anchor_strides = anchor_strides
-        for k in range(len(anchor_strides)):
-            base_size = min_sizes[k]
-            stride = anchor_strides[k]
-            ctr = ((stride - 1) / 2., (stride - 1) / 2.)
-            scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
-            ratios = [1.]
-            for r in anchor_ratios[k]:
-                ratios += [1 / r, r]  # 4 or 6 ratio
-            anchor_generator = AnchorGenerator(
-                base_size, scales, ratios, scale_major=False, ctr=ctr)
-            indices = list(range(len(ratios)))
-            indices.insert(1, len(indices))
-            anchor_generator.base_anchors = torch.index_select(
-                anchor_generator.base_anchors, 0, torch.LongTensor(indices))
-            self.anchor_generators.append(anchor_generator)
 
         self.target_means = target_means
         self.target_stds = target_stds
@@ -145,7 +117,7 @@ class RefineDetHead(AnchorHead):
         tcb_feats.reverse()
 
         # apply ODM to feats
-        for feat, reg_conv, cls_conv in zip(tcb_feats, self.arm_reg,self.arm_cls):
+        for feat, reg_conv, cls_conv in zip(tcb_feats, self.odm_reg, self.odm_cls):
             odm_cls.append(cls_conv(feat))
             odm_reg.append(reg_conv(feat))
         
@@ -177,10 +149,53 @@ class RefineDetHead(AnchorHead):
 
     def loss(self, arm_cls, arm_reg, odm_cls, odm_reg, gt_bboxes,
              gt_labels, img_metas, cfg, gt_bboxes_ignore=None):
-        arm_criterion = refinedet_mutlibox_loss(2, 0.5, True, 0, True, 3, 0.5,
-                             False, args.cuda)
-        odm_criterion = refinedet_mutlibox_loss(cfg['num_classes'], 0.5, True, 0, True, 3, 0.5,
-                             False, args.cuda, use_ARM=True)
+
+        featmap_sizes = [featmap.size()[-2:] for featmap in arm_cls]
+        assert len(featmap_sizes) == len(self.anchor_generators)
+
+        anchor_list, valid_flag_list = self.get_anchors(
+            featmap_sizes, img_metas)
+        cls_reg_targets = anchor_target(
+            anchor_list,
+            valid_flag_list,
+            gt_bboxes,
+            img_metas,
+            self.target_means,
+            self.target_stds,
+            cfg,
+            gt_bboxes_ignore_list=gt_bboxes_ignore,
+            gt_labels_list=gt_labels,
+            label_channels=1,
+            sampling=False,
+            unmap_outputs=False)
+        if cls_reg_targets is None:
+            return None
+        (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
+         num_total_pos, num_total_neg) = cls_reg_targets
+
+        num_images = len(img_metas)
+        all_labels = torch.cat(labels_list, -1).view(num_images, -1)
+        all_label_weights = torch.cat(label_weights_list,
+                                      -1).view(num_images, -1)
+
+        all_bbox_targets = torch.cat(bbox_targets_list,
+                                     -2).view(num_images, -1, 4)
+        all_bbox_weights = torch.cat(bbox_weights_list,
+                                     -2).view(num_images, -1, 4)
+
+        assert len(arm_cls) == len(arm_reg)
+        num_levels = len(arm_cls)
+        mlvl_anchors = [
+            self.anchor_generators[i].grid_anchors(arm_cls[i].size()[-2:],
+                                                   self.anchor_strides[i])
+            for i in range(num_levels)
+        ]
+        anchors = torch.cat([o.view(o.size(0), -1) for o in mlvl_anchors], 0)
+
+        # process predict
+        arm_criterion = refinedet_multibox_loss(2, 0.5, True, 0, True, 3, 0.5, False, self.target_stds)
+        odm_criterion = refinedet_multibox_loss(self.num_classes, 0.5, True, 0, True, self.target_stds,
+                                                3, 0.5, False, use_ARM=True)
 
         arm_cls = torch.cat([o.permute(0, 2, 3, 1).contiguous().view(o.size(0), -1)
                              for o in arm_cls], 1)
@@ -196,12 +211,14 @@ class RefineDetHead(AnchorHead):
             arm_reg.view(arm_reg.size(0), -1, 4),
             arm_cls.view(arm_cls.size(0), -1, 2),
             odm_reg.view(odm_reg.size(0), -1, 4),
-            odm_cls.view(odm_cls.size(0), -1, self.num_classes)
+            odm_cls.view(odm_cls.size(0), -1, self.num_classes),
+            anchors
         )
 
+        targets = (all_bbox_targets, all_labels)
 
-        arm_loss_l, arm_loss_c = arm_criterion(predict, targets)
-        odm_loss_l, odm_loss_c = odm_criterion(preditc, targets)
+        arm_reg_loss, arm_cls_loss = arm_criterion(predict, targets)
+        odm_reg_loss, odm_cls_loss = odm_criterion(predict, targets)
 
         return dict(arm_reg_loss=arm_reg_loss,
                     arm_cls_loss=arm_cls_loss,

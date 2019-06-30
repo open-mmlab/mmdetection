@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from torch.autograd import Variable
 from .refinedet_utils import match, log_sum_exp, refine_match
 from ..registry import LOSSES
 
@@ -29,7 +31,7 @@ class refinedet_multibox_loss(nn.Module):
 
     def __init__(self, num_classes, overlap_thresh, prior_for_matching,
                  bkg_label, neg_mining, neg_pos, neg_overlap, encode_target,
-                 use_gpu=True, theta=0.01, use_ARM=False):
+                 variance, use_gpu=True, theta=0.01, use_ARM=False):
         super(refinedet_multibox_loss, self).__init__()
         self.use_gpu = use_gpu
         self.num_classes = num_classes
@@ -40,7 +42,7 @@ class refinedet_multibox_loss(nn.Module):
         self.do_neg_mining = neg_mining
         self.negpos_ratio = neg_pos
         self.neg_overlap = neg_overlap
-        self.variance = cfg['variance']
+        self.variance = variance
         self.theta = theta
         self.use_ARM = use_ARM
 
@@ -74,8 +76,11 @@ class refinedet_multibox_loss(nn.Module):
         loc_t = torch.Tensor(num, num_priors, 4)
         conf_t = torch.LongTensor(num, num_priors)
         for idx in range(num):
-            truths = targets[idx][:, :-1].data
-            labels = targets[idx][:, -1].data
+            # truths = targets[idx][:, :-1].data
+            # labels = targets[idx][:, -1].data
+            truths, labels = targets
+            truths = truths[idx, :, :]
+            labels = labels[idx, :]
             if num_classes == 2:
                 labels = labels >= 0
             defaults = priors.data
