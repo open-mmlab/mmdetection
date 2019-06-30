@@ -160,11 +160,12 @@ class FCOSHead(nn.Module):
             avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
-        pos_bbox_targets = flatten_bbox_targets[pos_inds]
         pos_centerness = flatten_centerness[pos_inds]
-        pos_centerness_targets = self.centerness_target(pos_bbox_targets)
 
         if num_pos > 0:
+            # only compute target when num_pos > 0
+            pos_bbox_targets = flatten_bbox_targets[pos_inds]
+            pos_centerness_targets = self.centerness_target(pos_bbox_targets)
             pos_points = flatten_points[pos_inds]
             pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
             pos_decoded_target_preds = distance2bbox(pos_points,
@@ -178,6 +179,7 @@ class FCOSHead(nn.Module):
             loss_centerness = self.loss_centerness(pos_centerness,
                                                    pos_centerness_targets)
         else:
+            # empty tensor sum is 0
             loss_bbox = pos_bbox_preds.sum()
             loss_centerness = pos_centerness.sum()
 
