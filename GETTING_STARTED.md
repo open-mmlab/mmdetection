@@ -213,7 +213,7 @@ There are two ways to work with custom datasets.
 
 We basically categorize model components into 4 types.
 
-- backbone: usually a FCN network to extract feature maps, e.g., ResNet, MobileNet.
+- backbone: usually an FCN network to extract feature maps, e.g., ResNet, MobileNet.
 - neck: the component between backbones and heads, e.g., FPN, PAFPN.
 - head: the component for specific tasks, e.g., bbox prediction and mask prediction.
 - roi extractor: the part for extracting RoI features from feature maps, e.g., RoI Align.
