@@ -12,6 +12,7 @@ from mmdet.core import (DistOptimizerHook, DistEvalmAPHook,
                         CocoDistEvalRecallHook, CocoDistEvalmAPHook,
                         Fp16OptimizerHook)
 from mmdet.datasets import build_dataloader
+from mmdet.datasets import get_dataset
 from mmdet.models import RPN
 from .env import get_root_logger
 
@@ -197,7 +198,14 @@ def _non_dist_train(model, dataset, cfg, validate=False):
             cfg.data.imgs_per_gpu,
             cfg.data.workers_per_gpu,
             cfg.gpus,
-            dist=False)
+            dist=False),
+        build_dataloader(
+            get_dataset(cfg.data.val),
+            cfg.data.imgs_per_gpu,
+            cfg.data.workers_per_gpu,
+            cfg.gpus,
+            dist=False
+        )
     ]
     # put model on gpus
     model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
