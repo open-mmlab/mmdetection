@@ -16,7 +16,7 @@ Thanks for your error report and we appreciate it a lot.
 **Describe the bug**
 A clear and concise description of what the bug is.
 
-**Reproduction details**
+**Reproduction**
 1. What command or script did you run?
 ```
 A placeholder for the command.
