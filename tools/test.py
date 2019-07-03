@@ -12,7 +12,7 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
 from mmdet.apis import init_dist
 from mmdet.core import results2json, coco_eval, wrap_fp16_model
-from mmdet.datasets import build_dataloader, get_dataset
+from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
 
@@ -147,7 +147,7 @@ def main():
 
     # build the dataloader
     # TODO: support multiple images per gpu (only minor changes are needed)
-    dataset = get_dataset(cfg.data.test)
+    dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
         dataset,
         imgs_per_gpu=1,
