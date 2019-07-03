@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 
 from .base import BaseDetector
-from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
+from .test_mixins import (RPNTestMixin, BBoxTestMixin, MaskTestMixin,
+                          SemanticSegmTestMixin)
 from .. import builder
 from ..registry import DETECTORS
 from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
@@ -10,11 +11,12 @@ from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
 
 @DETECTORS.register_module
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
-                       MaskTestMixin):
+                       MaskTestMixin, SemanticSegmTestMixin):
 
     def __init__(self,
                  backbone,
                  neck=None,
+                 semantic_segm_head=None,
                  shared_head=None,
                  rpn_head=None,
                  bbox_roi_extractor=None,
@@ -29,6 +31,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         if neck is not None:
             self.neck = builder.build_neck(neck)
+
+        if semantic_segm_head is not None:
+            self.semantic_segm_head = builder.build_head(semantic_segm_head)
 
         if shared_head is not None:
             self.shared_head = builder.build_shared_head(shared_head)
@@ -69,6 +74,12 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                     m.init_weights()
             else:
                 self.neck.init_weights()
+        if self.with_semantic_segm_head:
+            if isinstance(self.with_semantic_segm_head, nn.Sequential):
+                for m in self.with_semantic_segm_head:
+                    m.init_weights()
+            else:
+                self.semantic_segm_head.init_weights()
         if self.with_shared_head:
             self.shared_head.init_weights(pretrained=pretrained)
         if self.with_rpn:
@@ -94,10 +105,28 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
+                      gt_semantic_seg=None,
                       proposals=None):
         x = self.extract_feat(img)
 
         losses = dict()
+
+        # Semantic segm forword and loss
+        if self.with_semantic_segm_head:
+            for i in range(gt_semantic_seg.shape[0]):
+                gt_semantic_seg[i, :, img_meta[i]['img_shape'][0]:, :] = \
+                    self.semantic_segm_head.ignore_label
+                gt_semantic_seg[i, :, :, img_meta[i]['img_shape'][1]:] = \
+                    self.semantic_segm_head.ignore_label
+            gt_semantic_seg = gt_semantic_seg.long()
+            gt_semantic_seg = gt_semantic_seg.squeeze(1)
+
+            segm_feature_pred = self.semantic_segm_head(
+                x[self.semantic_segm_head.
+                  start_level:self.semantic_segm_head.end_level + 1])
+            segm_losses = self.semantic_segm_head.loss(
+                segm_feature_pred, gt_semantic_seg)
+            losses.update(segm_losses)
 
         # RPN forward and loss
         if self.with_rpn:
@@ -208,6 +237,12 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         else:
             segm_results = self.simple_test_mask(
                 x, img_meta, det_bboxes, det_labels, rescale=rescale)
+
+            # test with semantic segm
+            if self.with_semantic_segm_head:
+                semantic_results = self.simple_test_semantic_segm(x, img_meta)
+                return bbox_results, segm_results, semantic_results
+
             return bbox_results, segm_results
 
     def aug_test(self, imgs, img_metas, rescale=False):

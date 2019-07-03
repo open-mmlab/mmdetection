@@ -23,6 +23,11 @@ class BaseDetector(nn.Module):
         return hasattr(self, 'neck') and self.neck is not None
 
     @property
+    def with_semantic_segm_head(self):
+        return hasattr(self, 'semantic_segm_head') and \
+            self.semantic_segm_head is not None
+
+    @property
     def with_shared_head(self):
         return hasattr(self, 'shared_head') and self.shared_head is not None
 

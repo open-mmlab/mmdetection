@@ -6,9 +6,15 @@ from .utils import weight_reduce_loss
 from ..registry import LOSSES
 
 
-def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
+def cross_entropy(pred,
+                  label,
+                  weight=None,
+                  reduction='mean',
+                  avg_factor=None,
+                  ignore_label=-100):
     # element-wise losses
-    loss = F.cross_entropy(pred, label, reduction='none')
+    loss = F.cross_entropy(
+        pred, label, reduction='none', ignore_index=ignore_label)
 
     # apply weights and do the reduction
     if weight is not None:

@@ -159,3 +159,18 @@ class MaskTestMixin(object):
                 scale_factor=1.0,
                 rescale=False)
         return segm_result
+
+
+class SemanticSegmTestMixin(object):
+
+    def simple_test_semantic_segm(self, x, img_meta):
+        ori_shape = img_meta[0]['ori_shape']
+        img_shape_withoutpad = img_meta[0]['img_shape']
+
+        segm_feature_pred = self.semantic_segm_head(
+            x[self.semantic_segm_head.
+              start_level:self.semantic_segm_head.end_level + 1])
+        semantic_segm_results = self.semantic_segm_head.get_semantic_segm(
+            segm_feature_pred, ori_shape, img_shape_withoutpad)
+
+        return semantic_segm_results

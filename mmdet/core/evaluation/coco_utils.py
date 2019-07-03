@@ -154,7 +154,27 @@ def segm2json(dataset, results):
     return bbox_json_results, segm_json_results
 
 
-def results2json(dataset, results, out_file):
+def SemanticSegm2json(dataset, results):
+    semantic_segm_json_results = []
+    for idx in range(len(dataset)):
+        img_id = dataset.img_ids[idx]
+        semantic_segm = results[idx]
+        for label in range(len(semantic_segm)):
+            # skip none segm
+            if semantic_segm[label] == []:
+                continue
+            semantic_segm_cls = semantic_segm[label][0]
+            data = dict()
+            data['image_id'] = img_id
+            data['category_id'] = dataset.label2semantic[label+1]
+            semantic_segm_cls['counts'] = \
+                semantic_segm_cls['counts'].decode()
+            data['segmentation'] = semantic_segm_cls
+            semantic_segm_json_results.append(data)
+    return semantic_segm_json_results
+
+
+def results2json(dataset, results, out_file, eval_types):
     result_files = dict()
     if isinstance(results[0], list):
         json_results = det2json(dataset, results)
@@ -162,12 +182,28 @@ def results2json(dataset, results, out_file):
         result_files['proposal'] = '{}.{}.json'.format(out_file, 'bbox')
         mmcv.dump(json_results, result_files['bbox'])
     elif isinstance(results[0], tuple):
-        json_results = segm2json(dataset, results)
+        if 'semantic_segm' in eval_types:
+            instance_segm_results = []
+            semantic_segm_results = []
+            for idx in range(len(dataset)):
+                det, seg, semantic_segm = results[idx]
+                instance_segm_results.append([det, seg])
+                semantic_segm_results.append(semantic_segm)
+        else:
+            instance_segm_results = results
+        json_results = segm2json(dataset, instance_segm_results)
         result_files['bbox'] = '{}.{}.json'.format(out_file, 'bbox')
         result_files['proposal'] = '{}.{}.json'.format(out_file, 'bbox')
         result_files['segm'] = '{}.{}.json'.format(out_file, 'segm')
         mmcv.dump(json_results[0], result_files['bbox'])
         mmcv.dump(json_results[1], result_files['segm'])
+        if 'semantic_segm' in eval_types:
+            semantic_segm_json_results = SemanticSegm2json(
+                dataset, semantic_segm_results)
+            result_files['semantic_segm'] = '{}.{}.json'.format(
+                out_file, 'semantic_segm')
+            mmcv.dump(semantic_segm_json_results,
+                      result_files['semantic_segm'])
     elif isinstance(results[0], np.ndarray):
         json_results = proposal2json(dataset, results)
         result_files['proposal'] = '{}.{}.json'.format(out_file, 'proposal')
