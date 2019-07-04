@@ -150,8 +150,10 @@ In `mmdet/datasets/my_dataset.py`:
 
 ```python
 from .coco import CocoDataset
+from .registry import DATASETS
 
 
+@DATASETS.register_module
 class MyDataset(CocoDataset):
 
     CLASSES = ('a', 'b', 'c', 'd', 'e')
@@ -228,7 +230,7 @@ import torch.nn as nn
 from ..registry import BACKBONES
 
 
-@BACKBONES.register
+@BACKBONES.register_module
 class MobileNet(nn.Module):
 
     def __init__(self, arg1, arg2):
