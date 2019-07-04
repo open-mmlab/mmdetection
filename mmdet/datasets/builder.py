@@ -15,14 +15,13 @@ def _concat_dataset(cfg):
     num_dset = len(ann_files)
     for i in range(num_dset):
         data_cfg = copy.deepcopy(cfg)
-
+        data_cfg['ann_file'] = ann_files[i]
         if isinstance(img_prefixes, (list, tuple)):
             data_cfg['img_prefix'] = img_prefixes[i]
         if isinstance(seg_prefixes, (list, tuple)):
             data_cfg['seg_prefix'] = seg_prefixes[i]
         if isinstance(proposal_files, (list, tuple)):
             data_cfg['proposal_file'] = proposal_files[i]
-
         datasets.append(build_dataset(data_cfg))
 
     return ConcatDataset(datasets)
