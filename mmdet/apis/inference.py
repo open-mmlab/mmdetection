@@ -7,7 +7,7 @@ import torch
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import get_classes
-from mmdet.datasets import to_tensor
+from mmdet.datasets.pipelines import to_tensor
 from mmdet.datasets.transforms import ImageTransform
 from mmdet.models import build_detector
 
