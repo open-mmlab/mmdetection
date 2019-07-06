@@ -25,7 +25,10 @@ def single_gpu_test(model, data_loader, show=False):
         batch_size = len(data['img'][0].data[0])
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
-        results += result
+        if batch_size == 1:
+            results.append(result)
+        else:
+            results += result
 
         if show:
             model.module.show_result(data, result, dataset.img_norm_cfg)
@@ -46,7 +49,10 @@ def multi_gpu_test(model, data_loader, tmpdir=None):
         batch_size = len(data['img'][0].data[0])
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
-        results += result
+        if batch_size == 1:
+            results.append(result)
+        else:
+            results += result
 
         if rank == 0:
             for _ in range(batch_size * world_size):

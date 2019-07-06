@@ -54,7 +54,16 @@ class RPN(BaseDetector, RPNTestMixin):
             *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
+    # TODO: merge simple_test and batch_test
     def simple_test(self, img, img_meta, rescale=False):
+        x = self.extract_feat(img)
+        proposal_list = self.simple_test_rpn(x, img_meta, self.test_cfg.rpn)
+        if rescale:
+            for proposals, meta in zip(proposal_list, img_meta):
+                proposals[:, :4] /= meta['scale_factor']
+        return proposal_list[0].cpu().numpy()
+
+    def batch_test(self, img, img_meta, rescale=False):
         x = self.extract_feat(img)
         proposal_list = self.simple_test_rpn(x, img_meta, self.test_cfg.rpn)
         if rescale:

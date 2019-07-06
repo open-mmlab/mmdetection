@@ -51,6 +51,10 @@ class BaseDetector(nn.Module):
         pass
 
     @abstractmethod
+    def batch_test(self, img, img_meta, **kwargs):
+        pass
+
+    @abstractmethod
     def aug_test(self, imgs, img_metas, **kwargs):
         pass
 
@@ -72,7 +76,10 @@ class BaseDetector(nn.Module):
                     len(imgs), len(img_metas)))
 
         if num_augs == 1:
-            return self.simple_test(imgs[0], img_metas[0], **kwargs)
+            if len(imgs[0]) == 1:
+                return self.simple_test(imgs[0], img_metas[0], **kwargs)
+            else:
+                return self.batch_test(imgs[0], img_metas[0], **kwargs)
         else:
             return self.aug_test(imgs, img_metas, **kwargs)
 

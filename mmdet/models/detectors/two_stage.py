@@ -192,6 +192,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         return losses
 
+    # TODO: merge simple_test and batch_test
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         """Test without augmentation."""
         assert self.with_bbox, "Bbox head must be implemented."
@@ -203,6 +204,27 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
+        bbox_results = bbox2result(det_bboxes, det_labels,
+                                   self.bbox_head.num_classes)
+
+        if not self.with_mask:
+            return bbox_results
+        else:
+            segm_results = self.simple_test_mask(
+                x, img_meta, det_bboxes, det_labels, rescale=rescale)
+            return bbox_results, segm_results
+
+    def batch_test(self, img, img_meta, proposals=None, rescale=False):
+        """Test without augmentation."""
+        assert self.with_bbox, "Bbox head must be implemented."
+
+        x = self.extract_feat(img)
+
+        proposal_list = self.batch_test_rpn(
+            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
+
+        det_bboxes, det_labels = self.batch_test_bboxes(
+            x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
                         self.bbox_head.num_classes)
@@ -212,7 +234,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if not self.with_mask:
             return bbox_results
         else:
-            segm_results = self.simple_test_mask(
+            segm_results = self.batch_test_mask(
                 x, img_meta, det_bboxes, det_labels, rescale=rescale)
             return ((bbox_result, segm_result)
                     for (bbox_result,
