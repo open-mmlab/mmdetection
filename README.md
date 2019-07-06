@@ -106,7 +106,7 @@ Other features
 - [x] Soft-NMS
 - [x] Generalized Attention
 - [x] GCNet
-- [ ] Mixed Precision (FP16) Training (coming soon)
+- [x] Mixed Precision (FP16) Training
 
 
 ## Installation

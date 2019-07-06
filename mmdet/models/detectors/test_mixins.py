@@ -160,17 +160,19 @@ class MaskTestMixin(object):
             if self.with_shared_head:
                 mask_feats = self.shared_head(mask_feats)
             mask_pred = self.mask_head(mask_feats)
-            segm_result = self.mask_head.get_seg_masks(
-                mask_pred, _bboxes, det_labels, self.test_cfg.rcnn, ori_shape,
-                scale_factor, rescale)
+            segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
+                                                       det_labels,
+                                                       self.test_cfg.rcnn,
+                                                       ori_shape, scale_factor,
+                                                       rescale)
         return segm_result
 
     def batch_test_mask(self,
-                         x,
-                         img_meta,
-                         det_bboxes,
-                         det_labels,
-                         rescale=False):
+                        x,
+                        img_meta,
+                        det_bboxes,
+                        det_labels,
+                        rescale=False):
         # when batch size is 1 and no det bbox
         if len(det_bboxes) == 1 and det_bboxes[0].shape[0] == 0:
             return [[[] for _ in range(self.mask_head.num_classes - 1)]]

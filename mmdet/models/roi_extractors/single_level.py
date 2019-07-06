@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from mmdet import ops
+from mmdet.core import force_fp32
 from ..registry import ROI_EXTRACTORS
 
 
@@ -31,6 +32,7 @@ class SingleRoIExtractor(nn.Module):
         self.out_channels = out_channels
         self.featmap_strides = featmap_strides
         self.finest_scale = finest_scale
+        self.fp16_enabled = False
 
     @property
     def num_inputs(self):
@@ -70,6 +72,7 @@ class SingleRoIExtractor(nn.Module):
         target_lvls = target_lvls.clamp(min=0, max=num_levels - 1).long()
         return target_lvls
 
+    @force_fp32(apply_to=('feats',), out_fp16=True)
     def forward(self, feats, rois):
         if len(feats) == 1:
             return self.roi_layers[0](feats[0], rois)
@@ -77,8 +80,8 @@ class SingleRoIExtractor(nn.Module):
         out_size = self.roi_layers[0].out_size
         num_levels = len(feats)
         target_lvls = self.map_roi_levels(rois, num_levels)
-        roi_feats = torch.cuda.FloatTensor(rois.size()[0], self.out_channels,
-                                           out_size, out_size).fill_(0)
+        roi_feats = feats[0].new_zeros(rois.size()[0], self.out_channels,
+                                       out_size, out_size)
         for i in range(num_levels):
             inds = target_lvls == i
             if inds.any():

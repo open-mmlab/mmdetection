@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import delta2bbox, multiclass_nms, bbox_target
+from mmdet.core import (delta2bbox, multiclass_nms, bbox_target, force_fp32,
+                        auto_fp16)
 from ..builder import build_loss
 from ..losses import accuracy
 from ..registry import HEADS
@@ -40,6 +41,7 @@ class BBoxHead(nn.Module):
         self.target_means = target_means
         self.target_stds = target_stds
         self.reg_class_agnostic = reg_class_agnostic
+        self.fp16_enabled = False
 
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
@@ -64,6 +66,7 @@ class BBoxHead(nn.Module):
             nn.init.normal_(self.fc_reg.weight, 0, 0.001)
             nn.init.constant_(self.fc_reg.bias, 0)
 
+    @auto_fp16()
     def forward(self, x):
         if self.with_avg_pool:
             x = self.avg_pool(x)
@@ -90,6 +93,7 @@ class BBoxHead(nn.Module):
             target_stds=self.target_stds)
         return cls_reg_targets
 
+    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
              cls_score,
              bbox_pred,
@@ -123,6 +127,7 @@ class BBoxHead(nn.Module):
                 reduction_override=reduction_override)
         return losses
 
+    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def get_det_bboxes(self,
                        rois,
                        cls_score,
@@ -156,6 +161,7 @@ class BBoxHead(nn.Module):
 
             return det_bboxes, det_labels
 
+    @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
         """Refine bboxes during training.
 
@@ -196,6 +202,7 @@ class BBoxHead(nn.Module):
 
         return bboxes_list
 
+    @force_fp32(apply_to=('bbox_pred', ))
     def regress_by_class(self, rois, label, bbox_pred, img_meta):
         """Regress the bbox for the predicted class. Used in Cascade R-CNN.
 
