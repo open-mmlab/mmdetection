@@ -17,30 +17,13 @@ a. Download 2017 [Panopatic Train/Val annotations](http://cocodataset.org/#downl
 
 b. Install [COCO 2018 Panoptic Segmentation Task API](https://github.com/cocodataset/panopticapi)
 
-c. It is recommended to symlink the dataset root to $MMDETECTION/data.
-```
-mmdetection
-©À©¤©¤ mmdet
-©À©¤©¤ tools
-©À©¤©¤ configs
-©À©¤©¤ data
-©¦   ©À©¤©¤ coco
-©¦   ©¦   ©À©¤©¤ annotations
-©¦   ©¦   ©À©¤©¤ PanopticSegm_annotations
-©¦   ©¦   ©À©¤©¤ train2017
-©¦   ©¦   ©À©¤©¤ val2017
-©¦   ©¦   ©À©¤©¤ test2017
-©¦   ©À©¤©¤ VOCdevkit
-©¦   ©¦   ©À©¤©¤ VOC2007
-©¦   ©¦   ©À©¤©¤ VOC2012
+c. symlink the panoptic segmentation annotations root to `$MMDETECTION/data/coco/PanopticSegm_annotations`
 
-```
-
-Note: The path of panoptic segmentaion annotations should be `$MMDETECTION/data/coco/PanopticSegm_annotations/PanopticSegm_annotations/`
+  Note: The path of panoptic segmentaion annotations should be `$MMDETECTION/data/coco/PanopticSegm_annotations/PanopticSegm_annotations/`
 
 d. Extract semantic segmentation from data in COCO panoptic format by using the script `$PANOPTICAPI/converters/panoptic2semantic_segmentation.py`
 
-Note: The path of semantic segmentaion annotations should be `$MMDETECTION/data/coco/PanopticSegm_annotations/SemanticSegm_annotations/semantic_val2017` and `$MMDETECTION/data/coco/PanopticSegm_annotations/SemanticSegm_annotations/semantic_train2017`
+  Note: The path of semantic segmentaion annotations should be `$MMDETECTION/data/coco/PanopticSegm_annotations/SemanticSegm_annotations/semantic_val2017` and `$MMDETECTION/data/coco/PanopticSegm_annotations/SemanticSegm_annotations/semantic_train2017`
 
 ## Evaluation
 
