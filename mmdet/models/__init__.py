@@ -1,5 +1,6 @@
 from .backbones import *  # noqa: F401,F403
 from .necks import *  # noqa: F401,F403
+from .panoptic import *
 from .roi_extractors import *  # noqa: F401,F403
 from .anchor_heads import *  # noqa: F401,F403
 from .shared_heads import *  # noqa: F401,F403
@@ -15,6 +16,6 @@ from .builder import (build_backbone, build_neck, build_roi_extractor,
 
 __all__ = [
     'BACKBONES', 'NECKS', 'ROI_EXTRACTORS', 'SHARED_HEADS', 'HEADS', 'LOSSES',
-    'DETECTORS', 'build_backbone', 'build_neck', 'build_roi_extractor',
+    'DETECTORS', 'build_backbone', 'build_neck', 'build_panoptic', 'build_roi_extractor',
     'build_shared_head', 'build_head', 'build_loss', 'build_detector'
 ]

@@ -109,7 +109,7 @@ def parse_args():
         '--eval',
         type=str,
         nargs='+',
-        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
+        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints', 'semantic_segm'],
         help='eval types')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument('--tmpdir', help='tmp dir for writing some results')
@@ -187,7 +187,15 @@ def main():
                 coco_eval(result_file, eval_types, dataset.coco)
             else:
                 if not isinstance(outputs[0], dict):
-                    result_files = results2json(dataset, outputs, args.out)
+                    result_files = results2json(dataset, outputs, args.out, eval_types)
+                    
+                    # we evaluate semantic_segm or panoptic segm offline
+                    if 'semantic_segm' in eval_types:
+                        print("semantic segmentation results are saved in {}.{}.json".format(args.out, 'semantic_segm'))
+                        print("instance segmentation results are saved in {}.{}.json".format(args.out, 'segm'))
+                        print("Please use COCO 2018 Panoptic Segmentation Task API(https://github.com/cocodataset/panopticapi) to combine instance segmentation and semantic segmentation and then evaluate Panoptic Segmentation results")
+                        del eval_types[2]
+                    
                     coco_eval(result_files, eval_types, dataset.coco)
                 else:
                     for name in outputs[0]:
