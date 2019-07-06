@@ -6,15 +6,43 @@ from ..registry import PIPELINES
 
 @PIPELINES.register_module
 class Resize(object):
+    """Resize images & bbox & mask.
+
+    This transform resizes the input image to some scale. Bboxes and masks are
+    then resized with the same scale factor. If the input dict contains the key
+    "scale", then the scale in the input dict is used, otherwise the specified
+    scale in the init method is used.
+
+    `img_scale` can either be a tuple (single-scale) or a list of tuple
+    (multi-scale). There are 3 multiscale modes:
+    - `ratio_range` is not None: randomly sample a ratio from the ratio range
+        and multiply it with the image scale.
+    - `ratio_range` is None and `multiscale_mode` == "range": randomly sample a
+        scale from the a range.
+    - `ratio_range` is None and `multiscale_mode` == "value": randomly sample a
+        scale from multiple scales.
+
+    Args:
+        img_scale (tuple or list[tuple]): Images scales for resizing.
+        multiscale_mode (str): Either "range" or "value".
+        ratio_range (tuple[float]): (min_ratio, max_ratio)
+        keep_ratio (bool): Whether to keep the aspect ratio when resizing the
+            image.
+    """
 
     def __init__(self,
-                 img_scale,
+                 img_scale=None,
                  multiscale_mode='range',
                  ratio_range=None,
                  keep_ratio=True):
-        self.img_scale = img_scale if isinstance(img_scale,
-                                                 list) else [img_scale]
-        assert mmcv.is_list_of(self.img_scale, tuple)
+        if img_scale is None:
+            self.img_scale = None
+        else:
+            if isinstance(img_scale, list):
+                self.img_scale = img_scale
+            else:
+                self.img_scale = [img_scale]
+            assert mmcv.is_list_of(self.img_scale, tuple)
 
         if ratio_range is not None:
             # mode 1: given a scale and a range of image ratio
@@ -52,6 +80,7 @@ class Resize(object):
     def random_sample_ratio(img_scale, ratio_range):
         assert isinstance(img_scale, tuple) and len(img_scale) == 2
         min_ratio, max_ratio = ratio_range
+        assert min_ratio <= max_ratio
         ratio = np.random.random_sample() * (max_ratio - min_ratio) + min_ratio
         scale = int(img_scale[0] * ratio), int(img_scale[1] * ratio)
         return scale, None
