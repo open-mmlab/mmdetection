@@ -36,15 +36,15 @@ mmdetection
 
 ```
 
-Note: The path of panoptic segmentaion annotations should be '$MMDETECTION/data/coco/PanopticSegm_annotations/PanopticSegm_annotations/'
+Note: The path of panoptic segmentaion annotations should be `$MMDETECTION/data/coco/PanopticSegm_annotations/PanopticSegm_annotations/`
 
-d. Extract semantic segmentation from data in COCO panoptic format by using the script '$PANOPTICAPI/converters/panoptic2semantic_segmentation.py'. 
+d. Extract semantic segmentation from data in COCO panoptic format by using the script `$PANOPTICAPI/converters/panoptic2semantic_segmentation.py`
 
-Note: The path of semantic segmentaion annotations should be '$MMDETECTION/data/coco/PanopticSegm_annotations/SemanticSegm_annotations/semantic_val2017' and '$MMDETECTION/data/coco/PanopticSegm_annotations/SemanticSegm_annotations/semantic_train2017'
+Note: The path of semantic segmentaion annotations should be `$MMDETECTION/data/coco/PanopticSegm_annotations/SemanticSegm_annotations/semantic_val2017` and `$MMDETECTION/data/coco/PanopticSegm_annotations/SemanticSegm_annotations/semantic_train2017`
 
 ## Evaluation
 
-using the script '$PANOPTICAPI/combine_semantic_and_instance_predictions.py'
+using the script `$PANOPTICAPI/combine_semantic_and_instance_predictions.py`
 
 ## Results and Models
 
