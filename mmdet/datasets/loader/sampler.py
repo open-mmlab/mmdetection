@@ -37,16 +37,16 @@ class DistributedSampler(_DistributedSampler):
 
 class GroupSampler(Sampler):
 
-    def __init__(self, dataset, samples_per_gpu=1):
+    def __init__(self, dataset, group_size=1):
         assert hasattr(dataset, 'flag')
         self.dataset = dataset
-        self.samples_per_gpu = samples_per_gpu
+        self.group_size = group_size
         self.flag = dataset.flag.astype(np.int64)
         self.group_sizes = np.bincount(self.flag)
         self.num_samples = 0
         for i, size in enumerate(self.group_sizes):
             self.num_samples += int(np.ceil(
-                size / self.samples_per_gpu)) * self.samples_per_gpu
+                size / self.group_size)) * self.group_size
 
     def __iter__(self):
         indices = []
@@ -56,15 +56,15 @@ class GroupSampler(Sampler):
             indice = np.where(self.flag == i)[0]
             assert len(indice) == size
             np.random.shuffle(indice)
-            num_extra = int(np.ceil(size / self.samples_per_gpu)
-                            ) * self.samples_per_gpu - len(indice)
+            num_extra = int(np.ceil(
+                size / self.group_size)) * self.group_size - len(indice)
             indice = np.concatenate([indice, indice[:num_extra]])
             indices.append(indice)
         indices = np.concatenate(indices)
         indices = [
-            indices[i * self.samples_per_gpu:(i + 1) * self.samples_per_gpu]
+            indices[i * self.group_size:(i + 1) * self.group_size]
             for i in np.random.permutation(
-                range(len(indices) // self.samples_per_gpu))
+                range(len(indices) // self.group_size))
         ]
         indices = np.concatenate(indices)
         indices = indices.astype(np.int64).tolist()
@@ -85,6 +85,9 @@ class DistributedGroupSampler(Sampler):
         Dataset is assumed to be of constant size.
     Arguments:
         dataset: Dataset used for sampling.
+        samples_per_gpu: Number of samples per GPU.
+        group_across_gpus (bool): Make samples on each GPU for
+            a same training batch has a same flag. (if true)
         num_replicas (optional): Number of processes participating in
             distributed training.
         rank (optional): Rank of the current process within num_replicas.
@@ -93,6 +96,7 @@ class DistributedGroupSampler(Sampler):
     def __init__(self,
                  dataset,
                  samples_per_gpu=1,
+                 group_across_gpus=False,
                  num_replicas=None,
                  rank=None):
         _rank, _num_replicas = get_dist_info()
@@ -102,6 +106,10 @@ class DistributedGroupSampler(Sampler):
             rank = _rank
         self.dataset = dataset
         self.samples_per_gpu = samples_per_gpu
+        self.group_across_gpus = group_across_gpus
+        self.group_size = (
+            samples_per_gpu *
+            num_replicas if group_across_gpus else samples_per_gpu)
         self.num_replicas = num_replicas
         self.rank = rank
         self.epoch = 0
@@ -140,15 +148,15 @@ class DistributedGroupSampler(Sampler):
 
         indices = [
             indices[j] for i in list(
-                torch.randperm(
-                    len(indices) // self.samples_per_gpu, generator=g))
-            for j in range(i * self.samples_per_gpu, (i + 1) *
-                           self.samples_per_gpu)
+                torch.randperm(len(indices) // self.group_size, generator=g))
+            for j in range(i * self.group_size, (i + 1) * self.group_size)
         ]
 
         # subsample
-        offset = self.num_samples * self.rank
-        indices = indices[offset:offset + self.num_samples]
+        indices = np.array(indices)
+        indices = indices.reshape(-1, self.num_replicas, self.samples_per_gpu)
+        indices = indices[:, self.rank, :].reshape(-1).astype(
+            np.int64).tolist()
         assert len(indices) == self.num_samples
 
         return iter(indices)

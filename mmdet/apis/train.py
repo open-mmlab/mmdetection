@@ -138,11 +138,13 @@ def build_optimizer(model, optimizer_cfg):
 
 def _dist_train(model, dataset, cfg, validate=False):
     # prepare data loaders
+    group_across_gpus = cfg.data.get('group_across_gpus', False)
     data_loaders = [
         build_dataloader(
             dataset,
             cfg.data.imgs_per_gpu,
             cfg.data.workers_per_gpu,
+            group_across_gpus=group_across_gpus,
             dist=True)
     ]
     # put model on gpus
@@ -191,12 +193,14 @@ def _dist_train(model, dataset, cfg, validate=False):
 
 def _non_dist_train(model, dataset, cfg, validate=False):
     # prepare data loaders
+    group_across_gpus = cfg.data.get('group_across_gpus', False)
     data_loaders = [
         build_dataloader(
             dataset,
             cfg.data.imgs_per_gpu,
             cfg.data.workers_per_gpu,
             cfg.gpus,
+            group_across_gpus=group_across_gpus,
             dist=False)
     ]
     # put model on gpus

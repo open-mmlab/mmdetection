@@ -17,20 +17,27 @@ def build_dataloader(dataset,
                      workers_per_gpu,
                      num_gpus=1,
                      dist=True,
+                     group_across_gpus=False,
                      **kwargs):
     shuffle = kwargs.get('shuffle', True)
     if dist:
         rank, world_size = get_dist_info()
         if shuffle:
             sampler = DistributedGroupSampler(dataset, imgs_per_gpu,
-                                              world_size, rank)
+                                              group_across_gpus, world_size,
+                                              rank)
         else:
             sampler = DistributedSampler(
                 dataset, world_size, rank, shuffle=False)
         batch_size = imgs_per_gpu
         num_workers = workers_per_gpu
     else:
-        sampler = GroupSampler(dataset, imgs_per_gpu) if shuffle else None
+        # sampling consecutive N samples with a same flag.(N is group_size.)
+        # group_across_gpus (bool): Make samples on each GPU for
+        #   a same training batch has a same flag. (if true)
+        group_size = (
+            num_gpus * imgs_per_gpu if group_across_gpus else imgs_per_gpu)
+        sampler = GroupSampler(dataset, group_size) if shuffle else None
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
