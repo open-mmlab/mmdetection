@@ -192,8 +192,8 @@ def results2json(dataset, results, out_file, eval_types):
         result_files['bbox'] = '{}.{}.json'.format(out_file, 'bbox')
         result_files['proposal'] = '{}.{}.json'.format(out_file, 'bbox')
         result_files['segm'] = '{}.{}.json'.format(out_file, 'segm')
-        result_files['semantic_segm'] = '{}.{}.json'.format(out_file,
-            'semantic_segm')
+        result_files['semantic_segm'] = '{}.{}.json'.format(
+            out_file, 'semantic_segm')
 
         mmcv.dump(json_results[0], result_files['bbox'])
         mmcv.dump(json_results[1], result_files['segm'])

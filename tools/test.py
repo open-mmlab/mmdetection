@@ -192,7 +192,7 @@ def main():
                 if not isinstance(outputs[0], dict):
                     result_files = results2json(dataset, outputs, args.out,
                                                 eval_types)
-                    
+
                     # we evaluate semantic_segm or panoptic segm offline
                     if 'semantic_segm' in eval_types:
                         print(
@@ -202,7 +202,7 @@ def main():
                             "instance segm results are saved in {}.{}.json"
                             .format(args.out, 'segm'))
                         del eval_types[2]
-                    
+
                     coco_eval(result_files, eval_types, dataset.coco)
                 else:
                     for name in outputs[0]:

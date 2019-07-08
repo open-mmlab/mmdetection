@@ -35,57 +35,94 @@ class PanopticFPN(nn.Module):
         self.norm_cfg = norm_cfg
 
         self.convP5 = nn.Sequential(
-            ConvModule(self.in_channels, self.out_channels, 3, padding=1,
-                conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg),
-            nn.GroupNorm(self.out_channels//16, self.out_channels),
+            ConvModule(
+                self.in_channels,
+                self.out_channels,
+                3,
+                padding=1,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg),
+            nn.GroupNorm(self.out_channels // 16, self.out_channels),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-
-            ConvModule(self.out_channels, self.out_channels, 3, padding=1,
-                conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg),
-            nn.GroupNorm(self.out_channels//16, self.out_channels),
+            ConvModule(
+                self.out_channels,
+                self.out_channels,
+                3,
+                padding=1,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg),
+            nn.GroupNorm(self.out_channels // 16, self.out_channels),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-
-            ConvModule(self.out_channels, self.out_channels, 3, padding=1,
-                conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg),
-            nn.GroupNorm(self.out_channels//16, self.out_channels),
+            ConvModule(
+                self.out_channels,
+                self.out_channels,
+                3,
+                padding=1,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg),
+            nn.GroupNorm(self.out_channels // 16, self.out_channels),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
         )
 
         self.convP4 = nn.Sequential(
-            ConvModule(self.in_channels, self.out_channels, 3, padding=1,
-                conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg),
-            nn.GroupNorm(self.out_channels//16, self.out_channels),
+            ConvModule(
+                self.in_channels,
+                self.out_channels,
+                3,
+                padding=1,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg),
+            nn.GroupNorm(self.out_channels // 16, self.out_channels),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-
-            ConvModule(self.out_channels, self.out_channels, 3, padding=1,
-                conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg),
-            nn.GroupNorm(self.out_channels//16, self.out_channels),
+            ConvModule(
+                self.out_channels,
+                self.out_channels,
+                3,
+                padding=1,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg),
+            nn.GroupNorm(self.out_channels // 16, self.out_channels),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
         )
 
         self.convP3 = nn.Sequential(
-            ConvModule(self.in_channels, self.out_channels, 3, padding=1,
-                conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg),
-            nn.GroupNorm(self.out_channels//16, self.out_channels),
+            ConvModule(
+                self.in_channels,
+                self.out_channels,
+                3,
+                padding=1,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg),
+            nn.GroupNorm(self.out_channels // 16, self.out_channels),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
         )
 
         self.convP2 = nn.Sequential(
-            ConvModule(self.in_channels, self.out_channels, 3, padding=1,
-                conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg),
-            nn.GroupNorm(self.out_channels//16, self.out_channels),
+            ConvModule(
+                self.in_channels,
+                self.out_channels,
+                3,
+                padding=1,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg),
+            nn.GroupNorm(self.out_channels // 16, self.out_channels),
             nn.ReLU(inplace=True),
         )
 
         self.conv_pred = nn.Sequential(
-            ConvModule(self.out_channels, self.num_classes, 1, padding=0,
-                conv_cfg=self.conv_cfg, norm_cfg=self.norm_cfg),
+            ConvModule(
+                self.out_channels,
+                self.num_classes,
+                1,
+                padding=0,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg),
             nn.Upsample(scale_factor=4, mode='bilinear', align_corners=False),
         )
 
@@ -116,7 +153,7 @@ class PanopticFPN(nn.Module):
     def get_semantic_segm(self, segm_feature_pred, ori_shape,
                           img_shape_withoutpad):
         # only surport 1 batch
-        segm_feature_pred = segm_feature_pred[:, :,0:img_shape_withoutpad[0],
+        segm_feature_pred = segm_feature_pred[:, :, 0:img_shape_withoutpad[0],
                                               0:img_shape_withoutpad[1]]
         segm_pred_map = F.softmax(segm_feature_pred, 1)
         segm_pred_map = F.interpolate(segm_pred_map, size=ori_shape[0:2],
@@ -132,11 +169,11 @@ class PanopticFPN(nn.Module):
         for i in segm_pred_map_unique:
             if i <= self.num_things_classes:
                 continue
-            cls_im_mask = np.zeros((ori_shape[0],
-                                  ori_shape[1])).astype(np.uint8)
+            cls_im_mask = np.zeros(
+                (ori_shape[0], ori_shape[1])).astype(np.uint8)
             cls_im_mask[segm_pred_map == i] = 1
-            rle = mask_util.encode(np.array(cls_im_mask[:, :, np.newaxis],
-                                    order='F'))[0]
+            rle = mask_util.encode(
+                np.array(cls_im_mask[:, :, np.newaxis], order='F'))[0]
             cls_segms[i-1].append(rle)
 
         return cls_segms

@@ -140,11 +140,11 @@ data = dict(
         with_crowd=True,
         with_label=True,
         with_semantic_seg=True,
-        semantic_labels_map=data_root + \
-            'PanopticSegm_annotations/PanopticSegm_annotations/' + \
+        semantic_labels_map=data_root +
+            'PanopticSegm_annotations/PanopticSegm_annotations/' +
             'panoptic_val2017.json',
-        seg_prefix=data_root + \
-            'PanopticSegm_annotations/SemanticSegm_annotations/' + \
+        seg_prefix=data_root +
+            'PanopticSegm_annotations/SemanticSegm_annotations/' +
             'semantic_train2017',
         ),
     val=dict(
@@ -169,8 +169,8 @@ data = dict(
         with_mask=False,
         with_label=False,
         with_semantic_seg=False,
-        semantic_labels_map=data_root + \
-            'PanopticSegm_annotations/PanopticSegm_annotations/' + \
+        semantic_labels_map=data_root +
+            'PanopticSegm_annotations/PanopticSegm_annotations/' +
             'panoptic_val2017.json',
         test_mode=True))
 # optimizer
