@@ -15,7 +15,7 @@ from .builder import (build_backbone, build_neck, build_panoptic,
                       build_head, build_loss, build_detector)
 
 __all__ = [
-    'BACKBONES', 'NECKS', 'PANOPTIC'
+    'BACKBONES', 'NECKS', 'PANOPTIC',
     'ROI_EXTRACTORS', 'SHARED_HEADS', 'HEADS', 'LOSSES', 'DETECTORS',
     'build_backbone', 'build_neck', 'build_panoptic', 'build_roi_extractor',
     'build_shared_head', 'build_head', 'build_loss', 'build_detector'
