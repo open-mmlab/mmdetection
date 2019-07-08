@@ -102,12 +102,12 @@ class CustomDataset(Dataset):
         self.with_label = with_label
         # with semantic segmentation (stuff) annotation or not
         self.with_seg = with_semantic_seg
-        
+
         self.semantic_labels_map = semantic_labels_map
         # map semantic labels to ids
         if self.semantic_labels_map:
             import json
-            panoptic_json_file = json.load(open(semantic_labels_map,'rb'))
+            panoptic_json_file = json.load(open(semantic_labels_map, 'rb'))
             self.semantic2label = {
                 cat_id['id']: i + 1
                 for i, cat_id in enumerate(panoptic_json_file['categories'])
@@ -116,7 +116,7 @@ class CustomDataset(Dataset):
                 i + 1: cat_id['id']
                 for i, cat_id in enumerate(panoptic_json_file['categories'])
             }
-        
+
         # prefix of semantic segmentation map path
         self.seg_prefix = seg_prefix
         # rescale factor for segmentation maps
@@ -242,14 +242,14 @@ class CustomDataset(Dataset):
             gt_seg = self.seg_transform(gt_seg.squeeze(), img_scale, flip)
             gt_seg = mmcv.imrescale(
                 gt_seg, self.seg_scale_factor, interpolation='nearest')
-                
+
             # map segmantic ids to labels
             if self.semantic_labels_map:
                 gt_seg_unique = np.unique(gt_seg)
                 for i in gt_seg_unique:
-                    if i !=0:
-                        gt_seg[gt_seg==i] = self.semantic2label[i]
-                
+                    if i != 0:
+                        gt_seg[gt_seg == i] = self.semantic2label[i]
+
             gt_seg = gt_seg[None, ...]
         if self.proposals is not None:
             proposals = self.bbox_transform(proposals, img_shape, scale_factor,

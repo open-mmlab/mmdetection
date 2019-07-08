@@ -14,7 +14,7 @@ model = dict(
             in_channels=[256, 512, 1024, 2048],
             out_channels=256,
             num_outs=5),
-    panoptic = dict(
+    panoptic=dict(
             type='PanopticFPN',
             in_channels=256,
             out_channels=128,
@@ -22,7 +22,7 @@ model = dict(
             num_things_classes=80,
             num_classes=134,
             ignore_label=200,
-            loss_weight=0.5),    
+            loss_weight=0.5),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -140,8 +140,12 @@ data = dict(
         with_crowd=True,
         with_label=True,
         with_semantic_seg=True,
-        semantic_labels_map=data_root + 'PanopticSegm_annotations/PanopticSegm_annotations/panoptic_val2017.json',
-        seg_prefix =data_root + 'PanopticSegm_annotations/SemanticSegm_annotations/semantic_train2017',
+        semantic_labels_map=data_root + \
+            'PanopticSegm_annotations/PanopticSegm_annotations/' + \
+            'panoptic_val2017.json',
+        seg_prefix=data_root + \
+            'PanopticSegm_annotations/SemanticSegm_annotations/' + \
+            'semantic_train2017',
         ),
     val=dict(
         type=dataset_type,
@@ -165,7 +169,9 @@ data = dict(
         with_mask=False,
         with_label=False,
         with_semantic_seg=False,
-        semantic_labels_map=data_root + 'PanopticSegm_annotations/PanopticSegm_annotations/panoptic_val2017.json',
+        semantic_labels_map=data_root + \
+            'PanopticSegm_annotations/PanopticSegm_annotations/' + \
+            'panoptic_val2017.json',
         test_mode=True))
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)

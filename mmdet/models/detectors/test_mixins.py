@@ -159,14 +159,16 @@ class MaskTestMixin(object):
                 scale_factor=1.0,
                 rescale=False)
         return segm_result
-        
+
+
 class SemanticSegmTestMixin(object):
 
     def simple_test_semantic_segm(self, x, img_meta):
         ori_shape = img_meta[0]['ori_shape']
         img_shape_withoutpad = img_meta[0]['img_shape']
-        
+
         segm_feature_pred = self.panopticFPN(x[0:self.panopticFPN.num_levels])
-        semantic_segm_result = self.panopticFPN.get_semantic_segm(segm_feature_pred, ori_shape, img_shape_withoutpad)
-        
+        semantic_segm_result = self.panopticFPN.get_semantic_segm(
+            segm_feature_pred, ori_shape, img_shape_withoutpad)
+
         return semantic_segm_result

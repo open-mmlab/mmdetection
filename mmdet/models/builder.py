@@ -1,8 +1,8 @@
 from torch import nn
 
 from mmdet.utils import build_from_cfg
-from .registry import (BACKBONES, NECKS, PANOPTIC, ROI_EXTRACTORS, SHARED_HEADS, HEADS,
-                       LOSSES, DETECTORS)
+from .registry import (BACKBONES, NECKS, PANOPTIC, ROI_EXTRACTORS,
+                       SHARED_HEADS, HEADS, LOSSES, DETECTORS)
 
 
 def build(cfg, registry, default_args=None):
@@ -22,8 +22,10 @@ def build_backbone(cfg):
 def build_neck(cfg):
     return build(cfg, NECKS)
 
+
 def build_panoptic(cfg):
     return build(cfg, PANOPTIC)
+
 
 def build_roi_extractor(cfg):
     return build(cfg, ROI_EXTRACTORS)

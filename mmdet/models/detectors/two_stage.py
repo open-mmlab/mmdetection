@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 
 from .base import BaseDetector
-from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin, SemanticSegmTestMixin
+from .test_mixins import (RPNTestMixin, BBoxTestMixin, MaskTestMixin,
+                          SemanticSegmTestMixin)
 from .. import builder
 from ..registry import DETECTORS
 from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
@@ -30,7 +31,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         if neck is not None:
             self.neck = builder.build_neck(neck)
-        
+
         if panoptic is not None:
             self.panopticFPN = builder.build_panoptic(panoptic)
 
@@ -103,18 +104,22 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         x = self.extract_feat(img)
 
         losses = dict()
-        
+
         # Panoptic segm forword and loss
         if hasattr(self, 'panopticFPN') and self.panopticFPN is not None:
             for i in range(gt_semantic_seg.shape[0]):
-                gt_semantic_seg[i, :, img_meta[i]['img_shape'][0]:, :] = self.panopticFPN.ignore_label
-                gt_semantic_seg[i, :, :, img_meta[i]['img_shape'][1]:] = self.panopticFPN.ignore_label
+                gt_semantic_seg[i, :, img_meta[i]['img_shape'][0]:, :] = \
+                    self.panopticFPN.ignore_label
+                gt_semantic_seg[i, :, :, img_meta[i]['img_shape'][1]:] = \
+                    self.panopticFPN.ignore_label
             gt_semantic_seg = gt_semantic_seg.long()
             gt_semantic_seg = gt_semantic_seg.squeeze(1)
-            
-            segm_feature_pred = self.panopticFPN(x[0:self.panopticFPN.num_levels])
-            segm_losses = self.panopticFPN.loss(segm_feature_pred, gt_semantic_seg)
-            losses.update(segm_losses)  
+
+            segm_feature_pred = self.panopticFPN(
+                x[0:self.panopticFPN.num_levels])
+            segm_losses = self.panopticFPN.loss(
+                segm_feature_pred, gt_semantic_seg)
+            losses.update(segm_losses)
 
         # RPN forward and loss
         if self.with_rpn:
@@ -225,12 +230,12 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         else:
             segm_results = self.simple_test_mask(
                 x, img_meta, det_bboxes, det_labels, rescale=rescale)
-                
+
             # test with panoptic segm
             if hasattr(self, 'panopticFPN') and self.panopticFPN is not None:
                 semantic_results = self.simple_test_semantic_segm(x, img_meta)
-                return bbox_results, segm_results, semantic_results 
-                
+                return bbox_results, segm_results, semantic_results
+
             return bbox_results, segm_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
