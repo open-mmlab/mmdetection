@@ -99,8 +99,8 @@ def make_cython_ext(name, module, sources):
         include_dirs=[np.get_include()],
         language='c++',
         extra_compile_args={
-            'cxx': ['-Wno-unused-function', '-Wno-write-strings']}
-    )
+            'cxx': ['-Wno-unused-function', '-Wno-write-strings']
+        })
     extension, = cythonize(extension)
     return extension
 
@@ -158,23 +158,30 @@ if __name__ == '__main__':
             make_cuda_ext(
                 name='deform_conv_cuda',
                 module='mmdet.ops.dcn',
-                sources=['src/deform_conv_cuda.cpp',
-                         'src/deform_conv_cuda_kernel.cu']),
+                sources=[
+                    'src/deform_conv_cuda.cpp',
+                    'src/deform_conv_cuda_kernel.cu'
+                ]),
             make_cuda_ext(
                 name='deform_pool_cuda',
                 module='mmdet.ops.dcn',
-                sources=['src/deform_pool_cuda.cpp',
-                         'src/deform_pool_cuda_kernel.cu']),
+                sources=[
+                    'src/deform_pool_cuda.cpp',
+                    'src/deform_pool_cuda_kernel.cu'
+                ]),
             make_cuda_ext(
                 name='sigmoid_focal_loss_cuda',
                 module='mmdet.ops.sigmoid_focal_loss',
-                sources=['src/sigmoid_focal_loss.cpp',
-                         'src/sigmoid_focal_loss_cuda.cu']),
+                sources=[
+                    'src/sigmoid_focal_loss.cpp',
+                    'src/sigmoid_focal_loss_cuda.cu'
+                ]),
             make_cuda_ext(
                 name='masked_conv2d_cuda',
                 module='mmdet.ops.masked_conv',
-                sources=['src/masked_conv2d_cuda.cpp',
-                         'src/masked_conv2d_kernel.cu']),
+                sources=[
+                    'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
+                ]),
         ],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)
