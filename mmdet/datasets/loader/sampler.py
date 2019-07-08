@@ -67,7 +67,7 @@ class GroupSampler(Sampler):
                 range(len(indices) // self.samples_per_gpu))
         ]
         indices = np.concatenate(indices)
-        indices = torch.from_numpy(indices).long()
+        indices = indices.astype(np.int64).tolist()
         assert len(indices) == self.num_samples
         return iter(indices)
 
