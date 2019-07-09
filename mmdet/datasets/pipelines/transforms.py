@@ -146,10 +146,20 @@ class Resize(object):
 
 @PIPELINES.register_module
 class RandomFlip(object):
+    """Flip the image & bbox & mask.
 
-    def __init__(self, flip_ratio=0.5):
+    If the input dict contains the key "flip", then the flag will be used,
+    otherwise it will be randomly decided by a ratio specified in the init
+    method.
+
+    Args:
+        flip_ratio (float, optional): The flipping probability.
+    """
+
+    def __init__(self, flip_ratio=None):
         self.flip_ratio = flip_ratio
-        assert flip_ratio >= 0 and flip_ratio <= 1
+        if flip_ratio is not None:
+            assert flip_ratio >= 0 and flip_ratio <= 1
 
     def bbox_flip(self, bboxes, img_shape):
         """Flip bboxes horizontally.
@@ -184,6 +194,16 @@ class RandomFlip(object):
 
 @PIPELINES.register_module
 class Pad(object):
+    """Pad the image & mask.
+
+    There are two padding modes: (1) pad to a fixed size and (2) pad to the
+    minimum size that is divisible by some number.
+
+    Args:
+        size (tuple, optional): Fixed padding size.
+        size_divisor (int, optional): The divisor of padded size.
+        pad_val (float, optional): Padding value, 0 by default.
+    """
 
     def __init__(self, size=None, size_divisor=None, pad_val=0):
         self.size = size
@@ -221,6 +241,11 @@ class Pad(object):
 
 @PIPELINES.register_module
 class RandomCrop(object):
+    """Random crop the image & bboxes.
+
+    Args:
+        crop_size (tuple): Expected size after cropping, (h, w).
+    """
 
     def __init__(self, crop_size):
         self.crop_size = crop_size
@@ -240,28 +265,36 @@ class RandomCrop(object):
 
         # resize bboxes accordingly and clip to the image boundary
         for key in results.get('bbox_fields', []):
-            bboxes = results[key] * results['scale_factor']
-            bboxes -= np.array([
+            bbox_offset = [
                 crop_offset[0], crop_offset[1], crop_offset[0], crop_offset[1]
-            ],
-                               dtype=np.float32)
+            ]
+            bboxes = results[key] - np.array(bbox_offset, dtype=np.float32)
             bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1] - 1)
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)
             results[key] = bboxes
 
-        gt_bboxes = results['gt_bboxes']
-        valid_inds = (gt_bboxes[:, 2] > gt_bboxes[:, 0]) & (
-            gt_bboxes[:, 3] > gt_bboxes[:, 1])
-        results['gt_bboxes'] = gt_bboxes[valid_inds, :]
+        # filter out the gt bboxes that are completely cropped
+        if 'gt_bboxes' in results:
+            gt_bboxes = results['gt_bboxes']
+            valid_inds = (gt_bboxes[:, 2] > gt_bboxes[:, 0]) & (
+                gt_bboxes[:, 3] > gt_bboxes[:, 1])
+            results['gt_bboxes'] = gt_bboxes[valid_inds, :]
 
-        if 'gt_masks' in results:
-            results['gt_masks'] = [results['gt_masks'][i] for i in valid_inds]
+            if 'gt_masks' in results:
+                results['gt_masks'] = [
+                    results['gt_masks'][i] for i in valid_inds
+                ]
 
         return results
 
 
 @PIPELINES.register_module
 class Normalize(object):
+    """Normalize the image.
+
+    The result dict is assumed to contain the key "img_norm_cfg", which will be
+    used as normalization arguments.
+    """
 
     def __call__(self, results):
         img_norm_cfg = results['img_norm_cfg']
@@ -274,6 +307,18 @@ class Normalize(object):
 
 @PIPELINES.register_module
 class SegResizeFlipPadRescale(object):
+    """A sequential transforms to semantic segmentation maps.
+
+    The same pipeline as input images is applied to the semantic segmentation
+    map, and finally rescale it by some scale factor. The transforms include:
+    1. resize
+    2. flip
+    3. pad
+    4. rescale (so that the final size can be different from the image size)
+
+    Args:
+        scale_factor (float): The scale factor of the final output.
+    """
 
     def __init__(self, scale_factor=1):
         self.scale_factor = scale_factor
