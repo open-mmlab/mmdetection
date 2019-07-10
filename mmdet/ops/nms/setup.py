@@ -5,6 +5,7 @@ import numpy as np
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+import platform
 
 ext_args = dict(
     include_dirs=[np.get_include()],
@@ -64,11 +65,17 @@ class custom_build_ext(build_ext):
         build_ext.build_extensions(self)
 
 
-setup(
-    name='soft_nms',
-    cmdclass={'build_ext': custom_build_ext},
-    ext_modules=cythonize(extensions),
-)
+if 'Windows' == platform.system():
+    setup(
+        name='soft_nms',
+        ext_modules=cythonize(extensions),
+    )
+else:
+    setup(
+        name='soft_nms',
+        cmdclass={'build_ext': custom_build_ext},
+        ext_modules=cythonize(extensions),
+    )
 
 setup(
     name='nms_cuda',
