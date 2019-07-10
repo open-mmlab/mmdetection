@@ -3,6 +3,8 @@ import subprocess
 import time
 from setuptools import Extension, find_packages, setup
 
+import numpy as np
+from Cython.Build import cythonize
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 
@@ -90,9 +92,6 @@ def make_cuda_ext(name, module, sources):
 
 
 def make_cython_ext(name, module, sources):
-    from Cython.Build import cythonize
-    import numpy as np
-
     extension = Extension(
         '{}.{}'.format(module, name),
         [os.path.join(*module.split('.'), p) for p in sources],
