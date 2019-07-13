@@ -1,4 +1,5 @@
 import os
+import platform
 import subprocess
 import time
 from setuptools import Extension, find_packages, setup
@@ -6,7 +7,6 @@ from setuptools import Extension, find_packages, setup
 import numpy as np
 from Cython.Build import cythonize
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
-import platform
 
 
 def readme():

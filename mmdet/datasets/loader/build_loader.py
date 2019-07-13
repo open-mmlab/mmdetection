@@ -1,5 +1,5 @@
-from functools import partial
 import platform
+from functools import partial
 
 from mmcv.runner import get_dist_info
 from mmcv.parallel import collate
