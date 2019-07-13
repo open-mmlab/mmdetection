@@ -91,18 +91,17 @@ def make_cuda_ext(name, module, sources):
         name='{}.{}'.format(module, name),
         sources=[os.path.join(*module.split('.'), p) for p in sources],
         extra_compile_args={
-            "cxx": [],
-            "nvcc": [
-                "-D__CUDA_NO_HALF_OPERATORS__",
-                "-D__CUDA_NO_HALF_CONVERSIONS__",
-                "-D__CUDA_NO_HALF2_OPERATORS__",
+            'nvcc': [
+                '-D__CUDA_NO_HALF_OPERATORS__',
+                '-D__CUDA_NO_HALF_CONVERSIONS__',
+                '-D__CUDA_NO_HALF2_OPERATORS__',
             ]
         })
 
 
 def make_cython_ext(name, module, sources):
     extra_compile_args = None
-    if not 'Windows' == platform.system():
+    if platform.system() != 'Windows':
         extra_compile_args = {
             'cxx': ['-Wno-unused-function', '-Wno-write-strings']
         }
