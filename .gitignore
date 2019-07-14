@@ -117,3 +117,4 @@ data
 *.pkl.json
 *.log.json
 work_dirs/
+weights/

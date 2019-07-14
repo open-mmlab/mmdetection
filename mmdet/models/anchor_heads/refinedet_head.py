@@ -20,7 +20,7 @@ class RefineDetHead(AnchorHead):
     }
 
     def __init__(self,
-                 input_size=300,
+                 input_size=320,
                  num_classes=81,
                  in_channels=(512, 512, 1024, 512),
                  anchor_ratios=[0.5, 1.0, 2.0],
@@ -153,38 +153,9 @@ class RefineDetHead(AnchorHead):
         featmap_sizes = [featmap.size()[-2:] for featmap in arm_cls]
         assert len(featmap_sizes) == len(self.anchor_generators)
 
-        anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas)
-        cls_reg_targets = anchor_target(
-            anchor_list,
-            valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            self.target_means,
-            self.target_stds,
-            cfg,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
-            label_channels=1,
-            sampling=False,
-            unmap_outputs=False)
-        if cls_reg_targets is None:
-            return None
-        (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_pos, num_total_neg) = cls_reg_targets
-
-        num_images = len(img_metas)
-        all_labels = torch.cat(labels_list, -1).view(num_images, -1)
-        all_label_weights = torch.cat(label_weights_list,
-                                      -1).view(num_images, -1)
-
-        all_bbox_targets = torch.cat(bbox_targets_list,
-                                     -2).view(num_images, -1, 4)
-        all_bbox_weights = torch.cat(bbox_weights_list,
-                                     -2).view(num_images, -1, 4)
-
         assert len(arm_cls) == len(arm_reg)
         num_levels = len(arm_cls)
+        print(arm_cls[0].size())
         mlvl_anchors = [
             self.anchor_generators[i].grid_anchors(arm_cls[i].size()[-2:],
                                                    self.anchor_strides[i])
@@ -194,8 +165,7 @@ class RefineDetHead(AnchorHead):
 
         # process predict
         arm_criterion = refinedet_multibox_loss(2, 0.5, True, 0, True, 3, 0.5, False, self.target_stds)
-        odm_criterion = refinedet_multibox_loss(self.num_classes, 0.5, True, 0, True, self.target_stds,
-                                                3, 0.5, False, use_ARM=True)
+        odm_criterion = refinedet_multibox_loss(self.num_classes, 0.5, True, 0, True, 3, 0.5, False, self.target_stds, use_ARM=True)
 
         arm_cls = torch.cat([o.permute(0, 2, 3, 1).contiguous().view(o.size(0), -1)
                              for o in arm_cls], 1)
@@ -215,7 +185,7 @@ class RefineDetHead(AnchorHead):
             anchors
         )
 
-        targets = (all_bbox_targets, all_labels)
+        targets = (gt_bboxes, gt_labels)
 
         arm_reg_loss, arm_cls_loss = arm_criterion(predict, targets)
         odm_reg_loss, odm_cls_loss = odm_criterion(predict, targets)

@@ -79,8 +79,8 @@ class refinedet_multibox_loss(nn.Module):
             # truths = targets[idx][:, :-1].data
             # labels = targets[idx][:, -1].data
             truths, labels = targets
-            truths = truths[idx, :, :]
-            labels = labels[idx, :]
+            truths = truths[idx]
+            labels = labels[idx]
             if num_classes == 2:
                 labels = labels >= 0
             defaults = priors.data
