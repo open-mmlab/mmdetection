@@ -54,10 +54,10 @@ class SingleRoIExtractor(nn.Module):
     def map_roi_levels(self, rois, num_levels):
         """Map rois to corresponding feature levels by scales.
 
-        - scale < finest_scale: level 0
-        - finest_scale <= scale < finest_scale * 2: level 1
-        - finest_scale * 2 <= scale < finest_scale * 4: level 2
-        - scale >= finest_scale * 4: level 3
+        - scale < finest_scale * 2: level 0
+        - finest_scale * 2 <= scale < finest_scale * 4: level 1
+        - finest_scale * 4 <= scale < finest_scale * 8: level 2
+        - scale >= finest_scale * 8: level 3
 
         Args:
             rois (Tensor): Input RoIs, shape (k, 5).
