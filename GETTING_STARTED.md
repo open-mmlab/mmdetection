@@ -63,6 +63,7 @@ Here is an example of building the model and test given images.
 
 ```python
 from mmdet.apis import init_detector, inference_detector, show_result
+import cv2
 
 config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
@@ -79,6 +80,15 @@ show_result(img, result, model.CLASSES)
 imgs = ['test1.jpg', 'test2.jpg']
 for i, result in enumerate(inference_detector(model, imgs)):
     show_result(imgs[i], result, model.CLASSES, out_file='result_{}.jpg'.format(i))
+
+# test a video and show the results
+cap = cv2.VideoCapture('video.mp4')
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+    result = inference_detector(model, frame)
+    show_result(frame, result, model.CLASSES, wait_time=1)
 ```
 
 
