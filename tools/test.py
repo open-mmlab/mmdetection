@@ -128,6 +128,10 @@ def parse_args():
 def main():
     args = parse_args()
 
+    assert args.out or args.show,\
+        'Please choice an operation(Save or Show the results)\
+         by argument --out or --show'
+
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
 
