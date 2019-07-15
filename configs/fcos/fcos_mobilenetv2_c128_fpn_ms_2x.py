@@ -3,9 +3,7 @@ model = dict(
     type='FCOS',
     pretrained=None,
     backbone=dict(
-        type='MobileNetV2',
-        out_indices=(1, 2, 4, 6),
-        frozen_stages=-1),
+        type='MobileNetV2', out_indices=(1, 2, 4, 6), frozen_stages=-1),
     neck=dict(
         type='FPN',
         in_channels=[24, 32, 96, 320],

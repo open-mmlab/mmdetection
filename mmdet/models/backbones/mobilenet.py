@@ -27,16 +27,28 @@ def _make_divisible(v, divisor, min_value=None):
 
 
 class ConvBNReLU(nn.Sequential):
-    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, groups=1):
+
+    def __init__(self,
+                 in_planes,
+                 out_planes,
+                 kernel_size=3,
+                 stride=1,
+                 groups=1):
         padding = (kernel_size - 1) // 2
         super(ConvBNReLU, self).__init__(
-            nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, groups=groups, bias=False),
-            nn.BatchNorm2d(out_planes),
-            nn.ReLU6(inplace=True)
-        )
+            nn.Conv2d(
+                in_planes,
+                out_planes,
+                kernel_size,
+                stride,
+                padding,
+                groups=groups,
+                bias=False), nn.BatchNorm2d(out_planes),
+            nn.ReLU6(inplace=True))
 
 
 class InvertedResidual(nn.Module):
+
     def __init__(self, inp, oup, stride, expand_ratio):
         super(InvertedResidual, self).__init__()
         self.stride = stride
@@ -51,7 +63,8 @@ class InvertedResidual(nn.Module):
             layers.append(ConvBNReLU(inp, hidden_dim, kernel_size=1))
         layers.extend([
             # dw
-            ConvBNReLU(hidden_dim, hidden_dim, stride=stride, groups=hidden_dim),
+            ConvBNReLU(
+                hidden_dim, hidden_dim, stride=stride, groups=hidden_dim),
             # pw-linear
             nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
             nn.BatchNorm2d(oup),
@@ -71,6 +84,7 @@ class MobileNetV2(nn.Module):
     MobileNetV2 is taken from pytorch hub.
     https://github.com/pytorch/vision/blob/master/torchvision/models/mobilenet.py
     """
+
     def __init__(self,
                  out_indices=(1, 2, 4, 6),
                  frozen_stages=-1,
@@ -80,10 +94,11 @@ class MobileNetV2(nn.Module):
         """
         MobileNet V2 main class
         Args:
-            width_mult (float): Width multiplier - adjusts number of channels in each layer by this amount
+            width_mult (float): Width multiplier - adjusts number of channels
+            in each layer by this amount
             inverted_residual_setting: Network structure
-            round_nearest (int): Round the number of channels in each layer to be a multiple of this number
-            Set to 1 to turn off rounding
+            round_nearest (int): Round the number of channels in each layer to
+             be a multiple of this number. Set to 1 to turn off rounding
         """
         super(MobileNetV2, self).__init__()
         block = InvertedResidual
@@ -101,16 +116,20 @@ class MobileNetV2(nn.Module):
                 [6, 320, 1, 1],  # 6
             ]
 
-        # only check the first element, assuming user knows t,c,n,s are required
-        if len(inverted_residual_setting) == 0 or len(inverted_residual_setting[0]) != 4:
+        # only check the first element,
+        # assuming user knows t,c,n,s are required
+        if len(inverted_residual_setting) == 0 or len(
+                inverted_residual_setting[0]) != 4:
             raise ValueError("inverted_residual_setting should be non-empty "
-                             "or a 4-element list, got {}".format(inverted_residual_setting))
+                             "or a 4-element list, got {}".format(
+                                 inverted_residual_setting))
 
         self.frozen_stages = frozen_stages
         self.out_indices = out_indices
         assert max(out_indices) < len(inverted_residual_setting)
         # building first layer
-        input_channel = _make_divisible(input_channel * width_mult, round_nearest)
+        input_channel = _make_divisible(input_channel * width_mult,
+                                        round_nearest)
         self.conv1 = ConvBNReLU(3, input_channel, stride=2)
         # building inverted residual blocks
         self.stages = []
@@ -119,7 +138,9 @@ class MobileNetV2(nn.Module):
             stage = []
             for i in range(n):
                 stride = s if i == 0 else 1
-                stage.append(block(input_channel, output_channel, stride, expand_ratio=t))
+                stage.append(
+                    block(
+                        input_channel, output_channel, stride, expand_ratio=t))
                 input_channel = output_channel
             stage_name = 'stage{}'.format(si + 1)
             self.add_module(stage_name, nn.Sequential(*stage))

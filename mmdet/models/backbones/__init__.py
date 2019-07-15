@@ -4,4 +4,6 @@ from .ssd_vgg import SSDVGG
 from .hrnet import HRNet
 from .mobilenet import MobileNetV2
 
-__all__ = ['ResNet', 'make_res_layer', 'ResNeXt', 'SSDVGG', 'HRNet', 'MobileNetV2']
+__all__ = [
+    'ResNet', 'make_res_layer', 'ResNeXt', 'SSDVGG', 'HRNet', 'MobileNetV2'
+]
