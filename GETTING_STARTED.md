@@ -82,11 +82,8 @@ for i, result in enumerate(inference_detector(model, imgs)):
     show_result(imgs[i], result, model.CLASSES, out_file='result_{}.jpg'.format(i))
 
 # test a video and show the results
-cap = mmcv.VideoReader('video.mp4')
-while True:
-    frame = cap.read()
-    if frame is None:
-        break
+video = mmcv.VideoReader('video.mp4')
+for frame in video:
     result = inference_detector(model, frame)
     show_result(frame, result, model.CLASSES, wait_time=1)
 ```
