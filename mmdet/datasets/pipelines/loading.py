@@ -13,7 +13,7 @@ class LoadImageFromFile(object):
     def __call__(self, results):
         img = mmcv.imread(
             osp.join(results['img_prefix'], results['img_info']['filename']))
-        results['img'] = img
+        results['img'] = img.astype(np.float32)
         results['ori_shape'] = img.shape
         return results
 

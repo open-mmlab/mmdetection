@@ -111,7 +111,8 @@ class DefaultFormatBundle(object):
     def __call__(self, results):
         if 'img' in self.keys:
             results['img'] = DC(
-                to_tensor(results['img'].transpose(2, 0, 1)), stack=True)
+                to_tensor(results['img'].transpose(2, 0, 1).copy()),
+                stack=True)  # copy() to avoid negative stride
         if 'gt_bboxes' in self.keys:
             results['gt_bboxes'] = DC(to_tensor(results['gt_bboxes']))
         if 'gt_bboxes_ignore' in self.keys:
