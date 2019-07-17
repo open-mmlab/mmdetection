@@ -1,6 +1,8 @@
 
 # mmdetection
 
+master分支作为原始工程备份，请切换到mmdet_modity分支。<br>
+
 ## Introduction
 
 The master branch works with **PyTorch 1.1** or higher. If you would like to use PyTorch 0.4.1,
