@@ -23,7 +23,7 @@ a. Create a conda virtual environment and activate it. Then install Cython.
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
-source activate open-mmlab
+conda activate open-mmlab
 
 conda install cython
 ```
@@ -37,17 +37,11 @@ git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Compile cuda extensions.
-
-```shell
-./compile.sh
-```
-
-e. Install mmdetection (other dependencies will be installed automatically).
+d. Install mmdetection (other dependencies will be installed automatically).
 
 ```shell
 python setup.py develop
-# or "pip install -e ."
+# or "pip install -v -e ."
 ```
 
 Note:
@@ -83,7 +77,7 @@ mmdetection
 a script for setting up mmdetection with conda.
 
 ### Notice
-You can run `python(3) setup.py develop` or `pip install -e .` to install mmdetection if you want to make modifications to it frequently.
+You can run `python(3) setup.py develop` or `pip install -v -e .` to install mmdetection if you want to make modifications to it frequently.
 
 If there are more than one mmdetection on your machine, and you want to use them alternatively.
 Please insert the following code to the main file
