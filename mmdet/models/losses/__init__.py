@@ -8,7 +8,7 @@ from .balanced_l1_loss import balanced_l1_loss, BalancedL1Loss
 from .mse_loss import mse_loss, MSELoss
 from .iou_loss import iou_loss, bounded_iou_loss, IoULoss, BoundedIoULoss
 from .utils import reduce_loss, weight_reduce_loss, weighted_loss
-from .giou_loss import GIoULoss
+from .dice_loss import DiceLoss
 
 __all__ = [
     'accuracy', 'Accuracy', 'cross_entropy', 'binary_cross_entropy',
@@ -16,5 +16,5 @@ __all__ = [
     'FocalLoss', 'smooth_l1_loss', 'SmoothL1Loss', 'balanced_l1_loss',
     'BalancedL1Loss', 'mse_loss', 'MSELoss', 'iou_loss', 'bounded_iou_loss',
     'IoULoss', 'BoundedIoULoss', 'GHMC', 'GHMR', 'reduce_loss',
-    'weight_reduce_loss', 'weighted_loss', 'GIoULoss'
+    'weight_reduce_loss', 'weighted_loss', 'DiceLoss'
 ]
