@@ -2,7 +2,7 @@
 model = dict(
     type='CascadeRCNN',
     num_stages=3,
-    pretrained='modelzoo://resnet101',
+    pretrained='torchvision://resnet101',
     backbone=dict(
         type='ResNet',
         depth=101,

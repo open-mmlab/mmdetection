@@ -3,7 +3,7 @@ norm_cfg = dict(type='SyncBN', requires_grad=True)
 
 model = dict(
     type='MaskRCNN',
-    pretrained='modelzoo://resnet50',
+    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,

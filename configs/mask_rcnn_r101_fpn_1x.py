@@ -1,7 +1,7 @@
 # model settings
 model = dict(
     type='MaskRCNN',
-    pretrained='modelzoo://resnet101',
+    pretrained='torchvision://resnet101',
     backbone=dict(
         type='ResNet',
         depth=101,

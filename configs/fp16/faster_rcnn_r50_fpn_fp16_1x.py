@@ -4,7 +4,7 @@ fp16 = dict(loss_scale=512.)
 # model settings
 model = dict(
     type='FasterRCNN',
-    pretrained='modelzoo://resnet50',
+    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
