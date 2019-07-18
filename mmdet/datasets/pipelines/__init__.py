@@ -5,12 +5,12 @@ from .loading import LoadAnnotations, LoadImageFromFile, LoadProposals
 from .test_aug import MultiScaleFlipAug
 from .transforms import (Expand, MinIoURandomCrop, Normalize, Pad,
                          PhotoMetricDistortion, RandomCrop, RandomFlip, Resize,
-                         SegResizeFlipPadRescale)
+                         SegResizeFlipPadRescale, CtdetTrainTransforms, CtdetTestTransforms)
 
 __all__ = [
     'Compose', 'to_tensor', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
     'Transpose', 'Collect', 'LoadAnnotations', 'LoadImageFromFile',
     'LoadProposals', 'MultiScaleFlipAug', 'Resize', 'RandomFlip', 'Pad',
     'RandomCrop', 'Normalize', 'SegResizeFlipPadRescale', 'MinIoURandomCrop',
-    'Expand', 'PhotoMetricDistortion'
+    'Expand', 'PhotoMetricDistortion', 'CtdetTrainTransforms', 'CtdetTestTransforms'
 ]

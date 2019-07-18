@@ -2,6 +2,11 @@ import mmcv
 import numpy as np
 from imagecorruptions import corrupt
 from numpy import random
+import torch
+import cv2
+import math
+from mmcv.parallel import DataContainer as DC
+from . import to_tensor
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..registry import PIPELINES
@@ -651,3 +656,441 @@ class Corrupt(object):
         repr_str += '(corruption={}, severity={})'.format(
             self.corruption, self.severity)
         return repr_str
+
+
+@PIPELINES.register_module
+class CtdetTrainTransforms(object):
+
+    def __init__(self,
+                flip_ratio,
+                size_divisor,
+                keep_ratio,
+                img_scale,
+                img_norm_cfg,
+                _data_rng,
+                _eig_val,
+                _eig_vec,
+                max_objs,
+                num_classes):
+        self.flip_ratio = flip_ratio
+        self.size_divisor = size_divisor
+        self.keep_ratio = keep_ratio
+        self.img_scales = img_scale if isinstance(img_scale,
+                                                  list) else [img_scale]
+        assert mmcv.is_list_of(self.img_scales, tuple)
+        self.img_norm_cfg = img_norm_cfg
+        self._data_rng = _data_rng
+        self._eig_val = _eig_val
+        self._eig_vec = _eig_vec
+        self.max_objs = max_objs
+        self.num_classes = num_classes
+
+    def grayscale(self, image):
+        return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    def lighting_(self, data_rng, image, alphastd, eigval, eigvec):
+        alpha = data_rng.normal(scale=alphastd, size=(3, ))
+        image += np.dot(eigvec, eigval * alpha)
+
+
+    def blend_(self, alpha, image1, image2):
+        image1 *= alpha
+        image2 *= (1 - alpha)
+        image1 += image2
+
+
+    def saturation_(self, data_rng, image, gs, gs_mean, var):
+        alpha = 1. + data_rng.uniform(low=-var, high=var)
+        self.blend_(alpha, image, gs[:, :, None])
+
+
+    def brightness_(self, data_rng, image, gs, gs_mean, var):
+        alpha = 1. + data_rng.uniform(low=-var, high=var)
+        image *= alpha
+
+
+    def contrast_(self, data_rng, image, gs, gs_mean, var):
+        alpha = 1. + data_rng.uniform(low=-var, high=var)
+        self.blend_(alpha, image, gs_mean)
+
+
+    def color_aug(self, data_rng, image, eig_val, eig_vec):
+        functions = [self.brightness_, self.contrast_, self.saturation_]
+        random.shuffle(functions)
+
+        gs = self.grayscale(image)
+        gs_mean = gs.mean()
+        for f in functions:
+            f(data_rng, image, gs, gs_mean, 0.4)
+        self.lighting_(data_rng, image, 0.1, eig_val, eig_vec)
+
+
+    def gaussian_radius(self, det_size, min_overlap=0.7):
+        height, width = det_size
+
+        a1 = 1
+        b1 = (height + width)
+        c1 = width * height * (1 - min_overlap) / (1 + min_overlap)
+        sq1 = np.sqrt(b1**2 - 4 * a1 * c1)
+        r1 = (b1 + sq1) / 2
+
+        a2 = 4
+        b2 = 2 * (height + width)
+        c2 = (1 - min_overlap) * width * height
+        sq2 = np.sqrt(b2**2 - 4 * a2 * c2)
+        r2 = (b2 + sq2) / 2
+
+        a3 = 4 * min_overlap
+        b3 = -2 * min_overlap * (height + width)
+        c3 = (min_overlap - 1) * width * height
+        sq3 = np.sqrt(b3**2 - 4 * a3 * c3)
+        r3 = (b3 + sq3) / 2
+        return min(r1, r2, r3)
+
+
+    def gaussian2D(self, shape, sigma=1):
+        m, n = [(ss - 1.) / 2. for ss in shape]
+        y, x = np.ogrid[-m:m + 1, -n:n + 1]
+
+        h = np.exp(-(x * x + y * y) / (2 * sigma * sigma))
+        h[h < np.finfo(h.dtype).eps * h.max()] = 0
+        return h
+
+
+    def draw_umich_gaussian(self, heatmap, center, radius, k=1):
+        diameter = 2 * radius + 1
+        gaussian = self.gaussian2D((diameter, diameter), sigma=diameter / 6)
+
+        x, y = int(center[0]), int(center[1])
+
+        height, width = heatmap.shape[0:2]
+
+        left, right = min(x, radius), min(width - x, radius + 1)
+        top, bottom = min(y, radius), min(height - y, radius + 1)
+
+        masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
+        masked_gaussian = gaussian[radius - top:radius + bottom, radius -
+                                   left:radius + right]
+        if min(masked_gaussian.shape) > 0 and min(
+                masked_heatmap.shape) > 0:  # TODO debug
+            np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
+        return heatmap
+
+
+    def get_dir(self, src_point, rot_rad):
+        sn, cs = np.sin(rot_rad), np.cos(rot_rad)
+
+        src_result = [0, 0]
+        src_result[0] = src_point[0] * cs - src_point[1] * sn
+        src_result[1] = src_point[0] * sn + src_point[1] * cs
+
+        return src_result
+
+
+    def get_3rd_point(self, a, b):
+        direct = a - b
+        return b + np.array([-direct[1], direct[0]], dtype=np.float32)
+
+
+    def get_affine_transform(self,
+                             center,
+                             scale,
+                             rot,
+                             output_size,
+                             shift=np.array([0, 0], dtype=np.float32),
+                             inv=0):
+        if isinstance(scale, torch.Tensor):
+            scale = scale.cpu().squeeze().numpy()
+        if isinstance(center, torch.Tensor):
+            center = center.cpu().squeeze().numpy()
+        if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
+            scale = np.array([scale, scale], dtype=np.float32)
+
+        scale_tmp = scale
+        src_w = scale_tmp[0]
+        dst_w = output_size[0]
+        dst_h = output_size[1]
+        if isinstance(dst_w, torch.Tensor):
+            dst_w = dst_w.cpu().squeeze().numpy()
+        if isinstance(dst_h, torch.Tensor):
+            dst_h = dst_h.cpu().squeeze().numpy()
+
+        rot_rad = np.pi * rot / 180
+        src_dir = self.get_dir([0, src_w * -0.5], rot_rad)
+        dst_dir = np.array([0, dst_w * -0.5], np.float32)
+
+        src = np.zeros((3, 2), dtype=np.float32)
+        dst = np.zeros((3, 2), dtype=np.float32)
+        src[0, :] = center + scale_tmp * shift
+        src[1, :] = center + src_dir + scale_tmp * shift
+        dst[0, :] = [dst_w * 0.5, dst_h * 0.5]
+        dst[1, :] = np.array([dst_w * 0.5, dst_h * 0.5], np.float32) + dst_dir
+
+        src[2:, :] = self.get_3rd_point(src[0, :], src[1, :])
+        dst[2:, :] = self.get_3rd_point(dst[0, :], dst[1, :])
+
+        if inv:
+            trans = cv2.getAffineTransform(np.float32(dst), np.float32(src))
+        else:
+            trans = cv2.getAffineTransform(np.float32(src), np.float32(dst))
+
+        return trans
+
+
+    def affine_transform(self, pt, t):
+        new_pt = np.array([pt[0], pt[1], 1.], dtype=np.float32).T
+        new_pt = np.dot(t, new_pt)
+        return new_pt[:2]
+
+
+    def get_border(self, border, size):
+        i = 1
+        while size - border // i <= border // i:
+            i *= 2
+        return border // i
+
+    def __call__(self, results):
+        # apply transforms
+        flip = True if np.random.rand() < self.flip_ratio else False
+        # randomly sample a scale
+        img = results['img']
+        height, width = img.shape[0], img.shape[1]
+        img_shape = img.shape
+        c = np.array([img.shape[1] / 2., img.shape[0] / 2.],
+                     dtype=np.float32)
+        if self.keep_ratio:
+            input_h = (height | self.size_divisor) + 1
+            input_w = (width | self.size_divisor) + 1
+            s = np.array([input_w, input_h], dtype=np.float32)
+        else:
+            s = max(img.shape[0], img.shape[1]) * 1.0
+            input_h, input_w = self.img_scales[0]
+
+        s = s * np.random.choice(np.arange(0.6, 1.4, 0.1))
+        w_border = self.get_border(128, img.shape[1])
+        h_border = self.get_border(128, img.shape[0])
+        c[0] = np.random.randint(
+            low=w_border, high=img.shape[1] - w_border)
+        c[1] = np.random.randint(
+            low=h_border, high=img.shape[0] - h_border)
+
+        if flip:
+            img = img[:, ::-1, :]
+            c[0] = width - c[0] - 1
+
+        trans_input = self.get_affine_transform(c, s, 0, [input_w, input_h])
+        inp = cv2.warpAffine(
+            img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
+
+        pad_shape = inp.shape
+        scale_factor = np.array([(pad_shape[1] / img_shape[1]),
+                                 (pad_shape[0] / img_shape[0]),
+                                 (pad_shape[1] / img_shape[1]),
+                                 (pad_shape[0] / img_shape[0])],
+                                dtype=np.float32)
+
+        inp = (inp.astype(np.float32) / 255.)
+        self.color_aug(self._data_rng, inp, self._eig_val, self._eig_vec)
+        mean = np.array(
+            self.img_norm_cfg['mean'], dtype=np.float32).reshape(1, 1, 3)
+        std = np.array(
+            self.img_norm_cfg['std'], dtype=np.float32).reshape(1, 1, 3)
+        inp = (inp - mean) / std
+        inp = inp.transpose(2, 0, 1)
+        img = inp.copy()
+
+
+        # TODO: change to down_ratio
+        output_h = input_h // 4
+        output_w = input_w // 4
+        trans_output = self.get_affine_transform(c, s, 0, [output_w, output_h])
+
+        hm = np.zeros((self.num_classes, output_h, output_w),
+                      dtype=np.float32)
+        wh = np.zeros((self.max_objs, 2), dtype=np.float32)
+        reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+        ind = np.zeros((self.max_objs), dtype=np.int64)
+        reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
+
+        ann = results['ann_info']
+        for k in range(min(len(ann['labels']), self.max_objs)):
+            bbox = ann['bboxes'][k]
+            cls_id = ann['labels'][k] - 1
+            if flip:
+                bbox[[0, 2]] = width - bbox[[2, 0]] - 1
+
+            # tranform bounding box to output size
+            bbox[:2] = self.affine_transform(bbox[:2], trans_output)
+            bbox[2:] = self.affine_transform(bbox[2:], trans_output)
+            bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, output_w - 1)
+            bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, output_h - 1)
+            h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
+            if h > 0 and w > 0:
+                # populate hm based on gd and ct
+                radius = self.gaussian_radius((math.ceil(h), math.ceil(w)))
+                radius = max(0, int(radius))
+                ct = np.array([(bbox[0] + bbox[2]) / 2,
+                               (bbox[1] + bbox[3]) / 2],
+                              dtype=np.float32)
+                ct_int = ct.astype(np.int32)
+                self.draw_umich_gaussian(hm[cls_id], ct_int, radius)
+                wh[k] = 1. * w, 1. * h
+                ind[k] = ct_int[1] * output_w + ct_int[0]
+                reg[k] = ct - ct_int
+                reg_mask[k] = 1
+
+        img_info = results['img_info']
+        ori_shape = (img_info['height'], img_info['width'], 3)
+        img_meta = dict(
+            ori_shape=ori_shape,
+            img_shape=img_shape,
+            pad_shape=pad_shape,
+            scale_factor=scale_factor,
+            flip=flip)
+
+        data = dict(
+            img=DC(to_tensor(img), stack=True),
+            img_meta=DC(img_meta, cpu_only=True),
+            gt_bboxes=DC(to_tensor(results['gt_bboxes'])))
+        data['gt_labels'] = DC(to_tensor(results['gt_labels']))
+        data['hm'] = DC(to_tensor(hm), stack=True)
+        data['reg_mask'] = DC(
+            to_tensor(reg_mask).unsqueeze(1), stack=True, pad_dims=1)
+        data['ind'] = DC(
+            to_tensor(ind).unsqueeze(1), stack=True, pad_dims=1)
+        data['wh'] = DC(to_tensor(wh), stack=True, pad_dims=1)
+        data['reg'] = DC(to_tensor(reg), stack=True, pad_dims=1)
+
+        return data
+
+@PIPELINES.register_module
+class CtdetTestTransforms(object):
+
+    def __init__(self,
+                size_divisor,
+                keep_ratio,
+                input_res,
+                img_norm_cfg):
+        self.size_divisor = size_divisor
+        self.keep_ratio = keep_ratio
+        self.input_res = input_res
+        self.img_norm_cfg = img_norm_cfg
+
+    def get_dir(self, src_point, rot_rad):
+        sn, cs = np.sin(rot_rad), np.cos(rot_rad)
+
+        src_result = [0, 0]
+        src_result[0] = src_point[0] * cs - src_point[1] * sn
+        src_result[1] = src_point[0] * sn + src_point[1] * cs
+
+        return src_result
+
+    def get_3rd_point(self, a, b):
+        direct = a - b
+        return b + np.array([-direct[1], direct[0]], dtype=np.float32)
+
+
+    def get_affine_transform(self,
+                             center,
+                             scale,
+                             rot,
+                             output_size,
+                             shift=np.array([0, 0], dtype=np.float32),
+                             inv=0):
+        if isinstance(scale, torch.Tensor):
+            scale = scale.cpu().squeeze().numpy()
+        if isinstance(center, torch.Tensor):
+            center = center.cpu().squeeze().numpy()
+        if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
+            scale = np.array([scale, scale], dtype=np.float32)
+
+        scale_tmp = scale
+        src_w = scale_tmp[0]
+        dst_w = output_size[0]
+        dst_h = output_size[1]
+        if isinstance(dst_w, torch.Tensor):
+            dst_w = dst_w.cpu().squeeze().numpy()
+        if isinstance(dst_h, torch.Tensor):
+            dst_h = dst_h.cpu().squeeze().numpy()
+
+        rot_rad = np.pi * rot / 180
+        src_dir = self.get_dir([0, src_w * -0.5], rot_rad)
+        dst_dir = np.array([0, dst_w * -0.5], np.float32)
+
+        src = np.zeros((3, 2), dtype=np.float32)
+        dst = np.zeros((3, 2), dtype=np.float32)
+        src[0, :] = center + scale_tmp * shift
+        src[1, :] = center + src_dir + scale_tmp * shift
+        dst[0, :] = [dst_w * 0.5, dst_h * 0.5]
+        dst[1, :] = np.array([dst_w * 0.5, dst_h * 0.5], np.float32) + dst_dir
+
+        src[2:, :] = self.get_3rd_point(src[0, :], src[1, :])
+        dst[2:, :] = self.get_3rd_point(dst[0, :], dst[1, :])
+
+        if inv:
+            trans = cv2.getAffineTransform(np.float32(dst), np.float32(src))
+        else:
+            trans = cv2.getAffineTransform(np.float32(src), np.float32(dst))
+
+        return trans
+
+    def __call__(self, results):
+        img = results['img']
+        scale = results['scale']
+        flip = results['flip']
+        height, width = img.shape[0:2]
+        new_height = int(height * scale[0])
+        new_width = int(width * scale[1])
+        img_shape = (new_height, new_width)
+        if self.keep_ratio:
+            inp_height = (new_height | self.size_divisor) + 1
+            inp_width = (new_width | self.size_divisor) + 1
+            c = np.array([new_width // 2, new_height // 2],
+                         dtype=np.float32)
+            s = np.array([inp_width, inp_height], dtype=np.float32)
+        else:
+            inp_height, inp_width = self.input_res[0], self.input_res[1]
+            c = np.array([new_width / 2., new_height / 2.],
+                  dtype=np.float32)
+            s = max(height, width) * 1.0
+
+        trans_input = self.get_affine_transform(c, s, 0,
+                                           [inp_width, inp_height])
+        resized_image = cv2.resize(img, (new_width, new_height))
+        inp_image = cv2.warpAffine(
+            resized_image,
+            trans_input, (inp_width, inp_height),
+            flags=cv2.INTER_LINEAR)
+        # img meta calculations
+        pad_shape = inp_image.shape[:2]
+        scale_factor = np.array([(pad_shape[1] / img_shape[1]),
+                                 (pad_shape[0] / img_shape[0]),
+                                 (pad_shape[1] / img_shape[1]),
+                                 (pad_shape[0] / img_shape[0])],
+                                dtype=np.float32)
+        mean = np.array(
+            self.img_norm_cfg['mean'],
+            dtype=np.float32).reshape(1, 1, 3)
+        std = np.array(
+            self.img_norm_cfg['std'],
+            dtype=np.float32).reshape(1, 1, 3)
+        inp_image = ((inp_image / 255. - mean) / std).astype(
+            np.float32)
+
+        _img = inp_image.transpose(2, 0, 1)
+        if flip:
+            _img = _img[:, :, ::-1].copy()
+
+        img_info = results['img_info']
+        _img_meta = dict(
+            ori_shape=(img_info['height'], img_info['width'], 3),
+            img_shape=img_shape,
+            pad_shape=pad_shape,
+            scale_factor=scale_factor,
+            ctdet_c=c,
+            ctdet_s=s,
+            ctdet_out_height=inp_height // 4,
+            ctdet_out_width=inp_width // 4,
+            flip=flip)
+        data = dict(img=_img, img_meta=DC(_img_meta, cpu_only=True))
+        return data
