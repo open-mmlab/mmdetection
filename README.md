@@ -9,6 +9,8 @@ toolbox with code to test models on coprrupted images. It was created as a part 
 [Robust Detection Benchmark Suite](https://github.com/bethgelab/robust_detection_benchmark) and has been 
 submitted to mmdetection as [pull request](https://github.com/open-mmlab/mmdetection/pulls).
 
+The benchmarking toolkit is part of the paper [Benchmarking Robustness in Object Detection: Autonomous Driving when Winter is Coming](https://arxiv.org/abs/1907.07484).
+
 For more information how to evaluate models on corrupted images and results for a set of standard
 models please refer to [ROBUSTNESS_BENCHMARKING.md](ROBUSTNESS_BENCHMARKING.md).
 
@@ -53,14 +55,14 @@ Plase see [ROBUSTNESS_BENCHMARKING.md](ROBUSTNESS_BENCHMARKING.md) for instructi
 If you use this toolbox or benchmark in your research, please cite this project.
 
 ```
-@article{michaelis2019dragon,
+@article{michaelis2019winter,
   title={Benchmarking Robustness in Object Detection: 
     Autonomous Driving when Winter is Coming},
   author={Michaelis, Claudio and Mitzkus, Benjamin and 
     Geirhos, Robert and Rusak, Evgenia and 
     Bringmann, Oliver and Ecker, Alexander S. and 
     Bethge, Matthias and Brendel, Wieland},
-  journal={arXiv},
+  journal={arXiv:1907.07484},
   year={2019}
 }
 ```
