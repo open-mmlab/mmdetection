@@ -56,6 +56,7 @@ class CustomDataset(Dataset):
                  seg_scale_factor=1,
                  extra_aug=None,
                  resize_keep_ratio=True,
+                 skip_img_without_anno=True,
                  test_mode=False):
         # prefix of images path
         self.img_prefix = img_prefix
@@ -128,6 +129,7 @@ class CustomDataset(Dataset):
 
         # image rescale if keep ratio
         self.resize_keep_ratio = resize_keep_ratio
+        self.skip_img_without_anno = skip_img_without_anno
 
     def __len__(self):
         return len(self.img_infos)
@@ -204,7 +206,7 @@ class CustomDataset(Dataset):
             gt_bboxes_ignore = ann['bboxes_ignore']
 
         # skip the image if there is no valid gt bbox
-        if len(gt_bboxes) == 0:
+        if len(gt_bboxes) == 0 and self.skip_img_without_anno:
             warnings.warn('Skip the image that has no valid gt bbox')
             return None
 
