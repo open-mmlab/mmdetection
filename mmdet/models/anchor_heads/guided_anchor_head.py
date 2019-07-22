@@ -7,7 +7,7 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (AnchorGenerator, anchor_target, anchor_inside_flags,
                         ga_loc_target, ga_shape_target, delta2bbox,
-                        multi_apply, multiclass_nms)
+                        multi_apply, multiclass_nms, force_fp32)
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import build_loss
 from .anchor_head import AnchorHead
@@ -93,37 +93,32 @@ class GuidedAnchorHead(AnchorHead):
         loss_bbox (dict): Config of bbox regression loss.
     """
 
-    def __init__(self,
-                 num_classes,
-                 in_channels,
-                 feat_channels=256,
-                 octave_base_scale=8,
-                 scales_per_octave=3,
-                 octave_ratios=[0.5, 1.0, 2.0],
-                 anchor_strides=[4, 8, 16, 32, 64],
-                 anchor_base_sizes=None,
-                 anchoring_means=(.0, .0, .0, .0),
-                 anchoring_stds=(1.0, 1.0, 1.0, 1.0),
-                 target_means=(.0, .0, .0, .0),
-                 target_stds=(1.0, 1.0, 1.0, 1.0),
-                 deformable_groups=4,
-                 loc_filter_thr=0.01,
-                 loss_loc=dict(
-                     type='FocalLoss',
-                     use_sigmoid=True,
-                     gamma=2.0,
-                     alpha=0.25,
-                     loss_weight=1.0),
-                 loss_shape=dict(
-                     type='BoundedIoULoss',
-                     beta=0.2,
-                     loss_weight=1.0),
-                 loss_cls=dict(
-                     type='CrossEntropyLoss',
-                     use_sigmoid=True,
-                     loss_weight=1.0),
-                 loss_bbox=dict(
-                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
+    def __init__(
+            self,
+            num_classes,
+            in_channels,
+            feat_channels=256,
+            octave_base_scale=8,
+            scales_per_octave=3,
+            octave_ratios=[0.5, 1.0, 2.0],
+            anchor_strides=[4, 8, 16, 32, 64],
+            anchor_base_sizes=None,
+            anchoring_means=(.0, .0, .0, .0),
+            anchoring_stds=(1.0, 1.0, 1.0, 1.0),
+            target_means=(.0, .0, .0, .0),
+            target_stds=(1.0, 1.0, 1.0, 1.0),
+            deformable_groups=4,
+            loc_filter_thr=0.01,
+            loss_loc=dict(
+                type='FocalLoss',
+                use_sigmoid=True,
+                gamma=2.0,
+                alpha=0.25,
+                loss_weight=1.0),
+            loss_shape=dict(type='BoundedIoULoss', beta=0.2, loss_weight=1.0),
+            loss_cls=dict(
+                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -168,6 +163,8 @@ class GuidedAnchorHead(AnchorHead):
         self.loss_shape = build_loss(loss_shape)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
+
+        self.fp16_enabled = False
 
         self._init_layers()
 
@@ -392,6 +389,8 @@ class GuidedAnchorHead(AnchorHead):
             avg_factor=loc_avg_factor)
         return loss_loc
 
+    @force_fp32(
+        apply_to=('cls_scores', 'bbox_preds', 'shape_preds', 'loc_preds'))
     def loss(self,
              cls_scores,
              bbox_preds,
@@ -502,6 +501,8 @@ class GuidedAnchorHead(AnchorHead):
             loss_shape=losses_shape,
             loss_loc=losses_loc)
 
+    @force_fp32(
+        apply_to=('cls_scores', 'bbox_preds', 'shape_preds', 'loc_preds'))
     def get_bboxes(self,
                    cls_scores,
                    bbox_preds,

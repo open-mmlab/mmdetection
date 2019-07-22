@@ -1,4 +1,5 @@
 from torch.autograd import Function
+from torch.nn.modules.utils import _pair
 
 from .. import roi_align_cuda
 
@@ -7,17 +8,8 @@ class RoIAlignFunction(Function):
 
     @staticmethod
     def forward(ctx, features, rois, out_size, spatial_scale, sample_num=0):
-        if isinstance(out_size, int):
-            out_h = out_size
-            out_w = out_size
-        elif isinstance(out_size, tuple):
-            assert len(out_size) == 2
-            assert isinstance(out_size[0], int)
-            assert isinstance(out_size[1], int)
-            out_h, out_w = out_size
-        else:
-            raise TypeError(
-                '"out_size" must be an integer or tuple of integers')
+        out_h, out_w = _pair(out_size)
+        assert isinstance(out_h, int) and isinstance(out_w, int)
         ctx.spatial_scale = spatial_scale
         ctx.sample_num = sample_num
         ctx.save_for_backward(rois)

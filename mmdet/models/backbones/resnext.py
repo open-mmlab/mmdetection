@@ -11,12 +11,12 @@ from ..utils import build_conv_layer, build_norm_layer
 
 class Bottleneck(_Bottleneck):
 
-    def __init__(self, groups=1, base_width=4, *args, **kwargs):
+    def __init__(self, inplanes, planes, groups=1, base_width=4, **kwargs):
         """Bottleneck block for ResNeXt.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
-        super(Bottleneck, self).__init__(*args, **kwargs)
+        super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
 
         if groups == 1:
             width = self.planes
