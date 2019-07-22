@@ -8,7 +8,7 @@
 
 ## Common settings
 
-- All baselines were trained using 1 GPU with a batch size of 2 (2 images per GPU).
+- All baselines were trained using 1 GPU with a batch size of 2 (2 images per GPU) using the [linear scaling rule](https://arxiv.org/abs/1706.02677) to scale the learning rate. The learning rate in the configs is set for a batch size of 16 to match the default of the coco models.
 - All models were trained on `cityscapes_train`, and tested on `cityscapes_val`.
 - 1x training schedule indicates 64 epochs which corresponds to slightly less than the 24k iterations reported in the original schedule from the [Mask R-CNN paper](https://arxiv.org/abs/1703.06870)
 - All pytorch-style pretrained backbones on ImageNet are from PyTorch model zoo.
