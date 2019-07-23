@@ -105,7 +105,9 @@ def parse_args():
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('--out', help='output result file')
-    parser.add_argument('--json_out', help='output result file name without extension', type=str)
+    parser.add_argument('--json_out',
+                        help='output result file name without extension',
+                        type=str)
     parser.add_argument(
         '--eval',
         type=str,
@@ -202,7 +204,9 @@ def main():
                         print('\nEvaluating {}'.format(name))
                         outputs_ = [out[name] for out in outputs]
                         result_file = args.out + '.{}'.format(name)
-                        result_files = results2json(dataset, outputs_, result_file)
+                        result_files = results2json(dataset,
+                                                    outputs_,
+                                                    result_file)
                         coco_eval(result_files, eval_types, dataset.coco)
 
     # Save predictions in the COCO json format
