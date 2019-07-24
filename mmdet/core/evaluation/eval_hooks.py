@@ -147,7 +147,7 @@ class CocoDistEvalmAPHook(DistEvalHook):
         for res_type in res_types:
             try:
                 cocoDt = cocoGt.loadRes(result_files[res_type])
-            except Exception:
+            except IndexError:
                 print('No prediction found.')
                 break
             iou_type = res_type
