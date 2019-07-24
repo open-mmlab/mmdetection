@@ -57,7 +57,7 @@ class CustomDataset(Dataset):
                  seg_scale_factor=1,
                  extra_aug=None,
                  resize_keep_ratio=True,
-                 corruption=None, 
+                 corruption=None,
                  corruption_severity=1,
                  test_mode=False):
         # prefix of images path
@@ -131,7 +131,7 @@ class CustomDataset(Dataset):
 
         # image rescale if keep ratio
         self.resize_keep_ratio = resize_keep_ratio
-        
+
         # corruptions
         self.corruption = corruption
         self.corruption_severity = corruption_severity
@@ -188,7 +188,8 @@ class CustomDataset(Dataset):
         img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
         # corruption
         if self.corruption is not None:
-            img = corrupt(img, severity=self.corruption_severity, corruption_name=self.corruption)
+            img = corrupt(img, severity=self.corruption_severity,
+                          corruption_name=self.corruption)
         # load proposals if necessary
         if self.proposals is not None:
             proposals = self.proposals[idx][:self.num_max_proposals]
@@ -282,7 +283,8 @@ class CustomDataset(Dataset):
         img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
         # corruption
         if self.corruption is not None:
-            img = corrupt(img, severity=self.corruption_severity, corruption_name=self.corruption)
+            img = corrupt(img, severity=self.corruption_severity,
+                          corruption_name=self.corruption)
         # load proposals if necessary
         if self.proposals is not None:
             proposal = self.proposals[idx][:self.num_max_proposals]
