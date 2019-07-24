@@ -12,8 +12,9 @@ from .registry import DATASETS
 from .builder import build_dataset
 
 __all__ = [
-    'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset', 'CityscapesDataset',
-    'GroupSampler', 'DistributedGroupSampler', 'build_dataloader', 'to_tensor', 
-    'random_scale', 'show_ann', 'ConcatDataset', 'RepeatDataset', 'ExtraAugmentation', 
+    'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset',
+    'CityscapesDataset', 'GroupSampler', 'DistributedGroupSampler',
+    'build_dataloader', 'to_tensor', 'random_scale', 'show_ann',
+    'ConcatDataset', 'RepeatDataset', 'ExtraAugmentation',
     'WIDERFaceDataset', 'DATASETS', 'build_dataset'
 ]

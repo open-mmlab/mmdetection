@@ -110,7 +110,8 @@ data = dict(
         times=8,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root + 'annotations/instancesonly_filtered_gtFine_train.json',
+            ann_file=data_root +
+            'annotations/instancesonly_filtered_gtFine_train.json',
             img_prefix=data_root + 'train/',
             img_scale=[(2048, 800), (2048, 1024)],
             img_norm_cfg=img_norm_cfg,
@@ -122,7 +123,8 @@ data = dict(
             with_label=True)),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instancesonly_filtered_gtFine_val.json',
+        ann_file=data_root +
+        'annotations/instancesonly_filtered_gtFine_val.json',
         img_prefix=data_root + 'val/',
         img_scale=(2048, 1024),
         img_norm_cfg=img_norm_cfg,
@@ -133,7 +135,8 @@ data = dict(
         with_label=True),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instancesonly_filtered_gtFine_val.json',
+        ann_file=data_root +
+        'annotations/instancesonly_filtered_gtFine_val.json',
         img_prefix=data_root + 'val/',
         img_scale=(2048, 1024),
         img_norm_cfg=img_norm_cfg,
@@ -163,7 +166,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 8 # actual epoch = 8 * 8 = 64
+total_epochs = 8  # actual epoch = 8 * 8 = 64
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/cityscapes/faster_rcnn_r50_fpn_1x_city'
