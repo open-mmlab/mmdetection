@@ -13,7 +13,6 @@ from torch.utils.data import Dataset
 from .coco_utils import results2json, fast_eval_recall
 from .mean_ap import eval_map
 from mmdet import datasets
-from mmdet.utils import build_from_cfg
 
 
 class DistEvalHook(Hook):
@@ -22,8 +21,7 @@ class DistEvalHook(Hook):
         if isinstance(dataset, Dataset):
             self.dataset = dataset
         elif isinstance(dataset, dict):
-            self.dataset = build_from_cfg(dataset, datasets.DATASETS,
-                                          {'test_mode': True})
+            self.dataset = datasets.build_dataset(dataset, {'test_mode': True})
         else:
             raise TypeError(
                 'dataset must be a Dataset object or a dict, not {}'.format(
