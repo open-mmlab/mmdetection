@@ -145,7 +145,11 @@ class CocoDistEvalmAPHook(DistEvalHook):
         cocoGt = self.dataset.coco
         imgIds = cocoGt.getImgIds()
         for res_type in res_types:
-            cocoDt = cocoGt.loadRes(result_files[res_type])
+            try:
+                cocoDt = cocoGt.loadRes(result_files[res_type])
+            except IndexError:
+                print('No prediction found.')
+                break
             iou_type = res_type
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.imgIds = imgIds
