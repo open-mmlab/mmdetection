@@ -207,7 +207,8 @@ class CustomDataset(Dataset):
 
         # skip the image if there is no valid gt bbox
         if len(gt_bboxes) == 0 and self.skip_img_without_anno:
-            warnings.warn('Skip the image that has no valid gt bbox')
+            warnings.warn('Skip the image "%s" that has no valid gt bbox' %
+                          osp.join(self.img_prefix, img_info['filename']))
             return None
 
         # extra augmentation
