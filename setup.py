@@ -15,10 +15,10 @@ def readme():
     return content
 
 
-MAJOR = 0
-MINOR = 6
-PATCH = 0
-SUFFIX = ''
+MAJOR = 1
+MINOR = 0
+PATCH = ''
+SUFFIX = 'rc0'
 SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
 
 version_file = 'mmdet/version.py'
@@ -143,7 +143,7 @@ if __name__ == '__main__':
         setup_requires=['pytest-runner', 'cython', 'numpy'],
         tests_require=['pytest'],
         install_requires=[
-            'mmcv>=0.2.6', 'numpy', 'matplotlib', 'six', 'terminaltables',
+            'mmcv>=0.2.10', 'numpy', 'matplotlib', 'six', 'terminaltables',
             'pycocotools', 'torch>=1.1'
         ],
         ext_modules=[
