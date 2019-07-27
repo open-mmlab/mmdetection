@@ -265,19 +265,20 @@ class RandomCrop(object):
         margin_w = max(img.shape[1] - self.crop_size[1], 0)
         offset_h = np.random.randint(0, margin_h + 1)
         offset_w = np.random.randint(0, margin_w + 1)
-        crop_offset = (offset_w, offset_h)
+        crop_y1, crop_y2 = offset_h, offset_h + self.crop_size[0]
+        crop_x1, crop_x2 = offset_w, offset_w + self.crop_size[1]
 
-        img = img[offset_h:offset_h + self.crop_size[0], offset_w:offset_w +
-                  self.crop_size[1], :]
+        # crop the image
+        img = img[crop_y1:crop_y2, crop_x1:crop_x2, :]
         img_shape = img.shape
+        results['img'] = img
         results['img_shape'] = img_shape
 
-        # resize bboxes accordingly and clip to the image boundary
+        # crop bboxes accordingly and clip to the image boundary
         for key in results.get('bbox_fields', []):
-            bbox_offset = [
-                crop_offset[0], crop_offset[1], crop_offset[0], crop_offset[1]
-            ]
-            bboxes = results[key] - np.array(bbox_offset, dtype=np.float32)
+            bbox_offset = np.array([offset_w, offset_h, offset_w, offset_h],
+                                   dtype=np.float32)
+            bboxes = results[key] - bbox_offset
             bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1] - 1)
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)
             results[key] = bboxes
@@ -287,12 +288,19 @@ class RandomCrop(object):
             gt_bboxes = results['gt_bboxes']
             valid_inds = (gt_bboxes[:, 2] > gt_bboxes[:, 0]) & (
                 gt_bboxes[:, 3] > gt_bboxes[:, 1])
+            # if no gt bbox remains after cropping, just skip this image
+            if not np.any(valid_inds):
+                return None
             results['gt_bboxes'] = gt_bboxes[valid_inds, :]
 
+            # filter and crop the masks
             if 'gt_masks' in results:
-                results['gt_masks'] = [
-                    results['gt_masks'][i] for i in valid_inds
-                ]
+                valid_gt_masks = []
+                for i in valid_inds:
+                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2, crop_x1:
+                                                     crop_x2]
+                    valid_gt_masks.append(gt_mask)
+                results['gt_masks'] = valid_gt_masks
 
         return results
 
