@@ -11,7 +11,7 @@ from mmdet import datasets
 from mmdet.core import (DistOptimizerHook, DistEvalmAPHook,
                         CocoDistEvalRecallHook, CocoDistEvalmAPHook,
                         Fp16OptimizerHook)
-from mmdet.datasets import build_dataloader
+from mmdet.datasets import build_dataloader, DATASETS
 from mmdet.models import RPN
 from .env import get_root_logger
 
@@ -174,7 +174,7 @@ def _dist_train(model, dataset, cfg, validate=False):
             runner.register_hook(
                 CocoDistEvalRecallHook(val_dataset_cfg, **eval_cfg))
         else:
-            dataset_type = getattr(datasets, val_dataset_cfg.type)
+            dataset_type = DATASETS.get(val_dataset_cfg.type)
             if issubclass(dataset_type, datasets.CocoDataset):
                 runner.register_hook(
                     CocoDistEvalmAPHook(val_dataset_cfg, **eval_cfg))

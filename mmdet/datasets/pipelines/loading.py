@@ -1,4 +1,5 @@
 import os.path as osp
+import warnings
 
 import mmcv
 import numpy as np
@@ -30,12 +31,14 @@ class LoadAnnotations(object):
                  with_label=True,
                  with_mask=False,
                  with_seg=False,
-                 poly2mask=True):
+                 poly2mask=True,
+                 skip_img_without_anno=True):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
+        self.skip_img_without_anno = skip_img_without_anno
 
     def _load_bboxes(self, results):
         ann_info = results['ann_info']
@@ -84,7 +87,12 @@ class LoadAnnotations(object):
     def __call__(self, results):
         if self.with_bbox:
             results = self._load_bboxes(results)
-            if results is None:
+            if results is None and self.skip_img_without_anno:
+                file_path = osp.join(results['img_prefix'],
+                                     results['img_info']['filename'])
+                warnings.warn(
+                    'Skip the image "{}" that has no valid gt bbox'.format(
+                        file_path))
                 return None
         if self.with_label:
             results = self._load_labels(results)

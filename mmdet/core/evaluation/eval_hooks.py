@@ -5,7 +5,7 @@ import mmcv
 import numpy as np
 import torch
 import torch.distributed as dist
-from mmcv.runner import Hook, obj_from_dict
+from mmcv.runner import Hook
 from mmcv.parallel import scatter, collate
 from pycocotools.cocoeval import COCOeval
 from torch.utils.data import Dataset
@@ -21,8 +21,7 @@ class DistEvalHook(Hook):
         if isinstance(dataset, Dataset):
             self.dataset = dataset
         elif isinstance(dataset, dict):
-            self.dataset = obj_from_dict(dataset, datasets,
-                                         {'test_mode': True})
+            self.dataset = datasets.build_dataset(dataset, {'test_mode': True})
         else:
             raise TypeError(
                 'dataset must be a Dataset object or a dict, not {}'.format(
@@ -145,7 +144,11 @@ class CocoDistEvalmAPHook(DistEvalHook):
         cocoGt = self.dataset.coco
         imgIds = cocoGt.getImgIds()
         for res_type in res_types:
-            cocoDt = cocoGt.loadRes(result_files[res_type])
+            try:
+                cocoDt = cocoGt.loadRes(result_files[res_type])
+            except IndexError:
+                print('No prediction found.')
+                break
             iou_type = res_type
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.imgIds = imgIds
