@@ -130,11 +130,18 @@ class Resize(object):
         for key in results.get('mask_fields', []):
             if results[key] is None:
                 continue
-            masks = [
-                mmcv.imrescale(
-                    mask, results['scale_factor'], interpolation='nearest')
-                for mask in results[key]
-            ]
+            if self.keep_ratio:
+                masks = [
+                    mmcv.imrescale(
+                        mask, results['scale_factor'], interpolation='nearest')
+                    for mask in results[key]
+                ]
+            else:
+                mask_size = (results['img_shape'][1], results['img_shape'][0])
+                masks = [
+                    mmcv.imresize(mask, mask_size, interpolation='nearest')
+                    for mask in results[key]
+                ]
             results[key] = masks
 
     def __call__(self, results):
