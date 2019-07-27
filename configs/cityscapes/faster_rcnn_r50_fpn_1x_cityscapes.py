@@ -1,6 +1,6 @@
 # model settings
 model = dict(
-    type='MaskRCNN',
+    type='FasterRCNN',
     pretrained='modelzoo://resnet50',
     backbone=dict(
         type='ResNet',
@@ -43,20 +43,7 @@ model = dict(
         reg_class_agnostic=False,
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
-    mask_roi_extractor=dict(
-        type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
-        out_channels=256,
-        featmap_strides=[4, 8, 16, 32]),
-    mask_head=dict(
-        type='FCNMaskHead',
-        num_convs=4,
-        in_channels=256,
-        conv_out_channels=256,
-        num_classes=9,
-        loss_mask=dict(
-            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)))
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -95,7 +82,6 @@ train_cfg = dict(
             pos_fraction=0.25,
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
-        mask_size=28,
         pos_weight=-1,
         debug=False))
 test_cfg = dict(
@@ -107,10 +93,10 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.05,
-        nms=dict(type='nms', iou_thr=0.5),
-        max_per_img=100,
-        mask_thr_binary=0.5))
+        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=100)
+    # soft-nms is also supported for rcnn testing
+    # e.g., nms=dict(type='soft_nms', iou_thr=0.5, min_score=0.05)
+)
 # dataset settings
 dataset_type = 'CityscapesDataset'
 data_root = 'data/cityscapes/'
@@ -132,7 +118,7 @@ data = dict(
             multiscale_mode='range',
             size_divisor=32,
             flip_ratio=0.5,
-            with_mask=True,
+            with_mask=False,
             with_crowd=True,
             with_label=True)),
     val=dict(
@@ -144,7 +130,7 @@ data = dict(
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
         flip_ratio=0,
-        with_mask=True,
+        with_mask=False,
         with_crowd=True,
         with_label=True),
     test=dict(
@@ -183,7 +169,7 @@ log_config = dict(
 total_epochs = 8  # actual epoch = 8 * 8 = 64
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/cityscapes/mask_rcnn_r50_fpn_1x_city'
+work_dir = './work_dirs/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
