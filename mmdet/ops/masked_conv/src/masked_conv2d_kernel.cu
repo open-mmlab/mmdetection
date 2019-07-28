@@ -57,7 +57,7 @@ int MaskedIm2colForwardLaucher(const at::Tensor bottom_data, const int height,
   const int output_size = mask_cnt * channels;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      bottom_data.type(), "MaskedIm2colLaucherForward", ([&] {
+      bottom_data.scalar_type(), "MaskedIm2colLaucherForward", ([&] {
         const scalar_t *bottom_data_ = bottom_data.data<scalar_t>();
         const long *mask_h_idx_ = mask_h_idx.data<long>();
         const long *mask_w_idx_ = mask_w_idx.data<long>();
@@ -97,7 +97,7 @@ int MaskedCol2imForwardLaucher(const at::Tensor bottom_data, const int height,
   const int output_size = mask_cnt * channels;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      bottom_data.type(), "MaskedCol2imLaucherForward", ([&] {
+      bottom_data.scalar_type(), "MaskedCol2imLaucherForward", ([&] {
         const scalar_t *bottom_data_ = bottom_data.data<scalar_t>();
         const long *mask_h_idx_ = mask_h_idx.data<long>();
         const long *mask_w_idx_ = mask_w_idx.data<long>();

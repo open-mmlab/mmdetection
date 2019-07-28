@@ -1,4 +1,4 @@
-// modify from
+// modified from
 // https://github.com/facebookresearch/maskrcnn-benchmark/blob/master/maskrcnn_benchmark/csrc/cuda/SigmoidFocalLoss_cuda.cu
 
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
@@ -118,7 +118,7 @@ at::Tensor SigmoidFocalLoss_forward_cuda(const at::Tensor &logits,
   }
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      logits.type(), "SigmoidFocalLoss_forward", [&] {
+      logits.scalar_type(), "SigmoidFocalLoss_forward", [&] {
         SigmoidFocalLossForward<scalar_t><<<grid, block>>>(
             losses_size, logits.contiguous().data<scalar_t>(),
             targets.contiguous().data<long>(), num_classes, gamma, alpha,
@@ -156,7 +156,7 @@ at::Tensor SigmoidFocalLoss_backward_cuda(const at::Tensor &logits,
   }
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      logits.type(), "SigmoidFocalLoss_backward", [&] {
+      logits.scalar_type(), "SigmoidFocalLoss_backward", [&] {
         SigmoidFocalLossBackward<scalar_t><<<grid, block>>>(
             d_logits_size, logits.contiguous().data<scalar_t>(),
             targets.contiguous().data<long>(),
