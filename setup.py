@@ -122,7 +122,7 @@ if __name__ == '__main__':
     setup(
         name='mmdet',
         version=get_version(),
-        description='Open MMLab Detection Toolbox',
+        description='Open MMLab Detection Toolbox and Benchmark',
         long_description=readme(),
         keywords='computer vision, object detection',
         url='https://github.com/open-mmlab/mmdetection',
@@ -152,14 +152,6 @@ if __name__ == '__main__':
                 module='mmdet.ops.nms',
                 sources=['src/soft_nms_cpu.pyx']),
             make_cuda_ext(
-                name='roi_align_cuda',
-                module='mmdet.ops.roi_align',
-                sources=['src/roi_align_cuda.cpp', 'src/roi_align_kernel.cu']),
-            make_cuda_ext(
-                name='roi_pool_cuda',
-                module='mmdet.ops.roi_pool',
-                sources=['src/roi_pool_cuda.cpp', 'src/roi_pool_kernel.cu']),
-            make_cuda_ext(
                 name='nms_cpu',
                 module='mmdet.ops.nms',
                 sources=['src/nms_cpu.cpp']),
@@ -167,6 +159,14 @@ if __name__ == '__main__':
                 name='nms_cuda',
                 module='mmdet.ops.nms',
                 sources=['src/nms_cuda.cpp', 'src/nms_kernel.cu']),
+            make_cuda_ext(
+                name='roi_align_cuda',
+                module='mmdet.ops.roi_align',
+                sources=['src/roi_align_cuda.cpp', 'src/roi_align_kernel.cu']),
+            make_cuda_ext(
+                name='roi_pool_cuda',
+                module='mmdet.ops.roi_pool',
+                sources=['src/roi_pool_cuda.cpp', 'src/roi_pool_kernel.cu']),
             make_cuda_ext(
                 name='deform_conv_cuda',
                 module='mmdet.ops.dcn',
