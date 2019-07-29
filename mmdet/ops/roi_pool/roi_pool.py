@@ -66,3 +66,10 @@ class RoIPool(nn.Module):
                                self.spatial_scale)
         else:
             return roi_pool(features, rois, self.out_size, self.spatial_scale)
+
+    def __repr__(self):
+        format_str = self.__class__.__name__
+        format_str += '(out_size={}, spatial_scale={}'.format(
+            self.out_size, self.spatial_scale)
+        format_str += ', use_torchvision={})'.format(self.use_torchvision)
+        return format_str

@@ -49,8 +49,6 @@ class SigmoidFocalLoss(nn.Module):
         return loss.sum()
 
     def __repr__(self):
-        tmpstr = self.__class__.__name__ + '('
-        tmpstr += 'gamma=' + str(self.gamma)
-        tmpstr += ', alpha=' + str(self.alpha)
-        tmpstr += ')'
+        tmpstr = self.__class__.__name__ + '(gamma={}, alpha={})'.format(
+            self.gamma, self.alpha)
         return tmpstr

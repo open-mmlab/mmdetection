@@ -78,3 +78,10 @@ class RoIAlign(nn.Module):
         else:
             return roi_align(features, rois, self.out_size, self.spatial_scale,
                              self.sample_num)
+
+    def __repr__(self):
+        format_str = self.__class__.__name__
+        format_str += '(out_size={}, spatial_scale={}, sample_num={}'.format(
+            self.out_size, self.spatial_scale, self.sample_num)
+        format_str += ', use_torchvision={})'.format(self.use_torchvision)
+        return format_str
