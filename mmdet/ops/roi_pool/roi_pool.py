@@ -1,8 +1,10 @@
 import torch
+import torch.nn as nn
 from torch.autograd import Function
+from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
-from .. import roi_pool_cuda
+from . import roi_pool_cuda
 
 
 class RoIPoolFunction(Function):
@@ -27,6 +29,7 @@ class RoIPoolFunction(Function):
         return output
 
     @staticmethod
+    @once_differentiable
     def backward(ctx, grad_output):
         assert grad_output.is_cuda
         spatial_scale = ctx.spatial_scale
@@ -45,3 +48,21 @@ class RoIPoolFunction(Function):
 
 
 roi_pool = RoIPoolFunction.apply
+
+
+class RoIPool(nn.Module):
+
+    def __init__(self, out_size, spatial_scale, use_torchvision=False):
+        super(RoIPool, self).__init__()
+
+        self.out_size = out_size
+        self.spatial_scale = float(spatial_scale)
+        self.use_torchvision = use_torchvision
+
+    def forward(self, features, rois):
+        if self.use_torchvision:
+            from torchvision.ops import roi_pool as tv_roi_pool
+            return tv_roi_pool(features, rois, _pair(self.out_size),
+                               self.spatial_scale)
+        else:
+            return roi_pool(features, rois, self.out_size, self.spatial_scale)
