@@ -28,9 +28,9 @@ def _allreduce_coalesced(tensors, world_size, bucket_size_mb=-1):
             tensor.copy_(synced)
 
 
-def allreduce_grads(model, coalesce=True, bucket_size_mb=-1):
+def allreduce_grads(params, coalesce=True, bucket_size_mb=-1):
     grads = [
-        param.grad.data for param in model.parameters()
+        param.grad.data for param in params
         if param.requires_grad and param.grad is not None
     ]
     world_size = dist.get_world_size()
@@ -51,7 +51,8 @@ class DistOptimizerHook(OptimizerHook):
     def after_train_iter(self, runner):
         runner.optimizer.zero_grad()
         runner.outputs['loss'].backward()
-        allreduce_grads(runner.model, self.coalesce, self.bucket_size_mb)
+        allreduce_grads(runner.model.parameters(), self.coalesce,
+                        self.bucket_size_mb)
         if self.grad_clip is not None:
             self.clip_grads(runner.model.parameters())
         runner.optimizer.step()

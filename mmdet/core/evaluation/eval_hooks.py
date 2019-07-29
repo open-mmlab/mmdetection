@@ -5,7 +5,7 @@ import mmcv
 import numpy as np
 import torch
 import torch.distributed as dist
-from mmcv.runner import Hook, obj_from_dict
+from mmcv.runner import Hook
 from mmcv.parallel import scatter, collate
 from pycocotools.cocoeval import COCOeval
 from torch.utils.data import Dataset
@@ -21,8 +21,7 @@ class DistEvalHook(Hook):
         if isinstance(dataset, Dataset):
             self.dataset = dataset
         elif isinstance(dataset, dict):
-            self.dataset = obj_from_dict(dataset, datasets,
-                                         {'test_mode': True})
+            self.dataset = datasets.build_dataset(dataset, {'test_mode': True})
         else:
             raise TypeError(
                 'dataset must be a Dataset object or a dict, not {}'.format(
@@ -116,9 +115,11 @@ class CocoDistEvalRecallHook(DistEvalHook):
 
     def __init__(self,
                  dataset,
+                 interval=1,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05)):
-        super(CocoDistEvalRecallHook, self).__init__(dataset)
+        super(CocoDistEvalRecallHook, self).__init__(
+            dataset, interval=interval)
         self.proposal_nums = np.array(proposal_nums, dtype=np.int32)
         self.iou_thrs = np.array(iou_thrs, dtype=np.float32)
 
@@ -135,15 +136,19 @@ class CocoDistEvalRecallHook(DistEvalHook):
 class CocoDistEvalmAPHook(DistEvalHook):
 
     def evaluate(self, runner, results):
-        tmp_file = osp.join(runner.work_dir, 'temp_0.json')
-        results2json(self.dataset, results, tmp_file)
+        tmp_file = osp.join(runner.work_dir, 'temp_0')
+        result_files = results2json(self.dataset, results, tmp_file)
 
-        res_types = ['bbox',
-                     'segm'] if runner.model.module.with_mask else ['bbox']
+        res_types = ['bbox', 'segm'
+                     ] if runner.model.module.with_mask else ['bbox']
         cocoGt = self.dataset.coco
-        cocoDt = cocoGt.loadRes(tmp_file)
         imgIds = cocoGt.getImgIds()
         for res_type in res_types:
+            try:
+                cocoDt = cocoGt.loadRes(result_files[res_type])
+            except IndexError:
+                print('No prediction found.')
+                break
             iou_type = res_type
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.imgIds = imgIds
@@ -159,4 +164,5 @@ class CocoDistEvalmAPHook(DistEvalHook):
                 '{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
                 '{ap[4]:.3f} {ap[5]:.3f}').format(ap=cocoEval.stats[:6])
         runner.log_buffer.ready = True
-        os.remove(tmp_file)
+        for res_type in res_types:
+            os.remove(result_files[res_type])

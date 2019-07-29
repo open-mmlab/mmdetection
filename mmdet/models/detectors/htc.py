@@ -205,9 +205,10 @@ class HybridTaskCascade(CascadeRCNN):
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
 
             for j in range(num_imgs):
-                assign_result = bbox_assigner.assign(
-                    proposal_list[j], gt_bboxes[j], gt_bboxes_ignore[j],
-                    gt_labels[j])
+                assign_result = bbox_assigner.assign(proposal_list[j],
+                                                     gt_bboxes[j],
+                                                     gt_bboxes_ignore[j],
+                                                     gt_labels[j])
                 sampling_result = bbox_sampler.sample(
                     assign_result,
                     proposal_list[j],
@@ -308,13 +309,12 @@ class HybridTaskCascade(CascadeRCNN):
                 if self.with_mask:
                     mask_head = self.mask_head[i]
                     if det_bboxes.shape[0] == 0:
-                        segm_result = [
-                            [] for _ in range(mask_head.num_classes - 1)
-                        ]
+                        mask_classes = mask_head.num_classes - 1
+                        segm_result = [[] for _ in range(mask_classes)]
                     else:
                         _bboxes = (
-                            det_bboxes[:, :4] * scale_factor
-                            if rescale else det_bboxes)
+                            det_bboxes[:, :4] *
+                            scale_factor if rescale else det_bboxes)
                         mask_pred = self._mask_forward_test(
                             i, x, _bboxes, semantic_feat=semantic_feat)
                         segm_result = mask_head.get_seg_masks(
@@ -342,13 +342,12 @@ class HybridTaskCascade(CascadeRCNN):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [
-                    [] for _ in range(self.mask_head[-1].num_classes - 1)
-                ]
+                mask_classes = self.mask_head[-1].num_classes - 1
+                segm_result = [[] for _ in range(mask_classes)]
             else:
                 _bboxes = (
-                    det_bboxes[:, :4] * scale_factor
-                    if rescale else det_bboxes)
+                    det_bboxes[:, :4] *
+                    scale_factor if rescale else det_bboxes)
 
                 mask_rois = bbox2roi([_bboxes])
                 aug_masks = []

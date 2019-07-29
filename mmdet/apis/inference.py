@@ -100,7 +100,12 @@ def _inference_generator(model, imgs, img_transform, device):
 
 
 # TODO: merge this method with the one in BaseDetector
-def show_result(img, result, class_names, score_thr=0.3, out_file=None):
+def show_result(img,
+                result,
+                class_names,
+                score_thr=0.3,
+                wait_time=0,
+                out_file=None):
     """Visualize the detection results on the image.
 
     Args:
@@ -109,6 +114,7 @@ def show_result(img, result, class_names, score_thr=0.3, out_file=None):
             (bbox, segm) or just bbox.
         class_names (list[str] or tuple[str]): A list of class names.
         score_thr (float): The threshold to visualize the bboxes and masks.
+        wait_time (int): Value of waitKey param.
         out_file (str, optional): If specified, the visualization result will
             be written to the out file instead of shown in a window.
     """
@@ -140,4 +146,5 @@ def show_result(img, result, class_names, score_thr=0.3, out_file=None):
         class_names=class_names,
         score_thr=score_thr,
         show=out_file is None,
+        wait_time=wait_time,
         out_file=out_file)

@@ -69,16 +69,17 @@ def cvt_annotations(devkit_path, years, split, out_file):
         years = [years]
     annotations = []
     for year in years:
-        filelist = osp.join(devkit_path, 'VOC{}/ImageSets/Main/{}.txt'.format(
-            year, split))
+        filelist = osp.join(devkit_path,
+                            'VOC{}/ImageSets/Main/{}.txt'.format(year, split))
         if not osp.isfile(filelist):
             print('filelist does not exist: {}, skip voc{} {}'.format(
                 filelist, year, split))
             return
         img_names = mmcv.list_from_file(filelist)
         xml_paths = [
-            osp.join(devkit_path, 'VOC{}/Annotations/{}.xml'.format(
-                year, img_name)) for img_name in img_names
+            osp.join(devkit_path,
+                     'VOC{}/Annotations/{}.xml'.format(year, img_name))
+            for img_name in img_names
         ]
         img_paths = [
             'VOC{}/JPEGImages/{}.jpg'.format(year, img_name)

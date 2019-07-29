@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import multi_apply, multiclass_nms, distance2bbox
+from mmdet.core import multi_apply, multiclass_nms, distance2bbox, force_fp32
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import bias_init_with_prob, Scale, ConvModule
@@ -48,6 +48,7 @@ class FCOSHead(nn.Module):
         self.loss_centerness = build_loss(loss_centerness)
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.fp16_enabled = False
 
         self._init_layers()
 
@@ -108,9 +109,11 @@ class FCOSHead(nn.Module):
         for reg_layer in self.reg_convs:
             reg_feat = reg_layer(reg_feat)
         # scale the bbox_pred of different level
-        bbox_pred = scale(self.fcos_reg(reg_feat)).exp()
+        # float to avoid overflow when enabling FP16
+        bbox_pred = scale(self.fcos_reg(reg_feat)).float().exp()
         return cls_score, bbox_pred, centerness
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
     def loss(self,
              cls_scores,
              bbox_preds,
@@ -183,6 +186,7 @@ class FCOSHead(nn.Module):
             loss_bbox=loss_bbox,
             loss_centerness=loss_centerness)
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
     def get_bboxes(self,
                    cls_scores,
                    bbox_preds,

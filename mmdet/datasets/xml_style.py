@@ -5,13 +5,16 @@ import mmcv
 import numpy as np
 
 from .custom import CustomDataset
+from .registry import DATASETS
 
 
+@DATASETS.register_module
 class XMLDataset(CustomDataset):
 
-    def __init__(self, **kwargs):
+    def __init__(self, min_size=None, **kwargs):
         super(XMLDataset, self).__init__(**kwargs)
         self.cat2label = {cat: i + 1 for i, cat in enumerate(self.CLASSES)}
+        self.min_size = min_size
 
     def load_annotations(self, ann_file):
         img_infos = []
@@ -50,7 +53,14 @@ class XMLDataset(CustomDataset):
                 int(bnd_box.find('xmax').text),
                 int(bnd_box.find('ymax').text)
             ]
-            if difficult:
+            ignore = False
+            if self.min_size:
+                assert not self.test_mode
+                w = bbox[2] - bbox[0]
+                h = bbox[3] - bbox[1]
+                if w < self.min_size or h < self.min_size:
+                    ignore = True
+            if difficult or ignore:
                 bboxes_ignore.append(bbox)
                 labels_ignore.append(label)
             else:
