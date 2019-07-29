@@ -60,7 +60,7 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
 
 at::Tensor nms(const at::Tensor& dets, const float threshold) {
   at::Tensor result;
-  AT_DISPATCH_FLOATING_TYPES(dets.type(), "nms", [&] {
+  AT_DISPATCH_FLOATING_TYPES(dets.scalar_type(), "nms", [&] {
     result = nms_cpu_kernel<scalar_t>(dets, threshold);
   });
   return result;

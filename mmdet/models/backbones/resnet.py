@@ -297,11 +297,11 @@ def make_res_layer(block,
     layers = []
     layers.append(
         block(
-            inplanes,
-            planes,
-            stride,
-            dilation,
-            downsample,
+            inplanes=inplanes,
+            planes=planes,
+            stride=stride,
+            dilation=dilation,
+            downsample=downsample,
             style=style,
             with_cp=with_cp,
             conv_cfg=conv_cfg,
@@ -314,10 +314,10 @@ def make_res_layer(block,
     for i in range(1, blocks):
         layers.append(
             block(
-                inplanes,
-                planes,
-                1,
-                dilation,
+                inplanes=inplanes,
+                planes=planes,
+                stride=1,
+                dilation=dilation,
                 style=style,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
