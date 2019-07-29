@@ -72,7 +72,7 @@ class SingleRoIExtractor(nn.Module):
         target_lvls = target_lvls.clamp(min=0, max=num_levels - 1).long()
         return target_lvls
 
-    @force_fp32(apply_to=('feats',), out_fp16=True)
+    @force_fp32(apply_to=('feats', ), out_fp16=True)
     def forward(self, feats, rois):
         if len(feats) == 1:
             return self.roi_layers[0](feats[0], rois)

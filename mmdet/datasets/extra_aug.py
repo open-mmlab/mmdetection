@@ -115,8 +115,8 @@ class RandomCrop(object):
                 left = random.uniform(w - new_w)
                 top = random.uniform(h - new_h)
 
-                patch = np.array((int(left), int(top), int(left + new_w),
-                                  int(top + new_h)))
+                patch = np.array(
+                    (int(left), int(top), int(left + new_w), int(top + new_h)))
                 overlaps = bbox_overlaps(
                     patch.reshape(-1, 4), boxes.reshape(-1, 4)).reshape(-1)
                 if overlaps.min() < min_iou:
