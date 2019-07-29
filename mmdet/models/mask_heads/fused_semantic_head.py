@@ -98,7 +98,7 @@ class FusedSemanticHead(nn.Module):
         x = self.conv_embedding(x)
         return mask_pred, x
 
-    @force_fp32(apply_to=('mask_pred',))
+    @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, labels):
         labels = labels.squeeze(1).long()
         loss_semantic_seg = self.criterion(mask_pred, labels)

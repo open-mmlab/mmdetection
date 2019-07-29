@@ -45,8 +45,9 @@ def multiclass_nms(multi_bboxes,
             _scores *= score_factors[cls_inds]
         cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
         cls_dets, _ = nms_op(cls_dets, **nms_cfg_)
-        cls_labels = multi_bboxes.new_full(
-            (cls_dets.shape[0], ), i - 1, dtype=torch.long)
+        cls_labels = multi_bboxes.new_full((cls_dets.shape[0], ),
+                                           i - 1,
+                                           dtype=torch.long)
         bboxes.append(cls_dets)
         labels.append(cls_labels)
     if bboxes:
