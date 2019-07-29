@@ -107,8 +107,9 @@ class MaxIoUAssigner(BaseAssigner):
         num_gts, num_bboxes = overlaps.size(0), overlaps.size(1)
 
         # 1. assign -1 by default
-        assigned_gt_inds = overlaps.new_full(
-            (num_bboxes, ), -1, dtype=torch.long)
+        assigned_gt_inds = overlaps.new_full((num_bboxes, ),
+                                             -1,
+                                             dtype=torch.long)
 
         # for each anchor, which gt best overlaps with it
         # for each anchor, the max iou of all gts

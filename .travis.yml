@@ -2,7 +2,7 @@ dist: xenial
 language: python
 
 install:
-  - pip install flake8
+  - pip install flake8 yapf
 
 python:
   - "3.5"
@@ -11,3 +11,4 @@ python:
 
 script:
   - flake8
+  - yapf -r -d --style .style.yapf mmdet/ tools/
