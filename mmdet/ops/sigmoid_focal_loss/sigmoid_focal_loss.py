@@ -1,7 +1,8 @@
+import torch.nn as nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 
-from .. import sigmoid_focal_loss_cuda
+from . import sigmoid_focal_loss_cuda
 
 
 class SigmoidFocalLossFunction(Function):
@@ -32,3 +33,22 @@ class SigmoidFocalLossFunction(Function):
 
 
 sigmoid_focal_loss = SigmoidFocalLossFunction.apply
+
+
+# TODO: remove this module
+class SigmoidFocalLoss(nn.Module):
+
+    def __init__(self, gamma, alpha):
+        super(SigmoidFocalLoss, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+
+    def forward(self, logits, targets):
+        assert logits.is_cuda
+        loss = sigmoid_focal_loss(logits, targets, self.gamma, self.alpha)
+        return loss.sum()
+
+    def __repr__(self):
+        tmpstr = self.__class__.__name__ + '(gamma={}, alpha={})'.format(
+            self.gamma, self.alpha)
+        return tmpstr
