@@ -5,13 +5,13 @@ import numpy as np
 from mmcv.parallel import DataContainer as DC
 from torch.utils.data import Dataset
 
+from imagecorruptions import corrupt
+
 from .registry import DATASETS
 from .transforms import (ImageTransform, BboxTransform, MaskTransform,
                          SegMapTransform, Numpy2Tensor)
 from .utils import to_tensor, random_scale
 from .extra_aug import ExtraAugmentation
-
-from imagecorruptions import corrupt
 
 
 @DATASETS.register_module
@@ -188,7 +188,8 @@ class CustomDataset(Dataset):
         img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
         # corruption
         if self.corruption is not None:
-            img = corrupt(img, severity=self.corruption_severity,
+            img = corrupt(img,
+                          severity=self.corruption_severity,
                           corruption_name=self.corruption)
         # load proposals if necessary
         if self.proposals is not None:
@@ -232,8 +233,8 @@ class CustomDataset(Dataset):
         img = img.copy()
         if self.with_seg:
             gt_seg = mmcv.imread(
-                osp.join(self.seg_prefix, img_info['file_name'].replace(
-                    'jpg', 'png')),
+                osp.join(self.seg_prefix,
+                         img_info['file_name'].replace('jpg', 'png')),
                 flag='unchanged')
             gt_seg = self.seg_transform(gt_seg.squeeze(), img_scale, flip)
             gt_seg = mmcv.imrescale(
@@ -283,7 +284,8 @@ class CustomDataset(Dataset):
         img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
         # corruption
         if self.corruption is not None:
-            img = corrupt(img, severity=self.corruption_severity,
+            img = corrupt(img,
+                          severity=self.corruption_severity,
                           corruption_name=self.corruption)
         # load proposals if necessary
         if self.proposals is not None:

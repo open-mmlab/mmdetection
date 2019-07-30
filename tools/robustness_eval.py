@@ -1,4 +1,4 @@
-import pickle
+import mmcv
 import numpy as np
 import os.path as osp
 from argparse import ArgumentParser
@@ -61,8 +61,7 @@ def get_coco_style_results(filename,
             'AR1', 'AR10', 'AR100', 'ARs', 'ARm', 'ARl'
         ]
 
-    with open(filename, "rb") as f:
-        eval_output = pickle.load(f)
+    eval_output = mmcv.load(filename)
 
     num_distortions = len(list(eval_output.keys()))
     results = np.zeros((num_distortions, 6, len(metrics)), dtype='float32')
@@ -72,8 +71,6 @@ def get_coco_style_results(filename,
             for metric_j, metric_name in enumerate(metrics):
                 mAP = eval_output[distortion][severity][task][metric_name]
                 results[corr_i, severity, metric_j] = mAP
-                # if verbose > 0:
-                #     print(distortion, severity, mAP)
 
     P = results[0, 0, :]
     if aggregate == 'benchmark':
@@ -82,38 +79,38 @@ def get_coco_style_results(filename,
         mPC = np.mean(results[:, 1:, :], axis=(0, 1))
     rPC = mPC/P
 
-    print("\nmodel: {}".format(osp.basename(filename)))
+    print('\nmodel: {}'.format(osp.basename(filename)))
     if metric is None:
         if 'P' in prints:
-            print("Performance on Clean Data [P] ({})"
+            print('Performance on Clean Data [P] ({})'
                   .format(task))
             print_coco_results(P)
         if 'mPC' in prints:
-            print("Mean Performance under Corruption [mPC] ({})"
+            print('Mean Performance under Corruption [mPC] ({})'
                   .format(task))
             print_coco_results(mPC)
         if 'rPC' in prints:
-            print("Realtive Performance under Corruption [rPC] ({})"
+            print('Realtive Performance under Corruption [rPC] ({})'
                   .format(task))
             print_coco_results(rPC)
     else:
         if 'P' in prints:
-            print("Performance on Clean Data [P] ({})"
+            print('Performance on Clean Data [P] ({})'
                   .format(task))
             for metric_i, metric_name in enumerate(metrics):
-                print("{:5} =  {:0.3f}"
+                print('{:5} =  {:0.3f}'
                       .format(metric_name, P[metric_i]))
         if 'mPC' in prints:
-            print("Mean Performance under Corruption [mPC] ({})"
+            print('Mean Performance under Corruption [mPC] ({})'
                   .format(task))
             for metric_i, metric_name in enumerate(metrics):
-                print("{:5} =  {:0.3f}"
+                print('{:5} =  {:0.3f}'
                       .format(metric_name, mPC[metric_i]))
         if 'rPC' in prints:
-            print("Realtive Performance under Corruption [rPC] ({})"
+            print('Realtive Performance under Corruption [rPC] ({})'
                   .format(task))
             for metric_i, metric_name in enumerate(metrics):
-                print("{:5} => {:0.1f} %"
+                print('{:5} => {:0.1f} %'
                       .format(metric_name, rPC[metric_i] * 100))
 
     return results
@@ -130,8 +127,7 @@ def get_voc_style_results(filename, prints='mPC', aggregate='benchmark'):
     for p in prints:
         assert p in ['P', 'mPC', 'rPC']
 
-    with open(filename, "rb") as f:
-        eval_output = pickle.load(f)
+    eval_output = mmcv.load(filename)
 
     num_distortions = len(list(eval_output.keys()))
     results = np.zeros((num_distortions, 6, 20), dtype='float32')
@@ -141,8 +137,6 @@ def get_voc_style_results(filename, prints='mPC', aggregate='benchmark'):
             mAP = [eval_output[distortion][severity][j]['ap']
                    for j in range(len(eval_output[distortion][severity]))]
             results[i, severity, :] = mAP
-            # if verbose > 0:
-            #     print(distortion, severity, mAP)
 
     P = results[0, 0, :]
     if aggregate == 'benchmark':
@@ -151,20 +145,20 @@ def get_voc_style_results(filename, prints='mPC', aggregate='benchmark'):
         mPC = np.mean(results[:, 1:, :], axis=(0, 1))
     rPC = mPC/P
 
-    print("\nmodel: {}".format(osp.basename(filename)))
+    print('\nmodel: {}'.format(osp.basename(filename)))
     if 'P' in prints:
-        print("{:48} = {:0.3f}".format(
-                  "Performance on Clean Data [P] in AP50",
+        print('{:48} = {:0.3f}'.format(
+                  'Performance on Clean Data [P] in AP50',
                   np.mean(P)
         ))
     if 'mPC' in prints:
-        print("{:48} = {:0.3f}".format(
-                  "Mean Performance under Corruption [mPC] in AP50",
+        print('{:48} = {:0.3f}'.format(
+                  'Mean Performance under Corruption [mPC] in AP50',
                   np.mean(mPC)
         ))
     if 'rPC' in prints:
-        print("{:48} = {:0.1f}".format(
-                  "Realtive Performance under Corruption [rPC] in %",
+        print('{:48} = {:0.1f}'.format(
+                  'Realtive Performance under Corruption [rPC] in %',
                   np.mean(rPC)*100
         ))
 
@@ -186,11 +180,11 @@ def get_results(filename,
         )
     elif dataset == 'voc':
         if task != 'bbox':
-            print("Only bbox analysis is supported for Pascal VOC")
-            print("Will report bbox results\n")
+            print('Only bbox analysis is supported for Pascal VOC')
+            print('Will report bbox results\n')
         if metric not in [None, ['AP'], ['AP50']]:
-            print("Only the AP50 metric is supported for Pascal VOC")
-            print("Will report AP50 metric\n")
+            print('Only the AP50 metric is supported for Pascal VOC')
+            print('Will report AP50 metric\n')
         results = get_voc_style_results(
             filename, prints=prints, aggregate=aggregate)
 
@@ -199,8 +193,7 @@ def get_results(filename,
 
 def get_distortions_from_file(filename):
 
-    with open(filename, "rb") as f:
-        eval_output = pickle.load(f)
+    eval_output = mmcv.load(filename)
 
     return get_distortions_from_results(eval_output)
 
