@@ -3,10 +3,10 @@ from abc import ABCMeta, abstractmethod
 
 import mmcv
 import numpy as np
-import torch.nn as nn
 import pycocotools.mask as maskUtils
+import torch.nn as nn
 
-from mmdet.core import tensor2imgs, get_classes, auto_fp16
+from mmdet.core import auto_fp16, get_classes, tensor2imgs
 
 
 class BaseDetector(nn.Module):

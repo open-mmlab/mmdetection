@@ -7,11 +7,11 @@ import tempfile
 import mmcv
 import torch
 import torch.distributed as dist
-from mmcv.runner import load_checkpoint, get_dist_info
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmcv.runner import get_dist_info, load_checkpoint
 
 from mmdet.apis import init_dist
-from mmdet.core import results2json, coco_eval, wrap_fp16_model
+from mmdet.core import coco_eval, results2json, wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 

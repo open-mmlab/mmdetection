@@ -2,9 +2,9 @@ import numpy as np
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from .anchor_head import AnchorHead
 from ..registry import HEADS
-from ..utils import bias_init_with_prob, ConvModule
+from ..utils import ConvModule, bias_init_with_prob
+from .anchor_head import AnchorHead
 
 
 @HEADS.register_module

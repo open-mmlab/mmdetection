@@ -6,11 +6,11 @@ import numpy as np
 from mmcv.parallel import DataContainer as DC
 from torch.utils.data import Dataset
 
-from .registry import DATASETS
-from .transforms import (ImageTransform, BboxTransform, MaskTransform,
-                         SegMapTransform, Numpy2Tensor)
-from .utils import to_tensor, random_scale
 from .extra_aug import ExtraAugmentation
+from .registry import DATASETS
+from .transforms import (BboxTransform, ImageTransform, MaskTransform,
+                         Numpy2Tensor, SegMapTransform)
+from .utils import random_scale, to_tensor
 
 
 @DATASETS.register_module

@@ -1,7 +1,7 @@
 import warnings
 
 import torch.nn as nn
-from mmcv.cnn import kaiming_init, constant_init
+from mmcv.cnn import constant_init, kaiming_init
 
 from .conv_ws import ConvWS2d
 from .norm import build_norm_layer

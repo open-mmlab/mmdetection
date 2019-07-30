@@ -1,7 +1,7 @@
 import torch
 
-from ..bbox import build_assigner, build_sampler, PseudoSampler
-from ..utils import unmap, multi_apply
+from ..bbox import PseudoSampler, build_assigner, build_sampler
+from ..utils import multi_apply, unmap
 
 
 def calc_region(bbox, ratio, featmap_size=None):
