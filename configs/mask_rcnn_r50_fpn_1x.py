@@ -136,7 +136,7 @@ test_pipeline = [
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip', flip_ratio=0.5),
+            dict(type='RandomFlip'),
             dict(type='Normalize'),
             dict(type='Pad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
