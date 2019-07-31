@@ -1,7 +1,9 @@
+import torch.nn as nn
 from torch.autograd import Function
+from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
-from .. import roi_align_cuda
+from . import roi_align_cuda
 
 
 class RoIAlignFunction(Function):
@@ -28,6 +30,7 @@ class RoIAlignFunction(Function):
         return output
 
     @staticmethod
+    @once_differentiable
     def backward(ctx, grad_output):
         feature_size = ctx.feature_size
         spatial_scale = ctx.spatial_scale
@@ -51,3 +54,34 @@ class RoIAlignFunction(Function):
 
 
 roi_align = RoIAlignFunction.apply
+
+
+class RoIAlign(nn.Module):
+
+    def __init__(self,
+                 out_size,
+                 spatial_scale,
+                 sample_num=0,
+                 use_torchvision=False):
+        super(RoIAlign, self).__init__()
+
+        self.out_size = out_size
+        self.spatial_scale = float(spatial_scale)
+        self.sample_num = int(sample_num)
+        self.use_torchvision = use_torchvision
+
+    def forward(self, features, rois):
+        if self.use_torchvision:
+            from torchvision.ops import roi_align as tv_roi_align
+            return tv_roi_align(features, rois, _pair(self.out_size),
+                                self.spatial_scale, self.sample_num)
+        else:
+            return roi_align(features, rois, self.out_size, self.spatial_scale,
+                             self.sample_num)
+
+    def __repr__(self):
+        format_str = self.__class__.__name__
+        format_str += '(out_size={}, spatial_scale={}, sample_num={}'.format(
+            self.out_size, self.spatial_scale, self.sample_num)
+        format_str += ', use_torchvision={})'.format(self.use_torchvision)
+        return format_str

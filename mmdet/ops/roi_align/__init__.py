@@ -1,4 +1,3 @@
-from .functions.roi_align import roi_align
-from .modules.roi_align import RoIAlign
+from .roi_align import roi_align, RoIAlign
 
 __all__ = ['roi_align', 'RoIAlign']

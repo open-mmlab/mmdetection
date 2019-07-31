@@ -1,8 +1,8 @@
 import torch.nn as nn
 
-from .bbox_head import BBoxHead
 from ..registry import HEADS
 from ..utils import ConvModule
+from .bbox_head import BBoxHead
 
 
 @HEADS.register_module

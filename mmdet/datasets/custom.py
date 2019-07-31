@@ -1,4 +1,5 @@
 import os.path as osp
+import warnings
 
 import mmcv
 import numpy as np
@@ -7,11 +8,11 @@ from torch.utils.data import Dataset
 
 from imagecorruptions import corrupt
 
-from .registry import DATASETS
-from .transforms import (ImageTransform, BboxTransform, MaskTransform,
-                         SegMapTransform, Numpy2Tensor)
-from .utils import to_tensor, random_scale
 from .extra_aug import ExtraAugmentation
+from .registry import DATASETS
+from .transforms import (BboxTransform, ImageTransform, MaskTransform,
+                         Numpy2Tensor, SegMapTransform)
+from .utils import random_scale, to_tensor
 
 
 @DATASETS.register_module
@@ -59,6 +60,7 @@ class CustomDataset(Dataset):
                  resize_keep_ratio=True,
                  corruption=None,
                  corruption_severity=1,
+                 skip_img_without_anno=True,
                  test_mode=False):
         # prefix of images path
         self.img_prefix = img_prefix
@@ -131,6 +133,7 @@ class CustomDataset(Dataset):
 
         # image rescale if keep ratio
         self.resize_keep_ratio = resize_keep_ratio
+        self.skip_img_without_anno = skip_img_without_anno
 
         # corruptions
         self.corruption = corruption
@@ -216,7 +219,9 @@ class CustomDataset(Dataset):
             gt_bboxes_ignore = ann['bboxes_ignore']
 
         # skip the image if there is no valid gt bbox
-        if len(gt_bboxes) == 0:
+        if len(gt_bboxes) == 0 and self.skip_img_without_anno:
+            warnings.warn('Skip the image "%s" that has no valid gt bbox' %
+                          osp.join(self.img_prefix, img_info['filename']))
             return None
 
         # extra augmentation
@@ -243,8 +248,8 @@ class CustomDataset(Dataset):
         if self.proposals is not None:
             proposals = self.bbox_transform(proposals, img_shape, scale_factor,
                                             flip)
-            proposals = np.hstack(
-                [proposals, scores]) if scores is not None else proposals
+            proposals = np.hstack([proposals, scores
+                                   ]) if scores is not None else proposals
         gt_bboxes = self.bbox_transform(gt_bboxes, img_shape, scale_factor,
                                         flip)
         if self.with_crowd:
@@ -315,8 +320,8 @@ class CustomDataset(Dataset):
                     score = None
                 _proposal = self.bbox_transform(proposal, img_shape,
                                                 scale_factor, flip)
-                _proposal = np.hstack(
-                    [_proposal, score]) if score is not None else _proposal
+                _proposal = np.hstack([_proposal, score
+                                       ]) if score is not None else _proposal
                 _proposal = to_tensor(_proposal)
             else:
                 _proposal = None

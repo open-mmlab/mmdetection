@@ -86,7 +86,7 @@ int ROIPoolForwardLaucher(const at::Tensor features, const at::Tensor rois,
   const int output_size = num_rois * channels * pooled_h * pooled_w;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      features.type(), "ROIPoolLaucherForward", ([&] {
+      features.scalar_type(), "ROIPoolLaucherForward", ([&] {
         const scalar_t *bottom_data = features.data<scalar_t>();
         const scalar_t *rois_data = rois.data<scalar_t>();
         scalar_t *top_data = output.data<scalar_t>();
@@ -134,7 +134,7 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
   const int output_size = num_rois * pooled_h * pooled_w * channels;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      top_grad.type(), "ROIPoolLaucherBackward", ([&] {
+      top_grad.scalar_type(), "ROIPoolLaucherBackward", ([&] {
         const scalar_t *top_diff = top_grad.data<scalar_t>();
         const scalar_t *rois_data = rois.data<scalar_t>();
         const int *argmax_data = argmax.data<int>();

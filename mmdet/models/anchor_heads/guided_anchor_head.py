@@ -5,14 +5,14 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (AnchorGenerator, anchor_target, anchor_inside_flags,
-                        ga_loc_target, ga_shape_target, delta2bbox,
-                        multi_apply, multiclass_nms, force_fp32)
+from mmdet.core import (AnchorGenerator, anchor_inside_flags, anchor_target,
+                        delta2bbox, force_fp32, ga_loc_target, ga_shape_target,
+                        multi_apply, multiclass_nms)
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import build_loss
-from .anchor_head import AnchorHead
 from ..registry import HEADS
 from ..utils import bias_init_with_prob
+from .anchor_head import AnchorHead
 
 
 class FeatureAdaption(nn.Module):

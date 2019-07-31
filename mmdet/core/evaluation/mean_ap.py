@@ -279,8 +279,8 @@ def eval_map(det_results,
                     bbox[:, 3] - bbox[:, 1] + 1)
                 for k, (min_area, max_area) in enumerate(area_ranges):
                     num_gts[k] += np.sum(
-                        np.logical_not(cls_gt_ignore[j]) &
-                        (gt_areas >= min_area) & (gt_areas < max_area))
+                        np.logical_not(cls_gt_ignore[j])
+                        & (gt_areas >= min_area) & (gt_areas < max_area))
         # sort all det bboxes by score, also sort tp and fp
         cls_dets = np.vstack(cls_dets)
         num_dets = cls_dets.shape[0]
@@ -312,11 +312,12 @@ def eval_map(det_results,
         all_ap = np.vstack([cls_result['ap'] for cls_result in eval_results])
         all_num_gts = np.vstack(
             [cls_result['num_gts'] for cls_result in eval_results])
-        mean_ap = [
-            all_ap[all_num_gts[:, i] > 0, i].mean()
-            if np.any(all_num_gts[:, i] > 0) else 0.0
-            for i in range(num_scales)
-        ]
+        mean_ap = []
+        for i in range(num_scales):
+            if np.any(all_num_gts[:, i] > 0):
+                mean_ap.append(all_ap[all_num_gts[:, i] > 0, i].mean())
+            else:
+                mean_ap.append(0.0)
     else:
         aps = []
         for cls_result in eval_results:
@@ -368,8 +369,8 @@ def print_map_summary(mean_ap, results, dataset=None):
         for j in range(num_classes):
             row_data = [
                 label_names[j], num_gts[i, j], results[j]['num_dets'],
-                '{:.3f}'.format(recalls[i, j]), '{:.3f}'.format(
-                    precisions[i, j]), '{:.3f}'.format(aps[i, j])
+                '{:.3f}'.format(recalls[i, j]),
+                '{:.3f}'.format(precisions[i, j]), '{:.3f}'.format(aps[i, j])
             ]
             table_data.append(row_data)
         table_data.append(['mAP', '', '', '', '', '{:.3f}'.format(mean_ap[i])])

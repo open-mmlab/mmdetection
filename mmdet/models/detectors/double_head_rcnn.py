@@ -1,48 +1,17 @@
 import torch
 
-from mmdet.core import bbox2roi, build_assigner, build_sampler
-from .. import builder
-from ..registry import DETECTORS
 from .two_stage import TwoStageDetector
+from ..registry import DETECTORS
+from mmdet.core import bbox2roi, build_assigner, build_sampler
 
 
 @DETECTORS.register_module
-class MaskScoringRCNN(TwoStageDetector):
-    """Mask Scoring RCNN.
+class DoubleHeadRCNN(TwoStageDetector):
 
-    https://arxiv.org/abs/1903.00241
-    """
+    def __init__(self, reg_roi_scale_factor, **kwargs):
+        super().__init__(**kwargs)
+        self.reg_roi_scale_factor = reg_roi_scale_factor
 
-    def __init__(self,
-                 backbone,
-                 rpn_head,
-                 bbox_roi_extractor,
-                 bbox_head,
-                 mask_roi_extractor,
-                 mask_head,
-                 train_cfg,
-                 test_cfg,
-                 neck=None,
-                 shared_head=None,
-                 mask_iou_head=None,
-                 pretrained=None):
-        super(MaskScoringRCNN, self).__init__(
-            backbone=backbone,
-            neck=neck,
-            shared_head=shared_head,
-            rpn_head=rpn_head,
-            bbox_roi_extractor=bbox_roi_extractor,
-            bbox_head=bbox_head,
-            mask_roi_extractor=mask_roi_extractor,
-            mask_head=mask_head,
-            train_cfg=train_cfg,
-            test_cfg=test_cfg,
-            pretrained=pretrained)
-
-        self.mask_iou_head = builder.build_head(mask_iou_head)
-        self.mask_iou_head.init_weights()
-
-    # TODO: refactor forward_train in two stage to reduce code redundancy
     def forward_train(self,
                       img,
                       img_meta,
@@ -97,11 +66,17 @@ class MaskScoringRCNN(TwoStageDetector):
         if self.with_bbox:
             rois = bbox2roi([res.bboxes for res in sampling_results])
             # TODO: a more flexible way to decide which feature maps to use
-            bbox_feats = self.bbox_roi_extractor(
+            bbox_cls_feats = self.bbox_roi_extractor(
                 x[:self.bbox_roi_extractor.num_inputs], rois)
+            bbox_reg_feats = self.bbox_roi_extractor(
+                x[:self.bbox_roi_extractor.num_inputs],
+                rois,
+                roi_scale_factor=self.reg_roi_scale_factor)
             if self.with_shared_head:
-                bbox_feats = self.shared_head(bbox_feats)
-            cls_score, bbox_pred = self.bbox_head(bbox_feats)
+                bbox_cls_feats = self.shared_head(bbox_cls_feats)
+                bbox_reg_feats = self.shared_head(bbox_reg_feats)
+            cls_score, bbox_pred = self.bbox_head(bbox_cls_feats,
+                                                  bbox_reg_feats)
 
             bbox_targets = self.bbox_head.get_target(sampling_results,
                                                      gt_bboxes, gt_labels,
@@ -121,7 +96,7 @@ class MaskScoringRCNN(TwoStageDetector):
                     mask_feats = self.shared_head(mask_feats)
             else:
                 pos_inds = []
-                device = bbox_feats.device
+                device = bbox_cls_feats.device
                 for res in sampling_results:
                     pos_inds.append(
                         torch.ones(
@@ -134,7 +109,7 @@ class MaskScoringRCNN(TwoStageDetector):
                             device=device,
                             dtype=torch.uint8))
                 pos_inds = torch.cat(pos_inds)
-                mask_feats = bbox_feats[pos_inds]
+                mask_feats = bbox_cls_feats[pos_inds]
             mask_pred = self.mask_head(mask_feats)
 
             mask_targets = self.mask_head.get_target(sampling_results,
@@ -146,52 +121,34 @@ class MaskScoringRCNN(TwoStageDetector):
                                             pos_labels)
             losses.update(loss_mask)
 
-            # mask iou head forward and loss
-            pos_mask_pred = mask_pred[range(mask_pred.size(0)), pos_labels]
-            mask_iou_pred = self.mask_iou_head(mask_feats, pos_mask_pred)
-            pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)
-                                                    ), pos_labels]
-            mask_iou_targets = self.mask_iou_head.get_target(
-                sampling_results, gt_masks, pos_mask_pred, mask_targets,
-                self.train_cfg.rcnn)
-            loss_mask_iou = self.mask_iou_head.loss(pos_mask_iou_pred,
-                                                    mask_iou_targets)
-            losses.update(loss_mask_iou)
         return losses
 
-    def simple_test_mask(self,
-                         x,
-                         img_meta,
-                         det_bboxes,
-                         det_labels,
-                         rescale=False):
-        # image shape of the first image in the batch (only one)
-        ori_shape = img_meta[0]['ori_shape']
+    def simple_test_bboxes(self,
+                           x,
+                           img_meta,
+                           proposals,
+                           rcnn_test_cfg,
+                           rescale=False):
+        """Test only det bboxes without augmentation."""
+        rois = bbox2roi(proposals)
+        bbox_cls_feats = self.bbox_roi_extractor(
+            x[:self.bbox_roi_extractor.num_inputs], rois)
+        bbox_reg_feats = self.bbox_roi_extractor(
+            x[:self.bbox_roi_extractor.num_inputs],
+            rois,
+            roi_scale_factor=self.reg_roi_scale_factor)
+        if self.with_shared_head:
+            bbox_cls_feats = self.shared_head(bbox_cls_feats)
+            bbox_reg_feats = self.shared_head(bbox_reg_feats)
+        cls_score, bbox_pred = self.bbox_head(bbox_cls_feats, bbox_reg_feats)
+        img_shape = img_meta[0]['img_shape']
         scale_factor = img_meta[0]['scale_factor']
-
-        if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
-            mask_scores = [[] for _ in range(self.mask_head.num_classes - 1)]
-        else:
-            # if det_bboxes is rescaled to the original image size, we need to
-            # rescale it back to the testing scale to obtain RoIs.
-            _bboxes = (
-                det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
-            mask_rois = bbox2roi([_bboxes])
-            mask_feats = self.mask_roi_extractor(
-                x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
-            if self.with_shared_head:
-                mask_feats = self.shared_head(mask_feats)
-            mask_pred = self.mask_head(mask_feats)
-            segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
-                                                       det_labels,
-                                                       self.test_cfg.rcnn,
-                                                       ori_shape, scale_factor,
-                                                       rescale)
-            # get mask scores with mask iou head
-            mask_iou_pred = self.mask_iou_head(
-                mask_feats,
-                mask_pred[range(det_labels.size(0)), det_labels + 1])
-            mask_scores = self.mask_iou_head.get_mask_scores(
-                mask_iou_pred, det_bboxes, det_labels)
-        return segm_result, mask_scores
+        det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
+            rois,
+            cls_score,
+            bbox_pred,
+            img_shape,
+            scale_factor,
+            rescale=rescale,
+            cfg=rcnn_test_cfg)
+        return det_bboxes, det_labels

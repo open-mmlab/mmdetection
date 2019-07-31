@@ -1,6 +1,6 @@
-import torch
-import numpy as np
 import mmcv
+import numpy as np
+import torch
 
 
 def mask_target(pos_proposals_list, pos_assigned_gt_inds_list, gt_masks_list,

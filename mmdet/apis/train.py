@@ -1,17 +1,15 @@
 from __future__ import division
-
 import re
 from collections import OrderedDict
 
 import torch
-from mmcv.runner import Runner, DistSamplerSeedHook, obj_from_dict
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmcv.runner import DistSamplerSeedHook, Runner, obj_from_dict
 
 from mmdet import datasets
-from mmdet.core import (DistOptimizerHook, DistEvalmAPHook,
-                        CocoDistEvalRecallHook, CocoDistEvalmAPHook,
-                        Fp16OptimizerHook)
-from mmdet.datasets import build_dataloader
+from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
+                        DistEvalmAPHook, DistOptimizerHook, Fp16OptimizerHook)
+from mmdet.datasets import DATASETS, build_dataloader
 from mmdet.models import RPN
 from .env import get_root_logger
 
@@ -174,7 +172,7 @@ def _dist_train(model, dataset, cfg, validate=False):
             runner.register_hook(
                 CocoDistEvalRecallHook(val_dataset_cfg, **eval_cfg))
         else:
-            dataset_type = getattr(datasets, val_dataset_cfg.type)
+            dataset_type = DATASETS.get(val_dataset_cfg.type)
             if issubclass(dataset_type, datasets.CocoDataset):
                 runner.register_hook(
                     CocoDistEvalmAPHook(val_dataset_cfg, **eval_cfg))
