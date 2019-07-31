@@ -21,8 +21,13 @@ please contact Kai Chen (chenkaidev[at]gmail[dot]com). We will much appreciate y
 
 ### Python
 We adopt [PEP8](https://www.python.org/dev/peps/pep-0008/) as the preferred code style.
-We use [flake8](http://flake8.pycqa.org/en/latest/) as the linter and [yapf](https://github.com/google/yapf) as the formatter.
-Please upgrade to the latest yapf (>=0.27.0) and refer to the [configuration](.style.yapf).
+
+We use the following tools for linting and formatting:
+- [flake8](http://flake8.pycqa.org/en/latest/): linter
+- [yapf](https://github.com/google/yapf): formatter
+- [isort](https://github.com/timothycrosley/isort): sort imports
+
+Style configurations of yapf and isort can be found in [.style.yapf](.style.yapf) and [.isort.cfg](.isort.cfg).
 
 >Before you create a PR, make sure that your code lints and is formatted by yapf.
 

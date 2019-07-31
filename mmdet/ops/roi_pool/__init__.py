@@ -1,3 +1,3 @@
-from .roi_pool import roi_pool, RoIPool
+from .roi_pool import RoIPool, roi_pool
 
 __all__ = ['roi_pool', 'RoIPool']
