@@ -1,10 +1,10 @@
 import torch.nn as nn
 from mmcv.cnn.weight_init import normal_init, xavier_init
 
-from .bbox_head import BBoxHead
 from ..backbones.resnet import Bottleneck
 from ..registry import HEADS
 from ..utils import ConvModule
+from .bbox_head import BBoxHead
 
 
 class BasicResBlock(nn.Module):
