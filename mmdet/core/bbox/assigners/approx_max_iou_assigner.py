@@ -1,7 +1,7 @@
 import torch
 
-from .max_iou_assigner import MaxIoUAssigner
 from ..geometry import bbox_overlaps
+from .max_iou_assigner import MaxIoUAssigner
 
 
 class ApproxMaxIoUAssigner(MaxIoUAssigner):

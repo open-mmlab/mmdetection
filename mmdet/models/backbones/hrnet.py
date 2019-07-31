@@ -6,7 +6,7 @@ from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..registry import BACKBONES
-from ..utils import build_norm_layer, build_conv_layer
+from ..utils import build_conv_layer, build_norm_layer
 from .resnet import BasicBlock, Bottleneck
 
 

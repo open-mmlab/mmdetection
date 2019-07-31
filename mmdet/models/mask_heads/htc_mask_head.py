@@ -1,6 +1,6 @@
-from .fcn_mask_head import FCNMaskHead
 from ..registry import HEADS
 from ..utils import ConvModule
+from .fcn_mask_head import FCNMaskHead
 
 
 @HEADS.register_module

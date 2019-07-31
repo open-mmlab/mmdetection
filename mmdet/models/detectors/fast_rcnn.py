@@ -1,5 +1,5 @@
-from .two_stage import TwoStageDetector
 from ..registry import DETECTORS
+from .two_stage import TwoStageDetector
 
 
 @DETECTORS.register_module

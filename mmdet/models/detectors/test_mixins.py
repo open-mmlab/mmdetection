@@ -1,5 +1,5 @@
-from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_proposals,
-                        merge_aug_bboxes, merge_aug_masks, multiclass_nms)
+from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
+                        merge_aug_masks, merge_aug_proposals, multiclass_nms)
 
 
 class RPNTestMixin(object):

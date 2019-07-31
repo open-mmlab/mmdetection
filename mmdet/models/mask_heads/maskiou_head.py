@@ -2,8 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import kaiming_init, normal_init
-from mmdet.core import force_fp32
 
+from mmdet.core import force_fp32
 from ..builder import build_loss
 from ..registry import HEADS
 

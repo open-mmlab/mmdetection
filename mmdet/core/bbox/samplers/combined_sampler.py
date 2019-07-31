@@ -1,5 +1,5 @@
-from .base_sampler import BaseSampler
 from ..assign_sampling import build_sampler
+from .base_sampler import BaseSampler
 
 
 class CombinedSampler(BaseSampler):

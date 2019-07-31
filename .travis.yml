@@ -2,7 +2,7 @@ dist: xenial
 language: python
 
 install:
-  - pip install flake8 yapf
+  - pip install isort flake8 yapf 
 
 python:
   - "3.5"
@@ -11,4 +11,5 @@ python:
 
 script:
   - flake8
+  - isort -rc --diff mmdet/ tools/
   - yapf -r -d --style .style.yapf mmdet/ tools/

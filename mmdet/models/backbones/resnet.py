@@ -2,14 +2,12 @@ import logging
 
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from torch.nn.modules.batchnorm import _BatchNorm
-
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
+from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.ops import DeformConv, ModulatedDeformConv, ContextBlock
 from mmdet.models.plugins import GeneralizedAttention
-
+from mmdet.ops import ContextBlock, DeformConv, ModulatedDeformConv
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
 
