@@ -9,13 +9,14 @@ def print_coco_results(results):
     def _print(result, ap=1, iouThr=None, areaRng='all', maxDets=100):
         iStr = ' {:<18} {} @[ IoU={:<9} | \
         area={:>6s} | maxDets={:>3d} ] = {:0.3f}'
+
         titleStr = 'Average Precision' if ap == 1 else 'Average Recall'
         typeStr = '(AP)' if ap == 1 else '(AR)'
         iouStr = '{:0.2f}:{:0.2f}'.format(.5, .95) \
             if iouThr is None else '{:0.2f}'.format(iouThr)
         print(iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, result))
 
-    stats = np.zeros((12,))
+    stats = np.zeros((12, ))
     stats[0] = _print(results[0], 1)
     stats[1] = _print(results[1], 1, iouThr=.5)
     stats[2] = _print(results[2], 1, iouThr=.75)
@@ -39,16 +40,16 @@ def get_coco_style_results(filename,
     assert aggregate in ['benchmark', 'all']
 
     if prints == 'all':
-        prints = ['P',  'mPC', 'rPC']
+        prints = ['P', 'mPC', 'rPC']
     elif isinstance(prints, str):
         prints = [prints]
     for p in prints:
-        assert p in ['P',  'mPC', 'rPC']
+        assert p in ['P', 'mPC', 'rPC']
 
     if metric is None:
         metrics = [
-            'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl',
-            'AR1', 'AR10', 'AR100', 'ARs', 'ARm', 'ARl'
+            'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl', 'AR1', 'AR10', 'AR100',
+            'ARs', 'ARm', 'ARl'
         ]
     elif isinstance(metric, list):
         metrics = metric
@@ -57,8 +58,8 @@ def get_coco_style_results(filename,
 
     for metric_name in metrics:
         assert metric_name in [
-            'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl',
-            'AR1', 'AR10', 'AR100', 'ARs', 'ARm', 'ARl'
+            'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl', 'AR1', 'AR10', 'AR100',
+            'ARs', 'ARm', 'ARl'
         ]
 
     eval_output = mmcv.load(filename)
@@ -77,41 +78,35 @@ def get_coco_style_results(filename,
         mPC = np.mean(results[:15, 1:, :], axis=(0, 1))
     else:
         mPC = np.mean(results[:, 1:, :], axis=(0, 1))
-    rPC = mPC/P
+    rPC = mPC / P
 
     print('\nmodel: {}'.format(osp.basename(filename)))
     if metric is None:
         if 'P' in prints:
-            print('Performance on Clean Data [P] ({})'
-                  .format(task))
+            print('Performance on Clean Data [P] ({})'.format(task))
             print_coco_results(P)
         if 'mPC' in prints:
-            print('Mean Performance under Corruption [mPC] ({})'
-                  .format(task))
+            print('Mean Performance under Corruption [mPC] ({})'.format(task))
             print_coco_results(mPC)
         if 'rPC' in prints:
-            print('Realtive Performance under Corruption [rPC] ({})'
-                  .format(task))
+            print('Realtive Performance under Corruption [rPC] ({})'.format(
+                task))
             print_coco_results(rPC)
     else:
         if 'P' in prints:
-            print('Performance on Clean Data [P] ({})'
-                  .format(task))
+            print('Performance on Clean Data [P] ({})'.format(task))
             for metric_i, metric_name in enumerate(metrics):
-                print('{:5} =  {:0.3f}'
-                      .format(metric_name, P[metric_i]))
+                print('{:5} =  {:0.3f}'.format(metric_name, P[metric_i]))
         if 'mPC' in prints:
-            print('Mean Performance under Corruption [mPC] ({})'
-                  .format(task))
+            print('Mean Performance under Corruption [mPC] ({})'.format(task))
             for metric_i, metric_name in enumerate(metrics):
-                print('{:5} =  {:0.3f}'
-                      .format(metric_name, mPC[metric_i]))
+                print('{:5} =  {:0.3f}'.format(metric_name, mPC[metric_i]))
         if 'rPC' in prints:
-            print('Realtive Performance under Corruption [rPC] ({})'
-                  .format(task))
+            print('Realtive Performance under Corruption [rPC] ({})'.format(
+                task))
             for metric_i, metric_name in enumerate(metrics):
-                print('{:5} => {:0.1f} %'
-                      .format(metric_name, rPC[metric_i] * 100))
+                print('{:5} => {:0.1f} %'.format(metric_name,
+                                                 rPC[metric_i] * 100))
 
     return results
 
@@ -134,8 +129,10 @@ def get_voc_style_results(filename, prints='mPC', aggregate='benchmark'):
 
     for i, distortion in enumerate(eval_output):
         for severity in eval_output[distortion]:
-            mAP = [eval_output[distortion][severity][j]['ap']
-                   for j in range(len(eval_output[distortion][severity]))]
+            mAP = [
+                eval_output[distortion][severity][j]['ap']
+                for j in range(len(eval_output[distortion][severity]))
+            ]
             results[i, severity, :] = mAP
 
     P = results[0, 0, :]
@@ -143,24 +140,19 @@ def get_voc_style_results(filename, prints='mPC', aggregate='benchmark'):
         mPC = np.mean(results[:15, 1:, :], axis=(0, 1))
     else:
         mPC = np.mean(results[:, 1:, :], axis=(0, 1))
-    rPC = mPC/P
+    rPC = mPC / P
 
     print('\nmodel: {}'.format(osp.basename(filename)))
     if 'P' in prints:
-        print('{:48} = {:0.3f}'.format(
-                  'Performance on Clean Data [P] in AP50',
-                  np.mean(P)
-        ))
+        print('{:48} = {:0.3f}'.format('Performance on Clean Data [P] in AP50',
+                                       np.mean(P)))
     if 'mPC' in prints:
         print('{:48} = {:0.3f}'.format(
-                  'Mean Performance under Corruption [mPC] in AP50',
-                  np.mean(mPC)
-        ))
+            'Mean Performance under Corruption [mPC] in AP50', np.mean(mPC)))
     if 'rPC' in prints:
         print('{:48} = {:0.1f}'.format(
-                  'Realtive Performance under Corruption [rPC] in %',
-                  np.mean(rPC)*100
-        ))
+            'Realtive Performance under Corruption [rPC] in %',
+            np.mean(rPC) * 100))
 
     return np.mean(results, axis=2, keepdims=True)
 
@@ -175,9 +167,11 @@ def get_results(filename,
 
     if dataset in ['coco', 'cityscapes']:
         results = get_coco_style_results(
-            filename, task=task, metric=metric,
-            prints=prints, aggregate=aggregate
-        )
+            filename,
+            task=task,
+            metric=metric,
+            prints=prints,
+            aggregate=aggregate)
     elif dataset == 'voc':
         if task != 'bbox':
             print('Only bbox analysis is supported for Pascal VOC')
@@ -225,8 +219,8 @@ def main():
         '--metric',
         nargs='+',
         choices=[
-            None, 'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl',
-            'AR1', 'AR10', 'AR100', 'ARs', 'ARm', 'ARl'
+            None, 'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl', 'AR1', 'AR10',
+            'AR100', 'ARs', 'ARm', 'ARl'
         ],
         default=None,
         help='metric to report')
@@ -248,12 +242,13 @@ def main():
     args = parser.parse_args()
 
     for task in args.task:
-        get_results(args.filename,
-                    dataset=args.dataset,
-                    task=task,
-                    metric=args.metric,
-                    prints=args.prints,
-                    aggregate=args.aggregate)
+        get_results(
+            args.filename,
+            dataset=args.dataset,
+            task=task,
+            metric=args.metric,
+            prints=args.prints,
+            aggregate=args.aggregate)
 
 
 if __name__ == '__main__':

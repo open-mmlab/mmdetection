@@ -60,10 +60,14 @@ def coco_eval_with_return(result_files,
         cocoEval.accumulate()
         cocoEval.summarize()
         if res_type == 'segm' or res_type == 'bbox':
-            metric_names = ['AP', 'AP50', 'AP75', 'APs', 'APm', 'APl',
-                            'AR1', 'AR10', 'AR100', 'ARs', 'ARm', 'ARl']
-            eval_results[res_type] = {metric_names[i]: cocoEval.stats[i]
-                                      for i in range(len(metric_names))}
+            metric_names = [
+                'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl', 'AR1', 'AR10',
+                'AR100', 'ARs', 'ARm', 'ARl'
+            ]
+            eval_results[res_type] = {
+                metric_names[i]: cocoEval.stats[i]
+                for i in range(len(metric_names))
+            }
         else:
             eval_results[res_type] = cocoEval.stats
 
@@ -110,8 +114,9 @@ def voc_eval_with_return(result_file,
         print_summary=print_summary)
 
     if only_ap:
-        eval_results = [{'ap': eval_results[i]['ap']}
-                        for i in range(len(eval_results))]
+        eval_results = [{
+            'ap': eval_results[i]['ap']
+        } for i in range(len(eval_results))]
 
     return mean_ap, eval_results
 
@@ -164,8 +169,10 @@ def collect_results(result_part, size, tmpdir=None):
     if tmpdir is None:
         MAX_LEN = 512
         # 32 is whitespace
-        dir_tensor = torch.full(
-            (MAX_LEN, ), 32, dtype=torch.uint8, device='cuda')
+        dir_tensor = torch.full((MAX_LEN, ),
+                                32,
+                                dtype=torch.uint8,
+                                device='cuda')
         if rank == 0:
             tmpdir = tempfile.mkdtemp()
             tmpdir = torch.tensor(
@@ -208,13 +215,14 @@ def parse_args():
         type=str,
         nargs='+',
         default='benchmark',
-        choices=['all', 'benchmark', 'noise', 'blur', 'weather', 'digital',
-                 'holdout', 'None', 'gaussian_noise', 'shot_noise',
-                 'impulse_noise', 'defocus_blur', 'glass_blur',
-                 'motion_blur', 'zoom_blur', 'snow', 'frost', 'fog',
-                 'brightness', 'contrast', 'elastic_transform', 'pixelate',
-                 'jpeg_compression', 'speckle_noise', 'gaussian_blur',
-                 'spatter', 'saturate'],
+        choices=[
+            'all', 'benchmark', 'noise', 'blur', 'weather', 'digital',
+            'holdout', 'None', 'gaussian_noise', 'shot_noise', 'impulse_noise',
+            'defocus_blur', 'glass_blur', 'motion_blur', 'zoom_blur', 'snow',
+            'frost', 'fog', 'brightness', 'contrast', 'elastic_transform',
+            'pixelate', 'jpeg_compression', 'speckle_noise', 'gaussian_blur',
+            'spatter', 'saturate'
+        ],
         help='corruptions')
     parser.add_argument(
         '--severities',
@@ -239,10 +247,7 @@ def parse_args():
         default=False,
         help='Print summaries for every corruption and severity')
     parser.add_argument(
-        '--workers',
-        type=int,
-        default=32,
-        help='workers per gpu')
+        '--workers', type=int, default=32, help='workers per gpu')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument('--tmpdir', help='tmp dir for writing some results')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
@@ -302,31 +307,34 @@ def main():
         set_random_seed(args.seed)
 
     if 'all' in args.corruptions:
-        corruptions = ['gaussian_noise', 'shot_noise', 'impulse_noise',
-                       'defocus_blur', 'glass_blur', 'motion_blur',
-                       'zoom_blur', 'snow', 'frost', 'fog', 'brightness',
-                       'contrast', 'elastic_transform', 'pixelate',
-                       'jpeg_compression', 'speckle_noise',
-                       'gaussian_blur', 'spatter', 'saturate']
+        corruptions = [
+            'gaussian_noise', 'shot_noise', 'impulse_noise', 'defocus_blur',
+            'glass_blur', 'motion_blur', 'zoom_blur', 'snow', 'frost', 'fog',
+            'brightness', 'contrast', 'elastic_transform', 'pixelate',
+            'jpeg_compression', 'speckle_noise', 'gaussian_blur', 'spatter',
+            'saturate'
+        ]
     elif 'benchmark' in args.corruptions:
-        corruptions = ['gaussian_noise', 'shot_noise', 'impulse_noise',
-                       'defocus_blur', 'glass_blur', 'motion_blur',
-                       'zoom_blur', 'snow', 'frost', 'fog', 'brightness',
-                       'contrast', 'elastic_transform', 'pixelate',
-                       'jpeg_compression']
+        corruptions = [
+            'gaussian_noise', 'shot_noise', 'impulse_noise', 'defocus_blur',
+            'glass_blur', 'motion_blur', 'zoom_blur', 'snow', 'frost', 'fog',
+            'brightness', 'contrast', 'elastic_transform', 'pixelate',
+            'jpeg_compression'
+        ]
     elif 'noise' in args.corruptions:
         corruptions = ['gaussian_noise', 'shot_noise', 'impulse_noise']
     elif 'blur' in args.corruptions:
-        corruptions = ['defocus_blur', 'glass_blur', 'motion_blur',
-                       'zoom_blur']
+        corruptions = [
+            'defocus_blur', 'glass_blur', 'motion_blur', 'zoom_blur'
+        ]
     elif 'weather' in args.corruptions:
         corruptions = ['snow', 'frost', 'fog', 'brightness']
     elif 'digital' in args.corruptions:
-        corruptions = ['contrast', 'elastic_transform', 'pixelate',
-                       'jpeg_compression']
+        corruptions = [
+            'contrast', 'elastic_transform', 'pixelate', 'jpeg_compression'
+        ]
     elif 'holdout' in args.corruptions:
-        corruptions = ['speckle_noise', 'gaussian_blur', 'spatter',
-                       'saturate']
+        corruptions = ['speckle_noise', 'gaussian_blur', 'spatter', 'saturate']
     elif 'None' in args.corruptions:
         corruptions = ['None']
         args.severities = [0]
@@ -353,8 +361,8 @@ def main():
                 cfg.data.test['corruption_severity'] = corruption_severity
 
             # print info
-            print('\nTesting {} at severity {}'.format(
-                corruption, corruption_severity))
+            print('\nTesting {} at severity {}'.format(corruption,
+                                                       corruption_severity))
 
             # build the dataloader
             # TODO: support multiple images per gpu
@@ -402,8 +410,7 @@ def main():
                             # print('Starting evaluate {}'.format(eval_type))
                             if eval_type == 'bbox':
                                 test_dataset = mmcv.runner.obj_from_dict(
-                                    cfg.data.test,
-                                    datasets)
+                                    cfg.data.test, datasets)
                                 mean_ap, eval_results = \
                                     voc_eval_with_return(
                                         args.out, test_dataset,
@@ -421,8 +428,8 @@ def main():
                             result_file = args.out
                         else:
                             if not isinstance(outputs[0], dict):
-                                result_files = results2json(dataset,
-                                                            outputs, args.out)
+                                result_files = results2json(
+                                    dataset, outputs, args.out)
                             else:
                                 for name in outputs[0]:
                                     print('\nEvaluating {}'.format(name))
@@ -449,12 +456,16 @@ def main():
 
     if cfg.dataset_type == 'VOCDataset':
         get_results(
-            eval_results_filename, dataset='voc',
-            prints=prints, aggregate=aggregate)
+            eval_results_filename,
+            dataset='voc',
+            prints=prints,
+            aggregate=aggregate)
     else:
         get_results(
-            eval_results_filename, dataset='coco',
-            prints=prints, aggregate=aggregate)
+            eval_results_filename,
+            dataset='coco',
+            prints=prints,
+            aggregate=aggregate)
 
 
 if __name__ == '__main__':
