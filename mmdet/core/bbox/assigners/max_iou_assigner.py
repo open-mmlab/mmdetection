@@ -1,8 +1,8 @@
 import torch
 
-from .base_assigner import BaseAssigner
-from .assign_result import AssignResult
 from ..geometry import bbox_overlaps
+from .assign_result import AssignResult
+from .base_assigner import BaseAssigner
 
 
 class MaxIoUAssigner(BaseAssigner):

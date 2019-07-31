@@ -1,15 +1,15 @@
 from __future__ import division
-
 import argparse
 import os
+
+import torch
 from mmcv import Config
 
 from mmdet import __version__
+from mmdet.apis import (get_root_logger, init_dist, set_random_seed,
+                        train_detector)
 from mmdet.datasets import build_dataset
-from mmdet.apis import (train_detector, init_dist, get_root_logger,
-                        set_random_seed)
 from mmdet.models import build_detector
-import torch
 
 
 def parse_args():

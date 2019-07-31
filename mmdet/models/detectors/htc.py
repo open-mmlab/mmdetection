@@ -1,11 +1,11 @@
 import torch
 import torch.nn.functional as F
 
-from .cascade_rcnn import CascadeRCNN
+from mmdet.core import (bbox2result, bbox2roi, build_assigner, build_sampler,
+                        merge_aug_masks)
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import (bbox2roi, bbox2result, build_assigner, build_sampler,
-                        merge_aug_masks)
+from .cascade_rcnn import CascadeRCNN
 
 
 @DETECTORS.register_module

@@ -1,8 +1,8 @@
 from torch import nn
 
 from mmdet.utils import build_from_cfg
-from .registry import (BACKBONES, NECKS, ROI_EXTRACTORS, SHARED_HEADS, HEADS,
-                       LOSSES, DETECTORS)
+from .registry import (BACKBONES, DETECTORS, HEADS, LOSSES, NECKS,
+                       ROI_EXTRACTORS, SHARED_HEADS)
 
 
 def build(cfg, registry, default_args=None):

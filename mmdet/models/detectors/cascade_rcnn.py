@@ -3,12 +3,12 @@ from __future__ import division
 import torch
 import torch.nn as nn
 
-from .base import BaseDetector
-from .test_mixins import RPNTestMixin
+from mmdet.core import (bbox2result, bbox2roi, build_assigner, build_sampler,
+                        merge_aug_masks)
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import (build_assigner, bbox2roi, bbox2result, build_sampler,
-                        merge_aug_masks)
+from .base import BaseDetector
+from .test_mixins import RPNTestMixin
 
 
 @DETECTORS.register_module

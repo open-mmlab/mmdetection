@@ -5,14 +5,14 @@ import mmcv
 import numpy as np
 import torch
 import torch.distributed as dist
+from mmcv.parallel import collate, scatter
 from mmcv.runner import Hook
-from mmcv.parallel import scatter, collate
 from pycocotools.cocoeval import COCOeval
 from torch.utils.data import Dataset
 
-from .coco_utils import results2json, fast_eval_recall
-from .mean_ap import eval_map
 from mmdet import datasets
+from .coco_utils import fast_eval_recall, results2json
+from .mean_ap import eval_map
 
 
 class DistEvalHook(Hook):

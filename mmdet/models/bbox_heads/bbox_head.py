@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import (delta2bbox, multiclass_nms, bbox_target, force_fp32,
-                        auto_fp16)
+from mmdet.core import (auto_fp16, bbox_target, delta2bbox, force_fp32,
+                        multiclass_nms)
 from ..builder import build_loss
 from ..losses import accuracy
 from ..registry import HEADS
