@@ -3,6 +3,7 @@ import warnings
 
 import mmcv
 import numpy as np
+from imagecorruptions import corrupt
 from mmcv.parallel import DataContainer as DC
 from torch.utils.data import Dataset
 
@@ -56,6 +57,8 @@ class CustomDataset(Dataset):
                  seg_scale_factor=1,
                  extra_aug=None,
                  resize_keep_ratio=True,
+                 corruption=None,
+                 corruption_severity=1,
                  skip_img_without_anno=True,
                  test_mode=False):
         # prefix of images path
@@ -131,6 +134,10 @@ class CustomDataset(Dataset):
         self.resize_keep_ratio = resize_keep_ratio
         self.skip_img_without_anno = skip_img_without_anno
 
+        # corruptions
+        self.corruption = corruption
+        self.corruption_severity = corruption_severity
+
     def __len__(self):
         return len(self.img_infos)
 
@@ -181,6 +188,12 @@ class CustomDataset(Dataset):
         img_info = self.img_infos[idx]
         # load image
         img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
+        # corruption
+        if self.corruption is not None:
+            img = corrupt(
+                img,
+                severity=self.corruption_severity,
+                corruption_name=self.corruption)
         # load proposals if necessary
         if self.proposals is not None:
             proposals = self.proposals[idx][:self.num_max_proposals]
@@ -274,6 +287,13 @@ class CustomDataset(Dataset):
         """Prepare an image for testing (multi-scale and flipping)"""
         img_info = self.img_infos[idx]
         img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
+        # corruption
+        if self.corruption is not None:
+            img = corrupt(
+                img,
+                severity=self.corruption_severity,
+                corruption_name=self.corruption)
+        # load proposals if necessary
         if self.proposals is not None:
             proposal = self.proposals[idx][:self.num_max_proposals]
             if not (proposal.shape[1] == 4 or proposal.shape[1] == 5):
