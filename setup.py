@@ -144,7 +144,7 @@ if __name__ == '__main__':
         tests_require=['pytest'],
         install_requires=[
             'mmcv>=0.2.10', 'numpy', 'matplotlib', 'six', 'terminaltables',
-            'pycocotools', 'torch>=1.1'
+            'pycocotools', 'torch>=1.1', 'imagecorruptions'
         ],
         ext_modules=[
             make_cython_ext(
