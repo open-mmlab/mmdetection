@@ -1,5 +1,6 @@
 import mmcv
 import numpy as np
+from imagecorruptions import corrupt
 from numpy import random
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -548,3 +549,18 @@ class MinIoURandomCrop(object):
                 results['gt_bboxes'] = boxes
                 results['gt_labels'] = labels
                 return results
+
+
+@PIPELINES.register_module
+class Corrupt(object):
+
+    def __init__(self, corruption, severity=1):
+        self.corruption = corruption
+        self.severity = severity
+
+    def __call__(self, results):
+        results['img'] = corrupt(
+            results['img'],
+            corruption_name=self.corruption,
+            severity=self.severity)
+        return results
