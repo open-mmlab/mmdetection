@@ -239,7 +239,7 @@ class CustomDataset(Dataset):
         if self.with_seg:
             gt_seg = mmcv.imread(
                 osp.join(self.seg_prefix,
-                         img_info['file_name'].replace('jpg', 'png')),
+                         img_info['filename'].replace('jpg', 'png')),
                 flag='unchanged')
             gt_seg = self.seg_transform(gt_seg.squeeze(), img_scale, flip)
             gt_seg = mmcv.imrescale(
