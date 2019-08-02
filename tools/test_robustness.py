@@ -5,23 +5,21 @@ import shutil
 import tempfile
 
 import mmcv
+import numpy as np
 import torch
 import torch.distributed as dist
-from mmcv.runner import load_checkpoint, get_dist_info
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-
-from mmdet.apis import init_dist, set_random_seed
-from mmdet.core import results2json, wrap_fp16_model, fast_eval_recall
-from mmdet.datasets import build_dataloader, build_dataset
-from mmdet.models import build_detector
-
-import numpy as np
-from mmdet import datasets
-from mmdet.core import eval_map
-# from voc_eval import voc_eval
+from mmcv.runner import get_dist_info, load_checkpoint
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from robustness_eval import get_results
+
+from mmdet import datasets
+from mmdet.apis import init_dist, set_random_seed
+from mmdet.core import (eval_map, fast_eval_recall, results2json,
+                        wrap_fp16_model)
+from mmdet.datasets import build_dataloader, build_dataset
+from mmdet.models import build_detector
 
 
 def coco_eval_with_return(result_files,
@@ -399,15 +397,14 @@ def main():
 
             rank, _ = get_dist_info()
             if args.out and rank == 0:
-                eval_results_filename = osp.splitext(args.out)[0]
-                + '_results' + osp.splitext(args.out)[1]
-                # print('\nwriting results to {}'.format(args.out))
+                eval_results_filename = (
+                    osp.splitext(args.out)[0] + '_results' +
+                    osp.splitext(args.out)[1])
                 mmcv.dump(outputs, args.out)
                 eval_types = args.eval
                 if cfg.dataset_type == 'VOCDataset':
                     if eval_types:
                         for eval_type in eval_types:
-                            # print('Starting evaluate {}'.format(eval_type))
                             if eval_type == 'bbox':
                                 test_dataset = mmcv.runner.obj_from_dict(
                                     cfg.data.test, datasets)
@@ -418,8 +415,8 @@ def main():
                                 aggregated_results[corruption][
                                     corruption_severity] = eval_results
                             else:
-                                print("\nOnly 'bbox' evaluation \
-                                is supported for pascal voc")
+                                print('\nOnly "bbox" evaluation \
+                                is supported for pascal voc')
                 else:
                     if eval_types:
                         print('Starting evaluate {}'.format(
@@ -443,14 +440,14 @@ def main():
                         aggregated_results[corruption][
                             corruption_severity] = eval_results
                     else:
-                        print("\nNo task was selected for evaluation; \
-                        \nUse --eval to select a task")
+                        print('\nNo task was selected for evaluation;'
+                              '\nUse --eval to select a task')
 
             # save results after each evaluation
             mmcv.dump(aggregated_results, eval_results_filename)
 
     # print filan results
-    print("\nAggregated results:")
+    print('\nAggregated results:')
     prints = args.final_prints
     aggregate = args.final_prints_aggregate
 

@@ -1,7 +1,8 @@
-import mmcv
-import numpy as np
 import os.path as osp
 from argparse import ArgumentParser
+
+import mmcv
+import numpy as np
 
 
 def print_coco_results(results):
@@ -102,7 +103,7 @@ def get_coco_style_results(filename,
             for metric_i, metric_name in enumerate(metrics):
                 print('{:5} =  {:0.3f}'.format(metric_name, mPC[metric_i]))
         if 'rPC' in prints:
-            print('Realtive Performance under Corruption [rPC] ({})'.format(
+            print('Relative Performance under Corruption [rPC] ({})'.format(
                 task))
             for metric_i, metric_name in enumerate(metrics):
                 print('{:5} => {:0.1f} %'.format(metric_name,
