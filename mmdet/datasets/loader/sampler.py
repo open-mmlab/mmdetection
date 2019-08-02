@@ -1,12 +1,11 @@
 from __future__ import division
-
 import math
-import torch
-import numpy as np
 
+import numpy as np
+import torch
 from mmcv.runner.utils import get_dist_info
-from torch.utils.data import Sampler
 from torch.utils.data import DistributedSampler as _DistributedSampler
+from torch.utils.data import Sampler
 
 
 class DistributedSampler(_DistributedSampler):

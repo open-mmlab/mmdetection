@@ -1,5 +1,5 @@
-from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_proposals,
-                        merge_aug_bboxes, merge_aug_masks, multiclass_nms)
+from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
+                        merge_aug_masks, merge_aug_proposals, multiclass_nms)
 
 
 class RPNTestMixin(object):
@@ -91,9 +91,10 @@ class BBoxTestMixin(object):
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas, rcnn_test_cfg)
-        det_bboxes, det_labels = multiclass_nms(
-            merged_bboxes, merged_scores, rcnn_test_cfg.score_thr,
-            rcnn_test_cfg.nms, rcnn_test_cfg.max_per_img)
+        det_bboxes, det_labels = multiclass_nms(merged_bboxes, merged_scores,
+                                                rcnn_test_cfg.score_thr,
+                                                rcnn_test_cfg.nms,
+                                                rcnn_test_cfg.max_per_img)
         return det_bboxes, det_labels
 
 
@@ -121,9 +122,11 @@ class MaskTestMixin(object):
             if self.with_shared_head:
                 mask_feats = self.shared_head(mask_feats)
             mask_pred = self.mask_head(mask_feats)
-            segm_result = self.mask_head.get_seg_masks(
-                mask_pred, _bboxes, det_labels, self.test_cfg.rcnn, ori_shape,
-                scale_factor, rescale)
+            segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
+                                                       det_labels,
+                                                       self.test_cfg.rcnn,
+                                                       ori_shape, scale_factor,
+                                                       rescale)
         return segm_result
 
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):
