@@ -3,10 +3,9 @@ import warnings
 
 import mmcv
 import numpy as np
+from imagecorruptions import corrupt
 from mmcv.parallel import DataContainer as DC
 from torch.utils.data import Dataset
-
-from imagecorruptions import corrupt
 
 from .extra_aug import ExtraAugmentation
 from .registry import DATASETS
