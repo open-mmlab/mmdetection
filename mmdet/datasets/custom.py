@@ -63,6 +63,43 @@ class CustomDataset(Dataset):
                  test_mode=False):
         # prefix of images path
         self.img_prefix = img_prefix
+        # (long_edge, short_edge) or [(long1, short1), (long2, short2), ...]
+        self.img_scales = img_scale if isinstance(img_scale,
+                                                  list) else [img_scale]
+        # normalization configs
+        self.img_norm_cfg = img_norm_cfg
+        # multi-scale mode (only applicable for multi-scale training)
+        self.multiscale_mode = multiscale_mode
+        assert multiscale_mode in ['value', 'range']
+        # padding border to ensure the image size can be divided by
+        # size_divisor (used for FPN)
+        self.size_divisor = size_divisor
+        # max proposals per image
+        self.num_max_proposals = num_max_proposals
+        # flip ratio
+        self.flip_ratio = flip_ratio
+        assert flip_ratio >= 0 and flip_ratio <= 1
+        # with mask or not (reserved field, takes no effect)
+        self.with_mask = with_mask
+        # some datasets provide bbox annotations as ignore/crowd/difficult,
+        # if `with_crowd` is True, then these info is returned.
+        self.with_crowd = with_crowd
+        # with label is False for RPN
+        self.with_label = with_label
+        # with semantic segmentation (stuff) annotation or not
+        self.with_seg = with_semantic_seg
+        # prefix of semantic segmentation map path
+        self.seg_prefix = seg_prefix
+        # rescale factor for segmentation maps
+        self.seg_scale_factor = seg_scale_factor
+        # image rescale if keep ratio
+        self.resize_keep_ratio = resize_keep_ratio
+        self.skip_img_without_anno = skip_img_without_anno
+        # corruptions
+        self.corruption = corruption
+        self.corruption_severity = corruption_severity
+        # in test mode or not
+        self.test_mode = test_mode
 
         # load annotations (and proposals)
         self.img_infos = self.load_annotations(ann_file)
@@ -77,41 +114,7 @@ class CustomDataset(Dataset):
             if self.proposals is not None:
                 self.proposals = [self.proposals[i] for i in valid_inds]
 
-        # (long_edge, short_edge) or [(long1, short1), (long2, short2), ...]
-        self.img_scales = img_scale if isinstance(img_scale,
-                                                  list) else [img_scale]
         assert mmcv.is_list_of(self.img_scales, tuple)
-        # normalization configs
-        self.img_norm_cfg = img_norm_cfg
-
-        # multi-scale mode (only applicable for multi-scale training)
-        self.multiscale_mode = multiscale_mode
-        assert multiscale_mode in ['value', 'range']
-
-        # max proposals per image
-        self.num_max_proposals = num_max_proposals
-        # flip ratio
-        self.flip_ratio = flip_ratio
-        assert flip_ratio >= 0 and flip_ratio <= 1
-        # padding border to ensure the image size can be divided by
-        # size_divisor (used for FPN)
-        self.size_divisor = size_divisor
-
-        # with mask or not (reserved field, takes no effect)
-        self.with_mask = with_mask
-        # some datasets provide bbox annotations as ignore/crowd/difficult,
-        # if `with_crowd` is True, then these info is returned.
-        self.with_crowd = with_crowd
-        # with label is False for RPN
-        self.with_label = with_label
-        # with semantic segmentation (stuff) annotation or not
-        self.with_seg = with_semantic_seg
-        # prefix of semantic segmentation map path
-        self.seg_prefix = seg_prefix
-        # rescale factor for segmentation maps
-        self.seg_scale_factor = seg_scale_factor
-        # in test mode or not
-        self.test_mode = test_mode
 
         # set group flag for the sampler
         if not self.test_mode:
@@ -129,14 +132,6 @@ class CustomDataset(Dataset):
             self.extra_aug = ExtraAugmentation(**extra_aug)
         else:
             self.extra_aug = None
-
-        # image rescale if keep ratio
-        self.resize_keep_ratio = resize_keep_ratio
-        self.skip_img_without_anno = skip_img_without_anno
-
-        # corruptions
-        self.corruption = corruption
-        self.corruption_severity = corruption_severity
 
     def __len__(self):
         return len(self.img_infos)
