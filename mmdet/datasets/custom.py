@@ -78,6 +78,8 @@ class CustomDataset(Dataset):
         results['img_prefix'] = self.img_prefix
         results['seg_prefix'] = self.seg_prefix
         results['proposal_file'] = self.proposal_file
+        results['bbox_fields'] = []
+        results['mask_fields'] = []
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small."""
@@ -117,11 +119,15 @@ class CustomDataset(Dataset):
         img_info = self.img_infos[idx]
         ann_info = self.get_ann_info(idx)
         results = dict(img_info=img_info, ann_info=ann_info)
+        if self.proposals is not None:
+            results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
         return self.pipeline(results)
 
     def prepare_test_img(self, idx):
         img_info = self.img_infos[idx]
         results = dict(img_info=img_info)
+        if self.proposals is not None:
+            results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
         return self.pipeline(results)

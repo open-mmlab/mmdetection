@@ -51,7 +51,7 @@ class LoadAnnotations(object):
         if len(results['gt_bboxes']) == 0:
             return None
         results['gt_bboxes_ignore'] = ann_info.get('bboxes_ignore', None)
-        results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
+        results['bbox_fields'].extend(['gt_bboxes', 'gt_bboxes_ignore'])
         return results
 
     def _load_labels(self, results):
@@ -80,7 +80,7 @@ class LoadAnnotations(object):
         if self.poly2mask:
             gt_masks = [self._poly2mask(mask, h, w) for mask in gt_masks]
         results['gt_masks'] = gt_masks
-        results['mask_fields'] = ['gt_masks']
+        results['mask_fields'].append('gt_masks')
         return results
 
     def _load_semantic_seg(self, results):
@@ -121,7 +121,7 @@ class LoadProposals(object):
         self.num_max_proposals = num_max_proposals
 
     def __call__(self, results):
-        proposals = results['ann_info']['proposals']
+        proposals = results['proposals']
         if proposals.shape[1] not in (4, 5):
             raise AssertionError(
                 'proposals should have shapes (n, 4) or (n, 5), '

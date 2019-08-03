@@ -97,6 +97,7 @@ class DefaultFormatBundle(object):
     These fields are formatted as follows.
 
     - img: (1)transpose, (2)to tensor, (3)to DataContainer (stack=True)
+    - proposals: (1)to tensor, (2)to DataContainer
     - gt_bboxes: (1)to tensor, (2)to DataContainer
     - gt_bboxes_ignore: (1)to tensor, (2)to DataContainer
     - gt_labels: (1)to tensor, (2)to DataContainer
@@ -113,6 +114,8 @@ class DefaultFormatBundle(object):
             results['img'] = DC(
                 to_tensor(results['img'].transpose(2, 0, 1).copy()),
                 stack=True)  # copy() to avoid negative stride
+        if 'proposals' in self.keys:
+            results['proposals'] = DC(to_tensor(results['proposals']))
         if 'gt_bboxes' in self.keys:
             results['gt_bboxes'] = DC(to_tensor(results['gt_bboxes']))
         if 'gt_bboxes_ignore' in self.keys:
