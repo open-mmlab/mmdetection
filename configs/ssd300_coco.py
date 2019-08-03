@@ -68,7 +68,7 @@ train_pipeline = [
     dict(type='Resize', img_scale=(300, 300), keep_ratio=False),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='DefaultFormatBundle', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
 test_pipeline = [

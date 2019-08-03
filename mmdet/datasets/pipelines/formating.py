@@ -93,7 +93,7 @@ class DefaultFormatBundle(object):
     """Default formatting bundle.
 
     It simplifies the pipeline of formatting common fields, including "img",
-    "gt_bboxes", "gt_labels", "gt_masks" and "gt_semantic_seg".
+    "proposals", "gt_bboxes", "gt_labels", "gt_masks" and "gt_semantic_seg".
     These fields are formatted as follows.
 
     - img: (1)transpose, (2)to tensor, (3)to DataContainer (stack=True)
@@ -106,26 +106,17 @@ class DefaultFormatBundle(object):
                        (3)to DataContainer (stack=True)
     """
 
-    def __init__(self, keys):
-        self.keys = keys
-
     def __call__(self, results):
-        if 'img' in self.keys:
-            results['img'] = DC(
-                to_tensor(results['img'].transpose(2, 0, 1).copy()),
-                stack=True)  # copy() to avoid negative stride
-        if 'proposals' in self.keys:
-            results['proposals'] = DC(to_tensor(results['proposals']))
-        if 'gt_bboxes' in self.keys:
-            results['gt_bboxes'] = DC(to_tensor(results['gt_bboxes']))
-        if 'gt_bboxes_ignore' in self.keys:
-            results['gt_bboxes_ignore'] = DC(
-                to_tensor(results['gt_bboxes_ignore']))
-        if 'gt_labels' in self.keys:
-            results['gt_labels'] = DC(to_tensor(results['gt_labels']))
-        if 'gt_masks' in self.keys:
+        if 'img' in results:
+            img = np.ascontiguousarray(results['img'].transpose(2, 0, 1))
+            results['img'] = DC(to_tensor(img), stack=True)
+        for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
+            if key not in results:
+                continue
+            results[key] = DC(to_tensor(results[key]))
+        if 'gt_masks' in results:
             results['gt_masks'] = DC(results['gt_masks'], cpu_only=True)
-        if 'gt_semantic_seg' in self.keys:
+        if 'gt_semantic_seg' in results:
             results['gt_semantic_seg'] = DC(
                 to_tensor(results['gt_semantic_seg'][None, ...]), stack=True)
         return results
