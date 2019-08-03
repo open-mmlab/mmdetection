@@ -33,14 +33,12 @@ class CustomDataset(Dataset):
 
     def __init__(self,
                  ann_file,
-                 img_norm_cfg,
                  pipeline,
                  img_prefix=None,
                  seg_prefix=None,
                  proposal_file=None,
                  test_mode=False):
         self.ann_file = ann_file
-        self.img_norm_cfg = img_norm_cfg
         self.img_prefix = img_prefix
         self.seg_prefix = seg_prefix
         self.proposal_file = proposal_file
@@ -77,7 +75,6 @@ class CustomDataset(Dataset):
         return self.img_infos[idx]['ann']
 
     def pre_pipeline(self, results):
-        results['img_norm_cfg'] = self.img_norm_cfg
         results['img_prefix'] = self.img_prefix
         results['seg_prefix'] = self.seg_prefix
         results['proposal_file'] = self.proposal_file

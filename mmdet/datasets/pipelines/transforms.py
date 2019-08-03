@@ -310,16 +310,23 @@ class RandomCrop(object):
 class Normalize(object):
     """Normalize the image.
 
-    The result dict is assumed to contain the key "img_norm_cfg", which will be
-    used as normalization arguments.
+    Args:
+        mean (sequence): Mean values of 3 channels.
+        std (sequence): Std values of 3 channels.
+        to_rgb (bool): Whether to convert the image from BGR to RGB,
+            default is true.
     """
 
+    def __init__(self, mean, std, to_rgb=True):
+        self.mean = np.array(mean, dtype=np.float32)
+        self.std = np.array(std, dtype=np.float32)
+        self.to_rgb = to_rgb
+
     def __call__(self, results):
-        img_norm_cfg = results['img_norm_cfg']
-        mean = np.array(img_norm_cfg['mean'], dtype=np.float32)
-        std = np.array(img_norm_cfg['std'], dtype=np.float32)
-        to_rgb = img_norm_cfg.get('to_rgb', True)
-        results['img'] = mmcv.imnormalize(results['img'], mean, std, to_rgb)
+        results['img'] = mmcv.imnormalize(results['img'], self.mean, self.std,
+                                          self.to_rgb)
+        results['img_norm_cfg'] = dict(
+            mean=self.mean, std=self.std, to_rgb=self.to_rgb)
         return results
 
 
@@ -560,7 +567,7 @@ class Corrupt(object):
 
     def __call__(self, results):
         results['img'] = corrupt(
-            results['img'],
+            results['img'].astype(np.uint8),
             corruption_name=self.corruption,
             severity=self.severity)
         return results

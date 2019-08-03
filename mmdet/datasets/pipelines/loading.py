@@ -11,9 +11,14 @@ from ..registry import PIPELINES
 @PIPELINES.register_module
 class LoadImageFromFile(object):
 
+    def __init__(self, to_float32=False):
+        self.to_float32 = to_float32
+
     def __call__(self, results):
         img = mmcv.imread(
             osp.join(results['img_prefix'], results['img_info']['filename']))
+        if self.to_float32:
+            img = img.astype(np.float32)
         results['img'] = img
         results['ori_shape'] = img.shape
         return results
