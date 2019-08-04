@@ -10,7 +10,6 @@ __all__ = [
 
 class ImageTransform(object):
     """Preprocess an image.
-
     1. rescale the image to expected size
     2. normalize the image
     3. flip the image (if needed)
@@ -34,8 +33,8 @@ class ImageTransform(object):
         else:
             img, w_scale, h_scale = mmcv.imresize(
                 img, scale, return_scale=True)
-            scale_factor = np.array(
-                [w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
+            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
+                                    dtype=np.float32)
         img_shape = img.shape
         img = mmcv.imnormalize(img, self.mean, self.std, self.to_rgb)
         if flip:
@@ -58,7 +57,6 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
     """
     assert bboxes.shape[-1] % 4 == 0
     flipped = bboxes.copy()
-
     if direction == 'horizontal':
         w = img_shape[1]
         flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
@@ -72,7 +70,6 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
 
 class BboxTransform(object):
     """Preprocess gt bboxes.
-
     1. rescale bboxes according to image size
     2. flip bboxes (if needed)
     3. pad the first dimension to `max_num_gts`
@@ -85,7 +82,6 @@ class BboxTransform(object):
         gt_bboxes = bboxes * scale_factor
         if flip:
             gt_bboxes = bbox_flip(gt_bboxes, img_shape)
-        
         gt_bboxes[:, 0::2] = np.clip(gt_bboxes[:, 0::2], 0, img_shape[1] - 1)
         gt_bboxes[:, 1::2] = np.clip(gt_bboxes[:, 1::2], 0, img_shape[0] - 1)
         if self.max_num_gts is None:
@@ -99,17 +95,30 @@ class BboxTransform(object):
 
 class MaskTransform(object):
     """Preprocess masks.
-
     1. resize masks to expected size and stack to a single array
     2. flip the masks (if needed)
     3. pad the masks (if needed)
     """
 
     def __call__(self, masks, pad_shape, scale_factor, flip=False):
-        masks = [
-            mmcv.imrescale(mask, scale_factor, interpolation='nearest')
-            for mask in masks
-        ]
+        # aspect ratio unchanged
+        if isinstance(scale_factor, float):
+            masks = [
+                mmcv.imrescale(mask, scale_factor, interpolation='nearest')
+                for mask in masks
+            ]
+        # aspect ratio changed
+        else:
+            w_ratio, h_ratio = scale_factor[:2]
+            if masks:
+                h, w = masks[0].shape[:2]
+                new_h = int(np.round(h * h_ratio))
+                new_w = int(np.round(w * w_ratio))
+                new_size = (new_w, new_h)
+                masks = [
+                    mmcv.imresize(mask, new_size, interpolation='nearest')
+                    for mask in masks
+                ]
         if flip:
             masks = [mask[:, ::-1] for mask in masks]
         padded_masks = [
@@ -121,7 +130,6 @@ class MaskTransform(object):
 
 class SegMapTransform(object):
     """Preprocess semantic segmentation maps.
-
     1. rescale the segmentation map to expected size
     3. flip the image (if needed)
     4. pad the image (if needed)
