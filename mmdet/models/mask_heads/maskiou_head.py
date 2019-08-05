@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import kaiming_init, normal_init
+from torch.nn.modules.utils import _pair
 
 from mmdet.core import force_fp32
 from ..builder import build_loss
@@ -47,10 +48,13 @@ class MaskIoUHead(nn.Module):
                     stride=stride,
                     padding=1))
 
+        roi_feat_size = _pair(roi_feat_size)
+        pooled_area = (roi_feat_size[0] // 2) * (roi_feat_size[1] // 2)
         self.fcs = nn.ModuleList()
         for i in range(num_fcs):
-            in_channels = self.conv_out_channels * (
-                roi_feat_size // 2)**2 if i == 0 else self.fc_out_channels
+            in_channels = (
+                self.conv_out_channels *
+                pooled_area if i == 0 else self.fc_out_channels)
             self.fcs.append(nn.Linear(in_channels, self.fc_out_channels))
 
         self.fc_mask_iou = nn.Linear(self.fc_out_channels, self.num_classes)

@@ -94,8 +94,8 @@ class SingleRoIExtractor(nn.Module):
         out_size = self.roi_layers[0].out_size
         num_levels = len(feats)
         target_lvls = self.map_roi_levels(rois, num_levels)
-        roi_feats = feats[0].new_zeros(rois.size()[0], self.out_channels,
-                                       out_size, out_size)
+        roi_feats = feats[0].new_zeros(
+            rois.size(0), self.out_channels, *out_size)
         if roi_scale_factor is not None:
             rois = self.roi_rescale(rois, roi_scale_factor)
         for i in range(num_levels):
