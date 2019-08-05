@@ -65,7 +65,7 @@ def get_model_complexity_info(model,
             (1, *input_res),
             dtype=next(flops_model.parameters()).dtype,
             device=next(flops_model.parameters()).device)
-        _ = flops_model(batch)
+        flops_model(batch)
 
     if print_per_layer_stat:
         print_model_with_flops(flops_model, ost=ost)
