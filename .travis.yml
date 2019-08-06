@@ -11,5 +11,5 @@ python:
 
 script:
   - flake8
-  - isort -rc --diff mmdet/ tools/
+  - isort -rc --check-only --diff mmdet/ tools/
   - yapf -r -d --style .style.yapf mmdet/ tools/
