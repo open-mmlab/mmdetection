@@ -92,9 +92,9 @@ def main():
         cfg.checkpoint_config.meta = dict(
             mmdet_version=__version__,
             config=cfg.text,
-            CLASSES=train_dataset.CLASSES)
+            CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
-    model.CLASSES = train_dataset.CLASSES
+    model.CLASSES = datasets[0].CLASSES
     train_detector(
         model,
         datasets,
