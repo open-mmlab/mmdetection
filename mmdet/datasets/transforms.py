@@ -10,6 +10,7 @@ __all__ = [
 
 class ImageTransform(object):
     """Preprocess an image.
+    
     1. rescale the image to expected size
     2. normalize the image
     3. flip the image (if needed)
@@ -70,6 +71,7 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
 
 class BboxTransform(object):
     """Preprocess gt bboxes.
+    
     1. rescale bboxes according to image size
     2. flip bboxes (if needed)
     3. pad the first dimension to `max_num_gts`
@@ -95,6 +97,7 @@ class BboxTransform(object):
 
 class MaskTransform(object):
     """Preprocess masks.
+    
     1. resize masks to expected size and stack to a single array
     2. flip the masks (if needed)
     3. pad the masks (if needed)
@@ -130,6 +133,7 @@ class MaskTransform(object):
 
 class SegMapTransform(object):
     """Preprocess semantic segmentation maps.
+    
     1. rescale the segmentation map to expected size
     3. flip the image (if needed)
     4. pad the image (if needed)
