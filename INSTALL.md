@@ -44,6 +44,32 @@ python setup.py develop
 # or "pip install -v -e ."
 ```
 
+### Install mmdetection for PyCharm with virtualenv 
+
+a. Clone repo by using the following command in the directory of your choice:
+
+```shell
+git clone https://github.com/open-mmlab/mmdetection.git
+```
+
+b. Create a virtual env in pycharm by following the steps below:
+```text
+1. File -> settings
+2. Project:mmdetection -> project interpreter
+3. Click on settings wheel, then add new virtual env
+4. Tools -> python intergrated tools -> set the requirements.txt by browsing for the file in root of mmdetection directory
+5. Install requirements when prompted by pycharm
+```
+
+c. Install mmdetection (other dependencies will be installed automatically).
+
+```shell
+1. Open terminal from the bottom tab which activates the virtual env
+2. Enter the following code to install mmdetection
+python setup.py develop
+# or "pip install -v -e ."
+```
+
 Note:
 
 1. It is recommended that you run the step e each time you pull some updates from github. If there are some updates of the C/CUDA codes, you also need to run step d.
