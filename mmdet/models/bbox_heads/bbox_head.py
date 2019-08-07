@@ -152,7 +152,10 @@ class BBoxHead(nn.Module):
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
 
         if rescale:
-            bboxes /= scale_factor
+            if isinstance(scale_factor, float):
+                bboxes /= scale_factor
+            else:
+                bboxes /= torch.from_numpy(scale_factor).to(bboxes.device)
 
         if cfg is None:
             return bboxes, scores
