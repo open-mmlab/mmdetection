@@ -38,6 +38,13 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
 
+v1.0rc0 (27/07/2019)
+- Implement lots of new methods and components (Mixed Precision Training, HTC, Libra R-CNN, Guided Anchoring, Empirical Attention, Mask Scoring R-CNN, Grid R-CNN (Plus), GHM, GCNet, FCOS, HRNet, Weight Standardization, etc.). Thank all collaborators!
+- Support two additional datasets: WIDER FACE and Cityscapes.
+- Refactoring for loss APIs and make it more flexible to adopt different losses and related hyper-parameters.
+- Speed up multi-gpu testing.
+- Integrate all compiling and installing in a single script.
+
 v0.6.0 (14/04/2019)
 - Up to 30% speedup compared to the model zoo.
 - Support both PyTorch stable and nightly version.
@@ -93,7 +100,7 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 | GHM                | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
 | FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Grid R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Grid R-CNN (Plus)  | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     |
 | Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     |
@@ -106,7 +113,7 @@ Other features
 - [x] Soft-NMS
 - [x] Generalized Attention
 - [x] GCNet
-- [ ] Mixed Precision (FP16) Training (coming soon)
+- [x] Mixed Precision (FP16) Training
 
 
 ## Installation
@@ -124,7 +131,7 @@ We appreciate all contributions to improve MMDetection. Please refer to [CONTRIB
 
 ## Acknowledgement
 
-MMDetection is an open source project that is contributed by researchers and engineers from various colledges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
+MMDetection is an open source project that is contributed by researchers and engineers from various colleges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
 We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new detectors.
 
 

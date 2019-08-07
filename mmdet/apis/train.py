@@ -1,16 +1,15 @@
 from __future__ import division
-
 import re
 from collections import OrderedDict
 
 import torch
-from mmcv.runner import Runner, DistSamplerSeedHook, obj_from_dict
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmcv.runner import DistSamplerSeedHook, Runner, obj_from_dict
 
 from mmdet import datasets
-from mmdet.core import (DistOptimizerHook, DistEvalmAPHook,
-                        CocoDistEvalRecallHook, CocoDistEvalmAPHook)
-from mmdet.datasets import build_dataloader
+from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
+                        DistEvalmAPHook, DistOptimizerHook, Fp16OptimizerHook)
+from mmdet.datasets import DATASETS, build_dataloader
 from mmdet.models import RPN
 from .env import get_root_logger
 
@@ -109,10 +108,14 @@ def build_optimizer(model, optimizer_cfg):
         # set param-wise lr and weight decay
         params = []
         for name, param in model.named_parameters():
+            param_group = {'params': [param]}
             if not param.requires_grad:
+                # FP16 training needs to copy gradient/weight between master
+                # weight copy and model weight, it is convenient to keep all
+                # parameters here to align with model.parameters()
+                params.append(param_group)
                 continue
 
-            param_group = {'params': [param]}
             # for norm layers, overwrite the weight decay of weight and bias
             # TODO: obtain the norm layer prefixes dynamically
             if re.search(r'(bn|gn)(\d+)?.(weight|bias)', name):
@@ -133,21 +136,29 @@ def build_optimizer(model, optimizer_cfg):
 
 def _dist_train(model, dataset, cfg, validate=False):
     # prepare data loaders
+    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
     data_loaders = [
         build_dataloader(
-            dataset,
-            cfg.data.imgs_per_gpu,
-            cfg.data.workers_per_gpu,
-            dist=True)
+            ds, cfg.data.imgs_per_gpu, cfg.data.workers_per_gpu, dist=True)
+        for ds in dataset
     ]
     # put model on gpus
     model = MMDistributedDataParallel(model.cuda())
+
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
     runner = Runner(model, batch_processor, optimizer, cfg.work_dir,
                     cfg.log_level)
+
+    # fp16 setting
+    fp16_cfg = cfg.get('fp16', None)
+    if fp16_cfg is not None:
+        optimizer_config = Fp16OptimizerHook(**cfg.optimizer_config,
+                                             **fp16_cfg)
+    else:
+        optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
+
     # register hooks
-    optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
     runner.register_hook(DistSamplerSeedHook())
@@ -160,7 +171,7 @@ def _dist_train(model, dataset, cfg, validate=False):
             runner.register_hook(
                 CocoDistEvalRecallHook(val_dataset_cfg, **eval_cfg))
         else:
-            dataset_type = getattr(datasets, val_dataset_cfg.type)
+            dataset_type = DATASETS.get(val_dataset_cfg.type)
             if issubclass(dataset_type, datasets.CocoDataset):
                 runner.register_hook(
                     CocoDistEvalmAPHook(val_dataset_cfg, **eval_cfg))
@@ -177,21 +188,30 @@ def _dist_train(model, dataset, cfg, validate=False):
 
 def _non_dist_train(model, dataset, cfg, validate=False):
     # prepare data loaders
+    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
     data_loaders = [
         build_dataloader(
-            dataset,
+            ds,
             cfg.data.imgs_per_gpu,
             cfg.data.workers_per_gpu,
             cfg.gpus,
-            dist=False)
+            dist=False) for ds in dataset
     ]
     # put model on gpus
     model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
+
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
     runner = Runner(model, batch_processor, optimizer, cfg.work_dir,
                     cfg.log_level)
-    runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
+    # fp16 setting
+    fp16_cfg = cfg.get('fp16', None)
+    if fp16_cfg is not None:
+        optimizer_config = Fp16OptimizerHook(
+            **cfg.optimizer_config, **fp16_cfg, distributed=False)
+    else:
+        optimizer_config = cfg.optimizer_config
+    runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
 
     if cfg.resume_from:

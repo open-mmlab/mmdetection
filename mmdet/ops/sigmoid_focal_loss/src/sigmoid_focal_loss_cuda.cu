@@ -1,4 +1,4 @@
-// modify from
+// modified from
 // https://github.com/facebookresearch/maskrcnn-benchmark/blob/master/maskrcnn_benchmark/csrc/cuda/SigmoidFocalLoss_cuda.cu
 
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
@@ -23,7 +23,7 @@
 template <typename scalar_t>
 __global__ void SigmoidFocalLossForward(const int nthreads,
                                         const scalar_t *logits,
-                                        const long *targets,
+                                        const int64_t *targets,
                                         const int num_classes,
                                         const float gamma, const float alpha,
                                         const int num, scalar_t *losses) {
@@ -60,7 +60,7 @@ __global__ void SigmoidFocalLossForward(const int nthreads,
 
 template <typename scalar_t>
 __global__ void SigmoidFocalLossBackward(
-    const int nthreads, const scalar_t *logits, const long *targets,
+    const int nthreads, const scalar_t *logits, const int64_t *targets,
     const scalar_t *d_losses, const int num_classes, const float gamma,
     const float alpha, const int num, scalar_t *d_logits) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
@@ -109,7 +109,8 @@ at::Tensor SigmoidFocalLoss_forward_cuda(const at::Tensor &logits,
   auto losses = at::empty({num_samples, logits.size(1)}, logits.options());
   auto losses_size = num_samples * logits.size(1);
 
-  dim3 grid(std::min(THCCeilDiv(losses_size, 512L), 4096L));
+  dim3 grid(
+      std::min(THCCeilDiv((int64_t)losses_size, (int64_t)512), (int64_t)4096));
   dim3 block(512);
 
   if (losses.numel() == 0) {
@@ -118,10 +119,10 @@ at::Tensor SigmoidFocalLoss_forward_cuda(const at::Tensor &logits,
   }
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      logits.type(), "SigmoidFocalLoss_forward", [&] {
+      logits.scalar_type(), "SigmoidFocalLoss_forward", [&] {
         SigmoidFocalLossForward<scalar_t><<<grid, block>>>(
             losses_size, logits.contiguous().data<scalar_t>(),
-            targets.contiguous().data<long>(), num_classes, gamma, alpha,
+            targets.contiguous().data<int64_t>(), num_classes, gamma, alpha,
             num_samples, losses.data<scalar_t>());
       });
   THCudaCheck(cudaGetLastError());
@@ -147,7 +148,8 @@ at::Tensor SigmoidFocalLoss_backward_cuda(const at::Tensor &logits,
   auto d_logits = at::zeros({num_samples, num_classes}, logits.options());
   auto d_logits_size = num_samples * logits.size(1);
 
-  dim3 grid(std::min(THCCeilDiv(d_logits_size, 512L), 4096L));
+  dim3 grid(std::min(THCCeilDiv((int64_t)d_logits_size, (int64_t)512),
+                     (int64_t)4096));
   dim3 block(512);
 
   if (d_logits.numel() == 0) {
@@ -156,10 +158,10 @@ at::Tensor SigmoidFocalLoss_backward_cuda(const at::Tensor &logits,
   }
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      logits.type(), "SigmoidFocalLoss_backward", [&] {
+      logits.scalar_type(), "SigmoidFocalLoss_backward", [&] {
         SigmoidFocalLossBackward<scalar_t><<<grid, block>>>(
             d_logits_size, logits.contiguous().data<scalar_t>(),
-            targets.contiguous().data<long>(),
+            targets.contiguous().data<int64_t>(),
             d_losses.contiguous().data<scalar_t>(), num_classes, gamma, alpha,
             num_samples, d_logits.data<scalar_t>());
       });

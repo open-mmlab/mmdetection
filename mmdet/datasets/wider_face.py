@@ -3,16 +3,18 @@ import xml.etree.ElementTree as ET
 
 import mmcv
 
+from .registry import DATASETS
 from .xml_style import XMLDataset
 
 
+@DATASETS.register_module
 class WIDERFaceDataset(XMLDataset):
     """
     Reader for the WIDER Face dataset in PASCAL VOC format.
     Conversion scripts can be found in
     https://github.com/sovrasov/wider-face-pascal-voc-annotations
     """
-    CLASSES = ('face',)
+    CLASSES = ('face', )
 
     def __init__(self, **kwargs):
         super(WIDERFaceDataset, self).__init__(**kwargs)
@@ -31,7 +33,10 @@ class WIDERFaceDataset(XMLDataset):
             height = int(size.find('height').text)
             folder = root.find('folder').text
             img_infos.append(
-                dict(id=img_id, filename=osp.join(folder, filename),
-                     width=width, height=height))
+                dict(
+                    id=img_id,
+                    filename=osp.join(folder, filename),
+                    width=width,
+                    height=height))
 
         return img_infos

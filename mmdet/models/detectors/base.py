@@ -3,10 +3,10 @@ from abc import ABCMeta, abstractmethod
 
 import mmcv
 import numpy as np
-import torch.nn as nn
 import pycocotools.mask as maskUtils
+import torch.nn as nn
 
-from mmdet.core import tensor2imgs, get_classes
+from mmdet.core import auto_fp16, get_classes, tensor2imgs
 
 
 class BaseDetector(nn.Module):
@@ -16,6 +16,7 @@ class BaseDetector(nn.Module):
 
     def __init__(self):
         super(BaseDetector, self).__init__()
+        self.fp16_enabled = False
 
     @property
     def with_neck(self):
@@ -79,6 +80,7 @@ class BaseDetector(nn.Module):
         else:
             return self.aug_test(imgs, img_metas, **kwargs)
 
+    @auto_fp16(apply_to=('img', ))
     def forward(self, img, img_meta, return_loss=True, **kwargs):
         if return_loss:
             return self.forward_train(img, img_meta, **kwargs)

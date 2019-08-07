@@ -5,9 +5,9 @@ import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
 from mmdet.core import AnchorGenerator, anchor_target, multi_apply
-from .anchor_head import AnchorHead
 from ..losses import smooth_l1_loss
 from ..registry import HEADS
+from .anchor_head import AnchorHead
 
 
 # TODO: add loss evaluator for SSD
@@ -92,6 +92,7 @@ class SSDHead(AnchorHead):
         self.target_stds = target_stds
         self.use_sigmoid_cls = False
         self.cls_focal_loss = False
+        self.fp16_enabled = False
 
     def init_weights(self):
         for m in self.modules():

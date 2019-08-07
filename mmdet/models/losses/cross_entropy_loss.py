@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .utils import weight_reduce_loss
 from ..registry import LOSSES
+from .utils import weight_reduce_loss
 
 
 def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):

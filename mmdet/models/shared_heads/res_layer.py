@@ -4,6 +4,7 @@ import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 
+from mmdet.core import auto_fp16
 from ..backbones import ResNet, make_res_layer
 from ..registry import SHARED_HEADS
 
@@ -25,6 +26,7 @@ class ResLayer(nn.Module):
         self.norm_eval = norm_eval
         self.norm_cfg = norm_cfg
         self.stage = stage
+        self.fp16_enabled = False
         block, stage_blocks = ResNet.arch_settings[depth]
         stage_block = stage_blocks[stage]
         planes = 64 * 2**stage
@@ -56,6 +58,7 @@ class ResLayer(nn.Module):
         else:
             raise TypeError('pretrained must be a str or None')
 
+    @auto_fp16()
     def forward(self, x):
         res_layer = getattr(self, 'layer{}'.format(self.stage + 1))
         out = res_layer(x)

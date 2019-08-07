@@ -34,8 +34,8 @@ class ImageTransform(object):
         else:
             img, w_scale, h_scale = mmcv.imresize(
                 img, scale, return_scale=True)
-            scale_factor = np.array(
-                [w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
+            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
+                                    dtype=np.float32)
         img_shape = img.shape
         img = mmcv.imnormalize(img, self.mean, self.std, self.to_rgb)
         if flip:
@@ -49,18 +49,23 @@ class ImageTransform(object):
         return img, img_shape, pad_shape, scale_factor
 
 
-def bbox_flip(bboxes, img_shape):
-    """Flip bboxes horizontally.
+def bbox_flip(bboxes, img_shape, direction='horizontal'):
+    """Flip bboxes horizontally or vertically.
 
     Args:
         bboxes(ndarray): shape (..., 4*k)
         img_shape(tuple): (height, width)
     """
     assert bboxes.shape[-1] % 4 == 0
-    w = img_shape[1]
     flipped = bboxes.copy()
-    flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
-    flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+    if direction == 'horizontal':
+        w = img_shape[1]
+        flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
+        flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+    else:
+        h = img_shape[0]
+        flipped[..., 1::4] = h - bboxes[..., 3::4] - 1
+        flipped[..., 3::4] = h - bboxes[..., 1::4] - 1
     return flipped
 
 
@@ -99,10 +104,24 @@ class MaskTransform(object):
     """
 
     def __call__(self, masks, pad_shape, scale_factor, flip=False):
-        masks = [
-            mmcv.imrescale(mask, scale_factor, interpolation='nearest')
-            for mask in masks
-        ]
+        # aspect ratio unchanged
+        if isinstance(scale_factor, float):
+            masks = [
+                mmcv.imrescale(mask, scale_factor, interpolation='nearest')
+                for mask in masks
+            ]
+        # aspect ratio changed
+        else:
+            w_ratio, h_ratio = scale_factor[:2]
+            if masks:
+                h, w = masks[0].shape[:2]
+                new_h = int(np.round(h * h_ratio))
+                new_w = int(np.round(w * w_ratio))
+                new_size = (new_w, new_h)
+                masks = [
+                    mmcv.imresize(mask, new_size, interpolation='nearest')
+                    for mask in masks
+                ]
         if flip:
             masks = [mask[:, ::-1] for mask in masks]
         padded_masks = [

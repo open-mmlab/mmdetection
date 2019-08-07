@@ -3,11 +3,12 @@ import numpy as np
 import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
+from torch.nn.modules.utils import _pair
 
+from mmdet.core import auto_fp16, force_fp32, mask_target
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule
-from mmdet.core import mask_target
 
 
 @HEADS.register_module
@@ -33,7 +34,8 @@ class FCNMaskHead(nn.Module):
                 'Invalid upsample method {}, accepted methods '
                 'are "deconv", "nearest", "bilinear"'.format(upsample_method))
         self.num_convs = num_convs
-        self.roi_feat_size = roi_feat_size  # WARN: not used and reserved
+        # WARN: roi_feat_size is reserved and not used
+        self.roi_feat_size = _pair(roi_feat_size)
         self.in_channels = in_channels
         self.conv_kernel_size = conv_kernel_size
         self.conv_out_channels = conv_out_channels
@@ -43,6 +45,7 @@ class FCNMaskHead(nn.Module):
         self.class_agnostic = class_agnostic
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.fp16_enabled = False
         self.loss_mask = build_loss(loss_mask)
 
         self.convs = nn.ModuleList()
@@ -88,6 +91,7 @@ class FCNMaskHead(nn.Module):
                 m.weight, mode='fan_out', nonlinearity='relu')
             nn.init.constant_(m.bias, 0)
 
+    @auto_fp16()
     def forward(self, x):
         for conv in self.convs:
             x = conv(x)
@@ -107,6 +111,7 @@ class FCNMaskHead(nn.Module):
                                    gt_masks, rcnn_train_cfg)
         return mask_targets
 
+    @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, mask_targets, labels):
         loss = dict()
         if self.class_agnostic:
@@ -138,6 +143,9 @@ class FCNMaskHead(nn.Module):
         if isinstance(mask_pred, torch.Tensor):
             mask_pred = mask_pred.sigmoid().cpu().numpy()
         assert isinstance(mask_pred, np.ndarray)
+        # when enabling mixed precision training, mask_pred may be float16
+        # numpy array
+        mask_pred = mask_pred.astype(np.float32)
 
         cls_segms = [[] for _ in range(self.num_classes - 1)]
         bboxes = det_bboxes.cpu().numpy()[:, :4]

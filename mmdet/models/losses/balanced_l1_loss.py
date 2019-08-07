@@ -2,8 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .utils import weighted_loss
 from ..registry import LOSSES
+from .utils import weighted_loss
 
 
 @weighted_loss

@@ -2,7 +2,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import kaiming_init, normal_init
+from torch.nn.modules.utils import _pair
 
+from mmdet.core import force_fp32
 from ..builder import build_loss
 from ..registry import HEADS
 
@@ -28,6 +30,7 @@ class MaskIoUHead(nn.Module):
         self.conv_out_channels = conv_out_channels
         self.fc_out_channels = fc_out_channels
         self.num_classes = num_classes
+        self.fp16_enabled = False
 
         self.convs = nn.ModuleList()
         for i in range(num_convs):
@@ -45,10 +48,13 @@ class MaskIoUHead(nn.Module):
                     stride=stride,
                     padding=1))
 
+        roi_feat_size = _pair(roi_feat_size)
+        pooled_area = (roi_feat_size[0] // 2) * (roi_feat_size[1] // 2)
         self.fcs = nn.ModuleList()
         for i in range(num_fcs):
-            in_channels = self.conv_out_channels * (
-                roi_feat_size // 2)**2 if i == 0 else self.fc_out_channels
+            in_channels = (
+                self.conv_out_channels *
+                pooled_area if i == 0 else self.fc_out_channels)
             self.fcs.append(nn.Linear(in_channels, self.fc_out_channels))
 
         self.fc_mask_iou = nn.Linear(self.fc_out_channels, self.num_classes)
@@ -82,6 +88,7 @@ class MaskIoUHead(nn.Module):
         mask_iou = self.fc_mask_iou(x)
         return mask_iou
 
+    @force_fp32(apply_to=('mask_iou_pred', ))
     def loss(self, mask_iou_pred, mask_iou_targets):
         pos_inds = mask_iou_targets > 0
         if pos_inds.sum() > 0:
@@ -91,6 +98,7 @@ class MaskIoUHead(nn.Module):
             loss_mask_iou = mask_iou_pred * 0
         return dict(loss_mask_iou=loss_mask_iou)
 
+    @force_fp32(apply_to=('mask_pred', ))
     def get_target(self, sampling_results, gt_masks, mask_pred, mask_targets,
                    rcnn_train_cfg):
         """Compute target of mask IoU.
@@ -166,6 +174,7 @@ class MaskIoUHead(nn.Module):
             area_ratios = pos_proposals.new_zeros((0, ))
         return area_ratios
 
+    @force_fp32(apply_to=('mask_iou_pred', ))
     def get_mask_scores(self, mask_iou_pred, det_bboxes, det_labels):
         """Get the mask scores.
 

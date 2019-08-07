@@ -1,16 +1,20 @@
 import os.path as osp
+import warnings
 
 import mmcv
 import numpy as np
+from imagecorruptions import corrupt
 from mmcv.parallel import DataContainer as DC
 from torch.utils.data import Dataset
 
-from .transforms import (ImageTransform, BboxTransform, MaskTransform,
-                         SegMapTransform, Numpy2Tensor)
-from .utils import to_tensor, random_scale
 from .extra_aug import ExtraAugmentation
+from .registry import DATASETS
+from .transforms import (BboxTransform, ImageTransform, MaskTransform,
+                         Numpy2Tensor, SegMapTransform)
+from .utils import random_scale, to_tensor
 
 
+@DATASETS.register_module
 class CustomDataset(Dataset):
     """Custom dataset for detection.
 
@@ -53,6 +57,9 @@ class CustomDataset(Dataset):
                  seg_scale_factor=1,
                  extra_aug=None,
                  resize_keep_ratio=True,
+                 corruption=None,
+                 corruption_severity=1,
+                 skip_img_without_anno=True,
                  test_mode=False):
         # prefix of images path
         self.img_prefix = img_prefix
@@ -125,6 +132,11 @@ class CustomDataset(Dataset):
 
         # image rescale if keep ratio
         self.resize_keep_ratio = resize_keep_ratio
+        self.skip_img_without_anno = skip_img_without_anno
+
+        # corruptions
+        self.corruption = corruption
+        self.corruption_severity = corruption_severity
 
     def __len__(self):
         return len(self.img_infos)
@@ -176,6 +188,12 @@ class CustomDataset(Dataset):
         img_info = self.img_infos[idx]
         # load image
         img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
+        # corruption
+        if self.corruption is not None:
+            img = corrupt(
+                img,
+                severity=self.corruption_severity,
+                corruption_name=self.corruption)
         # load proposals if necessary
         if self.proposals is not None:
             proposals = self.proposals[idx][:self.num_max_proposals]
@@ -201,7 +219,9 @@ class CustomDataset(Dataset):
             gt_bboxes_ignore = ann['bboxes_ignore']
 
         # skip the image if there is no valid gt bbox
-        if len(gt_bboxes) == 0:
+        if len(gt_bboxes) == 0 and self.skip_img_without_anno:
+            warnings.warn('Skip the image "%s" that has no valid gt bbox' %
+                          osp.join(self.img_prefix, img_info['filename']))
             return None
 
         # extra augmentation
@@ -218,8 +238,8 @@ class CustomDataset(Dataset):
         img = img.copy()
         if self.with_seg:
             gt_seg = mmcv.imread(
-                osp.join(self.seg_prefix, img_info['file_name'].replace(
-                    'jpg', 'png')),
+                osp.join(self.seg_prefix,
+                         img_info['filename'].replace('jpg', 'png')),
                 flag='unchanged')
             gt_seg = self.seg_transform(gt_seg.squeeze(), img_scale, flip)
             gt_seg = mmcv.imrescale(
@@ -228,8 +248,8 @@ class CustomDataset(Dataset):
         if self.proposals is not None:
             proposals = self.bbox_transform(proposals, img_shape, scale_factor,
                                             flip)
-            proposals = np.hstack(
-                [proposals, scores]) if scores is not None else proposals
+            proposals = np.hstack([proposals, scores
+                                   ]) if scores is not None else proposals
         gt_bboxes = self.bbox_transform(gt_bboxes, img_shape, scale_factor,
                                         flip)
         if self.with_crowd:
@@ -267,6 +287,13 @@ class CustomDataset(Dataset):
         """Prepare an image for testing (multi-scale and flipping)"""
         img_info = self.img_infos[idx]
         img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
+        # corruption
+        if self.corruption is not None:
+            img = corrupt(
+                img,
+                severity=self.corruption_severity,
+                corruption_name=self.corruption)
+        # load proposals if necessary
         if self.proposals is not None:
             proposal = self.proposals[idx][:self.num_max_proposals]
             if not (proposal.shape[1] == 4 or proposal.shape[1] == 5):
@@ -294,8 +321,8 @@ class CustomDataset(Dataset):
                     score = None
                 _proposal = self.bbox_transform(proposal, img_shape,
                                                 scale_factor, flip)
-                _proposal = np.hstack(
-                    [_proposal, score]) if score is not None else _proposal
+                _proposal = np.hstack([_proposal, score
+                                       ]) if score is not None else _proposal
                 _proposal = to_tensor(_proposal)
             else:
                 _proposal = None

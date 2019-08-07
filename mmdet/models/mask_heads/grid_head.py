@@ -46,6 +46,8 @@ class GridHead(nn.Module):
             raise ValueError('grid_points must be a square number')
 
         # the predicted heatmap is half of whole_map_size
+        if not isinstance(self.roi_feat_size, int):
+            raise ValueError('Only square RoIs are supporeted in Grid R-CNN')
         self.whole_map_size = self.roi_feat_size * 4
 
         # compute point-wise sub-regions

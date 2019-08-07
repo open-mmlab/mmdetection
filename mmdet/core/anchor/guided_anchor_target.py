@@ -1,7 +1,7 @@
 import torch
 
-from ..bbox import build_assigner, build_sampler, PseudoSampler
-from ..utils import unmap, multi_apply
+from ..bbox import PseudoSampler, build_assigner, build_sampler
+from ..utils import multi_apply, unmap
 
 
 def calc_region(bbox, ratio, featmap_size=None):
@@ -62,12 +62,13 @@ def ga_loc_target(gt_bboxes_list,
     all_ignore_map = []
     for lvl_id in range(num_lvls):
         h, w = featmap_sizes[lvl_id]
-        loc_targets = torch.zeros(img_per_gpu,
-                                  1,
-                                  h,
-                                  w,
-                                  device=gt_bboxes_list[0].device,
-                                  dtype=torch.float32)
+        loc_targets = torch.zeros(
+            img_per_gpu,
+            1,
+            h,
+            w,
+            device=gt_bboxes_list[0].device,
+            dtype=torch.float32)
         loc_weights = torch.full_like(loc_targets, -1)
         ignore_map = torch.zeros_like(loc_targets)
         all_loc_targets.append(loc_targets)
@@ -175,17 +176,18 @@ def ga_shape_target(approx_list,
     if gt_bboxes_ignore_list is None:
         gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
     (all_bbox_anchors, all_bbox_gts, all_bbox_weights, pos_inds_list,
-     neg_inds_list) = multi_apply(ga_shape_target_single,
-                                  approx_flat_list,
-                                  inside_flag_flat_list,
-                                  square_flat_list,
-                                  gt_bboxes_list,
-                                  gt_bboxes_ignore_list,
-                                  img_metas,
-                                  approxs_per_octave=approxs_per_octave,
-                                  cfg=cfg,
-                                  sampling=sampling,
-                                  unmap_outputs=unmap_outputs)
+     neg_inds_list) = multi_apply(
+         ga_shape_target_single,
+         approx_flat_list,
+         inside_flag_flat_list,
+         square_flat_list,
+         gt_bboxes_list,
+         gt_bboxes_ignore_list,
+         img_metas,
+         approxs_per_octave=approxs_per_octave,
+         cfg=cfg,
+         sampling=sampling,
+         unmap_outputs=unmap_outputs)
     # no valid anchors
     if any([bbox_anchors is None for bbox_anchors in all_bbox_anchors]):
         return None
