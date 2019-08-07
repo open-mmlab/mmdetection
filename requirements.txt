@@ -1,0 +1,8 @@
+# project requirement
+mmcv
+torch>=1.0
+
+# code linting and formatting
+flake8
+yapf
+isort
