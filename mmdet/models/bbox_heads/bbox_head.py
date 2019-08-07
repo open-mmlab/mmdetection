@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.modules.utils import _pair
 
 from mmdet.core import (auto_fp16, bbox_target, delta2bbox, force_fp32,
                         multiclass_nms)
@@ -35,7 +36,8 @@ class BBoxHead(nn.Module):
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
         self.with_reg = with_reg
-        self.roi_feat_size = roi_feat_size
+        self.roi_feat_size = _pair(roi_feat_size)
+        self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.target_means = target_means
@@ -48,9 +50,9 @@ class BBoxHead(nn.Module):
 
         in_channels = self.in_channels
         if self.with_avg_pool:
-            self.avg_pool = nn.AvgPool2d(roi_feat_size)
+            self.avg_pool = nn.AvgPool2d(self.roi_feat_size)
         else:
-            in_channels *= (self.roi_feat_size * self.roi_feat_size)
+            in_channels *= self.roi_feat_area
         if self.with_cls:
             self.fc_cls = nn.Linear(in_channels, num_classes)
         if self.with_reg:
