@@ -65,7 +65,7 @@ class RoIAlign(nn.Module):
                  use_torchvision=False):
         super(RoIAlign, self).__init__()
 
-        self.out_size = out_size
+        self.out_size = _pair(out_size)
         self.spatial_scale = float(spatial_scale)
         self.sample_num = int(sample_num)
         self.use_torchvision = use_torchvision
@@ -73,7 +73,7 @@ class RoIAlign(nn.Module):
     def forward(self, features, rois):
         if self.use_torchvision:
             from torchvision.ops import roi_align as tv_roi_align
-            return tv_roi_align(features, rois, _pair(self.out_size),
+            return tv_roi_align(features, rois, self.out_size,
                                 self.spatial_scale, self.sample_num)
         else:
             return roi_align(features, rois, self.out_size, self.spatial_scale,
