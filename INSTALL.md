@@ -53,6 +53,7 @@ git clone https://github.com/open-mmlab/mmdetection.git
 ```
 
 b. Create a virtual env in pycharm by following the steps below:
+
 ```text
 1. File -> settings
 2. Project:mmdetection -> project interpreter
