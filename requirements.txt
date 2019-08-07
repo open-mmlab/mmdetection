@@ -1,6 +1,7 @@
 # project requirement
 mmcv
 torch>=1.0
+Cython
 
 # code linting and formatting
 flake8
