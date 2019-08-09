@@ -134,8 +134,8 @@ class DoubleConvFCBBoxHead(BBoxHead):
         branch_fcs = nn.ModuleList()
         for i in range(self.num_fcs):
             fc_in_channels = (
-                self.in_channels * self.roi_feat_size *
-                self.roi_feat_size if i == 0 else self.fc_out_channels)
+                self.in_channels *
+                self.roi_feat_area if i == 0 else self.fc_out_channels)
             branch_fcs.append(nn.Linear(fc_in_channels, self.fc_out_channels))
         return branch_fcs
 

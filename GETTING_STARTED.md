@@ -57,7 +57,22 @@ python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
     8 --out results.pkl --eval bbox segm
 ```
 
-### High-level APIs for testing images.
+### Webcam demo
+
+We provide a webcam demo to illustrate the results.
+
+```shell
+python tools/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${CAMERA-ID}]
+```
+
+Examples:
+
+```shell
+python tools/webcam_demo.py configs/faster_rcnn_r50_fpn_1x.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth
+```
+
+### High-level APIs for testing images
 
 Here is an example of building the model and test given images.
 
