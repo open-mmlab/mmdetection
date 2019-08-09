@@ -189,18 +189,11 @@ More models with different backbones will be added to the model zoo.
 |  VGG16   |  300  | caffe |  120e   |   3.5    |        0.256        |  25.9 / 34.6   |  25.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd300_coco_vgg16_caffe_120e_20181221-84d7110b.pth) |
 |  VGG16   |  512  | caffe |  120e   |   7.6    |        0.412        |  20.7 / 25.4   |  29.3  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd512_coco_vgg16_caffe_120e_20181221-d48b0be8.pth) |
 
-### SSD (PASCAL VOC)
-
-| Backbone | Size  | Style | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP |                                                             Download                                                             |
-| :------: | :---: | :---: | :-----: | :------: | :-----------------: | :------------: | :----: | :------------------------------------------------------------------------------------------------------------------------------: |
-|  VGG16   |  300  | caffe |  240e   |   2.5    |        0.159        |  35.7 / 53.6   |  77.5  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd300_voc_vgg16_caffe_240e_20190501-7160d09a.pth) |
-|  VGG16   |  512  | caffe |  240e   |   4.3    |        0.214        |  27.5 / 35.9   |  80.0  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd512_voc_vgg16_caffe_240e_20190501-ff194be1.pth) |
-
 **Notes:**
 
 - `cudnn.benchmark` is set as `True` for SSD training and testing.
 - Inference time is reported for batch size = 1 and batch size = 8.
-- The speed difference between VOC and COCO is caused by model parameters and nms.
+- The speed on COCO and VOC are different due to model parameters and nms.
 
 ### Group Normalization (GN)
 
@@ -221,6 +214,38 @@ Please refer to [Libra R-CNN](configs/libra_rcnn/README.md) for details.
 ### Guided Anchoring
 
 Please refer to [Guided Anchoring](configs/guided_anchoring/README.md) for details.
+
+### FCOS
+
+Please refer to [FCOS](configs/fcos/README.md) for details.
+
+### Grid R-CNN (plus)
+
+Please refer to [Grid R-CNN](configs/grid_rcnn/README.md) for details.
+
+### GHM
+
+Please refer to [GHM](configs/ghm/README.md) for details.
+
+### GCNet
+
+Please refer to [GCNet](configs/gcnet/README.md) for details.
+
+### HRNet
+Please refer to [HRNet](configs/hrnet/README.md) for details.
+
+### Mask Scoring R-CNN
+
+Please refer to [Mask Scoring R-CNN](configs/ms_rcnn/README.md) for details.
+
+### Train from Scratch
+
+Please refer to [Rethinking ImageNet Pre-training](configs/scratch/README.md) for details.
+
+### Other datasets
+
+We also benchmark some methods on [PASCAL VOC](configs/pascal_voc/README.md), [Cityscapes](configs/cityscapes/README.md) and [WIDER FACE](configs/wider_face/README.md).
+
 
 ## Comparison with Detectron and maskrcnn-benchmark
 
