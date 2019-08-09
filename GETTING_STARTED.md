@@ -62,13 +62,13 @@ python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
 We provide a webcam demo to illustrate the results.
 
 ```shell
-python tools/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${CAMERA-ID}]
+python demo/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${CAMERA-ID}]
 ```
 
 Examples:
 
 ```shell
-python tools/webcam_demo.py configs/faster_rcnn_r50_fpn_1x.py \
+python demo/webcam_demo.py configs/faster_rcnn_r50_fpn_1x.py \
     checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth
 ```
 
@@ -102,6 +102,8 @@ for frame in video:
     result = inference_detector(model, frame)
     show_result(frame, result, model.CLASSES, wait_time=1)
 ```
+
+A notebook demo can be found in [demo/inference_demo.ipynb](demo/inference_demo.ipynb).
 
 
 ## Train a model
