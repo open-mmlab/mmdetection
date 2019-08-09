@@ -222,6 +222,31 @@ Please refer to [Libra R-CNN](configs/libra_rcnn/README.md) for details.
 
 Please refer to [Guided Anchoring](configs/guided_anchoring/README.md) for details.
 
+### FCOS
+
+Please refer to [FCOS](configs/fcos/README.md) for details.
+
+### Grid R-CNN (plus)
+
+Please refer to [Grid R-CNN](configs/grid_rcnn/README.md) for details.
+
+### GHM
+
+Please refer to [GHM](configs/ghm/README.md) for details.
+
+### GCNet
+
+Please refer to [GCNet](configs/gcnet/README.md) for details.
+
+### Mask Scoring R-CNN
+
+Please refer to [Mask Scoring R-CNN](configs/ms_rcnn/README.md) for details.
+
+### Train from Scratch
+
+Please refer to [Rethinking ImageNet Pre-training](configs/scratch/README.md) for details.
+
+
 ## Comparison with Detectron and maskrcnn-benchmark
 
 We compare mmdetection with [Detectron](https://github.com/facebookresearch/Detectron)
