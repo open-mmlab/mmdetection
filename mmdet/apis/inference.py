@@ -1,5 +1,6 @@
 import warnings
 
+import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -105,6 +106,7 @@ def show_result(img,
                 class_names,
                 score_thr=0.3,
                 wait_time=0,
+                show=True,
                 out_file=None):
     """Visualize the detection results on the image.
 
@@ -115,11 +117,17 @@ def show_result(img,
         class_names (list[str] or tuple[str]): A list of class names.
         score_thr (float): The threshold to visualize the bboxes and masks.
         wait_time (int): Value of waitKey param.
+        show (bool, optional): Whether to show the image with opencv or not.
         out_file (str, optional): If specified, the visualization result will
             be written to the out file instead of shown in a window.
+
+    Returns:
+        np.ndarray or None: If neither `show` nor `out_file` is specified, the
+            visualized image is returned, otherwise None is returned.
     """
     assert isinstance(class_names, (tuple, list))
     img = mmcv.imread(img)
+    img = img.copy()
     if isinstance(result, tuple):
         bbox_result, segm_result = result
     else:
@@ -140,11 +148,36 @@ def show_result(img,
     ]
     labels = np.concatenate(labels)
     mmcv.imshow_det_bboxes(
-        img.copy(),
+        img,
         bboxes,
         labels,
         class_names=class_names,
         score_thr=score_thr,
-        show=out_file is None,
+        show=show,
         wait_time=wait_time,
         out_file=out_file)
+    if not (show or out_file):
+        return img
+
+
+def show_result_pyplot(img,
+                       result,
+                       class_names,
+                       score_thr=0.3,
+                       fig_size=(15, 10)):
+    """Visualize the detection results on the image.
+
+    Args:
+        img (str or np.ndarray): Image filename or loaded image.
+        result (tuple[list] or list): The detection result, can be either
+            (bbox, segm) or just bbox.
+        class_names (list[str] or tuple[str]): A list of class names.
+        score_thr (float): The threshold to visualize the bboxes and masks.
+        fig_size (tuple): Figure size of the pyplot figure.
+        out_file (str, optional): If specified, the visualization result will
+            be written to the out file instead of shown in a window.
+    """
+    img = show_result(
+        img, result, class_names, score_thr=score_thr, show=False)
+    plt.figure(figsize=fig_size)
+    plt.imshow(mmcv.bgr2rgb(img))
