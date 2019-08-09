@@ -27,9 +27,15 @@ def main():
 
     camera = cv2.VideoCapture(args.camera_id)
 
+    print('Press "Esc", "q" or "Q" to exit.')
     while True:
         ret_val, img = camera.read()
         result = inference_detector(model, img)
+
+        ch = cv2.waitKey(1)
+        if ch == 27 or ch == ord('q') or ch == ord('Q'):
+            break
+
         show_result(
             img, result, model.CLASSES, score_thr=args.score_thr, wait_time=1)
 
