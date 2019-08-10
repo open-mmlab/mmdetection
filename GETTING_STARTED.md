@@ -1,6 +1,6 @@
 # Getting Started
 
-This page provides basic tutorials about the usage of mmdetection.
+This page provides basic tutorials about the usage of MMDetection.
 For installation instructions, please see [INSTALL.md](INSTALL.md).
 
 ## Inference with pretrained models
@@ -27,7 +27,7 @@ python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}] [-
 Optional arguments:
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
 - `EVAL_METRICS`: Items to be evaluated on the results. Allowed values are: `proposal_fast`, `proposal`, `bbox`, `segm`, `keypoints`.
-- `--show`: If specified, detection results will be ploted on the images and shown in a new window. (Only applicable for single GPU testing.)
+- `--show`: If specified, detection results will be ploted on the images and shown in a new window. It is only applicable to single GPU testing. Please make sure that GUI is available in your environment, otherwise you may encounter the error like `cannot connect to X server`.
 
 Examples:
 
@@ -62,7 +62,7 @@ python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
 We provide a webcam demo to illustrate the results.
 
 ```shell
-python demo/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${CAMERA-ID}]
+python demo/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${SCORE_THR}]
 ```
 
 Examples:
@@ -108,7 +108,7 @@ A notebook demo can be found in [demo/inference_demo.ipynb](demo/inference_demo.
 
 ## Train a model
 
-mmdetection implements distributed training and non-distributed training,
+MMDetection implements distributed training and non-distributed training,
 which uses `MMDistributedDataParallel` and `MMDataParallel` respectively.
 
 All outputs (log files and checkpoints) will be saved to the working directory,
@@ -143,7 +143,7 @@ Difference between `resume_from` and `load_from`:
 
 ### Train with multiple machines
 
-If you run mmdetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can just use the script `slurm_train.sh`.
+If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`.
 
 ```shell
 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR} [${GPUS}]
