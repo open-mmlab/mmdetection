@@ -2,11 +2,13 @@ import os
 import platform
 import subprocess
 import time
-from setuptools import Extension, find_packages, setup
+from setuptools import Extension, dist, find_packages, setup
 
-import numpy as np
-from Cython.Build import cythonize
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+
+dist.Distribution().fetch_build_eggs(['Cython', 'numpy>=1.11.1'])
+import numpy as np  # noqa: E402
+from Cython.Build import cythonize  # noqa: E402
 
 
 def readme():

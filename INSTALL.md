@@ -2,12 +2,12 @@
 
 ### Requirements
 
-- Linux
-- Python 3.5+ ([Say goodbye to Python2](https://python3statement.org/))
-- PyTorch 1.0+ or PyTorch-nightly
-- CUDA 9.0+
-- NCCL 2+
-- GCC 4.9+
+- Linux (Windows is not officially supported)
+- Python 3.5+ (Python 2 is not supported)
+- PyTorch 1.1 or higher
+- CUDA 9.0 or higher
+- NCCL 2
+- GCC 4.9 or higher
 - [mmcv](https://github.com/open-mmlab/mmcv)
 
 We have tested the following versions of OS and softwares:
@@ -19,16 +19,18 @@ We have tested the following versions of OS and softwares:
 
 ### Install mmdetection
 
-a. Create a conda virtual environment and activate it. Then install Cython.
+a. Create a conda virtual environment and activate it.
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
 conda activate open-mmlab
-
-conda install cython
 ```
 
-b. Install PyTorch stable or nightly and torchvision following the [official instructions](https://pytorch.org/).
+b. Install PyTorch stable or nightly and torchvision following the [official instructions](https://pytorch.org/), e.g.,
+
+```shell
+conda install pytorch torchvision -c pytorch
+```
 
 c. Clone the mmdetection repository.
 
@@ -46,14 +48,15 @@ python setup.py develop
 
 Note:
 
-1. It is recommended that you run the step e each time you pull some updates from github. If there are some updates of the C/CUDA codes, you also need to run step d.
-The git commit id will be written to the version number with step e, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
+1. The git commit id will be written to the version number with step d, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
+It is recommended that you run step d each time you pull some updates from github. If C/CUDA codes are modified, then this step is compulsory.
 
-2. Following the above instructions, mmdetection is installed on `dev` mode, any modifications to the code will take effect without installing it again.
+2. Following the above instructions, mmdetection is installed on `dev` mode, any local modifications made to the code will take effect without the need to reinstall it (unless you submit some commits and want to update the version number).
 
-### Prepare COCO dataset.
+### Prepare COCO dataset
 
 It is recommended to symlink the dataset root to `$MMDETECTION/data`.
+If your folder structure is different, you may need to change the corresponding paths in config files.
 
 ```
 mmdetection
@@ -84,14 +87,15 @@ mv train/*/* train/
 ```
 
 ### Scripts
+
 [Here](https://gist.github.com/hellock/bf23cd7348c727d69d48682cb6909047) is
 a script for setting up mmdetection with conda.
 
-### Notice
-You can run `python(3) setup.py develop` or `pip install -v -e .` to install mmdetection if you want to make modifications to it frequently.
+### Multiple versions
 
-If there are more than one mmdetection on your machine, and you want to use them alternatively.
-Please insert the following code to the main file
+If there are more than one mmdetection on your machine, and you want to use them alternatively, the recommended way is to create multiple conda environments and use different environments for different versions.
+
+Another way is to insert the following code to the main scripts (`train.py`, `test.py` or any other scripts you run)
 ```python
 import os.path as osp
 import sys
