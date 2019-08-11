@@ -103,5 +103,5 @@ class SingleRoIExtractor(nn.Module):
             if inds.any():
                 rois_ = rois[inds, :]
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
-                roi_feats[inds] += roi_feats_t
+                roi_feats[inds] = roi_feats_t
         return roi_feats
