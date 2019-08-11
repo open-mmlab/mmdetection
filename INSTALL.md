@@ -59,7 +59,7 @@ We provide a [Dockerfile](docker/Dockerfile) to build an image.
 
 ```shell
 # build an image with PyTorch 1.1, CUDA 10.0 and CUDNN 7.5
-nvidia-docker build -t mmdetection docker/
+docker build -t mmdetection docker/
 ```
 
 ### Prepare datasets
