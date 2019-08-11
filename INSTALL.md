@@ -53,7 +53,16 @@ It is recommended that you run step d each time you pull some updates from githu
 
 2. Following the above instructions, mmdetection is installed on `dev` mode, any local modifications made to the code will take effect without the need to reinstall it (unless you submit some commits and want to update the version number).
 
-### Prepare COCO dataset
+### Another option: Docker Image
+
+We provide a [Dockerfile](docker/Dockerfile) to build an image.
+
+```shell
+# build an image with PyTorch 1.1, CUDA 10.0 and CUDNN 7.5
+docker build -t mmdetection docker/
+```
+
+### Prepare datasets
 
 It is recommended to symlink the dataset root to `$MMDETECTION/data`.
 If your folder structure is different, you may need to change the corresponding paths in config files.
