@@ -1,7 +1,8 @@
 import torch
-from .single_stage import SingleStageDetector
+
+from mmdet.core import bbox2result, bbox_mapping_back, multiclass_nms
 from ..registry import DETECTORS
-from mmdet.core import bbox2result, multiclass_nms, bbox_mapping_back
+from .single_stage import SingleStageDetector
 
 
 @DETECTORS.register_module
@@ -14,8 +15,9 @@ class RepPointsDetector(SingleStageDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
-        super(RepPointsDetector, self).__init__(backbone, neck, bbox_head, train_cfg,
-                                                test_cfg, pretrained)
+        super(RepPointsDetector,
+              self).__init__(backbone, neck, bbox_head, train_cfg, test_cfg,
+                             pretrained)
 
     def merge_aug_results(self, aug_bboxes, aug_scores, img_metas):
         """Merge augmented detection bboxes and scores.
@@ -60,9 +62,10 @@ class RepPointsDetector(SingleStageDetector):
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = self.merge_aug_results(
             aug_bboxes, aug_scores, img_metas)
-        det_bboxes, det_labels = multiclass_nms(
-            merged_bboxes, merged_scores, self.test_cfg.score_thr,
-            self.test_cfg.nms, self.test_cfg.max_per_img)
+        det_bboxes, det_labels = multiclass_nms(merged_bboxes, merged_scores,
+                                                self.test_cfg.score_thr,
+                                                self.test_cfg.nms,
+                                                self.test_cfg.max_per_img)
 
         if rescale:
             _det_bboxes = det_bboxes

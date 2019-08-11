@@ -1,6 +1,6 @@
 import torch
 
-from ..bbox import assign_and_sample, build_assigner, PseudoSampler
+from ..bbox import PseudoSampler, assign_and_sample, build_assigner
 from ..utils import multi_apply
 
 
@@ -14,7 +14,7 @@ def point_target(proposals_list,
                  label_channels=1,
                  sampling=True,
                  unmap_outputs=True):
-    """Compute refinement and classification targets for points.
+    """Compute corresponding GT box and classification targets for proposals.
 
     Args:
         points_list (list[list]): Multi level points of each image.
@@ -43,18 +43,18 @@ def point_target(proposals_list,
         gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
     if gt_labels_list is None:
         gt_labels_list = [None for _ in range(num_imgs)]
-    (all_labels, all_label_weights, all_bbox_gt, all_proposals, all_proposal_weights,
-     pos_inds_list, neg_inds_list) = multi_apply(
-        point_target_single,
-        proposals_list,
-        valid_flag_list,
-        gt_bboxes_list,
-        gt_bboxes_ignore_list,
-        gt_labels_list,
-        cfg=cfg,
-        label_channels=label_channels,
-        sampling=sampling,
-        unmap_outputs=unmap_outputs)
+    (all_labels, all_label_weights, all_bbox_gt, all_proposals,
+     all_proposal_weights, pos_inds_list, neg_inds_list) = multi_apply(
+         point_target_single,
+         proposals_list,
+         valid_flag_list,
+         gt_bboxes_list,
+         gt_bboxes_ignore_list,
+         gt_labels_list,
+         cfg=cfg,
+         label_channels=label_channels,
+         sampling=sampling,
+         unmap_outputs=unmap_outputs)
     # no valid points
     if any([labels is None for labels in all_labels]):
         return None
@@ -62,10 +62,12 @@ def point_target(proposals_list,
     num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
     num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
     labels_list = images_to_levels(all_labels, num_level_proposals)
-    label_weights_list = images_to_levels(all_label_weights, num_level_proposals)
+    label_weights_list = images_to_levels(all_label_weights,
+                                          num_level_proposals)
     bbox_gt_list = images_to_levels(all_bbox_gt, num_level_proposals)
     proposals_list = images_to_levels(all_proposals, num_level_proposals)
-    proposal_weights_list = images_to_levels(all_proposal_weights, num_level_proposals)
+    proposal_weights_list = images_to_levels(all_proposal_weights,
+                                             num_level_proposals)
     return (labels_list, label_weights_list, bbox_gt_list, proposals_list,
             proposal_weights_list, num_total_pos, num_total_neg)
 
@@ -96,8 +98,8 @@ def point_target_single(flat_proposals,
                         unmap_outputs=True):
     inside_flags = valid_flags
     if not inside_flags.any():
-        return (None,) * 7
-    # assign gt and sample points
+        return (None, ) * 7
+    # assign gt and sample proposals
     proposals = flat_proposals[inside_flags, :]
 
     if sampling:
@@ -136,27 +138,28 @@ def point_target_single(flat_proposals,
     if len(neg_inds) > 0:
         label_weights[neg_inds] = 1.0
 
-    # map up to original set of grids
+    # map up to original set of proposals
     if unmap_outputs:
         num_total_proposals = flat_proposals.size(0)
         labels = unmap(labels, num_total_proposals, inside_flags)
         label_weights = unmap(label_weights, num_total_proposals, inside_flags)
         bbox_gt = unmap(bbox_gt, num_total_proposals, inside_flags)
         pos_proposals = unmap(pos_proposals, num_total_proposals, inside_flags)
-        proposals_weightss = unmap(proposals_weights, num_total_proposals, inside_flags)
+        proposals_weights = unmap(proposals_weights, num_total_proposals,
+                                  inside_flags)
 
-    return (labels, label_weights, bbox_gt, pos_proposals, proposals_weightss, pos_inds,
-            neg_inds)
+    return (labels, label_weights, bbox_gt, pos_proposals, proposals_weights,
+            pos_inds, neg_inds)
 
 
 def unmap(data, count, inds, fill=0):
     """ Unmap a subset of item (data) back to the original set of items (of
     size count) """
     if data.dim() == 1:
-        ret = data.new_full((count,), fill)
+        ret = data.new_full((count, ), fill)
         ret[inds] = data
     else:
-        new_size = (count,) + data.size()[1:]
+        new_size = (count, ) + data.size()[1:]
         ret = data.new_full(new_size, fill)
         ret[inds, :] = data
     return ret

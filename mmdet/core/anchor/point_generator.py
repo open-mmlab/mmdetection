@@ -1,5 +1,6 @@
 import torch
 
+
 class PointGenerator(object):
 
     def _meshgrid(self, x, y, row_major=True):
@@ -15,7 +16,7 @@ class PointGenerator(object):
         shift_x = torch.arange(0., feat_w, device=device) * stride
         shift_y = torch.arange(0., feat_h, device=device) * stride
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
-        stride = shift_x.new_full((shift_xx.shape[0],), stride)
+        stride = shift_x.new_full((shift_xx.shape[0], ), stride)
         shifts = torch.stack([shift_xx, shift_yy, stride], dim=-1)
         all_points = shifts.to(device)
         return all_points
