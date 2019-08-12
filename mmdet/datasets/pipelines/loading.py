@@ -48,7 +48,12 @@ class LoadAnnotations(object):
     def _load_bboxes(self, results):
         ann_info = results['ann_info']
         results['gt_bboxes'] = ann_info['bboxes']
-        if len(results['gt_bboxes']) == 0:
+        if len(results['gt_bboxes']) == 0 and self.skip_img_without_anno:
+            file_path = osp.join(results['img_prefix'],
+                                 results['img_info']['filename'])
+            warnings.warn(
+                'Skip the image "{}" that has no valid gt bbox'.format(
+                    file_path))
             return None
         results['gt_bboxes_ignore'] = ann_info.get('bboxes_ignore', None)
         results['bbox_fields'].extend(['gt_bboxes', 'gt_bboxes_ignore'])
@@ -92,12 +97,7 @@ class LoadAnnotations(object):
     def __call__(self, results):
         if self.with_bbox:
             results = self._load_bboxes(results)
-            if results is None and self.skip_img_without_anno:
-                file_path = osp.join(results['img_prefix'],
-                                     results['img_info']['filename'])
-                warnings.warn(
-                    'Skip the image "{}" that has no valid gt bbox'.format(
-                        file_path))
+            if results is None:
                 return None
         if self.with_label:
             results = self._load_labels(results)
