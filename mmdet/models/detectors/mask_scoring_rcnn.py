@@ -42,6 +42,9 @@ class MaskScoringRCNN(TwoStageDetector):
         self.mask_iou_head = builder.build_head(mask_iou_head)
         self.mask_iou_head.init_weights()
 
+    def forward_dummy(self, img):
+        raise NotImplementedError
+
     # TODO: refactor forward_train in two stage to reduce code redundancy
     def forward_train(self,
                       img,
