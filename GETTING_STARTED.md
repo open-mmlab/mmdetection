@@ -162,6 +162,103 @@ pytorch [launch utility](https://pytorch.org/docs/stable/distributed_deprecated.
 Usually it is slow if you do not have high speed networking like infiniband.
 
 
+## Useful tools
+
+### Analyze logs
+
+You can plot loss/mAP curves given a training log file. Run `pip install seaborn` first to install the dependency.
+
+![loss curve image](demo/loss_curve.png)
+
+```shell
+python tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
+```
+
+Examples:
+
+- Plot the classification loss of some run.
+
+```shell
+python tools/analyze_logs.py plot_curve log.json --keys loss_cls --legend loss_cls
+```
+
+- Plot the classification and regression loss of some run, and save the figure to a pdf.
+
+```shell
+python tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_reg --out losses.pdf
+```
+
+- Compare the bbox mAP of two runs in the same figure.
+
+```shell
+python tools/analyze_logs.py plot_curve log1.json log2.json --keys bbox_mAP --legend run1 run2
+```
+
+You can also compute the average training speed.
+
+```shell
+python tools/analyze_logs.py cal_train_time ${CONFIG_FILE} [--include-outliers]
+```
+
+The output is expected to be like the following.
+
+```
+-----Analyze train time of work_dirs/some_exp/20190611_192040.log.json-----
+slowest epoch 11, average time is 1.2024
+fastest epoch 1, average time is 1.1909
+time std over epochs is 0.0028
+average iter time: 1.1959 s/iter
+
+```
+
+### Get the FLOPs and params (experimental)
+
+We provide a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
+
+```shell
+python tools/get_flops.py ${CONFIG_FILE} [--shape ${INPUT_SHAPE}]
+```
+
+You will get the result like this.
+
+```
+==============================
+Input shape: (3, 1280, 800)
+Flops: 239.32 GMac
+Params: 37.74 M
+==============================
+```
+
+**Note**: This tool is still experimental and we do not guarantee that the number is correct. You may well use the result for simple comparisons, but double check it before you adopt it in technical reports or papers.
+
+(1) FLOPs are related to the input shape while parameters are not. The default input shape is (1, 3, 1280, 800).
+(2) Some operators are not counted into FLOPs like GN and custom operators.
+You can add support for new operators by modifying [`mmdet/utils/flops_counter.py`](mmdet/utils/flops_counter.py).
+(3) The FLOPs of two-stage detectors is dependent on the number of proposals.
+
+### Publish a model
+
+Before you upload a model to AWS, you may want to
+(1) convert model weights to CPU tensors, (2) delete the optimizer states and
+(3) compute the hash of the checkpoint file and append the hash id to the filename.
+
+```shell
+python tools/publish_model.py ${INPUT_FILENAME} ${OUTPUT_FILENAME}
+```
+
+E.g.,
+
+```shell
+python tools/publish_model.py work_dirs/faster_rcnn/latest.pth faster_rcnn_r50_fpn_1x_20190801.pth
+```
+
+The final output filename will be `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth`.
+
+### Test the robustness of detectors
+
+Please refer to [ROBUSTNESS_BENCHMARKING.md](ROBUSTNESS_BENCHMARKING.md).
+
+
 ## How-to
 
 ### Use my own datasets
