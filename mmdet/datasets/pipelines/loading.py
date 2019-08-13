@@ -20,6 +20,7 @@ class LoadImageFromFile(object):
         if self.to_float32:
             img = img.astype(np.float32)
         results['img'] = img
+        results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
         return results
 
