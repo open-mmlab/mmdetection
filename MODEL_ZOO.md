@@ -73,9 +73,9 @@ More models with different backbones will be added to the model zoo.
 | X-101-64x4d-FPN | pytorch |   1x    |   9.8    |        1.040        |      7.3       |  41.3  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_x101_64x4d_fpn_1x_20181218-c9c69c8f.pth) |
 | X-101-64x4d-FPN | pytorch |   2x    |    -     |          -          |       -        |  40.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_x101_64x4d_fpn_2x_20181218-fe94f9b8.pth) |
 |   HRNetV2-W18   | pytorch |   1x    |    -     |          -          |       -        |  36.1  |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/hrnet/faster_rcnn_hrnetv2_w18_fpn_1x_20190522-e368c387.pth)    |
-|   HRNetV2-W18   | pytorch |   2x    |    -     |          -          |       -        |  38.3  |    [model](https://1drv.ms/u/s!Auszw0Nn8DCRdjF_JWGaZJbUNr4?e=sqxJHZ) |
+|   HRNetV2-W18   | pytorch |   2x    |    -     |          -          |       -        |  38.3  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w18_2x_20190810-9c8615d5.pth) |
 |   HRNetV2-W32   | pytorch |   1x    |    -     |          -          |       -        |  39.5  |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/hrnet/faster_rcnn_hrnetv2_w32_fpn_1x_20190522-d22f1fef.pth)    |
-|   HRNetV2-W32   | pytorch |   2x    |    -     |          -          |       -        |  40.6  |    [mdoel](https://1drv.ms/u/s!Auszw0Nn8DCReTjC__GBpeHuIRU?e=ZNFXrP) |
+|   HRNetV2-W32   | pytorch |   2x    |    -     |          -          |       -        |  40.6  |    [mdoel](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w32_2x_20190810-24e8912a.pth) |
 
 ### Mask R-CNN
 
@@ -96,9 +96,9 @@ More models with different backbones will be added to the model zoo.
 | X-101-64x4d-FPN | pytorch |   1x    |   10.0   |        1.102        |      6.5       |  42.1  |  38.0   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_64x4d_fpn_1x_20181218-cb159987.pth) |
 | X-101-64x4d-FPN | pytorch |   2x    |    -     |          -          |       -        |  42.0  |  37.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_64x4d_fpn_2x_20181218-ea936e44.pth) |
 |   HRNetV2-W18   | pytorch |   1x    |    -     |          -          |       -        |  37.3  |  34.2   |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/hrnet/mask_rcnn_hrnetv2_w18_fpn_1x_20190522-c8ad459f.pth)    |
-|   HRNetV2-W18   | pytorch |   2x    |    -     |          -          |       -        |  39.2  |  35.7   |    [model](https://1drv.ms/u/s!AiO3BIXgPy5wdrfShb-tRYEXFN4?e=vKBNQk)   |
+|   HRNetV2-W18   | pytorch |   2x    |    -     |          -          |       -        |  39.2  |  35.7   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w18_2x_20190810-1e4747eb.pth)   |
 |   HRNetV2-W32   | pytorch |   1x    |    -     |          -          |       -        |  40.7  |  36.8   |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/hrnet/mask_rcnn_hrnetv2_w32_fpn_1x_20190522-374aaa00.pth)    |
-|   HRNetV2-W32   | pytorch |   2x    |    -     |          -          |       -        |  41.7  |  37.5   |    [model](https://1drv.ms/u/s!AiO3BIXgPy5wd6Ls0x644doGTRI?e=GMJk6i) |
+|   HRNetV2-W32   | pytorch |   2x    |    -     |          -          |       -        |  41.7  |  37.5   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w32_2x_20190810-773eca75.pth) |
 
 ### Fast R-CNN (with pre-computed proposals)
 
@@ -155,9 +155,9 @@ More models with different backbones will be added to the model zoo.
 | X-101-32x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  44.0  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_x101_32x4d_fpn_2x_20181218-28f73c4c.pth) |
 | X-101-64x4d-FPN | pytorch |   1x    |   10.0   |        1.133        |      6.7       |  44.5  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_x101_64x4d_fpn_1x_20181218-e2dc376a.pth) |
 | X-101-64x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  44.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_x101_64x4d_fpn_2x_20181218-5add321e.pth) |
-|   HRNetV2-W18   | pytorch |   20e   |    -     |          -          |       -        |  41.2  | [model](https://1drv.ms/u/s!Auszw0Nn8DCRdYrajEKsQ3NGDJc?e=TKXiHz) |
+|   HRNetV2-W18   | pytorch |   20e   |    -     |          -          |       -        |  41.2  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w18_20190810-132012d0.pth) |
 |   HRNetV2-W32   | pytorch |   20e   |    -     |          -          |       -        |  43.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/hrnet/cascade_rcnn_hrnetv2_w32_fpn_20e_20190522-55bec4ee.pth)|
-|   HRNetV2-W48   | pytorch |   20e   |    -     |          -          |       -        |  44.6  | [model](https://1drv.ms/u/s!Auszw0Nn8DCReL0DDCoam7I49bg?e=I5qMFf) |
+|   HRNetV2-W48   | pytorch |   20e   |    -     |          -          |       -        |  44.6  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w48_20e_20190810-f40ed8e1.pth) |
 
 ### Cascade Mask R-CNN
 
@@ -174,9 +174,9 @@ More models with different backbones will be added to the model zoo.
 | X-101-32x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  44.7  |  38.6   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_x101_32x4d_fpn_20e_20181218-761a3473.pth) |
 | X-101-64x4d-FPN | pytorch |   1x    |   11.4   |        1.33         |      5.3       |  45.4  |  39.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_x101_64x4d_fpn_1x_20190501-827e0a70.pth)  |
 | X-101-64x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  45.7  |  39.4   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_x101_64x4d_fpn_20e_20181218-630773a7.pth) |
-|   HRNetV2-W18   | pytorch |   20e   |    -     |          -          |       -        |  41.9  |  36.4   | [model](https://1drv.ms/u/s!Auszw0Nn8DCRcqFXodE8XZyW_L4?e=QV8FSF) |
-|   HRNetV2-W32   | pytorch |   20e   |    -     |          -          |       -        |  44.5  |  38.5   | [model](https://1drv.ms/u/s!Auszw0Nn8DCRdA6l34DNpT7sTQM?e=ZvCgjV) |
-|   HRNetV2-W48   | pytorch |   20e   |    -     |          -          |       -        |  46.0  |  39.5   | [model](https://1drv.ms/u/s!Auszw0Nn8DCRd2E7qOkocmi27Vk?e=acVJNl) |
+|   HRNetV2-W18   | pytorch |   20e   |    -     |          -          |       -        |  41.9  |  36.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_mask_rcnn_hrnetv2p_w18_20e_20190810-054fb7bf.pth) |
+|   HRNetV2-W32   | pytorch |   20e   |    -     |          -          |       -        |  44.5  |  38.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_20190810-76f61cd0.pth) |
+|   HRNetV2-W48   | pytorch |   20e   |    -     |          -          |       -        |  46.0  |  39.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_mask_rcnn_hrnetv2p_w48_20e_20190810-d04a1415.pth) |
 
 **Notes:**
 
@@ -191,9 +191,9 @@ More models with different backbones will be added to the model zoo.
 |    R-101-FPN    | pytorch |   20e   |   9.3    |        1.051        |      4.0       |  44.9  |  39.4   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r101_fpn_20e_20190408-a2e586db.pth)    |
 | X-101-32x4d-FPN | pytorch |   20e   |   5.8    |        0.769        |      3.8       |  46.1  |  40.3   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_x101_32x4d_fpn_20e_20190408-9eae4d0b.pth) |
 | X-101-64x4d-FPN | pytorch |   20e   |   7.5    |        1.120        |      3.5       |  46.9  |  40.8   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_x101_64x4d_fpn_20e_20190408-497f2561.pth) |
-|   HRNetV2-W18   | pytorch |   20e   |    -     |          -          |       -        |  43.1  |  37.9   | [model](https://1drv.ms/u/s!Auszw0Nn8DCRepy7NYQM8BpvLBM?e=fZucBh) |
-|   HRNetV2-W32   | pytorch |   20e   |    -     |          -          |       -        |  45.3  |  39.6   | [model](https://1drv.ms/u/s!Auszw0Nn8DCRezdRHZQ38kIgaQE?e=N7SJnK) |
-|   HRNetV2-W48   | pytorch |   20e   |    -     |          -          |       -        |  46.8  | 40.7    | [model](https://1drv.ms/u/s!Auszw0Nn8DCRfRkTT1_9Dtug3OM?e=nFPPFR) |
+|   HRNetV2-W18   | pytorch |   20e   |    -     |          -          |       -        |  43.1  |  37.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w18_20e_20190810-d70072af.pth) |
+|   HRNetV2-W32   | pytorch |   20e   |    -     |          -          |       -        |  45.3  |  39.6   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w32_20e_20190810-82f9ef5a.pth) |
+|   HRNetV2-W48   | pytorch |   20e   |    -     |          -          |       -        |  46.8  | 40.7    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w48_20e_20190810-f6d2c3fd.pth) |
 
 **Notes:**
 
