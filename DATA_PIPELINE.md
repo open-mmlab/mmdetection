@@ -9,7 +9,7 @@ We present a classical pipeline in the following figure. The blue blocks are pip
 
 The operations are categorized into data loading, pre-processing, formatting and test-time augmentation.
 
-Here is an example.
+Here is an pipeline example for Faster R-CNN.
 ```python
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -68,7 +68,7 @@ For each operation, we list the related dict fields that are added/updated/remov
 - update: img, pad_shape, *mask_fields
 
 `RandomCrop`
-- update: img, pad_shape, gt_bboxes, gt_masks, *bbox_fields
+- update: img, pad_shape, gt_bboxes, gt_labels, gt_masks, *bbox_fields
 
 `Normalize`
 - add: img_norm_cfg

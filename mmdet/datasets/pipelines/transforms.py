@@ -293,6 +293,8 @@ class RandomCrop(object):
             if not np.any(valid_inds):
                 return None
             results['gt_bboxes'] = gt_bboxes[valid_inds, :]
+            if 'gt_labels' in results:
+                results['gt_labels'] = results['gt_labels'][valid_inds]
 
             # filter and crop the masks
             if 'gt_masks' in results:
