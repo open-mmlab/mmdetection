@@ -47,7 +47,7 @@
 
 |    Backbone     |  Style  | Lr schd | box AP |       Download      |
 | :-------------: | :-----: | :-----: | :----: | :-----------------: |
-|   HRNetV2p-W18   | pytorch |   20e   |  41.2  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2_w32_fpn_20e_20190522-55bec4ee.pth)|
+|   HRNetV2p-W18   | pytorch |   20e   |  41.2  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w18_20e_20190810-132012d0.pth)|
 |   HRNetV2p-W32   | pytorch |   20e   |  43.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/hrnet/cascade_rcnn_hrnetv2_w32_fpn_20e_20190522-55bec4ee.pth)|
 |   HRNetV2p-W48   | pytorch |   20e   |  44.6  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w48_20e_20190810-f40ed8e1.pth)|
 

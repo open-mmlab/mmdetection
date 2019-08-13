@@ -155,7 +155,7 @@ More models with different backbones will be added to the model zoo.
 | X-101-32x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  44.0  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_x101_32x4d_fpn_2x_20181218-28f73c4c.pth) |
 | X-101-64x4d-FPN | pytorch |   1x    |   10.0   |        1.133        |      6.7       |  44.5  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_x101_64x4d_fpn_1x_20181218-e2dc376a.pth) |
 | X-101-64x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  44.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_x101_64x4d_fpn_2x_20181218-5add321e.pth) |
-|   HRNetV2p-W18   | pytorch |   20e   |    -     |          -          |       -        |  41.2  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w18_20190810-132012d0.pth) |
+|   HRNetV2p-W18   | pytorch |   20e   |    -     |          -          |       -        |  41.2  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w18_20e_20190810-132012d0.pth) |
 |   HRNetV2p-W32   | pytorch |   20e   |    -     |          -          |       -        |  43.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/hrnet/cascade_rcnn_hrnetv2_w32_fpn_20e_20190522-55bec4ee.pth)|
 |   HRNetV2p-W48   | pytorch |   20e   |    -     |          -          |       -        |  44.6  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w48_20e_20190810-f40ed8e1.pth) |
 
