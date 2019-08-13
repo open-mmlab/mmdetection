@@ -22,6 +22,7 @@
 
 ## Results and Models
 
+
 ### Faster R-CNN
 
 |    Backbone     |  Style  | Lr schd | box AP |       Download      |
@@ -69,6 +70,19 @@
 |   HRNetV2-W48   | pytorch |   20e   |  46.8  |  40.7   | [model](https://1drv.ms/u/s!Ah3Ku6_VdFEFbCfbs7-84a0Ab50?e=2c1YL0)   |
 | X-101-64x4d-FPN | pytorch |   28e   |  46.8  |  40.7   | [model](https://1drv.ms/u/s!Ah3Ku6_VdFEFbRy5RsHSGilbdgc?e=Pao0CF)   |
 |   HRNetV2-W48   | pytorch |   28e   |  47.0  |  41.0   | [model](https://1drv.ms/u/s!Ah3Ku6_VdFEFay0EW03fWCe8hn0?e=DT9MNQ)   |
+
+
+### FCOS
+
+| Backbone  | Style   |  GN     | MS train | Lr schd | box AP | Download |
+|:---------:|:-------:|:-------:|:--------:|:-------:|:------:|:--------:|
+|HRNetV2-W18| pytorch | Y       | N       | 1x       | 35.2   | [model](https://1drv.ms/u/s!AiO3BIXgPy5wayKftSh3gO7MInM?e=FfIiN7) |
+|HRNetV2-W18| pytorch | Y       | N       | 2x       | 38.2   | [model](https://1drv.ms/u/s!AiO3BIXgPy5wackG676gxAwZiLI?e=sklmPi) |
+|HRNetV2-W32| pytorch | Y       | N       | 1x       | 37.7   | [model](https://1drv.ms/u/s!AiO3BIXgPy5wbM-1LO3kHjbxyiI?e=hn4TYC) |
+|HRNetV2-W32| pytorch | Y       | N       | 2x       | 40.3   | [model](https://1drv.ms/u/s!AiO3BIXgPy5wbjqITT67XTFzYF4?e=v0ln9b) |
+|HRNetV2-W18| pytorch | Y       | Y       | 2x       | 38.1   | [model](https://1drv.ms/u/s!AiO3BIXgPy5wavizoonMcuHte7Y?e=hhFev0) |
+|HRNetV2-W32| pytorch | Y       | Y       | 2x       | 41.4   | [model](https://1drv.ms/u/s!AiO3BIXgPy5wbW_HReb2RHXnn1U?e=AHb2g4) |
+|HRNetV2-W48| pytorch | Y       | Y       | 2x       | 42.9   | [model](https://1drv.ms/u/s!AiO3BIXgPy5wb6jXLMuBcz9unQo?e=XBRTLk) |
 
 
 
