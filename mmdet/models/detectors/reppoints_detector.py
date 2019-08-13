@@ -7,6 +7,11 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module
 class RepPointsDetector(SingleStageDetector):
+    """RepPoints: Point Set Representation for Object Detection.
+
+        This detector is the implementation of:
+        - RepPoints detector (https://arxiv.org/pdf/1904.11490)
+    """
 
     def __init__(self,
                  backbone,

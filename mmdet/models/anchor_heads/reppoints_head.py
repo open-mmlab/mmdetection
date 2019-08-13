@@ -161,7 +161,7 @@ class RepPointsHead(nn.Module):
         normal_init(self.reppoints_pts_refine_conv, std=0.01)
         normal_init(self.reppoints_pts_refine_out, std=0.01)
 
-    def transform_box(self, pts, y_first=True):
+    def points2bbox(self, pts, y_first=True):
         """
         Converting the points set into bounding box.
         :param pts: the input points sets (fields), each points
@@ -171,12 +171,12 @@ class RepPointsHead(nn.Module):
             represented as [x1, y1, x2, y2 ... xn, yn].
         :return: each points set is converting to a bbox [x1, y1, x2, y2].
         """
+        pts_reshape = pts.view(pts.shape[0], -1, 2, *pts.shape[2:])
+        pts_y = pts_reshape[:, :, 0, ...] if y_first else pts_reshape[:, :, 1,
+                                                                      ...]
+        pts_x = pts_reshape[:, :, 1, ...] if y_first else pts_reshape[:, :, 0,
+                                                                      ...]
         if self.transform_method == 'minmax':
-            pts_reshape = pts.view(pts.shape[0], -1, 2, *pts.shape[2:])
-            pts_y = pts_reshape[:, :, 0,
-                                ...] if y_first else pts_reshape[:, :, 1, ...]
-            pts_x = pts_reshape[:, :, 1,
-                                ...] if y_first else pts_reshape[:, :, 0, ...]
             bbox_left = pts_x.min(dim=1, keepdim=True)[0]
             bbox_right = pts_x.max(dim=1, keepdim=True)[0]
             bbox_up = pts_y.min(dim=1, keepdim=True)[0]
@@ -184,12 +184,8 @@ class RepPointsHead(nn.Module):
             bbox = torch.cat([bbox_left, bbox_up, bbox_right, bbox_bottom],
                              dim=1)
         elif self.transform_method == 'partial_minmax':
-            pts_reshape = pts.view(pts.shape[0], -1, 2, *pts.shape[2:])
-            pts_reshape = pts_reshape[:, :4, ...]
-            pts_y = pts_reshape[:, :, 0,
-                                ...] if y_first else pts_reshape[:, :, 1, ...]
-            pts_x = pts_reshape[:, :, 1,
-                                ...] if y_first else pts_reshape[:, :, 0, ...]
+            pts_y = pts_y[:, :4, ...]
+            pts_x = pts_x[:, :4, ...]
             bbox_left = pts_x.min(dim=1, keepdim=True)[0]
             bbox_right = pts_x.max(dim=1, keepdim=True)[0]
             bbox_up = pts_y.min(dim=1, keepdim=True)[0]
@@ -197,17 +193,12 @@ class RepPointsHead(nn.Module):
             bbox = torch.cat([bbox_left, bbox_up, bbox_right, bbox_bottom],
                              dim=1)
         elif self.transform_method == 'moment':
-            pts_reshape = pts.view(pts.shape[0], -1, 2, *pts.shape[2:])
-            pts_y = pts_reshape[:, :, 0,
-                                ...] if y_first else pts_reshape[:, :, 1, ...]
-            pts_x = pts_reshape[:, :, 1,
-                                ...] if y_first else pts_reshape[:, :, 0, ...]
             pts_y_mean = pts_y.mean(dim=1, keepdim=True)
             pts_x_mean = pts_x.mean(dim=1, keepdim=True)
             pts_y_std = torch.std(pts_y - pts_y_mean, dim=1, keepdim=True)
             pts_x_std = torch.std(pts_x - pts_x_mean, dim=1, keepdim=True)
             moment_transfer = (self.moment_transfer * self.moment_mul) + (
-                        self.moment_transfer.detach() * (1 - self.moment_mul))
+                self.moment_transfer.detach() * (1 - self.moment_mul))
             moment_width_transfer = moment_transfer[0]
             moment_height_transfer = moment_transfer[1]
             half_width = pts_x_std * torch.exp(moment_width_transfer)
@@ -230,33 +221,28 @@ class RepPointsHead(nn.Module):
         :return: generate grids on the regressed bboxes.
         """
         b, _, h, w = reg.shape
-        tx = reg[:, [0], ...]
-        ty = reg[:, [1], ...]
-        tw = reg[:, [2], ...]
-        th = reg[:, [3], ...]
         bxy = (previous_boxes[:, :2, ...] + previous_boxes[:, 2:, ...]) / 2.
         bwh = (previous_boxes[:, 2:, ...] -
                previous_boxes[:, :2, ...]).clamp(min=1e-6)
-        bx = bxy[:, [0], ...]
-        by = bxy[:, [1], ...]
-        bw = bwh[:, [0], ...]
-        bh = bwh[:, [1], ...]
-        grid_left = bx + bw * tx - 0.5 * bw * torch.exp(tw)
-        grid_width = bw * torch.exp(tw)
-        grid_up = by + bh * ty - 0.5 * bh * torch.exp(th)
-        grid_height = bh * torch.exp(th)
+        grid_topleft = bxy + bwh * reg[:, :2, ...] - 0.5 * bwh * torch.exp(
+            reg[:, 2:, ...])
+        grid_wh = bwh * torch.exp(reg[:, 2:, ...])
+        grid_left = grid_topleft[:, [0], ...]
+        grid_top = grid_topleft[:, [1], ...]
+        grid_width = grid_wh[:, [0], ...]
+        grid_height = grid_wh[:, [1], ...]
         intervel = torch.linspace(0., 1., self.dcn_kernel).view(
             1, self.dcn_kernel, 1, 1).type_as(reg)
         grid_x = grid_left + grid_width * intervel
         grid_x = grid_x.unsqueeze(1).repeat(1, self.dcn_kernel, 1, 1, 1)
         grid_x = grid_x.view(b, -1, h, w)
-        grid_y = grid_up + grid_height * intervel
+        grid_y = grid_top + grid_height * intervel
         grid_y = grid_y.unsqueeze(2).repeat(1, 1, self.dcn_kernel, 1, 1)
         grid_y = grid_y.view(b, -1, h, w)
         grid_yx = torch.stack([grid_y, grid_x], dim=2)
         grid_yx = grid_yx.view(b, -1, h, w)
         regressed_bbox = torch.cat([
-            grid_left, grid_up, grid_left + grid_width, grid_up + grid_height
+            grid_left, grid_top, grid_left + grid_width, grid_top + grid_height
         ], 1)
         return grid_yx, regressed_bbox
 
@@ -295,7 +281,7 @@ class RepPointsHead(nn.Module):
         pts_out_refine = self.reppoints_pts_refine_out(
             self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset)))
         if self.use_grid_points:
-            bbox_out_init = self.transform_box(pts_out_init)
+            bbox_out_init = self.points2bbox(pts_out_init)
             pts_out_refine, bbox_out_refine = self.gen_grid_from_reg(
                 pts_out_refine, bbox_out_init.detach())
         else:
@@ -361,15 +347,6 @@ class RepPointsHead(nn.Module):
             bbox_list.append(bbox)
         return bbox_list
 
-    def yx_to_xy(self, pts):
-        """Change the points offset from y first to x first.
-        """
-        pts_y = pts[..., 0::2]
-        pts_x = pts[..., 1::2]
-        pts_xy = torch.stack([pts_x, pts_y], -1)
-        pts = pts_xy.view(*pts.shape[:-1], -1)
-        return pts
-
     def offset_to_pts(self, center_list, pred_list):
         """Change from point offset to point coordinate.
         """
@@ -382,7 +359,10 @@ class RepPointsHead(nn.Module):
                 pts_shift = pred_list[i_lvl][i_img]
                 yx_pts_shift = pts_shift.permute(1, 2, 0).view(
                     -1, 2 * self.num_points)
-                xy_pts_shift = self.yx_to_xy(yx_pts_shift)
+                y_pts_shift = yx_pts_shift[..., 0::2]
+                x_pts_shift = yx_pts_shift[..., 1::2]
+                xy_pts_shift = torch.stack([x_pts_shift, y_pts_shift], -1)
+                xy_pts_shift = xy_pts_shift.view(*yx_pts_shift.shape[:-1], -1)
                 pts = xy_pts_shift * self.point_strides[i_lvl] + pts_center
                 pts_lvl.append(pts)
             pts_lvl = torch.stack(pts_lvl, 0)
@@ -407,11 +387,11 @@ class RepPointsHead(nn.Module):
         # points loss
         bbox_gt_init = bbox_gt_init.reshape(-1, 4)
         bbox_weights_init = bbox_weights_init.reshape(-1, 4)
-        bbox_pred_init = self.transform_box(
+        bbox_pred_init = self.points2bbox(
             pts_pred_init.reshape(-1, 2 * self.num_points), y_first=False)
         bbox_gt_refine = bbox_gt_refine.reshape(-1, 4)
         bbox_weights_refine = bbox_weights_refine.reshape(-1, 4)
-        bbox_pred_refine = self.transform_box(
+        bbox_pred_refine = self.points2bbox(
             pts_pred_refine.reshape(-1, 2 * self.num_points), y_first=False)
         normalize_term = self.point_base_scale * stride
         loss_pts_init = self.loss_bbox_init(
@@ -440,14 +420,20 @@ class RepPointsHead(nn.Module):
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
         # target for initial stage
-        proposal_list, valid_flag_list = self.get_points(
-            featmap_sizes, img_metas)
-        pts_coordinate_preds_init = self.offset_to_pts(proposal_list,
+        center_list, valid_flag_list = self.get_points(featmap_sizes,
+                                                       img_metas)
+        pts_coordinate_preds_init = self.offset_to_pts(center_list,
                                                        pts_preds_init)
-        if cfg.init.assigner['type'] != 'PointAssigner':
-            proposal_list = self.centers_to_bboxes(proposal_list)
+        if cfg.init.assigner['type'] == 'PointAssigner':
+            # Assign target for center list
+            candidate_list = center_list
+        else:
+            # transform center list to bbox list and
+            #   assign target for bbox list
+            bbox_list = self.centers_to_bboxes(center_list)
+            candidate_list = bbox_list
         cls_reg_targets_init = point_target(
-            proposal_list,
+            candidate_list,
             valid_flag_list,
             gt_bboxes,
             img_metas,
@@ -456,26 +442,26 @@ class RepPointsHead(nn.Module):
             gt_labels_list=gt_labels,
             label_channels=label_channels,
             sampling=self.sampling)
-        (*_, bbox_gt_list_init, proposal_list_init, bbox_weights_list_init,
+        (*_, bbox_gt_list_init, candidate_list_init, bbox_weights_list_init,
          num_total_pos_init, num_total_neg_init) = cls_reg_targets_init
         num_total_samples_init = (
             num_total_pos_init +
             num_total_neg_init if self.sampling else num_total_pos_init)
 
         # target for refinement stage
-        proposal_list, valid_flag_list = self.get_points(
-            featmap_sizes, img_metas)
+        center_list, valid_flag_list = self.get_points(featmap_sizes,
+                                                       img_metas)
         pts_coordinate_preds_refine = self.offset_to_pts(
-            proposal_list, pts_preds_refine)
+            center_list, pts_preds_refine)
         bbox_list = []
-        for i_img, point in enumerate(proposal_list):
+        for i_img, center in enumerate(center_list):
             bbox = []
             for i_lvl in range(len(pts_preds_refine)):
-                bbox_preds_init = self.transform_box(
+                bbox_preds_init = self.points2bbox(
                     pts_preds_init[i_lvl].detach())
                 bbox_shift = bbox_preds_init * self.point_strides[i_lvl]
                 bbox_center = torch.cat(
-                    [point[i_lvl][:, :2], point[i_lvl][:, :2]], dim=1)
+                    [center[i_lvl][:, :2], center[i_lvl][:, :2]], dim=1)
                 bbox.append(bbox_center +
                             bbox_shift[i_img].permute(1, 2, 0).reshape(-1, 4))
             bbox_list.append(bbox)
@@ -490,7 +476,7 @@ class RepPointsHead(nn.Module):
             label_channels=label_channels,
             sampling=self.sampling)
         (labels_list, label_weights_list, bbox_gt_list_refine,
-         proposal_list_refine, bbox_weights_list_refine, num_total_pos_refine,
+         candidate_list_refine, bbox_weights_list_refine, num_total_pos_refine,
          num_total_neg_refine) = cls_reg_targets_refine
         num_total_samples_refine = (
             num_total_pos_refine +
@@ -528,7 +514,7 @@ class RepPointsHead(nn.Module):
                    nms=True):
         assert len(cls_scores) == len(pts_preds_refine)
         bbox_preds_refine = [
-            self.transform_box(pts_pred_refine)
+            self.points2bbox(pts_pred_refine)
             for pts_pred_refine in pts_preds_refine
         ]
         num_levels = len(cls_scores)
