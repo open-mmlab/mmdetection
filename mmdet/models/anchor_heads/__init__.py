@@ -6,8 +6,9 @@ from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 from .retina_head import RetinaHead
 from .rpn_head import RPNHead
 from .ssd_head import SSDHead
-
+from .fovea_head import FoveaHead
 __all__ = [
     'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption', 'RPNHead',
-    'GARPNHead', 'RetinaHead', 'GARetinaHead', 'SSDHead', 'FCOSHead'
+    'GARPNHead', 'RetinaHead', 'GARetinaHead', 'SSDHead', 'FCOSHead',
+    'FoveaHead'
 ]

@@ -12,9 +12,10 @@ from .retinanet import RetinaNet
 from .rpn import RPN
 from .single_stage import SingleStageDetector
 from .two_stage import TwoStageDetector
-
+from .fovea import FOVEA
 __all__ = [
     'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',
-    'DoubleHeadRCNN', 'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN'
+    'DoubleHeadRCNN', 'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN',
+    'FOVEA'
 ]
