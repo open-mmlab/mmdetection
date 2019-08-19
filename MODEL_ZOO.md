@@ -72,6 +72,10 @@ More models with different backbones will be added to the model zoo.
 | X-101-32x4d-FPN | pytorch |   2x    |    -     |          -          |       -        |  40.4  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_x101_32x4d_fpn_2x_20181218-0ed58946.pth) |
 | X-101-64x4d-FPN | pytorch |   1x    |   9.8    |        1.040        |      7.3       |  41.3  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_x101_64x4d_fpn_1x_20181218-c9c69c8f.pth) |
 | X-101-64x4d-FPN | pytorch |   2x    |    -     |          -          |       -        |  40.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_x101_64x4d_fpn_2x_20181218-fe94f9b8.pth) |
+|   HRNetV2p-W18   | pytorch |   1x    |    -     |          -          |       -        |  36.1  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w18_1x_20190522-e368c387.pth)    |
+|   HRNetV2p-W18   | pytorch |   2x    |    -     |          -          |       -        |  38.3  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w18_2x_20190810-9c8615d5.pth) |
+|   HRNetV2p-W32   | pytorch |   1x    |    -     |          -          |       -        |  39.5  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w32_1x_20190522-d22f1fef.pth)    |
+|   HRNetV2p-W32   | pytorch |   2x    |    -     |          -          |       -        |  40.6  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w32_2x_20190810-24e8912a.pth) |
 
 ### Mask R-CNN
 
@@ -91,6 +95,10 @@ More models with different backbones will be added to the model zoo.
 | X-101-32x4d-FPN | pytorch |   2x    |    -     |          -          |       -        |  41.4  |  37.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_32x4d_fpn_2x_20181218-f023dffa.pth) |
 | X-101-64x4d-FPN | pytorch |   1x    |   10.0   |        1.102        |      6.5       |  42.1  |  38.0   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_64x4d_fpn_1x_20181218-cb159987.pth) |
 | X-101-64x4d-FPN | pytorch |   2x    |    -     |          -          |       -        |  42.0  |  37.7   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_x101_64x4d_fpn_2x_20181218-ea936e44.pth) |
+|   HRNetV2p-W18   | pytorch |   1x    |    -     |          -          |       -        |  37.3  |  34.2   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w18_1x_20190522-c8ad459f.pth)    |
+|   HRNetV2p-W18   | pytorch |   2x    |    -     |          -          |       -        |  39.2  |  35.7   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w18_2x_20190810-1e4747eb.pth)   |
+|   HRNetV2p-W32   | pytorch |   1x    |    -     |          -          |       -        |  40.7  |  36.8   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w32_1x_20190522-374aaa00.pth)    |
+|   HRNetV2p-W32   | pytorch |   2x    |    -     |          -          |       -        |  41.7  |  37.5   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w32_2x_20190810-773eca75.pth) |
 
 ### Fast R-CNN (with pre-computed proposals)
 
@@ -147,6 +155,9 @@ More models with different backbones will be added to the model zoo.
 | X-101-32x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  44.0  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_x101_32x4d_fpn_2x_20181218-28f73c4c.pth) |
 | X-101-64x4d-FPN | pytorch |   1x    |   10.0   |        1.133        |      6.7       |  44.5  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_x101_64x4d_fpn_1x_20181218-e2dc376a.pth) |
 | X-101-64x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  44.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_rcnn_x101_64x4d_fpn_2x_20181218-5add321e.pth) |
+|   HRNetV2p-W18   | pytorch |   20e   |    -     |          -          |       -        |  41.2  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w18_20e_20190810-132012d0.pth) |
+|   HRNetV2p-W32   | pytorch |   20e   |    -     |          -          |       -        |  43.7  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w32_20e_20190522-55bec4ee.pth)|
+|   HRNetV2p-W48   | pytorch |   20e   |    -     |          -          |       -        |  44.6  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w48_20e_20190810-f40ed8e1.pth) |
 
 ### Cascade Mask R-CNN
 
@@ -163,6 +174,9 @@ More models with different backbones will be added to the model zoo.
 | X-101-32x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  44.7  |  38.6   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_x101_32x4d_fpn_20e_20181218-761a3473.pth) |
 | X-101-64x4d-FPN | pytorch |   1x    |   11.4   |        1.33         |      5.3       |  45.4  |  39.1   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_x101_64x4d_fpn_1x_20190501-827e0a70.pth)  |
 | X-101-64x4d-FPN | pytorch |   20e   |    -     |          -          |       -        |  45.7  |  39.4   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/cascade_mask_rcnn_x101_64x4d_fpn_20e_20181218-630773a7.pth) |
+|   HRNetV2p-W18   | pytorch |   20e   |    -     |          -          |       -        |  41.9  |  36.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_mask_rcnn_hrnetv2p_w18_20e_20190810-054fb7bf.pth) |
+|   HRNetV2p-W32   | pytorch |   20e   |    -     |          -          |       -        |  44.5  |  38.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_20190810-76f61cd0.pth) |
+|   HRNetV2p-W48   | pytorch |   20e   |    -     |          -          |       -        |  46.0  |  39.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_mask_rcnn_hrnetv2p_w48_20e_20190810-d04a1415.pth) |
 
 **Notes:**
 
@@ -172,11 +186,14 @@ More models with different backbones will be added to the model zoo.
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP |                                                            Download                                                             |
 | :-------------: | :-----: | :-----: | :------: | :-----------------: | :------------: | :----: | :-----: | :-----------------------------------------------------------------------------------------------------------------------------: |
-|    R-50-FPN     | pytorch |   1x    |   7.4    |        0.936        |      4.1       |  42.1  |  37.3   |     [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r50_fpn_1x_20190408-878c1712.pth)     |
+|    R-50-FPN     | pytorch |   1x    |   7.4    |        0.936        |      4.1       |  42.1  |  37.3   |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r50_fpn_1x_20190408-878c1712.pth)     |
 |    R-50-FPN     | pytorch |   20e   |    -     |          -          |       -        |  43.2  |  38.1   |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r50_fpn_20e_20190408-c03b7015.pth)     |
-|    R-101-FPN    | pytorch |   20e   |   9.3    |        1.051        |      4.0       |  44.9  |  39.4   |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r101_fpn_20e_20190408-a2e586db.pth)    |
+|    R-101-FPN    | pytorch |   20e   |   9.3    |        1.051        |      4.0       |  44.9  |  39.4   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_r101_fpn_20e_20190408-a2e586db.pth)    |
 | X-101-32x4d-FPN | pytorch |   20e   |   5.8    |        0.769        |      3.8       |  46.1  |  40.3   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_x101_32x4d_fpn_20e_20190408-9eae4d0b.pth) |
 | X-101-64x4d-FPN | pytorch |   20e   |   7.5    |        1.120        |      3.5       |  46.9  |  40.8   | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/htc_x101_64x4d_fpn_20e_20190408-497f2561.pth) |
+|   HRNetV2p-W18   | pytorch |   20e   |    -     |          -          |       -        |  43.1  |  37.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w18_20e_20190810-d70072af.pth) |
+|   HRNetV2p-W32   | pytorch |   20e   |    -     |          -          |       -        |  45.3  |  39.6   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w32_20e_20190810-82f9ef5a.pth) |
+|   HRNetV2p-W48   | pytorch |   20e   |    -     |          -          |       -        |  46.8  | 40.7    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w48_20e_20190810-f6d2c3fd.pth) |
 
 **Notes:**
 
@@ -189,18 +206,11 @@ More models with different backbones will be added to the model zoo.
 |  VGG16   |  300  | caffe |  120e   |   3.5    |        0.256        |  25.9 / 34.6   |  25.7  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd300_coco_vgg16_caffe_120e_20181221-84d7110b.pth) |
 |  VGG16   |  512  | caffe |  120e   |   7.6    |        0.412        |  20.7 / 25.4   |  29.3  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd512_coco_vgg16_caffe_120e_20181221-d48b0be8.pth) |
 
-### SSD (PASCAL VOC)
-
-| Backbone | Size  | Style | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP |                                                             Download                                                             |
-| :------: | :---: | :---: | :-----: | :------: | :-----------------: | :------------: | :----: | :------------------------------------------------------------------------------------------------------------------------------: |
-|  VGG16   |  300  | caffe |  240e   |   2.5    |        0.159        |  35.7 / 53.6   |  77.5  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd300_voc_vgg16_caffe_240e_20190501-7160d09a.pth) |
-|  VGG16   |  512  | caffe |  240e   |   4.3    |        0.214        |  27.5 / 35.9   |  80.0  | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ssd512_voc_vgg16_caffe_240e_20190501-ff194be1.pth) |
-
 **Notes:**
 
 - `cudnn.benchmark` is set as `True` for SSD training and testing.
 - Inference time is reported for batch size = 1 and batch size = 8.
-- The speed difference between VOC and COCO is caused by model parameters and nms.
+- The speed on COCO and VOC are different due to model parameters and nms.
 
 ### Group Normalization (GN)
 
@@ -221,6 +231,38 @@ Please refer to [Libra R-CNN](configs/libra_rcnn/README.md) for details.
 ### Guided Anchoring
 
 Please refer to [Guided Anchoring](configs/guided_anchoring/README.md) for details.
+
+### FCOS
+
+Please refer to [FCOS](configs/fcos/README.md) for details.
+
+### Grid R-CNN (plus)
+
+Please refer to [Grid R-CNN](configs/grid_rcnn/README.md) for details.
+
+### GHM
+
+Please refer to [GHM](configs/ghm/README.md) for details.
+
+### GCNet
+
+Please refer to [GCNet](configs/gcnet/README.md) for details.
+
+### HRNet
+Please refer to [HRNet](configs/hrnet/README.md) for details.
+
+### Mask Scoring R-CNN
+
+Please refer to [Mask Scoring R-CNN](configs/ms_rcnn/README.md) for details.
+
+### Train from Scratch
+
+Please refer to [Rethinking ImageNet Pre-training](configs/scratch/README.md) for details.
+
+### Other datasets
+
+We also benchmark some methods on [PASCAL VOC](configs/pascal_voc/README.md), [Cityscapes](configs/cityscapes/README.md) and [WIDER FACE](configs/wider_face/README.md).
+
 
 ## Comparison with Detectron and maskrcnn-benchmark
 

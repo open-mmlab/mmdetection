@@ -38,6 +38,11 @@ class RPN(BaseDetector, RPNTestMixin):
             x = self.neck(x)
         return x
 
+    def forward_dummy(self, img):
+        x = self.extract_feat(img)
+        rpn_outs = self.rpn_head(x)
+        return rpn_outs
+
     def forward_train(self,
                       img,
                       img_meta,

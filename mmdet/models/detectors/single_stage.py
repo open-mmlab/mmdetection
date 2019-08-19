@@ -42,6 +42,11 @@ class SingleStageDetector(BaseDetector):
             x = self.neck(x)
         return x
 
+    def forward_dummy(self, img):
+        x = self.extract_feat(img)
+        outs = self.bbox_head(x)
+        return outs
+
     def forward_train(self,
                       img,
                       img_metas,
