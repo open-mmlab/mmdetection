@@ -74,7 +74,7 @@ train_pipeline = [
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
-        type='MultiscaleFlipAug',
+        type='MultiScaleFlipAug',
         img_scale=(300, 300),
         flip=False,
         transforms=[

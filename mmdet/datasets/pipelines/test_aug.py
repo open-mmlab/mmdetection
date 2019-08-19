@@ -5,7 +5,7 @@ from .compose import Compose
 
 
 @PIPELINES.register_module
-class MultiscaleFlipAug(object):
+class MultiScaleFlipAug(object):
 
     def __init__(self, transforms, img_scale, flip=False):
         self.transforms = Compose(transforms)
