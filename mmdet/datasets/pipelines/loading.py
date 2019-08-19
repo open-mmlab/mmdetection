@@ -25,8 +25,8 @@ class LoadImageFromFile(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(prefix="{}")'.format(
-            self.img_prefix)
+        return self.__class__.__name__ + '(to_float32={})'.format(
+            self.to_float32)
 
 
 @PIPELINES.register_module
@@ -64,19 +64,18 @@ class LoadAnnotations(object):
         results['gt_labels'] = results['ann_info']['labels']
         return results
 
-    def _poly2mask(self, ann, img_h, img_w):
-        segm = ann['segmentation']
-        if type(segm) == list:
+    def _poly2mask(self, mask_ann, img_h, img_w):
+        if isinstance(mask_ann, list):
             # polygon -- a single object might consist of multiple parts
             # we merge all parts into one mask rle code
-            rles = maskUtils.frPyObjects(segm, img_h, img_w)
+            rles = maskUtils.frPyObjects(mask_ann, img_h, img_w)
             rle = maskUtils.merge(rles)
-        elif type(segm['counts']) == list:
+        elif isinstance(mask_ann['counts'], list):
             # uncompressed RLE
-            rle = maskUtils.frPyObjects(segm, img_h, img_w)
+            rle = maskUtils.frPyObjects(mask_ann, img_h, img_w)
         else:
             # rle
-            rle = ann['segmentation']
+            rle = mask_ann
         mask = maskUtils.decode(rle)
         return mask
 

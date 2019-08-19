@@ -64,11 +64,13 @@ class CocoDataset(CustomDataset):
 
         Returns:
             dict: A dict containing the following keys: bboxes, bboxes_ignore,
-                labels, masks, mask_polys, poly_lens.
+                labels, masks, seg_map. "masks" are raw annotations and not
+                decoded into binary masks.
         """
         gt_bboxes = []
         gt_labels = []
         gt_bboxes_ignore = []
+        gt_masks_ann = []
 
         for i, ann in enumerate(ann_info):
             if ann.get('ignore', False):
@@ -82,6 +84,7 @@ class CocoDataset(CustomDataset):
             else:
                 gt_bboxes.append(bbox)
                 gt_labels.append(self.cat2label[ann['category_id']])
+                gt_masks_ann.append(ann['segmentation'])
 
         if gt_bboxes:
             gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
@@ -101,7 +104,7 @@ class CocoDataset(CustomDataset):
             bboxes=gt_bboxes,
             labels=gt_labels,
             bboxes_ignore=gt_bboxes_ignore,
-            masks=ann_info,
+            masks=gt_masks_ann,
             seg_map=seg_map)
 
         return ann
