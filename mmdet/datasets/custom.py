@@ -1,3 +1,5 @@
+import os.path as osp
+
 import mmcv
 import numpy as np
 from torch.utils.data import Dataset
@@ -34,20 +36,34 @@ class CustomDataset(Dataset):
     def __init__(self,
                  ann_file,
                  pipeline,
+                 data_root=None,
                  img_prefix=None,
                  seg_prefix=None,
                  proposal_file=None,
                  test_mode=False):
         self.ann_file = ann_file
+        self.data_root = data_root
         self.img_prefix = img_prefix
         self.seg_prefix = seg_prefix
         self.proposal_file = proposal_file
         self.test_mode = test_mode
 
+        # join paths if data_root is specified
+        if self.data_root is not None:
+            if not osp.isabs(self.ann_file):
+                self.ann_file = osp.join(self.data_root, self.ann_file)
+            if not (self.img_prefix is None or osp.isabs(self.img_prefix)):
+                self.img_prefix = osp.join(self.data_root, self.img_prefix)
+            if not (self.seg_prefix is None or osp.isabs(self.seg_prefix)):
+                self.seg_prefix = osp.join(self.data_root, self.seg_prefix)
+            if not (self.proposal_file is None
+                    or osp.isabs(self.proposal_file)):
+                self.proposal_file = osp.join(self.data_root,
+                                              self.proposal_file)
         # load annotations (and proposals)
-        self.img_infos = self.load_annotations(ann_file)
-        if proposal_file is not None:
-            self.proposals = self.load_proposals(proposal_file)
+        self.img_infos = self.load_annotations(self.ann_file)
+        if self.proposal_file is not None:
+            self.proposals = self.load_proposals(self.proposal_file)
         else:
             self.proposals = None
         # filter images with no annotation during training
