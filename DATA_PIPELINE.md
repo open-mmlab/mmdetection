@@ -4,7 +4,7 @@ The data preparation pipeline and the dataset is decomposed. Usually a dataset
 defines how to process the annotations and a data pipeline defines all the steps to prepare a data dict.
 A pipeline consists of a sequence of operations. Each operation takes a dict as input and also output a dict for the next transform.
 
-We present a classical pipeline in the following figure. The blue blocks are pipeline operations. With the pipeline going on, each operator can add new keys to the result dict or update the existing keys.
+We present a classical pipeline in the following figure. The blue blocks are pipeline operations. With the pipeline going on, each operator can add new keys (marked as green) to the result dict or update the existing keys (marked as orange).
 ![pipeline figure](demo/data_pipeline.png)
 
 The operations are categorized into data loading, pre-processing, formatting and test-time augmentation.
@@ -92,17 +92,23 @@ For each operation, we list the related dict fields that are added/updated/remov
 ### Formatting
 
 `ToTensor`
+- update: specified by `keys`.
 
 `ImageToTensor`
+- update: specified by `keys`.
 
 `Transpose`
+- update: specified by `keys`.
 
 `ToDataContainer`
+- update: specified by `fields`.
 
 `DefaultFormatBundle`
 - update: img, proposals, gt_bboxes, gt_bboxes_ignore, gt_labels, gt_masks, gt_semantic_seg
 
 `Collect`
+- add: img_meta (the keys of img_meta is specified by `meta_keys`)
+- remove: all other keys except for those specified by `keys`
 
 ### Test time augmentation
 
