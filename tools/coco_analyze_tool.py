@@ -3,10 +3,10 @@ import os
 
 from argparse import ArgumentParser
 from multiprocessing import Pool
-import matplotlib.pyplot as plt
-import numpy as np
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def makeplot(rs, ps, outDir, class_name, iou_type):
