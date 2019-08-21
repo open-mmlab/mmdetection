@@ -2,7 +2,7 @@ dist: xenial
 language: python
 
 install:
-  - pip install isort flake8 yapf 
+  - pip install isort flake8 yapf pytest
 
 python:
   - "3.5"
@@ -10,6 +10,7 @@ python:
   - "3.7"
 
 script:
-  - flake8
+  - py.test -v --doctest-modules
+  - flake8 .
   - isort -rc --check-only --diff mmdet/ tools/
   - yapf -r -d --style .style.yapf mmdet/ tools/
