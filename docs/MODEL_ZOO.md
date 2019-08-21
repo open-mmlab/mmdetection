@@ -197,7 +197,7 @@ More models with different backbones will be added to the model zoo.
 
 **Notes:**
 
-- Please refer to [Hybrid Task Cascade](configs/htc/README.md) for details and more a powerful model (50.7/43.9).
+- Please refer to [Hybrid Task Cascade](../configs/htc/README.md) for details and more a powerful model (50.7/43.9).
 
 ### SSD
 
@@ -214,54 +214,54 @@ More models with different backbones will be added to the model zoo.
 
 ### Group Normalization (GN)
 
-Please refer to [Group Normalization](configs/gn/README.md) for details.
+Please refer to [Group Normalization](../configs/gn/README.md) for details.
 
 ### Weight Standardization
 
-Please refer to [Weight Standardization](configs/gn+ws/README.md) for details.
+Please refer to [Weight Standardization](../configs/gn+ws/README.md) for details.
 
 ### Deformable Convolution v2
 
-Please refer to [Deformable Convolutional Networks](configs/dcn/README.md) for details.
+Please refer to [Deformable Convolutional Networks](../configs/dcn/README.md) for details.
 
 ### Libra R-CNN
 
-Please refer to [Libra R-CNN](configs/libra_rcnn/README.md) for details.
+Please refer to [Libra R-CNN](../configs/libra_rcnn/README.md) for details.
 
 ### Guided Anchoring
 
-Please refer to [Guided Anchoring](configs/guided_anchoring/README.md) for details.
+Please refer to [Guided Anchoring](../configs/guided_anchoring/README.md) for details.
 
 ### FCOS
 
-Please refer to [FCOS](configs/fcos/README.md) for details.
+Please refer to [FCOS](../configs/fcos/README.md) for details.
 
 ### Grid R-CNN (plus)
 
-Please refer to [Grid R-CNN](configs/grid_rcnn/README.md) for details.
+Please refer to [Grid R-CNN](../configs/grid_rcnn/README.md) for details.
 
 ### GHM
 
-Please refer to [GHM](configs/ghm/README.md) for details.
+Please refer to [GHM](../configs/ghm/README.md) for details.
 
 ### GCNet
 
-Please refer to [GCNet](configs/gcnet/README.md) for details.
+Please refer to [GCNet](../configs/gcnet/README.md) for details.
 
 ### HRNet
-Please refer to [HRNet](configs/hrnet/README.md) for details.
+Please refer to [HRNet](../configs/hrnet/README.md) for details.
 
 ### Mask Scoring R-CNN
 
-Please refer to [Mask Scoring R-CNN](configs/ms_rcnn/README.md) for details.
+Please refer to [Mask Scoring R-CNN](../configs/ms_rcnn/README.md) for details.
 
 ### Train from Scratch
 
-Please refer to [Rethinking ImageNet Pre-training](configs/scratch/README.md) for details.
+Please refer to [Rethinking ImageNet Pre-training](../configs/scratch/README.md) for details.
 
 ### Other datasets
 
-We also benchmark some methods on [PASCAL VOC](configs/pascal_voc/README.md), [Cityscapes](configs/cityscapes/README.md) and [WIDER FACE](configs/wider_face/README.md).
+We also benchmark some methods on [PASCAL VOC](../configs/pascal_voc/README.md), [Cityscapes](../configs/cityscapes/README.md) and [WIDER FACE](../configs/wider_face/README.md).
 
 
 ## Comparison with Detectron and maskrcnn-benchmark
