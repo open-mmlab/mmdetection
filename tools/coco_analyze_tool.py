@@ -1,10 +1,10 @@
-import copy
 import os
-
+import copy
 from argparse import ArgumentParser
 from multiprocessing import Pool
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+
 import matplotlib.pyplot as plt
 import numpy as np
 
