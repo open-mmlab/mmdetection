@@ -6,7 +6,7 @@ python:
   - "3.6"
   - "3.7"
 
-env: CUDA=10.1.105-1 CUDA_SHORT=10.1 UBUNTU_VERSION=ubuntu1604
+env: CUDA=9.2.148-1 CUDA_SHORT=9.2 UBUNTU_VERSION=ubuntu1604
 
 before_install:
   - INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb
@@ -28,7 +28,7 @@ install:
 script:
   - python setup.py check -m -s
   - python setup.py build_ext --inplace
-  - py.test mmdet demmo -v --doctest-modules
+  - py.test mmdet demo -v --doctest-modules
   - flake8 .
   - isort -rc --check-only --diff mmdet/ tools/
   - yapf -r -d --style .style.yapf mmdet/ tools/
