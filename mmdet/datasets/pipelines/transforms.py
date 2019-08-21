@@ -153,6 +153,15 @@ class Resize(object):
         self._resize_masks(results)
         return results
 
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += ('(img_scale={}, multiscale_mode={}, ratio_range={}, '
+                     'keep_ratio={})').format(self.img_scale,
+                                              self.multiscale_mode,
+                                              self.ratio_range,
+                                              self.keep_ratio)
+        return repr_str
+
 
 @PIPELINES.register_module
 class RandomFlip(object):
@@ -201,6 +210,10 @@ class RandomFlip(object):
                 results[key] = [mask[:, ::-1] for mask in results[key]]
         return results
 
+    def __repr__(self):
+        return self.__class__.__name__ + '(flip_ratio={})'.format(
+            self.flip_ratio)
+
 
 @PIPELINES.register_module
 class Pad(object):
@@ -247,6 +260,42 @@ class Pad(object):
         self._pad_img(results)
         self._pad_masks(results)
         return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += '(size={}, size_divisor={}, pad_val={})'.format(
+            self.size, self.size_divisor, self.pad_val)
+        return repr_str
+
+
+@PIPELINES.register_module
+class Normalize(object):
+    """Normalize the image.
+
+    Args:
+        mean (sequence): Mean values of 3 channels.
+        std (sequence): Std values of 3 channels.
+        to_rgb (bool): Whether to convert the image from BGR to RGB,
+            default is true.
+    """
+
+    def __init__(self, mean, std, to_rgb=True):
+        self.mean = np.array(mean, dtype=np.float32)
+        self.std = np.array(std, dtype=np.float32)
+        self.to_rgb = to_rgb
+
+    def __call__(self, results):
+        results['img'] = mmcv.imnormalize(results['img'], self.mean, self.std,
+                                          self.to_rgb)
+        results['img_norm_cfg'] = dict(
+            mean=self.mean, std=self.std, to_rgb=self.to_rgb)
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += '(mean={}, std={}, to_rgb={})'.format(
+            self.mean, self.std, self.to_rgb)
+        return repr_str
 
 
 @PIPELINES.register_module
@@ -307,29 +356,9 @@ class RandomCrop(object):
 
         return results
 
-
-@PIPELINES.register_module
-class Normalize(object):
-    """Normalize the image.
-
-    Args:
-        mean (sequence): Mean values of 3 channels.
-        std (sequence): Std values of 3 channels.
-        to_rgb (bool): Whether to convert the image from BGR to RGB,
-            default is true.
-    """
-
-    def __init__(self, mean, std, to_rgb=True):
-        self.mean = np.array(mean, dtype=np.float32)
-        self.std = np.array(std, dtype=np.float32)
-        self.to_rgb = to_rgb
-
-    def __call__(self, results):
-        results['img'] = mmcv.imnormalize(results['img'], self.mean, self.std,
-                                          self.to_rgb)
-        results['img_norm_cfg'] = dict(
-            mean=self.mean, std=self.std, to_rgb=self.to_rgb)
-        return results
+    def __repr__(self):
+        return self.__class__.__name__ + '(crop_size={})'.format(
+            self.crop_size)
 
 
 @PIPELINES.register_module
@@ -370,6 +399,10 @@ class SegResizeFlipPadRescale(object):
                 gt_seg, self.scale_factor, interpolation='nearest')
         results['gt_semantic_seg'] = gt_seg
         return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(scale_factor={})'.format(
+            self.scale_factor)
 
 
 @PIPELINES.register_module
@@ -452,6 +485,14 @@ class PhotoMetricDistortion(object):
         results['img'] = img
         return results
 
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += ('(brightness_delta={}, contrast_range={}, '
+                     'saturation_range={}, hue_delta={})').format(
+                         self.brightness_delta, self.contrast_range,
+                         self.saturation_range, self.hue_delta)
+        return repr_str
+
 
 @PIPELINES.register_module
 class Expand(object):
@@ -491,6 +532,12 @@ class Expand(object):
         results['img'] = expand_img
         results['gt_bboxes'] = boxes
         return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += '(mean={}, to_rgb={}, ratio_range={})'.format(
+            self.mean, self.to_rgb, self.ratio_range)
+        return repr_str
 
 
 @PIPELINES.register_module
@@ -559,6 +606,12 @@ class MinIoURandomCrop(object):
                 results['gt_labels'] = labels
                 return results
 
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += '(min_ious={}, min_crop_size={})'.format(
+            self.min_ious, self.min_crop_size)
+        return repr_str
+
 
 @PIPELINES.register_module
 class Corrupt(object):
@@ -573,3 +626,9 @@ class Corrupt(object):
             corruption_name=self.corruption,
             severity=self.severity)
         return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += '(corruption={}, severity={})'.format(
+            self.corruption, self.severity)
+        return repr_str

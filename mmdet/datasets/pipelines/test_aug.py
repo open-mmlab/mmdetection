@@ -30,3 +30,9 @@ class MultiScaleFlipAug(object):
             for key, val in data.items():
                 aug_data_dict[key].append(val)
         return aug_data_dict
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += '(transforms={}, img_scale={}, flip={})'.format(
+            self.transforms, self.img_scale, self.flip)
+        return repr_str

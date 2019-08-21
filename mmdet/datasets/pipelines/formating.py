@@ -71,6 +71,10 @@ class Transpose(object):
             results[key] = results[key].transpose(self.order)
         return results
 
+    def __repr__(self):
+        return self.__class__.__name__ + '(keys={}, order={})'.format(
+            self.keys, self.order)
+
 
 @PIPELINES.register_module
 class ToDataContainer(object):
@@ -86,6 +90,9 @@ class ToDataContainer(object):
             key = field.pop('key')
             results[key] = DC(results[key], **field)
         return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(fields={})'.format(self.fields)
 
 
 @PIPELINES.register_module
@@ -121,13 +128,16 @@ class DefaultFormatBundle(object):
                 to_tensor(results['gt_semantic_seg'][None, ...]), stack=True)
         return results
 
+    def __repr__(self):
+        return self.__class__.__name__
+
 
 @PIPELINES.register_module
 class Collect(object):
 
     def __init__(self,
                  keys,
-                 meta_keys=('ori_shape', 'img_shape', 'pad_shape',
+                 meta_keys=('filename', 'ori_shape', 'img_shape', 'pad_shape',
                             'scale_factor', 'flip', 'img_norm_cfg')):
         self.keys = keys
         self.meta_keys = meta_keys
@@ -141,3 +151,7 @@ class Collect(object):
         for key in self.keys:
             data[key] = results[key]
         return data
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(keys={}, meta_keys={})'.format(
+            self.keys, self.meta_keys)

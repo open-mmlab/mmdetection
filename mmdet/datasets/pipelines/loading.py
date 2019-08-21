@@ -15,10 +15,12 @@ class LoadImageFromFile(object):
         self.to_float32 = to_float32
 
     def __call__(self, results):
-        img = mmcv.imread(
-            osp.join(results['img_prefix'], results['img_info']['filename']))
+        filename = osp.join(results['img_prefix'],
+                            results['img_info']['filename'])
+        img = mmcv.imread(filename)
         if self.to_float32:
             img = img.astype(np.float32)
+        results['filename'] = filename
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
@@ -108,10 +110,11 @@ class LoadAnnotations(object):
         return results
 
     def __repr__(self):
-        return (self.__class__.__name__ + '(with_bbox={}, with_label={}, '
-                'with_mask={}, with_seg={})'.format(
-                    self.with_bbox, self.with_label, self.with_mask,
-                    self.with_seg))
+        repr_str = self.__class__.__name__
+        repr_str += ('(with_bbox={}, with_label={}, with_mask={},'
+                     ' with_seg={})').format(self.with_bbox, self.with_label,
+                                             self.with_mask, self.with_seg)
+        return repr_str
 
 
 @PIPELINES.register_module
@@ -138,5 +141,5 @@ class LoadProposals(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(num_max_proposals="{}")'.format(
+        return self.__class__.__name__ + '(num_max_proposals={})'.format(
             self.num_max_proposals)
