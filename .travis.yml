@@ -28,7 +28,7 @@ install:
 script:
   - python setup.py check -m -s
   - python setup.py build_ext --inplace
-  - py.test -v --doctest-modules
+  - py.test mmdet demmo -v --doctest-modules
   - flake8 .
   - isort -rc --check-only --diff mmdet/ tools/
   - yapf -r -d --style .style.yapf mmdet/ tools/
