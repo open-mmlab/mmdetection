@@ -22,13 +22,17 @@ before_install:
   - PATH=${CUDA_HOME}/bin:${PATH}
 
 install:
-  - pip install isort flake8 yapf pytest Cython
+  - pip install Cython
   - pip install -r requirements.txt
+  - pip install -r tests/requirements.txt
 
 script:
-  - python setup.py check -m -s
-  - python setup.py build_ext --inplace
-  - py.test mmdet demo -v --doctest-modules
   - flake8 .
   - isort -rc --check-only --diff mmdet/ tools/
   - yapf -r -d --style .style.yapf mmdet/ tools/
+  - python setup.py check -m -s
+  - python setup.py build_ext --inplace
+  - coverage run --source mmdet -m py.test mmdet tests -v --doctest-modules
+
+after_success:
+  - coverage report
