@@ -1,15 +1,39 @@
 dist: xenial
 language: python
 
-install:
-  - pip install isort flake8 yapf 
-
 python:
   - "3.5"
   - "3.6"
   - "3.7"
 
+env: CUDA=9.2.148-1 CUDA_SHORT=9.2 UBUNTU_VERSION=ubuntu1604
+
+# Ref to CUDA installation in Travis: https://github.com/jeremad/cuda-travis
+before_install:
+  - INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb
+  - wget http://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/${INSTALLER}
+  - sudo dpkg -i ${INSTALLER}
+  - wget https://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/7fa2af80.pub
+  - sudo apt-key add 7fa2af80.pub
+  - sudo apt update -qq
+  - sudo apt install -y cuda-${CUDA_SHORT/./-} cuda-cufft-dev-${CUDA_SHORT/./-}
+  - sudo apt clean
+  - CUDA_HOME=/usr/local/cuda-${CUDA_SHORT}
+  - LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${CUDA_HOME}/include:${LD_LIBRARY_PATH}
+  - PATH=${CUDA_HOME}/bin:${PATH}
+
+install:
+  - pip install Cython
+  - pip install -r requirements.txt
+  - pip install -r tests/requirements.txt
+
 script:
-  - flake8
-  - isort -rc --check-only --diff mmdet/ tools/
-  - yapf -r -d --style .style.yapf mmdet/ tools/
+  - flake8 .
+  - isort -rc --check-only --diff mmdet/ tools/ tests/
+  - yapf -r -d --style .style.yapf mmdet/ tools/ tests/
+  - python setup.py check -m -s
+  - python setup.py build_ext --inplace
+  - coverage run --source mmdet -m py.test tests -v --doctest-modules
+
+after_success:
+  - coverage report
