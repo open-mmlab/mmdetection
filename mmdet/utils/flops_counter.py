@@ -103,8 +103,8 @@ def flops_to_string(flops, units='GMac', precision=2):
 def params_to_string(params_num):
     """converting number to string
 
-    :param float params_num:
-    :returns str:
+    :param float params_num: number
+    :returns str: number
 
     >>> params_to_string(1e9)
     '1000.0 M'
