@@ -8,6 +8,7 @@ python:
 
 env: CUDA=9.2.148-1 CUDA_SHORT=9.2 UBUNTU_VERSION=ubuntu1604
 
+# Ref to CUDA installation in Travis: https://github.com/jeremad/cuda-travis
 before_install:
   - INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb
   - wget http://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/${INSTALLER}
@@ -28,12 +29,11 @@ install:
 
 script:
   - flake8 .
-  - isort -rc --check-only --diff mmdet/ tools/
-  - yapf -r -d --style .style.yapf mmdet/ tools/
+  - isort -rc --check-only --diff mmdet/ tools/ tests/
+  - yapf -r -d --style .style.yapf mmdet/ tools/ tests/
   - python setup.py check -m -s
   - python setup.py build_ext --inplace
   - coverage run --source mmdet -m py.test tests -v --doctest-modules
-  # - nosetests mmdet tests -v --exe --with-doctest --with-xunit --with-coverage --cover-package=mmdet
 
 after_success:
   - coverage report

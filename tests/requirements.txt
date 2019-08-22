@@ -1,7 +1,5 @@
 isort
 flake8
 yapf
-nose2
-pytest-xdist
 pytest-cov
 codecov
