@@ -27,7 +27,7 @@ We use the following tools for linting and formatting:
 - [yapf](https://github.com/google/yapf): formatter
 - [isort](https://github.com/timothycrosley/isort): sort imports
 
-Style configurations of yapf and isort can be found in [.style.yapf](.style.yapf) and [.isort.cfg](.isort.cfg).
+Style configurations of yapf and isort can be found in [.style.yapf](../.style.yapf) and [.isort.cfg](../.isort.cfg).
 
 >Before you create a PR, make sure that your code lints and is formatted by yapf.
 

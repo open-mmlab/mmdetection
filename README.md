@@ -85,7 +85,7 @@ v0.5.1 (20/10/2018)
 ## Benchmark and model zoo
 
 Supported methods and backbones are shown in the below table.
-Results and models are available in the [Model zoo](MODEL_ZOO.md).
+Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 
 |                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet |
 |--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|
@@ -119,16 +119,16 @@ Other features
 
 ## Installation
 
-Please refer to [INSTALL.md](INSTALL.md) for installation and dataset preparation.
+Please refer to [INSTALL.md](docs/INSTALL.md) for installation and dataset preparation.
 
 
 ## Get Started
 
-Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage of MMDetection.
+Please see [GETTING_STARTED.md](docs/GETTING_STARTED.md) for the basic usage of MMDetection.
 
 ## Contributing
 
-We appreciate all contributions to improve MMDetection. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for the contributing guideline.
+We appreciate all contributions to improve MMDetection. Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contributing guideline.
 
 ## Acknowledgement
 
