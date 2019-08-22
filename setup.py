@@ -119,6 +119,15 @@ def make_cython_ext(name, module, sources):
     return extension
 
 
+def requirements2list(pfi_txt='requirements.txt'):
+    here = os.path.dirname(os.path.realpath(__file__))
+    f = open(os.path.join(here, pfi_txt), 'r')
+    l = []
+    for line in f.readlines():
+        l.append(line.replace('\n', ''))
+    return l
+
+
 if __name__ == '__main__':
     write_version_py()
     setup(
@@ -146,10 +155,7 @@ if __name__ == '__main__':
         license='Apache License 2.0',
         setup_requires=['pytest-runner', 'cython', 'numpy'],
         tests_require=['pytest'],
-        install_requires=[
-            'mmcv>=0.2.10', 'numpy', 'matplotlib', 'six', 'terminaltables',
-            'pycocotools', 'torch>=1.1', 'imagecorruptions'
-        ],
+        install_requires=requirements2list(),
         ext_modules=[
             make_cython_ext(
                 name='soft_nms_cpu',
