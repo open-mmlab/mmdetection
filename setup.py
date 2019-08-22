@@ -126,6 +126,8 @@ if __name__ == '__main__':
         version=get_version(),
         description='Open MMLab Detection Toolbox and Benchmark',
         long_description=readme(),
+        author='OpenMMLab',
+        author_email='chenkaidev@gmail.com',
         keywords='computer vision, object detection',
         url='https://github.com/open-mmlab/mmdetection',
         packages=find_packages(exclude=('configs', 'tools', 'demo')),

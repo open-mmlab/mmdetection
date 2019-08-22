@@ -101,6 +101,18 @@ def flops_to_string(flops, units='GMac', precision=2):
 
 
 def params_to_string(params_num):
+    """converting number to string
+
+    :param float params_num: number
+    :returns str: number
+
+    >>> params_to_string(1e9)
+    '1000.0 M'
+    >>> params_to_string(2e5)
+    '200.0 k'
+    >>> params_to_string(3e-9)
+    '3e-09'
+    """
     if params_num // 10**6 > 0:
         return str(round(params_num / 10**6, 2)) + ' M'
     elif params_num // 10**3:
