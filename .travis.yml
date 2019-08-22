@@ -32,7 +32,8 @@ script:
   - yapf -r -d --style .style.yapf mmdet/ tools/
   - python setup.py check -m -s
   - python setup.py build_ext --inplace
-  - coverage run --source mmdet -m py.test mmdet tests -v --doctest-modules
+  # - coverage run --source mmdet -m py.test mmdet tests -v --doctest-modules
+  - nosetests mmdet tests -v --exe --with-doctest --with-xunit --with-coverage --cover-package=mmdet
 
 after_success:
   - coverage report

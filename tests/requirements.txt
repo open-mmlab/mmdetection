@@ -1,5 +1,7 @@
 isort
 flake8
 yapf
-pytest
+nose2
+pytest-xdist
+pytest-cov
 codecov
