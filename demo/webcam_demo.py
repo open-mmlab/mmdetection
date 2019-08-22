@@ -19,10 +19,6 @@ def parse_args():
     return args
 
 
-def test_something():
-    pass
-
-
 def main():
     args = parse_args()
 
