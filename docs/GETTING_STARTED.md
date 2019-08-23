@@ -89,12 +89,10 @@ model = init_detector(config_file, checkpoint_file, device='cuda:0')
 # test a single image and show the results
 img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
 result = inference_detector(model, img)
+# visualize the results in a new window
 show_result(img, result, model.CLASSES)
-
-# test a list of images and write the results to image files
-imgs = ['test1.jpg', 'test2.jpg']
-for i, result in enumerate(inference_detector(model, imgs)):
-    show_result(imgs[i], result, model.CLASSES, out_file='result_{}.jpg'.format(i))
+# or save the visualization results to image files
+show_result(img, result, model.CLASSES, out_file='result.jpg')
 
 # test a video and show the results
 video = mmcv.VideoReader('video.mp4')

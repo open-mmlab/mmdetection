@@ -402,7 +402,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
     def aug_test(self, img, img_meta, proposals=None, rescale=False):
         raise NotImplementedError
 
-    def show_result(self, data, result, img_norm_cfg, **kwargs):
+    def show_result(self, data, result, **kwargs):
         if self.with_mask:
             ms_bbox_result, ms_segm_result = result
             if isinstance(ms_bbox_result, dict):
@@ -411,5 +411,4 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         else:
             if isinstance(result, dict):
                 result = result['ensemble']
-        super(CascadeRCNN, self).show_result(data, result, img_norm_cfg,
-                                             **kwargs)
+        super(CascadeRCNN, self).show_result(data, result, **kwargs)

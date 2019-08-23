@@ -1,4 +1,5 @@
 import argparse
+import copy
 import os
 import os.path as osp
 import shutil
@@ -350,13 +351,15 @@ def main():
                 continue
 
             # assign corruption and severity
-            if corruption_severity == 0:
-                # evaluate without corruptions for severity = 0
-                cfg.data.test['corruption'] = None
-                cfg.data.test['corruption_severity'] = 0
-            else:
-                cfg.data.test['corruption'] = corruption
-                cfg.data.test['corruption_severity'] = corruption_severity
+            if corruption_severity > 0:
+                test_data_cfg = copy.deepcopy(cfg.data.test)
+                corruption_trans = dict(
+                    type='Corrupt',
+                    corruption=corruption,
+                    severity=corruption_severity)
+                # TODO: hard coded "1", we assume that the first step is
+                # loading images, which needs to be fixed in the future
+                test_data_cfg['pipeline'].insert(1, corruption_trans)
 
             # print info
             print('\nTesting {} at severity {}'.format(corruption,
