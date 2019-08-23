@@ -78,12 +78,12 @@ class DistEvalmAPHook(DistEvalHook):
     def evaluate(self, runner, results):
         gt_bboxes = []
         gt_labels = []
-        gt_ignore = [] if self.dataset.with_crowd else None
+        gt_ignore = []
         for i in range(len(self.dataset)):
             ann = self.dataset.get_ann_info(i)
             bboxes = ann['bboxes']
             labels = ann['labels']
-            if gt_ignore is not None:
+            if 'bboxes_ignore' in ann:
                 ignore = np.concatenate([
                     np.zeros(bboxes.shape[0], dtype=np.bool),
                     np.ones(ann['bboxes_ignore'].shape[0], dtype=np.bool)
@@ -93,6 +93,8 @@ class DistEvalmAPHook(DistEvalHook):
                 labels = np.concatenate([labels, ann['labels_ignore']])
             gt_bboxes.append(bboxes)
             gt_labels.append(labels)
+        if not gt_ignore:
+            gt_ignore = None
         # If the dataset is VOC2007, then use 11 points mAP evaluation.
         if hasattr(self.dataset, 'year') and self.dataset.year == 2007:
             ds_name = 'voc07'
