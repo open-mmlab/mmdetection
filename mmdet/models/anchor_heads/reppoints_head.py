@@ -216,7 +216,7 @@ class RepPointsHead(nn.Module):
         """
         Base on the previous bboxes and regression values, we compute the
             regressed bboxes and generate the grids on the bboxes.
-        :param reg: the regression value to prevcious bboxes.
+        :param reg: the regression value to previous bboxes.
         :param previous_boxes: previous bboxes.
         :return: generate grids on the regressed bboxes.
         """
@@ -281,7 +281,6 @@ class RepPointsHead(nn.Module):
         pts_out_refine = self.reppoints_pts_refine_out(
             self.relu(self.reppoints_pts_refine_conv(pts_feat, dcn_offset)))
         if self.use_grid_points:
-            bbox_out_init = self.points2bbox(pts_out_init)
             pts_out_refine, bbox_out_refine = self.gen_grid_from_reg(
                 pts_out_refine, bbox_out_init.detach())
         else:
