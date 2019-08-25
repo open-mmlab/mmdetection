@@ -1,8 +1,9 @@
 import torch
 import torch.nn.functional as F
 
-from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner, 
-                        build_sampler, merge_aug_masks, merge_aug_bboxes, multiclass_nms)
+from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
+                        build_sampler, merge_aug_masks, merge_aug_bboxes,
+                        multiclass_nms)
 from .. import builder
 from ..registry import DETECTORS
 from .cascade_rcnn import CascadeRCNN
@@ -438,9 +439,12 @@ class HybridTaskCascade(CascadeRCNN):
         of imgs[0].
         """
         if self.with_semantic:
-            semantic_feats = [self.semantic_head(feat)[1] for feat in self.extract_feats(imgs)]
+            semantic_feats = [
+                self.semantic_head(feat)[1]
+                for feat in self.extract_feats(imgs)
+            ]
         else:
-            semantic_feats = [None]*len(img_metas)
+            semantic_feats = [None] * len(img_metas)
 
         # recompute feats to save memory
         proposal_list = self.aug_test_rpn(
@@ -449,7 +453,8 @@ class HybridTaskCascade(CascadeRCNN):
         rcnn_test_cfg = self.test_cfg.rcnn
         aug_bboxes = []
         aug_scores = []
-        for x, img_meta, semantic in zip(self.extract_feats(imgs), img_metas, semantic_feats):
+        for x, img_meta, semantic in zip(
+                self.extract_feats(imgs), img_metas, semantic_feats):
             # only one image in the batch
             img_shape = img_meta[0]['img_shape']
             scale_factor = img_meta[0]['scale_factor']
@@ -463,13 +468,14 @@ class HybridTaskCascade(CascadeRCNN):
             rois = bbox2roi([proposals])
             for i in range(self.num_stages):
                 bbox_head = self.bbox_head[i]
-                cls_score, bbox_pred = self._bbox_forward_test(i, x, rois, semantic_feat=semantic)
+                cls_score, bbox_pred = self._bbox_forward_test(
+                    i, x, rois, semantic_feat=semantic)
                 ms_scores.append(cls_score)
 
                 if i < self.num_stages - 1:
                     bbox_label = cls_score.argmax(dim=1)
-                    rois = bbox_head.regress_by_class(rois, bbox_label, bbox_pred,
-                                                      img_meta[0])
+                    rois = bbox_head.regress_by_class(rois, bbox_label,
+                                                      bbox_pred, img_meta[0])
 
             cls_score = sum(ms_scores) / float(len(ms_scores))
             bboxes, scores = self.bbox_head[-1].get_det_bboxes(
@@ -486,20 +492,24 @@ class HybridTaskCascade(CascadeRCNN):
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas, rcnn_test_cfg)
-        det_bboxes, det_labels = multiclass_nms(
-            merged_bboxes, merged_scores, rcnn_test_cfg.score_thr,
-            rcnn_test_cfg.nms, rcnn_test_cfg.max_per_img)
+        det_bboxes, det_labels = multiclass_nms(merged_bboxes, merged_scores,
+                                                rcnn_test_cfg.score_thr,
+                                                rcnn_test_cfg.nms,
+                                                rcnn_test_cfg.max_per_img)
 
         bbox_result = bbox2result(det_bboxes, det_labels,
                                   self.bbox_head[-1].num_classes)
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [[] for _ in range(self.mask_head[-1].num_classes - 1)]
+                segm_result = [[]
+                               for _ in range(self.mask_head[-1].num_classes -
+                                              1)]
             else:
                 aug_masks = []
                 aug_img_metas = []
-                for x, img_meta, semantic in zip(self.extract_feats(imgs), img_metas, semantic_feats):
+                for x, img_meta, semantic in zip(
+                        self.extract_feats(imgs), img_metas, semantic_feats):
                     img_shape = img_meta[0]['img_shape']
                     scale_factor = img_meta[0]['scale_factor']
                     flip = img_meta[0]['flip']
@@ -508,13 +518,13 @@ class HybridTaskCascade(CascadeRCNN):
                     mask_rois = bbox2roi([_bboxes])
                     mask_roi_extractor = self.mask_roi_extractor[-1]
                     mask_feats = mask_roi_extractor(
-                        x[:len(mask_roi_extractor.featmap_strides)],
-                        mask_rois)
+                        x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
                     if self.with_semantic:
                         semantic_feat = semantic
-                        mask_semantic_feat = self.semantic_roi_extractor([semantic_feat],
-                                                                mask_rois)
-                        if mask_semantic_feat.shape[-2:] != mask_feats.shape[-2:]:
+                        mask_semantic_feat = self.semantic_roi_extractor(
+                            [semantic_feat], mask_rois)
+                        if mask_semantic_feat.shape[-2:] != mask_feats.shape[
+                                -2:]:
                             mask_semantic_feat = F.adaptive_avg_pool2d(
                                 mask_semantic_feat, mask_feats.shape[-2:])
                         mask_feats += mask_semantic_feat
@@ -522,7 +532,8 @@ class HybridTaskCascade(CascadeRCNN):
                     for i in range(self.num_stages):
                         mask_head = self.mask_head[i]
                         if self.mask_info_flow:
-                            mask_pred, last_feat = mask_head(mask_feats, last_feat)
+                            mask_pred, last_feat = mask_head(
+                                mask_feats, last_feat)
                         else:
                             mask_pred = mask_head(mask_feats)
                         aug_masks.append(mask_pred.sigmoid().cpu().numpy())
@@ -532,8 +543,13 @@ class HybridTaskCascade(CascadeRCNN):
 
                 ori_shape = img_metas[0][0]['ori_shape']
                 segm_result = self.mask_head[-1].get_seg_masks(
-                    merged_masks, det_bboxes, det_labels, rcnn_test_cfg,
-                    ori_shape, scale_factor=1.0, rescale=False)
+                    merged_masks,
+                    det_bboxes,
+                    det_labels,
+                    rcnn_test_cfg,
+                    ori_shape,
+                    scale_factor=1.0,
+                    rescale=False)
             return bbox_result, segm_result
         else:
             return bbox_result
