@@ -199,6 +199,7 @@ More models with different backbones will be added to the model zoo.
 |   HRNetV2p-W18   | pytorch |   20e   |    -     |          -          |       -        |  43.1  |  37.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w18_20e_20190810-d70072af.pth) |
 |   HRNetV2p-W32   | pytorch |   20e   |    -     |          -          |       -        |  45.3  |  39.6   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w32_20e_20190810-82f9ef5a.pth) |
 |   HRNetV2p-W48   | pytorch |   20e   |    -     |          -          |       -        |  46.8  | 40.7    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w48_20e_20190810-f6d2c3fd.pth) |
+|   HRNetV2p-W48   | pytorch |   28e   |    -     |          -          |       -        |  47.0  |  41.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w48_28e_20190810-a4274b38.pth) |
 
 **Notes:**
 
