@@ -527,7 +527,7 @@ class Expand(object):
         left = int(random.uniform(0, w * ratio - w))
         top = int(random.uniform(0, h * ratio - h))
         expand_img[top:top + h, left:left + w] = img
-        boxes = boxes + np.tile((left, top), 2)
+        boxes = boxes + np.tile((left, top), 2).astype(boxes.dtype)
 
         results['img'] = expand_img
         results['gt_bboxes'] = boxes
