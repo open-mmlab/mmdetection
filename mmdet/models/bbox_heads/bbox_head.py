@@ -116,17 +116,19 @@ class BBoxHead(nn.Module):
             losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0
-            if self.reg_class_agnostic:
-                pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), 4)[pos_inds]
-            else:
-                pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), -1,
-                                               4)[pos_inds, labels[pos_inds]]
-            losses['loss_bbox'] = self.loss_bbox(
-                pos_bbox_pred,
-                bbox_targets[pos_inds],
-                bbox_weights[pos_inds],
-                avg_factor=bbox_targets.size(0),
-                reduction_override=reduction_override)
+            if pos_inds.any():
+                if self.reg_class_agnostic:
+                    pos_bbox_pred = bbox_pred.view(
+                        bbox_pred.size(0), 4)[pos_inds]
+                else:
+                    pos_bbox_pred = bbox_pred.view(
+                        bbox_pred.size(0), -1, 4)[pos_inds, labels[pos_inds]]
+                losses['loss_bbox'] = self.loss_bbox(
+                    pos_bbox_pred,
+                    bbox_targets[pos_inds],
+                    bbox_weights[pos_inds],
+                    avg_factor=bbox_targets.size(0),
+                    reduction_override=reduction_override)
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
