@@ -89,7 +89,12 @@ def cityscapes_classes():
     ]
 
 
+def hkb_classes():
+    return ['1',]
+
+
 dataset_aliases = {
+    'hkb': ['hkb',],
     'voc': ['voc', 'pascal_voc', 'voc07', 'voc12'],
     'imagenet_det': ['det', 'imagenet_det', 'ilsvrc_det'],
     'imagenet_vid': ['vid', 'imagenet_vid', 'ilsvrc_vid'],
