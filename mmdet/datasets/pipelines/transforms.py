@@ -348,11 +348,10 @@ class RandomCrop(object):
             # filter and crop the masks
             if 'gt_masks' in results:
                 valid_gt_masks = []
-                for i, is_valid in enumerate(valid_inds):
-                    if is_valid:
-                        gt_mask = results['gt_masks'][i]
-                        valid_gt_masks.append(
-                            gt_mask[crop_y1:crop_y2, crop_x1:crop_x2])
+                for i in np.where(valid_inds)[0]:
+                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2, crop_x1:
+                                                     crop_x2]
+                    valid_gt_masks.append(gt_mask)
                 results['gt_masks'] = valid_gt_masks
 
         return results
