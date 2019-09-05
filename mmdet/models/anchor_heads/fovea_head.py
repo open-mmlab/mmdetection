@@ -112,22 +112,22 @@ class FoveaHead(nn.Module):
                 self.feat_channels, self.cls_out_channels, 3, padding=1)
         else:
             self.cls_convs.append(
-                ConvModule(self.feat_channels, (self.feat_channels * 4),
-                           3,
-                           stride=1,
-                           padding=1,
-                           conv_cfg=self.conv_cfg,
-                           norm_cfg=self.norm_cfg,
-                           bias=self.norm_cfg is None))
-            self.cls_convs.append(
                 ConvModule(
-                    (self.feat_channels * 4), (self.feat_channels * 4),
-                    1,
+                    self.feat_channels, (self.feat_channels * 4),
+                    3,
                     stride=1,
-                    padding=0,
+                    padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
+            self.cls_convs.append(
+                ConvModule((self.feat_channels * 4), (self.feat_channels * 4),
+                           1,
+                           stride=1,
+                           padding=0,
+                           conv_cfg=self.conv_cfg,
+                           norm_cfg=self.norm_cfg,
+                           bias=self.norm_cfg is None))
             self.feature_adaption = FeatureAlign(
                 self.feat_channels,
                 self.feat_channels,
