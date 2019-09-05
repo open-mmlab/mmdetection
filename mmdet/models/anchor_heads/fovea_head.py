@@ -7,6 +7,7 @@ from mmdet.ops import DeformConv
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, bias_init_with_prob
+
 INF = 1e8
 
 
@@ -111,14 +112,13 @@ class FoveaHead(nn.Module):
                 self.feat_channels, self.cls_out_channels, 3, padding=1)
         else:
             self.cls_convs.append(
-                ConvModule(
-                    self.feat_channels, (self.feat_channels * 4),
-                    3,
-                    stride=1,
-                    padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                ConvModule(self.feat_channels, (self.feat_channels * 4),
+                           3,
+                           stride=1,
+                           padding=1,
+                           conv_cfg=self.conv_cfg,
+                           norm_cfg=self.norm_cfg,
+                           bias=self.norm_cfg is None))
             self.cls_convs.append(
                 ConvModule(
                     (self.feat_channels * 4), (self.feat_channels * 4),
