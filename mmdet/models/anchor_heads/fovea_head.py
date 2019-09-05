@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
-from mmdet.ops import DeformConv
+
 from mmdet.core import multi_apply, multiclass_nms
+from mmdet.ops import DeformConv
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import bias_init_with_prob, ConvModule
+from ..utils import ConvModule, bias_init_with_prob
 INF = 1e8
 
 
@@ -18,15 +19,14 @@ class FeatureAlign(nn.Module):
                  deformable_groups=4):
         super(FeatureAlign, self).__init__()
         offset_channels = kernel_size * kernel_size * 2
-        self.conv_offset = nn.Conv2d(4,
-                                     deformable_groups * offset_channels,
-                                     1,
-                                     bias=False)
-        self.conv_adaption = DeformConv(in_channels,
-                                        out_channels,
-                                        kernel_size=kernel_size,
-                                        padding=(kernel_size - 1) // 2,
-                                        deformable_groups=deformable_groups)
+        self.conv_offset = nn.Conv2d(
+            4, deformable_groups * offset_channels, 1, bias=False)
+        self.conv_adaption = DeformConv(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            padding=(kernel_size - 1) // 2,
+            deformable_groups=deformable_groups)
         self.relu = nn.ReLU(inplace=True)
 
     def init_weights(self):
@@ -49,8 +49,8 @@ class FoveaHead(nn.Module):
                  stacked_convs=4,
                  strides=(4, 8, 16, 32, 64),
                  base_edge_list=(16, 32, 64, 126, 256),
-                 scale_ranges=((8, 32), (16, 64), (32, 128),
-                               (64, 256), (128, 512)),
+                 scale_ranges=((8, 32), (16, 64), (32, 128), (64, 256), (128,
+                                                                         512)),
                  sigma=0.4,
                  with_deform=False,
                  deformable_groups=4,
@@ -112,8 +112,7 @@ class FoveaHead(nn.Module):
         else:
             self.cls_convs.append(
                 ConvModule(
-                    self.feat_channels,
-                    (self.feat_channels * 4),
+                    self.feat_channels, (self.feat_channels * 4),
                     3,
                     stride=1,
                     padding=1,
@@ -122,8 +121,7 @@ class FoveaHead(nn.Module):
                     bias=self.norm_cfg is None))
             self.cls_convs.append(
                 ConvModule(
-                    (self.feat_channels * 4),
-                    (self.feat_channels * 4),
+                    (self.feat_channels * 4), (self.feat_channels * 4),
                     1,
                     stride=1,
                     padding=0,
@@ -137,7 +135,9 @@ class FoveaHead(nn.Module):
                 deformable_groups=self.deformable_groups)
             self.fovea_cls = nn.Conv2d(
                 int(self.feat_channels * 4),
-                self.cls_out_channels, 3, padding=1)
+                self.cls_out_channels,
+                3,
+                padding=1)
 
     def init_weights(self):
         for m in self.cls_convs:
@@ -169,10 +169,10 @@ class FoveaHead(nn.Module):
     def get_points(self, featmap_sizes, dtype, device, flatten=False):
         points = []
         for featmap_size in featmap_sizes:
-            x_range = torch.arange(featmap_size[1],
-                                   dtype=dtype, device=device) + 0.5
-            y_range = torch.arange(featmap_size[0],
-                                   dtype=dtype, device=device) + 0.5
+            x_range = torch.arange(
+                featmap_size[1], dtype=dtype, device=device) + 0.5
+            y_range = torch.arange(
+                featmap_size[0], dtype=dtype, device=device) + 0.5
             y, x = torch.meshgrid(y_range, x_range)
             if flatten:
                 points.append((y.flatten(), x.flatten()))
@@ -199,14 +199,15 @@ class FoveaHead(nn.Module):
             featmap_size_list=featmap_sizes,
             point_list=points)
         flatten_labels = [
-            torch.cat([labels_level_img.flatten()
-                       for labels_level_img in labels_level])
-            for labels_level in zip(*label_list)
+            torch.cat([
+                labels_level_img.flatten() for labels_level_img in labels_level
+            ]) for labels_level in zip(*label_list)
         ]
         flatten_bbox_targets = [
-            torch.cat([bbox_targets_level_img.reshape(-1, 4)
-                       for bbox_targets_level_img in bbox_targets_level])
-            for bbox_targets_level in zip(*bbox_target_list)
+            torch.cat([
+                bbox_targets_level_img.reshape(-1, 4)
+                for bbox_targets_level_img in bbox_targets_level
+            ]) for bbox_targets_level in zip(*bbox_target_list)
         ]
         flatten_labels = torch.cat(flatten_labels)
         flatten_bbox_targets = torch.cat(flatten_bbox_targets)
@@ -224,24 +225,22 @@ class FoveaHead(nn.Module):
         pos_inds = (flatten_labels > 0).nonzero().view(-1)
         num_pos = len(pos_inds)
         loss_cls = self.loss_cls(
-            flatten_cls_scores, flatten_labels,
-            avg_factor=num_pos + num_imgs)
+            flatten_cls_scores, flatten_labels, avg_factor=num_pos + num_imgs)
         if num_pos > 0:
             pos_bbox_preds = flatten_bbox_preds[pos_inds]
             pos_bbox_targets = flatten_bbox_targets[pos_inds]
             pos_weights = pos_bbox_targets.new_zeros(
                 pos_bbox_targets.size()) + 1.0
-            loss_bbox = self.loss_bbox(pos_bbox_preds,
-                                       pos_bbox_targets,
-                                       pos_weights,
-                                       avg_factor=num_pos)
+            loss_bbox = self.loss_bbox(
+                pos_bbox_preds,
+                pos_bbox_targets,
+                pos_weights,
+                avg_factor=num_pos)
         else:
             loss_bbox = torch.tensor([0],
                                      dtype=flatten_bbox_preds.dtype,
                                      device=flatten_bbox_preds.device)
-        return dict(
-            loss_cls=loss_cls,
-            loss_bbox=loss_bbox)
+        return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
     def fovea_target_single(self,
                             gt_bboxes_raw,
@@ -249,16 +248,16 @@ class FoveaHead(nn.Module):
                             featmap_size_list=None,
                             point_list=None):
 
-        gt_areas = torch.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0])
-                              * (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
+        gt_areas = torch.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0]) *
+                              (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
         label_list = []
         bbox_target_list = []
         for base_len, (lower_bound, upper_bound), stride, featmap_size, \
             (y, x) in zip(self.base_edge_list, self.scale_ranges,
                           self.strides, featmap_size_list, point_list):
             labels = gt_labels_raw.new_zeros(featmap_size)
-            bbox_targets = gt_bboxes_raw.new(
-                featmap_size[0], featmap_size[1], 4) + 1
+            bbox_targets = gt_bboxes_raw.new(featmap_size[0], featmap_size[1],
+                                             4) + 1
             hit_indices = ((gt_areas >= lower_bound) &
                            (gt_areas <= upper_bound)).nonzero().flatten()
             if len(hit_indices) == 0:
@@ -295,22 +294,20 @@ class FoveaHead(nn.Module):
                     (gt_x2 - stride * x[py1:py2 + 1, px1:px2 + 1]) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 3] = \
                     (gt_y2 - stride * y[py1:py2 + 1, px1:px2 + 1]) / base_len
-            bbox_targets = bbox_targets.clamp(min=1./16, max=16.)
+            bbox_targets = bbox_targets.clamp(min=1. / 16, max=16.)
             label_list.append(labels)
             bbox_target_list.append(torch.log(bbox_targets))
         return label_list, bbox_target_list
 
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   img_metas,
-                   cfg,
-                   rescale=None):
+    def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg, rescale=None):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                 bbox_preds[0].device, flatten=True)
+        points = self.get_points(
+            featmap_sizes,
+            bbox_preds[0].dtype,
+            bbox_preds[0].device,
+            flatten=True)
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -321,13 +318,10 @@ class FoveaHead(nn.Module):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self.get_bboxes_single(cls_score_list,
-                                                bbox_pred_list,
-                                                featmap_sizes,
-                                                points,
-                                                img_shape,
-                                                scale_factor,
-                                                cfg, rescale)
+            det_bboxes = self.get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                featmap_sizes, points,
+                                                img_shape, scale_factor, cfg,
+                                                rescale)
             result_list.append(det_bboxes)
         return result_list
 
@@ -375,10 +369,7 @@ class FoveaHead(nn.Module):
         det_scores = torch.cat(det_scores)
         padding = det_scores.new_zeros(det_scores.shape[0], 1)
         det_scores = torch.cat([padding, det_scores], dim=1)
-        det_bboxes, det_labels = multiclass_nms(
-            det_bboxes,
-            det_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img)
+        det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,
+                                                cfg.score_thr, cfg.nms,
+                                                cfg.max_per_img)
         return det_bboxes, det_labels
