@@ -47,8 +47,11 @@ FROM ubuntu:18.04
 
 ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
+ENV NVIDIA_REQUIRE_CUDA "cuda>=10.0"
 
-ENV PATH /home/user/.local/bin:/opt/conda/bin:$PATH
+# nvidia-driver-installer uses /usr/local/nvidia/ directory to install/mount nvidia binaries and libraries
+ENV PATH /home/user/.local/bin:/opt/conda/bin:/usr/local/nvidia/bin:$PATH
+ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
@@ -64,7 +67,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=build /opt/conda /opt/conda
 
-RUN echo /opt/conda/lib/ > /etc/ld.so.conf.d/conda && ldconfig
+RUN echo /opt/conda/lib/ > /etc/ld.so.conf.d/conda && \
+    echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
+    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf && ldconfig
 
 COPY --from=build --chown=user:user /home/user /home/user
 
