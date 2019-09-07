@@ -230,8 +230,8 @@ class Bottleneck(nn.Module):
                 out = self.conv2(out)
             elif self.with_modulated_dcn:
                 offset_mask = self.conv2_offset(out)
-                offset = offset_mask[:, :18*self.deformable_groups, :, :]
-                mask = offset_mask[:, -9*self.deformable_groups:, :, :]
+                offset = offset_mask[:, :18 * self.deformable_groups, :, :]
+                mask = offset_mask[:, -9 * self.deformable_groups:, :, :]
                 mask = mask.sigmoid()
                 out = self.conv2(out, offset, mask)
             else:
