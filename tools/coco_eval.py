@@ -20,8 +20,18 @@ def main():
         nargs='+',
         default=[100, 300, 1000],
         help='proposal numbers, only used for recall evaluation')
+    parser.add_argument(
+        '--LRPEval',
+        type=int,
+        default=1,
+        help='Whether or not to provide oLRP results')    
+    parser.add_argument(
+        '--LRPtau',
+        type=float,
+        default=0.5,
+        help='True Positive Validation Threshold for LRP')            
     args = parser.parse_args()
-    coco_eval(args.result, args.types, args.ann, args.max_dets)
+    coco_eval(args.result, args.types, args.ann, args.max_dets,args.LRPEval,args.LRPtau)
 
 
 if __name__ == '__main__':
