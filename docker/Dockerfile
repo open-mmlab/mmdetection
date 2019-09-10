@@ -20,7 +20,9 @@ RUN conda install cython -y && conda clean --all \
     terminaltables \
     pycocotools \
     imagecorruptions \
-    gpustat
+    gpustat \
+    seaborn \
+    tensorboard
 ENV TERM=xterm-256color
 ENV PYTHONPATH=$PYTHONPATH:/workspace/mmdetection
 ENV OMP_NUM_THREADS=4

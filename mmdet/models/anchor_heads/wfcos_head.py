@@ -11,33 +11,77 @@ INF = 1e8
 
 
 @HEADS.register_module
-class FCOSHead(nn.Module):
+class WFCOSHead(nn.Module):
 
     def __init__(self,
                  num_classes,
                  in_channels,
+                 max_energy,
                  feat_channels=256,
                  stacked_convs=4,
                  strides=(4, 8, 16, 32, 64),
                  regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 512),
                                  (512, INF)),
-                 loss_cls=dict(
-                     type='FocalLoss',
-                     use_sigmoid=True,
-                     gamma=2.0,
-                     alpha=0.25,
-                     loss_weight=1.0),
-                 loss_bbox=dict(type='IoULoss', loss_weight=1.0),
-                 loss_centerness=dict(
-                     type='CrossEntropyLoss',
-                     use_sigmoid=True,
-                     loss_weight=1.0),
+                 loss_cls=None,
+                 loss_bbox=None,
+                 loss_energy=None,
                  conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)):
-        super(FCOSHead, self).__init__()
+                 norm_cfg=None,
+                 split_convs=False):
+        """
+        Creates a head based on FCOS that uses an energies map, not centerness
+        Args:
+            num_classes (int): Number of classes to output.
+            in_channels (int): Number of innput channels.
+            max_energy (int): Quantization of energies. How much to split the
+                energies values by.
+            feat_channels (int): Number of feature channels in each of the
+                stacked convolutions.
+            stacked_convs (int): Number of stacked convolutions to have.
+            strides (tuple): Stride value for each of the heads.
+            regress_ranges (tuple): The regression range for each of the heads.
+            loss_cls (dict): A description of the loss to use for the
+                classfication output.
+            loss_bbox (dict): A description of the loss to use for the bbox
+                output.
+            loss_energy (dict): A description of the loss to use for the energies
+                map output.
+            conv_cfg (dict): A description of the configuration of the
+                convolutions in the stacked convolution.
+            norm_cfg (dict): A description of the normalization configuration of
+                the layers of the stacked convolution.
+            split_convs (bool): Whether or not to split the classification and
+                energies map convolution stacks. False means that the
+                classification energies map shares the same convolution stack.
+                Defaults to False.
+        """
+        super(WFCOSHead, self).__init__()
 
+        # To avoid mutable default values
+        if loss_cls is None:
+            loss_cls = dict(
+                type='FocalLoss',
+                use_sigmoid=True,
+                gamma=2.0,
+                alpha=0.25,
+                loss_weight=1.0)
+
+        if loss_bbox is None:
+            loss_bbox = dict(type='IoULoss', loss_weight=1.0)
+
+        if loss_energy is None:
+            loss_energy = dict(
+                type='CrossEntropyLoss',
+                use_sigmoid=True,
+                loss_weight=1.0)
+
+        if norm_cfg is None:
+            norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
+
+        # Save the different arguments to self
         self.num_classes = num_classes
         self.cls_out_channels = num_classes - 1
+        self.max_energy = max_energy
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
@@ -45,18 +89,26 @@ class FCOSHead(nn.Module):
         self.regress_ranges = regress_ranges
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
-        self.loss_centerness = build_loss(loss_centerness)
+        self.loss_energy = build_loss(loss_energy)
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
+        self.split_convs = split_convs
 
+        # Now create the layers
         self._init_layers()
 
     def _init_layers(self):
+        """Initialize each of the layers needed."""
         self.cls_convs = nn.ModuleList()
+        self.energy_convs = None if not self.split_convs else nn.ModuleList()
         self.reg_convs = nn.ModuleList()
+
+        # Create the stacked convolutions
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
+
+            # Make the different convolution stacks
             self.cls_convs.append(
                 ConvModule(
                     chn,
@@ -67,6 +119,19 @@ class FCOSHead(nn.Module):
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
+            if self.split_convs:
+                self.energy_convs.append(
+                    ConvModule(
+                        chn,
+                        self.feat_channels,
+                        3,
+                        stride=1,
+                        padding=1,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg,
+                        bias=self.norm_cfg is None
+                    )
+                )
             self.reg_convs.append(
                 ConvModule(
                     chn,
@@ -77,24 +142,46 @@ class FCOSHead(nn.Module):
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
-        self.fcos_cls = nn.Conv2d(
-            self.feat_channels, self.cls_out_channels, 3, padding=1)
-        self.fcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
-        self.fcos_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
 
+        # Classifier convolution
+        self.wfcos_cls = nn.Conv2d(
+            self.feat_channels, self.cls_out_channels, 3, padding=1)
+        # Bounding box regression convolution
+        self.wfcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
+        # Energy map convolution
+        self.wfcos_energy = nn.Conv2d(self.feat_channels, self.max_energy,
+                                      1, padding=1)
+
+        # Scaling factor for the different heads
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
 
     def init_weights(self):
+        """Initialize the weights for all the layers with a normal dist."""
         for m in self.cls_convs:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
             normal_init(m.conv, std=0.01)
+        if self.split_convs:
+            for m in self.energy_convs:
+                normal_init(m.conv, std=0.01)
         bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
-        normal_init(self.fcos_reg, std=0.01)
-        normal_init(self.fcos_centerness, std=0.01)
+        normal_init(self.wfcos_cls, std=0.01, bias=bias_cls)
+        normal_init(self.wfcos_reg, std=0.01)
+        normal_init(self.wfcos_energy, std=0.01)
 
     def forward(self, feats):
+        """Run forwards on the network.
+
+        Args:
+            feats (tuple): tuple of torch tensors handed off from the neck.
+                Expects the use of FPN as the neck, giving multiple feature
+                tensors.
+
+        Returns:
+            (tuple): A tuple of 3-tuples of tensors, each 3-tuple representing
+                cls_score, bbox_pred, energies of the different feature layers.
+        """
+        # Use a multi_apply function to run forwards on each feats tensor
         return multi_apply(self.forward_single, feats, self.scales)
 
     def forward_single(self, x, scale):
@@ -103,35 +190,42 @@ class FCOSHead(nn.Module):
 
         for cls_layer in self.cls_convs:
             cls_feat = cls_layer(cls_feat)
-        cls_score = self.fcos_cls(cls_feat)
-        centerness = self.fcos_centerness(cls_feat)
+        cls_score = self.wfcos_cls(cls_feat)
+
+        if self.split_convs:
+            energy_feat = x
+            for energy_layer in self.energy_convs:
+                energy_feat = energy_layer(energy_feat)
+            energy = self.wfcos_energy(energy_feat)
+        else:
+            energy = self.wfcos_energy(cls_feat)
 
         for reg_layer in self.reg_convs:
             reg_feat = reg_layer(reg_feat)
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
-        bbox_pred = scale(self.fcos_reg(reg_feat)).float().exp()
-        return cls_score, bbox_pred, centerness
+        bbox_pred = scale(self.wfcos_reg(reg_feat)).float().exp()
+        return cls_score, bbox_pred, energy
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'energies'))
     def loss(self,
              cls_scores,
              bbox_preds,
-             centernesses,
+             energies,
              gt_bboxes,
              gt_labels,
              img_metas,
              cfg,
              gt_bboxes_ignore=None):
-        assert len(cls_scores) == len(bbox_preds) == len(centernesses)
+        assert len(cls_scores) == len(bbox_preds) == len(energies)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                            bbox_preds[0].device)
-        labels, bbox_targets = self.fcos_target(all_level_points, gt_bboxes,
-                                                gt_labels)
+        labels, bbox_targets = self.wfcos_target(all_level_points, gt_bboxes,
+                                                 gt_labels)
 
         num_imgs = cls_scores[0].size(0)
-        # flatten cls_scores, bbox_preds and centerness
+        # flatten cls_scores, bbox_preds and energies
         flatten_cls_scores = [
             cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)
             for cls_score in cls_scores
@@ -140,13 +234,13 @@ class FCOSHead(nn.Module):
             bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
             for bbox_pred in bbox_preds
         ]
-        flatten_centerness = [
-            centerness.permute(0, 2, 3, 1).reshape(-1)
-            for centerness in centernesses
+        flatten_energies = [
+            energies.permute(0, 2, 3, 1).reshape(-1)
+            for energy in energies
         ]
         flatten_cls_scores = torch.cat(flatten_cls_scores)
         flatten_bbox_preds = torch.cat(flatten_bbox_preds)
-        flatten_centerness = torch.cat(flatten_centerness)
+        flatten_energies = torch.cat(flatten_energies)
         flatten_labels = torch.cat(labels)
         flatten_bbox_targets = torch.cat(bbox_targets)
         # repeat points to align with bbox_preds
@@ -160,11 +254,11 @@ class FCOSHead(nn.Module):
             avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
-        pos_centerness = flatten_centerness[pos_inds]
+        pos_energies = flatten_energies[pos_inds]
 
         if num_pos > 0:
             pos_bbox_targets = flatten_bbox_targets[pos_inds]
-            pos_centerness_targets = self.centerness_target(pos_bbox_targets)
+            pos_centerness_targets = self.energy_target(pos_bbox_targets)
             pos_points = flatten_points[pos_inds]
             pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
             pos_decoded_target_preds = distance2bbox(pos_points,
@@ -175,22 +269,22 @@ class FCOSHead(nn.Module):
                 pos_decoded_target_preds,
                 weight=pos_centerness_targets,
                 avg_factor=pos_centerness_targets.sum())
-            loss_centerness = self.loss_centerness(pos_centerness,
-                                                   pos_centerness_targets)
+            loss_energy = self.loss_energy(pos_energies,
+                                           pos_centerness_targets)
         else:
             loss_bbox = pos_bbox_preds.sum()
-            loss_centerness = pos_centerness.sum()
+            loss_energy = pos_energies.sum()
 
         return dict(
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
-            loss_centerness=loss_centerness)
+            loss_centerness=loss_energy)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'energies'))
     def get_bboxes(self,
                    cls_scores,
                    bbox_preds,
-                   centernesses,
+                   energies,
                    img_metas,
                    cfg,
                    rescale=None):
@@ -208,13 +302,13 @@ class FCOSHead(nn.Module):
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
             ]
-            centerness_pred_list = [
-                centernesses[i][img_id].detach() for i in range(num_levels)
+            energy_pred_list = [
+                energies[i][img_id].detach() for i in range(num_levels)
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             det_bboxes = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                centerness_pred_list,
+                                                energy_pred_list,
                                                 mlvl_points, img_shape,
                                                 scale_factor, cfg, rescale)
             result_list.append(det_bboxes)
@@ -223,7 +317,7 @@ class FCOSHead(nn.Module):
     def get_bboxes_single(self,
                           cls_scores,
                           bbox_preds,
-                          centernesses,
+                          energies,
                           mlvl_points,
                           img_shape,
                           scale_factor,
@@ -232,41 +326,41 @@ class FCOSHead(nn.Module):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
         mlvl_scores = []
-        mlvl_centerness = []
-        for cls_score, bbox_pred, centerness, points in zip(
-                cls_scores, bbox_preds, centernesses, mlvl_points):
+        mlvl_energy = []
+        for cls_score, bbox_pred, energy, points in zip(
+                cls_scores, bbox_preds, energies, mlvl_points):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
-            centerness = centerness.permute(1, 2, 0).reshape(-1).sigmoid()
+            energy = energy.permute(1, 2, 0).reshape(-1).sigmoid()
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
-                max_scores, _ = (scores * centerness[:, None]).max(dim=1)
+                max_scores, _ = (scores * energy[:, None]).max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 points = points[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-                centerness = centerness[topk_inds]
+                energy = energy[topk_inds]
             bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-            mlvl_centerness.append(centerness)
+            mlvl_energy.append(energy)
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
-        mlvl_centerness = torch.cat(mlvl_centerness)
+        mlvl_energy = torch.cat(mlvl_energy)
         det_bboxes, det_labels = multiclass_nms(
             mlvl_bboxes,
             mlvl_scores,
             cfg.score_thr,
             cfg.nms,
             cfg.max_per_img,
-            score_factors=mlvl_centerness)
+            score_factors=mlvl_energy)
         return det_bboxes, det_labels
 
     def get_points(self, featmap_sizes, dtype, device):
@@ -298,7 +392,7 @@ class FCOSHead(nn.Module):
             (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
         return points
 
-    def fcos_target(self, points, gt_bboxes_list, gt_labels_list):
+    def wfcos_target(self, points, gt_bboxes_list, gt_labels_list):
         assert len(points) == len(self.regress_ranges)
         num_levels = len(points)
         # expand regress ranges to align with points
@@ -311,7 +405,7 @@ class FCOSHead(nn.Module):
         concat_points = torch.cat(points, dim=0)
         # get labels and bbox_targets of each image
         labels_list, bbox_targets_list = multi_apply(
-            self.fcos_target_single,
+            self.wfcos_target_single,
             gt_bboxes_list,
             gt_labels_list,
             points=concat_points,
@@ -336,7 +430,7 @@ class FCOSHead(nn.Module):
                     [bbox_targets[i] for bbox_targets in bbox_targets_list]))
         return concat_lvl_labels, concat_lvl_bbox_targets
 
-    def fcos_target_single(self, gt_bboxes, gt_labels, points, regress_ranges):
+    def wfcos_target_single(self, gt_bboxes, gt_labels, points, regress_ranges):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
@@ -382,11 +476,11 @@ class FCOSHead(nn.Module):
 
         return labels, bbox_targets
 
-    def centerness_target(self, pos_bbox_targets):
+    def energy_target(self, pos_bbox_targets):
         # only calculate pos centerness targets, otherwise there may be nan
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
-        centerness_targets = (
+        energy_targets = (
             left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
                 top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
-        return torch.sqrt(centerness_targets)
+        return torch.sqrt(energy_targets)
