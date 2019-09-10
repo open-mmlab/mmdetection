@@ -23,7 +23,12 @@ def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
         return
 
     for res_type in result_types:
-        result_file = result_files[res_type]
+        if isinstance(result_files, str):
+            result_file = result_files
+        elif isinstance(result_files, dict):
+            result_file = result_files[res_type]
+        else:
+            assert TypeError('result_files must be a str or dict')
         assert result_file.endswith('.json')
 
         coco_dets = coco.loadRes(result_file)
