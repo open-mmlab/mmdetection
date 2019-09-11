@@ -161,7 +161,7 @@ class Bottleneck(nn.Module):
                 bias=False)
         else:
             assert conv_cfg is None, 'conv_cfg must be None for DCN'
-            deformable_groups = dcn.get('deformable_groups', 1)
+            self.deformable_groups = dcn.get('deformable_groups', 1)
             if not self.with_modulated_dcn:
                 conv_op = DeformConv
                 offset_channels = 18
@@ -170,7 +170,7 @@ class Bottleneck(nn.Module):
                 offset_channels = 27
             self.conv2_offset = nn.Conv2d(
                 planes,
-                deformable_groups * offset_channels,
+                self.deformable_groups * offset_channels,
                 kernel_size=3,
                 stride=self.conv2_stride,
                 padding=dilation,
@@ -182,7 +182,7 @@ class Bottleneck(nn.Module):
                 stride=self.conv2_stride,
                 padding=dilation,
                 dilation=dilation,
-                deformable_groups=deformable_groups,
+                deformable_groups=self.deformable_groups,
                 bias=False)
         self.add_module(self.norm2_name, norm2)
         self.conv3 = build_conv_layer(
@@ -230,8 +230,9 @@ class Bottleneck(nn.Module):
                 out = self.conv2(out)
             elif self.with_modulated_dcn:
                 offset_mask = self.conv2_offset(out)
-                offset = offset_mask[:, :18, :, :]
-                mask = offset_mask[:, -9:, :, :].sigmoid()
+                offset = offset_mask[:, :18 * self.deformable_groups, :, :]
+                mask = offset_mask[:, -9 * self.deformable_groups:, :, :]
+                mask = mask.sigmoid()
                 out = self.conv2(out, offset, mask)
             else:
                 offset = self.conv2_offset(out)
