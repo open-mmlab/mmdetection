@@ -516,8 +516,7 @@ class HybridTaskCascade(CascadeRCNN):
                     _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
                                            scale_factor, flip)
                     mask_rois = bbox2roi([_bboxes])
-                    mask_roi_extractor = self.mask_roi_extractor[-1]
-                    mask_feats = mask_roi_extractor(
+                    mask_feats = self.mask_roi_extractor[-1](
                         x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
                     if self.with_semantic:
                         semantic_feat = semantic
