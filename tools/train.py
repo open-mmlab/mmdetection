@@ -1,4 +1,10 @@
 from __future__ import division
+
+import os.path as osp
+import sys
+
+sys.path.insert(0, osp.abspath(osp.join(__file__, '../../')))
+
 import argparse
 import os
 
