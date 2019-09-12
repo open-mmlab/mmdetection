@@ -49,8 +49,13 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
 class LoadImage(object):
 
     def __call__(self, results):
+        if isinstance(results['img'], str):
+            results['filename'] = results['img']
+        else:
+            results['filename'] = None
         img = mmcv.imread(results['img'])
         results['img'] = img
+        results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
         return results
 

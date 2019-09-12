@@ -300,7 +300,7 @@ class Normalize(object):
 
 @PIPELINES.register_module
 class RandomCrop(object):
-    """Random crop the image & bboxes.
+    """Random crop the image & bboxes & masks.
 
     Args:
         crop_size (tuple): Expected size after cropping, (h, w).
@@ -348,7 +348,7 @@ class RandomCrop(object):
             # filter and crop the masks
             if 'gt_masks' in results:
                 valid_gt_masks = []
-                for i in valid_inds:
+                for i in np.where(valid_inds)[0]:
                     gt_mask = results['gt_masks'][i][crop_y1:crop_y2, crop_x1:
                                                      crop_x2]
                     valid_gt_masks.append(gt_mask)
@@ -527,10 +527,19 @@ class Expand(object):
         left = int(random.uniform(0, w * ratio - w))
         top = int(random.uniform(0, h * ratio - h))
         expand_img[top:top + h, left:left + w] = img
-        boxes += np.tile((left, top), 2)
+        boxes = boxes + np.tile((left, top), 2).astype(boxes.dtype)
 
         results['img'] = expand_img
         results['gt_bboxes'] = boxes
+
+        if 'gt_masks' in results:
+            expand_gt_masks = []
+            for mask in results['gt_masks']:
+                expand_mask = np.full((int(h * ratio), int(w * ratio)),
+                                      0).astype(mask.dtype)
+                expand_mask[top:top + h, left:left + w] = mask
+                expand_gt_masks.append(expand_mask)
+            results['gt_masks'] = expand_gt_masks
         return results
 
     def __repr__(self):
@@ -604,6 +613,16 @@ class MinIoURandomCrop(object):
                 results['img'] = img
                 results['gt_bboxes'] = boxes
                 results['gt_labels'] = labels
+
+                if 'gt_masks' in results:
+                    valid_masks = [
+                        results['gt_masks'][i] for i in range(len(mask))
+                        if mask[i]
+                    ]
+                    results['gt_masks'] = [
+                        gt_mask[patch[1]:patch[3], patch[0]:patch[2]]
+                        for gt_mask in valid_masks
+                    ]
                 return results
 
     def __repr__(self):
