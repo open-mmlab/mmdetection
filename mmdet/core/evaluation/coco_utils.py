@@ -142,7 +142,7 @@ def segm2json(dataset, results):
 
             # segm results
             # some detectors use different score for det and segm
-            if len(seg) == 2:
+            if len(seg) == 2 and len(seg) != len(dataset.CLASSES):
                 segms = seg[0][label]
                 mask_score = seg[1][label]
             else:
