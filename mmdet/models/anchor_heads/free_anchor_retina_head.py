@@ -74,11 +74,11 @@ class FreeAnchorRetinaHead(RetinaHead):
                         1).reshape(cls.size(0), -1, self.cls_out_channels)
             for cls in cls_scores
         ]
-        cls_scores = torch.cat(cls_scores, dim=1)
         bbox_preds = [
             bbox_pred.permute(0, 2, 3, 1).reshape(bbox_pred.size(0), -1, 4)
             for bbox_pred in bbox_preds
         ]
+        cls_scores = torch.cat(cls_scores, dim=1)
         bbox_preds = torch.cat(bbox_preds, dim=1)
 
         cls_prob = torch.sigmoid(cls_scores)
