@@ -88,7 +88,7 @@ class SingleRoIExtractor(nn.Module):
         new_rois = torch.stack((rois[:, 0], x1, y1, x2, y2), dim=-1)
         return new_rois
 
-    @force_fp32(apply_to=('feats',), out_fp16=True)
+    @force_fp32(apply_to=('feats', ), out_fp16=True)
     def forward(self, feats, rois, roi_scale_factor=None):
         from torch.onnx import operators
 
@@ -104,7 +104,8 @@ class SingleRoIExtractor(nn.Module):
         roi_feats = []
         for level, (feat, extractor) in enumerate(zip(feats, self.roi_layers)):
             # Explicit casting to int is required for ONNXRuntime.
-            level_indices = torch.nonzero((target_lvls == level).int()).view(-1)
+            level_indices = torch.nonzero(
+                (target_lvls == level).int()).view(-1)
             level_rois = rois[level_indices]
             indices.append(level_indices)
 

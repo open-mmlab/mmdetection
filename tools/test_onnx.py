@@ -5,7 +5,7 @@ import numpy as np
 import onnx
 import onnxruntime
 import torch
-from onnx import shape_inference, helper
+from onnx import helper, shape_inference
 from onnx.utils import polish_model
 
 from mmdet.core import coco_eval, results2json
@@ -32,16 +32,23 @@ def postprocess(result, img_meta, num_classes=81, rescale=True):
 
     bbox_results = bbox2result(det_bboxes, det_labels, num_classes)
     if det_masks is not None:
-        segm_results = mask2result(det_bboxes, det_labels, det_masks, num_classes,
-                                   mask_thr_binary=0.5,
-                                   rle=True, full_size=True, img_size=(img_h, img_w))
+        segm_results = mask2result(
+            det_bboxes,
+            det_labels,
+            det_masks,
+            num_classes,
+            mask_thr_binary=0.5,
+            rle=True,
+            full_size=True,
+            img_size=(img_h, img_w))
         return bbox_results, segm_results
     return bbox_results
 
 
 def empty_result(num_classes=81, with_mask=False):
-    bbox_results = [np.zeros((0, 5), dtype=np.float32)
-                    for _ in range(num_classes - 1)]
+    bbox_results = [
+        np.zeros((0, 5), dtype=np.float32) for _ in range(num_classes - 1)
+    ]
     if with_mask:
         segm_results = [[] for _ in range(num_classes - 1)]
         return bbox_results, segm_results
@@ -49,6 +56,7 @@ def empty_result(num_classes=81, with_mask=False):
 
 
 class ONNXModel(object):
+
     def __init__(self, model_file_path, cfg=None, classes=None):
         self.device = onnxruntime.get_device()
         self.model = onnx.load(model_file_path)
@@ -56,8 +64,8 @@ class ONNXModel(object):
         self.classes = classes
         self.pt_model = None
         if cfg is not None:
-            self.pt_model = build_detector(cfg.model, train_cfg=None,
-                                           test_cfg=cfg.test_cfg)
+            self.pt_model = build_detector(
+                cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
             if classes is not None:
                 self.pt_model.CLASSES = classes
 
@@ -66,8 +74,8 @@ class ONNXModel(object):
         self.sess_options.set_graph_optimization_level(2)
         self.sess_options.enable_profiling = False
 
-        self.session = onnxruntime.InferenceSession(self.model.SerializeToString(),
-                                                    self.sess_options)
+        self.session = onnxruntime.InferenceSession(
+            self.model.SerializeToString(), self.sess_options)
         self.input_names = []
         self.output_names = []
         for input in self.session.get_inputs():
@@ -77,30 +85,35 @@ class ONNXModel(object):
 
     def show(self, data, result, dataset=None, score_thr=0.3):
         if self.pt_model is not None:
-            self.pt_model.show_result(data, result, dataset=dataset,
-                                      score_thr=score_thr)
+            self.pt_model.show_result(
+                data, result, dataset=dataset, score_thr=score_thr)
 
     def add_output(self, output_ids):
         if not isinstance(output_ids, (tuple, list, set)):
-            output_ids = [output_ids, ]
+            output_ids = [
+                output_ids,
+            ]
 
         inferred_model = shape_inference.infer_shapes(self.model)
-        all_blobs_info = {value_info.name: value_info
-                          for value_info in inferred_model.graph.value_info}
+        all_blobs_info = {
+            value_info.name: value_info
+            for value_info in inferred_model.graph.value_info
+        }
 
         extra_outputs = []
         for output_id in output_ids:
             value_info = all_blobs_info.get(output_id, None)
             if value_info is None:
                 print('WARNING! No blob with name {}'.format(output_id))
-                extra_outputs.append(helper.make_empty_tensor_value_info(output_id))
+                extra_outputs.append(
+                    helper.make_empty_tensor_value_info(output_id))
             else:
                 extra_outputs.append(value_info)
 
         self.model.graph.output.extend(extra_outputs)
         self.output_names.extend(output_ids)
-        self.session = onnxruntime.InferenceSession(self.model.SerializeToString(),
-                                                    self.sess_options)
+        self.session = onnxruntime.InferenceSession(
+            self.model.SerializeToString(), self.sess_options)
 
     def __call__(self, inputs, *args, **kwargs):
         if isinstance(inputs, (list, tuple)):
@@ -117,11 +130,7 @@ def main(args):
 
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
-        dataset,
-        imgs_per_gpu=1,
-        workers_per_gpu=0,
-        dist=False,
-        shuffle=False)
+        dataset, imgs_per_gpu=1, workers_per_gpu=0, dist=False, shuffle=False)
 
     if args.model is None:
         print('No model file provided. Trying to load evaluation results.')
@@ -141,12 +150,15 @@ def main(args):
                 im_data = data['img'][0].cpu().numpy()
                 try:
                     result = model([im_data], run_options=run_opts)
-                    result = postprocess(result, data['img_meta'][0].data[0],
-                                         num_classes=classes_num,
-                                         rescale=not args.show)
-                except Exception as ex:
-                    result = empty_result(num_classes=classes_num,
-                                          with_mask=model.pt_model.with_mask)
+                    result = postprocess(
+                        result,
+                        data['img_meta'][0].data[0],
+                        num_classes=classes_num,
+                        rescale=not args.show)
+                except Exception:
+                    result = empty_result(
+                        num_classes=classes_num,
+                        with_mask=model.pt_model.with_mask)
             results.append(result)
 
             if args.show:
@@ -178,8 +190,7 @@ def main(args):
                     print('\nEvaluating {}'.format(name))
                     outputs_ = [out[name] for out in results]
                     result_file = args.out + '.{}'.format(name)
-                    result_files = results2json(dataset, outputs_,
-                                                result_file)
+                    result_files = results2json(dataset, outputs_, result_file)
                     coco_eval(result_files, eval_types, dataset.coco)
 
     # Save predictions in the COCO json format
@@ -196,20 +207,30 @@ def main(args):
 def parse_args():
     parser = argparse.ArgumentParser(description='Test ONNX model')
     parser.add_argument('config', help='path to configuration file')
-    parser.add_argument('--model', type=str,
-                        help='path to onnx model file. If not set, try to load results'
-                             'from the file specified by `--out` key.')
-    parser.add_argument('--out', type=str,
-                        help='path to file with inference results')
-    parser.add_argument('--json_out', type=str,
-                        help='output result file name without extension')
-    parser.add_argument('--eval', type=str, nargs='+',
-                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
-                        help='eval types')
-    parser.add_argument('--show', action='store_true',
-                        help='visualize results')
-    parser.add_argument('--score_thr', type=float, default=0.3,
-                        help='show only detection with confidence larger than threshold')
+    parser.add_argument(
+        '--model',
+        type=str,
+        help='path to onnx model file. If not set, try to load results'
+        'from the file specified by `--out` key.')
+    parser.add_argument(
+        '--out', type=str, help='path to file with inference results')
+    parser.add_argument(
+        '--json_out',
+        type=str,
+        help='output result file name without extension')
+    parser.add_argument(
+        '--eval',
+        type=str,
+        nargs='+',
+        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
+        help='eval types')
+    parser.add_argument(
+        '--show', action='store_true', help='visualize results')
+    parser.add_argument(
+        '--score_thr',
+        type=float,
+        default=0.3,
+        help='show only detection with confidence larger than threshold')
     args = parser.parse_args()
     return args
 

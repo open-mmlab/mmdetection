@@ -5,8 +5,14 @@ import pycocotools.mask as mask_util
 from ..utils.misc import to_numpy
 
 
-def mask2result(det_bboxes, det_labels, det_masks, num_classes,
-                mask_thr_binary=0.5, rle=True, full_size=True, img_size=None):
+def mask2result(det_bboxes,
+                det_labels,
+                det_masks,
+                num_classes,
+                mask_thr_binary=0.5,
+                rle=True,
+                full_size=True,
+                img_size=None):
 
     masks = to_numpy(det_masks)
     bboxes = to_numpy(det_bboxes, np.int32)[:, :4]
@@ -28,7 +34,8 @@ def mask2result(det_bboxes, det_labels, det_masks, num_classes,
             mask = im_mask
 
         if rle:
-            mask = mask_util.encode(np.array(mask[:, :, np.newaxis], order='F'))[0]
+            mask = mask_util.encode(
+                np.array(mask[:, :, np.newaxis], order='F'))[0]
 
         cls_masks[label].append(mask)
 

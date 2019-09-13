@@ -209,9 +209,8 @@ class AnchorHead(nn.Module):
                 size = operators.shape_as_tensor(cls_scores[i])[2:4]
             else:
                 size = cls_scores[i].size()[-2:]
-            level_anchors = self.anchor_generators[i].grid_anchors(size,
-                                                                   self.anchor_strides[i],
-                                                                   device=cls_scores[0].device)
+            level_anchors = self.anchor_generators[i].grid_anchors(
+                size, self.anchor_strides[i], device=cls_scores[0].device)
             mlvl_anchors.append(level_anchors)
 
         result_list = []

@@ -3,8 +3,8 @@ import torch.onnx.symbolic_helper as sym_help
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
-from torch.onnx.symbolic_opset10 import _slice
 from torch.onnx.symbolic_opset9 import reshape
+from torch.onnx.symbolic_opset10 import _slice
 
 from . import roi_align_cuda
 
@@ -26,8 +26,8 @@ class RoIAlignFunction(Function):
         output = features.new_zeros(num_rois, num_channels, out_h, out_w)
         if features.is_cuda:
             if rois.numel() > 0:
-                roi_align_cuda.forward(features, rois, out_h, out_w, spatial_scale,
-                                       sample_num, output)
+                roi_align_cuda.forward(features, rois, out_h, out_w,
+                                       spatial_scale, sample_num, output)
         else:
             raise NotImplementedError
 
@@ -58,16 +58,23 @@ class RoIAlignFunction(Function):
 
     @staticmethod
     def symbolic(g, features, rois, out_size, spatial_scale, sample_num=0):
-        batch_indices = reshape(g,
-                                g.op('Cast',
-                                     _slice(g, rois, axes=[1], starts=[0], ends=[1]),
-                                     to_i=sym_help.cast_pytorch_to_onnx['Long']),
-                                [-1])
+        batch_indices = reshape(
+            g,
+            g.op(
+                'Cast',
+                _slice(g, rois, axes=[1], starts=[0], ends=[1]),
+                to_i=sym_help.cast_pytorch_to_onnx['Long']), [-1])
         bboxes = _slice(g, rois, axes=[1], starts=[1], ends=[5])
         out_h, out_w = _pair(out_size)
-        return g.op('RoiAlign', features, bboxes, batch_indices,
-                    output_height_i=out_h, output_width_i=out_w,
-                    sampling_ratio_i=sample_num, spatial_scale_f=spatial_scale)
+        return g.op(
+            'RoiAlign',
+            features,
+            bboxes,
+            batch_indices,
+            output_height_i=out_h,
+            output_width_i=out_w,
+            sampling_ratio_i=sample_num,
+            spatial_scale_f=spatial_scale)
 
 
 roi_align = RoIAlignFunction.apply

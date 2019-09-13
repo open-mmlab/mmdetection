@@ -1,9 +1,9 @@
 import mmcv
 import numpy as np
 import torch
+from torch.onnx import is_in_onnx_export
 
 from ..utils.misc import to_numpy
-from torch.onnx import is_in_onnx_export
 
 
 def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
@@ -37,16 +37,20 @@ def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
 def clamp(x, min, max):
     if is_in_onnx_export():
         device = x.device
-        dtype= x.dtype
+        dtype = x.dtype
 
         y = x
 
         min_val = torch.as_tensor(min, dtype=dtype, device=device)
-        y = torch.stack([y, min_val.view([1, ] * y.dim()).expand_as(y)], dim=0)
+        y = torch.stack([y, min_val.view([
+            1,
+        ] * y.dim()).expand_as(y)], dim=0)
         y = torch.max(y, dim=0, keepdim=False)[0]
 
         max_val = torch.as_tensor(max, dtype=dtype, device=device)
-        y = torch.stack([y, max_val.view([1, ] * y.dim()).expand_as(y)], dim=0)
+        y = torch.stack([y, max_val.view([
+            1,
+        ] * y.dim()).expand_as(y)], dim=0)
         y = torch.min(y, dim=0, keepdim=False)[0]
     else:
         y = x.clamp(min=min, max=max)

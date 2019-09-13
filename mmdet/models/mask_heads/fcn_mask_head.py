@@ -1,6 +1,3 @@
-import mmcv
-import numpy as np
-import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
 from torch.nn.modules.utils import _pair
@@ -134,7 +131,8 @@ class FCNMaskHead(nn.Module):
             det_labels (Tensor): shape (n, )
 
         Returns:
-            Tensor of shape (n, 1, h, w) with mask heatmaps for all detected boxes.
+            Tensor of shape (n, 1, h, w) with mask heatmaps
+            for all detected boxes.
         """
 
         if not self.class_agnostic:
@@ -142,7 +140,7 @@ class FCNMaskHead(nn.Module):
         else:
             class_indices = 0
 
-        segm_result = det_masks[arange(end=det_labels.shape[0],
-                                       device=det_masks.device),
-                                class_indices].sigmoid()
+        segm_result = det_masks[arange(
+            end=det_labels.shape[0], device=det_masks.device
+        ), class_indices].sigmoid()
         return segm_result

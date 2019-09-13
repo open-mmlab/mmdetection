@@ -38,8 +38,14 @@ def unmap(data, count, inds, fill=0):
     return ret
 
 
-def arange(start=0, end=None, step=1, out=None, dtype=None,
-           layout=torch.strided, device=None, requires_grad=False):
+def arange(start=0,
+           end=None,
+           step=1,
+           out=None,
+           dtype=None,
+           layout=torch.strided,
+           device=None,
+           requires_grad=False):
     if torch.onnx.is_in_onnx_export():
         if end is None:
             raise ValueError('End of range must be defined.')
@@ -66,10 +72,15 @@ def arange(start=0, end=None, step=1, out=None, dtype=None,
 
         return result
     else:
-        return torch.arange(start=start, end=end, step=step,
-                            out=out, dtype=dtype,
-                            layout=layout, device=device,
-                            requires_grad=requires_grad)
+        return torch.arange(
+            start=start,
+            end=end,
+            step=step,
+            out=out,
+            dtype=dtype,
+            layout=layout,
+            device=device,
+            requires_grad=requires_grad)
 
 
 def topk(x, k, dim=None, **kwargs):
@@ -86,20 +97,24 @@ def topk(x, k, dim=None, **kwargs):
         n = torch.min(torch.cat((k, n), dim=0).int()).long()
         # ONNX OpSet 10 does not support non-floating point input for TopK.
         original_dtype = x.dtype
-        require_cast = original_dtype not in {torch.float16, torch.float32, torch.float64}
+        require_cast = original_dtype not in {
+            torch.float16, torch.float32, torch.float64
+        }
         if require_cast:
             x = x.to(torch.float32)
         values, keep = torch.topk(x, n, dim=dim, **kwargs)
         if require_cast:
             values = values.to(original_dtype)
     else:
-        values, keep = torch.topk(x, min(int(k), x.shape[dim]), dim=dim, **kwargs)
+        values, keep = torch.topk(
+            x, min(int(k), x.shape[dim]), dim=dim, **kwargs)
     return values, keep
 
 
 def dummy_pad(x, padding):
 
     class DummyPad(torch.autograd.Function):
+
         @staticmethod
         def forward(ctx, x, padding):
             return torch.nn.functional.pad(x, padding)

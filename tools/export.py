@@ -5,7 +5,7 @@ import onnx
 import torch
 import torch.onnx.symbolic_helper as sym_help
 from mmcv.parallel import collate, scatter
-from torch.onnx.symbolic_helper import parse_args, _unimplemented
+from torch.onnx.symbolic_helper import _unimplemented, parse_args
 from torch.onnx.symbolic_registry import register_op
 
 from mmdet.apis import init_detector
@@ -25,7 +25,8 @@ def addcmul_symbolic(g, self, tensor1, tensor2, value=1, out=None):
     if sym_help._scalar(value) != 1:
         value = sym_help._if_scalar_type_as(g, value, x)
         if not sym_help._is_value(value):
-            value = g.op("Constant", value_t=torch.tensor(value, dtype=torch.float32))
+            value = g.op(
+                "Constant", value_t=torch.tensor(value, dtype=torch.float32))
         x = mul(g, x, value)
     return add(g, self, x)
 
@@ -37,6 +38,7 @@ def view_as_symbolic(g, self, other):
 
 @parse_args('v', 'v', 'i', 'i', 'i', 'none')
 def topk_symbolic(g, self, k, dim, largest, sorted, out=None):
+
     def reverse(x):
         from torch.onnx.symbolic_opset9 import reshape, transpose, size
 
@@ -63,7 +65,11 @@ def topk_symbolic(g, self, k, dim, largest, sorted, out=None):
     return top_values, top_indices
 
 
-def export(model, img, export_name="/tmp/model.onnx", verbose=False, strip_doc_string=False):
+def export(model,
+           img,
+           export_name="/tmp/model.onnx",
+           verbose=False,
+           strip_doc_string=False):
     register_op("addcmul", addcmul_symbolic, "", 10)
     register_op("view_as", view_as_symbolic, "", 10)
     register_op("topk", topk_symbolic, "", 10)
@@ -79,20 +85,32 @@ def export(model, img, export_name="/tmp/model.onnx", verbose=False, strip_doc_s
     data = scatter(collate([data], samples_per_gpu=1), [device])[0]
     # forward the model
     output_names = ["boxes", "labels"]
-    dynamic_axes = {"image": {2: "height", 3: "width"},
-                    "boxes": {0: "objects_num"},
-                    "labels": {0: "objects_num"}}
+    dynamic_axes = {
+        "image": {
+            2: "height",
+            3: "width"
+        },
+        "boxes": {
+            0: "objects_num"
+        },
+        "labels": {
+            0: "objects_num"
+        }
+    }
     if model.with_mask:
         output_names.append("masks")
         dynamic_axes["masks"] = {0: "objects_num"}
     with torch.no_grad():
-        model.export(**data, export_name=export_name, verbose=verbose,
-                     opset_version=10, strip_doc_string=strip_doc_string,
-                     operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
-                     input_names=["image"],
-                     output_names=output_names,
-                     dynamic_axes=dynamic_axes
-                     )
+        model.export(
+            **data,
+            export_name=export_name,
+            verbose=verbose,
+            opset_version=10,
+            strip_doc_string=strip_doc_string,
+            operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
+            input_names=["image"],
+            output_names=output_names,
+            dynamic_axes=dynamic_axes)
 
 
 def check_onnx_model(export_name):
@@ -133,10 +151,15 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Export model to ONNX")
     parser.add_argument("config", help="test config file path")
     parser.add_argument("model", help="path to output onnx model file")
-    parser.add_argument("--check", action="store_true",
-                        help="check that resulting onnx model is valid")
-    parser.add_argument("--checkpoint", default=None, type=str,
-                        help="path to file with model's weights")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="check that resulting onnx model is valid")
+    parser.add_argument(
+        "--checkpoint",
+        default=None,
+        type=str,
+        help="path to file with model's weights")
     args = parser.parse_args()
     return args
 

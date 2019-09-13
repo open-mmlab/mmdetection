@@ -223,7 +223,12 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         return losses
 
-    def simple_test(self, img, img_meta, proposals=None, rescale=False, postprocess=True):
+    def simple_test(self,
+                    img,
+                    img_meta,
+                    proposals=None,
+                    rescale=False,
+                    postprocess=True):
         """Test without augmentation."""
         assert self.with_bbox, "Bbox head must be implemented."
 
@@ -241,31 +246,45 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 x, img_meta, det_bboxes, det_labels, rescale=False)
 
         if postprocess:
-            return self.postprocess(det_bboxes, det_labels, det_masks, img_meta, rescale=rescale)
+            return self.postprocess(
+                det_bboxes, det_labels, det_masks, img_meta, rescale=rescale)
         else:
             if det_masks is None:
                 return det_bboxes, det_labels
             else:
                 return det_bboxes, det_labels, det_masks
 
-    def postprocess(self, det_bboxes, det_labels, det_masks, img_meta, rescale=False):
+    def postprocess(self,
+                    det_bboxes,
+                    det_labels,
+                    det_masks,
+                    img_meta,
+                    rescale=False):
         img_h, img_w = img_meta[0]['ori_shape'][:2]
         scale_factor = img_meta[0]['scale_factor']
         num_classes = self.bbox_head.num_classes
 
         if rescale:
-            # Keep original image resolution unchanged and scale bboxes and masks to it.
+            # Keep original image resolution unchanged
+            # and scale bboxes and masks to it.
             det_bboxes[:, :4] /= scale_factor
         else:
-            # Resize image to test resolution and keep bboxes and masks in test scale.
+            # Resize image to test resolution
+            # and keep bboxes and masks in test scale.
             img_h = np.round(img_h * scale_factor).astype(np.int32)
             img_w = np.round(img_w * scale_factor).astype(np.int32)
 
         bbox_results = bbox2result(det_bboxes, det_labels, num_classes)
         if self.with_mask:
-            segm_results = mask2result(det_bboxes, det_labels, det_masks, num_classes,
-                                       mask_thr_binary=self.test_cfg.rcnn.mask_thr_binary,
-                                       rle=True, full_size=True, img_size=(img_h, img_w))
+            segm_results = mask2result(
+                det_bboxes,
+                det_labels,
+                det_masks,
+                num_classes,
+                mask_thr_binary=self.test_cfg.rcnn.mask_thr_binary,
+                rle=True,
+                full_size=True,
+                img_size=(img_h, img_w))
             return bbox_results, segm_results
 
         return bbox_results

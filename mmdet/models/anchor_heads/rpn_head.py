@@ -5,8 +5,8 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import delta2bbox, multiclass_nms
 from mmdet.core.utils.misc import topk
-from .anchor_head import AnchorHead
 from ..registry import HEADS
+from .anchor_head import AnchorHead
 
 
 @HEADS.register_module
@@ -88,15 +88,18 @@ class RPNHead(AnchorHead):
                 proposals = proposals[valid_inds, :]
                 scores = scores[valid_inds]
             proposals, _ = multiclass_nms(proposals, scores.unsqueeze(1), 0.0,
-                                          {'type': 'nms', 'iou_thr': cfg.nms_thr},
-                                          cfg.nms_post)
+                                          {
+                                              'type': 'nms',
+                                              'iou_thr': cfg.nms_thr
+                                          }, cfg.nms_post)
             mlvl_proposals.append(proposals)
         proposals = torch.cat(mlvl_proposals, 0)
         if cfg.nms_across_levels:
             proposals, _ = multiclass_nms(proposals[:, :4],
-                                          proposals[:, 4].unsqueeze(1), 0.0,
-                                          {'type': 'nms', 'iou_thr': cfg.nms_thr},
-                                          cfg.max_num)
+                                          proposals[:, 4].unsqueeze(1), 0.0, {
+                                              'type': 'nms',
+                                              'iou_thr': cfg.nms_thr
+                                          }, cfg.max_num)
         else:
             scores = proposals[:, 4]
             _, topk_inds = topk(scores, cfg.max_num)

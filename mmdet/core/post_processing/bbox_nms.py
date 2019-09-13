@@ -1,8 +1,8 @@
 import torch
 import torch.onnx.symbolic_helper as sym_help
 from torch.autograd import Function
-from torch.onnx.symbolic_opset10 import _slice
 from torch.onnx.symbolic_opset9 import reshape
+from torch.onnx.symbolic_opset10 import _slice
 
 from mmdet.core.utils.misc import topk
 from mmdet.ops.nms import nms_wrapper
@@ -31,11 +31,8 @@ def multiclass_nms(multi_bboxes,
         tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
             are 0-based.
     """
-    combined_bboxes = GenericMulticlassNMS.apply(multi_bboxes,
-                                                 multi_scores,
-                                                 score_thr,
-                                                 nms_cfg,
-                                                 max_num,
+    combined_bboxes = GenericMulticlassNMS.apply(multi_bboxes, multi_scores,
+                                                 score_thr, nms_cfg, max_num,
                                                  score_factors)
     _, topk_inds = topk(combined_bboxes[:, 4].view(-1), max_num)
     combined_bboxes = combined_bboxes[topk_inds]
@@ -74,7 +71,7 @@ class GenericMulticlassNMS(Function):
                 _scores *= score_factors[cls_inds]
             cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
             cls_dets, _ = nms_op(cls_dets, **nms_op_cfg)
-            cls_labels = multi_bboxes.new_full((cls_dets.shape[0],),
+            cls_labels = multi_bboxes.new_full((cls_dets.shape[0], ),
                                                i,
                                                dtype=torch.long)
             bboxes.append(cls_dets)
@@ -87,17 +84,21 @@ class GenericMulticlassNMS(Function):
                 _, inds = bboxes[:, -1].topk(max_num, sorted=True)
                 bboxes = bboxes[inds]
                 labels = labels[inds]
-            combined_bboxes = torch.cat([bboxes,
-                                         labels.to(bboxes.dtype).unsqueeze(-1)],
-                                        dim=1)
+            combined_bboxes = torch.cat(
+                [bboxes, labels.to(bboxes.dtype).unsqueeze(-1)], dim=1)
         else:
             combined_bboxes = multi_bboxes.new_zeros((0, 6))
 
         return combined_bboxes
 
     @staticmethod
-    def symbolic(g, multi_bboxes, multi_scores, score_thr,
-                 nms_cfg, max_num=-1, score_factors=None):
+    def symbolic(g,
+                 multi_bboxes,
+                 multi_scores,
+                 score_thr,
+                 nms_cfg,
+                 max_num=-1,
+                 score_factors=None):
 
         def cast(x, dtype):
             return g.op('Cast', x, to_i=sym_help.cast_pytorch_to_onnx[dtype])
@@ -110,46 +111,56 @@ class GenericMulticlassNMS(Function):
         assert 0 <= iou_threshold <= 1
 
         # Transpose and reshape input tensors to fit ONNX NonMaxSuppression.
-        multi_bboxes = g.op('Transpose',
-                            reshape(g, multi_bboxes, [0, -1, 4]),
-                            perm_i=[1, 0, 2])
-        multi_scores = g.op('Unsqueeze',
-                            g.op('Transpose', multi_scores, perm_i=[1, 0]),
-                            axes_i=[1])
+        multi_bboxes = g.op(
+            'Transpose',
+            reshape(g, multi_bboxes, [0, -1, 4]),
+            perm_i=[1, 0, 2])
+        multi_scores = g.op(
+            'Unsqueeze',
+            g.op('Transpose', multi_scores, perm_i=[1, 0]),
+            axes_i=[1])
 
         assert max_num > 0
 
-        indices = g.op('NonMaxSuppression', multi_bboxes, multi_scores,
-                       g.op('Constant', value_t=torch.LongTensor([max_num])),
-                       g.op('Constant', value_t=torch.FloatTensor([iou_threshold])),
-                       g.op('Constant', value_t=torch.FloatTensor([score_thr])))
+        indices = g.op(
+            'NonMaxSuppression', multi_bboxes, multi_scores,
+            g.op('Constant', value_t=torch.LongTensor([max_num])),
+            g.op('Constant', value_t=torch.FloatTensor([iou_threshold])),
+            g.op('Constant', value_t=torch.FloatTensor([score_thr])))
 
         # Flatten bboxes and scores.
         multi_bboxes_flat = reshape(g, multi_bboxes, [-1, 4])
-        multi_scores_flat = reshape(g, multi_scores, [-1, ])
+        multi_scores_flat = reshape(g, multi_scores, [
+            -1,
+        ])
 
         # Flatten indices.
-        class_indices = cast(_slice(g, indices, axes=[1], starts=[0], ends=[1]), 'Long')
-        box_indices = cast(_slice(g, indices, axes=[1], starts=[2], ends=[3]), 'Long')
+        class_indices = cast(
+            _slice(g, indices, axes=[1], starts=[0], ends=[1]), 'Long')
+        box_indices = cast(
+            _slice(g, indices, axes=[1], starts=[2], ends=[3]), 'Long')
 
-        num_boxes = cast(_slice(g, g.op('Shape', multi_bboxes),
-                                axes=[0], starts=[1], ends=[2]), 'Long')
-        flat_indices = cast(g.op('Add',
-                                 cast(g.op('Mul', class_indices, num_boxes), 'Long'),
-                                 box_indices),
-                            'Long')
+        num_boxes = cast(
+            _slice(
+                g, g.op('Shape', multi_bboxes), axes=[0], starts=[1],
+                ends=[2]), 'Long')
+        flat_indices = cast(
+            g.op('Add', cast(g.op('Mul', class_indices, num_boxes), 'Long'),
+                 box_indices), 'Long')
 
         # Select bboxes.
-        out_bboxes = reshape(g, g.op('Gather', multi_bboxes_flat,
-                                     flat_indices, axis_i=0), [-1, 4])
-        out_scores = reshape(g, g.op('Gather', multi_scores_flat,
-                                     flat_indices, axis_i=0), [-1, 1])
+        out_bboxes = reshape(
+            g, g.op('Gather', multi_bboxes_flat, flat_indices, axis_i=0),
+            [-1, 4])
+        out_scores = reshape(
+            g, g.op('Gather', multi_scores_flat, flat_indices, axis_i=0),
+            [-1, 1])
         class_indices = reshape(g, cast(class_indices, 'Float'), [-1, 1])
 
         # Combine bboxes, scores and labels into a single tensor.
         # This a workaround for a PyTorch bug (feature?),
         # limiting ONNX operations to output only single tensor.
-        out_combined_bboxes = g.op('Concat', out_bboxes,
-                                   out_scores, class_indices, axis_i=1)
+        out_combined_bboxes = g.op(
+            'Concat', out_bboxes, out_scores, class_indices, axis_i=1)
 
         return out_combined_bboxes

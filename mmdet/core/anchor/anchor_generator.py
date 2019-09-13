@@ -58,8 +58,12 @@ class AnchorGenerator(object):
     def grid_anchors(self, featmap_size, stride=16, device='cuda'):
         base_anchors = self.base_anchors.to(device)
 
-        shift_x = arange(start=0, end=featmap_size[1], dtype=torch.float32, device=device) * stride
-        shift_y = arange(start=0, end=featmap_size[0], dtype=torch.float32, device=device) * stride
+        shift_x = arange(
+            start=0, end=featmap_size[1], dtype=torch.float32,
+            device=device) * stride
+        shift_y = arange(
+            start=0, end=featmap_size[0], dtype=torch.float32,
+            device=device) * stride
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=1)
         shifts = shifts.type_as(base_anchors)

@@ -115,12 +115,16 @@ class MaskTestMixin(object):
 
         if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
             # If there are no detection there is nothing to do for a mask head.
-            # But during ONNX export we should run mask head for it to appear in the graph.
-            # So add one zero / dummy ROI that will be mapped to an Identity op in the graph.
+            # But during ONNX export we should run mask head
+            # for it to appear in the graph.
+            # So add one zero / dummy ROI that will be mapped
+            # to an Identity op in the graph.
             det_bboxes = dummy_pad(det_bboxes, (0, 0, 0, 1))
 
         if det_bboxes.shape[0] == 0:
-            det_masks = torch.empty([0, 0, 0], dtype=det_bboxes.dtype, device=det_bboxes.device)
+            det_masks = torch.empty([0, 0, 0],
+                                    dtype=det_bboxes.dtype,
+                                    device=det_bboxes.device)
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
