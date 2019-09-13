@@ -151,6 +151,11 @@ class BBoxHead(nn.Module):
                 bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1] - 1)
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
 
+        # Remove data for background.
+        scores = scores[:, 1:]
+        if not self.reg_class_agnostic:
+            bboxes = bboxes[:, 4:]
+
         if rescale:
             if isinstance(scale_factor, float):
                 bboxes /= scale_factor
@@ -163,7 +168,6 @@ class BBoxHead(nn.Module):
             det_bboxes, det_labels = multiclass_nms(bboxes, scores,
                                                     cfg.score_thr, cfg.nms,
                                                     cfg.max_per_img)
-
             return det_bboxes, det_labels
 
     @force_fp32(apply_to=('bbox_preds', ))

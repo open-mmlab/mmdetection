@@ -198,14 +198,22 @@ class AnchorHead(nn.Module):
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg,
                    rescale=False):
+        from torch.onnx import operators, is_in_onnx_export
+
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
-        mlvl_anchors = [
-            self.anchor_generators[i].grid_anchors(cls_scores[i].size()[-2:],
-                                                   self.anchor_strides[i])
-            for i in range(num_levels)
-        ]
+        mlvl_anchors = []
+        for i in range(num_levels):
+            if is_in_onnx_export():
+                size = operators.shape_as_tensor(cls_scores[i])[2:4]
+            else:
+                size = cls_scores[i].size()[-2:]
+            level_anchors = self.anchor_generators[i].grid_anchors(size,
+                                                                   self.anchor_strides[i],
+                                                                   device=cls_scores[0].device)
+            mlvl_anchors.append(level_anchors)
+
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -244,15 +252,15 @@ class AnchorHead(nn.Module):
                 scores = cls_score.softmax(-1)
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+            if 0 < nms_pre < scores.shape[0]:
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
                     max_scores, _ = scores[:, 1:].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
+                anchors = anchors[topk_inds]
+                bbox_pred = bbox_pred[topk_inds]
+                scores = scores[topk_inds]
             bboxes = delta2bbox(anchors, bbox_pred, self.target_means,
                                 self.target_stds, img_shape)
             mlvl_bboxes.append(bboxes)

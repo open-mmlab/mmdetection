@@ -1,5 +1,9 @@
+import torch
+import torch.onnx
+
 from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, merge_aug_proposals, multiclass_nms)
+from mmdet.core.utils.misc import dummy_pad
 
 
 class RPNTestMixin(object):
@@ -107,10 +111,16 @@ class MaskTestMixin(object):
                          det_labels,
                          rescale=False):
         # image shape of the first image in the batch (only one)
-        ori_shape = img_meta[0]['ori_shape']
         scale_factor = img_meta[0]['scale_factor']
+
+        if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
+            # If there are no detection there is nothing to do for a mask head.
+            # But during ONNX export we should run mask head for it to appear in the graph.
+            # So add one zero / dummy ROI that will be mapped to an Identity op in the graph.
+            det_bboxes = dummy_pad(det_bboxes, (0, 0, 0, 1))
+
         if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
+            det_masks = torch.empty([0, 0, 0], dtype=det_bboxes.dtype, device=det_bboxes.device)
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
@@ -122,12 +132,10 @@ class MaskTestMixin(object):
             if self.with_shared_head:
                 mask_feats = self.shared_head(mask_feats)
             mask_pred = self.mask_head(mask_feats)
-            segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
-                                                       det_labels,
-                                                       self.test_cfg.rcnn,
-                                                       ori_shape, scale_factor,
-                                                       rescale)
-        return segm_result
+
+            det_masks = self.mask_head.get_seg_masks(mask_pred, det_labels)
+
+        return det_masks
 
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):
         if det_bboxes.shape[0] == 0:

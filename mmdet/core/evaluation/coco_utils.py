@@ -153,8 +153,8 @@ def segm2json(dataset, results):
                 data['image_id'] = img_id
                 data['score'] = float(mask_score[i])
                 data['category_id'] = dataset.cat_ids[label]
-                segms[i]['counts'] = segms[i]['counts'].decode()
-                data['segmentation'] = segms[i]
+                data['segmentation'] = {'size': segms[i]['size'],
+                                        'counts': segms[i]['counts'].decode()}
                 segm_json_results.append(data)
     return bbox_json_results, segm_json_results
 

@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
-from mmdet.core import delta2bbox
-from mmdet.ops import nms
-from ..registry import HEADS
+from mmdet.core import delta2bbox, multiclass_nms
+from mmdet.core.utils.misc import topk
 from .anchor_head import AnchorHead
+from ..registry import HEADS
 
 
 @HEADS.register_module
@@ -74,11 +74,10 @@ class RPNHead(AnchorHead):
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
                 scores = rpn_cls_score.softmax(dim=1)[:, 1]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
-                _, topk_inds = scores.topk(cfg.nms_pre)
-                rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
-                anchors = anchors[topk_inds, :]
-                scores = scores[topk_inds]
+            nms_pre = int(cfg.nms_pre)
+            scores, topk_inds = topk(scores, nms_pre)
+            rpn_bbox_pred = rpn_bbox_pred[topk_inds]
+            anchors = anchors[topk_inds]
             proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
                                    self.target_stds, img_shape)
             if cfg.min_bbox_size > 0:
@@ -88,17 +87,18 @@ class RPNHead(AnchorHead):
                                            (h >= cfg.min_bbox_size)).squeeze()
                 proposals = proposals[valid_inds, :]
                 scores = scores[valid_inds]
-            proposals = torch.cat([proposals, scores.unsqueeze(-1)], dim=-1)
-            proposals, _ = nms(proposals, cfg.nms_thr)
-            proposals = proposals[:cfg.nms_post, :]
+            proposals, _ = multiclass_nms(proposals, scores.unsqueeze(1), 0.0,
+                                          {'type': 'nms', 'iou_thr': cfg.nms_thr},
+                                          cfg.nms_post)
             mlvl_proposals.append(proposals)
         proposals = torch.cat(mlvl_proposals, 0)
         if cfg.nms_across_levels:
-            proposals, _ = nms(proposals, cfg.nms_thr)
-            proposals = proposals[:cfg.max_num, :]
+            proposals, _ = multiclass_nms(proposals[:, :4],
+                                          proposals[:, 4].unsqueeze(1), 0.0,
+                                          {'type': 'nms', 'iou_thr': cfg.nms_thr},
+                                          cfg.max_num)
         else:
             scores = proposals[:, 4]
-            num = min(cfg.max_num, proposals.shape[0])
-            _, topk_inds = scores.topk(num)
-            proposals = proposals[topk_inds, :]
+            _, topk_inds = topk(scores, cfg.max_num)
+            proposals = proposals[topk_inds]
         return proposals
