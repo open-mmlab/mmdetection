@@ -3,10 +3,11 @@ import numpy as np
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+from .cocoevalLRP import COCOevalLRP
 from .recall import eval_recalls
 
 
-def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
+def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000),LRPEval=1,tau=0.5):
     for res_type in result_types:
         assert res_type in [
             'proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'
@@ -28,7 +29,7 @@ def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
         elif isinstance(result_files, dict):
             result_file = result_files[res_type]
         else:
-            assert TypeError('result_files must be a str or dict')
+            assert TypeError('result_files must be a str or dict')        
         assert result_file.endswith('.json')
 
         coco_dets = coco.loadRes(result_file)
@@ -42,6 +43,11 @@ def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
         cocoEval.evaluate()
         cocoEval.accumulate()
         cocoEval.summarize()
+        if res_type=='bbox' and LRPEval>0:
+            cocoEvalLRP = COCOevalLRP(coco,coco_dets,tau)
+            cocoEvalLRP.evaluate()
+            cocoEvalLRP.accumulate()
+            cocoEvalLRP.summarize()
 
 
 def fast_eval_recall(results,
