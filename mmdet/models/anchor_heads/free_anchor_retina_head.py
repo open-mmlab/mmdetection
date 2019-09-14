@@ -63,9 +63,7 @@ class FreeAnchorRetinaHead(RetinaHead):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
 
-        anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas)
-
+        anchor_list, _ = self.get_anchors(featmap_sizes, img_metas)
         anchors = [torch.cat(anchor) for anchor in anchor_list]
 
         # concatenate each level
@@ -96,26 +94,32 @@ class FreeAnchorRetinaHead(RetinaHead):
                                         self.target_means, self.target_stds)
 
                 # object_box_iou: IoU_{ij}^{loc}, shape: [i, j]
-                ious = bbox_overlaps(gt_bboxes_, pred_boxes)
-                max_ious = ious.max(
-                    dim=1,
-                    keepdim=True).values.clamp(min=self.bbox_threshold + 1e-12)
+                object_box_iou = bbox_overlaps(gt_bboxes_, pred_boxes)
 
                 # object_box_prob: P{a_{j} -> b_{i}}, shape: [i, j]
-                object_box_prob = ((ious - self.bbox_threshold) /
-                                   (max_ious - self.bbox_threshold)).clamp(
-                                       min=0, max=1)
+                t1 = self.bbox_threshold
+                t2 = object_box_iou.max(
+                    dim=1, keepdim=True).values.clamp(min=t1 + 1e-12)
+                object_box_prob = ((object_box_iou - t1) / (t2 - t1)).clamp(
+                    min=0, max=1)
 
+                # object_cls_box_prob: P{a_{j} -> b_{i}}, shape: [i, c, j]
                 num_obj = gt_labels_.size(0)
                 indices = torch.stack(
                     [torch.arange(num_obj).type_as(gt_labels_), gt_labels_],
                     dim=0)
-
-                # object_cls_box_prob: P{a_{j} -> b_{i}}, shape: [i, c, j]
                 object_cls_box_prob = torch.sparse_coo_tensor(
                     indices, object_box_prob)
 
                 # image_box_iou: P{a_{j} \in A_{+}}, shape: [c, j]
+                """
+                from "start" to "end" implement:
+
+                image_box_iou = torch.sparse.max(object_cls_box_prob, 
+                                                 dim=0).t()
+
+                """
+                # start
                 box_cls_prob = torch.sparse.sum(
                     object_cls_box_prob, dim=0).to_dense()
 
@@ -125,7 +129,6 @@ class FreeAnchorRetinaHead(RetinaHead):
                         anchors_.size(0),
                         self.cls_out_channels).type_as(object_box_prob)
                 else:
-                    # for each pos anchor, find its largest IoU with GTs
                     nonzero_box_prob = torch.where(
                         (gt_labels_.unsqueeze(dim=-1) == indices[0]),
                         object_box_prob[:, indices[1]],
@@ -138,8 +141,11 @@ class FreeAnchorRetinaHead(RetinaHead):
                         nonzero_box_prob,
                         size=(anchors_.size(0),
                               self.cls_out_channels)).to_dense()
+                # end
+
                 box_prob.append(image_box_prob)
 
+            # construct bags for objects
             match_quality_matrix = bbox_overlaps(gt_bboxes_, anchors_)
             _, matched = torch.topk(
                 match_quality_matrix,
@@ -148,11 +154,13 @@ class FreeAnchorRetinaHead(RetinaHead):
                 sorted=False)
             del match_quality_matrix
 
+            # matched_cls_prob: P_{ij}^{cls}
             matched_cls_prob = torch.gather(
                 cls_prob_[matched], 2,
                 gt_labels_.view(-1, 1, 1).repeat(1, self.pre_anchor_topk,
                                                  1)).squeeze(2)
 
+            # matched_box_prob: P_{ij}^{loc}
             matched_anchors = anchors_[matched]
             matched_object_targets = bbox2delta(
                 matched_anchors,
@@ -164,14 +172,18 @@ class FreeAnchorRetinaHead(RetinaHead):
                 reduction_override='none').sum(-1)
             matched_box_prob = torch.exp(-loss_bbox)
 
+            # positive_losses: {-log( Mean-max(P_{ij}^{cls} * P_{ij}^{loc}) )}
             num_pos += len(gt_bboxes_)
             positive_losses.append(
                 self.positive_bag_loss_func(
                     matched_cls_prob * matched_box_prob, dim=1))
         positive_loss = torch.cat(positive_losses).sum() / max(1, num_pos)
 
+        # box_prob: P{a_{j} \in A_{+}}
         box_prob = torch.stack(box_prob, dim=0)
 
+        # negative_loss:
+        # \sum_{j}{ FL((1 - P{a_{j} \in A_{+}}) * (1 - P_{j}^{bg})) } / n||B||
         negative_loss = self.negative_bag_loss_func(
             cls_prob * (1 - box_prob), self.focal_loss_gamma) / max(
                 1, num_pos * self.pre_anchor_topk)
@@ -185,9 +197,11 @@ class FreeAnchorRetinaHead(RetinaHead):
 
 
 def positive_bag_loss(logits, *args, **kwargs):
+    # bag_prob = Mean-max(logits)
     weight = 1 / clip(1 - logits, 1e-12, None)
     weight /= weight.sum(*args, **kwargs).unsqueeze(dim=-1)
     bag_prob = (weight * logits).sum(*args, **kwargs)
+    # positive_bag_loss = -log(bag_prob)
     return F.binary_cross_entropy(
         bag_prob, torch.ones_like(bag_prob), reduction='none')
 
