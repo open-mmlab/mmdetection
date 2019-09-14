@@ -23,8 +23,10 @@ class DeformRoIPoolingFunction(Function):
                 sample_per_part=4,
                 trans_std=.0):
         # TODO: support unsquare RoIs
-        assert out_size[0] == out_size[1]
-        out_size = out_size[0]
+        out_h, out_w = _pair(out_size)
+        assert isinstance(out_h, int) and isinstance(out_w, int)
+        assert out_h == out_w
+        out_size = out_h  # out_h and out_w must be equal
 
         ctx.spatial_scale = spatial_scale
         ctx.out_size = out_size
