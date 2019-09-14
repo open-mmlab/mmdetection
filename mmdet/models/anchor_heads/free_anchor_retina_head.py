@@ -114,8 +114,7 @@ class FreeAnchorRetinaHead(RetinaHead):
                 # image_box_iou: P{a_{j} \in A_{+}}, shape: [c, j]
                 """
                 from "start" to "end" implement:
-
-                image_box_iou = torch.sparse.max(object_cls_box_prob, 
+                image_box_iou = torch.sparse.max(object_cls_box_prob,
                                                  dim=0).t()
 
                 """
