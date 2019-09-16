@@ -134,9 +134,9 @@ class DistributedGroupSampler(Sampler):
                 ) * self.samples_per_gpu * self.num_replicas - len(indice)
                 # pad indice
                 tmp = indice.copy()
-                for _ in range(extra//size):
+                for _ in range(extra // size):
                     indice.extend(tmp)
-                indice.extend(tmp[:extra%size])
+                indice.extend(tmp[:extra % size])
                 indices.extend(indice)
 
         assert len(indices) == self.total_size
