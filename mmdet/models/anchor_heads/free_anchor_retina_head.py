@@ -3,9 +3,9 @@ import torch.nn.functional as F
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 
-from mmdet.core import bbox_overlaps, delta2bbox, bbox2delta
-from .retina_head import RetinaHead
+from mmdet.core import bbox2delta, bbox_overlaps, delta2bbox
 from ..registry import HEADS
+from .retina_head import RetinaHead
 
 
 class Clip(Function):
