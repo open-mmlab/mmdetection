@@ -142,7 +142,7 @@ def segm2json(dataset, results):
 
             # segm results
             # some detectors use different score for det and segm
-            if len(seg) == 2 and label in seg[0] and len(seg[0][label]) == bboxes.shape[0] and label in seg[1] and len(seg[1][label]) == bboxes.shape[0]:
+            if label in seg[0]:
                 segms = seg[0][label]
                 mask_score = seg[1][label]
             else:
