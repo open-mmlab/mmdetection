@@ -31,9 +31,9 @@ class Registry(object):
         Args:
             module (:obj:`nn.Module`): Module to be registered.
         """
-        if not inspect.isclass(module_class):
-            raise TypeError('module must be a class, but got {}'.format(
-                type(module_class)))
+        # if not inspect.isclass(module_class):
+        #     raise TypeError('module must be a class, but got {}'.format(
+        #         type(module_class)))
         module_name = module_class.__name__
         if module_name in self._module_dict:
             raise KeyError('{} is already registered in {}'.format(
