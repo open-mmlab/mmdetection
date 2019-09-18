@@ -1,5 +1,7 @@
 import torch
 
+from mmdet.core.utils.misc import arange
+
 
 class AnchorGenerator(object):
 
@@ -45,8 +47,9 @@ class AnchorGenerator(object):
         return base_anchors
 
     def _meshgrid(self, x, y, row_major=True):
-        xx = x.repeat(len(y))
-        yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
+        n, m = y.shape[0], x.shape[0]
+        yy = y.view(-1, 1).expand(n, m).reshape(-1)
+        xx = x.view(1, -1).expand(n, m).reshape(-1)
         if row_major:
             return xx, yy
         else:
@@ -55,12 +58,16 @@ class AnchorGenerator(object):
     def grid_anchors(self, featmap_size, stride=16, device='cuda'):
         base_anchors = self.base_anchors.to(device)
 
-        feat_h, feat_w = featmap_size
-        shift_x = torch.arange(0, feat_w, device=device) * stride
-        shift_y = torch.arange(0, feat_h, device=device) * stride
+        shift_x = arange(
+            start=0, end=featmap_size[1], dtype=torch.float32,
+            device=device) * stride
+        shift_y = arange(
+            start=0, end=featmap_size[0], dtype=torch.float32,
+            device=device) * stride
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
-        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
+        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=1)
         shifts = shifts.type_as(base_anchors)
+
         # first feat_w elements correspond to the first row of shifts
         # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
         # shifted anchors (K, A, 4), reshape to (K*A, 4)

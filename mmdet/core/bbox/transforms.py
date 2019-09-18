@@ -1,6 +1,9 @@
 import mmcv
 import numpy as np
 import torch
+from torch.onnx import is_in_onnx_export
+
+from ..utils.misc import to_numpy
 
 
 def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
@@ -31,14 +34,38 @@ def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
     return deltas
 
 
+def clamp(x, min, max):
+    if is_in_onnx_export():
+        device = x.device
+        dtype = x.dtype
+
+        y = x
+
+        min_val = torch.as_tensor(min, dtype=dtype, device=device)
+        y = torch.stack([y, min_val.view([
+            1,
+        ] * y.dim()).expand_as(y)], dim=0)
+        y = torch.max(y, dim=0, keepdim=False)[0]
+
+        max_val = torch.as_tensor(max, dtype=dtype, device=device)
+        y = torch.stack([y, max_val.view([
+            1,
+        ] * y.dim()).expand_as(y)], dim=0)
+        y = torch.min(y, dim=0, keepdim=False)[0]
+    else:
+        y = x.clamp(min=min, max=max)
+
+    return y
+
+
 def delta2bbox(rois,
                deltas,
-               means=[0, 0, 0, 0],
-               stds=[1, 1, 1, 1],
+               means=(0, 0, 0, 0),
+               stds=(1, 1, 1, 1),
                max_shape=None,
                wh_ratio_clip=16 / 1000):
-    means = deltas.new_tensor(means).repeat(1, deltas.size(1) // 4)
-    stds = deltas.new_tensor(stds).repeat(1, deltas.size(1) // 4)
+    means = deltas.new_tensor(means).view(1, -1).repeat(1, deltas.size(1) // 4)
+    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(1) // 4)
     denorm_deltas = deltas * stds + means
     dx = denorm_deltas[:, 0::4]
     dy = denorm_deltas[:, 1::4]
@@ -53,18 +80,18 @@ def delta2bbox(rois,
     ph = (rois[:, 3] - rois[:, 1] + 1.0).unsqueeze(1).expand_as(dh)
     gw = pw * dw.exp()
     gh = ph * dh.exp()
-    gx = torch.addcmul(px, 1, pw, dx)  # gx = px + pw * dx
-    gy = torch.addcmul(py, 1, ph, dy)  # gy = py + ph * dy
+    gx = torch.addcmul(px, 1.0, pw, dx)  # gx = px + pw * dx
+    gy = torch.addcmul(py, 1.0, ph, dy)  # gy = py + ph * dy
     x1 = gx - gw * 0.5 + 0.5
     y1 = gy - gh * 0.5 + 0.5
     x2 = gx + gw * 0.5 - 0.5
     y2 = gy + gh * 0.5 - 0.5
     if max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1] - 1)
-        y1 = y1.clamp(min=0, max=max_shape[0] - 1)
-        x2 = x2.clamp(min=0, max=max_shape[1] - 1)
-        y2 = y2.clamp(min=0, max=max_shape[0] - 1)
-    bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view_as(deltas)
+        x1 = clamp(x1, min=0, max=max_shape[1] - 1)
+        y1 = clamp(y1, min=0, max=max_shape[0] - 1)
+        x2 = clamp(x2, min=0, max=max_shape[1] - 1)
+        y2 = clamp(y2, min=0, max=max_shape[0] - 1)
+    bboxes = torch.stack([x1, y1, x2, y2], dim=2).view_as(deltas)
     return bboxes
 
 
@@ -116,8 +143,8 @@ def bbox2roi(bbox_list):
     rois_list = []
     for img_id, bboxes in enumerate(bbox_list):
         if bboxes.size(0) > 0:
-            img_inds = bboxes.new_full((bboxes.size(0), 1), img_id)
-            rois = torch.cat([img_inds, bboxes[:, :4]], dim=-1)
+            rois = bboxes[:, :4].reshape(-1, 4)
+            rois = torch.nn.functional.pad(rois, (1, 0, 0, 0), value=img_id)
         else:
             rois = bboxes.new_zeros((0, 5))
         rois_list.append(rois)
@@ -151,8 +178,8 @@ def bbox2result(bboxes, labels, num_classes):
             np.zeros((0, 5), dtype=np.float32) for i in range(num_classes - 1)
         ]
     else:
-        bboxes = bboxes.cpu().numpy()
-        labels = labels.cpu().numpy()
+        bboxes = to_numpy(bboxes)
+        labels = to_numpy(labels)
         return [bboxes[labels == i, :] for i in range(num_classes - 1)]
 
 

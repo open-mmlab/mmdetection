@@ -1,11 +1,9 @@
-import mmcv
-import numpy as np
-import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import auto_fp16, force_fp32, mask_target
+from mmdet.core.utils.misc import arange
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule
@@ -122,60 +120,27 @@ class FCNMaskHead(nn.Module):
         loss['loss_mask'] = loss_mask
         return loss
 
-    def get_seg_masks(self, mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
-                      ori_shape, scale_factor, rescale):
+    def get_seg_masks(self, det_masks, det_labels):
         """Get segmentation masks from mask_pred and bboxes.
 
         Args:
-            mask_pred (Tensor or ndarray): shape (n, #class+1, h, w).
+            det_masks (Tensor): shape (n, #class+1, h, w).
                 For single-scale testing, mask_pred is the direct output of
                 model, whose type is Tensor, while for multi-scale testing,
                 it will be converted to numpy array outside of this method.
-            det_bboxes (Tensor): shape (n, 4/5)
             det_labels (Tensor): shape (n, )
-            img_shape (Tensor): shape (3, )
-            rcnn_test_cfg (dict): rcnn testing config
-            ori_shape: original image size
 
         Returns:
-            list[list]: encoded masks
+            Tensor of shape (n, 1, h, w) with mask heatmaps
+            for all detected boxes.
         """
-        if isinstance(mask_pred, torch.Tensor):
-            mask_pred = mask_pred.sigmoid().cpu().numpy()
-        assert isinstance(mask_pred, np.ndarray)
-        # when enabling mixed precision training, mask_pred may be float16
-        # numpy array
-        mask_pred = mask_pred.astype(np.float32)
 
-        cls_segms = [[] for _ in range(self.num_classes - 1)]
-        bboxes = det_bboxes.cpu().numpy()[:, :4]
-        labels = det_labels.cpu().numpy() + 1
-
-        if rescale:
-            img_h, img_w = ori_shape[:2]
+        if not self.class_agnostic:
+            class_indices = det_labels + 1
         else:
-            img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
-            img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
-            scale_factor = 1.0
+            class_indices = 0
 
-        for i in range(bboxes.shape[0]):
-            bbox = (bboxes[i, :] / scale_factor).astype(np.int32)
-            label = labels[i]
-            w = max(bbox[2] - bbox[0] + 1, 1)
-            h = max(bbox[3] - bbox[1] + 1, 1)
-
-            if not self.class_agnostic:
-                mask_pred_ = mask_pred[i, label, :, :]
-            else:
-                mask_pred_ = mask_pred[i, 0, :, :]
-            im_mask = np.zeros((img_h, img_w), dtype=np.uint8)
-
-            bbox_mask = mmcv.imresize(mask_pred_, (w, h))
-            bbox_mask = (bbox_mask > rcnn_test_cfg.mask_thr_binary).astype(
-                np.uint8)
-            im_mask[bbox[1]:bbox[1] + h, bbox[0]:bbox[0] + w] = bbox_mask
-            rle = mask_util.encode(
-                np.array(im_mask[:, :, np.newaxis], order='F'))[0]
-            cls_segms[label - 1].append(rle)
-
-        return cls_segms
+        segm_result = det_masks[arange(
+            end=det_labels.shape[0], device=det_masks.device
+        ), class_indices].sigmoid()
+        return segm_result
