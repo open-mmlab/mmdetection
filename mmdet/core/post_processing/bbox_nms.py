@@ -31,9 +31,13 @@ def multiclass_nms(multi_bboxes,
         tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
             are 0-based.
     """
-    combined_bboxes = GenericMulticlassNMS.apply(multi_bboxes, multi_scores,
-                                                 score_thr, nms_cfg, max_num,
-                                                 score_factors)
+    if score_factors is not None:
+        target_shape = list(score_factors.shape) + [1, ] * (multi_scores.dim() - score_factors.dim())
+        scores = multi_scores * score_factors.view(*target_shape).expand_as(multi_scores)
+    else:
+        scores = multi_scores
+    combined_bboxes = GenericMulticlassNMS.apply(multi_bboxes, scores,
+                                                 score_thr, nms_cfg, max_num)
     _, topk_inds = topk(combined_bboxes[:, 4].view(-1), max_num)
     combined_bboxes = combined_bboxes[topk_inds]
     bboxes = combined_bboxes[:, :5]
@@ -49,8 +53,7 @@ class GenericMulticlassNMS(Function):
                 multi_scores,
                 score_thr,
                 nms_cfg,
-                max_num=-1,
-                score_factors=None):
+                max_num=-1):
         nms_op_cfg = nms_cfg.copy()
         nms_op_type = nms_op_cfg.pop('type', 'nms')
         nms_op = getattr(nms_wrapper, nms_op_type)
@@ -67,8 +70,6 @@ class GenericMulticlassNMS(Function):
             else:
                 _bboxes = multi_bboxes[cls_inds, i * 4:(i + 1) * 4]
             _scores = multi_scores[cls_inds, i]
-            if score_factors is not None:
-                _scores *= score_factors[cls_inds]
             cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
             cls_dets, _ = nms_op(cls_dets, **nms_op_cfg)
             cls_labels = multi_bboxes.new_full((cls_dets.shape[0], ),
@@ -97,13 +98,11 @@ class GenericMulticlassNMS(Function):
                  multi_scores,
                  score_thr,
                  nms_cfg,
-                 max_num=-1,
-                 score_factors=None):
+                 max_num=-1):
 
         def cast(x, dtype):
             return g.op('Cast', x, to_i=sym_help.cast_pytorch_to_onnx[dtype])
 
-        assert score_factors is None
         nms_op_type = nms_cfg.get('type', 'nms')
         assert nms_op_type == 'nms'
         assert 'iou_thr' in nms_cfg

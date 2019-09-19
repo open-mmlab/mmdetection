@@ -60,16 +60,30 @@ class SingleStageDetector(BaseDetector):
             *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
-    def simple_test(self, img, img_meta, rescale=False):
+    def simple_test(self, img, img_meta, rescale=False, postprocess=True):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
-        bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
-        bbox_list = self.bbox_head.get_bboxes(*bbox_inputs)
-        bbox_results = [
-            bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-            for det_bboxes, det_labels in bbox_list
-        ]
-        return bbox_results[0]
+        det_bboxes, det_labels = self.bbox_head.get_bboxes(*outs, img_meta, self.test_cfg, False)[0]
+
+        if postprocess:
+            return self.postprocess(det_bboxes, det_labels, None, img_meta, rescale=rescale)
+
+        return det_bboxes, det_labels
+
+    def postprocess(self,
+                    det_bboxes,
+                    det_labels,
+                    det_masks,
+                    img_meta,
+                    rescale=False):
+        scale_factor = img_meta[0]['scale_factor']
+        num_classes = self.bbox_head.num_classes
+
+        if rescale:
+            det_bboxes[:, :4] /= scale_factor
+
+        bbox_results = bbox2result(det_bboxes, det_labels, num_classes)
+        return bbox_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError

@@ -29,12 +29,6 @@ def generate_backbones():
                     elif i == last_stage:
                         break
 
-                # print('*' * 20)
-                # print(x.shape)
-                # for y in outputs:
-                #     print(y.shape)
-                # print('-' * 20)
-
                 return outputs
 
             def init_weights(self, pretrained=True):

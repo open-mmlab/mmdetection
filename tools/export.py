@@ -65,6 +65,11 @@ def topk_symbolic(g, self, k, dim, largest, sorted, out=None):
     return top_values, top_indices
 
 
+@parse_args('v', 'i', 'v', 'v', 'f', 'i')
+def group_norm_symbolic(g, input, num_groups, weight, bias, eps, cudnn_enabled):
+    return g.op("GroupNorm", input, weight, bias, num_groups_i=num_groups, eps_f=eps)
+
+
 def export(model,
            img,
            export_name="/tmp/model.onnx",
@@ -73,6 +78,7 @@ def export(model,
     register_op("addcmul", addcmul_symbolic, "", 10)
     register_op("view_as", view_as_symbolic, "", 10)
     register_op("topk", topk_symbolic, "", 10)
+    register_op("group_norm", group_norm_symbolic, "", 10)
 
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
@@ -127,8 +133,8 @@ def check_onnx_model(export_name):
 def add_node_names(export_name):
     model = onnx.load(export_name)
     for n in model.graph.node:
-        n.name = "in: " + ";".join([i for i in n.input]) + ". " + \
-                 "out: " + ";".join([i for i in n.output])
+        n.name = "in: " + ",".join([i for i in n.input]) + ". " + \
+                 "out: " + ",".join([i for i in n.output])
     onnx.save(model, export_name)
 
 
@@ -141,7 +147,7 @@ def main(args):
     with torch.no_grad():
         export(model, image, export_name=args.model)
 
-    add_node_names(args.model)
+    # add_node_names(args.model)
 
     if args.check:
         check_onnx_model(args.model)

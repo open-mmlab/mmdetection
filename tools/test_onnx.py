@@ -123,6 +123,80 @@ class ONNXModel(object):
         return outputs
 
 
+def main_openvino(args):
+    from mmdet.utils.openvino import DetectorOpenVINO
+
+
+    cfg = mmcv.Config.fromfile(args.config)
+    cfg.model.pretrained = None
+    cfg.data.test.test_mode = True
+
+    dataset = build_dataset(cfg.data.test)
+    data_loader = build_dataloader(
+        dataset,
+        imgs_per_gpu=1,
+        workers_per_gpu=cfg.data.workers_per_gpu,
+        dist=False,
+        shuffle=False)
+
+    if args.model is None:
+        print('No model file provided. Trying to load evaluation results.')
+        results = mmcv.load(args.out)
+    else:
+        classes_num = 2
+
+        model = DetectorOpenVINO(args.model, args.ckpt, required_output_keys=['11206/Split.0', 'in: 1359,1360. out: labels'],
+                                 cpu_extension_lib_path='/home/paul/programs/intel/l_openvino_toolkit_p_2019.3.325/openvino/inference_engine/lib/intel64/libcpu_extension_avx2.so',
+                                 cfg=cfg, classes=['person'])
+
+        results = []
+        dataset = data_loader.dataset
+        prog_bar = mmcv.ProgressBar(len(dataset))
+
+        for i, data in enumerate(data_loader):
+            with torch.no_grad():
+                im_data = data['img'][0].cpu().numpy()
+                result = model(dict(image=im_data))
+                result = postprocess(
+                    result,
+                    data['img_meta'][0].data[0],
+                    num_classes=classes_num,
+                    rescale=not args.show)
+            results.append(result)
+
+            if args.show:
+                model.show(data, result, score_thr=args.score_thr)
+
+            batch_size = data['img'][0].size(0)
+            for _ in range(batch_size):
+                prog_bar.update()
+
+        print('')
+        print('Writing results to {}'.format(args.out))
+        mmcv.dump(results, args.out)
+
+    eval_types = args.eval
+    if eval_types:
+        print('Starting evaluate {}'.format(' and '.join(eval_types)))
+        if eval_types == ['proposal_fast']:
+            result_file = args.out
+            coco_eval(result_file, eval_types, dataset.coco)
+        else:
+            if not isinstance(results[0], dict):
+                result_files = results2json(dataset, results, args.out)
+                coco_eval(result_files, eval_types, dataset.coco)
+            else:
+                for name in results[0]:
+                    print('\nEvaluating {}'.format(name))
+                    outputs_ = [out[name] for out in results]
+                    result_file = args.out + '.{}'.format(name)
+                    result_files = results2json(dataset, outputs_,
+                                                result_file)
+                    coco_eval(result_files, eval_types, dataset.coco)
+
+    return results
+
+
 def main(args):
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
@@ -213,6 +287,9 @@ def parse_args():
         help='path to onnx model file. If not set, try to load results'
         'from the file specified by `--out` key.')
     parser.add_argument(
+        '--ckpt',
+        type=str)
+    parser.add_argument(
         '--out', type=str, help='path to file with inference results')
     parser.add_argument(
         '--json_out',
@@ -231,10 +308,14 @@ def parse_args():
         type=float,
         default=0.3,
         help='show only detection with confidence larger than threshold')
+    parser.add_argument('--backend', default='onnx', choices=('onnx', 'openvino'))
     args = parser.parse_args()
     return args
 
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args)
+    if args.backend == 'onnx':
+        main(args)
+    elif args.backend == 'openvino':
+        main_openvino(args)
