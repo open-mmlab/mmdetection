@@ -104,7 +104,7 @@ class BaseDetector(nn.Module):
         torch.onnx.export(self, img, export_name, **kwargs)
         self.forward = self.forward_backup
 
-    def show_result(self, data, result, dataset=None, score_thr=0.3):
+    def show_result(self, data, result, dataset=None, score_thr=0.3, wait_time=0):
         if isinstance(result, tuple):
             bbox_result, segm_result = result
         else:
@@ -150,5 +150,6 @@ class BaseDetector(nn.Module):
                 img_show,
                 bboxes,
                 labels,
+                wait_time=wait_time,
                 class_names=class_names,
                 score_thr=score_thr)

@@ -1,5 +1,7 @@
 import argparse
 
+import sys
+import cv2
 import mmcv
 import numpy as np
 import onnx
@@ -123,21 +125,62 @@ class ONNXModel(object):
         return outputs
 
 
+from mmcv.parallel import collate
+from mmdet.datasets.pipelines import Compose
+from mmdet.apis.inference import LoadImage
+
+
+class VideoDataset(object):
+    def __init__(self, path, cfg, device='cpu'):
+        self.path = path
+        self.video = cv2.VideoCapture(self.path)
+        assert self.video.isOpened()
+        self.video.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
+        self.cfg = cfg
+        self.device = device
+
+        # build the data pipeline
+        self.test_pipeline = [LoadImage()] + self.cfg.test.pipeline[1:]
+        self.test_pipeline = Compose(self.test_pipeline)
+
+    def __getitem__(self, idx):
+        status, img = self.video.read()
+        if not status:
+            self.video.release()
+            raise StopIteration
+
+        data = dict(img=img)
+        data = self.test_pipeline(data)
+        data = collate([data], samples_per_gpu=1)
+        return data
+
+    def __len__(self):
+        return sys.maxsize
+
+
 def main_openvino(args):
     from mmdet.utils.openvino import DetectorOpenVINO
-
 
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
-    dataset = build_dataset(cfg.data.test)
-    data_loader = build_dataloader(
-        dataset,
-        imgs_per_gpu=1,
-        workers_per_gpu=cfg.data.workers_per_gpu,
-        dist=False,
-        shuffle=False)
+    if args.video is not None and args.show:
+        dataset = VideoDataset(int(args.video), cfg.data)
+        data_loader = iter(dataset)
+        wait_key = 1
+    else:
+        dataset = build_dataset(cfg.data.test)
+        data_loader = build_dataloader(
+            dataset,
+            imgs_per_gpu=1,
+            workers_per_gpu=cfg.data.workers_per_gpu,
+            dist=False,
+            shuffle=False)
+        wait_key = 0
+
+    dataset_volume = len(dataset)
 
     if args.model is None:
         print('No model file provided. Trying to load evaluation results.')
@@ -145,13 +188,12 @@ def main_openvino(args):
     else:
         classes_num = 2
 
-        model = DetectorOpenVINO(args.model, args.ckpt, required_output_keys=['11206/Split.0', 'in: 1359,1360. out: labels'],
+        model = DetectorOpenVINO(args.model, args.ckpt, required_output_keys=['11200/Split.0', 'labels'],
                                  cpu_extension_lib_path='/home/paul/programs/intel/l_openvino_toolkit_p_2019.3.325/openvino/inference_engine/lib/intel64/libcpu_extension_avx2.so',
                                  cfg=cfg, classes=['person'])
 
         results = []
-        dataset = data_loader.dataset
-        prog_bar = mmcv.ProgressBar(len(dataset))
+        prog_bar = mmcv.ProgressBar(dataset_volume)
 
         for i, data in enumerate(data_loader):
             with torch.no_grad():
@@ -165,7 +207,7 @@ def main_openvino(args):
             results.append(result)
 
             if args.show:
-                model.show(data, result, score_thr=args.score_thr)
+                model.show(data, result, score_thr=args.score_thr, wait_time=wait_key)
 
             batch_size = data['img'][0].size(0)
             for _ in range(batch_size):
@@ -303,6 +345,8 @@ def parse_args():
         help='eval types')
     parser.add_argument(
         '--show', action='store_true', help='visualize results')
+    parser.add_argument(
+        '--video', default=None)
     parser.add_argument(
         '--score_thr',
         type=float,

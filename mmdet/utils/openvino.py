@@ -125,10 +125,10 @@ class OpenVINONet(object):
         del self.exec_net
         del self.ie
 
-    def show(self, data, result, dataset=None, score_thr=0.3):
+    def show(self, data, result, dataset=None, score_thr=0.3, wait_time=0):
         if self.pt_model is not None:
             self.pt_model.show_result(
-                data, result, dataset=dataset, score_thr=score_thr)
+                data, result, dataset=dataset, score_thr=score_thr, wait_time=wait_time)
 
 
 class DetectorOpenVINO(OpenVINONet):
