@@ -606,4 +606,5 @@ class GuidedAnchorHead(AnchorHead):
         det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)
+        det_labels -= 1
         return det_bboxes, det_labels

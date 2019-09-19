@@ -1,9 +1,11 @@
+import numpy as np
+import torch
 import torch.nn as nn
 
 from mmdet.core import bbox2result
+from .base import BaseDetector
 from .. import builder
 from ..registry import DETECTORS
-from .base import BaseDetector
 
 
 @DETECTORS.register_module
@@ -80,7 +82,10 @@ class SingleStageDetector(BaseDetector):
         num_classes = self.bbox_head.num_classes
 
         if rescale:
-            det_bboxes[:, :4] /= scale_factor
+            if isinstance(det_bboxes, torch.Tensor):
+                det_bboxes[:, :4] /= det_bboxes.new_tensor(scale_factor)
+            else:
+                det_bboxes[:, :4] /= np.asarray(scale_factor)
 
         bbox_results = bbox2result(det_bboxes, det_labels, num_classes)
         return bbox_results
