@@ -7,6 +7,7 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (AnchorGenerator, anchor_target, delta2bbox, force_fp32,
                         multi_apply, multiclass_nms)
+from mmdet.core.utils.misc import topk
 from ..builder import build_loss
 from ..registry import HEADS
 
@@ -253,14 +254,17 @@ class AnchorHead(nn.Module):
                 scores = cls_score.sigmoid()
             else:
                 scores = cls_score.softmax(-1)
+                scores = scores[:, 1:]
+
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if 0 < nms_pre < scores.shape[0]:
+            nms_pre = int(cfg.get('nms_pre', -1))
+            if 0 < nms_pre:
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
-                    max_scores, _ = scores[:, 1:].max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
+                    max_scores, _ = scores.max(dim=1)
+                topk_inds = topk(max_scores, nms_pre)
+                # _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds]
                 bbox_pred = bbox_pred[topk_inds]
                 scores = scores[topk_inds]
