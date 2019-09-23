@@ -21,74 +21,103 @@ class SSDHead(AnchorHead):
                  anchor_strides=(8, 16, 32, 64, 100, 300),
                  basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
+                 anchor_heights=[],
+                 anchor_widths=[],
                  target_means=(.0, .0, .0, .0),
-                 target_stds=(1.0, 1.0, 1.0, 1.0)):
+                 target_stds=(1.0, 1.0, 1.0, 1.0),
+                 depthwise_heads=False):
         super(AnchorHead, self).__init__()
         self.input_size = input_size
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.cls_out_channels = num_classes
-        num_anchors = [len(ratios) * 2 + 2 for ratios in anchor_ratios]
+        if len(anchor_heights):
+            assert len(anchor_heights) == len(anchor_widths)
+            num_anchors = [len(anc_conf) for anc_conf in anchor_heights]
+        else:
+            num_anchors = [len(ratios) * 2 + 2 for ratios in anchor_ratios]
         reg_convs = []
         cls_convs = []
         for i in range(len(in_channels)):
-            reg_convs.append(
-                nn.Conv2d(
+            if depthwise_heads:
+                reg_conv = nn.Sequential(
+                    nn.Conv2d(in_channels[i], in_channels[i],
+                              kernel_size=3, padding=1, groups=in_channels[i]),
+                    nn.BatchNorm2d(in_channels[i]),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(in_channels[i], num_anchors[i] * 4,
+                              kernel_size=1, padding=0))
+                cls_conv = nn.Sequential(
+                    nn.Conv2d(in_channels[i], in_channels[i],
+                              kernel_size=3, padding=1, groups=in_channels[i]),
+                    nn.BatchNorm2d(in_channels[i]),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(in_channels[i], num_anchors[i] * num_classes,
+                              kernel_size=1, padding=0))
+            else:
+                reg_conv = nn.Conv2d(
                     in_channels[i],
                     num_anchors[i] * 4,
                     kernel_size=3,
-                    padding=1))
-            cls_convs.append(
-                nn.Conv2d(
+                    padding=1)
+                cls_conv = nn.Conv2d(
                     in_channels[i],
                     num_anchors[i] * num_classes,
                     kernel_size=3,
-                    padding=1))
+                    padding=1)
+            reg_convs.append(reg_conv)
+            cls_convs.append(cls_conv)
         self.reg_convs = nn.ModuleList(reg_convs)
         self.cls_convs = nn.ModuleList(cls_convs)
 
-        min_ratio, max_ratio = basesize_ratio_range
-        min_ratio = int(min_ratio * 100)
-        max_ratio = int(max_ratio * 100)
-        step = int(np.floor(max_ratio - min_ratio) / (len(in_channels) - 2))
-        min_sizes = []
-        max_sizes = []
-        for r in range(int(min_ratio), int(max_ratio) + 1, step):
-            min_sizes.append(int(input_size * r / 100))
-            max_sizes.append(int(input_size * (r + step) / 100))
-        min_sizes.insert(0, int(input_size * 7 / 100))
-        max_sizes.insert(0, int(input_size * 15 / 100))
-        # if input_size == 300:
-        #     if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
-        #         min_sizes.insert(0, int(input_size * 7 / 100))
-        #         max_sizes.insert(0, int(input_size * 15 / 100))
-        #     elif basesize_ratio_range[0] == 0.2:  # SSD300 VOC
-        #         min_sizes.insert(0, int(input_size * 10 / 100))
-        #         max_sizes.insert(0, int(input_size * 20 / 100))
-        # elif input_size == 512:
-        #     if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
-        #         min_sizes.insert(0, int(input_size * 4 / 100))
-        #         max_sizes.insert(0, int(input_size * 10 / 100))
-        #     elif basesize_ratio_range[0] == 0.15:  # SSD512 VOC
-        #         min_sizes.insert(0, int(input_size * 7 / 100))
-        #         max_sizes.insert(0, int(input_size * 15 / 100))
         self.anchor_generators = []
         self.anchor_strides = anchor_strides
-        for k in range(len(anchor_strides)):
-            base_size = min_sizes[k]
-            stride = anchor_strides[k]
-            ctr = ((stride - 1) / 2., (stride - 1) / 2.)
-            scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
-            ratios = [1.]
-            for r in anchor_ratios[k]:
-                ratios += [1 / r, r]  # 4 or 6 ratio
-            anchor_generator = AnchorGenerator(
-                base_size, scales, ratios, scale_major=False, ctr=ctr)
-            indices = list(range(len(ratios)))
-            indices.insert(1, len(indices))
-            anchor_generator.base_anchors = torch.index_select(
-                anchor_generator.base_anchors, 0, torch.LongTensor(indices))
-            self.anchor_generators.append(anchor_generator)
+        if len(anchor_heights):
+            assert len(anchor_heights) == len(anchor_widths)
+            for k in range(len(anchor_strides)):
+                assert len(anchor_widths[i]) == len(anchor_heights[i])
+                stride = anchor_strides[k]
+                if isinstance(stride, tuple):
+                    ctr = ((stride[0] - 1) / 2., (stride[1] - 1) / 2.)
+                else:
+                    ctr = ((stride - 1) / 2., (stride - 1) / 2.)
+                anchor_generator = AnchorGenerator(
+                    0, [], [], widths=anchor_widths[k],
+                    heights=anchor_heights[k],
+                    scale_major=False, ctr=ctr)
+                self.anchor_generators.append(anchor_generator)
+        else:
+            min_ratio, max_ratio = basesize_ratio_range
+            min_ratio = int(min_ratio * 100)
+            max_ratio = int(max_ratio * 100)
+            step = int(np.floor(max_ratio - min_ratio) /
+                       (len(in_channels) - 2))
+            min_sizes = []
+            max_sizes = []
+            for r in range(int(min_ratio), int(max_ratio) + 1, step):
+                min_sizes.append(int(input_size * r / 100))
+                max_sizes.append(int(input_size * (r + step) / 100))
+            min_sizes.insert(0, int(input_size * basesize_ratio_range[0] / 2))
+            max_sizes.insert(0, int(input_size * basesize_ratio_range[0]))
+            for k in range(len(anchor_strides)):
+                base_size = min_sizes[k]
+                stride = anchor_strides[k]
+                if isinstance(stride, tuple):
+                    ctr = ((stride[0] - 1) / 2., (stride[1] - 1) / 2.)
+                else:
+                    ctr = ((stride - 1) / 2., (stride - 1) / 2.)
+                scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
+                ratios = [1.]
+                for r in anchor_ratios[k]:
+                    ratios += [1 / r, r]  # 4 or 6 ratio
+                anchor_generator = AnchorGenerator(
+                    base_size, scales, ratios, scale_major=False, ctr=ctr)
+                indices = list(range(len(ratios)))
+                indices.insert(1, len(indices))
+                anchor_generator.base_anchors = torch.index_select(
+                    anchor_generator.base_anchors, 0,
+                    torch.LongTensor(indices))
+                self.anchor_generators.append(anchor_generator)
 
         self.target_means = target_means
         self.target_stds = target_stds
@@ -122,6 +151,9 @@ class SSDHead(AnchorHead):
         if num_neg_samples > neg_inds.size(0):
             num_neg_samples = neg_inds.size(0)
         topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
+        assert num_pos_samples > 0
+        assert num_neg_samples > 0
+        assert num_total_samples > 0
         loss_cls_pos = loss_cls_all[pos_inds].sum()
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
@@ -144,9 +176,10 @@ class SSDHead(AnchorHead):
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
+        device = cls_scores[0].device
 
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas)
+            featmap_sizes, img_metas, device=device)
         cls_reg_targets = anchor_target(
             anchor_list,
             valid_flag_list,

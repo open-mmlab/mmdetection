@@ -66,6 +66,7 @@ class SingleStageDetector(BaseDetector):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
         det_bboxes, det_labels = self.bbox_head.get_bboxes(*outs, img_meta, self.test_cfg, False)[0]
+        det_labels += 1
 
         if postprocess:
             return self.postprocess(det_bboxes, det_labels, None, img_meta, rescale=rescale)

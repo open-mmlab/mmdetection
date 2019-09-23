@@ -91,7 +91,7 @@ class AnchorHead(nn.Module):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
 
-    def get_anchors(self, featmap_sizes, img_metas):
+    def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
         """Get anchors according to feature map sizes.
 
         Args:
@@ -109,7 +109,9 @@ class AnchorHead(nn.Module):
         multi_level_anchors = []
         for i in range(num_levels):
             anchors = self.anchor_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i])
+                featmap_sizes[i], self.anchor_strides[i],
+                device=device
+            )
             multi_level_anchors.append(anchors)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
@@ -124,7 +126,9 @@ class AnchorHead(nn.Module):
                 valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.anchor_generators[i].valid_flags(
-                    (feat_h, feat_w), (valid_feat_h, valid_feat_w))
+                    (feat_h, feat_w), (valid_feat_h, valid_feat_w),
+                    device=device
+                )
                 multi_level_flags.append(flags)
             valid_flag_list.append(multi_level_flags)
 
