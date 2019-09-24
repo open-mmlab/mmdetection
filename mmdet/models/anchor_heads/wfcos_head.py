@@ -478,9 +478,16 @@ class WFCOSHead(nn.Module):
 
     def energy_target(self, pos_bbox_targets):
         # only calculate pos centerness targets, otherwise there may be nan
+        # Grabs left, right, top, bottom positions.
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
+
+        # gets energy targets as (min(left, right) / max(left, right)
+        # * (min(top, bottom) / max(top, bottom))
         energy_targets = (
             left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
                 top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
-        return torch.sqrt(energy_targets)
+
+        # Square-roots the energy targets to get a range between [0, 1]
+        # Then quantizes them by multiplying by the max energy and flooring.
+        return (torch.sqrt(energy_targets) * self.max_energy).floor()
