@@ -235,7 +235,7 @@ class WFCOSHead(nn.Module):
             for bbox_pred in bbox_preds
         ]
         flatten_energies = [
-            energies.permute(0, 2, 3, 1).reshape(-1)
+            energy.permute(0, 2, 3, 1).reshape(-1)
             for energy in energies
         ]
         flatten_cls_scores = torch.cat(flatten_cls_scores)

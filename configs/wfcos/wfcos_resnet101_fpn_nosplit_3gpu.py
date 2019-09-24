@@ -20,9 +20,10 @@ model = dict(
         num_outs=5,
         relu_before_extra_convs=True),
     bbox_head=dict(
-        type='FCOSHead',
+        type='WFCOSHead',
         num_classes=81,
         in_channels=256,
+        max_energy=20,
         stacked_convs=4,
         feat_channels=256,
         strides=[8, 16, 32, 64, 128],
@@ -34,7 +35,9 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)))
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        split_convs=False
+    ))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
@@ -125,7 +128,7 @@ log_config = dict(
     interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
+        dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
@@ -133,7 +136,7 @@ total_epochs = 1
 device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_mstrain_640_800_r101_caffe_fpn_gn_2x_3gpu'
+work_dir = './work_dirs/wfcos_resnet101_fpn_nosplit_3gpu'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
