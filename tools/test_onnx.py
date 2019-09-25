@@ -188,9 +188,11 @@ def main_openvino(args):
     else:
         classes_num = 2
 
-        model = DetectorOpenVINO(args.model, args.ckpt, required_output_keys=['11200/Split.0', 'labels'],
-                                 cpu_extension_lib_path='/home/paul/programs/intel/l_openvino_toolkit_p_2019.3.325/openvino/inference_engine/lib/intel64/libcpu_extension_avx2.so',
-                                 cfg=cfg, classes=['person'])
+        cpu_ext_path = '/home/paul/programs/intel/l_openvino_toolkit_p_2019.3.325/openvino/inference_engine/lib/intel64/libcpu_extension_avx512.so'
+        model = DetectorOpenVINO(args.model, args.ckpt, args.mapping,
+                                 cpu_extension_lib_path=cpu_ext_path,
+                                 cfg=cfg,
+                                 classes=['person'])
 
         results = []
         prog_bar = mmcv.ProgressBar(dataset_volume)
@@ -331,6 +333,7 @@ def parse_args():
     parser.add_argument(
         '--ckpt',
         type=str)
+    parser.add_argument("--mapping", help="path to mapping file", default=None, type=str)
     parser.add_argument(
         '--out', type=str, help='path to file with inference results')
     parser.add_argument(

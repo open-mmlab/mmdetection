@@ -20,6 +20,8 @@ import numpy as np
 import torch
 
 from mmdet.models import build_detector
+from lxml import etree
+from collections import OrderedDict
 
 
 class PerformanceCounters(object):
@@ -54,9 +56,14 @@ def to_numpy(x):
 
 class OpenVINONet(object):
 
-    def __init__(self, xml_file_path, bin_file_path, device='CPU',
-                 plugin_dir=None, cpu_extension_lib_path=None, collect_perf_counters=False,
-                 cfg=None, classes=None):
+    def __init__(self, xml_file_path, bin_file_path, mapping_file_path=None,
+                 device='CPU',
+                 cpu_extension_lib_path=None,
+                 collect_perf_counters=False,
+                 input_names=(),
+                 output_names=(),
+                 cfg=None,
+                 classes=None):
 
         from openvino.inference_engine import IECore, IENetwork
 
@@ -69,16 +76,33 @@ class OpenVINONet(object):
         logging.info('Reading network from IR...')
         self.net = IENetwork(model=xml_file_path, weights=bin_file_path)
 
-        # self.required_input_keys = {'image'}
-        # assert self.required_input_keys == set(self.net.inputs.keys())
-        # print(self.net.inputs['image'].shape)
-        # required_output_keys = {'boxes', 'labels', 'masks'}
-        # if not required_output_keys.issubset(self.net.outputs.keys()):
-        #     logging.error('Some of the required outputs {} are not present as actual outputs of the net {}'.format(
-        #         list(required_output_keys), list(self.net.outputs.keys())))
-        #     raise ValueError
+        # Original to IR mapping.
+        self.mapping = None
+        # IR to original mapping.
+        self.reverse_mapping = None
 
-        # self.n, self.c, self.h, self.w = self.net.inputs['image'].shape
+        if mapping_file_path is not None:
+            self.mapping = {}
+            root = etree.parse(mapping_file_path).getroot()
+            for m in root:
+                if m.tag != 'map':
+                    continue
+                framework = m.find('framework')
+                ir = m.find('IR')
+                # FIXME. It should be not '-1', but something more sophisticated.
+                self.mapping[framework.get('name')] = ir.get('name') + '.' + str(int(ir.get('out_port_id')) - 1)
+            self.reverse_mapping = {v: k for k, v in self.mapping.items()}
+
+        self.net_inputs_mapping = OrderedDict((i, i) for i in self.net.inputs.keys())
+
+        self.net_outputs_mapping = OrderedDict((i, i) for i in self.net.outputs.keys())
+        if output_names:
+            if self.mapping is not None:
+                self.net_outputs_mapping = OrderedDict((self.mapping[i] if i not in self.net.outputs else i, i) for i in output_names)
+            else:
+                assert set(output_names).issubset(self.net.outputs.keys())
+                self.net_outputs_mapping = OrderedDict((i, i) for i in output_names)
+        print(self.net_outputs_mapping)
 
         if 'CPU' in device:
             logging.info('Check that all layers are supported...')
@@ -96,7 +120,6 @@ class OpenVINONet(object):
                 raise ValueError('Some of the layers are not supported.')
 
         logging.info('Loading network to plugin...')
-        # self.exec_net = self.plugin.load(network=self.net, num_requests=1)
         self.exec_net = self.ie.load_network(network=self.net, device_name=device, num_requests=1)
 
         self.perf_counters = None
@@ -110,10 +133,18 @@ class OpenVINONet(object):
                 self.pt_model.CLASSES = classes
 
     def __call__(self, inputs):
+        if isinstance(inputs, (list, tuple)):
+            inputs = {k: v for (k, _), v in zip(self.net_inputs_mapping.items(), inputs)}
+        inputs = {self.net_inputs_mapping[k]: v for k, v in inputs.items()}
+
         outputs = self.exec_net.infer(inputs)
+
+        outputs = {self.net_outputs_mapping[k]: v for k, v in outputs.items() if k in self.net_outputs_mapping}
+
         if self.perf_counters:
             perf_counters = self.exec_net.requests[0].get_perf_counts()
             self.perf_counters.update(perf_counters)
+
         return outputs
 
     def print_performance_counters(self):
@@ -132,32 +163,14 @@ class OpenVINONet(object):
 
 
 class DetectorOpenVINO(OpenVINONet):
-    def __init__(self, *args, required_output_keys=('boxes', 'labels'),  **kwargs):
-        super().__init__(*args, **kwargs)
-        self.required_input_keys = {'image'}
-        assert self.required_input_keys == set(self.net.inputs.keys())
-        self.output_alias = dict(zip(required_output_keys, ['boxes', 'labels']))
-        if not set(required_output_keys).issubset(self.net.outputs.keys()):
-            logging.error('Some of the required outputs {} are not present as actual outputs of the net {}'.format(
-                list(required_output_keys), list(self.net.outputs.keys())))
-            raise ValueError
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, input_names=('image', ), output_names=('boxes', 'labels'), **kwargs)
 
         self.n, self.c, self.h, self.w = self.net.inputs['image'].shape
         assert self.n == 1, 'Only batch 1 is supported.'
 
     def __call__(self, inputs, **kwargs):
-        if isinstance(inputs, (list, tuple)):
-            inputs = dict(zip(self.required_input_keys, inputs))
-        # im_data = to_numpy(image[0])
-        # if (self.h - im_data.shape[1] < 0) or (self.w - im_data.shape[2] < 0):
-        #     raise ValueError('Input image should resolution of {}x{} or less, '
-        #                      'got {}x{}.'.format(self.w, self.h, im_data.shape[2], im_data.shape[1]))
-        # im_data = np.pad(im_data, ((0, 0),
-        #                            (0, self.h - im_data.shape[1]),
-        #                            (0, self.w - im_data.shape[2])),
-        #                  mode='constant', constant_values=0).reshape(1, self.c, self.h, self.w)
         output = super().__call__(inputs)
-        output = {v: output[k] for k, v in self.output_alias.items()}
         classes = output['labels']
         valid_detections_mask = classes >= 0
         output['labels'] = classes[valid_detections_mask]

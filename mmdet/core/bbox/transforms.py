@@ -36,22 +36,29 @@ def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
 
 def clamp(x, min, max):
     if is_in_onnx_export():
-        device = x.device
-        dtype = x.dtype
+        is_min_tensor = isinstance(min, torch.Tensor)
+        is_max_tensor = isinstance(max, torch.Tensor)
 
-        y = x
+        if is_min_tensor and is_max_tensor:
+            y = x.clamp(min=min, max=max)
+        else:
+            device = x.device
+            dtype = x.dtype
 
-        min_val = torch.as_tensor(min, dtype=dtype, device=device)
-        y = torch.stack([y, min_val.view([
-            1,
-        ] * y.dim()).expand_as(y)], dim=0)
-        y = torch.max(y, dim=0, keepdim=False)[0]
+            y = x
+            d = -1
 
-        max_val = torch.as_tensor(max, dtype=dtype, device=device)
-        y = torch.stack([y, max_val.view([
-            1,
-        ] * y.dim()).expand_as(y)], dim=0)
-        y = torch.min(y, dim=0, keepdim=False)[0]
+            min_val = torch.as_tensor(min, dtype=dtype, device=device)
+            y = torch.stack([y, min_val.view([
+                                                 1,
+                                             ] * y.dim()).expand_as(y)], dim=d)
+            y = torch.max(y, dim=d, keepdim=False)[0]
+
+            max_val = torch.as_tensor(max, dtype=dtype, device=device)
+            y = torch.stack([y, max_val.view([
+                                                 1,
+                                             ] * y.dim()).expand_as(y)], dim=d)
+            y = torch.min(y, dim=d, keepdim=False)[0]
     else:
         y = x.clamp(min=min, max=max)
 

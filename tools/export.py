@@ -138,10 +138,64 @@ def add_node_names(export_name):
     onnx.save(model, export_name)
 
 
+from mmdet.utils.tracer_stubs import TracerStub
+
+
+class AnchorsGridGeneratorStub(TracerStub):
+    def __init__(self, inner, namespace='mmdet_custom',
+                 name='anchor_grid_generator', **kwargs):
+        super().__init__(inner, namespace=namespace, name=name, **kwargs)
+        self.inner = lambda x, **kw: inner(x.shape[2:4], **kw)
+
+    def forward(self, featmap, stride=16, device='cpu'):
+        # Force `stride` and `device` to be passed in as kwargs.
+        return super().forward(featmap, stride=stride, device=device)
+
+    def symbolic(self, g, featmap):
+        stride = float(self.params['stride'])
+        shift = torch.full(self.params['base_anchors'].shape, - 0.5 * stride, dtype=torch.float32)
+        prior_boxes = g.op("Constant", value_t=torch.tensor(self.params['base_anchors'], dtype=torch.float32) + shift)
+        # TODO. im_data is not needed actually.
+        im_data = g.op("Constant", value_t=torch.zeros([1, 1, 1, 1], dtype=torch.float32))
+
+        return g.op('ExperimentalDetectronPriorGridGenerator',
+                    prior_boxes,
+                    featmap,
+                    im_data,
+                    stride_x_f=stride,
+                    stride_y_f=stride,
+                    h_i=0,
+                    w_i=0,
+                    flatten_i=1,
+                    outputs=self.num_outputs)
+
+
 def main(args):
     model = init_detector(args.config, args.checkpoint, device="cpu")
     model.eval().cuda()
     torch.set_default_tensor_type(torch.FloatTensor)
+
+    # class StubModule(TracerStub):
+    #     def __init__(self, inner):
+    #         super().__init__(inner, 'mmdet_custom', 'x')
+    #
+    #     def forward(self, *input, **kwargs):
+    #         return self.inner(*input, **kwargs)[0]
+    #
+    # class Stub(TracerStub):
+    #
+    #     def symbolic(self, g, *args):
+    #         return g.op(self.name, *args, outputs=self.num_outputs)
+
+    # model.backbone = Stub(model.backbone, name='EfficientNet', namespace='mmdet_custom')
+    # model.bbox_head = Stub(StubModule(model.bbox_head), name='DetectionOutput', namespace='mmdet_custom')
+    # model.bbox_head.get_bboxes = Stub(model.bbox_head.get_bboxes, name='DetectionOutput', namespace='mmdet_custom')
+
+    anchor_generators = model.bbox_head.anchor_generators
+    for i in range(len(anchor_generators)):
+        anchor_generators[i].grid_anchors = AnchorsGridGeneratorStub(anchor_generators[i].grid_anchors)
+        # Save base anchors as operation parameter. It's used at ONNX export time during symbolic call.
+        anchor_generators[i].grid_anchors.params['base_anchors'] = anchor_generators[i].base_anchors.cpu().numpy()
 
     image = np.zeros((128, 128, 3), dtype=np.uint8)
     with torch.no_grad():

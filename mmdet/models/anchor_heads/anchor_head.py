@@ -211,7 +211,9 @@ class AnchorHead(nn.Module):
         mlvl_anchors = []
         for i in range(num_levels):
             if is_in_onnx_export():
-                size = operators.shape_as_tensor(cls_scores[i])[2:4]
+                # size = operators.shape_as_tensor(cls_scores[i])[2:4]
+                # FIXME. Workaround for OpenVINO-friendly export.
+                size = cls_scores[i]
             else:
                 size = cls_scores[i].size()[-2:]
             level_anchors = self.anchor_generators[i].grid_anchors(
