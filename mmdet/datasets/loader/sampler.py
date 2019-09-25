@@ -132,8 +132,12 @@ class DistributedGroupSampler(Sampler):
                     math.ceil(
                         size * 1.0 / self.samples_per_gpu / self.num_replicas)
                 ) * self.samples_per_gpu * self.num_replicas - len(indice)
-                indice += indice[:extra]
-                indices += indice
+                # pad indice
+                tmp = indice.copy()
+                for _ in range(extra // size):
+                    indice.extend(tmp)
+                indice.extend(tmp[:extra % size])
+                indices.extend(indice)
 
         assert len(indices) == self.total_size
 
