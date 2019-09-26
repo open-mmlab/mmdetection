@@ -267,12 +267,14 @@ class FoveaHead(nn.Module):
                               (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
         label_list = []
         bbox_target_list = []
+        # for each pyramid, find the cls and box target
         for base_len, (lower_bound, upper_bound), stride, featmap_size, \
             (y, x) in zip(self.base_edge_list, self.scale_ranges,
                           self.strides, featmap_size_list, point_list):
             labels = gt_labels_raw.new_zeros(featmap_size)
             bbox_targets = gt_bboxes_raw.new(featmap_size[0], featmap_size[1],
                                              4) + 1
+            # scale assignment
             hit_indices = ((gt_areas >= lower_bound) &
                            (gt_areas <= upper_bound)).nonzero().flatten()
             if len(hit_indices) == 0:
@@ -285,6 +287,7 @@ class FoveaHead(nn.Module):
             gt_labels = gt_labels_raw[hit_indices]
             half_w = 0.5 * (gt_bboxes[:, 2] - gt_bboxes[:, 0])
             half_h = 0.5 * (gt_bboxes[:, 3] - gt_bboxes[:, 1])
+            # valid fovea area: left, right, top, down
             pos_left = torch.ceil(
                 gt_bboxes[:, 0] + (1 - self.sigma) * half_w - 0.5).long().\
                 clamp(0, featmap_size[1] - 1)
