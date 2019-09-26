@@ -206,9 +206,7 @@ class FoveaHead(nn.Module):
         flatten_bbox_preds = torch.cat(flatten_bbox_preds)
 
         flatten_labels, flatten_bbox_targets = self.fovea_target(
-            gt_bbox_list,
-            gt_label_list,
-            featmap_sizes, points
+            gt_bbox_list, gt_label_list, featmap_sizes, points
         )
         pos_inds = (flatten_labels > 0).nonzero().view(-1)
         num_pos = len(pos_inds)
@@ -230,11 +228,7 @@ class FoveaHead(nn.Module):
                                      device=flatten_bbox_preds.device)
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
-    def fovea_target(self,
-                     gt_bbox_list,
-                     gt_label_list,
-                     featmap_sizes,
-                     points):
+    def fovea_target(self, gt_bbox_list, gt_label_list, featmap_sizes, points):
         label_list, bbox_target_list = multi_apply(
             self.fovea_target_single,
             gt_bbox_list,
@@ -243,8 +237,7 @@ class FoveaHead(nn.Module):
             point_list=points)
         flatten_labels = [
             torch.cat([
-                labels_level_img.flatten()
-                for labels_level_img in labels_level
+                labels_level_img.flatten() for labels_level_img in labels_level
             ]) for labels_level in zip(*label_list)
         ]
         flatten_bbox_targets = [
