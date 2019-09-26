@@ -1,10 +1,10 @@
 # model settings
 model = dict(
     type='FOVEA',
-    pretrained='torchvision://resnet50',
+    pretrained='torchvision://resnet101',
     backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=101,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
@@ -27,7 +27,10 @@ model = dict(
         scale_ranges=((1, 64), (32, 128), (64, 256),
                       (128, 512), (256, 2048)),
         sigma=0.4,
-        with_deform=False,
+        with_deform=True,
+        norm_cfg=dict(type='GN',
+                      num_groups=32,
+                      requires_grad=True),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -121,7 +124,7 @@ total_epochs = 24
 device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fovea_release_r50_fpn_4gpu_2x'
+work_dir = './work_dirs/fovea_r101_fpn_4gpu_2x_align_gn'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

@@ -1,10 +1,10 @@
 # model settings
 model = dict(
     type='FOVEA',
-    pretrained='torchvision://resnet101',
+    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
-        depth=101,
+        depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
@@ -27,7 +27,10 @@ model = dict(
         scale_ranges=((1, 64), (32, 128), (64, 256),
                       (128, 512), (256, 2048)),
         sigma=0.4,
-        with_deform=False,
+        with_deform=True,
+        norm_cfg=dict(type='GN',
+                      num_groups=32,
+                      requires_grad=True),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -45,6 +48,7 @@ test_cfg = dict(
     nms=dict(type='nms', iou_thr=0.5),
     max_per_img=100)
 # dataset settings
+# dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
@@ -54,7 +58,11 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+    dict(
+        type='Resize',
+        img_scale=[(1333, 640), (1333, 800)],
+        multiscale_mode='value',
+        keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -121,7 +129,7 @@ total_epochs = 24
 device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fovea_release_r101_fpn_4gpu_2x'
+work_dir = './work_dirs/fovea_ms_r50_fpn_4gpu_2x_align_gn'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

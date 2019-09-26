@@ -27,7 +27,10 @@ model = dict(
         scale_ranges=((1, 64), (32, 128), (64, 256),
                       (128, 512), (256, 2048)),
         sigma=0.4,
-        with_deform=False,
+        with_deform=True,
+        norm_cfg=dict(type='GN',
+                      num_groups=32,
+                      requires_grad=True),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -45,6 +48,7 @@ test_cfg = dict(
     nms=dict(type='nms', iou_thr=0.5),
     max_per_img=100)
 # dataset settings
+# dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
@@ -54,7 +58,11 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+    dict(
+        type='Resize',
+        img_scale=[(1333, 640), (1333, 800)],
+        multiscale_mode='value',
+        keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -106,7 +114,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[8, 11])
+    step=[16, 22])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -117,11 +125,11 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 24
 device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fovea_release_r101_fpn_4gpu_1x'
+work_dir = './work_dirs/fovea_ms_r101_fpn_4gpu_2x_align_gn'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
