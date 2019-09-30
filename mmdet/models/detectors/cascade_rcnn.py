@@ -171,8 +171,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             gt_bboxes (list[Tensor]): each item are the truth boxes for each
                 image in [tl_x, tl_y, br_x, br_y] format.
 
-            gt_labels (list[Tensor]): each item is the class index corresponding
-                to each box.
+            gt_labels (list[Tensor]): class indices corresponding to each box
 
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.

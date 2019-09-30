@@ -137,9 +137,9 @@ class Collect(object):
     """
     Populates img_meta, which by default includes:
 
-        - "img_shape": shape of the image input to the network as a tuple (h, w, c).
-            Note that images may be zero padded on the bottom/right if the batch
-            tensor is larger than this shape.
+        - "img_shape": shape of the image input to the network as a tuple
+            (h, w, c).  Note that images may be zero padded on the bottom/right
+            if the batch tensor is larger than this shape.
 
         - "scale_factor": a float indicating the preprocessing scale
 
