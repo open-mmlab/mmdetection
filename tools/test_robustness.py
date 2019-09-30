@@ -350,9 +350,9 @@ def main():
                     aggregated_results[corruptions[0]][0]
                 continue
 
+            test_data_cfg = copy.deepcopy(cfg.data.test)
             # assign corruption and severity
             if corruption_severity > 0:
-                test_data_cfg = copy.deepcopy(cfg.data.test)
                 corruption_trans = dict(
                     type='Corrupt',
                     corruption=corruption,
@@ -368,7 +368,7 @@ def main():
             # build the dataloader
             # TODO: support multiple images per gpu
             #       (only minor changes are needed)
-            dataset = build_dataset(cfg.data.test)
+            dataset = build_dataset(test_data_cfg)
             data_loader = build_dataloader(
                 dataset,
                 imgs_per_gpu=1,
