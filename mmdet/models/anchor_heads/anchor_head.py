@@ -207,10 +207,10 @@ class AnchorHead(nn.Module):
 
         device = cls_scores[0].device
         mlvl_anchors = [
-            self.anchor_generators[i].grid_anchors(cls_scores[i].size()[-2:],
-                                                   self.anchor_strides[i],
-                                                   device=device)
-            for i in range(num_levels)
+            self.anchor_generators[i].grid_anchors(
+                cls_scores[i].size()[-2:],
+                self.anchor_strides[i],
+                device=device) for i in range(num_levels)
         ]
         result_list = []
         for img_id in range(len(img_metas)):

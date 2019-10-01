@@ -529,7 +529,8 @@ class GuidedAnchorHead(AnchorHead):
             shape_preds,
             loc_preds,
             img_metas,
-            use_loc_filter=not self.training, device=device)
+            use_loc_filter=not self.training,
+            device=device)
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
