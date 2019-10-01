@@ -3,3 +3,4 @@ flake8
 yapf
 pytest-cov
 codecov
+xdoctest >= 0.10.0
