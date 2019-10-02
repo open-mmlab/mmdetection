@@ -181,7 +181,7 @@ class ResNeXt(ResNet):
             in resblocks to let them behave as identity.
 
     Example:
-        >>> from mmdet.models.backbones.resnext import *  # NOQA
+        >>> from mmdet.models import ResNeXt
         >>> self = ResNeXt(depth=50)
         >>> self.eval()
         >>> inputs = torch.rand(1, 3, 32, 32)
