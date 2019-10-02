@@ -8,14 +8,14 @@ Different from previous anchor-based methods, FoveaBox directly learns the objec
 
 | Backbone  | Style   |  align  | ms-train| Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
 |:---------:|:-------:|:-------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
-| R-50      | pytorch | N       | N       | 1x      | 5.7      | 0.450               | 13.5           | 36.5   | [model](https://drive.google.com/file/d/19eQNnctoC1VTcP2AKdCryQGjb6Dzq62r/view?usp=sharing) |
-| R-50      | pytorch | N       | N       | 2x      | -        | -                   |                | 36.9   | [model](https://drive.google.com/file/d/1W-9DrNQcaw4vaLLON8GLe86pfBXztbWR/view?usp=sharing) |
-| R-50      | pytorch | Y       | N       | 2x      | -        | -                   |                | 37.9   | [model](https://drive.google.com/file/d/1RtTizixUDqd7X-PifTI7rseXZ1Q8YaAf/view?usp=sharing) |
-| R-50      | pytorch | Y       | Y       | 2x      | -        | -                   |                | 40.1   | [model](https://drive.google.com/file/d/1bHwmP3Uy-lFUifAyzkWykZTkYY-v-nEN/view?usp=sharing) |
-| R-101     | pytorch | N       | N       | 1x      | 9.4      | 0.712               | 11.5           | 38.5   | [model](https://drive.google.com/file/d/1Xb6hDUquGKB8ad7DigrF8K9sX8xoZigh/view?usp=sharing) |
-| R-101     | pytorch | N       | N       | 2x      | -        | -                   | -              | 38.5   | [model](https://drive.google.com/file/d/1ToZyqAxjWIZ4N8SDL4gufmkA-Wjz_VUW/view?usp=sharing) |
-| R-101     | pytorch | Y       | N       | 2x      | -        | -                   | -              | 39.4   | [model](https://drive.google.com/file/d/1n34MNGfgrMmJdpT2xAaEQOw8GJhTd1z8/view?usp=sharing) |
-| R-101     | pytorch | Y       | Y       | 2x      | -        | -                   | -              | 41.9   | [model](https://drive.google.com/file/d/1ZQAsW9SxMdCTX3_pjIIHotg0yDT2wy34/view?usp=sharing) |
+| R-50      | pytorch | N       | N       | 1x      | 5.7      | -                   |                | 36.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/foveabox/fovea_r50_fpn_4gpu_1x_20190905-3b185a5d.pth) |
+| R-50      | pytorch | N       | N       | 2x      | -        | -                   |                | 36.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/foveabox/fovea_r50_fpn_4gpu_2x_20190905-4a07f6e0.pth) |
+| R-50      | pytorch | Y       | N       | 2x      | -        | -                   |                | 37.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/foveabox/fovea_align_gn_r50_fpn_4gpu_2x_20190905-3e6bc82f.pth) |
+| R-50      | pytorch | Y       | Y       | 2x      | -        | -                   |                | 40.1   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/foveabox/fovea_align_gn_ms_r50_fpn_4gpu_2x_20190905-13374f33.pth) |
+| R-101     | pytorch | N       | N       | 1x      | 9.4      | -                   |                | 38.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/foveabox/fovea_r101_fpn_4gpu_1x_20190905-80ff93a6.pth) |
+| R-101     | pytorch | N       | N       | 2x      | -        | -                   |                | 38.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/foveabox/fovea_r101_fpn_4gpu_2x_20190905-d9c99fb1.pth) |
+| R-101     | pytorch | Y       | N       | 2x      | -        | -                   |                | 39.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/foveabox/fovea_align_gn_r101_fpn_4gpu_2x_20190905-407ddad6.pth) |
+| R-101     | pytorch | Y       | Y       | 2x      | -        | -                   |                | 41.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/foveabox/fovea_align_gn_ms_r101_fpn_4gpu_2x_20190905-936c7277.pth) |
 
 [1] *1x and 2x mean the model is trained for 12 and 24 epochs, respectively.* \
 [2] *Align means utilizing deformable convolution to align the cls branch.* \

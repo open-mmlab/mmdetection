@@ -42,6 +42,9 @@ class FeatureAlign(nn.Module):
 
 @HEADS.register_module
 class FoveaHead(nn.Module):
+    """FoveaBox: Beyond Anchor-based Object Detector
+    https://arxiv.org/abs/1904.03797
+    """
 
     def __init__(self,
                  num_classes,
