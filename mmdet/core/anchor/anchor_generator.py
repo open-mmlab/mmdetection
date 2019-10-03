@@ -2,6 +2,17 @@ import torch
 
 
 class AnchorGenerator(object):
+    """
+    Examples:
+        >>> from mmdet.core import AnchorGenerator
+        >>> self = AnchorGenerator(9, [1.], [1.])
+        >>> all_anchors = self.grid_anchors((2, 2), device='cpu')
+        >>> print(all_anchors)
+        tensor([[ 0.,  0.,  8.,  8.],
+                [16.,  0., 24.,  8.],
+                [ 0., 16.,  8., 24.],
+                [16., 16., 24., 24.]])
+    """
 
     def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None):
         self.base_size = base_size

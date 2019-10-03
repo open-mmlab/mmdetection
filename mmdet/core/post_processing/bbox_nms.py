@@ -13,7 +13,8 @@ def multiclass_nms(multi_bboxes,
 
     Args:
         multi_bboxes (Tensor): shape (n, #class*4) or (n, 4)
-        multi_scores (Tensor): shape (n, #class)
+        multi_scores (Tensor): shape (n, #class), where the 0th column
+            contains scores of the background class, but this will be ignored.
         score_thr (float): bbox threshold, bboxes with scores lower than it
             will not be considered.
         nms_thr (float): NMS IoU threshold
@@ -31,6 +32,7 @@ def multiclass_nms(multi_bboxes,
     nms_cfg_ = nms_cfg.copy()
     nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = getattr(nms_wrapper, nms_type)
+    # The background class is
     for i in range(1, num_classes):
         cls_inds = multi_scores[:, i] > score_thr
         if not cls_inds.any():
