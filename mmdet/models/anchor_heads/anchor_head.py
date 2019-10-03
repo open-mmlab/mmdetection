@@ -231,7 +231,8 @@ class AnchorHead(nn.Module):
 
         Example:
             >>> import mmcv
-            >>> self = AnchorHead(num_classes=9, in_channels=1, feat_channels=1)
+            >>> self = AnchorHead(num_classes=9, in_channels=1,
+            >>>                   feat_channels=1)
             >>> img_metas = [{'img_shape': (32, 32, 3), 'scale_factor': 1}]
             >>> cfg = mmcv.Config(dict(
             >>>     score_thr=0.00,
@@ -241,7 +242,8 @@ class AnchorHead(nn.Module):
             >>> cls_score, bbox_pred = self.forward_single(feat)
             >>> # note the input lists are over different levels, not images
             >>> cls_scores, bbox_preds = [cls_score], [bbox_pred]
-            >>> result_list = self.get_bboxes(cls_scores, bbox_preds, img_metas, cfg)
+            >>> result_list = self.get_bboxes(cls_scores, bbox_preds,
+            >>>                               img_metas, cfg)
             >>> det_bboxes, det_labels = result_list[0]
             >>> assert len(result_list) == 1
             >>> assert det_bboxes.shape[1] == 5
