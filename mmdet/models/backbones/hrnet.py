@@ -213,7 +213,7 @@ class HRNet(nn.Module):
             in resblocks to let them behave as identity.
 
     Example:
-        >>> from mmdet.models.backbones.hrnet import *  # NOQA
+        >>> from mmdet.models import HRNet
         >>> import torch
         >>> extra = dict(
         >>>     stage1=dict(
