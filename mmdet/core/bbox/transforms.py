@@ -38,30 +38,38 @@ def delta2bbox(rois,
                max_shape=None,
                wh_ratio_clip=16 / 1000):
     """
-    Transform network energies encoding anchor offsets to bounding boxes.
+    Apply deltas to shift/scale base boxes.
+
+    Typically the rois are anchor or proposed bounding boxes and the deltas are
+    network outputs used to shift/scale those boxes.
 
     Args:
-        rois (Tensor): anchor boxes for a level.
-            Has shape [A * H * W, 4]
-        deltas (Tensor): predicted bbox offsets with respect to each anchor.
-            Has shape [A * H * W, 4]
+        rois (Tensor): boxes to be transformed. Has shape (N, 4)
+        deltas (Tensor): encoded offsets with respect to each roi.
+            Has shape (N, 4)
         means (list): denormalizing means for delta coordinates
         stds (list): denormalizing standard deviation for delta coordinates
         max_shape (tuple[int, int]): maximum bounds for boxes. specifies (H, W)
-        wh_ratio_clip (float): maximum aspect ration for boxes.
+        wh_ratio_clip (float): maximum aspect ratio for boxes.
 
     Returns:
-        Tensor: boxes with shape [A * H * W, 4], where columns represent
+        Tensor: boxes with shape [N, 4], where columns represent
             tl_x, tl_y, br_x, br_y.
 
     Example:
-        >>> from mmdet.core import AnchorGenerator
-        >>> self = AnchorGenerator(9, [1.], [1.])
-        >>> rois = self.grid_anchors((3, 3), stride=3, device='cpu')
-        >>> deltas = torch.randn(len(rois), 4)
-        >>> bboxes = delta2bbox(rois, deltas, max_shape=(32, 32))
-        >>> assert bboxes.max() <= 32
-        >>> assert bboxes.min() >= 0
+        >>> rois = torch.Tensor([[ 0.,  0.,  1.,  1.],
+        >>>                      [ 0.,  0.,  1.,  1.],
+        >>>                      [ 0.,  0.,  1.,  1.],
+        >>>                      [ 5.,  5.,  5.,  5.]])
+        >>> deltas = torch.Tensor([[  0.,   0.,   0.,   0.],
+        >>>                        [  1.,   1.,   1.,   1.],
+        >>>                        [  0.,   0.,   2.,  -1.],
+        >>>                        [ 0.7, -1.9, -0.5,  0.3]])
+        >>> delta2bbox(rois, deltas, max_shape=(32, 32))
+        tensor([[0.0000, 0.0000, 1.0000, 1.0000],
+                [0.2817, 0.2817, 4.7183, 4.7183],
+                [0.0000, 0.6321, 7.3891, 0.3679],
+                [5.8967, 2.9251, 5.5033, 3.2749]])
     """
     means = deltas.new_tensor(means).repeat(1, deltas.size(1) // 4)
     stds = deltas.new_tensor(stds).repeat(1, deltas.size(1) // 4)
@@ -73,16 +81,16 @@ def delta2bbox(rois,
     max_ratio = np.abs(np.log(wh_ratio_clip))
     dw = dw.clamp(min=-max_ratio, max=max_ratio)
     dh = dh.clamp(min=-max_ratio, max=max_ratio)
-    # Compute center of each anchor ROI grid cell
+    # Compute center of each roi
     px = ((rois[:, 0] + rois[:, 2]) * 0.5).unsqueeze(1).expand_as(dx)
     py = ((rois[:, 1] + rois[:, 3]) * 0.5).unsqueeze(1).expand_as(dy)
-    # Compute width/height of each anchor ROI grid cell
+    # Compute width/height of each roi
     pw = (rois[:, 2] - rois[:, 0] + 1.0).unsqueeze(1).expand_as(dw)
     ph = (rois[:, 3] - rois[:, 1] + 1.0).unsqueeze(1).expand_as(dh)
-    # Use exp(network energy) to enlarge/shrink each anchor ROI
+    # Use exp(network energy) to enlarge/shrink each roi
     gw = pw * dw.exp()
     gh = ph * dh.exp()
-    # Use network energy to shift location of each anchor ROI
+    # Use network energy to shift the center of each roi
     gx = torch.addcmul(px, 1, pw, dx)  # gx = px + pw * dx
     gy = torch.addcmul(py, 1, ph, dy)  # gy = py + ph * dy
     # Convert center-xy/width/height to top-left, bottom-right
