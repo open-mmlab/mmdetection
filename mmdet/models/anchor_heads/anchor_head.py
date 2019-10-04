@@ -301,11 +301,10 @@ class AnchorHead(nn.Module):
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
+                # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
-                    # The background class doesnt exist when using sigmoid
                     max_scores, _ = scores.max(dim=1)
                 else:
-                    # Remove background class scores when using softmax
                     max_scores, _ = scores[:, 1:].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds, :]
