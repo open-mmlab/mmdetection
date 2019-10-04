@@ -32,7 +32,6 @@ def multiclass_nms(multi_bboxes,
     nms_cfg_ = nms_cfg.copy()
     nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = getattr(nms_wrapper, nms_type)
-    # The background class is
     for i in range(1, num_classes):
         cls_inds = multi_scores[:, i] > score_thr
         if not cls_inds.any():

@@ -47,7 +47,7 @@ class AnchorHead(nn.Module):
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)):
         super(AnchorHead, self).__init__()
-        # FIXME: in_channels is never used!
+        # NOTE: in_channels is only used in child classes (e.g. RetinaHead)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
@@ -214,9 +214,9 @@ class AnchorHead(nn.Module):
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (B, num_anchors * num_clases, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for scale level
-                with shape (B, num_anchors * 4, H, W)
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
             img_metas (list[dict]): size / scale info for each image
             cfg (mmcv.Config): test / postprocessing configuration
             rescale (bool): if True, return boxes in original image space
