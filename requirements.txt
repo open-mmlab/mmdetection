@@ -7,3 +7,4 @@ pycocotools
 torch>=1.1
 torchvision
 imagecorruptions
+albumentations>=0.3.2
