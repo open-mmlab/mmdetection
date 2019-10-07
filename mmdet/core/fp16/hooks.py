@@ -6,6 +6,7 @@ from mmcv.runner import OptimizerHook
 
 from ..utils.dist_utils import allreduce_grads
 from .utils import cast_tensor_type
+from mmdet.ops import DeformRoIPooling
 
 
 class Fp16OptimizerHook(OptimizerHook):
@@ -88,6 +89,8 @@ def wrap_fp16_model(model):
     model.half()
     # patch the normalization layers to make it work in fp32 mode
     patch_norm_fp32(model)
+    # patch other fp16 sensitive modules to make them work in fp32 mode
+    patch_module_fp32(model)
     # set `fp16_enabled` flag
     for m in model.modules():
         if hasattr(m, 'fp16_enabled'):
@@ -101,6 +104,23 @@ def patch_norm_fp32(module):
                                               torch.float)
     for child in module.children():
         patch_norm_fp32(child)
+    return module
+
+
+def patch_module_fp32(module):
+    # output to fp32 or fp16 is related to the context
+    out_to_fp32_modules = (DeformRoIPooling, )
+    out_to_fp16_modules = ()
+    if isinstance(module, out_to_fp32_modules):
+        module.float()
+        module.forward = patch_forward_method(
+            module.forward, torch.half, torch.float, convert_output=False)
+    if isinstance(module, out_to_fp16_modules):
+        module.float()
+        module.forward = patch_forward_method(module.forward, torch.half,
+                                              torch.float)
+    for child in module.children():
+        patch_module_fp32(child)
     return module
 
 
