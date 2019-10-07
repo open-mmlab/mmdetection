@@ -1,7 +1,11 @@
 import inspect
 from functools import partial
 
+import logging
 import mmcv
+import torch
+
+logger = logging.getLogger(__name__)
 
 
 class Registry(object):
@@ -76,4 +80,21 @@ def build_from_cfg(cfg, registry, default_args=None):
     if default_args is not None:
         for name, value in default_args.items():
             args.setdefault(name, value)
-    return obj_cls(**args)
+
+    jit = args.pop('jit', False)
+
+    if not jit:
+        return obj_cls(**args)
+
+    jit_dump_graph_for = args.pop('jit_dump_graph_for', False)
+    jit_dump_graph = args.pop('jit_dump_graph', False)
+    jit_dump_code = args.pop('jit_dump_code', False)
+
+    jitted = torch.jit.script(obj_cls(**args))
+    if jit_dump_graph_for:
+        logger.info(jitted.graph_for, extra=cfg)
+    if jit_dump_graph:
+        logger.info(jitted.graph, extra=cfg)
+    if jit_dump_code:
+        logger.info(jitted.code, extra=cfg)
+    return jitted

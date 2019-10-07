@@ -28,20 +28,37 @@ def build_conv_layer(cfg, *args, **kwargs):
         layer (nn.Module): created conv layer
     """
     if cfg is None:
-        cfg_ = dict(type='Conv')
-    else:
-        assert isinstance(cfg, dict) and 'type' in cfg
-        cfg_ = cfg.copy()
-
-    layer_type = cfg_.pop('type')
-    if layer_type not in conv_cfg:
-        raise KeyError('Unrecognized norm type {}'.format(layer_type))
-    else:
-        conv_layer = conv_cfg[layer_type]
+        cfg_ = dict(type="Conv")
+    conv_layer = get_conv_layer_module(cfg_)
+    cfg_.pop("type")
 
     layer = conv_layer(*args, **kwargs, **cfg_)
 
     return layer
+
+
+def get_conv_layer_module(cfg):
+    """ Get convolution layer module class
+
+    Args:
+        cfg (None or dict): cfg should contain:
+            type (str): identify conv layer type.
+
+    Returns:
+        layer module class (nn.Module): created conv layer module
+    """
+    if cfg is None:
+        cfg_ = dict(type="Conv")
+    else:
+        assert isinstance(cfg, dict) and "type" in cfg
+        cfg_ = cfg.copy()
+
+    layer_type = cfg_.pop("type")
+    if layer_type not in conv_cfg:
+        raise KeyError("Unrecognized conv type {}".format(layer_type))
+    else:
+        conv_layer = conv_cfg[layer_type]
+        return conv_layer
 
 
 class ConvModule(nn.Module):
