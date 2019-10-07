@@ -91,12 +91,13 @@ class AnchorHead(nn.Module):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
 
-    def get_anchors(self, featmap_sizes, img_metas):
+    def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
         """Get anchors according to feature map sizes.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
             img_metas (list[dict]): Image meta info.
+            device (torch.device | str): device for returned tensors
 
         Returns:
             tuple: anchors of each image, valid flags of each image
@@ -109,7 +110,7 @@ class AnchorHead(nn.Module):
         multi_level_anchors = []
         for i in range(num_levels):
             anchors = self.anchor_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i])
+                featmap_sizes[i], self.anchor_strides[i], device=device)
             multi_level_anchors.append(anchors)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
@@ -124,7 +125,8 @@ class AnchorHead(nn.Module):
                 valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.anchor_generators[i].valid_flags(
-                    (feat_h, feat_w), (valid_feat_h, valid_feat_w))
+                    (feat_h, feat_w), (valid_feat_h, valid_feat_w),
+                    device=device)
                 multi_level_flags.append(flags)
             valid_flag_list.append(multi_level_flags)
 
@@ -162,8 +164,10 @@ class AnchorHead(nn.Module):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
 
+        device = cls_scores[0].device
+
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas)
+            featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = anchor_target(
             anchor_list,
@@ -201,10 +205,12 @@ class AnchorHead(nn.Module):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
+        device = cls_scores[0].device
         mlvl_anchors = [
-            self.anchor_generators[i].grid_anchors(cls_scores[i].size()[-2:],
-                                                   self.anchor_strides[i])
-            for i in range(num_levels)
+            self.anchor_generators[i].grid_anchors(
+                cls_scores[i].size()[-2:],
+                self.anchor_strides[i],
+                device=device) for i in range(num_levels)
         ]
         result_list = []
         for img_id in range(len(img_metas)):

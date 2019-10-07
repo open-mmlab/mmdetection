@@ -33,7 +33,7 @@ script:
   - yapf -r -d --style .style.yapf mmdet/ tools/ tests/
   - python setup.py check -m -s
   - python setup.py build_ext --inplace
-  - coverage run --source mmdet -m py.test tests -v --doctest-modules
+  - coverage run --source mmdet -m py.test -v --xdoctest-modules tests mmdet
 
 after_success:
   - coverage report
