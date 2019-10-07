@@ -1,26 +1,9 @@
 import torch
 import torch.nn.functional as F
-from torch.autograd import Function
-from torch.autograd.function import once_differentiable
 
 from mmdet.core import bbox2delta, bbox_overlaps, delta2bbox
 from ..registry import HEADS
 from .retina_head import RetinaHead
-
-
-class Clip(Function):
-
-    @staticmethod
-    def forward(ctx, x, a, b):
-        return x.clamp(a, b)
-
-    @staticmethod
-    @once_differentiable
-    def backward(ctx, grad_output):
-        return grad_output, None, None
-
-
-clip = Clip.apply
 
 
 @HEADS.register_module
@@ -197,7 +180,7 @@ class FreeAnchorRetinaHead(RetinaHead):
 
 def positive_bag_loss(logits, *args, **kwargs):
     # bag_prob = Mean-max(logits)
-    weight = 1 / clip(1 - logits, 1e-12, None)
+    weight = 1 / torch.clamp(1 - logits, 1e-12, None)
     weight /= weight.sum(*args, **kwargs).unsqueeze(dim=-1)
     bag_prob = (weight * logits).sum(*args, **kwargs)
     # positive_bag_loss = -log(bag_prob)
