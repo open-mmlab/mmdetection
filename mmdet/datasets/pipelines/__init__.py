@@ -3,7 +3,7 @@ from .formating import (Collect, ImageToTensor, ToDataContainer, ToTensor,
                         Transpose, to_tensor)
 from .loading import LoadAnnotations, LoadImageFromFile, LoadProposals
 from .test_aug import MultiScaleFlipAug
-from .transforms import (Expand, MinIoURandomCrop, Normalize, Pad,
+from .transforms import (Albu, Expand, MinIoURandomCrop, Normalize, Pad,
                          PhotoMetricDistortion, RandomCrop, RandomFlip, Resize,
                          SegResizeFlipPadRescale, CtdetTrainTransforms, CtdetTestTransforms)
 
@@ -12,5 +12,6 @@ __all__ = [
     'Transpose', 'Collect', 'LoadAnnotations', 'LoadImageFromFile',
     'LoadProposals', 'MultiScaleFlipAug', 'Resize', 'RandomFlip', 'Pad',
     'RandomCrop', 'Normalize', 'SegResizeFlipPadRescale', 'MinIoURandomCrop',
-    'Expand', 'PhotoMetricDistortion', 'CtdetTrainTransforms', 'CtdetTestTransforms'
+    'Expand', 'PhotoMetricDistortion', 'Albu', 'CtdetTrainTransforms',
+    'CtdetTestTransforms'
 ]
