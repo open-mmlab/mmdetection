@@ -4,9 +4,9 @@ import torch
 import torch.nn as nn
 from mmcv.runner import OptimizerHook
 
+from mmdet.ops import DeformRoIPooling
 from ..utils.dist_utils import allreduce_grads
 from .utils import cast_tensor_type
-from mmdet.ops import DeformRoIPooling
 
 
 class Fp16OptimizerHook(OptimizerHook):
