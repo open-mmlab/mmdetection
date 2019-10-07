@@ -2,7 +2,6 @@ from .anchor_head import AnchorHead
 from .fcos_head import FCOSHead
 from .fovea_head import FoveaHead
 from .free_anchor_retina_head import FreeAnchorRetinaHead
-from .free_anchor_retina_head import FreeAnchorRetinaHead
 from .ga_retina_head import GARetinaHead
 from .ga_rpn_head import GARPNHead
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
