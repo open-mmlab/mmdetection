@@ -1,3 +1,6 @@
+from typing import List
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
@@ -72,7 +75,9 @@ class FPN(nn.Module):
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
 
+        self.used_backbone_levels = len(self.lateral_convs)
         # add extra conv layers (e.g., RetinaNet)
+        self.extra_fpn_convs = nn.ModuleList()
         extra_levels = num_outs - self.backbone_end_level + self.start_level
         if add_extra_convs and extra_levels >= 1:
             for i in range(extra_levels):
@@ -90,7 +95,7 @@ class FPN(nn.Module):
                     norm_cfg=norm_cfg,
                     activation=self.activation,
                     inplace=False)
-                self.fpn_convs.append(extra_fpn_conv)
+                self.extra_fpn_convs.append(extra_fpn_conv)
 
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
@@ -99,43 +104,51 @@ class FPN(nn.Module):
                 xavier_init(m, distribution='uniform')
 
     @auto_fp16()
-    def forward(self, inputs):
+    def forward(self, inputs: List[torch.Tensor]) -> List[torch.Tensor]:
+        return self._forward(inputs)
+
+    def _forward(self, inputs: List[torch.Tensor]) -> List[torch.Tensor]:
         assert len(inputs) == len(self.in_channels)
 
         # build laterals
-        laterals = [
-            lateral_conv(inputs[i + self.start_level])
-            for i, lateral_conv in enumerate(self.lateral_convs)
-        ]
+        laterals = []
+        i = 0
+        for lateral_conv in self.lateral_convs:
+            laterals.append(lateral_conv(inputs[i + self.start_level]))
+            i += 1
 
         # build top-down path
-        used_backbone_levels = len(laterals)
-        for i in range(used_backbone_levels - 1, 0, -1):
+        for i in range(self.used_backbone_levels - 1, 0, -1):
             laterals[i - 1] += F.interpolate(
-                laterals[i], scale_factor=2, mode='nearest')
+                laterals[i], scale_factor=2.0, mode='nearest')
 
-        # build outputs
+        # # build outputs
         # part 1: from original levels
-        outs = [
-            self.fpn_convs[i](laterals[i]) for i in range(used_backbone_levels)
-        ]
-        # part 2: add extra levels
+        outs = []
+        i = 0
+        # https://github.com/pytorch/pytorch/issues/16123
+        for fpn_conv in self.fpn_convs:
+            outs.append(fpn_conv(laterals[i]))
+            i += 1
+
+        # # part 2: add extra levels
         if self.num_outs > len(outs):
             # use max pool to get more levels on top of outputs
             # (e.g., Faster R-CNN, Mask R-CNN)
             if not self.add_extra_convs:
-                for i in range(self.num_outs - used_backbone_levels):
+                for i in range(self.num_outs - self.used_backbone_levels):
                     outs.append(F.max_pool2d(outs[-1], 1, stride=2))
             # add conv layers on top of original feature maps (RetinaNet)
             else:
-                if self.extra_convs_on_inputs:
-                    orig = inputs[self.backbone_end_level - 1]
-                    outs.append(self.fpn_convs[used_backbone_levels](orig))
-                else:
-                    outs.append(self.fpn_convs[used_backbone_levels](outs[-1]))
-                for i in range(used_backbone_levels + 1, self.num_outs):
-                    if self.relu_before_extra_convs:
-                        outs.append(self.fpn_convs[i](F.relu(outs[-1])))
+                i = 0
+                for fpn_conv in self.extra_fpn_convs:
+                    if i == 0 and self.extra_convs_on_inputs:
+                        inp = inputs[self.backbone_end_level - 1]
+                    elif self.relu_before_extra_convs:
+                        inp = F.relu(outs[-1])
                     else:
-                        outs.append(self.fpn_convs[i](outs[-1]))
-        return tuple(outs)
+                        inp = outs[-1]
+                    outs.append(fpn_conv(inp))
+                    i += 1
+
+        return outs

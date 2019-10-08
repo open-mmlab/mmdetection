@@ -87,6 +87,7 @@ class ConvModule(nn.Module):
             sequence of "conv", "norm" and "act". Examples are
             ("conv", "norm", "act") and ("act", "conv", "norm").
     """
+    __constants__ = ["activate", "norm"]
 
     def __init__(self,
                  in_channels,
@@ -145,6 +146,7 @@ class ConvModule(nn.Module):
         self.output_padding = self.conv.output_padding
         self.groups = self.conv.groups
 
+        self.norm = None
         # build normalization layers
         if self.with_norm:
             # norm layer is after conv layer
@@ -154,7 +156,9 @@ class ConvModule(nn.Module):
                 norm_channels = in_channels
             self.norm_name, norm = build_norm_layer(norm_cfg, norm_channels)
             self.add_module(self.norm_name, norm)
+            self.norm = norm
 
+        self.activate = None
         # build activation layer
         if self.with_activation:
             # TODO: introduce `act_cfg` and supports more activation layers
@@ -167,22 +171,20 @@ class ConvModule(nn.Module):
         # Use msra init by default
         self.init_weights()
 
-    @property
-    def norm(self):
-        return getattr(self, self.norm_name)
-
     def init_weights(self):
         nonlinearity = 'relu' if self.activation is None else self.activation
         kaiming_init(self.conv, nonlinearity=nonlinearity)
         if self.with_norm:
             constant_init(self.norm, 1, bias=0)
 
-    def forward(self, x, activate=True, norm=True):
+    def forward(self, x, activate: bool = True, norm: bool = True):
         for layer in self.order:
             if layer == 'conv':
                 x = self.conv(x)
             elif layer == 'norm' and norm and self.with_norm:
-                x = self.norm(x)
+                if self.norm is not None:
+                    x = self.norm(x)
             elif layer == 'act' and activate and self.with_activation:
-                x = self.activate(x)
+                if self.activate is not None:
+                    x = self.activate(x)
         return x
