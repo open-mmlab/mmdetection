@@ -179,6 +179,16 @@ class ResNeXt(ResNet):
         (1, 512, 4, 4)
         (1, 1024, 2, 2)
         (1, 2048, 1, 1)
+        >>> jitted = torch.jit.script(ResNeXt(depth=50))
+        >>> jitted.eval()
+        >>> inputs = torch.rand(1, 3, 32, 32)
+        >>> level_outputs = jitted.forward(inputs)
+        >>> for level_out in level_outputs:
+        ...     print(tuple(level_out.shape))
+        (1, 256, 8, 8)
+        (1, 512, 4, 4)
+        (1, 1024, 2, 2)
+        (1, 2048, 1, 1)
     """
 
     arch_settings = {
