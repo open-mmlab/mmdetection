@@ -1,5 +1,6 @@
 import math
 
+import torch
 import torch.nn as nn
 
 from ..registry import BACKBONES
@@ -192,7 +193,7 @@ class ResNeXt(ResNet):
         self.base_width = base_width
 
         self.inplanes = 64
-        self.res_layers = []
+        res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = self.strides[i]
             dilation = self.dilations[i]
@@ -217,6 +218,7 @@ class ResNeXt(ResNet):
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
-            self.res_layers.append(layer_name)
+            res_layers.append(res_layer)
 
+        self.res_layers = torch.nn.ModuleList(res_layers)
         self._freeze_stages()
