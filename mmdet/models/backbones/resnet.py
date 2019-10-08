@@ -51,7 +51,10 @@ class BasicBlock(nn.Module):
         self.add_module(self.norm2_name, norm2)
 
         self.relu = nn.ReLU(inplace=True)
-        self.downsample = downsample
+        if downsample is None:
+            self.downsample = nn.Identity()
+        else:
+            self.downsample = downsample
         self.stride = stride
         self.dilation = dilation
         assert not with_cp
@@ -65,8 +68,6 @@ class BasicBlock(nn.Module):
         return getattr(self, self.norm2_name)
 
     def forward(self, x):
-        identity = x
-
         out = self.conv1(x)
         out = self.norm1(out)
         out = self.relu(out)
@@ -74,10 +75,9 @@ class BasicBlock(nn.Module):
         out = self.conv2(out)
         out = self.norm2(out)
 
-        if self.downsample is not None:
-            identity = self.downsample(x)
+        identity_or_downsample = self.downsample(x)
 
-        out += identity
+        out += identity_or_downsample
         out = self.relu(out)
 
         return out
