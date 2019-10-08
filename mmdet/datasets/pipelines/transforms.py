@@ -1,3 +1,4 @@
+import os
 import mmcv
 import numpy as np
 from imagecorruptions import corrupt
@@ -5,6 +6,12 @@ from numpy import random
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..registry import PIPELINES
+
+from .rigidtrasform_base import visualize_bbox, get_aug, color_aug
+
+# from .stainNorm_Macenko import Normalizer as mac_normalizer
+# from .stainNorm_Reinhard import Normalizer as rei_normalizer
+# from .stainNorm_Vahadane import Normalizer as vah_normalizer
 
 
 @PIPELINES.register_module
@@ -651,3 +658,86 @@ class Corrupt(object):
         repr_str += '(corruption={}, severity={})'.format(
             self.corruption, self.severity)
         return repr_str
+
+
+@PIPELINES.register_module
+class RigidTrasform(object):
+    def __init__(self, p=0.5):
+        self.p = p
+        self.count = 0
+
+    def __call__(self, results):
+        annotations = {'image': results['img'], 'bboxes': results['gt_bboxes'], 'category_id': results['gt_labels']}
+        # for old_bbox in annotations['bboxes']:
+        aug = get_aug(p=self.p)
+        annotations_aug = aug(**annotations)
+
+        CHECKED = True
+        PADDING = 40.  # 35.
+        width, height, _ = annotations_aug['image'].shape
+        temp = []
+        for bbox in annotations_aug['bboxes']:
+            center_x = int((bbox[0] + bbox[2]) / 2)
+            center_y = int((bbox[1] + bbox[3]) / 2)
+            box_width = bbox[2] - bbox[0]
+            box_height = bbox[3] - bbox[1]
+            if center_x - PADDING < 1 or center_y - PADDING < 1 or center_x + PADDING > width or center_y + PADDING > height:
+                CHECKED = False
+                break
+            
+            if box_width > 2 * PADDING:
+                left = center_x - PADDING
+                right = center_x + PADDING
+            else:
+                left = bbox[0]
+                right = bbox[2]
+            if box_height > 2 * PADDING:
+                top = center_y - PADDING
+                bottom = center_y + PADDING
+            else:
+                top = bbox[1]
+                bottom = bbox[3]
+
+            bbox = [left, top, right, bottom]
+            temp.append(bbox)
+
+
+        if CHECKED and len(annotations_aug['bboxes']) != 0:
+            results['img'] = annotations_aug['image'].copy()
+            results['gt_bboxes'] = temp  # annotations_aug['bboxes']  
+            results['gt_labels'] = annotations_aug['category_id']
+        else:
+            results['img'] = results['img'].copy()
+            results['gt_bboxes'] = results['gt_bboxes']
+            results['gt_labels'] = results['gt_labels']
+
+        # DEGUG = True
+        # if DEGUG:
+        #     print("\nafter", "*" * 50)
+        #     image_after = results['img'].copy()
+        #     for idx, bbox in enumerate(results['gt_bboxes']):
+        #         image_after = visualize_bbox(image_after, bbox, results['gt_labels'][idx], {1: 'positive', 2: 'suspected'})
+        #     mmcv.imwrite(image_after, "/home/wanglichao/AnalyticalToolkit/mmdetection/output/img_" + str(self.count) + "_after.jpg")
+        #     self.count = self.count + 1
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+
+
+@PIPELINES.register_module
+class ColorTrasform(object):
+    def __init__(self, p=0.5):
+        self.p = p
+        
+    def __call__(self, results):
+        if random.randint(2):
+            annotations = {'image': results['img']}
+            aug = color_aug(p=self.p)
+            annotations_aug = aug(**annotations)
+            results['img'] = annotations_aug['image'].copy()
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
