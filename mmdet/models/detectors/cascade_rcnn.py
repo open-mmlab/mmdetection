@@ -313,11 +313,6 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         """
         x = self.extract_feat(img)
 
-        if isinstance(img_meta, dict):
-            # a single dict was passed in but the rest of this function
-            # expect a list of with one item.
-            img_meta = [img_meta]
-
         proposal_list = self.simple_test_rpn(
             x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
 
