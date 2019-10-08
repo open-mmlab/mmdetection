@@ -29,10 +29,14 @@ def build_conv_layer(cfg, *args, **kwargs):
     """
     if cfg is None:
         cfg_ = dict(type="Conv")
+    else:
+        assert isinstance(cfg, dict) and "type" in cfg
+        cfg_ = cfg_.copy()
     conv_layer = get_conv_layer_module(cfg_)
     cfg_.pop("type")
+    cfg_.update(kwargs)
 
-    layer = conv_layer(*args, **kwargs, **cfg_)
+    layer = conv_layer(*args, **cfg_)
 
     return layer
 
