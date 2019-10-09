@@ -105,7 +105,6 @@ def test_config_build_detector():
 
         'pascal_voc/ssd300_voc.py',
         'pascal_voc/faster_rcnn_r50_fpn_1x_voc0712.py',
-        'pascal_voc/cascade_rcnn_r50_fpn_1x.py',
         'pascal_voc/ssd512_voc.py',
 
         'gcnet/mask_rcnn_r4_gcb_c3-c5_r50_fpn_syncbn_1x.py',
