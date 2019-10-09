@@ -171,8 +171,7 @@ class GuidedAnchorHead(AnchorHead):
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)
         self.conv_loc = nn.Conv2d(self.in_channels, 1, 1)
-        self.conv_shape = nn.Conv2d(self.in_channels, self.num_anchors * 2,
-                                    1)
+        self.conv_shape = nn.Conv2d(self.in_channels, self.num_anchors * 2, 1)
         self.feature_adaption = FeatureAdaption(
             self.in_channels,
             self.feat_channels,
