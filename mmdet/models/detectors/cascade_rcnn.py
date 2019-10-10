@@ -159,7 +159,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                       proposals=None):
         """
         Args:
-            img (Tensor): of shape (B, C, H, W) encoding input images.
+            img (Tensor): of shape (N, C, H, W) encoding input images.
                 Typically these should be mean centered and std scaled.
 
             img_meta (list[dict]): list of image info dict where each dict has:
@@ -301,7 +301,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         """Run inference on a single image.
 
         Args:
-            img (Tensor): must be in shape (B, C, H, W)
+            img (Tensor): must be in shape (N, C, H, W)
             img_meta (list[dict]): a list with one dictionary element.
                 See `mmdet/datasets/pipelines/formatting.py:Collect` for
                 details of meta dicts.
