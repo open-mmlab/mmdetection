@@ -137,7 +137,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       proposals=None):
         """
         Args:
-            img (Tensor): of shape (B, C, H, W) encoding input images.
+            img (Tensor): of shape (N, C, H, W) encoding input images.
                 Typically these should be mean centered and std scaled.
 
             img_meta (list[dict]): list of image info dict where each dict has:
