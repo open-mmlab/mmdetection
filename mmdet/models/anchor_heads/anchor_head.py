@@ -236,6 +236,25 @@ class AnchorHead(nn.Module):
             result_list.append(proposals)
         return result_list
 
+    def get_centerness(self, anchors, bboxes):
+        # print(anchors.shape, bboxes.shape)
+
+        anchors_centers = (anchors[:, 2:4] + anchors[:, 0:2]) * 0.5
+        # anchors_wh = anchors[:, 2:4] - anchors[:, 0:2]
+        bboxes_centers = (bboxes[:, 2:4] + bboxes[:, 0:2]) * 0.5
+        bboxes_wh = bboxes[:, 2:4] - bboxes[:, 0:2]
+
+        # print(anchors_centers.shape, bboxes_centers.shape)
+        delta = torch.abs(anchors_centers - bboxes_centers) * 2
+        centerness = torch.clamp((bboxes_wh - delta), min=0, max=None) / (bboxes_wh + delta)
+        centerness = torch.prod(centerness, dim=-1, keepdim=False) ** 0.5
+
+        assert torch.all(centerness.view(-1) >= 0)
+        assert torch.all(centerness.view(-1) <= 1)
+        # print(centerness.shape)
+
+        return centerness.unsqueeze(1)
+
     def get_bboxes_single(self,
                           cls_scores,
                           bbox_preds,

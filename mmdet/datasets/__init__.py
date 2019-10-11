@@ -1,6 +1,7 @@
 from .builder import build_dataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
+from .crossroad_coco import CrossroadDataset, CrossroadPersonDataset
 from .custom import CustomDataset
 from .dataset_wrappers import ConcatDataset, RepeatDataset
 from .extra_aug import ExtraAugmentation
@@ -14,5 +15,6 @@ __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset',
     'CityscapesDataset', 'GroupSampler', 'DistributedGroupSampler',
     'build_dataloader', 'ConcatDataset', 'RepeatDataset', 'ExtraAugmentation',
-    'WIDERFaceDataset', 'DATASETS', 'build_dataset'
+    'WIDERFaceDataset', 'CrossroadDataset', 'CrossroadPersonDataset',
+    'DATASETS', 'build_dataset'
 ]

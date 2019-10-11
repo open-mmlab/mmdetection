@@ -24,9 +24,13 @@ def generate_backbones():
                 last_stage = max(self.out_indices)
                 for i, stage in enumerate(self.features):
                     y = stage(y)
+                    s = str(i) + ' ' + str(y.shape)
                     if i in self.out_indices:
                         outputs.append(y)
-                    elif i == last_stage:
+                        s += '*'
+                    if self.verbose:
+                        print(s)
+                    if i == last_stage:
                         break
 
                 return outputs
@@ -49,7 +53,7 @@ def generate_backbones():
                         if isinstance(m, _BatchNorm):
                             m.eval()
 
-            def custom_model_getter(*args, out_indices=None, frozen_stages=0, norm_eval=False, **kwargs):
+            def custom_model_getter(*args, out_indices=None, frozen_stages=0, norm_eval=False, verbose=False, **kwargs):
                 if 'pretrained' in kwargs and kwargs['pretrained'] and 'root' in kwargs:
                     path = kwargs['root']
                     if not osp.exists(path):
@@ -62,6 +66,7 @@ def generate_backbones():
                 model.out_indices = out_indices
                 model.frozen_stages = frozen_stages
                 model.norm_eval = norm_eval
+                model.verbose = verbose
                 if hasattr(model, 'features') and isinstance(model.features, nn.Sequential):
                     # Save original forward, just in case.
                     model.forward_single_output = model.forward

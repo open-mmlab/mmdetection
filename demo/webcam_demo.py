@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('--device', type=int, default=0, help='CUDA device id')
     parser.add_argument(
-        '--camera-id', type=int, default=0, help='camera device id')
+        '--camera-id', default=0, help='camera device id')
     parser.add_argument(
         '--score-thr', type=float, default=0.5, help='bbox score threshold')
     args = parser.parse_args()
