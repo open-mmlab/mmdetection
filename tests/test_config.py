@@ -43,7 +43,7 @@ def test_config_build_detector():
         # 'dcn/faster_rcnn_mdconv_c3-c5_group4_r50_fpn_1x.py',
         # 'dcn/faster_rcnn_mdconv_c3-c5_r50_fpn_1x.py',
         # ---
-        'htc/htc_x101_32x4d_fpn_20e_16gpu.py',
+        # 'htc/htc_x101_32x4d_fpn_20e_16gpu.py',
         'htc/htc_without_semantic_r50_fpn_1x.py',
         # 'htc/htc_dconv_c3-c5_mstrain_400_1400_x101_64x4d_fpn_20e.py',
         # 'htc/htc_x101_64x4d_fpn_20e_16gpu.py',
@@ -69,7 +69,7 @@ def test_config_build_detector():
         # ---
         # 'ms_rcnn/ms_rcnn_r101_caffe_fpn_1x.py',
         # 'ms_rcnn/ms_rcnn_x101_64x4d_fpn_1x.py',
-        'ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py',
+        # 'ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py',
         # ---
         # 'guided_anchoring/ga_faster_x101_32x4d_fpn_1x.py',
         # 'guided_anchoring/ga_rpn_x101_32x4d_fpn_1x.py',
@@ -89,7 +89,7 @@ def test_config_build_detector():
         # 'hrnet/cascade_rcnn_hrnetv2p_w32_20e.py',
         # 'hrnet/mask_rcnn_hrnetv2p_w32_1x.py',
         # 'hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e.py',
-        'hrnet/htc_hrnetv2p_w32_20e.py',
+        # 'hrnet/htc_hrnetv2p_w32_20e.py',
         # 'hrnet/faster_rcnn_hrnetv2p_w18_1x.py',
         # 'hrnet/mask_rcnn_hrnetv2p_w18_1x.py',
         # 'hrnet/faster_rcnn_hrnetv2p_w32_1x.py',
@@ -107,9 +107,9 @@ def test_config_build_detector():
         'pascal_voc/faster_rcnn_r50_fpn_1x_voc0712.py',
         'pascal_voc/ssd512_voc.py',
         # ---
-        'gcnet/mask_rcnn_r4_gcb_c3-c5_r50_fpn_syncbn_1x.py',
+        # 'gcnet/mask_rcnn_r4_gcb_c3-c5_r50_fpn_syncbn_1x.py',
         # 'gcnet/mask_rcnn_r16_gcb_c3-c5_r50_fpn_syncbn_1x.py',
-        'gcnet/mask_rcnn_r4_gcb_c3-c5_r50_fpn_1x.py',
+        # 'gcnet/mask_rcnn_r4_gcb_c3-c5_r50_fpn_1x.py',
         # 'gcnet/mask_rcnn_r16_gcb_c3-c5_r50_fpn_1x.py',
         'gcnet/mask_rcnn_r50_fpn_sbn_1x.py',
         # ---
@@ -143,15 +143,16 @@ def test_config_build_detector():
         # 'libra_rcnn/libra_faster_rcnn_x101_64x4d_fpn_1x.py',
         # 'libra_rcnn/libra_fast_rcnn_r50_fpn_1x.py',
         # ---
-        'ghm/retinanet_ghm_r50_fpn_1x.py',
+        # 'ghm/retinanet_ghm_r50_fpn_1x.py',
         # ---
-        'fp16/retinanet_r50_fpn_fp16_1x.py',
+        # 'fp16/retinanet_r50_fpn_fp16_1x.py',
         'fp16/mask_rcnn_r50_fpn_fp16_1x.py',
         'fp16/faster_rcnn_r50_fpn_fp16_1x.py'
     ]
 
     print('Using {} config files'.format(len(config_names)))
 
+    times = {}
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
         config_mod = import_module_from_path(config_fpath)
@@ -165,8 +166,13 @@ def test_config_build_detector():
         if 'pretrained' in config_mod.model:
             config_mod.model['pretrained'] = None
 
-        detector = build_detector(
-            config_mod.model,
-            train_cfg=config_mod.train_cfg,
-            test_cfg=config_mod.test_cfg)
+        import ubelt as ub
+        with ub.Timer() as t:
+            detector = build_detector(
+                config_mod.model,
+                train_cfg=config_mod.train_cfg,
+                test_cfg=config_mod.test_cfg)
+        times[config_fname] = t.elapsed
         assert detector is not None
+
+    print(ub.repr2(ub.dict_subset(times, ub.argsort(times))))
