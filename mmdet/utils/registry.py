@@ -87,7 +87,9 @@ def build_from_cfg(cfg, registry, default_args=None):
     jit_dump_graph = args.pop('jit_dump_graph', False)
     jit_dump_code = args.pop('jit_dump_code', False)
 
-    jitted = torch.jit.script(obj_cls(**args))
+    orig = obj_cls(**args)
+    jitted = torch.jit.script(orig)
+    _restore_load_state_dict_pre_hooks(jitted)
     if jit_dump_graph_for:
         logger.info(jitted.graph_for, extra=cfg)
     if jit_dump_graph:
@@ -95,3 +97,14 @@ def build_from_cfg(cfg, registry, default_args=None):
     if jit_dump_code:
         logger.info(jitted.code, extra=cfg)
     return jitted
+
+
+def _restore_load_state_dict_pre_hooks(jitted):
+    weak_ref_to_original = getattr(jitted, '_original', None)
+
+    if weak_ref_to_original:
+        for key, hook in weak_ref_to_original(
+        )._load_state_dict_pre_hooks.items():
+            jitted._load_state_dict_pre_hooks[key] = hook
+    for child in jitted.children():
+        _restore_load_state_dict_pre_hooks(child)

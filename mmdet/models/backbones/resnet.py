@@ -1,4 +1,7 @@
+import collections
 import logging
+import re
+from typing import Dict, List
 
 import torch
 import torch.nn as nn
@@ -8,13 +11,17 @@ from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.plugins import GeneralizedAttention
+from mmdet.models.utils import norm as norm_utils
 from mmdet.ops import ContextBlock, DeformConv, ModulatedDeformConv
 from ..registry import BACKBONES
 from ..utils import build_norm_layer, get_conv_layer_module
 
+logger = logging.getLogger(__name__)
+
 
 class BasicBlock(nn.Module):
     expansion = 1
+    _version = 2
 
     def __init__(self,
                  inplanes,
@@ -34,8 +41,8 @@ class BasicBlock(nn.Module):
         assert gen_attention is None, "Not implemented yet."
         assert gcb is None, "Not implemented yet."
 
-        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
-        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
+        _, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        _, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
 
         self.conv1 = get_conv_layer_module(conv_cfg)(
             inplanes,
@@ -45,10 +52,11 @@ class BasicBlock(nn.Module):
             padding=dilation,
             dilation=dilation,
             bias=False)
-        self.add_module(self.norm1_name, norm1)
+        self.norm1 = norm1
+        self._register_load_state_dict_pre_hook(_convert_norm_names)
         self.conv2 = get_conv_layer_module(conv_cfg)(
             planes, planes, 3, padding=1, bias=False)
-        self.add_module(self.norm2_name, norm2)
+        self.norm2 = norm2
 
         self.relu = nn.ReLU(inplace=True)
         if downsample is None:
@@ -58,14 +66,6 @@ class BasicBlock(nn.Module):
         self.stride = stride
         self.dilation = dilation
         assert not with_cp
-
-    @property
-    def norm1(self):
-        return getattr(self, self.norm1_name)
-
-    @property
-    def norm2(self):
-        return getattr(self, self.norm2_name)
 
     def forward(self, x):
         out = self.conv1(x)
@@ -85,6 +85,7 @@ class BasicBlock(nn.Module):
 
 class Bottleneck(nn.Module):
     expansion = 4
+    _version = 2
     __constants__ = [
         "context_block",
         "conv2_offset",
@@ -137,9 +138,9 @@ class Bottleneck(nn.Module):
             self.conv1_stride = stride
             self.conv2_stride = 1
 
-        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
-        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
-        self.norm3_name, norm3 = build_norm_layer(
+        _, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        _, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
+        _, norm3 = build_norm_layer(
             norm_cfg, planes * self.expansion, postfix=3)
 
         self.conv1 = get_conv_layer_module(conv_cfg)(
@@ -148,7 +149,7 @@ class Bottleneck(nn.Module):
             kernel_size=1,
             stride=self.conv1_stride,
             bias=False)
-        self.add_module(self.norm1_name, norm1)
+        self.norm1 = norm1
         fallback_on_stride = False
         self.with_modulated_dcn = False
         if self.with_dcn:
@@ -189,11 +190,11 @@ class Bottleneck(nn.Module):
                 dilation=dilation,
                 deformable_groups=self.deformable_groups,
                 bias=False)
-
-        self.add_module(self.norm2_name, norm2)
+        self.norm2 = norm2
         self.conv3 = get_conv_layer_module(conv_cfg)(
             planes, planes * self.expansion, kernel_size=1, bias=False)
-        self.add_module(self.norm3_name, norm3)
+        self.norm3 = norm3
+        self._register_load_state_dict_pre_hook(_convert_norm_names)
 
         self.relu = nn.ReLU(inplace=True)
         if downsample is None:
@@ -213,18 +214,6 @@ class Bottleneck(nn.Module):
                 planes, **gen_attention)
         else:
             self.gen_attention_block = None
-
-    @property
-    def norm1(self):
-        return getattr(self, self.norm1_name)
-
-    @property
-    def norm2(self):
-        return getattr(self, self.norm2_name)
-
-    @property
-    def norm3(self):
-        return getattr(self, self.norm3_name)
 
     def forward(self, x):
 
@@ -392,6 +381,7 @@ class ResNet(nn.Module):
         (1, 512, 1, 1)
     """
 
+    _version = 2
     __constants__ = ["dcn", "gcb"]
 
     arch_settings = {
@@ -479,8 +469,6 @@ class ResNet(nn.Module):
                 gen_attention=gen_attention,
                 gen_attention_blocks=stage_with_gen_attention[i])
             self.inplanes = planes * self.block.expansion
-            layer_name = 'layer{}'.format(i + 1)
-            self.add_module(layer_name, res_layer)
             res_layers.append(res_layer)
 
         self.res_layers = torch.nn.ModuleList(res_layers)
@@ -488,16 +476,14 @@ class ResNet(nn.Module):
 
         self.feat_dim = self.block.expansion * 64 * 2**(
             len(self.stage_blocks) - 1)
-
-    @property
-    def norm1(self):
-        return getattr(self, self.norm1_name)
+        self._register_load_state_dict_pre_hook(_convert_res_layers)
+        self._register_load_state_dict_pre_hook(_convert_norm_names)
 
     def _make_stem_layer(self, in_channels):
         self.conv1 = get_conv_layer_module(self.conv_cfg)(
             in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        self.norm1_name, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
-        self.add_module(self.norm1_name, norm1)
+        _, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
+        self.norm1 = norm1
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
@@ -509,7 +495,7 @@ class ResNet(nn.Module):
                     param.requires_grad = False
 
         for i in range(1, self.frozen_stages + 1):
-            m = getattr(self, 'layer{}'.format(i))
+            m = self.res_layers[i]  #getattr(self, 'layer{}'.format(i))
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
@@ -564,3 +550,74 @@ class ResNet(nn.Module):
                 # trick: eval have effect on BatchNorm only
                 if isinstance(m, _BatchNorm):
                     m.eval()
+
+
+def _convert_res_layers(state_dict, prefix: str, local_metadata: Dict,
+                        strict: bool, missing_keys: List[str],
+                        unexpected_keys: List[str], error_msgs: List[str]):
+    """Convert res_layers keys
+
+    Rename key with prefix `backbone.layer1.` to the key with prefix
+    `backbone.res_layers.0.`
+
+    """
+    MODULE_LIST_NAME = 'res_layers'
+
+    keys_to_convert = []
+    converted_prefixes = collections.OrderedDict()
+    for key in state_dict.keys():
+        if not key.startswith(prefix):
+            # it's a parameter/buffer for another module
+            continue
+        else:
+            unprefixed = key.split(prefix)[1]
+            if unprefixed.startswith('layer'):
+                # we don't convert it
+                parts = unprefixed.split('.')
+                layer_part = parts[0]
+                assert layer_part.startswith('layer')
+                index = layer_part.split('layer')[1]
+                start_from_zero_index = str(int(index) - 1)
+                converted_parts = [MODULE_LIST_NAME, start_from_zero_index]
+                converted_prefixes[prefix + layer_part] = \
+                    prefix + '.'.join(converted_parts)
+                converted_parts.extend(parts[1:])
+                converted_key = prefix + '.'.join(converted_parts)
+                keys_to_convert.append((key, converted_key))
+
+    for key, converted_key in keys_to_convert:
+        state_dict[converted_key] = state_dict.pop(key)
+    if converted_prefixes:
+        msg = "\n".join(
+            ["{} -> {}".format(k, v) for k, v in converted_prefixes.items()])
+        logger.info("Converted key prefixes:\n %s", msg)
+
+
+def _convert_norm_names(state_dict, prefix: str, local_metadata: Dict,
+                        strict: bool, missing_keys: List[str],
+                        unexpected_keys: List[str], error_msgs: List[str]):
+    """Convert norm names to 'norm'"""
+    NORM_NAMES = {v[0] for v in norm_utils.norm_cfg.values()}
+    NORM_NAMES_PATTERN = '|'.join('({})'.format(n) for n in NORM_NAMES)
+
+    keys_to_convert = []
+    converted_prefixes = collections.OrderedDict()
+    for key in state_dict.keys():
+        if not key.startswith(prefix):
+            # it's a parameter/buffer for another module
+            continue
+        else:
+            unprefixed = key.split(prefix)[1]
+            m = re.match(NORM_NAMES_PATTERN, unprefixed)
+            if m:
+                converted_key = prefix + re.sub(
+                    NORM_NAMES_PATTERN, 'norm', unprefixed, count=1)
+                keys_to_convert.append((key, converted_key))
+                converted_prefixes[prefix + m.group()] = prefix + 'norm'
+
+    for key, converted_key in keys_to_convert:
+        state_dict[converted_key] = state_dict.pop(key)
+    if converted_prefixes:
+        msg = "\n".join(
+            ["{} -> {}".format(k, v) for k, v in converted_prefixes.items()])
+        logger.info("Converted key prefixes:\n %s", msg)
