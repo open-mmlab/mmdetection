@@ -2,6 +2,23 @@ import torch
 
 
 class AssignResult(object):
+    """
+    Stores assignments between predicted and truth boxes.
+
+    Attributes:
+        num_gts (int): the number of truth boxes considered when computing this
+            assignment
+
+        gt_inds (LongTensor): for each predicted box indicates the 1-based
+            index of the assigned truth box. 0 means unassigned and -1 means
+            ignore.
+
+        max_overlaps (FloatTensor): the iou between the predicted box and its
+            assigned truth box.
+
+        labels (None | LongTensor): If specified, for each predicted box
+            indicates the category label of the assigned truth box.
+    """
 
     def __init__(self, num_gts, gt_inds, max_overlaps, labels=None):
         self.num_gts = num_gts
