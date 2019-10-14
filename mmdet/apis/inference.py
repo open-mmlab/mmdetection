@@ -108,10 +108,9 @@ async def async_inference_detector(model, img):
     data = test_pipeline(data)
     data = scatter(collate([data], samples_per_gpu=1), [device])[0]
 
-    # We don't restore `torch.is_grad_enabled()` value during concurrent
-    # inference since execution can overlap
-    torch.set_grad_enabled(False)
-    result = await model.aforward_test(rescale=True, **data)
+    # forward the model
+    with torch.no_grad():
+        result = await model.aforward_test(rescale=True, **data)
     return result
 
 
