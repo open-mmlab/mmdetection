@@ -89,7 +89,8 @@ def build_from_cfg(cfg, registry, default_args=None):
 
     orig = obj_cls(**args)
     jitted = torch.jit.script(orig)
-    _restore_load_state_dict_pre_hooks(jitted)
+    orig._jitted = jitted
+    _restore_load_state_dict_pre_hooks(orig, jitted)
     if jit_dump_graph_for:
         logger.info(jitted.graph_for, extra=cfg)
     if jit_dump_graph:
@@ -99,12 +100,10 @@ def build_from_cfg(cfg, registry, default_args=None):
     return jitted
 
 
-def _restore_load_state_dict_pre_hooks(jitted):
-    weak_ref_to_original = getattr(jitted, '_original', None)
-
-    if weak_ref_to_original:
-        for key, hook in weak_ref_to_original(
-        )._load_state_dict_pre_hooks.items():
-            jitted._load_state_dict_pre_hooks[key] = hook
-    for child in jitted.children():
-        _restore_load_state_dict_pre_hooks(child)
+def _restore_load_state_dict_pre_hooks(orig, jitted):
+    for key, hook in orig._load_state_dict_pre_hooks.items():
+        jitted._load_state_dict_pre_hooks[key] = hook
+    orig_children = dict(orig.named_children())
+    for name, child in jitted.named_children():
+        orig_child = orig_children[name]
+        _restore_load_state_dict_pre_hooks(orig_child, child)

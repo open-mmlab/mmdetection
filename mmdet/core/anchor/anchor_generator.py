@@ -1,4 +1,5 @@
 import torch
+from typing import Tuple, List
 
 
 class AnchorGenerator(object):
@@ -14,10 +15,15 @@ class AnchorGenerator(object):
                 [16., 16., 24., 24.]])
     """
 
-    def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None):
+    def __init__(self,
+                 base_size: int,
+                 scales: List[float],
+                 ratios: List[float],
+                 scale_major: bool = True,
+                 ctr: Tuple[float, float] = None):
         self.base_size = base_size
-        self.scales = torch.Tensor(scales)
-        self.ratios = torch.Tensor(ratios)
+        self.scales = torch.tensor(scales)
+        self.ratios = torch.tensor(ratios)
         self.scale_major = scale_major
         self.ctr = ctr
         self.base_anchors = self.gen_base_anchors()
@@ -55,7 +61,7 @@ class AnchorGenerator(object):
 
         return base_anchors
 
-    def _meshgrid(self, x, y, row_major=True):
+    def _meshgrid(self, x, y, row_major: bool = True):
         xx = x.repeat(len(y))
         yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
         if row_major:
@@ -63,8 +69,14 @@ class AnchorGenerator(object):
         else:
             return yy, xx
 
-    def grid_anchors(self, featmap_size, stride=16, device='cuda'):
-        base_anchors = self.base_anchors.to(device)
+    def grid_anchors(self,
+                     featmap_size: Tuple[int, int],
+                     stride: int = 16,
+                     device: str = 'cuda'):
+        # autograd profiling:
+        # non_blocking=False - ~1.38ms per call, 59.1ms total
+        # non_blocking=True - ~80us per call, 3.1ms total
+        base_anchors = self.base_anchors.to(device, non_blocking=True)
 
         feat_h, feat_w = featmap_size
         shift_x = torch.arange(0, feat_w, device=device) * stride
@@ -82,7 +94,10 @@ class AnchorGenerator(object):
         # then (0, 1), (0, 2), ...
         return all_anchors
 
-    def valid_flags(self, featmap_size, valid_size, device='cuda'):
+    def valid_flags(self,
+                    featmap_size: Tuple[int, int],
+                    valid_size: Tuple[int, int],
+                    device: str = 'cuda'):
         feat_h, feat_w = featmap_size
         valid_h, valid_w = valid_size
         assert valid_h <= feat_h and valid_w <= feat_w
