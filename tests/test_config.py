@@ -152,7 +152,6 @@ def test_config_build_detector():
 
     print('Using {} config files'.format(len(config_names)))
 
-    times = {}
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
         config_mod = import_module_from_path(config_fpath)
@@ -166,13 +165,8 @@ def test_config_build_detector():
         if 'pretrained' in config_mod.model:
             config_mod.model['pretrained'] = None
 
-        import ubelt as ub
-        with ub.Timer() as t:
-            detector = build_detector(
-                config_mod.model,
-                train_cfg=config_mod.train_cfg,
-                test_cfg=config_mod.test_cfg)
-        times[config_fname] = t.elapsed
+        detector = build_detector(
+            config_mod.model,
+            train_cfg=config_mod.train_cfg,
+            test_cfg=config_mod.test_cfg)
         assert detector is not None
-
-    print(ub.repr2(ub.dict_subset(times, ub.argsort(times))))
