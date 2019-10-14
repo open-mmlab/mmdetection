@@ -508,6 +508,8 @@ class HybridTaskCascade(CascadeRCNN):
             else:
                 aug_masks = []
                 aug_img_metas = []
+                aug_flip_masks = []
+                aug_flip_img_metas = []
                 for x, img_meta, semantic in zip(
                         self.extract_feats(imgs), img_metas, semantic_feats):
                     img_shape = img_meta[0]['img_shape']
@@ -536,10 +538,18 @@ class HybridTaskCascade(CascadeRCNN):
                                 mask_feats, last_feat)
                         else:
                             mask_pred = mask_head(mask_feats)
-                        aug_masks.append(mask_pred.sigmoid().cpu().numpy())
-                        aug_img_metas.append(img_meta)
+                        mask_pred_numpy = mask_pred.sigmoid().cpu().numpy()
+                        if flip:
+                            aug_flip_masks.append(mask_pred_numpy)
+                            aug_flip_img_metas.append(img_meta)
+                        else:
+                            aug_masks.append(mask_pred_numpy)
+                            aug_img_metas.append(img_meta)
                 merged_masks = merge_aug_masks(aug_masks, aug_img_metas,
                                                self.test_cfg.rcnn)
+                merged_flip_masks = merge_aug_masks(
+                    aug_flip_masks, aug_flip_img_metas,
+                    self.test_cfg.rcnn) if len(aug_flip_masks) > 0 else None
 
                 ori_shape = img_metas[0][0]['ori_shape']
                 segm_result = self.mask_head[-1].get_seg_masks(
@@ -549,7 +559,8 @@ class HybridTaskCascade(CascadeRCNN):
                     rcnn_test_cfg,
                     ori_shape,
                     scale_factor=1.0,
-                    rescale=False)
+                    rescale=False,
+                    flip_mask_pred=merged_flip_masks)
             return bbox_result, segm_result
         else:
             return bbox_result

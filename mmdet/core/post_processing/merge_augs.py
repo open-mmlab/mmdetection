@@ -78,7 +78,10 @@ def merge_aug_scores(aug_scores):
         return np.mean(aug_scores, axis=0)
 
 
-def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
+def merge_aug_masks(aug_masks,
+                    img_metas,
+                    rcnn_test_cfg,
+                    weights=None):
     """Merge augmented mask prediction.
 
     Args:

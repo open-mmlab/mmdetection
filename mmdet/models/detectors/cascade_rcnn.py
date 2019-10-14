@@ -514,7 +514,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                                               1)]
             else:
                 aug_masks = []
+                aug_flip_masks = []
                 aug_img_metas = []
+                aug_flip_img_metas = []
                 for x, img_meta in zip(self.extract_feats(imgs), img_metas):
                     img_shape = img_meta[0]['img_shape']
                     scale_factor = img_meta[0]['scale_factor']
@@ -529,10 +531,18 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                         if self.with_shared_head:
                             mask_feats = self.shared_head(mask_feats)
                         mask_pred = self.mask_head[i](mask_feats)
-                        aug_masks.append(mask_pred.sigmoid().cpu().numpy())
-                        aug_img_metas.append(img_meta)
+                        mask_pred_numpy = mask_pred.sigmoid().cpu().numpy()
+                        if flip:
+                            aug_flip_masks.append(mask_pred_numpy)
+                            aug_flip_img_metas.append(img_meta)
+                        else:
+                            aug_masks.append(mask_pred_numpy)
+                            aug_img_metas.append(img_meta)
                 merged_masks = merge_aug_masks(aug_masks, aug_img_metas,
                                                self.test_cfg.rcnn)
+                merged_flip_masks = merge_aug_masks(
+                    aug_flip_masks, aug_flip_img_metas,
+                    self.test_cfg.rcnn) if len(aug_flip_masks) > 0 else None
 
                 ori_shape = img_metas[0][0]['ori_shape']
                 segm_result = self.mask_head[-1].get_seg_masks(
@@ -542,7 +552,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     rcnn_test_cfg,
                     ori_shape,
                     scale_factor=1.0,
-                    rescale=False)
+                    rescale=False,
+                    flip_mask_pred=merged_flip_masks)
             return bbox_result, segm_result
         else:
             return bbox_result

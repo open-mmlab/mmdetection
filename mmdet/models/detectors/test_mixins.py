@@ -134,6 +134,9 @@ class MaskTestMixin(object):
             segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
         else:
             aug_masks = []
+            aug_img_metas = []
+            aug_flip_masks = []
+            aug_flip_img_metas = []
             for x, img_meta in zip(feats, img_metas):
                 img_shape = img_meta[0]['img_shape']
                 scale_factor = img_meta[0]['scale_factor']
@@ -148,9 +151,18 @@ class MaskTestMixin(object):
                     mask_feats = self.shared_head(mask_feats)
                 mask_pred = self.mask_head(mask_feats)
                 # convert to numpy array to save memory
-                aug_masks.append(mask_pred.sigmoid().cpu().numpy())
-            merged_masks = merge_aug_masks(aug_masks, img_metas,
+                mask_pred_numpy = mask_pred.sigmoid().cpu().numpy()
+                if flip:
+                    aug_flip_masks.append(mask_pred_numpy)
+                    aug_flip_img_metas.append(img_meta)
+                else:
+                    aug_masks.append(mask_pred_numpy)
+                    aug_img_metas.append(img_meta)
+            merged_masks = merge_aug_masks(aug_masks, aug_img_metas,
                                            self.test_cfg.rcnn)
+            merged_flip_masks = merge_aug_masks(
+                aug_flip_masks, aug_flip_img_metas,
+                self.test_cfg.rcnn) if len(aug_flip_masks) > 0 else None
 
             ori_shape = img_metas[0][0]['ori_shape']
             segm_result = self.mask_head.get_seg_masks(
@@ -160,5 +172,6 @@ class MaskTestMixin(object):
                 self.test_cfg.rcnn,
                 ori_shape,
                 scale_factor=1.0,
-                rescale=False)
+                rescale=False,
+                flip_mask_pred=merged_flip_masks)
         return segm_result

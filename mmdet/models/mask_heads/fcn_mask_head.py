@@ -122,8 +122,15 @@ class FCNMaskHead(nn.Module):
         loss['loss_mask'] = loss_mask
         return loss
 
-    def get_seg_masks(self, mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
-                      ori_shape, scale_factor, rescale):
+    def get_seg_masks(self,
+                      mask_pred,
+                      det_bboxes,
+                      det_labels,
+                      rcnn_test_cfg,
+                      ori_shape,
+                      scale_factor,
+                      rescale,
+                      flip_mask_pred=None):
         """Get segmentation masks from mask_pred and bboxes.
 
         Args:
@@ -147,6 +154,15 @@ class FCNMaskHead(nn.Module):
         # numpy array
         mask_pred = mask_pred.astype(np.float32)
 
+        if flip_mask_pred is not None:
+            if isinstance(flip_mask_pred, torch.Tensor):
+                flip_mask_pred = flip_mask_pred.sigmoid().cpu().numpy()
+            assert isinstance(flip_mask_pred, np.ndarray)
+            flip_mask_pred = flip_mask_pred.astype(np.float32)
+            weights = [0.5, 0.5]
+        else:
+            weights = [1., 0.]
+
         cls_segms = [[] for _ in range(self.num_classes - 1)]
         bboxes = det_bboxes.cpu().numpy()[:, :4]
         labels = det_labels.cpu().numpy() + 1
@@ -164,16 +180,40 @@ class FCNMaskHead(nn.Module):
             w = max(bbox[2] - bbox[0] + 1, 1)
             h = max(bbox[3] - bbox[1] + 1, 1)
 
+            im_mask = np.zeros((img_h, img_w), dtype=np.float32)
+
+            # mask pred
             if not self.class_agnostic:
                 mask_pred_ = mask_pred[i, label, :, :]
             else:
                 mask_pred_ = mask_pred[i, 0, :, :]
-            im_mask = np.zeros((img_h, img_w), dtype=np.uint8)
 
             bbox_mask = mmcv.imresize(mask_pred_, (w, h))
-            bbox_mask = (bbox_mask > rcnn_test_cfg.mask_thr_binary).astype(
+            im_mask[bbox[1]:bbox[1] + h, bbox[0]:bbox[0] +
+                    w] = weights[0] * bbox_mask
+
+            # flip mask pred
+            if flip_mask_pred is not None:
+                bbox_ = bboxes[i, :] / scale_factor
+                bbox = bbox_.astype(int)
+                # round up instead round down
+                bbox[0] = min(np.ceil(bbox_[0]).astype(int), img_w - 1)
+                bbox[2] = min(np.ceil(bbox_[2]).astype(int), img_w - 1)
+
+                w = max(bbox[2] - bbox[0] + 1, 1)
+                h = max(bbox[3] - bbox[1] + 1, 1)
+
+                if not self.class_agnostic:
+                    flip_mask_pred_ = flip_mask_pred[i, label, :, :]
+                else:
+                    flip_mask_pred_ = flip_mask_pred[i, 0, :, :]
+
+                flip_bbox_mask = mmcv.imresize(flip_mask_pred_, (w, h))
+                im_mask[bbox[1]:bbox[1] + h, bbox[0]:bbox[0] +
+                        w] += weights[1] * flip_bbox_mask
+
+            im_mask = (im_mask > rcnn_test_cfg.mask_thr_binary).astype(
                 np.uint8)
-            im_mask[bbox[1]:bbox[1] + h, bbox[0]:bbox[0] + w] = bbox_mask
             rle = mask_util.encode(
                 np.array(im_mask[:, :, np.newaxis], order='F'))[0]
             cls_segms[label - 1].append(rle)
