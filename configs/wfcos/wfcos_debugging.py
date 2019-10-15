@@ -91,12 +91,12 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=4,
-    workers_per_gpu=4,
+    imgs_per_gpu=2,
+    workers_per_gpu=1,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        img_prefix=data_root + 'val2017/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
@@ -133,8 +133,8 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 36
-device_ids = range(3)
+total_epochs = 1
+device_ids = range(2)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/wfcos_resnet101_fpn_nosplit_3gpu'

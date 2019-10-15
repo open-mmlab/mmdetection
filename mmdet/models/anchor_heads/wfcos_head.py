@@ -150,7 +150,7 @@ class WFCOSHead(nn.Module):
         self.wfcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
         # Energy map convolution
         self.wfcos_energy = nn.Conv2d(self.feat_channels, self.max_energy,
-                                      1, padding=1)
+                                      1, padding=0)
 
         # Scaling factor for the different heads
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
@@ -224,6 +224,13 @@ class WFCOSHead(nn.Module):
         labels, bbox_targets = self.wfcos_target(all_level_points, gt_bboxes,
                                                  gt_labels)
 
+        # Labels are a list of per level labels, each level is a tensor of all
+        # targets at that level
+
+        print("bbox_target[0]: {}".format(bbox_targets[0]))
+        print("bbox_targets[0].shape: {}".format(bbox_targets[0].shape))
+        print("bbox_target length: {}".format(len(bbox_targets)))
+
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and energies
         flatten_cls_scores = [
@@ -234,51 +241,72 @@ class WFCOSHead(nn.Module):
             bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
             for bbox_pred in bbox_preds
         ]
-        flatten_energies = [
-            energy.permute(0, 2, 3, 1).reshape(-1)
-            for energy in energies
-        ]
+
+        print("flatten_bbox_preds pre cat length, shape of each: {}"
+              .format(len(flatten_bbox_preds), flatten_bbox_preds[0].shape))
+
+        # Calculate flattened energies
+        flatten_energies = []
+        for energy in energies:
+            print("Pre reshape energy.shape: {}".format(energy.shape))
+            energy = energy.permute(0, 2, 3, 1)
+            es = energy.shape  # Easier access
+            flatten_energies.append(energy.reshape([es[0] * es[1] * es[2],
+                                                    self.max_energy]))
+            print("Energy.shape: {}".format(energy.shape))
         flatten_cls_scores = torch.cat(flatten_cls_scores)
         flatten_bbox_preds = torch.cat(flatten_bbox_preds)
-        flatten_energies = torch.cat(flatten_energies)
+        flatten_energies = torch.cat(flatten_energies, dim=0)
         flatten_labels = torch.cat(labels)
         flatten_bbox_targets = torch.cat(bbox_targets)
+
+        print("flatten_bbox_preds post cat shape: {}".format(flatten_bbox_preds.shape))
         # repeat points to align with bbox_preds
         flatten_points = torch.cat(
             [points.repeat(num_imgs, 1) for points in all_level_points])
 
         pos_inds = flatten_labels.nonzero().reshape(-1)
+        print("pos_inds.shape: {}".format(pos_inds.shape))
+        print("pos_inds: {}".format(pos_inds))
         num_pos = len(pos_inds)
         loss_cls = self.loss_cls(
             flatten_cls_scores, flatten_labels,
             avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
 
+        print("flatten_energies.shape: {}".format(flatten_energies.shape))
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
+        # We calculate energy values for everything
         pos_energies = flatten_energies[pos_inds]
 
         if num_pos > 0:
             pos_bbox_targets = flatten_bbox_targets[pos_inds]
-            pos_centerness_targets = self.energy_target(pos_bbox_targets)
+            pos_energies_targets = self.energy_target(flatten_bbox_targets)
             pos_points = flatten_points[pos_inds]
             pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
             pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
-            # centerness weighted iou loss
+
+            print("pos_energies.shape: {}".format(pos_energies.shape))
+            print("pos_energies_targets.shape: {}".format(pos_energies_targets.shape))
+            print("featmap_sizes: {}".format(featmap_sizes))
+            # energy weighted iou loss
             loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
-                weight=pos_centerness_targets,
-                avg_factor=pos_centerness_targets.sum())
+                weight=pos_energies_targets,
+                avg_factor=pos_energies_targets.sum())
             loss_energy = self.loss_energy(pos_energies,
-                                           pos_centerness_targets)
+                                           pos_energies_targets
+                                           .to(dtype=torch.long))
         else:
             loss_bbox = pos_bbox_preds.sum()
             loss_energy = pos_energies.sum()
+        input()
 
         return dict(
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
-            loss_centerness=loss_energy)
+            loss_energy=loss_energy)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'energies'))
     def get_bboxes(self,
@@ -332,7 +360,15 @@ class WFCOSHead(nn.Module):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
-            energy = energy.permute(1, 2, 0).reshape(-1).sigmoid()
+
+            # FIXME TEMPORARY CODE
+
+
+            # TODO REPLACE WITH WATERSHED
+            print(energy.shape)
+            energy= energy.permute(1, 2, 0).reshape(-1).sigmoid()
+            print(energy.shape)
+
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
@@ -477,10 +513,30 @@ class WFCOSHead(nn.Module):
         return labels, bbox_targets
 
     def energy_target(self, pos_bbox_targets):
-        # only calculate pos centerness targets, otherwise there may be nan
-        # Grabs left, right, top, bottom positions.
-        left_right = pos_bbox_targets[:, [0, 2]]
-        top_bottom = pos_bbox_targets[:, [1, 3]]
+        """Calculate energy targets based on deep watershed paper.
+
+        Notes:
+            We require:
+            E_max \cdot argmax_{c \in C}[1 - \sqrt{(i - c_i)^2 + (j - c_j)^2}
+                                         / r]
+            where r is a hyperparameter we would like to minimize.
+            (i - c_i) will be assigned variable x
+            (j - c_j) will be assigned variable y
+            E_max is self.max_energy
+
+            To get centers, we need to calc from bbox_target positions
+
+            We don't need to do a max between 0 and the above equation since we
+            only calculate a value for
+
+
+        """
+        print(pos_bbox_targets.shape)
+        # only calculate pos energy targets, otherwise there may be nan
+        # Grabs horizontal centers and vertical centers.
+        horizontal = torch.div(torch.sum(pos_bbox_targets[:, 0::2], 1), 2.)
+        vertical = torch.div(torch.sum(pos_bbox_targets[:, 1::2], 1), 2.)
+
 
         # gets energy targets as (min(left, right) / max(left, right)
         # * (min(top, bottom) / max(top, bottom))
@@ -490,4 +546,5 @@ class WFCOSHead(nn.Module):
 
         # Square-roots the energy targets to get a range between [0, 1]
         # Then quantizes them by multiplying by the max energy and flooring.
-        return (torch.sqrt(energy_targets) * self.max_energy).floor()
+        out = (torch.sqrt(energy_targets) * self.max_energy).floor()
+        return out
