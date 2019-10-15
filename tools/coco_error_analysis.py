@@ -183,8 +183,8 @@ def analyze_results(res_file, ann_file, res_types, out_dir, with_ap=False):
             ap_allcategory = analyze_result[2]['ap_allcategory']
             ap_str = ''
             for ap in ap_allcategory:
-                ap_str = ap_str + f'{ap:0.3f} '
-            print(f"{k + 1:02d}-{nm['name']:<15}: {ap_str}")
+                ap_str = ap_str + '{:0.3f} '.format(ap)
+            print("{:02d}-{:<15}: {}".format(k + 1, nm['name'], ap_str))
 
 
 def main():
