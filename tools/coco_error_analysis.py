@@ -49,11 +49,17 @@ def makeplot(rs, ps, outDir, class_name, iou_type):
         plt.close(fig)
 
 
-def analyze_individual_category(k, cocoDt, cocoGt, catId, iou_type):
+def analyze_individual_category(k,
+                                cocoDt,
+                                cocoGt,
+                                catId,
+                                iou_type,
+                                with_ap=False):
     nm = cocoGt.loadCats(catId)[0]
     print('--------------analyzing {}-{}---------------'.format(
         k + 1, nm['name']))
     ps_ = {}
+    ap_ = {}
     dt = copy.deepcopy(cocoDt)
     nm = cocoGt.loadCats(catId)[0]
     imgIds = cocoGt.getImgIds()
@@ -98,10 +104,25 @@ def analyze_individual_category(k, cocoDt, cocoGt, catId, iou_type):
     cocoEval.accumulate()
     ps_allcategory = cocoEval.eval['precision'][0, :, k, :, :]
     ps_['ps_allcategory'] = ps_allcategory
-    return k, ps_
+    if with_ap:
+        # compute mAP but ignore any class confusion
+        gt = copy.deepcopy(cocoGt)
+        for idx, ann in enumerate(gt.dataset['annotations']):
+            if ann['category_id'] != catId:
+                gt.dataset['annotations'][idx]['ignore'] = 1
+                gt.dataset['annotations'][idx]['iscrowd'] = 1
+                gt.dataset['annotations'][idx]['category_id'] = catId
+        cocoEval = COCOeval(gt, copy.deepcopy(dt), iou_type)
+        cocoEval.params.imgIds = imgIds
+        cocoEval.params.useCats = 1
+        cocoEval.evaluate()
+        cocoEval.accumulate()
+        cocoEval.summarize()
+        ap_['ap_allcategory'] = cocoEval.stats
+    return k, ps_, ap_
 
 
-def analyze_results(res_file, ann_file, res_types, out_dir):
+def analyze_results(res_file, ann_file, res_types, out_dir, with_ap=False):
     for res_type in res_types:
         assert res_type in ['bbox', 'segm']
 
@@ -133,7 +154,7 @@ def analyze_results(res_file, ann_file, res_types, out_dir):
         catIds = cocoGt.getCatIds()
         recThrs = cocoEval.params.recThrs
         with Pool(processes=48) as pool:
-            args = [(k, cocoDt, cocoGt, catId, iou_type)
+            args = [(k, cocoDt, cocoGt, catId, iou_type, with_ap)
                     for k, catId in enumerate(catIds)]
             analyze_results = pool.starmap(analyze_individual_category, args)
         for k, catId in enumerate(catIds):
@@ -154,6 +175,16 @@ def analyze_results(res_file, ann_file, res_types, out_dir):
             ps[6, :, k, :, :] = 1.0
             makeplot(recThrs, ps[:, :, k], res_out_dir, nm['name'], iou_type)
         makeplot(recThrs, ps, res_out_dir, 'allclass', iou_type)
+        # show bounding box ap for each class
+        for k, catId in enumerate(catIds):
+            nm = cocoGt.loadCats(catId)[0]
+            analyze_result = analyze_results[k]
+            assert k == analyze_result[0]
+            ap_allcategory = analyze_result[2]['ap_allcategory']
+            ap_str = ''
+            for ap in ap_allcategory:
+                ap_str = ap_str + f'{ap:0.3f} '
+            print(f"{k + 1:02d}-{nm['name']:<15}: {ap_str}")
 
 
 def main():
@@ -166,8 +197,17 @@ def main():
         help='annotation file path')
     parser.add_argument(
         '--types', type=str, nargs='+', default=['bbox'], help='result types')
+    parser.add_argument(
+        '--with_ap',
+        action='store_true',
+        help='whether to show the ap results')
     args = parser.parse_args()
-    analyze_results(args.result, args.ann, args.types, out_dir=args.out_dir)
+    analyze_results(
+        args.result,
+        args.ann,
+        args.types,
+        out_dir=args.out_dir,
+        with_ap=args.with_ap)
 
 
 if __name__ == '__main__':
