@@ -1,15 +1,15 @@
 from __future__ import division
-
 import argparse
 import os
+
+import torch
 from mmcv import Config
 
 from mmdet import __version__
-from mmdet.datasets import get_dataset
-from mmdet.apis import (train_detector, init_dist, get_root_logger,
-                        set_random_seed)
+from mmdet.apis import (get_root_logger, init_dist, set_random_seed,
+                        train_detector)
+from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
-import torch
 
 
 def parse_args():
@@ -35,6 +35,10 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument(
+        '--autoscale-lr',
+        action='store_true',
+        help='automatically scale lr with the number of gpus')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -56,6 +60,10 @@ def main():
         cfg.resume_from = args.resume_from
     cfg.gpus = args.gpus
 
+    if args.autoscale_lr:
+        # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
+        cfg.optimizer['lr'] = cfg.optimizer['lr'] * cfg.gpus / 8
+
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
         distributed = False
@@ -75,19 +83,21 @@ def main():
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
 
-    train_dataset = get_dataset(cfg.data.train)
+    datasets = [build_dataset(cfg.data.train)]
+    if len(cfg.workflow) == 2:
+        datasets.append(build_dataset(cfg.data.val))
     if cfg.checkpoint_config is not None:
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
             mmdet_version=__version__,
             config=cfg.text,
-            CLASSES=train_dataset.CLASSES)
+            CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
-    model.CLASSES = train_dataset.CLASSES
+    model.CLASSES = datasets[0].CLASSES
     train_detector(
         model,
-        train_dataset,
+        datasets,
         cfg,
         distributed=distributed,
         validate=args.validate,

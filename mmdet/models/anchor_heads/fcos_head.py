@@ -2,16 +2,32 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import multi_apply, multiclass_nms, distance2bbox, force_fp32
+from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import bias_init_with_prob, Scale, ConvModule
+from ..utils import ConvModule, Scale, bias_init_with_prob
 
 INF = 1e8
 
 
 @HEADS.register_module
 class FCOSHead(nn.Module):
+    """
+    Fully Convolutional One-Stage Object Detection head from [1]_.
+
+    The FCOS head does not use anchor boxes. Instead bounding boxes are
+    predicted at each pixel and a centerness measure is used to supress
+    low-quality predictions.
+
+    References:
+        .. [1] https://arxiv.org/abs/1904.01355
+
+    Example:
+        >>> self = FCOSHead(11, 7)
+        >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
+        >>> cls_score, bbox_pred, centerness = self.forward(feats)
+        >>> assert len(cls_score) == len(self.scales)
+    """
 
     def __init__(self,
                  num_classes,
@@ -160,11 +176,11 @@ class FCOSHead(nn.Module):
             avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
-        pos_bbox_targets = flatten_bbox_targets[pos_inds]
         pos_centerness = flatten_centerness[pos_inds]
-        pos_centerness_targets = self.centerness_target(pos_bbox_targets)
 
         if num_pos > 0:
+            pos_bbox_targets = flatten_bbox_targets[pos_inds]
+            pos_centerness_targets = self.centerness_target(pos_bbox_targets)
             pos_points = flatten_points[pos_inds]
             pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
             pos_decoded_target_preds = distance2bbox(pos_points,
@@ -339,6 +355,9 @@ class FCOSHead(nn.Module):
     def fcos_target_single(self, gt_bboxes, gt_labels, points, regress_ranges):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
+        if num_gts == 0:
+            return gt_labels.new_zeros(num_points), \
+                   gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
             gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)

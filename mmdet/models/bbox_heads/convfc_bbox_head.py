@@ -1,13 +1,13 @@
 import torch.nn as nn
 
-from .bbox_head import BBoxHead
 from ..registry import HEADS
 from ..utils import ConvModule
+from .bbox_head import BBoxHead
 
 
 @HEADS.register_module
 class ConvFCBBoxHead(BBoxHead):
-    """More general bbox head, with shared conv and fc layers and two optional
+    r"""More general bbox head, with shared conv and fc layers and two optional
     separated branches.
 
                                 /-> cls convs -> cls fcs -> cls
@@ -67,9 +67,9 @@ class ConvFCBBoxHead(BBoxHead):
 
         if self.num_shared_fcs == 0 and not self.with_avg_pool:
             if self.num_cls_fcs == 0:
-                self.cls_last_dim *= (self.roi_feat_size * self.roi_feat_size)
+                self.cls_last_dim *= self.roi_feat_area
             if self.num_reg_fcs == 0:
-                self.reg_last_dim *= (self.roi_feat_size * self.roi_feat_size)
+                self.reg_last_dim *= self.roi_feat_area
 
         self.relu = nn.ReLU(inplace=True)
         # reconstruct fc_cls and fc_reg since input channels are changed
@@ -112,7 +112,7 @@ class ConvFCBBoxHead(BBoxHead):
             # for separated branches, also consider self.num_shared_fcs
             if (is_shared
                     or self.num_shared_fcs == 0) and not self.with_avg_pool:
-                last_layer_dim *= (self.roi_feat_size * self.roi_feat_size)
+                last_layer_dim *= self.roi_feat_area
             for i in range(num_branch_fcs):
                 fc_in_channels = (
                     last_layer_dim if i == 0 else self.fc_out_channels)

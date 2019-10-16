@@ -6,7 +6,7 @@ from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..registry import BACKBONES
-from ..utils import build_norm_layer, build_conv_layer
+from ..utils import build_conv_layer, build_norm_layer
 from .resnet import BasicBlock, Bottleneck
 
 
@@ -201,6 +201,7 @@ class HRNet(nn.Module):
 
     Args:
         extra (dict): detailed configuration for each stage of HRNet.
+        in_channels (int): Number of input image channels. Normally 3.
         conv_cfg (dict): dictionary to construct and config conv layer.
         norm_cfg (dict): dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
@@ -210,12 +211,52 @@ class HRNet(nn.Module):
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+
+    Example:
+        >>> from mmdet.models import HRNet
+        >>> import torch
+        >>> extra = dict(
+        >>>     stage1=dict(
+        >>>         num_modules=1,
+        >>>         num_branches=1,
+        >>>         block='BOTTLENECK',
+        >>>         num_blocks=(4, ),
+        >>>         num_channels=(64, )),
+        >>>     stage2=dict(
+        >>>         num_modules=1,
+        >>>         num_branches=2,
+        >>>         block='BASIC',
+        >>>         num_blocks=(4, 4),
+        >>>         num_channels=(32, 64)),
+        >>>     stage3=dict(
+        >>>         num_modules=4,
+        >>>         num_branches=3,
+        >>>         block='BASIC',
+        >>>         num_blocks=(4, 4, 4),
+        >>>         num_channels=(32, 64, 128)),
+        >>>     stage4=dict(
+        >>>         num_modules=3,
+        >>>         num_branches=4,
+        >>>         block='BASIC',
+        >>>         num_blocks=(4, 4, 4, 4),
+        >>>         num_channels=(32, 64, 128, 256)))
+        >>> self = HRNet(extra, in_channels=1)
+        >>> self.eval()
+        >>> inputs = torch.rand(1, 1, 32, 32)
+        >>> level_outputs = self.forward(inputs)
+        >>> for level_out in level_outputs:
+        ...     print(tuple(level_out.shape))
+        (1, 32, 8, 8)
+        (1, 64, 4, 4)
+        (1, 128, 2, 2)
+        (1, 256, 1, 1)
     """
 
     blocks_dict = {'BASIC': BasicBlock, 'BOTTLENECK': Bottleneck}
 
     def __init__(self,
                  extra,
+                 in_channels=3,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  norm_eval=True,
@@ -235,7 +276,7 @@ class HRNet(nn.Module):
 
         self.conv1 = build_conv_layer(
             self.conv_cfg,
-            3,
+            in_channels,
             64,
             kernel_size=3,
             stride=2,

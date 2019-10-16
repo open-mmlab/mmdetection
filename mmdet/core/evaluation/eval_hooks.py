@@ -5,14 +5,14 @@ import mmcv
 import numpy as np
 import torch
 import torch.distributed as dist
-from mmcv.runner import Hook, obj_from_dict
-from mmcv.parallel import scatter, collate
+from mmcv.parallel import collate, scatter
+from mmcv.runner import Hook
 from pycocotools.cocoeval import COCOeval
 from torch.utils.data import Dataset
 
-from .coco_utils import results2json, fast_eval_recall
-from .mean_ap import eval_map
 from mmdet import datasets
+from .coco_utils import fast_eval_recall, results2json
+from .mean_ap import eval_map
 
 
 class DistEvalHook(Hook):
@@ -21,8 +21,7 @@ class DistEvalHook(Hook):
         if isinstance(dataset, Dataset):
             self.dataset = dataset
         elif isinstance(dataset, dict):
-            self.dataset = obj_from_dict(dataset, datasets,
-                                         {'test_mode': True})
+            self.dataset = datasets.build_dataset(dataset, {'test_mode': True})
         else:
             raise TypeError(
                 'dataset must be a Dataset object or a dict, not {}'.format(
@@ -79,12 +78,12 @@ class DistEvalmAPHook(DistEvalHook):
     def evaluate(self, runner, results):
         gt_bboxes = []
         gt_labels = []
-        gt_ignore = [] if self.dataset.with_crowd else None
+        gt_ignore = []
         for i in range(len(self.dataset)):
             ann = self.dataset.get_ann_info(i)
             bboxes = ann['bboxes']
             labels = ann['labels']
-            if gt_ignore is not None:
+            if 'bboxes_ignore' in ann:
                 ignore = np.concatenate([
                     np.zeros(bboxes.shape[0], dtype=np.bool),
                     np.ones(ann['bboxes_ignore'].shape[0], dtype=np.bool)
@@ -94,6 +93,8 @@ class DistEvalmAPHook(DistEvalHook):
                 labels = np.concatenate([labels, ann['labels_ignore']])
             gt_bboxes.append(bboxes)
             gt_labels.append(labels)
+        if not gt_ignore:
+            gt_ignore = None
         # If the dataset is VOC2007, then use 11 points mAP evaluation.
         if hasattr(self.dataset, 'year') and self.dataset.year == 2007:
             ds_name = 'voc07'
@@ -145,7 +146,11 @@ class CocoDistEvalmAPHook(DistEvalHook):
         cocoGt = self.dataset.coco
         imgIds = cocoGt.getImgIds()
         for res_type in res_types:
-            cocoDt = cocoGt.loadRes(result_files[res_type])
+            try:
+                cocoDt = cocoGt.loadRes(result_files[res_type])
+            except IndexError:
+                print('No prediction found.')
+                break
             iou_type = res_type
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.imgIds = imgIds

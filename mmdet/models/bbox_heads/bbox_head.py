@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.modules.utils import _pair
 
-from mmdet.core import (delta2bbox, multiclass_nms, bbox_target, force_fp32,
-                        auto_fp16)
+from mmdet.core import (auto_fp16, bbox_target, delta2bbox, force_fp32,
+                        multiclass_nms)
 from ..builder import build_loss
 from ..losses import accuracy
 from ..registry import HEADS
@@ -35,7 +36,8 @@ class BBoxHead(nn.Module):
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
         self.with_reg = with_reg
-        self.roi_feat_size = roi_feat_size
+        self.roi_feat_size = _pair(roi_feat_size)
+        self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.target_means = target_means
@@ -48,9 +50,9 @@ class BBoxHead(nn.Module):
 
         in_channels = self.in_channels
         if self.with_avg_pool:
-            self.avg_pool = nn.AvgPool2d(roi_feat_size)
+            self.avg_pool = nn.AvgPool2d(self.roi_feat_size)
         else:
-            in_channels *= (self.roi_feat_size * self.roi_feat_size)
+            in_channels *= self.roi_feat_area
         if self.with_cls:
             self.fc_cls = nn.Linear(in_channels, num_classes)
         if self.with_reg:
@@ -150,7 +152,10 @@ class BBoxHead(nn.Module):
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
 
         if rescale:
-            bboxes /= scale_factor
+            if isinstance(scale_factor, float):
+                bboxes /= scale_factor
+            else:
+                bboxes /= torch.from_numpy(scale_factor).to(bboxes.device)
 
         if cfg is None:
             return bboxes, scores

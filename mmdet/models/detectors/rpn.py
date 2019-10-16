@@ -1,10 +1,10 @@
 import mmcv
 
-from mmdet.core import tensor2imgs, bbox_mapping
-from .base import BaseDetector
-from .test_mixins import RPNTestMixin
+from mmdet.core import bbox_mapping, tensor2imgs
 from .. import builder
 from ..registry import DETECTORS
+from .base import BaseDetector
+from .test_mixins import RPNTestMixin
 
 
 @DETECTORS.register_module
@@ -37,6 +37,11 @@ class RPN(BaseDetector, RPNTestMixin):
         if self.with_neck:
             x = self.neck(x)
         return x
+
+    def forward_dummy(self, img):
+        x = self.extract_feat(img)
+        rpn_outs = self.rpn_head(x)
+        return rpn_outs
 
     def forward_train(self,
                       img,
@@ -76,7 +81,7 @@ class RPN(BaseDetector, RPNTestMixin):
         # TODO: remove this restriction
         return proposal_list[0].cpu().numpy()
 
-    def show_result(self, data, result, img_norm_cfg, dataset=None, top_k=20):
+    def show_result(self, data, result, dataset=None, top_k=20):
         """Show RPN proposals on the image.
 
         Although we assume batch size is 1, this method supports arbitrary
@@ -84,7 +89,7 @@ class RPN(BaseDetector, RPNTestMixin):
         """
         img_tensor = data['img'][0]
         img_metas = data['img_meta'][0].data[0]
-        imgs = tensor2imgs(img_tensor, **img_norm_cfg)
+        imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
         assert len(imgs) == len(img_metas)
         for img, img_meta in zip(imgs, img_metas):
             h, w, _ = img_meta['img_shape']

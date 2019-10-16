@@ -1,15 +1,17 @@
+import platform
 from functools import partial
 
-from mmcv.runner import get_dist_info
 from mmcv.parallel import collate
+from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader
 
-from .sampler import GroupSampler, DistributedGroupSampler, DistributedSampler
+from .sampler import DistributedGroupSampler, DistributedSampler, GroupSampler
 
-# https://github.com/pytorch/pytorch/issues/973
-import resource
-rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
-resource.setrlimit(resource.RLIMIT_NOFILE, (4096, rlimit[1]))
+if platform.system() != 'Windows':
+    # https://github.com/pytorch/pytorch/issues/973
+    import resource
+    rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (4096, rlimit[1]))
 
 
 def build_dataloader(dataset,

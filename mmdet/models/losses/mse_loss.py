@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .utils import weighted_loss
 from ..registry import LOSSES
+from .utils import weighted_loss
 
 mse_loss = weighted_loss(F.mse_loss)
 

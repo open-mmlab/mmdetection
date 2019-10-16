@@ -1,9 +1,9 @@
 import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
-from .two_stage import TwoStageDetector
 from .. import builder
 from ..registry import DETECTORS
+from .two_stage import TwoStageDetector
 
 
 @DETECTORS.register_module
@@ -41,6 +41,9 @@ class MaskScoringRCNN(TwoStageDetector):
 
         self.mask_iou_head = builder.build_head(mask_iou_head)
         self.mask_iou_head.init_weights()
+
+    def forward_dummy(self, img):
+        raise NotImplementedError
 
     # TODO: refactor forward_train in two stage to reduce code redundancy
     def forward_train(self,

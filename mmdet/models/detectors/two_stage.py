@@ -1,16 +1,21 @@
 import torch
 import torch.nn as nn
 
-from .base import BaseDetector
-from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
+from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
+from .base import BaseDetector
+from .test_mixins import BBoxTestMixin, MaskTestMixin, RPNTestMixin
 
 
 @DETECTORS.register_module
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                        MaskTestMixin):
+    """Base class for two-stage detectors.
+
+    Two-stage detectors typically consisting of a region proposal network and a
+    task-specific regression head.
+    """
 
     def __init__(self,
                  backbone,
@@ -82,10 +87,45 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 self.mask_roi_extractor.init_weights()
 
     def extract_feat(self, img):
+        """Directly extract features from the backbone+neck
+        """
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
         return x
+
+    def forward_dummy(self, img):
+        """Used for computing network flops.
+
+        See `mmedetection/tools/get_flops.py`
+        """
+        outs = ()
+        # backbone
+        x = self.extract_feat(img)
+        # rpn
+        if self.with_rpn:
+            rpn_outs = self.rpn_head(x)
+            outs = outs + (rpn_outs, )
+        proposals = torch.randn(1000, 4).cuda()
+        # bbox head
+        rois = bbox2roi([proposals])
+        if self.with_bbox:
+            bbox_feats = self.bbox_roi_extractor(
+                x[:self.bbox_roi_extractor.num_inputs], rois)
+            if self.with_shared_head:
+                bbox_feats = self.shared_head(bbox_feats)
+            cls_score, bbox_pred = self.bbox_head(bbox_feats)
+            outs = outs + (cls_score, bbox_pred)
+        # mask head
+        if self.with_mask:
+            mask_rois = rois[:100]
+            mask_feats = self.mask_roi_extractor(
+                x[:self.mask_roi_extractor.num_inputs], mask_rois)
+            if self.with_shared_head:
+                mask_feats = self.shared_head(mask_feats)
+            mask_pred = self.mask_head(mask_feats)
+            outs = outs + (mask_pred, )
+        return outs
 
     def forward_train(self,
                       img,
@@ -95,6 +135,34 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None):
+        """
+        Args:
+            img (Tensor): of shape (N, C, H, W) encoding input images.
+                Typically these should be mean centered and std scaled.
+
+            img_meta (list[dict]): list of image info dict where each dict has:
+                'img_shape', 'scale_factor', 'flip', and my also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+
+            gt_labels (list[Tensor]): class indices corresponding to each box
+
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+            gt_masks (None | Tensor) : true segmentation masks for each box
+                used if the architecture supports a segmentation task.
+
+            proposals : override rpn proposals with custom proposals. Use when
+                `with_rpn` is False.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
         x = self.extract_feat(img)
 
         losses = dict()
@@ -125,9 +193,10 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
             sampling_results = []
             for i in range(num_imgs):
-                assign_result = bbox_assigner.assign(
-                    proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
-                    gt_labels[i])
+                assign_result = bbox_assigner.assign(proposal_list[i],
+                                                     gt_bboxes[i],
+                                                     gt_bboxes_ignore[i],
+                                                     gt_labels[i])
                 sampling_result = bbox_sampler.sample(
                     assign_result,
                     proposal_list[i],
@@ -146,8 +215,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 bbox_feats = self.shared_head(bbox_feats)
             cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
-            bbox_targets = self.bbox_head.get_target(
-                sampling_results, gt_bboxes, gt_labels, self.train_cfg.rcnn)
+            bbox_targets = self.bbox_head.get_target(sampling_results,
+                                                     gt_bboxes, gt_labels,
+                                                     self.train_cfg.rcnn)
             loss_bbox = self.bbox_head.loss(cls_score, bbox_pred,
                                             *bbox_targets)
             losses.update(loss_bbox)
@@ -179,8 +249,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 mask_feats = bbox_feats[pos_inds]
             mask_pred = self.mask_head(mask_feats)
 
-            mask_targets = self.mask_head.get_target(
-                sampling_results, gt_masks, self.train_cfg.rcnn)
+            mask_targets = self.mask_head.get_target(sampling_results,
+                                                     gt_masks,
+                                                     self.train_cfg.rcnn)
             pos_labels = torch.cat(
                 [res.pos_gt_labels for res in sampling_results])
             loss_mask = self.mask_head.loss(mask_pred, mask_targets,

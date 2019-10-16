@@ -23,7 +23,12 @@ def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
         return
 
     for res_type in result_types:
-        result_file = result_files[res_type]
+        if isinstance(result_files, str):
+            result_file = result_files
+        elif isinstance(result_files, dict):
+            result_file = result_files[res_type]
+        else:
+            assert TypeError('result_files must be a str or dict')
         assert result_file.endswith('.json')
 
         coco_dets = coco.loadRes(result_file)
@@ -137,7 +142,7 @@ def segm2json(dataset, results):
 
             # segm results
             # some detectors use different score for det and segm
-            if len(seg) == 2:
+            if isinstance(seg, tuple):
                 segms = seg[0][label]
                 mask_score = seg[1][label]
             else:
@@ -148,7 +153,8 @@ def segm2json(dataset, results):
                 data['image_id'] = img_id
                 data['score'] = float(mask_score[i])
                 data['category_id'] = dataset.cat_ids[label]
-                segms[i]['counts'] = segms[i]['counts'].decode()
+                if isinstance(segms[i]['counts'], bytes):
+                    segms[i]['counts'] = segms[i]['counts'].decode()
                 data['segmentation'] = segms[i]
                 segm_json_results.append(data)
     return bbox_json_results, segm_json_results

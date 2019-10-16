@@ -1,12 +1,11 @@
 from __future__ import division
-
 import math
-import torch
-import numpy as np
 
+import numpy as np
+import torch
 from mmcv.runner.utils import get_dist_info
-from torch.utils.data import Sampler
 from torch.utils.data import DistributedSampler as _DistributedSampler
+from torch.utils.data import Sampler
 
 
 class DistributedSampler(_DistributedSampler):
@@ -67,7 +66,7 @@ class GroupSampler(Sampler):
                 range(len(indices) // self.samples_per_gpu))
         ]
         indices = np.concatenate(indices)
-        indices = torch.from_numpy(indices).long()
+        indices = indices.astype(np.int64).tolist()
         assert len(indices) == self.num_samples
         return iter(indices)
 
@@ -133,8 +132,12 @@ class DistributedGroupSampler(Sampler):
                     math.ceil(
                         size * 1.0 / self.samples_per_gpu / self.num_replicas)
                 ) * self.samples_per_gpu * self.num_replicas - len(indice)
-                indice += indice[:extra]
-                indices += indice
+                # pad indice
+                tmp = indice.copy()
+                for _ in range(extra // size):
+                    indice.extend(tmp)
+                indice.extend(tmp[:extra % size])
+                indices.extend(indice)
 
         assert len(indices) == self.total_size
 
