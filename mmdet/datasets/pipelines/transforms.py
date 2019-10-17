@@ -516,6 +516,8 @@ class Expand(object):
                  to_rgb=True,
                  ratio_range=(1, 4),
                  seg_ignore_label=None):
+        self.to_rgb = to_rgb
+        self.ratio_range = ratio_range
         if to_rgb:
             self.mean = mean[::-1]
         else:
@@ -550,6 +552,7 @@ class Expand(object):
                 expand_gt_masks.append(expand_mask)
             results['gt_masks'] = expand_gt_masks
 
+        # not tested
         if 'gt_semantic_seg' in results:
             assert self.seg_ignore_label is not None
             gt_seg = results['gt_semantic_seg']
@@ -561,8 +564,10 @@ class Expand(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += '(mean={}, to_rgb={}, ratio_range={})'.format(
-            self.mean, self.to_rgb, self.ratio_range)
+        repr_str += '(mean={}, to_rgb={}, ratio_range={}, ' \
+                    'seg_ignore_label={})'.format(
+                        self.mean, self.to_rgb, self.ratio_range,
+                        self.seg_ignore_label)
         return repr_str
 
 
@@ -640,6 +645,7 @@ class MinIoURandomCrop(object):
                         for gt_mask in valid_masks
                     ]
 
+                # not tested
                 if 'gt_semantic_seg' in results:
                     results['gt_semantic_seg'] = results['gt_semantic_seg'][
                         patch[1]:patch[3], patch[0]:patch[2]]
