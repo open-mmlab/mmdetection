@@ -1,13 +1,11 @@
 import copy
-import os
-import mmcv
 from argparse import ArgumentParser
 from multiprocessing import Pool
 
-import matplotlib.pyplot as plt
-import numpy as np
+import mmcv
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+
 from mmdet.core import coco_eval
 
 
@@ -65,7 +63,6 @@ def coco_eval_class_wise(result_files,
         assert result_file.endswith('.json')
 
         coco_dets = coco.loadRes(result_file)
-        img_ids = coco.getImgIds()
         iou_type = 'bbox' if res_type == 'proposal' else res_type
 
         # eval class_wise mAP
