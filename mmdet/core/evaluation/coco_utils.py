@@ -9,8 +9,11 @@ from tabulate import tabulate
 from .recall import eval_recalls
 
 
-def coco_eval(result_files, result_types, coco,
-              max_dets=(100, 300, 1000), class_wise=False):
+def coco_eval(result_files,
+              result_types,
+              coco,
+              max_dets=(100, 300, 1000),
+              class_wise=False):
     for res_type in result_types:
         assert res_type in [
             'proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'
@@ -63,13 +66,13 @@ def coco_eval(result_files, result_types, coco,
                 precision = precisions[:, :, idx, 0, -1]
                 precision = precision[precision > -1]
                 ap = np.mean(precision) if precision.size else float("nan")
-                results_per_category.append(("{}".format(nm['name']),
-                                             float(ap * 100)))
+                results_per_category.append(
+                    ("{}".format(nm['name']), float(ap * 100)))
 
             N_COLS = min(6, len(results_per_category) * 2)
             results_flatten = list(itertools.chain(*results_per_category))
-            results_2d = itertools.zip_longest(*[results_flatten[i::N_COLS]
-                                                 for i in range(N_COLS)])
+            results_2d = itertools.zip_longest(
+                *[results_flatten[i::N_COLS] for i in range(N_COLS)])
             table = tabulate(
                 results_2d,
                 tablefmt="pipe",

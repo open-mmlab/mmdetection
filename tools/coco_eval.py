@@ -23,8 +23,8 @@ def main():
     parser.add_argument(
         '--class_wise', action='store_true', help='whether eval class wise ap')
     args = parser.parse_args()
-    coco_eval(args.result, args.types, args.ann,
-              args.max_dets, args.class_wise)
+    coco_eval(args.result, args.types, args.ann, args.max_dets,
+              args.class_wise)
 
 
 if __name__ == '__main__':
