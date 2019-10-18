@@ -137,7 +137,7 @@ class MaxIoUAssigner(BaseAssigner):
                                              dtype=torch.long)
 
         if num_gts == 0 or num_bboxes == 0:
-            # No ground truth, all boxes do not get assigned
+            # No ground truth or boxes, return empty assignment
             max_overlaps = overlaps.new()
             return AssignResult(
                 num_gts, assigned_gt_inds, max_overlaps, labels=None)

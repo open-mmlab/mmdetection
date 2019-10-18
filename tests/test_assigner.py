@@ -1,6 +1,7 @@
 import torch
 
 from mmdet.core import MaxIoUAssigner
+from mmdet.core.bbox.assigners import PointAssigner
 
 
 def test_max_iou_assigner_with_ignore():
@@ -80,3 +81,49 @@ def test_max_iou_assigner_with_empty_boxes_and_gt():
     gt_bboxes = torch.empty((0, 4)).float()
     assign_result = self.assign(bboxes, gt_bboxes)
     assert len(assign_result.gt_inds) == 0
+
+
+def test_point_assigner_with_empty_gt():
+    """
+    Test corner case where an image might have no true detections
+    """
+    self = PointAssigner()
+    points = torch.FloatTensor([  # [x, y, stride]
+        [0, 0, 1],
+        [10, 10, 1],
+        [5, 5, 1],
+        [32, 32, 1],
+    ])
+    gt_bboxes = torch.FloatTensor([])
+    assign_result = self.assign(points, gt_bboxes)
+
+    expected_gt_inds = torch.LongTensor([-1, -1, -1, -1])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
+
+
+def test_point_assigner_with_empty_boxes_and_gt():
+    """
+    Test corner case where an image might have no true detections
+    """
+    self = PointAssigner()
+    points = torch.FloatTensor([])
+    gt_bboxes = torch.FloatTensor([])
+    assign_result = self.assign(points, gt_bboxes)
+    assert len(assign_result.gt_inds) == 0
+
+
+def test_point_assigner():
+    self = PointAssigner()
+    points = torch.FloatTensor([  # [x, y, stride]
+        [0, 0, 1],
+        [10, 10, 1],
+        [5, 5, 1],
+        [32, 32, 1],
+    ])
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ])
+    assign_result = self.assign(points, gt_bboxes)
+    expected_gt_inds = torch.LongTensor([1, 2, 1, 0])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
