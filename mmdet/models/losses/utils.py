@@ -36,6 +36,7 @@ def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
         Tensor: Processed loss values.
     """
     # if weight is specified, apply element-wise weight
+    # does not work multi gpu case.
     pdb.set_trace()
     if weight is not None:
         pdb.set_trace()
