@@ -52,7 +52,7 @@ def coco_eval(result_files,
 
         if class_wise:
             # Compute per-category AP
-            # from https://github.com/facebookresearch/Detectron/blob/a6a835f5b8208c45d0dce217ce9bbda915f44df7/detectron/datasets/json_dataset_evaluator.py#L222-L252 # noqa
+            # from https://github.com/facebookresearch/detectron2/blob/03064eb5bafe4a3e5750cc7a16672daf5afe8435/detectron2/evaluation/coco_evaluation.py#L259-L283
             precisions = cocoEval.eval["precision"]
             catIds = coco.getCatIds()
             # precision has dims (iou, recall, cls, area range, max dets)
