@@ -50,9 +50,9 @@ class PointAssigner(BaseAssigner):
         num_gts = gt_bboxes.shape[0]
 
         if num_gts == 0 or num_points == 0:
-            # No ground truth or boxes, return empty assignment
+            # If no truth assign everything to the background
             assigned_gt_inds = points.new_full((num_points, ),
-                                               -1,
+                                               0,
                                                dtype=torch.long)
             return AssignResult(num_gts, assigned_gt_inds, None, labels=None)
 

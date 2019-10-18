@@ -139,6 +139,9 @@ class MaxIoUAssigner(BaseAssigner):
         if num_gts == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
             max_overlaps = overlaps.new()
+            if num_gts == 0:
+                # No truth, assign everything to background
+                assigned_gt_inds[:] = 0
             return AssignResult(
                 num_gts, assigned_gt_inds, max_overlaps, labels=None)
 
