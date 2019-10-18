@@ -55,7 +55,7 @@ def test_max_iou_assigner_with_empty_gt():
     gt_bboxes = torch.FloatTensor([])
     assign_result = self.assign(bboxes, gt_bboxes)
 
-    expected_gt_inds = torch.LongTensor([-1, -1, -1, -1])
+    expected_gt_inds = torch.LongTensor([0, 0, 0, 0])
     assert torch.all(assign_result.gt_inds == expected_gt_inds)
 
 
@@ -104,7 +104,7 @@ def test_point_assigner_with_empty_gt():
     gt_bboxes = torch.FloatTensor([])
     assign_result = self.assign(points, gt_bboxes)
 
-    expected_gt_inds = torch.LongTensor([-1, -1, -1, -1])
+    expected_gt_inds = torch.LongTensor([0, 0, 0, 0])
     assert torch.all(assign_result.gt_inds == expected_gt_inds)
 
 
@@ -157,7 +157,7 @@ def test_approx_iou_assigner_with_empty_gt():
     assign_result = self.assign(approxs, squares, approxs_per_octave,
                                 gt_bboxes)
 
-    expected_gt_inds = torch.LongTensor([-1, -1, -1, -1])
+    expected_gt_inds = torch.LongTensor([0, 0, 0, 0])
     assert torch.all(assign_result.gt_inds == expected_gt_inds)
 
 
