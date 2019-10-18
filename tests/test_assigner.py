@@ -1,7 +1,15 @@
+"""
+Tests the Assigner objects.
+
+CommandLine:
+    pytest tests/test_assigner.py
+
+"""
 import torch
 
 from mmdet.core import MaxIoUAssigner
 from mmdet.core.bbox.assigners import PointAssigner
+from mmdet.core.bbox.assigners import ApproxMaxIoUAssigner
 
 
 def test_max_iou_assigner_with_ignore():
@@ -127,3 +135,67 @@ def test_point_assigner():
     assign_result = self.assign(points, gt_bboxes)
     expected_gt_inds = torch.LongTensor([1, 2, 1, 0])
     assert torch.all(assign_result.gt_inds == expected_gt_inds)
+
+
+def test_approx_iou_assigner_with_empty_gt():
+    """
+    Test corner case where an image might have no true detections
+    """
+    self = ApproxMaxIoUAssigner(
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+    )
+    bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_bboxes = torch.FloatTensor([])
+    approxs_per_octave = 1
+    approxs = bboxes
+    squares = bboxes
+    assign_result = self.assign(approxs, squares, approxs_per_octave,
+                                gt_bboxes)
+
+    expected_gt_inds = torch.LongTensor([-1, -1, -1, -1])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
+
+
+def test_approx_iou_assigner_with_empty_boxes():
+    """
+    Test corner case where an network might predict no boxes
+    """
+    self = ApproxMaxIoUAssigner(
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+    )
+    bboxes = torch.empty((0, 4)).float()
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ])
+    approxs_per_octave = 1
+    approxs = bboxes
+    squares = bboxes
+    assign_result = self.assign(approxs, squares, approxs_per_octave,
+                                gt_bboxes)
+    assert len(assign_result.gt_inds) == 0
+
+
+def test_approx_iou_assigner_with_empty_boxes_and_gt():
+    """
+    Test corner case where an network might predict no boxes and no gt
+    """
+    self = ApproxMaxIoUAssigner(
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+    )
+    bboxes = torch.empty((0, 4)).float()
+    gt_bboxes = torch.empty((0, 4)).float()
+    approxs_per_octave = 1
+    approxs = bboxes
+    squares = bboxes
+    assign_result = self.assign(approxs, squares, approxs_per_octave,
+                                gt_bboxes)
+    assert len(assign_result.gt_inds) == 0
