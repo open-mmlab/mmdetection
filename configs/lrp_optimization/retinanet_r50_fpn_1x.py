@@ -31,8 +31,9 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss',
             use_sigmoid=True,
+            reduction = 'none',
             loss_weight=1.0),
-        loss_bbox=dict(type='IoULoss', beta=0.11, loss_weight=1.0)))
+        loss_bbox=dict(type='IoULoss', reduction = None, loss_weight=1.0)))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(

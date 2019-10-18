@@ -1,7 +1,7 @@
 import functools
 
 import torch.nn.functional as F
-
+import pdb
 
 def reduce_loss(loss, reduction):
     """Reduce loss as specified.
@@ -36,8 +36,13 @@ def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
         Tensor: Processed loss values.
     """
     # if weight is specified, apply element-wise weight
+    pdb.set_trace()
     if weight is not None:
-        loss = loss * weight
+        pdb.set_trace()
+        if loss.dim() != weight.dim():
+            loss = loss * weight[:, 0]
+        else:
+            loss = loss * weight
 
     # if avg_factor is not specified, just reduce the loss
     if avg_factor is None:
