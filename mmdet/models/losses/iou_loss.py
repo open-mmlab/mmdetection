@@ -5,9 +5,10 @@ from mmdet.core import bbox_overlaps
 from ..registry import LOSSES
 from .utils import weighted_loss
 
+import pdb
 
 @weighted_loss
-def iou_loss(pred, target, eps=1e-6):
+def iou_loss(pred, target, tau, eps=1e-6):
     """IoU loss.
 
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
@@ -22,8 +23,11 @@ def iou_loss(pred, target, eps=1e-6):
     Return:
         Tensor: Loss tensor.
     """
+    
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
-    loss = -ious.log()
+    loss = (1-ious) / (1-tau)
+    #loss = -ious.log()
+    pdb.set_trace()
     return loss
 
 
@@ -72,12 +76,13 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
 @LOSSES.register_module
 class IoULoss(nn.Module):
 
-    def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
+    def __init__(self, tau, eps=1e-6, reduction='mean', loss_weight=1.0):
         super(IoULoss, self).__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
-
+        self.tau = tau
+        pdb.set_trace()
     def forward(self,
                 pred,
                 target,
@@ -90,11 +95,13 @@ class IoULoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
+        pdb.set_trace()
         loss = self.loss_weight * iou_loss(
             pred,
-            target,
+            target, 
             weight,
             eps=self.eps,
+            tau=self.tau,
             reduction=reduction,
             avg_factor=avg_factor,
             **kwargs)

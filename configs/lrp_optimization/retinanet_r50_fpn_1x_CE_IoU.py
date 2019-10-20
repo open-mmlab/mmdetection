@@ -33,13 +33,13 @@ model = dict(
             use_sigmoid=True,
             reduction = 'none',
             loss_weight=1.0),
-        loss_bbox=dict(type='IoULoss', reduction = 'none', loss_weight=1.0)))
+        loss_bbox=dict(type='IoULoss', tau=0.5, reduction = 'none', loss_weight=1.0)))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
         type='MaxIoUAssigner',
         pos_iou_thr=0.5,
-        neg_iou_thr=0.4,
+        neg_iou_thr=0.5,
         min_pos_iou=0,
         ignore_iof_thr=-1),
     allowed_border=-1,

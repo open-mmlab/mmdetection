@@ -1,7 +1,7 @@
 import inspect
 
 import mmcv
-
+import pdb
 
 class Registry(object):
 
@@ -72,5 +72,5 @@ def build_from_cfg(cfg, registry, default_args=None):
             type(obj_type)))
     if default_args is not None:
         for name, value in default_args.items():
-            args.setdefault(name, value)
+            args.setdefault(name, value) 
     return obj_cls(**args)

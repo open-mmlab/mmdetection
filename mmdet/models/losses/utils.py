@@ -37,7 +37,6 @@ def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
     """
     # if weight is specified, apply element-wise weight
     # does not work multi gpu case.
-    pdb.set_trace()
     if weight is not None:
         pdb.set_trace()
         if loss.dim() != weight.dim():
