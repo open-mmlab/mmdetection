@@ -1,3 +1,6 @@
+from functools import reduce
+from operator import mul
+
 import torch.nn as nn
 
 from ..registry import HEADS
@@ -138,7 +141,9 @@ class ConvFCBBoxHead(BBoxHead):
         if self.num_shared_fcs > 0:
             if self.with_avg_pool:
                 x = self.avg_pool(x)
-            x = x.view(x.size(0), -1)
+
+            x = _view_flat_trailing_dims(x)
+
             for fc in self.shared_fcs:
                 x = self.relu(fc(x))
         # separate branches
@@ -150,7 +155,7 @@ class ConvFCBBoxHead(BBoxHead):
         if x_cls.dim() > 2:
             if self.with_avg_pool:
                 x_cls = self.avg_pool(x_cls)
-            x_cls = x_cls.view(x_cls.size(0), -1)
+            x_cls = _view_flat_trailing_dims(x_cls)
         for fc in self.cls_fcs:
             x_cls = self.relu(fc(x_cls))
 
@@ -159,13 +164,43 @@ class ConvFCBBoxHead(BBoxHead):
         if x_reg.dim() > 2:
             if self.with_avg_pool:
                 x_reg = self.avg_pool(x_reg)
-            x_reg = x_reg.view(x_reg.size(0), -1)
+            x_reg = _view_flat_trailing_dims(x_reg)
         for fc in self.reg_fcs:
             x_reg = self.relu(fc(x_reg))
 
         cls_score = self.fc_cls(x_cls) if self.with_cls else None
         bbox_pred = self.fc_reg(x_reg) if self.with_reg else None
         return cls_score, bbox_pred
+
+
+def _view_flat_trailing_dims(x):
+    """
+    Flattens trailing dimensions
+
+    Equivalent to `x.view(x.shape[0], -1)`, but has special handling of the
+    case where `x.shape[0] == 0`
+
+    Args:
+        x (Tensor): input tensor
+
+    Returns:
+        Tensor: reshaped tensor
+
+    Example:
+        >>> import torch
+        >>> x = _view_flat_trailing_dims(torch.empty(3, 5, 7))
+        >>> assert tuple(x.shape) == (3, 35)
+        >>> x = _view_flat_trailing_dims(torch.empty(0, 5, 7))
+        >>> assert tuple(x.shape) == (0, 35)
+        >>> x = _view_flat_trailing_dims(torch.empty(0,))
+        >>> assert tuple(x.shape) == (0, 1)
+    """
+    if x.numel() == 0:
+        num_trailing = reduce(mul, x.shape[1:], 1)
+        x = x.view(x.size(0), num_trailing)
+    else:
+        x = x.view(x.size(0), -1)
+    return x
 
 
 @HEADS.register_module
