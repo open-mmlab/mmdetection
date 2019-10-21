@@ -57,15 +57,12 @@ class AnchorHead(nn.Module):
         self.target_stds = target_stds
 
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        # better underwater ?
-        #self.sampling = loss_cls['type'] not in ['FocalLoss', 'GHMC']
-        self.sampling = 0
+        self.sampling = loss_cls['type'] not in ['FocalLoss', 'GHMC']
         if self.use_sigmoid_cls:
             self.cls_out_channels = num_classes - 1
         else:
             self.cls_out_channels = num_classes
         self.loss_cls = build_loss(loss_cls)
-        pdb.set_trace()
         self.loss_bbox = build_loss(loss_bbox)
         self.fp16_enabled = False
 
@@ -136,7 +133,6 @@ class AnchorHead(nn.Module):
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
         # classification loss
-        pdb.set_trace()
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
@@ -147,7 +143,6 @@ class AnchorHead(nn.Module):
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
-        pdb.set_trace()
         loss_bbox = self.loss_bbox(
             bbox_pred,
             bbox_targets,
@@ -188,7 +183,6 @@ class AnchorHead(nn.Module):
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (
             num_total_pos + num_total_neg if self.sampling else num_total_pos)
-        pdb.set_trace()
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
@@ -199,7 +193,6 @@ class AnchorHead(nn.Module):
             bbox_weights_list,
             num_total_samples=num_total_samples,
             cfg=cfg)
-        pdb.set_trace()
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))

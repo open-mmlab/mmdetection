@@ -30,10 +30,9 @@ model = dict(
         target_stds=[1.0, 1.0, 1.0, 1.0],
         loss_cls=dict(
             type='CrossEntropyLoss',
-            use_sigmoid=True,
-            reduction = 'none',
+            use_sigmoid=False,
             loss_weight=1.0),
-        loss_bbox=dict(type='IoULoss', tau=0.5, reduction = 'none', loss_weight=1.0)))
+        loss_bbox=dict(type='IoULoss', loss_weight=1.0)))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
@@ -42,6 +41,12 @@ train_cfg = dict(
         neg_iou_thr=0.5,
         min_pos_iou=0,
         ignore_iof_thr=-1),
+    sampler=dict(
+        type='RandomSampler',
+        num=512,
+        pos_fraction=0.25,
+        neg_pos_ub=-1,
+        add_gt_as_proposals=False),
     allowed_border=-1,
     pos_weight=-1,
     debug=False)
@@ -82,8 +87,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=2,
-    workers_per_gpu=2,
+    imgs_per_gpu=1,
+    workers_per_gpu=1,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
