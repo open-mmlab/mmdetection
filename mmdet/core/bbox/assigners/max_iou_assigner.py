@@ -186,7 +186,7 @@ class MaxIoUAssigner(BaseAssigner):
             assigned_labels = assigned_gt_inds.new_zeros((num_bboxes, ))
             pos_inds = torch.nonzero(assigned_gt_inds > 0).squeeze()
             if pos_inds.numel() > 0:
-                assigned_labels[pos_inds] = gt_labels[
+                assigned_labels[pos_inds] = gt_labels.long()[
                     assigned_gt_inds[pos_inds] - 1]
         else:
             assigned_labels = None
