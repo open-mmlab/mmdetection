@@ -29,17 +29,18 @@ model = dict(
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
         loss_cls=dict(
-            type='CrossEntropyLoss',
+            type='FocalLoss',
             use_sigmoid=True,
-            reduction = 'none',
+            gamma=2.0,
+            alpha=0.25,
             loss_weight=1.0),
-        loss_bbox=dict(type='IoULoss', reduction = None, loss_weight=1.0)))
+        loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0)))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
         type='MaxIoUAssigner',
         pos_iou_thr=0.5,
-        neg_iou_thr=0.4,
+        neg_iou_thr=0.5,
         min_pos_iou=0,
         ignore_iof_thr=-1),
     allowed_border=-1,
@@ -86,7 +87,7 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
+        ann_file=data_root + 'annotations/instances_train2017_minicoco.json',
         img_prefix=data_root + 'train2017/',
         pipeline=train_pipeline),
     val=dict(

@@ -9,14 +9,13 @@ import pdb
 
 def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
     # element-wise losses
-    loss = F.cross_entropy(pred, label, reduction='none')
+    #loss = F.cross_entropy(pred, label, reduction='none')
     loss_ = 0.5 - torch.max(F.softmax(pred, dim=1), dim=1)[0]
-    pdb.set_trace()
     # apply weights and do the reduction
     if weight is not None:
         weight = weight.float()
-    loss = weight_reduce_loss(
-        loss, weight=weight, reduction=reduction, avg_factor=avg_factor)
+    loss_ = weight_reduce_loss(
+        loss_, weight=weight, reduction=reduction, avg_factor=avg_factor)
 
     return loss_
 

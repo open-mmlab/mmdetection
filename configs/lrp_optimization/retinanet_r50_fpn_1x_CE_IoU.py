@@ -87,11 +87,11 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=1,
-    workers_per_gpu=1,
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
+        ann_file=data_root + 'annotations/instances_train2017_minicoco.json',
         img_prefix=data_root + 'train2017/',
         pipeline=train_pipeline),
     val=dict(
@@ -120,7 +120,7 @@ log_config = dict(
     interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
+        dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
@@ -128,7 +128,7 @@ total_epochs = 12
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/retinanet_r50_fpn_1x'
+work_dir = './work_dirs/lrp_optimization/retinanet_r50_fpn_1x_IoU_CE'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
