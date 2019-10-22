@@ -9,15 +9,15 @@ import pdb
 
 def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
     # element-wise losses
-    #loss = F.cross_entropy(pred, label, reduction='none')
-    loss_ = 0.5 - torch.max(F.softmax(pred, dim=1), dim=1)[0]
+    loss = F.cross_entropy(pred, label, reduction='none')
+    #loss_ = 2*(0.5) - torch.max(F.softmax(pred, dim=1), dim=1)[0]
     # apply weights and do the reduction
     if weight is not None:
         weight = weight.float()
-    loss_ = weight_reduce_loss(
-        loss_, weight=weight, reduction=reduction, avg_factor=avg_factor)
+    loss = weight_reduce_loss(
+        loss, weight=weight, reduction=reduction, avg_factor=avg_factor)
 
-    return loss_
+    return loss
 
 
 def _expand_binary_labels(labels, label_weights, label_channels):
@@ -46,10 +46,13 @@ def binary_cross_entropy(pred,
         weight = weight.float()
     loss = F.binary_cross_entropy_with_logits(
         pred, label.float(), weight, reduction='none')
+    #loss_ = torch.max(F.softmax(pred, dim=1), dim=1)[0]
     # do the reduction for the weighted loss
+    #loss_ = weight_reduce_loss(loss_, reduction=reduction, avg_factor=avg_factor)
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
-
-    return loss
+    
+    pdb.set_trace()
+    return loss_
 
 
 def mask_cross_entropy(pred, target, label, reduction='mean', avg_factor=None):

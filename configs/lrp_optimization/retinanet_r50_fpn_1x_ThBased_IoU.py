@@ -30,7 +30,7 @@ model = dict(
         target_stds=[1.0, 1.0, 1.0, 1.0],
         loss_cls=dict(
             type='CrossEntropyLoss',
-            use_sigmoid=False,
+            use_sigmoid=True,
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0)))
 # training and testing settings
@@ -41,13 +41,7 @@ train_cfg = dict(
         neg_iou_thr=0.5,
         min_pos_iou=0,
         ignore_iof_thr=-1),
-    sampler=dict(
-        type='RandomSampler',
-        num=512,
-        pos_fraction=0.25,
-        neg_pos_ub=-1,
-        add_gt_as_proposals=False),
-    allowed_border=-1,
+        allowed_border=-1,
     pos_weight=-1,
     debug=False)
 test_cfg = dict(
@@ -128,7 +122,7 @@ total_epochs = 12
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/lrp_optimization/retinanet_r50_fpn_1x_IoU_CE'
+work_dir = './work_dirs/lrp_optimization/retinanet_r50_fpn_1x_ThBased_IoU'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
