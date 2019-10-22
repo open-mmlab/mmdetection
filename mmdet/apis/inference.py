@@ -113,7 +113,7 @@ def show_result(img,
         np.ndarray or None: If neither `show` nor `out_file` is specified, the
             visualized image is returned, otherwise None is returned.
     """
-    assert isinstance(class_names, (tuple, list))
+    assert isinstance(class_names, (tuple, list, str))
     img = mmcv.imread(img)
     img = img.copy()
     if isinstance(result, tuple):
