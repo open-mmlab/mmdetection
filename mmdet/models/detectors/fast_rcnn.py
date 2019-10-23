@@ -44,7 +44,7 @@ class FastRCNN(TwoStageDetector):
         assert imgs_per_gpu == 1
 
         if num_augs == 1:
-            return self.simple_test(imgs[0], img_metas[0], proposals[0],
+            return self.simple_test(imgs[0], img_metas[0:1], proposals[0],
                                     **kwargs)
         else:
             return self.aug_test(imgs, img_metas, proposals, **kwargs)
