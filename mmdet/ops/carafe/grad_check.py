@@ -15,11 +15,11 @@ print('Gradcheck for carafe...')
 test = gradcheck(CARAFE(5, 4, 2), (feat, mask), atol=1e-4, eps=1e-4)
 print(test)
 
-print('Gradcheck for carafe benchmark version...')
+print('Gradcheck for carafe benchmark...')
 test = gradcheck(CARAFE(5, 4, 2, True), (feat, mask), atol=1e-4, eps=1e-4)
 print(test)
 
-print('Gradcheck for carafe naive version...')
+print('Gradcheck for carafe naive...')
 test = gradcheck(CARAFENAIVE(5, 4, 2), (feat, mask), atol=1e-4, eps=1e-4)
 print(test)
 
@@ -41,7 +41,7 @@ for i in range(loopNum):
     torch.cuda.synchronize()
     time_backward += timer.since_last_check()
     bar.update()
-print('\nCARAFE time forward: {}ms | time backward: {}ms'.format(
+print('\nCARAFE time forward: {} ms/iter | time backward: {} ms/iter'.format(
     (time_forward + 1e-3) * 1e3 / loopNum,
     (time_backward + 1e-3) * 1e3 / loopNum))
 
@@ -57,9 +57,10 @@ for i in range(loopNum):
     torch.cuda.synchronize()
     time_benchmark_backward += timer.since_last_check()
     bar.update()
-print('\nCARAFE benchmark version time forward: {}ms | time backward: {}ms'.
-      format((time_benchmark_forward + 1e-3) * 1e3 / loopNum,
-             (time_benchmark_backward + 1e-3) * 1e3 / loopNum))
+print(
+    '\nCARAFE benchmark time forward: {} ms/iter | time backward: {} ms/iter'.
+    format((time_benchmark_forward + 1e-3) * 1e3 / loopNum,
+           (time_benchmark_backward + 1e-3) * 1e3 / loopNum))
 
 time_naive_forward = 0
 time_naive_backward = 0
@@ -73,6 +74,6 @@ for i in range(loopNum):
     torch.cuda.synchronize()
     time_naive_backward += timer.since_last_check()
     bar.update()
-print('\nCARAFE naive version time forward: {}ms | time backward: {}ms'.format(
-    (time_naive_forward + 1e-3) * 1e3 / loopNum,
-    (time_naive_backward + 1e-3) * 1e3 / loopNum))
+print('\nCARAFE naive time forward: {} ms/iter | time backward: {} ms/iter'.
+      format((time_naive_forward + 1e-3) * 1e3 / loopNum,
+             (time_naive_backward + 1e-3) * 1e3 / loopNum))
