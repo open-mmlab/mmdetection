@@ -15,8 +15,8 @@ print('Gradcheck for carafe...')
 test = gradcheck(CARAFE(5, 4, 2), (feat, mask), atol=1e-4, eps=1e-4)
 print(test)
 
-print('Gradcheck for carafe speed version...')
-test = gradcheck(CARAFE(5, 4, 2, 'speed'), (feat, mask), atol=1e-4, eps=1e-4)
+print('Gradcheck for carafe benchmark version...')
+test = gradcheck(CARAFE(5, 4, 2, True), (feat, mask), atol=1e-4, eps=1e-4)
 print(test)
 
 print('Gradcheck for carafe naive version...')
@@ -45,21 +45,21 @@ print('\nCARAFE time forward: {} | time backward: {}'.format(
     (time_forward + 1e-3) * 1e3 / loopNum,
     (time_backward + 1e-3) * 1e3 / loopNum))
 
-time_speed_forward = 0
-time_speed_backward = 0
+time_benchmark_forward = 0
+time_benchmark_backward = 0
 bar = mmcv.ProgressBar(loopNum)
 timer = mmcv.Timer()
 for i in range(loopNum):
-    x = carafe(feat.clone(), mask.clone(), 5, 1, 2, 'speed')
+    x = carafe(feat.clone(), mask.clone(), 5, 1, 2, benchmark=True)
     torch.cuda.synchronize()
-    time_speed_forward += timer.since_last_check()
+    time_benchmark_forward += timer.since_last_check()
     x.sum().backward(retain_graph=True)
     torch.cuda.synchronize()
-    time_speed_backward += timer.since_last_check()
+    time_benchmark_backward += timer.since_last_check()
     bar.update()
-print('\nCARAFE speed version time forward: {} | time backward: {}'.format(
-    (time_speed_forward + 1e-3) * 1e3 / loopNum,
-    (time_speed_backward + 1e-3) * 1e3 / loopNum))
+print('\nCARAFE benchmark version time forward: {} | time backward: {}'.format(
+    (time_benchmark_forward + 1e-3) * 1e3 / loopNum,
+    (time_benchmark_backward + 1e-3) * 1e3 / loopNum))
 
 time_naive_forward = 0
 time_naive_backward = 0

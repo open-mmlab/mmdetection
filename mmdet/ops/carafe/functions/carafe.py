@@ -1,7 +1,7 @@
 import torch
 from torch.autograd import Function
 
-from .. import carafe_cuda, carafe_cuda_speed
+from .. import carafe_cuda, carafe_cuda_benchmark
 
 
 class CARAFEFunction(Function):
@@ -13,8 +13,7 @@ class CARAFEFunction(Function):
                 kernel_size,
                 group_size,
                 scale_factor,
-                version='precise'):
-        assert version in ['precise', 'speed']
+                benchmark=False):
         assert scale_factor >= 1
         assert masks.size(1) == kernel_size * kernel_size * group_size
         assert masks.size(-1) == features.size(-1) * scale_factor
@@ -26,7 +25,7 @@ class CARAFEFunction(Function):
         ctx.scale_factor = scale_factor
         ctx.feature_size = features.size()
         ctx.mask_size = masks.size()
-        ctx.version = version
+        ctx.benchmark = benchmark
 
         n, c, h, w = features.size()
         output = features.new_zeros((n, c, h * scale_factor, w * scale_factor))
@@ -34,14 +33,14 @@ class CARAFEFunction(Function):
         rfeatures = features.new_zeros(features.size(), requires_grad=False)
         rmasks = masks.new_zeros(masks.size(), requires_grad=False)
         if features.is_cuda:
-            if version == 'precise':
+            if not benchmark:
                 carafe_cuda.forward(features, rfeatures, masks, rmasks,
                                     kernel_size, group_size, scale_factor,
                                     routput, output)
-            elif version == 'speed':
-                carafe_cuda_speed.forward(features, rfeatures, masks, rmasks,
-                                          kernel_size, group_size,
-                                          scale_factor, routput, output)
+            else:
+                carafe_cuda_benchmark.forward(features, rfeatures, masks,
+                                              rmasks, kernel_size, group_size,
+                                              scale_factor, routput, output)
         else:
             raise NotImplementedError
 
@@ -57,7 +56,7 @@ class CARAFEFunction(Function):
         kernel_size = ctx.kernel_size
         group_size = ctx.group_size
         scale_factor = ctx.scale_factor
-        version = ctx.version
+        benchmark = ctx.benchmark
 
         rgrad_output = torch.zeros_like(grad_output, requires_grad=False)
         rgrad_input_hs = torch.zeros_like(grad_output, requires_grad=False)
@@ -65,17 +64,17 @@ class CARAFEFunction(Function):
         rgrad_masks = torch.zeros_like(masks, requires_grad=False)
         grad_input = torch.zeros_like(features, requires_grad=False)
         grad_masks = torch.zeros_like(masks, requires_grad=False)
-        if version == 'precise':
+        if not benchmark:
             carafe_cuda.backward(grad_output.contiguous(), rfeatures, masks,
                                  kernel_size, group_size, scale_factor,
                                  rgrad_output, rgrad_input_hs, rgrad_input,
                                  rgrad_masks, grad_input, grad_masks)
-        elif version == 'speed':
-            carafe_cuda_speed.backward(grad_output.contiguous(), rfeatures,
-                                       masks, kernel_size, group_size,
-                                       scale_factor, rgrad_output,
-                                       rgrad_input_hs, rgrad_input,
-                                       rgrad_masks, grad_input, grad_masks)
+        else:
+            carafe_cuda_benchmark.backward(grad_output.contiguous(), rfeatures,
+                                           masks, kernel_size, group_size,
+                                           scale_factor, rgrad_output,
+                                           rgrad_input_hs, rgrad_input,
+                                           rgrad_masks, grad_input, grad_masks)
         return grad_input, grad_masks, None, None, None, None
 
 
