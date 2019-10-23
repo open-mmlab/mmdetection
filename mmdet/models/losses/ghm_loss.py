@@ -35,10 +35,12 @@ class GHMC(nn.Module):
         super(GHMC, self).__init__()
         self.bins = bins
         self.momentum = momentum
-        self.edges = torch.arange(bins + 1).float().cuda() / bins
+        edges = torch.arange(bins + 1).float() / bins
+        self.register_buffer('edges', edges)
         self.edges[-1] += 1e-6
         if momentum > 0:
-            self.acc_sum = torch.zeros(bins).cuda()
+            acc_sum = torch.zeros(bins)
+            self.register_buffer('acc_sum', acc_sum)
         self.use_sigmoid = use_sigmoid
         if not self.use_sigmoid:
             raise NotImplementedError
@@ -111,11 +113,13 @@ class GHMR(nn.Module):
         super(GHMR, self).__init__()
         self.mu = mu
         self.bins = bins
-        self.edges = torch.arange(bins + 1).float().cuda() / bins
+        edges = torch.arange(bins + 1).float() / bins
+        self.register_buffer('edges', edges)
         self.edges[-1] = 1e3
         self.momentum = momentum
         if momentum > 0:
-            self.acc_sum = torch.zeros(bins).cuda()
+            acc_sum = torch.zeros(bins)
+            self.register_buffer('acc_sum', acc_sum)
         self.loss_weight = loss_weight
 
     # TODO: support reduction parameter
