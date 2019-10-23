@@ -50,7 +50,7 @@ time_benchmark_backward = 0
 bar = mmcv.ProgressBar(loopNum)
 timer = mmcv.Timer()
 for i in range(loopNum):
-    x = carafe(feat.clone(), mask.clone(), 5, 1, 2, benchmark=True)
+    x = carafe(feat.clone(), mask.clone(), 5, 1, 2, True)
     torch.cuda.synchronize()
     time_benchmark_forward += timer.since_last_check()
     x.sum().backward(retain_graph=True)
