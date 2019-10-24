@@ -1,9 +1,10 @@
+import os.path as osp
+import sys
+
 import mmcv
 import torch
 from torch.autograd import gradcheck
 
-import os.path as osp
-import sys
 sys.path.append(osp.abspath(osp.join(__file__, '../../')))
 from carafe import (carafe, carafe_naive, CARAFE, CARAFENAIVE)  # noqa: E402
 

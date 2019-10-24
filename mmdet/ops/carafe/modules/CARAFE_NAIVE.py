@@ -1,4 +1,5 @@
 from torch.nn.modules.module import Module
+
 from ..functions.carafe_naive import CARAFENAIVEFunction
 
 

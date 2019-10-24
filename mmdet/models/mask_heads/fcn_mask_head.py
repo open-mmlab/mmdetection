@@ -4,9 +4,9 @@ import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
 from torch.nn.modules.utils import _pair
-from mmdet.ops.carafe import CARAFEPack
 
 from mmdet.core import auto_fp16, force_fp32, mask_target
+from mmdet.ops.carafe import CARAFEPack
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule

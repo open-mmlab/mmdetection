@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init, normal_init
+from mmcv.cnn import normal_init, xavier_init
+
 from .functions.carafe import carafe
 
 

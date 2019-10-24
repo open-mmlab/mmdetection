@@ -1,10 +1,10 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
-from mmdet.ops.carafe import CARAFEPack
 
-from ..utils import ConvModule
+from mmdet.ops.carafe import CARAFEPack
 from ..registry import NECKS
+from ..utils import ConvModule
 
 
 @NECKS.register_module
