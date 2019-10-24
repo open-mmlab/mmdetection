@@ -4,6 +4,7 @@ import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
 from torch.nn.modules.utils import _pair
+from mmdet.ops.carafe import CARAFEPack
 
 from mmdet.core import auto_fp16, force_fp32, mask_target
 from ..builder import build_loss
@@ -24,15 +25,23 @@ class FCNMaskHead(nn.Module):
                  upsample_ratio=2,
                  num_classes=81,
                  class_agnostic=False,
+                 carafe_cfg=None,
                  conv_cfg=None,
                  norm_cfg=None,
                  loss_mask=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(FCNMaskHead, self).__init__()
-        if upsample_method not in [None, 'deconv', 'nearest', 'bilinear']:
+        if upsample_method not in [
+                None, 'deconv', 'nearest', 'bilinear', 'carafe'
+        ]:
             raise ValueError(
                 'Invalid upsample method {}, accepted methods '
-                'are "deconv", "nearest", "bilinear"'.format(upsample_method))
+                'are "deconv", "nearest", "bilinear", "carafe"'.format(
+                    upsample_method))
+        if upsample_method == 'carafe':
+            assert carafe_cfg is not None
+        self.carafe_cfg = carafe_cfg
+        self.with_carafe = carafe_cfg is not None
         self.num_convs = num_convs
         # WARN: roi_feat_size is reserved and not used
         self.roi_feat_size = _pair(roi_feat_size)
@@ -71,6 +80,9 @@ class FCNMaskHead(nn.Module):
                 self.conv_out_channels,
                 self.upsample_ratio,
                 stride=self.upsample_ratio)
+        elif self.upsample_method == 'carafe':
+            self.upsample = CARAFEPack(upsample_in_channels, upsample_ratio,
+                                       **self.carafe_cfg)
         else:
             self.upsample = nn.Upsample(
                 scale_factor=self.upsample_ratio, mode=self.upsample_method)
@@ -85,11 +97,13 @@ class FCNMaskHead(nn.Module):
 
     def init_weights(self):
         for m in [self.upsample, self.conv_logits]:
-            if m is None:
+            if m is None or isinstance(m, CARAFEPack):
                 continue
             nn.init.kaiming_normal_(
                 m.weight, mode='fan_out', nonlinearity='relu')
             nn.init.constant_(m.bias, 0)
+        if self.with_carafe:
+            self.upsample.init_weights()
 
     @auto_fp16()
     def forward(self, x):
