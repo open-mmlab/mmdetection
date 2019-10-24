@@ -188,9 +188,8 @@ def main_openvino(args):
     else:
         classes_num = 2
 
-        cpu_ext_path = '/home/paul/programs/intel/l_openvino_toolkit_p_2019.3.325/openvino/inference_engine/lib/intel64/libcpu_extension_avx512.so'
         model = DetectorOpenVINO(args.model, args.ckpt, args.mapping,
-                                 cpu_extension_lib_path=cpu_ext_path,
+                                 # cpu_extension_lib_path=args.cpu_ext_path,
                                  cfg=cfg,
                                  classes=['person'])
 
@@ -356,6 +355,7 @@ def parse_args():
         default=0.3,
         help='show only detection with confidence larger than threshold')
     parser.add_argument('--backend', default='onnx', choices=('onnx', 'openvino'))
+    parser.add_argument('--cpu_ext_path', type=str, help='')
     args = parser.parse_args()
     return args
 

@@ -15,13 +15,14 @@
 """
 
 import logging
+import os.path as osp
+from collections import OrderedDict
 
 import numpy as np
 import torch
+from lxml import etree
 
 from mmdet.models import build_detector
-from lxml import etree
-from collections import OrderedDict
 
 
 class PerformanceCounters(object):
@@ -54,107 +55,133 @@ def to_numpy(x):
     return x
 
 
-class OpenVINONet(object):
+class IECore(object):
+    def __new__(cls):
+        from openvino.inference_engine import IECore as IECore_
 
-    def __init__(self, xml_file_path, bin_file_path, mapping_file_path=None,
+        if not hasattr(cls, 'instance'):
+            cls.instance = IECore_()
+        return cls.instance
+
+
+class ModelOpenVINO(object):
+
+    def __init__(self,
+                 xml_file_path,
+                 bin_file_path=None,
+                 mapping_file_path=None,
                  device='CPU',
-                 cpu_extension_lib_path=None,
+                 required_inputs=None,
+                 required_outputs=None,
+                 max_num_requests=1,
                  collect_perf_counters=False,
-                 input_names=(),
-                 output_names=(),
                  cfg=None,
                  classes=None):
 
-        from openvino.inference_engine import IECore, IENetwork
+        from openvino.inference_engine import IENetwork
 
-        logging.info('Creating {} plugin...'.format(device))
-        self.ie = IECore()
-        if cpu_extension_lib_path and 'CPU' in device:
-            self.ie.add_extension(cpu_extension_lib_path, 'CPU')
-
-        # Read IR
+        ie = IECore()
         logging.info('Reading network from IR...')
+        if bin_file_path is None:
+            bin_file_path = osp.splitext(xml_file_path)[0] + '.bin'
         self.net = IENetwork(model=xml_file_path, weights=bin_file_path)
 
-        # Original to IR mapping.
-        self.mapping = None
-        # IR to original mapping.
-        self.reverse_mapping = None
-
-        if mapping_file_path is not None:
-            self.mapping = {}
-            root = etree.parse(mapping_file_path).getroot()
-            for m in root:
-                if m.tag != 'map':
-                    continue
-                framework = m.find('framework')
-                ir = m.find('IR')
-                # FIXME. It should be not '-1', but something more sophisticated.
-                self.mapping[framework.get('name')] = ir.get('name') + '.' + str(int(ir.get('out_port_id')) - 1)
-            self.reverse_mapping = {v: k for k, v in self.mapping.items()}
-
+        self.mapping = {'labels': 'labels', 'boxes': '23597/Split.0'}
+        self.mapping_file_path = mapping_file_path
         self.net_inputs_mapping = OrderedDict((i, i) for i in self.net.inputs.keys())
-
-        self.net_outputs_mapping = OrderedDict((i, i) for i in self.net.outputs.keys())
-        if output_names:
-            if self.mapping is not None:
-                self.net_outputs_mapping = OrderedDict((self.mapping[i] if i not in self.net.outputs else i, i) for i in output_names)
-            else:
-                assert set(output_names).issubset(self.net.outputs.keys())
-                self.net_outputs_mapping = OrderedDict((i, i) for i in output_names)
-        print(self.net_outputs_mapping)
+        if required_inputs is not None:
+            assert set(required_inputs) == set(self.net.inputs.keys())
+        self.net_outputs_mapping = self.configure_outputs(self.net, required_outputs)
 
         if 'CPU' in device:
-            logging.info('Check that all layers are supported...')
-            supported_layers = self.ie.query_network(self.net, 'CPU')
-            not_supported_layers = [l for l in self.net.layers.keys() if l not in supported_layers]
-            if len(not_supported_layers) != 0:
-                unsupported_info = '\n\t'.join('{} ({} with params {})'.format(layer_id,
-                                                                               self.net.layers[layer_id].type,
-                                                                               str(self.net.layers[layer_id].params))
-                                               for layer_id in not_supported_layers)
-                logging.warning('Following layers are not supported '
-                                'by the plugin for specified device {}:'
-                                '\n\t{}'.format(self.plugin.device, unsupported_info))
-                logging.warning('Please try to specify cpu extensions library path.')
-                raise ValueError('Some of the layers are not supported.')
+            self.check_cpu_support(ie, self.net)
 
         logging.info('Loading network to plugin...')
-        self.exec_net = self.ie.load_network(network=self.net, device_name=device, num_requests=1)
+        self.max_num_requests = max_num_requests
+        self.exec_net = ie.load_network(network=self.net, device_name=device, num_requests=max_num_requests)
 
         self.perf_counters = None
         if collect_perf_counters:
             self.perf_counters = PerformanceCounters()
 
+        self.pt_model = None
         if cfg is not None:
             self.pt_model = build_detector(
                 cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
             if classes is not None:
                 self.pt_model.CLASSES = classes
 
-    def __call__(self, inputs):
-        if isinstance(inputs, (list, tuple)):
+    @staticmethod
+    def check_cpu_support(ie, net):
+        logging.info('Check that all layers are supported...')
+        supported_layers = ie.query_network(net, 'CPU')
+        not_supported_layers = [l for l in net.layers.keys() if l not in supported_layers]
+        if len(not_supported_layers) != 0:
+            unsupported_info = '\n\t'.join('{} ({} with params {})'.format(layer_id,
+                                                                           net.layers[layer_id].type,
+                                                                           str(net.layers[layer_id].params))
+                                           for layer_id in not_supported_layers)
+            logging.warning('Following layers are not supported '
+                            'by the CPU plugin:\n\t{}'.format(unsupported_info))
+            logging.warning('Please try to specify cpu extensions library path.')
+            raise ValueError('Some of the layers are not supported.')
+
+    def get_mapping(self):
+        if len(self.mapping) == 0 and self.mapping_file_path is not None:
+            logging.info('Loading mapping file...')
+            self.mapping = {}
+            root = etree.parse(self.mapping_file_path).getroot()
+            for m in root:
+                if m.tag != 'map':
+                    continue
+                framework = m.find('framework')
+                ir = m.find('IR')
+                self.mapping[framework.get('name')] = ir.get('name')
+        return self.mapping
+
+    def configure_outputs(self, net, required_outputs):
+        net_outputs_mapping = OrderedDict()
+        if required_outputs is None:
+            for o in net.outputs.keys():
+                net_outputs_mapping[o] = o
+        else:
+            for required_output in required_outputs:
+                output = self.get_mapping()[required_output]
+                try:
+                    net.add_outputs(output)
+                except RuntimeError:
+                    pass
+                if output in net.outputs:
+                    net_outputs_mapping[output] = required_output
+                else:
+                    raise ValueError('Failed to identify output {}'.format(required_output))
+        return net_outputs_mapping
+
+    def rename_outputs(self, outputs):
+        return {self.net_outputs_mapping[k]: v for k, v in outputs.items() if k in self.net_outputs_mapping}
+
+    def forward(self, inputs):
+        if not isinstance(inputs, dict):
+            if len(self.net_inputs_mapping) == 1 and not isinstance(inputs, (list, tuple)):
+                inputs = [inputs]
             inputs = {k: v for (k, _), v in zip(self.net_inputs_mapping.items(), inputs)}
         inputs = {self.net_inputs_mapping[k]: v for k, v in inputs.items()}
-
         outputs = self.exec_net.infer(inputs)
-
-        outputs = {self.net_outputs_mapping[k]: v for k, v in outputs.items() if k in self.net_outputs_mapping}
-
         if self.perf_counters:
             perf_counters = self.exec_net.requests[0].get_perf_counts()
             self.perf_counters.update(perf_counters)
+        return self.rename_outputs(outputs)
 
-        return outputs
-
-    def print_performance_counters(self):
-        if self.perf_counters:
-            self.perf_counters.print()
+    def __call__(self, inputs):
+        return self.forward(inputs)
 
     def __del__(self):
         del self.net
         del self.exec_net
-        del self.ie
+
+    def print_performance_counters(self):
+        if self.perf_counters:
+            self.perf_counters.print()
 
     def show(self, data, result, dataset=None, score_thr=0.3, wait_time=0):
         if self.pt_model is not None:
@@ -162,9 +189,12 @@ class OpenVINONet(object):
                 data, result, dataset=dataset, score_thr=score_thr, wait_time=wait_time)
 
 
-class DetectorOpenVINO(OpenVINONet):
+class DetectorOpenVINO(ModelOpenVINO):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, input_names=('image', ), output_names=('boxes', 'labels'), **kwargs)
+        super().__init__(*args,
+                         required_inputs=('image', ),
+                         required_outputs=('boxes', 'labels'),
+                         **kwargs)
 
         self.n, self.c, self.h, self.w = self.net.inputs['image'].shape
         assert self.n == 1, 'Only batch 1 is supported.'
@@ -178,7 +208,7 @@ class DetectorOpenVINO(OpenVINONet):
         return output
 
 
-class MaskRCNNOpenVINO(OpenVINONet):
+class MaskRCNNOpenVINO(ModelOpenVINO):
     def __init__(self, *args, **kwargs):
         super(MaskRCNNOpenVINO, self).__init__(*args, **kwargs)
         self.required_input_keys = {'image'}
