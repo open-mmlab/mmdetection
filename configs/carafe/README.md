@@ -27,7 +27,7 @@ The results on COCO 2017 val is shown in the below table.
 
 ## Implementation
 
-The CUDA implementation of CARAFE can be find at `mmdet/ops/carafe` undet his repository.
+The CUDA implementation of CARAFE can be find at `mmdet/ops/carafe` undet this repository.
 
 ## Setup CARAFE
 
