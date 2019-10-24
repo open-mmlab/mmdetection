@@ -6,8 +6,8 @@ import torch
 from torch.autograd import gradcheck
 
 sys.path.append(osp.abspath(osp.join(__file__, '../../')))
-from carafe import (carafe, carafe_naive, CARAFE,
-                    CARAFENAIVE)  # noqa: E402, isort:skip
+from carafe import carafe_naive, CARAFENAIVE  # noqa: E402, isort:skip
+from carafe import carafe, CARAFE  # noqa: E402, isort:skip
 
 feat = torch.randn(2, 64, 3, 3, requires_grad=True, device='cuda:0').double()
 mask = torch.randn(
