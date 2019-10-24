@@ -25,4 +25,7 @@ The results on COCO 2017 val is shown in the below table.
 | Mask R-CNN w/ CARAFE |    R-50-FPN  |  pytorch  |   1x   | 1000 |  38.6   | 35.6| [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/carafe/mask_rcnn_r50_fpn_carafe_1x-5fc51cfd.pth) |
 | - |   -  |  -  |   -   | 2000 |  38.6   | 35.7| - |
 
+## Implementation
+
+The CUDA implementation of CARAFE can be find at `mmdet/ops/carafe` undet his repository.
 
