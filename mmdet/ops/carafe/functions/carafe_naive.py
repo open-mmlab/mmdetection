@@ -43,11 +43,9 @@ class CARAFENAIVEFunction(Function):
 
         grad_input = torch.zeros_like(features)
         grad_masks = torch.zeros_like(masks)
-        input_tmp = torch.zeros_like(grad_input, requires_grad=False).double()
-        mask_tmp = torch.zeros_like(masks, requires_grad=False).double()
         carafe_naive_cuda.backward(grad_output.contiguous(), features, masks,
                                    kernel_size, group_size, scale_factor,
-                                   grad_input, grad_masks, input_tmp, mask_tmp)
+                                   grad_input, grad_masks)
 
         return grad_input, grad_masks, None, None, None
 

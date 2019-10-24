@@ -16,8 +16,7 @@ int CARAFENAIVEBackwardLaucher(const at::Tensor top_grad,
                                const int group_size, const int scale_factor,
                                const int batch_size, const int channels,
                                const int height, const int width,
-                               at::Tensor bottom_grad, at::Tensor mask_grad,
-                               at::Tensor bottom_tmp, at::Tensor mask_tmp);
+                               at::Tensor bottom_grad, at::Tensor mask_grad);
 
 #define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x, " must be a CUDAtensor ")
 #define CHECK_CONTIGUOUS(x) \
@@ -48,14 +47,12 @@ int carafe_naive_forward_cuda(at::Tensor features, at::Tensor masks,
 int carafe_naive_backward_cuda(at::Tensor top_grad, at::Tensor features,
                                at::Tensor masks, int kernel_size,
                                int group_size, int scale_factor,
-                               at::Tensor bottom_grad, at::Tensor mask_grad,
-                               at::Tensor bottom_tmp, at::Tensor mask_tmp) {
+                               at::Tensor bottom_grad, at::Tensor mask_grad) {
   CHECK_INPUT(top_grad);
   CHECK_INPUT(features);
   CHECK_INPUT(masks);
   CHECK_INPUT(bottom_grad);
   CHECK_INPUT(mask_grad);
-  CHECK_INPUT(mask_tmp);
 
   int batch_size = top_grad.size(0);
   int num_channels = top_grad.size(1);
@@ -64,8 +61,7 @@ int carafe_naive_backward_cuda(at::Tensor top_grad, at::Tensor features,
 
   CARAFENAIVEBackwardLaucher(top_grad, features, masks, kernel_size, group_size,
                              scale_factor, batch_size, num_channels,
-                             data_height, data_width, bottom_grad, mask_grad,
-                             bottom_tmp, mask_tmp);
+                             data_height, data_width, bottom_grad, mask_grad);
 
   return 1;
 }

@@ -48,7 +48,7 @@ __global__ void CARAFENAIVEForward(const int nthreads,
     int start_h = down_ph - (kernel_size - 1) / 2;
     int end_h = down_ph + (kernel_size - 1) / 2 + 1;
 
-    double output_val = 0;
+    scalar_t output_val = 0;
     for (int iy = start_h; iy < end_h; iy++) {
       for (int ix = start_w; ix < end_w; ix++) {
         if (iy < 0 || iy > down_height - 1 || ix < 0 || ix > down_width - 1) {
@@ -62,11 +62,10 @@ __global__ void CARAFENAIVEForward(const int nthreads,
             Loc2Index(n, c, iy, ix, channels, down_height, down_width);
         int mask_index =
             Loc2Index(n, mask_c, ph, pw, mask_channels, height, width);
-        double val = bottom_data[feat_index] * bottom_masks[mask_index];
-        output_val += val;
+        output_val += bottom_data[feat_index] * bottom_masks[mask_index];
       }
     }
-    top_data[index] = (scalar_t)output_val;
+    top_data[index] = output_val;
   }
 }
 
@@ -101,7 +100,7 @@ __global__ void CARAFENAIVEBackward(
     const int nthreads, const scalar_t *top_diff, const scalar_t *bottom_data,
     const scalar_t *bottom_masks, const int kernel_size, const int group_size,
     const int scale_factor, const int channels, const int height,
-    const int width, double *bottom_diff, double *mask_diff) {
+    const int width, scalar_t *bottom_diff, scalar_t *mask_diff) {
   CUDA_1D_KERNEL_LOOP(index, nthreads) {
     // (n, c, ph, pw) is an element in the bottom_data
     int pw = index % width;
@@ -149,8 +148,7 @@ int CARAFENAIVEBackwardLaucher(const at::Tensor top_grad,
                                const int group_size, const int scale_factor,
                                const int batch_size, const int channels,
                                const int height, const int width,
-                               at::Tensor bottom_grad, at::Tensor mask_grad,
-                               at::Tensor bottom_tmp, at::Tensor mask_tmp) {
+                               at::Tensor bottom_grad, at::Tensor mask_grad) {
   const int output_size = batch_size * channels * height * width;
 
   // TODO: use AT_DISPATCH_FLOATING_TYPES_AND_HALF when atomicAdd is resolved
@@ -159,14 +157,14 @@ int CARAFENAIVEBackwardLaucher(const at::Tensor top_grad,
         const scalar_t *top_diff = top_grad.data<scalar_t>();
         const scalar_t *bottom_data = features.data<scalar_t>();
         const scalar_t *bottom_masks = masks.data<scalar_t>();
-        double *bottom_diff_tmp = bottom_tmp.data<double>();
-        double *mask_diff_tmp = mask_tmp.data<double>();
+        scalar_t *bottom_diff = bottom_grad.data<scalar_t>();
+        scalar_t *mask_diff = mask_grad.data<scalar_t>();
 
         CARAFENAIVEBackward<scalar_t>
             <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
                 output_size, top_diff, bottom_data, bottom_masks, kernel_size,
-                group_size, scale_factor, channels, height, width,
-                bottom_diff_tmp, mask_diff_tmp);
+                group_size, scale_factor, channels, height, width, bottom_diff,
+                mask_diff);
       }));
 
   cudaError_t err = cudaGetLastError();
@@ -174,8 +172,6 @@ int CARAFENAIVEBackwardLaucher(const at::Tensor top_grad,
     fprintf(stderr, "cudaCheckError() failed : %s\n", cudaGetErrorString(err));
     exit(-1);
   }
-  bottom_grad += bottom_tmp.toType(bottom_grad.type());
-  mask_grad += mask_tmp.toType(mask_grad.type());
 
   return 1;
 }
