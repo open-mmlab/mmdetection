@@ -19,7 +19,7 @@ We provide config files to reproduce the object detection & instance segmentatio
 The results on COCO 2017 val is shown in the below table.
 
 | Method |    Backbone     |  Style  | Lr schd | Test Proposal Num| Box AP |   Mask AP |                                                                 Download                                                                    |
-| :----: | :-------------: | :-----: | :-----: | :------: | :------: |:-----------------: |:--------------------------------------------------------------------------------------------------------------------------------------------: |
+| :--------------------: | :-------------: | :-----: | :-----: | :--------------: | :----: | :--------: |:----------------------------------------------------------------------------------------------------: |
 | Faster R-CNN w/ CARAFE |    R-50-FPN  |  pytorch  |   1x    | 1000 |  37.8  | -  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/carafe/faster_rcnn_r50_fpn_carafe_1x-a2bf3f56.pth)  |
 | - |    -  |  -  |   -    | 2000 |  37.9  | -  | -  |
 | Mask R-CNN w/ CARAFE |    R-50-FPN  |  pytorch  |   1x   | 1000 |  38.6   | 35.6| [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/carafe/mask_rcnn_r50_fpn_carafe_1x-5fc51cfd.pth) |
@@ -28,4 +28,37 @@ The results on COCO 2017 val is shown in the below table.
 ## Implementation
 
 The CUDA implementation of CARAFE can be find at `mmdet/ops/carafe` undet his repository.
+
+## Setup CARAFE
+
+Git clone mmdetection
+```shell
+git clone https://github.com/open-mmlab/mmdetection.git
+cd mmdetection
+```
+
+a. Use CARAFE in mmdetection.
+
+Install mmdetection
+```shell
+python setup.py develop
+# or "pip install -v -e ."
+python ./mmdet/ops/carafe/grad_check.py
+```
+
+b. Use CARAFE in your own project.
+
+```shell
+cp -r ./mmdet/ops/carafe $Your_Project_Path$
+cd $Your_Project_Path$/carafe
+python setup.py develop
+# or "pip install -v -e ."
+cd ..
+python ./carafe/grad_check.py
+```
+
+
+
+
+
 
