@@ -21,6 +21,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
 
     assert mode in ['iou', 'iof']
 
+    bboxes2 = bboxes2.type(bboxes1.dtype)
     rows = bboxes1.size(0)
     cols = bboxes2.size(0)
     if is_aligned:
