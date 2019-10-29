@@ -37,7 +37,8 @@ model = dict(
         loss_energy=dict(
             type='CrossEntropyLoss', loss_weight=1.0, use_sigmoid=False
         ),
-        split_convs=False
+        split_convs=False,
+        r=500.
     ))
 # training and testing settings
 train_cfg = dict(
