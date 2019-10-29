@@ -246,25 +246,19 @@ class WFCOSHead(nn.Module):
             for bbox_pred in bbox_preds
         ]
 
-        print("flatten_bbox_preds pre cat length, shape of each: {}"
-              .format(len(flatten_bbox_preds), flatten_bbox_preds[0].shape))
-
         # Calculate flattened energies
         flatten_energies = []
         for energy in energies:
-            print("Pre reshape energy.shape: {}".format(energy.shape))
             energy = energy.permute(0, 2, 3, 1)
             es = energy.shape  # Easier access
             flatten_energies.append(energy.reshape([es[0] * es[1] * es[2],
                                                     self.max_energy]))
-            print("Energy.shape: {}".format(energy.shape))
         flatten_cls_scores = torch.cat(flatten_cls_scores)
         flatten_bbox_preds = torch.cat(flatten_bbox_preds)
         flatten_energies = torch.cat(flatten_energies, dim=0)
         flatten_labels = torch.cat(labels)
         flatten_bbox_targets = torch.cat(bbox_targets)
 
-        print("flatten_bbox_preds post cat shape: {}".format(flatten_bbox_preds.shape))
         # repeat points to align with bbox_preds
         flatten_points = torch.cat(
             [points.repeat(num_imgs, 1) for points in all_level_points])
@@ -277,7 +271,6 @@ class WFCOSHead(nn.Module):
             flatten_cls_scores, flatten_labels,
             avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
 
-        print("flatten_energies.shape: {}".format(flatten_energies.shape))
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_energies = flatten_energies[pos_inds]
 
@@ -290,9 +283,12 @@ class WFCOSHead(nn.Module):
             pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
 
-            print("featmap_sizes: {}".format(featmap_sizes))
-            print("pos_bbox_targets[0]: {}".format(pos_bbox_targets))
             # energy weighted iou loss
+            # print("decoded_bbox_shape:         {}".format(pos_decoded_bbox_preds.shape))
+            # print("decoded_target_preds.shape: {}".format(pos_decoded_target_preds.shape))
+            # print("pos_energies_targets.shape:  {}\n".format(pos_energies_targets.shape))
+            # print("energies_targets \n{}\n".format(pos_energies_targets))
+            # print("energies: \n{}\n".format(pos_energies))
             loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
@@ -304,7 +300,6 @@ class WFCOSHead(nn.Module):
         else:
             loss_bbox = pos_bbox_preds.sum()
             loss_energy = pos_energies.sum()
-        input()
 
         return dict(
             loss_cls=loss_cls,
@@ -325,6 +320,7 @@ class WFCOSHead(nn.Module):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         mlvl_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                       bbox_preds[0].device)
+        print("Energies: {}".format(len(energies)))
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -336,6 +332,7 @@ class WFCOSHead(nn.Module):
             energy_pred_list = [
                 energies[i][img_id].detach() for i in range(num_levels)
             ]
+
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             det_bboxes = self.get_bboxes_single(cls_score_list, bbox_pred_list,
@@ -368,9 +365,10 @@ class WFCOSHead(nn.Module):
 
 
             # TODO REPLACE WITH WATERSHED
-            print(energy.shape)
             energy= energy.permute(1, 2, 0).reshape(-1).sigmoid()
-            print(energy.shape)
+            print('\nenergy.shape: \n{}'.format(energy.shape))
+            print('scores.shape: \n{}'.format(scores.shape))
+            print('energy[:, None].shape: \n{}'.format(energy[:, None].shape))
 
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
@@ -552,12 +550,20 @@ class WFCOSHead(nn.Module):
         horizontal = pos_bbox_targets[:, 0] - pos_bbox_targets[:, 2]
         vertical = pos_bbox_targets[:, 1] - pos_bbox_targets[:, 3]
 
+        # print("Horizontals: {}".format(horizontal))
+        # print("Verticals: {}".format(vertical))
+
         horizontal = torch.div(horizontal, 2)
         vertical = torch.div(vertical, 2)
 
+        c2 = (horizontal * horizontal) + (vertical * vertical)
+
+        # print("c2: \n{}".format(c2))
+
         # We use x * x instead of x.pow(2) since it's faster by about 30%
-        square_root = torch.sqrt((horizontal * horizontal)
-                                 + (vertical * vertical))
+        square_root = torch.sqrt(c2)
+
+        # print("Sqrt: \n{}".format(square_root))
 
         type_dict = {'dtype': square_root.dtype,
                      'device': square_root.device}
@@ -572,5 +578,10 @@ class WFCOSHead(nn.Module):
         energies_targets = torch.zeros(flattened_bbox_targets.shape[0],
                                        **type_dict)
         energies_targets[pos_indices] = pos_energies
+
+        # torch.set_printoptions(profile='full')
+        # print("Energy targets: \n {}".format(pos_energies))
+        # torch.set_printoptions(profile='default')
+        # input()
 
         return pos_energies, energies_targets
