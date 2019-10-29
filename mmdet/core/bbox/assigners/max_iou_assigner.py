@@ -70,8 +70,12 @@ class MaxIoUAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
-        if bboxes.shape[0] == 0 or gt_bboxes.shape[0] == 0:
-            raise ValueError('No gt or bboxes')
+        if bboxes.shape[0] == 0:
+            raise ValueError('No proposed bboxes')
+
+        if gt_bboxes.shape[0] == 0:
+            raise ValueError('No gt bboxes')
+
         bboxes = bboxes[:, :4]
         overlaps = bbox_overlaps(gt_bboxes, bboxes)
 
