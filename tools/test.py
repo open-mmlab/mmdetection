@@ -29,7 +29,11 @@ def single_gpu_test(model, data_loader, show=False):
         if show:
             model.module.show_result(data, result)
 
-        batch_size = data['img'].data[0].size(0)
+        try:  # process 2 possible format of input
+            batch_size = data['img'].data[0].size(0)
+        except AttributeError as e:
+            batch_size = data['img'][0].size(0)
+
         for _ in range(batch_size):
             prog_bar.update()
     return results

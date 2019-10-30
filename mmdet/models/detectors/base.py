@@ -97,9 +97,28 @@ class BaseDetector(nn.Module):
         else:
             bbox_result, segm_result = result, None
 
-        img_tensor = data['img'].data[0]
-        img_metas = data['img_meta'].data[0]
+        data_img = data['img']
+        data_img_meta = data['img_meta']
+
+        try:  # process DataContainer-like objects
+            data_img = data_img.data
+            data_img_meta = data_img_meta.data
+        except AttributeError:
+            pass
+        img_tensor = data_img[0]
+        img_metas = data_img_meta[0]
+
+        try:  # process DataContainer-like objects
+            img_metas = img_metas.data
+        except AttributeError:
+            pass
+        try:  # process nested list inside
+            img_metas[0][0]
+            img_metas = img_metas[0]
+        except KeyError:
+            pass
         imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
+
         assert len(imgs) == len(img_metas)
 
         if dataset is None:
