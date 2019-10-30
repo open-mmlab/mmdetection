@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 DEBUG_COMPLETED_TIME = bool(os.environ.get('DEBUG_COMPLETED_TIME', False))
 DEBUG_COMPLETED = bool(os.environ.get('DEBUG_COMPLETED', False))
+DEBUG_CONCURRENT = bool(os.environ.get('DEBUG_CONCURRENT', False))
 
 
 @contextlib.asynccontextmanager
@@ -49,6 +50,9 @@ async def completed(trace_name="",
     try:
         yield
     finally:
+        current_stream = torch.cuda.current_stream()
+        assert current_stream == stream_before_context_switch
+
         if DEBUG_COMPLETED_TIME:
             cpu_end = time.monotonic()
         for i, stream in enumerate(streams):
@@ -62,26 +66,17 @@ async def completed(trace_name="",
         assert grad_enabled_before == grad_enabled_after, \
             "Unexpected is_grad_enabled() value change"
 
-        device_before_context_switch = torch.cuda.current_device()
-
         are_done = [e.query() for e in end_events]
         if DEBUG_COMPLETED:
             logger.info("%s %s completed: %s streams: %s", trace_name, name,
                         are_done, streams)
-        while not all(are_done):
-            await asyncio.sleep(sleep_interval)
-            are_done = [e.query() for e in end_events]
-            if DEBUG_COMPLETED:
-                logger.info("%s %s completed: %s streams: %s", trace_name,
-                            name, are_done, streams)
-
-        current_device = torch.cuda.current_device()
-        current_stream = torch.cuda.current_stream()
-
-        if current_device != device_before_context_switch:
-            torch.cuda.set_device(device_before_context_switch)
-        if current_stream != stream_before_context_switch:
-            torch._C._cuda_setStream(stream_before_context_switch._cdata)
+        with torch.cuda.stream(stream_before_context_switch):
+            while not all(are_done):
+                await asyncio.sleep(sleep_interval)
+                are_done = [e.query() for e in end_events]
+                if DEBUG_COMPLETED:
+                    logger.info("%s %s completed: %s streams: %s", trace_name,
+                                name, are_done, streams)
 
         if DEBUG_COMPLETED_TIME:
             cpu_time = (cpu_end - cpu_start) * 1000
@@ -94,5 +89,37 @@ async def completed(trace_name="",
 
 
 @contextlib.asynccontextmanager
-async def completed(trace_name="",
-                    name="",
+async def concurrent(streamqueue: asyncio.Queue,
+                     trace_name="concurrent",
+                     name="stream"):
+    """Run code concurrently in different streams.
+
+    :param streamqueue: asyncio.Queue instance.
+
+    Queue tasks define the pool of streams used for concurrent execution.
+
+    """
+    if not torch.cuda.is_available():
+        yield
+        return
+
+    initial_stream = torch.cuda.current_stream()
+
+    with torch.cuda.stream(initial_stream):
+        stream = await streamqueue.get()
+        assert isinstance(stream, torch.cuda.Stream)
+
+        try:
+            with torch.cuda.stream(stream):
+                if DEBUG_CONCURRENT:
+                    logger.info("%s %s is starting, stream: %s", trace_name,
+                                name, stream)
+                yield
+                current = torch.cuda.current_stream()
+                assert current == stream
+                if DEBUG_CONCURRENT:
+                    logger.info("%s %s has finished, stream: %s", trace_name,
+                                name, stream)
+        finally:
+            streamqueue.task_done()
+            streamqueue.put_nowait(stream)

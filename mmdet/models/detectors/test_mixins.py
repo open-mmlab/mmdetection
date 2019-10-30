@@ -8,12 +8,13 @@ from mmdet.utils.contextmanagers import completed
 class RPNTestMixin(object):
 
     async def async_test_rpn(self, x, img_meta, rpn_test_cfg):
-        sleep_interval = rpn_test_cfg.pop("async_sleep_interval", 0.05)
+        sleep_interval = rpn_test_cfg.pop("async_sleep_interval", 0.025)
         async with completed(
                 __name__, "rpn_head_forward", sleep_interval=sleep_interval):
             rpn_outs = self.rpn_head(x)
 
         proposal_inputs = rpn_outs + (img_meta, rpn_test_cfg)
+
         proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         return proposal_list
 

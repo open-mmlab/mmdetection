@@ -1,5 +1,4 @@
 from __future__ import division
-
 from typing import List, Tuple
 
 import numpy as np
@@ -103,7 +102,6 @@ class AnchorHead(nn.Module):
         cls_scores = []
         bbox_preds = []
         for level, f in enumerate(feats):
-            flat = f.reshape(-1)
             cls_score, bbox_pred = self.forward_single(f)
             cls_scores.append(cls_score)
             bbox_preds.append(bbox_pred)
