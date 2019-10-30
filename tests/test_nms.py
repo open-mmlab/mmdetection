@@ -1,7 +1,6 @@
 """
 CommandLine:
     pytest tests/test_nms.py
-    xdoctest -m ~/code/mmdetection/tests/test_nms.py test_nms_device_and_dtypes_gpu
 """
 import numpy as np
 import torch
@@ -10,7 +9,10 @@ from mmdet.ops.nms.nms_wrapper import nms
 
 
 def test_nms_device_and_dtypes_cpu():
-
+    """
+    CommandLine:
+        xdoctest -m tests/test_nms.py test_nms_device_and_dtypes_cpu
+    """
     iou_thr = 0.7
     base_dets = np.array([[49.1, 32.4, 51.0, 35.9, 0.9],
                           [49.3, 32.9, 51.0, 35.3, 0.9],
@@ -40,6 +42,10 @@ def test_nms_device_and_dtypes_cpu():
 
 
 def test_nms_device_and_dtypes_gpu():
+    """
+    CommandLine:
+        xdoctest -m tests/test_nms.py test_nms_device_and_dtypes_gpu
+    """
     if not torch.cuda.is_available():
         import pytest
         pytest.skip('test requires GPU and torch+cuda')
