@@ -229,6 +229,8 @@ class WFCOSHead(nn.Module):
         labels, bbox_targets = self.wfcos_target(all_level_points, gt_bboxes,
                                                  gt_labels)
 
+
+
         # Labels are a list of per level labels, each level is a tensor of all
         # targets at that level
 
@@ -317,6 +319,10 @@ class WFCOSHead(nn.Module):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
+        print("===========================================================")
+        print("Doing get_bboxes")
+        
+
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         mlvl_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                       bbox_preds[0].device)
@@ -361,15 +367,13 @@ class WFCOSHead(nn.Module):
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
 
-            # FIXME TEMPORARY CODE
-
-
-            # TODO REPLACE WITH WATERSHED
             energy= energy.permute(1, 2, 0).reshape(-1).sigmoid()
-            print('\nenergy.shape: \n{}'.format(energy.shape))
-            print('scores.shape: \n{}'.format(scores.shape))
-            print('energy[:, None].shape: \n{}'.format(energy[:, None].shape))
-
+            # DEBUG
+            print("=====================================================")
+            print("Doing get_bboxes_single:")
+            print('energy.shape:          {}'.format(energy.shape))
+            print('scores.shape:          {}'.format(scores.shape))
+            print('energy[:, None].shape: {}'.format(energy[:, None].shape))
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
