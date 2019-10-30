@@ -319,14 +319,10 @@ class WFCOSHead(nn.Module):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
-        print("===========================================================")
-        print("Doing get_bboxes")
-        
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         mlvl_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                       bbox_preds[0].device)
-        print("Energies: {}".format(len(energies)))
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -346,6 +342,7 @@ class WFCOSHead(nn.Module):
                                                 mlvl_points, img_shape,
                                                 scale_factor, cfg, rescale)
             result_list.append(det_bboxes)
+
         return result_list
 
     def get_bboxes_single(self,
@@ -367,13 +364,18 @@ class WFCOSHead(nn.Module):
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
 
-            energy= energy.permute(1, 2, 0).reshape(-1).sigmoid()
-            # DEBUG
-            print("=====================================================")
-            print("Doing get_bboxes_single:")
-            print('energy.shape:          {}'.format(energy.shape))
-            print('scores.shape:          {}'.format(scores.shape))
-            print('energy[:, None].shape: {}'.format(energy[:, None].shape))
+            # Flatten to argmax values
+            energy = energy.permute(1, 2, 0).argmax(2).reshape(-1)
+
+            # Turn it into a float
+            energy = energy.to(dtype=torch.float32)
+
+            # Then apply a sigmoid function to it before increasing back to the
+            # max energy level
+            energy = energy.div(self.max_energy).sigmoid()
+
+            # Finally floor it
+            energy = energy.floor()
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)

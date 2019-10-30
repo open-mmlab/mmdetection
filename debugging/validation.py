@@ -7,10 +7,7 @@ manipulate them more easily
 Author:
     Yvan Satyawan <y_satyawan@hotmail.com>
 """
-import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchvision.datasets import CocoDetection
 
 from mmcv import Config
 
@@ -19,11 +16,14 @@ from mmdet.models.backbones import ResNet
 from mmdet.models.necks import FPN
 
 from debugging.multi_transforms import *
+from debugging.coco_dataset import CocoDataset
+
 
 class ValidationDebug:
     def __init__(self, config_path):
         """Initializes the network and dataset."""
         cfg = Config.fromfile(config_path)
+        self.cfg = cfg
 
         # Initialize network first as separate modules so we can access WFCOS
         self.backbone = ResNet(**cfg.model.backbone)
@@ -36,9 +36,9 @@ class ValidationDebug:
             MultiToTensor(),
             MultiNormalize(**cfg.img_norm_cfg)
         ])
-        coco_dataset = CocoDetection(cfg.data.train.img_prefix,
-                                     cfg.data.train.ann_file,
-                                     transforms=transforms)
+        coco_dataset = CocoDataset(cfg.data.train.img_prefix,
+                                   cfg.data.train.ann_file,
+                                   transforms=transforms)
 
         self.loader = DataLoader(coco_dataset, 1, True)
 
@@ -48,7 +48,11 @@ class ValidationDebug:
             out = self.backbone(img)
             out = self.neck(out)
             out = self.head(out)
-            self.head.
+
+            img_metas = [{'img_shape': (640, 800),
+                          'scale_factor': 1}]
+            self.head.get_bboxes(out[0], out[1], out[2], img_metas,
+                                 self.cfg.test_cfg)
             pass
 
 
