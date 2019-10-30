@@ -31,7 +31,7 @@ def single_gpu_test(model, data_loader, show=False):
 
         try:  # process 2 possible format of input
             batch_size = data['img'].data[0].size(0)
-        except AttributeError as e:
+        except AttributeError:
             batch_size = data['img'][0].size(0)
 
         for _ in range(batch_size):
