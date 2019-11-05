@@ -44,16 +44,47 @@ def binary_cross_entropy(pred,
     # weighted element-wise losses
     if weight is not None:
         weight = weight.float()
-    loss = F.binary_cross_entropy_with_logits(
+    loss_ = F.binary_cross_entropy_with_logits(
         pred, label.float(), weight, reduction='none')
-    #loss_ = torch.max(F.softmax(pred, dim=1), dim=1)[0]
-    # do the reduction for the weighted loss
-    #loss_ = weight_reduce_loss(loss_, reduction=reduction, avg_factor=avg_factor)
-    loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
+    th = 0.5
+    #Get the indices of valid examples using weights
+    valid_ind=weight>0
+    #Get valid positive labels
     
-    pdb.set_trace()
-    return loss_
+    #Compute loss originating from foreground examples
+    #1.Find corresponding output of the network,
+    #Now you have 1xfg sized vector
+    
+    #2.Compute loss to have fg sized loss vector
+    
+    #Get valid bacground labels
+    
+    #Compute loss_originating from bg examples
+    
+    #1.Find 1-pred_ for bg examples for all of the outputs(in total 80)
+    #Now you have 80xbg examples matrix
+    
+    #2.Compute loss, and average them to have a single loss per bg example
+    #Now you have bg sized vector
+    
 
+    #Concat fg loss and bg loss vectors and average with the total size
+    
+    pred_ = torch.sigmoid(pred)
+    loss = (2*th - pred_)
+    pdb.set_trace()
+    
+#    loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
+    return loss
+
+def modified_sigmoid(x):
+    out = (1+(-x).exp()).reciprocal()
+    return out
+
+def modified_cross_entropy(pred, label, th):
+    out = (pred*label + (1-label)*(1-pred))
+    pdb.set_trace()
+    return torch.abs(th-out)
 
 def mask_cross_entropy(pred, target, label, reduction='mean', avg_factor=None):
     # TODO: handle these two reserved arguments

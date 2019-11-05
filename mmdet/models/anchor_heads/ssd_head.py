@@ -110,6 +110,12 @@ class SSDHead(AnchorHead):
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
+        # change with T-pi
+        # bg yi labels'da nereye koyuyor?
+        # cls_score'un içinde ne var? 
+          # 1. 81xanchor -> cls_score[labels] 
+          # 2. 1xanchor -> cls_score 
+        # label_weights ne? OHEM olmasına rağmen neden kullanılıyor, toplamı kaç?
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         pos_inds = (labels > 0).nonzero().view(-1)
@@ -119,6 +125,7 @@ class SSDHead(AnchorHead):
         num_neg_samples = cfg.neg_pos_ratio * num_pos_samples
         if num_neg_samples > neg_inds.size(0):
             num_neg_samples = neg_inds.size(0)
+        # OHEM kalsın.
         topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
         loss_cls_pos = loss_cls_all[pos_inds].sum()
         loss_cls_neg = topk_loss_cls_neg.sum()
