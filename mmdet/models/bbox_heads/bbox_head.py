@@ -9,6 +9,7 @@ from ..builder import build_loss
 from ..losses import accuracy
 from ..registry import HEADS
 
+import pdb
 
 @HEADS.register_module
 class BBoxHead(nn.Module):
@@ -47,7 +48,6 @@ class BBoxHead(nn.Module):
 
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
-
         in_channels = self.in_channels
         if self.with_avg_pool:
             self.avg_pool = nn.AvgPool2d(self.roi_feat_size)
@@ -105,6 +105,7 @@ class BBoxHead(nn.Module):
              bbox_weights,
              reduction_override=None):
         losses = dict()
+        #pdb.set_trace()
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             losses['loss_cls'] = self.loss_cls(

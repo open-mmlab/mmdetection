@@ -6,9 +6,11 @@ from mmcv.cnn import xavier_init
 
 from mmdet.core import AnchorGenerator, anchor_target, multi_apply
 from ..losses import smooth_l1_loss
+from ..losses import iou_loss
 from ..registry import HEADS
 from .anchor_head import AnchorHead
 
+import pdb
 
 # TODO: add loss evaluator for SSD
 @HEADS.register_module
@@ -130,14 +132,22 @@ class SSDHead(AnchorHead):
         loss_cls_pos = loss_cls_all[pos_inds].sum()
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
+        pdb.set_trace() 
+        loss_bbox_iou = iou_loss(
+                bbox_pred,
+                bbox_targets,
+                bbox_weights,
+                reduction = 'mean',
+                avg_factor = num_total_samples)
 
-        loss_bbox = smooth_l1_loss(
-            bbox_pred,
-            bbox_targets,
-            bbox_weights,
-            beta=cfg.smoothl1_beta,
-            avg_factor=num_total_samples)
-        return loss_cls[None], loss_bbox
+        #loss_bbox = smooth_l1_loss(
+        #    bbox_pred,
+        #    bbox_targets,
+        #    bbox_weights,
+        #    beta=cfg.smoothl1_beta,
+        #    avg_factor=num_total_samples)
+
+        return loss_cls[None], loss_bbox_iou
 
     def loss(self,
              cls_scores,

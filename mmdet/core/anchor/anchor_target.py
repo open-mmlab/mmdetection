@@ -68,7 +68,6 @@ def anchor_target(anchor_list,
     num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
     num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
     # split targets to a list w.r.t. multiple levels
-    pdb.set_trace()
     labels_list = images_to_levels(all_labels, num_level_anchors)
     label_weights_list = images_to_levels(all_label_weights, num_level_anchors)
     bbox_targets_list = images_to_levels(all_bbox_targets, num_level_anchors)
@@ -111,7 +110,7 @@ def anchor_target_single(flat_anchors,
         return (None, ) * 6
     # assign gt and sample anchors
     anchors = flat_anchors[inside_flags, :]
-    pdb.set_trace()
+    #pdb.set_trace()
     if sampling:
         assign_result, sampling_result = assign_and_sample(
             anchors, gt_bboxes, gt_bboxes_ignore, None, cfg)
