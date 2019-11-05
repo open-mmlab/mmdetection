@@ -285,12 +285,15 @@ class WFCOSHead(nn.Module):
             pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
 
-            # energy weighted iou loss
-            # print("decoded_bbox_shape:         {}".format(pos_decoded_bbox_preds.shape))
-            # print("decoded_target_preds.shape: {}".format(pos_decoded_target_preds.shape))
-            # print("pos_energies_targets.shape:  {}\n".format(pos_energies_targets.shape))
+            if pos_energies_targets is not None \
+                and not torch.any(pos_energies_targets > 0):
+                pos_energies_targets = pos_energies_targets.reshape(
+                    [pos_energies_targets.shape[0], 1]).repeat(1, 4)
+
             # print("energies_targets \n{}\n".format(pos_energies_targets))
             # print("energies: \n{}\n".format(pos_energies))
+            # energy weighted iou loss
+
             loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
