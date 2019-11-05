@@ -57,7 +57,8 @@ class GroupSampler(Sampler):
             np.random.shuffle(indice)
             num_extra = int(np.ceil(size / self.samples_per_gpu)
                             ) * self.samples_per_gpu - len(indice)
-            indice = np.concatenate([indice, indice[:num_extra]])
+            indice = np.concatenate(
+                [indice, np.random.choice(indice, num_extra)])
             indices.append(indice)
         indices = np.concatenate(indices)
         indices = [
