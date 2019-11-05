@@ -82,6 +82,12 @@ def build_optimizer(model, optimizer_cfg):
 
     Returns:
         torch.optim.Optimizer: The initialized optimizer.
+
+    Example:
+        >>> model = torch.nn.modules.Conv1d(1, 1, 1)
+        >>> optimizer_cfg = dict(type='SGD', lr=0.01, momentum=0.9,
+        >>>                      weight_decay=0.0001)
+        >>> optimizer = build_optimizer(model, optimizer_cfg)
     """
     if hasattr(model, 'module'):
         model = model.module

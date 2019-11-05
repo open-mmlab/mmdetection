@@ -1,5 +1,6 @@
 from .anchor_head import AnchorHead
 from .fcos_head import FCOSHead
+from .fovea_head import FoveaHead
 from .ga_retina_head import GARetinaHead
 from .ga_rpn_head import GARPNHead
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
@@ -12,5 +13,6 @@ from .wfcos_head import WFCOSHead
 __all__ = [
     'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption', 'RPNHead',
     'GARPNHead', 'RetinaHead', 'GARetinaHead', 'SSDHead', 'FCOSHead',
-    'RepPointsHead', 'WFCOSHead'
+    'RepPointsHead', 'WFCOSHead', 'FoveaHead'
+
 ]

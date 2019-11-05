@@ -12,6 +12,22 @@ INF = 1e8
 
 @HEADS.register_module
 class FCOSHead(nn.Module):
+    """
+    Fully Convolutional One-Stage Object Detection head from [1]_.
+
+    The FCOS head does not use anchor boxes. Instead bounding boxes are
+    predicted at each pixel and a centerness measure is used to supress
+    low-quality predictions.
+
+    References:
+        .. [1] https://arxiv.org/abs/1904.01355
+
+    Example:
+        >>> self = FCOSHead(11, 7)
+        >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
+        >>> cls_score, bbox_pred, centerness = self.forward(feats)
+        >>> assert len(cls_score) == len(self.scales)
+    """
 
     def __init__(self,
                  num_classes,
