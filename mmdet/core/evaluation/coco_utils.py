@@ -142,7 +142,7 @@ def segm2json(dataset, results):
 
             # segm results
             # some detectors use different score for det and segm
-            if isinstance(seg, tuple):
+            if len(seg) == 2:
                 segms = seg[0][label]
                 mask_score = seg[1][label]
             else:
@@ -153,8 +153,7 @@ def segm2json(dataset, results):
                 data['image_id'] = img_id
                 data['score'] = float(mask_score[i])
                 data['category_id'] = dataset.cat_ids[label]
-                if isinstance(segms[i]['counts'], bytes):
-                    segms[i]['counts'] = segms[i]['counts'].decode()
+                segms[i]['counts'] = segms[i]['counts'].decode()
                 data['segmentation'] = segms[i]
                 segm_json_results.append(data)
     return bbox_json_results, segm_json_results

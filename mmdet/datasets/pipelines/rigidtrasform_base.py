@@ -42,8 +42,8 @@ def visualize_bbox(img,
 def get_aug(p=0.5, min_area=0., min_visibility=0.):
     return Compose(
         [
+            HorizontalFlip(p=0.5),
             VerticalFlip(p=0.5),
-            # Transpose(p=0.5),
             RandomRotate90(p=0.5),
             Rotate(p=0.5),
         ],
@@ -60,7 +60,6 @@ def color_aug(p=0.5):
     return Compose(
         [
             RandomBrightness(p=0.5),
-            RandomContrast(p=0.5),
             RandomGamma(p=0.5),
             RGBShift(p=0.5),
         ],

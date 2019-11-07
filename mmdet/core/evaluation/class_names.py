@@ -9,6 +9,14 @@ def mitosis_classes():
     return ['positive']
 
 
+def ki67_classes():
+    return ['positive', 'negative', 'stromal', 'lymphocyte']
+
+
+def ki67mask_classes():  # ki67 mask
+    return ['positive', 'negative', 'stromal', 'lymphocyte']
+
+
 def voc_classes():
     return [
         'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat',
@@ -69,21 +77,22 @@ def imagenet_vid_classes():
 
 
 def coco_classes():
-    return [
-        'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
-        'truck', 'boat', 'traffic_light', 'fire_hydrant', 'stop_sign',
-        'parking_meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
-        'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella',
-        'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard',
-        'sports_ball', 'kite', 'baseball_bat', 'baseball_glove', 'skateboard',
-        'surfboard', 'tennis_racket', 'bottle', 'wine_glass', 'cup', 'fork',
-        'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange',
-        'broccoli', 'carrot', 'hot_dog', 'pizza', 'donut', 'cake', 'chair',
-        'couch', 'potted_plant', 'bed', 'dining_table', 'toilet', 'tv',
-        'laptop', 'mouse', 'remote', 'keyboard', 'cell_phone', 'microwave',
-        'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
-        'scissors', 'teddy_bear', 'hair_drier', 'toothbrush'
-    ]
+    return ['positive', 'negative', 'stromal', 'lymphocyte']
+    # return [
+    #     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
+    #     'truck', 'boat', 'traffic_light', 'fire_hydrant', 'stop_sign',
+    #     'parking_meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
+    #     'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella',
+    #     'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard',
+    #     'sports_ball', 'kite', 'baseball_bat', 'baseball_glove', 'skateboard',
+    #     'surfboard', 'tennis_racket', 'bottle', 'wine_glass', 'cup', 'fork',
+    #     'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange',
+    #     'broccoli', 'carrot', 'hot_dog', 'pizza', 'donut', 'cake', 'chair',
+    #     'couch', 'potted_plant', 'bed', 'dining_table', 'toilet', 'tv',
+    #     'laptop', 'mouse', 'remote', 'keyboard', 'cell_phone', 'microwave',
+    #     'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
+    #     'scissors', 'teddy_bear', 'hair_drier', 'toothbrush'
+    # ]
 
 
 def cityscapes_classes():
@@ -100,7 +109,9 @@ dataset_aliases = {
     'coco': ['coco', 'mscoco', 'ms_coco'],
     'wider_face': ['WIDERFaceDataset', 'wider_face', 'WDIERFace'],
     'cityscapes': ['cityscapes'],
-    'mitosis': ['voc', 'pascal_voc', 'voc07', 'voc12']  # mitosis
+    'mitosis': ['voc', 'pascal_voc', 'voc07', 'voc12'],  # mitosis
+    'ki67': ['voc', 'pascal_voc', 'voc07', 'voc12'],  # ki67
+    'ki67mask': ['coco', 'mscoco', 'ms_coco'],  # ki67 mask
 }
 
 

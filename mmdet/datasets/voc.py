@@ -5,10 +5,12 @@ from .xml_style import XMLDataset
 @DATASETS.register_module
 class VOCDataset(XMLDataset):
 
-    CLASSES = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car',
-               'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
-               'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
-               'tvmonitor')
+    # CLASSES = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car',
+    #            'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
+    #            'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
+    #            'tvmonitor')
+    CLASSES = ('positive',)
+    # CLASSES = ('positive', 'suspected')
 
     def __init__(self, **kwargs):
         super(VOCDataset, self).__init__(**kwargs)
