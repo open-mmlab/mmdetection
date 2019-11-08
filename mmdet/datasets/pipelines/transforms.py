@@ -580,7 +580,7 @@ class MinIoURandomCrop(object):
     Args:
         min_ious (tuple): minimum IoU threshold for all intersections with
         bounding boxes
-        min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w, 
+        min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
         where a >= min_crop_size).
     """
 
