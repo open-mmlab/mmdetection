@@ -76,7 +76,8 @@ def test_ssd300_forward():
         img_list = [g[None, :] for g in imgs]
         batch_results = []
         for one_img, one_meta in zip(img_list, img_metas):
-            result = detector.forward([one_img], [[one_meta]], return_loss=False)
+            result = detector.forward([one_img], [[one_meta]],
+                                      return_loss=False)
             batch_results.append(result)
 
 
@@ -104,7 +105,8 @@ def test_rpn_forward():
         img_list = [g[None, :] for g in imgs]
         batch_results = []
         for one_img, one_meta in zip(img_list, img_metas):
-            result = detector.forward([one_img], [[one_meta]], return_loss=False)
+            result = detector.forward([one_img], [[one_meta]],
+                                      return_loss=False)
             batch_results.append(result)
 
 
@@ -138,7 +140,8 @@ def test_retina_ghm_forward():
         img_list = [g[None, :] for g in imgs]
         batch_results = []
         for one_img, one_meta in zip(img_list, img_metas):
-            result = detector.forward([one_img], [[one_meta]], return_loss=False)
+            result = detector.forward([one_img], [[one_meta]],
+                                      return_loss=False)
             batch_results.append(result)
 
     if torch.cuda.is_available():
@@ -160,7 +163,8 @@ def test_retina_ghm_forward():
             img_list = [g[None, :] for g in imgs]
             batch_results = []
             for one_img, one_meta in zip(img_list, img_metas):
-                result = detector.forward([one_img], [[one_meta]], return_loss=False)
+                result = detector.forward([one_img], [[one_meta]],
+                                          return_loss=False)
                 batch_results.append(result)
 
 
