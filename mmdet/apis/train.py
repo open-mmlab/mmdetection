@@ -141,11 +141,6 @@ def build_optimizer(model, optimizer_cfg):
 
 
 def _dist_train(model, dataset, cfg, validate=False):
-    if validate:
-        raise NotImplementedError('Built-in validation is not implemented '
-                                  'yet in not-distributed training. Use '
-                                  'distributed training or test.py and '
-                                  '*eval.py scripts instead.')
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
     data_loaders = [
@@ -198,6 +193,11 @@ def _dist_train(model, dataset, cfg, validate=False):
 
 
 def _non_dist_train(model, dataset, cfg, validate=False):
+    if validate:
+        raise NotImplementedError('Built-in validation is not implemented '
+                                  'yet in not-distributed training. Use '
+                                  'distributed training or test.py and '
+                                  '*eval.py scripts instead.')
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
     data_loaders = [
