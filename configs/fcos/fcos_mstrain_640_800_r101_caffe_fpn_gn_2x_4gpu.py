@@ -130,7 +130,6 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 24
-device_ids = range(4)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/fcos_mstrain_640_800_r101_caffe_fpn_gn_2x_4gpu'

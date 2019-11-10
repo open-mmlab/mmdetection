@@ -342,7 +342,7 @@ class HybridTaskCascade(CascadeRCNN):
                     img_shape,
                     scale_factor,
                     rescale=rescale,
-                    nms_cfg=rcnn_test_cfg)
+                    cfg=rcnn_test_cfg)
                 bbox_result = bbox2result(det_bboxes, det_labels,
                                           bbox_head.num_classes)
                 ms_bbox_result['stage{}'.format(i)] = bbox_result
