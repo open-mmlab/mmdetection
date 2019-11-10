@@ -581,8 +581,10 @@ class MinIoURandomCrop(object):
     selected from min_ious.
 
     Args:
-        min_ious (tuple): minimum IoU threshold
-        crop_size (tuple): Expected size after cropping, (h, w).
+        min_ious (tuple): minimum IoU threshold for all intersections with
+        bounding boxes
+        min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
+        where a >= min_crop_size).
     """
 
     def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3):
