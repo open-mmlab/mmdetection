@@ -144,7 +144,6 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 24
-device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/reppoints_moment_x101_dcn_fpn_2x_mt'

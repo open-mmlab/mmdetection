@@ -357,6 +357,9 @@ class MobileNet(nn.Module):
 
     def forward(x):  # should return a tuple
         pass
+    
+    def init_weights(self, pretrained=None):
+        pass
 ```
 
 2. Import the module in `mmdet/models/backbones/__init__.py`.

@@ -75,6 +75,15 @@ class BaseDetector(nn.Module):
             logger.info('load model from: {}'.format(pretrained))
 
     def forward_test(self, imgs, img_metas, **kwargs):
+        """
+        Args:
+            imgs (List[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            img_meta (List[List[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch
+        """
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError('{} must be a list, but got {}'.format(
@@ -96,6 +105,14 @@ class BaseDetector(nn.Module):
 
     @auto_fp16(apply_to=('img', ))
     def forward(self, img, img_meta, return_loss=True, **kwargs):
+        """
+        Calls either forward_train or forward_test depending on whether
+        return_loss=True. Note this setting will change the expected inputs.
+        When `return_loss=False`, img and img_meta are single-nested (i.e.
+        Tensor and List[dict]), and when `resturn_loss=True`, img and img_meta
+        should be double nested (i.e.  List[Tensor], List[List[dict]]), with
+        the outer list indicating test time augmentations.
+        """
         if return_loss:
             return self.forward_train(img, img_meta, **kwargs)
         else:
