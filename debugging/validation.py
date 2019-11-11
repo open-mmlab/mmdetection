@@ -7,9 +7,12 @@ manipulate them more easily
 Author:
     Yvan Satyawan <y_satyawan@hotmail.com>
 """
+import torch
 from torch.utils.data import DataLoader
 
 from mmcv import Config
+
+from collections import OrderedDict
 
 from mmdet.models.anchor_heads import WFCOSHead
 from mmdet.models.backbones import ResNet
@@ -25,10 +28,35 @@ class ValidationDebug:
         cfg = Config.fromfile(config_path)
         self.cfg = cfg
 
+        # Get the checkpoint file
+        print('loading checkpoint file ...')
+        cp = torch.load(cfg.work_dir + '/latest.pth')
+        print('done')
+
+        print('loading state dictionary ...')
         # Initialize network first as separate modules so we can access WFCOS
         self.backbone = ResNet(**cfg.model.backbone)
         self.neck = FPN(**cfg.model.neck)
         self.head = WFCOSHead(**cfg.model.bbox_head)
+
+        # Load the state dicts
+        backbone_state = OrderedDict()
+        neck_state = OrderedDict()
+        head_state = OrderedDict()
+
+        for key in cp['state_dict'].keys():
+            if 'backbone' in key:
+                backbone_state[key.split('.', 1)[1]] = cp['state_dict'][key]
+            elif 'neck' in key:
+                neck_state[key.split('.', 1)[1]] = cp['state_dict'][key]
+            elif 'bbox_head' in key:
+                head_state[key.split('.', 1)[1]] = cp['state_dict'][key]
+
+        self.backbone.load_state_dict(backbone_state)
+        self.neck.load_state_dict(neck_state)
+        self.head.load_state_dict(head_state)
+
+        print('done')
 
         # Now make the dataloader
         transforms = MultiCompose([
@@ -43,7 +71,8 @@ class ValidationDebug:
         self.loader = DataLoader(coco_dataset, 1, True)
 
     def run(self):
-        """Runs validation only with a completely untrained network."""
+        """Runs validation only with the network."""
+        print('starting inference validation run ...')
         for i, (img, cls) in enumerate(self.loader):
             out = self.backbone(img)
             out = self.neck(out)
@@ -51,9 +80,10 @@ class ValidationDebug:
 
             img_metas = [{'img_shape': (640, 800),
                           'scale_factor': 1}]
-            self.head.get_bboxes(out[0], out[1], out[2], img_metas,
-                                 self.cfg.test_cfg)
+            bboxes = self.head.get_bboxes(out[0], out[1], out[2], img_metas,
+                                          self.cfg.test_cfg)
             pass
+        print('done')
 
 
 if __name__ == '__main__':

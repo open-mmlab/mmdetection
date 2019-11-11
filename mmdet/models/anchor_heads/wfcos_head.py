@@ -45,8 +45,8 @@ class WFCOSHead(nn.Module):
                 classfication output.
             loss_bbox (dict): A description of the loss to use for the bbox
                 output.
-            loss_energy (dict): A description of the loss to use for the energies
-                map output.
+            loss_energy (dict): A description of the loss to use for the
+                energies map output.
             conv_cfg (dict): A description of the configuration of the
                 convolutions in the stacked convolution.
             norm_cfg (dict): A description of the normalization configuration of
@@ -210,6 +210,7 @@ class WFCOSHead(nn.Module):
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
         bbox_pred = scale(self.wfcos_reg(reg_feat)).float().exp()
+
         return cls_score, bbox_pred, energy
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'energies'))
@@ -229,13 +230,8 @@ class WFCOSHead(nn.Module):
         labels, bbox_targets = self.wfcos_target(all_level_points, gt_bboxes,
                                                  gt_labels)
 
-
-
         # Labels are a list of per level labels, each level is a tensor of all
         # targets at that level
-
-        # print("bbox_targets[0].shape: {}".format(bbox_targets[0].shape))
-        # print("bbox_target length: {}".format(len(bbox_targets)))
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and energies
@@ -286,7 +282,7 @@ class WFCOSHead(nn.Module):
                                                      pos_bbox_targets)
 
             if pos_energies_targets is not None \
-                and not torch.any(pos_energies_targets > 0):
+                    and not torch.any(pos_energies_targets > 0):
                 pos_energies_targets = pos_energies_targets.reshape(
                     [pos_energies_targets.shape[0], 1]).repeat(1, 4)
 
@@ -302,6 +298,42 @@ class WFCOSHead(nn.Module):
             loss_energy = self.loss_energy(flatten_energies,
                                            energies_targets
                                            .to(dtype=torch.long))
+
+            # DEBUG
+            non0 = pos_inds[0]
+            print('===========================================================')
+            print('flatten_energies[!=0]:\n{}'.format(flatten_energies[non0]))
+            print('energies_targets[!=0]:\n{}'.format(energies_targets[non0]))
+            print('loss_energy.item():\n{}'.format(loss_energy.item()))
+            print('count number of energies which have argmax > 0:')
+            print((flatten_energies.argmax(1) > 0).sum())
+            flat0 = flatten_energies[non0:non0 + 1, :]
+            print('flat0.shape:\n{}'.format(flat0.shape))
+            print('loss for only one of the energy values')
+            print(self.loss_energy(flat0,
+                                   energies_targets[non0:non0 + 1].to(dtype=torch.long)))
+
+            print('----------------')
+            a = torch.rand_like(flatten_energies)
+            b = torch.zeros_like(energies_targets, dtype=torch.long)
+            for ind in pos_inds:
+                b[ind] = torch.randint(0, 20, [1])
+            loss_value = self.loss_energy(a, b)
+            print("\na.shape:\n{}b.shape:\n{}\nloss_value:\n{}"
+                  .format(a.shape, b.shape, loss_value.item()))
+
+            print('----------------')
+            print("Debug non-random value:")
+
+            a = torch.zeros([1, 20])
+            a[0, 5] = 5.
+            b = torch.tensor([5], dtype=torch.long)
+            loss_value = self.loss_energy(a, b)
+            print('\na.shape:\n{}'.format(a.shape))
+            print('a.argmax:\n{}'.format(a.argmax(1)))
+            print('b:\n{}'.format(b))
+            print('loss value:\n{}'.format(loss_value.item()))
+            input()
         else:
             loss_bbox = pos_bbox_preds.sum()
             loss_energy = pos_energies.sum()
@@ -320,14 +352,25 @@ class WFCOSHead(nn.Module):
                    cfg,
                    rescale=None):
         assert len(cls_scores) == len(bbox_preds)
+
         num_levels = len(cls_scores)
 
-
+        # Create feature map size list. Calculating this on the fly makes it
+        # possible to do operations later on while respecting the feature map
+        # size, even if the feature map sizes are changed or more features maps
+        # are added later on.
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+
+        # mlvl_points holds data that lets us know the coordinates of each value
+        # in the feature maps. E.g. if a feature map has the size (7, 10), then
+        # the values that each point in the feature map represents must be
+        # transformed to its corresponding coordinates in the actual image.
         mlvl_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                       bbox_preds[0].device)
+
         result_list = []
         for img_id in range(len(img_metas)):
+            # We now iterate through each of the images.
             cls_score_list = [
                 cls_scores[i][img_id].detach() for i in range(num_levels)
             ]
@@ -337,6 +380,15 @@ class WFCOSHead(nn.Module):
             energy_pred_list = [
                 energies[i][img_id].detach() for i in range(num_levels)
             ]
+
+            for energy_pred in energy_pred_list:
+                print("energy_pred.max: {}".format(torch.max(energy_pred)))
+                print("energy_pred.shape: {}".format(energy_pred.shape))
+                print("energy_pred first value: \n{}"
+                      .format(energy_pred[:, 0, 0]))
+
+            # All of the above lists contains the output values at corresponding
+            # feature map resolutions for one image.
 
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
@@ -357,10 +409,13 @@ class WFCOSHead(nn.Module):
                           scale_factor,
                           cfg,
                           rescale=False):
+        """Process bboxes for a single image."""
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
+
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_energy = []
+
         for cls_score, bbox_pred, energy, points in zip(
                 cls_scores, bbox_preds, energies, mlvl_points):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
@@ -370,29 +425,25 @@ class WFCOSHead(nn.Module):
             # Flatten to argmax values
             energy = energy.permute(1, 2, 0).argmax(2).reshape(-1)
 
-            # Turn it into a float
-            energy = energy.to(dtype=torch.float32)
-
-            # Then apply a sigmoid function to it before increasing back to the
-            # max energy level
-            energy = energy.div(self.max_energy).sigmoid()
-
-            # Finally floor it
-            energy = energy.floor()
+            print("\nenergy max: \n{}".format(torch.max(energy)))
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
-                max_scores, _ = (scores * energy[:, None]).max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                points = points[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                energy = energy[topk_inds]
-            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
-            mlvl_bboxes.append(bboxes)
-            mlvl_scores.append(scores)
-            mlvl_energy.append(energy)
+            # # This whole section has to be replaced
+            # nms_pre = cfg.get('nms_pre', -1)
+            # if 0 < nms_pre < scores.shape[0]:
+            #     max_scores, _ = (scores * energy[:, None]).max(dim=1)
+            #     _, topk_inds = max_scores.topk(nms_pre)
+            #     points = points[topk_inds, :]
+            #     bbox_pred = bbox_pred[topk_inds, :]
+            #     scores = scores[topk_inds, :]
+            #     energy = energy[topk_inds]
+            # bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
+            # mlvl_bboxes.append(bboxes)
+            # mlvl_scores.append(scores)
+            # mlvl_energy.append(energy)
+
+        print('=========================================================\n')
+        input()
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
@@ -407,6 +458,7 @@ class WFCOSHead(nn.Module):
             cfg.nms,
             cfg.max_per_img,
             score_factors=mlvl_energy)
+
         return det_bboxes, det_labels
 
     def get_points(self, featmap_sizes, dtype, device):
@@ -427,7 +479,8 @@ class WFCOSHead(nn.Module):
                                        dtype, device))
         return mlvl_points
 
-    def get_points_single(self, featmap_size, stride, dtype, device):
+    @staticmethod
+    def get_points_single(featmap_size, stride, dtype, device):
         h, w = featmap_size
         x_range = torch.arange(
             0, w * stride, stride, dtype=dtype, device=device)
@@ -476,7 +529,8 @@ class WFCOSHead(nn.Module):
                     [bbox_targets[i] for bbox_targets in bbox_targets_list]))
         return concat_lvl_labels, concat_lvl_bbox_targets
 
-    def wfcos_target_single(self, gt_bboxes, gt_labels, points, regress_ranges):
+    @staticmethod
+    def wfcos_target_single(gt_bboxes, gt_labels, points, regress_ranges):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
@@ -484,7 +538,7 @@ class WFCOSHead(nn.Module):
                    gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
-            gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
+                gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
         # TODO: figure out why these two are different
         # areas = areas[None].expand(num_points, num_gts)
         areas = areas[None].repeat(num_points, 1)
@@ -506,9 +560,10 @@ class WFCOSHead(nn.Module):
 
         # condition2: limit the regression range for each location
         max_regress_distance = bbox_targets.max(-1)[0]
-        inside_regress_range = (
-            max_regress_distance >= regress_ranges[..., 0]) & (
-                max_regress_distance <= regress_ranges[..., 1])
+        inside_regress_range = (max_regress_distance
+                                >= regress_ranges[..., 0]) & \
+                               (max_regress_distance
+                                  <= regress_ranges[..., 1])
 
         # if there are still more than one objects for a location,
         # we choose the one with minimal area
@@ -537,7 +592,8 @@ class WFCOSHead(nn.Module):
 
         Notes:
             The energy targets are calculated as:
-            E_max \cdot argmax_{c \in C}[1 - \sqrt{((l-r)/2)^2 + ((t-b) / 2)^2}
+            E_max \cdot argmax_{c \in C}[1 - \sqrt{((l-r) / 2)^2
+                                                   + ((t-b) / 2)^2}
                                          / r]
 
             - r is a hyperparameter we would like to minimize.
@@ -587,10 +643,5 @@ class WFCOSHead(nn.Module):
         energies_targets = torch.zeros(flattened_bbox_targets.shape[0],
                                        **type_dict)
         energies_targets[pos_indices] = pos_energies
-
-        # torch.set_printoptions(profile='full')
-        # print("Energy targets: \n {}".format(pos_energies))
-        # torch.set_printoptions(profile='default')
-        # input()
 
         return pos_energies, energies_targets

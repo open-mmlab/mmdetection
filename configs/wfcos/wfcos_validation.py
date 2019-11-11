@@ -134,7 +134,7 @@ total_epochs = 1
 device_ids = range(2)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/wfcos_debugging'
+work_dir = './work_dirs/wfcos_validation'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
