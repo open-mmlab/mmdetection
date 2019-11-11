@@ -45,6 +45,20 @@ class BaseDetector(nn.Module):
 
     @abstractmethod
     def forward_train(self, imgs, img_metas, **kwargs):
+        """
+        Args:
+            img (list[Tensor]): list of tensors of shape (1, C, H, W).
+                Typically these should be mean centered and std scaled.
+
+            img_metas (list[dict]): list of image info dict where each dict
+                has:
+                'img_shape', 'scale_factor', 'flip', and my also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+
+             **kwargs: specific to concrete implementation
+        """
         pass
 
     @abstractmethod

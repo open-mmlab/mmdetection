@@ -134,6 +134,35 @@ class DefaultFormatBundle(object):
 
 @PIPELINES.register_module
 class Collect(object):
+    """
+    Collect data from the loader relevant to the specific task.
+
+    This is usually the last stage of the data loader pipeline. Typically keys
+    is set to some subset of "img", "proposals", "gt_bboxes",
+    "gt_bboxes_ignore", "gt_labels", and/or "gt_masks".
+
+    The "img_meta" item is always populated.  The contents of the "img_meta"
+    dictionary depends on "meta_keys". By default this includes:
+
+        - "img_shape": shape of the image input to the network as a tuple
+            (h, w, c).  Note that images may be zero padded on the bottom/right
+            if the batch tensor is larger than this shape.
+
+        - "scale_factor": a float indicating the preprocessing scale
+
+        - "flip": a boolean indicating if image flip transform was used
+
+        - "filename": path to the image file
+
+        - "ori_shape": original shape of the image as a tuple (h, w, c)
+
+        - "pad_shape": image shape after padding
+
+        - "img_norm_cfg": a dict of normalization information:
+            - mean - per channel mean subtraction
+            - std - per channel std divisor
+            - to_rgb - bool indicating if bgr was converted to rgb
+    """
 
     def __init__(self,
                  keys,

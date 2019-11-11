@@ -1,5 +1,9 @@
+import inspect
+
+import albumentations
 import mmcv
 import numpy as np
+from albumentations import Compose
 from imagecorruptions import corrupt
 from numpy import random
 
@@ -300,7 +304,7 @@ class Normalize(object):
 
 @PIPELINES.register_module
 class RandomCrop(object):
-    """Random crop the image & bboxes.
+    """Random crop the image & bboxes & masks.
 
     Args:
         crop_size (tuple): Expected size after cropping, (h, w).
@@ -348,7 +352,7 @@ class RandomCrop(object):
             # filter and crop the masks
             if 'gt_masks' in results:
                 valid_gt_masks = []
-                for i in valid_inds:
+                for i in np.where(valid_inds)[0]:
                     gt_mask = results['gt_masks'][i][crop_y1:crop_y2, crop_x1:
                                                      crop_x2]
                     valid_gt_masks.append(gt_mask)
@@ -507,12 +511,19 @@ class Expand(object):
         ratio_range (tuple): range of expand ratio.
     """
 
-    def __init__(self, mean=(0, 0, 0), to_rgb=True, ratio_range=(1, 4)):
+    def __init__(self,
+                 mean=(0, 0, 0),
+                 to_rgb=True,
+                 ratio_range=(1, 4),
+                 seg_ignore_label=None):
+        self.to_rgb = to_rgb
+        self.ratio_range = ratio_range
         if to_rgb:
             self.mean = mean[::-1]
         else:
             self.mean = mean
         self.min_ratio, self.max_ratio = ratio_range
+        self.seg_ignore_label = seg_ignore_label
 
     def __call__(self, results):
         if random.randint(2):
@@ -531,12 +542,32 @@ class Expand(object):
 
         results['img'] = expand_img
         results['gt_bboxes'] = boxes
+
+        if 'gt_masks' in results:
+            expand_gt_masks = []
+            for mask in results['gt_masks']:
+                expand_mask = np.full((int(h * ratio), int(w * ratio)),
+                                      0).astype(mask.dtype)
+                expand_mask[top:top + h, left:left + w] = mask
+                expand_gt_masks.append(expand_mask)
+            results['gt_masks'] = expand_gt_masks
+
+        # not tested
+        if 'gt_semantic_seg' in results:
+            assert self.seg_ignore_label is not None
+            gt_seg = results['gt_semantic_seg']
+            expand_gt_seg = np.full((int(h * ratio), int(w * ratio)),
+                                    self.seg_ignore_label).astype(gt_seg.dtype)
+            expand_gt_seg[top:top + h, left:left + w] = gt_seg
+            results['gt_semantic_seg'] = expand_gt_seg
         return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += '(mean={}, to_rgb={}, ratio_range={})'.format(
-            self.mean, self.to_rgb, self.ratio_range)
+        repr_str += '(mean={}, to_rgb={}, ratio_range={}, ' \
+                    'seg_ignore_label={})'.format(
+                        self.mean, self.to_rgb, self.ratio_range,
+                        self.seg_ignore_label)
         return repr_str
 
 
@@ -587,9 +618,8 @@ class MinIoURandomCrop(object):
 
                 # center of boxes should inside the crop img
                 center = (boxes[:, :2] + boxes[:, 2:]) / 2
-                mask = (center[:, 0] > patch[0]) * (
-                    center[:, 1] > patch[1]) * (center[:, 0] < patch[2]) * (
-                        center[:, 1] < patch[3])
+                mask = ((center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) *
+                        (center[:, 0] < patch[2]) * (center[:, 1] < patch[3]))
                 if not mask.any():
                     continue
                 boxes = boxes[mask]
@@ -604,6 +634,21 @@ class MinIoURandomCrop(object):
                 results['img'] = img
                 results['gt_bboxes'] = boxes
                 results['gt_labels'] = labels
+
+                if 'gt_masks' in results:
+                    valid_masks = [
+                        results['gt_masks'][i] for i in range(len(mask))
+                        if mask[i]
+                    ]
+                    results['gt_masks'] = [
+                        gt_mask[patch[1]:patch[3], patch[0]:patch[2]]
+                        for gt_mask in valid_masks
+                    ]
+
+                # not tested
+                if 'gt_semantic_seg' in results:
+                    results['gt_semantic_seg'] = results['gt_semantic_seg'][
+                        patch[1]:patch[3], patch[0]:patch[2]]
                 return results
 
     def __repr__(self):
@@ -631,4 +676,156 @@ class Corrupt(object):
         repr_str = self.__class__.__name__
         repr_str += '(corruption={}, severity={})'.format(
             self.corruption, self.severity)
+        return repr_str
+
+
+@PIPELINES.register_module
+class Albu(object):
+
+    def __init__(self,
+                 transforms,
+                 bbox_params=None,
+                 keymap=None,
+                 update_pad_shape=False,
+                 skip_img_without_anno=False):
+        """
+        Adds custom transformations from Albumentations lib.
+        Please, visit `https://albumentations.readthedocs.io`
+        to get more information.
+
+        transforms (list): list of albu transformations
+        bbox_params (dict): bbox_params for albumentation `Compose`
+        keymap (dict): contains {'input key':'albumentation-style key'}
+        skip_img_without_anno (bool): whether to skip the image
+                                      if no ann left after aug
+        """
+
+        self.transforms = transforms
+        self.filter_lost_elements = False
+        self.update_pad_shape = update_pad_shape
+        self.skip_img_without_anno = skip_img_without_anno
+
+        # A simple workaround to remove masks without boxes
+        if (isinstance(bbox_params, dict) and 'label_fields' in bbox_params
+                and 'filter_lost_elements' in bbox_params):
+            self.filter_lost_elements = True
+            self.origin_label_fields = bbox_params['label_fields']
+            bbox_params['label_fields'] = ['idx_mapper']
+            del bbox_params['filter_lost_elements']
+
+        self.bbox_params = (
+            self.albu_builder(bbox_params) if bbox_params else None)
+        self.aug = Compose([self.albu_builder(t) for t in self.transforms],
+                           bbox_params=self.bbox_params)
+
+        if not keymap:
+            self.keymap_to_albu = {
+                'img': 'image',
+                'gt_masks': 'masks',
+                'gt_bboxes': 'bboxes'
+            }
+        else:
+            self.keymap_to_albu = keymap
+        self.keymap_back = {v: k for k, v in self.keymap_to_albu.items()}
+
+    def albu_builder(self, cfg):
+        """Import a module from albumentations.
+        Inherits some of `build_from_cfg` logic.
+
+        Args:
+            cfg (dict): Config dict. It should at least contain the key "type".
+        Returns:
+            obj: The constructed object.
+        """
+        assert isinstance(cfg, dict) and "type" in cfg
+        args = cfg.copy()
+
+        obj_type = args.pop("type")
+        if mmcv.is_str(obj_type):
+            obj_cls = getattr(albumentations, obj_type)
+        elif inspect.isclass(obj_type):
+            obj_cls = obj_type
+        else:
+            raise TypeError(
+                'type must be a str or valid type, but got {}'.format(
+                    type(obj_type)))
+
+        if 'transforms' in args:
+            args['transforms'] = [
+                self.albu_builder(transform)
+                for transform in args['transforms']
+            ]
+
+        return obj_cls(**args)
+
+    @staticmethod
+    def mapper(d, keymap):
+        """
+        Dictionary mapper.
+        Renames keys according to keymap provided.
+
+        Args:
+            d (dict): old dict
+            keymap (dict): {'old_key':'new_key'}
+        Returns:
+            dict: new dict.
+        """
+        updated_dict = {}
+        for k, v in zip(d.keys(), d.values()):
+            new_k = keymap.get(k, k)
+            updated_dict[new_k] = d[k]
+        return updated_dict
+
+    def __call__(self, results):
+        # dict to albumentations format
+        results = self.mapper(results, self.keymap_to_albu)
+
+        if 'bboxes' in results:
+            # to list of boxes
+            if isinstance(results['bboxes'], np.ndarray):
+                results['bboxes'] = [x for x in results['bboxes']]
+            # add pseudo-field for filtration
+            if self.filter_lost_elements:
+                results['idx_mapper'] = np.arange(len(results['bboxes']))
+
+        results = self.aug(**results)
+
+        if 'bboxes' in results:
+            if isinstance(results['bboxes'], list):
+                results['bboxes'] = np.array(
+                    results['bboxes'], dtype=np.float32)
+
+            # filter label_fields
+            if self.filter_lost_elements:
+
+                results['idx_mapper'] = np.arange(len(results['bboxes']))
+
+                for label in self.origin_label_fields:
+                    results[label] = np.array(
+                        [results[label][i] for i in results['idx_mapper']])
+                if 'masks' in results:
+                    results['masks'] = [
+                        results['masks'][i] for i in results['idx_mapper']
+                    ]
+
+                if (not len(results['idx_mapper'])
+                        and self.skip_img_without_anno):
+                    return None
+
+        if 'gt_labels' in results:
+            if isinstance(results['gt_labels'], list):
+                results['gt_labels'] = np.array(results['gt_labels'])
+
+        # back to the original format
+        results = self.mapper(results, self.keymap_back)
+
+        # update final shape
+        if self.update_pad_shape:
+            results['pad_shape'] = results['img'].shape
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += '(transformations={})'.format(self.transformations)
         return repr_str

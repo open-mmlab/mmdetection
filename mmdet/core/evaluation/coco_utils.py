@@ -1,12 +1,19 @@
+import itertools
+
 import mmcv
 import numpy as np
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+from terminaltables import AsciiTable
 
 from .recall import eval_recalls
 
 
-def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
+def coco_eval(result_files,
+              result_types,
+              coco,
+              max_dets=(100, 300, 1000),
+              classwise=False):
     for res_type in result_types:
         assert res_type in [
             'proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'
@@ -23,7 +30,12 @@ def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
         return
 
     for res_type in result_types:
-        result_file = result_files[res_type]
+        if isinstance(result_files, str):
+            result_file = result_files
+        elif isinstance(result_files, dict):
+            result_file = result_files[res_type]
+        else:
+            assert TypeError('result_files must be a str or dict')
         assert result_file.endswith('.json')
 
         coco_dets = coco.loadRes(result_file)
@@ -37,6 +49,36 @@ def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000)):
         cocoEval.evaluate()
         cocoEval.accumulate()
         cocoEval.summarize()
+
+        if classwise:
+            # Compute per-category AP
+            # from https://github.com/facebookresearch/detectron2/blob/03064eb5bafe4a3e5750cc7a16672daf5afe8435/detectron2/evaluation/coco_evaluation.py#L259-L283 # noqa
+            precisions = cocoEval.eval['precision']
+            catIds = coco.getCatIds()
+            # precision has dims (iou, recall, cls, area range, max dets)
+            assert len(catIds) == precisions.shape[2]
+
+            results_per_category = []
+            for idx, catId in enumerate(catIds):
+                # area range index 0: all area ranges
+                # max dets index -1: typically 100 per image
+                nm = coco.loadCats(catId)[0]
+                precision = precisions[:, :, idx, 0, -1]
+                precision = precision[precision > -1]
+                ap = np.mean(precision) if precision.size else float('nan')
+                results_per_category.append(
+                    ('{}'.format(nm['name']),
+                     '{:0.3f}'.format(float(ap * 100))))
+
+            N_COLS = min(6, len(results_per_category) * 2)
+            results_flatten = list(itertools.chain(*results_per_category))
+            headers = ['category', 'AP'] * (N_COLS // 2)
+            results_2d = itertools.zip_longest(
+                *[results_flatten[i::N_COLS] for i in range(N_COLS)])
+            table_data = [headers]
+            table_data += [result for result in results_2d]
+            table = AsciiTable(table_data)
+            print(table.table)
 
 
 def fast_eval_recall(results,
@@ -137,7 +179,7 @@ def segm2json(dataset, results):
 
             # segm results
             # some detectors use different score for det and segm
-            if len(seg) == 2:
+            if isinstance(seg, tuple):
                 segms = seg[0][label]
                 mask_score = seg[1][label]
             else:
@@ -148,7 +190,8 @@ def segm2json(dataset, results):
                 data['image_id'] = img_id
                 data['score'] = float(mask_score[i])
                 data['category_id'] = dataset.cat_ids[label]
-                segms[i]['counts'] = segms[i]['counts'].decode()
+                if isinstance(segms[i]['counts'], bytes):
+                    segms[i]['counts'] = segms[i]['counts'].decode()
                 data['segmentation'] = segms[i]
                 segm_json_results.append(data)
     return bbox_json_results, segm_json_results
