@@ -45,6 +45,20 @@ class BaseDetector(nn.Module):
 
     @abstractmethod
     def forward_train(self, imgs, img_metas, **kwargs):
+        """
+        Args:
+            img (list[Tensor]): list of tensors of shape (1, C, H, W).
+                Typically these should be mean centered and std scaled.
+
+            img_metas (list[dict]): list of image info dict where each dict
+                has:
+                'img_shape', 'scale_factor', 'flip', and my also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+
+             **kwargs: specific to concrete implementation
+        """
         pass
 
     @abstractmethod
@@ -61,6 +75,15 @@ class BaseDetector(nn.Module):
             logger.info('load model from: {}'.format(pretrained))
 
     def forward_test(self, imgs, img_metas, **kwargs):
+        """
+        Args:
+            imgs (List[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            img_meta (List[List[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch
+        """
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError('{} must be a list, but got {}'.format(
@@ -82,6 +105,14 @@ class BaseDetector(nn.Module):
 
     @auto_fp16(apply_to=('img', ))
     def forward(self, img, img_meta, return_loss=True, **kwargs):
+        """
+        Calls either forward_train or forward_test depending on whether
+        return_loss=True. Note this setting will change the expected inputs.
+        When `return_loss=False`, img and img_meta are single-nested (i.e.
+        Tensor and List[dict]), and when `resturn_loss=True`, img and img_meta
+        should be double nested (i.e.  List[Tensor], List[List[dict]]), with
+        the outer list indicating test time augmentations.
+        """
         if return_loss:
             return self.forward_train(img, img_meta, **kwargs)
         else:

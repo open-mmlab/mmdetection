@@ -37,7 +37,7 @@ class CustomDataset(Dataset):
                  ann_file,
                  pipeline,
                  data_root=None,
-                 img_prefix=None,
+                 img_prefix='',
                  seg_prefix=None,
                  proposal_file=None,
                  test_mode=False):

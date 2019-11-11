@@ -96,7 +96,7 @@ We adopt distributed training for both single machine and multiple machines.
 Supposing that the server has 8 GPUs, 8 processes will be started and each process runs on a single GPU.
 
 Each process keeps an isolated model, data loader, and optimizer.
-Model parameters are only synchronized once at the begining.
+Model parameters are only synchronized once at the beginning.
 After a forward and backward pass, gradients will be allreduced among all GPUs,
 and the optimizer will update model parameters.
 Since the gradients are allreduced, the model parameter stays the same for all processes after the iteration.
