@@ -78,14 +78,17 @@ async def completed(trace_name="",
                     logger.info("%s %s completed: %s streams: %s", trace_name,
                                 name, are_done, streams)
 
+        current_stream = torch.cuda.current_stream()
+        assert current_stream == stream_before_context_switch
+
         if DEBUG_COMPLETED_TIME:
             cpu_time = (cpu_end - cpu_start) * 1000
             stream_times_ms = ""
             for i, stream in enumerate(streams):
                 elapsed_time = start.elapsed_time(end_events[i])
-                stream_times_ms += f" {stream} {elapsed_time:.2f} ms"
-            logger.info(f"{trace_name} {name} cpu_time {cpu_time:.2f} ms" +
-                        stream_times_ms)
+                stream_times_ms += " {stream} {elapsed_time:.2f} ms"
+            logger.info("{trace_name} {name} cpu_time {cpu_time:.2f} ms",
+                        trace_name, name, cpu_time, stream_times_ms)
 
 
 @contextlib.asynccontextmanager

@@ -1,8 +1,16 @@
+import logging
+
 import torch
 
 from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, merge_aug_proposals, multiclass_nms)
-from mmdet.utils.contextmanagers import completed
+
+logger = logging.getLogger(__name__)
+
+try:
+    from mmdet.utils.contextmanagers import completed
+except AttributeError:
+    logger.info("Async interface is disabled for Python version < 3.7")
 
 
 class RPNTestMixin(object):
