@@ -31,8 +31,8 @@ model = dict(
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=1.0),
-        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+            loss_weight=0.1),
+        loss_bbox=dict(type='IoULoss', loss_weight=0.1),
         loss_energy=dict(
             type='CrossEntropyLoss', loss_weight=1.0, use_sigmoid=False
         ),
@@ -133,7 +133,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 36
+total_epochs = 12
 device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
