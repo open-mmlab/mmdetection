@@ -28,7 +28,7 @@ class WFCOSHead(nn.Module):
                  conv_cfg=None,
                  norm_cfg=None,
                  split_convs=False,
-                 r=5.):
+                 r=500.):
         """
         Creates a head based on FCOS that uses an energies map, not centerness
         Args:
@@ -99,6 +99,7 @@ class WFCOSHead(nn.Module):
         self.max_energy = max_energy
         self.split_convs = split_convs
         self.r = r
+        self.loss_energy_weights = self.calculate_loss_energy_weights()
 
         # Now create the layers
         self._init_layers()
@@ -173,6 +174,19 @@ class WFCOSHead(nn.Module):
         normal_init(self.wfcos_cls, std=0.01, bias=bias_cls)
         normal_init(self.wfcos_reg, std=0.01)
         normal_init(self.wfcos_energy, std=0.01)
+
+    def calculate_loss_energy_weights(self) -> torch.Tensor:
+        """Calculates proportional loss weights for the energy."""
+        class0_weight = 1. / float(self.max_energy)
+        weights = [class0_weight]
+
+        device = torch.device('cuda') if torch.cuda.is_available() \
+            else torch.device('cpu')
+
+        for i in range(self.max_energy - 1):
+            weights.append(1.)
+        return torch.tensor(weights, dtype=torch.float,
+                            device=device)
 
     def forward(self, feats):
         """Run forwards on the network.
@@ -295,45 +309,53 @@ class WFCOSHead(nn.Module):
                 pos_decoded_target_preds,
                 weight=pos_energies_targets,
                 avg_factor=pos_energies_targets.sum())
-            loss_energy = self.loss_energy(flatten_energies,
-                                           energies_targets
-                                           .to(dtype=torch.long))
 
-            # DEBUG
-            non0 = pos_inds[0]
-            print('===========================================================')
-            print('flatten_energies[!=0]:\n{}'.format(flatten_energies[non0]))
-            print('energies_targets[!=0]:\n{}'.format(energies_targets[non0]))
-            print('loss_energy.item():\n{}'.format(loss_energy.item()))
-            print('count number of energies which have argmax > 0:')
-            print((flatten_energies.argmax(1) > 0).sum())
-            flat0 = flatten_energies[non0:non0 + 1, :]
-            print('flat0.shape:\n{}'.format(flat0.shape))
-            print('loss for only one of the energy values')
-            print(self.loss_energy(flat0,
-                                   energies_targets[non0:non0 + 1].to(dtype=torch.long)))
+            loss_energy = self.loss_energy(
+                flatten_energies, energies_targets.to(dtype=torch.long),
+                class_weight=self.loss_energy_weights
+            )
 
-            print('----------------')
-            a = torch.rand_like(flatten_energies)
-            b = torch.zeros_like(energies_targets, dtype=torch.long)
-            for ind in pos_inds:
-                b[ind] = torch.randint(0, 20, [1])
-            loss_value = self.loss_energy(a, b)
-            print("\na.shape:\n{}b.shape:\n{}\nloss_value:\n{}"
-                  .format(a.shape, b.shape, loss_value.item()))
+            # print(loss_energy.shape)
+            # print(loss_energy)
 
-            print('----------------')
-            print("Debug non-random value:")
+            # # DEBUG
+            # non0 = pos_inds[0]
+            # print('=========================================================')
+            # print('flatten_energies.shape:\n{}'
+            #       .format(flatten_energies.shape))
+            # print('flatten_energies[!=0]:\n{}'.format(flatten_energies[non0]))
+            # print('energies_targets[!=0]:\n{}'.format(energies_targets[non0]))
+            # print('loss_energy.item():\n{}'.format(loss_energy.item()))
+            # print('count number of energies which have argmax > 0:')
+            # print((flatten_energies.argmax(1) > 0).sum())
+            # flat0 = flatten_energies[non0:non0 + 1, :]
+            # print('flat0.shape:\n{}'.format(flat0.shape))
+            # print('loss for only one of the energy values')
+            # print(self.loss_energy(flat0,
+            #                        energies_targets[non0:non0 + 1]
+            #                        .to(dtype=torch.long)))
 
-            a = torch.zeros([1, 20])
-            a[0, 5] = 5.
-            b = torch.tensor([5], dtype=torch.long)
-            loss_value = self.loss_energy(a, b)
-            print('\na.shape:\n{}'.format(a.shape))
-            print('a.argmax:\n{}'.format(a.argmax(1)))
-            print('b:\n{}'.format(b))
-            print('loss value:\n{}'.format(loss_value.item()))
-            input()
+            # print('----------------')
+            # a = torch.rand_like(flatten_energies)
+            # b = torch.zeros_like(energies_targets, dtype=torch.long)
+            # for ind in pos_inds:
+            #     b[ind] = torch.randint(0, 20, [1])
+            # loss_value = self.loss_energy(a, b)
+            # print("\na.shape:\n{}b.shape:\n{}\nloss_value:\n{}"
+            #       .format(a.shape, b.shape, loss_value.item()))
+
+            # print('----------------')
+            # print("Debug non-random value:")
+            #
+            # a = torch.zeros([1, 20])
+            # a[0, 5] = 5.
+            # b = torch.tensor([5], dtype=torch.long)
+            # loss_value = self.loss_energy(a, b)
+            # print('\na.shape:\n{}'.format(a.shape))
+            # print('a.argmax:\n{}'.format(a.argmax(1)))
+            # print('b:\n{}'.format(b))
+            # print('loss value:\n{}'.format(loss_value.item()))
+            # input()
         else:
             loss_bbox = pos_bbox_preds.sum()
             loss_energy = pos_energies.sum()
@@ -381,11 +403,11 @@ class WFCOSHead(nn.Module):
                 energies[i][img_id].detach() for i in range(num_levels)
             ]
 
-            for energy_pred in energy_pred_list:
-                print("energy_pred.max: {}".format(torch.max(energy_pred)))
-                print("energy_pred.shape: {}".format(energy_pred.shape))
-                print("energy_pred first value: \n{}"
-                      .format(energy_pred[:, 0, 0]))
+            # for energy_pred in energy_pred_list:
+                # print("energy_pred.max: {}".format(torch.max(energy_pred)))
+                # print("energy_pred.shape: {}".format(energy_pred.shape))
+                # print("energy_pred first value: \n{}"
+                #       .format(energy_pred[:, 0, 0]))
 
             # All of the above lists contains the output values at corresponding
             # feature map resolutions for one image.
@@ -425,7 +447,7 @@ class WFCOSHead(nn.Module):
             # Flatten to argmax values
             energy = energy.permute(1, 2, 0).argmax(2).reshape(-1)
 
-            print("\nenergy max: \n{}".format(torch.max(energy)))
+            # print("\nenergy max: \n{}".format(torch.max(energy)))
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             # # This whole section has to be replaced
@@ -442,8 +464,8 @@ class WFCOSHead(nn.Module):
             # mlvl_scores.append(scores)
             # mlvl_energy.append(energy)
 
-        print('=========================================================\n')
-        input()
+        # print('=========================================================\n')
+        # input()
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)

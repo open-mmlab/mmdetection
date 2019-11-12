@@ -6,9 +6,10 @@ from ..registry import LOSSES
 from .utils import weight_reduce_loss
 
 
-def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
+def cross_entropy(pred, label, weight=None, class_weight=None,
+                  reduction='mean', avg_factor=None):
     # element-wise losses
-    loss = F.cross_entropy(pred, label, reduction='none')
+    loss = F.cross_entropy(pred, label, weight=class_weight, reduction='none')
 
     # apply weights and do the reduction
     if weight is not None:
@@ -36,7 +37,8 @@ def binary_cross_entropy(pred,
                          label,
                          weight=None,
                          reduction='mean',
-                         avg_factor=None):
+                         avg_factor=None,
+                         class_weight=None):
     if pred.dim() != label.dim():
         label, weight = _expand_binary_labels(label, weight, pred.size(-1))
 
@@ -51,7 +53,8 @@ def binary_cross_entropy(pred,
     return loss
 
 
-def mask_cross_entropy(pred, target, label, reduction='mean', avg_factor=None):
+def mask_cross_entropy(pred, target, label, reduction='mean', avg_factor=None,
+                       class_weight=None):
     # TODO: handle these two reserved arguments
     assert reduction == 'mean' and avg_factor is None
     num_rois = pred.size()[0]
@@ -89,6 +92,7 @@ class CrossEntropyLoss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None,
+                class_weight=None,
                 **kwargs):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
@@ -97,6 +101,7 @@ class CrossEntropyLoss(nn.Module):
             cls_score,
             label,
             weight,
+            class_weight=class_weight,
             reduction=reduction,
             avg_factor=avg_factor,
             **kwargs)
