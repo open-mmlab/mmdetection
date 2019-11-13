@@ -86,7 +86,8 @@ async def completed(trace_name="",
             stream_times_ms = ""
             for i, stream in enumerate(streams):
                 elapsed_time = start.elapsed_time(end_events[i])
-                stream_times_ms += " {stream} {elapsed_time:.2f} ms"
+                stream_times_ms += " {stream} {elapsed_time:.2f} ms".format(
+                    stream, elapsed_time)
             logger.info("{trace_name} {name} cpu_time {cpu_time:.2f} ms",
                         trace_name, name, cpu_time, stream_times_ms)
 

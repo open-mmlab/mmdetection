@@ -1,4 +1,5 @@
 import logging
+import sys
 
 import torch
 
@@ -7,24 +8,25 @@ from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
 
 logger = logging.getLogger(__name__)
 
-try:
+if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
-except AttributeError:
-    logger.info("Async interface is disabled for Python version < 3.7")
 
 
 class RPNTestMixin(object):
 
-    async def async_test_rpn(self, x, img_meta, rpn_test_cfg):
-        sleep_interval = rpn_test_cfg.pop("async_sleep_interval", 0.025)
-        async with completed(
-                __name__, "rpn_head_forward", sleep_interval=sleep_interval):
-            rpn_outs = self.rpn_head(x)
+    if sys.version_info >= (3, 7):
 
-        proposal_inputs = rpn_outs + (img_meta, rpn_test_cfg)
+        async def async_test_rpn(self, x, img_meta, rpn_test_cfg):
+            sleep_interval = rpn_test_cfg.pop("async_sleep_interval", 0.025)
+            async with completed(
+                    __name__, "rpn_head_forward",
+                    sleep_interval=sleep_interval):
+                rpn_outs = self.rpn_head(x)
 
-        proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
-        return proposal_list
+            proposal_inputs = rpn_outs + (img_meta, rpn_test_cfg)
+
+            proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
+            return proposal_list
 
     def simple_test_rpn(self, x, img_meta, rpn_test_cfg):
         rpn_outs = self.rpn_head(x)
@@ -57,41 +59,44 @@ class RPNTestMixin(object):
 
 class BBoxTestMixin(object):
 
-    async def async_test_bboxes(self,
-                                x,
-                                img_meta,
-                                proposals,
-                                rcnn_test_cfg,
-                                rescale=False,
-                                bbox_semaphore=None,
-                                global_lock=None):
-        """Async test only det bboxes without augmentation.
+    if sys.version_info >= (3, 7):
 
-        FIXME: this code crashes when runs concurrently.
+        async def async_test_bboxes(self,
+                                    x,
+                                    img_meta,
+                                    proposals,
+                                    rcnn_test_cfg,
+                                    rescale=False,
+                                    bbox_semaphore=None,
+                                    global_lock=None):
+            """Async test only det bboxes without augmentation.
 
-        """
-        rois = bbox2roi(proposals)
-        roi_feats = self.bbox_roi_extractor(
-            x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
-        if self.with_shared_head:
-            roi_feats = self.shared_head(roi_feats)
-        sleep_interval = rcnn_test_cfg.get("async_sleep_interval", 0.017)
+            FIXME: this code crashes when runs concurrently.
 
-        async with completed(
-                __name__, "bbox_head_forward", sleep_interval=sleep_interval):
-            cls_score, bbox_pred = self.bbox_head(roi_feats)
+            """
+            rois = bbox2roi(proposals)
+            roi_feats = self.bbox_roi_extractor(
+                x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
+            if self.with_shared_head:
+                roi_feats = self.shared_head(roi_feats)
+            sleep_interval = rcnn_test_cfg.get("async_sleep_interval", 0.017)
 
-        img_shape = img_meta[0]['img_shape']
-        scale_factor = img_meta[0]['scale_factor']
-        det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
-            rois,
-            cls_score,
-            bbox_pred,
-            img_shape,
-            scale_factor,
-            rescale=rescale,
-            cfg=rcnn_test_cfg)
-        return det_bboxes, det_labels
+            async with completed(
+                    __name__, "bbox_head_forward",
+                    sleep_interval=sleep_interval):
+                cls_score, bbox_pred = self.bbox_head(roi_feats)
+
+            img_shape = img_meta[0]['img_shape']
+            scale_factor = img_meta[0]['scale_factor']
+            det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
+                rois,
+                cls_score,
+                bbox_pred,
+                img_shape,
+                scale_factor,
+                rescale=rescale,
+                cfg=rcnn_test_cfg)
+            return det_bboxes, det_labels
 
     def simple_test_bboxes(self,
                            x,
@@ -158,41 +163,45 @@ class BBoxTestMixin(object):
 
 class MaskTestMixin(object):
 
-    async def async_test_mask(self,
-                              x,
-                              img_meta,
-                              det_bboxes,
-                              det_labels,
-                              rescale=False,
-                              mask_test_cfg=None):
-        # image shape of the first image in the batch (only one)
-        ori_shape = img_meta[0]['ori_shape']
-        scale_factor = img_meta[0]['scale_factor']
-        if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
-        else:
-            _bboxes = (
-                det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
-            mask_rois = bbox2roi([_bboxes])
-            mask_feats = self.mask_roi_extractor(
-                x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
+    if sys.version_info >= (3, 7):
 
-            if self.with_shared_head:
-                mask_feats = self.shared_head(mask_feats)
-            if mask_test_cfg and mask_test_cfg.get('async_sleep_interval'):
-                sleep_interval = mask_test_cfg['async_sleep_interval']
+        async def async_test_mask(self,
+                                  x,
+                                  img_meta,
+                                  det_bboxes,
+                                  det_labels,
+                                  rescale=False,
+                                  mask_test_cfg=None):
+            # image shape of the first image in the batch (only one)
+            ori_shape = img_meta[0]['ori_shape']
+            scale_factor = img_meta[0]['scale_factor']
+            if det_bboxes.shape[0] == 0:
+                segm_result = [[]
+                               for _ in range(self.mask_head.num_classes - 1)]
             else:
-                sleep_interval = 0.035
-            async with completed(
-                    __name__, "mask_head_forward",
-                    sleep_interval=sleep_interval):
-                mask_pred = self.mask_head(mask_feats)
-            segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
-                                                       det_labels,
-                                                       self.test_cfg.rcnn,
-                                                       ori_shape, scale_factor,
-                                                       rescale)
-        return segm_result
+                _bboxes = (
+                    det_bboxes[:, :4] *
+                    scale_factor if rescale else det_bboxes)
+                mask_rois = bbox2roi([_bboxes])
+                mask_feats = self.mask_roi_extractor(
+                    x[:len(self.mask_roi_extractor.featmap_strides)],
+                    mask_rois)
+
+                if self.with_shared_head:
+                    mask_feats = self.shared_head(mask_feats)
+                if mask_test_cfg and mask_test_cfg.get('async_sleep_interval'):
+                    sleep_interval = mask_test_cfg['async_sleep_interval']
+                else:
+                    sleep_interval = 0.035
+                async with completed(
+                        __name__,
+                        "mask_head_forward",
+                        sleep_interval=sleep_interval):
+                    mask_pred = self.mask_head(mask_feats)
+                segm_result = self.mask_head.get_seg_masks(
+                    mask_pred, _bboxes, det_labels, self.test_cfg.rcnn,
+                    ori_shape, scale_factor, rescale)
+            return segm_result
 
     def simple_test_mask(self,
                          x,
