@@ -335,6 +335,7 @@ class ResNet(nn.Module):
 
     Args:
         depth (int): Depth of resnet, from {18, 34, 50, 101, 152}.
+        in_channels (int): Number of input image channels. Normally 3.
         num_stages (int): Resnet stages, normally 4.
         strides (Sequence[int]): Strides of the first block of each stage.
         dilations (Sequence[int]): Dilation of each stage.
@@ -352,6 +353,20 @@ class ResNet(nn.Module):
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+
+    Example:
+        >>> from mmdet.models import ResNet
+        >>> import torch
+        >>> self = ResNet(depth=18)
+        >>> self.eval()
+        >>> inputs = torch.rand(1, 3, 32, 32)
+        >>> level_outputs = self.forward(inputs)
+        >>> for level_out in level_outputs:
+        ...     print(tuple(level_out.shape))
+        (1, 64, 8, 8)
+        (1, 128, 4, 4)
+        (1, 256, 2, 2)
+        (1, 512, 1, 1)
     """
 
     arch_settings = {
@@ -364,6 +379,7 @@ class ResNet(nn.Module):
 
     def __init__(self,
                  depth,
+                 in_channels=3,
                  num_stages=4,
                  strides=(1, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
@@ -412,7 +428,7 @@ class ResNet(nn.Module):
         self.stage_blocks = stage_blocks[:num_stages]
         self.inplanes = 64
 
-        self._make_stem_layer()
+        self._make_stem_layer(in_channels)
 
         self.res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
@@ -450,10 +466,10 @@ class ResNet(nn.Module):
     def norm1(self):
         return getattr(self, self.norm1_name)
 
-    def _make_stem_layer(self):
+    def _make_stem_layer(self, in_channels):
         self.conv1 = build_conv_layer(
             self.conv_cfg,
-            3,
+            in_channels,
             64,
             kernel_size=7,
             stride=2,

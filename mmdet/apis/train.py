@@ -82,6 +82,12 @@ def build_optimizer(model, optimizer_cfg):
 
     Returns:
         torch.optim.Optimizer: The initialized optimizer.
+
+    Example:
+        >>> model = torch.nn.modules.Conv1d(1, 1, 1)
+        >>> optimizer_cfg = dict(type='SGD', lr=0.01, momentum=0.9,
+        >>>                      weight_decay=0.0001)
+        >>> optimizer = build_optimizer(model, optimizer_cfg)
     """
     if hasattr(model, 'module'):
         model = model.module
@@ -187,6 +193,11 @@ def _dist_train(model, dataset, cfg, validate=False):
 
 
 def _non_dist_train(model, dataset, cfg, validate=False):
+    if validate:
+        raise NotImplementedError('Built-in validation is not implemented '
+                                  'yet in not-distributed training. Use '
+                                  'distributed training or test.py and '
+                                  '*eval.py scripts instead.')
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
     data_loaders = [
