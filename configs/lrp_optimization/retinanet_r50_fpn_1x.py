@@ -29,8 +29,10 @@ model = dict(
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
         loss_cls=dict(
-            type='CrossEntropyLoss',
+            type='FocalLoss',
             use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0)))
 # training and testing settings
