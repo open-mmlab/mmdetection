@@ -87,7 +87,6 @@ class FocalLoss(nn.Module):
                     avg_factor=avg_factor)
             if loss_cls >= 1.0:
                 print("Shifted CE_Loss: {}".format(loss_cls))
-                pdb.set_trace()
         else:
             raise NotImplementedError
         return loss_cls
