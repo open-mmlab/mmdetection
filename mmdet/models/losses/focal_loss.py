@@ -4,7 +4,8 @@ import torch.nn.functional as F
 
 from mmdet.ops import sigmoid_focal_loss as _sigmoid_focal_loss
 from ..registry import LOSSES
-from .utils import weight_reduce_loss
+from .utils import weight_reduce_loss_focal
+
 import pdb
 
 # This method is only for debugging
@@ -16,22 +17,37 @@ def py_sigmoid_focal_loss(pred,
                           reduction='mean',
                           avg_factor=None):
    
+    targets = F.one_hot(target, num_classes=81)
+    targets = targets[:,1:]
+    pred_sigmoid = pred.sigmoid()
+    targets = targets.type_as(pred)
+    pt = (1 - pred_sigmoid) * targets + pred_sigmoid * (1 - targets)
+    focal_weight = (alpha * targets + (1 - alpha) *
+                    (1 - targets)) * pt.pow(gamma)
+    
+    loss = modified_cross_entropy(
+        pred_sigmoid, targets, reduction='none') * focal_weight
+
+    loss = torch.clamp(loss, min=0)
+     
+    check = loss > 1.0
+    if check.sum()>0:
+        print("Shifted_CE Loss Value: {}".format(loss))
+        pdb.set_trace()
+    
+    loss = weight_reduce_loss_focal(loss, weight, reduction, avg_factor)
+    pdb.set_trace()
+    return loss
+
+def modified_cross_entropy(pred, target, reduction ='none'):
+    
     shifting_factor = -1*torch.ones(pred.shape)
     shifting_factor = torch.exp(shifting_factor)
     shifting_factor = shifting_factor.type_as(pred)
     
-    pred_sigmoid = pred.sigmoid()
-    target = target.type_as(pred)
-    pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
-    focal_weight = (alpha * target + (1 - alpha) *
-                    (1 - target)) * pt.pow(gamma)
+    return -1*(target*torch.log(pred+shifting_factor)+\
+           (1-target)*torch.log(1-pred+shifting_factor))
     
-    loss = F.binary_cross_entropy_with_logits(
-        pred+shifting_factor, target, reduction='none') * focal_weight
-     
-    loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
-    return loss
-
 
 def sigmoid_focal_loss(pred,
                        target,
@@ -85,8 +101,6 @@ class FocalLoss(nn.Module):
                     alpha=self.alpha,
                     reduction=reduction,
                     avg_factor=avg_factor)
-            if loss_cls >= 1.0:
-                print("Shifted CE_Loss: {}".format(loss_cls))
         else:
             raise NotImplementedError
         return loss_cls
