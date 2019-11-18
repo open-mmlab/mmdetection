@@ -72,8 +72,41 @@ def test_max_iou_assigner_with_empty_boxes():
         [0, 0, 10, 9],
         [0, 10, 10, 19],
     ])
-    assign_result = self.assign(bboxes, gt_bboxes)
+    gt_labels = torch.LongTensor([2, 3])
+
+    # Test with gt_labels
+    assign_result = self.assign(bboxes, gt_bboxes, gt_labels=gt_labels)
     assert len(assign_result.gt_inds) == 0
+    assert tuple(assign_result.labels.shape) == (2, 0)
+
+    # Test without gt_labels
+    assign_result = self.assign(bboxes, gt_bboxes, gt_labels=None)
+    assert len(assign_result.gt_inds) == 0
+    assert assign_result.labels is None
+
+
+def test_max_iou_assigner():
+    """
+    Test corner case where an network might predict no boxes
+    """
+    self = MaxIoUAssigner(
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+    )
+    bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ])
+    gt_labels = torch.LongTensor([2, 3])
+    assign_result = self.assign(bboxes, gt_bboxes, gt_labels=gt_labels)
+    assert len(assign_result.gt_inds) == 4
+    assert len(assign_result.labels) == 4
 
 
 def test_max_iou_assigner_with_empty_boxes_and_gt():
