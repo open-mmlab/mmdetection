@@ -267,9 +267,11 @@ class WFCOSHead(nn.Module):
                                                     self.max_energy]))
         flatten_cls_scores = torch.cat(flatten_cls_scores)
         flatten_bbox_preds = torch.cat(flatten_bbox_preds)
-        flatten_energies = torch.cat(flatten_energies, dim=0)
+        flatten_energies = torch.cat(flatten_energies, dim=0).softmax(1)
         flatten_labels = torch.cat(labels)
         flatten_bbox_targets = torch.cat(bbox_targets)
+
+        # TODO: put flatten_energies through a softmax
 
         # repeat points to align with bbox_preds
         flatten_points = torch.cat(
@@ -318,43 +320,24 @@ class WFCOSHead(nn.Module):
             # print(loss_energy.shape)
             # print(loss_energy)
 
-            # # DEBUG
-            # non0 = pos_inds[0]
-            # print('=========================================================')
-            # print('flatten_energies.shape:\n{}'
-            #       .format(flatten_energies.shape))
-            # print('flatten_energies[!=0]:\n{}'.format(flatten_energies[non0]))
-            # print('energies_targets[!=0]:\n{}'.format(energies_targets[non0]))
-            # print('loss_energy.item():\n{}'.format(loss_energy.item()))
-            # print('count number of energies which have argmax > 0:')
-            # print((flatten_energies.argmax(1) > 0).sum())
-            # flat0 = flatten_energies[non0:non0 + 1, :]
-            # print('flat0.shape:\n{}'.format(flat0.shape))
-            # print('loss for only one of the energy values')
-            # print(self.loss_energy(flat0,
-            #                        energies_targets[non0:non0 + 1]
-            #                        .to(dtype=torch.long)))
-
-            # print('----------------')
-            # a = torch.rand_like(flatten_energies)
-            # b = torch.zeros_like(energies_targets, dtype=torch.long)
-            # for ind in pos_inds:
-            #     b[ind] = torch.randint(0, 20, [1])
-            # loss_value = self.loss_energy(a, b)
-            # print("\na.shape:\n{}b.shape:\n{}\nloss_value:\n{}"
-            #       .format(a.shape, b.shape, loss_value.item()))
-
-            # print('----------------')
-            # print("Debug non-random value:")
-            #
-            # a = torch.zeros([1, 20])
-            # a[0, 5] = 5.
-            # b = torch.tensor([5], dtype=torch.long)
-            # loss_value = self.loss_energy(a, b)
-            # print('\na.shape:\n{}'.format(a.shape))
-            # print('a.argmax:\n{}'.format(a.argmax(1)))
-            # print('b:\n{}'.format(b))
-            # print('loss value:\n{}'.format(loss_value.item()))
+            # DEBUG
+            # if torch.cuda.current_device() == 0:
+            #     non0 = pos_inds[0]
+            #     print('=======================================================')
+            #     print('flatten_energies.shape:\n{}'
+            #           .format(flatten_energies.shape))
+            #     print('flatten_energies[!=0]:\n{}'
+            #           .format(flatten_energies[non0]))
+            #     print('flatten_energies[!=0].argmax():\n{}'
+            #           .format(flatten_energies[non0].argmax()))
+            #     print('energies_targets[!=0]:\n{}'
+            #           .format(energies_targets[non0]))
+            #     print('loss_energy.item():\n{}'
+            #           .format(loss_energy.item()))
+            #     print('count number of energies which have argmax > 0:')
+            #     print((flatten_energies.argmax(1) > 0).sum())
+            #     flat0 = flatten_energies[non0:non0 + 1, :]
+            #     print('flat0.shape:\n{}'.format(flat0.shape))
             # input()
         else:
             loss_bbox = pos_bbox_preds.sum()
@@ -661,6 +644,11 @@ class WFCOSHead(nn.Module):
         pos_energies = torch.max(pos_energies,
                                  torch.tensor([0], **type_dict))
         pos_energies = pos_energies.floor()
+
+        # Handle special cases where the energy greater than or equal to the
+        # max energy, as this would require that the number of classes is
+        # max energy + 1
+        pos_energies[pos_energies >= self.max_energy] = self.max_energy - 1
 
         energies_targets = torch.zeros(flattened_bbox_targets.shape[0],
                                        **type_dict)

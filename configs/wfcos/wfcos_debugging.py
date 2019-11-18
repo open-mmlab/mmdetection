@@ -139,6 +139,6 @@ device_ids = range(2)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/wfcos_debugging'
-load_from = None  #'./work_dirs/wfcos_debugging/latest.pth'
+load_from = './work_dirs/wfcos_debugging/latest.pth'
 resume_from = None
 workflow = [('train', 1)]

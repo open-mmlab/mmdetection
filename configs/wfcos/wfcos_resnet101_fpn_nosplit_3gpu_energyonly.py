@@ -31,8 +31,8 @@ model = dict(
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=0.1),
-        loss_bbox=dict(type='IoULoss', loss_weight=0.1),
+            loss_weight=0.0),
+        loss_bbox=dict(type='IoULoss', loss_weight=0.0),
         loss_energy=dict(
             type='CrossEntropyLoss', loss_weight=1.0, use_sigmoid=False
         ),
@@ -133,11 +133,11 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 24
 device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/wfcos_resnet101_fpn_nosplit_3gpu'
+work_dir = './work_dirs/wfcos_energy_only'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
