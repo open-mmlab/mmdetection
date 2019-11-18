@@ -29,14 +29,7 @@ def py_sigmoid_focal_loss(pred,
         pred_sigmoid, targets, reduction='none') * focal_weight
 
     loss = torch.clamp(loss, min=0)
-     
-    check = loss > 1.0
-    if check.sum()>0:
-        print("Shifted_CE Loss Value: {}".format(loss))
-        pdb.set_trace()
-    
     loss = weight_reduce_loss_focal(loss, weight, reduction, avg_factor)
-    pdb.set_trace()
     return loss
 
 def modified_cross_entropy(pred, target, reduction ='none'):
