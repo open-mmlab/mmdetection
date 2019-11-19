@@ -25,8 +25,8 @@ def lrp_loss(pred,
     
     
 
-    loss = (label*pred_sigmoid+\
-               (1-label)*(1-pred_sigmoid))
+    loss = -1*(label*torch.cos(1.57*pred_sigmoid)+\
+               (1-label)*torch.cos(1.57*(1-pred_sigmoid)))
     loss = torch.clamp(loss, min=eps)
     #print("Loss max: {}, Loss min: {}\n".format(loss.max(), loss.min()))
 
