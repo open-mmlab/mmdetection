@@ -29,8 +29,10 @@ model = dict(
         target_means=[.0, .0, .0, .0],
         target_stds=[1.0, 1.0, 1.0, 1.0],
         loss_cls=dict(
-            type='CrossEntropyLoss',
+            type='FocalLoss',
             use_sigmoid=True,
+            gamma=1.0,
+            alpha=0.25,
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0)))
 # training and testing settings
@@ -39,14 +41,8 @@ train_cfg = dict(
         type='MaxIoUAssigner',
         pos_iou_thr=0.5,
         neg_iou_thr=0.5,
-        min_pos_iou=0.5,
+        min_pos_iou=0,
         ignore_iof_thr=-1),
-    sampler=dict(
-        type='RandomSampler',
-        num=64,
-        pos_fraction=0.5,
-        neg_pos_ub=-1,
-        add_gt_as_proposals=False),
     allowed_border=-1,
     pos_weight=-1,
     debug=False)
@@ -87,11 +83,11 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=1,
-    workers_per_gpu=1,
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017_minicoco.json',
+        ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
         pipeline=train_pipeline),
     val=dict(
@@ -128,7 +124,7 @@ total_epochs = 12
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/lrp_optimization/retinanet_r50_fpn_1x_ThBased_IoU'
+work_dir = './work_dirs/lrp_optimization/retinanet_r50_fpn_1x_ShiftedCE_1'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
