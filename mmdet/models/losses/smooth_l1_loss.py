@@ -4,7 +4,6 @@ import torch.nn as nn
 from ..registry import LOSSES
 from .utils import weighted_loss
 
-
 @weighted_loss
 def smooth_l1_loss(pred, target, beta=1.0):
     assert beta > 0

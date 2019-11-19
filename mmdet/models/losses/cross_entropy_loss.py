@@ -9,7 +9,7 @@ import pdb
 
 def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
     # element-wise losses
-    pdb.set_trace()
+    #pdb.set_trace()
     loss = F.cross_entropy(pred, label, reduction='none')
     #loss_ = 2*(0.5) - torch.max(F.softmax(pred, dim=1), dim=1)[0]
     # apply weights and do the reduction
@@ -73,7 +73,7 @@ def binary_cross_entropy(pred,
     
     pred_ = torch.sigmoid(pred)
     loss = (2*th - pred_)
-    pdb.set_trace()
+    #pdb.set_trace()
     
 #    loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
     return loss
@@ -84,7 +84,7 @@ def modified_sigmoid(x):
 
 def modified_cross_entropy(pred, label, th):
     out = (pred*label + (1-label)*(1-pred))
-    pdb.set_trace()
+    #pdb.set_trace()
     return torch.abs(th-out)
 
 def mask_cross_entropy(pred, target, label, reduction='mean', avg_factor=None):

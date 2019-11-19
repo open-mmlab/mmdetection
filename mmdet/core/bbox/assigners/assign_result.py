@@ -10,7 +10,6 @@ class AssignResult(object):
         self.labels = labels
 
     def add_gt_(self, gt_labels):
-        pdb.set_trace()
         self_inds = torch.arange(
             1, len(gt_labels) + 1, dtype=torch.long, device=gt_labels.device)
         self.gt_inds = torch.cat([self_inds, self.gt_inds])
