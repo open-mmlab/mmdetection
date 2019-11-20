@@ -25,15 +25,17 @@ def lrp_loss(pred,
     
     
 
-    loss = -1*(label*torch.cos(1.57*pred_sigmoid)+\
+    #print("Sigmoid activation:", pred_sigmoid[0])
+    loss = 1*(label*torch.cos(1.57*pred_sigmoid)+\
                (1-label)*torch.cos(1.57*(1-pred_sigmoid)))
-    loss = torch.clamp(loss, min=eps)
     #print("Loss max: {}, Loss min: {}\n".format(loss.max(), loss.min()))
 
     #loss = F.binary_cross_entropy_with_logits(
     #        pred, label.float(), weight, reduction='none')
+    #print("Loss:",loss[0])
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
-    #print("Reduced Loss: {}".format(loss))
+    #print("Reduced Loss:",loss)
+    pdb.set_trace()
     return loss
 
 
