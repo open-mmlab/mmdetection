@@ -9,7 +9,7 @@ import pdb
 
 def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
     # element-wise losses
-    #pdb.set_trace()
+    pdb.set_trace()
     loss = F.cross_entropy(pred, label, reduction='none')
     #loss_ = 2*(0.5) - torch.max(F.softmax(pred, dim=1), dim=1)[0]
     # apply weights and do the reduction
@@ -45,7 +45,7 @@ def binary_cross_entropy(pred,
     # weighted element-wise losses
     if weight is not None:
         weight = weight.float()
-    loss_ = F.binary_cross_entropy_with_logits(
+    loss = F.binary_cross_entropy_with_logits(
         pred, label.float(), weight, reduction='none')
     th = 0.5
     #Get the indices of valid examples using weights
@@ -71,8 +71,6 @@ def binary_cross_entropy(pred,
 
     #Concat fg loss and bg loss vectors and average with the total size
     
-    pred_ = torch.sigmoid(pred)
-    loss = (2*th - pred_)
     #pdb.set_trace()
     
 #    loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
@@ -129,6 +127,7 @@ class CrossEntropyLoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
+        #pdb.set_trace()
         loss_cls = self.loss_weight * self.cls_criterion(
             cls_score,
             label,

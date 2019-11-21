@@ -42,7 +42,7 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         loss_cls=dict(
-            type='LRPLoss', use_sigmoid=True, loss_weight=1.0),
+            type='LRPLoss', use_sigmoid=False, loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
@@ -128,11 +128,11 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=2,
-    workers_per_gpu=2,
+    imgs_per_gpu=1,
+    workers_per_gpu=1,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
+        ann_file=data_root + 'annotations/instances_train2017_minicoco.json',
         img_prefix=data_root + 'train2017/',
         pipeline=train_pipeline),
     val=dict(
@@ -165,7 +165,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 1
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/lrp_optimization/faster_rcnn_r50_fpn_1x_IoU_debug'

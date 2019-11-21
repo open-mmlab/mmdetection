@@ -13,29 +13,15 @@ def lrp_loss(pred,
              reduction='mean', 
              avg_factor=None,
              eps = 1e-6):
-    
-    
-    if pred.dim() != label.dim():
-        label, weight = _expand_binary_labels(label, weight, pred.size(-1))
+    pred_softmax = F.softmax(pred)
+    valid_inds = ((weight>0).nonzero()).flatten()
+    valid_labels = label[valid_inds]
+    valid_preds = pred_softmax[valid_inds, valid_labels]
     if weight is not None:
         weight = weight.float()
     
-    pred_sigmoid = pred.sigmoid()
-    label = label.type_as(pred)
-    
-    
-
-    #print("Sigmoid activation:", pred_sigmoid[0])
-    loss = 1*(label*torch.cos(1.57*pred_sigmoid)+\
-               (1-label)*torch.cos(1.57*(1-pred_sigmoid)))
-    #print("Loss max: {}, Loss min: {}\n".format(loss.max(), loss.min()))
-
-    #loss = F.binary_cross_entropy_with_logits(
-    #        pred, label.float(), weight, reduction='none')
-    #print("Loss:",loss[0])
+    loss = torch.cos(1.57*valid_preds+1.57)+1
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
-    #print("Reduced Loss:",loss)
-    pdb.set_trace()
     return loss
 
 
