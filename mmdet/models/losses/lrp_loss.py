@@ -12,6 +12,8 @@ def lrp_loss(pred,
              weight=None, 
              reduction='mean', 
              avg_factor=None,
+             use_modulator = False,
+             gamma = 1.0,
              eps = 1e-6):
     pred_softmax = F.softmax(pred)
     valid_inds = ((weight>0).nonzero()).flatten()
@@ -20,7 +22,12 @@ def lrp_loss(pred,
     if weight is not None:
         weight = weight.float()
     
-    loss = torch.pow(1-valid_preds, 1)*(torch.cos(1.57*valid_preds+1.57)+1)
+    loss = torch.cos(1.57*valid_preds+1.57)+1
+    pdb.set_trace()
+    if use_modulator:
+        loss = torch.pow((1-valid_preds), gamma)*loss
+    pdb.set_trace()
+
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
     return loss
 
@@ -44,9 +51,11 @@ def _expand_binary_labels(labels, label_weights, label_channels):
 class LRPLoss(nn.Module):
 
     def __init__(self,
-                 use_sigmoid = True,
+                 use_sigmoid = False,
                  use_mask = False,
                  reduction = 'mean',
+                 use_modulator = False,
+                 gamma = 1.0,
                  loss_weight=1.0):
         super(LRPLoss, self).__init__()
         
@@ -54,7 +63,9 @@ class LRPLoss(nn.Module):
         self.use_mask = use_mask
         self.reduction = reduction
         self.loss_weight = loss_weight
-
+        self.use_modulator = use_modulator
+        self.gamma = gamma
+        
     def forward(self,
                 cls_score,
                 label,
@@ -71,6 +82,8 @@ class LRPLoss(nn.Module):
             weight,
             reduction=reduction,
             avg_factor=avg_factor,
+            use_modulator = self.use_modulator,
+            gamma = self.gamma,
             eps = 1e-6,
             **kwargs)
         return loss_cls
