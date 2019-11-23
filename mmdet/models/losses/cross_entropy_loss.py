@@ -5,12 +5,11 @@ import torch.nn.functional as F
 from ..registry import LOSSES
 from .utils import weight_reduce_loss
 
-import pdb
 
 def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
     # element-wise losses
     loss = F.cross_entropy(pred, label, reduction='none')
-    #loss_ = 2*(0.5) - torch.max(F.softmax(pred, dim=1), dim=1)[0]
+
     # apply weights and do the reduction
     if weight is not None:
         weight = weight.float()
@@ -40,49 +39,17 @@ def binary_cross_entropy(pred,
                          avg_factor=None):
     if pred.dim() != label.dim():
         label, weight = _expand_binary_labels(label, weight, pred.size(-1))
-    #pdb.set_trace()
+
     # weighted element-wise losses
     if weight is not None:
         weight = weight.float()
     loss = F.binary_cross_entropy_with_logits(
         pred, label.float(), weight, reduction='none')
-    th = 0.5
-    #Get the indices of valid examples using weights
-    valid_ind=weight>0
-    #Get valid positive labels
-    
-    #Compute loss originating from foreground examples
-    #1.Find corresponding output of the network,
-    #Now you have 1xfg sized vector
-    
-    #2.Compute loss to have fg sized loss vector
-    
-    #Get valid bacground labels
-    
-    #Compute loss_originating from bg examples
-    
-    #1.Find 1-pred_ for bg examples for all of the outputs(in total 80)
-    #Now you have 80xbg examples matrix
-    
-    #2.Compute loss, and average them to have a single loss per bg example
-    #Now you have bg sized vector
-    
+    # do the reduction for the weighted loss
+    loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
 
-    #Concat fg loss and bg loss vectors and average with the total size
-    
-    #pdb.set_trace()
-    
-#    loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
     return loss
 
-def modified_sigmoid(x):
-    out = (1+(-x).exp()).reciprocal()
-    return out
-
-def modified_cross_entropy(pred, label, th):
-    out = (pred*label + (1-label)*(1-pred))
-    #pdb.set_trace()
-    return torch.abs(th-out)
 
 def mask_cross_entropy(pred, target, label, reduction='mean', avg_factor=None):
     # TODO: handle these two reserved arguments
@@ -126,7 +93,6 @@ class CrossEntropyLoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
-        #pdb.set_trace()
         loss_cls = self.loss_weight * self.cls_criterion(
             cls_score,
             label,
