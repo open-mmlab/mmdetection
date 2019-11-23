@@ -69,6 +69,29 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
     return loss
 
 
+@weighted_loss
+def giou_loss(pred, target):
+    lt = torch.max(pred[:, :2], target[:, :2])  # [rows, 2]
+    rb = torch.min(pred[:, 2:], target[:, 2:])  # [rows, 2]
+
+    wh = (rb - lt + 1).clamp(min=0)  # [rows, 2]
+    overlap_area = wh[:, 0] * wh[:, 1]
+    area1 = (pred[:, 2] - pred[:, 0] + 1) * (pred[:, 3] - pred[:, 1] + 1)
+    area2 = (target[:, 2] - target[:, 0] + 1) * (
+        target[:, 3] - target[:, 1] + 1)
+    ious = overlap_area / (area1 + area2 - overlap_area)
+
+    enclose_x1y1 = torch.min(pred[:, :2], target[:, :2])
+    enclose_x2y2 = torch.max(pred[:, 2:], target[:, 2:])
+
+    enclose_wh = (enclose_x2y2 - enclose_x1y1 + 1).clamp(min=0)
+    enclose_area = enclose_wh[:, 0] * enclose_wh[:, 1]
+    u = area1 + area2 - overlap_area
+    gious = ious - (enclose_area - u) / enclose_area
+    loss = 1 - gious
+    return loss
+
+
 @LOSSES.register_module
 class IoULoss(nn.Module):
 
@@ -129,6 +152,36 @@ class BoundedIoULoss(nn.Module):
             weight,
             beta=self.beta,
             eps=self.eps,
+            reduction=reduction,
+            avg_factor=avg_factor,
+            **kwargs)
+        return loss
+
+
+@LOSSES.register_module
+class GIoULoss(nn.Module):
+
+    def __init__(self, reduction='mean', loss_weight=1.0):
+        super(GIoULoss, self).__init__()
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+
+    def forward(self,
+                pred,
+                target,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None,
+                **kwargs):
+        if weight is not None and not torch.any(weight > 0):
+            return (pred * weight).sum()  # 0
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
+        loss = self.loss_weight * giou_loss(
+            pred,
+            target,
+            weight,
             reduction=reduction,
             avg_factor=avg_factor,
             **kwargs)

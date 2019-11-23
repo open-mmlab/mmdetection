@@ -269,6 +269,10 @@ Please refer to [Mask Scoring R-CNN](../configs/ms_rcnn/README.md) for details.
 
 Please refer to [Rethinking ImageNet Pre-training](../configs/scratch/README.md) for details.
 
+### TTFNet
+
+Please refer to [TTFNet](../configs/ttfnet/README.md) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](../configs/pascal_voc/README.md), [Cityscapes](../configs/cityscapes/README.md) and [WIDER FACE](../configs/wider_face/README.md).

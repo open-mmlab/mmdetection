@@ -87,24 +87,25 @@ v0.5.1 (20/10/2018)
 Supported methods and backbones are shown in the below table.
 Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 
-|                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet |
-|--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|
-| RPN                | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Faster R-CNN       | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Mask R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
-| SSD                | ✗        | ✗        | ✗        | ✓        | ✗     |
-| RetinaNet          | ✓        | ✓        | ☐        | ✗        | ✓     |
-| GHM                | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
-| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Double-Head R-CNN  | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Grid R-CNN (Plus)  | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     |
-| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     |
+|                     | ResNet | ResNeXt | SENet | VGG  | HRNet | DarkNet |
+| ------------------- | :----: | :-----: | :---: | :--: | :---: | :-----: |
+| RPN                 |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Fast R-CNN          |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Faster R-CNN        |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Mask R-CNN          |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Cascade R-CNN       |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Cascade Mask R-CNN  |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| SSD                 |   ✗    |    ✗    |   ✗   |  ✓   |   ✗   |    ☐    |
+| RetinaNet           |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| GHM                 |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Mask Scoring R-CNN  |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| FCOS                |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Double-Head R-CNN   |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Grid R-CNN (Plus)   |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Hybrid Task Cascade |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Libra R-CNN         |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| Guided Anchoring    |   ✓    |    ✓    |   ☐   |  ✗   |   ✓   |    ☐    |
+| TTFNet              |   ✓    |    ☐    |   ☐   |  ✗   |   ☐   |    ✓    |
 
 Other features
 - [x] DCNv2
