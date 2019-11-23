@@ -13,7 +13,12 @@ if __name__ == '__main__':
     cls_scores = np.arange(lower_limit, upper_limit, split)
     # losses
     loss_cos_neg = -1*np.cos(((1.57)*cls_scores+1.57))
-    loss_cos_pos = np.cos((1.57)*cls_scores+1.57)+1
+    gammas = [0, 1, 1.5, 2, 5, 10] 
+    ax = plt.subplot(121)
+    for gamma in gammas:
+        loss_cos_pos = np.power(1-cls_scores, gamma)*(np.cos((1.57)*cls_scores+1.57)+1)
+        label = "Cos loss w/gamma={}".format(gamma)
+        ax.plot(cls_scores, loss_cos_pos, label = label)
     loss_cos_nf = np.cos(1.57*cls_scores)
     loss_linear = -1*(cls_scores-1)
     loss_CE_pos = -1*np.log(cls_scores)
@@ -40,9 +45,9 @@ if __name__ == '__main__':
     derivative_linear_neg = 1*np.ones(3*1000)
     derivative_CE = -1 / cls_scores
     # Losses
-    ax.plot(cls_scores, loss_cos_pos, label="Cosine Positive")
-    ax.plot(cls_scores, loss_cos_neg, label="Cosine Negative")
-    #ax.plot(cls_scores, loss_CE_pos, label="CE_pos")
+    #ax.plot(cls_scores, loss_cos_pos, label="Cosine Positive")
+    #ax.plot(cls_scores, loss_cos_neg, label="Cosine Negative")
+    ax.plot(cls_scores, loss_CE_pos, label="CE")
     #ax.plot(cls_scores, loss_CE_neg, label="CE_neg")
     #ax.plot(cls_scores, loss_linear_pos, label = "linear_pos")
     #ax.plot(cls_scores, loss_linear_neg, label = "linear_neg")

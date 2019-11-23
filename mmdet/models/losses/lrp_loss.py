@@ -20,7 +20,7 @@ def lrp_loss(pred,
     if weight is not None:
         weight = weight.float()
     
-    loss = torch.cos(1.57*valid_preds+1.57)+1
+    loss = torch.pow(1-valid_preds, 1)*(torch.cos(1.57*valid_preds+1.57)+1)
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
     return loss
 
