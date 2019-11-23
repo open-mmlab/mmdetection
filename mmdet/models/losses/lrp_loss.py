@@ -23,10 +23,8 @@ def lrp_loss(pred,
         weight = weight.float()
     
     loss = torch.cos(1.57*valid_preds+1.57)+1
-    pdb.set_trace()
     if use_modulator:
         loss = torch.pow((1-valid_preds), gamma)*loss
-    pdb.set_trace()
 
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
     return loss

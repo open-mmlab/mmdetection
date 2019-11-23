@@ -60,7 +60,7 @@ if __name__ == '__main__':
     #ax.plot(cls_scores, loss_linear, label="Linear")
     ax.legend()
     ax.grid()
-    plt.xlabel(r'$CLS probs$')
+    plt.xlabel(r'$GT probability$')
     plt.ylabel(r'$Loss$')
     plt.title("Losses")
     plt.tight_layout()
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     
     ax.legend()
     ax.grid()
-    plt.xlabel(r'$CLS probs$')
+    plt.xlabel(r'$GT probability$')
     plt.ylabel(r'$\Delta Loss$')
     plt.show()
     
