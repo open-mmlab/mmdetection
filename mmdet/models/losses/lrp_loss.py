@@ -15,7 +15,10 @@ def lrp_loss(pred,
              use_modulator = False,
              gamma = 1.0,
              eps = 1e-6):
+    use_modulator = False
+    #pdb.set_trace()
     pred_softmax = F.softmax(pred)
+    #pred_softmax_ = pred_softmax[:, label]
     valid_inds = ((weight>0).nonzero()).flatten()
     valid_labels = label[valid_inds]
     valid_preds = pred_softmax[valid_inds, valid_labels]

@@ -43,7 +43,7 @@ model = dict(
         reg_class_agnostic=False,
         loss_cls=dict(
             type='LRPLoss', use_sigmoid=False, loss_weight=1.0, \
-                  use_modulator = True, gamma = 1.0),
+                  use_modulator = False, gamma = 1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
