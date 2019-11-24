@@ -62,7 +62,7 @@ class BaseDetector(nn.Module):
         pass
 
     @abstractmethod
-    def simple_test(self, img, img_meta, **kwargs):
+    def simple_test(self, img, img_metas, **kwargs):
         pass
 
     @abstractmethod
@@ -80,7 +80,7 @@ class BaseDetector(nn.Module):
             imgs (List[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains all images in the batch.
-            img_meta (List[List[dict]]): the outer list indicates test-time
+            img_metas (List[dict]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch
         """
@@ -104,7 +104,7 @@ class BaseDetector(nn.Module):
             return self.aug_test(imgs, img_metas, **kwargs)
 
     @auto_fp16(apply_to=('img', ))
-    def forward(self, img, img_meta, return_loss=True, **kwargs):
+    def forward(self, img, img_metas, return_loss=True, **kwargs):
         """
         Calls either forward_train or forward_test depending on whether
         return_loss=True. Note this setting will change the expected inputs.
@@ -114,9 +114,9 @@ class BaseDetector(nn.Module):
         the outer list indicating test time augmentations.
         """
         if return_loss:
-            return self.forward_train(img, img_meta, **kwargs)
+            return self.forward_train(img, img_metas, **kwargs)
         else:
-            return self.forward_test(img, img_meta, **kwargs)
+            return self.forward_test(img, img_metas, **kwargs)
 
     def show_result(self, data, result, dataset=None, score_thr=0.3):
         if isinstance(result, tuple):
