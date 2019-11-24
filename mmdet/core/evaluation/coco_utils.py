@@ -188,6 +188,7 @@ def segm2json(dataset, results):
             for i in range(bboxes.shape[0]):
                 data = dict()
                 data['image_id'] = img_id
+                data['bbox'] = xyxy2xywh(bboxes[i])
                 data['score'] = float(mask_score[i])
                 data['category_id'] = dataset.cat_ids[label]
                 if isinstance(segms[i]['counts'], bytes):
