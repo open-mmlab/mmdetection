@@ -20,6 +20,8 @@ class FreeAnchorRetinaHead(RetinaHead):
                  iou_threshold=0.3,
                  pre_anchor_topk=50,
                  bbox_threshold=0.6,
+                 gamma=2.0,
+                 alpha=0.5,
                  **kwargs):
         super(FreeAnchorRetinaHead,
               self).__init__(num_classes, in_channels, stacked_convs,
@@ -29,11 +31,8 @@ class FreeAnchorRetinaHead(RetinaHead):
         self.iou_threshold = iou_threshold
         self.pre_anchor_topk = pre_anchor_topk
         self.bbox_threshold = bbox_threshold
-        self.focal_loss_alpha = self.loss_cls.alpha
-        self.focal_loss_gamma = self.loss_cls.gamma
-
-        self.positive_bag_loss_func = positive_bag_loss
-        self.negative_bag_loss_func = focal_loss
+        self.gamma = gamma
+        self.alpha = alpha
 
     def loss(self,
              cls_scores,
@@ -157,8 +156,7 @@ class FreeAnchorRetinaHead(RetinaHead):
             # positive_losses: {-log( Mean-max(P_{ij}^{cls} * P_{ij}^{loc}) )}
             num_pos += len(gt_bboxes_)
             positive_losses.append(
-                self.positive_bag_loss_func(
-                    matched_cls_prob * matched_box_prob, dim=1))
+                self.positive_bag_loss(matched_cls_prob, matched_box_prob))
         positive_loss = torch.cat(positive_losses).sum() / max(1, num_pos)
 
         # box_prob: P{a_{j} \in A_{+}}
@@ -166,28 +164,29 @@ class FreeAnchorRetinaHead(RetinaHead):
 
         # negative_loss:
         # \sum_{j}{ FL((1 - P{a_{j} \in A_{+}}) * (1 - P_{j}^{bg})) } / n||B||
-        negative_loss = self.negative_bag_loss_func(
-            cls_prob * (1 - box_prob), self.focal_loss_gamma) / max(
-                1, num_pos * self.pre_anchor_topk)
+        negative_loss = self.negative_bag_loss(cls_prob, box_prob).sum() / max(
+            1, num_pos * self.pre_anchor_topk)
 
         losses = {
-            "loss_retina_positive": positive_loss * self.focal_loss_alpha,
-            "loss_retina_negative":
-            negative_loss * (1 - self.focal_loss_alpha),
+            "positive_bag_loss": positive_loss,
+            "negative_bag_loss": negative_loss
         }
+        print(losses)
+        exit()
         return losses
 
+    def positive_bag_loss(self, matched_cls_prob, matched_box_prob):
+        # bag_prob = Mean-max(matched_prob)
+        matched_prob = matched_cls_prob * matched_box_prob
+        weight = 1 / torch.clamp(1 - matched_prob, 1e-12, None)
+        weight /= weight.sum(dim=1).unsqueeze(dim=-1)
+        bag_prob = (weight * matched_prob).sum(dim=1)
+        # positive_bag_loss = -self.alpha * log(bag_prob)
+        return self.alpha * F.binary_cross_entropy(
+            bag_prob, torch.ones_like(bag_prob), reduction='none')
 
-def positive_bag_loss(logits, *args, **kwargs):
-    # bag_prob = Mean-max(logits)
-    weight = 1 / torch.clamp(1 - logits, 1e-12, None)
-    weight /= weight.sum(*args, **kwargs).unsqueeze(dim=-1)
-    bag_prob = (weight * logits).sum(*args, **kwargs)
-    # positive_bag_loss = -log(bag_prob)
-    return F.binary_cross_entropy(
-        bag_prob, torch.ones_like(bag_prob), reduction='none')
-
-
-def focal_loss(logits, gamma):
-    return torch.sum(logits**gamma * F.binary_cross_entropy(
-        logits, torch.zeros_like(logits), reduction='none'))
+    def negative_bag_loss(self, cls_prob, box_prob):
+        prob = cls_prob * (1 - box_prob)
+        negative_bag_loss = prob**self.gamma * F.binary_cross_entropy(
+            prob, torch.zeros_like(prob), reduction='none')
+        return (1 - self.alpha) * negative_bag_loss
