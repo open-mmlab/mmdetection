@@ -171,8 +171,6 @@ class FreeAnchorRetinaHead(RetinaHead):
             "positive_bag_loss": positive_loss,
             "negative_bag_loss": negative_loss
         }
-        print(losses)
-        exit()
         return losses
 
     def positive_bag_loss(self, matched_cls_prob, matched_box_prob):
