@@ -1,11 +1,11 @@
 import argparse
 import json
 from collections import defaultdict
-
+import operator
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-
+import pdb
 
 def cal_train_time(log_dicts, args):
     for i, log_dict in enumerate(log_dicts):
@@ -77,9 +77,13 @@ def plot_curve(log_dicts, args):
                     ys.append(np.array(log_dict[epoch][metric][:len(iters)]))
                 xs = np.concatenate(xs)
                 ys = np.concatenate(ys)
+                step = 0.1
+                plt.ylim(0, max(log_dict, key=log_dict.get)+step)
+                plt.yticks(np.arange(0, max(log_dict, key=log_dict.get)+step, step=step))
                 plt.xlabel('iter')
+                plt.ylabel('loss')
                 plt.plot(
-                    xs, ys, label=legend[i * num_metrics + j], linewidth=0.5)
+                    xs, ys, label=legend[i * num_metrics + j], linewidth=1.5)
             plt.legend()
         if args.title is not None:
             plt.title(args.title)

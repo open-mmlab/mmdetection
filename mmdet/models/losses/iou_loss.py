@@ -26,7 +26,6 @@ def iou_loss(pred, target, eps=1e-6):
     
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
     loss = 1-ious
-    pdb.set_trace()
     return loss
 
 
