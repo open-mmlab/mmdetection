@@ -17,9 +17,8 @@ class FreeAnchorRetinaHead(RetinaHead):
                  scales_per_octave=3,
                  conv_cfg=None,
                  norm_cfg=None,
-                 iou_threshold=0.3,
                  pre_anchor_topk=50,
-                 bbox_threshold=0.6,
+                 bbox_thr=0.6,
                  gamma=2.0,
                  alpha=0.5,
                  **kwargs):
@@ -28,9 +27,8 @@ class FreeAnchorRetinaHead(RetinaHead):
                              octave_base_scale, scales_per_octave, conv_cfg,
                              norm_cfg, **kwargs)
 
-        self.iou_threshold = iou_threshold
         self.pre_anchor_topk = pre_anchor_topk
-        self.bbox_threshold = bbox_threshold
+        self.bbox_thr = bbox_thr
         self.gamma = gamma
         self.alpha = alpha
 
@@ -70,7 +68,7 @@ class FreeAnchorRetinaHead(RetinaHead):
                     zip(anchors, gt_labels, gt_bboxes, cls_prob, bbox_preds)):
             gt_labels_ -= 1
 
-            with torch.set_grad_enabled(False):
+            with torch.no_grad():
                 # box_localization: a_{j}^{loc}, shape: [j, 4]
                 pred_boxes = delta2bbox(anchors_, bbox_preds_,
                                         self.target_means, self.target_stds)
@@ -79,7 +77,7 @@ class FreeAnchorRetinaHead(RetinaHead):
                 object_box_iou = bbox_overlaps(gt_bboxes_, pred_boxes)
 
                 # object_box_prob: P{a_{j} -> b_{i}}, shape: [i, j]
-                t1 = self.bbox_threshold
+                t1 = self.bbox_thr
                 t2 = object_box_iou.max(
                     dim=1, keepdim=True).values.clamp(min=t1 + 1e-12)
                 object_box_prob = ((object_box_iou - t1) / (t2 - t1)).clamp(
