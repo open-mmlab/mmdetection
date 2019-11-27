@@ -90,7 +90,7 @@ test_pipeline = [
 ]
 data = dict(
     imgs_per_gpu=4,
-    workers_per_gpu=4,
+    workers_per_gpu=0,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'deepscores_train.json',
@@ -132,7 +132,7 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 74
-device_ids = range(3)
+device_ids = range(1)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/fcos_deepscores_dataset'
