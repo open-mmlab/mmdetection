@@ -166,8 +166,8 @@ class FreeAnchorRetinaHead(RetinaHead):
             1, num_pos * self.pre_anchor_topk)
 
         losses = {
-            "positive_bag_loss": positive_loss,
-            "negative_bag_loss": negative_loss
+            'positive_bag_loss': positive_loss,
+            'negative_bag_loss': negative_loss
         }
         return losses
 
