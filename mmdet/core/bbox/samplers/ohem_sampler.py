@@ -68,15 +68,13 @@ class OHEMSampler(BaseSampler):
                     bboxes=None,
                     feats=None,
                     **kwargs):
-        import xdev
-        with xdev.embed_on_exception_context:
-            # Sample some hard negative samples
-            neg_inds = torch.nonzero(assign_result.gt_inds == 0)
-            if neg_inds.numel() != 0:
-                neg_inds = neg_inds.squeeze(1)
-            if len(neg_inds) <= num_expected:
-                return neg_inds
-            else:
-                return self.hard_mining(neg_inds, num_expected,
-                                        bboxes[neg_inds],
-                                        assign_result.labels[neg_inds], feats)
+        # Sample some hard negative samples
+        neg_inds = torch.nonzero(assign_result.gt_inds == 0)
+        if neg_inds.numel() != 0:
+            neg_inds = neg_inds.squeeze(1)
+        if len(neg_inds) <= num_expected:
+            return neg_inds
+        else:
+            return self.hard_mining(neg_inds, num_expected,
+                                    bboxes[neg_inds],
+                                    assign_result.labels[neg_inds], feats)
