@@ -28,7 +28,9 @@ class MaxIoUAssigner(BaseAssigner):
             ignoring any bboxes.
         ignore_wrt_candidates (bool): Whether to compute the iof between
             `bboxes` and `gt_bboxes_ignore`, or the contrary.
-        assign_on_cpu (bool): Whether to assign bboxes on CPU to save memory.
+        gpu_assign_thr (int): The upper bound of the number of GT for GPU
+            assign. When the number of gt is above this threshold, will assign
+            on CPU device. Negative values mean not assign on CPU.
     """
 
     def __init__(self,
@@ -38,14 +40,14 @@ class MaxIoUAssigner(BaseAssigner):
                  gt_max_assign_all=True,
                  ignore_iof_thr=-1,
                  ignore_wrt_candidates=True,
-                 assign_on_cpu=False):
+                 gpu_assign_thr=-1):
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
         self.gt_max_assign_all = gt_max_assign_all
         self.ignore_iof_thr = ignore_iof_thr
         self.ignore_wrt_candidates = ignore_wrt_candidates
-        self.assign_on_cpu = assign_on_cpu
+        self.gpu_assign_thr = gpu_assign_thr
 
     def assign(self, bboxes, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
         """Assign gt to bboxes.
@@ -75,7 +77,9 @@ class MaxIoUAssigner(BaseAssigner):
         """
         if bboxes.shape[0] == 0 or gt_bboxes.shape[0] == 0:
             raise ValueError('No gt or bboxes')
-        if self.assign_on_cpu:
+        assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
+            gt_bboxes.shape[0] > self.gpu_assign_thr) else False
+        if assign_on_cpu:
             device = bboxes.device
             bboxes = bboxes.cpu()
             gt_bboxes = gt_bboxes.cpu()
@@ -98,7 +102,7 @@ class MaxIoUAssigner(BaseAssigner):
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 
         assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
-        if self.assign_on_cpu:
+        if assign_on_cpu:
             assign_result.gt_inds = assign_result.gt_inds.to(device)
             assign_result.max_overlaps = assign_result.max_overlaps.to(device)
             assign_result.labels = assign_result.labels.to(
