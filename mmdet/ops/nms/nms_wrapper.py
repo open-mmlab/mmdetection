@@ -21,6 +21,18 @@ def nms(dets, iou_thr, device_id=None):
     Returns:
         tuple: kept bboxes and indice, which is always the same data type as
             the input.
+
+    Example:
+        >>> dets = np.array([[49.1, 32.4, 51.0, 35.9, 0.9],
+        >>>                  [49.3, 32.9, 51.0, 35.3, 0.9],
+        >>>                  [49.2, 31.8, 51.0, 35.4, 0.5],
+        >>>                  [35.1, 11.5, 39.1, 15.7, 0.5],
+        >>>                  [35.6, 11.8, 39.3, 14.2, 0.5],
+        >>>                  [35.3, 11.5, 39.9, 14.5, 0.4],
+        >>>                  [35.2, 11.7, 39.7, 15.7, 0.3]], dtype=np.float32)
+        >>> iou_thr = 0.7
+        >>> supressed, inds = nms(dets, iou_thr)
+        >>> assert len(inds) == len(supressed) == 3
     """
     # convert dets (tensor or numpy array) to tensor
     if isinstance(dets, torch.Tensor):
@@ -50,6 +62,18 @@ def nms(dets, iou_thr, device_id=None):
 
 
 def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
+    """
+    Example:
+        >>> dets = np.array([[4., 3., 5., 3., 0.9],
+        >>>                  [4., 3., 5., 4., 0.9],
+        >>>                  [3., 1., 3., 1., 0.5],
+        >>>                  [3., 1., 3., 1., 0.5],
+        >>>                  [3., 1., 3., 1., 0.4],
+        >>>                  [3., 1., 3., 1., 0.0]], dtype=np.float32)
+        >>> iou_thr = 0.7
+        >>> supressed, inds = soft_nms(dets, iou_thr, sigma=0.5)
+        >>> assert len(inds) == len(supressed) == 3
+    """
     if isinstance(dets, torch.Tensor):
         is_tensor = True
         dets_np = dets.detach().cpu().numpy()

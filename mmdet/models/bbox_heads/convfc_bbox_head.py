@@ -7,7 +7,7 @@ from .bbox_head import BBoxHead
 
 @HEADS.register_module
 class ConvFCBBoxHead(BBoxHead):
-    """More general bbox head, with shared conv and fc layers and two optional
+    r"""More general bbox head, with shared conv and fc layers and two optional
     separated branches.
 
                                 /-> cls convs -> cls fcs -> cls
