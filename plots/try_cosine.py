@@ -19,10 +19,10 @@ if __name__ == '__main__':
     for gamma in gammas:
         loss_cos = np.power(1-cls_scores, gamma)*(np.cos((1.57)*cls_scores+1.57)+1)
         label = "Cos loss w/gamma={}".format(gamma)
-        ax.plot(cls_scores, loss_cos, label = label)
+        ax.plot(cls_scores, loss_cos, label = label, linewidth=2.0)
     
     loss_CE = -1*np.log(cls_scores) 
-    ax.plot(cls_scores, loss_CE, label="CE")
+    ax.plot(cls_scores, loss_CE, label="CE", linewidth=2.0)
     ax.axhline(0, color='black')
     ax.axvline(0, color='black')
     ax.set_ylim(-1.75, 2)
@@ -40,10 +40,10 @@ if __name__ == '__main__':
         der_cos = ((-1*gamma*np.power(1-cls_scores, gamma-1))*(np.cos(1.57*cls_scores+1.57)+1)) \
                   + (np.power(1-cls_scores, gamma)*(-1.57*np.sin(1.57*cls_scores+1.57)))
         label = "Cos loss w/gamma={}".format(gamma)
-        ax.plot(cls_scores, der_cos, label=label)
+        ax.plot(cls_scores, der_cos, label=label, linewidth=2.0)
 
     derivative_CE = -1 / cls_scores
-    ax.plot(cls_scores, derivative_CE, label="CE")
+    ax.plot(cls_scores, derivative_CE, label="CE", linewidth=2.0)
     plt.title("Derivatives")
     plt.tight_layout()
     # Derivatives
