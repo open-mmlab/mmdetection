@@ -123,7 +123,8 @@ class NASFPN(nn.Module):
                 1,
                 norm_cfg=norm_cfg,
                 activation=None)
-            self.extra_downsamples.append(extra_conv)
+            self.extra_downsamples.append(
+                nn.Sequential(extra_conv, nn.MaxPool2d(2, 2)))
 
         # add NAS FPN connections
         self.fpn_stages = nn.ModuleList()
@@ -160,7 +161,7 @@ class NASFPN(nn.Module):
         ]
         # build P6-P7 on top of P5
         for downsample in self.extra_downsamples:
-            feats.append(F.max_pool2d(downsample(feats[-1]), 2, 2))
+            feats.append(downsample(feats[-1]))
 
         p3, p4, p5, p6, p7 = feats
 
@@ -183,3 +184,4 @@ class NASFPN(nn.Module):
             p6 = stage['gp_75_6'](p7, p5, out_size=p6.shape[-2:])
 
         return p3, p4, p5, p6, p7
+
