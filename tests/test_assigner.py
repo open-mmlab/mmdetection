@@ -3,6 +3,9 @@ Tests the Assigner objects.
 
 CommandLine:
     pytest tests/test_assigner.py
+    xdoctest tests/test_assigner.py zero
+
+
 
 """
 import torch
@@ -77,7 +80,7 @@ def test_max_iou_assigner_with_empty_boxes():
     # Test with gt_labels
     assign_result = self.assign(bboxes, gt_bboxes, gt_labels=gt_labels)
     assert len(assign_result.gt_inds) == 0
-    assert tuple(assign_result.labels.shape) == (2, 0)
+    assert tuple(assign_result.labels.shape) == (0, )
 
     # Test without gt_labels
     assign_result = self.assign(bboxes, gt_bboxes, gt_labels=None)

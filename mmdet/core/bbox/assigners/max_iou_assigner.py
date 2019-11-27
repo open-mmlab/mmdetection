@@ -138,17 +138,19 @@ class MaxIoUAssigner(BaseAssigner):
 
         if num_gts == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
-            max_overlaps = overlaps.new()
+            max_overlaps = overlaps.new_zeros((num_bboxes, ))
             if num_gts == 0:
                 # No truth, assign everything to background
                 assigned_gt_inds[:] = 0
             if gt_labels is None:
                 assigned_labels = None
             else:
-                assigned_labels = overlaps.new_empty(
-                    (num_gts, num_bboxes), dtype=torch.long)
+                assigned_labels = overlaps.new_zeros((num_bboxes, ),
+                                                     dtype=torch.long)
             return AssignResult(
-                num_gts, assigned_gt_inds, max_overlaps,
+                num_gts,
+                assigned_gt_inds,
+                max_overlaps,
                 labels=assigned_labels)
 
         # for each anchor, which gt best overlaps with it

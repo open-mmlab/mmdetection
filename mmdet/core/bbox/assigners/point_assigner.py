@@ -54,7 +54,13 @@ class PointAssigner(BaseAssigner):
             assigned_gt_inds = points.new_full((num_points, ),
                                                0,
                                                dtype=torch.long)
-            return AssignResult(num_gts, assigned_gt_inds, None, labels=None)
+            if gt_labels is None:
+                assigned_labels = None
+            else:
+                assigned_labels = points.new_zeros((num_points, ),
+                                                   dtype=torch.long)
+            return AssignResult(
+                num_gts, assigned_gt_inds, None, labels=assigned_labels)
 
         points_xy = points[:, :2]
         points_stride = points[:, 2]
