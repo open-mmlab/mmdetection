@@ -1,6 +1,9 @@
 import argparse
 import os
+import os.path as osp
+import shutil
 import pickle
+import tempfile
 
 import mmcv
 import torch
@@ -33,7 +36,7 @@ def single_gpu_test(model, data_loader, show=False):
     return results
 
 
-def multi_gpu_test(model, data_loader):
+def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     model.eval()
     results = []
     dataset = data_loader.dataset
@@ -51,12 +54,56 @@ def multi_gpu_test(model, data_loader):
                 prog_bar.update()
 
     # collect results from all ranks
-    results = collect_results(results, len(dataset))
-
+    if gpu_collect:
+        results = collect_results_gpu(results, len(dataset))
+    else:
+        results = collect_results_cpu(results, len(dataset), tmpdir)
     return results
 
 
-def collect_results(result_part, size):
+def collect_results_cpu(result_part, size, tmpdir=None):
+    rank, world_size = get_dist_info()
+    # create a tmp dir if it is not specified
+    if tmpdir is None:
+        MAX_LEN = 512
+        # 32 is whitespace
+        dir_tensor = torch.full((MAX_LEN, ),
+                                32,
+                                dtype=torch.uint8,
+                                device='cuda')
+        if rank == 0:
+            tmpdir = tempfile.mkdtemp()
+            tmpdir = torch.tensor(
+                bytearray(tmpdir.encode()), dtype=torch.uint8, device='cuda')
+            dir_tensor[:len(tmpdir)] = tmpdir
+        dist.broadcast(dir_tensor, 0)
+        tmpdir = dir_tensor.cpu().numpy().tobytes().decode().rstrip()
+    else:
+        mmcv.mkdir_or_exist(tmpdir)
+    # dump the part result to the dir
+    mmcv.dump(result_part, osp.join(tmpdir, 'part_{}.pkl'.format(rank)))
+    dist.barrier()
+    # collect all parts
+    if rank != 0:
+        return None
+    else:
+        # load results of all parts from tmp dir
+        part_list = []
+        for i in range(world_size):
+            part_file = osp.join(tmpdir, 'part_{}.pkl'.format(i))
+            part_list.append(mmcv.load(part_file))
+        # sort the results
+        ordered_results = []
+        for res in zip(*part_list):
+            ordered_results.extend(list(res))
+        # the dataloader may pad some samples
+        ordered_results = ordered_results[:size]
+        # remove tmp dir
+        shutil.rmtree(tmpdir)
+        return ordered_results
+
+
+def collect_results_gpu(result_part, size):
     rank, world_size = get_dist_info()
     # dump result part to tensor with pickle
     part_tensor = torch.tensor(
@@ -105,6 +152,11 @@ def parse_args():
         choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
         help='eval types')
     parser.add_argument('--show', action='store_true', help='show results')
+    parser.add_argument(
+        '--gpu_collect',
+        action='store_true',
+        help='whether to use gpu to collect results')
+    parser.add_argument('--tmpdir', help='tmp dir for writing some results')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
@@ -172,7 +224,8 @@ def main():
         outputs = single_gpu_test(model, data_loader, args.show)
     else:
         model = MMDistributedDataParallel(model.cuda())
-        outputs = multi_gpu_test(model, data_loader)
+        outputs = multi_gpu_test(model, data_loader, args.tmpdir,
+                                 args.gpu_collect)
 
     rank, _ = get_dist_info()
     if args.out and rank == 0:
