@@ -79,13 +79,15 @@ class MaxIoUAssigner(BaseAssigner):
             raise ValueError('No gt or bboxes')
         assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
             gt_bboxes.shape[0] > self.gpu_assign_thr) else False
+        # compute overlap and assign gt on CPU when number of GT is large
         if assign_on_cpu:
             device = bboxes.device
             bboxes = bboxes.cpu()
             gt_bboxes = gt_bboxes.cpu()
-            gt_bboxes_ignore = gt_bboxes_ignore.cpu(
-            ) if gt_bboxes_ignore is not None else None
-            gt_labels = gt_labels.cpu() if gt_labels is not None else None
+            if gt_bboxes_ignore is not None:
+                gt_bboxes_ignore = gt_bboxes_ignore.cpu()
+            if gt_labels is not None:
+                gt_labels = gt_labels.cpu()
         bboxes = bboxes[:, :4]
         overlaps = bbox_overlaps(gt_bboxes, bboxes)
 
@@ -105,8 +107,8 @@ class MaxIoUAssigner(BaseAssigner):
         if assign_on_cpu:
             assign_result.gt_inds = assign_result.gt_inds.to(device)
             assign_result.max_overlaps = assign_result.max_overlaps.to(device)
-            assign_result.labels = assign_result.labels.to(
-                device) if assign_result.labels is not None else None
+            if assign_result.labels is not None:
+                assign_result.labels = assign_result.labels.to(device)
         return assign_result
 
     def assign_wrt_overlaps(self, overlaps, gt_labels=None):
