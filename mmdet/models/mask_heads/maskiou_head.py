@@ -181,8 +181,8 @@ class MaskIoUHead(nn.Module):
         mask_score = bbox_score * mask_iou
         """
         inds = range(det_labels.size(0))
-        mask_scores = mask_iou_pred[inds, det_labels +
-                                    1] * det_bboxes[inds, -1]
+        mask_scores = mask_iou_pred[inds, det_labels + 1] * det_bboxes[inds,
+                                                                       -1]
         mask_scores = mask_scores.cpu().numpy()
         det_labels = det_labels.cpu().numpy()
         return [

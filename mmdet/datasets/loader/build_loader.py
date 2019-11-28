@@ -19,8 +19,8 @@ def build_dataloader(dataset,
                      workers_per_gpu,
                      num_gpus=1,
                      dist=True,
+                     shuffle=True,
                      **kwargs):
-    shuffle = kwargs.get('shuffle', True)
     if dist:
         rank, world_size = get_dist_info()
         if shuffle:

@@ -27,7 +27,7 @@ python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}] [-
 Optional arguments:
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
 - `EVAL_METRICS`: Items to be evaluated on the results. Allowed values are: `proposal_fast`, `proposal`, `bbox`, `segm`, `keypoints`.
-- `--show`: If specified, detection results will be ploted on the images and shown in a new window. It is only applicable to single GPU testing. Please make sure that GUI is available in your environment, otherwise you may encounter the error like `cannot connect to X server`.
+- `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing. Please make sure that GUI is available in your environment, otherwise you may encounter the error like `cannot connect to X server`.
 
 Examples:
 
@@ -209,6 +209,16 @@ average iter time: 1.1959 s/iter
 
 ```
 
+### Analyse Class-Wise Performance 
+
+You can analyse the class-wise mAP to have a more comprehensive understanding of the model.
+
+```shell
+python coco_eval.py ${RESULT} --ann ${ANNOTATION_PATH} --types bbox --classwise 
+```
+
+Now we only support class-wise mAP for all the evaluation types, we will support class-wise mAR in the future.
+
 ### Get the FLOPs and params (experimental)
 
 We provide a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
@@ -356,6 +366,9 @@ class MobileNet(nn.Module):
         pass
 
     def forward(x):  # should return a tuple
+        pass
+    
+    def init_weights(self, pretrained=None):
         pass
 ```
 

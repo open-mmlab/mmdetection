@@ -11,6 +11,11 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin, RPNTestMixin
 @DETECTORS.register_module
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                        MaskTestMixin):
+    """Base class for two-stage detectors.
+
+    Two-stage detectors typically consisting of a region proposal network and a
+    task-specific regression head.
+    """
 
     def __init__(self,
                  backbone,
@@ -82,12 +87,18 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 self.mask_roi_extractor.init_weights()
 
     def extract_feat(self, img):
+        """Directly extract features from the backbone+neck
+        """
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
         return x
 
     def forward_dummy(self, img):
+        """Used for computing network flops.
+
+        See `mmedetection/tools/get_flops.py`
+        """
         outs = ()
         # backbone
         x = self.extract_feat(img)
@@ -124,6 +135,34 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None):
+        """
+        Args:
+            img (Tensor): of shape (N, C, H, W) encoding input images.
+                Typically these should be mean centered and std scaled.
+
+            img_meta (list[dict]): list of image info dict where each dict has:
+                'img_shape', 'scale_factor', 'flip', and my also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+
+            gt_labels (list[Tensor]): class indices corresponding to each box
+
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+            gt_masks (None | Tensor) : true segmentation masks for each box
+                used if the architecture supports a segmentation task.
+
+            proposals : override rpn proposals with custom proposals. Use when
+                `with_rpn` is False.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
         x = self.extract_feat(img)
 
         losses = dict()
