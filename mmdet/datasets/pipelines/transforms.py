@@ -179,12 +179,14 @@ class RandomFlip(object):
         flip_ratio (float, optional): The flipping probability.
     """
 
-    def __init__(self, flip_ratio=None):
+    def __init__(self, flip_ratio=None, direction='horizontal'):
         self.flip_ratio = flip_ratio
+        self.direction = direction
         if flip_ratio is not None:
             assert flip_ratio >= 0 and flip_ratio <= 1
+        assert direction in ['horizontal', 'vertical']
 
-    def bbox_flip(self, bboxes, img_shape):
+    def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
 
         Args:
@@ -192,26 +194,41 @@ class RandomFlip(object):
             img_shape(tuple): (height, width)
         """
         assert bboxes.shape[-1] % 4 == 0
-        w = img_shape[1]
         flipped = bboxes.copy()
-        flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
-        flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+        if direction == 'horizontal':
+            w = img_shape[1]
+            flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
+            flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+        elif direction == 'vertical':
+            h = img_shape[0]
+            flipped[..., 1::4] = h - bboxes[..., 3::4] - 1
+            flipped[..., 3::4] = h - bboxes[..., 1::4] - 1
+        else:
+            raise ValueError(
+                'Invalid flipping direction "{}"'.format(direction))
         return flipped
 
     def __call__(self, results):
         if 'flip' not in results:
             flip = True if np.random.rand() < self.flip_ratio else False
             results['flip'] = flip
+        if 'flip_direction' not in results:
+            results['flip_direction'] = self.direction
         if results['flip']:
             # flip image
-            results['img'] = mmcv.imflip(results['img'])
+            results['img'] = mmcv.imflip(
+                results['img'], direction=results['flip_direction'])
             # flip bboxes
             for key in results.get('bbox_fields', []):
                 results[key] = self.bbox_flip(results[key],
-                                              results['img_shape'])
+                                              results['img_shape'],
+                                              results['flip_direction'])
             # flip masks
             for key in results.get('mask_fields', []):
-                results[key] = [mask[:, ::-1] for mask in results[key]]
+                results[key] = [
+                    mmcv.imflip(mask, direction=results['flip_direction'])
+                    for mask in results[key]
+                ]
         return results
 
     def __repr__(self):
@@ -353,8 +370,8 @@ class RandomCrop(object):
             if 'gt_masks' in results:
                 valid_gt_masks = []
                 for i in np.where(valid_inds)[0]:
-                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2, crop_x1:
-                                                     crop_x2]
+                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2,
+                                                     crop_x1:crop_x2]
                     valid_gt_masks.append(gt_mask)
                 results['gt_masks'] = valid_gt_masks
 
@@ -509,17 +526,27 @@ class Expand(object):
         mean (tuple): mean value of dataset.
         to_rgb (bool): if need to convert the order of mean to align with RGB.
         ratio_range (tuple): range of expand ratio.
+        prob (float): probability of applying this transformation
     """
 
-    def __init__(self, mean=(0, 0, 0), to_rgb=True, ratio_range=(1, 4)):
+    def __init__(self,
+                 mean=(0, 0, 0),
+                 to_rgb=True,
+                 ratio_range=(1, 4),
+                 seg_ignore_label=None,
+                 prob=0.5):
+        self.to_rgb = to_rgb
+        self.ratio_range = ratio_range
         if to_rgb:
             self.mean = mean[::-1]
         else:
             self.mean = mean
         self.min_ratio, self.max_ratio = ratio_range
+        self.seg_ignore_label = seg_ignore_label
+        self.prob = prob
 
     def __call__(self, results):
-        if random.randint(2):
+        if random.uniform(0, 1) > self.prob:
             return results
 
         img, boxes = [results[k] for k in ('img', 'gt_bboxes')]
@@ -544,12 +571,23 @@ class Expand(object):
                 expand_mask[top:top + h, left:left + w] = mask
                 expand_gt_masks.append(expand_mask)
             results['gt_masks'] = expand_gt_masks
+
+        # not tested
+        if 'gt_semantic_seg' in results:
+            assert self.seg_ignore_label is not None
+            gt_seg = results['gt_semantic_seg']
+            expand_gt_seg = np.full((int(h * ratio), int(w * ratio)),
+                                    self.seg_ignore_label).astype(gt_seg.dtype)
+            expand_gt_seg[top:top + h, left:left + w] = gt_seg
+            results['gt_semantic_seg'] = expand_gt_seg
         return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += '(mean={}, to_rgb={}, ratio_range={})'.format(
-            self.mean, self.to_rgb, self.ratio_range)
+        repr_str += '(mean={}, to_rgb={}, ratio_range={}, ' \
+                    'seg_ignore_label={})'.format(
+                        self.mean, self.to_rgb, self.ratio_range,
+                        self.seg_ignore_label)
         return repr_str
 
 
@@ -560,8 +598,10 @@ class MinIoURandomCrop(object):
     selected from min_ious.
 
     Args:
-        min_ious (tuple): minimum IoU threshold
-        crop_size (tuple): Expected size after cropping, (h, w).
+        min_ious (tuple): minimum IoU threshold for all intersections with
+        bounding boxes
+        min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
+        where a >= min_crop_size).
     """
 
     def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3):
@@ -626,6 +666,11 @@ class MinIoURandomCrop(object):
                         gt_mask[patch[1]:patch[3], patch[0]:patch[2]]
                         for gt_mask in valid_masks
                     ]
+
+                # not tested
+                if 'gt_semantic_seg' in results:
+                    results['gt_semantic_seg'] = results['gt_semantic_seg'][
+                        patch[1]:patch[3], patch[0]:patch[2]]
                 return results
 
     def __repr__(self):

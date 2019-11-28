@@ -209,6 +209,16 @@ average iter time: 1.1959 s/iter
 
 ```
 
+### Analyse Class-Wise Performance 
+
+You can analyse the class-wise mAP to have a more comprehensive understanding of the model.
+
+```shell
+python coco_eval.py ${RESULT} --ann ${ANNOTATION_PATH} --types bbox --classwise 
+```
+
+Now we only support class-wise mAP for all the evaluation types, we will support class-wise mAR in the future.
+
 ### Get the FLOPs and params (experimental)
 
 We provide a script adapted from [flops-counter.pytorch](https://github.com/sovrasov/flops-counter.pytorch) to compute the FLOPs and params of a given model.
@@ -356,6 +366,9 @@ class MobileNet(nn.Module):
         pass
 
     def forward(x):  # should return a tuple
+        pass
+    
+    def init_weights(self, pretrained=None):
         pass
 ```
 

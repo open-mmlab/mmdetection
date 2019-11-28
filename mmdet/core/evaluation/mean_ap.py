@@ -325,21 +325,25 @@ def eval_map(det_results,
                 aps.append(cls_result['ap'])
         mean_ap = np.array(aps).mean().item() if aps else 0.0
     if print_summary:
-        print_map_summary(mean_ap, eval_results, dataset)
+        print_map_summary(mean_ap, eval_results, dataset, area_ranges)
 
     return mean_ap, eval_results
 
 
-def print_map_summary(mean_ap, results, dataset=None):
+def print_map_summary(mean_ap, results, dataset=None, ranges=None):
     """Print mAP and results of each class.
 
     Args:
         mean_ap(float): calculated from `eval_map`
         results(list): calculated from `eval_map`
         dataset(None or str or list): dataset name or dataset classes.
+        ranges(list or Tuple): ranges of areas
     """
     num_scales = len(results[0]['ap']) if isinstance(results[0]['ap'],
                                                      np.ndarray) else 1
+    if ranges is not None:
+        assert len(ranges) == num_scales
+
     num_classes = len(results)
 
     recalls = np.zeros((num_scales, num_classes), dtype=np.float32)
@@ -365,6 +369,8 @@ def print_map_summary(mean_ap, results, dataset=None):
         mean_ap = [mean_ap]
     header = ['class', 'gts', 'dets', 'recall', 'precision', 'ap']
     for i in range(num_scales):
+        if ranges is not None:
+            print("Area range ", ranges[i])
         table_data = [header]
         for j in range(num_classes):
             row_data = [
