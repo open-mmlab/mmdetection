@@ -168,8 +168,8 @@ def test_retina_ghm_forward():
                 batch_results.append(result)
 
 
-def _demo_mm_inputs(
-        input_shape=(1, 3, 300, 300), num_items=None, num_classes=10):
+def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
+                    num_items=None, num_classes=10):  # yapf: disable
     """
     Create a superset of inputs needed to run test or train batches.
 
