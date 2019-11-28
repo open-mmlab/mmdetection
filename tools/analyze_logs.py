@@ -82,9 +82,9 @@ def plot_curve(log_dicts, args):
                 ys = np.concatenate(ys)
                 step = 0.1
                 plt.ylim(0, max(log_dict, key=log_dict.get)+step)
-                #plt.ylim(0,10)
+                #plt.ylim(0,2)
                 plt.yticks(np.arange(0, max(log_dict, key=log_dict.get)+step, step=step))
-                #plt.yticks(np.arange(0, 10, step=1))
+                #plt.yticks(np.arange(0, 2, step=step))
                 plt.xlabel('iter')
                 plt.ylabel('loss')
                 plt.plot(
