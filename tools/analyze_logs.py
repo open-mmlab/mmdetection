@@ -48,6 +48,7 @@ def plot_curve(log_dicts, args):
     num_metrics = len(metrics)
     for i, log_dict in enumerate(log_dicts):
         epochs = list(log_dict.keys())
+        ys_analyze = []
         for j, metric in enumerate(metrics):
             print('plot curve of {}, metric is {}'.format(
                 args.json_logs[i], metric))
@@ -66,7 +67,7 @@ def plot_curve(log_dicts, args):
                 plt.plot(xs, ys, label=legend[i * num_metrics + j], marker='o')
             else:
                 xs = []
-                ys = []
+                ys = [] 
                 num_iters_per_epoch = log_dict[epochs[0]]['iter'][-1]
                 for epoch in epochs:
                     iters = log_dict[epoch]['iter']
@@ -74,17 +75,24 @@ def plot_curve(log_dicts, args):
                         iters = iters[:-1]
                     xs.append(
                         np.array(iters) + (epoch - 1) * num_iters_per_epoch)
+                    if metric == 'loss_cls' or 'loss_bbox':
+                        ys_analyze.append(np.array(log_dict[epoch][metric][:len(iters)]))
                     ys.append(np.array(log_dict[epoch][metric][:len(iters)]))
                 xs = np.concatenate(xs)
                 ys = np.concatenate(ys)
                 step = 0.1
                 plt.ylim(0, max(log_dict, key=log_dict.get)+step)
+                #plt.ylim(0,10)
                 plt.yticks(np.arange(0, max(log_dict, key=log_dict.get)+step, step=step))
+                #plt.yticks(np.arange(0, 10, step=1))
                 plt.xlabel('iter')
                 plt.ylabel('loss')
                 plt.plot(
                     xs, ys, label=legend[i * num_metrics + j], linewidth=1.5)
             plt.legend()
+        diff_label = 'diff, mean:{}'.format((ys_analyze[0]/ys_analyze[1]).mean())
+        plt.plot(xs, ys_analyze[0]/ys_analyze[1], label=diff_label)
+        plt.legend()
         if args.title is not None:
             plt.title(args.title)
     if args.out is None:
