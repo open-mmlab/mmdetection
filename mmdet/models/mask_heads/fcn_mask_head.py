@@ -159,8 +159,7 @@ class FCNMaskHead(nn.Module):
             scale_factor = 1.0
 
         for i in range(bboxes.shape[0]):
-            if not isinstance(scale_factor, float) and not isinstance(
-                    scale_factor, np.ndarray):
+            if not isinstance(scale_factor, (float, np.ndarray)):
                 scale_factor = scale_factor.cpu().numpy()
             bbox = (bboxes[i, :] / scale_factor).astype(np.int32)
             label = labels[i]
