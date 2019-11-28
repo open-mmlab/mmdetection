@@ -169,7 +169,7 @@ def test_retina_ghm_forward():
 
 
 def _demo_mm_inputs(
-        input_shape=(1, 3, 300, 300), num_items=None, num_classes=10):
+    input_shape=(1, 3, 300, 300), num_items=None, num_classes=10):
     """
     Create a superset of inputs needed to run test or train batches.
 
