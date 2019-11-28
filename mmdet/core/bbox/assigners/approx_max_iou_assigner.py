@@ -96,7 +96,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
             approxs.view(num_squares, approxs_per_octave, 4), 0,
             1).contiguous().view(-1, 4)
         assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
-                num_gts > self.gpu_assign_thr) else False
+            num_gts > self.gpu_assign_thr) else False
         # compute overlap and assign gt on CPU when number of GT is large
         if assign_on_cpu:
             device = approxs.device
