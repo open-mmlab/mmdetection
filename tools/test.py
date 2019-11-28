@@ -1,8 +1,8 @@
 import argparse
 import os
 import os.path as osp
-import shutil
 import pickle
+import shutil
 import tempfile
 
 import mmcv
