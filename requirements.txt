@@ -1,4 +1,3 @@
-mmcv>=0.2.10
 numpy
 matplotlib
 six
