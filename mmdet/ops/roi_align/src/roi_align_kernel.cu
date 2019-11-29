@@ -98,12 +98,6 @@ __global__ void ROIAlignForward(const int nthreads, const scalar_t *bottom_data,
     int sample_num_w =
         (sample_num > 0) ? sample_num : ceil(roi_width / pooled_width);
 
-    scalar_t h = (scalar_t)(ph + 0.5) * bin_size_h + roi_start_h;
-    scalar_t w = (scalar_t)(pw + 0.5) * bin_size_w + roi_start_w;
-
-    int hstart = fminf(floor(h), height - 2);
-    int wstart = fminf(floor(w), width - 2);
-
     scalar_t output_val = 0;
     for (int iy = 0; iy < sample_num_h; iy++) {
       const scalar_t y = roi_start_h + ph * bin_size_h +
@@ -230,12 +224,6 @@ __global__ void ROIAlignBackward(
         (sample_num > 0) ? sample_num : ceil(roi_width / pooled_width);
 
     const scalar_t count = (scalar_t)(sample_num_h * sample_num_w);
-
-    scalar_t h = (scalar_t)(ph + 0.5) * bin_size_h + roi_start_h;
-    scalar_t w = (scalar_t)(pw + 0.5) * bin_size_w + roi_start_w;
-
-    int hstart = fminf(floor(h), height - 2);
-    int wstart = fminf(floor(w), width - 2);
 
     for (int iy = 0; iy < sample_num_h; iy++) {
       const scalar_t y =
