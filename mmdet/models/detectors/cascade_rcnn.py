@@ -157,6 +157,34 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None):
+        """
+        Args:
+            img (Tensor): of shape (N, C, H, W) encoding input images.
+                Typically these should be mean centered and std scaled.
+
+            img_meta (list[dict]): list of image info dict where each dict has:
+                'img_shape', 'scale_factor', 'flip', and my also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+
+            gt_labels (list[Tensor]): class indices corresponding to each box
+
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+            gt_masks (None | Tensor) : true segmentation masks for each box
+                used if the architecture supports a segmentation task.
+
+            proposals : override rpn proposals with custom proposals. Use when
+                `with_rpn` is False.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
         x = self.extract_feat(img)
 
         losses = dict()
@@ -270,7 +298,21 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         return losses
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
+        """Run inference on a single image.
+
+        Args:
+            img (Tensor): must be in shape (N, C, H, W)
+            img_meta (list[dict]): a list with one dictionary element.
+                See `mmdet/datasets/pipelines/formatting.py:Collect` for
+                details of meta dicts.
+            proposals : if specified overrides rpn proposals
+            rescale (bool): if True returns boxes in original image space
+
+        Returns:
+            dict: results
+        """
         x = self.extract_feat(img)
+
         proposal_list = self.simple_test_rpn(
             x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
 

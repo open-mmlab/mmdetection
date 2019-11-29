@@ -15,8 +15,11 @@ class LoadImageFromFile(object):
         self.to_float32 = to_float32
 
     def __call__(self, results):
-        filename = osp.join(results['img_prefix'],
-                            results['img_info']['filename'])
+        if results['img_prefix'] is not None:
+            filename = osp.join(results['img_prefix'],
+                                results['img_info']['filename'])
+        else:
+            filename = results['img_info']['filename']
         img = mmcv.imread(filename)
         if self.to_float32:
             img = img.astype(np.float32)
@@ -52,14 +55,21 @@ class LoadAnnotations(object):
         ann_info = results['ann_info']
         results['gt_bboxes'] = ann_info['bboxes']
         if len(results['gt_bboxes']) == 0 and self.skip_img_without_anno:
-            file_path = osp.join(results['img_prefix'],
-                                 results['img_info']['filename'])
+            if results['img_prefix'] is not None:
+                file_path = osp.join(results['img_prefix'],
+                                     results['img_info']['filename'])
+            else:
+                file_path = results['img_info']['filename']
             warnings.warn(
                 'Skip the image "{}" that has no valid gt bbox'.format(
                     file_path))
             return None
-        results['gt_bboxes_ignore'] = ann_info.get('bboxes_ignore', None)
-        results['bbox_fields'].extend(['gt_bboxes', 'gt_bboxes_ignore'])
+
+        gt_bboxes_ignore = ann_info.get('bboxes_ignore', None)
+        if gt_bboxes_ignore is not None:
+            results['gt_bboxes_ignore'] = gt_bboxes_ignore
+            results['bbox_fields'].append('gt_bboxes_ignore')
+        results['bbox_fields'].append('gt_bboxes')
         return results
 
     def _load_labels(self, results):

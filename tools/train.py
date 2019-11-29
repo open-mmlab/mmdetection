@@ -74,6 +74,8 @@ def main():
     # init logger before other steps
     logger = get_root_logger(cfg.log_level)
     logger.info('Distributed training: {}'.format(distributed))
+    logger.info('MMDetection Version: {}'.format(__version__))
+    logger.info('Config: {}'.format(cfg.text))
 
     # set random seeds
     if args.seed is not None:
