@@ -38,21 +38,22 @@ def single_gpu_test(model, data_loader, show=False):
 
 def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     """Test model with multiple gpus.
-    
+
     This method tests model with multiple gpus and collects the results
     under two different modes: gpu and cpu modes. By setting 'gpu_collect=True'
     it encodes results to gpu tensors and use gpu communication for results
     collection. On cpu mode it saves the results on different gpus to 'tmpdir'
     and collects them by the rank 0 worker.
-    
+
     Args:
-        model: Model to be tested.
-        data_loader: Pytorch data loader.
-        tmpdir: Path of directory to save the temporary results from
+        model (nn.Module): Model to be tested.
+        data_loader (nn.Dataloader): Pytorch data loader.
+        tmpdir (str): Path of directory to save the temporary results from
             different gpus under cpu mode.
-        gpu_collect: option to use either gpu or cpu for results collection
+        gpu_collect (bool): Option to use either gpu or cpu to collect results.
+
     Returns:
-        results: The prediction results.
+        list: The prediction results.
     """
     model.eval()
     results = []
