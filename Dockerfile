@@ -34,6 +34,7 @@ CMD ["python", "eureka_rest.py"]
 # docker run --name mmdet2_consloe  --gpus all -it -p 7100:7100  -v /home/AI/mmdet2/:/mmdetection/app  mmdet2:v1.0 /bin/bash
 # docker run --name mmdet2_consloe  --gpus all -it -p 7100:7100  -v /home/mmde2:/mmdetection/app  mmdet2:v1.0 /bin/bash
 # docker run --name mmdet2_app  --gpus all -it -p 7100:7100  -v /home/mmde2:/mmdetection/app  mmdet2:v1.0
+# docker run --name mmdet2_app      --gpus all -it -d -p 7100:7100  -v  /home/AI/mmdet2/eureka_rest.py:/mmdetection/eureka_rest.py   -v  /home/AI/mmdet2/work_dirs:/mmdetection/work_dirs -v  /home/AI/mmdet2/data:/mmdetection/data mmdet2:v1.0
 
 # build 
 # docker build -t mmdet2:v1.0 .
