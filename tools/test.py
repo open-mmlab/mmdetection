@@ -37,6 +37,11 @@ def single_gpu_test(model, data_loader, show=False):
 
 
 def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
+    """
+        When gpu_collect=True, it will use GPU communication to collect results
+        from different workers. Otherwise it will saves the results to tmpdir
+        first and collect it by CPU.
+    """
     model.eval()
     results = []
     dataset = data_loader.dataset
@@ -123,10 +128,10 @@ def collect_results_gpu(result_part, size):
     dist.all_gather(part_recv_list, part_send)
 
     if rank == 0:
-        part_list = [
-            pickle.loads(t[:shape_list[i][0]].cpu().numpy().tobytes())
-            for i, t in enumerate(part_recv_list)
-        ]
+        part_list = []
+        for recv, shape in zip(part_recv_list, shape_list):
+            part_list.append(
+                pickle.loads(recv[:shape[0]].cpu().numpy().tobytes()))
         # sort the results
         ordered_results = []
         for res in zip(*part_list):
