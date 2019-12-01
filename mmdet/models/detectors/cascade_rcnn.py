@@ -298,10 +298,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 pos_is_gts = [res.pos_is_gt for res in sampling_results]
                 roi_labels = bbox_targets[0]  # bbox_targets is a tuple
                 with torch.no_grad():
-                    import xdev
-                    with xdev.embed_on_exception_context:
-                        proposal_list = bbox_head.refine_bboxes(
-                            rois, roi_labels, bbox_pred, pos_is_gts, img_meta)
+                    proposal_list = bbox_head.refine_bboxes(
+                        rois, roi_labels, bbox_pred, pos_is_gts, img_meta)
 
         return losses
 

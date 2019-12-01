@@ -80,11 +80,11 @@ class AssignResult(object):
         return ', '.join(parts)
 
     def __repr__(self):
-        devnice = self.__nice__()
+        nice = self.__nice__()
         classname = self.__class__.__name__
-        return '<%s(%s) at %s>' % (classname, devnice, hex(id(self)))
+        return '<{}({}) at {}>'.format(classname, nice, hex(id(self)))
 
     def __str__(self):
         classname = self.__class__.__name__
-        devnice = self.__nice__()
-        return '<%s(%s)>' % (classname, devnice)
+        nice = self.__nice__()
+        return '<{}({})>'.format(classname, nice)
