@@ -27,13 +27,15 @@ class AssignResult(object):
         >>> gt_inds = torch.LongTensor([-1, 1, 2, 0])
         >>> labels = torch.LongTensor([0, 3, 4, 0])
         >>> self = AssignResult(num_gts, gt_inds, max_overlaps, labels)
-        >>> print(str(self))
-        <AssignResult(num_gts=9, gt_inds.shape=(4,), max_overlaps.shape=(4,), labels.shape=(4,))>
+        >>> print(str(self))  # xdoctest: +IGNORE_WANT
+        <AssignResult(num_gts=9, gt_inds.shape=(4,), max_overlaps.shape=(4,),
+                      labels.shape=(4,))>
         >>> # Force addition of gt labels (when adding gt as proposals)
         >>> new_labels = torch.LongTensor([3, 4, 5])
         >>> self.add_gt_(new_labels)
-        >>> print(str(self))
-        <AssignResult(num_gts=9, gt_inds.shape=(7,), max_overlaps.shape=(7,), labels.shape=(7,))>
+        >>> print(str(self))  # xdoctest: +IGNORE_WANT
+        <AssignResult(num_gts=9, gt_inds.shape=(7,), max_overlaps.shape=(7,),
+                      labels.shape=(7,))>
     """
 
     def __init__(self, num_gts, gt_inds, max_overlaps, labels=None):
