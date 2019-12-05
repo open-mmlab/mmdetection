@@ -35,16 +35,17 @@ class MaskRCNNDetector:
                  streamqueue_size=3,
                  device="cuda:0"):
 
-        # build the model and load checkpoint
-        self.device = device
-        self.model = init_detector(
-            model_config, checkpoint=None, device=self.device)
-        self.streamqueue = None
         if torch.cuda.is_available():
             self.streamqueue_size = streamqueue_size
+            self.device = device
         else:
             # concurrent execution makes sense only on GPU
             self.streamqueue_size = 1
+            self.device = "cpu"
+        # build the model and load checkpoint
+        self.model = init_detector(
+            model_config, checkpoint=None, device=self.device)
+        self.streamqueue = None
 
     async def init(self):
         self.streamqueue = asyncio.Queue()
