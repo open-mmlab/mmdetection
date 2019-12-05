@@ -24,19 +24,22 @@ class AsyncTestCase(asynctest.TestCase):
         result = method()
         if asyncio.iscoroutine(result):
             self.loop.run_until_complete(
-                asyncio.wait_for(result, timeout=self.TEST_TIMEOUT)
-            )
+                asyncio.wait_for(result, timeout=self.TEST_TIMEOUT))
 
 
 class MaskRCNNDetector:
-    def __init__(
-        self, model_config, checkpoint=None, streamqueue_size=3, device="cuda:0"
-    ):
+
+    def __init__(self,
+                 model_config,
+                 checkpoint=None,
+                 streamqueue_size=3,
+                 device="cuda:0"):
 
         self.streamqueue_size = streamqueue_size
         self.device = device
         # build the model and load checkpoint
-        self.model = init_detector(model_config, checkpoint=None, device=self.device)
+        self.model = init_detector(
+            model_config, checkpoint=None, device=self.device)
         self.streamqueue = None
 
     async def init(self):
@@ -66,7 +69,8 @@ class AsyncInferenceTestCase(AsyncTestCase):
                 pytest.skip("test requires GPU and torch+cuda")
 
             root_dir = os.path.dirname(os.path.dirname(__name__))
-            model_config = os.path.join(root_dir, "configs/mask_rcnn_r50_fpn_1x.py")
+            model_config = os.path.join(root_dir,
+                                        "configs/mask_rcnn_r50_fpn_1x.py")
             detector = MaskRCNNDetector(model_config)
             await detector.init()
             img_path = os.path.join(root_dir, "demo/demo.jpg")
