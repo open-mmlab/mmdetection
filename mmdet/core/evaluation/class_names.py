@@ -84,8 +84,8 @@ def coco_classes():
 
 def cityscapes_classes():
     return [
-        'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
-        'bicycle'
+        'person', 'rider', 'car', 'bicycle', 'bus', 'truck', 'train',
+        'motorcycle'
     ]
 
 
