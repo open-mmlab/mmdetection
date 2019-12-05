@@ -11,8 +11,6 @@ import torch
 logger = logging.getLogger(__name__)
 
 DEBUG_COMPLETED_TIME = bool(os.environ.get('DEBUG_COMPLETED_TIME', False))
-DEBUG_COMPLETED = bool(os.environ.get('DEBUG_COMPLETED', False))
-DEBUG_CONCURRENT = bool(os.environ.get('DEBUG_CONCURRENT', False))
 
 
 @contextlib.asynccontextmanager
@@ -44,8 +42,7 @@ async def completed(trace_name="",
         stream_before_context_switch.record_event(start)
 
         cpu_start = time.monotonic()
-    if DEBUG_COMPLETED:
-        logger.info("%s %s starting, streams: %s", trace_name, name, streams)
+    logger.debug("%s %s starting, streams: %s", trace_name, name, streams)
     grad_enabled_before = torch.is_grad_enabled()
     try:
         yield
@@ -67,16 +64,14 @@ async def completed(trace_name="",
             "Unexpected is_grad_enabled() value change"
 
         are_done = [e.query() for e in end_events]
-        if DEBUG_COMPLETED:
-            logger.info("%s %s completed: %s streams: %s", trace_name, name,
-                        are_done, streams)
+        logger.debug("%s %s completed: %s streams: %s", trace_name, name,
+                     are_done, streams)
         with torch.cuda.stream(stream_before_context_switch):
             while not all(are_done):
                 await asyncio.sleep(sleep_interval)
                 are_done = [e.query() for e in end_events]
-                if DEBUG_COMPLETED:
-                    logger.info("%s %s completed: %s streams: %s", trace_name,
-                                name, are_done, streams)
+                logger.debug("%s %s completed: %s streams: %s", trace_name,
+                             name, are_done, streams)
 
         current_stream = torch.cuda.current_stream()
         assert current_stream == stream_before_context_switch
@@ -115,15 +110,13 @@ async def concurrent(streamqueue: asyncio.Queue,
 
         try:
             with torch.cuda.stream(stream):
-                if DEBUG_CONCURRENT:
-                    logger.info("%s %s is starting, stream: %s", trace_name,
-                                name, stream)
+                logger.debug("%s %s is starting, stream: %s", trace_name, name,
+                             stream)
                 yield
                 current = torch.cuda.current_stream()
                 assert current == stream
-                if DEBUG_CONCURRENT:
-                    logger.info("%s %s has finished, stream: %s", trace_name,
-                                name, stream)
+                logger.debug("%s %s has finished, stream: %s", trace_name,
+                             name, stream)
         finally:
             streamqueue.task_done()
             streamqueue.put_nowait(stream)

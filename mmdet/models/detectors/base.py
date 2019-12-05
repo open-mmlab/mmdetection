@@ -62,7 +62,7 @@ class BaseDetector(nn.Module):
         pass
 
     @abstractmethod
-    async def async_test(self, img, img_meta, **kwargs):
+    async def async_simple_test(self, img, img_meta, **kwargs):
         pass
 
     @abstractmethod
@@ -94,7 +94,7 @@ class BaseDetector(nn.Module):
         assert imgs_per_gpu == 1
 
         if num_augs == 1:
-            return await self.async_test(img[0], img_meta[0], **kwargs)
+            return await self.async_simple_test(img[0], img_meta[0], **kwargs)
         else:
             raise NotImplementedError
 

@@ -260,7 +260,11 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         return losses
 
-    async def async_test(self, img, img_meta, proposals=None, rescale=False):
+    async def async_simple_test(self,
+                                img,
+                                img_meta,
+                                proposals=None,
+                                rescale=False):
         """Async test without augmentation."""
         assert self.with_bbox, "Bbox head must be implemented."
         x = self.extract_feat(img)
