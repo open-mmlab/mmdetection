@@ -40,12 +40,20 @@ class MaskRCNNDetector:
         self.model = init_detector(
             model_config, checkpoint=None, device=self.device)
         self.streamqueue = None
-        self.streamqueue_size = streamqueue_size
+        if torch.cuda.is_available():
+            self.streamqueue_size = streamqueue_size
+        else:
+            # concurrent execution makes sense only on GPU
+            self.streamqueue_size = 1
 
     async def init(self):
         self.streamqueue = asyncio.Queue()
         for _ in range(self.streamqueue_size):
-            self.streamqueue.put_nowait(torch.cuda.Stream(device=self.device))
+            if torch.cuda.is_available():
+                stream = torch.cuda.Stream(device=self.device)
+            else:
+                stream = None
+            self.streamqueue.put_nowait(stream)
 
     if sys.version_info >= (3, 7):
 
