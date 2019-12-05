@@ -24,36 +24,25 @@ class AsyncTestCase(asynctest.TestCase):
         result = method()
         if asyncio.iscoroutine(result):
             self.loop.run_until_complete(
-                asyncio.wait_for(result, timeout=self.TEST_TIMEOUT))
+                asyncio.wait_for(result, timeout=self.TEST_TIMEOUT)
+            )
 
 
 class MaskRCNNDetector:
+    def __init__(
+        self, model_config, checkpoint=None, streamqueue_size=3, device="cuda:0"
+    ):
 
-    def __init__(self,
-                 model_config,
-                 checkpoint=None,
-                 streamqueue_size=3,
-                 device="cuda:0"):
-
-        if torch.cuda.is_available():
-            self.streamqueue_size = streamqueue_size
-            self.device = device
-        else:
-            # concurrent execution makes sense only on GPU
-            self.streamqueue_size = 1
-            self.device = "cpu"
+        self.streamqueue_size = streamqueue_size
+        self.device = device
         # build the model and load checkpoint
-        self.model = init_detector(
-            model_config, checkpoint=None, device=self.device)
+        self.model = init_detector(model_config, checkpoint=None, device=self.device)
         self.streamqueue = None
 
     async def init(self):
         self.streamqueue = asyncio.Queue()
         for _ in range(self.streamqueue_size):
-            if torch.cuda.is_available():
-                stream = torch.cuda.Stream(device=self.device)
-            else:
-                stream = None
+            stream = torch.cuda.Stream(device=self.device)
             self.streamqueue.put_nowait(stream)
 
     if sys.version_info >= (3, 7):
@@ -71,10 +60,15 @@ class AsyncInferenceTestCase(AsyncTestCase):
     if sys.version_info >= (3, 7):
 
         async def test_simple_inference(self):
+            if not torch.cuda.is_available():
+                import pytest
+
+                pytest.skip("test requires GPU and torch+cuda")
+
             root_dir = os.path.dirname(os.path.dirname(__name__))
-            model_config = os.path.join(root_dir,
-                                        "configs/mask_rcnn_r50_fpn_1x.py")
+            model_config = os.path.join(root_dir, "configs/mask_rcnn_r50_fpn_1x.py")
             detector = MaskRCNNDetector(model_config)
             await detector.init()
             img_path = os.path.join(root_dir, "demo/demo.jpg")
-            await detector.apredict(img_path)
+            bboxes, _ = await detector.apredict(img_path)
+            self.assertTrue(bboxes)
