@@ -1,5 +1,4 @@
 from __future__ import division
-from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -95,17 +94,8 @@ class AnchorHead(nn.Module):
         bbox_pred = self.conv_reg(x)
         return cls_score, bbox_pred
 
-    def forward(
-            self,
-            feats: List[torch.Tensor],
-    ) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
-        cls_scores = []
-        bbox_preds = []
-        for level, f in enumerate(feats):
-            cls_score, bbox_pred = self.forward_single(f)
-            cls_scores.append(cls_score)
-            bbox_preds.append(bbox_pred)
-        return cls_scores, bbox_preds
+    def forward(self, feats):
+        return multi_apply(self.forward_single, feats)
 
     def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
         """Get anchors according to feature map sizes.
