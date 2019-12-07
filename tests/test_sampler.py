@@ -54,11 +54,8 @@ def test_random_sampler_empty_gt():
         [32, 32, 38, 42],
     ])
     gt_bboxes = torch.empty(0, 4)
-    gt_labels = torch.empty(0,).long()
-    assign_result = assigner.assign(
-        bboxes,
-        gt_bboxes,
-        gt_labels=gt_labels)
+    gt_labels = torch.empty(0, ).long()
+    assign_result = assigner.assign(bboxes, gt_bboxes, gt_labels=gt_labels)
 
     sampler = RandomSampler(
         num=10, pos_fraction=0.5, neg_pos_ub=-1, add_gt_as_proposals=True)
@@ -82,10 +79,7 @@ def test_random_sampler_empty_pred():
         [0, 10, 10, 19],
     ])
     gt_labels = torch.LongTensor([1, 2])
-    assign_result = assigner.assign(
-        bboxes,
-        gt_bboxes,
-        gt_labels=gt_labels)
+    assign_result = assigner.assign(bboxes, gt_bboxes, gt_labels=gt_labels)
 
     sampler = RandomSampler(
         num=10, pos_fraction=0.5, neg_pos_ub=-1, add_gt_as_proposals=True)

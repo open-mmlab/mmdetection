@@ -259,7 +259,3 @@ def test_approx_iou_assigner_with_empty_boxes_and_gt():
     assign_result = self.assign(approxs, squares, approxs_per_octave,
                                 gt_bboxes)
     assert len(assign_result.gt_inds) == 0
-
-
-if __name__ == '__main__':
-    test_approx_iou_assigner()
