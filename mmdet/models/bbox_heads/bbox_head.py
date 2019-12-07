@@ -187,6 +187,9 @@ class BBoxHead(nn.Module):
         Returns:
             list[Tensor]: Refined bboxes of each image in a mini-batch.
         """
+        img_ids = rois[:, 0].long().unique(sorted=True)
+        assert img_ids.numel() == len(img_metas)
+
         bboxes_list = []
         for i in range(len(img_metas)):
             inds = torch.nonzero(rois[:, 0] == i).squeeze()

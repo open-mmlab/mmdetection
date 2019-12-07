@@ -40,6 +40,62 @@ def test_random_sampler():
     assert len(sample_result.neg_bboxes) == len(sample_result.neg_inds)
 
 
+def test_random_sampler_empty_gt():
+    assigner = MaxIoUAssigner(
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+        ignore_iof_thr=0.5,
+        ignore_wrt_candidates=False,
+    )
+    bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_bboxes = torch.empty(0, 4)
+    gt_labels = torch.empty(0,).long()
+    assign_result = assigner.assign(
+        bboxes,
+        gt_bboxes,
+        gt_labels=gt_labels)
+
+    sampler = RandomSampler(
+        num=10, pos_fraction=0.5, neg_pos_ub=-1, add_gt_as_proposals=True)
+
+    sample_result = sampler.sample(assign_result, bboxes, gt_bboxes, gt_labels)
+
+    assert len(sample_result.pos_bboxes) == len(sample_result.pos_inds)
+    assert len(sample_result.neg_bboxes) == len(sample_result.neg_inds)
+
+
+def test_random_sampler_empty_pred():
+    assigner = MaxIoUAssigner(
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+        ignore_iof_thr=0.5,
+        ignore_wrt_candidates=False,
+    )
+    bboxes = torch.empty(0, 4)
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ])
+    gt_labels = torch.LongTensor([1, 2])
+    assign_result = assigner.assign(
+        bboxes,
+        gt_bboxes,
+        gt_labels=gt_labels)
+
+    sampler = RandomSampler(
+        num=10, pos_fraction=0.5, neg_pos_ub=-1, add_gt_as_proposals=True)
+
+    sample_result = sampler.sample(assign_result, bboxes, gt_bboxes, gt_labels)
+
+    assert len(sample_result.pos_bboxes) == len(sample_result.pos_inds)
+    assert len(sample_result.neg_bboxes) == len(sample_result.neg_inds)
+
+
 def _context_for_ohem():
     try:
         from test_forward import _get_detector_cfg
@@ -48,6 +104,7 @@ def _context_for_ohem():
         import sys
         from os.path import dirname
         sys.path.insert(0, dirname(__file__))
+        from test_forward import _get_detector_cfg
     model, train_cfg, test_cfg = _get_detector_cfg(
         'faster_rcnn_ohem_r50_fpn_1x.py')
     model['pretrained'] = None
@@ -117,7 +174,7 @@ def test_ohem_sampler_empty_gt():
         [5, 5, 15, 15],
         [32, 32, 38, 42],
     ])
-    gt_bboxes = torch.FloatTensor([]).view(0, 4)
+    gt_bboxes = torch.empty(0, 4)
     gt_labels = torch.LongTensor([])
     gt_bboxes_ignore = torch.Tensor([])
     assign_result = assigner.assign(
@@ -151,7 +208,7 @@ def test_ohem_sampler_empty_pred():
         ignore_iof_thr=0.5,
         ignore_wrt_candidates=False,
     )
-    bboxes = torch.FloatTensor([]).view(0, 4)
+    bboxes = torch.empty(0, 4)
     gt_bboxes = torch.FloatTensor([
         [0, 0, 10, 10],
         [10, 10, 20, 20],
