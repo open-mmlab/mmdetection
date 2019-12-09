@@ -4,6 +4,8 @@ from terminaltables import AsciiTable
 
 from .bbox_overlaps import bbox_overlaps
 from .class_names import get_classes
+import pdb
+from .compare_data import delete_duplicate_box
 
 
 def average_precision(recalls, precisions, mode='area'):
@@ -238,6 +240,7 @@ def get_cls_results(det_results, gt_bboxes, gt_labels, gt_ignore, class_id):
 def eval_map(det_results,
              gt_bboxes,
              gt_labels,
+             drop_duplicate_box=False,
              gt_ignore=None,
              scale_ranges=None,
              iou_thr=0.5,
@@ -274,6 +277,10 @@ def eval_map(det_results,
     gt_labels = [
         label if label.ndim == 1 else label[:, 0] for label in gt_labels
     ]
+    if drop_duplicate_box:
+        for k in range(len(det_results)):
+            det_results[k]=delete_duplicate_box(det_results[k]) # delete duplicate box for Ki67
+
     for i in range(num_classes):
         # get gt and det bboxes of this class
         cls_dets, cls_gts, cls_gt_ignore = get_cls_results(
@@ -293,6 +300,7 @@ def eval_map(det_results,
         # tpfp = [tpfp_func(cls_dets[j], cls_gts[j], 32) for j in range(len(cls_dets))]
 
         tp, fp = tuple(zip(*tpfp))
+        # pdb.set_trace()
         # calculate gt number of each scale, gts ignored or beyond scale
         # are not counted
         num_gts = np.zeros(num_scales, dtype=int)
