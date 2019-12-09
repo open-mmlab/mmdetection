@@ -2,7 +2,7 @@
 #SBATCH -p akya-cuda
 #SBATCH -A bcam
 #SBATCH  
-#SBATCH -J Shifted_CE_2_minicoco
+#SBATCH -J faster-rcnn-iou-ce
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -c 10
@@ -10,9 +10,9 @@
 #SBATCH --gres=gpu:2
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=bariscancam@gmail.com
-#SBATCH --time=15-00:00:00
-#SBATCH --output=/truba_scratch/bcam/output/lrp_optimization/Shifted_CE_2_minicoco.out
-#SBATCH --error=/truba_scratch/bcam/output/lrp_optimization/Shifted_CE_2_minicoco.err
+#SBATCH --time=0-8:00:00
+#SBATCH --output=/truba_scratch/bcam/output/lrp_optimization/faster-rcnn-iou-ce.out
+#SBATCH --error=/truba_scratch/bcam/output/lrp_optimization/faster-rcnn-iou-ce.err
 
 ###################  Init. CUDA ##########################
 export CUDA_HOME=/truba_scratch/bcam/software/cuda-10.0
@@ -41,5 +41,5 @@ source /truba_scratch/bcam/software/miniconda3/bin/activate open-mmlab
 
 ###################  Run ##########################
 cd /truba/home/bcam/imgworkspace/mmdetection
-python tools/train.py configs/lrp_optimization/retinanet_r50_fpn_1x_ShiftedCE_2_minicoco.py --gpus 2
+python tools/train.py configs/lrp_optimization/initial_experiments/faster_rcnn_r50_fpn_1x_IoU_CE.py --gpus 2
 ######################################################################
