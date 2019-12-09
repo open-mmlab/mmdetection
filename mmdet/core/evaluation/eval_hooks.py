@@ -14,7 +14,7 @@ from mmdet import datasets
 from .coco_utils import fast_eval_recall, results2json
 from .mean_ap import eval_map
 
-from mmdet.datasets.ki67 import KI67Dataset  ## added by lichao wang
+# from mmdet.datasets.ki67 import KI67Dataset  ## added by lichao wang
 
 
 class DistEvalHook(Hook):
@@ -104,7 +104,7 @@ class DistEvalmAPHook(DistEvalHook):
             ds_name = self.dataset.CLASSES
 
         drop_duplicate_box = False
-        if isinstance(self.dataset, KI67Dataset):
+        if isinstance(self.dataset, datasets.ki67.KI67Dataset):
             drop_duplicate_box = True
         mean_ap, eval_results = eval_map(
             results,
