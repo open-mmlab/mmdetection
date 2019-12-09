@@ -68,6 +68,9 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# runners-slurm
+runners/
+
 # PyBuilder
 target/
 
