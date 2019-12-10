@@ -1,7 +1,46 @@
 """Classes Lookup.
 
-Lookup tables for classes from the COCO dataset.
+Lookup tables for classes from the COCO and DeepScores dataset.
 """
+
+
+DEEPSCORES = ('brace', 'repeatDot', 'segno', 'coda', 'gClef', 'cClefAlto',
+              'cClefTenor', 'fClef', 'unpitchedPercussionClef1', 'gClefChange',
+              'cClefAltoChange', 'cClefTenorChange', 'fClefChange', 'clef8',
+              'clef15', 'timeSig0', 'timeSig1', 'timeSig2', 'timeSig3',
+              'timeSig4', 'timeSig5', 'timeSig6', 'timeSig7', 'timeSig8',
+              'timeSig9', 'timeSig12', 'timeSig16', 'timeSigCommon',
+              'timeSigCutCommon', 'noteheadBlack', 'noteheadBlackSmall',
+              'noteheadHalf', 'noteheadHalfSmall', 'noteheadWhole',
+              'noteheadWholeSmall', 'noteheadDoubleWhole',
+              'noteheadDoubleWholeSmall', 'augmentationDot', 'flag8thUp',
+              'flag8thUpSmall', 'flag16thUp', 'flag32ndUp', 'flag64thUp',
+              'flag128thUp', 'flag8thDown', 'flag8thDownSmall', 'flag16thDown',
+              'flag32ndDown', 'flag64thDown', 'flag128thDown',
+              'accidentalFlat', 'accidentalFlatSmall', 'accidentalNatural',
+              'accidentalNaturalSmall', 'accidentalSharp',
+              'accidentalSharpSmall', 'accidentalDoubleSharp',
+              'accidentalDoubleFlat', 'keyFlat', 'keyNatural', 'keySharp',
+              'articAccentAbove', 'articAccentBelow', 'articStaccatoAbove',
+              'articStaccatoBelow', 'articTenutoAbove', 'articTenutoBelow',
+              'articStaccatissimoAbove', 'articStaccatissimoBelow',
+              'articMarcatoAbove', 'articMarcatoBelow', 'fermataAbove',
+              'fermataBelow', 'caesura', 'restMaxima', 'restLonga',
+              'restDoubleWhole', 'restWhole', 'restHalf', 'restQuarter',
+              'rest8th', 'rest16th', 'rest32nd', 'rest64th', 'rest128th',
+              'restHBar', 'dynamicPiano', 'dynamicMezzo', 'dynamicForte',
+              'dynamicPPPPP', 'dynamicPPPP', 'dynamicPPP', 'dynamicPP',
+              'dynamicMP', 'dynamicMF', 'dynamicFF', 'dynamicFFF',
+              'dynamicFFFF', 'dynamicFFFFF', 'dynamicFortePiano',
+              'dynamicSforzando1', 'dynamicSforzato', 'dynamicRinforzando2',
+              'graceNoteAcciaccaturaStemUp', 'graceNoteAppoggiaturaStemUp',
+              'graceNoteAcciaccaturaStemDown', 'graceNoteAppoggiaturaStemDown',
+              'ornamentTrill', 'ornamentTurn', 'ornamentTurnInverted',
+              'ornamentMordent', 'stringsDownBow', 'stringsUpBow',
+              'arpeggiato', 'keyboardPedalPed', 'keyboardPedalUp', 'tuplet3',
+              'tuplet6', 'fingering0', 'fingering1', 'fingering2',
+              'fingering3', 'fingering4', 'fingering5'
+              )
 
 CATS = [{'supercategory': 'person', 'id': 1, 'name': 'person'},
         {'supercategory': 'vehicle', 'id': 2, 'name': 'bicycle'},
@@ -166,19 +205,19 @@ CAT_DICT = {1: 'person',
             90: 'toothbrush'}
 
 CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
-               'train', 'truck', 'boat', 'traffic_light', 'fire_hydrant',
-               'stop_sign', 'parking_meter', 'bench', 'bird', 'cat', 'dog',
-               'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
-               'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-               'skis', 'snowboard', 'sports_ball', 'kite', 'baseball_bat',
-               'baseball_glove', 'skateboard', 'surfboard', 'tennis_racket',
-               'bottle', 'wine_glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
-               'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
-               'hot_dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-               'potted_plant', 'bed', 'dining_table', 'toilet', 'tv', 'laptop',
-               'mouse', 'remote', 'keyboard', 'cell_phone', 'microwave',
-               'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock',
-               'vase', 'scissors', 'teddy_bear', 'hair_drier', 'toothbrush')
+           'train', 'truck', 'boat', 'traffic_light', 'fire_hydrant',
+           'stop_sign', 'parking_meter', 'bench', 'bird', 'cat', 'dog',
+           'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
+           'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
+           'skis', 'snowboard', 'sports_ball', 'kite', 'baseball_bat',
+           'baseball_glove', 'skateboard', 'surfboard', 'tennis_racket',
+           'bottle', 'wine_glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
+           'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
+           'hot_dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+           'potted_plant', 'bed', 'dining_table', 'toilet', 'tv', 'laptop',
+           'mouse', 'remote', 'keyboard', 'cell_phone', 'microwave',
+           'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock',
+           'vase', 'scissors', 'teddy_bear', 'hair_drier', 'toothbrush')
 
 CATEGORIES = [
         "__background",

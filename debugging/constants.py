@@ -43,9 +43,9 @@ INDEX_TENSOR = torch.cat([x_index, y_index,
 
 THRESHOLD = 18
 
-FONT_PATH = path.abspath(path.join(path.dirname(__file__), pardir, 'fonts',
-                                   'KeepCalm.ttf'))
-FONT = ImageFont.truetype(FONT_PATH, size=8)
+# FONT_PATH = path.abspath(path.join(path.dirname(__file__), pardir, 'fonts',
+#                                    'KeepCalm.ttf'))
+# FONT = ImageFont.truetype(FONT_PATH, size=8)
 
 DEEP_SCORES_CLASSES = (
     'brace',
