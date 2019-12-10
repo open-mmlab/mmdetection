@@ -1,6 +1,6 @@
-"""DeepScores
+"""DEEPSCORES
 
-Provides access to the DeepScores database with a COCO-like interface. The
+Provides access to the DEEPSCORES database with a COCO-like interface. The
 only changes made compared to the coco.py file are the class labels.
 
 Author:
