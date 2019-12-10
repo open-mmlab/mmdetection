@@ -135,5 +135,5 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/fcos_mstrain_640_800_r101_caffe_fpn_gn_2x_3gpu_tensorboard'
 load_from = None
-resume_from = './work_dirs/fcos_mstrain_640_800_r101_caffe_fpn_gn_2x_3gpu_tensorboard/latest.pth'
+resume_from = None
 workflow = [('train', 1)]
