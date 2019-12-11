@@ -9,13 +9,11 @@ Created on:
     December 03, 2019
 """
 import numpy as np
-from mmcv.visualization.image import imshow_det_bboxes
 from PIL import Image, ImageDraw
 from debugging.classes_lookup import DEEPSCORES
 import torch
 from pycocotools.coco import COCO
 from tqdm import tqdm
-import sys
 from mmdet.core.evaluation.coco_utils import coco_eval
 import argparse
 
@@ -54,50 +52,69 @@ def rfd(data, result, file_suffix, threshold=0.17, show=False):
     return r_array
 
 
-def cati(coco:COCO, output_fp: str, img_ids: list=None,
-         img_dir: str='/workspace/deep_scores_dense/images_png/'):
+def cati(coco: COCO, output_fp: str, pred: bool, img_ids: list = None,
+         img_dir: str = '/workspace/deep_scores_dense/images_png/'):
     """COCO Anns to Image.
 
     Overlays bounding boxes with categories from a COCO ann_list onto the image
     specified in img_fp.
 
     Args:
-        coco: The coco API object with the desired annotations
+        coco: The coco API object with the desired annotations.
+        output_fp: Where to output the files to.
+        pred: True if this is the prediction, false if ground truth.
+        img_ids: Image IDs to output
+        img_dir: The directory where the images are located.
     """
-    out_list = []
+    labels = ('', 'bbox-only_')
+    color = (255, 0, 0) if pred else (0, 255, 0)
+
     if img_ids is None:
-        img_ids=[1]
+        img_ids = [1]
 
     for img_id in tqdm(img_ids):
-        im = Image.open(img_dir + coco.imgs[img_id]['file_name'])
-        draw = ImageDraw.Draw(im)
-        ann_ids = coco.getAnnIds(imgIds=[img_id])
-        for ann_id in ann_ids:
-            ann = coco.anns[ann_id]
-            bbox = ann['bbox']
-            # Draw bounding box rectangle
-            draw.rectangle((bbox[0], bbox[1],
-                            bbox[0] + bbox[2],
-                            bbox[1] + bbox[3]),
-                           outline=(0, 255, 0))
+        ims = [Image.open(img_dir + coco.imgs[img_id]['file_name']),
+               Image.new('RGB',
+                         Image.open(
+                             img_dir + coco.imgs[img_id]['file_name']).size
+                         )
+               ]
 
-            # Draw class label
-            class_label = coco.cats[ann['category_id']]['name']
-            text_size = draw.textsize(class_label)  # Returns (w, h)
-            draw.rectangle((bbox[0],
-                            bbox[1] - text_size[1] - 4,
-                            bbox[0] + text_size[0] + 4,
-                            bbox[1]),
-                           fill=(46, 92, 166),  # Nice navy blue
-                           outline=(255, 255, 255))
-            draw.text((bbox[0] + 2, bbox[1] - text_size[1] - 2),
-                      class_label,
-                      fill=(255, 255, 255))
-        im.save(output_fp + 'img{}.png'.format(img_id))
-        out_list.append(im)
+        for label, im in zip(labels, ims):
+            draw = ImageDraw.Draw(im)
+            ann_ids = coco.getAnnIds(imgIds=[img_id])
+            for ann_id in ann_ids:
+                ann = coco.anns[ann_id]
+                bbox = ann['bbox']
+                # Draw bounding box rectangle
+                draw.rectangle((bbox[0], bbox[1],
+                                bbox[0] + bbox[2],
+                                bbox[1] + bbox[3]),
+                               outline=color)
+
+                # Draw class label
+                class_label = coco.cats[ann['category_id']]['name']
+                text_size = draw.textsize(class_label)  # Returns (w, h)
+                if label == '':
+                    draw.rectangle((bbox[0],
+                                    bbox[1] - text_size[1] - 4,
+                                    bbox[0] + text_size[0] + 4,
+                                    bbox[1]),
+                                   fill=(53, 103, 184))  # Nice navy blue
+                else:
+                    draw.rectangle((bbox[0],
+                                    bbox[1] - text_size[1] - 4,
+                                    bbox[0] + text_size[0] + 4,
+                                    bbox[1]),
+                                   fill=color)
+
+                draw.text((bbox[0] + 2, bbox[1] - text_size[1] - 2),
+                          class_label,
+                          fill=(255, 255, 255))
+            im.save(output_fp + '{}{}.png'.format(label, img_id))
 
 
-def ttp(img: torch.Tensor, save_path: str=None) -> Image:
+def ttp(img: torch.Tensor, save_path: str = None) -> Image:
     """Tensor to PIL image. Saves to a path if specified.
 
     Shape:
@@ -113,6 +130,22 @@ def ttp(img: torch.Tensor, save_path: str=None) -> Image:
     return img
 
 
+def compare(gt_file: str, pred_file: str, diff_file: str, img_ids: list):
+    """Compares two images."""
+    for img_id in tqdm(img_ids):
+        gt_array = np.array(Image.open(gt_file + 'bbox-only_' + str(img_id)
+                                       + '.png'))
+        pred_array = np.array(Image.open(pred_file + 'bbox-only_'
+                                         + str(img_id) + '.png'))
+
+        assert gt_array.shape == pred_array.shape, "Somehow the outputs " \
+                                                   "aren't the same size?"
+
+        diff_array = gt_array + pred_array
+
+        Image.fromarray(diff_array).save(diff_file + str(img_id) + '.png')
+
+
 def from_file(results: str, coco: str, img_ind: int or list):
     """Does cati from a file."""
     if not img_ind:
@@ -124,10 +157,18 @@ def from_file(results: str, coco: str, img_ind: int or list):
 
     img_id = [coco.imgs[keys[ind]]['id'] for ind in img_ind]
 
+    gt_path = '/workspace/outputs/gt-'
+    pred_path = '/workspace/outputs/pred-'
+    diff_path = '/workspace/outputs/diff-'
+
     print('Writing ground truth bboxes')
-    cati(coco, '/workspace/outputs/gt-', img_id)
+    cati(coco, gt_path, False, img_id)
     print('Writing predict bboxes')
-    cati(results, '/workspace/outputs/pred-', img_id)
+    cati(results, pred_path, True, img_id)
+
+    print('Writing differences...')
+    compare(gt_path, pred_path, diff_path, img_id)
+
     print('Done!')
 
 
@@ -157,6 +198,6 @@ if __name__ == '__main__':
         coco_eval(args.RESULTS, ['bbox'], args.COCO, max_dets=300)
     elif args.class_wise_eval:
         coco_eval(args.RESULTS, ['bbox'], args.COCO, max_dets=300,
-        classwise=True)
+                  classwise=True)
     else:
-       from_file(args.RESULTS, args.COCO, args.save)
+        from_file(args.RESULTS, args.COCO, args.save)
