@@ -15,8 +15,6 @@ def lrp_loss(pred,
              use_modulator = False,
              gamma = 1.0,
              eps = 1e-6):
-    use_modulator = False
-    #pdb.set_trace()
     pred_softmax = F.softmax(pred)
     #pred_softmax_ = pred_softmax[:, label]
     valid_inds = ((weight>0).nonzero()).flatten()
@@ -27,9 +25,11 @@ def lrp_loss(pred,
     
     loss = torch.cos(1.57*valid_preds+1.57)+1
     if use_modulator:
+        pdb.set_trace()
         loss = torch.pow((1-valid_preds), gamma)*loss
 
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
+    pdb.set_trace()
     return loss
 
 
@@ -76,7 +76,7 @@ class LRPLoss(nn.Module):
                 **kwargs):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (reduction_override if reduction_override else self.reduction)
-
+        pdb.set_trace()
         loss_cls = self.loss_weight * lrp_loss(
             cls_score,
             label,
