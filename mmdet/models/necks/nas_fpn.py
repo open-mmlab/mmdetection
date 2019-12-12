@@ -184,4 +184,3 @@ class NASFPN(nn.Module):
             p6 = stage['gp_75_6'](p7, p5, out_size=p6.shape[-2:])
 
         return p3, p4, p5, p6, p7
-
