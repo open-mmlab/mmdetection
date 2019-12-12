@@ -48,6 +48,7 @@ class CustomDataset(Dataset):
         self.seg_prefix = seg_prefix
         self.proposal_file = proposal_file
         self.test_mode = test_mode
+        self.filter_empty_gt = filter_empty_gt
 
         # join paths if data_root is specified
         if self.data_root is not None:
@@ -68,7 +69,7 @@ class CustomDataset(Dataset):
         else:
             self.proposals = None
         # filter images with no annotation during training
-        if not test_mode and filter_empty_gt:
+        if not test_mode:
             valid_inds = self._filter_imgs()
             self.img_infos = [self.img_infos[i] for i in valid_inds]
             if self.proposals is not None:
