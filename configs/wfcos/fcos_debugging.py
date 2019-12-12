@@ -89,20 +89,20 @@ test_pipeline = [
 ]
 data = dict(
     imgs_per_gpu=2,
-    workers_per_gpu=2,
+    workers_per_gpu=0,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
+        ann_file=data_root + 'annotations/instances_small2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
+        ann_file=data_root + 'annotations/instances_small2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
+        ann_file=data_root + 'annotations/instances_small2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
 # optimizer
@@ -123,14 +123,14 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=50,
+    interval=1,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 1
+total_epochs = 20
 device_ids = range(1)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
@@ -138,3 +138,4 @@ work_dir = './work_dirs/fcos_debug'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
+

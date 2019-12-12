@@ -61,7 +61,7 @@ test_cfg = dict(
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -141,4 +141,4 @@ log_level = 'INFO'
 work_dir = './work_dirs/wfcos_debugging'
 load_from = './work_dirs/wfcos_debugging/latest.pth'
 resume_from = None
-workflow = [('train', 1)]
+workflow = [('train', 1), ('val', 1)]
