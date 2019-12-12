@@ -40,7 +40,8 @@ class CustomDataset(Dataset):
                  img_prefix='',
                  seg_prefix=None,
                  proposal_file=None,
-                 test_mode=False):
+                 test_mode=False,
+                 filter_empty_gt=True):
         self.ann_file = ann_file
         self.data_root = data_root
         self.img_prefix = img_prefix
@@ -67,7 +68,7 @@ class CustomDataset(Dataset):
         else:
             self.proposals = None
         # filter images with no annotation during training
-        if not test_mode:
+        if not test_mode and filter_empty_gt:
             valid_inds = self._filter_imgs()
             self.img_infos = [self.img_infos[i] for i in valid_inds]
             if self.proposals is not None:
