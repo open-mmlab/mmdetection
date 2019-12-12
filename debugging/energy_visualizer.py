@@ -11,10 +11,10 @@ from PIL import Image
 
 from math import floor, ceil
 
-from .coco_dataset import CocoDetection
-from .colormapping import map_color_values
-from .bbox import BoundingBox
-from . import draw_boxes
+from debugging.coco_dataset import CocoDetection
+from debugging.colormapping import map_color_values
+from debugging.bbox import BoundingBox
+from debugging import draw_boxes
 
 from os.path import join
 

@@ -44,12 +44,12 @@ def draw_boxes(image, bounding_boxes, use_watershed=False, threshold=0.8,
                 label = CAT_DICT[int(bb[4])]
 
             # Draw the category label
-            text_size = draw.textsize(label, FONT)
+            text_size = draw.textsize(label, draw.getfont())
             draw.rectangle([bb[0], bb[1],
                             bb[0] + 6 + text_size[0],
                             bb[1] + 6 + text_size[1]],
                            fill=(0, 0, 0))
-            draw.text(bb[0:2] + 3, label, fill=(255, 255, 255), font=FONT)
+            draw.text(bb[0:2] + 3, label, fill=(255, 255, 255))
 
             # Draw the bounding box
             draw.rectangle(bb[0:4], outline=color, width=2)

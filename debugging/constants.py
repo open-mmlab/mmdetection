@@ -3,7 +3,7 @@
 Constants are kept here for easy modifications whenever needed.
 """
 import torch
-from PIL import ImageFont
+from PIL import ImageDraw
 from os import path, pardir
 
 
