@@ -75,12 +75,13 @@ img_norm_cfg = dict(
     mean=[240.15232515949037, 240.15229097456378, 240.15232515949037],
     std=[57.178083212078896, 57.178143244444556, 57.178083212078896],
     to_rgb=False)
-img_scale = (1333, 640)
+train_img_scale = (1333, 640)
+test_img_scale = (1333, 800)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomCrop', crop_size=(640, 800)),
-    dict(type='Resize', img_scale=img_scale, keep_ratio=True),
+    dict(type='Resize', img_scale=train_img_scale, keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -91,11 +92,11 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=img_scale,
+        img_scale=test_img_scale,
         flip=False,
         transforms=[
             dict(type='RandomCrop', crop_size=(640, 800)),
-            dict(type='Resize', img_scale=img_scale, keep_ratio=True),
+            dict(type='Resize', img_scale=test_img_scale, keep_ratio=True),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32),

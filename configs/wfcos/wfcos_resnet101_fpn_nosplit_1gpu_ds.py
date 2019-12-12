@@ -1,44 +1,28 @@
-# model settings
 model = dict(
-    type='FCOS',
-    pretrained='open-mmlab://msra/hrnetv2_w32',
+    type='WFCOS',
+    pretrained='open-mmlab://resnet101_caffe',
     backbone=dict(
-        type='HRNet',
-        extra=dict(
-            stage1=dict(
-                num_modules=1,
-                num_branches=1,
-                block='BOTTLENECK',
-                num_blocks=(4, ),
-                num_channels=(64, )),
-            stage2=dict(
-                num_modules=1,
-                num_branches=2,
-                block='BASIC',
-                num_blocks=(4, 4),
-                num_channels=(32, 64)),
-            stage3=dict(
-                num_modules=4,
-                num_branches=3,
-                block='BASIC',
-                num_blocks=(4, 4, 4),
-                num_channels=(32, 64, 128)),
-            stage4=dict(
-                num_modules=3,
-                num_branches=4,
-                block='BASIC',
-                num_blocks=(4, 4, 4, 4),
-                num_channels=(32, 64, 128, 256)))),
+        type='ResNet',
+        depth=101,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
+        frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=False),
+        style='caffe'),
     neck=dict(
-        type='HRFPN',
-        in_channels=[32, 64, 128, 256],
+        type='FPN',
+        in_channels=[256, 512, 1024, 2048],
         out_channels=256,
-        stride=2,
-        num_outs=5),
+        start_level=1,
+        add_extra_convs=True,
+        extra_convs_on_inputs=False,  # use P5
+        num_outs=5,
+        relu_before_extra_convs=True),
     bbox_head=dict(
-        type='FCOSHead',
+        type='WFCOSHead',
         num_classes=124,
         in_channels=256,
+        max_energy=20,
         stacked_convs=4,
         feat_channels=256,
         strides=[8, 16, 32, 64, 128],
@@ -47,10 +31,14 @@ model = dict(
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=1.0),
-        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
-        loss_centerness=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)))
+            loss_weight=.0),
+        loss_bbox=dict(type='IoULoss', loss_weight=.0),
+        loss_energy=dict(
+            type='CrossEntropyLoss', loss_weight=1.0, use_sigmoid=False
+        ),
+        split_convs=False,
+        r=500.
+    ))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
@@ -65,9 +53,9 @@ train_cfg = dict(
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
-    score_thr=0.3,
-    nms=dict(type='nms', iou_thr=0.2),
-    max_per_img=1000)
+    score_thr=0.05,
+    nms=dict(type='nms', iou_thr=0.5),
+    max_per_img=100)
 # dataset settings
 dataset_type = 'DeepScoresDataset'
 data_root = 'data/deep_scores_dense/'
@@ -75,7 +63,7 @@ img_norm_cfg = dict(
     mean=[240.15232515949037, 240.15229097456378, 240.15232515949037],
     std=[57.178083212078896, 57.178143244444556, 57.178083212078896],
     to_rgb=False)
-img_scale_train = (1400, 1600)
+img_scale_train = (1333, 640)
 img_scale_test = (3000, 3828)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -106,7 +94,7 @@ test_pipeline = [
 ]
 data = dict(
     imgs_per_gpu=4,
-    workers_per_gpu=4,
+    workers_per_gpu=0,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'deepscores_train.json',
@@ -125,7 +113,7 @@ data = dict(
 # optimizer
 optimizer = dict(
     type='SGD',
-    lr=0.008,
+    lr=0.01,
     momentum=0.9,
     weight_decay=0.0001,
     paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
@@ -135,9 +123,9 @@ lr_config = dict(
     policy='step',
     warmup='constant',
     warmup_iters=500,
-    warmup_ratio=1.0/3,
+    warmup_ratio=1.0 / 3,
     step=[16, 22])
-checkpoint_config = dict(interval=5)
+checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
     interval=10,
@@ -147,10 +135,11 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 210
+total_epochs = 42
+device_ids = range(1)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_hrnetv2p_w32_gn_1x_4gpu_ds/'
+work_dir = './work_dirs/wfcos_resnet101_fpn_nosplit_3gpu_ds/'
 load_from = None  # work_dir + 'latest.pth'
 resume_from = None
-workflow = [('train', 3)]
+workflow = [('train', 1)]

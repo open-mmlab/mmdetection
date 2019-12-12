@@ -34,7 +34,7 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_energy=dict(
-            type='CrossEntropyLoss', loss_weight=1.0, use_sigmoid=False
+            type='CrossEntropyLoss', loss_weight=0., use_sigmoid=False
         ),
         split_convs=False,
         r=500.
@@ -128,18 +128,18 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=50,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 36
+total_epochs = 42
 device_ids = range(3)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/wfcos_resnet101_fpn_nosplit_3gpu_ds'
-load_from = None
+work_dir = './work_dirs/wfcos_resnet101_fpn_nosplit_3gpu_ds/'
+load_from = work_dir + 'latest.pth'
 resume_from = None
 workflow = [('train', 1)]
