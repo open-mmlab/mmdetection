@@ -33,7 +33,7 @@ class WFCOSHead(nn.Module):
         Creates a head based on FCOS that uses an energies map, not centerness
         Args:
             num_classes (int): Number of classes to output.
-            in_channels (int): Number of innput channels.
+            in_channels (int): Number of input channels.
             max_energy (int): Quantization of energies. How much to split the
                 energies values by.
             feat_channels (int): Number of feature channels in each of the

@@ -87,5 +87,5 @@ class ValidationDebug:
 
 
 if __name__ == '__main__':
-    vd = ValidationDebug('configs/wfcos/wfcos_validation.py')
+    vd = ValidationDebug('configs/wfcos/fcos_debugging.py')
     vd.run()

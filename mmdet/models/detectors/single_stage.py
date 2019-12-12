@@ -29,6 +29,7 @@ class SingleStageDetector(BaseDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.init_weights(pretrained=pretrained)
+        self.last_vals = None
 
     def init_weights(self, pretrained=None):
         super(SingleStageDetector, self).init_weights(pretrained)
@@ -69,6 +70,7 @@ class SingleStageDetector(BaseDetector):
         loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
         losses = self.bbox_head.loss(
             *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        self.last_vals = dict(img=img)
         return losses
 
     def simple_test(self, img, img_meta, rescale=False):

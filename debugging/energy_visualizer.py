@@ -7,16 +7,67 @@ Author:
 """
 import torch
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from math import floor, ceil
 
-from .coco_dataset import CocoDetection
-from .colormapping import map_color_values
-from .bbox import BoundingBox
-from . import draw_boxes
+from coco_dataset import CocoDetection
+from colormapping import map_color_values
+from bbox import BoundingBox
+
 
 from os.path import join
+
+def draw_boxes(image, bounding_boxes, use_watershed=False, threshold=0.8,
+               target=False):
+    """Draw all bounding_boxes on the image along with their class.
+
+    Args:
+        image (PIL.Image.Image): Image to draw the bounding boxes on
+        bounding_boxes (bbox.bbox.BoundingBox): List of BoundingBox objects.
+            Each BoundingBox object contains all bounding boxes of an image.
+        use_watershed (bool): Use watershed or a simple threshold value
+        threshold (float): Threshold or percentage value for suppression.
+        target (bool): If the image comes from a target source
+
+    Returns:
+        PIL.Image.Image: Image with bounding boxes drawn on top.
+    """
+    img = image.copy()
+    draw = ImageDraw.Draw(img)
+
+    if use_watershed:
+        pruned_bboxes = bounding_boxes.get_watershed(threshold)
+    else:
+        pruned_bboxes = bounding_boxes.get_suppressed(threshold)
+    pruned_bboxes = pruned_bboxes.detach().to(device='cpu').numpy()
+
+    # pruned_bboxes = bounding_boxes.detach().numpy()
+
+    for bb in pruned_bboxes:
+        # Map category to color
+        if True: #int(bb[4]):
+            color = tuple(map_color_values(bb[4], 80))
+
+            # Get category class label
+            # if not target:
+            #     label = CLASSES[int(bb[4])]
+            # else:
+            #     label = CAT_DICT[int(bb[4])]
+            label = "..."
+
+            # Draw the category label
+            text_size = draw.textsize(label)
+            draw.rectangle([bb[0], bb[1],
+                            bb[0] + 6 + text_size[0],
+                            bb[1] + 6 + text_size[1]],
+                           fill=(0, 0, 0))
+            draw.text(bb[0:2] + 3, label, fill=(255, 255, 255))
+
+            # Draw the bounding box
+            draw.rectangle(bb[0:4], outline=color, width=2)
+
+    return img
 
 
 def energy_target(flattened_bbox_targets, pos_bbox_targets,
@@ -167,7 +218,7 @@ def visualize_image(image, annotations, output_dir, iterator):
 def runner(coco_dataset_root, output_fp):
     """Runs the program."""
     ann_fp = join(coco_dataset_root, 'annotations', 'instances_small2017.json')
-    dataset = CocoDetection(join(coco_dataset_root, 'images', 'val2017'),
+    dataset = CocoDetection(join(coco_dataset_root, 'val2017'),
                             ann_fp)
 
     stop = False
@@ -184,4 +235,4 @@ def runner(coco_dataset_root, output_fp):
 
 
 if __name__ == '__main__':
-    runner('/workspace/coco/', '/workspace/watershed-fcos/work_dirs/energy_vis')
+    runner('data/coco/', '/energy_vis')

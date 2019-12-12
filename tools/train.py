@@ -3,6 +3,7 @@ import argparse
 import os
 
 import torch
+
 from mmcv import Config
 
 from mmdet import __version__

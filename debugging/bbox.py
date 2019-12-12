@@ -4,8 +4,8 @@ Bounding box class that represents abstract bounding boxes.
 """
 import torch
 
-from .classes_lookup import *
-from .constants import *
+from classes_lookup import *
+from constants import *
 
 
 class BoundingBox:
