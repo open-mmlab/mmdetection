@@ -317,6 +317,11 @@ class WFCOSHead(nn.Module):
                 class_weight=self.loss_energy_weights
             )
 
+            energy_non_zero = torch.tensor(
+                flatten_energies.argmax(1).nonzero().shape[0],
+                dtype=torch.float
+            )
+
             # print(loss_energy.shape)
             # print(loss_energy)
 
@@ -342,11 +347,14 @@ class WFCOSHead(nn.Module):
         else:
             loss_bbox = pos_bbox_preds.sum()
             loss_energy = pos_energies.sum()
+            energy_non_zero = torch.tensor(0, dtype=torch.float)
 
         return dict(
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
-            loss_energy=loss_energy)
+            loss_energy=loss_energy,
+            num_energy_nonzero=energy_non_zero
+        )
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'energies'))
     def get_bboxes(self,
