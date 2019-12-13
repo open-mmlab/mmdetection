@@ -99,7 +99,7 @@ class IoUBalancedNegSampler(RandomSampler):
                 iou_sampling_set = set(
                     np.where(max_overlaps > self.floor_thr)[0])
                 # for sampling interval calculation
-                self.floor_thr == 0
+                self.floor_thr = 0
 
             floor_neg_inds = list(floor_set & neg_set)
             iou_sampling_neg_inds = list(iou_sampling_set & neg_set)
