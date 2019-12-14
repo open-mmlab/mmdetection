@@ -40,13 +40,14 @@ def collect_env():
         for name, devids in devices.items():
             env_info['GPU ' + ','.join(devids)] = name
 
-    gcc = subprocess.check_output('gcc --version', shell=True)
+    gcc = subprocess.check_output('gcc --version | head -n1', shell=True)
     gcc = gcc.decode('utf-8').strip()
     env_info['GCC'] = gcc
 
-    env_info['PyTorch'] = torch.__config__.show()
+    env_info['PyTorch'] = torch.__version__
+    env_info['PyTorch compiling details'] = torch.__config__.show()
 
-    env_info['torchvision'] = torchvision.__version__
+    env_info['TorchVision'] = torchvision.__version__
 
     env_info['OpenCV'] = cv2.__version__
 
