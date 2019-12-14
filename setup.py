@@ -7,8 +7,8 @@ from setuptools import Extension, dist, find_packages, setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 dist.Distribution().fetch_build_eggs(['Cython', 'numpy>=1.11.1'])
-import numpy as np  # noqa: E402
-from Cython.Build import cythonize  # noqa: E402
+import numpy as np  # noqa: E402, isort:skip
+from Cython.Build import cythonize  # noqa: E402, isort:skip
 
 
 def readme():
@@ -20,8 +20,11 @@ def readme():
 MAJOR = 1
 MINOR = 0
 PATCH = ''
-SUFFIX = 'rc0'
-SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
+SUFFIX = 'rc1'
+if PATCH:
+    SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
+else:
+    SHORT_VERSION = '{}.{}{}'.format(MAJOR, MINOR, SUFFIX)
 
 version_file = 'mmdet/version.py'
 
