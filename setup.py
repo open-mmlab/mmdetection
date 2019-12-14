@@ -4,6 +4,7 @@ import subprocess
 import time
 from setuptools import Extension, dist, find_packages, setup
 
+import torch
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 dist.Distribution().fetch_build_eggs(['Cython', 'numpy>=1.11.1'])
@@ -92,9 +93,17 @@ def get_version():
 
 def make_cuda_ext(name, module, sources):
 
+    define_macros = []
+
+    if torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1':
+        define_macros += [("WITH_CUDA", None)]
+    else:
+        raise EnvironmentError('CUDA is required to compile MMDetection!')
+
     return CUDAExtension(
         name='{}.{}'.format(module, name),
         sources=[os.path.join(*module.split('.'), p) for p in sources],
+        define_macros=define_macros,
         extra_compile_args={
             'cxx': [],
             'nvcc': [
@@ -146,18 +155,20 @@ if __name__ == '__main__':
             'Development Status :: 4 - Beta',
             'License :: OSI Approved :: Apache Software License',
             'Operating System :: OS Independent',
-            'Programming Language :: Python :: 2',
-            'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.4',
             'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
         ],
         license='Apache License 2.0',
         setup_requires=['pytest-runner', 'cython', 'numpy'],
         tests_require=['pytest', 'xdoctest'],
         install_requires=get_requirements(),
         ext_modules=[
+            make_cuda_ext(
+                name='compiling_info',
+                module='mmdet.ops.utils',
+                sources=['src/compiling_info.cpp']),
             make_cython_ext(
                 name='soft_nms_cpu',
                 module='mmdet.ops.nms',
