@@ -42,8 +42,13 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         loss_cls=dict(
+<<<<<<< HEAD:configs/lrp_optimization/SmoothL1CosLoss/3_lw_gamma_mixed/faster_rcnn_r50_fpn_1x_SmoothL1_CosLoss_lw25_gamma2.py
             type='LRPLoss', use_sigmoid=False, loss_weight=2.00, \
                   use_modulator = False, gamma = 2.5),
+=======
+            type='LRPLoss', use_sigmoid=False, loss_weight=2.5, \
+                  use_modulator = True, gamma = 2.0),
+>>>>>>> 042b891a60af2a638c5a3966d2b337529fed0707:configs/lrp_optimization/SmoothL1CosLoss/3_lw_gamma_mixed/faster_rcnn_r50_fpn_1x_SmoothL1_CosLoss_lw25_gamma2.py
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
