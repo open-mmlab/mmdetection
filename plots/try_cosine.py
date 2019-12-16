@@ -17,8 +17,8 @@ if __name__ == '__main__':
     lower_limit = -1
     split = 0.001
     cls_scores = np.arange(lower_limit, upper_limit, split)
-    gammas = [2, 3, 4]
-    lw_vals = [4, 5, 10]
+    gammas = [2, 2.5]
+    lw_vals = [10, 15]
     # losses 
     ax = plt.subplot(121)
     plt.plot(figsize=(20,20))
