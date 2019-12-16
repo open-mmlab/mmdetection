@@ -152,8 +152,8 @@ class MaskScoringRCNN(TwoStageDetector):
             # mask iou head forward and loss
             pos_mask_pred = mask_pred[range(mask_pred.size(0)), pos_labels]
             mask_iou_pred = self.mask_iou_head(mask_feats, pos_mask_pred)
-            pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)
-                                                    ), pos_labels]
+            pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)),
+                                              pos_labels]
             mask_iou_targets = self.mask_iou_head.get_target(
                 sampling_results, gt_masks, pos_mask_pred, mask_targets,
                 self.train_cfg.rcnn)
@@ -193,8 +193,8 @@ class MaskScoringRCNN(TwoStageDetector):
                                                        rescale)
             # get mask scores with mask iou head
             mask_iou_pred = self.mask_iou_head(
-                mask_feats,
-                mask_pred[range(det_labels.size(0)), det_labels + 1])
+                mask_feats, mask_pred[range(det_labels.size(0)),
+                                      det_labels + 1])
             mask_scores = self.mask_iou_head.get_mask_scores(
                 mask_iou_pred, det_bboxes, det_labels)
         return segm_result, mask_scores

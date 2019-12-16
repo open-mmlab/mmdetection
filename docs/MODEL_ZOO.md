@@ -76,6 +76,9 @@ More models with different backbones will be added to the model zoo.
 |   HRNetV2p-W18   | pytorch |   2x    |    -     |          -          |       -        |  38.3  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w18_2x_20190810-9c8615d5.pth) |
 |   HRNetV2p-W32   | pytorch |   1x    |    -     |          -          |       -        |  39.5  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w32_1x_20190522-d22f1fef.pth)    |
 |   HRNetV2p-W32   | pytorch |   2x    |    -     |          -          |       -        |  40.6  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w32_2x_20190810-24e8912a.pth) |
+|   HRNetV2p-W48   | pytorch |   1x    |    -     |          -          |       -        |  40.9  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w48_1x_20190820-5c6d0903.pth)    |
+|   HRNetV2p-W48   | pytorch |   2x    |    -     |          -          |       -        |  41.5  |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w48_2x_20190820-79fb8bfc.pth) |
+
 
 ### Mask R-CNN
 
@@ -99,6 +102,8 @@ More models with different backbones will be added to the model zoo.
 |   HRNetV2p-W18   | pytorch |   2x    |    -     |          -          |       -        |  39.2  |  35.7   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w18_2x_20190810-1e4747eb.pth)   |
 |   HRNetV2p-W32   | pytorch |   1x    |    -     |          -          |       -        |  40.7  |  36.8   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w32_1x_20190522-374aaa00.pth)    |
 |   HRNetV2p-W32   | pytorch |   2x    |    -     |          -          |       -        |  41.7  |  37.5   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w32_2x_20190810-773eca75.pth) |
+|   HRNetV2p-W48   | pytorch |   1x    |    -     |          -          |       -        |  42.4  |  38.1   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w48_1x_20190820-0923d1ad.pth) |
+|   HRNetV2p-W48   | pytorch |   2x    |    -     |          -          |       -        |  42.9  |  38.3   |    [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w48_2x_20190820-70df51b2.pth) |
 
 ### Fast R-CNN (with pre-computed proposals)
 
@@ -194,10 +199,11 @@ More models with different backbones will be added to the model zoo.
 |   HRNetV2p-W18   | pytorch |   20e   |    -     |          -          |       -        |  43.1  |  37.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w18_20e_20190810-d70072af.pth) |
 |   HRNetV2p-W32   | pytorch |   20e   |    -     |          -          |       -        |  45.3  |  39.6   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w32_20e_20190810-82f9ef5a.pth) |
 |   HRNetV2p-W48   | pytorch |   20e   |    -     |          -          |       -        |  46.8  | 40.7    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w48_20e_20190810-f6d2c3fd.pth) |
+|   HRNetV2p-W48   | pytorch |   28e   |    -     |          -          |       -        |  47.0  |  41.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w48_28e_20190810-a4274b38.pth) |
 
 **Notes:**
 
-- Please refer to [Hybrid Task Cascade](configs/htc/README.md) for details and more a powerful model (50.7/43.9).
+- Please refer to [Hybrid Task Cascade](../configs/htc/README.md) for details and more a powerful model (50.7/43.9).
 
 ### SSD
 
@@ -214,54 +220,66 @@ More models with different backbones will be added to the model zoo.
 
 ### Group Normalization (GN)
 
-Please refer to [Group Normalization](configs/gn/README.md) for details.
+Please refer to [Group Normalization](../configs/gn/README.md) for details.
 
 ### Weight Standardization
 
-Please refer to [Weight Standardization](configs/gn+ws/README.md) for details.
+Please refer to [Weight Standardization](../configs/gn+ws/README.md) for details.
 
 ### Deformable Convolution v2
 
-Please refer to [Deformable Convolutional Networks](configs/dcn/README.md) for details.
+Please refer to [Deformable Convolutional Networks](../configs/dcn/README.md) for details.
 
 ### Libra R-CNN
 
-Please refer to [Libra R-CNN](configs/libra_rcnn/README.md) for details.
+Please refer to [Libra R-CNN](../configs/libra_rcnn/README.md) for details.
 
 ### Guided Anchoring
 
-Please refer to [Guided Anchoring](configs/guided_anchoring/README.md) for details.
+Please refer to [Guided Anchoring](../configs/guided_anchoring/README.md) for details.
 
 ### FCOS
 
-Please refer to [FCOS](configs/fcos/README.md) for details.
+Please refer to [FCOS](../configs/fcos/README.md) for details.
+
+### FoveaBox
+
+Please refer to [FoveaBox](../configs/foveabox/README.md) for details.
+
+### RepPoints
+
+Please refer to [RepPoints](../configs/reppoints/README.md) for details.
+
+### FreeAnchor
+
+Please refer to [FreeAnchor](../configs/free_anchor/README.md) for details.
 
 ### Grid R-CNN (plus)
 
-Please refer to [Grid R-CNN](configs/grid_rcnn/README.md) for details.
+Please refer to [Grid R-CNN](../configs/grid_rcnn/README.md) for details.
 
 ### GHM
 
-Please refer to [GHM](configs/ghm/README.md) for details.
+Please refer to [GHM](../configs/ghm/README.md) for details.
 
 ### GCNet
 
-Please refer to [GCNet](configs/gcnet/README.md) for details.
+Please refer to [GCNet](../configs/gcnet/README.md) for details.
 
 ### HRNet
-Please refer to [HRNet](configs/hrnet/README.md) for details.
+Please refer to [HRNet](../configs/hrnet/README.md) for details.
 
 ### Mask Scoring R-CNN
 
-Please refer to [Mask Scoring R-CNN](configs/ms_rcnn/README.md) for details.
+Please refer to [Mask Scoring R-CNN](../configs/ms_rcnn/README.md) for details.
 
 ### Train from Scratch
 
-Please refer to [Rethinking ImageNet Pre-training](configs/scratch/README.md) for details.
+Please refer to [Rethinking ImageNet Pre-training](../configs/scratch/README.md) for details.
 
 ### Other datasets
 
-We also benchmark some methods on [PASCAL VOC](configs/pascal_voc/README.md), [Cityscapes](configs/cityscapes/README.md) and [WIDER FACE](configs/wider_face/README.md).
+We also benchmark some methods on [PASCAL VOC](../configs/pascal_voc/README.md), [Cityscapes](../configs/cityscapes/README.md) and [WIDER FACE](../configs/wider_face/README.md).
 
 
 ## Comparison with Detectron and maskrcnn-benchmark

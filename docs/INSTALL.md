@@ -7,7 +7,7 @@
 - PyTorch 1.1 or higher
 - CUDA 9.0 or higher
 - NCCL 2
-- GCC 4.9 or higher
+- GCC(G++) 4.9 or higher
 - [mmcv](https://github.com/open-mmlab/mmcv)
 
 We have tested the following versions of OS and softwares:
@@ -15,7 +15,7 @@ We have tested the following versions of OS and softwares:
 - OS: Ubuntu 16.04/18.04 and CentOS 7.2
 - CUDA: 9.0/9.2/10.0
 - NCCL: 2.1.15/2.2.13/2.3.7/2.4.2
-- GCC: 4.9/5.3/5.4/7.3
+- GCC(G++): 4.9/5.3/5.4/7.3
 
 ### Install mmdetection
 
@@ -42,8 +42,8 @@ cd mmdetection
 d. Install mmdetection (other dependencies will be installed automatically).
 
 ```shell
-python setup.py develop
-# or "pip install -v -e ."
+pip install mmcv
+python setup.py develop  # or "pip install -v -e ."
 ```
 
 Note:
@@ -53,9 +53,12 @@ It is recommended that you run step d each time you pull some updates from githu
 
 2. Following the above instructions, mmdetection is installed on `dev` mode, any local modifications made to the code will take effect without the need to reinstall it (unless you submit some commits and want to update the version number).
 
+3. If you would like to use `opencv-python-headless` instead of `opencv-python`,
+you can install it before installing MMCV.
+
 ### Another option: Docker Image
 
-We provide a [Dockerfile](docker/Dockerfile) to build an image.
+We provide a [Dockerfile](../docker/Dockerfile) to build an image.
 
 ```shell
 # build an image with PyTorch 1.1, CUDA 10.0 and CUDNN 7.5

@@ -19,6 +19,9 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
     mask_targets = []
     if num_pos > 0:
         proposals_np = pos_proposals.cpu().numpy()
+        _, maxh, maxw = gt_masks.shape
+        proposals_np[:, [0, 2]] = np.clip(proposals_np[:, [0, 2]], 0, maxw - 1)
+        proposals_np[:, [1, 3]] = np.clip(proposals_np[:, [1, 3]], 0, maxh - 1)
         pos_assigned_gt_inds = pos_assigned_gt_inds.cpu().numpy()
         for i in range(num_pos):
             gt_mask = gt_masks[pos_assigned_gt_inds[i]]

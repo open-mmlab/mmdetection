@@ -159,7 +159,9 @@ def anchor_target_single(flat_anchors,
             neg_inds)
 
 
-def anchor_inside_flags(flat_anchors, valid_flags, img_shape,
+def anchor_inside_flags(flat_anchors,
+                        valid_flags,
+                        img_shape,
                         allowed_border=0):
     img_h, img_w = img_shape[:2]
     if allowed_border >= 0:
