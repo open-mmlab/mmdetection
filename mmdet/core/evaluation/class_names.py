@@ -22,8 +22,15 @@ def voc_classes():
         'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat',
         'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person',
         'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
-    ]    
+    ]
 
+
+def her2_classes():
+    return ['incomplete not_strong',
+            'negative',
+            'complete not_strong',
+            'incomplete strong',
+            'complete strong']
 
 def imagenet_det_classes():
     return [
@@ -78,6 +85,7 @@ def imagenet_vid_classes():
 
 def coco_classes():
     return ['positive', 'negative', 'stromal', 'lymphocyte']
+
     # return [
     #     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
     #     'truck', 'boat', 'traffic_light', 'fire_hydrant', 'stop_sign',
