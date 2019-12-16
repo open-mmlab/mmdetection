@@ -68,7 +68,7 @@ class CustomDataset(Dataset):
             self.proposals = self.load_proposals(self.proposal_file)
         else:
             self.proposals = None
-        # filter images with no annotation during training
+        # filter images too small
         if not test_mode:
             valid_inds = self._filter_imgs()
             self.img_infos = [self.img_infos[i] for i in valid_inds]
