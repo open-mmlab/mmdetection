@@ -5,17 +5,24 @@ def wider_face_classes():
     return ['face']
 
 
+def mitosis_classes():
+    return ['positive']
+
+
+def ki67_classes():
+    return ['positive', 'negative', 'stromal', 'lymphocyte']
+
+
+def ki67mask_classes():  # ki67 mask
+    return ['positive', 'negative', 'stromal', 'lymphocyte']
+
+
 def voc_classes():
-    return ['incomplete not_strong',
-            'negative',
-            'complete not_strong',
-            'incomplete strong',
-            'complete strong']
-    # return [
-    #     'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat',
-    #     'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person',
-    #     'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
-    # ]
+    return [
+        'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat',
+        'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person',
+        'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
+    ]
 
 
 def her2_classes():
@@ -77,9 +84,8 @@ def imagenet_vid_classes():
 
 
 def coco_classes():
-    return [
-        'positive','negative','stromal','lymphocyte'
-    ]
+    return ['positive', 'negative', 'stromal', 'lymphocyte']
+
     # return [
     #     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
     #     'truck', 'boat', 'traffic_light', 'fire_hydrant', 'stop_sign',
@@ -110,7 +116,10 @@ dataset_aliases = {
     'imagenet_vid': ['vid', 'imagenet_vid', 'ilsvrc_vid'],
     'coco': ['coco', 'mscoco', 'ms_coco'],
     'wider_face': ['WIDERFaceDataset', 'wider_face', 'WDIERFace'],
-    'cityscapes': ['cityscapes']
+    'cityscapes': ['cityscapes'],
+    'mitosis': ['voc', 'pascal_voc', 'voc07', 'voc12'],  # mitosis
+    'ki67': ['voc', 'pascal_voc', 'voc07', 'voc12'],  # ki67
+    'ki67mask': ['coco', 'mscoco', 'ms_coco'],  # ki67 mask
 }
 
 
