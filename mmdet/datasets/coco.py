@@ -1,12 +1,9 @@
 import numpy as np
-import instaboostfast as instaboost
 from pycocotools.coco import COCO
-from imagecorruptions import corrupt
-import mmcv
-import os.path as osp
 
 from .custom import CustomDataset
 from .registry import DATASETS
+
 
 @DATASETS.register_module
 class CocoDataset(CustomDataset):
@@ -26,11 +23,6 @@ class CocoDataset(CustomDataset):
                'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock',
                'vase', 'scissors', 'teddy_bear', 'hair_drier', 'toothbrush')
 
-    IB_CFG = {'action_candidate': ('normal', 'horizontal', 'skip'), \
-              'action_prob': (1, 0, 0), 'scale': (0.8, 1.2), 'dx': 15, \
-              'dy': 15, 'theta': (-1, 1), 'color_prob': 0.5, \
-              'hflag': False, 'aug_ratio': 0.5}
-
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)
         self.cat_ids = self.coco.getCatIds()
@@ -46,13 +38,11 @@ class CocoDataset(CustomDataset):
             img_infos.append(info)
         return img_infos
 
-    '''
     def get_ann_info(self, idx):
         img_id = self.img_infos[idx]['id']
         ann_ids = self.coco.getAnnIds(imgIds=[img_id])
         ann_info = self.coco.loadAnns(ann_ids)
         return self._parse_ann_info(ann_info, self.with_mask)
-    '''
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small or without ground truths."""
@@ -128,33 +118,3 @@ class CocoDataset(CustomDataset):
             ann['mask_polys'] = gt_mask_polys
             ann['poly_lens'] = gt_poly_lens
         return ann
-
-    '''
-    InstaBoost
-    '''
-    def _get_instaboost_config(self, cfg):
-        ibcfg = instaboost.InstaBoostConfig(cfg['action_candidate'], cfg['action_prob'], cfg['scale'], \
-            cfg['dx'], cfg['dy'],cfg['theta'], cfg['color_prob'], cfg['hflag'])
-        return ibcfg, cfg['aug_ratio']
-
-    def _get_img_ib(self, idx):
-        img_info = self.img_infos[idx]
-        # load image
-        img = mmcv.imread(osp.join(self.img_prefix, img_info['filename']))
-        # corruption
-        if self.corruption is not None:
-            img = corrupt(
-                img,
-                severity=self.corruption_severity,
-                corruption_name=self.corruption)
-        return img
-
-    def get_ann_info(self, idx):
-        img = self._get_img_ib(idx)
-        ibcfg, r = self._get_instaboost_config(self.IB_CFG)
-        img_id = self.img_infos[idx]['id']
-        ann_ids = self.coco.getAnnIds(imgIds=[img_id])
-        ann_info = self.coco.loadAnns(ann_ids)
-        if np.random.choice([0,1],p=[1-r,r]):
-            ann_info, img = instaboost.get_new_data(ann_info, img, ibcfg, background=None)
-        return self._parse_ann_info(ann_info, self.with_mask)
