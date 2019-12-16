@@ -246,6 +246,14 @@ Please refer to [FCOS](../configs/fcos/README.md) for details.
 
 Please refer to [FoveaBox](../configs/foveabox/README.md) for details.
 
+### RepPoints
+
+Please refer to [RepPoints](../configs/reppoints/README.md) for details.
+
+### FreeAnchor
+
+Please refer to [FreeAnchor](../configs/free_anchor/README.md) for details.
+
 ### Grid R-CNN (plus)
 
 Please refer to [Grid R-CNN](../configs/grid_rcnn/README.md) for details.
