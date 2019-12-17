@@ -275,15 +275,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         else:
             proposal_list = proposals
 
-        det_bboxes, det_labels = self.simple_test_bboxes(
+        det_bboxes, det_labels = await self.async_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
-        # FIXME: Illegal memory access
-        # det_bboxes, det_labels = await self.async_test_bboxes(
-        #     x,
-        #     img_meta,
-        #     proposal_list,
-        #     self.test_cfg.rcnn,
-        #     rescale=rescale)
         bbox_results = bbox2result(det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
 

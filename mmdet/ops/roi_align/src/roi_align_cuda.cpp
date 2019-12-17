@@ -1,5 +1,8 @@
 #include <torch/extension.h>
 
+#include <ATen/ATen.h>
+#include <ATen/cuda/CUDAContext.h>
+
 #include <cmath>
 #include <vector>
 
@@ -8,14 +11,14 @@ int ROIAlignForwardLaucher(const at::Tensor features, const at::Tensor rois,
                            const int channels, const int height,
                            const int width, const int num_rois,
                            const int pooled_height, const int pooled_width,
-                           at::Tensor output);
+                           at::Tensor output, cudaStream_t stream);
 
 int ROIAlignBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
                             const float spatial_scale, const int sample_num,
                             const int channels, const int height,
                             const int width, const int num_rois,
                             const int pooled_height, const int pooled_width,
-                            at::Tensor bottom_grad);
+                            at::Tensor bottom_grad, cudaStream_t stream);
 
 #define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x, " must be a CUDAtensor ")
 #define CHECK_CONTIGUOUS(x) \
@@ -47,7 +50,7 @@ int roi_align_forward_cuda(at::Tensor features, at::Tensor rois,
 
   ROIAlignForwardLaucher(features, rois, spatial_scale, sample_num,
                          num_channels, data_height, data_width, num_rois,
-                         pooled_height, pooled_width, output);
+                         pooled_height, pooled_width, output, at::cuda::getCurrentCUDAStream());
 
   return 1;
 }
@@ -74,7 +77,7 @@ int roi_align_backward_cuda(at::Tensor top_grad, at::Tensor rois,
 
   ROIAlignBackwardLaucher(top_grad, rois, spatial_scale, sample_num,
                           num_channels, data_height, data_width, num_rois,
-                          pooled_height, pooled_width, bottom_grad);
+                          pooled_height, pooled_width, bottom_grad, at::cuda::getCurrentCUDAStream());
 
   return 1;
 }

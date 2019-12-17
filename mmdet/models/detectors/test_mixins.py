@@ -69,11 +69,7 @@ class BBoxTestMixin(object):
                                     rescale=False,
                                     bbox_semaphore=None,
                                     global_lock=None):
-            """Async test only det bboxes without augmentation.
-
-            FIXME: this code crashes when runs concurrently.
-
-            """
+            """Async test only det bboxes without augmentation."""
             rois = bbox2roi(proposals)
             roi_feats = self.bbox_roi_extractor(
                 x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
