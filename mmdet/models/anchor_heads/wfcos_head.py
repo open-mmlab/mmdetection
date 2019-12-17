@@ -28,6 +28,7 @@ class WFCOSHead(nn.Module):
                  conv_cfg=None,
                  norm_cfg=None,
                  split_convs=False,
+                 quantize_energy = True,
                  r=500.):
         """
         Creates a head based on FCOS that uses an energies map, not centerness
@@ -55,6 +56,9 @@ class WFCOSHead(nn.Module):
                 energies map convolution stacks. False means that the
                 classification energies map shares the same convolution stack.
                 Defaults to False.
+            quantize_energy (bool): Whether or not to represent the energy as different
+            descreete levels or one float number between zero and one
+                Defaults to True.
             r (float): r variable in the energy map target equation.
         """
         super(WFCOSHead, self).__init__()
@@ -100,6 +104,7 @@ class WFCOSHead(nn.Module):
         self.split_convs = split_convs
         self.r = r
         self.loss_energy_weights = self.calculate_loss_energy_weights()
+        self.last_vals = None
 
         # Now create the layers
         self._init_layers()
@@ -348,6 +353,19 @@ class WFCOSHead(nn.Module):
             loss_bbox = pos_bbox_preds.sum()
             loss_energy = pos_energies.sum()
             energy_non_zero = torch.tensor(0, dtype=torch.float)
+
+        self.last_vals = dict(
+            cls_scores=cls_scores,
+            bbox_preds=bbox_preds,
+            centernesses=energies,
+            gt_bboxes=gt_bboxes,
+            gt_labels=gt_labels,
+            img_metas=img_metas,
+            cfg=cfg,
+            all_level_points=all_level_points,
+            labels=labels,
+            bbox_targets=bbox_targets
+        )
 
         return dict(
             loss_cls=loss_cls,

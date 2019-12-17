@@ -11,7 +11,6 @@ from mmdet.core import get_classes, tensor2imgs, bbox2result
 from mmcv.visualization import imshow_det_bboxes, imshow_bboxes
 import numpy as np
 
-from PIL import Image
 
 INF = 1e8
 
