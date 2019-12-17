@@ -42,7 +42,7 @@ model = dict(
         target_stds=[0.1, 0.1, 0.2, 0.2],
         reg_class_agnostic=False,
         loss_cls=dict(
-           type='LRPLoss', use_sigmoid=False, loss_weight=4.25, \
+           type='LRPLoss', use_sigmoid=False, loss_weight=3.1, \
                   use_modulator = True, gamma = 4.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
 # model training and testing settings
@@ -169,7 +169,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/lrp_optimization/faster_rcnn_r50_fpn_1x_SmoothL1_CosLoss_lw5_gamma4'
+work_dir = './work_dirs/lrp_optimization/faster_rcnn_r50_fpn_1x_SmoothL1_CosLoss_lw31_gamma4'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

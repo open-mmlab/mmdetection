@@ -3,6 +3,7 @@ import torch
 import matplotlib.patches as patches
 from matplotlib import pyplot as plt
 
+LW_SEARCH = False
 
 def export_legend(legend, filename):
     fig = legend.figure
@@ -17,20 +18,43 @@ if __name__ == '__main__':
     lower_limit = -1
     split = 0.001
     cls_scores = np.arange(lower_limit, upper_limit, split)
-    gammas = [2, 2.5]
-    lw_vals = [10, 15]
+    
+    #gammas = [3, 4, 5, 10]
+    #lw_vals = [2.5, 3.1, 5, 10]
+    
+    if LW_SEARCH == True:
+        gamma = 2
+        gamma_lw = []
+        for lw in range(1, 21, 2):
+            param_sub = []
+            param_sub = [gamma, lw]
+            gamma_lw.append(param_sub)
+    else:    
+        gamma_lw = [[3, 10], \
+        [3, 10], \
+        [4, 5], [4, 3.1], \
+        [5, 2.5], \
+        [10, 2.5]]
+    
     # losses 
     ax = plt.subplot(121)
     plt.plot(figsize=(20,20))
-    for gamma in gammas:
+    #for gamma in gammas:
+    #    loss_cos = np.power(1-cls_scores, gamma)*(np.cos((1.57)*cls_scores+1.57)+1)
+    #    if lw_vals != None:
+    #        linewidth = 2
+    #        for lw in lw_vals:
+    #            loss_cos = loss_cos * lw
+    #            label = "Cos loss w/gamma={}, lw={}".format(gamma, lw)
+    #            ax.plot(cls_scores, loss_cos, label = label, linewidth=linewidth)
+    #            linewidth += 0.7
+    
+    for param in gamma_lw:
+        gamma = param[0]; lw = param[1]
         loss_cos = np.power(1-cls_scores, gamma)*(np.cos((1.57)*cls_scores+1.57)+1)
-        if lw_vals != None:
-            linewidth = 2
-            for lw in lw_vals:
-                loss_cos = loss_cos * lw
-                label = "Cos loss w/gamma={}, lw={}".format(gamma, lw)
-                ax.plot(cls_scores, loss_cos, label = label, linewidth=linewidth)
-                linewidth += 0.7
+        loss_cos = loss_cos * lw
+        label = "Cos Loss w/gamma={}, lw={}".format(gamma,lw)
+        ax.plot(cls_scores, loss_cos, label = label, linewidth = 4.0)
 
     loss_CE = -1*np.log(cls_scores) 
     ax.plot(cls_scores, loss_CE, label="CE", linewidth=5.0)
@@ -41,25 +65,38 @@ if __name__ == '__main__':
     ax.grid()
     legend = ax.legend()
     export_legend(legend, "losses_legend.png")
-    ax.get_legend().remove()
+    #ax.get_legend().remove()
     plt.xlabel(r'$GT probability$')
     plt.ylabel(r'$Loss$')
     plt.title("Losses")
     plt.tight_layout()
 
+    derivative_CE = -1 / cls_scores
     # Derivatives
     ax = plt.subplot(122)
-    for gamma in gammas:
+    #for gamma in gammas:
+    #    der_cos = ((-1*gamma*np.power(1-cls_scores, gamma-1))*(np.cos(1.57*cls_scores+1.57)+1)) \
+    #              + (np.power(1-cls_scores, gamma)*(-1.57*np.sin(1.57*cls_scores+1.57)))
+    #    if lw_vals != None:
+    #        linewidth=2
+    #        for lw in lw_vals:
+    #            der_cos = der_cos * lw
+    #            label = "Cos loss w/gamma={}, lw={}".format(gamma, lw)
+    #            corr = np.correlate(derivative_CE, der_cos)[0]
+    #            print("gamma:{}, lw:{} => corr:{}".format(gamma, lw, corr))
+    #            ax.plot(cls_scores, der_cos, label=label, linewidth=linewidth)
+    #            linewidth += 0.7 
+    
+    for param in gamma_lw:
+        gamma=param[0]; lw=param[1]
         der_cos = ((-1*gamma*np.power(1-cls_scores, gamma-1))*(np.cos(1.57*cls_scores+1.57)+1)) \
                   + (np.power(1-cls_scores, gamma)*(-1.57*np.sin(1.57*cls_scores+1.57)))
-        if lw_vals != None:
-            linewidth=2
-            for lw in lw_vals:
-                der_cos = der_cos * lw
-                label = "Cos loss w/gamma={}, lw={}".format(gamma, lw)
-                ax.plot(cls_scores, der_cos, label=label, linewidth=linewidth)
-                linewidth += 0.7
-    derivative_CE = -1 / cls_scores
+        der_cos = der_cos * lw
+        label = "Cos loss w/gamma={}, lw={}".format(gamma,lw)
+        corr = np.correlate(derivative_CE, der_cos)[0]
+        print("gamma:{}, lw:{} => corr:{}".format(gamma, lw, corr))
+        ax.plot(cls_scores, der_cos, label=label, linewidth = 4.0)
+
     ax.plot(cls_scores, derivative_CE, label="CE", linewidth=5.0)
     plt.title("Derivatives")
     plt.tight_layout()
@@ -72,7 +109,7 @@ if __name__ == '__main__':
     
     legend = ax.legend()
     export_legend(legend, "derivatives_legend.png")
-    ax.get_legend().remove()
+    #ax.get_legend().remove()
     ax.grid()
     plt.xlabel(r'$GT probability$')
     plt.ylabel(r'$\Delta Loss$')
