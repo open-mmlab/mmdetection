@@ -80,7 +80,7 @@ test_pipeline = [
         transforms=[
             dict(type='Resize', keep_ratio=False),
             dict(type='Normalize', **img_norm_cfg),
-            dict(type='ImageToTensor', keys=['img']),
+            dict(type='DefaultFormatBundle'),
             dict(type='Collect', keys=['img']),
         ])
 ]

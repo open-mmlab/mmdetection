@@ -165,14 +165,28 @@ class DoubleHeadRCNN(TwoStageDetector):
             bbox_cls_feats = self.shared_head(bbox_cls_feats)
             bbox_reg_feats = self.shared_head(bbox_reg_feats)
         cls_score, bbox_pred = self.bbox_head(bbox_cls_feats, bbox_reg_feats)
-        img_shape = img_meta[0]['img_shape']
-        scale_factor = img_meta[0]['scale_factor']
-        det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
-            rois,
-            cls_score,
-            bbox_pred,
-            img_shape,
-            scale_factor,
-            rescale=rescale,
-            cfg=rcnn_test_cfg)
+        img_shapes = tuple(meta['img_shape'] for meta in img_meta)
+        scale_factors = tuple(meta['scale_factor'] for meta in img_meta)
+
+        # split batch bbox prediction back to each image
+        num_image = len(proposals)
+        num_pp_per_image = tuple(len(p) for p in proposals)
+        cls_score = cls_score.split(num_pp_per_image, 0)
+        bbox_pred = bbox_pred.split(num_pp_per_image, 0)
+        rois = rois.split(num_pp_per_image, 0)
+
+        # apply bbox post-processing to each image individually
+        det_bboxes = []
+        det_labels = []
+        for i in range(num_image):
+            det_bbox, det_label = self.bbox_head.get_det_bboxes(
+                rois[i],
+                cls_score[i],
+                bbox_pred[i],
+                img_shapes[i],
+                scale_factors[i],
+                rescale=rescale,
+                cfg=rcnn_test_cfg)
+            det_bboxes.append(det_bbox)
+            det_labels.append(det_label)
         return det_bboxes, det_labels

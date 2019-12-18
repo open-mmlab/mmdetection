@@ -209,21 +209,33 @@ class GridRCNN(TwoStageDetector):
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=False)
 
         # pack rois into bboxes
-        grid_rois = bbox2roi([det_bboxes[:, :4]])
+        grid_rois = bbox2roi([det_bbox[:, :4] for det_bbox in det_bboxes])
         grid_feats = self.grid_roi_extractor(
             x[:len(self.grid_roi_extractor.featmap_strides)], grid_rois)
         if grid_rois.shape[0] != 0:
             self.grid_head.test_mode = True
             grid_pred = self.grid_head(grid_feats)
-            det_bboxes = self.grid_head.get_bboxes(det_bboxes,
-                                                   grid_pred['fused'],
-                                                   img_meta)
-            if rescale:
-                det_bboxes[:, :4] /= img_meta[0]['scale_factor']
-        else:
-            det_bboxes = torch.Tensor([])
 
-        bbox_results = bbox2result(det_bboxes, det_labels,
-                                   self.bbox_head.num_classes)
+            # split batch grid head prediction back to each image
+            num_roi_per_img = tuple(len(det_bbox) for det_bbox in det_bboxes)
+            grid_pred = {
+                k: v.split(num_roi_per_img, 0)
+                for k, v in grid_pred.items()
+            }
+
+            # apply bbox post-processing to each image individually
+            bbox_results = []
+            num_imgs = len(det_bboxes)
+            for i in range(num_imgs):
+                det_bbox = self.grid_head.get_bboxes(det_bboxes[i],
+                                                     grid_pred['fused'][i],
+                                                     [img_meta[i]])
+                if rescale:
+                    det_bbox[:, :4] /= img_meta[i]['scale_factor']
+                bbox_results.append(
+                    bbox2result(det_bbox, det_labels[i],
+                                self.bbox_head.num_classes))
+        else:
+            bbox_results = [torch.Tensor([]) for _ in range(len(det_bboxes))]
 
         return bbox_results

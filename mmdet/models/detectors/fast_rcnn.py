@@ -50,12 +50,11 @@ class FastRCNN(TwoStageDetector):
             raise ValueError(
                 'num of augmentations ({}) != num of image meta ({})'.format(
                     len(imgs), len(img_metas)))
-        # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
-        imgs_per_gpu = imgs[0].size(0)
-        assert imgs_per_gpu == 1
 
         if num_augs == 1:
             return self.simple_test(imgs[0], img_metas[0], proposals[0],
                                     **kwargs)
         else:
+            # TODO: add batch aug test
+            assert imgs[0].size(0) == 1
             return self.aug_test(imgs, img_metas, proposals, **kwargs)

@@ -45,7 +45,7 @@ class DistEvalHook(Hook):
             with torch.no_grad():
                 result = runner.model(
                     return_loss=False, rescale=True, **data_gpu)
-            results[idx] = result
+            results[idx] = result[0]
 
             batch_size = runner.world_size
             if runner.rank == 0:

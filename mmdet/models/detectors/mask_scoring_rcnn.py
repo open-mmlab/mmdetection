@@ -168,33 +168,52 @@ class MaskScoringRCNN(TwoStageDetector):
                          det_bboxes,
                          det_labels,
                          rescale=False):
-        # image shape of the first image in the batch (only one)
-        ori_shape = img_meta[0]['ori_shape']
-        scale_factor = img_meta[0]['scale_factor']
+        # image shapes of images in the batch
+        ori_shapes = tuple(meta['ori_shape'] for meta in img_meta)
+        scale_factors = tuple(meta['scale_factor'] for meta in img_meta)
 
-        if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
-            mask_scores = [[] for _ in range(self.mask_head.num_classes - 1)]
+        num_imgs = len(det_bboxes)
+        if num_imgs == 1 and det_bboxes[0].shape[0] == 0:
+            num_classes = self.mask_head.num_classes - 1
+            segm_results = [[[] for _ in range(num_classes)]]
+            mask_scores = [[[] for _ in range(num_classes)]]
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
-            _bboxes = (
-                det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
-            mask_rois = bbox2roi([_bboxes])
+            _bboxes = [
+                det_bboxes[i][:, :4] *
+                scale_factors[i] if rescale else det_bboxes[i]
+                for i in range(num_imgs)
+            ]
+            mask_rois = bbox2roi(_bboxes)
             mask_feats = self.mask_roi_extractor(
                 x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
             if self.with_shared_head:
                 mask_feats = self.shared_head(mask_feats)
             mask_pred = self.mask_head(mask_feats)
-            segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
-                                                       det_labels,
-                                                       self.test_cfg.rcnn,
-                                                       ori_shape, scale_factor,
-                                                       rescale)
-            # get mask scores with mask iou head
+            concat_det_labels = torch.cat(det_labels)
             mask_iou_pred = self.mask_iou_head(
-                mask_feats, mask_pred[range(det_labels.size(0)),
-                                      det_labels + 1])
-            mask_scores = self.mask_iou_head.get_mask_scores(
-                mask_iou_pred, det_bboxes, det_labels)
-        return segm_result, mask_scores
+                mask_feats, mask_pred[range(concat_det_labels.size(0)),
+                                      concat_det_labels + 1])
+
+            # split batch mask prediction back to each image
+            num_bboxes_per_img = tuple(len(_bbox) for _bbox in _bboxes)
+            mask_preds = mask_pred.split(num_bboxes_per_img, 0)
+            mask_iou_preds = mask_iou_pred.split(num_bboxes_per_img, 0)
+
+            # apply mask post-processing to each image individually
+            segm_results = []
+            mask_scores = []
+            for i in range(num_imgs):
+                segm_result = self.mask_head.get_seg_masks(
+                    mask_preds[i], _bboxes[i], det_labels[i],
+                    self.test_cfg.rcnn, ori_shapes[i], scale_factors[i],
+                    rescale)
+                # get mask scores with mask iou head
+                mask_score = self.mask_iou_head.get_mask_scores(
+                    mask_iou_preds[i], det_bboxes[i], det_labels[i])
+                segm_results.append(segm_result)
+                mask_scores.append(mask_score)
+        return tuple(
+            (segm_result, mask_score)
+            for segm_result, mask_score in zip(segm_results, mask_scores))
