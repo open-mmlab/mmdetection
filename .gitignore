@@ -5,6 +5,9 @@ __pycache__/
 # swp files.
 *.swp
 
+# data
+*.dat
+
 # C extensions
 *.so
 
