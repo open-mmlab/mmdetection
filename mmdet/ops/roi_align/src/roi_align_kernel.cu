@@ -1,4 +1,5 @@
 #include <ATen/ATen.h>
+#include <ATen/cuda/CUDAContext.h>
 #include <THC/THCAtomics.cuh>
 
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
@@ -122,7 +123,7 @@ int ROIAlignForwardLaucher(const at::Tensor features, const at::Tensor rois,
                            const int channels, const int height,
                            const int width, const int num_rois,
                            const int pooled_height, const int pooled_width,
-                           at::Tensor output, cudaStream_t stream) {
+                           at::Tensor output) {
   const int output_size = num_rois * pooled_height * pooled_width * channels;
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       features.scalar_type(), "ROIAlignLaucherForward", ([&] {
@@ -131,7 +132,7 @@ int ROIAlignForwardLaucher(const at::Tensor features, const at::Tensor rois,
         scalar_t *top_data = output.data<scalar_t>();
 
         ROIAlignForward<scalar_t>
-            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, stream>>>(
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()>>>(
                 output_size, bottom_data, rois_data, scalar_t(spatial_scale),
                 sample_num, channels, height, width, pooled_height,
                 pooled_width, top_data);
@@ -258,7 +259,7 @@ int ROIAlignBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
                             const int channels, const int height,
                             const int width, const int num_rois,
                             const int pooled_height, const int pooled_width,
-                            at::Tensor bottom_grad, cudaStream_t stream) {
+                            at::Tensor bottom_grad) {
   const int output_size = num_rois * pooled_height * pooled_width * channels;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
@@ -272,7 +273,7 @@ int ROIAlignBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
         }
 
         ROIAlignBackward<scalar_t>
-            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, stream>>>(
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()>>>(
                 output_size, top_diff, rois_data, spatial_scale, sample_num,
                 channels, height, width, pooled_height, pooled_width,
                 bottom_diff);
