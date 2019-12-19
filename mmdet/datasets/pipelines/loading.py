@@ -1,5 +1,4 @@
 import os.path as osp
-import warnings
 
 import mmcv
 import numpy as np
