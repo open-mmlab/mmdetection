@@ -141,7 +141,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 Typically these should be mean centered and std scaled.
 
             img_meta (list[dict]): list of image info dict where each dict has:
-                'img_shape', 'scale_factor', 'flip', and my also contain
+                'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.

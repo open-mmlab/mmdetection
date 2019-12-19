@@ -334,35 +334,6 @@ class HybridTaskCascade(CascadeRCNN):
                 i, x, rois, semantic_feat=semantic_feat)
             ms_scores.append(cls_score)
 
-            if self.test_cfg.keep_all_stages:
-                det_bboxes, det_labels = bbox_head.get_det_bboxes(
-                    rois,
-                    cls_score,
-                    bbox_pred,
-                    img_shape,
-                    scale_factor,
-                    rescale=rescale,
-                    cfg=rcnn_test_cfg)
-                bbox_result = bbox2result(det_bboxes, det_labels,
-                                          bbox_head.num_classes)
-                ms_bbox_result['stage{}'.format(i)] = bbox_result
-
-                if self.with_mask:
-                    mask_head = self.mask_head[i]
-                    if det_bboxes.shape[0] == 0:
-                        mask_classes = mask_head.num_classes - 1
-                        segm_result = [[] for _ in range(mask_classes)]
-                    else:
-                        _bboxes = (
-                            det_bboxes[:, :4] *
-                            scale_factor if rescale else det_bboxes)
-                        mask_pred = self._mask_forward_test(
-                            i, x, _bboxes, semantic_feat=semantic_feat)
-                        segm_result = mask_head.get_seg_masks(
-                            mask_pred, _bboxes, det_labels, rcnn_test_cfg,
-                            ori_shape, scale_factor, rescale)
-                    ms_segm_result['stage{}'.format(i)] = segm_result
-
             if i < self.num_stages - 1:
                 bbox_label = cls_score.argmax(dim=1)
                 rois = bbox_head.regress_by_class(rois, bbox_label, bbox_pred,
@@ -415,20 +386,10 @@ class HybridTaskCascade(CascadeRCNN):
                     ori_shape, scale_factor, rescale)
             ms_segm_result['ensemble'] = segm_result
 
-        if not self.test_cfg.keep_all_stages:
-            if self.with_mask:
-                results = (ms_bbox_result['ensemble'],
-                           ms_segm_result['ensemble'])
-            else:
-                results = ms_bbox_result['ensemble']
+        if self.with_mask:
+            results = (ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
         else:
-            if self.with_mask:
-                results = {
-                    stage: (ms_bbox_result[stage], ms_segm_result[stage])
-                    for stage in ms_bbox_result
-                }
-            else:
-                results = ms_bbox_result
+            results = ms_bbox_result['ensemble']
 
         return results
 
