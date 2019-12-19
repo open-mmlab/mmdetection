@@ -111,32 +111,32 @@ Async interface allows not to block CPU on GPU bound inference code and enables 
 ```python
 import asyncio
 import torch
-from mmdet.apis import init_detector, inference_detector, show_result
+from mmdet.apis import init_detector, async_inference_detector, show_result
 
 async def main():
-	config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
-	checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
-	device = 'cuda:0'
-	model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
+    config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
+    checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
+    device = 'cuda:0'
+    model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
 
-	# queue is used for concurrent inference of multiple images
-	streamqueue = asyncio.Queue()
-	# queue size defines concurrency level
-	streamqueue_size = 3
+    # queue is used for concurrent inference of multiple images
+    streamqueue = asyncio.Queue()
+    # queue size defines concurrency level
+    streamqueue_size = 3
 
-	for _ in range(streamqueue_size):
-		streamqueue.put_nowait(torch.cuda.Stream(device=device))
+    for _ in range(streamqueue_size):
+        streamqueue.put_nowait(torch.cuda.Stream(device=device))
 
-	# test a single image and show the results
-	img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
+    # test a single image and show the results
+    img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
 
-	async with concurrent(streamqueue):
-		result = await async_inference_detector(model, img)
+    async with concurrent(streamqueue):
+        result = await async_inference_detector(model, img)
 
-	# visualize the results in a new window
-	show_result(img, result, model.CLASSES)
-	# or save the visualization results to image files
-	show_result(img, result, model.CLASSES, out_file='result.jpg')
+    # visualize the results in a new window
+    show_result(img, result, model.CLASSES)
+    # or save the visualization results to image files
+    show_result(img, result, model.CLASSES, out_file='result.jpg')
 
 
 asyncio.run(main())
