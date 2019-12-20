@@ -165,7 +165,7 @@ You can setup the backend and communication port in the config as the following 
 dist_params = dict(backend='nccl', port=29501)
 ```
 
-It is necessary to change the **port** when you need to run two jobs on the same machine to avoid the port conflict.
+By default the backend is ```nccl``` in the configs, you need to change the **port** when you want to run two jobs on the same machine to avoid the port conflict.
 
 ## Useful tools
 
