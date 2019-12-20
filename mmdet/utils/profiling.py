@@ -37,5 +37,5 @@ if sys.version_info >= (3, 7):
             gpu_time = start.elapsed_time(end)
             msg = "{} {} cpu_time {:.2f} ms ".format(trace_name, name,
                                                      cpu_time)
-            msg += "gpu_time {:.2f} ms stream {}".format
-            print(gpu_time, end_stream)
+            msg += "gpu_time {:.2f} ms stream {}".format(gpu_time, stream)
+            print(msg, end_stream)

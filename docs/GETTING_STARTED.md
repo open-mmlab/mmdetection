@@ -108,10 +108,13 @@ A notebook demo can be found in [demo/inference_demo.ipynb](../demo/inference_de
 
 Async interface allows not to block CPU on GPU bound inference code and enables better CPU/GPU utilization for single threaded application. Inference can be done concurrently either between different input data samples or between different models of some inference pipeline.
 
+See `tests/async_benchmark.py` to compare the speed of synchronous and asynchronous interfaces.
+
 ```python
 import asyncio
 import torch
 from mmdet.apis import init_detector, async_inference_detector, show_result
+from mmdet.utils.contextmanagers import concurrent
 
 async def main():
     config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
