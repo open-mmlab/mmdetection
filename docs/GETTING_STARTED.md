@@ -159,6 +159,13 @@ If you have just multiple machines connected with ethernet, you can refer to
 pytorch [launch utility](https://pytorch.org/docs/stable/distributed_deprecated.html#launch-utility).
 Usually it is slow if you do not have high speed networking like infiniband.
 
+You can setup the backend and communication port in the config as the following example.
+
+```python
+dist_params = dict(backend='nccl', port=29501)
+```
+
+It is necessary to change the **port** when you need to run two jobs on the same machine to avoid the port conflict.
 
 ## Useful tools
 
