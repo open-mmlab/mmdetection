@@ -272,7 +272,6 @@ def pool_flops_counter_hook(module, input, output):
 
 
 def norm_flops_counter_hook(module, input, output):
-    module.affine
     input = input[0]
 
     batch_flops = np.prod(input.shape)
@@ -385,7 +384,6 @@ hook_mapping = {
 
 
 def add_batch_counter_variables_or_reset(module):
-
     module.__batch_counter__ = 0
 
 
