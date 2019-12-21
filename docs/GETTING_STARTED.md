@@ -74,6 +74,7 @@ python demo/webcam_demo.py configs/faster_rcnn_r50_fpn_1x.py \
 
 ### High-level APIs for testing images
 
+#### Synchronous interface
 Here is an example of building the model and test given images.
 
 ```python
@@ -102,6 +103,48 @@ for frame in video:
 ```
 
 A notebook demo can be found in [demo/inference_demo.ipynb](../demo/inference_demo.ipynb).
+
+#### Asynchronous interface - supported for Python 3.7+
+
+Async interface allows not to block CPU on GPU bound inference code and enables better CPU/GPU utilization for single threaded application. Inference can be done concurrently either between different input data samples or between different models of some inference pipeline.
+
+See `tests/async_benchmark.py` to compare the speed of synchronous and asynchronous interfaces.
+
+```python
+import asyncio
+import torch
+from mmdet.apis import init_detector, async_inference_detector, show_result
+from mmdet.utils.contextmanagers import concurrent
+
+async def main():
+    config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
+    checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
+    device = 'cuda:0'
+    model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
+
+    # queue is used for concurrent inference of multiple images
+    streamqueue = asyncio.Queue()
+    # queue size defines concurrency level
+    streamqueue_size = 3
+
+    for _ in range(streamqueue_size):
+        streamqueue.put_nowait(torch.cuda.Stream(device=device))
+
+    # test a single image and show the results
+    img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
+
+    async with concurrent(streamqueue):
+        result = await async_inference_detector(model, img)
+
+    # visualize the results in a new window
+    show_result(img, result, model.CLASSES)
+    # or save the visualization results to image files
+    show_result(img, result, model.CLASSES, out_file='result.jpg')
+
+
+asyncio.run(main())
+
+```
 
 
 ## Train a model
