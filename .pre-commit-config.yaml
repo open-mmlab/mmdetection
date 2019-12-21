@@ -8,11 +8,11 @@ repos:
   hooks:
       - id: isort
 - repo: https://github.com/pre-commit/mirrors-yapf
-  rev: 80b9cd2f0f3b1f3456a77eff3ddbaf08f18c08ae
+  rev: v0.29.0
   hooks:
     - id: yapf
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.3.0
+  rev: v2.4.0
   hooks:
     - id: flake8
     - id: trailing-whitespace
