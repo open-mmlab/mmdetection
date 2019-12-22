@@ -15,19 +15,21 @@ def transform_boxes(deltas,
     dy = deltas[:, 1] / wy
     dw = deltas[:, 2] / ww
     dh = deltas[:, 3] / wh
+    
+    max_ratio = np.abs(np.log(wh_ratio_clip))
 
-    dw.clamp(min=-wh_ratio_clip, max=wh_ratio_clip)
-    dh.clamp(min=-wh_ratio_clip, max=wh_ratio_clip)
+    dw.clamp(min=-max_ratio, max=max_ratio)
+    dh.clamp(min=-max_ratio, max=max_ratio)
 
     pred_ctr_x = dx
     pred_ctr_y = dy
     pred_w = torch.exp(dw)
     pred_h = torch.exp(dh)
 
-    x1 = pred_ctr_x - 0.5 * pred_w
-    y1 = pred_ctr_y - 0.5 * pred_h
-    x2 = pred_ctr_x + 0.5 * pred_w
-    y2 = pred_ctr_y + 0.5 * pred_h
+    x1 = pred_ctr_x - 0.5 * pred_w + 0.5
+    y1 = pred_ctr_y - 0.5 * pred_h + 0.5
+    x2 = pred_ctr_x + 0.5 * pred_w - 0.5
+    y2 = pred_ctr_y + 0.5 * pred_h - 0.5
     
     return torch.stack([x1, y1, x2, y2], dim=-1)
 
