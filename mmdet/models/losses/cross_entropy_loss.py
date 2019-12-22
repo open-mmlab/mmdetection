@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from ..registry import LOSSES
 from .utils import weight_reduce_loss
-
+import pdb
 
 def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
     # element-wise losses

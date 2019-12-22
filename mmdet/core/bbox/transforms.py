@@ -2,6 +2,34 @@ import mmcv
 import numpy as np
 import torch
 
+import pdb
+
+def transform_boxes(deltas, 
+                    means=[0., 0., 0., 0.], 
+                    stds=[1., 1., 1., 1.], 
+                    max_shape=None, 
+                    wh_ratio_clip=16/1000):
+    
+    wx, wy, ww, wh = stds
+    dx = deltas[:, 0] / wx
+    dy = deltas[:, 1] / wy
+    dw = deltas[:, 2] / ww
+    dh = deltas[:, 3] / wh
+
+    dw.clamp(min=-wh_ratio_clip, max=wh_ratio_clip)
+    dh.clamp(min=-wh_ratio_clip, max=wh_ratio_clip)
+
+    pred_ctr_x = dx
+    pred_ctr_y = dy
+    pred_w = torch.exp(dw)
+    pred_h = torch.exp(dh)
+
+    x1 = pred_ctr_x - 0.5 * pred_w
+    y1 = pred_ctr_y - 0.5 * pred_h
+    x2 = pred_ctr_x + 0.5 * pred_w
+    y2 = pred_ctr_y + 0.5 * pred_h
+    
+    return torch.stack([x1, y1, x2, y2], dim=-1)
 
 def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
     assert proposals.size() == gt.size()
@@ -37,6 +65,7 @@ def delta2bbox(rois,
                stds=[1, 1, 1, 1],
                max_shape=None,
                wh_ratio_clip=16 / 1000):
+    #print (stds, means, max_shape, wh_ratio_clip)
     means = deltas.new_tensor(means).repeat(1, deltas.size(1) // 4)
     stds = deltas.new_tensor(stds).repeat(1, deltas.size(1) // 4)
     denorm_deltas = deltas * stds + means
@@ -65,6 +94,7 @@ def delta2bbox(rois,
         x2 = x2.clamp(min=0, max=max_shape[1] - 1)
         y2 = y2.clamp(min=0, max=max_shape[0] - 1)
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view_as(deltas)
+     
     return bboxes
 
 

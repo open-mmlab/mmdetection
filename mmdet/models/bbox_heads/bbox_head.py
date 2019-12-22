@@ -4,12 +4,13 @@ import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import (auto_fp16, bbox_target, delta2bbox, force_fp32,
-                        multiclass_nms)
+                        multiclass_nms, transform_boxes)
 from ..builder import build_loss
 from ..losses import accuracy
 from ..registry import HEADS
 
 import pdb
+import inspect
 
 @HEADS.register_module
 class BBoxHead(nn.Module):
@@ -45,9 +46,9 @@ class BBoxHead(nn.Module):
         self.target_stds = target_stds
         self.reg_class_agnostic = reg_class_agnostic
         self.fp16_enabled = False
-
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
+        self.loss_bbox_type = loss_bbox['type']
         in_channels = self.in_channels
         if self.with_avg_pool:
             self.avg_pool = nn.AvgPool2d(self.roi_feat_size)
@@ -59,7 +60,7 @@ class BBoxHead(nn.Module):
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
             self.fc_reg = nn.Linear(in_channels, out_dim_reg)
         self.debug_imgs = None
-
+        
     def init_weights(self):
         if self.with_cls:
             nn.init.normal_(self.fc_cls.weight, 0, 0.01)
@@ -121,6 +122,13 @@ class BBoxHead(nn.Module):
             else:
                 pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), -1,
                                                4)[pos_inds, labels[pos_inds]]
+            # apply inverse delta transform for pos_bbox_pred
+            # and bbox_targets
+            if self.loss_bbox_type == 'IoULoss':
+                pos_bbox_pred_ = transform_boxes(pos_bbox_pred)
+                bbox_targets_ = transform_boxes(bbox_targets[pos_inds])
+            pos_bbox_pred = pos_bbox_pred_
+            bbox_targets[pos_inds] = bbox_targets_
             losses['loss_bbox'] = self.loss_bbox(
                 pos_bbox_pred,
                 bbox_targets[pos_inds],
