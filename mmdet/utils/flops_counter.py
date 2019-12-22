@@ -271,12 +271,23 @@ def pool_flops_counter_hook(module, input, output):
     module.__flops__ += int(np.prod(input.shape))
 
 
-def norm_flops_counter_hook(module, input, output):
+def bn_flops_counter_hook(module, input, output):
     input = input[0]
 
     batch_flops = np.prod(input.shape)
     if module.affine:
         batch_flops *= 2
+    module.__flops__ += int(batch_flops)
+
+
+def gn_flops_counter_hook(module, input, output):
+    elems = np.prod(input[0].shape)
+    # there is no precise FLOPs estimation of computing mean and variance,
+    # and we just set it 2 * elems: half muladds for computing
+    # means and half for computing vars
+    batch_flops = 3 * elems
+    if module.affine:
+        batch_flops += elems
     module.__flops__ += int(batch_flops)
 
 
@@ -345,18 +356,6 @@ def conv_flops_counter_hook(conv_module, input, output):
     conv_module.__flops__ += int(overall_flops)
 
 
-def batch_counter_hook(module, input, output):
-    batch_size = 1
-    if len(input) > 0:
-        # Can have multiple inputs, getting the first one
-        input = input[0]
-        batch_size = len(input)
-    else:
-        print('Warning! No positional inputs found for a module, '
-              'assuming batch size is 1.')
-    module.__batch_counter__ += batch_size
-
-
 hook_mapping = {
     # conv
     _ConvNd: conv_flops_counter_hook,
@@ -376,11 +375,23 @@ hook_mapping = {
     nn.LeakyReLU: relu_flops_counter_hook,
     nn.ReLU6: relu_flops_counter_hook,
     # normalization
-    _BatchNorm: norm_flops_counter_hook,
-    nn.GroupNorm: norm_flops_counter_hook,
+    _BatchNorm: bn_flops_counter_hook,
+    nn.GroupNorm: gn_flops_counter_hook,
     # upsample
     nn.Upsample: upsample_flops_counter_hook,
 }
+
+
+def batch_counter_hook(module, input, output):
+    batch_size = 1
+    if len(input) > 0:
+        # Can have multiple inputs, getting the first one
+        input = input[0]
+        batch_size = len(input)
+    else:
+        print('Warning! No positional inputs found for a module, '
+              'assuming batch size is 1.')
+    module.__batch_counter__ += batch_size
 
 
 def add_batch_counter_variables_or_reset(module):
