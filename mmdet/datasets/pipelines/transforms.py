@@ -415,7 +415,7 @@ class SegRescale(object):
         self.scale_factor = scale_factor
 
     def __call__(self, results):
-        for key in results.get('seg_fields'):
+        for key in results.get('seg_fields', []):
             if self.scale_factor != 1:
                 results[key] = mmcv.imrescale(
                     results[key], self.scale_factor, interpolation='nearest')
