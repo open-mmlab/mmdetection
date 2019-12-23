@@ -127,13 +127,11 @@ class BBoxHead(nn.Module):
             if self.loss_bbox_type == 'IoULoss':
                 pos_bbox_pred_ = transform_boxes(pos_bbox_pred)
                 bbox_targets_ = transform_boxes(bbox_targets[pos_inds])
-                pos_bbox_pred = pos_bbox_pred_
-                bbox_targets[pos_inds] = bbox_targets_
             losses['loss_bbox'] = self.loss_bbox(
-                pos_bbox_pred,
-                bbox_targets[pos_inds],
+                pos_bbox_pred_,
+                bbox_targets_,
                 bbox_weights[pos_inds],
-                avg_factor=bbox_targets.size(0),
+                avg_factor=bbox_targets_.size(0),
                 reduction_override=reduction_override)
         return losses
 
