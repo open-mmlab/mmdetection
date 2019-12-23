@@ -18,18 +18,18 @@ def transform_boxes(deltas,
     
     max_ratio = np.abs(np.log(wh_ratio_clip))
 
-    dw.clamp(max=max_ratio)
-    dh.clamp(max=max_ratio)
+    dw.clamp(min=-max_ratio, max=max_ratio)
+    dh.clamp(min=-max_ratio, max=max_ratio)
 
     pred_ctr_x = dx
     pred_ctr_y = dy
     pred_w = torch.exp(dw)
     pred_h = torch.exp(dh)
 
-    x1 = pred_ctr_x - 0.5 * pred_w
-    y1 = pred_ctr_y - 0.5 * pred_h
-    x2 = pred_ctr_x + 0.5 * pred_w
-    y2 = pred_ctr_y + 0.5 * pred_h
+    x1 = pred_ctr_x - 0.5 * pred_w + 0.5
+    y1 = pred_ctr_y - 0.5 * pred_h + 0.5
+    x2 = pred_ctr_x + 0.5 * pred_w - 0.5
+    y2 = pred_ctr_y + 0.5 * pred_h - 0.5
     
     return torch.stack([x1, y1, x2, y2], dim=-1)
 
@@ -65,7 +65,8 @@ def delta2bbox(rois,
                means=[0, 0, 0, 0],
                stds=[1, 1, 1, 1],
                max_shape=None,
-               wh_ratio_clip=16 / 1000): 
+               wh_ratio_clip=16 / 1000):
+    #print (stds, means, max_shape, wh_ratio_clip)
     means = deltas.new_tensor(means).repeat(1, deltas.size(1) // 4)
     stds = deltas.new_tensor(stds).repeat(1, deltas.size(1) // 4)
     denorm_deltas = deltas * stds + means
@@ -89,6 +90,7 @@ def delta2bbox(rois,
     x2 = gx + gw * 0.5 - 0.5
     y2 = gy + gh * 0.5 - 0.5
     if max_shape is not None:
+        pdb.set_trace()
         x1 = x1.clamp(min=0, max=max_shape[1] - 1)
         y1 = y1.clamp(min=0, max=max_shape[0] - 1)
         x2 = x2.clamp(min=0, max=max_shape[1] - 1)
