@@ -275,7 +275,10 @@ class Pad(object):
                 mmcv.impad(mask, pad_shape, pad_val=self.pad_val)
                 for mask in results[key]
             ]
-            results[key] = np.stack(padded_masks, axis=0)
+            if padded_masks:
+                results[key] = np.stack(padded_masks, axis=0)
+            else:
+                results[key] = np.empty((0, ) + pad_shape, dtype=np.uint8)
 
     def __call__(self, results):
         self._pad_img(results)
