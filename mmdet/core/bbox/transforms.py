@@ -18,8 +18,8 @@ def transform_boxes(deltas,
     
     max_ratio = np.abs(np.log(wh_ratio_clip))
 
-    dw.clamp(max=max_ratio)
-    dh.clamp(max=max_ratio)
+    dw = dw.clamp(min=-max_ratio, max=max_ratio)
+    dh = dh.clamp(min=-max_ratio, max=max_ratio)
 
     pred_ctr_x = dx
     pred_ctr_y = dy
