@@ -252,7 +252,7 @@ average iter time: 1.1959 s/iter
 
 ```
 
-### Analyse Class-Wise Performance 
+### Analyse class-wise performance
 
 You can analyse the class-wise mAP to have a more comprehensive understanding of the model.
 
