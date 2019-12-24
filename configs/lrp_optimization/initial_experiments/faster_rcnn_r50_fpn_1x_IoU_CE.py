@@ -43,7 +43,7 @@ model = dict(
         reg_class_agnostic=False,
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-        loss_bbox=dict(type='IoULoss', loss_weight=1.0)))
+        loss_bbox=dict(type='IoULoss', loss_weight=12.0)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(
@@ -168,7 +168,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/lrp_optimization/faster_rcnn_r50_fpn_1x_IoU_CE'
+work_dir = './work_dirs/lrp_optimization/faster_rcnn_r50_fpn_1x_1-IoU_CE'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

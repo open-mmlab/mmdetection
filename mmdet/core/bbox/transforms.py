@@ -6,15 +6,15 @@ import pdb
 
 def transform_boxes(deltas, 
                     means=[0., 0., 0., 0.], 
-                    stds=[1., 1., 1., 1.], 
+                    stds=[0.1, 0.1, 0.2, 0.2], 
                     max_shape=None, 
                     wh_ratio_clip=16/1000):
     
     wx, wy, ww, wh = stds
-    dx = deltas[:, 0] / wx
-    dy = deltas[:, 1] / wy
-    dw = deltas[:, 2] / ww
-    dh = deltas[:, 3] / wh
+    dx = deltas[:, 0] * wx
+    dy = deltas[:, 1] * wy
+    dw = deltas[:, 2] * ww
+    dh = deltas[:, 3] * wh
     
     max_ratio = np.abs(np.log(wh_ratio_clip))
 
