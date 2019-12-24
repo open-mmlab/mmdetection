@@ -74,6 +74,7 @@ python demo/webcam_demo.py configs/faster_rcnn_r50_fpn_1x.py \
 
 ### High-level APIs for testing images
 
+#### Synchronous interface
 Here is an example of building the model and test given images.
 
 ```python
@@ -101,7 +102,49 @@ for frame in video:
     show_result(frame, result, model.CLASSES, wait_time=1)
 ```
 
-A notebook demo can be found in [demo/inference_demo.ipynb](../demo/inference_demo.ipynb).
+A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb).
+
+#### Asynchronous interface - supported for Python 3.7+
+
+Async interface allows not to block CPU on GPU bound inference code and enables better CPU/GPU utilization for single threaded application. Inference can be done concurrently either between different input data samples or between different models of some inference pipeline.
+
+See `tests/async_benchmark.py` to compare the speed of synchronous and asynchronous interfaces.
+
+```python
+import asyncio
+import torch
+from mmdet.apis import init_detector, async_inference_detector, show_result
+from mmdet.utils.contextmanagers import concurrent
+
+async def main():
+    config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
+    checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
+    device = 'cuda:0'
+    model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
+
+    # queue is used for concurrent inference of multiple images
+    streamqueue = asyncio.Queue()
+    # queue size defines concurrency level
+    streamqueue_size = 3
+
+    for _ in range(streamqueue_size):
+        streamqueue.put_nowait(torch.cuda.Stream(device=device))
+
+    # test a single image and show the results
+    img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
+
+    async with concurrent(streamqueue):
+        result = await async_inference_detector(model, img)
+
+    # visualize the results in a new window
+    show_result(img, result, model.CLASSES)
+    # or save the visualization results to image files
+    show_result(img, result, model.CLASSES, out_file='result.jpg')
+
+
+asyncio.run(main())
+
+```
 
 
 ## Train a model
@@ -131,7 +174,7 @@ If you want to specify the working directory in the command, you can add an argu
 
 Optional arguments are:
 
-- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](../configs/mask_rcnn_r50_fpn_1x.py#L174)) epochs during the training.
+- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn_r50_fpn_1x.py#L174)) epochs during the training.
 - `--work_dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume_from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
 
@@ -153,7 +196,7 @@ Here is an example of using 16 GPUs to train Mask R-CNN on the dev partition.
 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x.py /nfs/xxxx/mask_rcnn_r50_fpn_1x 16
 ```
 
-You can check [slurm_train.sh](../tools/slurm_train.sh) for full arguments and environment variables.
+You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
 
 If you have just multiple machines connected with ethernet, you can refer to
 pytorch [launch utility](https://pytorch.org/docs/stable/distributed_deprecated.html#launch-utility).
@@ -209,12 +252,12 @@ average iter time: 1.1959 s/iter
 
 ```
 
-### Analyse Class-Wise Performance 
+### Analyse class-wise performance
 
 You can analyse the class-wise mAP to have a more comprehensive understanding of the model.
 
 ```shell
-python coco_eval.py ${RESULT} --ann ${ANNOTATION_PATH} --types bbox --classwise 
+python coco_eval.py ${RESULT} --ann ${ANNOTATION_PATH} --types bbox --classwise
 ```
 
 Now we only support class-wise mAP for all the evaluation types, we will support class-wise mAR in the future.
@@ -241,7 +284,7 @@ Params: 37.74 M
 
 (1) FLOPs are related to the input shape while parameters are not. The default input shape is (1, 3, 1280, 800).
 (2) Some operators are not counted into FLOPs like GN and custom operators.
-You can add support for new operators by modifying [`mmdet/utils/flops_counter.py`](mmdet/utils/flops_counter.py).
+You can add support for new operators by modifying [`mmdet/utils/flops_counter.py`](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/utils/flops_counter.py).
 (3) The FLOPs of two-stage detectors is dependent on the number of proposals.
 
 ### Publish a model
@@ -332,12 +375,12 @@ There are two ways to work with custom datasets.
 
   You can write a new Dataset class inherited from `CustomDataset`, and overwrite two methods
   `load_annotations(self, ann_file)` and `get_ann_info(self, idx)`,
-  like [CocoDataset](../mmdet/datasets/coco.py) and [VOCDataset](../mmdet/datasets/voc.py).
+  like [CocoDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/coco.py) and [VOCDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/voc.py).
 
 - offline conversion
 
   You can convert the annotation format to the expected format above and save it to
-  a pickle or json file, like [pascal_voc.py](../tools/convert_datasets/pascal_voc.py).
+  a pickle or json file, like [pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/pascal_voc.py).
   Then you can simply use `CustomDataset`.
 
 ### Develop new components
@@ -367,7 +410,7 @@ class MobileNet(nn.Module):
 
     def forward(x):  # should return a tuple
         pass
-    
+
     def init_weights(self, pretrained=None):
         pass
 ```

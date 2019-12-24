@@ -6,7 +6,7 @@ python:
   - "3.6"
   - "3.7"
 
-env: CUDA=10.1.105-1 CUDA_SHORT=10.1 UBUNTU_VERSION=ubuntu1804
+env: CUDA=10.1.105-1 CUDA_SHORT=10.1 UBUNTU_VERSION=ubuntu1804 FORCE_CUDA=1
 cache: pip
 
 # Ref to CUDA installation in Travis: https://github.com/jeremad/cuda-travis

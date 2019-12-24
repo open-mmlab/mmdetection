@@ -1,17 +1,39 @@
-from __future__ import division
+import logging
+import random
 import re
 from collections import OrderedDict
 
+import numpy as np
 import torch
+import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import DistSamplerSeedHook, Runner, obj_from_dict
+from mmcv.runner import (DistSamplerSeedHook, Runner, get_dist_info,
+                         obj_from_dict)
 
 from mmdet import datasets
 from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
                         DistEvalmAPHook, DistOptimizerHook, Fp16OptimizerHook)
 from mmdet.datasets import DATASETS, build_dataloader
 from mmdet.models import RPN
-from .env import get_root_logger
+
+
+def set_random_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+def get_root_logger(log_level=logging.INFO):
+    logger = logging.getLogger()
+    if not logger.hasHandlers():
+        logging.basicConfig(
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            level=log_level)
+    rank, _ = get_dist_info()
+    if rank != 0:
+        logger.setLevel('ERROR')
+    return logger
 
 
 def parse_losses(losses):
@@ -28,8 +50,12 @@ def parse_losses(losses):
     loss = sum(_value for _key, _value in log_vars.items() if 'loss' in _key)
 
     log_vars['loss'] = loss
-    for name in log_vars:
-        log_vars[name] = log_vars[name].item()
+    for loss_name, loss_value in log_vars.items():
+        # reduce loss when distributed training
+        if dist.is_initialized():
+            loss_value = loss_value.data.clone()
+            dist.all_reduce(loss_value.div_(dist.get_world_size()))
+        log_vars[loss_name] = loss_value.item()
 
     return loss, log_vars
 
