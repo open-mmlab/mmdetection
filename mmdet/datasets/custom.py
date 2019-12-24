@@ -98,6 +98,7 @@ class CustomDataset(Dataset):
         results['proposal_file'] = self.proposal_file
         results['bbox_fields'] = []
         results['mask_fields'] = []
+        results['seg_fields'] = []
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small."""
