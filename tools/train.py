@@ -1,7 +1,10 @@
 from __future__ import division
 import argparse
 import os
+import os.path as osp
+import time
 
+import mmcv
 import torch
 from mmcv import Config
 from mmcv.runner import init_dist
@@ -71,11 +74,17 @@ def main():
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
 
-    # init logger before other steps
-    logger = get_root_logger(cfg.log_level)
+    # create work_dir
+    mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
+    # init the logger before other steps
+    timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+    log_file = osp.join(cfg.work_dir, '{}.log'.format(timestamp))
+    logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
+
+    # log some basic info
     logger.info('Distributed training: {}'.format(distributed))
     logger.info('MMDetection Version: {}'.format(__version__))
-    logger.info('Config: {}'.format(cfg.text))
+    logger.info('Config:\n{}'.format(cfg.text))
 
     # set random seeds
     if args.seed is not None:
@@ -103,7 +112,7 @@ def main():
         cfg,
         distributed=distributed,
         validate=args.validate,
-        logger=logger)
+        timestamp=timestamp)
 
 
 if __name__ == '__main__':
