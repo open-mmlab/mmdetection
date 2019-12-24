@@ -9,7 +9,7 @@ Following typical conventions, we use `Dataset` and `DataLoader` for data loadin
 with multiple workers. `Dataset` returns a dict of data items corresponding
 the arguments of models' forward method.
 Since the data in object detection may not be the same size (image size, gt bbox size, etc.),
-we introduce a new `DataContainer` type in `mmcv` to help collect and distribute
+we introduce a new `DataContainer` type in MMCV to help collect and distribute
 data of different size.
 See [here](https://github.com/open-mmlab/mmcv/blob/master/mmcv/parallel/data_container.py) for more details.
 
@@ -70,15 +70,15 @@ For each operation, we list the related dict fields that are added/updated/remov
 
 `Resize`
 - add: scale, scale_idx, pad_shape, scale_factor, keep_ratio
-- update: img, img_shape, *bbox_fields, *mask_fields
+- update: img, img_shape, *bbox_fields, *mask_fields, *seg_fields
 
 `RandomFlip`
 - add: flip
-- update: img, *bbox_fields, *mask_fields
+- update: img, *bbox_fields, *mask_fields, *seg_fields
 
 `Pad`
 - add: pad_fixed_size, pad_size_divisor
-- update: img, pad_shape, *mask_fields
+- update: img, pad_shape, *mask_fields, *seg_fields
 
 `RandomCrop`
 - update: img, pad_shape, gt_bboxes, gt_labels, gt_masks, *bbox_fields
@@ -87,7 +87,7 @@ For each operation, we list the related dict fields that are added/updated/remov
 - add: img_norm_cfg
 - update: img
 
-`SegResizeFlipPadRescale`
+`SegRescale`
 - update: gt_semantic_seg
 
 `PhotoMetricDistortion`
@@ -167,6 +167,12 @@ FPN structure in [Path Aggregation Network for Instance Segmentation](https://ar
         def forward(self, inputs):
             # implementation is ignored
             pass
+    ```
+
+2. Import the module in `mmdet/models/necks/__init__.py`.
+
+    ```python
+    from .pafpn import PAFPN
     ```
 
 2. modify the config file from

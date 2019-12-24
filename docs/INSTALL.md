@@ -13,7 +13,7 @@
 We have tested the following versions of OS and softwares:
 
 - OS: Ubuntu 16.04/18.04 and CentOS 7.2
-- CUDA: 9.0/9.2/10.0
+- CUDA: 9.0/9.2/10.0/10.1
 - NCCL: 2.1.15/2.2.13/2.3.7/2.4.2
 - GCC(G++): 4.9/5.3/5.4/7.3
 
@@ -26,7 +26,7 @@ conda create -n open-mmlab python=3.7 -y
 conda activate open-mmlab
 ```
 
-b. Install PyTorch stable or nightly and torchvision following the [official instructions](https://pytorch.org/), e.g.,
+b. Install PyTorch and torchvision following the [official instructions](https://pytorch.org/), e.g.,
 
 ```shell
 conda install pytorch torchvision -c pytorch
@@ -58,7 +58,7 @@ you can install it before installing MMCV.
 
 ### Another option: Docker Image
 
-We provide a [Dockerfile](../docker/Dockerfile) to build an image.
+We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image.
 
 ```shell
 # build an image with PyTorch 1.1, CUDA 10.0 and CUDNN 7.5
@@ -91,7 +91,7 @@ mmdetection
 
 ```
 The cityscapes annotations have to be converted into the coco format using the [cityscapesScripts](https://github.com/mcordts/cityscapesScripts) toolbox.
-We plan to provide an easy to use conversion script. For the moment we recommend following the instructions provided in the 
+We plan to provide an easy to use conversion script. For the moment we recommend following the instructions provided in the
 [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/tree/master/maskrcnn_benchmark/data) toolbox. When using this script all images have to be moved into the same folder. On linux systems this can e.g. be done for the train images with:
 ```shell
 cd data/cityscapes/
