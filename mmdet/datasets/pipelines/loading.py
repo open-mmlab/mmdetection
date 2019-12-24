@@ -91,6 +91,7 @@ class LoadAnnotations(object):
         results['gt_semantic_seg'] = mmcv.imread(
             osp.join(results['seg_prefix'], results['ann_info']['seg_map']),
             flag='unchanged').squeeze()
+        results['seg_fields'].append('gt_semantic_seg')
         return results
 
     def __call__(self, results):
