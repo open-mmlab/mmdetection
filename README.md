@@ -69,6 +69,7 @@ Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 | RepPoints          | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     |
 | FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     |
+| NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     |
 
 Other features
 - [x] DCNv2
