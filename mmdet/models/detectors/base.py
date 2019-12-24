@@ -1,4 +1,3 @@
-import logging
 from abc import ABCMeta, abstractmethod
 
 import mmcv
@@ -9,10 +8,8 @@ import torch.nn as nn
 from mmdet.core import auto_fp16, get_classes, tensor2imgs
 
 
-class BaseDetector(nn.Module):
+class BaseDetector(nn.Module, metaclass=ABCMeta):
     """Base class for detectors"""
-
-    __metaclass__ = ABCMeta
 
     def __init__(self):
         super(BaseDetector, self).__init__()
@@ -75,7 +72,8 @@ class BaseDetector(nn.Module):
 
     def init_weights(self, pretrained=None):
         if pretrained is not None:
-            logger = logging.getLogger()
+            from mmdet.apis import get_root_logger
+            logger = get_root_logger()
             logger.info('load model from: {}'.format(pretrained))
 
     async def aforward_test(self, *, img, img_meta, **kwargs):
