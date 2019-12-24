@@ -10,6 +10,7 @@ def transform_boxes(deltas,
                     max_shape=None, 
                     wh_ratio_clip=16/1000):
     
+    # std was 1/std in detectron.
     wx, wy, ww, wh = stds
     dx = deltas[:, 0] * wx
     dy = deltas[:, 1] * wy
