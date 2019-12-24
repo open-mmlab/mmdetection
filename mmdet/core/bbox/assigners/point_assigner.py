@@ -40,19 +40,33 @@ class PointAssigner(BaseAssigner):
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
+                NOTE: currently unused.
             gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
 
         Returns:
             :obj:`AssignResult`: The assign result.
         """
-        if points.shape[0] == 0 or gt_bboxes.shape[0] == 0:
-            raise ValueError('No gt or bboxes')
+        num_points = points.shape[0]
+        num_gts = gt_bboxes.shape[0]
+
+        if num_gts == 0 or num_points == 0:
+            # If no truth assign everything to the background
+            assigned_gt_inds = points.new_full((num_points, ),
+                                               0,
+                                               dtype=torch.long)
+            if gt_labels is None:
+                assigned_labels = None
+            else:
+                assigned_labels = points.new_zeros((num_points, ),
+                                                   dtype=torch.long)
+            return AssignResult(
+                num_gts, assigned_gt_inds, None, labels=assigned_labels)
+
         points_xy = points[:, :2]
         points_stride = points[:, 2]
         points_lvl = torch.log2(
             points_stride).int()  # [3...,4...,5...,6...,7...]
         lvl_min, lvl_max = points_lvl.min(), points_lvl.max()
-        num_gts, num_points = gt_bboxes.shape[0], points.shape[0]
 
         # assign gt box
         gt_bboxes_xy = (gt_bboxes[:, :2] + gt_bboxes[:, 2:]) / 2
