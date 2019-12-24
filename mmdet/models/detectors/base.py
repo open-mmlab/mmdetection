@@ -58,9 +58,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     async def async_simple_test(self, img, img_meta, **kwargs):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def simple_test(self, img, img_meta, **kwargs):
