@@ -3,6 +3,8 @@
 
 **News**: We released the technical report on [ArXiv](https://arxiv.org/abs/1906.07155).
 
+Documentation: https://mmdetection.readthedocs.io/
+
 ## Introduction
 
 The master branch works with **PyTorch 1.1** or higher.
