@@ -17,13 +17,6 @@ from mmdet.datasets import DATASETS, build_dataloader
 from mmdet.models import RPN
 
 
-def set_random_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-
-
 def get_root_logger(log_file=None, log_level=logging.INFO):
     logger = logging.getLogger('mmdet')
     # if the logger has been initialized, just return it
@@ -43,6 +36,25 @@ def get_root_logger(log_file=None, log_level=logging.INFO):
         logger.addHandler(file_handler)
 
     return logger
+
+
+def set_random_seed(seed, deterministic=False):
+    """Set random seed.
+
+    Args:
+        seed (int): Seed to be used.
+        deterministic (bool): Whether to set the deterministic option for
+            CUDNN backend, i.e., set `torch.backends.cudnn.deterministic`
+            to True and `torch.backends.cudnn.benchmark` to False.
+            Default: False.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    if deterministic:
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 
 def parse_losses(losses):
@@ -70,6 +82,21 @@ def parse_losses(losses):
 
 
 def batch_processor(model, data, train_mode):
+    """Process a data batch.
+
+    This method is required as an argument of Runner, which defines how to
+    process a data batch and obtain proper outputs. The first 3 arguments of
+    batch_processor are fixed.
+
+    Args:
+        model (nn.Module): A PyTorch model.
+        data (dict): The data batch in a dict.
+        train_mode (bool): Training mode or not. It may be useless for some
+            models.
+
+    Returns:
+        dict: A dict containing losses and log vars.
+    """
     losses = model(**data)
     loss, log_vars = parse_losses(losses)
 

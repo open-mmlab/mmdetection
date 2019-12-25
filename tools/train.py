@@ -33,6 +33,10 @@ def parse_args():
         '(only applicable to non-distributed training)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
     parser.add_argument(
+        '--deterministic',
+        action='store_true',
+        help='whether to set deterministic options for CUDNN backend.')
+    parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
@@ -88,8 +92,9 @@ def main():
 
     # set random seeds
     if args.seed is not None:
-        logger.info('Set random seed to {}'.format(args.seed))
-        set_random_seed(args.seed)
+        logger.info('Set random seed to {}, deterministic: {}'.format(
+            args.seed, args.deterministic))
+        set_random_seed(args.seed, deterministic=args.deterministic)
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
