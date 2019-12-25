@@ -18,8 +18,8 @@ We benchmark the new training schedule (crop training, large batch, unfrozen BN,
 
 | Backbone    | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
 |:-----------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
-| R-50-FPN    | 50e     | 12786    | 0.513               | 15.3           | 37.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/nas_fpn/retinanet_crop640_r50_fpn_50e_190824-4d75bfa0.pth) |
-| R-50-NASFPN | 50e     | 14784    | 0.662               | 13.1           | 39.8   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/nas_fpn/retinanet_crop640_r50_nasfpn_50e_20191225-b82d3a86.pth) |
+| R-50-FPN    | 50e     | 12.8     | 0.513               | 15.3           | 37.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/nas_fpn/retinanet_crop640_r50_fpn_50e_190824-4d75bfa0.pth) |
+| R-50-NASFPN | 50e     | 14.8     | 0.662               | 13.1           | 39.8   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/nas_fpn/retinanet_crop640_r50_nasfpn_50e_20191225-b82d3a86.pth) |
 
 
 **Note**: We find that it is unstable to train NAS-FPN and there is a small chance that results can be 3% mAP lower.
