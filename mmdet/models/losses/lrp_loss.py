@@ -27,7 +27,7 @@ def lrp_loss(pred,
         weight = weight.float()
     
     #loss = torch.cos(1.57*valid_preds+1.57)+1
-    loss = torch.exp(-1*valid_preds/gamma)
+    loss = torch.exp(-1*valid_preds/gamma)  
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
     
     return loss
