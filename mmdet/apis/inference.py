@@ -121,7 +121,6 @@ def show_result(img,
     else:
         bbox_result, segm_result = result, None
     bboxes = np.vstack(bbox_result)
-    # draw bounding boxes
     labels = [
         np.full(bbox.shape[0], i, dtype=np.int32)
         for i, bbox in enumerate(bbox_result)
@@ -141,6 +140,7 @@ def show_result(img,
             color_mask = color_masks[labels[i]]
             mask = maskUtils.decode(segms[i]).astype(np.bool)
             img[mask] = img[mask] * 0.5 + color_mask * 0.5
+    # draw bounding boxes
     mmcv.imshow_det_bboxes(
         img,
         bboxes,
