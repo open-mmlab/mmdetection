@@ -132,7 +132,10 @@ def show_result(img,
         segms = mmcv.concat_list(segm_result)
         inds = np.where(bboxes[:, -1] > score_thr)[0]
         np.random.seed(42)
-        color_masks = [np.random.randint(0, 256, (1, 3), dtype=np.uint8) for _ in range(max(labels)+1)]
+        color_masks = [
+            np.random.randint(0, 256, (1, 3), dtype=np.uint8)
+            for _ in range(max(labels) + 1)
+        ]
         for i in inds:
             i = int(i)
             color_mask = color_masks[labels[i]]
