@@ -86,3 +86,60 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
             ious = overlap / (area1[:, None])
 
     return ious
+
+
+def scale_boxes(bboxes, scale):
+    """Expand an array of boxes by a given scale.
+        Args:
+            bboxes (Tensor): shape (m, 4)
+            scale (float): the scale factor of bboxes
+
+        Returns:
+            (Tensor): shape (m, 4) scaled bboxes
+        """
+    w_half = (bboxes[:, 2] - bboxes[:, 0] + 1) * .5
+    h_half = (bboxes[:, 3] - bboxes[:, 1] + 1) * .5
+    x_c = (bboxes[:, 2] + bboxes[:, 0] + 1) * .5
+    y_c = (bboxes[:, 3] + bboxes[:, 1] + 1) * .5
+
+    w_half *= scale
+    h_half *= scale
+
+    boxes_exp = torch.zeros_like(bboxes)
+    boxes_exp[:, 0] = x_c - w_half
+    boxes_exp[:, 2] = x_c + w_half - 1
+    boxes_exp[:, 1] = y_c - h_half
+    boxes_exp[:, 3] = y_c + h_half - 1
+    return boxes_exp
+
+
+def is_located_in(points, bboxes, is_aligned=False):
+    """ is center a locates in box b
+    Then we compute the area of intersect between box_a and box_b.
+    Args:
+      points: (tensor) bounding boxes, Shape: [m,2].
+      bboxes: (tensor)  bounding boxes, Shape: [n,4].
+       If is_aligned is ``True``, then m mush be equal to n
+    Return:
+      (tensor) intersection area, Shape: [m, n]. If is_aligned ``True``,
+       then shape = [m]
+    """
+    if not is_aligned:
+        return (points[:, 0].unsqueeze(1) > bboxes[:, 0].unsqueeze(0)) & \
+               (points[:, 0].unsqueeze(1) < bboxes[:, 2].unsqueeze(0)) & \
+               (points[:, 1].unsqueeze(1) > bboxes[:, 1].unsqueeze(0)) & \
+               (points[:, 1].unsqueeze(1) < bboxes[:, 3].unsqueeze(0))
+    else:
+        return (points[:, 0] > bboxes[:, 0]) & \
+               (points[:, 0] < bboxes[:, 2]) & \
+               (points[:, 1] > bboxes[:, 1]) & \
+               (points[:, 1] < bboxes[:, 3])
+
+
+def bboxes_area(bboxes):
+    """Compute the area of an array of boxes."""
+    w = (bboxes[:, 2] - bboxes[:, 0] + 1)
+    h = (bboxes[:, 3] - bboxes[:, 1] + 1)
+    areas = w * h
+
+    return areas
