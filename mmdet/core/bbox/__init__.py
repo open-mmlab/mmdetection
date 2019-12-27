@@ -4,8 +4,9 @@ from .iou_calculators import BboxOverlaps2D, bbox_overlaps
 from .samplers import (BaseSampler, CombinedSampler,
                        InstanceBalancedPosSampler, IoUBalancedNegSampler,
                        PseudoSampler, RandomSampler, SamplingResult)
+
 from .transforms import (bbox2result, bbox2roi, bbox_flip, bbox_mapping,
-                         bbox_mapping_back, distance2bbox, roi2bbox)
+                         bbox_mapping_back, distance2bbox, roi2bbox, tblr2bboxes)
 
 from .builder import (  # isort:skip, avoid recursive imports
     build_assigner, build_sampler, build_bbox_coder)
