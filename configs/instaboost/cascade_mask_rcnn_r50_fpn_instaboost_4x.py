@@ -1,6 +1,7 @@
 # model settings
 model = dict(
-    type='MaskRCNN',
+    type='CascadeRCNN',
+    num_stages=3,
     pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
@@ -31,19 +32,47 @@ model = dict(
         roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
         out_channels=256,
         featmap_strides=[4, 8, 16, 32]),
-    bbox_head=dict(
-        type='SharedFCBBoxHead',
-        num_fcs=2,
-        in_channels=256,
-        fc_out_channels=1024,
-        roi_feat_size=7,
-        num_classes=81,
-        target_means=[0., 0., 0., 0.],
-        target_stds=[0.1, 0.1, 0.2, 0.2],
-        reg_class_agnostic=False,
-        loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
+    bbox_head=[
+        dict(
+            type='SharedFCBBoxHead',
+            num_fcs=2,
+            in_channels=256,
+            fc_out_channels=1024,
+            roi_feat_size=7,
+            num_classes=81,
+            target_means=[0., 0., 0., 0.],
+            target_stds=[0.1, 0.1, 0.2, 0.2],
+            reg_class_agnostic=True,
+            loss_cls=dict(
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
+        dict(
+            type='SharedFCBBoxHead',
+            num_fcs=2,
+            in_channels=256,
+            fc_out_channels=1024,
+            roi_feat_size=7,
+            num_classes=81,
+            target_means=[0., 0., 0., 0.],
+            target_stds=[0.05, 0.05, 0.1, 0.1],
+            reg_class_agnostic=True,
+            loss_cls=dict(
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
+        dict(
+            type='SharedFCBBoxHead',
+            num_fcs=2,
+            in_channels=256,
+            fc_out_channels=1024,
+            roi_feat_size=7,
+            num_classes=81,
+            target_means=[0., 0., 0., 0.],
+            target_stds=[0.033, 0.033, 0.067, 0.067],
+            reg_class_agnostic=True,
+            loss_cls=dict(
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
+    ],
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -82,22 +111,57 @@ train_cfg = dict(
         max_num=2000,
         nms_thr=0.7,
         min_bbox_size=0),
-    rcnn=dict(
-        assigner=dict(
-            type='MaxIoUAssigner',
-            pos_iou_thr=0.5,
-            neg_iou_thr=0.5,
-            min_pos_iou=0.5,
-            ignore_iof_thr=-1),
-        sampler=dict(
-            type='RandomSampler',
-            num=512,
-            pos_fraction=0.25,
-            neg_pos_ub=-1,
-            add_gt_as_proposals=True),
-        mask_size=28,
-        pos_weight=-1,
-        debug=False))
+    rcnn=[
+        dict(
+            assigner=dict(
+                type='MaxIoUAssigner',
+                pos_iou_thr=0.5,
+                neg_iou_thr=0.5,
+                min_pos_iou=0.5,
+                ignore_iof_thr=-1),
+            sampler=dict(
+                type='RandomSampler',
+                num=512,
+                pos_fraction=0.25,
+                neg_pos_ub=-1,
+                add_gt_as_proposals=True),
+            mask_size=28,
+            pos_weight=-1,
+            debug=False),
+        dict(
+            assigner=dict(
+                type='MaxIoUAssigner',
+                pos_iou_thr=0.6,
+                neg_iou_thr=0.6,
+                min_pos_iou=0.6,
+                ignore_iof_thr=-1),
+            sampler=dict(
+                type='RandomSampler',
+                num=512,
+                pos_fraction=0.25,
+                neg_pos_ub=-1,
+                add_gt_as_proposals=True),
+            mask_size=28,
+            pos_weight=-1,
+            debug=False),
+        dict(
+            assigner=dict(
+                type='MaxIoUAssigner',
+                pos_iou_thr=0.7,
+                neg_iou_thr=0.7,
+                min_pos_iou=0.7,
+                ignore_iof_thr=-1),
+            sampler=dict(
+                type='RandomSampler',
+                num=512,
+                pos_fraction=0.25,
+                neg_pos_ub=-1,
+                add_gt_as_proposals=True),
+            mask_size=28,
+            pos_weight=-1,
+            debug=False)
+    ],
+    stage_loss_weights=[1, 0.5, 0.25])
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,
@@ -181,12 +245,11 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1)
 # runtime settings
 total_epochs = 48
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_instaboost_4x'
+work_dir = './work_dirs/cascade_mask_rcnn_r50_fpn_instaboost_4x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

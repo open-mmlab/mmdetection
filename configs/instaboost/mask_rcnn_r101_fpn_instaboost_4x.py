@@ -1,10 +1,10 @@
 # model settings
 model = dict(
     type='MaskRCNN',
-    pretrained='torchvision://resnet50',
+    pretrained='torchvision://resnet101',
     backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=101,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
@@ -181,12 +181,11 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1)
 # runtime settings
 total_epochs = 48
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/mask_rcnn_r50_fpn_instaboost_4x'
+work_dir = './work_dirs/mask_rcnn_r101_fpn_instaboost_4x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
