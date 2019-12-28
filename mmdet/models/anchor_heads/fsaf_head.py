@@ -12,8 +12,11 @@ from mmdet.core import (anchor_tblr_target, force_fp32, multi_apply)
 
 @weighted_loss
 def iou_loss_tblr(pred, target, eps=1e-6):
-    """
-    calculate the iou loss when both the prediction and targets are encoded in TBLR format
+    """Calculate the iou loss.
+
+    Get iou loss when both the prediction and targets are
+     encoded in TBLR format.
+
     Args:
         pred: shape (num_anchor, 4)
         target: shape (num_anchor, 4)
@@ -21,7 +24,6 @@ def iou_loss_tblr(pred, target, eps=1e-6):
 
     Returns:
         loss: shape (num_anchor), IoU loss
-
     """
     xt, xb, xl, xr = torch.split(pred, 1, dim=-1)
 
@@ -37,7 +39,8 @@ def iou_loss_tblr(pred, target, eps=1e-6):
     Iw = torch.min(xl, gl) + torch.min(xr, gr)
 
     I = Ih * Iw
-    U = (X + G - I).clamp(min=1) # minimum area should be 1
+    U = (X + G - I).clamp(min=1)
+    # minimum area should be 1
 
     IoU = I / U
     IoU = IoU.squeeze()
@@ -156,8 +159,9 @@ class FSAFHead(RetinaHead):
             sampling=self.sampling)
         if cls_reg_targets is None:
             return None
-        (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_pos, num_total_neg, pos_assigned_gt_inds_list) = cls_reg_targets
+        (labels_list, label_weights_list, bbox_targets_list,
+         bbox_weights_list, num_total_pos, num_total_neg,
+         pos_assigned_gt_inds_list) = cls_reg_targets
 
         num_gts = np.array(list(map(len, gt_labels)))
         num_total_samples = (
@@ -181,23 +185,30 @@ class FSAFHead(RetinaHead):
         num_gts = sum(map(len, gt_labels))
         with torch.no_grad():
             loss_levels, = multi_apply(self.collect_loss_level_single,
-                                       losses_cls, losses_bbox, pos_assigned_gt_inds_list,
-                                       labels_seq=torch.arange(num_gts, device=device))
+                                       losses_cls, losses_bbox,
+                                       pos_assigned_gt_inds_list,
+                                       labels_seq=torch.arange(num_gts,
+                                                               device=device))
             loss_levels = torch.stack(loss_levels, dim=0)
             loss, argmin = loss_levels.min(dim=0)
-        losses_cls, losses_bbox, pos_inds = multi_apply(self.reassign_loss_single,
-                                                        losses_cls,
-                                                        losses_bbox,
-                                                        pos_assigned_gt_inds_list,
-                                                        labels_list,
-                                                        list(range(len(losses_cls))),
-                                                        min_levels=argmin)
+        losses_cls, losses_bbox, pos_inds = multi_apply(
+            self.reassign_loss_single,
+            losses_cls,
+            losses_bbox,
+            pos_assigned_gt_inds_list,
+            labels_list,
+            list(range(len(losses_cls))),
+            min_levels=argmin)
+
         num_pos = torch.cat(pos_inds, 0).sum().float()
         acc = self.calculate_accuracy(cls_scores, labels_list, pos_inds)
         for i in range(len(losses_cls)):
             losses_cls[i] /= num_pos
             losses_bbox[i] /= num_pos
-        return dict(loss_cls=losses_cls, loss_bbox=losses_bbox, num_pos=num_pos / batch_size, accuracy=acc)
+        return dict(loss_cls=losses_cls,
+                    loss_bbox=losses_bbox,
+                    num_pos=num_pos/batch_size,
+                    accuracy=acc)
 
     def calculate_accuracy(self, cls_scores, labels_list, pos_inds):
         with torch.no_grad():
@@ -205,46 +216,73 @@ class FSAFHead(RetinaHead):
             num_class = cls_scores[0].size(1)
             scores = [cls.permute(0, 2, 3, 1).reshape(-1, num_class)[pos]
              for cls, pos in zip(cls_scores, pos_inds)]
-            labels = [l.reshape(-1)[pos] for l, pos in zip(labels_list, pos_inds)]
+            labels = [l.reshape(-1)[pos]
+                      for l, pos in zip(labels_list, pos_inds)]
+
             argmax = lambda x: x.argmax(1) if x.numel()>0 else -100
-            num_correct = sum([(argmax(score) + 1 == label).sum() for score, label in zip(scores, labels)])
+            num_correct = sum([(argmax(score) + 1 == label).sum()
+                               for score, label in zip(scores, labels)])
             return num_correct.float() / (num_pos+1e-3)
 
-    def collect_loss_level_single(self, cls_loss, reg_loss, pos_assigned_gt_inds, labels_seq):
-        """
-        Get the average loss in each FPN level w.r.t. each gt label
+    def collect_loss_level_single(self,
+                                  cls_loss,
+                                  reg_loss,
+                                  pos_assigned_gt_inds,
+                                  labels_seq):
+        """Get the average loss in each FPN level w.r.t. each gt label
+
         Args:
-            cls_loss (tensor): classification loss of each feature map pixel, shape (num_anchor, num_class)
-            reg_loss (tensor): regression loss of each feature map pixel, shape (num_anchor)
-            pos_assigned_gt_inds (tensor): shape (num_anchor), indicating which gt the prior is assigned to
-                (-1: no assignment)
+            cls_loss (tensor): classification loss of each feature map pixel,
+              shape (num_anchor, num_class)
+            reg_loss (tensor): regression loss of each feature map pixel,
+              shape (num_anchor)
+            pos_assigned_gt_inds (tensor): shape (num_anchor), indicating
+              which gt the prior is assigned to (-1: no assignment)
             labels_seq: The rank of labels
 
         Returns:
 
         """
-        loss = cls_loss.sum(dim=-1) + reg_loss # total loss at each feature map point
-        match = pos_assigned_gt_inds.reshape(-1).unsqueeze(1) == labels_seq.unsqueeze(0)
+        loss = cls_loss.sum(dim=-1) + reg_loss
+        # total loss at each feature map point
+        match = (pos_assigned_gt_inds.reshape(-1).unsqueeze(1) ==
+                 labels_seq.unsqueeze(0))
         loss_ceiling = loss.new_zeros(1).squeeze() + 1e6
         # default loss value for a layer where no anchor is positive
         losses_ = torch.stack(
-            [torch.mean(loss[match[:, i]]) if match[:, i].sum() > 0 else loss_ceiling for i in labels_seq])
+            [torch.mean(loss[match[:, i]])
+             if match[:, i].sum() > 0
+             else loss_ceiling for i in labels_seq])
         return losses_,
 
-    def reassign_loss_single(self, cls_loss, reg_loss, pos_assigned_gt_inds, labels, level, min_levels):
-        """
-        Reassign loss values at each level by masking those where the pre-calculated loss is too large
+    def reassign_loss_single(self,
+                             cls_loss,
+                             reg_loss,
+                             pos_assigned_gt_inds,
+                             labels,
+                             level,
+                             min_levels):
+        """Reassign loss values at each level.
+
+         Reassign loss values at each level by masking those where the
+          pre-calculated loss is too large
+
         Args:
-            cls_loss (tensor): shape (num_anchors, num_classes) classification loss
+            cls_loss (tensor): shape (num_anchors, num_classes)
+              classification loss
             reg_loss (tensor): shape (num_anchors) regression loss
             pos_assigned_gt_inds (tensor): shape (num_anchors),
-                the gt indices that each positive anchor corresponds to. (-1 if it is a negative one)
+              the gt indices that each positive anchor corresponds to.
+              (-1 if it is a negative one)
             labels (tensor): shape (num_anchors). Label assigned to each pixel
-            level (int): the current level index in the pyramid (0-4 for RetinaNet)
-            min_levels (tensor): shape (num_gts), the best-matching level for each gt
+            level (int): the current level index in the
+              pyramid (0-4 for RetinaNet)
+            min_levels (tensor): shape (num_gts),
+              the best-matching level for each gt
 
         Returns:
-            cls_loss: shape (num_anchors, num_classes). Corrected classification loss
+            cls_loss: shape (num_anchors, num_classes).
+              Corrected classification loss
             reg_loss: shape (num_anchors). Corrected regression loss
             keep_indices: shape (num_anchors). Indicating final postive anchors
         """
@@ -260,8 +298,10 @@ class FSAFHead(RetinaHead):
                         match_gt_inds.view(1, -1)).any(dim=-1)
         loc_weight[zeroing_indices] = 0
 
-        #only the weight corresponding to the label is zeroed out if not selected
-        zeroing_labels = labels[zeroing_indices] - 1 # the original labels assigned to the anchor box
+        # Only the weight corresponding to the label is
+        #  zeroed out if not selected
+        zeroing_labels = labels[zeroing_indices] - 1
+        # the original labels assigned to the anchor box
         assert (zeroing_labels>=0).all()
         cls_weight[zeroing_indices, zeroing_labels] = 0
 

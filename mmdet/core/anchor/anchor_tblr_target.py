@@ -69,9 +69,11 @@ def anchor_tblr_target(anchor_list,
     label_weights_list = images_to_levels(all_label_weights, num_level_anchors)
     bbox_targets_list = images_to_levels(all_bbox_targets, num_level_anchors)
     bbox_weights_list = images_to_levels(all_bbox_weights, num_level_anchors)
-    pos_assigned_gt_inds_list = images_to_levels(pos_assigned_gt_inds, num_level_anchors)
+    pos_assigned_gt_inds_list = images_to_levels(pos_assigned_gt_inds,
+                                                 num_level_anchors)
     return (labels_list, label_weights_list, bbox_targets_list,
-            bbox_weights_list, num_total_pos, num_total_neg, pos_assigned_gt_inds_list)
+            bbox_weights_list, num_total_pos, num_total_neg,
+            pos_assigned_gt_inds_list)
 
 
 def images_to_levels(target, num_level_anchors):
@@ -123,7 +125,9 @@ def anchor_target_single(flat_anchors,
     bbox_weights = torch.zeros_like(anchors)
     labels = anchors.new_zeros(num_valid_anchors, dtype=torch.long)
     label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
-    pos_assigned_gt_inds = anchors.new_zeros(num_valid_anchors, dtype=torch.long)-1
+    pos_assigned_gt_inds = anchors.new_full((num_valid_anchors,),
+                                            -1,
+                                            dtype=torch.long)
 
     pos_inds = sampling_result.pos_inds
     neg_inds = sampling_result.neg_inds
