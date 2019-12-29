@@ -26,13 +26,13 @@ feat = torch.randn(
     2, 1024, 100, 100, requires_grad=True, device='cuda:0').float()
 mask = torch.randn(
     2, 25, 200, 200, requires_grad=True, device='cuda:0').sigmoid().float()
-loopNum = 500
+loop_num = 500
 
 time_forward = 0
 time_backward = 0
-bar = mmcv.ProgressBar(loopNum)
+bar = mmcv.ProgressBar(loop_num)
 timer = mmcv.Timer()
-for i in range(loopNum):
+for i in range(loop_num):
     x = carafe(feat.clone(), mask.clone(), 5, 1, 2)
     torch.cuda.synchronize()
     time_forward += timer.since_last_check()
@@ -41,14 +41,14 @@ for i in range(loopNum):
     time_backward += timer.since_last_check()
     bar.update()
 print('\nCARAFE time forward: {} ms/iter | time backward: {} ms/iter'.format(
-    (time_forward + 1e-3) * 1e3 / loopNum,
-    (time_backward + 1e-3) * 1e3 / loopNum))
+    (time_forward + 1e-3) * 1e3 / loop_num,
+    (time_backward + 1e-3) * 1e3 / loop_num))
 
 time_naive_forward = 0
 time_naive_backward = 0
-bar = mmcv.ProgressBar(loopNum)
+bar = mmcv.ProgressBar(loop_num)
 timer = mmcv.Timer()
-for i in range(loopNum):
+for i in range(loop_num):
     x = carafe_naive(feat.clone(), mask.clone(), 5, 1, 2)
     torch.cuda.synchronize()
     time_naive_forward += timer.since_last_check()
@@ -57,5 +57,5 @@ for i in range(loopNum):
     time_naive_backward += timer.since_last_check()
     bar.update()
 print('\nCARAFE naive time forward: {} ms/iter | time backward: {} ms/iter'.
-      format((time_naive_forward + 1e-3) * 1e3 / loopNum,
-             (time_naive_backward + 1e-3) * 1e3 / loopNum))
+      format((time_naive_forward + 1e-3) * 1e3 / loop_num,
+             (time_naive_backward + 1e-3) * 1e3 / loop_num))

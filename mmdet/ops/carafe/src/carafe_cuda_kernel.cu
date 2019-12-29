@@ -6,7 +6,7 @@
 #include <THC/THCAtomics.cuh>
 #include <cmath>
 
-using namespace at;  // temporal fix for pytorch<=0.4.1 (see #9848)
+using namespace at;
 
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; \
@@ -96,11 +96,8 @@ __global__ void CARAFEForward(
   if (index > num_kernels - 1) {
     return;
   }
-  // const int warp_id = threadIdx.x / WARP_SIZE;
-  // const int lane_id = threadIdx.x % WARP_SIZE;
   const int pixel_id = threadIdx.x / THREADS_PER_PIXEL;
   const int split_id = threadIdx.x % THREADS_PER_PIXEL;
-  // (n, c, ph, pw) is an element in the bottom_data
   index = index / THREADS_PER_PIXEL;
   const int pw = index % width;
   const int ph = (index / width) % height;
@@ -144,7 +141,6 @@ __global__ void CARAFEForward(
     }
 
     int top_index = Loc2Index(n, ph, pw, c, height, width, channels);
-    // Kahan and Babuska summation, Neumaier variant
     top_data[top_index] = output_val;
   }
 }
@@ -243,9 +239,6 @@ __global__ void CARAFEBackward_Feature(
   const int ph = (index / width) % height;
   const int n = index / width / height;
 
-  // const int down_pw = pw / scale_factor;
-  // const int down_ph = ph / scale_factor;
-
   const int start_w = pw - (kernel_size - 1) * scale_factor / 2;
   const int end_w = pw + (kernel_size - 1) * scale_factor / 2 + 1;
   const int start_h = ph - (kernel_size - 1) * scale_factor / 2;
@@ -304,7 +297,6 @@ __global__ void FeatureSum(const int num_kernels,
   if (index > num_kernels - 1) {
     return;
   }
-  // const int pixel_id = threadIdx.x / THREADS_PER_PIXEL;
   const int split_id = threadIdx.x % THREADS_PER_PIXEL;
   index = index / THREADS_PER_PIXEL;
   const int pw = index % width;
