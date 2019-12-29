@@ -1,4 +1,5 @@
 from setuptools import setup
+
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 cxx_args = ['-std=c++11']
@@ -14,13 +15,6 @@ setup(
         CUDAExtension(
             'carafe_cuda',
             ['src/carafe_cuda.cpp', 'src/carafe_cuda_kernel.cu'],
-            extra_compile_args={
-                'cxx': [],
-                'nvcc': NVCC_ARGS
-            }),
-        CUDAExtension(
-            'carafe_cuda_benchmark',
-            ['src/carafe_cuda.cpp', 'src/carafe_cuda_kernel_benchmark.cu'],
             extra_compile_args={
                 'cxx': [],
                 'nvcc': NVCC_ARGS

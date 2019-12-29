@@ -124,9 +124,6 @@ __global__ void CARAFEForward(
   for (int c = split_id; c < channels; c += THREADS_PER_PIXEL) {
     int mask_group = c / channels_per_group;
     scalar_t output_val = 0;
-    scalar_t lost = 0;
-    scalar_t t = 0;
-    scalar_t input = 0;
 #pragma unroll
     for (int iy = start_h; iy < end_h; iy++) {
 #pragma unroll
@@ -141,19 +138,14 @@ __global__ void CARAFEForward(
         int feat_index =
             Loc2Index(n, iy, ix, c, down_height, down_width, channels);
 
-        // Kahan and Babuska summation, Neumaier variant
-        input = bottom_data[feat_index] *
-                shared_mask[mask_c * WARP_SIZE + pixel_id];
-        t = output_val + input;
-        lost += fabs(output_val) >= fabs(input) ? (output_val - t) + input
-                                                : (input - t) + output_val;
-        output_val = t;
+        output_val += bottom_data[feat_index] *
+                      shared_mask[mask_c * WARP_SIZE + pixel_id];
       }
     }
 
     int top_index = Loc2Index(n, ph, pw, c, height, width, channels);
     // Kahan and Babuska summation, Neumaier variant
-    top_data[top_index] = output_val + lost;
+    top_data[top_index] = output_val;
   }
 }
 
@@ -280,9 +272,6 @@ __global__ void CARAFEBackward_Feature(
     int mask_group = c / channels_per_group;
     int top_index = Loc2Index(n, ph, pw, c, height, width, channels);
     scalar_t output_val = 0;
-    scalar_t lost = 0;
-    scalar_t t = 0;
-    scalar_t input = 0;
 #pragma unroll
     for (int iy = start_h; iy < end_h; iy += scale_factor) {
 #pragma unroll
@@ -297,15 +286,11 @@ __global__ void CARAFEBackward_Feature(
         int mask_c =
             (mask_group * kernel_size + mask_iy) * kernel_size + mask_ix;
         int feat_index = Loc2Index(n, iy, ix, c, height, width, channels);
-        input =
+        output_val +=
             shared_mask[mask_c * WARP_SIZE + pixel_id] * top_diff[feat_index];
-        t = output_val + input;
-        lost += fabs(output_val) >= fabs(input) ? (output_val - t) + input
-                                                : (input - t) + output_val;
-        output_val = t;
       }
     }
-    bottom_diff[top_index] = output_val + lost;
+    bottom_diff[top_index] = output_val;
   }
 }
 
@@ -327,23 +312,15 @@ __global__ void FeatureSum(const int num_kernels,
   const int n = index / width / height;
   for (int c = split_id; c < channels; c += THREADS_PER_PIXEL) {
     scalar_t output_val = 0;
-    scalar_t lost = 0;
-    scalar_t t = 0;
-    scalar_t input = 0;
     for (int iy = ph * scale_factor; iy < (ph + 1) * scale_factor; iy++) {
       for (int ix = pw * scale_factor; ix < (pw + 1) * scale_factor; ix++) {
         int input_id = Loc2Index(n, iy, ix, c, height * scale_factor,
                                  width * scale_factor, channels);
-        // output_val += input_data[input_id];
-        input = input_data[input_id];
-        t = output_val + input;
-        lost += fabs(output_val) >= fabs(input) ? (output_val - t) + input
-                                                : (input - t) + output_val;
-        output_val = t;
+        output_val += input_data[input_id];
       }
     }
     const int output_id = Loc2Index(n, ph, pw, c, height, width, channels);
-    output_data[output_id] = output_val + lost;
+    output_data[output_id] = output_val;
   }
 }
 
@@ -385,9 +362,6 @@ __global__ void CARAFEBackward_Mask(const int num_kernels,
   const int down_y = down_ph + offset_y;
 
   scalar_t output_val = 0;
-  scalar_t lost = 0;
-  scalar_t t = 0;
-  scalar_t input = 0;
 
   if (down_y >= 0 && down_y <= down_height - 1 && down_x >= 0 &&
       down_x <= down_width - 1) {
@@ -398,20 +372,15 @@ __global__ void CARAFEBackward_Mask(const int num_kernels,
       int bottom_id =
           Loc2Index(n, down_y, down_x, c, down_height, down_width, channels);
       int top_id = Loc2Index(n, ph, pw, c, height, width, channels);
-      input = top_diff[top_id] * bottom_data[bottom_id];
-      t = output_val + input;
-      lost += fabs(output_val) >= fabs(input) ? (output_val - t) + input
-                                              : (input - t) + output_val;
-      output_val = t;
+      output_val += top_diff[top_id] * bottom_data[bottom_id];
     }
   }
   __syncwarp();
   output_val = warpReduceSum(output_val);
-  lost = warpReduceSum(lost);
   if (lane_id == 0) {
     const int mask_id =
         Loc2Index(n, ph, pw, mask_c, height, width, mask_channels);
-    mask_diff[mask_id] = output_val + lost;
+    mask_diff[mask_id] = output_val;
   }
 }
 

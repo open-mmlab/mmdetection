@@ -221,13 +221,6 @@ if __name__ == '__main__':
                 module='mmdet.ops.carafe',
                 sources=['src/carafe_cuda.cpp', 'src/carafe_cuda_kernel.cu']),
             make_cuda_ext(
-                name='carafe_cuda_benchmark',
-                module='mmdet.ops.carafe',
-                sources=[
-                    'src/carafe_cuda.cpp',
-                    'src/carafe_cuda_kernel_benchmark.cu'
-                ]),
-            make_cuda_ext(
                 name='carafe_naive_cuda',
                 module='mmdet.ops.carafe',
                 sources=[
