@@ -48,6 +48,7 @@ class FPN_CARAFE(nn.Module):
             assert hasattr(
                 self.upsample_cfg,
                 'upsample_kernel') and self.upsample_cfg.upsample_kernel > 0
+            self.upsample_kernel = self.upsample_cfg.upsample_kernel
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -91,14 +92,14 @@ class FPN_CARAFE(nn.Module):
                         out_channels,
                         self.upsample_kernel,
                         stride=2,
-                        padding=int((self.upsample_kernel - 1) / 2),
-                        output_padding=int((self.upsample_kernel - 1) / 2))
+                        padding=(self.upsample_kernel - 1) // 2,
+                        output_padding=(self.upsample_kernel - 1) // 2)
                 elif self.upsample == 'pixel_shuffle':
                     upsample_module = nn.Conv2d(
                         out_channels,
                         out_channels * 4,
                         self.upsample_kernel,
-                        padding=int((self.upsample_kernel - 1) / 2))
+                        padding=(self.upsample_kernel - 1) // 2)
                 elif self.upsample == 'carafe':
                     upsample_module = CARAFEPack(out_channels, 2,
                                                  **self.upsample_cfg)
@@ -131,14 +132,14 @@ class FPN_CARAFE(nn.Module):
                         out_channels,
                         self.upsample_kernel,
                         stride=2,
-                        padding=int((self.upsample_kernel - 1) / 2),
-                        output_padding=int((self.upsample_kernel - 1) / 2))
+                        padding=(self.upsample_kernel - 1) // 2,
+                        output_padding=(self.upsample_kernel - 1) // 2)
                 elif self.upsample == 'pixel_shuffle':
                     upsample_module = nn.Conv2d(
                         out_channels,
                         out_channels * 4,
                         self.upsample_kernel,
-                        padding=int((self.upsample_kernel - 1) / 2))
+                        padding=(self.upsample_kernel - 1) // 2)
                 elif self.upsample == 'carafe':
                     upsample_module = CARAFEPack(out_channels, 2,
                                                  **self.upsample_cfg)
@@ -161,7 +162,6 @@ class FPN_CARAFE(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
                 xavier_init(m, distribution='uniform')
-        for m in self.modules():
             if isinstance(m, CARAFEPack):
                 m.init_weights()
 
