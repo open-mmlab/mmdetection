@@ -49,7 +49,7 @@ class CocoDataset(CustomDataset):
         valid_inds = []
         ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
         for i, img_info in enumerate(self.img_infos):
-            if self.img_ids[i] not in ids_with_ann:
+            if self.filter_empty_gt and self.img_ids[i] not in ids_with_ann:
                 continue
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)

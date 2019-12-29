@@ -149,12 +149,23 @@ class Resize(object):
                 ]
             results[key] = masks
 
+    def _resize_seg(self, results):
+        for key in results.get('seg_fields', []):
+            if self.keep_ratio:
+                gt_seg = mmcv.imrescale(
+                    results[key], results['scale'], interpolation='nearest')
+            else:
+                gt_seg = mmcv.imresize(
+                    results[key], results['scale'], interpolation='nearest')
+            results['gt_semantic_seg'] = gt_seg
+
     def __call__(self, results):
         if 'scale' not in results:
             self._random_scale(results)
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
+        self._resize_seg(results)
         return results
 
     def __repr__(self):
@@ -179,12 +190,14 @@ class RandomFlip(object):
         flip_ratio (float, optional): The flipping probability.
     """
 
-    def __init__(self, flip_ratio=None):
+    def __init__(self, flip_ratio=None, direction='horizontal'):
         self.flip_ratio = flip_ratio
+        self.direction = direction
         if flip_ratio is not None:
             assert flip_ratio >= 0 and flip_ratio <= 1
+        assert direction in ['horizontal', 'vertical']
 
-    def bbox_flip(self, bboxes, img_shape):
+    def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
 
         Args:
@@ -192,26 +205,46 @@ class RandomFlip(object):
             img_shape(tuple): (height, width)
         """
         assert bboxes.shape[-1] % 4 == 0
-        w = img_shape[1]
         flipped = bboxes.copy()
-        flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
-        flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+        if direction == 'horizontal':
+            w = img_shape[1]
+            flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
+            flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+        elif direction == 'vertical':
+            h = img_shape[0]
+            flipped[..., 1::4] = h - bboxes[..., 3::4] - 1
+            flipped[..., 3::4] = h - bboxes[..., 1::4] - 1
+        else:
+            raise ValueError(
+                'Invalid flipping direction "{}"'.format(direction))
         return flipped
 
     def __call__(self, results):
         if 'flip' not in results:
             flip = True if np.random.rand() < self.flip_ratio else False
             results['flip'] = flip
+        if 'flip_direction' not in results:
+            results['flip_direction'] = self.direction
         if results['flip']:
             # flip image
-            results['img'] = mmcv.imflip(results['img'])
+            results['img'] = mmcv.imflip(
+                results['img'], direction=results['flip_direction'])
             # flip bboxes
             for key in results.get('bbox_fields', []):
                 results[key] = self.bbox_flip(results[key],
-                                              results['img_shape'])
+                                              results['img_shape'],
+                                              results['flip_direction'])
             # flip masks
             for key in results.get('mask_fields', []):
-                results[key] = [mask[:, ::-1] for mask in results[key]]
+                results[key] = [
+                    mmcv.imflip(mask, direction=results['flip_direction'])
+                    for mask in results[key]
+                ]
+
+            # flip segs
+            for key in results.get('seg_fields', []):
+                results[key] = mmcv.imflip(
+                    results[key], direction=results['flip_direction'])
         return results
 
     def __repr__(self):
@@ -258,11 +291,19 @@ class Pad(object):
                 mmcv.impad(mask, pad_shape, pad_val=self.pad_val)
                 for mask in results[key]
             ]
-            results[key] = np.stack(padded_masks, axis=0)
+            if padded_masks:
+                results[key] = np.stack(padded_masks, axis=0)
+            else:
+                results[key] = np.empty((0, ) + pad_shape, dtype=np.uint8)
+
+    def _pad_seg(self, results):
+        for key in results.get('seg_fields', []):
+            results[key] = mmcv.impad(results[key], results['pad_shape'][:2])
 
     def __call__(self, results):
         self._pad_img(results)
         self._pad_masks(results)
+        self._pad_seg(results)
         return results
 
     def __repr__(self):
@@ -337,6 +378,10 @@ class RandomCrop(object):
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)
             results[key] = bboxes
 
+        # crop semantic seg
+        for key in results.get('seg_fields', []):
+            results[key] = results[key][crop_y1:crop_y2, crop_x1:crop_x2]
+
         # filter out the gt bboxes that are completely cropped
         if 'gt_bboxes' in results:
             gt_bboxes = results['gt_bboxes']
@@ -353,8 +398,8 @@ class RandomCrop(object):
             if 'gt_masks' in results:
                 valid_gt_masks = []
                 for i in np.where(valid_inds)[0]:
-                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2, crop_x1:
-                                                     crop_x2]
+                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2,
+                                                     crop_x1:crop_x2]
                     valid_gt_masks.append(gt_mask)
                 results['gt_masks'] = valid_gt_masks
 
@@ -366,15 +411,8 @@ class RandomCrop(object):
 
 
 @PIPELINES.register_module
-class SegResizeFlipPadRescale(object):
-    """A sequential transforms to semantic segmentation maps.
-
-    The same pipeline as input images is applied to the semantic segmentation
-    map, and finally rescale it by some scale factor. The transforms include:
-    1. resize
-    2. flip
-    3. pad
-    4. rescale (so that the final size can be different from the image size)
+class SegRescale(object):
+    """Rescale semantic segmentation maps.
 
     Args:
         scale_factor (float): The scale factor of the final output.
@@ -384,24 +422,10 @@ class SegResizeFlipPadRescale(object):
         self.scale_factor = scale_factor
 
     def __call__(self, results):
-        if results['keep_ratio']:
-            gt_seg = mmcv.imrescale(
-                results['gt_semantic_seg'],
-                results['scale'],
-                interpolation='nearest')
-        else:
-            gt_seg = mmcv.imresize(
-                results['gt_semantic_seg'],
-                results['scale'],
-                interpolation='nearest')
-        if results['flip']:
-            gt_seg = mmcv.imflip(gt_seg)
-        if gt_seg.shape != results['pad_shape']:
-            gt_seg = mmcv.impad(gt_seg, results['pad_shape'][:2])
-        if self.scale_factor != 1:
-            gt_seg = mmcv.imrescale(
-                gt_seg, self.scale_factor, interpolation='nearest')
-        results['gt_semantic_seg'] = gt_seg
+        for key in results.get('seg_fields', []):
+            if self.scale_factor != 1:
+                results[key] = mmcv.imrescale(
+                    results[key], self.scale_factor, interpolation='nearest')
         return results
 
     def __repr__(self):
@@ -509,13 +533,15 @@ class Expand(object):
         mean (tuple): mean value of dataset.
         to_rgb (bool): if need to convert the order of mean to align with RGB.
         ratio_range (tuple): range of expand ratio.
+        prob (float): probability of applying this transformation
     """
 
     def __init__(self,
                  mean=(0, 0, 0),
                  to_rgb=True,
                  ratio_range=(1, 4),
-                 seg_ignore_label=None):
+                 seg_ignore_label=None,
+                 prob=0.5):
         self.to_rgb = to_rgb
         self.ratio_range = ratio_range
         if to_rgb:
@@ -524,9 +550,10 @@ class Expand(object):
             self.mean = mean
         self.min_ratio, self.max_ratio = ratio_range
         self.seg_ignore_label = seg_ignore_label
+        self.prob = prob
 
     def __call__(self, results):
-        if random.randint(2):
+        if random.uniform(0, 1) > self.prob:
             return results
 
         img, boxes = [results[k] for k in ('img', 'gt_bboxes')]
@@ -578,8 +605,10 @@ class MinIoURandomCrop(object):
     selected from min_ious.
 
     Args:
-        min_ious (tuple): minimum IoU threshold
-        crop_size (tuple): Expected size after cropping, (h, w).
+        min_ious (tuple): minimum IoU threshold for all intersections with
+        bounding boxes
+        min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
+        where a >= min_crop_size).
     """
 
     def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3):

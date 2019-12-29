@@ -29,6 +29,17 @@ class FastRCNN(TwoStageDetector):
             pretrained=pretrained)
 
     def forward_test(self, imgs, img_metas, proposals, **kwargs):
+        """
+        Args:
+            imgs (List[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            img_meta (List[List[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch
+            proposals (List[List[Tensor | None]]): predefiend proposals for
+                each test-time augmentation and each item.
+        """
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError('{} must be a list, but got {}'.format(
