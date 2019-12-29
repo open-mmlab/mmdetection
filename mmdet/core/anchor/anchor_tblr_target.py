@@ -1,7 +1,7 @@
 import torch
 
-from ..bbox import PseudoSampler, assign_and_sample, \
-    bboxes2tblr, build_assigner
+from ..bbox import (PseudoSampler, assign_and_sample, bboxes2tblr,
+                    build_assigner)
 from ..utils import multi_apply
 
 
@@ -47,17 +47,17 @@ def anchor_tblr_target(anchor_list,
         gt_labels_list = [None for _ in range(num_imgs)]
     (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
      pos_inds_list, neg_inds_list, pos_assigned_gt_inds) = multi_apply(
-        anchor_target_single,
-        anchor_list,
-        valid_flag_list,
-        gt_bboxes_list,
-        gt_bboxes_ignore_list,
-        gt_labels_list,
-        img_metas,
-        target_normalizer=target_normalizer,
-        cfg=cfg,
-        sampling=sampling,
-        unmap_outputs=unmap_outputs)
+         anchor_target_single,
+         anchor_list,
+         valid_flag_list,
+         gt_bboxes_list,
+         gt_bboxes_ignore_list,
+         gt_labels_list,
+         img_metas,
+         target_normalizer=target_normalizer,
+         cfg=cfg,
+         sampling=sampling,
+         unmap_outputs=unmap_outputs)
     # no valid anchors
     if any([labels is None for labels in all_labels]):
         return None
@@ -125,7 +125,7 @@ def anchor_target_single(flat_anchors,
     bbox_weights = torch.zeros_like(anchors)
     labels = anchors.new_zeros(num_valid_anchors, dtype=torch.long)
     label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
-    pos_assigned_gt_inds = anchors.new_full((num_valid_anchors,),
+    pos_assigned_gt_inds = anchors.new_full((num_valid_anchors, ),
                                             -1,
                                             dtype=torch.long)
 
@@ -156,8 +156,8 @@ def anchor_target_single(flat_anchors,
         label_weights = unmap(label_weights, num_total_anchors, inside_flags)
         bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
         bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
-        pos_assigned_gt_inds = unmap(pos_assigned_gt_inds, num_total_anchors,
-                                     inside_flags, fill=-1)
+        pos_assigned_gt_inds = unmap(
+            pos_assigned_gt_inds, num_total_anchors, inside_flags, fill=-1)
 
     return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
             neg_inds, pos_assigned_gt_inds)

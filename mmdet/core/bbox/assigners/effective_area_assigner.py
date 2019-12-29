@@ -1,6 +1,6 @@
 import torch
 
-from ..geometry import bbox_overlaps, scale_boxes, is_located_in, bboxes_area
+from ..geometry import bbox_overlaps, bboxes_area, is_located_in, scale_boxes
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
@@ -66,15 +66,15 @@ class EffectiveAreaAssigner(BaseAssigner):
         # the center points lie within the gt boxes
 
         bbox_and_gt_eff_overlaps = bbox_overlaps(bboxes, gt_eff, mode='iof')
-        is_bbox_in_gt_eff = is_bbox_in_gt & (bbox_and_gt_eff_overlaps
-                                             > self.min_pos_iof)
+        is_bbox_in_gt_eff = is_bbox_in_gt & (
+            bbox_and_gt_eff_overlaps > self.min_pos_iof)
         # shape (n, k)
         # the center point of effective priors should be within the gt box
 
         # constructing ignored gt areas
         gt_ignore = scale_boxes(gt_bboxes, self.neg_area_thr)
-        is_bbox_in_gt_ignore = (bbox_overlaps(bboxes, gt_ignore, mode='iof')
-                                > self.min_pos_iof)
+        is_bbox_in_gt_ignore = (
+            bbox_overlaps(bboxes, gt_ignore, mode='iof') > self.min_pos_iof)
         is_bbox_in_gt_ignore &= (~is_bbox_in_gt_eff)
         # rule out center effective pixels
 
@@ -83,14 +83,13 @@ class EffectiveAreaAssigner(BaseAssigner):
         # rank all gt bbox areas so that smaller instances
         #   can overlay larger ones
 
-        assigned_gt_inds = self.assign_one_hot_gt_indices(is_bbox_in_gt_eff,
-                                                          is_bbox_in_gt_ignore,
-                                                          gt_priority=sort_idx)
+        assigned_gt_inds = self.assign_one_hot_gt_indices(
+            is_bbox_in_gt_eff, is_bbox_in_gt_ignore, gt_priority=sort_idx)
 
         # ignored gts
         if gt_bboxes_ignore is not None and gt_bboxes_ignore.numel() > 0:
-            gt_bboxes_ignore = scale_boxes(gt_bboxes_ignore,
-                                           scale=self.ignore_gt_area_thr)
+            gt_bboxes_ignore = scale_boxes(
+                gt_bboxes_ignore, scale=self.ignore_gt_area_thr)
             is_bbox_in_ignored_gts = is_located_in(bbox_centers,
                                                    gt_bboxes_ignore)
             is_bbox_in_ignored_gts = is_bbox_in_ignored_gts.any(dim=1)
@@ -138,7 +137,7 @@ class EffectiveAreaAssigner(BaseAssigner):
         if gt_priority is None:
             gt_priority = torch.arange(num_gts).to(is_bbox_in_gt_eff.device)
             # the bigger, the more preferable to be assigned
-        assigned_gt_inds = is_bbox_in_gt_eff.new_full((num_bboxes,),
+        assigned_gt_inds = is_bbox_in_gt_eff.new_full((num_bboxes, ),
                                                       0,
                                                       dtype=torch.long)
         inds_of_match = torch.any(is_bbox_in_gt_eff, dim=1)
