@@ -20,9 +20,9 @@ The results on COCO 2017 val is shown in the below table.
 
 | Method |    Backbone     |  Style  | Lr schd | Test Proposal Num| Box AP |   Mask AP |                                                                 Download                                                                    |
 | :--------------------: | :-------------: | :-----: | :-----: | :--------------: | :----: | :--------: |:----------------------------------------------------------------------------------------------------: |
-| Faster R-CNN w/ CARAFE |    R-50-FPN  |  pytorch  |   1x    | 1000 |  37.8  | -  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/carafe/faster_rcnn_r50_fpn_carafe_1x-a2bf3f56.pth)  |
+| Faster R-CNN w/ CARAFE |    R-50-FPN  |  pytorch  |   1x    | 1000 |  37.8  | -  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/carafe/faster_rcnn_r50_fpn_carafe_1x-2ca2d094.pth)  |
 | - |    -  |  -  |   -    | 2000 |  37.9  | -  | -  |
-| Mask R-CNN w/ CARAFE |    R-50-FPN  |  pytorch  |   1x   | 1000 |  38.6   | 35.6| [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/carafe/mask_rcnn_r50_fpn_carafe_1x-5fc51cfd.pth) |
+| Mask R-CNN w/ CARAFE |    R-50-FPN  |  pytorch  |   1x   | 1000 |  38.6   | 35.6| [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/carafe/mask_rcnn_r50_fpn_carafe_1x-2cc4b9fe.pth) |
 | - |   -  |  -  |   -   | 2000 |  38.6   | 35.7| - |
 
 ## Implementation
@@ -56,9 +56,3 @@ python setup.py develop
 cd ..
 python ./carafe/grad_check.py
 ```
-
-
-
-
-
-
