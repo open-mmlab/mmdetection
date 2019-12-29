@@ -1,13 +1,12 @@
 import numpy as np
 import torch
 
+from mmdet.core import (tblr2bboxes, multiclass_nms)
+from mmdet.core import (anchor_tblr_target, force_fp32, multi_apply)
 from .retina_head import RetinaHead
 from ..losses.utils import weighted_loss, weight_reduce_loss
 from ..losses import IoULoss
 from ..registry import HEADS, LOSSES
-from mmdet.core import (tblr2bboxes, multiclass_nms)
-from mmdet.core import (anchor_tblr_target, force_fp32, multi_apply)
-
 
 
 @weighted_loss
@@ -38,11 +37,11 @@ def iou_loss_tblr(pred, target, eps=1e-6):
     Ih = torch.min(xt, gt) + torch.min(xb, gb)
     Iw = torch.min(xl, gl) + torch.min(xr, gr)
 
-    I = Ih * Iw
-    U = (X + G - I).clamp(min=1)
+    Inter = Ih * Iw
+    Union = (X + G - Inter).clamp(min=1)
     # minimum area should be 1
 
-    IoU = I / U
+    IoU = Inter / Union
     IoU = IoU.squeeze()
     ious = IoU.clamp(min=eps)
     loss = -ious.log()
@@ -66,7 +65,7 @@ class IoULossTBLR(IoULoss):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
-        weight = weight.sum(dim=-1) / 4. # iou loss is a scalar!
+        weight = weight.sum(dim=-1) / 4.  # iou loss is a scalar!
         loss = self.loss_weight * iou_loss_tblr(
             pred,
             target,
@@ -215,11 +214,13 @@ class FSAFHead(RetinaHead):
             num_pos = torch.cat(pos_inds, 0).sum().float()
             num_class = cls_scores[0].size(1)
             scores = [cls.permute(0, 2, 3, 1).reshape(-1, num_class)[pos]
-             for cls, pos in zip(cls_scores, pos_inds)]
+                      for cls, pos in zip(cls_scores, pos_inds)]
             labels = [l.reshape(-1)[pos]
                       for l, pos in zip(labels_list, pos_inds)]
 
-            argmax = lambda x: x.argmax(1) if x.numel()>0 else -100
+            def argmax(x):
+                return x.argmax(1) if x.numel() > 0 else -100
+
             num_correct = sum([(argmax(score) + 1 == label).sum()
                                for score, label in zip(scores, labels)])
             return num_correct.float() / (num_pos+1e-3)
@@ -302,10 +303,10 @@ class FSAFHead(RetinaHead):
         #  zeroed out if not selected
         zeroing_labels = labels[zeroing_indices] - 1
         # the original labels assigned to the anchor box
-        assert (zeroing_labels>=0).all()
+        assert (zeroing_labels >= 0).all()
         cls_weight[zeroing_indices, zeroing_labels] = 0
 
-        #weighted loss for both cls and reg loss
+        # weighted loss for both cls and reg loss
         cls_loss = weight_reduce_loss(cls_loss, cls_weight, reduction='sum')
         reg_loss = weight_reduce_loss(reg_loss, loc_weight, reduction='sum')
         return cls_loss, reg_loss, keep_indices
@@ -346,7 +347,7 @@ class FSAFHead(RetinaHead):
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
             bboxes = tblr2bboxes(anchors, bbox_pred,
-                                self.target_normalizer, img_shape)
+                                 self.target_normalizer, img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)

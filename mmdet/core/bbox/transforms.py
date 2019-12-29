@@ -222,6 +222,7 @@ def distance2bbox(points, distance, max_shape=None):
         y2 = y2.clamp(min=0, max=max_shape[0] - 1)
     return torch.stack([x1, y1, x2, y2], -1)
 
+
 def bboxes2tblr(priors, gt, normalizer=1.0):
     """Encode ground truth boxes
 
@@ -273,11 +274,11 @@ def tblr2bboxes(priors, tblr, normalizer=1.0, max_shape=None):
     w, h = torch.split(wh, 1, dim=1)
     loc_decode[:, :2] *= h
     loc_decode[:, 2:] *= w
-    t, b, l, r = loc_decode.split(1, dim=1)
-    xmin = prior_centers[:, 0].unsqueeze(1) - l
-    xmax = prior_centers[:, 0].unsqueeze(1) + r - 1
-    ymin = prior_centers[:, 1].unsqueeze(1) - t
-    ymax = prior_centers[:, 1].unsqueeze(1) + b - 1
+    top, bottom, left, right = loc_decode.split(1, dim=1)
+    xmin = prior_centers[:, 0].unsqueeze(1) - left
+    xmax = prior_centers[:, 0].unsqueeze(1) + right - 1
+    ymin = prior_centers[:, 1].unsqueeze(1) - top
+    ymax = prior_centers[:, 1].unsqueeze(1) + bottom - 1
     boxes = torch.cat((xmin, ymin, xmax, ymax), dim=1)
     if max_shape is not None:
         boxes[:, 0].clamp_(min=0, max=max_shape[1] - 1)
