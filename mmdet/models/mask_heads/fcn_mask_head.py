@@ -25,7 +25,7 @@ class FCNMaskHead(nn.Module):
                  upsample_ratio=2,
                  num_classes=81,
                  class_agnostic=False,
-                 carafe_cfg=None,
+                 upsample_cfg=None,
                  conv_cfg=None,
                  norm_cfg=None,
                  loss_mask=dict(
@@ -39,9 +39,8 @@ class FCNMaskHead(nn.Module):
                 'are "deconv", "nearest", "bilinear", "carafe"'.format(
                     upsample_method))
         if upsample_method == 'carafe':
-            assert carafe_cfg is not None
-        self.carafe_cfg = carafe_cfg
-        self.with_carafe = carafe_cfg is not None
+            assert upsample_cfg is not None
+        self.upsample_cfg = upsample_cfg
         self.num_convs = num_convs
         # WARN: roi_feat_size is reserved and not used
         self.roi_feat_size = _pair(roi_feat_size)
@@ -81,8 +80,9 @@ class FCNMaskHead(nn.Module):
                 self.upsample_ratio,
                 stride=self.upsample_ratio)
         elif self.upsample_method == 'carafe':
-            self.upsample = CARAFEPack(upsample_in_channels, upsample_ratio,
-                                       **self.carafe_cfg)
+            self.upsample = CARAFEPack(upsample_in_channels,
+                                       self.upsample_ratio,
+                                       **self.upsample_cfg)
         else:
             self.upsample = nn.Upsample(
                 scale_factor=self.upsample_ratio, mode=self.upsample_method)
@@ -97,13 +97,14 @@ class FCNMaskHead(nn.Module):
 
     def init_weights(self):
         for m in [self.upsample, self.conv_logits]:
-            if m is None or isinstance(m, CARAFEPack):
+            if m is None:
                 continue
-            nn.init.kaiming_normal_(
-                m.weight, mode='fan_out', nonlinearity='relu')
-            nn.init.constant_(m.bias, 0)
-        if self.with_carafe:
-            self.upsample.init_weights()
+            elif isinstance(m, CARAFEPack):
+                m.init_weights()
+            else:
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.constant_(m.bias, 0)
 
     @auto_fp16()
     def forward(self, x):
