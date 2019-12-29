@@ -8,7 +8,7 @@ from torch.nn.modules.module import Module
 from . import carafe_cuda, carafe_naive_cuda
 
 
-class CARAFENAIVEFunction(Function):
+class CARAFENaiveFunction(Function):
 
     @staticmethod
     def forward(ctx, features, masks, kernel_size, group_size, scale_factor):
@@ -54,20 +54,20 @@ class CARAFENAIVEFunction(Function):
         return grad_input, grad_masks, None, None, None
 
 
-carafe_naive = CARAFENAIVEFunction.apply
+carafe_naive = CARAFENaiveFunction.apply
 
 
-class CARAFENAIVE(Module):
+class CARAFENaive(Module):
 
     def __init__(self, kernel_size, group_size, scale_factor):
-        super(CARAFENAIVE, self).__init__()
+        super(CARAFENaive, self).__init__()
 
         self.kernel_size = int(kernel_size)
         self.group_size = int(group_size)
         self.scale_factor = int(scale_factor)
 
     def forward(self, features, masks):
-        return CARAFENAIVEFunction.apply(features, masks, self.kernel_size,
+        return CARAFENaiveFunction.apply(features, masks, self.kernel_size,
                                          self.group_size, self.scale_factor)
 
 

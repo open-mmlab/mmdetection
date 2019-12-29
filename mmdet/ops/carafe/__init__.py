@@ -1,3 +1,3 @@
-from .carafe import CARAFE, CARAFENAIVE, CARAFEPack, carafe, carafe_naive
+from .carafe import CARAFE, CARAFENaive, CARAFEPack, carafe, carafe_naive
 
-__all__ = ['carafe', 'carafe_naive', 'CARAFE', 'CARAFENAIVE', 'CARAFEPack']
+__all__ = ['carafe', 'carafe_naive', 'CARAFE', 'CARAFENaive', 'CARAFEPack']

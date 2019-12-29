@@ -2,7 +2,6 @@ from setuptools import setup
 
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
-cxx_args = ['-std=c++11']
 NVCC_ARGS = [
     '-D__CUDA_NO_HALF_OPERATORS__',
     '-D__CUDA_NO_HALF_CONVERSIONS__',

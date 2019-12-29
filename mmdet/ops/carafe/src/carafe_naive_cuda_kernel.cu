@@ -151,7 +151,6 @@ int CARAFENAIVEBackwardLaucher(const at::Tensor top_grad,
                                at::Tensor bottom_grad, at::Tensor mask_grad) {
   const int output_size = batch_size * channels * height * width;
 
-  // TODO: use AT_DISPATCH_FLOATING_TYPES_AND_HALF when atomicAdd is resolved
   AT_DISPATCH_FLOATING_TYPES(
       top_grad.type(), "CARAFENAIVELaucherBackward", ([&] {
         const scalar_t *top_diff = top_grad.data<scalar_t>();
