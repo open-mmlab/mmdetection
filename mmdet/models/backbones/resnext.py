@@ -2,9 +2,8 @@ import math
 
 import torch.nn as nn
 
-from mmdet.ops import DeformConv, ModulatedDeformConv
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
+from ..utils import DCNModule, build_conv_layer, build_norm_layer
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 
@@ -42,7 +41,6 @@ class Bottleneck(_Bottleneck):
         self.with_modulated_dcn = False
         if self.with_dcn:
             fallback_on_stride = self.dcn.get('fallback_on_stride', False)
-            self.with_modulated_dcn = self.dcn.get('modulated', False)
         if not self.with_dcn or fallback_on_stride:
             self.conv2 = build_conv_layer(
                 self.conv_cfg,
@@ -56,31 +54,22 @@ class Bottleneck(_Bottleneck):
                 bias=False)
         else:
             assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
+            deformable_groups = dcn.get('deformable_groups', 1)
+            modulated = self.dcn.get('modulated', False)
             groups = self.dcn.get('groups', 1)
-            deformable_groups = self.dcn.get('deformable_groups', 1)
-            if not self.with_modulated_dcn:
-                conv_op = DeformConv
-                offset_channels = 18
-            else:
-                conv_op = ModulatedDeformConv
-                offset_channels = 27
-            self.conv2_offset = nn.Conv2d(
-                width,
-                deformable_groups * offset_channels,
-                kernel_size=3,
+            self.conv2 = DCNModule(
+                planes,
+                planes,
+                dcn_kernel=3,
                 stride=self.conv2_stride,
-                padding=self.dilation,
-                dilation=self.dilation)
-            self.conv2 = conv_op(
-                width,
-                width,
-                kernel_size=3,
-                stride=self.conv2_stride,
-                padding=self.dilation,
-                dilation=self.dilation,
+                dcn_dilation=dilation,
+                offset_dilation=dilation,
+                modulated=modulated,
                 groups=groups,
                 deformable_groups=deformable_groups,
-                bias=False)
+                bias=False,
+            )
+
         self.add_module(self.norm2_name, norm2)
         self.conv3 = build_conv_layer(
             self.conv_cfg,
