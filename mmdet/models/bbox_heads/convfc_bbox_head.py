@@ -138,7 +138,9 @@ class ConvFCBBoxHead(BBoxHead):
         if self.num_shared_fcs > 0:
             if self.with_avg_pool:
                 x = self.avg_pool(x)
-            x = x.view(x.size(0), -1)
+
+            x = x.flatten(1)
+
             for fc in self.shared_fcs:
                 x = self.relu(fc(x))
         # separate branches
@@ -150,7 +152,7 @@ class ConvFCBBoxHead(BBoxHead):
         if x_cls.dim() > 2:
             if self.with_avg_pool:
                 x_cls = self.avg_pool(x_cls)
-            x_cls = x_cls.view(x_cls.size(0), -1)
+            x_cls = x_cls.flatten(1)
         for fc in self.cls_fcs:
             x_cls = self.relu(fc(x_cls))
 
@@ -159,7 +161,7 @@ class ConvFCBBoxHead(BBoxHead):
         if x_reg.dim() > 2:
             if self.with_avg_pool:
                 x_reg = self.avg_pool(x_reg)
-            x_reg = x_reg.view(x_reg.size(0), -1)
+            x_reg = x_reg.flatten(1)
         for fc in self.reg_fcs:
             x_reg = self.relu(fc(x_reg))
 

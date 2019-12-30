@@ -296,7 +296,7 @@ void DeformablePSROIPoolForward(const at::Tensor data,
         scalar_t *top_data = out.data<scalar_t>();
         scalar_t *top_count_data = top_count.data<scalar_t>();
 
-        DeformablePSROIPoolForwardKernel<<<GET_BLOCKS(count), CUDA_NUM_THREADS>>>(
+        DeformablePSROIPoolForwardKernel<<<GET_BLOCKS(count), CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream()>>>(
             count, bottom_data, (scalar_t)spatial_scale, channels, height, width, pooled_height, pooled_width,
             bottom_rois, bottom_trans, no_trans, (scalar_t)trans_std, sample_per_part, output_dim,
             group_size, part_size, num_classes, channels_each_class, top_data, top_count_data);
@@ -349,7 +349,7 @@ void DeformablePSROIPoolBackwardAcc(const at::Tensor out_grad,
         scalar_t *bottom_trans_diff = no_trans ? NULL : trans_grad.data<scalar_t>();
         const scalar_t *top_count_data = top_count.data<scalar_t>();
 
-        DeformablePSROIPoolBackwardAccKernel<<<GET_BLOCKS(count), CUDA_NUM_THREADS>>>(
+        DeformablePSROIPoolBackwardAccKernel<<<GET_BLOCKS(count), CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream()>>>(
             count, top_diff, top_count_data, num_rois, (scalar_t)spatial_scale, channels, height, width,
             pooled_height, pooled_width, output_dim, bottom_data_diff, bottom_trans_diff,
             bottom_data, bottom_rois, bottom_trans, no_trans, (scalar_t)trans_std, sample_per_part,

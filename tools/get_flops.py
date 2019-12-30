@@ -46,6 +46,9 @@ def main():
     split_line = '=' * 30
     print('{0}\nInput shape: {1}\nFlops: {2}\nParams: {3}\n{0}'.format(
         split_line, input_shape, flops, params))
+    print('!!!Please be cautious if you use the results in papers. '
+          'You may need to check if all ops are supported and verify that the '
+          'flops computation is correct.')
 
 
 if __name__ == '__main__':
