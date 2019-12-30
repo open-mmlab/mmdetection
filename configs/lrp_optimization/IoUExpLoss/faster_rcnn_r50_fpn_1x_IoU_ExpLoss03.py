@@ -43,7 +43,7 @@ model = dict(
         reg_class_agnostic=False,
         loss_cls=dict(
             type='LRPLoss', use_sigmoid=False, loss_weight=1.0, \
-                  use_modulator = False, gamma = 0.1),
+                  use_modulator = False, gamma = 0.3),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
@@ -147,7 +147,7 @@ data = dict(
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.025, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -169,7 +169,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/lrp_optimization/faster_rcnn_r50_fpn_1x_1-IoU_ExpLoss01'
+work_dir = './work_dirs/lrp_optimization/faster_rcnn_r50_fpn_1x_1-IoU_ExpLoss03'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
