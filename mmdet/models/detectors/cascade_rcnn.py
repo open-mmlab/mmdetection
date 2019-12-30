@@ -157,6 +157,34 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None):
+        """
+        Args:
+            img (Tensor): of shape (N, C, H, W) encoding input images.
+                Typically these should be mean centered and std scaled.
+
+            img_meta (list[dict]): list of image info dict where each dict has:
+                'img_shape', 'scale_factor', 'flip', and my also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+
+            gt_labels (list[Tensor]): class indices corresponding to each box
+
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+            gt_masks (None | Tensor) : true segmentation masks for each box
+                used if the architecture supports a segmentation task.
+
+            proposals : override rpn proposals with custom proposals. Use when
+                `with_rpn` is False.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
         x = self.extract_feat(img)
 
         losses = dict()
@@ -208,6 +236,12 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             bbox_head = self.bbox_head[i]
 
             rois = bbox2roi([res.bboxes for res in sampling_results])
+
+            if len(rois) == 0:
+                # If there are no predicted and/or truth boxes, then we cannot
+                # compute head / mask losses
+                continue
+
             bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                             rois)
             if self.with_shared_head:
@@ -270,7 +304,21 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         return losses
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
+        """Run inference on a single image.
+
+        Args:
+            img (Tensor): must be in shape (N, C, H, W)
+            img_meta (list[dict]): a list with one dictionary element.
+                See `mmdet/datasets/pipelines/formatting.py:Collect` for
+                details of meta dicts.
+            proposals : if specified overrides rpn proposals
+            rescale (bool): if True returns boxes in original image space
+
+        Returns:
+            dict: results
+        """
         x = self.extract_feat(img)
+
         proposal_list = self.simple_test_rpn(
             x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
 
@@ -296,41 +344,6 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
             cls_score, bbox_pred = bbox_head(bbox_feats)
             ms_scores.append(cls_score)
-
-            if self.test_cfg.keep_all_stages:
-                det_bboxes, det_labels = bbox_head.get_det_bboxes(
-                    rois,
-                    cls_score,
-                    bbox_pred,
-                    img_shape,
-                    scale_factor,
-                    rescale=rescale,
-                    cfg=rcnn_test_cfg)
-                bbox_result = bbox2result(det_bboxes, det_labels,
-                                          bbox_head.num_classes)
-                ms_bbox_result['stage{}'.format(i)] = bbox_result
-
-                if self.with_mask:
-                    mask_roi_extractor = self.mask_roi_extractor[i]
-                    mask_head = self.mask_head[i]
-                    if det_bboxes.shape[0] == 0:
-                        mask_classes = mask_head.num_classes - 1
-                        segm_result = [[] for _ in range(mask_classes)]
-                    else:
-                        _bboxes = (
-                            det_bboxes[:, :4] *
-                            scale_factor if rescale else det_bboxes)
-                        mask_rois = bbox2roi([_bboxes])
-                        mask_feats = mask_roi_extractor(
-                            x[:len(mask_roi_extractor.featmap_strides)],
-                            mask_rois)
-                        if self.with_shared_head:
-                            mask_feats = self.shared_head(mask_feats, i)
-                        mask_pred = mask_head(mask_feats)
-                        segm_result = mask_head.get_seg_masks(
-                            mask_pred, _bboxes, det_labels, rcnn_test_cfg,
-                            ori_shape, scale_factor, rescale)
-                    ms_segm_result['stage{}'.format(i)] = segm_result
 
             if i < self.num_stages - 1:
                 bbox_label = cls_score.argmax(dim=1)
@@ -383,20 +396,10 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     ori_shape, scale_factor, rescale)
             ms_segm_result['ensemble'] = segm_result
 
-        if not self.test_cfg.keep_all_stages:
-            if self.with_mask:
-                results = (ms_bbox_result['ensemble'],
-                           ms_segm_result['ensemble'])
-            else:
-                results = ms_bbox_result['ensemble']
+        if self.with_mask:
+            results = (ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
         else:
-            if self.with_mask:
-                results = {
-                    stage: (ms_bbox_result[stage], ms_segm_result[stage])
-                    for stage in ms_bbox_result
-                }
-            else:
-                results = ms_bbox_result
+            results = ms_bbox_result['ensemble']
 
         return results
 

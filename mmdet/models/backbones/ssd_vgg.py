@@ -1,5 +1,3 @@
-import logging
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,6 +9,26 @@ from ..registry import BACKBONES
 
 @BACKBONES.register_module
 class SSDVGG(VGG):
+    """VGG Backbone network for single-shot-detection
+
+    Args:
+        input_size (int): width and height of input, from {300, 512}.
+        depth (int): Depth of vgg, from {11, 13, 16, 19}.
+        out_indices (Sequence[int]): Output from which stages.
+
+    Example:
+        >>> self = SSDVGG(input_size=300, depth=11)
+        >>> self.eval()
+        >>> inputs = torch.rand(1, 3, 300, 300)
+        >>> level_outputs = self.forward(inputs)
+        >>> for level_out in level_outputs:
+        ...     print(tuple(level_out.shape))
+        (1, 1024, 19, 19)
+        (1, 512, 10, 10)
+        (1, 256, 5, 5)
+        (1, 256, 3, 3)
+        (1, 256, 1, 1)
+    """
     extra_setting = {
         300: (256, 'S', 512, 128, 'S', 256, 128, 256, 128, 256),
         512: (256, 'S', 512, 128, 'S', 256, 128, 'S', 256, 128, 'S', 256, 128),
@@ -24,6 +42,7 @@ class SSDVGG(VGG):
                  out_indices=(3, 4),
                  out_feature_indices=(22, 34),
                  l2_norm_scale=20.):
+        # TODO: in_channels for mmcv.VGG
         super(SSDVGG, self).__init__(
             depth,
             with_last_pool=with_last_pool,
@@ -54,7 +73,8 @@ class SSDVGG(VGG):
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
-            logger = logging.getLogger()
+            from mmdet.apis import get_root_logger
+            logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)
         elif pretrained is None:
             for m in self.features.modules():
