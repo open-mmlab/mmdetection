@@ -172,7 +172,7 @@ class Bottleneck(nn.Module):
                 deformable_groups=deformable_groups,
                 bias=False,
             )
-            
+
         self.add_module(self.norm2_name, norm2)
         self.conv3 = build_conv_layer(
             conv_cfg,

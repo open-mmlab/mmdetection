@@ -1,12 +1,12 @@
 import warnings
 
+import torch
 import torch.nn as nn
-from mmcv.cnn import (xavier_init, normal_init,
-                      constant_init, kaiming_init)
+from mmcv.cnn import constant_init, kaiming_init, xavier_init
 
+from mmdet.ops import DeformConv, ModulatedDeformConv
 from .conv_ws import ConvWS2d
 from .norm import build_norm_layer
-from mmdet.ops import DeformConv, ModulatedDeformConv
 
 conv_cfg = {
     'Conv': nn.Conv2d,
@@ -165,7 +165,7 @@ class ConvModule(nn.Module):
                 x = self.activate(x)
         return x
 
-    
+
 class DCNModule(nn.Module):
     """A conv block that contains deformable conv with or
         without norm/activation layers.
@@ -192,7 +192,7 @@ class DCNModule(nn.Module):
             sequence of "conv", "norm" and "act". Examples are
             ("conv", "norm", "act") and ("act", "conv", "norm").
     """
-    
+
     _version = 1
 
     def __init__(self,
@@ -223,7 +223,7 @@ class DCNModule(nn.Module):
         self.with_activatation = activation is not None
         self.activation = activation
         self.order = order
-        self.groups=groups
+        self.groups = groups
         self.dcn_dilation = dcn_dilation
         # if the conv layer is before a norm layer, bias is unnecessary.
         if bias == 'auto':
@@ -330,27 +330,32 @@ class DCNModule(nn.Module):
             elif layer == 'act' and activate and self.with_activatation:
                 x = self.activate(x)
         return x
-    
-    def _load_from_state_dict(
-        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
-    ):
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
         version = local_metadata.get("version", None)
-        import pdb; pdb.set_trace()
+
         if version is None or version < 2:
             # the key is different in early versions
             # In version < 2, the DCNModule load previous benchmark models.
             if prefix + "offset_conv.weight" not in state_dict:
-                state_dict[prefix + "offset_conv.weight"] = state_dict[prefix + "_offset.weight"]
+                state_dict[prefix +
+                           "offset_conv.weight"] = state_dict[prefix[:-1] +
+                                                              "_offset.weight"]
             if prefix + "offset_conv.bias" not in state_dict:
-                state_dict[prefix + "offset_conv.bias"] = state_dict[prefix + "_offset.bias"]
+                state_dict[prefix +
+                           "offset_conv.bias"] = state_dict[prefix[:-1] +
+                                                            "_offset.bias"]
             if prefix + "dcn_conv.weight" not in state_dict:
-                state_dict[prefix + "dcn_conv.weight"] = state_dict[prefix + ".weight"]
+                state_dict[prefix + "dcn_conv.weight"] = state_dict[prefix +
+                                                                    "weight"]
 
         if version is not None and version > 1:
-            logger = logging.getLogger(__name__)
-            logger.info("DCNModule {} is upgraded to version 2.".format(prefix.rstrip(".")))
+            import logging
+            logger = logging.getLogger()
+            logger.info("DCNModule {} is upgraded to version 2.".format(
+                prefix.rstrip(".")))
 
-        super()._load_from_state_dict(
-            state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
-        )
-    
+        super()._load_from_state_dict(state_dict, prefix, local_metadata,
+                                      strict, missing_keys, unexpected_keys,
+                                      error_msgs)

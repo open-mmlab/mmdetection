@@ -54,16 +54,16 @@ class Bottleneck(_Bottleneck):
                 bias=False)
         else:
             assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
-            deformable_groups = dcn.get('deformable_groups', 1)
+            deformable_groups = self.dcn.get('deformable_groups', 1)
             modulated = self.dcn.get('modulated', False)
             groups = self.dcn.get('groups', 1)
             self.conv2 = DCNModule(
-                planes,
-                planes,
+                width,
+                width,
                 dcn_kernel=3,
                 stride=self.conv2_stride,
-                dcn_dilation=dilation,
-                offset_dilation=dilation,
+                dcn_dilation=self.dilation,
+                offset_dilation=self.dilation,
                 modulated=modulated,
                 groups=groups,
                 deformable_groups=deformable_groups,
