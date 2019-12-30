@@ -155,6 +155,11 @@ which uses `MMDistributedDataParallel` and `MMDataParallel` respectively.
 All outputs (log files and checkpoints) will be saved to the working directory,
 which is specified by `work_dir` in the config file.
 
+By default we evaluate the model on the validation set after each epoch, you can change the evaluation interval by adding the interval argument in the training config.
+```python
+evaluation = dict(interval=12)  # This evaluate the model per 12 epoch.
+```
+
 **\*Important\***: The default learning rate in config files is for 8 GPUs and 2 img/gpu (batch size = 8*2 = 16).
 According to the [Linear Scaling Rule](https://arxiv.org/abs/1706.02677), you need to set the learning rate proportional to the batch size if you use different GPUs or images per GPU, e.g., lr=0.01 for 4 GPUs * 2 img/gpu and lr=0.08 for 16 GPUs * 4 img/gpu.
 
@@ -183,7 +188,7 @@ Difference between `resume_from` and `load_from`:
 `load_from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
 The script uses the default setting for distributed training by `pytorch` launcher.
-To setup the distributed training environment, please use the following command for optional arguments
+To setup the distributed training environment, please use the following command for optional arguments.
 
 ```shell
 python -m torch.distributed.launch --help
