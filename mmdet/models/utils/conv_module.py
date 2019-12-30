@@ -2,7 +2,7 @@ import warnings
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import constant_init, kaiming_init, xavier_init
+from mmcv.cnn import constant_init, kaiming_init
 
 from mmdet.ops import DeformConv, ModulatedDeformConv
 from .conv_ws import ConvWS2d
@@ -301,13 +301,11 @@ class DCNModule(nn.Module):
         return getattr(self, self.norm_name)
 
     def init_weights(self):
-        # TODO: check the init
-        # Detectron2 use kaiming_init, in CAFA we use xavier
-#         xavier_init(self.dcn_conv, distribution='uniform')
+        # Detectron2 also use kaiming_init
+        nonlinearity = 'relu' if self.activation is None else self.activation
+        kaiming_init(self.dcn_conv, nonlinearity=nonlinearity)
         self.offset_conv.weight.data.zero_()
         self.offset_conv.bias.data.zero_()
-#         if self.with_compress:
-#             xavier_init(self.channel_compressor, distribution='uniform')
 
     def forward(self, x, activate=True, norm=True):
         for layer in self.order:
@@ -338,19 +336,21 @@ class DCNModule(nn.Module):
         if version is None or version < 2:
             # the key is different in early versions
             # In version < 2, the DCNModule load previous benchmark models.
-            if (prefix + "offset_conv.weight" not in state_dict 
-                and prefix[:-1] + "_offset.weight" in state_dict):
-                state_dict[prefix + "offset_conv.weight"] = state_dict[
-                    prefix[:-1] + "_offset.weight"]
+            if (prefix + "offset_conv.weight" not in state_dict
+                    and prefix[:-1] + "_offset.weight" in state_dict):
+                state_dict[prefix +
+                           "offset_conv.weight"] = state_dict[prefix[:-1] +
+                                                              "_offset.weight"]
             if (prefix + "offset_conv.bias" not in state_dict
-                and prefix[:-1] + "_offset.bias" in state_dict):
-                state_dict[prefix + "offset_conv.bias"] = state_dict[
-                    prefix[:-1] + "_offset.bias"]
+                    and prefix[:-1] + "_offset.bias" in state_dict):
+                state_dict[prefix +
+                           "offset_conv.bias"] = state_dict[prefix[:-1] +
+                                                            "_offset.bias"]
             # the conv2.weight is in both pretrain & current model
             if (prefix + "dcn_conv.weight" not in state_dict
-                and prefix + "weight" in state_dict):
-                state_dict[prefix + "dcn_conv.weight"] = state_dict[
-                    prefix + "weight"]
+                    and prefix + "weight" in state_dict):
+                state_dict[prefix + "dcn_conv.weight"] = state_dict[prefix +
+                                                                    "weight"]
 
         if version is not None and version > 1:
             import logging
