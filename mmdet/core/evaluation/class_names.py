@@ -24,6 +24,12 @@ def voc_classes():
         'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
     ]
 
+def her2_classes():
+    return ['incomplete not_strong',
+            'negative',
+            'complete not_strong',
+            'incomplete strong',
+            'complete strong']
 
 def imagenet_det_classes():
     return [
@@ -92,7 +98,6 @@ def coco_classes():
         'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
         'scissors', 'teddy_bear', 'hair_drier', 'toothbrush'
     ]
-
 
 def cityscapes_classes():
     return [
