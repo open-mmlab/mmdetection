@@ -4,7 +4,7 @@ from terminaltables import AsciiTable
 
 from .bbox_overlaps import bbox_overlaps
 from .class_names import get_classes
-import pdb
+
 from .compare_data import delete_duplicate_box
 
 
@@ -85,8 +85,8 @@ def tpfp_imagenet(det_bboxes,
         if area_ranges == [(None, None)]:
             fp[...] = 1
         else:
-            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0] +
-                         1) * (det_bboxes[:, 3] - det_bboxes[:, 1] + 1)
+            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0] + 1) * (
+                det_bboxes[:, 3] - det_bboxes[:, 1] + 1)
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
         return tp, fp
@@ -181,8 +181,8 @@ def tpfp_default(det_bboxes, gt_bboxes, gt_ignore, iou_thr, area_ranges=None):
         if area_ranges == [(None, None)]:
             fp[...] = 1
         else:
-            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0] +
-                         1) * (det_bboxes[:, 3] - det_bboxes[:, 1] + 1)
+            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0] + 1) * (
+                det_bboxes[:, 3] - det_bboxes[:, 1] + 1)
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
         return tp, fp
@@ -196,8 +196,8 @@ def tpfp_default(det_bboxes, gt_bboxes, gt_ignore, iou_thr, area_ranges=None):
         if min_area is None:
             gt_area_ignore = np.zeros_like(gt_ignore, dtype=bool)
         else:
-            gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] +
-                        1) * (gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
+            gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
+                gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
             gt_area_ignore = (gt_areas < min_area) | (gt_areas >= max_area)
         for i in sort_inds:
             if ious_max[i] >= iou_thr:
@@ -286,21 +286,13 @@ def eval_map(det_results,
         cls_dets, cls_gts, cls_gt_ignore = get_cls_results(
             det_results, gt_bboxes, gt_labels, gt_ignore, i)
         # calculate tp and fp for each image
-
-        # deleted by Lichao Wang
-        tpfp_func = (tpfp_imagenet
-                     if dataset in ['det', 'vid'] else tpfp_default)
+        tpfp_func = (
+            tpfp_imagenet if dataset in ['det', 'vid'] else tpfp_default)
         tpfp = [
             tpfp_func(cls_dets[j], cls_gts[j], cls_gt_ignore[j], iou_thr,
                       area_ranges) for j in range(len(cls_dets))
         ]
-
-        # added by Lichao Wang
-        # tpfp_func = tpfp_according_to_distance
-        # tpfp = [tpfp_func(cls_dets[j], cls_gts[j], 32) for j in range(len(cls_dets))]
-
         tp, fp = tuple(zip(*tpfp))
-        # pdb.set_trace()
         # calculate gt number of each scale, gts ignored or beyond scale
         # are not counted
         num_gts = np.zeros(num_scales, dtype=int)
@@ -308,8 +300,8 @@ def eval_map(det_results,
             if area_ranges is None:
                 num_gts[0] += np.sum(np.logical_not(cls_gt_ignore[j]))
             else:
-                gt_areas = (bbox[:, 2] - bbox[:, 0] + 1) * (bbox[:, 3] -
-                                                            bbox[:, 1] + 1)
+                gt_areas = (bbox[:, 2] - bbox[:, 0] + 1) * (
+                    bbox[:, 3] - bbox[:, 1] + 1)
                 for k, (min_area, max_area) in enumerate(area_ranges):
                     num_gts[k] += np.sum(
                         np.logical_not(cls_gt_ignore[j])
@@ -361,21 +353,25 @@ def eval_map(det_results,
                 aps.append(cls_result['ap'])
         mean_ap = np.array(aps).mean().item() if aps else 0.0
     if print_summary:
-        print_map_summary(mean_ap, eval_results, dataset)
+        print_map_summary(mean_ap, eval_results, dataset, area_ranges)
 
     return mean_ap, eval_results
 
 
-def print_map_summary(mean_ap, results, dataset=None):
+def print_map_summary(mean_ap, results, dataset=None, ranges=None):
     """Print mAP and results of each class.
 
     Args:
         mean_ap(float): calculated from `eval_map`
         results(list): calculated from `eval_map`
         dataset(None or str or list): dataset name or dataset classes.
+        ranges(list or Tuple): ranges of areas
     """
     num_scales = len(results[0]['ap']) if isinstance(results[0]['ap'],
                                                      np.ndarray) else 1
+    if ranges is not None:
+        assert len(ranges) == num_scales
+
     num_classes = len(results)
 
     recalls = np.zeros((num_scales, num_classes), dtype=np.float32)
@@ -406,6 +402,8 @@ def print_map_summary(mean_ap, results, dataset=None):
     header = ['class', 'gts', 'dets', 'recall', 'precision', 'f1-score',
               'ap']  # modify by Lichao Wang
     for i in range(num_scales):
+        if ranges is not None:
+            print("Area range ", ranges[i])
         table_data = [header]
         for j in range(num_classes):
             row_data = [

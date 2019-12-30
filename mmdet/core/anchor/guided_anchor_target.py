@@ -94,12 +94,12 @@ def ga_loc_target(gt_bboxes_list,
             # calculate positive (center) regions
             ctr_x1, ctr_y1, ctr_x2, ctr_y2 = calc_region(
                 gt_, r1, featmap_sizes[lvl])
-            all_loc_targets[lvl][img_id, 0, ctr_y1:ctr_y2 + 1, ctr_x1:ctr_x2 +
-                                 1] = 1
-            all_loc_weights[lvl][img_id, 0, ignore_y1:ignore_y2 +
-                                 1, ignore_x1:ignore_x2 + 1] = 0
-            all_loc_weights[lvl][img_id, 0, ctr_y1:ctr_y2 + 1, ctr_x1:ctr_x2 +
-                                 1] = 1
+            all_loc_targets[lvl][img_id, 0, ctr_y1:ctr_y2 + 1,
+                                 ctr_x1:ctr_x2 + 1] = 1
+            all_loc_weights[lvl][img_id, 0, ignore_y1:ignore_y2 + 1,
+                                 ignore_x1:ignore_x2 + 1] = 0
+            all_loc_weights[lvl][img_id, 0, ctr_y1:ctr_y2 + 1,
+                                 ctr_x1:ctr_x2 + 1] = 1
             # calculate ignore map on nearby low level feature
             if lvl > 0:
                 d_lvl = lvl - 1
@@ -107,8 +107,8 @@ def ga_loc_target(gt_bboxes_list,
                 gt_ = gt_bboxes[gt_id, :4] / anchor_strides[d_lvl]
                 ignore_x1, ignore_y1, ignore_x2, ignore_y2 = calc_region(
                     gt_, r2, featmap_sizes[d_lvl])
-                all_ignore_map[d_lvl][img_id, 0, ignore_y1:ignore_y2 +
-                                      1, ignore_x1:ignore_x2 + 1] = 1
+                all_ignore_map[d_lvl][img_id, 0, ignore_y1:ignore_y2 + 1,
+                                      ignore_x1:ignore_x2 + 1] = 1
             # calculate ignore map on nearby high level feature
             if lvl < num_lvls - 1:
                 u_lvl = lvl + 1
@@ -116,8 +116,8 @@ def ga_loc_target(gt_bboxes_list,
                 gt_ = gt_bboxes[gt_id, :4] / anchor_strides[u_lvl]
                 ignore_x1, ignore_y1, ignore_x2, ignore_y2 = calc_region(
                     gt_, r2, featmap_sizes[u_lvl])
-                all_ignore_map[u_lvl][img_id, 0, ignore_y1:ignore_y2 +
-                                      1, ignore_x1:ignore_x2 + 1] = 1
+                all_ignore_map[u_lvl][img_id, 0, ignore_y1:ignore_y2 + 1,
+                                      ignore_x1:ignore_x2 + 1] = 1
     for lvl_id in range(num_lvls):
         # ignore negative regions w.r.t. ignore map
         all_loc_weights[lvl_id][(all_loc_weights[lvl_id] < 0)
@@ -250,7 +250,7 @@ def ga_shape_target_single(flat_approxs,
         tuple
     """
     if not inside_flags.any():
-        return (None, ) * 6
+        return (None, ) * 5
     # assign gt and sample anchors
     expand_inside_flags = inside_flags[:, None].expand(
         -1, approxs_per_octave).reshape(-1)

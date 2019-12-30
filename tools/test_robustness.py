@@ -10,13 +10,13 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import get_dist_info, load_checkpoint
+from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from robustness_eval import get_results
 
 from mmdet import datasets
-from mmdet.apis import init_dist, set_random_seed
+from mmdet.apis import set_random_seed
 from mmdet.core import (eval_map, fast_eval_recall, results2json,
                         wrap_fp16_model)
 from mmdet.datasets import build_dataloader, build_dataset
@@ -350,9 +350,9 @@ def main():
                     aggregated_results[corruptions[0]][0]
                 continue
 
+            test_data_cfg = copy.deepcopy(cfg.data.test)
             # assign corruption and severity
             if corruption_severity > 0:
-                test_data_cfg = copy.deepcopy(cfg.data.test)
                 corruption_trans = dict(
                     type='Corrupt',
                     corruption=corruption,
@@ -368,7 +368,7 @@ def main():
             # build the dataloader
             # TODO: support multiple images per gpu
             #       (only minor changes are needed)
-            dataset = build_dataset(cfg.data.test)
+            dataset = build_dataset(test_data_cfg)
             data_loader = build_dataloader(
                 dataset,
                 imgs_per_gpu=1,

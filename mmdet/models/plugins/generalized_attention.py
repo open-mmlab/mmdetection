@@ -120,17 +120,16 @@ class GeneralizedAttention(nn.Module):
                 (max_len, max_len, max_len_kv, max_len_kv), dtype=np.int)
             for iy in range(max_len):
                 for ix in range(max_len):
-                    local_constraint_map[iy, ix,
-                                         max((iy - self.spatial_range) //
-                                             self.kv_stride, 0):min(
-                                                 (iy + self.spatial_range +
-                                                  1) // self.kv_stride +
-                                                 1, max_len),
-                                         max((ix - self.spatial_range) //
-                                             self.kv_stride, 0):min(
-                                                 (ix + self.spatial_range +
-                                                  1) // self.kv_stride +
-                                                 1, max_len)] = 0
+                    local_constraint_map[
+                        iy, ix,
+                        max((iy - self.spatial_range) //
+                            self.kv_stride, 0):min((iy + self.spatial_range +
+                                                    1) // self.kv_stride +
+                                                   1, max_len),
+                        max((ix - self.spatial_range) //
+                            self.kv_stride, 0):min((ix + self.spatial_range +
+                                                    1) // self.kv_stride +
+                                                   1, max_len)] = 0
 
             self.local_constraint_map = nn.Parameter(
                 torch.from_numpy(local_constraint_map).byte(),

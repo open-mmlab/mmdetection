@@ -107,7 +107,7 @@ data = dict(
         img_prefix=data_root + 'WIDER_val/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
+optimizer = dict(type='SGD', lr=0.012, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
 lr_config = dict(

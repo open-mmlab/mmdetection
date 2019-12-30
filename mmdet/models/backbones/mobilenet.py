@@ -89,20 +89,17 @@ class InvertedResidual(nn.Module):
 
 @BACKBONES.register_module
 class MobileNetV2(nn.Module):
-    def __init__(
-            self,
-            #  num_classes=1000,
-            out_feature_indices=(
-                # 1,
-                3,
-                6,
-                13,
-                18,
-            ),
-            width_mult=1.0,
-            inverted_residual_setting=None,
-            round_nearest=8,
-            block=None):
+    def __init__(self,
+                 out_feature_indices=(
+                     3,
+                     6,
+                     13,
+                     18,
+                 ),
+                 width_mult=1.0,
+                 inverted_residual_setting=None,
+                 round_nearest=8,
+                 block=None):
         """
         MobileNet V2 main class
 
@@ -180,8 +177,6 @@ class MobileNetV2(nn.Module):
         outs = []
         for i, block in enumerate(self.features):
             x = block(x)
-            # print(i)
-            # print(x.shape)
             if i in self.out_feature_indices:
                 outs.append(x)
         return tuple(outs)
