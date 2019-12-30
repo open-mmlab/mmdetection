@@ -31,10 +31,11 @@ We have already integrate InstaBoost in data pipeline, thus all you need is to a
 If you use this toolbox or benchmark in your research, please cite this project.
 
 ```
-@article{Fang2019InstaBoost,
-author = {Fang, Hao-Shu and Sun, Jianhua and Wang, Runzhong and Gou, Minghao and Li, Yong-Lu and Lu, Cewu},
-title = {InstaBoost: Boosting Instance Segmentation Via Probability Map Guided Copy-Pasting},
-journal={arXiv preprint arXiv:1908.07801},
-year = {2019}
+@inproceedings{fang2019instaboost,
+  title={Instaboost: Boosting instance segmentation via probability map guided copy-pasting},
+  author={Fang, Hao-Shu and Sun, Jianhua and Wang, Runzhong and Gou, Minghao and Li, Yong-Lu and Lu, Cewu},
+  booktitle={Proceedings of the IEEE International Conference on Computer Vision},
+  pages={682--691},
+  year={2019}
 }
 ```
