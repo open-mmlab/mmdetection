@@ -3,24 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+from matplotlib import pyplot as plt
 from pathlib import Path
 from ..registry import LOSSES
 from .utils import weight_reduce_loss
 import pdb
-
-def parse_samples(valid_labels,
-                  valid_preds,
-                  loss):
-    
-    tuple_ = np.concatenate((np.expand_dims(valid_preds.detach().cpu().numpy(), 1), \
-              np.expand_dims(valid_labels.detach().cpu().numpy(),1),\
-              np.expand_dims(loss.detach().cpu().numpy(),1)), \
-              axis=1)
-
-    p = Path('/home/cancam/workspace/mmdetection/class_analysis.txt')
-    with p.open("ab") as fp:
-        np.savetxt(fp, tuple_)
-        fp.close()
 
 def lrp_loss(pred, 
              label, 
@@ -39,13 +26,8 @@ def lrp_loss(pred,
     if weight is not None:
         weight = weight.float()
     
-    loss = torch.cos(1.57*valid_preds+1.57)+1
-    
-    parse_samples(valid_labels, valid_preds, loss)
-    
-    if use_modulator:
-        loss = torch.pow((1-valid_preds), gamma)*loss
-
+    #loss = torch.cos(1.57*valid_preds+1.57)+1
+    loss = torch.exp(-1*valid_preds/gamma)
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
     
     return loss
