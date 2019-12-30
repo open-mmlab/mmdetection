@@ -182,6 +182,15 @@ Difference between `resume_from` and `load_from`:
 `resume_from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
 `load_from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
+The script uses the default setting for distributed training by `pytorch` launcher.
+To setup the distributed training environment, please use the following command for optional arguments
+
+```shell
+python -m torch.distributed.launch --help
+```
+
+For example, you can setup the communication port in the script by adding the option `--master_port=${FREE_PORT}`.
+
 ### Train with multiple machines
 
 If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`.
