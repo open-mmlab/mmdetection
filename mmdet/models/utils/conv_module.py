@@ -338,19 +338,19 @@ class DCNModule(nn.Module):
             # In version < 2, the DCNModule load previous benchmark models.
             if (prefix + "offset_conv.weight" not in state_dict
                     and prefix[:-1] + "_offset.weight" in state_dict):
-                state_dict[prefix +
-                           "offset_conv.weight"] = state_dict[prefix[:-1] +
-                                                              "_offset.weight"]
+                state_dict[prefix + "offset_conv.weight"] = state_dict.pop(
+                    prefix[:-1] + "_offset.weight")
             if (prefix + "offset_conv.bias" not in state_dict
                     and prefix[:-1] + "_offset.bias" in state_dict):
                 state_dict[prefix +
-                           "offset_conv.bias"] = state_dict[prefix[:-1] +
-                                                            "_offset.bias"]
+                           "offset_conv.bias"] = state_dict.pop(prefix[:-1] +
+                                                                "_offset.bias")
             # the conv2.weight is in both pretrain & current model
             if (prefix + "dcn_conv.weight" not in state_dict
                     and prefix + "weight" in state_dict):
-                state_dict[prefix + "dcn_conv.weight"] = state_dict[prefix +
-                                                                    "weight"]
+                state_dict[prefix +
+                           "dcn_conv.weight"] = state_dict.pop(prefix +
+                                                               "weight")
 
         if version is not None and version > 1:
             import logging
