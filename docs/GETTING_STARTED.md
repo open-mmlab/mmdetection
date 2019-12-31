@@ -187,15 +187,6 @@ Difference between `resume_from` and `load_from`:
 `resume_from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
 `load_from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
-The script uses the default setting for distributed training by `pytorch` launcher.
-To setup the distributed training environment, please use the following command for optional arguments.
-
-```shell
-python -m torch.distributed.launch --help
-```
-
-For example, you can setup the communication port in the script by adding the option `--master_port=${FREE_PORT}`.
-
 ### Train with multiple machines
 
 If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`.
@@ -216,13 +207,36 @@ If you have just multiple machines connected with ethernet, you can refer to
 pytorch [launch utility](https://pytorch.org/docs/stable/distributed_deprecated.html#launch-utility).
 Usually it is slow if you do not have high speed networking like infiniband.
 
-You can setup the backend and communication port in the config as the following example.
+### Launch multiple jobs on a single machine
 
+If you launch multiple jobs on a single machine, e.g., 2 jobs of 4-GPU training on a machine with 8 GPUs,
+you need to specify different ports (29500 by default) for each job to avoid communication conflict.
+
+If you use `dist_train.sh` to launch training jobs, you can set the port in commands.
+
+```shell
+CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
+CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
+```
+
+If you use launch training jobs with slurm, you need to modify the config files (usually the 6th line from the bottom in config files) to set different communication ports. 
+
+In `config1.py`,
+```python
+dist_params = dict(backend='nccl', port=29500)
+```
+
+In `config1.py`,
 ```python
 dist_params = dict(backend='nccl', port=29501)
 ```
 
-By default the backend is ```nccl``` in the configs, you need to change the **port** when you want to run two jobs on the same machine to avoid the port conflict.
+Then you can launch two jobs with `config1.py` ang `config2.py`.
+
+```shell
+CUDA_VISIBLE_DEVICES=0,1,2,3 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} 4
+CUDA_VISIBLE_DEVICES=4,5,6,7 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} 4
+```
 
 ## Useful tools
 
