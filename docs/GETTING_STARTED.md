@@ -226,7 +226,7 @@ In `config1.py`,
 dist_params = dict(backend='nccl', port=29500)
 ```
 
-In `config1.py`,
+In `config2.py`,
 ```python
 dist_params = dict(backend='nccl', port=29501)
 ```
