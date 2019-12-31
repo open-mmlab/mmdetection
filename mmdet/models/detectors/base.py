@@ -129,8 +129,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         """
         Calls either forward_train or forward_test depending on whether
         return_loss=True. Note this setting will change the expected inputs.
-        When `return_loss=False`, img and img_meta are single-nested (i.e.
-        Tensor and List[dict]), and when `resturn_loss=True`, img and img_meta
+        When `return_loss=True`, img and img_meta are single-nested (i.e.
+        Tensor and List[dict]), and when `resturn_loss=False`, img and img_meta
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
         """
