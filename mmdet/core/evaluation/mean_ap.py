@@ -1,3 +1,4 @@
+import logging
 from multiprocessing import Pool
 
 import mmcv
@@ -328,7 +329,7 @@ def eval_map(det_results,
                 [area_ranges for _ in range(num_imgs)]))
         tp, fp = tuple(zip(*tpfp))
         # calculate gt number of each scale
-        # gts ignored or beyond scale are not counted
+        # ignored gts or gts beyond the specific scale are not counted
         num_gts = np.zeros(num_scales, dtype=int)
         for j, bbox in enumerate(cls_gts):
             if area_ranges is None:
@@ -404,12 +405,17 @@ def print_map_summary(mean_ap,
         results (list[dict]): Calculated from `eval_map()`.
         dataset (list[str] | str | None): Dataset name or dataset classes.
         scale_ranges (list[tuple] | None): Range of scales to be evaluated.
+        logger (logging.Logger | 'print' | None): The way to print the mAP
+            summary. If a Logger is specified, then the summary will be logged
+            with `logger.info()`; if set to "print", then it will be simply
+            printed to stdout; if set to None, then no information will be
+            printed. Default: 'print'.
     """
 
     def _print(content):
-        if logger is None:
+        if logger == 'print':
             print(content)
-        else:
+        elif isinstance(logger, logging.Logger):
             logger.info(content)
 
     if isinstance(results[0]['ap'], np.ndarray):
@@ -419,6 +425,9 @@ def print_map_summary(mean_ap,
 
     if scale_ranges is not None:
         assert len(scale_ranges) == num_scales
+
+    assert logger is None or logger == 'print' or isinstance(
+        logger, logging.Logger)
 
     num_classes = len(results)
 
