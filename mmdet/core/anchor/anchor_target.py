@@ -15,7 +15,8 @@ def anchor_target(anchor_list,
                   gt_labels_list=None,
                   label_channels=1,
                   sampling=True,
-                  unmap_outputs=True):
+                  unmap_outputs=True,
+                  get_bbox_anchor=False):
     """Compute regression and classification targets for anchors.
 
     Args:
@@ -26,6 +27,8 @@ def anchor_target(anchor_list,
         target_means (Iterable): Mean value of regression targets.
         target_stds (Iterable): Std value of regression targets.
         cfg (dict): RPN train configs.
+        get_bbox_anchor (bool): whether to re-arange anchor_list to desired
+            form which will be used for IoU loss.
 
     Returns:
         tuple
@@ -36,10 +39,12 @@ def anchor_target(anchor_list,
     # anchor number of multi levels
     num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
     # concat all level anchors and flags to a single tensor
+    _anchor_list = []
+    _valid_flag_list = []
     for i in range(num_imgs):
         assert len(anchor_list[i]) == len(valid_flag_list[i])
-        anchor_list[i] = torch.cat(anchor_list[i])
-        valid_flag_list[i] = torch.cat(valid_flag_list[i])
+        _anchor_list.append(torch.cat(anchor_list[i]))
+        _valid_flag_list.append(torch.cat(valid_flag_list[i]))
 
     # compute targets for each image
     if gt_bboxes_ignore_list is None:
@@ -49,8 +54,8 @@ def anchor_target(anchor_list,
     (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
      pos_inds_list, neg_inds_list) = multi_apply(
          anchor_target_single,
-         anchor_list,
-         valid_flag_list,
+         _anchor_list,
+         _valid_flag_list,
          gt_bboxes_list,
          gt_bboxes_ignore_list,
          gt_labels_list,
@@ -72,8 +77,12 @@ def anchor_target(anchor_list,
     label_weights_list = images_to_levels(all_label_weights, num_level_anchors)
     bbox_targets_list = images_to_levels(all_bbox_targets, num_level_anchors)
     bbox_weights_list = images_to_levels(all_bbox_weights, num_level_anchors)
-    return (labels_list, label_weights_list, bbox_targets_list,
-            bbox_weights_list, num_total_pos, num_total_neg)
+    outputs = (labels_list, label_weights_list, bbox_targets_list,
+               bbox_weights_list, num_total_pos, num_total_neg)
+    if get_bbox_anchor:
+        bbox_anchor_list = images_to_levels(_anchor_list, num_level_anchors)
+        outputs = outputs + (bbox_anchor_list, )
+    return outputs
 
 
 def images_to_levels(target, num_level_anchors):

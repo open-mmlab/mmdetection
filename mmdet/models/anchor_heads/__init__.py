@@ -1,4 +1,6 @@
 from .anchor_head import AnchorHead
+from .cascade_anchor_head import CascadeAnchorHead
+from .cascade_rpn_head import CascadeRPNHead
 from .fcos_head import FCOSHead
 from .fovea_head import FoveaHead
 from .free_anchor_retina_head import FreeAnchorRetinaHead
@@ -14,5 +16,6 @@ from .ssd_head import SSDHead
 __all__ = [
     'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption', 'RPNHead',
     'GARPNHead', 'RetinaHead', 'RetinaSepBNHead', 'GARetinaHead', 'SSDHead',
-    'FCOSHead', 'RepPointsHead', 'FoveaHead', 'FreeAnchorRetinaHead'
+    'FCOSHead', 'RepPointsHead', 'FoveaHead', 'FreeAnchorRetinaHead',
+    'CascadeAnchorHead', 'CascadeRPNHead'
 ]

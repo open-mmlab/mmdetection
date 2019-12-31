@@ -7,7 +7,7 @@ from .utils import weighted_loss
 
 
 @weighted_loss
-def iou_loss(pred, target, eps=1e-6):
+def iou_loss(pred, target, linear=False, eps=1e-6):
     """IoU loss.
 
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
@@ -23,7 +23,10 @@ def iou_loss(pred, target, eps=1e-6):
         Tensor: Loss tensor.
     """
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
-    loss = -ious.log()
+    if linear:
+        loss = 1 - ious
+    else:
+        loss = -ious.log()
     return loss
 
 
@@ -72,8 +75,13 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
 @LOSSES.register_module
 class IoULoss(nn.Module):
 
-    def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
+    def __init__(self,
+                 linear=False,
+                 eps=1e-6,
+                 reduction='mean',
+                 loss_weight=1.0):
         super(IoULoss, self).__init__()
+        self.linear = linear
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
@@ -87,6 +95,8 @@ class IoULoss(nn.Module):
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
             return (pred * weight).sum()  # 0
+        if weight is not None:  # iou loss is single unit
+            weight = weight[:, 0]
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
@@ -94,6 +104,7 @@ class IoULoss(nn.Module):
             pred,
             target,
             weight,
+            linear=self.linear,
             eps=self.eps,
             reduction=reduction,
             avg_factor=avg_factor,

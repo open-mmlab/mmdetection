@@ -1,5 +1,6 @@
 from .base import BaseDetector
 from .cascade_rcnn import CascadeRCNN
+from .cascade_rpn import CascadeRPN
 from .double_head_rcnn import DoubleHeadRCNN
 from .fast_rcnn import FastRCNN
 from .faster_rcnn import FasterRCNN
@@ -19,5 +20,5 @@ __all__ = [
     'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',
     'DoubleHeadRCNN', 'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN',
-    'RepPointsDetector', 'FOVEA'
+    'RepPointsDetector', 'FOVEA', 'CascadeRPN'
 ]

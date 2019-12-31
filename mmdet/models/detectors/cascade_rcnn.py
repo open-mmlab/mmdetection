@@ -3,9 +3,9 @@ from __future__ import division
 import torch
 import torch.nn as nn
 
-from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
-                        build_sampler, merge_aug_bboxes, merge_aug_masks,
-                        multiclass_nms)
+from mmdet.core import (anchor_offset, bbox2result, bbox2roi, bbox_mapping,
+                        build_assigner, build_sampler, merge_aug_bboxes,
+                        merge_aug_masks, multiclass_nms)
 from .. import builder
 from ..registry import DETECTORS
 from .base import BaseDetector
@@ -27,7 +27,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                  mask_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 num_rpn_stages=1):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
         super(CascadeRCNN, self).__init__()
@@ -39,7 +40,13 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             self.neck = builder.build_neck(neck)
 
         if rpn_head is not None:
-            self.rpn_head = builder.build_head(rpn_head)
+            self.num_rpn_stages = num_rpn_stages
+            if num_rpn_stages == 1:
+                self.rpn_head = builder.build_head(rpn_head)
+            else:
+                self.rpn_head = nn.ModuleList()
+                for head in rpn_head:
+                    self.rpn_head.append(builder.build_head(head))
 
         if shared_head is not None:
             self.shared_head = builder.build_shared_head(shared_head)
@@ -88,7 +95,13 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
     @property
     def with_rpn(self):
-        return hasattr(self, 'rpn_head') and self.rpn_head is not None
+        return (hasattr(self, 'rpn_head') and self.rpn_head is not None
+                and self.num_rpn_stages == 1)
+
+    @property
+    def with_cascade_rpn(self):
+        return (hasattr(self, 'rpn_head') and self.rpn_head is not None
+                and self.num_rpn_stages > 1)
 
     def init_weights(self, pretrained=None):
         super(CascadeRCNN, self).init_weights(pretrained)
@@ -101,6 +114,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 self.neck.init_weights()
         if self.with_rpn:
             self.rpn_head.init_weights()
+        elif self.with_cascade_rpn:
+            for i in range(self.num_rpn_stages):
+                self.rpn_head[i].init_weights()
         if self.with_shared_head:
             self.shared_head.init_weights(pretrained=pretrained)
         for i in range(self.num_stages):
@@ -201,6 +217,37 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                                               self.test_cfg.rpn)
             proposal_inputs = rpn_outs + (img_meta, proposal_cfg)
             proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
+        elif self.with_cascade_rpn:
+            rpn_feat = x
+            featmap_sizes = [featmap.size()[-2:] for featmap in rpn_feat]
+            anchor_list, valid_flag_list = self.rpn_head[0].init_anchors(
+                featmap_sizes, img_meta)
+
+            for i in range(self.num_rpn_stages):
+                rpn_train_cfg = self.train_cfg.rpn[i]
+                rpn_head = self.rpn_head[i]
+
+                if rpn_head.feat_adapt:
+                    offset_list = anchor_offset(anchor_list,
+                                                rpn_head.anchor_strides,
+                                                featmap_sizes)
+                else:
+                    offset_list = None
+                rpn_feat, cls_score, bbox_pred = rpn_head(
+                    rpn_feat, offset_list)
+                rpn_loss_inputs = (anchor_list, valid_flag_list, cls_score,
+                                   bbox_pred, gt_bboxes, img_meta,
+                                   rpn_train_cfg)
+                stage_loss = rpn_head.loss(*rpn_loss_inputs)
+                for name, value in stage_loss.items():
+                    losses['s{}.{}'.format(i, name)] = value
+
+                # refine boxes
+                if i < self.num_rpn_stages - 1:
+                    anchor_list = rpn_head.refine_bboxes(
+                        anchor_list, bbox_pred, img_meta)
+            proposal_list = self.rpn_head[-1].get_bboxes(
+                anchor_list, cls_score, bbox_pred, img_meta, self.test_cfg.rpn)
         else:
             proposal_list = proposals
 
@@ -319,8 +366,33 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         """
         x = self.extract_feat(img)
 
-        proposal_list = self.simple_test_rpn(
-            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
+        if self.with_rpn:
+            proposal_list = self.simple_test_rpn(x, img_meta,
+                                                 self.test_cfg.rpn)
+        elif self.with_cascade_rpn:
+            rpn_feat = x
+            featmap_sizes = [featmap.size()[-2:] for featmap in rpn_feat]
+            anchor_list, _ = self.rpn_head[0].init_anchors(
+                featmap_sizes, img_meta)
+
+            for i in range(self.num_rpn_stages):
+                rpn_head = self.rpn_head[i]
+                if rpn_head.feat_adapt:
+                    offset_list = anchor_offset(anchor_list,
+                                                rpn_head.anchor_strides,
+                                                featmap_sizes)
+                else:
+                    offset_list = None
+                rpn_feat, cls_score, bbox_pred = rpn_head(
+                    rpn_feat, offset_list)
+                if i < self.num_rpn_stages - 1:
+                    anchor_list = rpn_head.refine_bboxes(
+                        anchor_list, bbox_pred, img_meta)
+
+            proposal_list = self.rpn_head[-1].get_bboxes(
+                anchor_list, cls_score, bbox_pred, img_meta, self.test_cfg.rpn)
+        else:
+            proposal_list = proposals
 
         img_shape = img_meta[0]['img_shape']
         ori_shape = img_meta[0]['ori_shape']
@@ -409,6 +481,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
+        if self.with_cascade_rpn:
+            raise NotImplementedError
+
         # recompute feats to save memory
         proposal_list = self.aug_test_rpn(
             self.extract_feats(imgs), img_metas, self.test_cfg.rpn)

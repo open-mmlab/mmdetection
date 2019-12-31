@@ -14,7 +14,7 @@ from mmdet import datasets
 from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
                         DistEvalmAPHook, DistOptimizerHook, Fp16OptimizerHook)
 from mmdet.datasets import DATASETS, build_dataloader
-from mmdet.models import RPN
+from mmdet.models import RPN, CascadeRPN
 
 
 def get_root_logger(log_file=None, log_level=logging.INFO):
@@ -252,7 +252,7 @@ def _dist_train(model,
     if validate:
         val_dataset_cfg = cfg.data.val
         eval_cfg = cfg.get('evaluation', {})
-        if isinstance(model.module, RPN):
+        if isinstance(model.module, (RPN, CascadeRPN)):
             # TODO: implement recall hooks for other datasets
             runner.register_hook(
                 CocoDistEvalRecallHook(val_dataset_cfg, **eval_cfg))
