@@ -2,8 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
-# swp files.
+# swp and swo files.
 *.swp
+*.swo
 
 # data
 *.dat
