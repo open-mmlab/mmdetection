@@ -158,7 +158,7 @@ class Bottleneck(nn.Module):
                 dilation=dilation,
                 bias=False)
         else:
-            assert self.conv_cfg is None, 'conv_cfg cannot be None for DCN'\
+            assert self.conv_cfg is None, 'conv_cfg cannot be None for DCN'
             # use ConvModule for backward/forward compatibility for now
 
             # TODO: change to use build_conv_layer when new benchmark

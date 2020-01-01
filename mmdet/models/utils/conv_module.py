@@ -1,6 +1,5 @@
 import warnings
 
-import torch
 import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
 
