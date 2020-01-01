@@ -3,7 +3,7 @@ import math
 import torch.nn as nn
 
 from ..registry import BACKBONES
-from ..utils import DCNModule, build_conv_layer, build_norm_layer
+from ..utils import ConvModule, build_conv_layer, build_norm_layer
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 
@@ -40,7 +40,7 @@ class Bottleneck(_Bottleneck):
         fallback_on_stride = False
         self.with_modulated_dcn = False
         if self.with_dcn:
-            fallback_on_stride = self.dcn.get('fallback_on_stride', False)
+            fallback_on_stride = self.dcn.pop('fallback_on_stride', False)
         if not self.with_dcn or fallback_on_stride:
             self.conv2 = build_conv_layer(
                 self.conv_cfg,
@@ -54,20 +54,19 @@ class Bottleneck(_Bottleneck):
                 bias=False)
         else:
             assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
-            deformable_groups = self.dcn.get('deformable_groups', 1)
-            modulated = self.dcn.get('modulated', False)
-            groups = self.dcn.get('groups', 1)
-            self.conv2 = DCNModule(
+            # use ConvModule for backward/forward compatibility for now
+            # TODO: consider to use build_conv_layer for new benchmark
+            self.conv2 = ConvModule(
                 width,
                 width,
-                dcn_kernel=3,
+                kernel_size=3,
                 stride=self.conv2_stride,
-                dcn_dilation=self.dilation,
-                offset_dilation=self.dilation,
-                modulated=modulated,
+                padding=self.dilation,
+                dilation=self.dilation,
                 groups=groups,
-                deformable_groups=deformable_groups,
                 bias=False,
+                conv_cfg=self.dcn,
+                activation=None,
             )
 
         self.add_module(self.norm2_name, norm2)

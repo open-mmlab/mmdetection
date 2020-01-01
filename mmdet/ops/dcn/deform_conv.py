@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
-from torch.nn.modules.utils import _pair
+from torch.nn.modules.utils import _pair, _single
 
 from . import deform_conv_cuda
 
@@ -217,6 +217,9 @@ class DeformConv(nn.Module):
         self.dilation = _pair(dilation)
         self.groups = groups
         self.deformable_groups = deformable_groups
+        # enable compatibility with nn.Conv2d
+        self.transposed = False
+        self.output_padding = _single(0)
 
         self.weight = nn.Parameter(
             torch.Tensor(out_channels, in_channels // self.groups,
@@ -283,6 +286,9 @@ class ModulatedDeformConv(nn.Module):
         self.groups = groups
         self.deformable_groups = deformable_groups
         self.with_bias = bias
+        # enable compatibility with nn.Conv2d
+        self.transposed = False
+        self.output_padding = _single(0)
 
         self.weight = nn.Parameter(
             torch.Tensor(out_channels, in_channels // groups,
@@ -313,7 +319,7 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
     def __init__(self, *args, **kwargs):
         super(ModulatedDeformConvPack, self).__init__(*args, **kwargs)
 
-        self.conv_offset_mask = nn.Conv2d(
+        self.conv_offset = nn.Conv2d(
             self.in_channels,
             self.deformable_groups * 3 * self.kernel_size[0] *
             self.kernel_size[1],
@@ -324,11 +330,11 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
         self.init_offset()
 
     def init_offset(self):
-        self.conv_offset_mask.weight.data.zero_()
-        self.conv_offset_mask.bias.data.zero_()
+        self.conv_offset.weight.data.zero_()
+        self.conv_offset.bias.data.zero_()
 
     def forward(self, x):
-        out = self.conv_offset_mask(x)
+        out = self.conv_offset(x)
         o1, o2, mask = torch.chunk(out, 3, dim=1)
         offset = torch.cat((o1, o2), dim=1)
         mask = torch.sigmoid(mask)

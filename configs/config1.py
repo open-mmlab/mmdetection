@@ -8,10 +8,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        style='pytorch',
-        dcn=dict(
-            type='MDCN', deformable_groups=4, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True)),
+        style='pytorch'),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -171,7 +168,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/faster_rcnn_mdconv_c3-c5_group4_r50_fpn_1x'
+work_dir = './work_dirs/faster_rcnn_r50_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
