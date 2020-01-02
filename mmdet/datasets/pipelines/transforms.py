@@ -378,6 +378,10 @@ class RandomCrop(object):
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)
             results[key] = bboxes
 
+        # crop semantic seg
+        for key in results.get('seg_fields', []):
+            results[key] = results[key][crop_y1:crop_y2, crop_x1:crop_x2]
+
         # filter out the gt bboxes that are completely cropped
         if 'gt_bboxes' in results:
             gt_bboxes = results['gt_bboxes']
