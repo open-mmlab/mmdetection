@@ -123,8 +123,9 @@ class SampleFree(object):
         detector = cfg.model.type
         backbone = cfg.model.backbone
         neck = cfg.model.neck
-        model = f"{detector}_{backbone.type}{backbone.depth}_"
-        f"{neck.type}_{self.dataset_name.upper()}"
+        model = "{}_{}{}_{}_{}".format(
+            detector, backbone.type, backbone.depth,
+            neck.type, self.dataset_name.upper())
 
         return model
 
