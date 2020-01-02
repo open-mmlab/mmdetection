@@ -44,6 +44,10 @@ class Registry(object):
         self._register_module(cls)
         return cls
 
+    def register_function(self, module_func):
+        module_name = module_func.__name__
+        self._module_dict[module_name] = module_func
+
 
 def build_from_cfg(cfg, registry, default_args=None):
     """Build a module from config dict.
