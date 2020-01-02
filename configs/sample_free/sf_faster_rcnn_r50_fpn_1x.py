@@ -17,9 +17,10 @@ model = dict(
         num_outs=5),
     rpn_head=dict(
         type='SampleFreeHead',
-        model_key='FasterRCNN_ResNet50_FPN_COCO', #this will auto generate by sample_free.py
+        # this will auto generate by sample_free.py
+        model_key='FasterRCNN_ResNet50_FPN_COCO',
         init_prior_file='configs/sample_free/init_prior.json',
-        loss_cls_scale = 1.0,
+        loss_cls_scale=1.0,
         head='RPNHead',
         in_channels=256,
         feat_channels=256,
@@ -38,7 +39,7 @@ model = dict(
         featmap_strides=[4, 8, 16, 32]),
     bbox_head=dict(
         type='SampleFreeBBoxHead',
-        loss_cls_scale = 2.0,
+        loss_cls_scale=2.0,
         num_fcs=2,
         in_channels=256,
         fc_out_channels=1024,
@@ -76,9 +77,9 @@ train_cfg = dict(
             neg_iou_thr=0.5,
             min_pos_iou=0.5,
             ignore_iof_thr=-1),
-        #for rcnn stage we do sample free by set sample_num = INF,
-        #we can also use PseudoSampler, but it need change the code
-        sampler=dict( 
+        # for rcnn stage we do sample free by set sample_num = INF,
+        # we can also use PseudoSampler, but it need change the code
+        sampler=dict(
             type='RandomSampler',
             num=INF,
             pos_fraction=0.25,
@@ -167,11 +168,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12  
+total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/sf_faster_rcnn_r50_fpn_1x'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-
