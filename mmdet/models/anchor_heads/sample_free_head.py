@@ -72,8 +72,8 @@ class GuidedLoss(object):
 
 def load_prior(model_key, filename):
     if not os.path.exists(filename):
-        raise FileNotFoundError(f"""{filename} is not existed.
-                please calculating prior before training.""")
+        raise FileNotFoundError(f"{filename} is not existed."
+                                f"please calculating prior before training.")
 
     with open(filename, 'r') as f:
         model_prior_dict = json.load(f)
@@ -81,5 +81,5 @@ def load_prior(model_key, filename):
             print('Find it. Use it to initialize the model.')
             return model_prior_dict[model_key]
         else:
-            raise KeyError(f"""{model_key} is not existed.
-                    please calculating it before training.""")
+            raise KeyError(f"{model_key} is not existed."
+                           f"please calculating it before training.")
