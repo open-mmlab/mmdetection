@@ -7,6 +7,7 @@ from .convfc_bbox_head import SharedFCBBoxHead
 
 @HEADS.register_module
 class SampleFreeBBoxHead(SharedFCBBoxHead):
+
     def __init__(self, loss_cls_scale, **kwargs):
         super(SampleFreeBBoxHead, self).__init__(**kwargs)
         self.guided_loss = GuidedLoss(loss_cls_scale)
@@ -53,7 +54,7 @@ class SampleFreeBBoxHead(SharedFCBBoxHead):
                     avg_factor=None,
                     reduction_override=reduction_override)
 
-            losses['loss_cls'] = self.guided_loss(
-                losses['loss_bbox'], losses['loss_cls'])
+            losses['loss_cls'] = self.guided_loss(losses['loss_bbox'],
+                                                  losses['loss_cls'])
 
         return losses

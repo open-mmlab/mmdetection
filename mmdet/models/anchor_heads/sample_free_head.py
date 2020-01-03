@@ -11,7 +11,9 @@ from ..utils import bias_init_with_prob
 
 @HEADS.register_function
 def SampleFreeHead(head, model_key, init_prior_file, loss_cls_scale, **kwargs):
+
     class SFHead(HEADS.get(head)):
+
         def __init__(self, **kwargs):
             super(SFHead, self).__init__(**kwargs)
             self.prior = load_prior(model_key, init_prior_file)
@@ -27,8 +29,10 @@ def SampleFreeHead(head, model_key, init_prior_file, loss_cls_scale, **kwargs):
 
         def init_weights(self):
             super().init_weights()
-            conv_cls_attr = [attr for attr in dir(self) if 'cls' in attr
-                             and isinstance(getattr(self, attr), nn.Conv2d)]
+            conv_cls_attr = [
+                attr for attr in dir(self) if 'cls' in attr
+                and isinstance(getattr(self, attr), nn.Conv2d)
+            ]
             assert len(conv_cls_attr) == 1
             bias_cls = bias_init_with_prob(self.prior)
             normal_init(
@@ -37,8 +41,8 @@ def SampleFreeHead(head, model_key, init_prior_file, loss_cls_scale, **kwargs):
         def loss(self, *args, **kwargs):
             loss_dict = super().loss(*args, **kwargs)
             loss_cls_key = [key for key in loss_dict.keys() if 'cls' in key][0]
-            loss_bbox_key = [
-                key for key in loss_dict.keys() if 'bbox' in key][0]
+            loss_bbox_key = [key for key in loss_dict.keys()
+                             if 'bbox' in key][0]
             loss_cls = loss_dict[loss_cls_key]
             loss_bbox = loss_dict[loss_bbox_key]
             loss_bbox = list(
@@ -54,6 +58,7 @@ def SampleFreeHead(head, model_key, init_prior_file, loss_cls_scale, **kwargs):
 
 # https://github.com/ChenJoya/sampling-free/blob/master/maskrcnn_benchmark/modeling/sampling_free.py
 class GuidedLoss(object):
+
     def __init__(self, scale):
         self.scale = scale
 
@@ -71,8 +76,7 @@ class GuidedLoss(object):
 
 def load_prior(model_key, filename):
     if not os.path.exists(filename):
-        msg = '{} is not existed, please calculate it first'.format(
-               filename)
+        msg = '{} is not existed, please calculate it first'.format(filename)
         raise FileNotFoundError(msg)
 
     with open(filename, 'r') as f:
@@ -82,5 +86,5 @@ def load_prior(model_key, filename):
             return model_prior_dict[model_key]
         else:
             msg = '{} is not existed, please calculate it frist'.format(
-               model_key)
+                model_key)
             raise KeyError(msg)
