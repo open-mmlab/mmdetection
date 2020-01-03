@@ -1,22 +1,24 @@
 import torch
 
-from .anchor_target import images_to_levels, anchor_inside_flags, unmap
 from ..bbox import PseudoSampler, assign_and_sample, bbox2delta, build_assigner
 from ..utils import multi_apply
+from .anchor_target import anchor_inside_flags, images_to_levels, unmap
 
-#almost the same with anchor_target, with a little modification
+# almost the same with anchor_target, with a little modification
+
+
 def atss_target(anchor_list,
-                  valid_flag_list,
-                  gt_bboxes_list,
-                  img_metas,
-                  target_means,
-                  target_stds,
-                  cfg,
-                  gt_bboxes_ignore_list=None,
-                  gt_labels_list=None,
-                  label_channels=1,
-                  sampling=True,
-                  unmap_outputs=True):
+                valid_flag_list,
+                gt_bboxes_list,
+                img_metas,
+                target_means,
+                target_stds,
+                cfg,
+                gt_bboxes_ignore_list=None,
+                gt_labels_list=None,
+                label_channels=1,
+                sampling=True,
+                unmap_outputs=True):
     """Compute regression and classification targets for anchors.
 
     Args:
@@ -49,8 +51,8 @@ def atss_target(anchor_list,
         gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
     if gt_labels_list is None:
         gt_labels_list = [None for _ in range(num_imgs)]
-    (all_anchors, all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
-     pos_inds_list, neg_inds_list) = multi_apply(
+    (all_anchors, all_labels, all_label_weights, all_bbox_targets,
+     all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
          atss_target_single,
          anchor_list,
          valid_flag_list,
@@ -81,20 +83,19 @@ def atss_target(anchor_list,
             bbox_weights_list, num_total_pos, num_total_neg)
 
 
-
 def atss_target_single(flat_anchors,
-                         valid_flags,
-                         num_level_anchors,
-                         gt_bboxes,
-                         gt_bboxes_ignore,
-                         gt_labels,
-                         img_meta,
-                         target_means,
-                         target_stds,
-                         cfg,
-                         label_channels=1,
-                         sampling=True,
-                         unmap_outputs=True):
+                       valid_flags,
+                       num_level_anchors,
+                       gt_bboxes,
+                       gt_bboxes_ignore,
+                       gt_labels,
+                       img_meta,
+                       target_means,
+                       target_stds,
+                       cfg,
+                       label_channels=1,
+                       sampling=True,
+                       unmap_outputs=True):
     inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                        img_meta['img_shape'][:2],
                                        cfg.allowed_border)
@@ -102,17 +103,18 @@ def atss_target_single(flat_anchors,
         return (None, ) * 6
     # assign gt and sample anchors
     anchors = flat_anchors[inside_flags, :]
-    
 
     if sampling:
         assign_result, sampling_result = assign_and_sample(
             anchors, gt_bboxes, gt_bboxes_ignore, None, cfg)
     else:
-        num_level_anchors_inside = get_num_level_anchors_inside(num_level_anchors, inside_flags)
+        num_level_anchors_inside = get_num_level_anchors_inside(
+            num_level_anchors, inside_flags)
         bbox_assigner = build_assigner(cfg.assigner)
-        assign_result = bbox_assigner.assign(anchors, num_level_anchors_inside, gt_bboxes,
-                                            gt_bboxes_ignore, gt_labels)
-       
+        assign_result = bbox_assigner.assign(anchors, num_level_anchors_inside,
+                                             gt_bboxes, gt_bboxes_ignore,
+                                             gt_labels)
+
         bbox_sampler = PseudoSampler()
         sampling_result = bbox_sampler.sample(assign_result, anchors,
                                               gt_bboxes)
@@ -151,8 +153,8 @@ def atss_target_single(flat_anchors,
         bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
         bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
-    return (anchors, labels, label_weights, bbox_targets, 
-            bbox_weights, pos_inds, neg_inds)
+    return (anchors, labels, label_weights, bbox_targets, bbox_weights,
+            pos_inds, neg_inds)
 
 
 def get_num_level_anchors_inside(num_level_anchors, inside_flags):
@@ -161,7 +163,8 @@ def get_num_level_anchors_inside(num_level_anchors, inside_flags):
     for num_per_level in num_level_anchors:
         end_idx = start_idx + num_per_level
         inside_flags_level = inside_flags[start_idx:end_idx]
-        num_level_anchors_inside.append(int(inside_flags_level.sum().cpu().numpy()))
+        num_level_anchors_inside.append(
+            int(inside_flags_level.sum().cpu().numpy()))
         start_idx = end_idx
 
     return num_level_anchors_inside
