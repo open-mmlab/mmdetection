@@ -7,12 +7,11 @@ from torch import nn
 
 from ..registry import HEADS
 from ..utils import bias_init_with_prob
-from . import *
 
 
 @HEADS.register_function
 def SampleFreeHead(head, model_key, init_prior_file, loss_cls_scale, **kwargs):
-    class SFHead(eval(head)):
+    class SFHead(HEADS.get(head)):
         def __init__(self, **kwargs):
             super(SFHead, self).__init__(**kwargs)
             self.prior = load_prior(model_key, init_prior_file)

@@ -138,12 +138,12 @@ class SampleFree(object):
                 model_prior_dict = json.load(f)
                 model_prior_dict[model] = self.prior
         else:
-            print(f"{filename} is not existed. Create it.")
+            print("{} is not existed. Create it.".format(filename))
             model_prior_dict = {model: self.prior}
 
         with open(filename, 'w') as f:
             json.dump(model_prior_dict, f)
-        print(f"Priors have saved to {filename}.")
+        print("Priors have saved to {}.".format(filename))
 
     def set_score_thr(self):
         """rewrite the score_thr and model key in config file
@@ -152,11 +152,13 @@ class SampleFree(object):
         cfg_text = Path(self.cfg_file).read_text()
         origin_score_thr = re.findall(r'score_thr=(.*?),', cfg_text)[0]
         cfg_text = cfg_text.replace(
-            f'score_thr={origin_score_thr}', f'score_thr={score_thr}')
+            'score_thr={}'.format(origin_score_thr),
+            'score_thr={}'.format(score_thr))
 
         origin_model_key = re.findall(r'model_key=(.*?),', cfg_text)[0]
         cfg_text = cfg_text.replace(
-            f"model_key={origin_model_key}", f"model_key='{self.model_key}'")
+            "model_key={}".format(origin_model_key),
+            "model_key='{}'".format(self.model_key))
         Path(self.cfg_file).write_text(cfg_text)
 
 
