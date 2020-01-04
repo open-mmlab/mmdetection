@@ -18,9 +18,9 @@ InstaBoost have been already integrated in the data pipeline, thus all you need 
 
 ## Results and Models
 
- - All models were trained on `coco_2017_train` and tested on `coco_2017_val` for conveinience of evaluation and comparison. In the paper, the results are obtained from test-dev.
+ - All models were trained on `coco_2017_train` and tested on `coco_2017_val` for conveinience of evaluation and comparison. In the paper, the results are obtained from `test-dev`.
  - To balance accuracy and training time when using InstaBoost, models released in this page are all trained for 48 Epochs. Other training and testing configs strictly follow the original framework. 
- - The results and models are provided the [`authors`](https://github.com/GothicAi/Instaboost) (many thanks).
+ - The results and models are provided by the [authors](https://github.com/GothicAi/Instaboost) (many thanks).
 
 
 |    InstaBoost   |     Network     |       Backbone       | Lr schd |      box AP       |      mask AP       |      Download       |
