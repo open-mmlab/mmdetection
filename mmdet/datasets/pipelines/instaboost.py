@@ -1,4 +1,3 @@
-import instaboostfast as instaboost
 import numpy as np
 
 from ..registry import PIPELINES
@@ -22,6 +21,12 @@ class InstaBoost(object):
                  color_prob=0.5,
                  hflag=False,
                  aug_ratio=0.5):
+        try:
+            import instaboostfast as instaboost
+        except ImportError:
+            raise ImportError(
+                'Please run "pip install instaboostfast" '
+                'to install instaboostfast first for instaboost augmentation.')
         self.ibcfg = instaboost.InstaBoostConfig(action_candidate, action_prob,
                                                  scale, dx, dy, theta,
                                                  color_prob, hflag)
@@ -70,6 +75,11 @@ class InstaBoost(object):
         img = results['img']
         anns = self._load_anns(results)
         if np.random.choice([0, 1], p=[1 - self.aug_ratio, self.aug_ratio]):
+            try:
+                import instaboostfast as instaboost
+            except ImportError:
+                raise ImportError('Please run "pip install instaboostfast" '
+                                  'to install instaboostfast first.')
             anns, img = instaboost.get_new_data(
                 anns, img, self.ibcfg, background=None)
         results = self._parse_anns(results, anns, img)
