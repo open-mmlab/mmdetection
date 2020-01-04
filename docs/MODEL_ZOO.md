@@ -91,8 +91,6 @@ More models with different backbones will be added to the model zoo.
 |    R-50-FPN     |  caffe  |   1x    |   3.8    |        0.430        |      10.2      |  37.4  |  34.3   |                                                                -                                                                 |
 |    R-50-FPN     | pytorch |   1x    |   3.9    |        0.453        |      10.6      |  37.3  |  34.2   |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth)     |
 |    R-50-FPN     | pytorch |   2x    |    -     |          -          |       -        |  38.5  |  35.1   |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_2x_20181010-41d35c05.pth)     |
-|    R-50-FPN     | pytorch |   4x ([InstaBoost](../configs/instaboost/README.md))    |    -     |          -          |       -        |  39.9  |  36.2   |    [model]()     |
-|    R-101-FPN    |  caffe  |   1x    |   5.7    |        0.534        |      9.4       |  39.9  |  36.1   |
 |    R-101-FPN    |  caffe  |   1x    |   5.7    |        0.534        |      9.4       |  39.9  |  36.1   |                                                                -                                                                 |
 |    R-101-FPN    | pytorch |   1x    |   5.8    |        0.571        |      9.5       |  39.4  |  35.9   |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r101_fpn_1x_20181129-34ad1961.pth)    |
 |    R-101-FPN    | pytorch |   2x    |    -     |          -          |       -        |  40.3  |  36.5   |    [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r101_fpn_2x_20181129-a254bdfc.pth)    |
@@ -231,6 +229,10 @@ Please refer to [Weight Standardization](https://github.com/open-mmlab/mmdetecti
 ### Deformable Convolution v2
 
 Please refer to [Deformable Convolutional Networks](https://github.com/open-mmlab/mmdetection/blob/master/configs/dcn) for details.
+
+### Instaboost
+
+Please refer to [Instaboost](https://github.com/open-mmlab/mmdetection/blob/master/configs/instaboost) for details.
 
 ### Libra R-CNN
 

@@ -27,9 +27,9 @@ class InstaBoost(object):
             raise ImportError(
                 'Please run "pip install instaboostfast" '
                 'to install instaboostfast first for instaboost augmentation.')
-        self.ibcfg = instaboost.InstaBoostConfig(action_candidate, action_prob,
-                                                 scale, dx, dy, theta,
-                                                 color_prob, hflag)
+        self.cfg = instaboost.InstaBoostConfig(action_candidate, action_prob,
+                                               scale, dx, dy, theta,
+                                               color_prob, hflag)
         self.aug_ratio = aug_ratio
 
     def _load_anns(self, results):
@@ -81,12 +81,11 @@ class InstaBoost(object):
                 raise ImportError('Please run "pip install instaboostfast" '
                                   'to install instaboostfast first.')
             anns, img = instaboost.get_new_data(
-                anns, img, self.ibcfg, background=None)
+                anns, img, self.cfg, background=None)
         results = self._parse_anns(results, anns, img)
         return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += ('(ibcfg={}, aug_ratio={})').format(
-            self.ibcfg, self.aug_ratio)
+        repr_str += ('(cfg={}, aug_ratio={})').format(self.cfg, self.aug_ratio)
         return repr_str

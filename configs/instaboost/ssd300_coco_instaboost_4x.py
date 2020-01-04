@@ -49,9 +49,17 @@ data_root = 'data/coco/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
-    dict(type='InstaBoost', action_candidate=('normal', 'horizontal', 'skip'),
-         action_prob=(1, 0, 0), scale=(0.8, 1.2), dx=15, dy=15, theta=(-1, 1),
-         color_prob=0.5, hflag=False, aug_ratio=0.5),
+    dict(
+        type='InstaBoost',
+        action_candidate=('normal', 'horizontal', 'skip'),
+        action_prob=(1, 0, 0),
+        scale=(0.8, 1.2),
+        dx=15,
+        dy=15,
+        theta=(-1, 1),
+        color_prob=0.5,
+        hflag=False,
+        aug_ratio=0.5),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
