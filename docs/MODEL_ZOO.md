@@ -230,6 +230,10 @@ Please refer to [Weight Standardization](https://github.com/open-mmlab/mmdetecti
 
 Please refer to [Deformable Convolutional Networks](https://github.com/open-mmlab/mmdetection/blob/master/configs/dcn) for details.
 
+### Instaboost
+
+Please refer to [Instaboost](https://github.com/open-mmlab/mmdetection/blob/master/configs/instaboost) for details.
+
 ### Libra R-CNN
 
 Please refer to [Libra R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/libra_rcnn) for details.

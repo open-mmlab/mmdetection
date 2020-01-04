@@ -80,6 +80,7 @@ Other features
 - [x] Generalized Attention
 - [x] GCNet
 - [x] Mixed Precision (FP16) Training
+- [x] [InstaBoost](configs/instaboost/README.md)
 
 
 ## Installation
