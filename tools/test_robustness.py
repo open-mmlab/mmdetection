@@ -10,13 +10,13 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import get_dist_info, load_checkpoint
+from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from robustness_eval import get_results
 
 from mmdet import datasets
-from mmdet.apis import init_dist, set_random_seed
+from mmdet.apis import set_random_seed
 from mmdet.core import (eval_map, fast_eval_recall, results2json,
                         wrap_fp16_model)
 from mmdet.datasets import build_dataloader, build_dataset
@@ -76,41 +76,21 @@ def coco_eval_with_return(result_files,
 def voc_eval_with_return(result_file,
                          dataset,
                          iou_thr=0.5,
-                         print_summary=True,
+                         logger='print',
                          only_ap=True):
     det_results = mmcv.load(result_file)
-    gt_bboxes = []
-    gt_labels = []
-    gt_ignore = []
-    for i in range(len(dataset)):
-        ann = dataset.get_ann_info(i)
-        bboxes = ann['bboxes']
-        labels = ann['labels']
-        if 'bboxes_ignore' in ann:
-            ignore = np.concatenate([
-                np.zeros(bboxes.shape[0], dtype=np.bool),
-                np.ones(ann['bboxes_ignore'].shape[0], dtype=np.bool)
-            ])
-            gt_ignore.append(ignore)
-            bboxes = np.vstack([bboxes, ann['bboxes_ignore']])
-            labels = np.concatenate([labels, ann['labels_ignore']])
-        gt_bboxes.append(bboxes)
-        gt_labels.append(labels)
-    if not gt_ignore:
-        gt_ignore = gt_ignore
+    annotations = [dataset.get_ann_info(i) for i in range(len(dataset))]
     if hasattr(dataset, 'year') and dataset.year == 2007:
         dataset_name = 'voc07'
     else:
         dataset_name = dataset.CLASSES
     mean_ap, eval_results = eval_map(
         det_results,
-        gt_bboxes,
-        gt_labels,
-        gt_ignore=gt_ignore,
+        annotations,
         scale_ranges=None,
         iou_thr=iou_thr,
         dataset=dataset_name,
-        print_summary=print_summary)
+        logger=logger)
 
     if only_ap:
         eval_results = [{
@@ -411,10 +391,11 @@ def main():
                             if eval_type == 'bbox':
                                 test_dataset = mmcv.runner.obj_from_dict(
                                     cfg.data.test, datasets)
+                                logger = 'print' if args.summaries else None
                                 mean_ap, eval_results = \
                                     voc_eval_with_return(
                                         args.out, test_dataset,
-                                        args.iou_thr, args.summaries)
+                                        args.iou_thr, logger)
                                 aggregated_results[corruption][
                                     corruption_severity] = eval_results
                             else:

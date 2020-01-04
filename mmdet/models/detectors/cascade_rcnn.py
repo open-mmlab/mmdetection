@@ -236,6 +236,12 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             bbox_head = self.bbox_head[i]
 
             rois = bbox2roi([res.bboxes for res in sampling_results])
+
+            if len(rois) == 0:
+                # If there are no predicted and/or truth boxes, then we cannot
+                # compute head / mask losses
+                continue
+
             bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                             rois)
             if self.with_shared_head:

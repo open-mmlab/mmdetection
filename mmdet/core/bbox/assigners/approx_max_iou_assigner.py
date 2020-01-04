@@ -74,9 +74,9 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
 
         Args:
             approxs (Tensor): Bounding boxes to be assigned,
-        shape(approxs_per_octave*n, 4).
+                shape(approxs_per_octave*n, 4).
             squares (Tensor): Base Bounding boxes to be assigned,
-        shape(n, 4).
+                shape(n, 4).
             approxs_per_octave (int): number of approxs per octave
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
@@ -86,11 +86,15 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
-
-        if squares.shape[0] == 0 or gt_bboxes.shape[0] == 0:
-            raise ValueError('No gt or approxs')
         num_squares = squares.size(0)
         num_gts = gt_bboxes.size(0)
+
+        if num_squares == 0 or num_gts == 0:
+            # No predictions and/or truth, return empty assignment
+            overlaps = approxs.new(num_gts, num_squares)
+            assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
+            return assign_result
+
         # re-organize anchors by approxs_per_octave x num_squares
         approxs = torch.transpose(
             approxs.view(num_squares, approxs_per_octave, 4), 0,

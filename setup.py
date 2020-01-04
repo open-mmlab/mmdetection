@@ -162,7 +162,7 @@ if __name__ == '__main__':
         ],
         license='Apache License 2.0',
         setup_requires=['pytest-runner', 'cython', 'numpy'],
-        tests_require=['pytest', 'xdoctest'],
+        tests_require=['pytest', 'xdoctest', 'asynctest'],
         install_requires=get_requirements(),
         ext_modules=[
             make_cuda_ext(
