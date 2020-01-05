@@ -54,9 +54,9 @@ def parse_args():
 
 
 def main():
-    args = parse_args()
+    args = parse_args()#命令行参数
 
-    cfg = Config.fromfile(args.config)
+    cfg = Config.fromfile(args.config)#模型的所有参数，包括model,train,test，本身是一个字典
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -78,7 +78,7 @@ def main():
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
 
-    # create work_dir
+    # create work_dir创建保存路径和日志
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
     # init the logger before other steps
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
@@ -95,7 +95,7 @@ def main():
         logger.info('Set random seed to {}, deterministic: {}'.format(
             args.seed, args.deterministic))
         set_random_seed(args.seed, deterministic=args.deterministic)
-
+    # model的建立，利用所有的config参数，包括model,train,test。
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
 
