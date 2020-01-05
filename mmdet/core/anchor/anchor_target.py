@@ -175,12 +175,12 @@ def anchor_inside_flags(flat_anchors,
     return inside_flags
 
 
-def unmap(data, count, inds, fill=0):
+def unmap(data, count, inds, fill=0):#将数据reshape,并将它放在指定的索引位置
     """ Unmap a subset of item (data) back to the original set of items (of
     size count) """
-    if data.dim() == 1:
+    if data.dim() == 1:#如果数据是一维的
         ret = data.new_full((count, ), fill)
-        ret[inds] = data
+        ret[inds] = data#指定的inds也是data
     else:
         new_size = (count, ) + data.size()[1:]
         ret = data.new_full(new_size, fill)
