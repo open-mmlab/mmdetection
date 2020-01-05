@@ -49,23 +49,23 @@ def build_from_cfg(cfg, registry, default_args=None):
     """Build a module from config dict.
 
     Args:
-        cfg (dict): Config dict. It should at least contain the key "type".
-        registry (:obj:`Registry`): The registry to search the type from.
-        default_args (dict, optional): Default initialization arguments.
+        cfg (dict): Config dict. It should at least contain the key "type".至少有type的字典
+        registry (:obj:`Registry`): The registry to search the type from.类
+        default_args (dict, optional): Default initialization arguments.默认字典参数
 
     Returns:
         obj: The constructed object.
     """
-    assert isinstance(cfg, dict) and 'type' in cfg
-    assert isinstance(default_args, dict) or default_args is None
+    assert isinstance(cfg, dict) and 'type' in cfg#保证‘type’在字典中
+    assert isinstance(default_args, dict) or default_args is None#保证参数是字典
     args = cfg.copy()
-    obj_type = args.pop('type')
-    if mmcv.is_str(obj_type):
+    obj_type = args.pop('type')#'FCOS'
+    if mmcv.is_str(obj_type):#如果是字符串
         obj_cls = registry.get(obj_type)
-        if obj_cls is None:
+        if obj_cls is None:#不能是空
             raise KeyError('{} is not in the {} registry'.format(
                 obj_type, registry.name))
-    elif inspect.isclass(obj_type):
+    elif inspect.isclass(obj_type):#如果是个类
         obj_cls = obj_type
     else:
         raise TypeError('type must be a str or valid type, but got {}'.format(
@@ -73,4 +73,4 @@ def build_from_cfg(cfg, registry, default_args=None):
     if default_args is not None:
         for name, value in default_args.items():
             args.setdefault(name, value)
-    return obj_cls(**args)
+    return obj_cls(**args)#直接构造成FCOS(config)格式，形成model
