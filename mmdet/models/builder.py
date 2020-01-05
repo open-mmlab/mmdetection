@@ -45,3 +45,5 @@ def build_loss(cfg):
 
 def build_detector(cfg, train_cfg=None, test_cfg=None):#函数调用接口，cfg，train_cfg,test_cfg是一个字典，
     return build(cfg, DETECTORS, dict(train_cfg=train_cfg, test_cfg=test_cfg))
+  
+  
