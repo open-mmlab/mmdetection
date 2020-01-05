@@ -15,7 +15,7 @@ from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 
 
-def parse_args():
+def parse_args():#解析参数
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
     parser.add_argument('--work_dir', help='the dir to save logs and models')
@@ -57,15 +57,15 @@ def main():
     args = parse_args()#命令行参数
 
     cfg = Config.fromfile(args.config)#模型的所有参数，包括model,train,test，本身是一个字典
-    # set cudnn_benchmark
+    # set cudnn_benchmark设置cudnn
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
-    # update configs according to CLI args
+    # update configs according to CLI args 将命令行参数放入config中统一使用
     if args.work_dir is not None:
         cfg.work_dir = args.work_dir
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
-    cfg.gpus = args.gpus
+    cfg.gpus = args.gpus#将gpu个数放入到config参数字典中
 
     if args.autoscale_lr:
         # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
