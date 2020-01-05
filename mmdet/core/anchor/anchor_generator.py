@@ -1,7 +1,7 @@
 import torch
 
 
-class AnchorGenerator(object):
+class AnchorGenerator(object):#生成anchor
     """
     Examples:
         >>> from mmdet.core import AnchorGenerator
@@ -15,21 +15,24 @@ class AnchorGenerator(object):
     """
 
     def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None):
-        self.base_size = base_size
-        self.scales = torch.Tensor(scales)
-        self.ratios = torch.Tensor(ratios)
+        self.base_size = base_size#大小
+        self.scales = torch.Tensor(scales)#尺度
+        self.ratios = torch.Tensor(ratios)#比列
         self.scale_major = scale_major
         self.ctr = ctr
         self.base_anchors = self.gen_base_anchors()
 
     @property
     def num_base_anchors(self):
-        return self.base_anchors.size(0)
+        return self.base_anchors.size(0)#返回有多少个anchors
 
-    def gen_base_anchors(self):
+    def gen_base_anchors(self):#生成anchor的函数
+        '''
+        这个函数是先生成一个位置所有尺度的anchor,所以只需要w和h，并不需要中心
+        '''
         w = self.base_size
         h = self.base_size
-        if self.ctr is None:
+        if self.ctr is None:#如果没有给中心，那么可以用长宽来求出中心点位置，
             x_ctr = 0.5 * (w - 1)
             y_ctr = 0.5 * (h - 1)
         else:
@@ -63,21 +66,21 @@ class AnchorGenerator(object):
         else:
             return yy, xx
 
-    def grid_anchors(self, featmap_size, stride=16, device='cuda'):
-        base_anchors = self.base_anchors.to(device)
+    def grid_anchors(self, featmap_size, stride=16, device='cuda'):#给定特征图的大小和s，生成anchor
+        base_anchors = self.base_anchors.to(device)#放入设备，调用生成一个位置的anchor
 
         feat_h, feat_w = featmap_size
         shift_x = torch.arange(0, feat_w, device=device) * stride
         shift_y = torch.arange(0, feat_h, device=device) * stride
-        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
-        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
+        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)#生成了整个网格坐标
+        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)#将网格坐标线堆叠在一起，形成[x,y,x,y]
         shifts = shifts.type_as(base_anchors)
         # first feat_w elements correspond to the first row of shifts
         # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
         # shifted anchors (K, A, 4), reshape to (K*A, 4)
 
-        all_anchors = base_anchors[None, :, :] + shifts[:, None, :]
-        all_anchors = all_anchors.view(-1, 4)
+        all_anchors = base_anchors[None, :, :] + shifts[:, None, :]#使用广播的方式，将所有的网格全部加上每个位置的anchor即可生成所有的anchor
+        all_anchors = all_anchors.view(-1, 4)#最后将所有的anchors重构成为（N,4）的形式即可
         # first A rows correspond to A anchors of (0, 0) in feature map,
         # then (0, 1), (0, 2), ...
         return all_anchors
