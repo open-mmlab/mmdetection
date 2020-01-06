@@ -165,35 +165,3 @@ class ConvModule(nn.Module):
             elif layer == 'act' and activate and self.with_activatation:
                 x = self.activate(x)
         return x
-
-    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
-                              missing_keys, unexpected_keys, error_msgs):
-        version = local_metadata.get("version", None)
-
-        if version is None or version < 2:
-            # the key is different in early versions
-            # In version < 2, the DCNModule load previous benchmark models.
-            if (prefix + "conv.conv_offset.weight" not in state_dict
-                    and prefix[:-1] + "_offset.weight" in state_dict):
-                state_dict[prefix +
-                           "conv.conv_offset.weight"] = state_dict.pop(
-                               prefix[:-1] + "_offset.weight")
-            if (prefix + "conv.conv_offset.bias" not in state_dict
-                    and prefix[:-1] + "_offset.bias" in state_dict):
-                state_dict[prefix + "conv.conv_offset.bias"] = state_dict.pop(
-                    prefix[:-1] + "_offset.bias")
-            # the conv2.weight is in both pretrain & current model
-            if (prefix + "conv.weight" not in state_dict
-                    and prefix + "weight" in state_dict):
-                state_dict[prefix + "conv.weight"] = state_dict.pop(prefix +
-                                                                    "weight")
-
-        if version is not None and version > 1:
-            import logging
-            logger = logging.getLogger()
-            logger.info("DCNModule {} is upgraded to version 2.".format(
-                prefix.rstrip(".")))
-
-        super()._load_from_state_dict(state_dict, prefix, local_metadata,
-                                      strict, missing_keys, unexpected_keys,
-                                      error_msgs)

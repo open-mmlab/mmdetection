@@ -7,7 +7,7 @@ from torch.nn.modules.batchnorm import _BatchNorm
 from mmdet.models.plugins import GeneralizedAttention
 from mmdet.ops import ContextBlock
 from ..registry import BACKBONES
-from ..utils import ConvModule, build_conv_layer, build_norm_layer
+from ..utils import build_conv_layer, build_norm_layer
 
 
 class BasicBlock(nn.Module):
@@ -160,17 +160,15 @@ class Bottleneck(nn.Module):
             # use ConvModule for backward/forward compatibility for now
 
             # TODO: change to use build_conv_layer when new benchmark
-            self.conv2 = ConvModule(
+            self.conv2 = build_conv_layer(
+                dcn,
                 planes,
                 planes,
                 kernel_size=3,
                 stride=self.conv2_stride,
                 padding=dilation,
                 dilation=dilation,
-                bias=False,
-                conv_cfg=dcn,
-                activation=None,
-            )
+                bias=False)
 
         self.add_module(self.norm2_name, norm2)
         self.conv3 = build_conv_layer(

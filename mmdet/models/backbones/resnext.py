@@ -3,7 +3,7 @@ import math
 import torch.nn as nn
 
 from ..registry import BACKBONES
-from ..utils import ConvModule, build_conv_layer, build_norm_layer
+from ..utils import build_conv_layer, build_norm_layer
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 
@@ -56,7 +56,8 @@ class Bottleneck(_Bottleneck):
             assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
             # use ConvModule for backward/forward compatibility for now
             # TODO: consider to use build_conv_layer for new benchmark
-            self.conv2 = ConvModule(
+            self.conv2 = build_conv_layer(
+                self.dcn,
                 width,
                 width,
                 kernel_size=3,
@@ -64,10 +65,7 @@ class Bottleneck(_Bottleneck):
                 padding=self.dilation,
                 dilation=self.dilation,
                 groups=groups,
-                bias=False,
-                conv_cfg=self.dcn,
-                activation=None,
-            )
+                bias=False)
 
         self.add_module(self.norm2_name, norm2)
         self.conv3 = build_conv_layer(

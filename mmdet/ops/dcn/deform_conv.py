@@ -240,6 +240,22 @@ class DeformConv(nn.Module):
 
 
 class DeformConvPack(DeformConv):
+    """A Deformable Conv Encapsulation that acts as normal Conv layers.
+
+    Args:
+        in_channels (int): Same as nn.Conv2d.
+        out_channels (int): Same as nn.Conv2d.
+        kernel_size (int or tuple[int]): Same as nn.Conv2d.
+        stride (int or tuple[int]): Same as nn.Conv2d.
+        padding (int or tuple[int]): Same as nn.Conv2d.
+        dilation (int or tuple[int]): Same as nn.Conv2d.
+        groups (int): Same as nn.Conv2d.
+        bias (bool or str): If specified as `auto`, it will be decided by the
+            norm_cfg. Bias will be set as True if norm_cfg is None, otherwise
+            False.
+    """
+
+    version = 1
 
     def __init__(self, *args, **kwargs):
         super(DeformConvPack, self).__init__(*args, **kwargs)
@@ -262,6 +278,33 @@ class DeformConvPack(DeformConv):
         offset = self.conv_offset(x)
         return deform_conv(x, offset, self.weight, self.stride, self.padding,
                            self.dilation, self.groups, self.deformable_groups)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        version = local_metadata.get("version", None)
+
+        if version is None or version < 2:
+            # the key is different in early versions
+            # In version < 2, DeformConvPack loads previous benchmark models.
+            if (prefix + "conv_offset.weight" not in state_dict
+                    and prefix[:-1] + "_offset.weight" in state_dict):
+                state_dict[prefix + "conv_offset.weight"] = state_dict.pop(
+                    prefix[:-1] + "_offset.weight")
+            if (prefix + "conv_offset.bias" not in state_dict
+                    and prefix[:-1] + "_offset.bias" in state_dict):
+                state_dict[prefix +
+                           "conv_offset.bias"] = state_dict.pop(prefix[:-1] +
+                                                                "_offset.bias")
+
+        if version is not None and version > 1:
+            from mmdet.apis import get_root_logger
+            logger = get_root_logger
+            logger.info("DeformConvPack {} is upgraded to version 2.".format(
+                prefix.rstrip(".")))
+
+        super()._load_from_state_dict(state_dict, prefix, local_metadata,
+                                      strict, missing_keys, unexpected_keys,
+                                      error_msgs)
 
 
 class ModulatedDeformConv(nn.Module):
@@ -315,6 +358,22 @@ class ModulatedDeformConv(nn.Module):
 
 
 class ModulatedDeformConvPack(ModulatedDeformConv):
+    """A ModulatedDeformable Conv Encapsulation that acts as normal Conv layers.
+
+    Args:
+        in_channels (int): Same as nn.Conv2d.
+        out_channels (int): Same as nn.Conv2d.
+        kernel_size (int or tuple[int]): Same as nn.Conv2d.
+        stride (int or tuple[int]): Same as nn.Conv2d.
+        padding (int or tuple[int]): Same as nn.Conv2d.
+        dilation (int or tuple[int]): Same as nn.Conv2d.
+        groups (int): Same as nn.Conv2d.
+        bias (bool or str): If specified as `auto`, it will be decided by the
+            norm_cfg. Bias will be set as True if norm_cfg is None, otherwise
+            False.
+    """
+
+    version = 1
 
     def __init__(self, *args, **kwargs):
         super(ModulatedDeformConvPack, self).__init__(*args, **kwargs)
@@ -341,3 +400,32 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
         return modulated_deform_conv(x, offset, mask, self.weight, self.bias,
                                      self.stride, self.padding, self.dilation,
                                      self.groups, self.deformable_groups)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        version = local_metadata.get("version", None)
+
+        if version is None or version < 2:
+            # the key is different in early versions
+            # In version < 2, ModulatedDeformConvPack
+            # loads previous benchmark models.
+            if (prefix + "conv_offset.weight" not in state_dict
+                    and prefix[:-1] + "_offset.weight" in state_dict):
+                state_dict[prefix + "conv_offset.weight"] = state_dict.pop(
+                    prefix[:-1] + "_offset.weight")
+            if (prefix + "conv_offset.bias" not in state_dict
+                    and prefix[:-1] + "_offset.bias" in state_dict):
+                state_dict[prefix +
+                           "conv_offset.bias"] = state_dict.pop(prefix[:-1] +
+                                                                "_offset.bias")
+
+        if version is not None and version > 1:
+            from mmdet.apis import get_root_logger
+            logger = get_root_logger
+            logger.info(
+                "ModulatedDeformConvPack {} is upgraded to version 2.".format(
+                    prefix.rstrip(".")))
+
+        super()._load_from_state_dict(state_dict, prefix, local_metadata,
+                                      strict, missing_keys, unexpected_keys,
+                                      error_msgs)
