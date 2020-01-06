@@ -110,6 +110,15 @@ def main():
             mmdet_version=__version__,
             config=cfg.text,
             CLASSES=datasets[0].CLASSES)
+    # check if there is a wandb hook present
+    if 'WandbLoggerHook' in [x["type"] for x in cfg["log_config"]["hooks"]]:
+        import wandb
+        wandb.init()
+        wandb.config.update(cfg._cfg_dict)
+        wandb.config.update(filename=cfg.filename)
+        import numpy as np
+        wandb.log({"example": wandb.Image(np.zeros([256, 256]).astype(np.uint8))})
+
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
     train_detector(
