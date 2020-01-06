@@ -7,8 +7,8 @@ from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, Scale, bias_init_with_prob
 import debugging.visualization_tools as vt
-from mmdet.core import get_classes, tensor2imgs, bbox2result
-from mmcv.visualization import imshow_det_bboxes, imshow_bboxes
+from mmdet.core import tensor2imgs
+from mmcv.visualization import imshow_det_bboxes
 import numpy as np
 
 

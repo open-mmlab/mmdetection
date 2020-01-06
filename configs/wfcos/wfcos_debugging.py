@@ -127,7 +127,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=50,
+    interval=1,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook')
@@ -139,6 +139,6 @@ device_ids = range(1)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/wfcos_debugging'
-load_from = './work_dirs/wfcos_debugging/latest.pth'
+load_from = None
 resume_from = None
 workflow = [('train', 1)]
