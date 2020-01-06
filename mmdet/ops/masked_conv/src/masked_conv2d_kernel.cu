@@ -1,4 +1,5 @@
 #include <ATen/ATen.h>
+#include <ATen/cuda/CUDAContext.h>
 #include <THC/THCAtomics.cuh>
 
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
@@ -63,7 +64,8 @@ int MaskedIm2colForwardLaucher(const at::Tensor bottom_data, const int height,
         const int64_t *mask_w_idx_ = mask_w_idx.data<int64_t>();
         scalar_t *top_data_ = top_data.data<scalar_t>();
         MaskedIm2colForward<scalar_t>
-            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()
+>>>(
                 output_size, bottom_data_, height, width, kernel_h, kernel_w,
                 pad_h, pad_w, mask_h_idx_, mask_w_idx_, mask_cnt, top_data_);
       }));
@@ -103,7 +105,7 @@ int MaskedCol2imForwardLaucher(const at::Tensor bottom_data, const int height,
         scalar_t *top_data_ = top_data.data<scalar_t>();
 
         MaskedCol2imForward<scalar_t>
-            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()>>>(
                 output_size, bottom_data_, height, width, channels, mask_h_idx_,
                 mask_w_idx_, mask_cnt, top_data_);
       }));
