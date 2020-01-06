@@ -14,6 +14,8 @@ from .wfcos_head import WFCOSHead
 
 __all__ = [
     'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption', 'RPNHead',
+
    'GARPNHead', 'RetinaHead', 'RetinaSepBNHead', 'GARetinaHead', 'SSDHead',
-    'FCOSHead', 'RepPointsHead', 'FoveaHead', 'FreeAnchorRetinaHead'
+    'FCOSHead', 'RepPointsHead', 'FoveaHead', 'FreeAnchorRetinaHead', 'WFCOSHead'
+
 ]

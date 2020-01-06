@@ -74,6 +74,7 @@ def parse_losses(losses):
     loss = sum(_value for _key, _value in log_vars.items() if 'loss' in _key)
 
     log_vars['loss'] = loss
+
     for loss_name, loss_value in log_vars.items():
         # reduce loss when distributed training
         if dist.is_initialized():
