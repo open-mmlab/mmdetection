@@ -16,6 +16,6 @@ from .ultra_slim_head import UltraSlimHead
 __all__ = [
     'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption', 'RPNHead',
     'GARPNHead', 'RetinaHead', 'GARetinaHead', 'SSDHead', 'FCOSHead',
-    'RepPointsHead', 'FoveaHead', 'FreeAnchorRetinaHead','FaceboxesHead_DENS',
-    'FaceboxesHead_DENS_V2' , 'UltraSlimHead'
+    'RepPointsHead', 'FoveaHead', 'FreeAnchorRetinaHead', 'FaceboxesHead_DENS',
+    'FaceboxesHead_DENS_V2', 'UltraSlimHead'
 ]

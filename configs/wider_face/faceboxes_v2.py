@@ -6,12 +6,9 @@ model = dict(
     backbone=dict(
         type='FaceBoxes',
         input_size=input_size,
-        ),
+    ),
     neck=dict(
-        type='FPN',
-        in_channels=[128, 256, 256],
-        out_channels=64,
-        num_outs=3),
+        type='FPN', in_channels=[128, 256, 256], out_channels=64, num_outs=3),
     bbox_head=dict(
         type='FaceboxesHead_DENS_V2',
         input_size=input_size,
@@ -30,12 +27,10 @@ train_cfg = dict(
         ignore_iof_thr=-1,
         gt_max_assign_all=False),
     smoothl1_beta=1,
-    #### reduction='sum',
     reg_loss_weight=2.,
     allowed_border=-1,
-    #-1 to 3
     pos_weight=-1,
-    neg_pos_ratio=7, 
+    neg_pos_ratio=7,
     debug=False)
 test_cfg = dict(
     nms_pre=1000,
@@ -46,7 +41,7 @@ test_cfg = dict(
 # dataset settings
 dataset_type = 'WIDERFaceDataset'
 data_root = 'data/WIDERFace/'
-img_norm_cfg = dict(mean=[104, 117, 123], std=[1,1,1], to_rgb=True) 
+img_norm_cfg = dict(mean=[104, 117, 123], std=[1, 1, 1], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -133,4 +128,3 @@ work_dir = './work_dirs/faceboxes_v2'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-

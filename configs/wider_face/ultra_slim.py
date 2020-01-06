@@ -1,12 +1,12 @@
 # model settings
-input_size = (320,240)
+input_size = (320, 240)
 model = dict(
     type='SingleStageDetector',
     pretrained=None,
     backbone=dict(
         type='UltraSlim',
         input_size=input_size,
-        ),
+    ),
     neck=None,
     bbox_head=dict(
         type='UltraSlimHead',
@@ -14,7 +14,7 @@ model = dict(
         in_channels=(64, 128, 256, 256),
         num_classes=2,
         target_means=(.0, .0, .0, .0),
-        target_stds=(0.1, 0.1, 0.2, 0.2)))  
+        target_stds=(0.1, 0.1, 0.2, 0.2)))
 # model training and testing settings
 cudnn_benchmark = True
 train_cfg = dict(
@@ -26,12 +26,10 @@ train_cfg = dict(
         ignore_iof_thr=-1,
         gt_max_assign_all=False),
     smoothl1_beta=1,
-    #### reduction='sum',
     reg_loss_weight=1.,
     allowed_border=-1,
-    #-1 to 3
     pos_weight=-1,
-    neg_pos_ratio=3, 
+    neg_pos_ratio=3,
     debug=False)
 test_cfg = dict(
     nms_pre=1000,
@@ -42,7 +40,7 @@ test_cfg = dict(
 # dataset settings
 dataset_type = 'WIDERFaceDataset'
 data_root = 'data/WIDERFace/'
-img_norm_cfg = dict(mean=[127, 127, 127], std=[128,128,128], to_rgb=True)  
+img_norm_cfg = dict(mean=[127, 127, 127], std=[128, 128, 128], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -106,9 +104,7 @@ data = dict(
 optimizer = dict(type='SGD', lr=1e-2, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
 # learning policy
-lr_config = dict(
-    policy='step',   
-    step=[95 ,150])
+lr_config = dict(policy='step', step=[95, 150])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -126,4 +122,3 @@ work_dir = './work_dirs/ultra_slim'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-

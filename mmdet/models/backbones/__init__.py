@@ -5,4 +5,7 @@ from .ssd_vgg import SSDVGG
 from .faceboxesnet import FaceBoxes
 from .ultra_slim import UltraSlim
 
-__all__ = ['ResNet', 'make_res_layer', 'ResNeXt', 'SSDVGG', 'HRNet','FaceBoxes', 'UltraSlim']
+__all__ = [
+    'ResNet', 'make_res_layer', 'ResNeXt', 'SSDVGG', 'HRNet', 'FaceBoxes',
+    'UltraSlim'
+]
