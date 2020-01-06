@@ -2,10 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmdet.core import AnchorGenerator_FB, anchor_target
-from .anchor_head import delta2bbox, AnchorHead, multiclass_nms
+
+from mmdet.core import AnchorGenerator_FB, anchor_target, force_fp32
 from ..registry import HEADS
-from mmdet.core import force_fp32
+from .anchor_head import AnchorHead, delta2bbox, multiclass_nms
 
 ANCHOR_SPECIFICATIONS = [
     [(32, 1.0, 4), (64, 1.0, 2), (128, 1.0, 1)],  # scale 0

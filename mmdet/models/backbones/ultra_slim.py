@@ -1,8 +1,10 @@
 import logging
+
 import torch.nn as nn
 from mmcv.runner import load_checkpoint
+from torch.nn import Conv2d, ModuleList, ReLU, Sequential
+
 from ..registry import BACKBONES
-from torch.nn import Conv2d, Sequential, ModuleList, ReLU
 
 
 class Base_net(nn.Module):

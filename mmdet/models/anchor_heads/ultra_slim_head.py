@@ -2,13 +2,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmdet.core import AnchorGenerator_Ultra, anchor_target
-from mmdet.core import delta2bbox, multiclass_nms
-from .anchor_head import AnchorHead
-from ..registry import HEADS
-from ..backbones import ultra_slim
 from torch.nn import Conv2d
-from mmdet.core import force_fp32
+
+from mmdet.core import (AnchorGenerator_Ultra, anchor_target, delta2bbox,
+                        force_fp32, multiclass_nms)
+from ..backbones import ultra_slim
+from ..registry import HEADS
+from .anchor_head import AnchorHead
 
 
 @HEADS.register_module

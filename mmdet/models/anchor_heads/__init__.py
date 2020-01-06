@@ -1,4 +1,6 @@
 from .anchor_head import AnchorHead
+from .faceboxes_head_densification import FaceboxesHead_DENS
+from .faceboxes_head_densification_v2 import FaceboxesHead_DENS_V2
 from .fcos_head import FCOSHead
 from .fovea_head import FoveaHead
 from .free_anchor_retina_head import FreeAnchorRetinaHead
@@ -9,8 +11,6 @@ from .reppoints_head import RepPointsHead
 from .retina_head import RetinaHead
 from .rpn_head import RPNHead
 from .ssd_head import SSDHead
-from .faceboxes_head_densification import FaceboxesHead_DENS
-from .faceboxes_head_densification_v2 import FaceboxesHead_DENS_V2
 from .ultra_slim_head import UltraSlimHead
 
 __all__ = [
