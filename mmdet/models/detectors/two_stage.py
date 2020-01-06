@@ -247,18 +247,50 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                             dtype=torch.uint8))
                 pos_inds = torch.cat(pos_inds)
                 mask_feats = bbox_feats[pos_inds]
-            mask_pred = self.mask_head(mask_feats)
 
-            mask_targets = self.mask_head.get_target(sampling_results,
-                                                     gt_masks,
-                                                     self.train_cfg.rcnn)
-            pos_labels = torch.cat(
-                [res.pos_gt_labels for res in sampling_results])
-            loss_mask = self.mask_head.loss(mask_pred, mask_targets,
-                                            pos_labels)
-            losses.update(loss_mask)
+            if mask_feats.shape[0] > 0:
+                mask_pred = self.mask_head(mask_feats)
+                mask_targets = self.mask_head.get_target(
+                    sampling_results, gt_masks, self.train_cfg.rcnn)
+                pos_labels = torch.cat(
+                    [res.pos_gt_labels for res in sampling_results])
+                loss_mask = self.mask_head.loss(mask_pred, mask_targets,
+                                                pos_labels)
+                losses.update(loss_mask)
 
         return losses
+
+    async def async_simple_test(self,
+                                img,
+                                img_meta,
+                                proposals=None,
+                                rescale=False):
+        """Async test without augmentation."""
+        assert self.with_bbox, "Bbox head must be implemented."
+        x = self.extract_feat(img)
+
+        if proposals is None:
+            proposal_list = await self.async_test_rpn(x, img_meta,
+                                                      self.test_cfg.rpn)
+        else:
+            proposal_list = proposals
+
+        det_bboxes, det_labels = await self.async_test_bboxes(
+            x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
+        bbox_results = bbox2result(det_bboxes, det_labels,
+                                   self.bbox_head.num_classes)
+
+        if not self.with_mask:
+            return bbox_results
+        else:
+            segm_results = await self.async_test_mask(
+                x,
+                img_meta,
+                det_bboxes,
+                det_labels,
+                rescale=rescale,
+                mask_test_cfg=self.test_cfg.get('mask'))
+            return bbox_results, segm_results
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         """Test without augmentation."""
@@ -266,8 +298,11 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         x = self.extract_feat(img)
 
-        proposal_list = self.simple_test_rpn(
-            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
+        if proposals is None:
+            proposal_list = self.simple_test_rpn(x, img_meta,
+                                                 self.test_cfg.rpn)
+        else:
+            proposal_list = proposals
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
