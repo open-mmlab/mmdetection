@@ -1,4 +1,4 @@
-dist: xenial
+dist: bionic  # ubuntu 18.04
 language: python
 
 python:
@@ -6,7 +6,8 @@ python:
   - "3.6"
   - "3.7"
 
-env: CUDA=9.2.148-1 CUDA_SHORT=9.2 UBUNTU_VERSION=ubuntu1604
+env: CUDA=10.1.105-1 CUDA_SHORT=10.1 UBUNTU_VERSION=ubuntu1804 FORCE_CUDA=1
+cache: pip
 
 # Ref to CUDA installation in Travis: https://github.com/jeremad/cuda-travis
 before_install:
@@ -23,17 +24,19 @@ before_install:
   - PATH=${CUDA_HOME}/bin:${PATH}
 
 install:
-  - pip install Cython
+  - pip install Cython torch==1.2
   - pip install -r requirements.txt
   - pip install -r tests/requirements.txt
 
-script:
+before_script:
   - flake8 .
   - isort -rc --check-only --diff mmdet/ tools/ tests/
   - yapf -r -d --style .style.yapf mmdet/ tools/ tests/
+
+script:
   - python setup.py check -m -s
   - python setup.py build_ext --inplace
-  - coverage run --source mmdet -m py.test tests -v --doctest-modules
+  - coverage run --source mmdet -m py.test -v --xdoctest-modules tests mmdet
 
 after_success:
   - coverage report

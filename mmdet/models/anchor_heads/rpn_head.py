@@ -65,7 +65,6 @@ class RPNHead(AnchorHead):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
             assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
-            anchors = mlvl_anchors[idx]
             rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
             if self.use_sigmoid_cls:
                 rpn_cls_score = rpn_cls_score.reshape(-1)
@@ -74,6 +73,7 @@ class RPNHead(AnchorHead):
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
                 scores = rpn_cls_score.softmax(dim=1)[:, 1]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            anchors = mlvl_anchors[idx]
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
                 _, topk_inds = scores.topk(cfg.nms_pre)
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
