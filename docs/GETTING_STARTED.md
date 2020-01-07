@@ -443,7 +443,7 @@ class MobileNet(nn.Module):
     def __init__(self, arg1, arg2):
         pass
 
-    def forward(x):  # should return a tuple
+    def forward(self, x):  # should return a tuple
         pass
 
     def init_weights(self, pretrained=None):
