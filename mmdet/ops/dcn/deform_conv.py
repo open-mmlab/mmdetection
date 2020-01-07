@@ -255,7 +255,7 @@ class DeformConvPack(DeformConv):
             False.
     """
 
-    version = 1
+    _version = 2
 
     def __init__(self, *args, **kwargs):
         super(DeformConvPack, self).__init__(*args, **kwargs)
@@ -373,7 +373,7 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
             False.
     """
 
-    version = 1
+    _version = 2
 
     def __init__(self, *args, **kwargs):
         super(ModulatedDeformConvPack, self).__init__(*args, **kwargs)
