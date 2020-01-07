@@ -8,7 +8,7 @@ from .registry import DATASETS
 def _concat_dataset(cfg, default_args=None):
     ann_files = cfg['ann_file']
     img_prefixes = cfg.get('img_prefix', None)
-    seg_prefixes = cfg.get('seg_prefixes', None)
+    seg_prefixes = cfg.get('seg_prefix', None)
     proposal_files = cfg.get('proposal_file', None)
 
     datasets = []
