@@ -3,6 +3,8 @@
 
 **News**: We released the technical report on [ArXiv](https://arxiv.org/abs/1906.07155).
 
+Documentation: https://mmdetection.readthedocs.io/
+
 ## Introduction
 
 The master branch works with **PyTorch 1.1** or higher.
@@ -36,49 +38,15 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 This project is released under the [Apache 2.0 license](LICENSE).
 
-## Updates
+## Changelog
 
-v0.6.0 (14/04/2019)
-- Up to 30% speedup compared to the model zoo.
-- Support both PyTorch stable and nightly version.
-- Replace NMS and SigmoidFocalLoss with Pytorch CUDA extensions.
-
-v0.6rc0(06/02/2019)
-- Migrate to PyTorch 1.0.
-
-v0.5.7 (06/02/2019)
-- Add support for Deformable ConvNet v2. (Many thanks to the authors and [@chengdazhi](https://github.com/chengdazhi))
-- This is the last release based on PyTorch 0.4.1.
-
-v0.5.6 (17/01/2019)
-- Add support for Group Normalization.
-- Unify RPNHead and single stage heads (RetinaHead, SSDHead) with AnchorHead.
-
-v0.5.5 (22/12/2018)
-- Add SSD for COCO and PASCAL VOC.
-- Add ResNeXt backbones and detection models.
-- Refactoring for Samplers/Assigners and add OHEM.
-- Add VOC dataset and evaluation scripts.
-
-v0.5.4 (27/11/2018)
-- Add SingleStageDetector and RetinaNet.
-
-v0.5.3 (26/11/2018)
-- Add Cascade R-CNN and Cascade Mask R-CNN.
-- Add support for Soft-NMS in config files.
-
-v0.5.2 (21/10/2018)
-- Add support for custom datasets.
-- Add a script to convert PASCAL VOC annotations to the expected format.
-
-v0.5.1 (20/10/2018)
-- Add BBoxAssigner and BBoxSampler, the `train_cfg` field in config files are restructured.
-- `ConvFCRoIHead` / `SharedFCRoIHead` are renamed to `ConvFCBBoxHead` / `SharedFCBBoxHead` for consistency.
+v1.0rc1 was released in 13/12/2019, with more than 20 bug fixes and 30 improvements and new features.
+Please refer to [CHANGELOG.md](docs/CHANGELOG.md) for details and history versions.
 
 ## Benchmark and model zoo
 
 Supported methods and backbones are shown in the below table.
-Results and models are available in the [Model zoo](MODEL_ZOO.md).
+Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 
 |                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet |
 |--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|
@@ -92,11 +60,16 @@ Results and models are available in the [Model zoo](MODEL_ZOO.md).
 | RetinaNet          | ✓        | ✓        | ☐        | ✗        | ✓     |
 | GHM                | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
-| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Grid R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Double-Head R-CNN  | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Grid R-CNN (Plus)  | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     |
 | Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     |
+| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     |
+| RepPoints          | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     |
+| FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     |
+| NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     |
 
 Other features
 - [x] DCNv2
@@ -107,24 +80,25 @@ Other features
 - [x] Generalized Attention
 - [x] GCNet
 - [x] Mixed Precision (FP16) Training
+- [x] [InstaBoost](configs/instaboost/README.md)
 
 
 ## Installation
 
-Please refer to [INSTALL.md](INSTALL.md) for installation and dataset preparation.
+Please refer to [INSTALL.md](docs/INSTALL.md) for installation and dataset preparation.
 
 
 ## Get Started
 
-Please see [GETTING_STARTED.md](GETTING_STARTED.md) for the basic usage of MMDetection.
+Please see [GETTING_STARTED.md](docs/GETTING_STARTED.md) for the basic usage of MMDetection.
 
 ## Contributing
 
-We appreciate all contributions to improve MMDetection. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for the contributing guideline.
+We appreciate all contributions to improve MMDetection. Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contributing guideline.
 
 ## Acknowledgement
 
-MMDetection is an open source project that is contributed by researchers and engineers from various colledges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
+MMDetection is an open source project that is contributed by researchers and engineers from various colleges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
 We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new detectors.
 
 
@@ -135,16 +109,18 @@ If you use this toolbox or benchmark in your research, please cite this project.
 ```
 @article{mmdetection,
   title   = {{MMDetection}: Open MMLab Detection Toolbox and Benchmark},
-  author  = {Kai Chen, Jiaqi Wang, Jiangmiao Pang, Yuhang Cao, Yu Xiong, Xiaoxiao Li,
-             Shuyang Sun, Wansen Feng, Ziwei Liu, Jiarui Xu, Zheng Zhang, Dazhi Cheng,
-             Chenchen Zhu, Tianheng Cheng, Qijie Zhao, Buyu Li, Xin Lu, Rui Zhu, Yue Wu,
-             Jifeng Dai, Jingdong Wang, Jianping Shi, Wanli Ouyang, Chen Change Loy, Dahua Lin},
-  journal = {arXiv preprint arXiv:1906.07155},
-  year    = {2019}
+  author  = {Chen, Kai and Wang, Jiaqi and Pang, Jiangmiao and Cao, Yuhang and
+             Xiong, Yu and Li, Xiaoxiao and Sun, Shuyang and Feng, Wansen and
+             Liu, Ziwei and Xu, Jiarui and Zhang, Zheng and Cheng, Dazhi and
+             Zhu, Chenchen and Cheng, Tianheng and Zhao, Qijie and Li, Buyu and
+             Lu, Xin and Zhu, Rui and Wu, Yue and Dai, Jifeng and Wang, Jingdong
+             and Shi, Jianping and Ouyang, Wanli and Loy, Chen Change and Lin, Dahua},
+  journal= {arXiv preprint arXiv:1906.07155},
+  year={2019}
 }
 ```
 
 
 ## Contact
 
-This repo is currently maintained by Kai Chen ([@hellock](http://github.com/hellock)), Jiangmiao Pang ([@OceanPang](https://github.com/OceanPang)), Jiaqi Wang ([@myownskyW7](https://github.com/myownskyW7)) and Yuhang Cao ([@yhcao6](https://github.com/yhcao6)).
+This repo is currently maintained by Kai Chen ([@hellock](http://github.com/hellock)), Yuhang Cao ([@yhcao6](https://github.com/yhcao6)), Wenwei Zhang ([@ZwwWayne](https://github.com/ZwwWayne)), Jiangmiao Pang ([@OceanPang](https://github.com/OceanPang)) and Jiaqi Wang ([@myownskyW7](https://github.com/myownskyW7)).

@@ -2,6 +2,7 @@
 // https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch/blob/mmdetection/mmdet/ops/dcn/src/deform_conv_cuda.c
 
 #include <torch/extension.h>
+#include <ATen/DeviceGuard.h>
 
 #include <cmath>
 #include <vector>
@@ -162,7 +163,8 @@ int deform_conv_forward_cuda(at::Tensor input, at::Tensor weight,
 
   shape_check(input, offset, NULL, weight, kH, kW, dH, dW, padH, padW,
               dilationH, dilationW, group, deformable_group);
-
+  at::DeviceGuard guard(input.device());
+  
   input = input.contiguous();
   offset = offset.contiguous();
   weight = weight.contiguous();
@@ -266,6 +268,7 @@ int deform_conv_backward_input_cuda(at::Tensor input, at::Tensor offset,
                                     int deformable_group, int im2col_step) {
   shape_check(input, offset, &gradOutput, weight, kH, kW, dH, dW, padH, padW,
               dilationH, dilationW, group, deformable_group);
+  at::DeviceGuard guard(input.device());
 
   input = input.contiguous();
   offset = offset.contiguous();
@@ -382,7 +385,8 @@ int deform_conv_backward_parameters_cuda(
 
   shape_check(input, offset, &gradOutput, gradWeight, kH, kW, dH, dW, padH,
               padW, dilationH, dilationW, group, deformable_group);
-
+  at::DeviceGuard guard(input.device());
+  
   input = input.contiguous();
   offset = offset.contiguous();
   gradOutput = gradOutput.contiguous();
@@ -492,7 +496,8 @@ void modulated_deform_conv_cuda_forward(
     const bool with_bias) {
   AT_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
   AT_CHECK(weight.is_contiguous(), "weight tensor has to be contiguous");
-
+  at::DeviceGuard guard(input.device());
+  
   const int batch = input.size(0);
   const int channels = input.size(1);
   const int height = input.size(2);
@@ -573,6 +578,7 @@ void modulated_deform_conv_cuda_backward(
     const bool with_bias) {
   AT_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
   AT_CHECK(weight.is_contiguous(), "weight tensor has to be contiguous");
+  at::DeviceGuard guard(input.device());
 
   const int batch = input.size(0);
   const int channels = input.size(1);

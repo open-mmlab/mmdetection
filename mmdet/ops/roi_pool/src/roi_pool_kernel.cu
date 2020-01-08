@@ -1,4 +1,5 @@
 #include <ATen/ATen.h>
+#include <ATen/cuda/CUDAContext.h>
 #include <THC/THCAtomics.cuh>
 
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
@@ -86,14 +87,14 @@ int ROIPoolForwardLaucher(const at::Tensor features, const at::Tensor rois,
   const int output_size = num_rois * channels * pooled_h * pooled_w;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      features.type(), "ROIPoolLaucherForward", ([&] {
+      features.scalar_type(), "ROIPoolLaucherForward", ([&] {
         const scalar_t *bottom_data = features.data<scalar_t>();
         const scalar_t *rois_data = rois.data<scalar_t>();
         scalar_t *top_data = output.data<scalar_t>();
         int *argmax_data = argmax.data<int>();
 
         ROIPoolForward<scalar_t>
-            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()>>>(
                 output_size, bottom_data, rois_data, scalar_t(spatial_scale),
                 channels, height, width, pooled_h, pooled_w, top_data,
                 argmax_data);
@@ -134,7 +135,7 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
   const int output_size = num_rois * pooled_h * pooled_w * channels;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      top_grad.type(), "ROIPoolLaucherBackward", ([&] {
+      top_grad.scalar_type(), "ROIPoolLaucherBackward", ([&] {
         const scalar_t *top_diff = top_grad.data<scalar_t>();
         const scalar_t *rois_data = rois.data<scalar_t>();
         const int *argmax_data = argmax.data<int>();
@@ -146,7 +147,7 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
         }
 
         ROIPoolBackward<scalar_t>
-            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()>>>(
                 output_size, top_diff, rois_data, argmax_data,
                 scalar_t(spatial_scale), channels, height, width, pooled_h,
                 pooled_w, bottom_diff);

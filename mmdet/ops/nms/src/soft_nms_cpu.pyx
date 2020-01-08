@@ -27,7 +27,7 @@ def soft_nms_cpu(
     float min_score=0.001,
 ):
     boxes = boxes_in.copy()
-    cdef unsigned int N = boxes.shape[0]
+    cdef int N = boxes.shape[0]
     cdef float iw, ih, box_area
     cdef float ua
     cdef int pos = 0

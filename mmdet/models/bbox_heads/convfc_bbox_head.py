@@ -1,13 +1,13 @@
 import torch.nn as nn
 
-from .bbox_head import BBoxHead
 from ..registry import HEADS
 from ..utils import ConvModule
+from .bbox_head import BBoxHead
 
 
 @HEADS.register_module
 class ConvFCBBoxHead(BBoxHead):
-    """More general bbox head, with shared conv and fc layers and two optional
+    r"""More general bbox head, with shared conv and fc layers and two optional
     separated branches.
 
                                 /-> cls convs -> cls fcs -> cls
@@ -67,9 +67,9 @@ class ConvFCBBoxHead(BBoxHead):
 
         if self.num_shared_fcs == 0 and not self.with_avg_pool:
             if self.num_cls_fcs == 0:
-                self.cls_last_dim *= (self.roi_feat_size * self.roi_feat_size)
+                self.cls_last_dim *= self.roi_feat_area
             if self.num_reg_fcs == 0:
-                self.reg_last_dim *= (self.roi_feat_size * self.roi_feat_size)
+                self.reg_last_dim *= self.roi_feat_area
 
         self.relu = nn.ReLU(inplace=True)
         # reconstruct fc_cls and fc_reg since input channels are changed
@@ -112,7 +112,7 @@ class ConvFCBBoxHead(BBoxHead):
             # for separated branches, also consider self.num_shared_fcs
             if (is_shared
                     or self.num_shared_fcs == 0) and not self.with_avg_pool:
-                last_layer_dim *= (self.roi_feat_size * self.roi_feat_size)
+                last_layer_dim *= self.roi_feat_area
             for i in range(num_branch_fcs):
                 fc_in_channels = (
                     last_layer_dim if i == 0 else self.fc_out_channels)
@@ -138,7 +138,9 @@ class ConvFCBBoxHead(BBoxHead):
         if self.num_shared_fcs > 0:
             if self.with_avg_pool:
                 x = self.avg_pool(x)
-            x = x.view(x.size(0), -1)
+
+            x = x.flatten(1)
+
             for fc in self.shared_fcs:
                 x = self.relu(fc(x))
         # separate branches
@@ -150,7 +152,7 @@ class ConvFCBBoxHead(BBoxHead):
         if x_cls.dim() > 2:
             if self.with_avg_pool:
                 x_cls = self.avg_pool(x_cls)
-            x_cls = x_cls.view(x_cls.size(0), -1)
+            x_cls = x_cls.flatten(1)
         for fc in self.cls_fcs:
             x_cls = self.relu(fc(x_cls))
 
@@ -159,7 +161,7 @@ class ConvFCBBoxHead(BBoxHead):
         if x_reg.dim() > 2:
             if self.with_avg_pool:
                 x_reg = self.avg_pool(x_reg)
-            x_reg = x_reg.view(x_reg.size(0), -1)
+            x_reg = x_reg.flatten(1)
         for fc in self.reg_fcs:
             x_reg = self.relu(fc(x_reg))
 

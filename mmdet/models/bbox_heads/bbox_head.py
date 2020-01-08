@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.modules.utils import _pair
 
-from mmdet.core import (delta2bbox, multiclass_nms, bbox_target, force_fp32,
-                        auto_fp16)
+from mmdet.core import (auto_fp16, bbox_target, delta2bbox, force_fp32,
+                        multiclass_nms)
 from ..builder import build_loss
 from ..losses import accuracy
 from ..registry import HEADS
@@ -35,7 +36,8 @@ class BBoxHead(nn.Module):
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
         self.with_reg = with_reg
-        self.roi_feat_size = roi_feat_size
+        self.roi_feat_size = _pair(roi_feat_size)
+        self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.target_means = target_means
@@ -48,9 +50,9 @@ class BBoxHead(nn.Module):
 
         in_channels = self.in_channels
         if self.with_avg_pool:
-            self.avg_pool = nn.AvgPool2d(roi_feat_size)
+            self.avg_pool = nn.AvgPool2d(self.roi_feat_size)
         else:
-            in_channels *= (self.roi_feat_size * self.roi_feat_size)
+            in_channels *= self.roi_feat_area
         if self.with_cls:
             self.fc_cls = nn.Linear(in_channels, num_classes)
         if self.with_reg:
@@ -105,26 +107,30 @@ class BBoxHead(nn.Module):
         losses = dict()
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
-            losses['loss_cls'] = self.loss_cls(
-                cls_score,
-                labels,
-                label_weights,
-                avg_factor=avg_factor,
-                reduction_override=reduction_override)
-            losses['acc'] = accuracy(cls_score, labels)
+            if cls_score.numel() > 0:
+                losses['loss_cls'] = self.loss_cls(
+                    cls_score,
+                    labels,
+                    label_weights,
+                    avg_factor=avg_factor,
+                    reduction_override=reduction_override)
+                losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0
-            if self.reg_class_agnostic:
-                pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), 4)[pos_inds]
-            else:
-                pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), -1,
-                                               4)[pos_inds, labels[pos_inds]]
-            losses['loss_bbox'] = self.loss_bbox(
-                pos_bbox_pred,
-                bbox_targets[pos_inds],
-                bbox_weights[pos_inds],
-                avg_factor=bbox_targets.size(0),
-                reduction_override=reduction_override)
+            if pos_inds.any():
+                if self.reg_class_agnostic:
+                    pos_bbox_pred = bbox_pred.view(bbox_pred.size(0),
+                                                   4)[pos_inds]
+                else:
+                    pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), -1,
+                                                   4)[pos_inds,
+                                                      labels[pos_inds]]
+                losses['loss_bbox'] = self.loss_bbox(
+                    pos_bbox_pred,
+                    bbox_targets[pos_inds],
+                    bbox_weights[pos_inds],
+                    avg_factor=bbox_targets.size(0),
+                    reduction_override=reduction_override)
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
@@ -150,7 +156,12 @@ class BBoxHead(nn.Module):
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
 
         if rescale:
-            bboxes /= scale_factor
+            if isinstance(scale_factor, float):
+                bboxes /= scale_factor
+            else:
+                scale_factor = torch.from_numpy(scale_factor).to(bboxes.device)
+                bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
+                          scale_factor).view(bboxes.size()[0], -1)
 
         if cfg is None:
             return bboxes, scores

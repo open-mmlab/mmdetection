@@ -5,8 +5,8 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import delta2bbox
 from mmdet.ops import nms
-from .guided_anchor_head import GuidedAnchorHead
 from ..registry import HEADS
+from .guided_anchor_head import GuidedAnchorHead
 
 
 @HEADS.register_module
@@ -17,10 +17,8 @@ class GARPNHead(GuidedAnchorHead):
         super(GARPNHead, self).__init__(2, in_channels, **kwargs)
 
     def _init_layers(self):
-        self.rpn_conv = nn.Conv2d(self.in_channels,
-                                  self.feat_channels,
-                                  3,
-                                  padding=1)
+        self.rpn_conv = nn.Conv2d(
+            self.in_channels, self.feat_channels, 3, padding=1)
         super(GARPNHead, self)._init_layers()
 
     def init_weights(self):
@@ -43,19 +41,21 @@ class GARPNHead(GuidedAnchorHead):
              img_metas,
              cfg,
              gt_bboxes_ignore=None):
-        losses = super(GARPNHead, self).loss(cls_scores,
-                                             bbox_preds,
-                                             shape_preds,
-                                             loc_preds,
-                                             gt_bboxes,
-                                             None,
-                                             img_metas,
-                                             cfg,
-                                             gt_bboxes_ignore=gt_bboxes_ignore)
-        return dict(loss_rpn_cls=losses['loss_cls'],
-                    loss_rpn_bbox=losses['loss_bbox'],
-                    loss_anchor_shape=losses['loss_shape'],
-                    loss_anchor_loc=losses['loss_loc'])
+        losses = super(GARPNHead, self).loss(
+            cls_scores,
+            bbox_preds,
+            shape_preds,
+            loc_preds,
+            gt_bboxes,
+            None,
+            img_metas,
+            cfg,
+            gt_bboxes_ignore=gt_bboxes_ignore)
+        return dict(
+            loss_rpn_cls=losses['loss_cls'],
+            loss_rpn_bbox=losses['loss_bbox'],
+            loss_anchor_shape=losses['loss_shape'],
+            loss_anchor_loc=losses['loss_loc'])
 
     def get_bboxes_single(self,
                           cls_scores,

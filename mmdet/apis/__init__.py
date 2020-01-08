@@ -1,8 +1,9 @@
-from .env import init_dist, get_root_logger, set_random_seed
-from .train import train_detector
-from .inference import init_detector, inference_detector, show_result
+from .inference import (async_inference_detector, inference_detector,
+                        init_detector, show_result, show_result_pyplot)
+from .train import get_root_logger, set_random_seed, train_detector
 
 __all__ = [
-    'init_dist', 'get_root_logger', 'set_random_seed', 'train_detector',
-    'init_detector', 'inference_detector', 'show_result'
+    'get_root_logger', 'set_random_seed', 'train_detector', 'init_detector',
+    'async_inference_detector', 'inference_detector', 'show_result',
+    'show_result_pyplot'
 ]

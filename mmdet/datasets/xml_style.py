@@ -5,8 +5,10 @@ import mmcv
 import numpy as np
 
 from .custom import CustomDataset
+from .registry import DATASETS
 
 
+@DATASETS.register_module
 class XMLDataset(CustomDataset):
 
     def __init__(self, min_size=None, **kwargs):

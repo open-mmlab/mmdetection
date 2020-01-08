@@ -1,15 +1,17 @@
+import platform
 from functools import partial
 
-from mmcv.runner import get_dist_info
 from mmcv.parallel import collate
+from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader
 
-from .sampler import GroupSampler, DistributedGroupSampler, DistributedSampler
+from .sampler import DistributedGroupSampler, DistributedSampler, GroupSampler
 
-# https://github.com/pytorch/pytorch/issues/973
-import resource
-rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
-resource.setrlimit(resource.RLIMIT_NOFILE, (4096, rlimit[1]))
+if platform.system() != 'Windows':
+    # https://github.com/pytorch/pytorch/issues/973
+    import resource
+    rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (4096, rlimit[1]))
 
 
 def build_dataloader(dataset,
@@ -17,10 +19,32 @@ def build_dataloader(dataset,
                      workers_per_gpu,
                      num_gpus=1,
                      dist=True,
+                     shuffle=True,
                      **kwargs):
-    shuffle = kwargs.get('shuffle', True)
+    """Build PyTorch DataLoader.
+
+    In distributed training, each GPU/process has a dataloader.
+    In non-distributed training, there is only one dataloader for all GPUs.
+
+    Args:
+        dataset (Dataset): A PyTorch dataset.
+        imgs_per_gpu (int): Number of images on each GPU, i.e., batch size of
+            each GPU.
+        workers_per_gpu (int): How many subprocesses to use for data loading
+            for each GPU.
+        num_gpus (int): Number of GPUs. Only used in non-distributed training.
+        dist (bool): Distributed training/test or not. Default: True.
+        shuffle (bool): Whether to shuffle the data at every epoch.
+            Default: True.
+        kwargs: any keyword argument to be used to initialize DataLoader
+
+    Returns:
+        DataLoader: A PyTorch dataloader.
+    """
     if dist:
         rank, world_size = get_dist_info()
+        # DistributedGroupSampler will definitely shuffle the data to satisfy
+        # that images on each GPU are in the same group
         if shuffle:
             sampler = DistributedGroupSampler(dataset, imgs_per_gpu,
                                               world_size, rank)

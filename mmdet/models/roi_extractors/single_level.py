@@ -54,10 +54,10 @@ class SingleRoIExtractor(nn.Module):
     def map_roi_levels(self, rois, num_levels):
         """Map rois to corresponding feature levels by scales.
 
-        - scale < finest_scale: level 0
-        - finest_scale <= scale < finest_scale * 2: level 1
-        - finest_scale * 2 <= scale < finest_scale * 4: level 2
-        - scale >= finest_scale * 4: level 3
+        - scale < finest_scale * 2: level 0
+        - finest_scale * 2 <= scale < finest_scale * 4: level 1
+        - finest_scale * 4 <= scale < finest_scale * 8: level 2
+        - scale >= finest_scale * 8: level 3
 
         Args:
             rois (Tensor): Input RoIs, shape (k, 5).
@@ -72,20 +72,36 @@ class SingleRoIExtractor(nn.Module):
         target_lvls = target_lvls.clamp(min=0, max=num_levels - 1).long()
         return target_lvls
 
-    @force_fp32(apply_to=('feats',), out_fp16=True)
-    def forward(self, feats, rois):
+    def roi_rescale(self, rois, scale_factor):
+        cx = (rois[:, 1] + rois[:, 3]) * 0.5
+        cy = (rois[:, 2] + rois[:, 4]) * 0.5
+        w = rois[:, 3] - rois[:, 1] + 1
+        h = rois[:, 4] - rois[:, 2] + 1
+        new_w = w * scale_factor
+        new_h = h * scale_factor
+        x1 = cx - new_w * 0.5 + 0.5
+        x2 = cx + new_w * 0.5 - 0.5
+        y1 = cy - new_h * 0.5 + 0.5
+        y2 = cy + new_h * 0.5 - 0.5
+        new_rois = torch.stack((rois[:, 0], x1, y1, x2, y2), dim=-1)
+        return new_rois
+
+    @force_fp32(apply_to=('feats', ), out_fp16=True)
+    def forward(self, feats, rois, roi_scale_factor=None):
         if len(feats) == 1:
             return self.roi_layers[0](feats[0], rois)
 
         out_size = self.roi_layers[0].out_size
         num_levels = len(feats)
         target_lvls = self.map_roi_levels(rois, num_levels)
-        roi_feats = feats[0].new_zeros(rois.size()[0], self.out_channels,
-                                       out_size, out_size)
+        roi_feats = feats[0].new_zeros(
+            rois.size(0), self.out_channels, *out_size)
+        if roi_scale_factor is not None:
+            rois = self.roi_rescale(rois, roi_scale_factor)
         for i in range(num_levels):
             inds = target_lvls == i
             if inds.any():
                 rois_ = rois[inds, :]
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
-                roi_feats[inds] += roi_feats_t
+                roi_feats[inds] = roi_feats_t
         return roi_feats

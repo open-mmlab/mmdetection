@@ -3,10 +3,10 @@ import math
 import torch.nn as nn
 
 from mmdet.ops import DeformConv, ModulatedDeformConv
-from .resnet import Bottleneck as _Bottleneck
-from .resnet import ResNet
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
+from .resnet import Bottleneck as _Bottleneck
+from .resnet import ResNet
 
 
 class Bottleneck(_Bottleneck):
@@ -160,6 +160,7 @@ class ResNeXt(ResNet):
 
     Args:
         depth (int): Depth of resnet, from {18, 34, 50, 101, 152}.
+        in_channels (int): Number of input image channels. Normally 3.
         num_stages (int): Resnet stages, normally 4.
         groups (int): Group of resnext.
         base_width (int): Base width of resnext.
@@ -179,6 +180,20 @@ class ResNeXt(ResNet):
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+
+    Example:
+        >>> from mmdet.models import ResNeXt
+        >>> import torch
+        >>> self = ResNeXt(depth=50)
+        >>> self.eval()
+        >>> inputs = torch.rand(1, 3, 32, 32)
+        >>> level_outputs = self.forward(inputs)
+        >>> for level_out in level_outputs:
+        ...     print(tuple(level_out.shape))
+        (1, 256, 8, 8)
+        (1, 512, 4, 4)
+        (1, 1024, 2, 2)
+        (1, 2048, 1, 1)
     """
 
     arch_settings = {
