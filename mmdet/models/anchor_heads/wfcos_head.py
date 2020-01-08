@@ -244,7 +244,7 @@ class WFCOSHead(nn.Module):
         labels, bbox_targets = self.wfcos_target(all_level_points, gt_bboxes,
                                                  gt_labels)
 
-        # Labels are a list of per level labels, each level is a tensor of all
+        # Labels are a list of per level labels_list, each level is a tensor of all
         # targets at that level
 
         num_imgs = cls_scores[0].size(0)
@@ -322,28 +322,6 @@ class WFCOSHead(nn.Module):
                 dtype=torch.float
             )
 
-            # print(loss_energy.shape)
-            # print(loss_energy)
-
-            # DEBUG
-            # if torch.cuda.current_device() == 0:
-            #     non0 = pos_inds[0]
-            #     print('=======================================================')
-            #     print('flatten_energies.shape:\n{}'
-            #           .format(flatten_energies.shape))
-            #     print('flatten_energies[!=0]:\n{}'
-            #           .format(flatten_energies[non0]))
-            #     print('flatten_energies[!=0].argmax():\n{}'
-            #           .format(flatten_energies[non0].argmax()))
-            #     print('energies_targets[!=0]:\n{}'
-            #           .format(energies_targets[non0]))
-            #     print('loss_energy.item():\n{}'
-            #           .format(loss_energy.item()))
-            #     print('count number of energies which have argmax > 0:')
-            #     print((flatten_energies.argmax(1) > 0).sum())
-            #     flat0 = flatten_energies[non0:non0 + 1, :]
-            #     print('flat0.shape:\n{}'.format(flat0.shape))
-            # input()
         else:
             loss_bbox = pos_bbox_preds.sum()
             loss_energy = pos_energies.sum()
@@ -515,7 +493,7 @@ class WFCOSHead(nn.Module):
         # concat all levels points and regress ranges
         concat_regress_ranges = torch.cat(expanded_regress_ranges, dim=0)
         concat_points = torch.cat(points, dim=0)
-        # get labels and bbox_targets of each image
+        # get labels_list and bbox_targets of each image
         labels_list, bbox_targets_list = multi_apply(
             self.wfcos_target_single,
             gt_bboxes_list,
@@ -628,20 +606,13 @@ class WFCOSHead(nn.Module):
         horizontal = pos_bbox_targets[:, 0] - pos_bbox_targets[:, 2]
         vertical = pos_bbox_targets[:, 1] - pos_bbox_targets[:, 3]
 
-        # print("Horizontals: {}".format(horizontal))
-        # print("Verticals: {}".format(vertical))
-
         horizontal = torch.div(horizontal, 2)
         vertical = torch.div(vertical, 2)
 
         c2 = (horizontal * horizontal) + (vertical * vertical)
 
-        # print("c2: \n{}".format(c2))
-
         # We use x * x instead of x.pow(2) since it's faster by about 30%
         square_root = torch.sqrt(c2)
-
-        # print("Sqrt: \n{}".format(square_root))
 
         type_dict = {'dtype': square_root.dtype,
                      'device': square_root.device}
@@ -654,7 +625,7 @@ class WFCOSHead(nn.Module):
         pos_energies = pos_energies.floor()
 
         # Handle special cases where the energy greater than or equal to the
-        # max energy, as this would require that the number of classes is
+        # max energy, as this would require that the number of classes to be
         # max energy + 1
         pos_energies[pos_energies >= self.max_energy] = self.max_energy - 1
 

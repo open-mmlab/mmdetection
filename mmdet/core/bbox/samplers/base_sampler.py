@@ -43,7 +43,7 @@ class BaseSampler(metaclass=ABCMeta):
             assign_result (:obj:`AssignResult`): Bbox assigning results.
             bboxes (Tensor): Boxes to be sampled from.
             gt_bboxes (Tensor): Ground truth bboxes.
-            gt_labels (Tensor, optional): Class labels of ground truth bboxes.
+            gt_labels (Tensor, optional): Class labels_list of ground truth bboxes.
 
         Returns:
             :obj:`SamplingResult`: Sampling result.

@@ -85,7 +85,7 @@ def voc_eval_with_return(result_file,
     for i in range(len(dataset)):
         ann = dataset.get_ann_info(i)
         bboxes = ann['bboxes']
-        labels = ann['labels']
+        labels = ann['labels_list']
         if 'bboxes_ignore' in ann:
             ignore = np.concatenate([
                 np.zeros(bboxes.shape[0], dtype=np.bool),

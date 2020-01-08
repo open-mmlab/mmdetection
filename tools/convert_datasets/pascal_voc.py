@@ -56,7 +56,7 @@ def parse_xml(args):
         'height': h,
         'ann': {
             'bboxes': bboxes.astype(np.float32),
-            'labels': labels.astype(np.int64),
+            'labels_list': labels.astype(np.int64),
             'bboxes_ignore': bboxes_ignore.astype(np.float32),
             'labels_ignore': labels_ignore.astype(np.int64)
         }

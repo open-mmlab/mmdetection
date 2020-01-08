@@ -75,7 +75,7 @@ img_norm_cfg = dict(
     mean=[240.15232515949037, 240.15229097456378, 240.15232515949037],
     std=[57.178083212078896, 57.178143244444556, 57.178083212078896],
     to_rgb=False)
-img_scale_train = (1400, 1600)
+img_scale_train = (1000, 800)
 img_scale_test = (3000, 3828)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -137,7 +137,7 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=1.0/3,
     step=[16, 22])
-checkpoint_config = dict(interval=5)
+checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
     interval=10,
@@ -147,10 +147,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 210
+total_epochs = 640
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/fcos_hrnetv2p_w32_gn_1x_4gpu_ds/'
-load_from = None  # work_dir + 'latest.pth'
-resume_from = None
+load_from = work_dir + 'latest.pth'
+resume_from = work_dir + 'latest.pth'
 workflow = [('train', 3)]

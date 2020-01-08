@@ -1,7 +1,7 @@
 """DEEPSCORES
 
 Provides access to the DEEPSCORES database with a COCO-like interface. The
-only changes made compared to the coco.py file are the class labels.
+only changes made compared to the coco.py file are the class labels_list.
 
 Author:
     Yvan Satyawan <y_satyawan@hotmail.com>

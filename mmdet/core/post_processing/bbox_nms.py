@@ -24,7 +24,7 @@ def multiclass_nms(multi_bboxes,
             applying NMS
 
     Returns:
-        tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
+        tuple: (bboxes, labels_list), tensors of shape (k, 5) and (k, 1). Labels
             are 0-based.
     """
     num_classes = multi_scores.shape[1]

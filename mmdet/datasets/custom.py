@@ -20,7 +20,7 @@ class CustomDataset(Dataset):
             'height': 720,
             'ann': {
                 'bboxes': <np.ndarray> (n, 4),
-                'labels': <np.ndarray> (n, ),
+                'labels_list': <np.ndarray> (n, ),
                 'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
                 'labels_ignore': <np.ndarray> (k, 4) (optional field)
             }

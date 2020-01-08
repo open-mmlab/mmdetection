@@ -93,7 +93,7 @@ test_pipeline = [
 ]
 data = dict(
     imgs_per_gpu=2,
-    workers_per_gpu=1,
+    workers_per_gpu=0,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_small2017.json',
@@ -135,10 +135,10 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 1
-device_ids = range(2)
+device_ids = range(1)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/wfcos_debugging'
 load_from = './work_dirs/wfcos_debugging/latest.pth'
 resume_from = None
-workflow = [('train', 1), ('val', 1)]
+workflow = [('train', 1),]

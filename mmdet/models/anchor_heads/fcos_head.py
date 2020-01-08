@@ -346,7 +346,7 @@ class FCOSHead(nn.Module):
         # concat all levels points and regress ranges
         concat_regress_ranges = torch.cat(expanded_regress_ranges, dim=0)
         concat_points = torch.cat(points, dim=0)
-        # get labels and bbox_targets of each image
+        # get labels_list and bbox_targets of each image
         labels_list, bbox_targets_list = multi_apply(
             self.fcos_target_single,
             gt_bboxes_list,
@@ -498,9 +498,9 @@ class FCOSHead(nn.Module):
 
         # class targets
         # align with VOC names
-        self.last_vals['labels'] = [labels-1 for labels in self.last_vals['labels']]
+        self.last_vals['labels_list'] = [labels-1 for labels in self.last_vals['labels_list']]
         reshaped_labels = []
-        for labels, vis_class in zip(self.last_vals['labels'], classes_vis):
+        for labels, vis_class in zip(self.last_vals['labels_list'], classes_vis):
             reshaped_labels.append(self.cut_batch_reshape(labels,vis_class.shape,batch_size))
         gt_classes = vt.image_pyramid(vt.colorize_class_preds(reshaped_labels, len(classes)+1),  img.shape[:-1])
         gt_classes = vt.add_class_legend(gt_classes, classes, vt.get_present_classes(reshaped_labels))

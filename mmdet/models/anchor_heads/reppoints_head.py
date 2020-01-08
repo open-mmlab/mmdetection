@@ -25,7 +25,7 @@ class RepPointsHead(nn.Module):
         gradient_mul (float): The multiplier to gradients from
             points refinement and recognition.
         point_strides (Iterable): points strides.
-        point_base_scale (int): bbox scale for assigning labels.
+        point_base_scale (int): bbox scale for assigning labels_list.
         loss_cls (dict): Config of classification loss.
         loss_bbox_init (dict): Config of initial points loss.
         loss_bbox_refine (dict): Config of points loss in refinement.

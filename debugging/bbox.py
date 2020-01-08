@@ -14,7 +14,7 @@ class BoundingBox:
 
         Creates an abstract bounding box class from the network output. This
         class keeps track of the individual bounding boxes, and adds class
-        labels to them based on the segmentation output from the network.
+        labels_list to them based on the segmentation output from the network.
 
         One BoundingBox object should be created per batch.
 
