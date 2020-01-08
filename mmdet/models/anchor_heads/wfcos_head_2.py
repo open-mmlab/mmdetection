@@ -39,12 +39,12 @@ class WFCOSHead(nn.Module):
                  split_convs=False,
                  r=500.):
         """
-        Creates a head based on FCOS that uses an energies map, not centerness
+        Creates a head based on FCOS that uses an energy_preds map, not centerness
         Args:
             num_classes (int): Number of classes to output.
             in_channels (int): Number of input channels.
-            max_energy (int): Quantization of energies. How much to split the
-                energies values by.
+            max_energy (int): Quantization of energy_preds. How much to split the
+                energy_preds values by.
             feat_channels (int): Number of feature channels in each of the
                 stacked convolutions.
             stacked_convs (int): Number of stacked convolutions to have.
@@ -55,14 +55,14 @@ class WFCOSHead(nn.Module):
             loss_bbox (dict): A description of the loss to use for the bbox
                 output.
             loss_energy (dict): A description of the loss to use for the
-                energies map output.
+                energy_preds map output.
             conv_cfg (dict): A description of the configuration of the
                 convolutions in the stacked convolution.
             norm_cfg (dict): A description of the normalization configuration of
                 the layers of the stacked convolution.
             split_convs (bool): Whether or not to split the classification and
-                energies map convolution stacks. False means that the
-                classification energies map shares the same convolution stack.
+                energy_preds map convolution stacks. False means that the
+                classification energy_preds map shares the same convolution stack.
                 Defaults to False.
             r (float): r variable in the energy map target equation.
         """
@@ -193,7 +193,7 @@ class WFCOSHead(nn.Module):
 
         Returns:
             (tuple): A tuple of 3-tuples of tensors, each 3-tuple representing
-                cls_score, bbox_pred, energies of the different feature layers.
+                cls_score, bbox_pred, energy_preds of the different feature layers.
         """
         # Use a multi_apply function to run forwards on each feats tensor
         return multi_apply(self.forward_single, feats, self.scales)
@@ -223,11 +223,11 @@ class WFCOSHead(nn.Module):
 
         return cls_score, bbox_pred, energy
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'energies'))
+    @force_fp32(apply_to=('label_preds', 'bbox_preds', 'energy_preds'))
     def loss(self,
-             cls_scores,
+             label_preds,
              bbox_preds,
-             energies,
+             energy_preds,
              gt_bboxes,
              gt_labels,
              img_metas,
@@ -241,36 +241,81 @@ class WFCOSHead(nn.Module):
         Returns:
             dict: A dictionary with keys loss_cls, loss_bbox, and loss_energy.
         """
-        assert len(cls_scores) == len(bbox_preds) == len(energies)
+        assert len(label_preds) == len(bbox_preds) == len(energy_preds)
 
-        feat_dims = [(level.shape[2], level.shape[3]) for level in cls_scores]
+        feat_dims = [level.shape[-2:] for level in label_preds]
+        all_level_points = []
+        for i in range(len(feat_dims)):
+            all_level_points.append(
+                self.get_points_single(feat_dims[i], self.strides[i],
+                                       bbox_preds[0].dtype,
+                                       bbox_preds[0].device)
+            )
 
         # First create targets
-        label_targets, bbox_targets, energy_targets = self.get_targets(
+        bbox_targets, label_targets, energy_targets, mask = self.get_targets(
             gt_bboxes, gt_labels, feat_dims, img_metas)
 
+        # Now reorder the targets so that they're usable and in the same
+        # shape as the network outputs.
+        bbox_targets, label_targets, energy_targets, mask = \
+            self.reorder_targets(
+                bbox_targets, label_targets, energy_targets, mask
+            )
+
         # Then calculate energy losses.
-
-        # Only consider loss for bboxes and labels_list at positions where the
-        # energy is non-zero. Entire area of non-zero energy within a single
-        # bounding box should have the same label.
-
-        return dict(
-            loss_cls=None,
-            loss_bbox=None,
-            loss_energy=None,
+        loss_energy = self.loss_energy(
+            energy_preds, energy_targets.to(dtype=torch.long)
         )
 
+        # Only consider loss for bboxes and labels_list at positions where the
+        # energy is non-zero.
+        pos_points = all_level_points[mask]
+        pos_bbox_preds = bbox_preds[mask]
+        pos_bbox_targets = bbox_targets[mask]
+        pos_label_preds = label_preds[mask]
+        pos_label_targets = label_targets[mask]
 
-    def get_targets(self, gt_bboxes_list, gt_labels_list, feat_dims, img_metas):
+        loss_bbox = self.loss_bbox(
+            distance2bbox(pos_points, pos_bbox_preds),
+            pos_bbox_targets
+        )
+        loss_cls = self.loss_cls(pos_label_preds, pos_label_targets)
+
+        if pos_bbox_preds.nelement() > 0:
+            pass
+        else:
+            loss_bbox = pos_bbox_preds.sum()
+            loss_cls = pos_label_preds.sum()
+
+        return dict(
+            loss_cls=loss_cls,
+            loss_bbox=loss_bbox,
+            loss_energy=loss_energy,
+        )
+
+    @staticmethod
+    def get_points_single(featmap_size, stride, dtype, device):
+        h, w = featmap_size
+        x_range = torch.arange(
+            0, w * stride, stride, dtype=dtype, device=device)
+        y_range = torch.arange(
+            0, h * stride, stride, dtype=dtype, device=device)
+        y, x = torch.meshgrid(y_range, x_range)
+        points = torch.stack(
+            (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
+        return points
+
+    def get_targets(self, gt_bboxes_list, gt_labels_list,
+                    feat_dims, img_metas):
         """Gets targets for each output type.
 
         This method is also responsible for splitting the targets up into the
         the separate feature levels, i.e. figures out in which feature level to
         detect each object.
 
-        The output returns labels_list, bboxes, and energies. The bboxes will
-        first be split based on max edge size. Then the energies for each
+        The output returns labels_list, bboxes, and energy_preds. The bboxes will
+        first be split based on max edge size. Then the energy_preds for each
         feature level will be calculated. Finally, the labels_list assigned to
         non-zero energy areas within each bounding box. All other areas will
         contain no label.
@@ -285,28 +330,36 @@ class WFCOSHead(nn.Module):
             img_metas (list): The img_metas as returned from the data loader.
 
         Returns:
-            tuple: A tuple of bboxes, labels_list, and energies. This will be
-                split first by image then by feature level, i.e. labels_list will be
-                a list n lists, where n is the number of images, and each of
-                those lists will have s elements, where s is the number of
-                feature levels/heads. Each of those lists will then hold n
-                tensors, n
-                being the number of feature levels, and each tensor being the
-                labels_list that are assigned to that feature level.
+            tuple: A tuple of bboxes, labels_list, energy_preds, and masks.
+                This will be split first by image then by feature level,
+                i.e. labels_list will be a list n lists, where n is the number
+                of images, and each of those lists will have s elements, where s
+                is the number of feature levels/heads. Each of those lists will
+                then hold n tensors, n being the number of feature levels, and
+                each tensor being the labels_list that are assigned to that
+                feature level.
+
+                bboxes will have shape (h, w, 4)
+                labels will have shape (h, w)
+                energy will have shape (h, w)
+                masks will have shape (h, w) and is a boolean tensor
+
         """
         assert len(gt_bboxes_list) == len(gt_labels_list)
 
         # Sort gt_bboxes_list by object max edge
         split_bboxes = self.split_bboxes(gt_bboxes_list, gt_labels_list)
 
-        # Calculate energies for image for each feature level
+        # Calculate energy_preds for image for each feature level
         gt_bboxes = []
         gt_energy = []
         gt_labels = []
+        gt_masks = []
         for i, bboxes in enumerate(split_bboxes):
             image_energy = []
             image_classes = []
             image_bboxes = []
+            image_masks = []
             for j, feat_level_bboxes in enumerate(bboxes):
                 img_size = img_metas[i]['pad_shape']
 
@@ -319,8 +372,12 @@ class WFCOSHead(nn.Module):
                                            torch.tensor(1),
                                            torch.tensor(0)) == 1
 
+                image_masks.append(feature_mask)
+
                 # Then, using feature_energy.indices, get the class for each
-                # grid cell that isn't background
+                # grid cell that isn't background Entire area of non-zero
+                # energy within a single bounding box should have the same
+                # label.
                 feature_classes = torch.zeros_like(feature_mask,
                                                    dtype=torch.float)
                 feature_classes[feature_mask] = (
@@ -344,8 +401,9 @@ class WFCOSHead(nn.Module):
             gt_energy.append(image_energy)
             gt_labels.append(image_classes)
             gt_bboxes.append(image_bboxes)
+            gt_masks.append(image_masks)
 
-        return gt_bboxes, gt_labels, gt_energy
+        return gt_bboxes, gt_labels, gt_energy, gt_masks
 
     def split_bboxes(self, bbox_list, labels_list):
         """Splits bboxes based on max edge length.
@@ -542,3 +600,67 @@ class WFCOSHead(nn.Module):
             energy_layer[mask == 1] = torch.floor(temp * self.max_energy)
 
         return energy_layers.max(dim=0)
+
+    @staticmethod
+    def reorder_targets(bbox_targets, label_targets, energy_targets,
+                        masks_targets):
+        """Reorders targets such that they are the same shape as predictions.
+
+        Notes:
+            b stands for batch size and s stands for number of feature
+            levels/heads.
+
+        Shapes:
+            bbox_targets: b-list of s-lists of (h, w, 4) tensors.
+            label_targets: b-list of s-lists of (h, w) tensors.
+            energy_target: b-list of s-lists of (h, w) tensors.
+            masks: b-list of s-lists of (h, w) tensors.
+        Args:
+             bbox_targets (list): List of bbox targets from get_targets()
+             label_targets (list): List of label targets from get_targets()
+             energy_targets (list): List of energy targets from get_targets()
+             masks (list): List of masks of non-zero energy from get_targets().
+                This is a boolean tensor.
+
+         Returns:
+             list: s-list of (b, h, w, 4) tensors representing bboxes.
+             list: s-list of (b, h, w) tensors representing labels.
+             list: s-list of (b, h, w) tensors representing energy_preds.
+             list: s-list of (b, h, w) boolean tensors representing the non-zero
+                masks.
+        """
+        bboxes = [[] for _ in range(len(bbox_targets[0]))]
+        labels = [[] for _ in range(len(bbox_targets[0]))]
+        energy = [[] for _ in range(len(bbox_targets[0]))]
+        masks = [[] for _ in range(len(bbox_targets[0]))]
+
+        for image_num in range(len(bbox_targets)):
+            for i, (b_target, l_target, e_target, m_target) in enumerate(
+                zip(bbox_targets[image_num],
+                    label_targets[image_num],
+                    energy_targets[image_num],
+                    masks_targets[image_num])):
+                bboxes[i].append(torch.unsqueeze(b_target, 0))
+                labels[i].append(torch.unsqueeze(l_target, 0))
+                energy[i].append(torch.unsqueeze(e_target, 0))
+                masks[i].append(torch.unsqueeze(m_target, 0))
+
+        for i in range(len(bbox_targets[0])):
+            bboxes[i] = torch.cat(bboxes[i])
+            labels[i] = torch.cat(labels[i])
+            energy[i] = torch.cat(energy[i])
+            masks[i] = torch.cat(masks[i])
+
+        return bboxes, labels, energy, masks
+
+    def get_pos_only(self, bbox_preds, bbox_targets,
+                     label_preds, label_targets, mask):
+        """Gets only the bboxes and labels where the mask is true.
+
+        Returns:
+            torch.Tensor: (d, 4) positive bbox predictions.
+            torch.Tensor: (d, 4) positive bbox targets.
+            torch.Tensor: (d, num_classes) positive label predictions.
+            torch.Tensor: (d) positive label targets.
+        """
+        return (bbox_preds[mask])
