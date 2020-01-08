@@ -180,11 +180,11 @@ class GuidedAnchorHead(AnchorHead):
             deformable_groups=self.deformable_groups)
         self.conv_cls = MaskedConv2d(self.feat_channels,
                                      self.num_anchors * self.cls_out_channels,
-                                     1)
+                                     1)#这个是分类预测层的卷积，如果是推断还需要用到mask
         self.conv_reg = MaskedConv2d(self.feat_channels, self.num_anchors * 4,
-                                     1)
+                                     1)#这个是回归预测层的卷积，如果是推断还需要用到mask
 
-    def init_weights(self):
+    def init_weights(self):#初始化权重
         normal_init(self.conv_cls, std=0.01)
         normal_init(self.conv_reg, std=0.01)
 
@@ -203,8 +203,8 @@ class GuidedAnchorHead(AnchorHead):
             mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr#矩形掩码
         else:
             mask = None
-        cls_score = self.conv_cls(x, mask)
-        bbox_pred = self.conv_reg(x, mask)
+        cls_score = self.conv_cls(x, mask)#分类预测
+        bbox_pred = self.conv_reg(x, mask)#回归预测
         return cls_score, bbox_pred, shape_pred, loc_pred
 
     def forward(self, feats):#主函数
