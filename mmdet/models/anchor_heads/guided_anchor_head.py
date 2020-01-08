@@ -14,7 +14,7 @@ from ..registry import HEADS
 from ..utils import bias_init_with_prob
 from .anchor_head import AnchorHead
 
-
+#DCN
 class FeatureAdaption(nn.Module):
     """Feature Adaption Module.
 
@@ -37,21 +37,21 @@ class FeatureAdaption(nn.Module):
         super(FeatureAdaption, self).__init__()
         offset_channels = kernel_size * kernel_size * 2
         self.conv_offset = nn.Conv2d(
-            2, deformable_groups * offset_channels, 1, bias=False)
+            2, deformable_groups * offset_channels, 1, bias=False)#计算偏移的普通卷积，输入为w,h的通道，输出为3*3*2*deformat
         self.conv_adaption = DeformConv(
             in_channels,
             out_channels,
             kernel_size=kernel_size,
             padding=(kernel_size - 1) // 2,
-            deformable_groups=deformable_groups)
+            deformable_groups=deformable_groups)#DCN卷积层
         self.relu = nn.ReLU(inplace=True)
 
-    def init_weights(self):
+    def init_weights(self):#初始化权重
         normal_init(self.conv_offset, std=0.1)
         normal_init(self.conv_adaption, std=0.01)
 
     def forward(self, x, shape):
-        offset = self.conv_offset(shape.detach())
+        offset = self.conv_offset(shape.detach())#先计算偏移
         x = self.relu(self.conv_adaption(x, offset))
         return x
 
@@ -194,20 +194,20 @@ class GuidedAnchorHead(AnchorHead):
 
         self.feature_adaption.init_weights()
 
-    def forward_single(self, x):
-        loc_pred = self.conv_loc(x)
-        shape_pred = self.conv_shape(x)
-        x = self.feature_adaption(x, shape_pred)
+    def forward_single(self, x):#主函数
+        loc_pred = self.conv_loc(x)#位置预测，是一个1*1的常规卷积层
+        shape_pred = self.conv_shape(x)#形状预测，也是一个常规1*1卷积，输出是anchors*2  ？？
+        x = self.feature_adaption(x, shape_pred)#主干的DCN部分
         # masked conv is only used during inference for speed-up
-        if not self.training:
-            mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr
+        if not self.training:#如果不是训练的时候，就要直接用掩码
+            mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr#矩形掩码
         else:
             mask = None
         cls_score = self.conv_cls(x, mask)
         bbox_pred = self.conv_reg(x, mask)
         return cls_score, bbox_pred, shape_pred, loc_pred
 
-    def forward(self, feats):
+    def forward(self, feats):#主函数
         return multi_apply(self.forward_single, feats)
 
     def get_sampled_approxs(self,
