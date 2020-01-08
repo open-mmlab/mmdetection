@@ -231,23 +231,23 @@ class GuidedAnchorHead(AnchorHead):
         # since feature map sizes of all images are the same, we only compute
         # approxes for one time
         multi_level_approxs = []
-        for i in range(num_levels):#对所有的特征图
+        for i in range(num_levels):#对所有的特征图生成anchor
             approxs = self.approx_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i], device=device)#生成该特征图上对应的
+                featmap_sizes[i], self.anchor_strides[i], device=device)#生成一个特征图上的anchor，是（N,4）
             multi_level_approxs.append(approxs)
-        approxs_list = [multi_level_approxs for _ in range(num_imgs)]
+        approxs_list = [multi_level_approxs for _ in range(num_imgs)]#每个图片都要有所有anchor
 
         # for each image, we compute inside flags of multi level approxes
         inside_flag_list = []
-        for img_id, img_meta in enumerate(img_metas):
+        for img_id, img_meta in enumerate(img_metas):#对每张图片的标签
             multi_level_flags = []
-            multi_level_approxs = approxs_list[img_id]
-            for i in range(num_levels):
-                approxs = multi_level_approxs[i]
+            multi_level_approxs = approxs_list[img_id]#选中他对应的anchor
+            for i in range(num_levels):#对每个尺度的特征图
+                approxs = multi_level_approxs[i]#选中他对应的anchor
                 anchor_stride = self.anchor_strides[i]
-                feat_h, feat_w = featmap_sizes[i]
-                h, w, _ = img_meta['pad_shape']
-                valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
+                feat_h, feat_w = featmap_sizes[i]#计算特征图的大小
+                h, w, _ = img_meta['pad_shape']#标签形状
+                valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)#计算特征图在原图上的部分
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.approx_generators[i].valid_flags(
                     (feat_h, feat_w), (valid_feat_h, valid_feat_w),
