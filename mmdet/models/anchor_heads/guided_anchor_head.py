@@ -216,24 +216,24 @@ class GuidedAnchorHead(AnchorHead):
                             cfg,
                             device='cuda'):
         """Get sampled approxs and inside flags according to feature map sizes.
-
+        用于生成对应的标签属性
         Args:
-            featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            img_metas (list[dict]): Image meta info.
+            featmap_sizes (list[tuple]): Multi-level feature map sizes.特征图大小
+            img_metas (list[dict]): Image meta info.图片标签
             device (torch.device | str): device for returned tensors
 
         Returns:
             tuple: approxes of each image, inside flags of each image
         """
-        num_imgs = len(img_metas)
-        num_levels = len(featmap_sizes)
+        num_imgs = len(img_metas)#有多少个标签
+        num_levels = len(featmap_sizes)#有多少个特征图
 
         # since feature map sizes of all images are the same, we only compute
         # approxes for one time
         multi_level_approxs = []
-        for i in range(num_levels):
+        for i in range(num_levels):#对所有的特征图
             approxs = self.approx_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i], device=device)
+                featmap_sizes[i], self.anchor_strides[i], device=device)#生成该特征图上对应的
             multi_level_approxs.append(approxs)
         approxs_list = [multi_level_approxs for _ in range(num_imgs)]
 
