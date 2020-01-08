@@ -1,19 +1,41 @@
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (atss_target, delta2bbox, force_fp32, multi_apply,
-                        multiclass_nms)
+from mmdet.core import (PseudoSampler, anchor_inside_flags, bbox2delta,
+                        build_assigner, delta2bbox, force_fp32,
+                        images_to_levels, multi_apply, multiclass_nms, unmap)
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, Scale, bias_init_with_prob
 from .anchor_head import AnchorHead
 
 
+def get_num_gpus():
+    return int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+
+
+def reduce_sum(tensor):
+    if get_num_gpus() <= 1:
+        return tensor
+    import torch.distributed as dist
+    tensor = tensor.clone()
+    dist.all_reduce(tensor, op=dist.reduce_op.SUM)
+    return tensor
+
+
 @HEADS.register_module
 class ATSSHead(AnchorHead):
     """
+    Bridging the Gap Between Anchor-based and Anchor-free Detection via
+    Adaptive Training Sample Selection
+
+    ATSS head structure is similar with FCOS, however ATSS use anchor boxes
+    and assign label by Adaptive Training Sample Selection instead max-iou.
+
     https://arxiv.org/abs/1912.02424
     """
 
@@ -25,7 +47,6 @@ class ATSSHead(AnchorHead):
                  scales_per_octave=1,
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 loss_bbox_weight=2.0,
                  loss_centerness=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
@@ -36,7 +57,6 @@ class ATSSHead(AnchorHead):
         self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.loss_bbox_weight = loss_bbox_weight
 
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
@@ -123,7 +143,7 @@ class ATSSHead(AnchorHead):
         loss_cls = self.loss_cls(
             cls_score, labels, label_weights, avg_factor=num_total_samples)
 
-        pos_inds = torch.nonzero(labels > 0).squeeze(1)
+        pos_inds = torch.nonzero(labels).squeeze(1)
 
         if len(pos_inds) > 0:
             pos_bbox_targets = bbox_targets[pos_inds]
@@ -156,7 +176,7 @@ class ATSSHead(AnchorHead):
         else:
             loss_bbox = loss_cls * 0
             loss_centerness = loss_bbox * 0
-            centerness_targets = torch.tensor(0)
+            centerness_targets = torch.tensor(0).cuda()
 
         return loss_cls, loss_bbox, loss_centerness, centerness_targets.sum()
 
@@ -179,25 +199,25 @@ class ATSSHead(AnchorHead):
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
-        cls_reg_targets = atss_target(
+        cls_reg_targets = self.atss_target(
             anchor_list,
             valid_flag_list,
             gt_bboxes,
             img_metas,
-            self.target_means,
-            self.target_stds,
             cfg,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
-            label_channels=label_channels,
-            sampling=self.sampling)
+            label_channels=label_channels)
         if cls_reg_targets is None:
             return None
 
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
          bbox_weights_list, num_total_pos, num_total_neg) = cls_reg_targets
-        num_total_samples = (
-            num_total_pos + num_total_neg if self.sampling else num_total_pos)
+
+        num_gpus = get_num_gpus()
+        num_total_samples = reduce_sum(
+            torch.tensor(num_total_pos).cuda()).item()
+        num_total_samples = max(num_total_samples / float(num_gpus), 1.0)
 
         losses_cls, losses_bbox, loss_centerness,\
             bbox_avg_factor = multi_apply(
@@ -212,11 +232,9 @@ class ATSSHead(AnchorHead):
                 num_total_samples=num_total_samples,
                 cfg=cfg)
 
-        bbox_avg_factor = torch.tensor(bbox_avg_factor).sum()
-        losses_bbox = list(
-            map(lambda x: x * self.loss_bbox_weight / bbox_avg_factor,
-                losses_bbox))
-
+        bbox_avg_factor = sum(bbox_avg_factor)
+        bbox_avg_factor = reduce_sum(bbox_avg_factor).item() / num_gpus
+        losses_bbox = list(map(lambda x: x / bbox_avg_factor, losses_bbox))
         return dict(
             loss_cls=losses_cls,
             loss_bbox=losses_bbox,
@@ -334,3 +352,143 @@ class ATSSHead(AnchorHead):
             cfg.max_per_img,
             score_factors=mlvl_centerness)
         return det_bboxes, det_labels
+
+    def atss_target(self,
+                    anchor_list,
+                    valid_flag_list,
+                    gt_bboxes_list,
+                    img_metas,
+                    cfg,
+                    gt_bboxes_ignore_list=None,
+                    gt_labels_list=None,
+                    label_channels=1,
+                    unmap_outputs=True):
+        """
+        almost the same with anchor_target, with a little modification,
+        here we need return the anchor
+        """
+        num_imgs = len(img_metas)
+        assert len(anchor_list) == len(valid_flag_list) == num_imgs
+
+        # anchor number of multi levels
+        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
+        num_level_anchors_list = [num_level_anchors] * num_imgs
+
+        # concat all level anchors and flags to a single tensor
+        for i in range(num_imgs):
+            assert len(anchor_list[i]) == len(valid_flag_list[i])
+            anchor_list[i] = torch.cat(anchor_list[i])
+            valid_flag_list[i] = torch.cat(valid_flag_list[i])
+
+        # compute targets for each image
+        if gt_bboxes_ignore_list is None:
+            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+        if gt_labels_list is None:
+            gt_labels_list = [None for _ in range(num_imgs)]
+        (all_anchors, all_labels, all_label_weights, all_bbox_targets,
+         all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
+             self.atss_target_single,
+             anchor_list,
+             valid_flag_list,
+             num_level_anchors_list,
+             gt_bboxes_list,
+             gt_bboxes_ignore_list,
+             gt_labels_list,
+             img_metas,
+             cfg=cfg,
+             label_channels=label_channels,
+             unmap_outputs=unmap_outputs)
+        # no valid anchors
+        if any([labels is None for labels in all_labels]):
+            return None
+        # sampled anchors of all images
+        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
+        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        # split targets to a list w.r.t. multiple levels
+        anchors_list = images_to_levels(all_anchors, num_level_anchors)
+        labels_list = images_to_levels(all_labels, num_level_anchors)
+        label_weights_list = images_to_levels(all_label_weights,
+                                              num_level_anchors)
+        bbox_targets_list = images_to_levels(all_bbox_targets,
+                                             num_level_anchors)
+        bbox_weights_list = images_to_levels(all_bbox_weights,
+                                             num_level_anchors)
+        return (anchors_list, labels_list, label_weights_list,
+                bbox_targets_list, bbox_weights_list, num_total_pos,
+                num_total_neg)
+
+    def atss_target_single(self,
+                           flat_anchors,
+                           valid_flags,
+                           num_level_anchors,
+                           gt_bboxes,
+                           gt_bboxes_ignore,
+                           gt_labels,
+                           img_meta,
+                           cfg,
+                           label_channels=1,
+                           unmap_outputs=True):
+        inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
+                                           img_meta['img_shape'][:2],
+                                           cfg.allowed_border)
+        if not inside_flags.any():
+            return (None, ) * 6
+        # assign gt and sample anchors
+        anchors = flat_anchors[inside_flags, :]
+
+        num_level_anchors_inside = self.get_num_level_anchors_inside(
+            num_level_anchors, inside_flags)
+        bbox_assigner = build_assigner(cfg.assigner)
+        assign_result = bbox_assigner.assign(anchors, num_level_anchors_inside,
+                                             gt_bboxes, gt_bboxes_ignore,
+                                             gt_labels)
+
+        bbox_sampler = PseudoSampler()
+        sampling_result = bbox_sampler.sample(assign_result, anchors,
+                                              gt_bboxes)
+
+        num_valid_anchors = anchors.shape[0]
+        bbox_targets = torch.zeros_like(anchors)
+        bbox_weights = torch.zeros_like(anchors)
+        labels = anchors.new_zeros(num_valid_anchors, dtype=torch.long)
+        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
+
+        pos_inds = sampling_result.pos_inds
+        neg_inds = sampling_result.neg_inds
+        if len(pos_inds) > 0:
+            pos_bbox_targets = bbox2delta(sampling_result.pos_bboxes,
+                                          sampling_result.pos_gt_bboxes,
+                                          self.target_means, self.target_stds)
+            bbox_targets[pos_inds, :] = pos_bbox_targets
+            bbox_weights[pos_inds, :] = 1.0
+            if gt_labels is None:
+                labels[pos_inds] = 1
+            else:
+                labels[pos_inds] = gt_labels[
+                    sampling_result.pos_assigned_gt_inds]
+            if cfg.pos_weight <= 0:
+                label_weights[pos_inds] = 1.0
+            else:
+                label_weights[pos_inds] = cfg.pos_weight
+        if len(neg_inds) > 0:
+            label_weights[neg_inds] = 1.0
+
+        # map up to original set of anchors
+        if unmap_outputs:
+            num_total_anchors = flat_anchors.size(0)
+            anchors = unmap(anchors, num_total_anchors, inside_flags)
+            labels = unmap(labels, num_total_anchors, inside_flags)
+            label_weights = unmap(label_weights, num_total_anchors,
+                                  inside_flags)
+            bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
+            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
+
+        return (anchors, labels, label_weights, bbox_targets, bbox_weights,
+                pos_inds, neg_inds)
+
+    def get_num_level_anchors_inside(self, num_level_anchors, inside_flags):
+        split_inside_flags = torch.split(inside_flags, num_level_anchors)
+        num_level_anchors_inside = [
+            int(flags.sum()) for flags in split_inside_flags
+        ]
+        return num_level_anchors_inside

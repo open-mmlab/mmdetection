@@ -33,7 +33,7 @@ class ATSSAssigner(BaseAssigner):
 
         The assignment is done in following steps
 
-        1. compute iou between all bbox and gt
+        1. compute iou between all bbox (bbox of all pyramid levels) and gt
         2. compute center distance between all bbox and gt
         3. on each pyramid level, for each gt, select k bbox whose center
            are closest to the gt center, so we total select k*l bbox as
@@ -56,14 +56,33 @@ class ATSSAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
-        if bboxes.shape[0] == 0 or gt_bboxes.shape[0] == 0:
-            raise ValueError('No gt or bboxes')
-
         INF = 100000000
-        num_gt = gt_bboxes.size(0)
         bboxes = bboxes[:, :4]
+        num_gt, num_bboxes = gt_bboxes.size(0), bboxes.size(0)
+
+        # compute iou between all bbox and gt
         overlaps = bbox_overlaps(bboxes, gt_bboxes)
 
+        # assign 0 by default
+        assigned_gt_inds = overlaps.new_full((num_bboxes, ),
+                                             0,
+                                             dtype=torch.long)
+
+        if num_gt == 0 or num_bboxes == 0:
+            # No ground truth or boxes, return empty assignment
+            max_overlaps = overlaps.new_zeros((num_bboxes, ))
+            if num_gt == 0:
+                # No truth, assign everything to background
+                assigned_gt_inds[:] = 0
+            if gt_labels is None:
+                assigned_labels = None
+            else:
+                assigned_labels = overlaps.new_zeros((num_bboxes, ),
+                                                     dtype=torch.long)
+            return AssignResult(
+                num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
+
+        # compute center distance between all bbox and gt
         gt_cx = (gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2.0
         gt_cy = (gt_bboxes[:, 1] + gt_bboxes[:, 3]) / 2.0
         gt_points = torch.stack((gt_cx, gt_cy), dim=1)
@@ -75,9 +94,12 @@ class ATSSAssigner(BaseAssigner):
         distances = (bboxes_points[:, None, :] -
                      gt_points[None, :, :]).pow(2).sum(-1).sqrt()
 
+        # Selecting candidates based on the center distance
         candidate_idxs = []
         start_idx = 0
         for level, bboxes_per_level in enumerate(num_level_bboxes):
+            # on each pyramid level, for each gt,
+            # select k bbox whose center are closest to the gt center
             end_idx = start_idx + bboxes_per_level
             distances_per_level = distances[start_idx:end_idx, :]
             _, topk_idxs_per_level = distances_per_level.topk(
@@ -86,6 +108,8 @@ class ATSSAssigner(BaseAssigner):
             start_idx = end_idx
         candidate_idxs = torch.cat(candidate_idxs, dim=0)
 
+        # get corresponding iou for the these candidates, and compute the
+        # mean and std, set mean + std as the iou threshold
         candidate_overlaps = overlaps[candidate_idxs, torch.arange(num_gt)]
         overlaps_mean_per_gt = candidate_overlaps.mean(0)
         overlaps_std_per_gt = candidate_overlaps.std(0)
@@ -93,7 +117,7 @@ class ATSSAssigner(BaseAssigner):
 
         is_pos = candidate_overlaps >= overlaps_thr_per_gt[None, :]
 
-        num_bboxes = bboxes.size(0)
+        # limit the positive sample's center in gt
         for gt_idx in range(num_gt):
             candidate_idxs[:, gt_idx] += gt_idx * num_bboxes
         ep_bboxes_cx = bboxes_cx.view(1, -1).expand(
@@ -102,6 +126,8 @@ class ATSSAssigner(BaseAssigner):
             num_gt, num_bboxes).contiguous().view(-1)
         candidate_idxs = candidate_idxs.view(-1)
 
+        # calculate the left, top, right, bottom distance between positive
+        # bbox center and gt side
         l_ = ep_bboxes_cx[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 0]
         t_ = ep_bboxes_cy[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 1]
         r_ = gt_bboxes[:, 2] - ep_bboxes_cx[candidate_idxs].view(-1, num_gt)
@@ -109,6 +135,8 @@ class ATSSAssigner(BaseAssigner):
         is_in_gts = torch.stack([l_, t_, r_, b_], dim=1).min(dim=1)[0] > 0.01
         is_pos = is_pos & is_in_gts
 
+        # if an anchor box is assigned to multiple gts,
+        # the one with the highest IoU will be selected.
         overlaps_inf = torch.full_like(overlaps,
                                        -INF).t().contiguous().view(-1)
         index = candidate_idxs.view(-1)[is_pos.view(-1)]
@@ -116,9 +144,6 @@ class ATSSAssigner(BaseAssigner):
         overlaps_inf = overlaps_inf.view(num_gt, -1).t()
 
         max_overlaps, argmax_overlaps = overlaps_inf.max(dim=1)
-        assigned_gt_inds = overlaps.new_full((num_bboxes, ),
-                                             0,
-                                             dtype=torch.long)
         assigned_gt_inds[
             max_overlaps != -INF] = argmax_overlaps[max_overlaps != -INF] + 1
 
