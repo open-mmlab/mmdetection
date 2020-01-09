@@ -115,7 +115,7 @@ def main():
         import wandb
         wandb.init()
         wandb.config.update(cfg._cfg_dict)
-        wandb.config.update(filename=cfg.filename)
+        wandb.config.update({"filename": cfg.filename})
         import numpy as np
         wandb.log({"example": wandb.Image(np.zeros([256, 256]).astype(np.uint8))})
 

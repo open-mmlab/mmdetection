@@ -365,6 +365,7 @@ class WFCOSHead(nn.Module):
             loss_bbox = pos_bbox_preds.sum()
             loss_energy = pos_energies.sum()
             energy_non_zero = torch.tensor(0, dtype=torch.float)
+            energies_targets = None
 
 
         self.last_vals = dict(
@@ -377,7 +378,8 @@ class WFCOSHead(nn.Module):
             cfg=cfg,
             all_level_points=all_level_points,
             labels=labels,
-            bbox_targets=bbox_targets
+            bbox_targets=bbox_targets,
+            energies_targets=energies_targets
         )
 
 
@@ -726,15 +728,13 @@ class WFCOSHead(nn.Module):
         scores_vis = []
         classes_vis = []
         for energies, cl_score in zip(self.last_vals['energies'], self.last_vals['cls_scores']):
-            cls_scores = cl_score[0].permute(1, 2, 0).sigmoid()
-            centerness_scores = energies[0].permute(1, 2, 0).sigmoid()
+            cls_scores = cl_score[0].permute(1, 2, 0).argmax(2)
+            energy_score = energies[0].permute(1, 2, 0).argmax(2)
 
-            final_score = (cls_scores*centerness_scores).detach().cpu().numpy()
-            max_final_score = np.max(final_score, axis=-1)
-            scores_vis.append(max_final_score)
+            energy_score = energy_score.detach().cpu().numpy()
+            scores_vis.append(energy_score)
 
-            final_classes = ((max_final_score > test_cfg['score_thr'])*np.argmax(cls_scores.detach().cpu().numpy(), axis=-1)+
-                             (max_final_score < test_cfg['score_thr'])*-1)
+            final_classes = cls_scores.detach().cpu().numpy()
             classes_vis.append(final_classes)
 
 
@@ -742,7 +742,7 @@ class WFCOSHead(nn.Module):
         # threshold should be about 0.5 lightness
         #[vis / test_cfg['score_thr'] * 125 for vis in scores_vis]
         # take care of overflow
-        img_scores = vt.image_pyramid([vis/test_cfg['score_thr']*125 for vis in scores_vis], img.shape[:-1])
+        img_scores = vt.image_pyramid([vis/10*125 for vis in scores_vis], img.shape[:-1])
         vis["energy_pred"] = np.expand_dims(img_scores, -1)
         #Image.fromarray(img_scores).show()
         img_classes = vt.image_pyramid(vt.colorize_class_preds(classes_vis, len(classes)+1),  img.shape[:-1])
@@ -757,9 +757,9 @@ class WFCOSHead(nn.Module):
         # cent = [tar.cpu().numpy() for tar in cent]
         # self.centerness_target(self.last_vals["bbox_targets"])
         reshaped_centers = []
-        for tar, vis_class in zip(self.last_vals["bbox_targets"], classes_vis):
+        for tar, vis_class in zip(self.last_vals["bbox_targets"],  ):
             tar[tar < 0] = 0
-            tar = self.centerness_target(tar).cpu().numpy()
+            tar = self.energy_target(tar).cpu().numpy()
             tar = self.cut_batch_reshape(tar, vis_class.shape, batch_size)
             tar = np.nan_to_num(tar)
             reshaped_centers.append((tar*255).astype(np.uint8))

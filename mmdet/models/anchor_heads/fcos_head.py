@@ -430,7 +430,7 @@ class FCOSHead(nn.Module):
                 top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
         return torch.sqrt(centerness_targets)
 
-    def get_visualization(self, input_img,classes,test_cfg):
+    def get_visualization(self, input_img, classes, test_cfg):
         vis = dict()
         batch_size = input_img.shape[0]
         img = tensor2imgs(input_img, **self.last_vals['img_metas'][0]['img_norm_cfg'])[0] #get input image
