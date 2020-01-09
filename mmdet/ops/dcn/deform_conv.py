@@ -24,7 +24,7 @@ class DeformConvFunction(Function):
                 im2col_step=64):
         if input is not None and input.dim() != 4:
             raise ValueError(
-                "Expected 4D tensor as input, got {}D tensor instead.".format(
+                'Expected 4D tensor as input, got {}D tensor instead.'.format(
                     input.dim()))
         ctx.stride = _pair(stride)
         ctx.padding = _pair(padding)
@@ -105,7 +105,7 @@ class DeformConvFunction(Function):
             output_size += ((in_size + (2 * pad) - kernel) // stride_ + 1, )
         if not all(map(lambda s: s > 0, output_size)):
             raise ValueError(
-                "convolution input is too small (output would be {})".format(
+                'convolution input is too small (output would be {})'.format(
                     'x'.join(map(str, output_size))))
         return output_size
 
@@ -281,26 +281,26 @@ class DeformConvPack(DeformConv):
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
-        version = local_metadata.get("version", None)
+        version = local_metadata.get('version', None)
 
         if version is None or version < 2:
             # the key is different in early versions
             # In version < 2, DeformConvPack loads previous benchmark models.
-            if (prefix + "conv_offset.weight" not in state_dict
-                    and prefix[:-1] + "_offset.weight" in state_dict):
-                state_dict[prefix + "conv_offset.weight"] = state_dict.pop(
-                    prefix[:-1] + "_offset.weight")
-            if (prefix + "conv_offset.bias" not in state_dict
-                    and prefix[:-1] + "_offset.bias" in state_dict):
+            if (prefix + 'conv_offset.weight' not in state_dict
+                    and prefix[:-1] + '_offset.weight' in state_dict):
+                state_dict[prefix + 'conv_offset.weight'] = state_dict.pop(
+                    prefix[:-1] + '_offset.weight')
+            if (prefix + 'conv_offset.bias' not in state_dict
+                    and prefix[:-1] + '_offset.bias' in state_dict):
                 state_dict[prefix +
-                           "conv_offset.bias"] = state_dict.pop(prefix[:-1] +
-                                                                "_offset.bias")
+                           'conv_offset.bias'] = state_dict.pop(prefix[:-1] +
+                                                                '_offset.bias')
 
         if version is not None and version > 1:
             from mmdet.apis import get_root_logger
             logger = get_root_logger
-            logger.info("DeformConvPack {} is upgraded to version 2.".format(
-                prefix.rstrip(".")))
+            logger.info('DeformConvPack {} is upgraded to version 2.'.format(
+                prefix.rstrip('.')))
 
         super()._load_from_state_dict(state_dict, prefix, local_metadata,
                                       strict, missing_keys, unexpected_keys,
@@ -403,28 +403,28 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
-        version = local_metadata.get("version", None)
+        version = local_metadata.get('version', None)
 
         if version is None or version < 2:
             # the key is different in early versions
             # In version < 2, ModulatedDeformConvPack
             # loads previous benchmark models.
-            if (prefix + "conv_offset.weight" not in state_dict
-                    and prefix[:-1] + "_offset.weight" in state_dict):
-                state_dict[prefix + "conv_offset.weight"] = state_dict.pop(
-                    prefix[:-1] + "_offset.weight")
-            if (prefix + "conv_offset.bias" not in state_dict
-                    and prefix[:-1] + "_offset.bias" in state_dict):
+            if (prefix + 'conv_offset.weight' not in state_dict
+                    and prefix[:-1] + '_offset.weight' in state_dict):
+                state_dict[prefix + 'conv_offset.weight'] = state_dict.pop(
+                    prefix[:-1] + '_offset.weight')
+            if (prefix + 'conv_offset.bias' not in state_dict
+                    and prefix[:-1] + '_offset.bias' in state_dict):
                 state_dict[prefix +
-                           "conv_offset.bias"] = state_dict.pop(prefix[:-1] +
-                                                                "_offset.bias")
+                           'conv_offset.bias'] = state_dict.pop(prefix[:-1] +
+                                                                '_offset.bias')
 
         if version is not None and version > 1:
             from mmdet.apis import get_root_logger
             logger = get_root_logger
             logger.info(
-                "ModulatedDeformConvPack {} is upgraded to version 2.".format(
-                    prefix.rstrip(".")))
+                'ModulatedDeformConvPack {} is upgraded to version 2.'.format(
+                    prefix.rstrip('.')))
 
         super()._load_from_state_dict(state_dict, prefix, local_metadata,
                                       strict, missing_keys, unexpected_keys,
