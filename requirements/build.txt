@@ -1,0 +1,3 @@
+pytest-runner
+cython
+numpy
