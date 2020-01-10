@@ -19,6 +19,12 @@ except ImportError:
     albumentations = None
     Compose = None
 
+try:
+    import albumentations
+    from albumentations import Compose
+except ImportError:
+    albumentations = None
+    Compose = None
 
 @PIPELINES.register_module
 class Resize(object):

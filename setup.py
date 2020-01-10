@@ -74,12 +74,15 @@ def get_hash():
 
 
 def write_version_py():
-    content = """# GENERATED VERSION FILE
-# TIME: {}
+    import textwrap
+    content = textwrap.dedent(
+        """
+        # GENERATED VERSION FILE
+        # TIME: {}
 
-__version__ = '{}'
-short_version = '{}'
-"""
+        __version__ = '{}'
+        short_version = '{}'
+        """).strip('\n')
     sha = get_hash()
     VERSION = SHORT_VERSION + '+' + sha
 
@@ -87,10 +90,80 @@ short_version = '{}'
         f.write(content.format(time.asctime(), VERSION, SHORT_VERSION))
 
 
-def get_version():
-    with open(version_file, 'r') as f:
-        exec(compile(f.read(), version_file, 'exec'))
-    return locals()['__version__']
+# def get_version():
+#     with open(version_file, 'r') as f:
+#         exec(compile(f.read(), version_file, 'exec'))
+#     return locals()['__version__']
+
+
+def parse_version(fpath):
+    """
+    Statically parse the version number from a python file
+    """
+    import ast
+    from os.path import exists
+    if not exists(fpath):
+        write_version_py()
+        if not exists(fpath):
+            raise ValueError('fpath={!r} does not exist'.format(fpath))
+    with open(fpath, 'r') as file_:
+        sourcecode = file_.read()
+    pt = ast.parse(sourcecode)
+
+    class VersionVisitor(ast.NodeVisitor):
+        def visit_Assign(self, node):
+            for target in node.targets:
+                if getattr(target, 'id', None) == '__version__':
+                    self.version = node.value.s
+    visitor = VersionVisitor()
+    visitor.visit(pt)
+    return visitor.version
+
+
+def native_mb_python_tag(plat_impl=None, version_info=None):
+    """
+    Get the correct manylinux python version tag for this interpreter
+
+    Example:
+        >>> print(native_mb_python_tag())
+        >>> print(native_mb_python_tag('PyPy', (2, 7)))
+        >>> print(native_mb_python_tag('CPython', (3, 8)))
+    """
+    if plat_impl is None:
+        import platform
+        plat_impl = platform.python_implementation()
+
+    if version_info is None:
+        import sys
+        version_info = sys.version_info
+
+    major, minor = version_info[0:2]
+    ver = '{}{}'.format(major, minor)
+
+    if plat_impl == 'CPython':
+        # TODO: get if cp27m or cp27mu
+        impl = 'cp'
+        if ver == '27':
+            IS_27_BUILT_WITH_UNICODE = True  # how to determine this?
+            if IS_27_BUILT_WITH_UNICODE:
+                abi = 'mu'
+            else:
+                abi = 'm'
+        else:
+            if ver == '38':
+                # no abi in 38?
+                abi = ''
+            else:
+                abi = 'm'
+        mb_tag = '{impl}{ver}-{impl}{ver}{abi}'.format(**locals())
+    elif plat_impl == 'PyPy':
+        abi = ''
+        impl = 'pypy'
+        ver = '{}{}'.format(major, minor)
+        mb_tag = '{impl}-{ver}'.format(**locals())
+    else:
+        raise NotImplementedError(plat_impl)
+    return mb_tag
 
 
 def make_cuda_ext(name, module, sources):
@@ -140,7 +213,7 @@ def parse_requirements(fname='requirements.txt', with_version=True):
 
     Args:
         fname (str): path to requirements file
-        with_version (bool, default=False): if True include version specs
+        with_version (bool, default=True): if True include version specs
 
     Returns:
         List[str]: list of requirements items
@@ -212,11 +285,14 @@ def parse_requirements(fname='requirements.txt', with_version=True):
     return packages
 
 
+NAME = 'mmdet'
+VERSION = parse_version(version_file)
+
 if __name__ == '__main__':
     write_version_py()
     setup(
-        name='mmdet',
-        version=get_version(),
+        name=NAME,
+        version=VERSION,
         description='Open MMLab Detection Toolbox and Benchmark',
         long_description=readme(),
         author='OpenMMLab',
