@@ -14,9 +14,7 @@ from mmcv import Config
 
 from collections import OrderedDict
 
-from mmdet.models.anchor_heads import WFCOSHead
-from mmdet.models.backbones import ResNet
-from mmdet.models.necks import FPN
+from mmdet.models.builder import build_backbone, build_neck, build_head
 
 from debugging.multi_transforms import *
 from debugging.coco_dataset import CocoDataset
@@ -34,10 +32,11 @@ class ValidationDebug:
         print('done')
 
         print('loading state dictionary ...')
-        # Initialize network first as separate modules so we can access WFCOS
-        self.backbone = ResNet(**cfg.model.backbone)
-        self.neck = FPN(**cfg.model.neck)
-        self.head = WFCOSHead(**cfg.model.bbox_head)
+        # Initialize network first as separate modules so we can access the
+        # individual modules
+        self.backbone = build_backbone(cfg.model.backbone)
+        self.neck = build_neck(cfg.model.neck)
+        self.head = build_head(cfg.model.bbox_head)
 
         # Load the state dicts
         backbone_state = OrderedDict()

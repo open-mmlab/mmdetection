@@ -8,7 +8,7 @@ from .reppoints_head import RepPointsHead
 from .retina_head import RetinaHead
 from .rpn_head import RPNHead
 from .ssd_head import SSDHead
-from .wfcos_head import WFCOSHead
+from .wfcos_head_backup import WFCOSHead
 
 __all__ = [
     'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption', 'RPNHead',
