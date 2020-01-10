@@ -178,7 +178,8 @@ def parse_requirements(fname='requirements.txt', with_version=False):
                     if ';' in rest:
                         # Handle platform specific dependencies
                         # http://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-platform-specific-dependencies
-                        version, platform_deps = map(str.strip, rest.split(';'))
+                        version, platform_deps = map(str.strip,
+                                                     rest.split(';'))
                         info['platform_deps'] = platform_deps
                     else:
                         version = rest  # NOQA
