@@ -7,3 +7,4 @@ six
 terminaltables
 torch>=1.1
 torchvision
+Pillow<=6.2.2
