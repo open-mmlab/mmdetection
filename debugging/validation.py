@@ -82,9 +82,14 @@ class ValidationDebug:
             bboxes = self.head.get_bboxes(out[0], out[1], out[2], img_metas,
                                           self.cfg.test_cfg)
             pass
+            num_bboxes = 0
+            for img_dets in bboxes:
+                num_bboxes += img_dets[1].shape[0]
+            print('Completed image {} of {}. Number bboxes detected: {}'
+                  .format(i, len(self.loader), num_bboxes))
         print('done')
 
 
 if __name__ == '__main__':
-    vd = ValidationDebug('configs/wfcos/fcos_debugging.py')
+    vd = ValidationDebug('configs/wfcos/wfcos_debugging.py')
     vd.run()
