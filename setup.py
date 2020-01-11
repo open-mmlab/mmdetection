@@ -133,14 +133,14 @@ def make_cython_ext(name, module, sources):
     return extension
 
 
-def parse_requirements(fname='requirements.txt', with_version=False):
+def parse_requirements(fname='requirements.txt', with_version=True):
     """
     Parse the package dependencies listed in a requirements file but strips
     specific versioning information.
 
     Args:
         fname (str): path to requirements file
-        with_version (bool, default=False): if true include version specs
+        with_version (bool, default=False): if True include version specs
 
     Returns:
         List[str]: list of requirements items

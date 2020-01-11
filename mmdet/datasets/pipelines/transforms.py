@@ -2,11 +2,15 @@ import inspect
 
 import mmcv
 import numpy as np
-from imagecorruptions import corrupt
 from numpy import random
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..registry import PIPELINES
+
+try:
+    from imagecorruptions import corrupt
+except ImportError:
+    corrupt = None
 
 try:
     import albumentations
@@ -700,6 +704,8 @@ class Corrupt(object):
         self.severity = severity
 
     def __call__(self, results):
+        if corrupt is None:
+            raise RuntimeError('imagecorruptions is not installed')
         results['img'] = corrupt(
             results['img'].astype(np.uint8),
             corruption_name=self.corruption,
