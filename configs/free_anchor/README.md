@@ -21,3 +21,4 @@
 
 **Notes:**
 - We use 8 GPUs with 2 images/GPU.
+- For more settings and models, please refer to the [official repo](https://github.com/zhangxiaosong18/FreeAnchor).
