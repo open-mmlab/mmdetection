@@ -38,10 +38,14 @@ def random_boxes(num=1, scale=1, rng=None):
         https://gitlab.kitware.com/computer-vision/kwimage/blob/master/kwimage/structs/boxes.py#L1390
 
     Example:
-        >>> num = 10
+        >>> num = 3
         >>> scale = 512
         >>> rng = 0
-        >>> boxes = random_boxes()
+        >>> boxes = random_boxes(num, scale, rng)
+        >>> print(boxes)
+        tensor([[280.9925, 278.9802, 308.6148, 366.1769],
+                [216.9113, 330.6978, 224.0446, 456.5878],
+                [405.3632, 196.3221, 493.3953, 270.7942]])
     """
     rng = ensure_rng(rng)
 
@@ -57,5 +61,5 @@ def random_boxes(num=1, scale=1, rng=None):
     tlbr[:, 2] = br_x * scale
     tlbr[:, 3] = br_y * scale
 
-    boxes = torch.FloatTensor(tlbr)
+    boxes = torch.from_numpy(tlbr)
     return boxes
