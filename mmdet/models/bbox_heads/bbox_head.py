@@ -189,9 +189,6 @@ class BBoxHead(nn.Module):
         Returns:
             list[Tensor]: Refined bboxes of each image in a mini-batch.
 
-        CommandLine:
-            xdoctest -m ~/code/mmdetection/mmdet/models/bbox_heads/bbox_head.py BBoxHead.refine_bboxes
-
         Example:
             >>> # xdoctest: +REQUIRES(module:kwarray)
             >>> import kwarray
