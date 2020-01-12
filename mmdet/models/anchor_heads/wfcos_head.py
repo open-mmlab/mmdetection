@@ -1,3 +1,15 @@
+"""Watershed-FCOS Head
+
+A head that uses principles from both the Deep Watershed Detector paper as well
+as the FCOS paper.
+
+Author:
+    Yvan Satyawan <y_satyawan@hotmail.com>
+    Lukas Tuggener <tugg@zhaw.ch>
+
+Created on:
+    January 06, 2020
+"""
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
@@ -7,17 +19,17 @@ from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, Scale, bias_init_with_prob
 
-import debugging.visualization_tools as vt
-from mmdet.core import tensor2imgs
-from mmcv.visualization import imshow_det_bboxes
+# Visualization imports
 import numpy as np
+import debugging.visualization_tools as vt
+from mmcv.visualization import imshow_det_bboxes
+from mmdet.core import tensor2imgs
 
 INF = 1e8
 
 
 @HEADS.register_module
 class WFCOSHead(nn.Module):
-
     def __init__(self,
                  num_classes,
                  in_channels,
@@ -33,17 +45,15 @@ class WFCOSHead(nn.Module):
                  conv_cfg=None,
                  norm_cfg=None,
                  split_convs=False,
-
-                 quantize_energy = True,
-
                  r=500.):
         """
-        Creates a head based on FCOS that uses an energies map, not centerness
+        Creates a head based on FCOS that instead uses an energy_preds map.
+
         Args:
             num_classes (int): Number of classes to output.
             in_channels (int): Number of input channels.
-            max_energy (int): Quantization of energies. How much to split the
-                energies values by.
+            max_energy (int): Quantization of energy_preds. How much to split
+                the energy_preds values by.
             feat_channels (int): Number of feature channels in each of the
                 stacked convolutions.
             stacked_convs (int): Number of stacked convolutions to have.
@@ -54,20 +64,15 @@ class WFCOSHead(nn.Module):
             loss_bbox (dict): A description of the loss to use for the bbox
                 output.
             loss_energy (dict): A description of the loss to use for the
-                energies map output.
-            conv_cfg (dict): A description of the configuration of the
-                convolutions in the stacked convolution.
-            norm_cfg (dict): A description of the normalization configuration of
-                the layers of the stacked convolution.
+                energy_preds map output.
+            conv_cfg: A description of the configuration of the convolutions in
+            the stacked convolution.
+            norm_cfg: A description of the normalization configuration of the
+            layers of the stacked convolution.
             split_convs (bool): Whether or not to split the classification and
-                energies map convolution stacks. False means that the
-                classification energies map shares the same convolution stack.
-                Defaults to False.
-
-            quantize_energy (bool): Whether or not to represent the energy as different
-            descreete levels or one float number between zero and one
-                Defaults to True.
-
+                energy_preds map convolution stacks. False means that the
+                classification energy_preds map shares the same convolution
+                stack. Defaults to False.
             r (float): r variable in the energy map target equation.
         """
         super(WFCOSHead, self).__init__()
@@ -94,7 +99,7 @@ class WFCOSHead(nn.Module):
             norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 
         # Save the different arguments to self
-        self.num_classes = num_classes
+        self.num_classes = num_classes  # We assign class 0 as the null class
         self.cls_out_channels = num_classes - 1
         self.in_channels = in_channels
         self.feat_channels = feat_channels
@@ -112,13 +117,11 @@ class WFCOSHead(nn.Module):
         self.max_energy = max_energy
         self.split_convs = split_convs
         self.r = r
-        self.loss_energy_weights = self.calculate_loss_energy_weights()
-
-        self.last_vals = None
-
 
         # Now create the layers
         self._init_layers()
+
+        self.last_vals = None
 
     def _init_layers(self):
         """Initialize each of the layers needed."""
@@ -191,19 +194,6 @@ class WFCOSHead(nn.Module):
         normal_init(self.wfcos_reg, std=0.01)
         normal_init(self.wfcos_energy, std=0.01)
 
-    def calculate_loss_energy_weights(self) -> torch.Tensor:
-        """Calculates proportional loss weights for the energy."""
-        class0_weight = 1. / float(self.max_energy)
-        weights = [class0_weight]
-
-        device = torch.device('cuda') if torch.cuda.is_available() \
-            else torch.device('cpu')
-
-        for i in range(self.max_energy - 1):
-            weights.append(1.)
-        return torch.tensor(weights, dtype=torch.float,
-                            device=device)
-
     def forward(self, feats):
         """Run forwards on the network.
 
@@ -214,12 +204,13 @@ class WFCOSHead(nn.Module):
 
         Returns:
             (tuple): A tuple of 3-tuples of tensors, each 3-tuple representing
-                cls_score, bbox_pred, energies of the different feature layers.
+                cls_score, bbox_pred, energy_preds of the different feature layers.
         """
         # Use a multi_apply function to run forwards on each feats tensor
         return multi_apply(self.forward_single, feats, self.scales)
 
     def forward_single(self, x, scale):
+        """Runs forwards on a single feature level."""
         cls_feat = x
         reg_feat = x
 
@@ -243,273 +234,114 @@ class WFCOSHead(nn.Module):
 
         return cls_score, bbox_pred, energy
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'energies'))
+    @force_fp32(apply_to=('label_preds', 'bbox_preds', 'energy_preds'))
     def loss(self,
-             cls_scores,
+             label_preds,
              bbox_preds,
-             energies,
+             energy_preds,
              gt_bboxes,
              gt_labels,
              img_metas,
              cfg,
              gt_bboxes_ignore=None):
-        assert len(cls_scores) == len(bbox_preds) == len(energies)
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
+        """Calculates loss for each of the head outputs.
+
+        Calculates a loss for each of the head ouputs based on what was
+        selected at initialization.
+
+        Returns:
+            dict: A dictionary with keys loss_cls, loss_bbox, and loss_energy.
+        """
+        assert len(label_preds) == len(bbox_preds) == len(energy_preds)
+
+        feat_dims = [level.shape[-2:] for level in label_preds]
+        all_level_points = self.get_points(feat_dims, bbox_preds[0].dtype,
                                            bbox_preds[0].device)
-        labels, bbox_targets = self.wfcos_target(all_level_points, gt_bboxes,
-                                                 gt_labels)
 
-        # Labels are a list of per level labels, each level is a tensor of all
-        # targets at that level
+        # First create targets
+        bbox_targets, label_targets, energy_targets, mask = self.get_targets(
+            gt_bboxes, gt_labels, feat_dims, img_metas)
 
-        num_imgs = cls_scores[0].size(0)
-        # flatten cls_scores, bbox_preds and energies
-        flatten_cls_scores = [
-            cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)
-            for cls_score in cls_scores
+        # Now reorder the targets so that they're usable and in the same
+        # shape as the network outputs.
+        bbox_targets, label_targets, energy_targets, mask = \
+            self.reorder_targets(
+                bbox_targets, label_targets, energy_targets, mask
+            )
+
+        # Flatten energy
+        flat_energy_preds = [
+            energy.permute(0, 2, 3, 1).reshape(-1, self.max_energy)
+            for energy in energy_preds
         ]
-        flatten_bbox_preds = [
-            bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
-            for bbox_pred in bbox_preds
-        ]
+        flat_energy_targets = [energy.reshape(-1) for energy in energy_targets]
 
-        # Calculate flattened energies
-        flatten_energies = []
-        for energy in energies:
-            energy = energy.permute(0, 2, 3, 1)
-            es = energy.shape  # Easier access
-            flatten_energies.append(energy.reshape([es[0] * es[1] * es[2],
-                                                    self.max_energy]))
-        flatten_cls_scores = torch.cat(flatten_cls_scores)
-        flatten_bbox_preds = torch.cat(flatten_bbox_preds)
-        flatten_energies = torch.cat(flatten_energies, dim=0).softmax(1)
-        flatten_labels = torch.cat(labels)
-        flatten_bbox_targets = torch.cat(bbox_targets)
+        # Then calculate energy losses.
+        loss_energy = self.loss_energy(
+            torch.cat(flat_energy_preds),
+            torch.cat(flat_energy_targets).to(dtype=torch.long)
+        )
 
+        # Only consider loss for bboxes and labels_list at positions where the
+        # energy is non-zero.
+        pos_points, pos_bbox_preds, pos_bbox_targets = [], [], []
+        pos_label_preds, pos_label_targets, = [], []
+        for i in range(len(feat_dims)):
+            pos_points.append(all_level_points[i]
+                              .reshape(feat_dims[i][0], feat_dims[i][1], 2)
+                              .unsqueeze(0)
+                              .repeat(mask[i].shape[0], 1, 1, 1)
+                              [mask[i]])
+            pos_bbox_preds.append(bbox_preds[i]
+                                  .permute(0, 2, 3, 1)
+                                  [mask[i]])
+            pos_bbox_targets.append(bbox_targets[i][mask[i]])
+            pos_label_preds.append(label_preds[i]
+                                   .permute(0, 2, 3, 1)
+                                   [mask[i]])
+            pos_label_targets.append(label_targets[i][mask[i]])
 
-        # repeat points to align with bbox_preds
-        flatten_points = torch.cat(
-            [points.repeat(num_imgs, 1) for points in all_level_points])
+        pos_points = torch.cat(pos_points)
+        pos_bbox_preds = torch.cat(pos_bbox_preds)
+        pos_bbox_targets = torch.cat(pos_bbox_targets)
+        pos_label_preds = torch.cat(pos_label_preds)
+        pos_label_targets = torch.cat(pos_label_targets)
 
-        pos_inds = flatten_labels.nonzero().reshape(-1)
-        # print("pos_inds.shape: {}".format(pos_inds.shape))
-        # print("pos_inds: {}".format(pos_inds))
-        num_pos = len(pos_inds)
-        loss_cls = self.loss_cls(
-            flatten_cls_scores, flatten_labels,
-            avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
-
-        # mask out non class areas
-
-        pos_bbox_preds = flatten_bbox_preds[pos_inds]
-        pos_energies = flatten_energies[pos_inds]
-
-        if num_pos > 0:
-            pos_bbox_targets = flatten_bbox_targets[pos_inds]
-            pos_energies_targets, energies_targets = self.energy_target(
-                flatten_bbox_targets, pos_bbox_targets, pos_inds)
-            pos_points = flatten_points[pos_inds]
-            pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
-            pos_decoded_target_preds = distance2bbox(pos_points,
-                                                     pos_bbox_targets)
-
-            if pos_energies_targets is not None \
-                    and not torch.any(pos_energies_targets > 0):
-                pos_energies_targets = pos_energies_targets.reshape(
-                    [pos_energies_targets.shape[0], 1]).repeat(1, 4)
-
-            # print("energies_targets \n{}\n".format(pos_energies_targets))
-            # print("energies: \n{}\n".format(pos_energies))
-            # energy weighted iou loss
-
+        if pos_bbox_preds.nelement() > 0:
             loss_bbox = self.loss_bbox(
-                pos_decoded_bbox_preds,
-                pos_decoded_target_preds,
-                weight=pos_energies_targets,
-                avg_factor=pos_energies_targets.sum())
-
-            loss_energy = self.loss_energy(
-                flatten_energies, energies_targets.to(dtype=torch.long),
-                class_weight=self.loss_energy_weights
+                distance2bbox(pos_points, pos_bbox_preds),
+                pos_bbox_targets
             )
-
-            energy_non_zero = torch.tensor(
-                flatten_energies.argmax(1).nonzero().shape[0],
-                dtype=torch.float
-            )
-
-            # print(loss_energy.shape)
-            # print(loss_energy)
-
-            # DEBUG
-            # if torch.cuda.current_device() == 0:
-            #     non0 = pos_inds[0]
-            #     print('=======================================================')
-            #     print('flatten_energies.shape:\n{}'
-            #           .format(flatten_energies.shape))
-            #     print('flatten_energies[!=0]:\n{}'
-            #           .format(flatten_energies[non0]))
-            #     print('flatten_energies[!=0].argmax():\n{}'
-            #           .format(flatten_energies[non0].argmax()))
-            #     print('energies_targets[!=0]:\n{}'
-            #           .format(energies_targets[non0]))
-            #     print('loss_energy.item():\n{}'
-            #           .format(loss_energy.item()))
-            #     print('count number of energies which have argmax > 0:')
-            #     print((flatten_energies.argmax(1) > 0).sum())
-            #     flat0 = flatten_energies[non0:non0 + 1, :]
-            #     print('flat0.shape:\n{}'.format(flat0.shape))
-            # input()
+            loss_cls = self.loss_cls(
+                pos_label_preds,
+                pos_label_targets.to(dtype=torch.long))
         else:
             loss_bbox = pos_bbox_preds.sum()
-            loss_energy = pos_energies.sum()
-            energy_non_zero = torch.tensor(0, dtype=torch.float)
+            loss_cls = pos_label_preds.sum()
 
-
+        # Get an image for visualization
         self.last_vals = dict(
-            cls_scores=cls_scores,
+            cls_scores=label_preds,
             bbox_preds=bbox_preds,
-            energies=energies,
+            centernesses=energy_preds,
             gt_bboxes=gt_bboxes,
             gt_labels=gt_labels,
             img_metas=img_metas,
             cfg=cfg,
             all_level_points=all_level_points,
-            labels=labels,
             bbox_targets=bbox_targets
         )
-
 
         return dict(
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
             loss_energy=loss_energy,
-            num_energy_nonzero=energy_non_zero
         )
-
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'energies'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   energies,
-                   img_metas,
-                   cfg,
-                   rescale=None):
-        assert len(cls_scores) == len(bbox_preds)
-
-        num_levels = len(cls_scores)
-
-        # Create feature map size list. Calculating this on the fly makes it
-        # possible to do operations later on while respecting the feature map
-        # size, even if the feature map sizes are changed or more features maps
-        # are added later on.
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-
-        # mlvl_points holds data that lets us know the coordinates of each value
-        # in the feature maps. E.g. if a feature map has the size (7, 10), then
-        # the values that each point in the feature map represents must be
-        # transformed to its corresponding coordinates in the actual image.
-        mlvl_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                      bbox_preds[0].device)
-
-        result_list = []
-        for img_id in range(len(img_metas)):
-            # We now iterate through each of the images.
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
-            energy_pred_list = [
-                energies[i][img_id].detach() for i in range(num_levels)
-            ]
-
-            # for energy_pred in energy_pred_list:
-                # print("energy_pred.max: {}".format(torch.max(energy_pred)))
-                # print("energy_pred.shape: {}".format(energy_pred.shape))
-                # print("energy_pred first value: \n{}"
-                #       .format(energy_pred[:, 0, 0]))
-
-            # All of the above lists contains the output values at corresponding
-            # feature map resolutions for one image.
-
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                energy_pred_list,
-                                                mlvl_points, img_shape,
-                                                scale_factor, cfg, rescale)
-            result_list.append(det_bboxes)
-
-        return result_list
-
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          energies,
-                          mlvl_points,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
-        """Process bboxes for a single image."""
-        assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
-
-        mlvl_bboxes = []
-        mlvl_scores = []
-        mlvl_energy = []
-
-        for cls_score, bbox_pred, energy, points in zip(
-                cls_scores, bbox_preds, energies, mlvl_points):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
-
-            # Flatten to argmax values
-            energy = energy.permute(1, 2, 0).argmax(2).reshape(-1)
-
-            # print("\nenergy max: \n{}".format(torch.max(energy)))
-
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            # # This whole section has to be replaced
-
-            nms_pre = cfg.get('nms_pre', -1)
-            if 0 < nms_pre < scores.shape[0]:
-                max_scores, _ = (scores * energy[:, None]).max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                points = points[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                energy = energy[topk_inds]
-            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
-            mlvl_bboxes.append(bboxes)
-            mlvl_scores.append(scores)
-            mlvl_energy.append(energy)
-
-
-        # print('=========================================================\n')
-        # input()
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
-        mlvl_energy = torch.cat(mlvl_energy)
-        det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes,
-            mlvl_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img,
-            score_factors=mlvl_energy)
-
-        return det_bboxes, det_labels
 
     def get_points(self, featmap_sizes, dtype, device):
         """Get points according to feature map sizes.
+
+        Same implementation as in FCOS head.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
@@ -533,230 +365,584 @@ class WFCOSHead(nn.Module):
             0, w * stride, stride, dtype=dtype, device=device)
         y_range = torch.arange(
             0, h * stride, stride, dtype=dtype, device=device)
-        y, x = torch.meshgrid(y_range, x_range)
+        y, x = torch.meshgrid([y_range, x_range])
         points = torch.stack(
             (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
         return points
 
-    def wfcos_target(self, points, gt_bboxes_list, gt_labels_list):
-        assert len(points) == len(self.regress_ranges)
-        num_levels = len(points)
-        # expand regress ranges to align with points
-        expanded_regress_ranges = [
-            points[i].new_tensor(self.regress_ranges[i])[None].expand_as(
-                points[i]) for i in range(num_levels)
-        ]
-        # concat all levels points and regress ranges
-        concat_regress_ranges = torch.cat(expanded_regress_ranges, dim=0)
-        concat_points = torch.cat(points, dim=0)
-        # get labels and bbox_targets of each image
-        labels_list, bbox_targets_list = multi_apply(
-            self.wfcos_target_single,
-            gt_bboxes_list,
-            gt_labels_list,
-            points=concat_points,
-            regress_ranges=concat_regress_ranges)
+    def get_targets(self, gt_bboxes_list, gt_labels_list,
+                    feat_dims, img_metas):
+        """Gets targets for each output type.
 
-        # split to per img, per level
-        num_points = [center.size(0) for center in points]
-        labels_list = [labels.split(num_points, 0) for labels in labels_list]
-        bbox_targets_list = [
-            bbox_targets.split(num_points, 0)
-            for bbox_targets in bbox_targets_list
-        ]
+        This method is also responsible for splitting the targets up into the
+        the separate feature levels, i.e. figures out in which feature level to
+        detect each object.
 
-        # concat per level image
-        concat_lvl_labels = []
-        concat_lvl_bbox_targets = []
-        for i in range(num_levels):
-            concat_lvl_labels.append(
-                torch.cat([labels[i] for labels in labels_list]))
-            concat_lvl_bbox_targets.append(
-                torch.cat(
-                    [bbox_targets[i] for bbox_targets in bbox_targets_list]))
-        return concat_lvl_labels, concat_lvl_bbox_targets
-
-    @staticmethod
-    def wfcos_target_single(gt_bboxes, gt_labels, points, regress_ranges):
-        num_points = points.size(0)
-        num_gts = gt_labels.size(0)
-        if num_gts == 0:
-            return gt_labels.new_zeros(num_points), \
-                   gt_bboxes.new_zeros((num_points, 4))
-
-        areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
-                gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
-        # TODO: figure out why these two are different
-        # areas = areas[None].expand(num_points, num_gts)
-        areas = areas[None].repeat(num_points, 1)
-        regress_ranges = regress_ranges[:, None, :].expand(
-            num_points, num_gts, 2)
-        gt_bboxes = gt_bboxes[None].expand(num_points, num_gts, 4)
-        xs, ys = points[:, 0], points[:, 1]
-        xs = xs[:, None].expand(num_points, num_gts)
-        ys = ys[:, None].expand(num_points, num_gts)
-
-        left = xs - gt_bboxes[..., 0]
-        right = gt_bboxes[..., 2] - xs
-        top = ys - gt_bboxes[..., 1]
-        bottom = gt_bboxes[..., 3] - ys
-        bbox_targets = torch.stack((left, top, right, bottom), -1)
-
-        # condition1: inside a gt bbox
-        inside_gt_bbox_mask = bbox_targets.min(-1)[0] > 0
-
-        # condition2: limit the regression range for each location
-        max_regress_distance = bbox_targets.max(-1)[0]
-        inside_regress_range = (max_regress_distance
-                                >= regress_ranges[..., 0]) & \
-                               (max_regress_distance
-                                  <= regress_ranges[..., 1])
-
-        # if there are still more than one objects for a location,
-        # we choose the one with minimal area
-        areas[inside_gt_bbox_mask == 0] = INF
-        areas[inside_regress_range == 0] = INF
-        min_area, min_area_inds = areas.min(dim=1)
-
-        labels = gt_labels[min_area_inds]
-        labels[min_area == INF] = 0
-        bbox_targets = bbox_targets[range(num_points), min_area_inds]
-
-        return labels, bbox_targets
-
-    def energy_target(self, flattened_bbox_targets, pos_bbox_targets,
-                      pos_indices):
-        """Calculate energy targets based on deep watershed paper.
+        The output returns labels_list, bboxes, and energy_preds. The bboxes
+        will first be split based on max edge size. Then the energy_preds for
+        each feature level will be calculated. Finally, the labels_list assigned
+        to non-zero energy areas within each bounding box. All other areas will
+        contain no label.
 
         Args:
-            flattened_bbox_targets (torch.Tensor): The flattened bbox targets.
-            pos_bbox_targets (torch.Tensor): Bounding box lrtb values only for
-                positions within the bounding box. We use this as an argument
-                to prevent recalculating it since it is used for other things as
-                well.
-            pos_indices (torch.Tensor): The indices of values in
-                flattened_bbox_targets which are within a bounding box
+            gt_bboxes_list (list): A list of tensors containing the ground
+                truth bounding boxes.
+            gt_labels_list (list): A list of tensors containing the ground
+                truth labels_list of each bounding box.
+            feat_dims (list): A list of 2-tuples where each element is the
+                (h, w)
+            img_metas (list): The img_metas as returned from the data loader.
+
+        Returns:
+            tuple: A tuple of bboxes, labels_list, energy_preds, and masks.
+                This will be split first by image then by feature level,
+                i.e. labels_list will be a list n lists, where n is the number
+                of images, and each of those lists will have s elements, where s
+                is the number of feature levels/heads. Each of those lists will
+                then hold n tensors, n being the number of feature levels, and
+                each tensor being the labels_list that are assigned to that
+                feature level.
+
+                bboxes will have shape (h, w, 4)
+                labels will have shape (h, w)
+                energy will have shape (h, w)
+                masks will have shape (h, w) and is a boolean tensor
+
+        """
+        assert len(gt_bboxes_list) == len(gt_labels_list)
+
+        # Sort gt_bboxes_list by object max edge
+        split_bboxes = self.split_bboxes(gt_bboxes_list, gt_labels_list)
+
+        # Calculate energy_preds for image for each feature level
+        gt_bboxes = []
+        gt_energy = []
+        gt_labels = []
+        gt_masks = []
+        for i, bboxes in enumerate(split_bboxes):
+            image_energy = []
+            image_classes = []
+            image_bboxes = []
+            image_masks = []
+            for j, feat_level_bboxes in enumerate(bboxes):
+                img_size = img_metas[i]['pad_shape']
+
+                feature_energy = self.get_energy_single(feat_dims[j],
+                                                        img_size,
+                                                        feat_level_bboxes)
+                image_energy.append(feature_energy.values)
+                # Using the image_energy, create a mask of background areas.
+                # This is first made with an int tensor before being
+                # converted to a bool since where_cuda does not implement bool.
+                feature_mask = torch.where(
+                    feature_energy.values > 0,
+                    torch.tensor(1, dtype=torch.int8,
+                                 device=feature_energy.values.device),
+                    torch.tensor(0, dtype=torch.int8,
+                                 device=feature_energy.values.device)
+                ).bool()
+
+                image_masks.append(feature_mask)
+
+                # Then, using feature_energy.indices, get the class for each
+                # grid cell that isn't background Entire area of non-zero
+                # energy within a single bounding box should have the same
+                # label.
+                feature_classes = torch.zeros_like(feature_mask,
+                                                   dtype=torch.float)
+                feature_classes[feature_mask] = (
+                    feat_level_bboxes[feature_energy.indices[feature_mask]]
+                    [:, -1]
+                )
+                image_classes.append(feature_classes)
+
+                # Finally, also assign bounding box values
+                feature_bboxes = torch.zeros([feat_dims[j][0],
+                                              feat_dims[j][1],
+                                              4],
+                                             dtype=torch.float,
+                                             device=feat_level_bboxes.device)
+                feature_bboxes[feature_mask] = (
+                    feat_level_bboxes[feature_energy.indices[feature_mask]]
+                    [:, 0:4]
+                )
+                image_bboxes.append(feature_bboxes)
+
+            gt_energy.append(image_energy)
+            gt_labels.append(image_classes)
+            gt_bboxes.append(image_bboxes)
+            gt_masks.append(image_masks)
+
+        return gt_bboxes, gt_labels, gt_energy, gt_masks
+
+    def split_bboxes(self, bbox_list, labels_list):
+        """Splits bboxes based on max edge length.
+
+        Args:
+            bbox_list (list): The list of bounding boxes to be sorted. The
+                list contains b tensors, where b is the batch size. Each
+                tensor must be in the shape (n, 4) where n is the number of
+                bounding boxes.
+            labels_list (list): The list of ground truth labels associated with
+                the bounding boxes. The list contains b tensors, where b is
+                the batch size. Each tensor must be in the shape (n) where n
+                is the equivalent to the number of bounding boxes.
+
+        Returns:
+            list: A list of length b, each element being a list of length s,
+                where s is the number of heads used in the network. Each of
+                these lists contains an (n, 5) tensor, which represents the
+                bounding boxes with dim 5 being the class.
+        """
+        # max_indices is a 2 dim tensor, where dim 0 is the sorted indices
+        # and dim 1 is the max_edge value
+        max_indices = self.sort_bboxes(bbox_list)
+
+        # Future TODO: Try sorting by area and see if that works better
+        # TODO: Figure out what to do with background class.
+        # Then move them to the appropriate level based on strides. The edge
+        # size for each level should be [prev_regress_range, regress_range).
+        # e.g. If we have ranges((-1, 4), (4, 8), (8, INF)), then we have edge
+        # sizes [-1, 4), [4, 8), [8, INF)
+        #
+        # First split the max_indices tensor based on the values
+        level_max_edge_lengths = [regress_range[0] for regress_range in
+                                  self.regress_ranges]
+
+        split_inds = []
+        for max_index in max_indices:
+            indices = []
+            for length in level_max_edge_lengths:
+                val = (max_index[1] > length).nonzero()
+                if val.nelement() != 0:
+                    val = val[0].item()
+                else:
+                    val = indices[-1] if len(indices) > 0 else 0
+                indices.append(val)
+
+            indices.append(len(max_index[1]))
+
+            # indices is now the indices of the elements as split by max_edge,
+            # split properly into each feature level.
+            #
+            # We now split the actual bboxes into the values
+            split_inds.append([max_index[0][indices[i]:indices[i + 1]]
+                               for i in range(len(indices) - 1)])
+
+            # split_bbox_ind is appended an s length list, where each element
+            # contains all the indices that belong to that feature level.
+
+        out_list = []
+        for i in range(len(bbox_list)):             # Iterate through each image
+            temp_list = []
+            for inds in split_inds[i]:                 # Iterate through head
+                # Grab bboxes with the given indices, then the labels
+                bbox = bbox_list[i][inds.to(dtype=torch.long)]
+                labels = labels_list[i][inds.to(dtype=torch.long)].to(
+                    dtype=torch.float)
+                # Labels must be unsqueezed to allow concatenation
+                temp_list.append(
+                    torch.cat((bbox, labels.unsqueeze(1)), dim=1)
+                )
+            out_list.append(temp_list)
+
+        return out_list
+
+    @staticmethod
+    def sort_bboxes(bbox_list):
+        """Sorts bboxes based on max_edge length.
+
+        Args:
+            bbox_list (list): The list of bounding boxes to be sorted. The
+                bounding boxes must be tensors in the shape (n, 4).
+
+        Returns:
+            list: A list of (2, n) tensors, where n is the number of bboxes
+                and 2 being the indice and max edge length of the
+                corresponding tensor.
+        """
+        out_list = []
+        for bboxes in bbox_list:
+            edges = torch.cat((bboxes[:, 2] - bboxes[:, 0],
+                               bboxes[:, 3] - bboxes[:, 1]))
+
+            # Split to a 2-dim array, dim 0 being the x length and dim 1
+            # being the y length
+            edges = edges.reshape(2, bboxes.shape[0])
+
+            # Then transpose it to associate both x and y with the same
+            # value. This is done simply because it is conceptually easier to
+            # understand.
+            edges = edges.transpose(0, 1)
+
+            # Get the max, then get the sorted indices.
+            max_edges = edges.max(1).values
+            sorted_inds = max_edges.argsort()
+
+            # Concatenate them and add them to the out_list
+            out_list.append(torch.cat((sorted_inds.to(dtype=torch.float),
+                                       max_edges[sorted_inds]))
+                            .reshape(2, bboxes.shape[0]))
+
+        return out_list
+
+    def get_energy_single(self, feat_dim, img_size, bboxes):
+        """Gets energy for a single feature level based on deep watershed.
+
+        Args:
+            feat_dim (tuple): A 2-tuple containing the height and width of the
+                current feature level. (h, w)
+            img_size (tuple): A 2-tuple containg the size of the image. Used
+                for scaling the bboxes to the feature level dimensions. (h, w)
+            bboxes (torch.Tensor): A tensor of the bboxes that belong the this
+                feature level with shape (n, 4).
 
         Notes:
             The energy targets are calculated as:
-            E_max \cdot argmax_{c \in C}[1 - \sqrt{((l-r) / 2)^2
-                                                   + ((t-b) / 2)^2}
-                                         / r]
+            E_max * argmax_{c \in C}[1 - \sqrt{dist to bbox center} / r]
+            for every position in the grid.
 
             - r is a hyperparameter we would like to minimize.
-            - (l-r)/2 is the horizontal distance to the center and will be
-                assigned the variable name "horizontal"
-            - (t-b)/2 is the vertical distance to the center and will be
-                assigned the variable name "vertical"
             - E_max is self.max_energy
-            - We don't need the argmax in this code implementation since we
-                already select the bounding boxes and their respective pixels in
-                a previous step.
 
         Returns:
-            tuple: A 2 tuple with values ("pos_energies_targets",
-                "energies_targets"). Both are flattened but pos_energies_targets
-                only contains values within bounding boxes.
+            torch.return_types.max: The max energy values and the bounding
+                box they belong to.
         """
+        type_dict = {'dtype': bboxes.dtype, 'device': bboxes.device}
 
-        horizontal = pos_bbox_targets[:, 0] - pos_bbox_targets[:, 2]
-        vertical = pos_bbox_targets[:, 1] - pos_bbox_targets[:, 3]
+        if not bboxes.shape[0] == 0:
+            # First create an n dimensional tensor, where n is the number of
+            # bboxes
+            energy_layers = [
+                torch.zeros([feat_dim[0], feat_dim[1]], **type_dict)
+                for _ in range(bboxes.shape[0])]
+            zero_tensor = torch.tensor(0., **type_dict)
 
-        # print("Horizontals: {}".format(horizontal))
-        # print("Verticals: {}".format(vertical))
+            # Now cast each bbox to each cell in the energy layer that it covers
+            # First bounds of grid squares that have a bbox in them
+            x_scale_factor = feat_dim[1] / img_size[1]
+            y_scale_factor = feat_dim[0] / img_size[0]
+            scale_factor = torch.tensor((x_scale_factor, y_scale_factor,
+                                         x_scale_factor, y_scale_factor,
+                                         1.), **type_dict)
+            scale_factor = scale_factor.repeat(bboxes.shape[0], 1)
+            adder = torch.tensor((0, 0, 1, 1, 0), device=type_dict['device'])
+            adder = adder.repeat(bboxes.shape[0], 1)
 
-        horizontal = torch.div(horizontal, 2)
-        vertical = torch.div(vertical, 2)
+            grid_bounds = torch.floor(bboxes * scale_factor).long() + adder
 
-        c2 = (horizontal * horizontal) + (vertical * vertical)
+            x_index = torch.arange(0, feat_dim[1], **type_dict).repeat(
+                feat_dim[0], 1)
+            y_index = torch.arange(0, feat_dim[0], **type_dict).repeat(
+                feat_dim[1], 1).transpose(0, 1)
 
-        # print("c2: \n{}".format(c2))
+            # Fill each energy layer. This is done this way to allow for
+            # vectorized calculations.
+            for i, (gb, bbox) in enumerate(zip(grid_bounds, bboxes)):
+                # Go through each bbox. First create the mask of grid areas
+                # where the bounding box exists.
+                mask = torch.zeros_like(energy_layers[i]).to(dtype=torch.bool)
+                mask[gb[1]:gb[3], gb[0]:gb[2]] = True
 
-        # We use x * x instead of x.pow(2) since it's faster by about 30%
-        square_root = torch.sqrt(c2)
+                bbox_dist = torch.tensor((bbox[0] + bbox[2],
+                                          bbox[1] + bbox[3]),
+                                         **type_dict)
 
-        # print("Sqrt: \n{}".format(square_root))
+                x_dist = torch.abs((bbox_dist[0] - (2. * x_index[mask]
+                                                    / x_scale_factor)) / 2)
 
-        type_dict = {'dtype': square_root.dtype,
-                     'device': square_root.device}
+                y_dist = torch.abs((bbox_dist[1] - (2. * y_index[mask]
+                                                    / y_scale_factor)) / 2)
 
-        pos_energies = (torch.tensor([1], **type_dict)
-                        - torch.div(square_root, self.r))
-        pos_energies *= self.max_energy
-        pos_energies = torch.max(pos_energies,
-                                 torch.tensor([0], **type_dict))
-        pos_energies = pos_energies.floor()
+                # Multiplied by self is faster than tensor.pow(2) by about 30%
+                tot_dist = torch.sqrt((x_dist * x_dist) + (y_dist * y_dist))
+                val = 1 - (tot_dist / self.r)
+                val = torch.floor(val * self.max_energy)
 
-        # Handle special cases where the energy greater than or equal to the
-        # max energy, as this would require that the number of classes is
-        # max energy + 1
-        pos_energies[pos_energies >= self.max_energy] = self.max_energy - 1
+                # torch.max to eliminate negative numbers. torch.max is
+                # approximately 20 times faster than using indexing
+                val = torch.max(val, zero_tensor)
 
-        energies_targets = torch.zeros(flattened_bbox_targets.shape[0],
-                                       **type_dict)
-        energies_targets[pos_indices] = pos_energies
+                energy_layers[i][mask] = val
+            energy_layers = torch.cat([torch.unsqueeze(layer, 0)
+                                       for layer in energy_layers])
+        else:
+            energy_layers = torch.zeros((1, feat_dim[0], feat_dim[1]),
+                                         **type_dict)
 
-        return pos_energies, energies_targets
+        return energy_layers.max(dim=0)
+
+    @staticmethod
+    def reorder_targets(bbox_targets, label_targets, energy_targets,
+                        masks_targets):
+        """Reorders targets such that they are the same shape as predictions.
+
+        Notes:
+            b stands for batch size and s stands for number of feature
+            levels/heads.
+
+        Shapes:
+            bbox_targets: b-list of s-lists of (h, w, 4) tensors.
+            label_targets: b-list of s-lists of (h, w) tensors.
+            energy_target: b-list of s-lists of (h, w) tensors.
+            masks: b-list of s-lists of (h, w) tensors.
+        Args:
+             bbox_targets (list): List of bbox targets from get_targets()
+             label_targets (list): List of label targets from get_targets()
+             energy_targets (list): List of energy targets from get_targets()
+             masks_targets (list): List of masks of non-zero energy from
+                get_targets(). This is a boolean tensor.
+
+         Returns:
+             list: s-list of (b, h, w, 4) tensors representing bboxes.
+             list: s-list of (b, h, w) tensors representing labels.
+             list: s-list of (b, h, w) tensors representing energy_preds.
+             list: s-list of (b, h, w) boolean tensors representing the non-zero
+                masks.
+        """
+        bboxes = [[] for _ in range(len(bbox_targets[0]))]
+        labels = [[] for _ in range(len(bbox_targets[0]))]
+        energy = [[] for _ in range(len(bbox_targets[0]))]
+        masks = [[] for _ in range(len(bbox_targets[0]))]
+
+        for image_num in range(len(bbox_targets)):
+            for i, (b_target, l_target, e_target, m_target) in enumerate(
+                zip(bbox_targets[image_num],
+                    label_targets[image_num],
+                    energy_targets[image_num],
+                    masks_targets[image_num])):
+                bboxes[i].append(torch.unsqueeze(b_target, 0))
+                labels[i].append(torch.unsqueeze(l_target, 0))
+                energy[i].append(torch.unsqueeze(e_target, 0))
+                masks[i].append(torch.unsqueeze(m_target, 0))
+
+        for i in range(len(bbox_targets[0])):
+            bboxes[i] = torch.cat(bboxes[i])
+            labels[i] = torch.cat(labels[i])
+            energy[i] = torch.cat(energy[i])
+            masks[i] = torch.cat(masks[i])
+
+        return bboxes, labels, energy, masks
+
+    @force_fp32(apply_to=('label_preds', 'bbox_preds', 'energy_preds'))
+    def get_bboxes(self, label_preds, bbox_preds, energy_preds,
+                   img_metas, cfg, rescale=None):
+        """Gets bboxes for validation.
+
+        This differs from the implementation in FCOS by focussing on the
+        energy instead of the class label. Instead of using a background
+        class to see which areas to ignore, we ignore areas which have an
+        energy of 0.
+
+        Returns:
+            list: A list of the detected bounding boxes. Each element is a
+                2-tuple ((n, 4) bbox tensor, (n) label tensor) representing all
+                bounding boxes in a single image.
+        """
+        assert len(label_preds) == len(bbox_preds) == len(energy_preds)
+
+        num_levels = len(energy_preds)
+
+        featmap_dims = [feat_level.shape[-2:] for feat_level in energy_preds]
+
+        feat_level_points = self.get_points(featmap_dims, bbox_preds[0].dtype,
+                                            bbox_preds[0].device)
+
+        result_list = []
+        for img_id in range(len(img_metas)):
+            # iterate through each image
+            img_label_preds = []
+            img_bbox_preds = []
+            img_energy_preds = []
+            for i in range(num_levels):
+                img_label_preds.append(label_preds[i][img_id].detach())
+                img_bbox_preds.append(bbox_preds[i][img_id].detach())
+                img_energy_preds.append(energy_preds[i][img_id].detach())
+
+            img_shape = img_metas[img_id]['img_shape']
+            scale_factor = img_metas[img_id]['scale_factor']
+            det_bboxes = self.get_bboxes_image(img_label_preds, img_bbox_preds,
+                                               img_energy_preds,
+                                               img_shape, feat_level_points,
+                                               scale_factor, cfg, rescale)
+            result_list.append(det_bboxes)
+
+        return result_list
+
+    def get_bboxes_image(self, img_label_preds, img_bbox_preds,
+                         img_energy_preds,
+                         img_shape, feat_level_points, scale_factor, cfg,
+                         rescale):
+        """Processes bboxes for a single image.
+
+        Shapes:
+            img_label_preds: list of (C, f_h, f_w) tensors.
+            img_bbox_preds: list of (4, f_h, f_w) tensors.
+            img_energy_preds: list of (E, f_h, f_w) tensors.
+            feat_level_points: list of (f_h * f_w, 2) tensors.
+
+        Notes:
+            f_h is the feature height.
+            f_w is the feature width.
+            C is the number of classes.
+            E is the number of energy levels.
+
+        Args:
+            img_label_preds (list): List of feature-level label tensors.
+            img_bbox_preds (list): List of feature-level bbox tensors.
+            img_energy_preds (list): List of feature-level energy tensors.
+            img_shape (tuple): (h, w) Tuple representing image size.
+            feat_level_points (list): List of feature level points for each
+                grid position.
+            scale_factor (float): The scaling factor of the image.
+            cfg (dict): The configuration used.
+            rescale (None or bool): Whether or not the image has been rescaled.
+
+        Returns:
+
+        """
+        feat_bboxes = []
+        feat_labels = []
+        feat_energies = []
+
+        for label_preds, bbox_preds, energy_preds, points in zip(
+            img_label_preds, img_bbox_preds, img_energy_preds, feat_level_points
+        ):
+            # Process each feature level in a for-loop
+            assert label_preds.shape[-2:] == bbox_preds.shape[-2:]
+
+            # Reshape quantized energy into a flat tensor and values
+            # between [0, 1].
+            energy_preds = energy_preds.permute(1, 2, 0).argmax(2).reshape(-1)
+            energy_preds = energy_preds.to(dtype=torch.float)
+            energy_preds /= float(self.max_energy)
+
+            # Reshape labels into a flat tensor and get the label softmax
+            # values. Interesting note, reshape completes in O(1).
+            label_preds = label_preds.permute(1, 2, 0).softmax(2).reshape(
+                -1, self.cls_out_channels)
+
+            # Similarly reshape the bboxes.
+            bbox_preds = bbox_preds.permute(1, 2, 0).reshape(-1, 4)
+
+            nms_pre = cfg.get('nms_pre', -1)
+            if 0 < nms_pre < energy_preds.shape[0]:
+                _, topk_inds = energy_preds.topk(nms_pre)
+                points = points[topk_inds, :]
+                bbox_preds = bbox_preds[topk_inds, :]
+                energy_preds = energy_preds[topk_inds]
+                label_preds = label_preds[topk_inds, :]
+
+            # Decode distance bbox to regular bbox
+            bboxes = distance2bbox(points, bbox_preds, max_shape=img_shape)
+            feat_bboxes.append(bboxes)
+            feat_labels.append(label_preds)
+            feat_energies.append(energy_preds)
+
+        feat_bboxes = torch.cat(feat_bboxes)
+
+        if rescale:
+            feat_bboxes /= feat_bboxes.new_tensor(scale_factor)
+
+        # Since multiclass_nms requires a 0th class representing background
+        # which is then subsequently ignored, we add that here.
+        feat_labels = torch.cat(feat_labels)
+        padding = feat_labels.new_zeros((feat_labels.shape[0], 1))
+        feat_labels = torch.cat((padding, feat_labels), dim=1)
+
+        # multiclass_nms also requires a score_factors tensor, which is the
+        # feature energies (feat_energies) tensor.
+        feat_energies = torch.cat(feat_energies)
+
+        det_bboxes, det_labels = multiclass_nms(
+            feat_bboxes,
+            feat_labels,
+            cfg.score_thr,
+            cfg.nms,
+            cfg.max_per_img,
+            feat_energies
+        )
+        return det_bboxes, det_labels
 
     def get_visualization(self, input_img,classes,test_cfg):
+        return {'full_image': np.array([[[0, 0, 0]]])}
+
         vis = dict()
         batch_size = input_img.shape[0]
-        img = tensor2imgs(input_img, **self.last_vals['img_metas'][0]['img_norm_cfg'])[0] #get input image
-        # from PIL import Image
-        #Image.fromarray(img).show()
-        img_gt = imshow_det_bboxes(img.copy(), self.last_vals['gt_bboxes'][0].cpu().numpy(),
-                                        self.last_vals['gt_labels'][0].cpu().numpy()-1,
-                                   class_names=classes, show=False, ret=True)
+
+        # get input image
+        img = tensor2imgs(input_img,
+                          **self.last_vals['img_metas'][0]['img_norm_cfg'])[0]
+
+        img_gt = imshow_det_bboxes(
+            img.copy(),
+            self.last_vals['gt_bboxes'][0].detach().cpu().numpy(),
+            self.last_vals['gt_labels'][0].cpu().numpy() - 1,
+            class_names=classes,
+            show=False,
+            ret=True
+        )
         #Image.fromarray(img_gt).show()
         vis["img_bbox_gt"] = img_gt
+
         # predict bboxes
         pred_bboxes, pred_labels = self.get_bboxes(
-                           cls_scores = self.last_vals['cls_scores'],
-                           bbox_preds = self.last_vals['bbox_preds'],
-                           energies = self.last_vals['energies'],
-                           img_metas = self.last_vals['img_metas'],
-                           cfg = test_cfg)[0]
+            cls_scores=self.last_vals['cls_scores'],
+            bbox_preds=self.last_vals['bbox_preds'],
+            centernesses=self.last_vals['centernesses'],
+            img_metas=self.last_vals['img_metas'],
+            cfg=test_cfg)[0]
         img_preds = imshow_det_bboxes(img.copy(), pred_bboxes.cpu().numpy(),
-                                           pred_labels.cpu().numpy(),
-                                      class_names=classes, show=False, ret=True, score_thr=0.05)
+                                      pred_labels.cpu().numpy(),
+                                      class_names=classes, show=False, ret=True,
+                                      score_thr=0.05)
         vis["img_bbox_pred"] = img_preds
-        #Image.fromarray(img_preds).show()
-
+        # Image.fromarray(img_preds).show()
 
         scores_vis = []
         classes_vis = []
-        for energies, cl_score in zip(self.last_vals['energies'], self.last_vals['cls_scores']):
+        for center_score, cl_score in zip(self.last_vals['centernesses'],
+                                          self.last_vals['cls_scores']):
+            # TODO Clean this up to use current solutions
             cls_scores = cl_score[0].permute(1, 2, 0).sigmoid()
-            centerness_scores = energies[0].permute(1, 2, 0).sigmoid()
+            centerness_scores = center_score[0].permute(1, 2, 0).sigmoid()
 
-            final_score = (cls_scores*centerness_scores).detach().cpu().numpy()
+            final_score = (cls_scores * centerness_scores)\
+                .detach().cpu().numpy()
+
             max_final_score = np.max(final_score, axis=-1)
+
             scores_vis.append(max_final_score)
 
-            final_classes = ((max_final_score > test_cfg['score_thr'])*np.argmax(cls_scores.detach().cpu().numpy(), axis=-1)+
-                             (max_final_score < test_cfg['score_thr'])*-1)
+            final_classes = ((max_final_score > test_cfg['score_thr'])
+                             * np.argmax(cls_scores.detach().cpu().numpy(),
+                                         axis=-1)
+                             + (max_final_score < test_cfg['score_thr']) * -1)
             classes_vis.append(final_classes)
 
+        img_scores = vt.image_pyramid(
+            [vis / test_cfg['score_thr'] * 125
+             for vis in scores_vis],
+            img.shape[:-1]
+        )
 
-        #img_scores = vt.image_pyramid(vt.normalize_centerness(scores_vis),  img.shape[:-1])
-        # threshold should be about 0.5 lightness
-        #[vis / test_cfg['score_thr'] * 125 for vis in scores_vis]
-        # take care of overflow
-        img_scores = vt.image_pyramid([vis/test_cfg['score_thr']*125 for vis in scores_vis], img.shape[:-1])
         vis["energy_pred"] = np.expand_dims(img_scores, -1)
-        #Image.fromarray(img_scores).show()
-        img_classes = vt.image_pyramid(vt.colorize_class_preds(classes_vis, len(classes)+1),  img.shape[:-1])
-        #Image.fromarray(img_classes).show()
-        img_classes = vt.add_class_legend(img_classes, classes, vt.get_present_classes(classes_vis))
-        #Image.fromarray(img_classes).show()
+        img_classes = vt.image_pyramid(
+            vt.colorize_class_preds(classes_vis, len(classes) + 1),
+            img.shape[:-1]
+        )
+
+        img_classes = vt.add_class_legend(img_classes,
+                                          classes,
+                                          vt.get_present_classes(classes_vis))
         vis["classes_pred"] = img_classes
 
         # show targets
         # centerness targets
-        # cent = [self.centerness_target(tar) for tar in self.last_vals["bbox_targets"]]
-        # cent = [tar.cpu().numpy() for tar in cent]
-        # self.centerness_target(self.last_vals["bbox_targets"])
+
         reshaped_centers = []
+
         for tar, vis_class in zip(self.last_vals["bbox_targets"], classes_vis):
             tar[tar < 0] = 0
             tar = self.centerness_target(tar).cpu().numpy()
@@ -764,21 +950,35 @@ class WFCOSHead(nn.Module):
             tar = np.nan_to_num(tar)
             reshaped_centers.append((tar*255).astype(np.uint8))
         gt_targets = vt.image_pyramid(reshaped_centers,  img.shape[:-1])
-        #Image.fromarray(gt_targets).show()
+
+        # Image.fromarray(gt_targets).show()
         vis["energy_gt"] = np.expand_dims(gt_targets, -1)
 
         # class targets
         # align with VOC names
-        self.last_vals['labels'] = [labels-1 for labels in self.last_vals['labels']]
-        reshaped_labels = []
-        for labels, vis_class in zip(self.last_vals['labels'], classes_vis):
-            reshaped_labels.append(self.cut_batch_reshape(labels,vis_class.shape,batch_size))
-        gt_classes = vt.image_pyramid(vt.colorize_class_preds(reshaped_labels, len(classes)+1),  img.shape[:-1])
-        gt_classes = vt.add_class_legend(gt_classes, classes, vt.get_present_classes(reshaped_labels))
+        self.last_vals['labels_list'] = [
+            labels-1 for labels in self.last_vals['labels_list']
+        ]
+
+        reshaped_labels = [
+            self.cut_batch_reshape(labels, vis_class.shape, batch_size)
+            for labels, vis_class in zip(self.last_vals['labels_list'],
+                                         classes_vis)
+        ]
+
+        gt_classes = vt.image_pyramid(vt.colorize_class_preds(reshaped_labels,
+                                                              len(classes)+1),
+                                      img.shape[:-1])
+        gt_classes = vt.add_class_legend(
+            gt_classes, classes, vt.get_present_classes(reshaped_labels)
+        )
         vis["classes_gt"] = gt_classes
-        #Image.fromarray(gt_classes).show()
-        stitched = vt.stitch_big_image([[vis["img_bbox_gt"], vis["energy_gt"], vis["classes_gt"]],
-                             [vis["img_bbox_pred"], vis["energy_pred"], vis["classes_pred"]]])
+        # Image.fromarray(gt_classes).show()
+        stitched = vt.stitch_big_image([[vis["img_bbox_gt"],
+                                         vis["energy_gt"],
+                                         vis["classes_gt"]],
+                                        [vis["img_bbox_pred"],
+                                         vis["energy_pred"],
+                                         vis["classes_pred"]]])
 
         return {"full_image": stitched}
-
