@@ -189,9 +189,14 @@ class BBoxHead(nn.Module):
         Returns:
             list[Tensor]: Refined bboxes of each image in a mini-batch.
 
+        CommandLine:
+            xdoctest -m ~/code/mmdetection/mmdet/models/bbox_heads/bbox_head.py BBoxHead.refine_bboxes
+
         Example:
             >>> # xdoctest: +REQUIRES(module:kwarray)
             >>> import kwarray
+            >>> import numpy as np
+            >>> from mmdet.core.bbox.demodata import random_boxes
             >>> self = BBoxHead(reg_class_agnostic=True)
             >>> n_roi = 2
             >>> n_img = 4
@@ -202,12 +207,12 @@ class BBoxHead(nn.Module):
             >>> # Create rois in the expected format
             >>> roi_boxes = random_boxes(n_roi, scale=scale, rng=rng)
             >>> img_ids = torch.randint(0, n_img, (n_roi,))
-            >>> img_ids = img_ids
+            >>> img_ids = img_ids.float()
             >>> rois = torch.cat([img_ids[:, None], roi_boxes], dim=1)
             >>> # Create other args
             >>> labels = torch.randint(0, 2, (n_roi,)).long()
             >>> bbox_preds = random_boxes(n_roi, scale=scale, rng=rng)
-            >>> # For each image,
+            >>> # For each image, pretend random positive boxes are gts
             >>> is_label_pos = (labels.numpy() > 0).astype(np.int)
             >>> lbl_per_img = kwarray.group_items(is_label_pos,
             ...                                   img_ids.numpy())
@@ -220,6 +225,7 @@ class BBoxHead(nn.Module):
             >>> ]
             >>> bboxes_list = self.refine_bboxes(rois, labels, bbox_preds,
             >>>                    pos_is_gts, img_metas)
+            >>> print(bboxes_list)
         """
         img_ids = rois[:, 0].long().unique(sorted=True)
         assert img_ids.numel() <= len(img_metas)
