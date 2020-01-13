@@ -21,7 +21,7 @@ class AnchorGenerator_Ultra(object):
         x_ctr, y_ctr = ctr
         base_anchors = list()
         for min_box in self.min_boxes:
-            w = min_box
+            w = min_box  # high
             h = min_box
             new_centers_y = torch.Tensor([0.5 * y_ctr])
             new_centers_x = torch.Tensor([0.5 * x_ctr])
