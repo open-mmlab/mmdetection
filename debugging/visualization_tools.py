@@ -49,7 +49,8 @@ def get_present_classes(classes_vis):
             unique_vals.extend(np.unique(vis.cpu().numpy()))
 
     ret = set(unique_vals)
-    ret.remove(-1)
+    if -1 in ret:
+        ret.remove(-1)
     ret = list(ret)
     ret.sort()
     return ret

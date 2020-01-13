@@ -317,7 +317,9 @@ class WFCOSHead(nn.Module):
                 pos_label_targets.to(dtype=torch.long))
         else:
             loss_bbox = pos_bbox_preds.sum()
+
             loss_cls = pos_label_preds.sum()
+
 
         # Get an image for visualization
         self.last_vals = dict(
@@ -329,7 +331,9 @@ class WFCOSHead(nn.Module):
             img_metas=img_metas,
             cfg=cfg,
             all_level_points=all_level_points,
+
             bbox_targets=bbox_targets
+
         )
 
         return dict(
@@ -902,6 +906,7 @@ class WFCOSHead(nn.Module):
 
         scores_vis = []
         classes_vis = []
+
         for center_score, cl_score in zip(self.last_vals['centernesses'],
                                           self.last_vals['cls_scores']):
             # TODO Clean this up to use current solutions
@@ -919,6 +924,7 @@ class WFCOSHead(nn.Module):
                              * np.argmax(cls_scores.detach().cpu().numpy(),
                                          axis=-1)
                              + (max_final_score < test_cfg['score_thr']) * -1)
+
             classes_vis.append(final_classes)
 
         img_scores = vt.image_pyramid(
@@ -926,6 +932,7 @@ class WFCOSHead(nn.Module):
              for vis in scores_vis],
             img.shape[:-1]
         )
+
 
         vis["energy_pred"] = np.expand_dims(img_scores, -1)
         img_classes = vt.image_pyramid(
@@ -943,9 +950,12 @@ class WFCOSHead(nn.Module):
 
         reshaped_centers = []
 
+
+
         for tar, vis_class in zip(self.last_vals["bbox_targets"], classes_vis):
+
             tar[tar < 0] = 0
-            tar = self.centerness_target(tar).cpu().numpy()
+            tar = self.energy_target(tar).cpu().numpy()
             tar = self.cut_batch_reshape(tar, vis_class.shape, batch_size)
             tar = np.nan_to_num(tar)
             reshaped_centers.append((tar*255).astype(np.uint8))
