@@ -25,6 +25,7 @@ before_install:
 
 install:
   - pip install Cython torch==1.2
+  - pip install Pillow==6.2.2
   - pip install -r requirements.txt
   - pip install -r tests/requirements.txt
 

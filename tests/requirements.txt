@@ -5,3 +5,6 @@ pytest-cov
 codecov
 xdoctest >= 0.10.0
 asynctest
+
+# Note: used for kwarray.group_items, this may be ported to mmcv in the future.
+kwarray
