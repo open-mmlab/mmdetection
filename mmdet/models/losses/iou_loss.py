@@ -70,7 +70,7 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
 
 
 @weighted_loss
-def giou_loss(pred, target, eps=1e-6):
+def giou_loss(pred, target, eps=1e-7):
     """
     Generalized Intersection over Union: A Metric and A Loss for
     Bounding Box Regression
@@ -88,42 +88,29 @@ def giou_loss(pred, target, eps=1e-6):
     Return:
         Tensor: Loss tensor.
     """
+    # overlap
+    lt = torch.max(pred[:, :2], target[:, :2])
+    rb = torch.min(pred[:, 2:], target[:, 2:])
+    wh = (rb - lt + 1).clamp(min=0)
+    overlap = wh[:, 0] * wh[:, 1]
 
-    pred_x1 = pred[:, 0]
-    pred_y1 = pred[:, 1]
-    pred_x2 = pred[:, 2]
-    pred_y2 = pred[:, 3]
-    pred_x2 = torch.max(pred_x1, pred_x2)
-    pred_y2 = torch.max(pred_y1, pred_y2)
-    pred_area = (pred_x2 - pred_x1 + 1) * (pred_y2 - pred_y1 + 1)
+    # union
+    ap = (pred[:, 2] - pred[:, 0] + 1) * (pred[:, 3] - pred[:, 1] + 1)
+    ag = (target[:, 2] - target[:, 0] + 1) * (target[:, 3] - target[:, 1] + 1)
+    union = ap + ag - overlap + eps
 
-    target_x1 = target[:, 0]
-    target_y1 = target[:, 1]
-    target_x2 = target[:, 2]
-    target_y2 = target[:, 3]
-    target_area = (target_x2 - target_x1 + 1) * (target_y2 - target_y1 + 1)
+    # IoU
+    ious = overlap / union
 
-    x1_intersect = torch.max(pred_x1, target_x1)
-    y1_intersect = torch.max(pred_y1, target_y1)
-    x2_intersect = torch.min(pred_x2, target_x2)
-    y2_intersect = torch.min(pred_y2, target_y2)
-    area_intersect = torch.zeros(pred_x1.size()).to(pred)
-    mask = (y2_intersect > y1_intersect) * (x2_intersect > x1_intersect)
-    area_intersect[mask] = (x2_intersect[mask] - x1_intersect[mask] + 1) * (
-        y2_intersect[mask] - y1_intersect[mask] + 1)
+    # enclose area
+    enclose_x1y1 = torch.min(pred[:, :2], target[:, :2])
+    enclose_x2y2 = torch.max(pred[:, 2:], target[:, 2:])
+    enclose_wh = (enclose_x2y2 - enclose_x1y1 + 1).clamp(min=0)
+    enclose_area = enclose_wh[:, 0] * enclose_wh[:, 1] + eps
 
-    x1_enclosing = torch.min(pred_x1, target_x1)
-    y1_enclosing = torch.min(pred_y1, target_y1)
-    x2_enclosing = torch.max(pred_x2, target_x2)
-    y2_enclosing = torch.max(pred_y2, target_y2)
-    area_enclosing = (x2_enclosing - x1_enclosing +
-                      1) * (y2_enclosing - y1_enclosing + 1) + 1e-7
-
-    area_union = pred_area + target_area - area_intersect + 1e-7
-    ious = area_intersect / area_union
-    gious = ious - (area_enclosing - area_union) / area_enclosing
+    # GIoU
+    gious = ious - (enclose_area - union) / enclose_area
     loss = 1 - gious
-
     return loss
 
 

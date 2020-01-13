@@ -1,7 +1,6 @@
-import os
-
 import numpy as np
 import torch
+import torch.distributed as dist
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
@@ -14,16 +13,11 @@ from ..utils import ConvModule, Scale, bias_init_with_prob
 from .anchor_head import AnchorHead
 
 
-def get_num_gpus():
-    return int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-
-
-def reduce_sum(tensor):
-    if get_num_gpus() <= 1:
+def reduce_mean(tensor):
+    if not dist.is_initialized():
         return tensor
-    import torch.distributed as dist
     tensor = tensor.clone()
-    dist.all_reduce(tensor, op=dist.reduce_op.SUM)
+    dist.all_reduce(tensor.div_(dist.get_world_size()), op=dist.reduce_op.SUM)
     return tensor
 
 
@@ -214,10 +208,9 @@ class ATSSHead(AnchorHead):
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
          bbox_weights_list, num_total_pos, num_total_neg) = cls_reg_targets
 
-        num_gpus = get_num_gpus()
-        num_total_samples = reduce_sum(
+        num_total_samples = reduce_mean(
             torch.tensor(num_total_pos).cuda()).item()
-        num_total_samples = max(num_total_samples / float(num_gpus), 1.0)
+        num_total_samples = max(num_total_samples, 1.0)
 
         losses_cls, losses_bbox, loss_centerness,\
             bbox_avg_factor = multi_apply(
@@ -233,7 +226,7 @@ class ATSSHead(AnchorHead):
                 cfg=cfg)
 
         bbox_avg_factor = sum(bbox_avg_factor)
-        bbox_avg_factor = reduce_sum(bbox_avg_factor).item() / num_gpus
+        bbox_avg_factor = reduce_mean(bbox_avg_factor).item()
         losses_bbox = list(map(lambda x: x / bbox_avg_factor, losses_bbox))
         return dict(
             loss_cls=losses_cls,
