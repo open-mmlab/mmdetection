@@ -20,10 +20,10 @@ from ..registry import HEADS
 from ..utils import ConvModule, Scale, bias_init_with_prob
 
 # Visualization imports
-import numpy as np
 import debugging.visualization_tools as vt
 from mmcv.visualization import imshow_det_bboxes
 from mmdet.core import tensor2imgs
+from PIL import Image
 
 INF = 1e8
 
@@ -302,14 +302,14 @@ class WFCOSHead(nn.Module):
             pos_label_targets.append(label_targets[i][mask[i]])
 
         pos_points = torch.cat(pos_points)
-        pos_bbox_preds = torch.cat(pos_bbox_preds)
+        pos_bbox_preds = distance2bbox(pos_points, torch.cat(pos_bbox_preds))
         pos_bbox_targets = torch.cat(pos_bbox_targets)
         pos_label_preds = torch.cat(pos_label_preds)
         pos_label_targets = torch.cat(pos_label_targets)
 
         if pos_bbox_preds.nelement() > 0:
             loss_bbox = self.loss_bbox(
-                distance2bbox(pos_points, pos_bbox_preds),
+                pos_bbox_preds,
                 pos_bbox_targets
             )
             loss_cls = self.loss_cls(
@@ -321,16 +321,23 @@ class WFCOSHead(nn.Module):
 
         # Get an image for visualization
         self.last_vals = dict(
-            cls_scores=label_preds,
-            bbox_preds=bbox_preds,
-            centernesses=energy_preds,
-            gt_bboxes=gt_bboxes,
-            gt_labels=gt_labels,
-            img_metas=img_metas,
-            cfg=cfg,
+            img_metas=img_metas[0],
             all_level_points=all_level_points,
-            bbox_targets=bbox_targets
+            bbox_targets=gt_bboxes[0].detach(),
+            gt_labels=gt_labels[0].detach(),
+            label_targets = [],
+            energy_targets=[],
+            bbox_preds=[x[0].detach().permute(1, 2, 0) for x in bbox_preds],
+            label_preds=[],
+            energy_preds=[]
         )
+
+        for et, lt, ep, lp in zip(energy_targets, label_targets,
+                                  energy_preds, label_preds):
+            self.last_vals['energy_targets'].append(et[0].detach())
+            self.last_vals['label_targets'].append(lt[0].detach())
+            self.last_vals['energy_preds'].append(ep[0].detach())
+            self.last_vals['label_preds'].append(lp[0].detach())
 
         return dict(
             loss_cls=loss_cls,
@@ -756,13 +763,17 @@ class WFCOSHead(nn.Module):
             img_bbox_preds = []
             img_energy_preds = []
             for i in range(num_levels):
-                img_label_preds.append(label_preds[i][img_id].detach())
+                img_label_preds.append(label_preds[i][img_id].detach()
+                                       .permute(2, 1, 0)
+                                       .argmax(2))
                 img_bbox_preds.append(bbox_preds[i][img_id].detach())
                 img_energy_preds.append(energy_preds[i][img_id].detach())
 
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self.get_bboxes_image(img_label_preds, img_bbox_preds,
+
+            det_bboxes = self.get_bboxes_image(img_label_preds,
+                                               img_bbox_preds,
                                                img_energy_preds,
                                                img_shape, feat_level_points,
                                                scale_factor, cfg, rescale)
@@ -865,130 +876,122 @@ class WFCOSHead(nn.Module):
         )
         return det_bboxes, det_labels
 
-    def get_visualization(self, input_img, classes, test_cfg):
+    def get_visualization(self, input_img, class_names, test_cfg):
         """Gets visualization of network output.
 
+        Shapes:
+            input_img: (B, 3, h, w) where B is the batch size.
+
+        Notes:
+            Only visualizes the first image of a batch.
+            get_visualization() expects that self has a property last_vals
+            and labels_list.
+            Only the first image in a a batch and its data must be stored to
+            last_vals.
+            last_vals must contain the following keys:
+                - 'img_metas' (dict): img_metas of the first image
+                - 'all_level_points' (list): s-list of all level points.
+                - 'bbox_targets' (torch.Tensor): (n, 4) bbox tensors.
+                - 'label_targets' (torch.Tensor): (n) label tensors.
+                - 'energy_targets' (list): s-list of (h, w) tensors.
+                - 'bbox_preds' (list): s-list of (h, w, 4) bbox tensors.
+                - 'label_preds' (list): s-list of (h, w) label tensors.
+                - 'energy_preds' (list): s-list of (h, w) tensors.
+            where s is the number of feature levels. All bbox tensors have
+            absolute pixel location values.
+
         Args:
-            input_img (tensor):
-            classes:
-            test_cfg:
+            input_img (torch.Tensor): Input image as a torch tensor.
+            classes (tuple): Tuple of class names.
+            test_cfg (ConfigDict): dictionary of the configuration.
 
         Returns:
-
+            dict: A dictionary with the key 'full_image' containing an np
+                ndarray with shape (w, h, 3) and dtype 'uint8'.
         """
-        return {'full_image': np.array([[[0, 0, 0]]])}
-
         vis = dict()
-        batch_size = input_img.shape[0]
 
-        # get input image
-        img = tensor2imgs(input_img,
-                          **self.last_vals['img_metas'][0]['img_norm_cfg'])[0]
+        # Get only the first input image
+        img = tensor2imgs(input_img[0].unsqueeze(0),
+                          **self.last_vals['img_metas']['img_norm_cfg'])[0]
+        img_shape = self.last_vals['img_metas']['img_shape']
+        scale_factor = self.last_vals['img_metas']['scale_factor']
 
-        img_gt = imshow_det_bboxes(
-            img.copy(),
-            self.last_vals['gt_bboxes'][0].detach().cpu().numpy(),
-            self.last_vals['gt_labels'][0].cpu().numpy() - 1,
-            class_names=classes,
+        self.last_vals['gt_labels'] -= 1
+
+        vis['img_gt'] = imshow_det_bboxes(
+            img=img.copy(),
+            bboxes=self.last_vals['bbox_targets'].cpu().numpy(),
+            labels=(self.last_vals['gt_labels']).cpu().numpy()
+                .astype(int),
+            class_names=class_names,
             show=False,
             ret=True
         )
-        #Image.fromarray(img_gt).show()
-        vis["img_bbox_gt"] = img_gt
 
-        # predict bboxes
-        pred_bboxes, pred_labels = self.get_bboxes(
-            cls_scores=self.last_vals['cls_scores'],
-            bbox_preds=self.last_vals['bbox_preds'],
-            centernesses=self.last_vals['centernesses'],
-            img_metas=self.last_vals['img_metas'],
-            cfg=test_cfg)[0]
-        img_preds = imshow_det_bboxes(img.copy(), pred_bboxes.cpu().numpy(),
-                                      pred_labels.cpu().numpy(),
-                                      class_names=classes, show=False, ret=True,
-                                      score_thr=0.05)
-        vis["img_bbox_pred"] = img_preds
-        # Image.fromarray(img_preds).show()
-
-        scores_vis = []
-        classes_vis = []
-        for center_score, cl_score in zip(self.last_vals['centernesses'],
-                                          self.last_vals['cls_scores']):
-            # TODO Clean this up to use current solutions
-            cls_scores = cl_score[0].permute(1, 2, 0).sigmoid()
-            centerness_scores = center_score[0].permute(1, 2, 0).sigmoid()
-
-            final_score = (cls_scores * centerness_scores)\
-                .detach().cpu().numpy()
-
-            max_final_score = np.max(final_score, axis=-1)
-
-            scores_vis.append(max_final_score)
-
-            final_classes = ((max_final_score > test_cfg['score_thr'])
-                             * np.argmax(cls_scores.detach().cpu().numpy(),
-                                         axis=-1)
-                             + (max_final_score < test_cfg['score_thr']) * -1)
-            classes_vis.append(final_classes)
-
-        img_scores = vt.image_pyramid(
-            [vis / test_cfg['score_thr'] * 125
-             for vis in scores_vis],
-            img.shape[:-1]
+        # Get image with predicted bboxes
+        det_bboxes, det_labels = self.get_bboxes_image(
+            img_bbox_preds=[x.permute(2, 0, 1)
+                            for x in self.last_vals['bbox_preds']],
+            img_label_preds=self.last_vals['label_preds'],
+            img_energy_preds=self.last_vals['energy_preds'],
+            img_shape=img_shape,
+            feat_level_points=self.last_vals['all_level_points'],
+            scale_factor=scale_factor,
+            cfg=test_cfg,
+            rescale=(scale_factor != 1)
+        )
+        vis['img_pred'] = imshow_det_bboxes(
+            img=img.copy(),
+            bboxes=det_bboxes.cpu().numpy(),
+            labels=det_labels.cpu().numpy().astype(int),
+            class_names=class_names,
+            score_thr=0.,
+            show=False,
+            ret=True
         )
 
-        vis["energy_pred"] = np.expand_dims(img_scores, -1)
-        img_classes = vt.image_pyramid(
-            vt.colorize_class_preds(classes_vis, len(classes) + 1),
-            img.shape[:-1]
-        )
+        # Go through energy and labels
+        vis['et'], vis['ep'], vis['lt'], vis['lp'] = [], [], [], []
+        np_arrays = {'lt': [], 'lp': []}
 
-        img_classes = vt.add_class_legend(img_classes,
-                                          classes,
-                                          vt.get_present_classes(classes_vis))
-        vis["classes_pred"] = img_classes
+        for et, lt, ep, lp in zip(self.last_vals['energy_targets'],
+                                  self.last_vals['label_targets'],
+                                  self.last_vals['energy_preds'],
+                                  self.last_vals['label_preds']):
+            et = et.cpu().numpy()
+            ep = ep.permute(1, 2, 0).argmax(2).cpu().numpy()
+            lt = lt.cpu().numpy().astype(int)
+            lp = lp.permute(1, 2, 0).argmax(2).cpu().numpy().astype(int)
 
-        # show targets
-        # centerness targets
+            vis['et'].append(vt.map_color_values(et, self.max_energy))
+            vis['ep'].append(vt.map_color_values(ep, self.max_energy))
+            vis['lt'].append(vt.map_color_values(lt, self.cls_out_channels))
+            vis['lp'].append(vt.map_color_values(lp, self.cls_out_channels))
 
-        reshaped_centers = []
+            np_arrays['lt'].append(lt)
+            np_arrays['lp'].append(lp)
 
-        for tar, vis_class in zip(self.last_vals["bbox_targets"], classes_vis):
-            tar[tar < 0] = 0
-            tar = self.centerness_target(tar).cpu().numpy()
-            tar = self.cut_batch_reshape(tar, vis_class.shape, batch_size)
-            tar = np.nan_to_num(tar)
-            reshaped_centers.append((tar*255).astype(np.uint8))
-        gt_targets = vt.image_pyramid(reshaped_centers,  img.shape[:-1])
 
-        # Image.fromarray(gt_targets).show()
-        vis["energy_gt"] = np.expand_dims(gt_targets, -1)
+        # Turn the image pyarmid into one long image
+        vis['et'] = vt.image_pyramid(vis['et'], img.shape[:-1])
+        vis['ep'] = vt.image_pyramid(vis['ep'], img.shape[:-1])
+        vis['lt'] = vt.image_pyramid(vis['lt'], img.shape[:-1])
+        vis['lp'] = vt.image_pyramid(vis['lp'], img.shape[:-1])
 
-        # class targets
-        # align with VOC names
-        self.last_vals['labels_list'] = [
-            labels-1 for labels in self.last_vals['labels_list']
-        ]
+        # Add legends for the labels
+        vis['lt'] = vt.add_class_legend(vis['lt'],
+                                        class_names,
+                                        vt.get_present_classes(np_arrays['lt']))
+        vis['lp'] = vt.add_class_legend(vis['lp'],
+                                        class_names,
+                                        vt.get_present_classes(np_arrays['lp']))
 
-        reshaped_labels = [
-            self.cut_batch_reshape(labels, vis_class.shape, batch_size)
-            for labels, vis_class in zip(self.last_vals['labels_list'],
-                                         classes_vis)
-        ]
+        stitched = vt.stitch_big_image([
+                [vis['img_gt'], vis['et'], vis['lt']],
+                [vis['img_pred'], vis['ep'], vis['lp']]
+            ])
 
-        gt_classes = vt.image_pyramid(vt.colorize_class_preds(reshaped_labels,
-                                                              len(classes)+1),
-                                      img.shape[:-1])
-        gt_classes = vt.add_class_legend(
-            gt_classes, classes, vt.get_present_classes(reshaped_labels)
-        )
-        vis["classes_gt"] = gt_classes
-        # Image.fromarray(gt_classes).show()
-        stitched = vt.stitch_big_image([[vis["img_bbox_gt"],
-                                         vis["energy_gt"],
-                                         vis["classes_gt"]],
-                                        [vis["img_bbox_pred"],
-                                         vis["energy_pred"],
-                                         vis["classes_pred"]]])
+        # Image.fromarray(stitched).save('/workspace/test.png')
 
         return {"full_image": stitched}

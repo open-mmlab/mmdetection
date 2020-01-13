@@ -2,6 +2,28 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 
+COLOR_MAPPING = ('24100E',
+                 '321713',
+                 '401E1F',
+                 '4D262E',
+                 '58303E',
+                 '603B50',
+                 '654862',
+                 '665675',
+                 '636686',
+                 '5B7595',
+                 '5186A0',
+                 '4496A8',
+                 '39A5AC',
+                 '37B5AC',
+                 '43C4A7',
+                 '5AD1A0',
+                 '77DE96',
+                 '98EA8A',
+                 'BCF47F',
+                 'E2FD76')
+
+
 def colorize_class_preds(class_maps, no_classes):
     # class maps are level-batch-class-H-W
     np_arrays = []
@@ -49,7 +71,10 @@ def get_present_classes(classes_vis):
             unique_vals.extend(np.unique(vis.cpu().numpy()))
 
     ret = set(unique_vals)
-    ret.remove(-1)
+    try:
+        ret.remove(-1)
+    except KeyError:
+        pass
     ret = list(ret)
     ret.sort()
     return ret
@@ -100,37 +125,15 @@ def add_class_legend(img, classes, present_classes):
     return np.concatenate((canv, img), axis=1)
 
 
-color_mapping = ('321713',
-                 '401E1F',
-                 '4D262E',
-                 '58303E',
-                 '603B50',
-                 '654862',
-                 '665675',
-                 '636686',
-                 '5B7595',
-                 '5186A0',
-                 '4496A8',
-                 '39A5AC',
-                 '37B5AC',
-                 '43C4A7',
-                 '5AD1A0',
-                 '77DE96',
-                 '98EA8A',
-                 'BCF47F',
-                 'E2FD76')
-
-
-def map_color_values(array, n, source_dest=None):
+def map_color_values(array, n):
     """Maps values to RGB arrays.
 
     Shape:
         array: (h, w)
 
     Args:
-        array (np.array): Array of values to map to colors.
+        array (np.ndarray): Array of values to map to colors.
         n (int or float): Number of categories to map.
-        source (list or tuple): Hex value of source (i.e. 0th category)
     """
     out = np.empty((array.shape[0], array.shape[1], 3), dtype='uint8')
     for i in range(array.shape[0]):
@@ -155,24 +158,22 @@ def map_color_value(value, n):
         n (int or float): The maximum value corresponding to a hue of 360.
 
     Returns:
-        np.array: a numpy array representing RGB values.
+        np.ndarray: a numpy array representing RGB values.
     """
     if value < 0:
         return np.array([0, 0, 0]).astype(np.uint8)
 
+    if value == n:
+        value = 0
+
     if n == 20:
         # Use nicer color values
         # First convert value to int
-        value = int(value)
-
-        if value == 0:
-            return np.array([255, 255, 255]).astype('uint8')
-        h = color_mapping[value - 1]
+        h = COLOR_MAPPING[int(value)]
         return np.array([int(h[i:i + 2], 16) for i in (0, 2, 4)], dtype='uint8')
 
     multiplier = 360 / n
-    if value == n:
-        value = 0
+
 
     hue = float(value) * float(multiplier)
 

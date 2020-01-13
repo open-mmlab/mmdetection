@@ -9,10 +9,12 @@ from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 from .deepscores import DeepScoresDataset
+from .qualitai import QualitaiDataset
 
 __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'DeepScoresDataset',
     'VOCDataset', 'CityscapesDataset', 'GroupSampler',
     'DistributedGroupSampler', 'build_dataloader', 'ConcatDataset',
-    'RepeatDataset', 'WIDERFaceDataset', 'DATASETS', 'build_dataset'
+    'RepeatDataset', 'WIDERFaceDataset', 'DATASETS', 'build_dataset',
+    'QualitaiDataset'
 ]
