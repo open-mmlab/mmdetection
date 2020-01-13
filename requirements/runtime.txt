@@ -6,4 +6,6 @@ six
 terminaltables
 torch>=1.1
 torchvision
+
+# need older pillow until torchvision is fixed
 Pillow<=6.2.2
