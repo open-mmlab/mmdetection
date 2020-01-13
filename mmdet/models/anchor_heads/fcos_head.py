@@ -513,6 +513,8 @@ class FCOSHead(nn.Module):
 
         return {"full_image": stitched}
 
+
+
     def compute_local_scores(self, cls_scores, bbox_scores):
         scores=1
         return scores
