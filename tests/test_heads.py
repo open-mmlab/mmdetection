@@ -169,3 +169,172 @@ def test_bbox_head_loss():
                        bbox_targets, bbox_weights)
     assert losses.get('loss_cls', 0) > 0, 'cls-loss should be non-zero'
     assert losses.get('loss_bbox', 0) > 0, 'box-loss should be non-zero'
+
+
+def test_refine_boxes():
+    """
+    Mirrors the doctest in
+    ``mmdet.models.bbox_heads.bbox_head.BBoxHead.refine_boxes`` but checks for
+    multiple values of n_roi / n_img.
+    """
+    self = BBoxHead(reg_class_agnostic=True)
+
+    test_settings = [
+
+        # Corner case: less rois than images
+        {
+            'n_roi': 2,
+            'n_img': 4,
+            'rng': 34285940
+        },
+
+        # Corner case: no images
+        {
+            'n_roi': 0,
+            'n_img': 0,
+            'rng': 52925222
+        },
+
+        # Corner cases: few images / rois
+        {
+            'n_roi': 1,
+            'n_img': 1,
+            'rng': 1200281
+        },
+        {
+            'n_roi': 2,
+            'n_img': 1,
+            'rng': 1200282
+        },
+        {
+            'n_roi': 2,
+            'n_img': 2,
+            'rng': 1200283
+        },
+        {
+            'n_roi': 1,
+            'n_img': 2,
+            'rng': 1200284
+        },
+
+        # Corner case: no rois few images
+        {
+            'n_roi': 0,
+            'n_img': 1,
+            'rng': 23955860
+        },
+        {
+            'n_roi': 0,
+            'n_img': 2,
+            'rng': 25830516
+        },
+
+        # Corner case: no rois many images
+        {
+            'n_roi': 0,
+            'n_img': 10,
+            'rng': 671346
+        },
+        {
+            'n_roi': 0,
+            'n_img': 20,
+            'rng': 699807
+        },
+
+        # Corner case: similar num rois and images
+        {
+            'n_roi': 20,
+            'n_img': 20,
+            'rng': 1200238
+        },
+        {
+            'n_roi': 10,
+            'n_img': 20,
+            'rng': 1200238
+        },
+        {
+            'n_roi': 5,
+            'n_img': 5,
+            'rng': 1200238
+        },
+
+        # ----------------------------------
+        # Common case: more rois than images
+        {
+            'n_roi': 100,
+            'n_img': 1,
+            'rng': 337156
+        },
+        {
+            'n_roi': 150,
+            'n_img': 2,
+            'rng': 275898
+        },
+        {
+            'n_roi': 500,
+            'n_img': 5,
+            'rng': 4903221
+        },
+    ]
+
+    for demokw in test_settings:
+        try:
+            n_roi = demokw['n_roi']
+            n_img = demokw['n_img']
+            rng = demokw['rng']
+
+            print('Test refine_boxes case: {!r}'.format(demokw))
+            tup = _demodata_refine_boxes(n_roi, n_img, rng=rng)
+            rois, labels, bbox_preds, pos_is_gts, img_metas = tup
+            bboxes_list = self.refine_bboxes(rois, labels, bbox_preds,
+                                             pos_is_gts, img_metas)
+            assert len(bboxes_list) == n_img
+            assert sum(map(len, bboxes_list)) <= n_roi
+            assert all(b.shape[1] == 4 for b in bboxes_list)
+        except Exception:
+            print('Test failed with demokw={!r}'.format(demokw))
+            raise
+
+
+def _demodata_refine_boxes(n_roi, n_img, rng=0):
+    """
+    Create random test data for the
+    ``mmdet.models.bbox_heads.bbox_head.BBoxHead.refine_boxes`` method
+    """
+    import numpy as np
+    from mmdet.core.bbox.demodata import random_boxes
+    from mmdet.core.bbox.demodata import ensure_rng
+    try:
+        import kwarray
+    except ImportError:
+        import pytest
+        pytest.skip('kwarray is required for this test')
+    scale = 512
+    rng = ensure_rng(rng)
+    img_metas = [{'img_shape': (scale, scale)} for _ in range(n_img)]
+    # Create rois in the expected format
+    roi_boxes = random_boxes(n_roi, scale=scale, rng=rng)
+    if n_img == 0:
+        assert n_roi == 0, 'cannot have any rois if there are no images'
+        img_ids = torch.empty((0, ), dtype=torch.long)
+        roi_boxes = torch.empty((0, 4), dtype=torch.float32)
+    else:
+        img_ids = rng.randint(0, n_img, (n_roi, ))
+        img_ids = torch.from_numpy(img_ids)
+    rois = torch.cat([img_ids[:, None].float(), roi_boxes], dim=1)
+    # Create other args
+    labels = rng.randint(0, 2, (n_roi, ))
+    labels = torch.from_numpy(labels).long()
+    bbox_preds = random_boxes(n_roi, scale=scale, rng=rng)
+    # For each image, pretend random positive boxes are gts
+    is_label_pos = (labels.numpy() > 0).astype(np.int)
+    lbl_per_img = kwarray.group_items(is_label_pos, img_ids.numpy())
+    pos_per_img = [sum(lbl_per_img.get(gid, [])) for gid in range(n_img)]
+    # randomly generate with numpy then sort with torch
+    _pos_is_gts = [
+        rng.randint(0, 2, (npos, )).astype(np.uint8) for npos in pos_per_img
+    ]
+    pos_is_gts = [
+        torch.from_numpy(p).sort(descending=True)[0] for p in _pos_is_gts
+    ]
+    return rois, labels, bbox_preds, pos_is_gts, img_metas
