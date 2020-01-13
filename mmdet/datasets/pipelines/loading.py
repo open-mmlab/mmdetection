@@ -1,5 +1,4 @@
 import os.path as osp
-import warnings
 
 import mmcv
 import numpy as np
@@ -42,28 +41,16 @@ class LoadAnnotations(object):
                  with_label=True,
                  with_mask=False,
                  with_seg=False,
-                 poly2mask=True,
-                 skip_img_without_anno=True):
+                 poly2mask=True):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
-        self.skip_img_without_anno = skip_img_without_anno
 
     def _load_bboxes(self, results):
         ann_info = results['ann_info']
         results['gt_bboxes'] = ann_info['bboxes']
-        if len(results['gt_bboxes']) == 0 and self.skip_img_without_anno:
-            if results['img_prefix'] is not None:
-                file_path = osp.join(results['img_prefix'],
-                                     results['img_info']['filename'])
-            else:
-                file_path = results['img_info']['filename']
-            warnings.warn(
-                'Skip the image "{}" that has no valid gt bbox'.format(
-                    file_path))
-            return None
 
         gt_bboxes_ignore = ann_info.get('bboxes_ignore', None)
         if gt_bboxes_ignore is not None:
@@ -104,6 +91,7 @@ class LoadAnnotations(object):
         results['gt_semantic_seg'] = mmcv.imread(
             osp.join(results['seg_prefix'], results['ann_info']['seg_map']),
             flag='unchanged').squeeze()
+        results['seg_fields'].append('gt_semantic_seg')
         return results
 
     def __call__(self, results):

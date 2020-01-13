@@ -21,8 +21,30 @@ def build_dataloader(dataset,
                      dist=True,
                      shuffle=True,
                      **kwargs):
+    """Build PyTorch DataLoader.
+
+    In distributed training, each GPU/process has a dataloader.
+    In non-distributed training, there is only one dataloader for all GPUs.
+
+    Args:
+        dataset (Dataset): A PyTorch dataset.
+        imgs_per_gpu (int): Number of images on each GPU, i.e., batch size of
+            each GPU.
+        workers_per_gpu (int): How many subprocesses to use for data loading
+            for each GPU.
+        num_gpus (int): Number of GPUs. Only used in non-distributed training.
+        dist (bool): Distributed training/test or not. Default: True.
+        shuffle (bool): Whether to shuffle the data at every epoch.
+            Default: True.
+        kwargs: any keyword argument to be used to initialize DataLoader
+
+    Returns:
+        DataLoader: A PyTorch dataloader.
+    """
     if dist:
         rank, world_size = get_dist_info()
+        # DistributedGroupSampler will definitely shuffle the data to satisfy
+        # that images on each GPU are in the same group
         if shuffle:
             sampler = DistributedGroupSampler(dataset, imgs_per_gpu,
                                               world_size, rank)
