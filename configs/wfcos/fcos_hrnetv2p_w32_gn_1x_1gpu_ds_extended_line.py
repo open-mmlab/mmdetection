@@ -81,8 +81,8 @@ train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomCrop', crop_size=(640, 800)),
-    #dict(type='Resize', img_scale=img_scale_train, keep_ratio=True),
-    #dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Resize', img_scale=img_scale_train, keep_ratio=True),
+    dict(type='RandomFlip', flip_ratio=0),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
@@ -137,7 +137,7 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=1.0/3,
     step=[16, 22])
-checkpoint_config = dict(interval=1)
+checkpoint_config = dict(interval=50)
 # yapf:disable
 log_config = dict(
     interval=100,
@@ -148,10 +148,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 640
+total_epochs = 1000
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_hrnetv2p_w32_gn_1x_4gpu_ds_dense/'
-load_from = work_dir + 'latest.pth'
-resume_from = work_dir + 'latest.pth'
+work_dir = './work_dirs/fcos_hrnetv2p_w32_gn_1x_4gpu_ds_dense_extended_line/'
+load_from = work_dir + "latest.pth"
+resume_from = work_dir + "latest.pth"
 workflow = [('train', 3)]

@@ -116,8 +116,8 @@ def main():
         wandb.init()
         wandb.config.update(cfg._cfg_dict)
         wandb.config.update({"filename": cfg.filename})
-        import numpy as np
-        wandb.log({"example": wandb.Image(np.zeros([256, 256]).astype(np.uint8))})
+        # import numpy as np
+        # wandb.log({"example": wandb.Image(np.zeros([256, 256]).astype(np.uint8))})
 
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
