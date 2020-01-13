@@ -865,7 +865,17 @@ class WFCOSHead(nn.Module):
         )
         return det_bboxes, det_labels
 
-    def get_visualization(self, input_img,classes,test_cfg):
+    def get_visualization(self, input_img, classes, test_cfg):
+        """Gets visualization of network output.
+
+        Args:
+            input_img (tensor):
+            classes:
+            test_cfg:
+
+        Returns:
+
+        """
         return {'full_image': np.array([[[0, 0, 0]]])}
 
         vis = dict()
