@@ -17,8 +17,4 @@
 
 | Backbone  | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
 |:---------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
-| R-50      | pytorch | 1x      |          |                     |                |  39.4  | [model](https://drive.google.com/open?id=1bNwUgjuYa8uTYXUaMrmXEw2PviBJ-F95)|
-
-
-**Notes:**
-- Due to the hardware limit, we train the model use `2 GPUs`, to speed up training we set `imgs_per_gpu=4` and  `lr = 0.01 / 2`
+| R-50      | pytorch | 1x      | 3.6      | 0.476               | 12.8           |  39.3  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/atss/atss_r50_fpn_1x_20200112-04331db4.pth)|
