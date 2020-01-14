@@ -30,8 +30,8 @@ class LoadImageFromFile(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(to_float32={})'.format(
-            self.to_float32)
+        return '{} (to_float32={}, color_type={})'.format(
+            self.__class__.__name__, self.to_float32, self.color_type)
 
 
 @PIPELINES.register_module
