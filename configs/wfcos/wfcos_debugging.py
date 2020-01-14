@@ -131,6 +131,7 @@ log_config = dict(
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook')
+#        dict(type='WandbLoggerHook')
     ])
 # yapf:enable
 # runtime settings

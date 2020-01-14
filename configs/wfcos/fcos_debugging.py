@@ -126,8 +126,10 @@ log_config = dict(
     interval=1,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
+        dict(type='TensorboardLoggerHook'),
+        dict(type='WandbLoggerHook')
     ])
+
 # yapf:enable
 # runtime settings
 total_epochs = 20

@@ -70,7 +70,7 @@ test_cfg = dict(
     max_per_img=1000)
 # dataset settings
 dataset_type = 'DeepScoresDataset'
-data_root = 'data/deep_scores_dense/'
+data_root = 'data/deep_scores_dense_extended/'
 img_norm_cfg = dict(
     mean=[240.15232515949037, 240.15229097456378, 240.15232515949037],
     std=[57.178083212078896, 57.178143244444556, 57.178083212078896],
@@ -151,7 +151,7 @@ log_config = dict(
 total_epochs = 640
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_hrnetv2p_w32_gn_1x_4gpu_ds_dense/'
+work_dir = './work_dirs/fcos_hrnetv2p_w32_gn_1x_4gpu_ds_dense_extended/'
 load_from = work_dir + 'latest.pth'
 resume_from = work_dir + 'latest.pth'
 workflow = [('train', 3)]
