@@ -14,12 +14,24 @@ from mmcv import Config
 
 from collections import OrderedDict
 
+from mmdet.models.builder import build_backbone, build_neck, build_head
+
 from mmdet.models.anchor_heads import WFCOSHead
 from mmdet.models.backbones import ResNet
 from mmdet.models.necks import FPN
 
 from debugging.multi_transforms import *
 from debugging.coco_dataset import CocoDataset
+
+from argparse import ArgumentParser
+
+
+def parse_arguments():
+    parser = ArgumentParser(description='debug the validation method')
+
+    parser.add_argument('CONFIG', type=str, help='configuration file path')
+
+    return parser.parse_args()
 
 
 class ValidationDebug:
@@ -35,9 +47,9 @@ class ValidationDebug:
 
         print('loading state dictionary ...')
         # Initialize network first as separate modules so we can access WFCOS
-        self.backbone = ResNet(**cfg.model.backbone)
-        self.neck = FPN(**cfg.model.neck)
-        self.head = WFCOSHead(**cfg.model.bbox_head)
+        self.backbone = build_backbone(**cfg.model.backbone)
+        self.neck = build_neck(**cfg.model.neck)
+        self.head = build_head(**cfg.model.bbox_head)
 
         # Load the state dicts
         backbone_state = OrderedDict()
@@ -87,5 +99,6 @@ class ValidationDebug:
 
 
 if __name__ == '__main__':
-    vd = ValidationDebug('configs/wfcos/fcos_debugging.py')
+    args = parse_arguments()
+    vd = ValidationDebug(args.CONFIG)
     vd.run()
