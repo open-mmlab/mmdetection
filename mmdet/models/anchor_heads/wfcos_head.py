@@ -23,7 +23,6 @@ from ..utils import ConvModule, Scale, bias_init_with_prob
 import debugging.visualization_tools as vt
 from mmcv.visualization import imshow_det_bboxes
 from mmdet.core import tensor2imgs
-from PIL import Image
 
 INF = 1e8
 
@@ -204,7 +203,8 @@ class WFCOSHead(nn.Module):
 
         Returns:
             (tuple): A tuple of 3-tuples of tensors, each 3-tuple representing
-                cls_score, bbox_pred, energy_preds of the different feature layers.
+                cls_score, bbox_pred, energy_preds of the different feature
+                layers.
         """
         # Use a multi_apply function to run forwards on each feats tensor
         return multi_apply(self.forward_single, feats, self.scales)
@@ -325,7 +325,7 @@ class WFCOSHead(nn.Module):
             all_level_points=all_level_points,
             bbox_targets=gt_bboxes[0].detach(),
             gt_labels=gt_labels[0].detach(),
-            label_targets = [],
+            label_targets=[],
             energy_targets=[],
             bbox_preds=[x[0].detach().permute(1, 2, 0) for x in bbox_preds],
             label_preds=[],
@@ -676,7 +676,7 @@ class WFCOSHead(nn.Module):
                                        for layer in energy_layers])
         else:
             energy_layers = torch.zeros((1, feat_dim[0], feat_dim[1]),
-                                         **type_dict)
+                                        **type_dict)
 
         return energy_layers.max(dim=0)
 
@@ -807,7 +807,7 @@ class WFCOSHead(nn.Module):
             feat_level_points (list): List of feature level points for each
                 grid position.
             scale_factor (float): The scaling factor of the image.
-            cfg (dict): The configuration used.
+            cfg (ConfigDict): The configuration used.
             rescale (None or bool): Whether or not the image has been rescaled.
 
         Returns:
@@ -902,7 +902,7 @@ class WFCOSHead(nn.Module):
 
         Args:
             input_img (torch.Tensor): Input image as a torch tensor.
-            classes (tuple): Tuple of class names.
+            class_names (tuple or list): Tuple of class names.
             test_cfg (ConfigDict): dictionary of the configuration.
 
         Returns:
@@ -922,8 +922,7 @@ class WFCOSHead(nn.Module):
         vis['img_gt'] = imshow_det_bboxes(
             img=img.copy(),
             bboxes=self.last_vals['bbox_targets'].cpu().numpy(),
-            labels=(self.last_vals['gt_labels']).cpu().numpy()
-                .astype(int),
+            labels=(self.last_vals['gt_labels']).cpu().numpy().astype(int),
             class_names=class_names,
             show=False,
             ret=True
@@ -971,7 +970,6 @@ class WFCOSHead(nn.Module):
 
             np_arrays['lt'].append(lt)
             np_arrays['lp'].append(lp)
-
 
         # Turn the image pyarmid into one long image
         vis['et'] = vt.image_pyramid(vis['et'], img.shape[:-1])
