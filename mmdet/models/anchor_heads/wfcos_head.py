@@ -254,6 +254,10 @@ class WFCOSHead(nn.Module):
         """
         assert len(label_preds) == len(bbox_preds) == len(energy_preds)
 
+        # Die if there's any NaNs in output
+        nans = any([torch.isnan(pred).any() for pred in bbox_preds])
+        assert not nans, "NaN detected in output"
+
         feat_dims = [level.shape[-2:] for level in label_preds]
         all_level_points = self.get_points(feat_dims, bbox_preds[0].dtype,
                                            bbox_preds[0].device)
