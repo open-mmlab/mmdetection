@@ -51,7 +51,9 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_energy=dict(
-            type='CrossEntropyLoss', loss_weight=1., use_sigmoid=False
+            type='FocalLoss',
+            use_sigmoid=True,
+            loss_weight=1.
         ),
         split_convs=False,
         r=500.
@@ -148,7 +150,7 @@ log_config = dict(
     interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
+        dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
@@ -156,6 +158,6 @@ total_epochs = 210
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/qualitai'
-load_from = None  # work_dir + 'latest.pth'
-resume_from = None
+load_from = work_dir + '/latest.pth'
+resume_from = work_dir + '/latest.pth'
 workflow = [('train', 1)]
