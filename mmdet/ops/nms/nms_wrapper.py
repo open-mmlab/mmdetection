@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 
-from . import nms_cpu, nms_cuda
 from .soft_nms_cpu import soft_nms_cpu
 
 
@@ -40,8 +39,10 @@ def nms(dets, iou_thr, device_id=None):
         inds = dets_th.new_zeros(0, dtype=torch.long)
     else:
         if dets_th.is_cuda:
+            from . import nms_cuda
             inds = nms_cuda.nms(dets_th, iou_thr)
         else:
+            from . import nms_cpu
             inds = nms_cpu.nms(dets_th, iou_thr)
 
     if is_numpy:

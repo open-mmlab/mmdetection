@@ -6,7 +6,10 @@ from torch.nn.modules.utils import _pair
 from torch.onnx.symbolic_opset9 import reshape
 from torch.onnx.symbolic_opset10 import _slice
 
-from . import roi_align_cuda
+try:
+    from . import roi_align_cuda
+except ImportError:
+    pass
 
 
 class RoIAlignFunction(Function):

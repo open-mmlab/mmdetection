@@ -17,6 +17,8 @@ def readme():
     return content
 
 
+WITH_CUDA = True
+
 MAJOR = 1
 MINOR = 0
 PATCH = ''
@@ -88,6 +90,8 @@ def get_version():
 
 
 def make_cuda_ext(name, module, sources):
+    if not WITH_CUDA:
+        return None
 
     return CUDAExtension(
         name='{}.{}'.format(module, name),
@@ -154,7 +158,7 @@ if __name__ == '__main__':
         setup_requires=['pytest-runner', 'cython', 'numpy'],
         tests_require=['pytest'],
         install_requires=get_requirements(),
-        ext_modules=[
+        ext_modules=list(filter(None, [
             make_cython_ext(
                 name='soft_nms_cpu',
                 module='mmdet.ops.nms',
@@ -202,6 +206,6 @@ if __name__ == '__main__':
                 sources=[
                     'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
                 ]),
-        ],
+        ])),
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)

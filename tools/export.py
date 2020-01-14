@@ -1,4 +1,5 @@
 import argparse
+from copy import copy
 
 import numpy as np
 import onnx
@@ -67,7 +68,31 @@ def topk_symbolic(g, self, k, dim, largest, sorted, out=None):
 
 @parse_args('v', 'i', 'v', 'v', 'f', 'i')
 def group_norm_symbolic(g, input, num_groups, weight, bias, eps, cudnn_enabled):
-    return g.op("GroupNorm", input, weight, bias, num_groups_i=num_groups, eps_f=eps)
+    from torch.onnx.symbolic_opset9 import reshape, mul, add
+
+    input_shape = list(input.type().sizes())
+
+    if num_groups == input_shape[1]:
+        # normalized_input = g.op('MeanVarianceNormalization', input, axes_i=[2, 3])
+        # weights_shape = g.op("Constant", value_t=torch.LongTensor([1, input_shape[1], 1, 1]))
+        # output = mul(g, normalized_input, reshape(g, weight, weights_shape))
+        # output = add(g, output, reshape(g, bias, weights_shape))
+
+        output = g.op('InstanceNormalization', input, weight, bias, epsilon_f=eps)
+    else:
+        print('WARNING. Potential problem with ONNX Runtime.')
+        intermediate_shape = copy(input_shape)
+        intermediate_shape[0] *= num_groups
+        intermediate_shape[1] //= num_groups
+        x = reshape(g, input, g.op("Constant", value_t=torch.LongTensor(intermediate_shape)))
+        x = g.op('MeanVarianceNormalization', x, axes_i=[1, 2, 3])
+        normalized_input = reshape(g, x, g.op("Constant", value_t=torch.LongTensor(input_shape)))
+
+        weights_shape = g.op("Constant", value_t=torch.LongTensor([1, input_shape[1], 1, 1]))
+        output = mul(g, normalized_input, reshape(g, weight, weights_shape))
+        output = add(g, output, reshape(g, bias, weights_shape))
+
+    return output
 
 
 def export(model,

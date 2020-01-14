@@ -188,7 +188,7 @@ def main_openvino(args):
     else:
         classes_num = 2
 
-        model = DetectorOpenVINO(args.model, args.ckpt, args.mapping,
+        model = DetectorOpenVINO(args.model, args.ckpt, mapping_file_path=args.mapping,
                                  # cpu_extension_lib_path=args.cpu_ext_path,
                                  cfg=cfg,
                                  classes=['person'])

@@ -87,6 +87,7 @@ class ModelOpenVINO(object):
         self.net = IENetwork(model=xml_file_path, weights=bin_file_path)
 
         self.mapping = {'labels': 'labels', 'boxes': '23597/Split.0'}
+        self.mapping = {}
         self.mapping_file_path = mapping_file_path
         self.net_inputs_mapping = OrderedDict((i, i) for i in self.net.inputs.keys())
         if required_inputs is not None:
@@ -137,6 +138,8 @@ class ModelOpenVINO(object):
                 framework = m.find('framework')
                 ir = m.find('IR')
                 self.mapping[framework.get('name')] = ir.get('name')
+                if framework.get('name') != ir.get('name'):
+                    self.mapping[framework.get('name')] += '.0'
         return self.mapping
 
     def configure_outputs(self, net, required_outputs):
