@@ -763,9 +763,12 @@ class WFCOSHead(nn.Module):
             img_bbox_preds = []
             img_energy_preds = []
             for i in range(num_levels):
-                img_label_preds.append(label_preds[i][img_id].detach()
-                                       .permute(2, 1, 0)
-                                       .argmax(2))
+                label_pred = label_preds[i][img_id].detach()
+                if not label_pred.shape[0] == self.cls_out_channels \
+                        and label_pred.shape[1:] == featmap_dims[0]:
+                    label_pred = label_pred.permute(2, 0, 1)
+
+                img_label_preds.append(label_pred)
                 img_bbox_preds.append(bbox_preds[i][img_id].detach())
                 img_energy_preds.append(energy_preds[i][img_id].detach())
 

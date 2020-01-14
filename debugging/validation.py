@@ -47,9 +47,9 @@ class ValidationDebug:
 
         print('loading state dictionary ...')
         # Initialize network first as separate modules so we can access WFCOS
-        self.backbone = build_backbone(**cfg.model.backbone)
-        self.neck = build_neck(**cfg.model.neck)
-        self.head = build_head(**cfg.model.bbox_head)
+        self.backbone = build_backbone(cfg.model.backbone)
+        self.neck = build_neck(cfg.model.neck)
+        self.head = build_head(cfg.model.bbox_head)
 
         # Load the state dicts
         backbone_state = OrderedDict()
