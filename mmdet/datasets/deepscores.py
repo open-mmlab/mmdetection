@@ -10,7 +10,7 @@ Created on:
     November 23, 2019
 """
 from .coco import *
-
+import os
 
 @DATASETS.register_module
 class DeepScoresDataset(CocoDataset):
@@ -52,3 +52,20 @@ class DeepScoresDataset(CocoDataset):
                'tuplet6', 'fingering0', 'fingering1', 'fingering2',
                'fingering3', 'fingering4', 'fingering5'
                )
+
+    def load_annotations(self, ann_file):
+        img_infos = super().load_annotations(ann_file)
+        DeepScoresDataset.CLASSES = tuple([self.coco.cats[x]['name'] for x in self.coco.cats])
+        # f_classes = os.path.join(os.path.dirname(ann_file), "class_names.csv")
+        # if os.path.exists(f_classes):
+        #     import csv
+        #     classes = []
+        #     with open(f_classes, 'rt') as csv_classes:
+        #         reader = csv.reader(csv_classes)
+        #         for row in reader:
+        #             classes.append(row[1])
+        #     DeepScoresDataset.CLASSES = tuple(classes)
+        # else:
+        #     print("falling back to default class names")
+
+        return img_infos
