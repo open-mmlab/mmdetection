@@ -959,7 +959,7 @@ class WFCOSHead(nn.Module):
             bboxes=det_bboxes.cpu().numpy(),
             labels=det_labels.cpu().numpy().astype(int),
             class_names=class_names,
-            score_thr=0.,
+            score_thr=test_cfg.score_thr,
             show=False,
             ret=True
         )
