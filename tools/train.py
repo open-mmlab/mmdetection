@@ -9,6 +9,7 @@ import torch
 
 from mmcv import Config
 from mmcv.runner import init_dist
+from mmcv.runner.dist_utils import master_only
 
 from mmdet import __version__
 from mmdet.apis import get_root_logger, set_random_seed, train_detector
@@ -53,6 +54,13 @@ def parse_args():
 
     return args
 
+@master_only
+def maybe_init_wandb(cfg):
+    if 'WandbLoggerHook' in [x["type"] for x in cfg["log_config"]["hooks"]]:
+        import wandb
+        wandb.init()
+        wandb.config.update(cfg._cfg_dict)
+        wandb.config.update({"filename": cfg.filename})
 
 def main():
     args = parse_args()
@@ -111,13 +119,7 @@ def main():
             config=cfg.text,
             CLASSES=datasets[0].CLASSES)
     # check if there is a wandb hook present
-    if 'WandbLoggerHook' in [x["type"] for x in cfg["log_config"]["hooks"]]:
-        import wandb
-        wandb.init()
-        wandb.config.update(cfg._cfg_dict)
-        wandb.config.update({"filename": cfg.filename})
-        # import numpy as np
-        # wandb.log({"example": wandb.Image(np.zeros([256, 256]).astype(np.uint8))})
+    maybe_init_wandb(cfg)
 
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES

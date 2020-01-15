@@ -81,8 +81,8 @@ train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomCrop', crop_size=(640, 800)),
-    #dict(type='Resize', img_scale=img_scale_train, keep_ratio=True),
-    #dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Resize', img_scale=img_scale_train, keep_ratio=True),
+    dict(type='RandomFlip', flip_ratio=0),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
@@ -105,7 +105,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=4,
+    imgs_per_gpu=8,
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
@@ -119,13 +119,13 @@ data = dict(
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'deepscores_small.json',
+        ann_file=data_root + 'deepscores_val.json',
         img_prefix=data_root + 'images_png/',
         pipeline=test_pipeline))
 # optimizer
 optimizer = dict(
     type='SGD',
-    lr=0.008,
+    lr=0.08,
     momentum=0.9,
     weight_decay=0.0001,
     paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
@@ -148,7 +148,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 640
+total_epochs = 1280
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/fcos_hrnetv2p_w32_gn_1x_4gpu_ds_dense/'
