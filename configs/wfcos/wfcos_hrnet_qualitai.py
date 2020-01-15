@@ -48,12 +48,13 @@ model = dict(
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=1.0),
+            loss_weight=.2),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_energy=dict(
             type='FocalLoss',
             use_sigmoid=True,
-            loss_weight=1.
+            gamma=5.0,
+            loss_weight=2.
         ),
         split_convs=False,
         r=500.
@@ -112,7 +113,7 @@ test_pipeline = [
 ]
 data = dict(
     imgs_per_gpu=4,
-    workers_per_gpu=0,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'qualitai_training_bad.json',
@@ -149,7 +150,7 @@ log_config = dict(
     interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
+        dict(type='WandbLoggerHook')
     ])
 # yapf:enable
 # runtime settings
@@ -166,5 +167,5 @@ workflow = [('train', 1)]
 # wandb settings
 wandb_cfg = dict(
     project='qualitai',
-    dryrun=False
+    dryrun=True
 )
