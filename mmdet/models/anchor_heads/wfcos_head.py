@@ -515,31 +515,38 @@ class WFCOSHead(nn.Module):
         # size for each level should be [prev_regress_range, regress_range).
         # e.g. If we have ranges((-1, 4), (4, 8), (8, INF)), then we have edge
         # sizes [-1, 4), [4, 8), [8, INF)
-        #
-        # First split the max_indices tensor based on the values
-        level_max_edge_lengths = [regress_range[0] for regress_range in
-                                  self.regress_ranges]
 
         split_inds = []
         for max_index in max_indices:
             indices = []
-            for length in level_max_edge_lengths:
-                val = (max_index[1] > length).nonzero()
+            for min_length, max_length in self.regress_ranges:
+                val = max_index[1]
+                val = (min_length <= val) * (val < max_length)
+                val = val.nonzero()
                 if val.nelement() != 0:
-                    val = val[0].item()
+                    val = val[-1].item()
                 else:
-                    val = indices[-1] if len(indices) > 0 else 0
+                    val = None
                 indices.append(val)
-
-            indices.append(len(max_index[1]))
 
             # indices is now the indices of the elements as split by max_edge,
             # split properly into each feature level.
             #
             # We now split the actual bboxes into the values
-            split_inds.append([max_index[0][indices[i]:indices[i + 1]]
-                               for i in range(len(indices) - 1)])
+            end = 0
+            temp_inds = []
+            for i in range(len(indices)):
+                if indices[i] is None:
+                    temp_inds.append(
+                        torch.empty(0, device=max_indices[0][1].device)
+                    )
+                    continue
 
+                start = end
+                end = indices[i] + 1
+                temp_inds.append(max_index[0][start:end])
+
+            split_inds.append(temp_inds)
             # split_bbox_ind is appended an s length list, where each element
             # contains all the indices that belong to that feature level.
 
