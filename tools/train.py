@@ -58,7 +58,20 @@ def parse_args():
 def maybe_init_wandb(cfg):
     if 'WandbLoggerHook' in [x["type"] for x in cfg["log_config"]["hooks"]]:
         import wandb
-        wandb.init()
+        name = "{}_{}".format(osp.split(cfg.work_dir)[1],
+                              time.strftime('%Y.%m.%d--%H.%M.%S'))
+        try:
+            project = cfg.wandb_cfg['project']
+        except AttributeError or KeyError:
+            project = None
+
+        try:
+            if cfg.wandb_cfg['dryrun']:
+                os.environ['WANDB_MODE'] = 'dryrun'
+        except AttributeError or KeyError:
+            pass
+
+        wandb.init(name=name, project=project)
         wandb.config.update(cfg._cfg_dict)
         wandb.config.update({"filename": cfg.filename})
 
