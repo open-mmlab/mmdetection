@@ -150,7 +150,7 @@ class MaskTestMixin(object):
                         sleep_interval=sleep_interval):
                     mask_pred = self.mask_head(mask_feats)
                 segm_result = self.mask_head.get_seg_masks(
-                    mask_pred, _bboxes, det_labels, self.test_cfg.rcnn,
+                    mask_pred, _bboxes, det_labels, self.test_cfg,
                     ori_shape, scale_factor, rescale)
             return segm_result
 
@@ -181,7 +181,7 @@ class MaskTestMixin(object):
             mask_pred = self.mask_head(mask_feats)
             segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
                                                        det_labels,
-                                                       self.test_cfg.rcnn,
+                                                       self.test_cfg,
                                                        ori_shape, scale_factor,
                                                        rescale)
         return segm_result
@@ -207,14 +207,14 @@ class MaskTestMixin(object):
                 # convert to numpy array to save memory
                 aug_masks.append(mask_pred.sigmoid().cpu().numpy())
             merged_masks = merge_aug_masks(aug_masks, img_metas,
-                                           self.test_cfg.rcnn)
+                                           self.test_cfg)
 
             ori_shape = img_metas[0][0]['ori_shape']
             segm_result = self.mask_head.get_seg_masks(
                 merged_masks,
                 det_bboxes,
                 det_labels,
-                self.test_cfg.rcnn,
+                self.test_cfg,
                 ori_shape,
                 scale_factor=1.0,
                 rescale=False)

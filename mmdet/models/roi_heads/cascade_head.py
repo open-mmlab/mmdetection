@@ -340,7 +340,7 @@ class CascadeBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                     aug_masks.append(mask_pred.sigmoid().cpu().numpy())
                 merged_masks = merge_aug_masks(aug_masks,
                                                [img_meta] * self.num_stages,
-                                               self.test_cfg.rcnn)
+                                               self.test_cfg)
                 segm_result = self.mask_head[-1].get_seg_masks(
                     merged_masks, _bboxes, det_labels, rcnn_test_cfg,
                     ori_shape, scale_factor, rescale)
@@ -439,7 +439,7 @@ class CascadeBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                         aug_masks.append(mask_pred.sigmoid().cpu().numpy())
                         aug_img_metas.append(img_meta)
                 merged_masks = merge_aug_masks(aug_masks, aug_img_metas,
-                                               self.test_cfg.rcnn)
+                                               self.test_cfg)
 
                 ori_shape = img_metas[0][0]['ori_shape']
                 segm_result = self.mask_head[-1].get_seg_masks(
