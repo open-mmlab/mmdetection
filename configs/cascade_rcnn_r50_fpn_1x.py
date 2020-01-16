@@ -29,6 +29,7 @@ model = dict(
     roi_head=dict(
         type= 'CascadeBBoxMaskHead',
         num_stages=3,
+        stage_loss_weights=[1, 0.5, 0.25],
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
@@ -146,8 +147,7 @@ train_cfg = dict(
                 add_gt_as_proposals=True),
             pos_weight=-1,
             debug=False)
-    ],
-    stage_loss_weights=[1, 0.5, 0.25])
+    ])
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,

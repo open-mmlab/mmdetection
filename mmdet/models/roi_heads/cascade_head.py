@@ -16,6 +16,7 @@ class CascadeBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
     def __init__(self,
                  num_stages,
+                 stage_loss_weights,
                  bbox_roi_extractor=None,
                  bbox_head=None,
                  mask_roi_extractor=None,
@@ -27,6 +28,7 @@ class CascadeBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
         assert bbox_head is not None
         super(CascadeBBoxMaskHead, self).__init__()
         self.num_stages = num_stages
+        self.stage_loss_weights = stage_loss_weights
 
         if shared_head is not None:
             self.shared_head = builder.build_shared_head(shared_head)
@@ -164,7 +166,7 @@ class CascadeBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
         for i in range(self.num_stages):
             self.current_stage = i
             rcnn_train_cfg = self.train_cfg[i]
-            lw = self.train_cfg.stage_loss_weights[i]
+            lw = self.stage_loss_weights[i]
 
             # assign gts and sample proposals
             sampling_results = []
