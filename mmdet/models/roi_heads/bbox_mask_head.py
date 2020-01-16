@@ -56,15 +56,14 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
     @property
     def with_mask(self):
         return hasattr(self, 'mask_head') and self.mask_head is not None
-<<<<<<< HEAD
     
     @property
     def with_shared_head(self):
         return hasattr(self, 'shared_head') and self.shared_head is not None
-=======
->>>>>>> d7ace45b7391c097171054f26196b3fcb13201c5
 
-    def init_weights(self):
+    def init_weights(self, pretrained):
+        if self.with_shared_head:
+            self.shared_head.init_weights(pretrained=pretrained)
         if self.with_bbox:
             self.bbox_roi_extractor.init_weights()
             self.bbox_head.init_weights()
@@ -155,11 +154,7 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
             bbox_targets = self.bbox_head.get_target(sampling_results,
                                                      gt_bboxes, gt_labels,
-<<<<<<< HEAD
                                                      self.train_cfg)
-=======
-                                                     self.train_cfg.rcnn)
->>>>>>> d7ace45b7391c097171054f26196b3fcb13201c5
             loss_bbox = self.bbox_head.loss(cls_score, bbox_pred,
                                             *bbox_targets)
             losses.update(loss_bbox)
@@ -193,11 +188,7 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
             if mask_feats.shape[0] > 0:
                 mask_pred = self.mask_head(mask_feats)
                 mask_targets = self.mask_head.get_target(
-<<<<<<< HEAD
                     sampling_results, gt_masks, self.train_cfg)
-=======
-                    sampling_results, gt_masks, self.train_cfg.rcnn)
->>>>>>> d7ace45b7391c097171054f26196b3fcb13201c5
                 pos_labels = torch.cat(
                     [res.pos_gt_labels for res in sampling_results])
                 loss_mask = self.mask_head.loss(mask_pred, mask_targets,
@@ -238,11 +229,7 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
         assert self.with_bbox, "Bbox head must be implemented."
 
         det_bboxes, det_labels = self.simple_test_bboxes(
-<<<<<<< HEAD
             x, img_meta, proposal_list, self.test_cfg, rescale=rescale)
-=======
-            x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
->>>>>>> d7ace45b7391c097171054f26196b3fcb13201c5
         bbox_results = bbox2result(det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
 
