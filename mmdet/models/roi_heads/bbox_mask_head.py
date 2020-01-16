@@ -1,12 +1,8 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn.modules.utils import _pair
 
 from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from .. import builder
-from ..builder import build_loss
-from ..losses import accuracy
 from ..registry import HEADS
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
@@ -27,7 +23,7 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
         super(StandardBBoxMaskHead, self).__init__()
         if shared_head is not None:
             self.shared_head = builder.build_shared_head(shared_head)
-            
+
         if bbox_head is not None:
             self.bbox_roi_extractor = builder.build_roi_extractor(
                 bbox_roi_extractor)
@@ -56,7 +52,7 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
     @property
     def with_mask(self):
         return hasattr(self, 'mask_head') and self.mask_head is not None
-    
+
     @property
     def with_shared_head(self):
         return hasattr(self, 'shared_head') and self.shared_head is not None
@@ -74,6 +70,7 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
     def forward_dummy(self, x, proposals):
         # bbox head
+        outs = ()
         rois = bbox2roi([proposals])
         if self.with_bbox:
             bbox_feats = self.bbox_roi_extractor(
@@ -93,9 +90,14 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
             outs = outs + (mask_pred, )
         return outs
 
-    def forward_train(
-        self, x, img_meta, proposal_list,
-        gt_bboxes, gt_labels, gt_bboxes_ignore=None, gt_masks=None):
+    def forward_train(self,
+                      x,
+                      img_meta,
+                      proposal_list,
+                      gt_bboxes,
+                      gt_labels,
+                      gt_bboxes_ignore=None,
+                      gt_masks=None):
         """
         Args:
             x (list[Tensor]): list of multi-level img features.
@@ -129,10 +131,9 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
             sampling_results = []
             for i in range(num_imgs):
-                assign_result = self.bbox_assigner.assign(proposal_list[i],
-                                                     gt_bboxes[i],
-                                                     gt_bboxes_ignore[i],
-                                                     gt_labels[i])
+                assign_result = self.bbox_assigner.assign(
+                    proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
+                    gt_labels[i])
                 sampling_result = self.bbox_sampler.sample(
                     assign_result,
                     proposal_list[i],
@@ -194,7 +195,7 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                 loss_mask = self.mask_head.loss(mask_pred, mask_targets,
                                                 pos_labels)
                 losses.update(loss_mask)
-        
+
         return losses
 
     async def async_simple_test(self,
@@ -223,8 +224,12 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                 mask_test_cfg=self.test_cfg.get('mask'))
             return bbox_results, segm_results
 
-    def simple_test(
-        self, x, proposal_list, img_meta, proposals=None, rescale=False):
+    def simple_test(self,
+                    x,
+                    proposal_list,
+                    img_meta,
+                    proposals=None,
+                    rescale=False):
         """Test without augmentation."""
         assert self.with_bbox, "Bbox head must be implemented."
 
@@ -247,8 +252,9 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
         of imgs[0].
         """
         # recompute feats to save memory
-        det_bboxes, det_labels = self.aug_test_bboxes(
-            x, img_metas, proposal_list, self.test_cfg)
+        det_bboxes, det_labels = self.aug_test_bboxes(x, img_metas,
+                                                      proposal_list,
+                                                      self.test_cfg)
 
         if rescale:
             _det_bboxes = det_bboxes
@@ -260,8 +266,8 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
         # det_bboxes always keep the original scale
         if self.with_mask:
-            segm_results = self.aug_test_mask(
-                x, img_metas, det_bboxes, det_labels)
+            segm_results = self.aug_test_mask(x, img_metas, det_bboxes,
+                                              det_labels)
             return bbox_results, segm_results
         else:
             return bbox_results

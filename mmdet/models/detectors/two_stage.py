@@ -62,12 +62,10 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
                     m.init_weights()
             else:
                 self.neck.init_weights()
-        if self.with_shared_head:
-            self.shared_head.init_weights(pretrained=pretrained)
         if self.with_rpn:
             self.rpn_head.init_weights()
         if self.with_roi_head:
-            self.roi_head.init_weights()
+            self.roi_head.init_weights(pretrained)
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck
@@ -82,7 +80,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
         See `mmedetection/tools/get_flops.py`
         """
-        outs = ()
         # backbone
         x = self.extract_feat(img)
         # rpn
@@ -92,6 +89,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         proposals = torch.randn(1000, 4).cuda()
         # roi_head
         outs = self.roi_head(x, proposals)
+        return outs
 
     def forward_train(self,
                       img,
