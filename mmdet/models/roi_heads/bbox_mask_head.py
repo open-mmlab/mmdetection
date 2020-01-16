@@ -41,9 +41,12 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-
-        self.bbox_assigner = build_assigner(self.train_cfg.assigner)
-        self.bbox_sampler = build_sampler(self.train_cfg.sampler, context=self)
+        
+        self.bbox_assigner = None
+        self.bbox_sampler = None
+        if self.train_cfg:
+            self.bbox_assigner = build_assigner(self.train_cfg.assigner)
+            self.bbox_sampler = build_sampler(self.train_cfg.sampler, context=self)
 
     @property
     def with_bbox(self):

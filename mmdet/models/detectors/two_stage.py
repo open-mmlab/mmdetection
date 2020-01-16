@@ -36,7 +36,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         if roi_head is not None:
             # update train and test cfg here for now
             # TODO: refactor assigner & sampler
-            roi_head.update(train_cfg=train_cfg.rcnn)
+            rcnn_train_cfg = train_cfg.rcnn if train_cfg is not None else None
+            roi_head.update(train_cfg=rcnn_train_cfg)
             roi_head.update(test_cfg=test_cfg.rcnn)
             self.roi_head = builder.build_head(roi_head)
 
@@ -172,8 +173,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         """Test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
-
         x = self.extract_feat(img)
 
         if proposals is None:

@@ -76,9 +76,12 @@ class CascadeBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
         # build assigner and smapler for each stage
         self.bbox_assigner = []
         self.bbox_sampler = []
-        for rcnn_train_cfg in self.train_cfg:
-            self.bbox_assigner.append(build_assigner(rcnn_train_cfg.assigner))
-            self.bbox_sampler.append(build_sampler(rcnn_train_cfg.sampler))
+        if self.train_cfg is not None:
+            for rcnn_train_cfg in self.train_cfg:
+                self.bbox_assigner.append(
+                    build_assigner(rcnn_train_cfg.assigner))
+                self.bbox_sampler.append(
+                    build_sampler(rcnn_train_cfg.sampler))
 
     @property
     def with_bbox(self):
