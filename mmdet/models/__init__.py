@@ -6,6 +6,7 @@ from .builder import (build_backbone, build_detector, build_head, build_loss,
 from .detectors import *  # noqa: F401,F403
 from .losses import *  # noqa: F401,F403
 from .mask_heads import *  # noqa: F401,F403
+from .roi_heads import *  # noqa: F401,F403
 from .necks import *  # noqa: F401,F403
 from .registry import (BACKBONES, DETECTORS, HEADS, LOSSES, NECKS,
                        ROI_EXTRACTORS, SHARED_HEADS)
