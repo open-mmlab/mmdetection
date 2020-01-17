@@ -1,0 +1,10 @@
+albumentations>=0.3.2
+imagecorruptions
+matplotlib
+mmcv>=0.2.15
+numpy
+pycocotools
+six
+terminaltables
+torch>=1.1
+torchvision
