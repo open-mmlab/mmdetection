@@ -259,3 +259,19 @@ def test_approx_iou_assigner_with_empty_boxes_and_gt():
     assign_result = self.assign(approxs, squares, approxs_per_octave,
                                 gt_bboxes)
     assert len(assign_result.gt_inds) == 0
+
+
+def test_random_assign_result():
+    """
+    Test random instantiation of assign result to catch corner cases
+    """
+    from mmdet.core.bbox.assigners.assign_result import AssignResult
+    AssignResult.random()
+
+    AssignResult.random(num_gts=0, num_preds=0)
+    AssignResult.random(num_gts=0, num_preds=3)
+    AssignResult.random(num_gts=3, num_preds=3)
+    AssignResult.random(num_gts=0, num_preds=3)
+    AssignResult.random(num_gts=7, num_preds=7)
+    AssignResult.random(num_gts=7, num_preds=64)
+    AssignResult.random(num_gts=24, num_preds=3)
