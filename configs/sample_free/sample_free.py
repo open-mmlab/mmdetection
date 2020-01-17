@@ -6,8 +6,7 @@ from math import ceil
 from pathlib import Path
 
 import torch
-from mmcv import Config
-from tqdm import tqdm
+from mmcv import Config, track_iter_progress
 
 from mmdet.apis import init_detector
 from mmdet.core.anchor import anchor_inside_flags
@@ -84,27 +83,29 @@ class SampleFree(object):
         assigner = build_assigner(assign_cfg)
 
         num_fg, num_all = 0, 0
-        for img_data in tqdm(dataloader):
-            img_metas, img, gt_bboxes = img_data['img_meta'].data[
-                0], img_data['img'].data[0], img_data['gt_bboxes'].data[0]
+        for img_data in track_iter_progress(dataloader):
+            img_metas, img, gt_bboxes = img_data['img_meta'].data[0], img_data[
+                'img'].data[0], img_data['gt_bboxes'].data[0]
             h, w = img.shape[-2:]
             featmap_sizes = [(int(ceil(h / stride)), int(ceil(w / stride)))
                              for stride in strides]
 
             anchors, valid_flags = getattr(model, head).get_anchors(
                 featmap_sizes, img_metas, device=self.device)
-            anchors = [torch.cat(anchors_per_image, 0)
-                       for anchors_per_image in anchors]
-            valid_flags = [torch.cat(valid_flags_per_image, 0)
-                           for valid_flags_per_image in valid_flags]
+            anchors = [
+                torch.cat(anchors_per_image, 0)
+                for anchors_per_image in anchors
+            ]
+            valid_flags = [
+                torch.cat(valid_flags_per_image, 0)
+                for valid_flags_per_image in valid_flags
+            ]
 
-            for anchor, valid_flag, gt_bbox, img_meta in zip(anchors,
-                                                             valid_flags,
-                                                             gt_bboxes,
-                                                             img_metas):
-                inside_flag = anchor_inside_flags(
-                    anchor, valid_flag, img_meta['img_shape'][:2],
-                    allowed_border)
+            for anchor, valid_flag, gt_bbox, img_meta in zip(
+                    anchors, valid_flags, gt_bboxes, img_metas):
+                inside_flag = anchor_inside_flags(anchor, valid_flag,
+                                                  img_meta['img_shape'][:2],
+                                                  allowed_border)
                 anchor = anchor[inside_flag, :]
                 gt_bbox = gt_bbox.to(self.device)
 
@@ -123,9 +124,8 @@ class SampleFree(object):
         detector = cfg.model.type
         backbone = cfg.model.backbone
         neck = cfg.model.neck
-        model = "{}_{}{}_{}_{}".format(
-            detector, backbone.type, backbone.depth,
-            neck.type, self.dataset_name.upper())
+        model = '{}_{}{}_{}_{}'.format(detector, backbone.type, backbone.depth,
+                                       neck.type, self.dataset_name.upper())
 
         return model
 
@@ -138,12 +138,12 @@ class SampleFree(object):
                 model_prior_dict = json.load(f)
                 model_prior_dict[model] = self.prior
         else:
-            print("{} is not existed. Create it.".format(filename))
+            print('{} is not existed. Create it.'.format(filename))
             model_prior_dict = {model: self.prior}
 
         with open(filename, 'w') as f:
             json.dump(model_prior_dict, f)
-        print("Priors have saved to {}.".format(filename))
+        print('Priors have saved to {}.'.format(filename))
 
     def set_score_thr(self):
         """rewrite the score_thr and model key in config file
@@ -151,26 +151,27 @@ class SampleFree(object):
         score_thr = 0.001 if self.detector_type == 'two-stage' else self.prior
         cfg_text = Path(self.cfg_file).read_text()
         origin_score_thr = re.findall(r'score_thr=(.*?),', cfg_text)[0]
-        cfg_text = cfg_text.replace(
-            'score_thr={}'.format(origin_score_thr),
-            'score_thr={}'.format(score_thr))
+        cfg_text = cfg_text.replace('score_thr={}'.format(origin_score_thr),
+                                    'score_thr={}'.format(score_thr))
 
         origin_model_key = re.findall(r'model_key=(.*?),', cfg_text)[0]
-        cfg_text = cfg_text.replace(
-            "model_key={}".format(origin_model_key),
-            "model_key='{}'".format(self.model_key))
+        cfg_text = cfg_text.replace("model_key={}".format(origin_model_key),
+                                    "model_key='{}'".format(self.model_key))
         Path(self.cfg_file).write_text(cfg_text)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('config', help='train config file path')
-    parser.add_argument('--detector_type', default='two-stage',
-                        help='detector is one-stage or two-stage')
+    parser.add_argument(
+        '--detector_type',
+        default='two-stage',
+        help='detector is one-stage or two-stage')
     parser.add_argument('--dataset', default='voc', help='dataset name')
-    parser.add_argument('--save_path',
-                        default='configs/sample_free/init_prior.json',
-                        help='save path of computed prior')
+    parser.add_argument(
+        '--save_path',
+        default='configs/sample_free/init_prior.json',
+        help='save path of computed prior')
     args = parser.parse_args()
     return args
 
