@@ -21,6 +21,7 @@ class SamplingResult(ub.NiceRepr):
         })>
 
     """
+
     def __init__(self, pos_inds, neg_inds, bboxes, gt_bboxes, assign_result,
                  gt_flags):
         self.pos_inds = pos_inds
@@ -142,8 +143,11 @@ class SamplingResult(ub.NiceRepr):
         else:
             add_gt_as_proposals = True  # make probabalistic?
 
-        sampler = RandomSampler(num, pos_fraction, neg_pos_ubo=neg_pos_ub,
-                                add_gt_as_proposals=add_gt_as_proposals,
-                                rng=rng)
+        sampler = RandomSampler(
+            num,
+            pos_fraction,
+            neg_pos_ubo=neg_pos_ub,
+            add_gt_as_proposals=add_gt_as_proposals,
+            rng=rng)
         self = sampler.sample(assign_result, bboxes, gt_bboxes, gt_labels)
         return self

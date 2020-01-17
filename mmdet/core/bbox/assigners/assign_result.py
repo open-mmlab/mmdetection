@@ -138,8 +138,7 @@ class AssignResult(ub.NiceRepr):
             max_overlaps = torch.from_numpy(rng.rand(num_preds))
 
             # Construct gt_inds for each predicted box
-            is_assigned = torch.from_numpy(
-                rng.rand(num_preds) < p_assigned)
+            is_assigned = torch.from_numpy(rng.rand(num_preds) < p_assigned)
             # maximum number of assignments constraints
             n_assigned = min(num_preds, min(num_gts, is_assigned.sum()))
 
