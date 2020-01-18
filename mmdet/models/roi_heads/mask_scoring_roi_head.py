@@ -75,7 +75,7 @@ class MaskScoringRoIHead(BaseRoIHead):
             mask_pred = self.mask_head(mask_feats)
             segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
                                                        det_labels,
-                                                       self.test_cfg.rcnn,
+                                                       self.test_cfg,
                                                        ori_shape, scale_factor,
                                                        rescale)
             # get mask scores with mask iou head
