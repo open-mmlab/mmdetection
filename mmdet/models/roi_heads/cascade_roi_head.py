@@ -12,6 +12,8 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 @HEADS.register_module
 class CascadeRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
     """Cascade roi head including one bbox head and one mask head.
+    
+    https://arxiv.org/abs/1712.00726
     """
 
     def __init__(self,

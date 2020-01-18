@@ -177,6 +177,21 @@ class BaseRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
         return loss_bbox, bbox_feats
 
     def calculate_mask_loss(self, x, sampling_results, bbox_feats, gt_masks):
+        mask_feats = self.extract_mask_feats(x, sampling_results, bbox_feats)
+
+        if mask_feats.shape[0] > 0:
+            mask_pred = self.mask_head(mask_feats)
+            mask_targets = self.mask_head.get_target(
+                sampling_results, gt_masks, self.train_cfg)
+            pos_labels = torch.cat(
+                [res.pos_gt_labels for res in sampling_results])
+            loss_mask = self.mask_head.loss(mask_pred, mask_targets,
+                                            pos_labels)
+            return loss_mask
+        else:
+            return None
+
+    def extract_mask_feats(self, x, sampling_results, bbox_feats):
         if not self.share_roi_extractor:
             pos_rois = bbox2roi(
                 [res.pos_bboxes for res in sampling_results])
@@ -200,19 +215,7 @@ class BaseRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                         dtype=torch.uint8))
             pos_inds = torch.cat(pos_inds)
             mask_feats = bbox_feats[pos_inds]
-
-        if mask_feats.shape[0] > 0:
-            mask_pred = self.mask_head(mask_feats)
-            mask_targets = self.mask_head.get_target(
-                sampling_results, gt_masks, self.train_cfg)
-            pos_labels = torch.cat(
-                [res.pos_gt_labels for res in sampling_results])
-            loss_mask = self.mask_head.loss(mask_pred, mask_targets,
-                                            pos_labels)
-            return loss_mask
-        else:
-            return None
-            
+        return mask_feats
 
     async def async_simple_test(self,
                                 x,

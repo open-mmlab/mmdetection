@@ -9,7 +9,9 @@ from .base_roi_head import BaseRoIHead
 
 @HEADS.register_module
 class DoubleHeadRoIHead(BaseRoIHead):
-    """Simplest base roi head including one bbox head and one mask head.
+    """RoI head for Double Head RCNN
+    
+    https://arxiv.org/abs/1904.06493
     """
 
     def __init__(self, reg_roi_scale_factor, **kwargs):
