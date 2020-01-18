@@ -60,7 +60,7 @@ model = dict(
             loss_mask=dict(
                 type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))),
 )
-    
+
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(

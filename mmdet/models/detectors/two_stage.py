@@ -52,7 +52,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
     @property
     def with_roi_head(self):
-        return hasattr(self,'roi_head') and self.roi_head is not None
+        return hasattr(self, 'roi_head') and self.roi_head is not None
 
     def init_weights(self, pretrained=None):
         super(TwoStageDetector, self).init_weights(pretrained)
@@ -81,6 +81,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
         See `mmedetection/tools/get_flops.py`
         """
+        outs = ()
         # backbone
         x = self.extract_feat(img)
         # rpn
@@ -100,7 +101,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
-                      proposals=None, **kwargs):
+                      proposals=None,
+                      **kwargs):
         """
         Args:
             img (Tensor): of shape (N, C, H, W) encoding input images.
@@ -149,9 +151,10 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         else:
             proposal_list = proposals
 
-        roi_losses = self.roi_head.forward_train(
-            x, img_meta, proposal_list, gt_bboxes, gt_labels,
-            gt_bboxes_ignore, gt_masks, **kwargs)
+        roi_losses = self.roi_head.forward_train(x, img_meta, proposal_list,
+                                                 gt_bboxes, gt_labels,
+                                                 gt_bboxes_ignore, gt_masks,
+                                                 **kwargs)
         losses.update(roi_losses)
 
         return losses
@@ -194,7 +197,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         """
         # recompute feats to save memory
         x = self.extract_feats(imgs)
-        proposal_list = self.aug_test_rpn(
-            x, img_metas, self.test_cfg.rpn)
+        proposal_list = self.aug_test_rpn(x, img_metas, self.test_cfg.rpn)
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)

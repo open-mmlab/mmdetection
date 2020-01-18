@@ -1,8 +1,4 @@
-import torch
-import torch.nn as nn
-
-from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
-from .. import builder
+from mmdet.core import bbox2roi
 from ..registry import HEADS
 from .base_roi_head import BaseRoIHead
 
@@ -10,7 +6,7 @@ from .base_roi_head import BaseRoIHead
 @HEADS.register_module
 class DoubleHeadRoIHead(BaseRoIHead):
     """RoI head for Double Head RCNN
-    
+
     https://arxiv.org/abs/1904.06493
     """
 
@@ -42,9 +38,10 @@ class DoubleHeadRoIHead(BaseRoIHead):
                 mask_feats = self.shared_head(mask_feats)
             mask_pred = self.mask_head(mask_feats)
             outs = outs + (mask_pred, )
-        return outs      
+        return outs
 
-    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels, img_meta):
+    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
+                            img_meta):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         # TODO: a more flexible way to decide which feature maps to use
         bbox_cls_feats = self.bbox_roi_extractor(
@@ -56,13 +53,10 @@ class DoubleHeadRoIHead(BaseRoIHead):
         if self.with_shared_head:
             bbox_cls_feats = self.shared_head(bbox_cls_feats)
             bbox_reg_feats = self.shared_head(bbox_reg_feats)
-        cls_score, bbox_pred = self.bbox_head(bbox_cls_feats,
-                                              bbox_reg_feats)
-        bbox_targets = self.bbox_head.get_target(sampling_results,
-                                                 gt_bboxes, gt_labels,
-                                                 self.train_cfg)
-        loss_bbox = self.bbox_head.loss(cls_score, bbox_pred,
-                                        *bbox_targets)
+        cls_score, bbox_pred = self.bbox_head(bbox_cls_feats, bbox_reg_feats)
+        bbox_targets = self.bbox_head.get_target(sampling_results, gt_bboxes,
+                                                 gt_labels, self.train_cfg)
+        loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
         return loss_bbox, bbox_cls_feats
 
     def simple_test_bboxes(self,

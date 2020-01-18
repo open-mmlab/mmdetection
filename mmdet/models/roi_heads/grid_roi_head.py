@@ -1,7 +1,6 @@
 import torch
-import torch.nn as nn
 
-from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
+from mmdet.core import bbox2result, bbox2roi
 from .. import builder
 from ..registry import HEADS
 from .base_roi_head import BaseRoIHead
@@ -14,10 +13,7 @@ class GridRoIHead(BaseRoIHead):
     https://arxiv.org/abs/1811.12030
     """
 
-    def __init__(self,
-                 grid_roi_extractor,
-                 grid_head,
-                 **kwargs):
+    def __init__(self, grid_roi_extractor, grid_head, **kwargs):
         assert grid_head is not None
         super(GridRoIHead, self).__init__(**kwargs)
         if grid_roi_extractor is not None:
@@ -71,7 +67,7 @@ class GridRoIHead(BaseRoIHead):
                 bbox_feats = self.shared_head(bbox_feats)
             cls_score, bbox_pred = self.bbox_head(bbox_feats)
             outs = outs + (cls_score, bbox_pred)
-        
+
         # grid head
         grid_rois = rois[:100]
         grid_feats = self.grid_roi_extractor(
@@ -92,7 +88,8 @@ class GridRoIHead(BaseRoIHead):
             outs = outs + (mask_pred, )
         return outs
 
-    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels, img_meta):
+    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
+                            img_meta):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
@@ -101,9 +98,8 @@ class GridRoIHead(BaseRoIHead):
             bbox_feats = self.shared_head(bbox_feats)
         cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
-        bbox_targets = self.bbox_head.get_target(sampling_results,
-                                                 gt_bboxes, gt_labels,
-                                                 self.train_cfg)
+        bbox_targets = self.bbox_head.get_target(sampling_results, gt_bboxes,
+                                                 gt_labels, self.train_cfg)
         loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
 
         # Grid head forward and loss
@@ -116,8 +112,8 @@ class GridRoIHead(BaseRoIHead):
         # Accelerate training
         max_sample_num_grid = self.train_cfg.get('max_num_grid', 192)
         sample_idx = torch.randperm(
-            grid_feats.shape[0])[:min(grid_feats.
-                                      shape[0], max_sample_num_grid)]
+            grid_feats.shape[0])[:min(grid_feats.shape[0], max_sample_num_grid
+                                      )]
         grid_feats = grid_feats[sample_idx]
 
         grid_pred = self.grid_head(grid_feats)

@@ -15,7 +15,6 @@ class FastRCNN(TwoStageDetector):
         super(FastRCNN, self).__init__(
             backbone=backbone,
             neck=neck,
-            shared_head=shared_head,
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,

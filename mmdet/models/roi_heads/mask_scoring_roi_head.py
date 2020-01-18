@@ -1,7 +1,6 @@
 import torch
-import torch.nn as nn
 
-from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
+from mmdet.core import bbox2roi
 from .. import builder
 from ..registry import HEADS
 from .base_roi_head import BaseRoIHead
@@ -14,21 +13,20 @@ class MaskScoringRoIHead(BaseRoIHead):
     https://arxiv.org/abs/1903.00241
     """
 
-    def __init__(self,
-                 mask_iou_head,
-                 **kwargs):
+    def __init__(self, mask_iou_head, **kwargs):
         super(MaskScoringRoIHead, self).__init__(**kwargs)
         assert mask_iou_head is not None
         self.mask_iou_head = builder.build_head(mask_iou_head)
         self.mask_iou_head.init_weights()
 
-    def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks, img_meta):
+    def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
+                            img_meta):
         mask_feats = self.extract_mask_feats(x, sampling_results, bbox_feats)
 
         if mask_feats.shape[0] > 0:
             mask_pred = self.mask_head(mask_feats)
-            mask_targets = self.mask_head.get_target(
-                sampling_results, gt_masks, self.train_cfg)
+            mask_targets = self.mask_head.get_target(sampling_results,
+                                                     gt_masks, self.train_cfg)
             pos_labels = torch.cat(
                 [res.pos_gt_labels for res in sampling_results])
             loss_mask = self.mask_head.loss(mask_pred, mask_targets,
@@ -47,7 +45,7 @@ class MaskScoringRoIHead(BaseRoIHead):
             loss_mask.update(loss_mask_iou)
             return loss_mask
         else:
-            return None   
+            return None
 
     def simple_test_mask(self,
                          x,
@@ -85,4 +83,3 @@ class MaskScoringRoIHead(BaseRoIHead):
             mask_scores = self.mask_iou_head.get_mask_scores(
                 mask_iou_pred, det_bboxes, det_labels)
         return segm_result, mask_scores
-

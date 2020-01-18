@@ -12,7 +12,7 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 @HEADS.register_module
 class CascadeRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
     """Cascade roi head including one bbox head and one mask head.
-    
+
     https://arxiv.org/abs/1712.00726
     """
 
@@ -82,8 +82,7 @@ class CascadeRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
             for rcnn_train_cfg in self.train_cfg:
                 self.bbox_assigner.append(
                     build_assigner(rcnn_train_cfg.assigner))
-                self.bbox_sampler.append(
-                    build_sampler(rcnn_train_cfg.sampler))
+                self.bbox_sampler.append(build_sampler(rcnn_train_cfg.sampler))
 
     @property
     def with_bbox(self):
@@ -266,11 +265,7 @@ class CascadeRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
         return losses
 
-    def simple_test(self,
-                    x,
-                    proposal_list,
-                    img_meta,
-                    rescale=False):
+    def simple_test(self, x, proposal_list, img_meta, rescale=False):
         """Test without augmentation."""
         assert self.with_bbox, "Bbox head must be implemented."
         img_shape = img_meta[0]['img_shape']

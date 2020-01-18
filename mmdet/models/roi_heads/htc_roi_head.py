@@ -1,10 +1,8 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
-from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
-                        build_sampler, merge_aug_bboxes, merge_aug_masks,
-                        multiclass_nms)
+from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
+                        merge_aug_masks, multiclass_nms)
 from .. import builder
 from ..registry import HEADS
 from .cascade_roi_head import CascadeRoIHead
@@ -13,7 +11,7 @@ from .cascade_roi_head import CascadeRoIHead
 @HEADS.register_module
 class HybridTaskCascadeRoIHead(CascadeRoIHead):
     """Hybrid task cascade roi head including one bbox head and one mask head.
-    
+
     https://arxiv.org/abs/1901.07518
     """
 
@@ -26,8 +24,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                  interleaved=True,
                  mask_info_flow=True,
                  **kwargs):
-        super(HybridTaskCascadeRoIHead, self).__init__(
-            num_stages, stage_loss_weights, **kwargs)
+        super(HybridTaskCascadeRoIHead,
+              self).__init__(num_stages, stage_loss_weights, **kwargs)
         assert self.with_bbox and self.with_mask
         assert not self.with_shared_head  # shared head not supported
         if semantic_head is not None:
@@ -37,7 +35,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         self.semantic_fusion = semantic_fusion
         self.interleaved = interleaved
-        self.mask_info_flow = mask_info_flow    
+        self.mask_info_flow = mask_info_flow
 
     @property
     def with_semantic(self):
@@ -287,11 +285,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         return losses
 
-    def simple_test(self,
-                    x,
-                    proposal_list,
-                    img_meta,
-                    rescale=False):
+    def simple_test(self, x, proposal_list, img_meta, rescale=False):
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)
         else:
@@ -381,21 +375,19 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         """
         if self.with_semantic:
             semantic_feats = [
-                self.semantic_head(feat)[1]
-                for feat in img_feats
+                self.semantic_head(feat)[1] for feat in img_feats
             ]
         else:
             semantic_feats = [None] * len(img_metas)
 
         # recompute feats to save memory
-        proposal_list = self.aug_test_rpn(
-            img_feats, img_metas, self.test_cfg.rpn)
+        proposal_list = self.aug_test_rpn(img_feats, img_metas,
+                                          self.test_cfg.rpn)
 
         rcnn_test_cfg = self.test_cfg
         aug_bboxes = []
         aug_scores = []
-        for x, img_meta, semantic in zip(
-                img_feats, img_metas, semantic_feats):
+        for x, img_meta, semantic in zip(img_feats, img_metas, semantic_feats):
             # only one image in the batch
             img_shape = img_meta[0]['img_shape']
             scale_factor = img_meta[0]['scale_factor']
@@ -449,8 +441,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             else:
                 aug_masks = []
                 aug_img_metas = []
-                for x, img_meta, semantic in zip(
-                        img_feats, img_metas, semantic_feats):
+                for x, img_meta, semantic in zip(img_feats, img_metas,
+                                                 semantic_feats):
                     img_shape = img_meta[0]['img_shape']
                     scale_factor = img_meta[0]['scale_factor']
                     flip = img_meta[0]['flip']

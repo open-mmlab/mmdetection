@@ -41,12 +41,13 @@ class BaseRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        
+
         self.bbox_assigner = None
         self.bbox_sampler = None
         if self.train_cfg:
             self.bbox_assigner = build_assigner(self.train_cfg.assigner)
-            self.bbox_sampler = build_sampler(self.train_cfg.sampler, context=self)
+            self.bbox_sampler = build_sampler(
+                self.train_cfg.sampler, context=self)
 
     @property
     def with_bbox(self):
@@ -154,14 +155,16 @@ class BaseRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
         # mask head forward and loss
         if self.with_mask:
-            loss_mask = self._mask_forward_train(
-                x, sampling_results, bbox_feats, gt_masks, img_meta)
+            loss_mask = self._mask_forward_train(x, sampling_results,
+                                                 bbox_feats, gt_masks,
+                                                 img_meta)
             if loss_mask is not None:
                 losses.update(loss_mask)
 
         return losses
 
-    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels, img_meta):
+    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
+                            img_meta):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
@@ -170,19 +173,19 @@ class BaseRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
             bbox_feats = self.shared_head(bbox_feats)
         cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
-        bbox_targets = self.bbox_head.get_target(sampling_results,
-                                                 gt_bboxes, gt_labels,
-                                                 self.train_cfg)
+        bbox_targets = self.bbox_head.get_target(sampling_results, gt_bboxes,
+                                                 gt_labels, self.train_cfg)
         loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
         return loss_bbox, bbox_feats
 
-    def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks, img_meta):
+    def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
+                            img_meta):
         mask_feats = self.extract_mask_feats(x, sampling_results, bbox_feats)
 
         if mask_feats.shape[0] > 0:
             mask_pred = self.mask_head(mask_feats)
-            mask_targets = self.mask_head.get_target(
-                sampling_results, gt_masks, self.train_cfg)
+            mask_targets = self.mask_head.get_target(sampling_results,
+                                                     gt_masks, self.train_cfg)
             pos_labels = torch.cat(
                 [res.pos_gt_labels for res in sampling_results])
             loss_mask = self.mask_head.loss(mask_pred, mask_targets,
@@ -193,8 +196,7 @@ class BaseRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
     def extract_mask_feats(self, x, sampling_results, bbox_feats):
         if not self.share_roi_extractor:
-            pos_rois = bbox2roi(
-                [res.pos_bboxes for res in sampling_results])
+            pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
             mask_feats = self.mask_roi_extractor(
                 x[:self.mask_roi_extractor.num_inputs], pos_rois)
             if self.with_shared_head:

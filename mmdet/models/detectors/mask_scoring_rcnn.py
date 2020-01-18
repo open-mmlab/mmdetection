@@ -1,7 +1,3 @@
-import torch
-
-from mmdet.core import bbox2roi, build_assigner, build_sampler
-from .. import builder
 from ..registry import DETECTORS
 from .two_stage import TwoStageDetector
 
