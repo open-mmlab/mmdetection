@@ -58,7 +58,7 @@ class DoubleHeadRoIHead(BaseRoIHead):
                                               bbox_reg_feats)
         bbox_targets = self.bbox_head.get_target(sampling_results,
                                                  gt_bboxes, gt_labels,
-                                                 self.train_cfg.rcnn)
+                                                 self.train_cfg)
         loss_bbox = self.bbox_head.loss(cls_score, bbox_pred,
                                         *bbox_targets)
         return loss_bbox, bbox_cls_feats
