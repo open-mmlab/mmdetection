@@ -22,7 +22,7 @@ class MaskScoringRoIHead(BaseRoIHead):
         self.mask_iou_head = builder.build_head(mask_iou_head)
         self.mask_iou_head.init_weights()
 
-    def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks):
+    def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks, img_meta):
         mask_feats = self.extract_mask_feats(x, sampling_results, bbox_feats)
 
         if mask_feats.shape[0] > 0:

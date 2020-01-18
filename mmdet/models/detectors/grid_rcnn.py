@@ -23,14 +23,11 @@ class GridRCNN(TwoStageDetector):
                  test_cfg,
                  neck=None,
                  pretrained=None):
-        assert grid_head is not None
         super(GridRCNN, self).__init__(
             backbone=backbone,
             neck=neck,
-            shared_head=shared_head,
             rpn_head=rpn_head,
-            bbox_roi_extractor=bbox_roi_extractor,
-            bbox_head=bbox_head,
+            roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
             pretrained=pretrained)

@@ -18,6 +18,7 @@ class GridRoIHead(BaseRoIHead):
                  grid_roi_extractor,
                  grid_head,
                  **kwargs):
+        assert grid_head is not None
         super(GridRoIHead, self).__init__(**kwargs)
         if grid_roi_extractor is not None:
             self.grid_roi_extractor = builder.build_roi_extractor(
@@ -91,7 +92,7 @@ class GridRoIHead(BaseRoIHead):
             outs = outs + (mask_pred, )
         return outs
 
-    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels):
+    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels, img_meta):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
