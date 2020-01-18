@@ -1,4 +1,4 @@
-from .bbox_mask_head import StandardBBoxMaskHead
-from .cascade_head import CascadeBBoxMaskHead
+from .base_roi_head import BaseRoIHead
+from .cascade_roi_head import CascadeRoIHead
 
-__all__ = ['StandardBBoxMaskHead', 'CascadeBBoxMaskHead']
+__all__ = ['BaseRoIHead', 'CascadeRoIHead']

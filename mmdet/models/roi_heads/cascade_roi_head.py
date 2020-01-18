@@ -10,7 +10,7 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
 @HEADS.register_module
-class CascadeBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
+class CascadeRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
     """Cascade roi head including one bbox head and one mask head.
     """
 
@@ -26,7 +26,7 @@ class CascadeBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                  test_cfg=None):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
-        super(CascadeBBoxMaskHead, self).__init__()
+        super(CascadeRoIHead, self).__init__()
         self.num_stages = num_stages
         self.stage_loss_weights = stage_loss_weights
 

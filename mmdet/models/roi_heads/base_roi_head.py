@@ -8,8 +8,8 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
 @HEADS.register_module
-class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
-    """Simplest standart roi head including one bbox head and one mask head.
+class BaseRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
+    """Simplest base roi head including one bbox head and one mask head.
     """
 
     def __init__(self,
@@ -20,7 +20,7 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                  shared_head=None,
                  train_cfg=None,
                  test_cfg=None):
-        super(StandardBBoxMaskHead, self).__init__()
+        super(BaseRoIHead, self).__init__()
         if shared_head is not None:
             self.shared_head = builder.build_shared_head(shared_head)
 
@@ -148,58 +148,71 @@ class StandardBBoxMaskHead(nn.Module, BBoxTestMixin, MaskTestMixin):
         losses = dict()
         # bbox head forward and loss
         if self.with_bbox:
-            rois = bbox2roi([res.bboxes for res in sampling_results])
-            # TODO: a more flexible way to decide which feature maps to use
-            bbox_feats = self.bbox_roi_extractor(
-                x[:self.bbox_roi_extractor.num_inputs], rois)
-            if self.with_shared_head:
-                bbox_feats = self.shared_head(bbox_feats)
-            cls_score, bbox_pred = self.bbox_head(bbox_feats)
-
-            bbox_targets = self.bbox_head.get_target(sampling_results,
-                                                     gt_bboxes, gt_labels,
-                                                     self.train_cfg)
-            loss_bbox = self.bbox_head.loss(cls_score, bbox_pred,
-                                            *bbox_targets)
+            loss_bbox, bbox_feats = self.calculate_bbox_loss(
+                x, sampling_results, gt_bboxes, gt_labels,)
             losses.update(loss_bbox)
 
         # mask head forward and loss
         if self.with_mask:
-            if not self.share_roi_extractor:
-                pos_rois = bbox2roi(
-                    [res.pos_bboxes for res in sampling_results])
-                mask_feats = self.mask_roi_extractor(
-                    x[:self.mask_roi_extractor.num_inputs], pos_rois)
-                if self.with_shared_head:
-                    mask_feats = self.shared_head(mask_feats)
-            else:
-                pos_inds = []
-                device = bbox_feats.device
-                for res in sampling_results:
-                    pos_inds.append(
-                        torch.ones(
-                            res.pos_bboxes.shape[0],
-                            device=device,
-                            dtype=torch.uint8))
-                    pos_inds.append(
-                        torch.zeros(
-                            res.neg_bboxes.shape[0],
-                            device=device,
-                            dtype=torch.uint8))
-                pos_inds = torch.cat(pos_inds)
-                mask_feats = bbox_feats[pos_inds]
-
-            if mask_feats.shape[0] > 0:
-                mask_pred = self.mask_head(mask_feats)
-                mask_targets = self.mask_head.get_target(
-                    sampling_results, gt_masks, self.train_cfg)
-                pos_labels = torch.cat(
-                    [res.pos_gt_labels for res in sampling_results])
-                loss_mask = self.mask_head.loss(mask_pred, mask_targets,
-                                                pos_labels)
+            loss_mask = self.calculate_mask_loss(
+                x, sampling_results, bbox_feats, gt_masks)
+            if loss_mask is not None:
                 losses.update(loss_mask)
 
         return losses
+
+    def calculate_bbox_loss(self, x, sampling_results, gt_bboxes, gt_labels):
+        rois = bbox2roi([res.bboxes for res in sampling_results])
+        # TODO: a more flexible way to decide which feature maps to use
+        bbox_feats = self.bbox_roi_extractor(
+            x[:self.bbox_roi_extractor.num_inputs], rois)
+        if self.with_shared_head:
+            bbox_feats = self.shared_head(bbox_feats)
+        cls_score, bbox_pred = self.bbox_head(bbox_feats)
+
+        bbox_targets = self.bbox_head.get_target(sampling_results,
+                                                 gt_bboxes, gt_labels,
+                                                 self.train_cfg)
+        loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
+        return loss_bbox, bbox_feats
+
+    def calculate_mask_loss(self, x, sampling_results, bbox_feats, gt_masks):
+        if not self.share_roi_extractor:
+            pos_rois = bbox2roi(
+                [res.pos_bboxes for res in sampling_results])
+            mask_feats = self.mask_roi_extractor(
+                x[:self.mask_roi_extractor.num_inputs], pos_rois)
+            if self.with_shared_head:
+                mask_feats = self.shared_head(mask_feats)
+        else:
+            pos_inds = []
+            device = bbox_feats.device
+            for res in sampling_results:
+                pos_inds.append(
+                    torch.ones(
+                        res.pos_bboxes.shape[0],
+                        device=device,
+                        dtype=torch.uint8))
+                pos_inds.append(
+                    torch.zeros(
+                        res.neg_bboxes.shape[0],
+                        device=device,
+                        dtype=torch.uint8))
+            pos_inds = torch.cat(pos_inds)
+            mask_feats = bbox_feats[pos_inds]
+
+        if mask_feats.shape[0] > 0:
+            mask_pred = self.mask_head(mask_feats)
+            mask_targets = self.mask_head.get_target(
+                sampling_results, gt_masks, self.train_cfg)
+            pos_labels = torch.cat(
+                [res.pos_gt_labels for res in sampling_results])
+            loss_mask = self.mask_head.loss(mask_pred, mask_targets,
+                                            pos_labels)
+            return loss_mask
+        else:
+            return None
+            
 
     async def async_simple_test(self,
                                 x,
