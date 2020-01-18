@@ -99,7 +99,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
-                      proposals=None):
+                      proposals=None, **kwargs):
         """
         Args:
             img (Tensor): of shape (N, C, H, W) encoding input images.
@@ -149,7 +149,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
             proposal_list = proposals
 
         roi_losses = self.roi_head.forward_train(
-            x, img_meta, proposal_list, gt_bboxes, gt_labels, gt_bboxes_ignore, gt_masks)
+            x, img_meta, proposal_list, gt_bboxes, gt_labels,
+            gt_bboxes_ignore, gt_masks, **kwargs)
         losses.update(roi_losses)
 
         return losses

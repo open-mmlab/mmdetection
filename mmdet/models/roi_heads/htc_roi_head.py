@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
                         build_sampler, merge_aug_bboxes, merge_aug_masks,
@@ -203,6 +204,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                       gt_semantic_seg=None):
         # semantic segmentation part
         # 2 outputs: segmentation prediction and embedded features
+        losses = dict()
         if self.with_semantic:
             semantic_pred, semantic_feat = self.semantic_head(x)
             loss_seg = self.semantic_head.loss(semantic_pred, gt_semantic_seg)
@@ -213,7 +215,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         for i in range(self.num_stages):
             self.current_stage = i
             rcnn_train_cfg = self.train_cfg[i]
-            lw = self.train_cfg.stage_loss_weights[i]
+            lw = self.stage_loss_weights[i]
 
             # assign gts and sample proposals
             sampling_results = []
