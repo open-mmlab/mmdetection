@@ -89,7 +89,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
             outs = outs + (rpn_outs, )
         proposals = torch.randn(1000, 4).cuda()
         # roi_head
-        outs = self.roi_head(x, proposals)
+        roi_outs = self.roi_head(x, proposals)
+        outs = outs + (roi_outs, )
         return outs
 
     def forward_train(self,
