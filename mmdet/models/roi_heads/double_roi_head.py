@@ -44,7 +44,7 @@ class DoubleHeadRoIHead(BaseRoIHead):
             outs = outs + (mask_pred, )
         return outs      
 
-    def calculate_bbox_loss(self, x, sampling_results, gt_bboxes, gt_labels):
+    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         # TODO: a more flexible way to decide which feature maps to use
         bbox_cls_feats = self.bbox_roi_extractor(

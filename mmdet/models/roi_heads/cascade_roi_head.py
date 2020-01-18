@@ -270,7 +270,6 @@ class CascadeRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                     x,
                     proposal_list,
                     img_meta,
-                    proposals=None,
                     rescale=False):
         """Test without augmentation."""
         assert self.with_bbox, "Bbox head must be implemented."
