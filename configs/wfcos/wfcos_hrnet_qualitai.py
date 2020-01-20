@@ -169,7 +169,7 @@ workflow = [('train', 1)]
 
 # wandb settings
 wandb_cfg = dict(
-    team='warp-net',
+    entity='warp-net',
     project='qualitai',
     dryrun=False
 )

@@ -71,7 +71,13 @@ def maybe_init_wandb(cfg):
         except AttributeError or KeyError:
             pass
 
-        wandb.init(name=name, project=project)
+        try:
+            if cfg.wandb_cfg['entity']:
+                entity = cfg.wandb_cfg['entity']
+        except AttributeError or KeyError:
+            pass
+
+        wandb.init(name=name, project=project, entity=entity)
         wandb.config.update(cfg._cfg_dict)
         wandb.config.update({"filename": cfg.filename})
 
