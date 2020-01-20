@@ -1,5 +1,4 @@
 import torch
-import pdb
 
 class AssignResult(object):
 

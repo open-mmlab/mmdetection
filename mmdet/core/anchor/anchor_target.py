@@ -2,7 +2,6 @@ import torch
 
 from ..bbox import PseudoSampler, assign_and_sample, bbox2delta, build_assigner
 from ..utils import multi_apply
-import pdb
 
 def anchor_target(anchor_list,
                   valid_flag_list,
@@ -110,7 +109,6 @@ def anchor_target_single(flat_anchors,
         return (None, ) * 6
     # assign gt and sample anchors
     anchors = flat_anchors[inside_flags, :]
-    #pdb.set_trace()
     if sampling:
         assign_result, sampling_result = assign_and_sample(
             anchors, gt_bboxes, gt_bboxes_ignore, None, cfg)
@@ -151,11 +149,7 @@ def anchor_target_single(flat_anchors,
     if unmap_outputs:
         num_total_anchors = flat_anchors.size(0)
         labels = unmap(labels, num_total_anchors, inside_flags)
-        label_weights = unmap(label_weights, num_total_anchors, inside_flags)
-        
-        #if label_channels > 1:
-            #labels, label_weights = expand_binary_labels(labels, label_weights, label_channels)
-        
+        label_weights = unmap(label_weights, num_total_anchors, inside_flags)   
         bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
         bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
@@ -188,12 +182,3 @@ def unmap(data, count, inds, fill=0):
         ret = data.new_full(new_size, fill)
         ret[inds, :] = data
     return ret
-
-def expand_binary_labels(labels, label_weights, label_channels):
-    bin_labels = labels.new_full((labels.size(0), label_channels), 0)
-    inds = torch.nonzero(labels >= 1).squeeze()
-    if inds.numel() > 0:
-        bin_labels[inds, labels[inds]-1] =1
-    bin_label_weights = label_weights.view(-1,1).expand(label_weights.size(0),\
-                                                        label_channels)
-    return bin_labels, bin_label_weights

@@ -12,7 +12,7 @@ from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
 from mmdet.datasets import DATASETS, build_dataloader
 from mmdet.models import RPN
 from .env import get_root_logger
-import pdb
+#import pdb
 
 def parse_losses(losses):
     log_vars = OrderedDict()
@@ -204,7 +204,6 @@ def _non_dist_train(model, dataset, cfg, validate=False):
     optimizer = build_optimizer(model, cfg.optimizer)
     runner = Runner(model, batch_processor, optimizer, cfg.work_dir,
                     cfg.log_level)
-    #pdb.set_trace()
     # fp16 setting
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:

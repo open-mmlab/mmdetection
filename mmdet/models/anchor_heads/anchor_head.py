@@ -9,7 +9,6 @@ from mmdet.core import (AnchorGenerator, anchor_target, delta2bbox, force_fp32,
                         multi_apply, multiclass_nms)
 from ..builder import build_loss
 from ..registry import HEADS
-import pdb
 
 @HEADS.register_module
 class AnchorHead(nn.Module):
@@ -132,11 +131,6 @@ class AnchorHead(nn.Module):
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
-        # classification loss
-        #if self.use_sigmoid_cls:
-            #labels = labels.reshape(-1, self.cls_out_channels)
-            #label_weights = label_weights.reshape(-1, self.cls_out_channels)
-        #else:
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
@@ -170,7 +164,7 @@ class AnchorHead(nn.Module):
             featmap_sizes, img_metas)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = anchor_target(
-                anchor_list,
+            anchor_list,
             valid_flag_list,
             gt_bboxes,
             img_metas,

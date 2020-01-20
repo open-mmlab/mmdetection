@@ -93,7 +93,7 @@ class IoULoss(nn.Module):
             reduction_override if reduction_override else self.reduction)
         loss = self.loss_weight * iou_loss(
             pred,
-            target, 
+            target,
             weight,
             eps=self.eps,
             reduction=reduction,

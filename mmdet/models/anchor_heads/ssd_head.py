@@ -6,11 +6,9 @@ from mmcv.cnn import xavier_init
 
 from mmdet.core import AnchorGenerator, anchor_target, multi_apply
 from ..losses import smooth_l1_loss
-from ..losses import iou_loss
 from ..registry import HEADS
 from .anchor_head import AnchorHead
 
-import pdb
 
 # TODO: add loss evaluator for SSD
 @HEADS.register_module
@@ -112,12 +110,6 @@ class SSDHead(AnchorHead):
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
-        # change with T-pi
-        # bg yi labels'da nereye koyuyor?
-        # cls_score'un içinde ne var? 
-          # 1. 81xanchor -> cls_score[labels] 
-          # 2. 1xanchor -> cls_score 
-        # label_weights ne? OHEM olmasına rağmen neden kullanılıyor, toplamı kaç?
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         pos_inds = (labels > 0).nonzero().view(-1)
@@ -127,27 +119,18 @@ class SSDHead(AnchorHead):
         num_neg_samples = cfg.neg_pos_ratio * num_pos_samples
         if num_neg_samples > neg_inds.size(0):
             num_neg_samples = neg_inds.size(0)
-        # OHEM kalsın.
         topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
         loss_cls_pos = loss_cls_all[pos_inds].sum()
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
-        pdb.set_trace() 
-        loss_bbox_iou = iou_loss(
-                bbox_pred,
-                bbox_targets,
-                bbox_weights,
-                reduction = 'mean',
-                avg_factor = num_total_samples)
 
-        #loss_bbox = smooth_l1_loss(
-        #    bbox_pred,
-        #    bbox_targets,
-        #    bbox_weights,
-        #    beta=cfg.smoothl1_beta,
-        #    avg_factor=num_total_samples)
-
-        return loss_cls[None], loss_bbox_iou
+        loss_bbox = smooth_l1_loss(
+            bbox_pred,
+            bbox_targets,
+            bbox_weights,
+            beta=cfg.smoothl1_beta,
+            avg_factor=num_total_samples)
+        return loss_cls[None], loss_bbox
 
     def loss(self,
              cls_scores,
@@ -160,8 +143,10 @@ class SSDHead(AnchorHead):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
 
+        device = cls_scores[0].device
+
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas)
+            featmap_sizes, img_metas, device=device)
         cls_reg_targets = anchor_target(
             anchor_list,
             valid_flag_list,
@@ -196,6 +181,12 @@ class SSDHead(AnchorHead):
                                      -2).view(num_images, -1, 4)
         all_bbox_weights = torch.cat(bbox_weights_list,
                                      -2).view(num_images, -1, 4)
+
+        # check NaN and Inf
+        assert torch.isfinite(all_cls_scores).all().item(), \
+            'classification scores become infinite or NaN!'
+        assert torch.isfinite(all_bbox_preds).all().item(), \
+            'bbox predications become infinite or NaN!'
 
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
