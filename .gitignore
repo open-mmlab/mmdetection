@@ -2,15 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
-# swp and swo files.
-*.swp
-*.swo
-
-# data
-*.dat
 
 # C extensions
 *.so
+# ignore directories
+work_dirs/
+
 
 # Distribution / packaging
 .Python
@@ -72,9 +69,6 @@ instance/
 # Sphinx documentation
 docs/_build/
 
-# runners-slurm
-runners/
-
 # PyBuilder
 target/
 
@@ -113,17 +107,7 @@ venv.bak/
 .mypy_cache/
 
 # cython generated cpp
-mmdet/ops/nms/src/soft_nms_cpu.cpp
-mmdet/version.py
+mmaction/version.py
 data
 .vscode
 .idea
-
-# custom
-*.pkl
-*.pkl.json
-*.log.json
-work_dirs/
-results/
-# Pytorch
-*.pth
