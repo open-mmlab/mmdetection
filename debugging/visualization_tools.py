@@ -116,9 +116,12 @@ def add_class_legend(img, classes, present_classes):
     canv_img = Image.fromarray(canv.astype(np.uint8))
     draw = ImageDraw.Draw(canv_img)
 
-
     for ind, cla in enumerate(present_classes):
-        draw.text((25, ind * spacer + 10), classes[cla], (0, 0, 0))
+        try:
+            label = classes[cla]
+        except IndexError:
+            label = 'Unknown Class'
+        draw.text((25, ind * spacer + 10), label, (0, 0, 0))
 
     canv = np.array(canv_img).astype(np.uint8)
 
