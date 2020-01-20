@@ -37,7 +37,7 @@ model = dict(
         num_outs=5),
     bbox_head=dict(
         type='WFCOSHead',
-        num_classes=2,
+        num_classes=80,
         in_channels=256,
         max_energy=20,
         stacked_convs=4,
@@ -48,14 +48,16 @@ model = dict(
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=.1),
-        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+            loss_weight=1.),
+        loss_bbox=dict(
+            type='IoULoss',
+            loss_weight=1.0
+        ),
         loss_energy=dict(
             type='FocalLoss',
             use_sigmoid=True,
-            gamma=5.0,
-            loss_weight=10.,
-            reduction='sum'
+            gamma=2.0,
+            loss_weight=1.
         ),
         split_convs=False,
         r=500.
@@ -74,14 +76,14 @@ train_cfg = dict(
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
-    score_thr=0.05,
-    nms=dict(type='nms', iou_thr=0.5),
-    max_per_img=100)
+    score_thr=0.3,
+    nms=dict(type='nms', iou_thr=0.2),
+    max_per_img=1000)
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -112,21 +114,21 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=1,
-    workers_per_gpu=0,
+    imgs_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_small2017.json',
-        img_prefix=data_root + 'images/val2017/',
+        ann_file=data_root + 'annotations/instances_train2017.json',
+        img_prefix=data_root + 'images/train2017/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_small2017.json',
+        ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'images/val2017/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_small2017.json',
+        ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'images/val2017/',
         pipeline=test_pipeline))
 # optimizer
@@ -136,31 +138,39 @@ optimizer = dict(
     momentum=0.9,
     weight_decay=0.0001,
     paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
-optimizer_config = dict(grad_clip=None)
+optimizer_config = dict(
+    grad_clip=dict(
+        max_norm=2.
+    ))
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='constant',
     warmup_iters=500,
-    warmup_ratio=1.0 / 3,
+    warmup_ratio=1.0/3,
     step=[16, 22])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=1,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
-#        dict(type='WandbLoggerHook')
+        dict(type='WandbLoggerHook')
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 1
-device_ids = range(1)
+total_epochs = 210
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/wfcos_debugging'
+work_dir = './work_dirs/wfcos_hrnet_coco'
 load_from = None
+# load_from = work_dir + '/epoch_4.pth'
 resume_from = None
+# resume_from = work_dir + '/epoch_4.pth'
 workflow = [('train', 1)]
 
+# wandb settings
+wandb_cfg = dict(
+    project='coco',
+    dryrun=False
+)

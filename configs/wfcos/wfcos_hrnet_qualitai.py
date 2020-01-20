@@ -48,13 +48,16 @@ model = dict(
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=.2),
-        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+            loss_weight=.1),
+        loss_bbox=dict(
+            type='IoULoss',
+            loss_weight=1.0),
         loss_energy=dict(
             type='FocalLoss',
             use_sigmoid=True,
             gamma=5.0,
-            loss_weight=2.
+            loss_weight=4.0,
+            reduction='sum'
         ),
         split_convs=False,
         r=500.
@@ -78,7 +81,7 @@ test_cfg = dict(
     max_per_img=1000)
 # dataset settings
 dataset_type = 'QualitaiDataset'
-data_root = '/workspace/qualitai/'
+data_root = 'data/qualitai/'
 img_norm_cfg = dict(
     mean=[32.20495642019232, 31.513648345703196, 36.627047367261675],
     std=[34.395634168647526, 36.89673991173119, 38.85190978611362],
@@ -166,6 +169,7 @@ workflow = [('train', 1)]
 
 # wandb settings
 wandb_cfg = dict(
+    team='warp-net',
     project='qualitai',
-    dryrun=True
+    dryrun=False
 )
