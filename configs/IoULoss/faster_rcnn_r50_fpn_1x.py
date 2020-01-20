@@ -168,7 +168,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/faster_rcnn_r50_fpn_1x_iou'
+work_dir = './work_dirs/faster_rcnn_r50_fpn_1x_iouloss'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
