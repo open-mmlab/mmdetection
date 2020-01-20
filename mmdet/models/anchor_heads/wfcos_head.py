@@ -273,17 +273,40 @@ class WFCOSHead(nn.Module):
                 bbox_targets, label_targets, energy_targets, mask
             )
 
-        # Flatten energy
+        # Flatten energy.
         flat_energy_preds = [
             energy.permute(0, 2, 3, 1).reshape(-1, self.max_energy)
             for energy in energy_preds
         ]
-        flat_energy_targets = [energy.reshape(-1) for energy in energy_targets]
+        flat_energy_targets = [energy.reshape(-1)
+                               for energy in energy_targets]
+        flat_energy_targets = torch.cat(flat_energy_targets).to(
+            dtype=torch.long
+        )
+
+        # Calculate energy loss weights.
+        total_elements = flat_energy_targets.shape[0]
+        non_zero_elements = flat_energy_targets.nonzero()
+        num_nonzero_elements = non_zero_elements.shape[0]
+        num_zero_elements = total_elements - num_nonzero_elements
+
+        # Deal with edge case where there are either no non-zero elements or
+        # no zero elements.
+        if num_zero_elements == 0:
+            num_zero_elements = 1.
+        if num_nonzero_elements == 0:
+            num_nonzero_elements = 1.
+
+        energy_weights = torch.full([total_elements],
+                                    1 / num_zero_elements,
+                                    device=flat_energy_targets.device)
+        energy_weights[non_zero_elements] = 1 / num_nonzero_elements
 
         # Then calculate energy losses.
         loss_energy = self.loss_energy(
             torch.cat(flat_energy_preds),
-            torch.cat(flat_energy_targets).to(dtype=torch.long)
+            flat_energy_targets + 1,
+            weight=energy_weights
         )
 
         # Only consider loss for bboxes and labels_list at positions where the
@@ -924,6 +947,7 @@ class WFCOSHead(nn.Module):
                 ndarray with shape (w, h, 3) and dtype 'uint8'.
         """
         vis = dict()
+        class_with_bg = ['background'] + list(class_names)
 
         # Get only the first input image
         img = tensor2imgs(input_img[0].unsqueeze(0),
@@ -958,7 +982,7 @@ class WFCOSHead(nn.Module):
             img=img.copy(),
             bboxes=det_bboxes.cpu().numpy(),
             labels=det_labels.cpu().numpy().astype(int),
-            class_names=class_names,
+            class_names=class_with_bg,
             score_thr=test_cfg.score_thr,
             show=False,
             ret=True
@@ -996,7 +1020,7 @@ class WFCOSHead(nn.Module):
                                         class_names,
                                         vt.get_present_classes(np_arrays['lt']))
         vis['lp'] = vt.add_class_legend(vis['lp'],
-                                        class_names,
+                                        class_with_bg,
                                         vt.get_present_classes(np_arrays['lp']))
 
         stitched = vt.stitch_big_image([
