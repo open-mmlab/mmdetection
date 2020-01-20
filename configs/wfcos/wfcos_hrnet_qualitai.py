@@ -60,7 +60,7 @@ model = dict(
             reduction='sum'
         ),
         split_convs=False,
-        r=500.
+        r=250.
     ))
 # training and testing settings
 train_cfg = dict(
@@ -157,7 +157,7 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 210
+total_epochs = 40
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/qualitai'

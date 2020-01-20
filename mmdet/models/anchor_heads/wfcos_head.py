@@ -23,6 +23,7 @@ from ..utils import ConvModule, Scale, bias_init_with_prob
 import debugging.visualization_tools as vt
 from mmcv.visualization import imshow_det_bboxes
 from mmdet.core import tensor2imgs
+import numpy as np
 
 INF = 1e8
 
@@ -459,10 +460,10 @@ class WFCOSHead(nn.Module):
             image_bboxes = []
             image_masks = []
             for j, feat_level_bboxes in enumerate(bboxes):
-                img_size = img_metas[i]['pad_shape']
+                img_shape = img_metas[i]['pad_shape']
 
                 feature_energy = self.get_energy_single(feat_dims[j],
-                                                        img_size,
+                                                        img_shape,
                                                         feat_level_bboxes)
                 image_energy.append(feature_energy.values)
                 # Using the image_energy, create a mask of background areas.
@@ -806,7 +807,7 @@ class WFCOSHead(nn.Module):
                 img_bbox_preds.append(bbox_preds[i][img_id].detach())
                 img_energy_preds.append(energy_preds[i][img_id].detach())
 
-            img_shape = img_metas[img_id]['img_shape']
+            img_shape = img_metas[img_id]['pad_shape']
             scale_factor = img_metas[img_id]['scale_factor']
 
             det_bboxes = self.get_bboxes_image(img_label_preds,
@@ -952,7 +953,7 @@ class WFCOSHead(nn.Module):
         # Get only the first input image
         img = tensor2imgs(input_img[0].unsqueeze(0),
                           **self.last_vals['img_metas']['img_norm_cfg'])[0]
-        img_shape = self.last_vals['img_metas']['img_shape']
+        img_shape = self.last_vals['img_metas']['pad_shape']
         scale_factor = self.last_vals['img_metas']['scale_factor']
 
         self.last_vals['gt_labels'] -= 1
@@ -1023,10 +1024,13 @@ class WFCOSHead(nn.Module):
                                         class_with_bg,
                                         vt.get_present_classes(np_arrays['lp']))
 
+        empty_img = np.full_like(vis['img_gt'], 255)
         stitched = vt.stitch_big_image([
-                [vis['img_gt'], vis['et'], vis['lt']],
-                [vis['img_pred'], vis['ep'], vis['lp']]
-            ])
+            [vis['img_gt'], vis['et']],
+            [vis['img_pred'], vis['ep']],
+            [vis['lt'], empty_img],
+            [vis['lp'], empty_img]
+        ])
 
         # Image.fromarray(stitched).save('/workspace/test.png')
 
