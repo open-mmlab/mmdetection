@@ -24,8 +24,8 @@ before_install:
   - PATH=${CUDA_HOME}/bin:${PATH}
 
 install:
-  - pip install Cython torch==1.2
-  - pip install Pillow==6.2.2
+  - pip install Pillow==6.2.2  # remove this line when torchvision>=0.5
+  - pip install Cython torch==1.2 torchvision==0.4.0  # TODO: fix CI for pytorch>1.2
   - pip install -r requirements.txt
   - pip install -r tests/requirements.txt
 
