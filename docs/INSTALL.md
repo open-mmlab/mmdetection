@@ -39,10 +39,11 @@ git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Install mmdetection (other dependencies will be installed automatically).
+d. Install build requirements and then install mmdetection.
 
 ```shell
-pip install -v -e .
+pip install -r requirements/build.txt
+pip install -v -e .  # or "python setup.py develop"
 ```
 
 Note:
