@@ -1,7 +1,7 @@
 albumentations>=0.3.2
 imagecorruptions
 matplotlib
-mmcv>=0.2.15
+mmcv>=0.2.16
 numpy
 pycocotools
 six

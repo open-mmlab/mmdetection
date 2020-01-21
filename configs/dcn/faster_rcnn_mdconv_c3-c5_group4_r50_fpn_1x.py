@@ -10,7 +10,7 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         dcn=dict(
-            modulated=True, deformable_groups=4, fallback_on_stride=False),
+            type='DCNv2', deformable_groups=4, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)),
     neck=dict(
         type='FPN',

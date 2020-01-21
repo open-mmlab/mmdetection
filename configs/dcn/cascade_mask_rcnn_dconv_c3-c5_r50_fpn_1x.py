@@ -11,7 +11,7 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         dcn=dict(
-            modulated=False, deformable_groups=1, fallback_on_stride=False),
+            type='DCN', deformable_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)),
     neck=dict(
         type='FPN',
