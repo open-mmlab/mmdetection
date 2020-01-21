@@ -54,8 +54,6 @@ class Bottleneck(_Bottleneck):
                 bias=False)
         else:
             assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
-            # use ConvModule for backward/forward compatibility for now
-            # TODO: consider to use build_conv_layer for new benchmark
             self.conv2 = build_conv_layer(
                 self.dcn,
                 width,
