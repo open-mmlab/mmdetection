@@ -298,7 +298,7 @@ class DeformConvPack(DeformConv):
 
         if version is not None and version > 1:
             from mmdet.apis import get_root_logger
-            logger = get_root_logger
+            logger = get_root_logger()
             logger.info('DeformConvPack {} is upgraded to version 2.'.format(
                 prefix.rstrip('.')))
 
@@ -421,7 +421,7 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
 
         if version is not None and version > 1:
             from mmdet.apis import get_root_logger
-            logger = get_root_logger
+            logger = get_root_logger()
             logger.info(
                 'ModulatedDeformConvPack {} is upgraded to version 2.'.format(
                     prefix.rstrip('.')))
