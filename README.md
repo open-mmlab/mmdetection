@@ -70,6 +70,7 @@ Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 | Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     |
 | FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     |
 | NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     |
+| ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     |
 
 Other features
 - [x] DCNv2
