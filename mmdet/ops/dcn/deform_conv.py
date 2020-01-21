@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
-from torch.nn.modules.utils import _pair
+from torch.nn.modules.utils import _pair, _single
 
 from . import deform_conv_cuda
 
@@ -24,7 +24,7 @@ class DeformConvFunction(Function):
                 im2col_step=64):
         if input is not None and input.dim() != 4:
             raise ValueError(
-                "Expected 4D tensor as input, got {}D tensor instead.".format(
+                'Expected 4D tensor as input, got {}D tensor instead.'.format(
                     input.dim()))
         ctx.stride = _pair(stride)
         ctx.padding = _pair(padding)
@@ -105,7 +105,7 @@ class DeformConvFunction(Function):
             output_size += ((in_size + (2 * pad) - kernel) // stride_ + 1, )
         if not all(map(lambda s: s > 0, output_size)):
             raise ValueError(
-                "convolution input is too small (output would be {})".format(
+                'convolution input is too small (output would be {})'.format(
                     'x'.join(map(str, output_size))))
         return output_size
 
@@ -217,6 +217,9 @@ class DeformConv(nn.Module):
         self.dilation = _pair(dilation)
         self.groups = groups
         self.deformable_groups = deformable_groups
+        # enable compatibility with nn.Conv2d
+        self.transposed = False
+        self.output_padding = _single(0)
 
         self.weight = nn.Parameter(
             torch.Tensor(out_channels, in_channels // self.groups,
@@ -237,6 +240,22 @@ class DeformConv(nn.Module):
 
 
 class DeformConvPack(DeformConv):
+    """A Deformable Conv Encapsulation that acts as normal Conv layers.
+
+    Args:
+        in_channels (int): Same as nn.Conv2d.
+        out_channels (int): Same as nn.Conv2d.
+        kernel_size (int or tuple[int]): Same as nn.Conv2d.
+        stride (int or tuple[int]): Same as nn.Conv2d.
+        padding (int or tuple[int]): Same as nn.Conv2d.
+        dilation (int or tuple[int]): Same as nn.Conv2d.
+        groups (int): Same as nn.Conv2d.
+        bias (bool or str): If specified as `auto`, it will be decided by the
+            norm_cfg. Bias will be set as True if norm_cfg is None, otherwise
+            False.
+    """
+
+    _version = 2
 
     def __init__(self, *args, **kwargs):
         super(DeformConvPack, self).__init__(*args, **kwargs)
@@ -259,6 +278,33 @@ class DeformConvPack(DeformConv):
         offset = self.conv_offset(x)
         return deform_conv(x, offset, self.weight, self.stride, self.padding,
                            self.dilation, self.groups, self.deformable_groups)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        version = local_metadata.get('version', None)
+
+        if version is None or version < 2:
+            # the key is different in early versions
+            # In version < 2, DeformConvPack loads previous benchmark models.
+            if (prefix + 'conv_offset.weight' not in state_dict
+                    and prefix[:-1] + '_offset.weight' in state_dict):
+                state_dict[prefix + 'conv_offset.weight'] = state_dict.pop(
+                    prefix[:-1] + '_offset.weight')
+            if (prefix + 'conv_offset.bias' not in state_dict
+                    and prefix[:-1] + '_offset.bias' in state_dict):
+                state_dict[prefix +
+                           'conv_offset.bias'] = state_dict.pop(prefix[:-1] +
+                                                                '_offset.bias')
+
+        if version is not None and version > 1:
+            from mmdet.apis import get_root_logger
+            logger = get_root_logger()
+            logger.info('DeformConvPack {} is upgraded to version 2.'.format(
+                prefix.rstrip('.')))
+
+        super()._load_from_state_dict(state_dict, prefix, local_metadata,
+                                      strict, missing_keys, unexpected_keys,
+                                      error_msgs)
 
 
 class ModulatedDeformConv(nn.Module):
@@ -283,6 +329,9 @@ class ModulatedDeformConv(nn.Module):
         self.groups = groups
         self.deformable_groups = deformable_groups
         self.with_bias = bias
+        # enable compatibility with nn.Conv2d
+        self.transposed = False
+        self.output_padding = _single(0)
 
         self.weight = nn.Parameter(
             torch.Tensor(out_channels, in_channels // groups,
@@ -309,11 +358,27 @@ class ModulatedDeformConv(nn.Module):
 
 
 class ModulatedDeformConvPack(ModulatedDeformConv):
+    """A ModulatedDeformable Conv Encapsulation that acts as normal Conv layers.
+
+    Args:
+        in_channels (int): Same as nn.Conv2d.
+        out_channels (int): Same as nn.Conv2d.
+        kernel_size (int or tuple[int]): Same as nn.Conv2d.
+        stride (int or tuple[int]): Same as nn.Conv2d.
+        padding (int or tuple[int]): Same as nn.Conv2d.
+        dilation (int or tuple[int]): Same as nn.Conv2d.
+        groups (int): Same as nn.Conv2d.
+        bias (bool or str): If specified as `auto`, it will be decided by the
+            norm_cfg. Bias will be set as True if norm_cfg is None, otherwise
+            False.
+    """
+
+    _version = 2
 
     def __init__(self, *args, **kwargs):
         super(ModulatedDeformConvPack, self).__init__(*args, **kwargs)
 
-        self.conv_offset_mask = nn.Conv2d(
+        self.conv_offset = nn.Conv2d(
             self.in_channels,
             self.deformable_groups * 3 * self.kernel_size[0] *
             self.kernel_size[1],
@@ -324,14 +389,43 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
         self.init_offset()
 
     def init_offset(self):
-        self.conv_offset_mask.weight.data.zero_()
-        self.conv_offset_mask.bias.data.zero_()
+        self.conv_offset.weight.data.zero_()
+        self.conv_offset.bias.data.zero_()
 
     def forward(self, x):
-        out = self.conv_offset_mask(x)
+        out = self.conv_offset(x)
         o1, o2, mask = torch.chunk(out, 3, dim=1)
         offset = torch.cat((o1, o2), dim=1)
         mask = torch.sigmoid(mask)
         return modulated_deform_conv(x, offset, mask, self.weight, self.bias,
                                      self.stride, self.padding, self.dilation,
                                      self.groups, self.deformable_groups)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        version = local_metadata.get('version', None)
+
+        if version is None or version < 2:
+            # the key is different in early versions
+            # In version < 2, ModulatedDeformConvPack
+            # loads previous benchmark models.
+            if (prefix + 'conv_offset.weight' not in state_dict
+                    and prefix[:-1] + '_offset.weight' in state_dict):
+                state_dict[prefix + 'conv_offset.weight'] = state_dict.pop(
+                    prefix[:-1] + '_offset.weight')
+            if (prefix + 'conv_offset.bias' not in state_dict
+                    and prefix[:-1] + '_offset.bias' in state_dict):
+                state_dict[prefix +
+                           'conv_offset.bias'] = state_dict.pop(prefix[:-1] +
+                                                                '_offset.bias')
+
+        if version is not None and version > 1:
+            from mmdet.apis import get_root_logger
+            logger = get_root_logger()
+            logger.info(
+                'ModulatedDeformConvPack {} is upgraded to version 2.'.format(
+                    prefix.rstrip('.')))
+
+        super()._load_from_state_dict(state_dict, prefix, local_metadata,
+                                      strict, missing_keys, unexpected_keys,
+                                      error_msgs)
