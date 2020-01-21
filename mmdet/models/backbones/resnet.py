@@ -157,9 +157,6 @@ class Bottleneck(nn.Module):
                 bias=False)
         else:
             assert self.conv_cfg is None, 'conv_cfg cannot be None for DCN'
-            # use ConvModule for backward/forward compatibility for now
-
-            # TODO: change to use build_conv_layer when new benchmark
             self.conv2 = build_conv_layer(
                 dcn,
                 planes,
@@ -437,7 +434,6 @@ class ResNet(nn.Module):
 
         self.feat_dim = self.block.expansion * 64 * 2**(
             len(self.stage_blocks) - 1)
-        print(self)
 
     @property
     def norm1(self):
