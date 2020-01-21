@@ -320,7 +320,7 @@ class RepPointsHead(nn.Module):
             for i in range(num_levels):
                 point_stride = self.point_strides[i]
                 feat_h, feat_w = featmap_sizes[i]
-                h, w, _ = img_meta['pad_shape']
+                h, w = img_meta['pad_shape'][:2]
                 valid_feat_h = min(int(np.ceil(h / point_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / point_stride)), feat_w)
                 flags = self.point_generators[i].valid_flags(
