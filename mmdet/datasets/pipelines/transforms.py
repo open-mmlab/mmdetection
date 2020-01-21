@@ -833,9 +833,8 @@ class Albu(object):
                     results[label] = np.array(
                         [results[label][i] for i in results['idx_mapper']])
                 if 'masks' in results:
-                    results['masks'] = [
-                        results['masks'][i] for i in results['idx_mapper']
-                    ]
+                    results['masks'] = np.array(
+                        [results['masks'][i] for i in results['idx_mapper']])
 
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):
