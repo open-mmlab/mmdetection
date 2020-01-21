@@ -85,9 +85,6 @@ else
     #set -x
     #set -e
 
-    TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
-    TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
-
     VENV_DIR=/root/venv-$MB_PYTHON_TAG
 
     # Setup a virtual environment for the target python version
@@ -100,12 +97,39 @@ else
     cd /io
     pip install -r requirements/build.txt
 
+    CUDA_VERSION=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev) # 10.1.243
+    CUDA_VERSION_SHORT=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev | cut -f1,2 -d".") # 10.1
+    CUDNN_VERSION=$(ls /usr/local/cuda/lib64/libcudnn.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev)
+    echo "
+    CUDA_VERSION = $CUDA_VERSION
+    CUDA_VERSION_SHORT = $CUDA_VERSION_SHORT
+    CUDNN_VERSION = $CUDNN_VERSION
+    "
+    
+    #TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
+    TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5"
+    TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
+    export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH
+    echo "
+    TORCH_CUDA_ARCH_LIST = $TORCH_CUDA_ARCH_LIST
+    TORCH_NVCC_FLAGS = $TORCH_NVCC_FLAGS
+    LD_LIBRARY_PATH = $LD_LIBRARY_PATH
+    "
     python setup.py bdist_wheel
+
+    # note that pip install of the unpatched wheel in this environment works
+
+    # does patching need to be done?
+    # https://github.com/pytorch/builder/blob/2d91d533eccbe0d859cfe38a9d508fe065f47534/manywheel/build_common.sh 
 
     chmod -R o+rw _skbuild
     chmod -R o+rw dist
     chmod -R o+rw build
     chmod -R o+rw .eggs
+
+    # Do we have to manually patch the wheels? The pytorch/builder repo
+    # mentions that: "auditwheel repair doesnt work correctly and is buggy"
+    # perhaps we should look into that?
 
     /opt/python/cp37-cp37m/bin/python -m pip install auditwheel
     /opt/python/cp37-cp37m/bin/python -m auditwheel show dist/$NAME-*$MB_PYTHON_TAG*.whl
@@ -115,5 +139,7 @@ else
     #/opt/python/cp37-cp37m/bin/python -m auditwheel repair dist/$NAME-$VERSION-$MB_PYTHON_TAG*.whl
     chmod -R o+rw wheelhouse
     chmod -R o+rw $NAME.egg-info
+
+    python -c "import mmdet.ops" 
 fi
 
