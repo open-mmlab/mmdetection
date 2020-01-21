@@ -1,3 +1,4 @@
+from .atss import ATSS
 from .base import BaseDetector
 from .cascade_rcnn import CascadeRCNN
 from .double_head_rcnn import DoubleHeadRCNN
@@ -16,7 +17,7 @@ from .single_stage import SingleStageDetector
 from .two_stage import TwoStageDetector
 
 __all__ = [
-    'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
+    'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',
     'DoubleHeadRCNN', 'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN',
     'RepPointsDetector', 'FOVEA'
