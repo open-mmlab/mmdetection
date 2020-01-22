@@ -93,7 +93,7 @@ class ConvModule(nn.Module):
         assert set(order) == set(['conv', 'norm', 'act'])
 
         self.with_norm = norm_cfg is not None
-        self.with_activatation = activation is not None
+        self.with_activation = activation is not None
         # if the conv layer is before a norm layer, bias is unnecessary.
         if bias == 'auto':
             bias = False if self.with_norm else True
@@ -135,7 +135,7 @@ class ConvModule(nn.Module):
             self.add_module(self.norm_name, norm)
 
         # build activation layer
-        if self.with_activatation:
+        if self.with_activation:
             # TODO: introduce `act_cfg` and supports more activation layers
             if self.activation not in ['relu']:
                 raise ValueError('{} is currently not supported.'.format(
@@ -162,6 +162,6 @@ class ConvModule(nn.Module):
                 x = self.conv(x)
             elif layer == 'norm' and norm and self.with_norm:
                 x = self.norm(x)
-            elif layer == 'act' and activate and self.with_activatation:
+            elif layer == 'act' and activate and self.with_activation:
                 x = self.activate(x)
         return x
