@@ -39,11 +39,11 @@ git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Install mmdetection (other dependencies will be installed automatically).
+d. Install build requirements and then install mmdetection.
 
 ```shell
-pip install mmcv
-python setup.py develop  # or "pip install -v -e ."
+pip install -r requirements/build.txt
+pip install -v -e .  # or "python setup.py develop"
 ```
 
 Note:
@@ -55,6 +55,8 @@ It is recommended that you run step d each time you pull some updates from githu
 
 3. If you would like to use `opencv-python-headless` instead of `opencv-python`,
 you can install it before installing MMCV.
+
+4. Some dependencies are optional. Simply running `pip install -v -e .` will only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
 ### Another option: Docker Image
 

@@ -1,14 +1,23 @@
 import inspect
 
-import albumentations
 import mmcv
 import numpy as np
-from albumentations import Compose
-from imagecorruptions import corrupt
 from numpy import random
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..registry import PIPELINES
+
+try:
+    from imagecorruptions import corrupt
+except ImportError:
+    corrupt = None
+
+try:
+    import albumentations
+    from albumentations import Compose
+except ImportError:
+    albumentations = None
+    Compose = None
 
 
 @PIPELINES.register_module
@@ -695,6 +704,8 @@ class Corrupt(object):
         self.severity = severity
 
     def __call__(self, results):
+        if corrupt is None:
+            raise RuntimeError('imagecorruptions is not installed')
         results['img'] = corrupt(
             results['img'].astype(np.uint8),
             corruption_name=self.corruption,
@@ -728,6 +739,8 @@ class Albu(object):
         skip_img_without_anno (bool): whether to skip the image
                                       if no ann left after aug
         """
+        if Compose is None:
+            raise RuntimeError('albumentations is not installed')
 
         self.transforms = transforms
         self.filter_lost_elements = False
@@ -771,6 +784,8 @@ class Albu(object):
 
         obj_type = args.pop("type")
         if mmcv.is_str(obj_type):
+            if albumentations is None:
+                raise RuntimeError('albumentations is not installed')
             obj_cls = getattr(albumentations, obj_type)
         elif inspect.isclass(obj_type):
             obj_cls = obj_type
