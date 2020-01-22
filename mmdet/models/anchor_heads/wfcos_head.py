@@ -852,8 +852,7 @@ class WFCOSHead(nn.Module):
 
         """
         feat_bboxes = []
-        feat_labels = []
-        feat_energies = []
+        feat_scores = []
 
         for label_preds, bbox_preds, energy_preds, points in zip(
             img_label_preds, img_bbox_preds, img_energy_preds, feat_level_points
@@ -883,34 +882,42 @@ class WFCOSHead(nn.Module):
                 energy_preds = energy_preds[topk_inds]
                 label_preds = label_preds[topk_inds, :]
 
+            # Now create a (n, c) scores tensor where c is the number of
+            # classes
+            score_preds = torch.zeros(label_preds.shape[0],
+                                      self.num_classes,
+                                      dtype=torch.float,
+                                      device=label_preds.device)
+            ar = torch.arange(0, label_preds.shape[0], dtype=torch.long,
+                              device=label_preds.device)
+            label_preds = (label_preds).to(dtype=torch.long)
+
+            # Set the value of each element at the class it's predicted
+            # to be to the energy value
+            score_preds[ar, label_preds] = energy_preds
+
+            # If the energy is 0, set class 0 to 1.
+            zeros = (energy_preds == 0).nonzero().view(-1)
+            score_preds[zeros, 0] = 1.
+
             # Decode distance bbox to regular bbox
             bboxes = distance2bbox(points, bbox_preds, max_shape=img_shape)
             feat_bboxes.append(bboxes)
-            feat_labels.append(label_preds)
-            feat_energies.append(energy_preds)
+            feat_scores.append(score_preds)
 
         feat_bboxes = torch.cat(feat_bboxes)
 
         if rescale:
             feat_bboxes /= feat_bboxes.new_tensor(scale_factor)
 
-        # Since multiclass_nms requires a 0th class representing background
-        # which is then subsequently ignored, we add that here.
-        feat_labels = torch.cat(feat_labels)
-        padding = feat_labels.new_zeros((feat_labels.shape[0], 1))
-        feat_labels = torch.cat((padding, feat_labels), dim=1)
-
-        # multiclass_nms also requires a score_factors tensor, which is the
-        # feature energies (feat_energies) tensor.
-        feat_energies = torch.cat(feat_energies)
+        feat_scores = torch.cat(feat_scores)
 
         det_bboxes, det_labels = multiclass_nms(
             feat_bboxes,
-            feat_labels,
+            feat_scores,
             cfg.score_thr,
             cfg.nms,
-            cfg.max_per_img,
-            feat_energies
+            cfg.max_per_img
         )
         return det_bboxes, det_labels
 
