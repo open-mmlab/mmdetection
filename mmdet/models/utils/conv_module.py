@@ -135,7 +135,7 @@ class ConvModule(nn.Module):
             self.add_module(self.norm_name, norm)
 
         # build activation layer
-        if self.with_activatation:
+        if self.with_activation:
             # TODO: introduce `act_cfg` and supports more activation layers
             if self.activation not in ['relu']:
                 raise ValueError('{} is currently not supported.'.format(
