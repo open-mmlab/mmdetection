@@ -53,7 +53,7 @@ def rfd(data, result, file_suffix, threshold=0.17, show=False):
 
 
 def cati(coco: COCO, output_fp: str, pred: bool, img_ids: list = None,
-         img_dir: str = '/workspace/deep_scores_dense/images_png/'):
+         img_dir = None):
     """COCO Anns to Image.
 
     Overlays bounding boxes with categories from a COCO ann_list onto the image
@@ -64,8 +64,11 @@ def cati(coco: COCO, output_fp: str, pred: bool, img_ids: list = None,
         output_fp: Where to output the files to.
         pred: True if this is the prediction, false if ground truth.
         img_ids: Image IDs to output
-        img_dir: The directory where the images are located.
+        img_dir str or None: The directory where the images are located.
     """
+    if not img_dir:
+        img_dir ='/workspace/deep_scores_dense/images_png/'
+
     labels = ('', 'bbox-only_')
     color = (255, 0, 0) if pred else (0, 255, 0)
 
@@ -146,7 +149,7 @@ def compare(gt_file: str, pred_file: str, diff_file: str, img_ids: list):
         Image.fromarray(diff_array).save(diff_file + str(img_id) + '.png')
 
 
-def from_file(results: str, coco: str, img_ind: int or list):
+def from_file(results: str, coco: str, img_ind: int or list, img_path: str):
     """Does cati from a file."""
     if not img_ind:
         img_ind = [0]
@@ -155,16 +158,19 @@ def from_file(results: str, coco: str, img_ind: int or list):
 
     keys = list(coco.imgs.keys())
 
-    img_id = [coco.imgs[keys[ind]]['id'] for ind in img_ind]
+    if len(img_ind) > 0:
+        img_id = [coco.imgs[keys[ind]]['id'] for ind in img_ind]
+    else:
+        img_id = [coco.imgs[key]['id'] for key in keys]
 
     gt_path = '/workspace/outputs/gt-'
     pred_path = '/workspace/outputs/pred-'
     diff_path = '/workspace/outputs/diff-'
 
     print('Writing ground truth bboxes')
-    cati(coco, gt_path, False, img_id)
+    cati(coco, gt_path, False, img_id, img_path)
     print('Writing predict bboxes')
-    cati(results, pred_path, True, img_id)
+    cati(results, pred_path, True, img_id, img_path)
 
     print('Writing differences...')
     compare(gt_path, pred_path, diff_path, img_id)
@@ -180,6 +186,8 @@ def parse_arguments():
                         help='results file')
     parser.add_argument('COCO', type=str,
                         help='coco annotations file')
+    parser.add_argument('-i', '--IMG-PATH', type=str, nargs='?',
+                        help='path to the image directory')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('-e', '--eval', action='store_true',
                       help='evaluate AP and AR')
@@ -199,5 +207,7 @@ if __name__ == '__main__':
     elif args.class_wise_eval:
         coco_eval(args.RESULTS, ['bbox'], args.COCO, max_dets=300,
                   classwise=True)
+    elif args.save is not None:
+        from_file(args.RESULTS, args.COCO, args.save, args.IMG_PATH)
     else:
-        from_file(args.RESULTS, args.COCO, args.save)
+        raise ValueError("At least one mode option must be selected.")
