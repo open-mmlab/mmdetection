@@ -25,7 +25,9 @@ class SSDHead(AnchorHead):
                  anchor_widths=[],
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
-                 depthwise_heads=False):
+                 depthwise_heads=False,
+                 depthwise_heads_activations='relu6',
+                 loss_balancing=False):
         super(AnchorHead, self).__init__()
         self.input_size = input_size
         self.num_classes = num_classes
@@ -40,18 +42,20 @@ class SSDHead(AnchorHead):
         cls_convs = []
         for i in range(len(in_channels)):
             if depthwise_heads:
+                assert depthwise_heads_activations in ['relu', 'relu6']
+                activation_class = nn.ReLU if depthwise_heads_activations is 'relu' else nn.ReLU6
                 reg_conv = nn.Sequential(
                     nn.Conv2d(in_channels[i], in_channels[i],
                               kernel_size=3, padding=1, groups=in_channels[i]),
                     nn.BatchNorm2d(in_channels[i]),
-                    nn.ReLU(inplace=True),
+                    activation_class(inplace=True),
                     nn.Conv2d(in_channels[i], num_anchors[i] * 4,
                               kernel_size=1, padding=0))
                 cls_conv = nn.Sequential(
                     nn.Conv2d(in_channels[i], in_channels[i],
                               kernel_size=3, padding=1, groups=in_channels[i]),
                     nn.BatchNorm2d(in_channels[i]),
-                    nn.ReLU(inplace=True),
+                    activation_class(inplace=True),
                     nn.Conv2d(in_channels[i], num_anchors[i] * num_classes,
                               kernel_size=1, padding=0))
             else:
@@ -124,6 +128,11 @@ class SSDHead(AnchorHead):
         self.use_sigmoid_cls = False
         self.cls_focal_loss = False
         self.fp16_enabled = False
+        self.loss_balancing = loss_balancing
+        if self.loss_balancing:
+            self.loss_weights = torch.nn.Parameter(torch.FloatTensor(2))
+            for i in range(2):
+                self.loss_weights.data[i] = 0.
 
     def init_weights(self):
         for m in self.modules():
@@ -225,4 +234,20 @@ class SSDHead(AnchorHead):
             all_bbox_weights,
             num_total_samples=num_total_pos,
             cfg=cfg)
+
+        if self.loss_balancing:
+            losses_cls, losses_reg = self._balance_losses(losses_cls,
+                                                          losses_bbox)
+
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
+
+    def _balance_losses(self, losses_cls, losses_reg):
+        loss_cls = sum(_loss.mean() for _loss in losses_cls)
+        loss_cls = torch.exp(-self.loss_weights[0])*loss_cls + \
+            0.5*self.loss_weights[0]
+
+        loss_reg = sum(_loss.mean() for _loss in losses_reg)
+        loss_reg = torch.exp(-self.loss_weights[1])*loss_reg + \
+            0.5*self.loss_weights[1]
+
+        return (loss_cls, loss_reg)
