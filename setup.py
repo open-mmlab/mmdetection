@@ -4,14 +4,14 @@ import os
 import platform
 import subprocess
 import time
-from setuptools import Extension, dist, find_packages, setup
-
-import torch
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension
-
-dist.Distribution().fetch_build_eggs(['Cython', 'numpy>=1.11.1'])
 import numpy as np  # noqa: E402, isort:skip
-from Cython.Build import cythonize  # noqa: E402, isort:skip
+from skbuild import setup
+from setuptools import find_packages
+# from setuptools import Extension, dist, find_packages, setup
+# import torch
+# from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+# dist.Distribution().fetch_build_eggs(['Cython', 'numpy>=1.11.1'])
+# from Cython.Build import cythonize  # noqa: E402, isort:skip
 
 
 def readme():
@@ -166,46 +166,6 @@ def native_mb_python_tag(plat_impl=None, version_info=None):
     return mb_tag
 
 
-def make_cuda_ext(name, module, sources):
-
-    define_macros = []
-
-    if torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1':
-        define_macros += [("WITH_CUDA", None)]
-    else:
-        raise EnvironmentError('CUDA is required to compile MMDetection!')
-
-    return CUDAExtension(
-        name='{}.{}'.format(module, name),
-        sources=[os.path.join(*module.split('.'), p) for p in sources],
-        define_macros=define_macros,
-        extra_compile_args={
-            'cxx': [],
-            'nvcc': [
-                '-D__CUDA_NO_HALF_OPERATORS__',
-                '-D__CUDA_NO_HALF_CONVERSIONS__',
-                '-D__CUDA_NO_HALF2_OPERATORS__',
-            ]
-        })
-
-
-def make_cython_ext(name, module, sources):
-    extra_compile_args = None
-    if platform.system() != 'Windows':
-        extra_compile_args = {
-            'cxx': ['-Wno-unused-function', '-Wno-write-strings']
-        }
-
-    extension = Extension(
-        '{}.{}'.format(module, name),
-        [os.path.join(*module.split('.'), p) for p in sources],
-        include_dirs=[np.get_include()],
-        language='c++',
-        extra_compile_args=extra_compile_args)
-    extension, = cythonize(extension)
-    return extension
-
-
 def parse_requirements(fname='requirements.txt', with_version=True):
     """
     Parse the package dependencies listed in a requirements file but strips
@@ -300,7 +260,7 @@ if __name__ == '__main__':
         keywords='computer vision, object detection',
         url='https://github.com/open-mmlab/mmdetection',
         packages=find_packages(exclude=('configs', 'tools', 'demo')),
-        package_data={'mmdet.ops': ['*/*.so']},
+        # package_data={'mmdet.ops': ['*/*.so']},
         classifiers=[
             'Development Status :: 4 - Beta',
             'License :: OSI Approved :: Apache Software License',
@@ -320,58 +280,4 @@ if __name__ == '__main__':
             'build': parse_requirements('requirements/build.txt'),
             'optional': parse_requirements('requirements/optional.txt'),
         },
-        ext_modules=[
-            make_cuda_ext(
-                name='compiling_info',
-                module='mmdet.ops.utils',
-                sources=['src/compiling_info.cpp']),
-            make_cython_ext(
-                name='soft_nms_cpu',
-                module='mmdet.ops.nms',
-                sources=['src/soft_nms_cpu.pyx']),
-            make_cuda_ext(
-                name='nms_cpu',
-                module='mmdet.ops.nms',
-                sources=['src/nms_cpu.cpp']),
-            make_cuda_ext(
-                name='nms_cuda',
-                module='mmdet.ops.nms',
-                sources=['src/nms_cuda.cpp', 'src/nms_kernel.cu']),
-            make_cuda_ext(
-                name='roi_align_cuda',
-                module='mmdet.ops.roi_align',
-                sources=['src/roi_align_cuda.cpp', 'src/roi_align_kernel.cu']),
-            make_cuda_ext(
-                name='roi_pool_cuda',
-                module='mmdet.ops.roi_pool',
-                sources=['src/roi_pool_cuda.cpp', 'src/roi_pool_kernel.cu']),
-            make_cuda_ext(
-                name='deform_conv_cuda',
-                module='mmdet.ops.dcn',
-                sources=[
-                    'src/deform_conv_cuda.cpp',
-                    'src/deform_conv_cuda_kernel.cu'
-                ]),
-            make_cuda_ext(
-                name='deform_pool_cuda',
-                module='mmdet.ops.dcn',
-                sources=[
-                    'src/deform_pool_cuda.cpp',
-                    'src/deform_pool_cuda_kernel.cu'
-                ]),
-            make_cuda_ext(
-                name='sigmoid_focal_loss_cuda',
-                module='mmdet.ops.sigmoid_focal_loss',
-                sources=[
-                    'src/sigmoid_focal_loss.cpp',
-                    'src/sigmoid_focal_loss_cuda.cu'
-                ]),
-            make_cuda_ext(
-                name='masked_conv2d_cuda',
-                module='mmdet.ops.masked_conv',
-                sources=[
-                    'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
-                ]),
-        ],
-        cmdclass={'build_ext': BuildExtension},
-        zip_safe=False)
+        )

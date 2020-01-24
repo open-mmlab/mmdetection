@@ -1,0 +1,4 @@
+[build-system]
+requires = ["setuptools>=41.0.1", "wheel", "torch", "numpy", "cmake", "cython", "ninja", "cffi"]
+# build-backend = "setuptools.build_meta"  commented out to disable pep517
+### build-backend = "scikit-build"
