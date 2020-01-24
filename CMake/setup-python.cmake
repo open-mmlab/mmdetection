@@ -44,8 +44,8 @@ endfunction()
 # Find current python major version user option
 #
 
-find_package(PythonInterp REQUIRED 3)
-find_package(PythonLibs REQUIRED 3)
+find_package(PythonInterp REQUIRED)
+find_package(PythonLibs REQUIRED)
 include_directories(SYSTEM ${PYTHON_INCLUDE_DIR})
 
 

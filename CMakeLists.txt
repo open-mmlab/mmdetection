@@ -25,10 +25,6 @@ if (USE_CUDA)
 endif()
 
 
-FIND_PACKAGE( pybind11 REQUIRED )
-message(STATUS "pybind11_FOUND = ${pybind11_FOUND}")
-message(STATUS "CMAKE_MODULE_PATH = ${CMAKE_MODULE_PATH}")
-
 # Setup basic python stuff and ensure we have skbuild
 list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_SOURCE_DIR}/CMake")
 include( setup-python )
@@ -60,6 +56,11 @@ find_package(Cython REQUIRED)
 find_package(NumPy REQUIRED)
 find_package(Torch REQUIRED)
 
+# sudo apt install pybind11-dev
+#FIND_PACKAGE( pybind11 CONFIG REQUIRED )
+#message(STATUS "pybind11_FOUND = ${pybind11_FOUND}")
+#message(STATUS "CMAKE_MODULE_PATH = ${CMAKE_MODULE_PATH}")
+#message(STATUS "pybind11_DIR = ${pybind11_DIR}")
 
 
 function(make_cython_ext module_name dpath rel_sources)
@@ -123,23 +124,25 @@ function(make_cuda_ext module_name dpath rel_sources )
   #message(STATUS "rel_sources = ${rel_sources}")
   #message(STATUS "sources = ${sources}")
 
-  #add_library(${module_name} MODULE ${sources})
-  pybind11_add_module(${module_name} MODULE ${sources})
+  add_library(${module_name} MODULE ${sources})
+  #pybind11_add_module(${module_name} MODULE ${sources})
 
   # Ensure the library is output in the specified directory
   set_target_properties(${module_name} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${dpath})
 
   target_include_directories(${module_name} PUBLIC
-    ${NumPy_INCLUDE_DIRS}
-    ${PYTHON_INCLUDE_DIRS}
     ${TORCH_INCLUDE_DIRS}
-    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    #${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+    #${NumPy_INCLUDE_DIRS}
+    #${PYTHON_INCLUDE_DIRS}
+    #${CMAKE_CURRENT_SOURCE_DIR}
   )
   target_link_libraries(${module_name} ${CUDA_LIBRARIES} ${TORCH_LIBRARIES})
   # ${PYTHON_LIBRARIES}
 
   target_compile_definitions(${module_name}
+    PUBLIC "TORCH_EXTENSION_NAME=${module_name}"  # Extremely important. Causes dynamic module does not define module export function otherwise
+    PUBLIC "WITH_CUDA=1"
     PUBLIC "__CUDA_NO_HALF_OPERATORS__"
     PUBLIC "__CUDA_NO_HALF_CONVERSIONS__"
     PUBLIC "__CUDA_NO_HALF2_OPERATORS__"
@@ -153,9 +156,8 @@ function(make_cuda_ext module_name dpath rel_sources )
   set_target_properties(${module_name} PROPERTIES CXX_VISIBILITY_PRESET "hidden")
   set_target_properties(${module_name} PROPERTIES CUDA_VISIBILITY_PRESET "hidden")
 
-
   # Transform the C++ library into an importable python module
-  #python_extension_module(${module_name})
+  python_extension_module(${module_name})
 
   # Install the C++ module to the correct relative location
   # (this will be an inplace build if you use `pip install -e`)
