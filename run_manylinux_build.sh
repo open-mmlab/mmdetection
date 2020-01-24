@@ -140,6 +140,11 @@ else
     chmod -R o+rw wheelhouse
     chmod -R o+rw $NAME.egg-info
 
-    python -c "import mmdet.ops" 
+    __debug__="""
+
+    python -c 'import mmdet.ops' 
+    cd /io/wheelhouse
+
+    """
 fi
 
