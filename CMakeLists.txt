@@ -70,17 +70,9 @@ function(make_cython_ext module_name dpath rel_sources)
     list(APPEND cython_sources "${dpath}/${src}")
   endforeach()
 
-  #message(STATUS "module_name = ${module_name}")
-  #message(STATUS "dpath = ${dpath}")
-  #message(STATUS "rel_sources = ${rel_sources}")
-  #message(STATUS "cython_sources = ${cython_sources}")
-
   # hack: make a cmake lists so scikit-build doesn't complain
-  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${dpath}")
   file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${dpath}/src")
-  file(TOUCH "${dpath}/CMakeLists.txt")
   file(TOUCH "${dpath}/src/CMakeLists.txt")
-  add_subdirectory(${dpath})
   add_subdirectory(${dpath}/src)
 
   # Translate Cython into C/C++
@@ -93,10 +85,9 @@ function(make_cython_ext module_name dpath rel_sources)
     ${module_name}
     PUBLIC
       ${NumPy_INCLUDE_DIRS}
-      ${PYTHON_INCLUDE_DIRS}
+      #${PYTHON_INCLUDE_DIRS}
   )
   #target_link_libraries(${module_name} ${PYTHON_LIBRARIES})
-  #target_link_libraries(${module_name})
   #${PYTHON_LIBRARIES})
   target_compile_options(${module_name} PUBLIC "-Wno-unused-function" "-Wno-write-strings")
   target_compile_definitions(${module_name} PUBLIC "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION")
@@ -118,11 +109,6 @@ function(make_cuda_ext module_name dpath rel_sources )
   foreach(src IN LISTS rel_sources)
     list(APPEND sources "${dpath}/${src}")
   endforeach()
-
-  #message(STATUS "module_name = ${module_name}")
-  #message(STATUS "dpath = ${dpath}")
-  #message(STATUS "rel_sources = ${rel_sources}")
-  #message(STATUS "sources = ${sources}")
 
   add_library(${module_name} MODULE ${sources})
   #pybind11_add_module(${module_name} MODULE ${sources})
@@ -152,12 +138,12 @@ function(make_cuda_ext module_name dpath rel_sources )
 
   # Required for pybind11 when building STATIC libraries.
   # It's ON by default with SHARED or MODULE libraries.
-  set_target_properties(${module_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  set_target_properties(${module_name} PROPERTIES CXX_VISIBILITY_PRESET "hidden")
-  set_target_properties(${module_name} PROPERTIES CUDA_VISIBILITY_PRESET "hidden")
+  #set_target_properties(${module_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  #set_target_properties(${module_name} PROPERTIES CXX_VISIBILITY_PRESET "hidden")
+  #set_target_properties(${module_name} PROPERTIES CUDA_VISIBILITY_PRESET "hidden")
 
   # Transform the C++ library into an importable python module
-  python_extension_module(${module_name})
+  #python_extension_module(${module_name})
 
   # Install the C++ module to the correct relative location
   # (this will be an inplace build if you use `pip install -e`)
