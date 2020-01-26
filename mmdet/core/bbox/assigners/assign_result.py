@@ -1,8 +1,8 @@
 import torch
-import ubelt as ub
+from mmdet.utils import util_mixins
 
 
-class AssignResult(ub.NiceRepr):
+class AssignResult(util_mixins.NiceRepr):
     """
     Stores assignments between predicted and truth boxes.
 
@@ -108,7 +108,7 @@ class AssignResult(ub.NiceRepr):
         Example:
             >>> from mmdet.core.bbox.assigners.assign_result import *  # NOQA
             >>> self = AssignResult.random()
-            >>> print('{}'.format(ub.repr2(self.info, nl=1)))
+            >>> print(self.info)
         """
         from mmdet.core.bbox import demodata
         rng = demodata.ensure_rng(kwargs.get('rng', None))

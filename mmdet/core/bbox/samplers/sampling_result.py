@@ -1,9 +1,10 @@
 import torch
-import ubelt as ub
+from mmdet.utils import util_mixins
 
 
-class SamplingResult(ub.NiceRepr):
+class SamplingResult(util_mixins.NiceRepr):
     """
+    xdoctest  ~/code/mmdetection/mmdet/core/bbox/samplers/sampling_result.py SamplingResult
 
     Example:
         >>> # xdoctest: +IGNORE_WANT
@@ -11,15 +12,14 @@ class SamplingResult(ub.NiceRepr):
         >>> self = SamplingResult.random(rng=10)
         >>> print('self = {}'.format(self))
         self = <SamplingResult({
-            'neg_bboxes': (12, 4),
+            'neg_bboxes': torch.Size([12, 4]),
             'neg_inds': tensor([ 0,  1,  2,  4,  5,  6,  7,  8,  9, 10, 11, 12]),
             'num_gts': 4,
             'pos_assigned_gt_inds': tensor([], dtype=torch.int64),
-            'pos_bboxes': (0, 4),
+            'pos_bboxes': torch.Size([0, 4]),
             'pos_inds': tensor([], dtype=torch.int64),
-            'pos_is_gt': tensor([], dtype=torch.uint8),
+            'pos_is_gt': tensor([], dtype=torch.uint8)
         })>
-
     """
 
     def __init__(self, pos_inds, neg_inds, bboxes, gt_bboxes, assign_result,
@@ -72,7 +72,9 @@ class SamplingResult(ub.NiceRepr):
         data = self.info.copy()
         data['pos_bboxes'] = data.pop('pos_bboxes').shape
         data['neg_bboxes'] = data.pop('neg_bboxes').shape
-        return ub.repr2(data, nl=1)
+        parts = ['\'{}\': {!r}'.format(k, v) for k, v in sorted(data.items())]
+        body = '    ' + ',\n    '.join(parts)
+        return '{\n' + body + '\n}'
 
     @property
     def info(self):
@@ -110,7 +112,7 @@ class SamplingResult(ub.NiceRepr):
         Example:
             >>> from mmdet.core.bbox.samplers.sampling_result import *  # NOQA
             >>> self = SamplingResult.random()
-            >>> print('{}'.format(ub.repr2(self.__dict__, nl=1)))
+            >>> print(self.__dict__)
         """
         from mmdet.core.bbox.samplers.random_sampler import RandomSampler
         from mmdet.core.bbox.assigners.assign_result import AssignResult
