@@ -4,8 +4,6 @@ from mmdet.utils import util_mixins
 
 class SamplingResult(util_mixins.NiceRepr):
     """
-    xdoctest  ~/code/mmdetection/mmdet/core/bbox/samplers/sampling_result.py SamplingResult
-
     Example:
         >>> # xdoctest: +IGNORE_WANT
         >>> from mmdet.core.bbox.samplers.sampling_result import *  # NOQA
