@@ -12,11 +12,12 @@ class RandomSampler(BaseSampler):
                  neg_pos_ub=-1,
                  add_gt_as_proposals=True,
                  **kwargs):
+        from mmdet.core.bbox import demodata
         super(RandomSampler, self).__init__(num, pos_fraction, neg_pos_ub,
                                             add_gt_as_proposals)
+        self.rng = demodata.ensure_rng(kwargs.get('rng', None))
 
-    @staticmethod
-    def random_choice(gallery, num):
+    def random_choice(self, gallery, num):
         """Random select some elements from the gallery.
 
         It seems that Pytorch's implementation is slower than numpy so we use
@@ -26,7 +27,7 @@ class RandomSampler(BaseSampler):
         if isinstance(gallery, list):
             gallery = np.array(gallery)
         cands = np.arange(len(gallery))
-        np.random.shuffle(cands)
+        self.rng.shuffle(cands)
         rand_inds = cands[:num]
         if not isinstance(gallery, np.ndarray):
             rand_inds = torch.from_numpy(rand_inds).long().to(gallery.device)
