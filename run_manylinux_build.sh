@@ -53,6 +53,217 @@ VERSION = $VERSION
 NAME = $NAME
 "
 
+
+fname_with_sha256() {
+    HASH=$(sha256sum $1 | cut -c1-8)
+    DIRNAME=$(dirname $1)
+    BASENAME=$(basename $1)
+    if [[ $BASENAME == "libnvrtc-builtins.so" ]]; then
+        echo $1
+    else
+        INITNAME=$(echo $BASENAME | cut -f1 -d".")
+        ENDNAME=$(echo $BASENAME | cut -f 2- -d".")
+        echo "$DIRNAME/$INITNAME-$HASH.$ENDNAME"
+    fi
+}
+
+make_wheel_record() {
+    __heredoc__="""
+    make_wheel_record 
+    """
+    FPATH=$1
+    if echo $FPATH | grep RECORD >/dev/null 2>&1; then
+        # if the RECORD file, then
+        echo "$FPATH,,"
+    else
+        HASH=$(openssl dgst -sha256 -binary $FPATH | openssl base64 | sed -e 's/+/-/g' | sed -e 's/\//_/g' | sed -e 's/=//g')
+        FSIZE=$(ls -nl $FPATH | awk '{print $5}')
+        echo "$FPATH,sha256=$HASH,$FSIZE"
+    fi
+}
+
+
+
+
+custom_repair_wheel(){
+    __heredoc__="""
+    See:
+        https://github.com/pytorch/builder/blob/2d91d533eccbe0d859cfe38a9d508fe065f47534/manywheel/build_common.sh#L226
+
+    Ignore:
+        pkg=/io/dist/mmdet-1.0rc1+c73c7e0-cp37-cp37m-linux_x86_64.whl
+    """
+    pkg=$1   # WHEEL FILEPATH
+
+    # Create temporary work dir
+    mkdir -p tmp
+    cd tmp
+    cp $pkg .
+
+    # Unpack the wheel
+    unzip -q $(basename $pkg)
+    rm -f $(basename $pkg)
+    
+    PREFIX=mmdet
+    mkdir -p $PREFIX/lib
+
+    export PATCHELF_BIN=/usr/local/bin/patchelf
+    patchelf_version=`$PATCHELF_BIN --version`
+    echo "patchelf version: " $patchelf_version
+    if [[ "$patchelf_version" == "patchelf 0.9" ]]; then
+        echo "Your patchelf version is too old. Please use version >= 0.10."
+        exit 1
+    fi
+        
+
+    echo $CUDA_VERSION_SHORT
+
+    OS_NAME=`awk -F= '/^NAME/{print $2}' /etc/os-release`
+    if [[ "$OS_NAME" == *"CentOS Linux"* ]]; then
+        LIBGOMP_PATH="/usr/lib64/libgomp.so.1"
+    elif [[ "$OS_NAME" == *"Ubuntu"* ]]; then
+        LIBGOMP_PATH="/usr/lib/x86_64-linux-gnu/libgomp.so.1"
+    fi
+
+    if [[ $CUDA_VERSION_SHORT == "9.0" ]]; then
+    DEPS_LIST=(
+        "/usr/local/cuda/lib64/libcudart.so.9.0"
+        "/usr/local/cuda/lib64/libnvToolsExt.so.1"
+        "/usr/local/cuda/lib64/libnvrtc.so.9.0"
+        "/usr/local/cuda/lib64/libnvrtc-builtins.so"
+        "$LIBGOMP_PATH"
+    )
+    DEPS_SONAME=(
+        "libcudart.so.9.0"
+        "libnvToolsExt.so.1"
+        "libnvrtc.so.9.0"
+        "libnvrtc-builtins.so"
+        "libgomp.so.1"
+    )
+    elif [[ $CUDA_VERSION_SHORT == "9.2" ]]; then
+    DEPS_LIST=(
+        "/usr/local/cuda/lib64/libcudart.so.9.2"
+        "/usr/local/cuda/lib64/libnvToolsExt.so.1"
+        "/usr/local/cuda/lib64/libnvrtc.so.9.2"
+        "/usr/local/cuda/lib64/libnvrtc-builtins.so"
+        "$LIBGOMP_PATH"
+    )
+
+    DEPS_SONAME=(
+        "libcudart.so.9.2"
+        "libnvToolsExt.so.1"
+        "libnvrtc.so.9.2"
+        "libnvrtc-builtins.so"
+        "libgomp.so.1"
+    )
+    elif [[ $CUDA_VERSION_SHORT == "10.0" ]]; then
+    DEPS_LIST=(
+        "/usr/local/cuda/lib64/libcudart.so.10.0"
+        "/usr/local/cuda/lib64/libnvToolsExt.so.1"
+        "/usr/local/cuda/lib64/libnvrtc.so.10.0"
+        "/usr/local/cuda/lib64/libnvrtc-builtins.so"
+        "$LIBGOMP_PATH"
+    )
+
+    DEPS_SONAME=(
+        "libcudart.so.10.0"
+        "libnvToolsExt.so.1"
+        "libnvrtc.so.10.0"
+        "libnvrtc-builtins.so"
+        "libgomp.so.1"
+    )
+    elif [[ $CUDA_VERSION_SHORT == "10.1" ]]; then
+    DEPS_LIST=(
+        "/usr/local/cuda/lib64/libcudart.so.10.1"
+        "/usr/local/cuda/lib64/libnvToolsExt.so.1"
+        "/usr/local/cuda/lib64/libnvrtc.so.10.1"
+        "/usr/local/cuda/lib64/libnvrtc-builtins.so"
+        "$LIBGOMP_PATH"
+    )
+    DEPS_SONAME=(
+        "libcudart.so.10.1"
+        "libnvToolsExt.so.1"
+        "libnvrtc.so.10.1"
+        "libnvrtc-builtins.so"
+        "libgomp.so.1"
+    )
+    else
+        echo "Unknown cuda version $CUDA_VERSION_SHORT"
+        exit 1
+    fi
+
+    if [[ $pkg != *"without-deps"* ]]; then
+        # copy over needed dependent .so files over and tag them with their hash
+        patched=()
+        for filepath in "${DEPS_LIST[@]}"; do
+            filename=$(basename $filepath)
+            destpath=$PREFIX/lib/$filename
+            if [[ "$filepath" != "$destpath" ]]; then
+                cp -v $filepath $destpath
+            fi
+
+            patchedpath=$(fname_with_sha256 $destpath)
+            patchedname=$(basename $patchedpath)
+            if [[ "$destpath" != "$patchedpath" ]]; then
+                mv $destpath $patchedpath
+            fi
+            patched+=("$patchedname")
+            echo "Copied $filepath to $patchedpath"
+        done
+
+        echo "patching to fix the so names to the hashed names"
+        for ((i=0;i<${#DEPS_LIST[@]};++i)); do
+            find $PREFIX -name '*.so*' | while read sofile; do
+                origname=${DEPS_SONAME[i]}
+                patchedname=${patched[i]}
+                if [[ "$origname" != "$patchedname" ]]; then
+                    set +e
+                    $PATCHELF_BIN --print-needed $sofile | grep $origname 2>&1 >/dev/null
+                    ERRCODE=$?
+                    set -e
+                    if [ "$ERRCODE" -eq "0" ]; then
+                        echo "patching $sofile entry $origname to $patchedname"
+                        $PATCHELF_BIN --replace-needed $origname $patchedname $sofile
+                    fi
+                fi
+            done
+        done
+    fi
+    
+    # set RPATH of _C.so and similar to $ORIGIN, $ORIGIN/lib
+    find $PREFIX -maxdepth 1 -type f -name "*.so*" | while read sofile; do
+        echo "Setting rpath of $sofile to " '$ORIGIN:$ORIGIN/lib'
+        $PATCHELF_BIN --set-rpath '$ORIGIN:$ORIGIN/lib' $sofile
+        $PATCHELF_BIN --print-rpath $sofile
+    done
+
+    # set RPATH of lib/ files to $ORIGIN
+    find $PREFIX/lib -maxdepth 1 -type f -name "*.so*" | while read sofile; do
+        echo "Setting rpath of $sofile to " '$ORIGIN'
+        $PATCHELF_BIN --set-rpath '$ORIGIN' $sofile
+        $PATCHELF_BIN --print-rpath $sofile
+    done
+
+    # regenerate the RECORD file with new hashes
+    record_file=`echo $(basename $pkg) | sed -e 's/-cp.*$/.dist-info\/RECORD/g'`
+    if [[ -e $record_file ]]; then
+        echo "Generating new record file $record_file"
+        rm -f $record_file
+        # generate records for folders in wheel
+        find * -type f | while read fname; do
+            echo $(make_wheel_record $fname) >>$record_file
+        done
+    fi
+
+    # zip up the wheel back
+    zip -rq $(basename $pkg) $PREIX*
+
+    mkdir -p ../custom_wheelhouse
+    mv $(basename $pkg) ../custom_wheelhouse/$(basename $pkg)
+    cd ..
+    rm -rf tmp
+}
+
 if [ "$_INSIDE_DOCKER" != "YES" ]; then
 
     set -e
@@ -85,6 +296,8 @@ else
     #set -x
     #set -e
 
+    yum install mod_ssl zip -y
+
     VENV_DIR=/root/venv-$MB_PYTHON_TAG
     # Setup a virtual environment for the target python version
     /opt/python/$MB_PYTHON_TAG/bin/python -m pip install pip -U
@@ -110,7 +323,8 @@ else
     "
     
     #TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
-    TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5"
+    #TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5"
+    TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0;7.5"
     TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
     #export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH
     echo "
@@ -138,8 +352,11 @@ else
     TORCH_DPATH=$(python -c "import os; import torch; print(os.path.dirname(torch.__file__))")
     export LD_LIBRARY_PATH="$TORCH_DPATH/lib:$LD_LIBRARY_PATH"
 
+    custom_repair_wheel dist/$NAME-*$MB_PYTHON_TAG*.whl
+
     /opt/python/cp37-cp37m/bin/python -m pip install auditwheel
     /opt/python/cp37-cp37m/bin/python -m auditwheel show dist/$NAME-*$MB_PYTHON_TAG*.whl
+    /opt/python/cp37-cp37m/bin/python -m auditwheel show custom_wheelhouse/$NAME-*$MB_PYTHON_TAG*.whl
     /opt/python/cp37-cp37m/bin/python -m auditwheel repair --plat=manylinux2014_x86_64 dist/$NAME-*$MB_PYTHON_TAG*.whl 
 
     #/opt/python/cp37-cp37m/bin/python -m auditwheel show dist/$NAME-$VERSION-$MB_PYTHON_TAG*.whl

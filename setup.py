@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-import platform
+# import platform
 import subprocess
 import time
-import numpy as np  # noqa: E402, isort:skip
+# import numpy as np  # noqa: E402, isort:skip
 from skbuild import setup
 from setuptools import find_packages
 # from setuptools import Extension, dist, find_packages, setup
@@ -266,7 +266,6 @@ if __name__ == '__main__':
             'License :: OSI Approved :: Apache Software License',
             'Operating System :: OS Independent',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
         ],
@@ -280,4 +279,4 @@ if __name__ == '__main__':
             'build': parse_requirements('requirements/build.txt'),
             'optional': parse_requirements('requirements/optional.txt'),
         },
-        )
+    )
