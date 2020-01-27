@@ -233,3 +233,17 @@ def test_ohem_sampler_empty_pred():
 
     assert len(sample_result.pos_bboxes) == len(sample_result.pos_inds)
     assert len(sample_result.neg_bboxes) == len(sample_result.neg_inds)
+
+
+def test_random_sample_result():
+    from mmdet.core.bbox.samplers.sampling_result import SamplingResult
+    SamplingResult.random(num_gts=0, num_preds=0)
+    SamplingResult.random(num_gts=0, num_preds=3)
+    SamplingResult.random(num_gts=3, num_preds=3)
+    SamplingResult.random(num_gts=0, num_preds=3)
+    SamplingResult.random(num_gts=7, num_preds=7)
+    SamplingResult.random(num_gts=7, num_preds=64)
+    SamplingResult.random(num_gts=24, num_preds=3)
+
+    for i in range(3):
+        SamplingResult.random(rng=i)
