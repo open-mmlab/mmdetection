@@ -143,7 +143,7 @@ function(make_cuda_ext module_name dpath rel_sources )
   #set_target_properties(${module_name} PROPERTIES CUDA_VISIBILITY_PRESET "hidden")
 
   # Transform the C++ library into an importable python module
-  #python_extension_module(${module_name})
+  python_extension_module(${module_name})
 
   # Install the C++ module to the correct relative location
   # (this will be an inplace build if you use `pip install -e`)

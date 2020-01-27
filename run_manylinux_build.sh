@@ -86,15 +86,15 @@ else
     #set -e
 
     VENV_DIR=/root/venv-$MB_PYTHON_TAG
-
     # Setup a virtual environment for the target python version
-    /opt/python/$MB_PYTHON_TAG/bin/python -m pip install pip
-    /opt/python/$MB_PYTHON_TAG/bin/python -m pip install setuptools pip virtualenv cmake wheel
+    /opt/python/$MB_PYTHON_TAG/bin/python -m pip install pip -U
+    /opt/python/$MB_PYTHON_TAG/bin/python -m pip install virtualenv
     /opt/python/$MB_PYTHON_TAG/bin/python -m virtualenv $VENV_DIR
 
     source $VENV_DIR/bin/activate 
 
     cd /io
+    pip pip -U
     pip install scikit-build
     pip install cmake
     pip install ninja
@@ -112,7 +112,7 @@ else
     #TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
     TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5"
     TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
-    export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH
+    #export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH
     echo "
     TORCH_CUDA_ARCH_LIST = $TORCH_CUDA_ARCH_LIST
     TORCH_NVCC_FLAGS = $TORCH_NVCC_FLAGS
@@ -135,6 +135,9 @@ else
     # mentions that: "auditwheel repair doesnt work correctly and is buggy"
     # perhaps we should look into that?
 
+    TORCH_DPATH=$(python -c "import os; import torch; print(os.path.dirname(torch.__file__))")
+    export LD_LIBRARY_PATH="$TORCH_DPATH/lib:$LD_LIBRARY_PATH"
+
     /opt/python/cp37-cp37m/bin/python -m pip install auditwheel
     /opt/python/cp37-cp37m/bin/python -m auditwheel show dist/$NAME-*$MB_PYTHON_TAG*.whl
     /opt/python/cp37-cp37m/bin/python -m auditwheel repair --plat=manylinux2014_x86_64 dist/$NAME-*$MB_PYTHON_TAG*.whl 
@@ -148,6 +151,23 @@ else
 
     python -c 'import mmdet.ops' 
     cd /io/wheelhouse
+
+    pip install -r /io/requirements.txt
+
+    pip install mmdet.*.whl
+
+    cd /io/_skbuild/linux-x86_64-3.7/cmake-install/mmdet/ops/nms
+    python -c 'import torch; import nms_cuda' 
+
+    python -c 'import mmdet.ops' 
+    python -c 'import soft_nms_cpu' 
+
+    find . -iname 'lib*.so' -delete
+
+    conda create -n test37 python=3.7
+
+    find /usr/local/ -iname 'libc10*'
+    find $TORCH_DPATH -iname 'libc10*'
 
     """
 fi
