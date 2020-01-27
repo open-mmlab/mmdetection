@@ -2,3 +2,5 @@
 cython
 numpy
 torch>=1.1
+cmake
+scikit-build

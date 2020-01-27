@@ -95,6 +95,9 @@ else
     source $VENV_DIR/bin/activate 
 
     cd /io
+    pip install scikit-build
+    pip install cmake
+    pip install ninja
     pip install -r requirements/build.txt
 
     CUDA_VERSION=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev) # 10.1.243
@@ -115,6 +118,7 @@ else
     TORCH_NVCC_FLAGS = $TORCH_NVCC_FLAGS
     LD_LIBRARY_PATH = $LD_LIBRARY_PATH
     "
+
     python setup.py bdist_wheel
 
     # note that pip install of the unpatched wheel in this environment works
