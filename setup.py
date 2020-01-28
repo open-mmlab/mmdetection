@@ -333,6 +333,7 @@ if __name__ == '__main__':
             '-DCUDA_NVCC_FLAGS="{}"'.format(' '.join(nvcc_flags))
         ]
     }
+    print('compile_setup_kw = {!r}'.format(compile_setup_kw))
 
     write_version_py()
     setup(
