@@ -31,7 +31,7 @@ install:
 before_script:
   - flake8 .
   - isort -rc --check-only --diff mmdet/ tools/ tests/
-  - yapf -r -d --style .style.yapf mmdet/ tools/ tests/
+  - yapf -r -d --style .style.yapf mmdet/ tools/ tests/ configs/
 
 script:
   - python setup.py check -m -s
