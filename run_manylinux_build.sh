@@ -34,12 +34,17 @@ notes:
         https://github.com/pytorch/builder/blob/master/manywheel/Dockerfile_101 
 
         https://discuss.python.org/t/the-next-manylinux-specification/1043
+
+    cd ~/code/mmdetection/docker
+    docker build --build-arg BASE_IMAGE=pytorch/manylinux-cuda101 -t mmdet/manylinux-cuda101 -f Dockerfile_base .
+    docker build --build-arg BASE_IMAGE=pytorch/manylinux-cuda92 -t mmdet/manylinux-cuda92 .
+
 """
 
 
 #DOCKER_IMAGE=${DOCKER_IMAGE:="quay.io/pypa/manylinux2010_x86_64:latest"}
 #DOCKER_IMAGE=${DOCKER_IMAGE:="soumith/manylinux-cuda101:latest"}
-DOCKER_IMAGE=${DOCKER_IMAGE:="pytorch/manylinux-cuda101"}
+DOCKER_IMAGE=${DOCKER_IMAGE:="mmdet/manylinux-cuda101"}
 
 # Valid multibuild python versions are:
 # cp27-cp27m  cp27-cp27mu  cp34-cp34m  cp35-cp35m  cp36-cp36m  cp37-cp37m, cp38-cp38m

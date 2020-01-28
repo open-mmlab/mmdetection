@@ -1,18 +1,18 @@
 # cd ~/code/mmdetection/docker
-# docker build --build-arg BASE_IMAGE=pytorch/manylinux-cuda101 -t mmdet/manylinux-cuda101 .
+# docker build --build-arg BASE_IMAGE=pytorch/manylinux-cuda101 -t mmdet/manylinux-cuda101 -f Dockerfile_base .
 
 ARG BASE_IMAGE
 
 FROM $BASE_IMAGE
 
 
-yum install mod_ssl zip -y
+RUN yum install mod_ssl zip -y
 
 
 # Setup a virtual environment for the target python version
-/opt/python/cp37-cp37m/bin/python -m pip install pip -U
-/opt/python/cp37-cp37m/bin/python -m pip install virtualenv
-/opt/python/cp37-cp37m/bin/python -m pip install scikit-build
-/opt/python/cp37-cp37m/bin/python -m pip install cmake
-/opt/python/cp37-cp37m/bin/python -m pip install ninja
-/opt/python/cp37-cp37m/bin/python -m pip install torch numpy Cython
+RUN /opt/python/cp37-cp37m/bin/python -m pip install pip -U && \
+    /opt/python/cp37-cp37m/bin/python -m pip install virtualenv && \
+    /opt/python/cp37-cp37m/bin/python -m pip install scikit-build && \
+    /opt/python/cp37-cp37m/bin/python -m pip install cmake && \
+    /opt/python/cp37-cp37m/bin/python -m pip install ninja && \
+    /opt/python/cp37-cp37m/bin/python -m pip install torch numpy Cython
