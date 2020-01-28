@@ -330,7 +330,7 @@ if __name__ == '__main__':
     nvcc_flags += _get_cuda_arch_flags()
     compile_setup_kw = {
         'cmake_args': [
-            '-DNVCC_FLAGS="{}"'.format(' '.join(nvcc_flags))
+            '-DCUDA_NVCC_FLAGS="{}"'.format(' '.join(nvcc_flags))
         ]
     }
 

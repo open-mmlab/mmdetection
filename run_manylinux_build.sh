@@ -162,65 +162,33 @@ custom_repair_wheel(){
 
     if [[ $CUDA_VERSION_SHORT == "9.0" ]]; then
         DEPS_LIST=(
-            "/usr/local/cuda/lib64/libcudart.so.9.0"
-            "/usr/local/cuda/lib64/libnvToolsExt.so.1"
-            "/usr/local/cuda/lib64/libnvrtc.so.9.0"
-            "/usr/local/cuda/lib64/libnvrtc-builtins.so"
-            "$LIBGOMP_PATH" 
+            "/usr/local/cuda/lib64/libcudart.so.9.0" "/usr/local/cuda/lib64/libnvToolsExt.so.1" "/usr/local/cuda/lib64/libnvrtc.so.9.0" "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH" 
         )
         DEPS_SONAME=(
-            "libcudart.so.9.0"
-            "libnvToolsExt.so.1"
-            "libnvrtc.so.9.0"
-            "libnvrtc-builtins.so"
-            "libgomp.so.1"
+            "libcudart.so.9.0" "libnvToolsExt.so.1" "libnvrtc.so.9.0" "libnvrtc-builtins.so" "libgomp.so.1"
         )
     elif [[ $CUDA_VERSION_SHORT == "9.2" ]]; then
         DEPS_LIST=(
-            "/usr/local/cuda/lib64/libcudart.so.9.2"
-            "/usr/local/cuda/lib64/libnvToolsExt.so.1"
-            "/usr/local/cuda/lib64/libnvrtc.so.9.2"
-            "/usr/local/cuda/lib64/libnvrtc-builtins.so"
-            "$LIBGOMP_PATH"
+            "/usr/local/cuda/lib64/libcudart.so.9.2" "/usr/local/cuda/lib64/libnvToolsExt.so.1" "/usr/local/cuda/lib64/libnvrtc.so.9.2" "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH"
         )
 
         DEPS_SONAME=(
-            "libcudart.so.9.2"
-            "libnvToolsExt.so.1"
-            "libnvrtc.so.9.2"
-            "libnvrtc-builtins.so"
-            "libgomp.so.1"
+            "libcudart.so.9.2" "libnvToolsExt.so.1" "libnvrtc.so.9.2" "libnvrtc-builtins.so" "libgomp.so.1"
         )
     elif [[ $CUDA_VERSION_SHORT == "10.0" ]]; then
         DEPS_LIST=(
-            "/usr/local/cuda/lib64/libcudart.so.10.0"
-            "/usr/local/cuda/lib64/libnvToolsExt.so.1"
-            "/usr/local/cuda/lib64/libnvrtc.so.10.0"
-            "/usr/local/cuda/lib64/libnvrtc-builtins.so"
-            "$LIBGOMP_PATH"
+            "/usr/local/cuda/lib64/libcudart.so.10.0" "/usr/local/cuda/lib64/libnvToolsExt.so.1" "/usr/local/cuda/lib64/libnvrtc.so.10.0" "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH"
         )
 
         DEPS_SONAME=(
-            "libcudart.so.10.0"
-            "libnvToolsExt.so.1"
-            "libnvrtc.so.10.0"
-            "libnvrtc-builtins.so"
-            "libgomp.so.1"
+            "libcudart.so.10.0" "libnvToolsExt.so.1" "libnvrtc.so.10.0" "libnvrtc-builtins.so" "libgomp.so.1"
         )
     elif [[ $CUDA_VERSION_SHORT == "10.1" ]]; then
         DEPS_LIST=(
-            "/usr/local/cuda/lib64/libcudart.so.10.1"
-            "/usr/local/cuda/lib64/libnvToolsExt.so.1"
-            "/usr/local/cuda/lib64/libnvrtc.so.10.1"
-            "/usr/local/cuda/lib64/libnvrtc-builtins.so"
-            "$LIBGOMP_PATH"
+            "/usr/local/cuda/lib64/libcudart.so.10.1" "/usr/local/cuda/lib64/libnvToolsExt.so.1" "/usr/local/cuda/lib64/libnvrtc.so.10.1" "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH"
         )
         DEPS_SONAME=(
-            "libcudart.so.10.1"
-            "libnvToolsExt.so.1"
-            "libnvrtc.so.10.1"
-            "libnvrtc-builtins.so"
-            "libgomp.so.1"
+            "libcudart.so.10.1" "libnvToolsExt.so.1" "libnvrtc.so.10.1" "libnvrtc-builtins.so" "libgomp.so.1"
         )
     else
         echo "Unknown cuda version $CUDA_VERSION_SHORT"
