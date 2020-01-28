@@ -40,9 +40,11 @@ cd mmdetection
 ```
 
 d. Install build requirements and then install mmdetection.
+(We install pycocotools via the github repo instead of pypi because the pypi version is old and not compatible with the latest numpy.)
 
 ```shell
 pip install -r requirements/build.txt
+pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 pip install -v -e .  # or "python setup.py develop"
 ```
 
@@ -102,7 +104,7 @@ mv train/*/* train/
 
 ### A from-scratch setup script
 
-Here is a full script for setting up mmdetection with conda and link the dataset path.
+Here is a full script for setting up mmdetection with conda and link the dataset path (supposing that your COCO dataset path is $COCO_ROOT).
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
@@ -112,6 +114,8 @@ conda install -c pytorch pytorch torchvision -y
 conda install cython -y
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
+pip install -r requirements/build.txt
+pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 pip install -v -e .
 
 mkdir data
