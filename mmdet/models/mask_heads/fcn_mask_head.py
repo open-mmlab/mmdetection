@@ -170,14 +170,22 @@ class FCNMaskHead(nn.Module):
                 mask_pred_ = mask_pred[i, label, :, :]
             else:
                 mask_pred_ = mask_pred[i, 0, :, :]
-            im_mask = np.zeros((img_h, img_w), dtype=np.uint8)
 
             bbox_mask = mmcv.imresize(mask_pred_, (w, h))
             bbox_mask = (bbox_mask > rcnn_test_cfg.mask_thr_binary).astype(
                 np.uint8)
-            im_mask[bbox[1]:bbox[1] + h, bbox[0]:bbox[0] + w] = bbox_mask
-            rle = mask_util.encode(
-                np.array(im_mask[:, :, np.newaxis], order='F'))[0]
-            cls_segms[label - 1].append(rle)
+
+            if rcnn_test_cfg.get('crop_mask', False):
+                im_mask = bbox_mask
+            else:
+                im_mask = np.zeros((img_h, img_w), dtype=np.uint8)
+                im_mask[bbox[1]:bbox[1] + h, bbox[0]:bbox[0] + w] = bbox_mask
+
+            if rcnn_test_cfg.get('rle_mask_encode', True):
+                rle = mask_util.encode(
+                    np.array(im_mask[:, :, np.newaxis], order='F'))[0]
+                cls_segms[label - 1].append(rle)
+            else:
+                cls_segms[label - 1].append(im_mask)
 
         return cls_segms
