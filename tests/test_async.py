@@ -9,6 +9,7 @@ import mmcv
 import torch
 
 from mmdet.apis import async_inference_detector, init_detector
+from os.path import abspath, dirname, join
 
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import concurrent
@@ -68,11 +69,19 @@ class AsyncInferenceTestCase(AsyncTestCase):
 
                 pytest.skip("test requires GPU and torch+cuda")
 
-            root_dir = os.path.dirname(os.path.dirname(__name__))
-            model_config = os.path.join(root_dir,
-                                        "configs/mask_rcnn_r50_fpn_1x.py")
+            root_dir = dirname(dirname(abspath(__name__)))
+            model_config = join(root_dir, "configs/mask_rcnn_r50_fpn_1x.py")
             detector = MaskRCNNDetector(model_config)
             await detector.init()
-            img_path = os.path.join(root_dir, "demo/demo.jpg")
+            img_path = join(root_dir, "demo/demo.jpg")
             bboxes, _ = await detector.apredict(img_path)
             self.assertTrue(bboxes)
+
+
+if __name__ == '__main__':
+    """
+    CommandLine:
+        python ~/code/mmdetection/tests/test_async.py
+    """
+    import unittest
+    unittest.main()
