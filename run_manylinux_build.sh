@@ -54,6 +54,39 @@ NAME = $NAME
 "
 
 
+if [ "$_INSIDE_DOCKER" != "YES" ]; then
+
+    set -e
+    docker run --runtime=nvidia --rm \
+        -v $PWD:/io \
+        -e _INSIDE_DOCKER="YES" \
+        -e MB_PYTHON_TAG="$MB_PYTHON_TAG" \
+        -e NAME="$NAME" \
+        -e VERSION="$VERSION" \
+        $DOCKER_IMAGE bash -c 'cd /io && ./run_manylinux_build.sh'
+
+    __interactive__='''
+    # notes for running / debugging interactively 
+
+    docker run --runtime=nvidia --rm \
+        -v $PWD:/io \
+        -e _INSIDE_DOCKER="YES" \
+        -e MB_PYTHON_TAG="$MB_PYTHON_TAG" \
+        -e NAME="$NAME" \
+        -e VERSION="$VERSION" \
+        -it $DOCKER_IMAGE bash
+
+    set +e
+    set +x
+    '''
+
+    BDIST_WHEEL_PATH=$(ls wheelhouse/$NAME-$VERSION-$MB_PYTHON_TAG*.whl)
+    echo "BDIST_WHEEL_PATH = $BDIST_WHEEL_PATH"
+fi
+    #set -x
+    #set -e
+
+
 fname_with_sha256() {
     HASH=$(sha256sum $1 | cut -c1-8)
     DIRNAME=$(dirname $1)
@@ -81,9 +114,6 @@ make_wheel_record() {
         echo "$FPATH,sha256=$HASH,$FSIZE"
     fi
 }
-
-
-
 
 custom_repair_wheel(){
     __heredoc__="""
@@ -264,38 +294,8 @@ custom_repair_wheel(){
     rm -rf tmp
 }
 
-if [ "$_INSIDE_DOCKER" != "YES" ]; then
 
-    set -e
-    docker run --runtime=nvidia --rm \
-        -v $PWD:/io \
-        -e _INSIDE_DOCKER="YES" \
-        -e MB_PYTHON_TAG="$MB_PYTHON_TAG" \
-        -e NAME="$NAME" \
-        -e VERSION="$VERSION" \
-        $DOCKER_IMAGE bash -c 'cd /io && ./run_manylinux_build.sh'
-
-    __interactive__='''
-    # notes for running / debugging interactively 
-
-    docker run --runtime=nvidia --rm \
-        -v $PWD:/io \
-        -e _INSIDE_DOCKER="YES" \
-        -e MB_PYTHON_TAG="$MB_PYTHON_TAG" \
-        -e NAME="$NAME" \
-        -e VERSION="$VERSION" \
-        -it $DOCKER_IMAGE bash
-
-    set +e
-    set +x
-    '''
-
-    BDIST_WHEEL_PATH=$(ls wheelhouse/$NAME-$VERSION-$MB_PYTHON_TAG*.whl)
-    echo "BDIST_WHEEL_PATH = $BDIST_WHEEL_PATH"
-else
-    #set -x
-    #set -e
-
+if [ "$_INSIDE_DOCKER" == "YES" ]; then
     yum install mod_ssl zip -y
 
     VENV_DIR=/root/venv-$MB_PYTHON_TAG
@@ -322,6 +322,8 @@ else
     CUDNN_VERSION = $CUDNN_VERSION
     "
     
+
+    # https://docs.nvidia.com/deploy/cuda-compatibility/index.html#binary-compatibility
     #TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
     #TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5"
     TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0;7.5"
