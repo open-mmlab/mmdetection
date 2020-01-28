@@ -245,7 +245,7 @@ def parse_requirements(fname='requirements.txt', with_version=True):
     return packages
 
 
-def _get_cuda_arch_flags(cflags=None):
+def _get_cuda_arch_flags(cflags=None, arch_list=None):
     '''
     Determine CUDA arch flags to use.
     For an arch, say "6.1", the added compile flag will be
@@ -286,7 +286,9 @@ def _get_cuda_arch_flags(cflags=None):
     # First check for an env var (same as used by the main setup.py)
     # Can be one or more architectures, e.g. "6.1" or "3.5;5.2;6.0;6.1;7.0+PTX"
     # See cmake/Modules_CUDA_fix/upstream/FindCUDA/select_compute_arch.cmake
-    arch_list = os.environ.get('TORCH_CUDA_ARCH_LIST', None)
+    if arch_list is None:
+        arch_list = os.environ.get('TORCH_CUDA_ARCH_LIST', None)
+    print('arch_list = {!r}'.format(arch_list))
 
     # If not given, determine what's needed for the GPU that can be found
     if not arch_list:
@@ -320,12 +322,12 @@ VERSION = parse_version(version_file)
 
 if __name__ == '__main__':
     nvcc_flags = [
-        '-Xfatbin'
-        '-compress-all'
+        '-Xfatbin',
+        '-compress-all',
         '-D__CUDA_NO_HALF_OPERATORS__',
         '-D__CUDA_NO_HALF_CONVERSIONS__',
         '-D__CUDA_NO_HALF2_OPERATORS__',
-        '--expt-relaxed-constexpr'
+        '--expt-relaxed-constexpr',
     ]
     nvcc_flags += _get_cuda_arch_flags()
     compile_setup_kw = {
