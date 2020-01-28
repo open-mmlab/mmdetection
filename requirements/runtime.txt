@@ -1,7 +1,7 @@
+git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
 matplotlib
 mmcv>=0.2.15
 numpy
-pycocotools
 six
 terminaltables
 torch>=1.1
