@@ -355,6 +355,14 @@ if [ "$_INSIDE_DOCKER" == "YES" ]; then
     #TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5"
     #TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0;7.5"
 
+    CUDA_VERSION=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev) # 10.1.243
+    CUDA_VERSION_SHORT=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev | cut -f1,2 -d".") # 10.1
+    CUDNN_VERSION=$(ls /usr/local/cuda/lib64/libcudnn.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev)
+    echo "
+    CUDA_VERSION = $CUDA_VERSION
+    CUDA_VERSION_SHORT = $CUDA_VERSION_SHORT
+    CUDNN_VERSION = $CUDNN_VERSION
+    "
 
     # Rferences: https://github.com/pytorch/builder/blob/master/manywheel/build.sh
     export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0"
