@@ -245,10 +245,95 @@ def parse_requirements(fname='requirements.txt', with_version=True):
     return packages
 
 
+def _get_cuda_arch_flags(cflags=None):
+    '''
+    Determine CUDA arch flags to use.
+    For an arch, say "6.1", the added compile flag will be
+    ``-gencode=arch=compute_61,code=sm_61``.
+    For an added "+PTX", an additional
+    ``-gencode=arch=compute_xx,code=compute_xx`` is added.
+    See select_compute_arch.cmake for corresponding named and supported arches
+    when building with CMake.
+
+    References:
+        https://github.com/pytorch/pytorch/blob/1e5aead35b3d2dca993f90e7d3343cc105ab93e1/torch/utils/cpp_extension.py#L979
+    '''
+    # If cflags is given, there may already be user-provided arch flags in it
+    # (from `extra_compile_args`)
+    if cflags is not None:
+        for flag in cflags:
+            if 'arch' in flag:
+                return []
+
+    # Note: keep combined names ("arch1+arch2") above single names, otherwise
+    # string replacement may not do the right thing
+    import collections
+    named_arches = collections.OrderedDict([
+        ('Kepler+Tesla', '3.7'),
+        ('Kepler', '3.5+PTX'),
+        ('Maxwell+Tegra', '5.3'),
+        ('Maxwell', '5.0;5.2+PTX'),
+        ('Pascal', '6.0;6.1+PTX'),
+        ('Volta', '7.0+PTX'),
+        ('Turing', '7.5+PTX'),
+    ])
+
+    supported_arches = ['3.5', '3.7', '5.0', '5.2', '5.3', '6.0', '6.1', '6.2',
+                        '7.0', '7.2', '7.5']
+    valid_arch_strings = supported_arches + [s + "+PTX" for s in supported_arches]
+
+    # The default is sm_30 for CUDA 9.x and 10.x
+    # First check for an env var (same as used by the main setup.py)
+    # Can be one or more architectures, e.g. "6.1" or "3.5;5.2;6.0;6.1;7.0+PTX"
+    # See cmake/Modules_CUDA_fix/upstream/FindCUDA/select_compute_arch.cmake
+    arch_list = os.environ.get('TORCH_CUDA_ARCH_LIST', None)
+
+    # If not given, determine what's needed for the GPU that can be found
+    if not arch_list:
+        import torch
+        capability = torch.cuda.get_device_capability()
+        arch_list = ['{}.{}'.format(capability[0], capability[1])]
+    else:
+        # Deal with lists that are ' ' separated (only deal with ';' after)
+        arch_list = arch_list.replace(' ', ';')
+        # Expand named arches
+        for named_arch, archval in named_arches.items():
+            arch_list = arch_list.replace(named_arch, archval)
+
+        arch_list = arch_list.split(';')
+
+    flags = []
+    for arch in arch_list:
+        if arch not in valid_arch_strings:
+            raise ValueError("Unknown CUDA arch ({}) or GPU not supported".format(arch))
+        else:
+            num = arch[0] + arch[2]
+            flags.append('-gencode=arch=compute_{},code=sm_{}'.format(num, num))
+            if arch.endswith('+PTX'):
+                flags.append('-gencode=arch=compute_{},code=compute_{}'.format(num, num))
+
+    return list(set(flags))
+
+
 NAME = 'mmdet'
 VERSION = parse_version(version_file)
 
 if __name__ == '__main__':
+    nvcc_flags = [
+        '-Xfatbin'
+        '-compress-all'
+        '-D__CUDA_NO_HALF_OPERATORS__',
+        '-D__CUDA_NO_HALF_CONVERSIONS__',
+        '-D__CUDA_NO_HALF2_OPERATORS__',
+        '--expt-relaxed-constexpr'
+    ]
+    nvcc_flags += _get_cuda_arch_flags()
+    compile_setup_kw = {
+        'cmake_args': [
+            '-DNVCC_FLAGS="{}"'.format(' '.join(nvcc_flags))
+        ]
+    }
+
     write_version_py()
     setup(
         name=NAME,
@@ -279,4 +364,5 @@ if __name__ == '__main__':
             'build': parse_requirements('requirements/build.txt'),
             'optional': parse_requirements('requirements/optional.txt'),
         },
+        **compile_setup_kw,
     )

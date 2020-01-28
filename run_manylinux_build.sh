@@ -37,7 +37,7 @@ notes:
 
     cd ~/code/mmdetection/docker
     docker build --build-arg BASE_IMAGE=pytorch/manylinux-cuda101 -t mmdet/manylinux-cuda101 -f Dockerfile_base .
-    docker build --build-arg BASE_IMAGE=pytorch/manylinux-cuda92 -t mmdet/manylinux-cuda92 .
+    docker build --build-arg BASE_IMAGE=pytorch/manylinux-cuda92 -t mmdet/manylinux-cuda92 -f Dockerfile_base .
 
 """
 
@@ -126,18 +126,18 @@ custom_repair_wheel(){
         https://github.com/pytorch/builder/blob/2d91d533eccbe0d859cfe38a9d508fe065f47534/manywheel/build_common.sh#L226
 
     Ignore:
-        pkg=/io/dist/mmdet-1.0rc1+c73c7e0-cp37-cp37m-linux_x86_64.whl
+        whl_fpath=/io/dist/mmdet-1.0rc1+c73c7e0-cp37-cp37m-linux_x86_64.whl
     """
-    pkg=$1   # WHEEL FILEPATH
+    whl_fpath=$1   # WHEEL FILEPATH
 
     # Create temporary work dir
     mkdir -p tmp
     cd tmp
-    cp $pkg .
+    cp $whl_fpath .
 
     # Unpack the wheel
-    unzip -q $(basename $pkg)
-    rm -f $(basename $pkg)
+    unzip -q $(basename $whl_fpath)
+    rm -f $(basename $whl_fpath)
     
     PREFIX=mmdet
     mkdir -p $PREFIX/lib
@@ -161,73 +161,73 @@ custom_repair_wheel(){
     fi
 
     if [[ $CUDA_VERSION_SHORT == "9.0" ]]; then
-    DEPS_LIST=(
-        "/usr/local/cuda/lib64/libcudart.so.9.0"
-        "/usr/local/cuda/lib64/libnvToolsExt.so.1"
-        "/usr/local/cuda/lib64/libnvrtc.so.9.0"
-        "/usr/local/cuda/lib64/libnvrtc-builtins.so"
-        "$LIBGOMP_PATH"
-    )
-    DEPS_SONAME=(
-        "libcudart.so.9.0"
-        "libnvToolsExt.so.1"
-        "libnvrtc.so.9.0"
-        "libnvrtc-builtins.so"
-        "libgomp.so.1"
-    )
+        DEPS_LIST=(
+            "/usr/local/cuda/lib64/libcudart.so.9.0"
+            "/usr/local/cuda/lib64/libnvToolsExt.so.1"
+            "/usr/local/cuda/lib64/libnvrtc.so.9.0"
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so"
+            "$LIBGOMP_PATH" 
+        )
+        DEPS_SONAME=(
+            "libcudart.so.9.0"
+            "libnvToolsExt.so.1"
+            "libnvrtc.so.9.0"
+            "libnvrtc-builtins.so"
+            "libgomp.so.1"
+        )
     elif [[ $CUDA_VERSION_SHORT == "9.2" ]]; then
-    DEPS_LIST=(
-        "/usr/local/cuda/lib64/libcudart.so.9.2"
-        "/usr/local/cuda/lib64/libnvToolsExt.so.1"
-        "/usr/local/cuda/lib64/libnvrtc.so.9.2"
-        "/usr/local/cuda/lib64/libnvrtc-builtins.so"
-        "$LIBGOMP_PATH"
-    )
+        DEPS_LIST=(
+            "/usr/local/cuda/lib64/libcudart.so.9.2"
+            "/usr/local/cuda/lib64/libnvToolsExt.so.1"
+            "/usr/local/cuda/lib64/libnvrtc.so.9.2"
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so"
+            "$LIBGOMP_PATH"
+        )
 
-    DEPS_SONAME=(
-        "libcudart.so.9.2"
-        "libnvToolsExt.so.1"
-        "libnvrtc.so.9.2"
-        "libnvrtc-builtins.so"
-        "libgomp.so.1"
-    )
+        DEPS_SONAME=(
+            "libcudart.so.9.2"
+            "libnvToolsExt.so.1"
+            "libnvrtc.so.9.2"
+            "libnvrtc-builtins.so"
+            "libgomp.so.1"
+        )
     elif [[ $CUDA_VERSION_SHORT == "10.0" ]]; then
-    DEPS_LIST=(
-        "/usr/local/cuda/lib64/libcudart.so.10.0"
-        "/usr/local/cuda/lib64/libnvToolsExt.so.1"
-        "/usr/local/cuda/lib64/libnvrtc.so.10.0"
-        "/usr/local/cuda/lib64/libnvrtc-builtins.so"
-        "$LIBGOMP_PATH"
-    )
+        DEPS_LIST=(
+            "/usr/local/cuda/lib64/libcudart.so.10.0"
+            "/usr/local/cuda/lib64/libnvToolsExt.so.1"
+            "/usr/local/cuda/lib64/libnvrtc.so.10.0"
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so"
+            "$LIBGOMP_PATH"
+        )
 
-    DEPS_SONAME=(
-        "libcudart.so.10.0"
-        "libnvToolsExt.so.1"
-        "libnvrtc.so.10.0"
-        "libnvrtc-builtins.so"
-        "libgomp.so.1"
-    )
+        DEPS_SONAME=(
+            "libcudart.so.10.0"
+            "libnvToolsExt.so.1"
+            "libnvrtc.so.10.0"
+            "libnvrtc-builtins.so"
+            "libgomp.so.1"
+        )
     elif [[ $CUDA_VERSION_SHORT == "10.1" ]]; then
-    DEPS_LIST=(
-        "/usr/local/cuda/lib64/libcudart.so.10.1"
-        "/usr/local/cuda/lib64/libnvToolsExt.so.1"
-        "/usr/local/cuda/lib64/libnvrtc.so.10.1"
-        "/usr/local/cuda/lib64/libnvrtc-builtins.so"
-        "$LIBGOMP_PATH"
-    )
-    DEPS_SONAME=(
-        "libcudart.so.10.1"
-        "libnvToolsExt.so.1"
-        "libnvrtc.so.10.1"
-        "libnvrtc-builtins.so"
-        "libgomp.so.1"
-    )
+        DEPS_LIST=(
+            "/usr/local/cuda/lib64/libcudart.so.10.1"
+            "/usr/local/cuda/lib64/libnvToolsExt.so.1"
+            "/usr/local/cuda/lib64/libnvrtc.so.10.1"
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so"
+            "$LIBGOMP_PATH"
+        )
+        DEPS_SONAME=(
+            "libcudart.so.10.1"
+            "libnvToolsExt.so.1"
+            "libnvrtc.so.10.1"
+            "libnvrtc-builtins.so"
+            "libgomp.so.1"
+        )
     else
         echo "Unknown cuda version $CUDA_VERSION_SHORT"
         exit 1
     fi
 
-    if [[ $pkg != *"without-deps"* ]]; then
+    if [[ $whl_fpath != *"without-deps"* ]]; then
         # copy over needed dependent .so files over and tag them with their hash
         patched=()
         for filepath in "${DEPS_LIST[@]}"; do
@@ -280,7 +280,7 @@ custom_repair_wheel(){
     done
 
     # regenerate the RECORD file with new hashes
-    record_file=`echo $(basename $pkg) | sed -e 's/-cp.*$/.dist-info\/RECORD/g'`
+    record_file=`echo $(basename $whl_fpath) | sed -e 's/-cp.*$/.dist-info\/RECORD/g'`
     if [[ -e $record_file ]]; then
         echo "Generating new record file $record_file"
         rm -f $record_file
@@ -291,10 +291,10 @@ custom_repair_wheel(){
     fi
 
     # zip up the wheel back
-    zip -rq $(basename $pkg) $PREIX*
+    zip -rq $(basename $whl_fpath) $PREIX*
 
     mkdir -p ../custom_wheelhouse
-    mv $(basename $pkg) ../custom_wheelhouse/$(basename $pkg)
+    mv $(basename $whl_fpath) ../custom_wheelhouse/$(basename $whl_fpath)
     cd ..
     rm -rf tmp
 }
@@ -331,7 +331,8 @@ if [ "$_INSIDE_DOCKER" == "YES" ]; then
     # https://docs.nvidia.com/deploy/cuda-compatibility/index.html#binary-compatibility
     #TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
     #TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5"
-    TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0;7.5"
+    #TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0;7.5"
+    TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0"
     TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
     #export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH
     echo "
