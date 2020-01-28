@@ -67,6 +67,7 @@ if [ "$_INSIDE_DOCKER" != "YES" ]; then
         -e _INSIDE_DOCKER="YES" \
         -e MB_PYTHON_TAG="$MB_PYTHON_TAG" \
         -e NAME="$NAME" \
+        -e HOST_USER="$USER" \
         -e VERSION="$VERSION" \
         $DOCKER_IMAGE bash -c 'cd /io && ./run_manylinux_build.sh'
 
@@ -78,6 +79,7 @@ if [ "$_INSIDE_DOCKER" != "YES" ]; then
         -e _INSIDE_DOCKER="YES" \
         -e MB_PYTHON_TAG="$MB_PYTHON_TAG" \
         -e NAME="$NAME" \
+        -e HOST_USER="$USER" \
         -e VERSION="$VERSION" \
         -it $DOCKER_IMAGE bash
 
@@ -85,7 +87,7 @@ if [ "$_INSIDE_DOCKER" != "YES" ]; then
     set +x
     '''
 
-    BDIST_WHEEL_PATH=$(ls wheelhouse/$NAME-$VERSION-$MB_PYTHON_TAG*.whl)
+    BDIST_WHEEL_PATH=$(ls custom_wheelhouse/$NAME-$VERSION-$MB_PYTHON_TAG*.whl)
     echo "BDIST_WHEEL_PATH = $BDIST_WHEEL_PATH"
 fi
     #set -x
@@ -155,11 +157,11 @@ custom_repair_wheel(){
         exit 1
     fi
         
-    CUDA_VERSION=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev) # 10.1.243
+    CUDA_VERSION_FULL=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev) # 10.1.243
     CUDA_VERSION_SHORT=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev | cut -f1,2 -d".") # 10.1
     CUDNN_VERSION=$(ls /usr/local/cuda/lib64/libcudnn.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev)
     echo "
-    CUDA_VERSION = $CUDA_VERSION
+    CUDA_VERSION_FULL = $CUDA_VERSION_FULL
     CUDA_VERSION_SHORT = $CUDA_VERSION_SHORT
     CUDNN_VERSION = $CUDNN_VERSION
     "
@@ -355,27 +357,27 @@ if [ "$_INSIDE_DOCKER" == "YES" ]; then
     #TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5"
     #TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0;7.5"
 
-    CUDA_VERSION=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev) # 10.1.243
+    CUDA_VERSION_FULL=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev) # 10.1.243
     CUDA_VERSION_SHORT=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev | cut -f1,2 -d".") # 10.1
     CUDNN_VERSION=$(ls /usr/local/cuda/lib64/libcudnn.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev)
     echo "
-    CUDA_VERSION = $CUDA_VERSION
+    CUDA_VERSION_FULL = $CUDA_VERSION_FULL
     CUDA_VERSION_SHORT = $CUDA_VERSION_SHORT
     CUDNN_VERSION = $CUDNN_VERSION
     "
 
     # Rferences: https://github.com/pytorch/builder/blob/master/manywheel/build.sh
     export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0"
-    if [[ $CUDA_VERSION == "9.0" ]]; then
+    if [[ $CUDA_VERSION_SHORT == "9.0" ]]; then
         export TORCH_CUDA_ARCH_LIST="$TORCH_CUDA_ARCH_LIST;6.0;7.0"
-    elif [[ $CUDA_VERSION == "9.2" ]]; then
+    elif [[ $CUDA_VERSION_SHORT == "9.2" ]]; then
         export TORCH_CUDA_ARCH_LIST="$TORCH_CUDA_ARCH_LIST;6.0;6.1;7.0"
-    elif [[ $CUDA_VERSION == "10.0" ]]; then
+    elif [[ $CUDA_VERSION_SHORT == "10.0" ]]; then
         export TORCH_CUDA_ARCH_LIST="$TORCH_CUDA_ARCH_LIST;6.0;6.1;7.0;7.5"
-    elif [[ $CUDA_VERSION == "10.1" ]]; then
+    elif [[ $CUDA_VERSION_SHORT == "10.1" ]]; then
         export TORCH_CUDA_ARCH_LIST="$TORCH_CUDA_ARCH_LIST;6.0;6.1;7.0;7.5"
     else
-        echo "unknown cuda version $CUDA_VERSION"
+        echo "unknown cuda version $CUDA_VERSION_SHORT"
         exit 1
     fi
     export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
@@ -408,7 +410,7 @@ if [ "$_INSIDE_DOCKER" == "YES" ]; then
     #TORCH_DPATH=$(python -c "import os; import torch; print(os.path.dirname(torch.__file__))")
     #export LD_LIBRARY_PATH="$TORCH_DPATH/lib:$LD_LIBRARY_PATH"
 
-    custom_repair_wheel dist/$NAME-*$MB_PYTHON_TAG*.whl
+    custom_repair_wheel $whl_fpath
 
     #/opt/python/cp37-cp37m/bin/python -m pip install auditwheel
     #/opt/python/cp37-cp37m/bin/python -m auditwheel show dist/$NAME-*$MB_PYTHON_TAG*.whl
@@ -418,8 +420,12 @@ if [ "$_INSIDE_DOCKER" == "YES" ]; then
     #/opt/python/cp37-cp37m/bin/python -m auditwheel show dist/$NAME-$VERSION-$MB_PYTHON_TAG*.whl
     #/opt/python/cp37-cp37m/bin/python -m auditwheel repair dist/$NAME-$VERSION-$MB_PYTHON_TAG*.whl
     chmod -R o+rw custom_wheelhouse
-    chmod -R o+rw wheelhouse
-    chmod -R o+rw *
+
+    if [ "$HOST_USER" != "" ]; then 
+        sudo chown $HOST_USER:$HOST_USER *
+    fi
+    #chmod -R o+rw wheelhouse
+    #chmod -R o+rw *
 
     __debug__="""
 
