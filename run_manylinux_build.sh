@@ -130,9 +130,14 @@ custom_repair_wheel(){
     """
     whl_fpath=$1   # WHEEL FILEPATH
 
+    echo "repair whl_fpath = $whl_fpath"
+
     # Create temporary work dir
-    mkdir -p tmp
-    cd tmp
+    prev_dpath=$(pwd)
+    tmp_dpath=$prev_dpath/tmp
+
+    mkdir -p $tmp_dpath
+    cd $tmp_dpath
     cp $whl_fpath .
 
     # Unpack the wheel
@@ -150,8 +155,14 @@ custom_repair_wheel(){
         exit 1
     fi
         
-
-    echo $CUDA_VERSION_SHORT
+    CUDA_VERSION=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev) # 10.1.243
+    CUDA_VERSION_SHORT=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev | cut -f1,2 -d".") # 10.1
+    CUDNN_VERSION=$(ls /usr/local/cuda/lib64/libcudnn.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev)
+    echo "
+    CUDA_VERSION = $CUDA_VERSION
+    CUDA_VERSION_SHORT = $CUDA_VERSION_SHORT
+    CUDNN_VERSION = $CUDNN_VERSION
+    "
 
     OS_NAME=`awk -F= '/^NAME/{print $2}' /etc/os-release`
     if [[ "$OS_NAME" == *"CentOS Linux"* ]]; then
@@ -160,35 +171,78 @@ custom_repair_wheel(){
         LIBGOMP_PATH="/usr/lib/x86_64-linux-gnu/libgomp.so.1"
     fi
 
+    __debug__="""
+	linux-vdso.so.1                     =>  (0x00007ffdd7fbf000)
+	libcudart.so.10.1                   => /usr/local/cuda/lib64/libcudart.so.10.1 (0x00007f2c190f6000)
+
+	libtorch.so                         => /root/venv-cp37-cp37m/lib/python3.7/site-packages/torch/lib/libtorch.so (0x00007f2bceb55000)
+	libc10.so                           => /root/venv-cp37-cp37m/lib/python3.7/site-packages/torch/lib/libc10.so (0x00007f2bce900000)
+	libc10_cuda.so                      => /root/venv-cp37-cp37m/lib/python3.7/site-packages/torch/lib/libc10_cuda.so (0x00007f2bcbbca000)
+	libcudart-1b201d85.so.10.1          => /root/venv-cp37-cp37m/lib/python3.7/site-packages/torch/lib/libcudart-1b201d85.so.10.1 (0x00007f2ba09b8000)
+	libgomp-7c85b1e2.so.1               => /root/venv-cp37-cp37m/lib/python3.7/site-packages/torch/lib/libgomp-7c85b1e2.so.1 (0x00007f2ba078e000)
+	libnvToolsExt-3965bdd0.so.1         => /root/venv-cp37-cp37m/lib/python3.7/site-packages/torch/lib/libnvToolsExt-3965bdd0.so.1 (0x00007f2ba0282000)
+
+	libcuda.so.1                        => /usr/lib64/libcuda.so.1 (0x00007f2bcd770000)
+
+	libnvrtc.so.10.1                    => /usr/local/cuda/lib64/libnvrtc.so.10.1 (0x00007f2bcc000000)
+	libnvToolsExt.so.1                  => /usr/local/cuda/lib64/libnvToolsExt.so.1 (0x00007f2bcbdf7000)
+	libcufft.so.10                      => /usr/local/cuda/lib64/libcufft.so.10 (0x00007f2bc3374000)
+	libcurand.so.10                     => /usr/local/cuda/lib64/libcurand.so.10 (0x00007f2bbf313000)
+	libcublas.so.10                     => /usr/local/cuda/lib64/libcublas.so.10 (0x00007f2bbb578000)
+	libcublasLt.so.10                   => /usr/local/cuda/lib64/libcublasLt.so.10 (0x00007f2b9e191000)
+
+	libcudnn.so.7                       => /usr/local/cuda/lib64/libcudnn.so.7 (0x00007f2ba192e000)
+
+	libnvidia-fatbinaryloader.so.435.21 => /usr/lib64/libnvidia-fatbinaryloader.so.435.21 (0x00007f2ba0035000)
+
+	libpthread.so.0                     => /usr/lib64/libpthread.so.0 (0x00007f2bcb9ae000)
+	libstdc++.so.6                      => /usr/lib64/libstdc++.so.6 (0x00007f2ba1627000)
+	libgcc_s.so.1                       => /usr/lib64/libgcc_s.so.1 (0x00007f2ba1411000)
+	libc.so.6                           => /usr/lib64/libc.so.6 (0x00007f2ba1043000)
+	libdl.so.2                          => /usr/lib64/libdl.so.2 (0x00007f2ba0e3f000)
+	librt.so.1                          => /usr/lib64/librt.so.1 (0x00007f2ba0c37000)
+	libm.so.6                           => /usr/lib64/libm.so.6 (0x00007f2ba048c000)
+
+    ldd mmdet/ops/dcn/deform_conv_cuda.cpython-37m-x86_64-linux-gnu.so
+    """
+
     if [[ $CUDA_VERSION_SHORT == "9.0" ]]; then
         DEPS_LIST=(
-            "/usr/local/cuda/lib64/libcudart.so.9.0" "/usr/local/cuda/lib64/libnvToolsExt.so.1" "/usr/local/cuda/lib64/libnvrtc.so.9.0" "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH" 
-        )
-        DEPS_SONAME=(
-            "libcudart.so.9.0" "libnvToolsExt.so.1" "libnvrtc.so.9.0" "libnvrtc-builtins.so" "libgomp.so.1"
+            "/usr/local/cuda/lib64/libcudart.so.9.0" 
+            "/usr/local/cuda/lib64/libnvToolsExt.so.1" 
+            "/usr/local/cuda/lib64/libnvrtc.so.9.0" 
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH" 
         )
     elif [[ $CUDA_VERSION_SHORT == "9.2" ]]; then
         DEPS_LIST=(
-            "/usr/local/cuda/lib64/libcudart.so.9.2" "/usr/local/cuda/lib64/libnvToolsExt.so.1" "/usr/local/cuda/lib64/libnvrtc.so.9.2" "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH"
-        )
-
-        DEPS_SONAME=(
-            "libcudart.so.9.2" "libnvToolsExt.so.1" "libnvrtc.so.9.2" "libnvrtc-builtins.so" "libgomp.so.1"
+            "/usr/local/cuda/lib64/libcudart.so.9.2" 
+            "/usr/local/cuda/lib64/libnvToolsExt.so.1" 
+            "/usr/local/cuda/lib64/libnvrtc.so.9.2" 
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH"
         )
     elif [[ $CUDA_VERSION_SHORT == "10.0" ]]; then
         DEPS_LIST=(
-            "/usr/local/cuda/lib64/libcudart.so.10.0" "/usr/local/cuda/lib64/libnvToolsExt.so.1" "/usr/local/cuda/lib64/libnvrtc.so.10.0" "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH"
-        )
-
-        DEPS_SONAME=(
-            "libcudart.so.10.0" "libnvToolsExt.so.1" "libnvrtc.so.10.0" "libnvrtc-builtins.so" "libgomp.so.1"
+            "/usr/local/cuda/lib64/libcudart.so.10.0" 
+            "/usr/local/cuda/lib64/libnvToolsExt.so.1" 
+            "/usr/local/cuda/lib64/libnvrtc.so.10.0" 
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so" 
+            "$LIBGOMP_PATH"
         )
     elif [[ $CUDA_VERSION_SHORT == "10.1" ]]; then
         DEPS_LIST=(
-            "/usr/local/cuda/lib64/libcudart.so.10.1" "/usr/local/cuda/lib64/libnvToolsExt.so.1" "/usr/local/cuda/lib64/libnvrtc.so.10.1" "/usr/local/cuda/lib64/libnvrtc-builtins.so" "$LIBGOMP_PATH"
+            "/usr/local/cuda/lib64/libcudart.so.10.1" 
+            "/usr/local/cuda/lib64/libnvToolsExt.so.1" 
+            "/usr/local/cuda/lib64/libnvrtc.so.10.1" 
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so" 
+            "$LIBGOMP_PATH"
         )
-        DEPS_SONAME=(
-            "libcudart.so.10.1" "libnvToolsExt.so.1" "libnvrtc.so.10.1" "libnvrtc-builtins.so" "libgomp.so.1"
+    elif [[ $CUDA_VERSION_SHORT == "10.1" ]]; then
+        DEPS_LIST=(
+            "/usr/local/cuda/lib64/libcudart.so.10.1" 
+            "/usr/local/cuda/lib64/libnvToolsExt.so.1" 
+            "/usr/local/cuda/lib64/libnvrtc.so.10.1" 
+            "/usr/local/cuda/lib64/libnvrtc-builtins.so" 
+            "$LIBGOMP_PATH"
         )
     else
         echo "Unknown cuda version $CUDA_VERSION_SHORT"
@@ -216,8 +270,11 @@ custom_repair_wheel(){
 
         echo "patching to fix the so names to the hashed names"
         for ((i=0;i<${#DEPS_LIST[@]};++i)); do
+            orig_fpath=${DEPS_LIST[i]}
+            origname=$(basename $orig_fpath)
+
             find $PREFIX -name '*.so*' | while read sofile; do
-                origname=${DEPS_SONAME[i]}
+
                 patchedname=${patched[i]}
                 if [[ "$origname" != "$patchedname" ]]; then
                     set +e
@@ -233,10 +290,12 @@ custom_repair_wheel(){
         done
     fi
     
-    # set RPATH of _C.so and similar to $ORIGIN, $ORIGIN/lib
-    find $PREFIX -maxdepth 1 -type f -name "*.so*" | while read sofile; do
-        echo "Setting rpath of $sofile to " '$ORIGIN:$ORIGIN/lib'
-        $PATCHELF_BIN --set-rpath '$ORIGIN:$ORIGIN/lib' $sofile
+    # set RPATH of mmdet shared objects to $ORIGIN, $ORIGIN/lib
+    find $PREFIX -maxdepth 9 -type f -name "*.so*" | while read sofile; do
+        rel_path=$(python -c "import os; print(os.path.relpath('$PREFIX/lib', os.path.dirname('$sofile')))")
+        new_rpath="\$ORIGIN:\$ORIGIN/$rel_path"
+        echo "Setting rpath of $sofile to " "$new_rpath"
+        $PATCHELF_BIN --set-rpath "$new_rpath" $sofile
         $PATCHELF_BIN --print-rpath $sofile
     done
 
@@ -263,13 +322,17 @@ custom_repair_wheel(){
 
     mkdir -p ../custom_wheelhouse
     mv $(basename $whl_fpath) ../custom_wheelhouse/$(basename $whl_fpath)
-    cd ..
-    rm -rf tmp
+
+    cd $prev_dpath
+    rm -rf $tmp_dpath
 }
 
 
 if [ "$_INSIDE_DOCKER" == "YES" ]; then
-    yum install mod_ssl zip -y
+
+    if [ "$(which openssl)" == "" ]; then
+        yum install mod_ssl zip -y
+    fi
 
     VENV_DIR=/root/venv-$MB_PYTHON_TAG
     # Setup a virtual environment for the target python version
@@ -285,23 +348,29 @@ if [ "$_INSIDE_DOCKER" == "YES" ]; then
     pip install cmake
     pip install ninja
     pip install -r requirements/build.txt
-
-    CUDA_VERSION=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev) # 10.1.243
-    CUDA_VERSION_SHORT=$(ls /usr/local/cuda/lib64/libcudart.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev | cut -f1,2 -d".") # 10.1
-    CUDNN_VERSION=$(ls /usr/local/cuda/lib64/libcudnn.so.*|sort|tac | head -1 | rev | cut -d"." -f -3 | rev)
-    echo "
-    CUDA_VERSION = $CUDA_VERSION
-    CUDA_VERSION_SHORT = $CUDA_VERSION_SHORT
-    CUDNN_VERSION = $CUDNN_VERSION
-    "
     
 
     # https://docs.nvidia.com/deploy/cuda-compatibility/index.html#binary-compatibility
     #TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
     #TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5"
     #TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0;7.5"
-    TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0"
-    TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
+
+
+    # Rferences: https://github.com/pytorch/builder/blob/master/manywheel/build.sh
+    export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0"
+    if [[ $CUDA_VERSION == "9.0" ]]; then
+        export TORCH_CUDA_ARCH_LIST="$TORCH_CUDA_ARCH_LIST;6.0;7.0"
+    elif [[ $CUDA_VERSION == "9.2" ]]; then
+        export TORCH_CUDA_ARCH_LIST="$TORCH_CUDA_ARCH_LIST;6.0;6.1;7.0"
+    elif [[ $CUDA_VERSION == "10.0" ]]; then
+        export TORCH_CUDA_ARCH_LIST="$TORCH_CUDA_ARCH_LIST;6.0;6.1;7.0;7.5"
+    elif [[ $CUDA_VERSION == "10.1" ]]; then
+        export TORCH_CUDA_ARCH_LIST="$TORCH_CUDA_ARCH_LIST;6.0;6.1;7.0;7.5"
+    else
+        echo "unknown cuda version $CUDA_VERSION"
+        exit 1
+    fi
+    export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
     #export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH
     echo "
     TORCH_CUDA_ARCH_LIST = $TORCH_CUDA_ARCH_LIST
@@ -321,24 +390,28 @@ if [ "$_INSIDE_DOCKER" == "YES" ]; then
     chmod -R o+rw build
     chmod -R o+rw .eggs
 
+    whl_fpath=$(ls /io/dist/$NAME-*$MB_PYTHON_TAG*.whl)
+    echo "whl_fpath = $whl_fpath"
+
     # Do we have to manually patch the wheels? The pytorch/builder repo
     # mentions that: "auditwheel repair doesnt work correctly and is buggy"
     # perhaps we should look into that?
 
-    TORCH_DPATH=$(python -c "import os; import torch; print(os.path.dirname(torch.__file__))")
-    export LD_LIBRARY_PATH="$TORCH_DPATH/lib:$LD_LIBRARY_PATH"
+    #TORCH_DPATH=$(python -c "import os; import torch; print(os.path.dirname(torch.__file__))")
+    #export LD_LIBRARY_PATH="$TORCH_DPATH/lib:$LD_LIBRARY_PATH"
 
     custom_repair_wheel dist/$NAME-*$MB_PYTHON_TAG*.whl
 
-    /opt/python/cp37-cp37m/bin/python -m pip install auditwheel
-    /opt/python/cp37-cp37m/bin/python -m auditwheel show dist/$NAME-*$MB_PYTHON_TAG*.whl
-    /opt/python/cp37-cp37m/bin/python -m auditwheel show custom_wheelhouse/$NAME-*$MB_PYTHON_TAG*.whl
-    /opt/python/cp37-cp37m/bin/python -m auditwheel repair --plat=manylinux2014_x86_64 dist/$NAME-*$MB_PYTHON_TAG*.whl 
+    #/opt/python/cp37-cp37m/bin/python -m pip install auditwheel
+    #/opt/python/cp37-cp37m/bin/python -m auditwheel show dist/$NAME-*$MB_PYTHON_TAG*.whl
+    #/opt/python/cp37-cp37m/bin/python -m auditwheel show custom_wheelhouse/$NAME-*$MB_PYTHON_TAG*.whl
+    #/opt/python/cp37-cp37m/bin/python -m auditwheel repair --plat=manylinux2014_x86_64 dist/$NAME-*$MB_PYTHON_TAG*.whl 
 
     #/opt/python/cp37-cp37m/bin/python -m auditwheel show dist/$NAME-$VERSION-$MB_PYTHON_TAG*.whl
     #/opt/python/cp37-cp37m/bin/python -m auditwheel repair dist/$NAME-$VERSION-$MB_PYTHON_TAG*.whl
+    chmod -R o+rw custom_wheelhouse
     chmod -R o+rw wheelhouse
-    chmod -R o+rw $NAME.egg-info
+    chmod -R o+rw *
 
     __debug__="""
 
