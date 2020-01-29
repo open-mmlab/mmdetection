@@ -1,5 +1,4 @@
 from __future__ import division
-
 from typing import List, Tuple
 
 import numpy as np

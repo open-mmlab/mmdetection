@@ -1,5 +1,6 @@
+from typing import List, Tuple
+
 import torch
-from typing import Tuple, List
 
 
 class AnchorGenerator(object):
@@ -107,7 +108,6 @@ class AnchorGenerator(object):
         valid_y[:valid_h] = 1
         valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
         valid = valid_xx & valid_yy
-        valid = valid[:,
-                      None].expand(valid.size(0),
-                                   self.num_base_anchors).contiguous().view(-1)
+        valid = valid[:, None].expand(
+            valid.size(0), self.num_base_anchors).contiguous().view(-1)
         return valid
