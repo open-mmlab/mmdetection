@@ -254,7 +254,9 @@ def main(args):
         results = mmcv.load(args.out)
     else:
         dataset = data_loader.dataset
-        classes_num = len(dataset.CLASSES)
+        # +1 is for background
+        classes_num = len(dataset.CLASSES) + 1
+
 
         model = ONNXModel(args.model, cfg=cfg, classes=dataset.CLASSES)
         run_opts = onnxruntime.RunOptions()
