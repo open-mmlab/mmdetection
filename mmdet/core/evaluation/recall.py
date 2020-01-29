@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 import numpy as np
 from terminaltables import AsciiTable
 
@@ -40,7 +42,7 @@ def _recalls(all_ious, proposal_nums, thrs):
 def set_recall_param(proposal_nums, iou_thrs):
     """Check proposal_nums and iou_thrs and set correct format.
     """
-    if isinstance(proposal_nums, list):
+    if isinstance(proposal_nums, Sequence):
         _proposal_nums = np.array(proposal_nums)
     elif isinstance(proposal_nums, int):
         _proposal_nums = np.array([proposal_nums])
@@ -49,7 +51,7 @@ def set_recall_param(proposal_nums, iou_thrs):
 
     if iou_thrs is None:
         _iou_thrs = np.array([0.5])
-    elif isinstance(iou_thrs, list):
+    elif isinstance(iou_thrs, Sequence):
         _iou_thrs = np.array(iou_thrs)
     elif isinstance(iou_thrs, float):
         _iou_thrs = np.array([iou_thrs])
