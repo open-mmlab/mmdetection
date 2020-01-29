@@ -4,10 +4,10 @@ fp16 = dict(loss_scale=512.)
 # model settings
 model = dict(
     type='RetinaNet',
-    pretrained='torchvision://resnet50',
+    pretrained='torchvision://resnet101',
     backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=101,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
@@ -86,7 +86,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=10,
+    imgs_per_gpu=8,
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
@@ -96,7 +96,7 @@ data = dict(
     val=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/',
-        img_prefix=data_root + 'test/',
+        img_prefix=data_root + 'val/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
@@ -104,7 +104,7 @@ data = dict(
         img_prefix=data_root + 'test/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.025, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -116,7 +116,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
-    interval=11,
+    interval=113,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook')
@@ -126,7 +126,7 @@ log_config = dict(
 total_epochs = 50
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/retinanet_r50_fpn_fp16_1x_025'
+work_dir = './work_dirs/retinanet_r101_fpn_fp16_1x_025'
 load_from = None
 resume_from = None
 workflow = [("train", 1)]

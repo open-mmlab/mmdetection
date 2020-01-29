@@ -92,6 +92,9 @@ def inference_detector(model, img):
 def show_result(img,
                 result,
                 class_names,
+                bbox_color='red',
+                text_color='red',
+                thickness=3,
                 score_thr=0.3,
                 wait_time=0,
                 show=True,
@@ -139,6 +142,9 @@ def show_result(img,
         img,
         bboxes,
         labels,
+        bbox_color=bbox_color,
+        text_color=text_color,
+        thickness=thickness,
         class_names=class_names,
         score_thr=score_thr,
         show=show,
@@ -151,8 +157,12 @@ def show_result(img,
 def show_result_pyplot(img,
                        result,
                        class_names,
+                       bbox_color='red',
+                       text_color='red',
+                       thickness=3,
                        score_thr=0.3,
-                       fig_size=(15, 10)):
+                       fig_size=(15, 10),
+                       out_file=None):
     """Visualize the detection results on the image.
 
     Args:
@@ -166,6 +176,9 @@ def show_result_pyplot(img,
             be written to the out file instead of shown in a window.
     """
     img = show_result(
-        img, result, class_names, score_thr=score_thr, show=False)
-    plt.figure(figsize=fig_size)
-    plt.imshow(mmcv.bgr2rgb(img))
+        img, result, class_names,
+        bbox_color=bbox_color, text_color=text_color, thickness=thickness,
+        score_thr=score_thr, show=False, out_file=out_file)
+    # plt.figure(figsize=fig_size)
+    # plt.imshow(mmcv.bgr2rgb(img))
+    # plt.savefig("test.jpg", mmcv.bgr2rgb(img))
