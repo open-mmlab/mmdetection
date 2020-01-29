@@ -103,7 +103,6 @@ class AnchorHead(nn.Module):
         cls_scores = []
         bbox_preds = []
         for level, f in enumerate(feats):
-            flat = f.reshape(-1)
             cls_score, bbox_pred = self.forward_single(f)
             cls_scores.append(cls_score)
             bbox_preds.append(bbox_pred)
@@ -218,11 +217,7 @@ class AnchorHead(nn.Module):
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   img_metas,
-                   cfg,
+    def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg,
                    rescale=False):
         """
         Transform network output for a batch into labeled boxes.

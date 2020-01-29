@@ -1,5 +1,6 @@
 import inspect
 import logging
+from functools import partial
 
 import mmcv
 import torch
@@ -29,7 +30,7 @@ class Registry(object):
     def get(self, key):
         return self._module_dict.get(key, None)
 
-    def _register_module(self, module_class):
+    def _register_module(self, module_class, force=False):
         """Register a module.
 
         Args:
@@ -39,7 +40,7 @@ class Registry(object):
             raise TypeError('module must be a class, but got {}'.format(
                 type(module_class)))
         module_name = module_class.__name__
-        if module_name in self._module_dict:
+        if not force and module_name in self._module_dict:
             raise KeyError('{} is already registered in {}'.format(
                 module_name, self.name))
         self._module_dict[module_name] = module_class

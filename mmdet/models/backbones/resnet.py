@@ -495,7 +495,7 @@ class ResNet(nn.Module):
                     param.requires_grad = False
 
         for i in range(1, self.frozen_stages + 1):
-            m = self.res_layers[i]  #getattr(self, 'layer{}'.format(i))
+            m = self.res_layers[i]
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
