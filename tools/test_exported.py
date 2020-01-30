@@ -166,6 +166,15 @@ def main_openvino(args):
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
+    if args.do_not_normalize:
+        assert cfg.data.test.pipeline[1]['type'] == 'MultiScaleFlipAug'
+        normalize_idx = [i for i, v in enumerate(cfg.data.test.pipeline[1]['transforms']) if v['type'] == 'Normalize'][0]
+
+        cfg.data.test.pipeline[1]['transforms'][normalize_idx]['mean'] = [0.0, 0.0, 0.0]
+        cfg.data.test.pipeline[1]['transforms'][normalize_idx]['std'] = [1.0, 1.0, 1.0]
+
+        print(cfg.data.test)
+
     if args.video is not None and args.show:
         dataset = VideoDataset(int(args.video), cfg.data)
         data_loader = iter(dataset)
@@ -188,8 +197,8 @@ def main_openvino(args):
     else:
         classes_num = 2
 
-        model = DetectorOpenVINO(args.model, args.ckpt, mapping_file_path=args.mapping,
-                                 # cpu_extension_lib_path=args.cpu_ext_path,
+        model = DetectorOpenVINO(args.with_detection_output,
+                                 args.model, args.ckpt, mapping_file_path=args.mapping,
                                  cfg=cfg,
                                  classes=['person'])
 
@@ -244,6 +253,17 @@ def main(args):
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
+
+
+    if args.do_not_normalize:
+        assert cfg.data.test.pipeline[1]['type'] == 'MultiScaleFlipAug'
+        normalize_idx = [i for i, v in enumerate(cfg.data.test.pipeline[1]['transforms']) if v['type'] == 'Normalize'][0]
+
+        cfg.data.test.pipeline[1]['transforms'][normalize_idx]['mean'] = [0.0, 0.0, 0.0]
+        cfg.data.test.pipeline[1]['transforms'][normalize_idx]['std'] = [1.0, 1.0, 1.0]
+
+        print(cfg.data.test)
+
 
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
@@ -358,6 +378,8 @@ def parse_args():
         help='show only detection with confidence larger than threshold')
     parser.add_argument('--backend', default='onnx', choices=('onnx', 'openvino'))
     parser.add_argument('--cpu_ext_path', type=str, help='')
+    parser.add_argument('--with_detection_output', action='store_true')
+    parser.add_argument('--do_not_normalize', action='store_true')
     args = parser.parse_args()
     return args
 

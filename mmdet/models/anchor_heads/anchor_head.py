@@ -259,10 +259,11 @@ class AnchorHead(nn.Module):
 
         # FIXME. Workaround for OpenVINO-friendly export.
         #        cls_scores[i] is_in_onnx_export()
+        in_export = is_in_onnx_export()
         device = cls_scores[0].device
         mlvl_anchors = [
             self.anchor_generators[i].grid_anchors(
-                cls_scores[i] if is_in_onnx_export() else cls_scores[i].size()[-2:],
+                cls_scores[i] if in_export else cls_scores[i].size()[-2:],
                 self.anchor_strides[i],
                 device=device) for i in range(num_levels)
         ]
@@ -282,25 +283,6 @@ class AnchorHead(nn.Module):
                                                scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
-
-    def get_centerness(self, anchors, bboxes):
-        # print(anchors.shape, bboxes.shape)
-
-        anchors_centers = (anchors[:, 2:4] + anchors[:, 0:2]) * 0.5
-        # anchors_wh = anchors[:, 2:4] - anchors[:, 0:2]
-        bboxes_centers = (bboxes[:, 2:4] + bboxes[:, 0:2]) * 0.5
-        bboxes_wh = bboxes[:, 2:4] - bboxes[:, 0:2]
-
-        # print(anchors_centers.shape, bboxes_centers.shape)
-        delta = torch.abs(anchors_centers - bboxes_centers) * 2
-        centerness = torch.clamp((bboxes_wh - delta), min=0, max=None) / (bboxes_wh + delta)
-        centerness = torch.prod(centerness, dim=-1, keepdim=False) ** 0.5
-
-        assert torch.all(centerness.view(-1) >= 0)
-        assert torch.all(centerness.view(-1) <= 1)
-        # print(centerness.shape)
-
-        return centerness.unsqueeze(1)
 
     def get_bboxes_single(self,
                           cls_score_list,
@@ -338,7 +320,6 @@ class AnchorHead(nn.Module):
                 else:
                     max_scores, _ = scores.max(dim=1)
                 topk_inds = topk(max_scores, nms_pre)
-                # _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds]
                 bbox_pred = bbox_pred[topk_inds]
                 scores = scores[topk_inds]

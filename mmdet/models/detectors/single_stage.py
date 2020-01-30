@@ -76,10 +76,12 @@ class SingleStageDetector(BaseDetector):
     def simple_test(self, img, img_meta, rescale=False, postprocess=True):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
-        det_bboxes, det_labels = self.bbox_head.get_bboxes(*outs, img_meta, self.test_cfg, False)[0]
+        det_bboxes, det_labels = \
+            self.bbox_head.get_bboxes(*outs, img_meta, self.test_cfg, False)[0]
 
         if postprocess:
-            return self.postprocess(det_bboxes, det_labels, None, img_meta, rescale=rescale)
+            return self.postprocess(det_bboxes, det_labels, None, img_meta,
+                                    rescale=rescale)
 
         return det_bboxes, det_labels
 
@@ -89,10 +91,10 @@ class SingleStageDetector(BaseDetector):
                     det_masks,
                     img_meta,
                     rescale=False):
-        scale_factor = img_meta[0]['scale_factor']
         num_classes = self.bbox_head.num_classes
 
         if rescale:
+            scale_factor = img_meta[0]['scale_factor']
             if isinstance(det_bboxes, torch.Tensor):
                 det_bboxes[:, :4] /= det_bboxes.new_tensor(scale_factor)
             else:

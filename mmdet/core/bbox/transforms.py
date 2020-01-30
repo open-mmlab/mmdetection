@@ -46,18 +46,16 @@ def clamp(x, min, max):
             dtype = x.dtype
 
             y = x
-            d = -1
+            d = len(y.shape)
 
             min_val = torch.as_tensor(min, dtype=dtype, device=device)
-            y = torch.stack([y, min_val.view([
-                                                 1,
-                                             ] * y.dim()).expand_as(y)], dim=d)
+            y = torch.stack(
+                [y, min_val.view([1, ] * y.dim()).expand_as(y)], dim=d)
             y = torch.max(y, dim=d, keepdim=False)[0]
 
             max_val = torch.as_tensor(max, dtype=dtype, device=device)
-            y = torch.stack([y, max_val.view([
-                                                 1,
-                                             ] * y.dim()).expand_as(y)], dim=d)
+            y = torch.stack(
+                [y, max_val.view([1, ] * y.dim()).expand_as(y)], dim=d)
             y = torch.min(y, dim=d, keepdim=False)[0]
     else:
         y = x.clamp(min=min, max=max)

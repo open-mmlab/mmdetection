@@ -193,57 +193,33 @@ class ModelOpenVINO(object):
 
 
 class DetectorOpenVINO(ModelOpenVINO):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, with_detection_output, *args, **kwargs):
         super().__init__(*args,
                          required_inputs=('image', ),
-                         required_outputs=('boxes', 'labels'),
+                         required_outputs=('detection_out',) if with_detection_output else ('boxes', 'labels'),
                          **kwargs)
 
-        self.n, self.c, self.h, self.w = self.net.inputs['image'].shape
-        assert self.n == 1, 'Only batch 1 is supported.'
-
-    def __call__(self, inputs, **kwargs):
-        output = super().__call__(inputs)
-        classes = output['labels']
-        valid_detections_mask = classes >= 0
-        output['labels'] = classes[valid_detections_mask]
-        output['boxes'] = output['boxes'][valid_detections_mask]
-        return output
-
-
-class MaskRCNNOpenVINO(ModelOpenVINO):
-    def __init__(self, *args, **kwargs):
-        super(MaskRCNNOpenVINO, self).__init__(*args, **kwargs)
-        self.required_input_keys = {'image'}
-        assert self.required_input_keys == set(self.net.inputs.keys())
-        required_output_keys = {'boxes', 'labels', 'masks'}
-        if not required_output_keys.issubset(self.net.outputs.keys()):
-            logging.error('Some of the required outputs {} are not present as actual outputs of the net {}'.format(
-                list(required_output_keys), list(self.net.outputs.keys())))
-            raise ValueError
+        self.with_detection_output = with_detection_output
 
         self.n, self.c, self.h, self.w = self.net.inputs['image'].shape
         assert self.n == 1, 'Only batch 1 is supported.'
 
     def __call__(self, inputs, **kwargs):
-        if isinstance(inputs, (list, tuple)):
-            inputs = dict(zip(self.required_input_keys, inputs))
-        for k, v in inputs.items():
-            print(k, v.shape())
-        # im_data = to_numpy(image[0])
-        # if (self.h - im_data.shape[1] < 0) or (self.w - im_data.shape[2] < 0):
-        #     raise ValueError('Input image should resolution of {}x{} or less, '
-        #                      'got {}x{}.'.format(self.w, self.h, im_data.shape[2], im_data.shape[1]))
-        # im_data = np.pad(im_data, ((0, 0),
-        #                            (0, self.h - im_data.shape[1]),
-        #                            (0, self.w - im_data.shape[2])),
-        #                  mode='constant', constant_values=0).reshape(1, self.c, self.h, self.w)
         output = super().__call__(inputs)
+        if self.with_detection_output:
+            detection_out = output['detection_out']
+            output = {}
+            output['labels'] = detection_out[0, 0, :, 1]
+            valid_detections_mask = output['labels'] > 0
+            output['boxes'] = detection_out[0, 0, :, 3:] * np.tile(inputs['image'].shape[2:][::-1], 2)
+            output['boxes'] = np.concatenate((output['boxes'], detection_out[0, 0, :, 2:3]), axis=1)
 
-        classes = output['labels']
-        valid_detections_mask = classes > 0
-        output['labels'] = classes[valid_detections_mask]
-        n = len(output['labels'])
-        output['boxes'] = output['boxes'][valid_detections_mask]
-        output['masks'] = output['masks'][valid_detections_mask][np.arange(n), classes.astype(int).flatten(), ...]
+            output['boxes'] = output['boxes'][valid_detections_mask]
+            output['labels'] = output['labels'][valid_detections_mask].astype(np.int32) - 1
+        else:
+            classes = output['labels']
+            valid_detections_mask = classes >= 0
+            output['labels'] = classes[valid_detections_mask]
+            output['boxes'] = output['boxes'][valid_detections_mask]
+
         return output

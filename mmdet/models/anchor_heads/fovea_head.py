@@ -4,6 +4,8 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import multi_apply, multiclass_nms
 from mmdet.ops import DeformConv
+from mmdet.core.utils.misc import topk
+from mmdet.core.bbox.transforms import clamp
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, bias_init_with_prob
@@ -357,30 +359,28 @@ class FoveaHead(nn.Module):
                 -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).exp()
             nms_pre = cfg.get('nms_pre', -1)
-            if (nms_pre > 0) and (scores.shape[0] > nms_pre):
+            if nms_pre > 0:
                 max_scores, _ = scores.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
+                _, topk_inds = topk(max_scores, nms_pre)
+                bbox_pred = bbox_pred[topk_inds]
+                scores = scores[topk_inds]
                 y = y[topk_inds]
                 x = x[topk_inds]
-            x1 = (stride * x - base_len * bbox_pred[:, 0]).\
-                clamp(min=0, max=img_shape[1] - 1)
-            y1 = (stride * y - base_len * bbox_pred[:, 1]).\
-                clamp(min=0, max=img_shape[0] - 1)
-            x2 = (stride * x + base_len * bbox_pred[:, 2]).\
-                clamp(min=0, max=img_shape[1] - 1)
-            y2 = (stride * y + base_len * bbox_pred[:, 3]).\
-                clamp(min=0, max=img_shape[0] - 1)
-            bboxes = torch.stack([x1, y1, x2, y2], -1)
+            x1 = clamp(stride * x - base_len * bbox_pred[:, 0], 0,
+                       img_shape[1] - 1)
+            y1 = clamp(stride * y - base_len * bbox_pred[:, 1], 0,
+                       img_shape[0] - 1)
+            x2 = clamp(stride * x + base_len * bbox_pred[:, 2], 0,
+                       img_shape[1] - 1)
+            y2 = clamp(stride * y + base_len * bbox_pred[:, 3], 0,
+                       img_shape[0] - 1)
+            bboxes = torch.stack([x1, y1, x2, y2], 1)
             det_bboxes.append(bboxes)
             det_scores.append(scores)
         det_bboxes = torch.cat(det_bboxes)
         if rescale:
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_scores = torch.cat(det_scores)
-        padding = det_scores.new_zeros(det_scores.shape[0], 1)
-        det_scores = torch.cat([padding, det_scores], dim=1)
         det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

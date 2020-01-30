@@ -42,8 +42,11 @@ class SSDHead(AnchorHead):
         cls_convs = []
         for i in range(len(in_channels)):
             if depthwise_heads:
-                assert depthwise_heads_activations in ['relu', 'relu6']
-                activation_class = nn.ReLU if depthwise_heads_activations is 'relu' else nn.ReLU6
+                activation_class = {
+                    'relu': nn.ReLU,
+                    'relu6': nn.ReLU6,
+                }[depthwise_heads_activations]
+
                 reg_conv = nn.Sequential(
                     nn.Conv2d(in_channels[i], in_channels[i],
                               kernel_size=3, padding=1, groups=in_channels[i]),

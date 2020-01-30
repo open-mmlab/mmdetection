@@ -13,7 +13,7 @@ def coco_eval(result_files,
               result_types,
               coco,
               max_dets=(100, 300, 1000),
-              classwise=True):
+              classwise=False):
     for res_type in result_types:
         assert res_type in [
             'proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'
@@ -191,10 +191,9 @@ def segm2json(dataset, results):
                 data['bbox'] = xyxy2xywh(bboxes[i])
                 data['score'] = float(mask_score[i])
                 data['category_id'] = dataset.cat_ids[label]
-                data['segmentation'] = {
-                    'size': segms[i]['size'],
-                    'counts': segms[i]['counts'].decode()
-                }
+                if isinstance(segms[i]['counts'], bytes):
+                    segms[i]['counts'] = segms[i]['counts'].decode()
+                data['segmentation'] = segms[i]
                 segm_json_results.append(data)
     return bbox_json_results, segm_json_results
 

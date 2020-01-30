@@ -91,7 +91,6 @@ class AnchorGenerator(object):
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=1)
         shifts = shifts.type_as(base_anchors)
-
         # first feat_w elements correspond to the first row of shifts
         # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
         # shifted anchors (K, A, 4), reshape to (K*A, 4)

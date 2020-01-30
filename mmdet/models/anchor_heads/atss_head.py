@@ -333,8 +333,6 @@ class ATSSHead(AnchorHead):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
 
         mlvl_scores = torch.cat(mlvl_scores)
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
 
         det_bboxes, det_labels = multiclass_nms(

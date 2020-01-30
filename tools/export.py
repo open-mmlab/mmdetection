@@ -239,16 +239,13 @@ def main(args):
 def parse_args():
     parser = argparse.ArgumentParser(description="Export model to ONNX")
     parser.add_argument("config", help="test config file path")
+    parser.add_argument("checkpoint", help="path to file with model's weights")
     parser.add_argument("model", help="path to output onnx model file")
     parser.add_argument(
         "--check",
         action="store_true",
         help="check that resulting onnx model is valid")
-    parser.add_argument(
-        "--checkpoint",
-        default=None,
-        type=str,
-        help="path to file with model's weights")
+
     args = parser.parse_args()
     return args
 

@@ -1,7 +1,5 @@
 import argparse
 
-import torch
-
 from mmcv import Config
 
 from mmdet.models import build_detector
@@ -34,9 +32,7 @@ def main():
 
     cfg = Config.fromfile(args.config)
     model = build_detector(
-        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
-    if torch.cuda.is_available():
-        model = model.cuda()
+        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg).cuda()
     model.eval()
 
     if hasattr(model, 'forward_dummy'):

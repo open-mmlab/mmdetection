@@ -1,5 +1,4 @@
 import logging
-import os.path as osp
 import tempfile
 import types
 
@@ -8,6 +7,8 @@ from pytorchcv.model_provider import _models
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..registry import BACKBONES
+
+from mmcv.runner import get_dist_info
 
 
 def generate_backbones():
@@ -53,31 +54,32 @@ def generate_backbones():
                         if isinstance(m, _BatchNorm):
                             m.eval()
 
-            def custom_model_getter(*args, out_indices=None, frozen_stages=0, norm_eval=False, verbose=False, **kwargs):
-                if 'pretrained' in kwargs and kwargs['pretrained'] and 'root' in kwargs:
-                    path = kwargs['root']
-                    if not osp.exists(path):
-                        logger.warning('{} does not exist, using standard location of pretrained models.'.format(path))
-                        del kwargs['root']
+            class custom_model_getter(nn.Module):
+                def __init__(self, *args, out_indices=None, frozen_stages=0, norm_eval=False, verbose=False, **kwargs):
+                    super().__init__()
+                    if 'pretrained' in kwargs and kwargs['pretrained']:
+                        rank, _ = get_dist_info()
+                        if rank > 0:
+                            if 'root' not in kwargs:
+                                kwargs['root'] = tempfile.mkdtemp()
+                            kwargs['root'] = tempfile.mkdtemp(dir=kwargs['root'])
+                            logger.info('Rank: {}, Setting {} as a target location of pretrained models'.format(rank, kwargs['root']))
+                    model = model_getter(*args, **kwargs)
+                    model.out_indices = out_indices
+                    model.frozen_stages = frozen_stages
+                    model.norm_eval = norm_eval
+                    model.verbose = verbose
+                    if hasattr(model, 'features') and isinstance(model.features, nn.Sequential):
+                        # Save original forward, just in case.
+                        model.forward_single_output = model.forward
+                        model.forward = types.MethodType(multioutput_forward, model)
+                        model.init_weights = types.MethodType(init_weights, model)
+                        model.train = types.MethodType(train, model)
                     else:
-                        kwargs['root'] = tempfile.mkdtemp(dir=path)
-                        logger.info('Setting {} as a target location of pretrained models'.format(kwargs['root']))
-                model = model_getter(*args, **kwargs)
-                model.out_indices = out_indices
-                model.frozen_stages = frozen_stages
-                model.norm_eval = norm_eval
-                model.verbose = verbose
-                if hasattr(model, 'features') and isinstance(model.features, nn.Sequential):
-                    # Save original forward, just in case.
-                    model.forward_single_output = model.forward
-                    model.forward = types.MethodType(multioutput_forward, model)
-                    model.init_weights = types.MethodType(init_weights, model)
-                    model.train = types.MethodType(train, model)
-                else:
-                    raise ValueError('Failed to automatically wrap backbone network. '
-                                     'Object of type {} has no valid attribute called '
-                                     '"features".'.format(model.__class__))
-                return model
+                        raise ValueError('Failed to automatically wrap backbone network. '
+                                         'Object of type {} has no valid attribute called '
+                                         '"features".'.format(model.__class__))
+                    self.__dict__.update(model.__dict__)
 
             custom_model_getter.__name__ = model_name
             return custom_model_getter

@@ -4,6 +4,8 @@ import os.path as osp
 import pickle
 import shutil
 import tempfile
+import numpy as np
+from tqdm import tqdm
 
 import mmcv
 import torch
@@ -11,19 +13,27 @@ import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 
-from mmdet.core import coco_eval, results2json, wrap_fp16_model
+from mmdet.core import coco_eval, results2json, wrap_fp16_model, multiclass_nms
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
 
-def single_gpu_test(model, data_loader, show=False):
+def single_gpu_test(model, data_loader, show=False, flip=False):
     model.eval()
     results = []
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
+            if flip:
+                data['img'][0] = torch.flip(data['img'][0], dims=(3,))
             result = model(return_loss=False, rescale=not show, **data)
+
+            if flip:
+                width = data['img_meta'][0]._data[0][0]['ori_shape'][1]
+                result[0][:, 0], result[0][:, 2] = \
+                        width - result[0][:, 2] - 1, width - result[0][:, 0] - 1
+
         results.append(result)
 
         if show:
@@ -34,6 +44,49 @@ def single_gpu_test(model, data_loader, show=False):
             prog_bar.update()
     return results
 
+def single_gpu_test_ms(model, cfg, scales, flip):
+    per_scale_results = []
+    flip_options = (False, True) if flip else (False,)
+    for flip in flip_options:
+        for img_scale in scales:
+            print(f'scale={img_scale} flip={flip}')
+            assert cfg.data.test.pipeline[1].type == 'MultiScaleFlipAug'
+            cfg.data.test.pipeline[1].img_scale = tuple(img_scale)
+            dataset = build_dataset(cfg.data.test)
+            data_loader = build_dataloader(
+                dataset,
+                imgs_per_gpu=1,
+                workers_per_gpu=cfg.data.workers_per_gpu,
+                dist=False,
+                shuffle=False)
+
+            results = single_gpu_test(model, data_loader, False, flip=flip)
+            per_scale_results.append(results)
+            print()
+
+    return per_scale_results
+
+def combine_results(per_scale_outputs, model, cfg):
+    results = []
+
+    for img_idx in tqdm(range(len(per_scale_outputs[0]))):
+        all_bboxes = []
+        for output in per_scale_outputs:
+            all_bboxes.append(output[img_idx][0])
+
+        all_bboxes = np.concatenate(all_bboxes, axis=0)
+        all_bboxes = torch.tensor(all_bboxes)
+
+        det_bboxes, det_labels = multiclass_nms(
+            all_bboxes[:, :4], all_bboxes[:, 4:], 0.0,
+            cfg.test_cfg.nms, cfg.test_cfg.max_per_img * len(per_scale_outputs))
+
+        results.append(
+            model.module.postprocess(det_bboxes, det_labels, None,
+                                     None, rescale=False)
+        )
+
+    return results
 
 def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     """Test model with multiple gpus.
@@ -180,6 +233,10 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--tta_ms', nargs='+',
+                        help='Enables multi-scale testing: h1 w1 h2 w2 ...')
+    parser.add_argument('--tta_flip', action='store_true',
+                        help='Enables flip as one of test-time augmentations.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -238,7 +295,14 @@ def main():
 
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
-        outputs = single_gpu_test(model, data_loader, args.show)
+        if args.tta_ms is None:
+            outputs = single_gpu_test(model, data_loader, args.show)
+        else:
+            assert not args.show
+            scales = np.array([int(x) for x in args.tta_ms]).reshape(-1, 2)
+            per_scale_outputs = single_gpu_test_ms(
+                model, cfg, scales, args.tta_flip)
+            outputs = combine_results(per_scale_outputs, model, cfg)
     else:
         model = MMDistributedDataParallel(model.cuda())
         outputs = multi_gpu_test(model, data_loader, args.tmpdir,

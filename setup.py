@@ -20,8 +20,6 @@ def readme():
     return content
 
 
-WITH_CUDA = True
-
 MAJOR = 1
 MINOR = 0
 PATCH = ''
@@ -96,8 +94,6 @@ def get_version():
 
 
 def make_cuda_ext(name, module, sources):
-    if not WITH_CUDA:
-        return None
 
     define_macros = []
 
