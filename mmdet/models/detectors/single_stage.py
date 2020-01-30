@@ -10,6 +10,11 @@ from ..registry import DETECTORS
 
 @DETECTORS.register_module
 class SingleStageDetector(BaseDetector):
+    """Base class for single-stage detectors.
+
+    Single-stage detectors directly and densely predict bounding boxes on the
+    output features of the backbone+neck.
+    """
 
     def __init__(self,
                  backbone,
@@ -39,12 +44,18 @@ class SingleStageDetector(BaseDetector):
         self.bbox_head.init_weights()
 
     def extract_feat(self, img):
+        """Directly extract features from the backbone+neck
+        """
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
         return x
 
     def forward_dummy(self, img):
+        """Used for computing network flops.
+
+        See `mmedetection/tools/get_flops.py`
+        """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
         return outs

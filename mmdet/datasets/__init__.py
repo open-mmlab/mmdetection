@@ -4,7 +4,6 @@ from .coco import CocoDataset
 from .crossroad_coco import CrossroadDataset, CrossroadPersonDataset
 from .custom import CustomDataset
 from .dataset_wrappers import ConcatDataset, RepeatDataset
-from .extra_aug import ExtraAugmentation
 from .loader import DistributedGroupSampler, GroupSampler, build_dataloader
 from .registry import DATASETS
 from .voc import VOCDataset

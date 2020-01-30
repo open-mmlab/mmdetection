@@ -1,10 +1,23 @@
+import inspect
+
 import mmcv
 import numpy as np
-from imagecorruptions import corrupt
 from numpy import random
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..registry import PIPELINES
+
+try:
+    from imagecorruptions import corrupt
+except ImportError:
+    corrupt = None
+
+try:
+    import albumentations
+    from albumentations import Compose
+except ImportError:
+    albumentations = None
+    Compose = None
 
 
 @PIPELINES.register_module
@@ -145,12 +158,23 @@ class Resize(object):
                 ]
             results[key] = masks
 
+    def _resize_seg(self, results):
+        for key in results.get('seg_fields', []):
+            if self.keep_ratio:
+                gt_seg = mmcv.imrescale(
+                    results[key], results['scale'], interpolation='nearest')
+            else:
+                gt_seg = mmcv.imresize(
+                    results[key], results['scale'], interpolation='nearest')
+            results['gt_semantic_seg'] = gt_seg
+
     def __call__(self, results):
         if 'scale' not in results:
             self._random_scale(results)
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
+        self._resize_seg(results)
         return results
 
     def __repr__(self):
@@ -175,12 +199,14 @@ class RandomFlip(object):
         flip_ratio (float, optional): The flipping probability.
     """
 
-    def __init__(self, flip_ratio=None):
+    def __init__(self, flip_ratio=None, direction='horizontal'):
         self.flip_ratio = flip_ratio
+        self.direction = direction
         if flip_ratio is not None:
             assert flip_ratio >= 0 and flip_ratio <= 1
+        assert direction in ['horizontal', 'vertical']
 
-    def bbox_flip(self, bboxes, img_shape):
+    def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
 
         Args:
@@ -188,26 +214,46 @@ class RandomFlip(object):
             img_shape(tuple): (height, width)
         """
         assert bboxes.shape[-1] % 4 == 0
-        w = img_shape[1]
         flipped = bboxes.copy()
-        flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
-        flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+        if direction == 'horizontal':
+            w = img_shape[1]
+            flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
+            flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+        elif direction == 'vertical':
+            h = img_shape[0]
+            flipped[..., 1::4] = h - bboxes[..., 3::4] - 1
+            flipped[..., 3::4] = h - bboxes[..., 1::4] - 1
+        else:
+            raise ValueError(
+                'Invalid flipping direction "{}"'.format(direction))
         return flipped
 
     def __call__(self, results):
         if 'flip' not in results:
             flip = True if np.random.rand() < self.flip_ratio else False
             results['flip'] = flip
+        if 'flip_direction' not in results:
+            results['flip_direction'] = self.direction
         if results['flip']:
             # flip image
-            results['img'] = mmcv.imflip(results['img'])
+            results['img'] = mmcv.imflip(
+                results['img'], direction=results['flip_direction'])
             # flip bboxes
             for key in results.get('bbox_fields', []):
                 results[key] = self.bbox_flip(results[key],
-                                              results['img_shape'])
+                                              results['img_shape'],
+                                              results['flip_direction'])
             # flip masks
             for key in results.get('mask_fields', []):
-                results[key] = [mask[:, ::-1] for mask in results[key]]
+                results[key] = [
+                    mmcv.imflip(mask, direction=results['flip_direction'])
+                    for mask in results[key]
+                ]
+
+            # flip segs
+            for key in results.get('seg_fields', []):
+                results[key] = mmcv.imflip(
+                    results[key], direction=results['flip_direction'])
         return results
 
     def __repr__(self):
@@ -254,11 +300,19 @@ class Pad(object):
                 mmcv.impad(mask, pad_shape, pad_val=self.pad_val)
                 for mask in results[key]
             ]
-            results[key] = np.stack(padded_masks, axis=0)
+            if padded_masks:
+                results[key] = np.stack(padded_masks, axis=0)
+            else:
+                results[key] = np.empty((0, ) + pad_shape, dtype=np.uint8)
+
+    def _pad_seg(self, results):
+        for key in results.get('seg_fields', []):
+            results[key] = mmcv.impad(results[key], results['pad_shape'][:2])
 
     def __call__(self, results):
         self._pad_img(results)
         self._pad_masks(results)
+        self._pad_seg(results)
         return results
 
     def __repr__(self):
@@ -319,7 +373,7 @@ class RandomCrop(object):
         crop_x1, crop_x2 = offset_w, offset_w + self.crop_size[1]
 
         # crop the image
-        img = img[crop_y1:crop_y2, crop_x1:crop_x2, :]
+        img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
         img_shape = img.shape
         results['img'] = img
         results['img_shape'] = img_shape
@@ -332,6 +386,10 @@ class RandomCrop(object):
             bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1] - 1)
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)
             results[key] = bboxes
+
+        # crop semantic seg
+        for key in results.get('seg_fields', []):
+            results[key] = results[key][crop_y1:crop_y2, crop_x1:crop_x2]
 
         # filter out the gt bboxes that are completely cropped
         if 'gt_bboxes' in results:
@@ -349,8 +407,8 @@ class RandomCrop(object):
             if 'gt_masks' in results:
                 valid_gt_masks = []
                 for i in np.where(valid_inds)[0]:
-                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2, crop_x1:
-                                                     crop_x2]
+                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2,
+                                                     crop_x1:crop_x2]
                     valid_gt_masks.append(gt_mask)
                 results['gt_masks'] = valid_gt_masks
 
@@ -362,15 +420,8 @@ class RandomCrop(object):
 
 
 @PIPELINES.register_module
-class SegResizeFlipPadRescale(object):
-    """A sequential transforms to semantic segmentation maps.
-
-    The same pipeline as input images is applied to the semantic segmentation
-    map, and finally rescale it by some scale factor. The transforms include:
-    1. resize
-    2. flip
-    3. pad
-    4. rescale (so that the final size can be different from the image size)
+class SegRescale(object):
+    """Rescale semantic segmentation maps.
 
     Args:
         scale_factor (float): The scale factor of the final output.
@@ -380,24 +431,10 @@ class SegResizeFlipPadRescale(object):
         self.scale_factor = scale_factor
 
     def __call__(self, results):
-        if results['keep_ratio']:
-            gt_seg = mmcv.imrescale(
-                results['gt_semantic_seg'],
-                results['scale'],
-                interpolation='nearest')
-        else:
-            gt_seg = mmcv.imresize(
-                results['gt_semantic_seg'],
-                results['scale'],
-                interpolation='nearest')
-        if results['flip']:
-            gt_seg = mmcv.imflip(gt_seg)
-        if gt_seg.shape != results['pad_shape']:
-            gt_seg = mmcv.impad(gt_seg, results['pad_shape'][:2])
-        if self.scale_factor != 1:
-            gt_seg = mmcv.imrescale(
-                gt_seg, self.scale_factor, interpolation='nearest')
-        results['gt_semantic_seg'] = gt_seg
+        for key in results.get('seg_fields', []):
+            if self.scale_factor != 1:
+                results[key] = mmcv.imrescale(
+                    results[key], self.scale_factor, interpolation='nearest')
         return results
 
     def __repr__(self):
@@ -505,17 +542,27 @@ class Expand(object):
         mean (tuple): mean value of dataset.
         to_rgb (bool): if need to convert the order of mean to align with RGB.
         ratio_range (tuple): range of expand ratio.
+        prob (float): probability of applying this transformation
     """
 
-    def __init__(self, mean=(0, 0, 0), to_rgb=True, ratio_range=(1, 4)):
+    def __init__(self,
+                 mean=(0, 0, 0),
+                 to_rgb=True,
+                 ratio_range=(1, 4),
+                 seg_ignore_label=None,
+                 prob=0.5):
+        self.to_rgb = to_rgb
+        self.ratio_range = ratio_range
         if to_rgb:
             self.mean = mean[::-1]
         else:
             self.mean = mean
         self.min_ratio, self.max_ratio = ratio_range
+        self.seg_ignore_label = seg_ignore_label
+        self.prob = prob
 
     def __call__(self, results):
-        if random.randint(2):
+        if random.uniform(0, 1) > self.prob:
             return results
 
         img, boxes = [results[k] for k in ('img', 'gt_bboxes')]
@@ -540,12 +587,23 @@ class Expand(object):
                 expand_mask[top:top + h, left:left + w] = mask
                 expand_gt_masks.append(expand_mask)
             results['gt_masks'] = expand_gt_masks
+
+        # not tested
+        if 'gt_semantic_seg' in results:
+            assert self.seg_ignore_label is not None
+            gt_seg = results['gt_semantic_seg']
+            expand_gt_seg = np.full((int(h * ratio), int(w * ratio)),
+                                    self.seg_ignore_label).astype(gt_seg.dtype)
+            expand_gt_seg[top:top + h, left:left + w] = gt_seg
+            results['gt_semantic_seg'] = expand_gt_seg
         return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += '(mean={}, to_rgb={}, ratio_range={})'.format(
-            self.mean, self.to_rgb, self.ratio_range)
+        repr_str += '(mean={}, to_rgb={}, ratio_range={}, ' \
+                    'seg_ignore_label={})'.format(
+                        self.mean, self.to_rgb, self.ratio_range,
+                        self.seg_ignore_label)
         return repr_str
 
 
@@ -556,8 +614,10 @@ class MinIoURandomCrop(object):
     selected from min_ious.
 
     Args:
-        min_ious (tuple): minimum IoU threshold
-        crop_size (tuple): Expected size after cropping, (h, w).
+        min_ious (tuple): minimum IoU threshold for all intersections with
+        bounding boxes
+        min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
+        where a >= min_crop_size).
     """
 
     def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3):
@@ -596,9 +656,8 @@ class MinIoURandomCrop(object):
 
                 # center of boxes should inside the crop img
                 center = (boxes[:, :2] + boxes[:, 2:]) / 2
-                mask = (center[:, 0] > patch[0]) * (
-                    center[:, 1] > patch[1]) * (center[:, 0] < patch[2]) * (
-                        center[:, 1] < patch[3])
+                mask = ((center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) *
+                        (center[:, 0] < patch[2]) * (center[:, 1] < patch[3]))
                 if not mask.any():
                     continue
                 boxes = boxes[mask]
@@ -623,6 +682,11 @@ class MinIoURandomCrop(object):
                         gt_mask[patch[1]:patch[3], patch[0]:patch[2]]
                         for gt_mask in valid_masks
                     ]
+
+                # not tested
+                if 'gt_semantic_seg' in results:
+                    results['gt_semantic_seg'] = results['gt_semantic_seg'][
+                        patch[1]:patch[3], patch[0]:patch[2]]
                 return results
 
     def __repr__(self):
@@ -640,6 +704,8 @@ class Corrupt(object):
         self.severity = severity
 
     def __call__(self, results):
+        if corrupt is None:
+            raise RuntimeError('imagecorruptions is not installed')
         results['img'] = corrupt(
             results['img'].astype(np.uint8),
             corruption_name=self.corruption,
@@ -650,4 +716,159 @@ class Corrupt(object):
         repr_str = self.__class__.__name__
         repr_str += '(corruption={}, severity={})'.format(
             self.corruption, self.severity)
+        return repr_str
+
+
+@PIPELINES.register_module
+class Albu(object):
+
+    def __init__(self,
+                 transforms,
+                 bbox_params=None,
+                 keymap=None,
+                 update_pad_shape=False,
+                 skip_img_without_anno=False):
+        """
+        Adds custom transformations from Albumentations lib.
+        Please, visit `https://albumentations.readthedocs.io`
+        to get more information.
+
+        transforms (list): list of albu transformations
+        bbox_params (dict): bbox_params for albumentation `Compose`
+        keymap (dict): contains {'input key':'albumentation-style key'}
+        skip_img_without_anno (bool): whether to skip the image
+                                      if no ann left after aug
+        """
+        if Compose is None:
+            raise RuntimeError('albumentations is not installed')
+
+        self.transforms = transforms
+        self.filter_lost_elements = False
+        self.update_pad_shape = update_pad_shape
+        self.skip_img_without_anno = skip_img_without_anno
+
+        # A simple workaround to remove masks without boxes
+        if (isinstance(bbox_params, dict) and 'label_fields' in bbox_params
+                and 'filter_lost_elements' in bbox_params):
+            self.filter_lost_elements = True
+            self.origin_label_fields = bbox_params['label_fields']
+            bbox_params['label_fields'] = ['idx_mapper']
+            del bbox_params['filter_lost_elements']
+
+        self.bbox_params = (
+            self.albu_builder(bbox_params) if bbox_params else None)
+        self.aug = Compose([self.albu_builder(t) for t in self.transforms],
+                           bbox_params=self.bbox_params)
+
+        if not keymap:
+            self.keymap_to_albu = {
+                'img': 'image',
+                'gt_masks': 'masks',
+                'gt_bboxes': 'bboxes'
+            }
+        else:
+            self.keymap_to_albu = keymap
+        self.keymap_back = {v: k for k, v in self.keymap_to_albu.items()}
+
+    def albu_builder(self, cfg):
+        """Import a module from albumentations.
+        Inherits some of `build_from_cfg` logic.
+
+        Args:
+            cfg (dict): Config dict. It should at least contain the key "type".
+        Returns:
+            obj: The constructed object.
+        """
+        assert isinstance(cfg, dict) and "type" in cfg
+        args = cfg.copy()
+
+        obj_type = args.pop("type")
+        if mmcv.is_str(obj_type):
+            if albumentations is None:
+                raise RuntimeError('albumentations is not installed')
+            obj_cls = getattr(albumentations, obj_type)
+        elif inspect.isclass(obj_type):
+            obj_cls = obj_type
+        else:
+            raise TypeError(
+                'type must be a str or valid type, but got {}'.format(
+                    type(obj_type)))
+
+        if 'transforms' in args:
+            args['transforms'] = [
+                self.albu_builder(transform)
+                for transform in args['transforms']
+            ]
+
+        return obj_cls(**args)
+
+    @staticmethod
+    def mapper(d, keymap):
+        """
+        Dictionary mapper.
+        Renames keys according to keymap provided.
+
+        Args:
+            d (dict): old dict
+            keymap (dict): {'old_key':'new_key'}
+        Returns:
+            dict: new dict.
+        """
+        updated_dict = {}
+        for k, v in zip(d.keys(), d.values()):
+            new_k = keymap.get(k, k)
+            updated_dict[new_k] = d[k]
+        return updated_dict
+
+    def __call__(self, results):
+        # dict to albumentations format
+        results = self.mapper(results, self.keymap_to_albu)
+
+        if 'bboxes' in results:
+            # to list of boxes
+            if isinstance(results['bboxes'], np.ndarray):
+                results['bboxes'] = [x for x in results['bboxes']]
+            # add pseudo-field for filtration
+            if self.filter_lost_elements:
+                results['idx_mapper'] = np.arange(len(results['bboxes']))
+
+        results = self.aug(**results)
+
+        if 'bboxes' in results:
+            if isinstance(results['bboxes'], list):
+                results['bboxes'] = np.array(
+                    results['bboxes'], dtype=np.float32)
+
+            # filter label_fields
+            if self.filter_lost_elements:
+
+                results['idx_mapper'] = np.arange(len(results['bboxes']))
+
+                for label in self.origin_label_fields:
+                    results[label] = np.array(
+                        [results[label][i] for i in results['idx_mapper']])
+                if 'masks' in results:
+                    results['masks'] = np.array(
+                        [results['masks'][i] for i in results['idx_mapper']])
+
+                if (not len(results['idx_mapper'])
+                        and self.skip_img_without_anno):
+                    return None
+
+        if 'gt_labels' in results:
+            if isinstance(results['gt_labels'], list):
+                results['gt_labels'] = np.array(results['gt_labels'])
+
+        # back to the original format
+        results = self.mapper(results, self.keymap_back)
+
+        # update final shape
+        if self.update_pad_shape:
+            results['pad_shape'] = results['img'].shape
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += '(transformations={})'.format(self.transformations)
         return repr_str

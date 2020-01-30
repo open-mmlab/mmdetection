@@ -1,4 +1,5 @@
 import itertools
+
 import mmcv
 import numpy as np
 from pycocotools.coco import COCO
@@ -8,7 +9,11 @@ from terminaltables import AsciiTable
 from .recall import eval_recalls
 
 
-def coco_eval(result_files, result_types, coco, max_dets=(100, 300, 1000), classwise=True):
+def coco_eval(result_files,
+              result_types,
+              coco,
+              max_dets=(100, 300, 1000),
+              classwise=True):
     for res_type in result_types:
         assert res_type in [
             'proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'
@@ -174,7 +179,7 @@ def segm2json(dataset, results):
 
             # segm results
             # some detectors use different score for det and segm
-            if len(seg) == 2:
+            if isinstance(seg, tuple):
                 segms = seg[0][label]
                 mask_score = seg[1][label]
             else:
@@ -183,6 +188,7 @@ def segm2json(dataset, results):
             for i in range(bboxes.shape[0]):
                 data = dict()
                 data['image_id'] = img_id
+                data['bbox'] = xyxy2xywh(bboxes[i])
                 data['score'] = float(mask_score[i])
                 data['category_id'] = dataset.cat_ids[label]
                 data['segmentation'] = {

@@ -76,25 +76,9 @@ class DistEvalHook(Hook):
 class DistEvalmAPHook(DistEvalHook):
 
     def evaluate(self, runner, results):
-        gt_bboxes = []
-        gt_labels = []
-        gt_ignore = []
-        for i in range(len(self.dataset)):
-            ann = self.dataset.get_ann_info(i)
-            bboxes = ann['bboxes']
-            labels = ann['labels']
-            if 'bboxes_ignore' in ann:
-                ignore = np.concatenate([
-                    np.zeros(bboxes.shape[0], dtype=np.bool),
-                    np.ones(ann['bboxes_ignore'].shape[0], dtype=np.bool)
-                ])
-                gt_ignore.append(ignore)
-                bboxes = np.vstack([bboxes, ann['bboxes_ignore']])
-                labels = np.concatenate([labels, ann['labels_ignore']])
-            gt_bboxes.append(bboxes)
-            gt_labels.append(labels)
-        if not gt_ignore:
-            gt_ignore = None
+        annotations = [
+            self.dataset.get_ann_info(i) for i in range(len(self.dataset))
+        ]
         # If the dataset is VOC2007, then use 11 points mAP evaluation.
         if hasattr(self.dataset, 'year') and self.dataset.year == 2007:
             ds_name = 'voc07'
@@ -102,13 +86,11 @@ class DistEvalmAPHook(DistEvalHook):
             ds_name = self.dataset.CLASSES
         mean_ap, eval_results = eval_map(
             results,
-            gt_bboxes,
-            gt_labels,
-            gt_ignore=gt_ignore,
+            annotations,
             scale_ranges=None,
             iou_thr=0.5,
             dataset=ds_name,
-            print_summary=True)
+            logger=runner.logger)
         runner.log_buffer.output['mAP'] = mean_ap
         runner.log_buffer.ready = True
 

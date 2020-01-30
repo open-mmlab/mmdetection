@@ -1,4 +1,5 @@
 import inspect
+from functools import partial
 
 import mmcv
 
@@ -25,23 +26,25 @@ class Registry(object):
     def get(self, key):
         return self._module_dict.get(key, None)
 
-    def _register_module(self, module_class):
+    def _register_module(self, module_class, force=False):
         """Register a module.
 
         Args:
             module (:obj:`nn.Module`): Module to be registered.
         """
-        # if not inspect.isclass(module_class):
-        #     raise TypeError('module must be a class, but got {}'.format(
-        #         type(module_class)))
+        if not inspect.isclass(module_class):
+            raise TypeError('module must be a class, but got {}'.format(
+                type(module_class)))
         module_name = module_class.__name__
-        if module_name in self._module_dict:
+        if not force and module_name in self._module_dict:
             raise KeyError('{} is already registered in {}'.format(
                 module_name, self.name))
         self._module_dict[module_name] = module_class
 
-    def register_module(self, cls):
-        self._register_module(cls)
+    def register_module(self, cls=None, force=False):
+        if cls is None:
+            return partial(self.register_module, force=force)
+        self._register_module(cls, force=force)
         return cls
 
 

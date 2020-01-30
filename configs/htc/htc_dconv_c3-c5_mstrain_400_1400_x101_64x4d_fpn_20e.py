@@ -15,7 +15,7 @@ model = dict(
         frozen_stages=1,
         style='pytorch',
         dcn=dict(
-            modulated=False,
+            type='DCN',
             groups=64,
             deformable_groups=1,
             fallback_on_stride=False),
@@ -199,8 +199,7 @@ test_cfg = dict(
         score_thr=0.001,
         nms=dict(type='nms', iou_thr=0.5),
         max_per_img=100,
-        mask_thr_binary=0.5),
-    keep_all_stages=False)
+        mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
@@ -218,7 +217,7 @@ train_pipeline = [
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
-    dict(type='SegResizeFlipPadRescale', scale_factor=1 / 8),
+    dict(type='SegRescale', scale_factor=1 / 8),
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',

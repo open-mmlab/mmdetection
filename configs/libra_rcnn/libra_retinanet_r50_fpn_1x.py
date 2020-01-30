@@ -15,7 +15,6 @@ model = dict(
             in_channels=[256, 512, 1024, 2048],
             out_channels=256,
             start_level=1,
-            extra_convs_on_inputs=True,
             add_extra_convs=True,
             num_outs=5),
         dict(
@@ -57,9 +56,6 @@ train_cfg = dict(
         neg_iou_thr=0.4,
         min_pos_iou=0,
         ignore_iof_thr=-1),
-    smoothl1_beta=0.11,
-    gamma=2.0,
-    alpha=0.25,
     allowed_border=-1,
     pos_weight=-1,
     debug=False)
@@ -138,7 +134,6 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 12
-device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/libra_retinanet_r50_fpn_1x'

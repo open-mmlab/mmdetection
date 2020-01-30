@@ -1,5 +1,0 @@
-isort
-flake8
-yapf
-pytest-cov
-codecov
