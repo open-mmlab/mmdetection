@@ -12,6 +12,7 @@ from torch.onnx.symbolic_registry import register_op
 from mmdet.apis import init_detector
 from mmdet.apis.inference import LoadImage
 from mmdet.datasets.pipelines import Compose
+from mmdet.models.anchor_heads.anchor_head import AnchorHead
 
 
 @parse_args('v', 'v', 'v', 'v', 'none')
@@ -216,11 +217,14 @@ def main(args):
     # model.bbox_head = Stub(StubModule(model.bbox_head), name='DetectionOutput', namespace='mmdet_custom')
     # model.bbox_head.get_bboxes = Stub(model.bbox_head.get_bboxes, name='DetectionOutput', namespace='mmdet_custom')
 
-    # anchor_generators = model.bbox_head.anchor_generators
-    # for i in range(len(anchor_generators)):
-    #     anchor_generators[i].grid_anchors = AnchorsGridGeneratorStub(anchor_generators[i].grid_anchors)
-    #     # Save base anchors as operation parameter. It's used at ONNX export time during symbolic call.
-    #     anchor_generators[i].grid_anchors.params['base_anchors'] = anchor_generators[i].base_anchors.cpu().numpy()
+    if isinstance(model.bbox_head, AnchorHead):
+        anchor_generators = model.bbox_head.anchor_generators
+        for i in range(len(anchor_generators)):
+            anchor_generators[i].grid_anchors = AnchorsGridGeneratorStub(
+                anchor_generators[i].grid_anchors)
+            # Save base anchors as operation parameter. It's used at ONNX export time during symbolic call.
+            anchor_generators[i].grid_anchors.params['base_anchors'] = anchor_generators[
+                i].base_anchors.cpu().numpy()
 
     image = np.zeros((128, 128, 3), dtype=np.uint8)
     with torch.no_grad():
