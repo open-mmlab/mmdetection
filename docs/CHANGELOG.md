@@ -8,7 +8,7 @@ This release mainly improves the code quality and add more docstrings.
 - Documentation is online now: https://mmdetection.readthedocs.io.
 - Support new models: [ATSS](https://arxiv.org/abs/1912.02424).
 - DCN is now available with the api `build_conv_layer` and `ConvModule` like the normal conv layer.
-- A tool to collect environment infomation is available for trouble shoting.
+- A tool to collect environment information is available for trouble shooting.
 
 **Bug Fixes**
 - Fix the incompatibility of the latest numpy and pycocotools. (#2024)
@@ -22,12 +22,12 @@ This release mainly improves the code quality and add more docstrings.
 
 **Improvements**
 - Enhance AssignResult and SamplingResult. (#1995)
-- Add ability to overwite existing module in Registry. (#1982)
+- Add ability to overwrite existing module in Registry. (#1982)
 - Reorganize requirements and make albumentations and imagecorruptions optional. (#1969)
 - Check NaN in `SSDHead`. (#1935)
 - Encapsulate the DCN in ResNe(X)t into a ConvModule & Conv_layers. (#1894)
 - Refactoring for mAP evaluation and support multiprocessing and logging. (#1889)
-- Init the root logger before constructing Runner to log more infomation. (#1865)
+- Init the root logger before constructing Runner to log more information. (#1865)
 - Split `SegResizeFlipPadRescale` into different existing transforms. (#1852)
 - Move `init_dist()` to MMCV. (#1851)
 - Documentation and docstring improvements. (#1971, #1938, #1869, #1838)
@@ -40,7 +40,7 @@ This release mainly improves the code quality and add more docstrings.
 - Implement "Bridging the Gap Between Anchor-based and Anchor-free Detection via Adaptive Training Sample Selection". (#1872)
 - Add sphinx generated docs. (#1859, #1864)
 - Add GN support for flops computation. (#1850)
-- Collect env info for trouble shoting. (#1812)
+- Collect env info for trouble shooting. (#1812)
 
 
 ### v1.0rc1 (13/12/2019)
