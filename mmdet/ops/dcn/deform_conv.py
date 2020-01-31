@@ -6,6 +6,7 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair, _single
 
+from mmdet.utils import get_root_logger
 from . import deform_conv_cuda
 
 
@@ -297,7 +298,6 @@ class DeformConvPack(DeformConv):
                                                                 '_offset.bias')
 
         if version is not None and version > 1:
-            from mmdet.apis import get_root_logger
             logger = get_root_logger()
             logger.info('DeformConvPack {} is upgraded to version 2.'.format(
                 prefix.rstrip('.')))
@@ -420,7 +420,6 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
                                                                 '_offset.bias')
 
         if version is not None and version > 1:
-            from mmdet.apis import get_root_logger
             logger = get_root_logger()
             logger.info(
                 'ModulatedDeformConvPack {} is upgraded to version 2.'.format(

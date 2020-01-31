@@ -6,6 +6,7 @@ import pycocotools.mask as maskUtils
 import torch.nn as nn
 
 from mmdet.core import auto_fp16, get_classes, tensor2imgs
+from mmdet.utils import get_root_logger
 
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
@@ -71,7 +72,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     def init_weights(self, pretrained=None):
         if pretrained is not None:
-            from mmdet.apis import get_root_logger
             logger = get_root_logger()
             logger.info('load model from: {}'.format(pretrained))
 
