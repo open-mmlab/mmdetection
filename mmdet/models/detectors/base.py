@@ -6,7 +6,7 @@ import pycocotools.mask as maskUtils
 import torch.nn as nn
 
 from mmdet.core import auto_fp16, get_classes, tensor2imgs
-from mmdet.utils import get_root_logger
+from mmdet.utils import print_log
 
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
@@ -72,8 +72,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     def init_weights(self, pretrained=None):
         if pretrained is not None:
-            logger = get_root_logger()
-            logger.info('load model from: {}'.format(pretrained))
+            print_log('load model from: {}'.format(pretrained), logger='root')
 
     async def aforward_test(self, *, img, img_meta, **kwargs):
         for var, name in [(img, 'img'), (img_meta, 'img_meta')]:
