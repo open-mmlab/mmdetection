@@ -6,7 +6,7 @@ from mmcv.runner import get_dist_info
 def get_root_logger(log_file=None, log_level=logging.INFO):
     """Get the root logger.
 
-    The logger will be initilized if it has not been initialized. By default a
+    The logger will be initialized if it has not been initialized. By default a
     StreamHandler will be added. If `log_file` is specified, a FileHandler will
     also be added. The name of the root logger is the top-level package name,
     e.g., "mmdet".
