@@ -1,3 +1,4 @@
+import logging
 import os.path as osp
 import tempfile
 
@@ -7,6 +8,7 @@ from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
 from mmdet.core import eval_recalls
+from mmdet.utils import print_log
 from .custom import CustomDataset
 from .registry import DATASETS
 
@@ -261,9 +263,11 @@ class CocoDataset(CustomDataset):
     def evaluate(self,
                  results,
                  metric='bbox',
+                 logger=None,
+                 jsonfile_prefix=None,
+                 classwise=False,
                  proposal_nums=(100, 300, 1000),
-                 iou_thrs=np.arange(0.5, 0.96, 0.05),
-                 logger=None):
+                 iou_thrs=np.arange(0.5, 0.96, 0.05)):
         """Evaluation in COCO protocol.
         """
         assert isinstance(results, list), 'results must be a list'
@@ -277,17 +281,23 @@ class CocoDataset(CustomDataset):
             if metric not in allowed_metrics:
                 raise KeyError('metric {} is not supported'.format(metric))
 
-        tmp_dir = tempfile.TemporaryDirectory()
-        result_files = self.results2json(results,
-                                         osp.join(tmp_dir.name, 'results'))
+        if jsonfile_prefix is None:
+            tmp_dir = tempfile.TemporaryDirectory()
+            jsonfile_prefix = osp.join(tmp_dir.name, 'results')
+        result_files = self.results2json(results, jsonfile_prefix)
 
         eval_results = {}
         cocoGt = self.coco
         for metric in metrics:
+            print_log('\nEvaluating {}...'.format(metric), logger=logger)
             if metric == 'proposal_fast':
                 ar = self.fast_eval_recall(results, proposal_nums, iou_thrs)
+                log_msg = []
                 for i, num in enumerate(proposal_nums):
                     eval_results['AR@{}'.format(num)] = ar[i]
+                    log_msg.append('AR@{}\t{:.4f}'.format(num, ar[i]))
+                log_msg = '\n'.join(log_msg)
+                print_log(log_msg, logger=logger)
                 continue
 
             if metric not in result_files:
@@ -295,7 +305,10 @@ class CocoDataset(CustomDataset):
             try:
                 cocoDt = cocoGt.loadRes(result_files[metric])
             except IndexError:
-                print('No prediction found.')
+                print_log(
+                    'The testing results of the whole dataset is empty.',
+                    logger=logger,
+                    level=logging.ERROR)
                 break
 
             iou_type = 'bbox' if metric == 'proposal' else metric
@@ -307,6 +320,9 @@ class CocoDataset(CustomDataset):
             cocoEval.evaluate()
             cocoEval.accumulate()
             cocoEval.summarize()
+            if classwise:  # Compute per-category AP
+                pass  # TODO
+
             if metric == 'proposal':
                 metric_items = [
                     'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000', 'AR_m@1000',
@@ -326,5 +342,6 @@ class CocoDataset(CustomDataset):
                 eval_results['{}_mAP_copypaste'.format(metric)] = (
                     '{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
                     '{ap[4]:.3f} {ap[5]:.3f}').format(ap=cocoEval.stats[:6])
-        tmp_dir.cleanup()
+        if jsonfile_prefix is None:
+            tmp_dir.cleanup()
         return eval_results

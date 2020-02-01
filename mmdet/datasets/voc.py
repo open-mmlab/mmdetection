@@ -27,6 +27,9 @@ class VOCDataset(XMLDataset):
                  proposal_nums=(100, 300, 1000),
                  iou_thr=0.5,
                  scale_ranges=None):
+        if not isinstance(metric, str):
+            assert len(metric) == 1
+            metric = metric[0]
         allowed_metrics = ['mAP', 'recall']
         if metric not in allowed_metrics:
             raise KeyError('metric {} is not supported'.format(metric))
@@ -37,7 +40,7 @@ class VOCDataset(XMLDataset):
                 ds_name = 'voc07'
             else:
                 ds_name = self.dataset.CLASSES
-            mean_ap, eval_results = eval_map(
+            mean_ap, _ = eval_map(
                 results,
                 annotations,
                 scale_ranges=None,
