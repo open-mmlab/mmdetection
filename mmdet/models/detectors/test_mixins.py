@@ -1,8 +1,6 @@
 import logging
 import sys
 
-import torch
-
 from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, merge_aug_proposals, multiclass_nms)
 
@@ -176,8 +174,8 @@ class MaskTestMixin(object):
                                for _ in range(self.mask_head.num_classes - 1)]
             else:
                 _bboxes = (
-                    det_bboxes[:, :4] *
-                    det_bboxes.new_tensor(scale_factor) if rescale else det_bboxes)
+                    det_bboxes[:, :4] * det_bboxes.new_tensor(scale_factor)
+                    if rescale else det_bboxes)
                 mask_rois = bbox2roi([_bboxes])
                 mask_feats = self.mask_roi_extractor(
                     x[:len(self.mask_roi_extractor.featmap_strides)],
@@ -214,7 +212,8 @@ class MaskTestMixin(object):
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
             _bboxes = (
-                det_bboxes[:, :4] * det_bboxes.new_tensor(scale_factor) if rescale else det_bboxes)
+                det_bboxes[:, :4] *
+                det_bboxes.new_tensor(scale_factor) if rescale else det_bboxes)
             mask_rois = bbox2roi([_bboxes])
             mask_feats = self.mask_roi_extractor(
                 x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
