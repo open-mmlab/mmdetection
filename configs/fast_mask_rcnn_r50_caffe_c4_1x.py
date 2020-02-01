@@ -25,7 +25,7 @@ model = dict(
         norm_eval=True),
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
+        roi_layer=dict(type='RoIAlign', out_size=14),
         out_channels=1024,
         featmap_strides=[16]),
     bbox_head=dict(

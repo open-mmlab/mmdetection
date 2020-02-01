@@ -1,4 +1,5 @@
-import torch.nn as nn
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
@@ -6,54 +7,48 @@ from torch.nn.modules.utils import _pair
 from . import roi_align_cuda
 
 
-class RoIAlignFunction(Function):
+class _ROIAlign(Function):
 
     @staticmethod
-    def forward(ctx, features, rois, out_size, spatial_scale, sample_num=0):
-        out_h, out_w = _pair(out_size)
-        assert isinstance(out_h, int) and isinstance(out_w, int)
+    def forward(ctx, input, roi, output_size, spatial_scale, sampling_ratio,
+                aligned):
+        ctx.save_for_backward(roi)
+        ctx.output_size = _pair(output_size)
         ctx.spatial_scale = spatial_scale
-        ctx.sample_num = sample_num
-        ctx.save_for_backward(rois)
-        ctx.feature_size = features.size()
-
-        batch_size, num_channels, data_height, data_width = features.size()
-        num_rois = rois.size(0)
-
-        output = features.new_zeros(num_rois, num_channels, out_h, out_w)
-        if features.is_cuda:
-            roi_align_cuda.forward(features, rois, out_h, out_w, spatial_scale,
-                                   sample_num, output)
-        else:
-            raise NotImplementedError
-
+        ctx.sampling_ratio = sampling_ratio
+        ctx.input_shape = input.size()
+        ctx.aligned = aligned
+        output = roi_align_cuda.roi_align_forward(input, roi, spatial_scale,
+                                                  output_size[0],
+                                                  output_size[1],
+                                                  sampling_ratio, aligned)
         return output
 
     @staticmethod
     @once_differentiable
     def backward(ctx, grad_output):
-        feature_size = ctx.feature_size
+        rois, = ctx.saved_tensors
+        output_size = ctx.output_size
         spatial_scale = ctx.spatial_scale
-        sample_num = ctx.sample_num
-        rois = ctx.saved_tensors[0]
-        assert (feature_size is not None and grad_output.is_cuda)
+        sampling_ratio = ctx.sampling_ratio
+        bs, ch, h, w = ctx.input_shape
+        grad_input = roi_align_cuda.roi_align_backward(
+            grad_output,
+            rois,
+            spatial_scale,
+            output_size[0],
+            output_size[1],
+            bs,
+            ch,
+            h,
+            w,
+            sampling_ratio,
+            ctx.aligned,
+        )
+        return grad_input, None, None, None, None, None
 
-        batch_size, num_channels, data_height, data_width = feature_size
-        out_w = grad_output.size(3)
-        out_h = grad_output.size(2)
 
-        grad_input = grad_rois = None
-        if ctx.needs_input_grad[0]:
-            grad_input = rois.new_zeros(batch_size, num_channels, data_height,
-                                        data_width)
-            roi_align_cuda.backward(grad_output.contiguous(), rois, out_h,
-                                    out_w, spatial_scale, sample_num,
-                                    grad_input)
-
-        return grad_input, grad_rois, None, None, None
-
-
-roi_align = RoIAlignFunction.apply
+roi_align = _ROIAlign.apply
 
 
 class RoIAlign(nn.Module):
@@ -61,27 +56,60 @@ class RoIAlign(nn.Module):
     def __init__(self,
                  out_size,
                  spatial_scale,
-                 sample_num=0,
-                 use_torchvision=False):
-        super(RoIAlign, self).__init__()
+                 sampling_ratio=0,
+                 aligned=False):
+        """
+        Args:
+            out_size (tuple): h, w
+            spatial_scale (float): scale the input boxes by this number
+            sampling_ratio (int): number of inputs samples to take for each
+                output sample. 0 to take samples densely.
+            aligned (bool): if False, use the legacy implementation in
+                Detectron. If True, align the results more perfectly.
 
+        Note:
+            The meaning of aligned=True:
+
+            Given a continuous coordinate c, its two neighboring pixel
+            indices (in our pixel model) are computed by floor(c - 0.5) and
+            ceil(c - 0.5). For example, c=1.3 has pixel neighbors with discrete
+            indices [0] and [1] (which are sampled from the underlying signal
+            at continuous coordinates 0.5 and 1.5). But the original roi_align
+            (aligned=False) does not subtract the 0.5 when computing
+            neighboring pixel indices and therefore it uses pixels with a
+            slightly incorrect alignment (relative to our pixel model) when
+            performing bilinear interpolation.
+
+            With `aligned=True`,
+            we first appropriately scale the ROI and then shift it by -0.5
+            prior to calling roi_align. This produces the correct neighbors;
+            see detectron2/tests/test_roi_align.py for verification.
+
+            The difference does not make a difference to the model's
+            performance if ROIAlign is used together with conv layers.
+        """
+        super(RoIAlign, self).__init__()
         self.out_size = _pair(out_size)
         self.spatial_scale = float(spatial_scale)
-        self.sample_num = int(sample_num)
-        self.use_torchvision = use_torchvision
+        self.sampling_ratio = sampling_ratio
+        self.aligned = aligned
 
-    def forward(self, features, rois):
-        if self.use_torchvision:
-            from torchvision.ops import roi_align as tv_roi_align
-            return tv_roi_align(features, rois, self.out_size,
-                                self.spatial_scale, self.sample_num)
-        else:
-            return roi_align(features, rois, self.out_size, self.spatial_scale,
-                             self.sample_num)
+    def forward(self, input, rois):
+        """
+        Args:
+            input: NCHW images
+            rois: Bx5 boxes. First column is the index into N. The other 4
+            columns are xyxy.
+        """
+        assert rois.dim() == 2 and rois.size(1) == 5
+        return roi_align(input, rois, self.out_size, self.spatial_scale,
+                         self.sampling_ratio, self.aligned)
 
     def __repr__(self):
-        format_str = self.__class__.__name__
-        format_str += '(out_size={}, spatial_scale={}, sample_num={}'.format(
-            self.out_size, self.spatial_scale, self.sample_num)
-        format_str += ', use_torchvision={})'.format(self.use_torchvision)
-        return format_str
+        tmpstr = self.__class__.__name__ + "("
+        tmpstr += "out_size=" + str(self.out_size)
+        tmpstr += ", spatial_scale=" + str(self.spatial_scale)
+        tmpstr += ", sampling_ratio=" + str(self.sampling_ratio)
+        tmpstr += ", aligned=" + str(self.aligned)
+        tmpstr += ")"
+        return tmpstr
