@@ -121,11 +121,17 @@ class Resize(object):
         if self.keep_ratio:
             img, scale_factor = mmcv.imrescale(
                 results['img'], results['scale'], return_scale=True)
+            # the w_scale and h_scale has minor difference
+            # a real fix should be done in the mmcv.imrescale in the future
+            new_h, new_w = img.shape[:2]
+            h, w = results['img'].shape[:2]
+            w_scale = new_w / w
+            h_scale = new_h / h
         else:
             img, w_scale, h_scale = mmcv.imresize(
                 results['img'], results['scale'], return_scale=True)
-            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
-                                    dtype=np.float32)
+        scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
+                                dtype=np.float32)
         results['img'] = img
         results['img_shape'] = img.shape
         results['pad_shape'] = img.shape  # in case that there is no padding
@@ -147,7 +153,7 @@ class Resize(object):
             if self.keep_ratio:
                 masks = [
                     mmcv.imrescale(
-                        mask, results['scale_factor'], interpolation='nearest')
+                        mask, results['scale'], interpolation='nearest')
                     for mask in results[key]
                 ]
             else:
