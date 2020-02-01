@@ -1,4 +1,5 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// Modified from https://github.com/facebookresearch/detectron2/tree/master/detectron2/layers/csrc/ROIAlign
 #include <ATen/TensorUtils.h>
 #include "ROIAlign.h"
 

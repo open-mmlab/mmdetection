@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Modified from https://github.com/facebookresearch/detectron2/blob/master/detectron2/layers/roi_align.py
 from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
