@@ -1,4 +1,6 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// Modified from https://github.com/facebookresearch/detectron2/tree/master/detectron2/layers/csrc/ROIAlign
+
 #pragma once
 #include <torch/extension.h>
 #include "ROIAlign.h"
