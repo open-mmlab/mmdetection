@@ -18,8 +18,7 @@ class RoIAlignFunction(Function):
         ctx.input_shape = input.size()
         ctx.aligned = aligned
         output = roi_align_cuda.forward(input, roi, spatial_scale,
-                                        output_size[0],
-                                        output_size[1],
+                                        output_size[0], output_size[1],
                                         sampling_ratio, aligned)
         return output
 
@@ -56,14 +55,14 @@ class RoIAlign(nn.Module):
                  out_size,
                  spatial_scale,
                  sample_num=0,
-                 use_torchvision=False,
+                 use_torchvision=True,
                  aligned=False):
         """
         Args:
             out_size (tuple): h, w
             spatial_scale (float): scale the input boxes by this number
             sample_num (int): number of inputs samples to take for each
-                output sample. 2 to take samples densely.
+                output sample. 2 to take samples densely for current models.
             use_torchvision (bool): whether to use roi_align from torchvision
             aligned (bool): if False, use the legacy implementation in
                 Detectron. If True, align the results more perfectly.
@@ -84,7 +83,6 @@ class RoIAlign(nn.Module):
             With `aligned=True`,
             we first appropriately scale the ROI and then shift it by -0.5
             prior to calling roi_align. This produces the correct neighbors;
-            see detectron2/tests/test_roi_align.py for verification.
 
             The difference does not make a difference to the model's
             performance if ROIAlign is used together with conv layers.
@@ -94,15 +92,9 @@ class RoIAlign(nn.Module):
         self.spatial_scale = float(spatial_scale)
         self.aligned = aligned
         self.sample_num = int(sample_num)
-        # The new roi_align uses sampling ratio as input and the default value
-        # is 0. Thus, for now, for backward compatibility, the default sample_num=2 
-        # is converted to the default sampling_ratio=0.
-        if sample_num == 2:
-            sampling_ratio = 0
-        self.sampling_ratio = sampling_ratio
         self.use_torchvision = use_torchvision
 
-    def forward(self, input, rois):
+    def forward(self, features, rois):
         """
         Args:
             input: NCHW images
@@ -115,8 +107,8 @@ class RoIAlign(nn.Module):
             return tv_roi_align(features, rois, self.out_size,
                                 self.spatial_scale, self.sample_num)
         else:
-            return roi_align(input, rois, self.out_size, self.spatial_scale,
-                             self.sampling_ratio, self.aligned)
+            return roi_align(features, rois, self.out_size, self.spatial_scale,
+                             self.sample_num, self.aligned)
 
     def __repr__(self):
         format_str = self.__class__.__name__
