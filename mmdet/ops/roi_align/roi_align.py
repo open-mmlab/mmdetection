@@ -1,5 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-# Modified from https://github.com/facebookresearch/detectron2/blob/master/detectron2/layers/roi_align.py
 from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
@@ -8,7 +6,7 @@ from torch.nn.modules.utils import _pair
 from . import roi_align_cuda
 
 
-class _ROIAlign(Function):
+class RoIAlignFunction(Function):
 
     @staticmethod
     def forward(ctx, input, roi, output_size, spatial_scale, sampling_ratio,
@@ -19,10 +17,10 @@ class _ROIAlign(Function):
         ctx.sampling_ratio = sampling_ratio
         ctx.input_shape = input.size()
         ctx.aligned = aligned
-        output = roi_align_cuda.roi_align_forward(input, roi, spatial_scale,
-                                                  output_size[0],
-                                                  output_size[1],
-                                                  sampling_ratio, aligned)
+        output = roi_align_cuda.forward(input, roi, spatial_scale,
+                                        output_size[0],
+                                        output_size[1],
+                                        sampling_ratio, aligned)
         return output
 
     @staticmethod
@@ -33,7 +31,7 @@ class _ROIAlign(Function):
         spatial_scale = ctx.spatial_scale
         sampling_ratio = ctx.sampling_ratio
         bs, ch, h, w = ctx.input_shape
-        grad_input = roi_align_cuda.roi_align_backward(
+        grad_input = roi_align_cuda.backward(
             grad_output,
             rois,
             spatial_scale,
@@ -49,7 +47,7 @@ class _ROIAlign(Function):
         return grad_input, None, None, None, None, None
 
 
-roi_align = _ROIAlign.apply
+roi_align = RoIAlignFunction.apply
 
 
 class RoIAlign(nn.Module):
@@ -57,14 +55,16 @@ class RoIAlign(nn.Module):
     def __init__(self,
                  out_size,
                  spatial_scale,
-                 sampling_ratio=0,
+                 sample_num=0,
+                 use_torchvision=False,
                  aligned=False):
         """
         Args:
             out_size (tuple): h, w
             spatial_scale (float): scale the input boxes by this number
-            sampling_ratio (int): number of inputs samples to take for each
-                output sample. 0 to take samples densely.
+            sample_num (int): number of inputs samples to take for each
+                output sample. 2 to take samples densely.
+            use_torchvision (bool): whether to use roi_align from torchvision
             aligned (bool): if False, use the legacy implementation in
                 Detectron. If True, align the results more perfectly.
 
@@ -92,8 +92,15 @@ class RoIAlign(nn.Module):
         super(RoIAlign, self).__init__()
         self.out_size = _pair(out_size)
         self.spatial_scale = float(spatial_scale)
-        self.sampling_ratio = sampling_ratio
         self.aligned = aligned
+        self.sample_num = int(sample_num)
+        # The new roi_align uses sampling ratio as input and the default value
+        # is 0. Thus, for now, for backward compatibility, the default sample_num=2 
+        # is converted to the default sampling_ratio=0.
+        if sample_num == 2:
+            sampling_ratio = 0
+        self.sampling_ratio = sampling_ratio
+        self.use_torchvision = use_torchvision
 
     def forward(self, input, rois):
         """
@@ -103,14 +110,18 @@ class RoIAlign(nn.Module):
             columns are xyxy.
         """
         assert rois.dim() == 2 and rois.size(1) == 5
-        return roi_align(input, rois, self.out_size, self.spatial_scale,
-                         self.sampling_ratio, self.aligned)
+        if self.use_torchvision:
+            from torchvision.ops import roi_align as tv_roi_align
+            return tv_roi_align(features, rois, self.out_size,
+                                self.spatial_scale, self.sample_num)
+        else:
+            return roi_align(input, rois, self.out_size, self.spatial_scale,
+                             self.sampling_ratio, self.aligned)
 
     def __repr__(self):
-        tmpstr = self.__class__.__name__ + "("
-        tmpstr += "out_size=" + str(self.out_size)
-        tmpstr += ", spatial_scale=" + str(self.spatial_scale)
-        tmpstr += ", sampling_ratio=" + str(self.sampling_ratio)
-        tmpstr += ", aligned=" + str(self.aligned)
-        tmpstr += ")"
-        return tmpstr
+        format_str = self.__class__.__name__
+        format_str += '(out_size={}, spatial_scale={}, sample_num={}'.format(
+            self.out_size, self.spatial_scale, self.sample_num)
+        format_str += ', use_torchvision={}, aligned={})'.format(
+            self.use_torchvision, self.aligned)
+        return format_str

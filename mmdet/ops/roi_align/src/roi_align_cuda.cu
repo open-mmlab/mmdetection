@@ -1,5 +1,5 @@
-// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 // Modified from https://github.com/facebookresearch/detectron2/tree/master/detectron2/layers/csrc/ROIAlign
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 #include <ATen/ATen.h>
 #include <ATen/cuda/CUDAContext.h>
