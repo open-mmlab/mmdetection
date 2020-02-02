@@ -264,10 +264,7 @@ if __name__ == '__main__':
             make_cuda_ext(
                 name='roi_align_cuda',
                 module='mmdet.ops.roi_align',
-                sources=[
-                    'src/ROIAlign.cpp', 'src/ROIAlign_cpu.cpp',
-                    'src/ROIAlign_cuda.cu'
-                ]),
+                sources=['src/roi_align_cuda.cpp', 'src/roi_align_kernel.cu']),
             make_cuda_ext(
                 name='roi_pool_cuda',
                 module='mmdet.ops.roi_pool',

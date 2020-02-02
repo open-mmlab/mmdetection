@@ -307,8 +307,6 @@ __global__ void RoIAlignBackwardFeature(
   } // CUDA_1D_KERNEL_LOOP
 } // RoIAlignBackward
 
-namespace detectron2 {
-
 at::Tensor ROIAlign_forward_cuda(
     const at::Tensor& input,
     const at::Tensor& rois,
@@ -420,5 +418,3 @@ at::Tensor ROIAlign_backward_cuda(
   AT_CUDA_CHECK(cudaGetLastError());
   return grad_input;
 }
-
-} // namespace detectron2
