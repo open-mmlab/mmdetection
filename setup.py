@@ -250,9 +250,9 @@ if __name__ == '__main__':
                 module='mmdet.ops.utils',
                 sources=['src/compiling_info.cpp']),
             make_cython_ext(
-                name='soft_nms_cpu',
+                name='soft_nms_cpu_cython',
                 module='mmdet.ops.nms',
-                sources=['src/soft_nms_cpu.pyx']),
+                sources=['src/soft_nms_cpu_cython.pyx']),
             make_cuda_ext(
                 name='nms_cpu',
                 module='mmdet.ops.nms',
@@ -261,6 +261,10 @@ if __name__ == '__main__':
                 name='nms_cuda',
                 module='mmdet.ops.nms',
                 sources=['src/nms_cuda.cpp', 'src/nms_kernel.cu']),
+            make_cuda_ext(
+                name='soft_nms_cpu',
+                module='mmdet.ops.nms',
+                sources=['src/soft_nms_cpu.cpp']),
             make_cuda_ext(
                 name='roi_align_cuda',
                 module='mmdet.ops.roi_align',

@@ -19,7 +19,7 @@ cdef inline np.float32_t min(np.float32_t a, np.float32_t b):
     return a if a <= b else b
 
 
-def soft_nms_cpu(
+def soft_nms_cpu_cython(
     np.ndarray[float, ndim=2] boxes_in,
     float iou_thr,
     unsigned int method=1,

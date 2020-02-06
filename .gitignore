@@ -104,7 +104,7 @@ venv.bak/
 .mypy_cache/
 
 # cython generated cpp
-mmdet/ops/nms/src/soft_nms_cpu.cpp
+mmdet/ops/nms/src/soft_nms_cpu_cython.cpp
 mmdet/version.py
 data
 .vscode
