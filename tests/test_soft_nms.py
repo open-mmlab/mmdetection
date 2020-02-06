@@ -21,22 +21,22 @@ def test_soft_nms_device_and_dtypes_cpu():
 
     # CPU can handle float32 and float64
     dets = base_dets.astype(np.float32)
-    suppressed, inds = soft_nms(dets, iou_thr)
-    assert dets.dtype == suppressed.dtype
-    assert len(inds) == len(suppressed) == 3
+    new_dets, inds = soft_nms(dets, iou_thr)
+    assert dets.dtype == new_dets.dtype
+    assert len(inds) == len(new_dets) == 4
 
     dets = torch.FloatTensor(base_dets)
-    suppressed, inds = soft_nms(dets, iou_thr)
-    assert dets.dtype == suppressed.dtype
-    assert len(inds) == len(suppressed) == 3
+    new_dets, inds = soft_nms(dets, iou_thr)
+    assert dets.dtype == new_dets.dtype
+    assert len(inds) == len(new_dets) == 4
 
     dets = base_dets.astype(np.float64)
-    suppressed, inds = soft_nms(dets, iou_thr)
-    assert dets.dtype == suppressed.dtype, "{} vs {}".format(
-        dets.dtype, suppressed.dtype)
-    assert len(inds) == len(suppressed) == 3
+    new_dets, inds = soft_nms(dets, iou_thr)
+    assert dets.dtype == new_dets.dtype, "{} vs {}".format(
+        dets.dtype, new_dets.dtype)
+    assert len(inds) == len(new_dets) == 4
 
     dets = torch.DoubleTensor(base_dets)
-    suppressed, inds = soft_nms(dets, iou_thr)
-    assert dets.dtype == suppressed.dtype
-    assert len(inds) == len(suppressed) == 3
+    new_dets, inds = soft_nms(dets, iou_thr)
+    assert dets.dtype == new_dets.dtype
+    assert len(inds) == len(new_dets) == 4

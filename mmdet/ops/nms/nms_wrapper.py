@@ -2,7 +2,6 @@ import numpy as np
 import torch
 
 from . import nms_cpu, nms_cuda, soft_nms_cpu
-from .soft_nms_cpu_cython import soft_nms_cpu_cython
 
 
 def nms(dets, iou_thr, device_id=None):
@@ -100,44 +99,3 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
     else:
         return new_dets.numpy().astype(dets.dtype), inds.numpy().astype(
             np.int64)
-
-
-def soft_nms_cython(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
-    """
-    Example:
-        >>> dets = np.array([[4., 3., 5., 3., 0.9],
-        >>>                  [4., 3., 5., 4., 0.9],
-        >>>                  [3., 1., 3., 1., 0.5],
-        >>>                  [3., 1., 3., 1., 0.5],
-        >>>                  [3., 1., 3., 1., 0.4],
-        >>>                  [3., 1., 3., 1., 0.0]], dtype=np.float32)
-        >>> iou_thr = 0.7
-        >>> supressed, inds = soft_nms(dets, iou_thr, sigma=0.5)
-        >>> assert len(inds) == len(supressed) == 3
-    """
-    if isinstance(dets, torch.Tensor):
-        is_tensor = True
-        dets_np = dets.detach().cpu().numpy()
-    elif isinstance(dets, np.ndarray):
-        is_tensor = False
-        dets_np = dets
-    else:
-        raise TypeError(
-            'dets must be either a Tensor or numpy array, but got {}'.format(
-                type(dets)))
-
-    method_codes = {'linear': 1, 'gaussian': 2}
-    if method not in method_codes:
-        raise ValueError('Invalid method for SoftNMS: {}'.format(method))
-    new_dets, inds = soft_nms_cpu_cython(
-        dets_np,
-        iou_thr,
-        method=method_codes[method],
-        sigma=sigma,
-        min_score=min_score)
-
-    if is_tensor:
-        return dets.new_tensor(new_dets), dets.new_tensor(
-            inds, dtype=torch.long)
-    else:
-        return new_dets.astype(np.float32), inds.astype(np.int64)
