@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from . import nms_cpu, nms_cuda, soft_nms_cpu
+from . import nms_cpu, nms_cuda
 
 
 def nms(dets, iou_thr, device_id=None):
@@ -87,8 +87,8 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
     method_codes = {'linear': 1, 'gaussian': 2}
     if method not in method_codes:
         raise ValueError('Invalid method for SoftNMS: {}'.format(method))
-    results = soft_nms_cpu.soft_nms(dets_t, iou_thr, method_codes[method],
-                                    sigma, min_score)
+    results = nms_cpu.soft_nms(dets_t, iou_thr, method_codes[method], sigma,
+                               min_score)
 
     new_dets = results[:, :5]
     inds = results[:, 5]
