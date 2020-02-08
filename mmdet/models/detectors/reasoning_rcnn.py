@@ -7,7 +7,7 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply,
+from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply,build_assigner, build_sampler,
                         merge_aug_masks)
 
 import numpy as np
@@ -33,7 +33,7 @@ class ReasoningRCNN(BaseDetector, RPNTestMixin):
                  pretrained=None,
                  adj_gt=None,
                  graph_out_channels=256,
-                 normalize=None,
+                 norm_cfg=None,
                  roi_feat_size=7,
                  shared_num_fc=2):
         assert bbox_roi_extractor is not None
@@ -47,9 +47,6 @@ class ReasoningRCNN(BaseDetector, RPNTestMixin):
             self.neck = builder.build_neck(neck)
         else:
             assert upper_neck is not None
-
-        if shared_head is not None:
-            self.shared_head = builder.build_shared_head(shared_head)
 
         if rpn_head is not None:
             self.rpn_head = builder.build_head(rpn_head)
@@ -100,7 +97,7 @@ class ReasoningRCNN(BaseDetector, RPNTestMixin):
                 self.share_roi_extractor = True
                 self.mask_roi_extractor = self.bbox_roi_extractor
 
-        self.norm_cfg = normalize
+        self.norm_cfg = norm_cfg
         if adj_gt is not None:
             self.adj_gt = pickle.load(open(adj_gt, 'rb'))
             self.adj_gt = np.float32(self.adj_gt)
@@ -109,7 +106,7 @@ class ReasoningRCNN(BaseDetector, RPNTestMixin):
         self.cmp_attention = nn.ModuleList()
         self.cmp_attention.append(
             ConvModule(1024, 1024 // 16,
-                       3, stride=2, padding=1, normalize=self.normalize, bias=self.norm_cfg is None))
+                       3, stride=2, padding=1, norm_cfg=self.norm_cfg, bias=self.norm_cfg is None))
         self.cmp_attention.append(
             nn.Linear(1024 // 16, bbox_head[0]['in_channels'] + 1))
         # init graph w
@@ -146,8 +143,6 @@ class ReasoningRCNN(BaseDetector, RPNTestMixin):
                     m.init_weights()
             else:
                 self.neck.init_weights()
-        if self.with_shared_head:
-            self.shared_head.init_weights(pretrained=pretrained)
         if self.with_rpn:
             self.rpn_head.init_weights()
         for i in range(self.num_stages):
@@ -212,7 +207,7 @@ class ReasoningRCNN(BaseDetector, RPNTestMixin):
             losses.update(rpn_losses)
 
             proposal_inputs = rpn_outs + (img_meta, self.test_cfg.rpn)
-            proposal_list = self.rpn_head.get_proposals(*proposal_inputs)
+            proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         else:
             proposal_list = proposals
 
@@ -240,24 +235,24 @@ class ReasoningRCNN(BaseDetector, RPNTestMixin):
 
             # assign gts and sample proposals
             if self.with_bbox or self.with_mask:
-                bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)
+                bbox_assigner = build_assigner(self.train_cfg.rcnn[i].assigner)
                 bbox_sampler = build_sampler(
-                    self.train_cfg.rcnn.sampler, context=self)
+                    self.train_cfg.rcnn[i].sampler, context=self)
                 num_imgs = img.size(0)
                 if gt_bboxes_ignore is None:
                     gt_bboxes_ignore = [None for _ in range(num_imgs)]
                 sampling_results = []
-                for i in range(num_imgs):
-                    assign_result = bbox_assigner.assign(proposal_list[i],
-                                                     gt_bboxes[i],
-                                                     gt_bboxes_ignore[i],
-                                                     gt_labels[i])
+                for num in range(num_imgs):
+                    assign_result = bbox_assigner.assign(proposal_list[num],
+                                                     gt_bboxes[num],
+                                                     gt_bboxes_ignore[num],
+                                                     gt_labels[num])
                     sampling_result = bbox_sampler.sample(
                         assign_result,
-                        proposal_list[i],
-                        gt_bboxes[i],
-                        gt_labels[i],
-                        feats=[lvl_feat[i][None] for lvl_feat in x])
+                        proposal_list[num],
+                        gt_bboxes[num],
+                        gt_labels[num],
+                        feats=[lvl_feat[num][None] for lvl_feat in x])
                     sampling_results.append(sampling_result)
 
             # bbox head forward and loss
@@ -281,7 +276,7 @@ class ReasoningRCNN(BaseDetector, RPNTestMixin):
                 cls_score, bbox_pred = bbox_head(bbox_feats)
 
                 bbox_targets = bbox_head.get_target(sampling_results, gt_bboxes,
-                                                gt_labels, self.train_cfg.rcnn)
+                                                gt_labels, self.train_cfg.rcnn[i])
                 loss_bbox = bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
                
                 for name, value in loss_bbox.items():
