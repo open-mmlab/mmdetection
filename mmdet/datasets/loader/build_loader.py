@@ -1,4 +1,6 @@
+import numpy as np
 import platform
+import random
 from functools import partial
 
 from mmcv.parallel import collate
@@ -20,6 +22,7 @@ def build_dataloader(dataset,
                      num_gpus=1,
                      dist=True,
                      shuffle=True,
+                     seed=None,
                      **kwargs):
     """Build PyTorch DataLoader.
 
@@ -65,6 +68,12 @@ def build_dataloader(dataset,
         num_workers=num_workers,
         collate_fn=partial(collate, samples_per_gpu=imgs_per_gpu),
         pin_memory=False,
+        worker_init_fn=worker_init_fn if seed is not None else None,
         **kwargs)
 
     return data_loader
+
+
+def worker_init_fn(seed):
+    np.random.seed(seed)
+    random.seed(seed)
