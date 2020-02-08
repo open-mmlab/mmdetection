@@ -168,8 +168,8 @@ class ATSSHead(AnchorHead):
                 avg_factor=num_total_samples)
 
         else:
-            loss_bbox = loss_cls * 0
-            loss_centerness = loss_bbox * 0
+            loss_bbox = bbox_pred.sum() * 0
+            loss_centerness = centerness.sum() * 0
             centerness_targets = torch.tensor(0).cuda()
 
         return loss_cls, loss_bbox, loss_centerness, centerness_targets.sum()
