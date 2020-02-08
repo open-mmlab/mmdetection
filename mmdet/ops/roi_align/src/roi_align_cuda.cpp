@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 
+#ifdef WITH_CUDA
 int ROIAlignForwardLaucher(const at::Tensor features, const at::Tensor rois,
                            const float spatial_scale, const int sample_num,
                            const int channels, const int height,
@@ -18,6 +19,29 @@ int ROIAlignBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
                             const int width, const int num_rois,
                             const int pooled_height, const int pooled_width,
                             at::Tensor bottom_grad);
+
+at::Tensor ROIAlign_forward_cuda_v2(
+    const at::Tensor& input,
+    const at::Tensor& rois,
+    const float spatial_scale,
+    const int pooled_height,
+    const int pooled_width,
+    const int sampling_ratio,
+    bool aligned);
+
+at::Tensor ROIAlign_backward_cuda_v2(
+    const at::Tensor& grad,
+    const at::Tensor& rois,
+    const float spatial_scale,
+    const int pooled_height,
+    const int pooled_width,
+    const int batch_size,
+    const int channels,
+    const int height,
+    const int width,
+    const int sampling_ratio,
+    bool aligned);
+#endif
 
 #define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x, " must be a CUDAtensor ")
 #define CHECK_CONTIGUOUS(x) \
@@ -81,30 +105,6 @@ int ROIAlign_backwardV1(at::Tensor top_grad, at::Tensor rois,
   return 1;
 }
 
-#ifdef WITH_CUDA
-at::Tensor ROIAlign_forward_cuda_v2(
-    const at::Tensor& input,
-    const at::Tensor& rois,
-    const float spatial_scale,
-    const int pooled_height,
-    const int pooled_width,
-    const int sampling_ratio,
-    bool aligned);
-
-at::Tensor ROIAlign_backward_cuda_v2(
-    const at::Tensor& grad,
-    const at::Tensor& rois,
-    const float spatial_scale,
-    const int pooled_height,
-    const int pooled_width,
-    const int batch_size,
-    const int channels,
-    const int height,
-    const int width,
-    const int sampling_ratio,
-    bool aligned);
-#endif
-
 // Interface for Python
 inline at::Tensor ROIAlign_forwardV2(
     const at::Tensor& input,
@@ -116,7 +116,7 @@ inline at::Tensor ROIAlign_forwardV2(
     bool aligned) {
   if (input.type().is_cuda()) {
 #ifdef WITH_CUDA
-    return ROIAlign_forward_cuda(
+    return ROIAlign_forward_cuda_v2(
         input,
         rois,
         spatial_scale,
@@ -144,7 +144,7 @@ inline at::Tensor ROIAlign_backwardV2(
     bool aligned) {
   if (grad.type().is_cuda()) {
 #ifdef WITH_CUDA
-    return ROIAlign_backward_cuda(
+    return ROIAlign_backward_cuda_v2(
         grad,
         rois,
         spatial_scale,

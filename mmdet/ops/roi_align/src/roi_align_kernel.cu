@@ -186,7 +186,7 @@ __device__ void bilinear_interpolate_gradient(const int height, const int width,
 }
 
 template <typename scalar_t>
-__global__ void ROIAlignBackwardV2(
+__global__ void ROIAlignBackwardV1(
     const int nthreads, const scalar_t *top_diff, const scalar_t *bottom_rois,
     const scalar_t spatial_scale, const int sample_num, const int channels,
     const int height, const int width, const int pooled_height,

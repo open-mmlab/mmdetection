@@ -22,8 +22,8 @@ class RoIAlignFunction(Function):
 
         output = features.new_zeros(num_rois, num_channels, out_h, out_w)
         if features.is_cuda:
-            roi_align_cuda.forward_v1(features, rois, out_h, out_w, spatial_scale,
-                                   sample_num, output)
+            roi_align_cuda.forward_v1(features, rois, out_h, out_w,
+                                      spatial_scale, sample_num, output)
         else:
             raise NotImplementedError
 
@@ -47,8 +47,8 @@ class RoIAlignFunction(Function):
             grad_input = rois.new_zeros(batch_size, num_channels, data_height,
                                         data_width)
             roi_align_cuda.backward_v1(grad_output.contiguous(), rois, out_h,
-                                    out_w, spatial_scale, sample_num,
-                                    grad_input)
+                                       out_w, spatial_scale, sample_num,
+                                       grad_input)
 
         return grad_input, grad_rois, None, None, None
 
@@ -103,7 +103,7 @@ class RoIAlign(nn.Module):
                  out_size,
                  spatial_scale,
                  sample_num=0,
-                 use_torchvision=True,
+                 use_torchvision=False,
                  aligned=False):
         """
         Args:
@@ -150,17 +150,18 @@ class RoIAlign(nn.Module):
             columns are xyxy.
         """
         assert rois.dim() == 2 and rois.size(1) == 5
-        
+
         if self.aligned:
-            return roi_align_v2(features, rois, self.out_size, self.spatial_scale,
-                             self.sample_num, self.aligned)
+            return roi_align_v2(features, rois, self.out_size,
+                                self.spatial_scale, self.sample_num,
+                                self.aligned)
         elif self.use_torchvision:
             from torchvision.ops import roi_align as tv_roi_align
             return tv_roi_align(features, rois, self.out_size,
                                 self.spatial_scale, self.sample_num)
         else:
-            return roi_align(
-                features, rois, self.out_size, self.spatial_scale, self.sample_num)
+            return roi_align(features, rois, self.out_size, self.spatial_scale,
+                             self.sample_num)
 
     def __repr__(self):
         format_str = self.__class__.__name__
