@@ -24,7 +24,7 @@ MAJOR = 1
 MINOR = 0
 PATCH = 0
 SUFFIX = ''
-if PATCH:
+if PATCH != '':
     SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
 else:
     SHORT_VERSION = '{}.{}{}'.format(MAJOR, MINOR, SUFFIX)
