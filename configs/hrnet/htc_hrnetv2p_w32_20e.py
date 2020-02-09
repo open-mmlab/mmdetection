@@ -121,7 +121,8 @@ model = dict(
             conv_out_channels=256,
             num_classes=81,
             loss_mask=dict(
-                type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)),
+                type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))
+    ],
     semantic_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
