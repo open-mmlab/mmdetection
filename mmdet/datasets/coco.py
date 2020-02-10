@@ -236,7 +236,7 @@ class CocoDataset(CustomDataset):
             raise TypeError('invalid type of results')
         return result_files
 
-    def fast_eval_recall(self, results, proposal_nums, iou_thrs):
+    def fast_eval_recall(self, results, proposal_nums, iou_thrs, logger=None):
         gt_bboxes = []
         for i in range(len(self.img_ids)):
             ann_ids = self.coco.getAnnIds(imgIds=self.img_ids[i])
@@ -256,7 +256,7 @@ class CocoDataset(CustomDataset):
             gt_bboxes.append(bboxes)
 
         recalls = eval_recalls(
-            gt_bboxes, results, proposal_nums, iou_thrs, print_summary=False)
+            gt_bboxes, results, proposal_nums, iou_thrs, logger=logger)
         ar = recalls.mean(axis=1)
         return ar
 
@@ -269,6 +269,23 @@ class CocoDataset(CustomDataset):
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05)):
         """Evaluation in COCO protocol.
+
+        Args:
+            results (list): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated.
+            logger (logging.Logger | str | None): Logger used for printing
+                related information during evaluation. Default: None.
+            jsonfile_prefix (str | None):
+            classwise (bool): Whether to evaluating the AP for each class.
+            proposal_nums (Sequence[int]): Proposal number used for evaluating
+                recalls, such as recall@100, recall@1000.
+                Default: (100, 300, 1000).
+            iou_thrs (Sequence[float]): IoU threshold used for evaluating
+                recalls. If set to a list, the average recall of all IoUs will
+                also be computed. Default: 0.5.
+
+        Returns:
+            dict[str: float]
         """
         assert isinstance(results, list), 'results must be a list'
         assert len(results) == len(self), (
@@ -289,14 +306,19 @@ class CocoDataset(CustomDataset):
         eval_results = {}
         cocoGt = self.coco
         for metric in metrics:
-            print_log('\nEvaluating {}...'.format(metric), logger=logger)
+            msg = 'Evaluating {}...'.format(metric)
+            if logger is None:
+                msg = '\n' + msg
+            print_log(msg, logger=logger)
+
             if metric == 'proposal_fast':
-                ar = self.fast_eval_recall(results, proposal_nums, iou_thrs)
+                ar = self.fast_eval_recall(
+                    results, proposal_nums, iou_thrs, logger='silent')
                 log_msg = []
                 for i, num in enumerate(proposal_nums):
                     eval_results['AR@{}'.format(num)] = ar[i]
-                    log_msg.append('AR@{}\t{:.4f}'.format(num, ar[i]))
-                log_msg = '\n'.join(log_msg)
+                    log_msg.append('\nAR@{}\t{:.4f}'.format(num, ar[i]))
+                log_msg = ''.join(log_msg)
                 print_log(log_msg, logger=logger)
                 continue
 
@@ -317,13 +339,9 @@ class CocoDataset(CustomDataset):
             if metric == 'proposal':
                 cocoEval.params.useCats = 0
                 cocoEval.params.maxDets = list(proposal_nums)
-            cocoEval.evaluate()
-            cocoEval.accumulate()
-            cocoEval.summarize()
-            if classwise:  # Compute per-category AP
-                pass  # TODO
-
-            if metric == 'proposal':
+                cocoEval.evaluate()
+                cocoEval.accumulate()
+                cocoEval.summarize()
                 metric_items = [
                     'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000', 'AR_m@1000',
                     'AR_l@1000'
@@ -332,6 +350,11 @@ class CocoDataset(CustomDataset):
                     val = float('{:.3f}'.format(cocoEval.stats[i + 6]))
                     eval_results[item] = val
             else:
+                cocoEval.evaluate()
+                cocoEval.accumulate()
+                cocoEval.summarize()
+                if classwise:  # Compute per-category AP
+                    pass  # TODO
                 metric_items = [
                     'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
                 ]

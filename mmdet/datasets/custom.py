@@ -159,6 +159,22 @@ class CustomDataset(Dataset):
                  proposal_nums=(100, 300, 1000),
                  iou_thr=0.5,
                  scale_ranges=None):
+        """Evaluate the dataset.
+
+        Args:
+            results (list): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated.
+            logger (logging.Logger | None | str): Logger used for printing
+                related information during evaluation. Default: None.
+            proposal_nums (Sequence[int]): Proposal number used for evaluating
+                recalls, such as recall@100, recall@1000.
+                Default: (100, 300, 1000).
+            iou_thr (float | list[float]): IoU threshold. It must be a float
+                when evaluating mAP, and can be a list when evaluating recall.
+                Default: 0.5.
+            scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
+                Default: None.
+        """
         allowed_metrics = ['mAP', 'recall']
         if metric not in allowed_metrics:
             raise KeyError('metric {} is not supported'.format(metric))

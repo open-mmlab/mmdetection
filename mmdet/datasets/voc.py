@@ -36,6 +36,7 @@ class VOCDataset(XMLDataset):
         annotations = [self.get_ann_info(i) for i in range(len(self))]
         eval_results = {}
         if metric == 'mAP':
+            assert isinstance(iou_thr, float)
             if self.year == 2007:
                 ds_name = 'voc07'
             else:
@@ -44,18 +45,16 @@ class VOCDataset(XMLDataset):
                 results,
                 annotations,
                 scale_ranges=None,
-                iou_thr=0.5,
+                iou_thr=iou_thr,
                 dataset=ds_name,
                 logger=logger)
             eval_results['mAP'] = mean_ap
         elif metric == 'recall':
             gt_bboxes = [ann['bboxes'] for ann in annotations]
+            if isinstance(iou_thr, float):
+                iou_thr = [iou_thr]
             recalls = eval_recalls(
-                gt_bboxes,
-                results,
-                proposal_nums,
-                iou_thr,
-                print_summary=False)
+                gt_bboxes, results, proposal_nums, iou_thr, logger=logger)
             for i, num in enumerate(proposal_nums):
                 for j, iou in enumerate(iou_thr):
                     eval_results['recall@{}@{}'.format(num, iou)] = recalls[i,
