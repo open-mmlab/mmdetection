@@ -142,6 +142,7 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
+evaluation = dict(interval=1, metric='bbox')
 # runtime settings
 total_epochs = 24
 dist_params = dict(backend='nccl')
