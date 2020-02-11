@@ -105,6 +105,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric='bbox')
 # optimizer
 optimizer = dict(
     type='SGD',
@@ -129,7 +130,6 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1, metric='bbox')
 # runtime settings
 total_epochs = 24
 dist_params = dict(backend='nccl')

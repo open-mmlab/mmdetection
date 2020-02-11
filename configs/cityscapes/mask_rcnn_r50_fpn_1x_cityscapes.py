@@ -166,6 +166,7 @@ data = dict(
         'annotations/instancesonly_filtered_gtFine_val.json',
         img_prefix=data_root + 'val/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric=['bbox', 'segm'])
 # optimizer
 # lr is set for a batch size of 8
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
@@ -186,7 +187,6 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1, metric='bbox')
 # runtime settings
 total_epochs = 8  # actual epoch = 8 * 8 = 64
 dist_params = dict(backend='nccl')

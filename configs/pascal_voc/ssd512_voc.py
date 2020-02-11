@@ -108,6 +108,7 @@ data = dict(
         ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
         img_prefix=data_root + 'VOC2007/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric='mAP')
 # optimizer
 optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
@@ -127,7 +128,6 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1, metric='mAP')
 # runtime settings
 total_epochs = 24
 dist_params = dict(backend='nccl')
