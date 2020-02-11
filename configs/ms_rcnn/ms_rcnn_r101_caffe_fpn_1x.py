@@ -170,6 +170,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric=['bbox', 'segm'])
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
