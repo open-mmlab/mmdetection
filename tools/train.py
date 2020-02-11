@@ -13,6 +13,7 @@ from mmdet import __version__
 from mmdet.apis import get_root_logger, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
+from tools.collect_env import collect_env
 
 
 def parse_args():
@@ -88,6 +89,15 @@ def main():
     # log some basic info
     logger.info('Distributed training: {}'.format(distributed))
     logger.info('MMDetection Version: {}'.format(__version__))
+
+    # log env info
+    env_info_dict = collect_env()
+    env_info = '\n'.join([('{}: {}'.format(k, v))
+                          for k, v in env_info_dict.items()])
+    logger.info('Environment info:\n' + '-' * 60 + '\n' + env_info + '\n')
+    env_info_dict['seed'] = args.seed
+
+    # log config
     logger.info('Config:\n{}'.format(cfg.text))
 
     # set random seeds
@@ -117,7 +127,8 @@ def main():
         cfg,
         distributed=distributed,
         validate=args.validate,
-        timestamp=timestamp)
+        timestamp=timestamp,
+        env_info_dict=env_info_dict)
 
 
 if __name__ == '__main__':

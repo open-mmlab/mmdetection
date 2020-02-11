@@ -111,7 +111,8 @@ def train_detector(model,
                    cfg,
                    distributed=False,
                    validate=False,
-                   timestamp=None):
+                   timestamp=None,
+                   env_info_dict=None):
     logger = get_root_logger(cfg.log_level)
 
     # start training
@@ -122,7 +123,8 @@ def train_detector(model,
             cfg,
             validate=validate,
             logger=logger,
-            timestamp=timestamp)
+            timestamp=timestamp,
+            env_info_dict=env_info_dict)
     else:
         _non_dist_train(
             model,
@@ -130,7 +132,8 @@ def train_detector(model,
             cfg,
             validate=validate,
             logger=logger,
-            timestamp=timestamp)
+            timestamp=timestamp,
+            env_info_dict=env_info_dict)
 
 
 def build_optimizer(model, optimizer_cfg):
@@ -218,7 +221,8 @@ def _dist_train(model,
                 cfg,
                 validate=False,
                 logger=None,
-                timestamp=None):
+                timestamp=None,
+                env_info_dict=None):
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
     data_loaders = [
@@ -232,9 +236,14 @@ def _dist_train(model,
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
     runner = Runner(
-        model, batch_processor, optimizer, cfg.work_dir, logger=logger)
+        model,
+        batch_processor,
+        optimizer,
+        cfg.work_dir,
+        logger=logger,
+        env_info=env_info_dict)
     # an ugly walkaround to make the .log and .log.json filenames the same
-    runner.timestamp = timestamp
+    runner.env_info_dict = env_info_dict
 
     # fp16 setting
     fp16_cfg = cfg.get('fp16', None)
@@ -277,7 +286,8 @@ def _non_dist_train(model,
                     cfg,
                     validate=False,
                     logger=None,
-                    timestamp=None):
+                    timestamp=None,
+                    env_info_dict=None):
     if validate:
         raise NotImplementedError('Built-in validation is not implemented '
                                   'yet in not-distributed training. Use '
@@ -299,9 +309,15 @@ def _non_dist_train(model,
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
     runner = Runner(
-        model, batch_processor, optimizer, cfg.work_dir, logger=logger)
+        model,
+        batch_processor,
+        optimizer,
+        cfg.work_dir,
+        logger=logger,
+        env_info=env_info_dict)
     # an ugly walkaround to make the .log and .log.json filenames the same
     runner.timestamp = timestamp
+    runner.env_info_dict = env_info_dict
     # fp16 setting
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
