@@ -8,11 +8,8 @@ import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import DistSamplerSeedHook, Runner, obj_from_dict
 
-from mmdet import datasets
-from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
-                        DistEvalmAPHook, DistOptimizerHook, Fp16OptimizerHook)
-from mmdet.datasets import DATASETS, build_dataloader
-from mmdet.models import RPN
+from mmdet.core import DistEvalHook, DistOptimizerHook, Fp16OptimizerHook
+from mmdet.datasets import build_dataloader
 from mmdet.utils import get_root_logger
 
 
@@ -233,18 +230,7 @@ def _dist_train(model,
     if validate:
         val_dataset_cfg = cfg.data.val
         eval_cfg = cfg.get('evaluation', {})
-        if isinstance(model.module, RPN):
-            # TODO: implement recall hooks for other datasets
-            runner.register_hook(
-                CocoDistEvalRecallHook(val_dataset_cfg, **eval_cfg))
-        else:
-            dataset_type = DATASETS.get(val_dataset_cfg.type)
-            if issubclass(dataset_type, datasets.CocoDataset):
-                runner.register_hook(
-                    CocoDistEvalmAPHook(val_dataset_cfg, **eval_cfg))
-            else:
-                runner.register_hook(
-                    DistEvalmAPHook(val_dataset_cfg, **eval_cfg))
+        runner.register_hook(DistEvalHook(val_dataset_cfg, **eval_cfg))
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)

@@ -105,6 +105,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric='bbox')
 # optimizer
 optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict()
