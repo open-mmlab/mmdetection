@@ -57,8 +57,6 @@ def collect_env():
     env_info['MMDetection CUDA Compiler'] = get_compiling_cuda_version()
 
     return env_info
-    for name, val in env_info.items():
-        print('{}: {}'.format(name, val))
 
 
 if __name__ == "__main__":
