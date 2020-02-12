@@ -96,6 +96,7 @@ def main():
         logger.info('Set random seed to {}, deterministic: {}'.format(
             args.seed, args.deterministic))
         set_random_seed(args.seed, deterministic=args.deterministic)
+    cfg.seed = args.seed
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
