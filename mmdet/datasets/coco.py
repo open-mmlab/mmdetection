@@ -301,6 +301,8 @@ class CocoDataset(CustomDataset):
         if jsonfile_prefix is None:
             tmp_dir = tempfile.TemporaryDirectory()
             jsonfile_prefix = osp.join(tmp_dir.name, 'results')
+        else:
+            tmp_dir = None
         result_files = self.results2json(results, jsonfile_prefix)
 
         eval_results = {}
@@ -365,6 +367,6 @@ class CocoDataset(CustomDataset):
                 eval_results['{}_mAP_copypaste'.format(metric)] = (
                     '{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
                     '{ap[4]:.3f} {ap[5]:.3f}').format(ap=cocoEval.stats[:6])
-        if jsonfile_prefix is None:
+        if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
