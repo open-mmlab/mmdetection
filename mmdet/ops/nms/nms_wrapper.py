@@ -86,7 +86,7 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
         >>>                  [3., 1., 3., 1., 0.0]], dtype=np.float32)
         >>> iou_thr = 0.7
         >>> new_dets, inds = soft_nms(dets, iou_thr, sigma=0.5)
-        >>> assert len(inds) == len(new_dets) == 5
+        >>> assert len(inds) == len(new_dets) == 3
     """
     # convert dets (tensor or numpy array) to tensor
     if isinstance(dets, torch.Tensor):
