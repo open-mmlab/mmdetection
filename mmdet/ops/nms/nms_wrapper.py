@@ -110,8 +110,9 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
     inds = results[:, 5]
 
     if is_tensor:
-        return dets.new_tensor(new_dets), dets.new_tensor(
-            inds, dtype=torch.long)
+        return new_dets.to(
+            device=dets.device, dtype=dets.dtype), inds.to(
+                device=dets.device, dtype=torch.long)
     else:
         return new_dets.numpy().astype(dets.dtype), inds.numpy().astype(
             np.int64)
