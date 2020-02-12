@@ -61,7 +61,22 @@ def nms(dets, iou_thr, device_id=None):
 
 
 def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
-    """
+    """Dispatch to only CPU Soft NMS implementations.
+
+    The input can be either a torch tensor or numpy array.
+    The returned type will always be the same as inputs.
+
+    Arguments:
+        dets (torch.Tensor or np.ndarray): bboxes with scores.
+        iou_thr (float): IoU threshold for Soft NMS.
+        method (str): either 'linear' or 'gaussian'
+        sigma (float): hyperparameter for gaussian method
+        min_score (float): score filter threshold
+
+    Returns:
+        tuple: new det bboxes and indice, which is always the same
+        data type as the input.
+
     Example:
         >>> dets = np.array([[4., 3., 5., 3., 0.9],
         >>>                  [4., 3., 5., 4., 0.9],
@@ -70,9 +85,10 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
         >>>                  [3., 1., 3., 1., 0.4],
         >>>                  [3., 1., 3., 1., 0.0]], dtype=np.float32)
         >>> iou_thr = 0.7
-        >>> supressed, inds = soft_nms(dets, iou_thr, sigma=0.5)
-        >>> assert len(inds) == len(supressed) == 3
+        >>> new_dets, inds = soft_nms(dets, iou_thr, sigma=0.5)
+        >>> assert len(inds) == len(supressed) == 6
     """
+    # convert dets (tensor or numpy array) to tensor
     if isinstance(dets, torch.Tensor):
         is_tensor = True
         dets_t = dets.detach().cpu()

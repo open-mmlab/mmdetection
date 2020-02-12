@@ -32,8 +32,7 @@ def test_soft_nms_device_and_dtypes_cpu():
 
     dets = base_dets.astype(np.float64)
     new_dets, inds = soft_nms(dets, iou_thr)
-    assert dets.dtype == new_dets.dtype, "{} vs {}".format(
-        dets.dtype, new_dets.dtype)
+    assert dets.dtype == new_dets.dtype
     assert len(inds) == len(new_dets) == 4
 
     dets = torch.DoubleTensor(base_dets)
