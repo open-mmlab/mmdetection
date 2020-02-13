@@ -9,7 +9,7 @@ import torch
 import torchvision
 
 import mmdet
-from mmdet.ops import get_compiler_version, get_compiling_cuda_version
+from mmdet.ops.utils import get_compiler_version, get_compiling_cuda_version
 
 
 def collect_env():
