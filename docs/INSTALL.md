@@ -111,7 +111,6 @@ conda create -n open-mmlab python=3.7 -y
 conda activate open-mmlab
 
 conda install -c pytorch pytorch torchvision -y
-conda install cython -y
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
