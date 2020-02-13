@@ -21,14 +21,19 @@ from .registry import DATASETS
 
 @DATASETS.register_module
 class CityscapesDataset(CustomDataset):
+    """
+    The correct CLASSES order should be
     CLASSES = ('person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
-               'bicycle')
+                'bicycle')
+    """
 
     def load_annotations(self, gt_dir):
         self.cat_ids = [
             label.id for label in CSLabels.labels
             if label.hasInstances and not label.ignoreInEval
         ]
+        self.CLASSES = tuple(
+            [CSLabels.id2label[cat_id].name for cat_id in self.cat_ids])
         self.cat2label = {
             cat_id: i + 1
             for i, cat_id in enumerate(self.cat_ids)
@@ -76,7 +81,8 @@ class CityscapesDataset(CustomDataset):
             inds = np.nonzero(mask)
             ymin, ymax = inds[0].min(), inds[0].max()
             xmin, xmax = inds[1].min(), inds[1].max()
-            bbox = (xmin, ymin, xmax, ymax)
+            # convert to COCO style XYWH format
+            bbox = (xmin, ymin, xmax + 1 - xmin, ymax + 1 - ymin)
             if xmax <= xmin or ymax <= ymin:
                 continue
 
@@ -178,7 +184,9 @@ class CityscapesDataset(CustomDataset):
                 values are corresponding filenames.
         """
         os.makedirs(outfile_prefix, exist_ok=True)
-        for idx, result in enumerate(results):
+        prog_bar = mmcv.ProgressBar(len(self))
+        for idx in range(len(self)):
+            result = results[idx]
             filename = self.img_infos[idx]['filename']
             basename = osp.splitext(osp.basename(filename))[0]
             pred_txt = osp.join(outfile_prefix, basename + '_pred.txt')
@@ -194,6 +202,7 @@ class CityscapesDataset(CustomDataset):
 
             assert len(bboxes) == len(segms) == len(labels)
             num_instances = len(bboxes)
+            prog_bar.update()
             with open(pred_txt, 'w') as fout:
                 for i in range(num_instances):
                     pred_class = labels[i]
@@ -230,6 +239,9 @@ class CityscapesDataset(CustomDataset):
             'The length of results is not equal to the dataset len: {} != {}'.
             format(len(results), len(self)))
 
+        metrics = metric[0] if isinstance(metric, list) else metric
+        assert metrics == 'segm'
+
         if txtfile_prefix is None:
             tmp_dir = tempfile.TemporaryDirectory()
             txtfile_prefix = osp.join(tmp_dir.name, 'results')
@@ -265,8 +277,8 @@ class CityscapesDataset(CustomDataset):
                                                  groundTruthImgList,
                                                  CSEval.args)['averages']
 
-        eval_results['mAP'] = CSEval_results['allAp'] * 100
-        eval_results['AP@50'] = CSEval_results['allAp50%'] * 100
+        eval_results['mAP'] = CSEval_results['allAp']
+        eval_results['AP@50'] = CSEval_results['allAp50%']
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
