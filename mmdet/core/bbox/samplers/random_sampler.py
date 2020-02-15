@@ -17,7 +17,19 @@ class RandomSampler(BaseSampler):
         self.rng = demodata.ensure_rng(kwargs.get('rng', None))
 
     def random_choice(self, gallery, num):
-        """Random select some elements from the gallery. """
+        """Random select some elements from the gallery.
+
+        If `gallery` is a Tensor, the returned indices will be a Tensor;
+        If `gallery` is a ndarray or list, the returned indices will be a
+        ndarray.
+
+        Args:
+            gallery (Tensor | ndarray | list): indices pool.
+            num (int): expected sample num.
+
+        Returns:
+            Tensor or ndarray: sampled indices.
+        """
         assert len(gallery) >= num
 
         is_tensor = isinstance(gallery, torch.Tensor)
