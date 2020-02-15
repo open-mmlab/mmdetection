@@ -103,7 +103,7 @@ class HybridTaskCascade(CascadeRCNN):
                     mask_feats, last_feat, return_logits=False)
             mask_pred = mask_head(mask_feats, last_feat, return_feat=False)
         else:
-            mask_pred = mask_head(mask_feats)
+            mask_pred = mask_head(mask_feats, return_feat=False)
 
         mask_targets = mask_head.get_target(sampling_results, gt_masks,
                                             rcnn_train_cfg)
