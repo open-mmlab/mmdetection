@@ -209,7 +209,10 @@ def _dist_train(model,
             seed=cfg.seed) for ds in dataset
     ]
     # put model on gpus
-    model = MMDistributedDataParallel(model.cuda())
+    model = MMDistributedDataParallel(
+        model.cuda(),
+        device_ids=[torch.cuda.current_device()],
+        broadcast_buffers=False)
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
