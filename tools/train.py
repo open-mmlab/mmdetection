@@ -93,7 +93,9 @@ def main():
     env_info_dict = collect_env()
     env_info = '\n'.join([('{}: {}'.format(k, v))
                           for k, v in env_info_dict.items()])
-    logger.info('Environment info:\n' + '-' * 60 + '\n' + env_info + '\n')
+    dash_line = '-' * 60 + '\n'
+    logger.info('Environment info:\n' + dash_line + env_info + '\n' +
+                dash_line)
     meta['env_info'] = env_info
 
     # log some basic info
