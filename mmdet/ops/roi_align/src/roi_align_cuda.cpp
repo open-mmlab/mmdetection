@@ -33,6 +33,7 @@ int roi_align_forward_cuda(at::Tensor features, at::Tensor rois,
   CHECK_INPUT(features);
   CHECK_INPUT(rois);
   CHECK_INPUT(output);
+  at::DeviceGuard guard(features.device());
 
   // Number of ROIs
   int num_rois = rois.size(0);
@@ -61,6 +62,7 @@ int roi_align_backward_cuda(at::Tensor top_grad, at::Tensor rois,
   CHECK_INPUT(top_grad);
   CHECK_INPUT(rois);
   CHECK_INPUT(bottom_grad);
+  at::DeviceGuard guard(top_grad.device());
 
   // Number of ROIs
   int num_rois = rois.size(0);
