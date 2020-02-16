@@ -5,57 +5,61 @@ import numpy as np
 import torch
 from torch.utils.data import Sampler
 
+from mmdet.utils import build_from_cfg
 from ..registry import SAMPLERS
 
 
 class PseudoDataset(object):
     """
+    Pseudo Dataset with flag
     Args:
         dataset (:obj:`Dataset`): The dataset to be sample.
-        indices (nd.array): Map sample indices to origin indices,
-                        indices[i] is the index of original dataset.
+        indices (nd.array): Map new sample indices to origin indices,
+                        indices[i] is the new sampled index of dataset.
+                        e.g. dataset[indices[i]]
     """
 
     def __init__(self, dataset, indices):
         self.indices = indices
         if hasattr(dataset, 'flag'):
-            self.flag = np.empty(len(indices))
+            self.flag = np.zeros(len(indices), dtype=np.uint8)
             for idx, ori_idx in enumerate(indices):
-                self.flag[idx] = ori_idx
+                self.flag[idx] = dataset.flag[ori_idx]
 
     def __len__(self):
         return len(self.indices)
 
 
-@SAMPLERS.register_module
 class BaseSampler(Sampler):
 
-    def __init__(self, parent_sampler, **parent_kwargs):
+    def __init__(self, parent_sampler):
         self.parent_sampler = parent_sampler
-        self.parent_kwargs = parent_kwargs
         self.dataset = parent_sampler.dataset
-        self.epoch = 0
+        if hasattr(parent_sampler, 'epoch'):
+            self.epoch = parent_sampler.epoch
 
     def set_epoch(self, epoch=None):
-        if epoch is None:
-            epoch = self.epoch
-        self.epoch = epoch
-        self.parent_sampler.epoch = epoch
+        if hasattr(self, 'epoch'):
+            if epoch is None:
+                epoch = self.epoch
+            self.epoch = epoch
+            self.parent_sampler.epoch = epoch
 
     def _get_sample_indices(self):
-        return np.arange(len(self.dataset))
+        sample_indices = np.arange(len(self.dataset))
+        return sample_indices
 
     def __iter__(self):
         sample_indices = self._get_sample_indices()
-        self.parent_sampler.__init__(
-            dataset=PseudoDataset(self.dataset, sample_indices),
-            **self.parent_kwargs)
-        self.set_epoch()
+        self.parent_sampler.reset_dataset(
+            PseudoDataset(self.dataset, sample_indices))
         indices = sample_indices[list(self.parent_sampler)].tolist()
+        assert len(indices) == len(self), '{} vs {}'.format(
+            len(indices), len(self))
         return iter(indices)
 
     def __len__(self):
-        raise len(self.parent_sampler)
+        return len(self.parent_sampler)
 
 
 @SAMPLERS.register_module
@@ -68,7 +72,6 @@ class RepeatSampler(BaseSampler):
     epochs.
 
     Args:
-        dataset (:obj:`Dataset`): The dataset to be repeated.
         times (int): Repeat times.
     """
 
@@ -79,23 +82,36 @@ class RepeatSampler(BaseSampler):
     def _get_sample_indices(self):
         ori_length = len(self.dataset)
         repeat_length = self.times * len(self.dataset)
-        indices = np.array([idx % ori_length] for idx in range(repeat_length))
-        return indices
-
-    def __len__(self):
-        return self.times * self.dataset
+        sample_indices = np.array(
+            [idx % ori_length for idx in range(repeat_length)])
+        return sample_indices
 
 
 # Modified from https://github.com/facebookresearch/detectron2/blob/41d475b75a230221e21d9cac5d69655e3415e3a4/detectron2/data/samplers/distributed_sampler.py#L57 # noqa
 @SAMPLERS.register_module
 class RepeatFactorSampler(BaseSampler):
+    """
+    Similar to RepeatSampler, but suitable for training on class imbalanced
+    datasets like LVIS. In each epoch, an image may appear multiple times
+    based on its "repeat factor". The repeat factor for an image is a function
+    of the frequency the rarest category labeled in that image. The "frequency
+    of category c" in [0, 1] is defined as the fraction of images in the
+    training set (without repeats) in which category c appears.
+
+    Args:
+        repeat_thresh (float): frequency threshold to repeat.
+    """
 
     def __init__(self, repeat_thr, *args, **kwargs):
         super(RepeatFactorSampler, self).__init__(*args, **kwargs)
         self.repeat_thr = repeat_thr
         repeat_factors = self._get_repeat_factors(self.dataset, repeat_thr)
+
         self._int_part = torch.trunc(repeat_factors)
         self._frac_part = repeat_factors - self._int_part
+
+        # init sampler length
+        self._get_sample_indices()
 
     def _get_repeat_factors(self, dataset, repeat_thr):
         # 1. For each category c, compute the fraction # of images
@@ -133,7 +149,7 @@ class RepeatFactorSampler(BaseSampler):
         Create a list of dataset indices (with repeats) to use for one epoch.
 
         Returns:
-            np.array: list of dataset indices to use in one epoch. Each index
+            nd.array: list of sampler indices to use in one epoch. Each index
                 is repeated based on its calculated repeat factor.
         """
         # Since repeat factors are fractional, we use stochastic rounding so
@@ -144,13 +160,14 @@ class RepeatFactorSampler(BaseSampler):
         rands = torch.rand(len(self._frac_part), generator=g)
         repeat_factors = self._int_part + (rands < self._frac_part).float()
         repeat_factors = repeat_factors.int().tolist()
-        # Construct a list of indices in which we repeat images as specified
-        indices = []
-        for dataset_index, repeat_factor in enumerate(repeat_factors):
-            indices.extend([dataset_index] * repeat_factor)
-        indices = np.array(indices)
-        self.indices = indices
-        return indices
 
-    def __len__(self):
-        return len(self.indices)
+        sample_indices = []
+        for dataset_index, repeat_factor in enumerate(repeat_factors):
+            sample_indices.extend([dataset_index] * repeat_factor)
+        sample_indices = np.array(sample_indices)
+        return sample_indices
+
+
+def build_sampler(sampler_cfg, parent_sampler):
+    sampler_cfg['parent_sampler'] = parent_sampler
+    return build_from_cfg(sampler_cfg, SAMPLERS)

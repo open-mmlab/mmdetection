@@ -201,6 +201,7 @@ def _dist_train(model,
             ds,
             cfg.data.imgs_per_gpu,
             cfg.data.workers_per_gpu,
+            sampler_cfg=cfg.data.train_sampler,
             dist=True,
             seed=cfg.seed) for ds in dataset
     ]

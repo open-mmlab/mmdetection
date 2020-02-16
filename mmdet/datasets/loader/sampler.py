@@ -14,6 +14,11 @@ class DistributedSampler(_DistributedSampler):
         super().__init__(dataset, num_replicas=num_replicas, rank=rank)
         self.shuffle = shuffle
 
+    def reset_dataset(self, dataset):
+        epoch = self.epoch
+        self.__init__(dataset, self.num_replicas, self.rank, self.shuffle)
+        self.epoch = epoch
+
     def __iter__(self):
         # deterministically shuffle based on epoch
         if self.shuffle:
@@ -46,6 +51,9 @@ class GroupSampler(Sampler):
         for i, size in enumerate(self.group_sizes):
             self.num_samples += int(np.ceil(
                 size / self.samples_per_gpu)) * self.samples_per_gpu
+
+    def reset_dataset(self, dataset):
+        self.__init__(dataset, self.samples_per_gpu)
 
     def __iter__(self):
         indices = []
@@ -116,6 +124,12 @@ class DistributedGroupSampler(Sampler):
                 math.ceil(self.group_sizes[i] * 1.0 / self.samples_per_gpu /
                           self.num_replicas)) * self.samples_per_gpu
         self.total_size = self.num_samples * self.num_replicas
+
+    def reset_dataset(self, dataset):
+        epoch = self.epoch
+        self.__init__(dataset, self.samples_per_gpu, self.num_replicas,
+                      self.rank)
+        self.epoch = epoch
 
     def __iter__(self):
         # deterministically shuffle based on epoch

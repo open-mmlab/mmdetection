@@ -8,6 +8,7 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader
 
 from .sampler import DistributedGroupSampler, DistributedSampler, GroupSampler
+from .sampler_wrappers import build_sampler
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -19,6 +20,7 @@ if platform.system() != 'Windows':
 def build_dataloader(dataset,
                      imgs_per_gpu,
                      workers_per_gpu,
+                     sampler_cfg=None,
                      num_gpus=1,
                      dist=True,
                      shuffle=True,
@@ -60,6 +62,9 @@ def build_dataloader(dataset,
         sampler = GroupSampler(dataset, imgs_per_gpu) if shuffle else None
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
+
+    if sampler_cfg is not None:
+        sampler = build_sampler(sampler_cfg, sampler)
 
     data_loader = DataLoader(
         dataset,
