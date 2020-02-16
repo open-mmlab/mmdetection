@@ -165,13 +165,13 @@ def anchor_inside_flags(flat_anchors,
                         allowed_border=0):
     img_h, img_w = img_shape[:2]
     if allowed_border >= 0:
-        inside_flags = valid_flags & \
-            (flat_anchors[:, 0] >= -allowed_border).type(torch.uint8) & \
-            (flat_anchors[:, 1] >= -allowed_border).type(torch.uint8) & \
-            (flat_anchors[:, 2] < img_w + allowed_border).type(torch.uint8) & \
-            (flat_anchors[:, 3] < img_h + allowed_border).type(torch.uint8)
+        inside_flags = valid_flags.type(torch.bool) & \
+            (flat_anchors[:, 0] >= -allowed_border).type(torch.bool) & \
+            (flat_anchors[:, 1] >= -allowed_border).type(torch.bool) & \
+            (flat_anchors[:, 2] < img_w + allowed_border).type(torch.bool) & \
+            (flat_anchors[:, 3] < img_h + allowed_border).type(torch.bool)
     else:
-        inside_flags = valid_flags
+        inside_flags = valid_flags.type(torch.bool)
     return inside_flags
 
 
