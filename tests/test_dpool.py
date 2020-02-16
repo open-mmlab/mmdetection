@@ -65,8 +65,12 @@ def test_dpool_empty_cpu():
 def test_dpool_empty_gpu():
     """
     CommandLine:
-        xdoctest -m tests/test_dpool.py test_dpool_empty_cpu
+        xdoctest -m tests/test_dpool.py test_dpool_empty_gpu
     """
+    if not torch.cuda.is_available():
+        import pytest
+        pytest.skip('test requires GPU and torch+cuda')
+
     dpool_layer = DeformRoIPoolingPack(
         spatial_scale=7,
         out_size=7,
