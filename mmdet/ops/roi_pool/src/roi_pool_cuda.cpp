@@ -31,6 +31,7 @@ int roi_pooling_forward_cuda(at::Tensor features, at::Tensor rois,
   CHECK_INPUT(rois);
   CHECK_INPUT(output);
   CHECK_INPUT(argmax);
+  at::DeviceGuard guard(features.device());
 
   // Number of ROIs
   int num_rois = rois.size(0);
@@ -58,6 +59,7 @@ int roi_pooling_backward_cuda(at::Tensor top_grad, at::Tensor rois,
   CHECK_INPUT(rois);
   CHECK_INPUT(argmax);
   CHECK_INPUT(bottom_grad);
+  at::DeviceGuard guard(top_grad.device());
 
   int pooled_height = top_grad.size(2);
   int pooled_width = top_grad.size(3);
