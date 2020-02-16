@@ -1,9 +1,9 @@
 from __future__ import division
 import argparse
+import copy
 import os
 import os.path as osp
 import time
-import copy
 
 import mmcv
 import torch
