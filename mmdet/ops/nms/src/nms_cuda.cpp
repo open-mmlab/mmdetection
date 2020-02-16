@@ -7,6 +7,7 @@ at::Tensor nms_cuda(const at::Tensor boxes, float nms_overlap_thresh);
 
 at::Tensor nms(const at::Tensor& dets, const float threshold) {
   CHECK_CUDA(dets);
+  at::DeviceGuard guard(dets.device());
   if (dets.numel() == 0)
     return at::empty({0}, dets.options().dtype(at::kLong).device(at::kCPU));
   return nms_cuda(dets, threshold);
