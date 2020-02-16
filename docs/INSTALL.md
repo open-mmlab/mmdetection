@@ -90,6 +90,9 @@ mmdetection
 │   │   ├── leftImg8bit
 │   │       ├── train
 │   │       ├── val
+│   │   ├── gtFine
+│   │       ├── train
+│   │       ├── val
 │   ├── VOCdevkit
 │   │   ├── VOC2007
 │   │   ├── VOC2012
