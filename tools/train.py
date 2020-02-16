@@ -3,6 +3,7 @@ import argparse
 import os
 import os.path as osp
 import time
+import copy
 
 import mmcv
 import torch
@@ -115,7 +116,9 @@ def main():
 
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
-        datasets.append(build_dataset(cfg.data.val))
+        val_dataset = copy.deepcopy(cfg.data.val)
+        val_dataset.pipeline = cfg.train_pipeline
+        datasets.append(build_dataset(val_dataset))
     if cfg.checkpoint_config is not None:
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
