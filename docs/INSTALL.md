@@ -88,11 +88,11 @@ mmdetection
 │   ├── cityscapes
 │   │   ├── annotations
 │   │   ├── leftImg8bit
-│   │       ├── train
-│   │       ├── val
+│   │   │   ├── train
+│   │   │   ├── val
 │   │   ├── gtFine
-│   │       ├── train
-│   │       ├── val
+│   │   │   ├── train
+│   │   │   ├── val
 │   ├── VOCdevkit
 │   │   ├── VOC2007
 │   │   ├── VOC2012
