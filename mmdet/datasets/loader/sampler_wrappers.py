@@ -10,8 +10,12 @@ from ..registry import SAMPLERS
 
 
 class PseudoDataset(object):
-    """
-    Pseudo Dataset with flag
+    """ Pseudo Dataset with flag
+
+    PseduoDataset is used to pass into Samplers e.g. DistributedGroupSampler.
+    The `indices` could be used to get sampled data from `dataset`.
+    `len(indices)` is the total number of sample to take.
+
     Args:
         dataset (:obj:`Dataset`): The dataset to be sample.
         indices (nd.array): Map new sample indices to origin indices,
@@ -90,7 +94,8 @@ class RepeatSampler(BaseSampler):
 # Modified from https://github.com/facebookresearch/detectron2/blob/41d475b75a230221e21d9cac5d69655e3415e3a4/detectron2/data/samplers/distributed_sampler.py#L57 # noqa
 @SAMPLERS.register_module
 class RepeatFactorSampler(BaseSampler):
-    """
+    """Repeat Sampler with specific repeat time for each image.
+
     Similar to RepeatSampler, but suitable for training on class imbalanced
     datasets like LVIS. In each epoch, an image may appear multiple times
     based on its "repeat factor". The repeat factor for an image is a function
