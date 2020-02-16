@@ -2,10 +2,10 @@
 CommandLine:
     pytest tests/test_dpool.py
 """
-import numpy as np
 import torch
 
-from mmdet.ops.dcn.deform_pool import DeformRoIPoolingPack, ModulatedDeformRoIPoolingPack
+from mmdet.ops.dcn.deform_pool import (DeformRoIPoolingPack,
+                                       ModulatedDeformRoIPoolingPack)
 
 
 def test_dpool_empty_cpu():
@@ -51,17 +51,17 @@ def test_dpool_empty_cpu():
     feats = torch.zeros((1, 16, 32, 32))
     data = dpool_layer(feats, rois)
     assert data.shape[0] == rois.shape[0]
-    
+
     data = mdpool_layer(feats, rois)
     assert data.shape[0] == rois.shape[0]
-    
+
     data = dpool_trans_layer(feats, rois)
     assert data.shape[0] == rois.shape[0]
-    
+
     data = mdpool_trans_layer(feats, rois)
     assert data.shape[0] == rois.shape[0]
-    
-    
+
+
 def test_dpool_empty_gpu():
     """
     CommandLine:
@@ -99,22 +99,18 @@ def test_dpool_empty_gpu():
         group_size=1,
         trans_std=0.1,
     ).cuda()
-    
+
     # test whether the dpool layer can handle empty roi
     rois = torch.empty((0, 5)).cuda()
     feats = torch.zeros((1, 16, 32, 32)).cuda()
     data = dpool_layer(feats, rois)
     assert data.shape[0] == rois.shape[0]
-    
+
     data = mdpool_layer(feats, rois)
     assert data.shape[0] == rois.shape[0]
-    
+
     data = dpool_trans_layer(feats, rois)
     assert data.shape[0] == rois.shape[0]
-    
+
     data = mdpool_trans_layer(feats, rois)
     assert data.shape[0] == rois.shape[0]
-        
-    
-    
-    
