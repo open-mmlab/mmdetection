@@ -211,7 +211,7 @@ class CityscapesDataset(CocoDataset):
             logger=logger)
 
         # set global states in cityscapes evaluation API
-        CSEval.args.cityscapesPath = os.path.join(self.ann_file, '../..')
+        CSEval.args.cityscapesPath = os.path.join(self.img_prefix, '../..')
         CSEval.args.predictionPath = os.path.abspath(txtfile_prefix)
         CSEval.args.predictionWalk = None
         CSEval.args.JSONOutput = False
@@ -219,7 +219,8 @@ class CityscapesDataset(CocoDataset):
         CSEval.args.gtInstancesFile = os.path.join(txtfile_prefix,
                                                    'gtInstances.json')
         CSEval.args.groundTruthSearch = os.path.join(
-            self.ann_file, '*/*_gtFine_instanceIds.png')
+            self.img_prefix.replace('leftImg8bit', 'gtFine'),
+            '*/*_gtFine_instanceIds.png')
 
         groundTruthImgList = glob.glob(CSEval.args.groundTruthSearch)
         assert len(groundTruthImgList), \

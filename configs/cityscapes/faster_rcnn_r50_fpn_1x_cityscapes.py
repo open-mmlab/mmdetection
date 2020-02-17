@@ -175,6 +175,6 @@ total_epochs = 8  # actual epoch = 8 * 8 = 64
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes'
-load_from = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_2x_20181010-443129e1.pth'
+load_from = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_2x_20181010-443129e1.pth'  # noqa
 resume_from = None
 workflow = [('train', 1)]
