@@ -162,7 +162,7 @@ def build_optimizer(model, optimizer_cfg):
         bias_lr_mult = paramwise_options.get('bias_lr_mult', 1.)
         bias_decay_mult = paramwise_options.get('bias_decay_mult', 1.)
         norm_decay_mult = paramwise_options.get('norm_decay_mult', 1.)
-        no_wd_in_dw = paramwise_options.get('no_wd_in_dw', False)        
+        no_wd_in_dw = paramwise_options.get('no_wd_in_dw', False)
         if no_wd_in_dw:
             named_modules = dict(model.named_modules())
         # set param-wise lr and weight decay
@@ -189,7 +189,7 @@ def build_optimizer(model, optimizer_cfg):
             elif no_wd_in_dw:
                 module_name = name.replace('.weight', '').replace('.bias', '')
                 if module_name in named_modules:
-                    module = named_modules[module_name]                    
+                    module = named_modules[module_name]
                     # if this Conv2d is depthwise Conv2d
                     if isinstance(module, torch.nn.Conv2d) and \
                             module.in_channels == module.groups:
