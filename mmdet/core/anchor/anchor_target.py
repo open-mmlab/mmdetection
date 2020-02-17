@@ -109,7 +109,7 @@ def anchor_target_single(flat_anchors,
     if not inside_flags.any():
         return (None, ) * 6
     # assign gt and sample anchors
-    anchors = flat_anchors[inside_flags, :]
+    anchors = flat_anchors[inside_flags.type(torch.bool), :]
 
     if sampling:
         assign_result, sampling_result = assign_and_sample(
@@ -180,9 +180,9 @@ def unmap(data, count, inds, fill=0):
     size count) """
     if data.dim() == 1:
         ret = data.new_full((count, ), fill)
-        ret[inds] = data
+        ret[inds.type(torch.bool)] = data
     else:
         new_size = (count, ) + data.size()[1:]
         ret = data.new_full(new_size, fill)
-        ret[inds, :] = data
+        ret[inds.type(torch.bool), :] = data
     return ret
