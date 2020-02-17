@@ -188,9 +188,9 @@ def build_optimizer(model, optimizer_cfg):
                 if base_wd is not None:
                     param_group['weight_decay'] = base_wd * bias_decay_mult
             elif no_wd_in_dw:
-                modules_name = name.replace('.weight', '').replace('.bias', '')
-                if modules_name in named_modules:
-                    module = named_modules[modules_name]
+                module_name = name.replace('.weight', '').replace('.bias', '')
+                if module_name in named_modules:
+                    module = named_modules[module_name]
                     
                     # if this Conv2d is depthwise Conv2d
                     if isinstance(module, torch.nn.Conv2d) and module.in_channels == module.groups:
