@@ -186,7 +186,7 @@ def build_optimizer(model, optimizer_cfg):
                 param_group['lr'] = base_lr * bias_lr_mult
                 if base_wd is not None:
                     param_group['weight_decay'] = base_wd * bias_decay_mult
-            elif no_wd_in_dw:
+            if no_wd_in_dw:
                 module_name = name.replace('.weight', '').replace('.bias', '')
                 if module_name in named_modules:
                     module = named_modules[module_name]
