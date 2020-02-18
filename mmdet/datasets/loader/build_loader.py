@@ -2,6 +2,7 @@ import platform
 import random
 from functools import partial
 
+import torch
 import numpy as np
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
@@ -61,6 +62,15 @@ def build_dataloader(dataset,
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
+    def worker_init_fn(worker_id):
+        # When enable distributed training, the seed of each worker equals to
+        # num_worker * rank + worker_id + user_seed
+        # When non-distributed training, rank is 0
+        rank = torch.distributed.get_rank() if dist else 0
+        worker_seed = num_workers * rank + worker_id + seed
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
+
     data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -72,8 +82,3 @@ def build_dataloader(dataset,
         **kwargs)
 
     return data_loader
-
-
-def worker_init_fn(seed):
-    np.random.seed(seed)
-    random.seed(seed)
