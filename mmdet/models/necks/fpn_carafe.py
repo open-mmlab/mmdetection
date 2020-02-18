@@ -10,7 +10,7 @@ from ..utils import ConvModule
 @NECKS.register_module
 class FPN_CARAFE(nn.Module):
     """FPN_CARAFE is a more flexible implementation of FPN.
-    It allows more choice for upsampling methods during the top-down pathway.
+    It allows more choice for upsample methods during the top-down pathway.
 
     It can reproduce the preformance of ICCV 2019 paper
     CARAFE: Content-Aware ReAssembly of FEatures
@@ -27,8 +27,8 @@ class FPN_CARAFE(nn.Module):
         activate (str): type of activation function in ConvModule
             (None indicates w/o activation).
         order (dict): order of components in ConvModule.
-        upsample (str): type of upsampling layer.
-        upsample_cfg (dict):  dictionary to construct and config upsampling layer.
+        upsample (str): type of upsample layer.
+        upsample_cfg (dict): dictionary to construct and config upsample layer.
     """
 
     def __init__(self,
