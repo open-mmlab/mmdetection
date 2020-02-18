@@ -40,8 +40,8 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v1.0rc1 was released in 13/12/2019, with more than 20 bug fixes and 30 improvements and new features.
-Please refer to [CHANGELOG.md](docs/CHANGELOG.md) for details and history versions.
+v1.0.0 was released in 30/1/2020, with more than 20 fixes and improvements.
+Please refer to [CHANGELOG.md](docs/CHANGELOG.md) for details and release history.
 
 ## Benchmark and model zoo
 
@@ -70,6 +70,7 @@ Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 | Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     |
 | FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     |
 | NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     |
+| ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     |
 
 Other features
 - [x] DCNv2
@@ -80,6 +81,7 @@ Other features
 - [x] Generalized Attention
 - [x] GCNet
 - [x] Mixed Precision (FP16) Training
+- [x] [InstaBoost](configs/instaboost/README.md)
 
 
 ## Installation

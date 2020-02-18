@@ -1,5 +1,6 @@
 from __future__ import division
 import argparse
+import copy
 import os
 import os.path as osp
 import time
@@ -10,9 +11,10 @@ from mmcv import Config
 from mmcv.runner import init_dist
 
 from mmdet import __version__
-from mmdet.apis import get_root_logger, set_random_seed, train_detector
+from mmdet.apis import set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
+from mmdet.utils import collect_env, get_root_logger
 
 
 def parse_args():
@@ -85,9 +87,20 @@ def main():
     log_file = osp.join(cfg.work_dir, '{}.log'.format(timestamp))
     logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
 
+    # init the meta dict to record some important information such as
+    # environment info and seed, which will be logged
+    meta = dict()
+    # log env info
+    env_info_dict = collect_env()
+    env_info = '\n'.join([('{}: {}'.format(k, v))
+                          for k, v in env_info_dict.items()])
+    dash_line = '-' * 60 + '\n'
+    logger.info('Environment info:\n' + dash_line + env_info + '\n' +
+                dash_line)
+    meta['env_info'] = env_info
+
     # log some basic info
     logger.info('Distributed training: {}'.format(distributed))
-    logger.info('MMDetection Version: {}'.format(__version__))
     logger.info('Config:\n{}'.format(cfg.text))
 
     # set random seeds
@@ -95,13 +108,17 @@ def main():
         logger.info('Set random seed to {}, deterministic: {}'.format(
             args.seed, args.deterministic))
         set_random_seed(args.seed, deterministic=args.deterministic)
+    cfg.seed = args.seed
+    meta['seed'] = args.seed
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
 
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
-        datasets.append(build_dataset(cfg.data.val))
+        val_dataset = copy.deepcopy(cfg.data.val)
+        val_dataset.pipeline = cfg.data.train.pipeline
+        datasets.append(build_dataset(val_dataset))
     if cfg.checkpoint_config is not None:
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
@@ -117,7 +134,8 @@ def main():
         cfg,
         distributed=distributed,
         validate=args.validate,
-        timestamp=timestamp)
+        timestamp=timestamp,
+        meta=meta)
 
 
 if __name__ == '__main__':

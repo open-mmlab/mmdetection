@@ -230,6 +230,10 @@ Please refer to [Weight Standardization](https://github.com/open-mmlab/mmdetecti
 
 Please refer to [Deformable Convolutional Networks](https://github.com/open-mmlab/mmdetection/blob/master/configs/dcn) for details.
 
+### Instaboost
+
+Please refer to [Instaboost](https://github.com/open-mmlab/mmdetection/blob/master/configs/instaboost) for details.
+
 ### Libra R-CNN
 
 Please refer to [Libra R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/libra_rcnn) for details.
@@ -279,6 +283,9 @@ Please refer to [Rethinking ImageNet Pre-training](https://github.com/open-mmlab
 
 ### NAS-FPN
 Please refer to [NAS-FPN](https://github.com/open-mmlab/mmdetection/blob/master/configs/nas_fpn) for details.
+
+### ATSS
+Please refer to [ATSS](https://github.com/open-mmlab/mmdetection/blob/master/configs/atss) for details.
 
 ### Other datasets
 
