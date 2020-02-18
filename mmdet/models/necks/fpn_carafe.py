@@ -20,11 +20,10 @@ class FPN_CARAFE(nn.Module):
                  activation=None,
                  order=('conv', 'norm', 'act'),
                  upsample='nearest',
-                 upsample_cfg=dict(
-                     up_kernel=5,
-                     up_group=1,
-                     encoder_kernel=3,
-                     encoder_dilation=1)):
+                 upsample_cfg=dict(up_kernel=5,
+                                   up_group=1,
+                                   encoder_kernel=3,
+                                   encoder_dilation=1)):
         super(FPN_CARAFE, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -66,25 +65,23 @@ class FPN_CARAFE(nn.Module):
         self.upsample_modules = nn.ModuleList()
 
         for i in range(self.start_level, self.backbone_end_level):
-            l_conv = ConvModule(
-                in_channels[i],
-                out_channels,
-                1,
-                norm_cfg=norm_cfg,
-                bias=self.with_bias,
-                activation=activation,
-                inplace=False,
-                order=self.order)
-            fpn_conv = ConvModule(
-                out_channels,
-                out_channels,
-                3,
-                padding=1,
-                norm_cfg=self.norm_cfg,
-                bias=self.with_bias,
-                activation=activation,
-                inplace=False,
-                order=self.order)
+            l_conv = ConvModule(in_channels[i],
+                                out_channels,
+                                1,
+                                norm_cfg=norm_cfg,
+                                bias=self.with_bias,
+                                activation=activation,
+                                inplace=False,
+                                order=self.order)
+            fpn_conv = ConvModule(out_channels,
+                                  out_channels,
+                                  3,
+                                  padding=1,
+                                  norm_cfg=self.norm_cfg,
+                                  bias=self.with_bias,
+                                  activation=activation,
+                                  inplace=False,
+                                  order=self.order)
             if i != self.backbone_end_level - 1:
                 if self.upsample == 'deconv':
                     upsample_module = nn.ConvTranspose2d(
@@ -108,24 +105,22 @@ class FPN_CARAFE(nn.Module):
             self.fpn_convs.append(fpn_conv)
 
         # add extra conv layers (e.g., RetinaNet)
-        extra_out_levels = (
-            num_outs - self.backbone_end_level + self.start_level)
+        extra_out_levels = (num_outs - self.backbone_end_level +
+                            self.start_level)
         if extra_out_levels >= 1:
             for i in range(extra_out_levels):
-                in_channels = (
-                    self.in_channels[self.backbone_end_level -
-                                     1] if i == 0 else out_channels)
-                extra_l_conv = ConvModule(
-                    in_channels,
-                    out_channels,
-                    3,
-                    stride=2,
-                    padding=1,
-                    norm_cfg=norm_cfg,
-                    bias=self.with_bias,
-                    activation=self.activation,
-                    inplace=False,
-                    order=self.order)
+                in_channels = (self.in_channels[self.backbone_end_level -
+                                                1] if i == 0 else out_channels)
+                extra_l_conv = ConvModule(in_channels,
+                                          out_channels,
+                                          3,
+                                          stride=2,
+                                          padding=1,
+                                          norm_cfg=norm_cfg,
+                                          bias=self.with_bias,
+                                          activation=self.activation,
+                                          inplace=False,
+                                          order=self.order)
                 if self.upsample == 'deconv':
                     upsample_module = nn.ConvTranspose2d(
                         out_channels,
@@ -143,16 +138,15 @@ class FPN_CARAFE(nn.Module):
                 elif self.upsample == 'carafe':
                     upsample_module = CARAFEPack(out_channels, 2,
                                                  **self.upsample_cfg)
-                extra_fpn_conv = ConvModule(
-                    out_channels,
-                    out_channels,
-                    3,
-                    padding=1,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.with_bias,
-                    activation=activation,
-                    inplace=False,
-                    order=self.order)
+                extra_fpn_conv = ConvModule(out_channels,
+                                            out_channels,
+                                            3,
+                                            padding=1,
+                                            norm_cfg=self.norm_cfg,
+                                            bias=self.with_bias,
+                                            activation=activation,
+                                            inplace=False,
+                                            order=self.order)
                 self.upsample_modules.append(upsample_module)
                 self.fpn_convs.append(extra_fpn_conv)
                 self.lateral_convs.append(extra_l_conv)
@@ -165,20 +159,20 @@ class FPN_CARAFE(nn.Module):
             if isinstance(m, CARAFEPack):
                 m.init_weights()
 
-    def resize_as(self, a, b):
-        # resize a as b
-        if a.size(2) == b.size(2) and a.size(3) == b.size(3):
-            return a
+    def slice_as(self, src, dst):
+        # slice src as dst
+        # src should have the same or larger size than dst
+        assert (src.size(2) >= dst.size(2)) and (src.size(3) >= dst.size(3))
+        if src.size(2) == dst.size(2) and src.size(3) == dst.size(3):
+            return src
         else:
-            assert (abs(a.size(2) - b.size(2)) <= 1
-                    and abs(a.size(3) - b.size(3)) <= 1)
-            return a[:, :, :b.size(2), :b.size(3)]
+            return src[:, :, :dst.size(2), :dst.size(3)]
 
     def tensor_add(self, a, b):
         if a.size() == b.size():
             c = a + b
         else:
-            c = a + self.resize_as(b, a)
+            c = a + self.slice_as(b, a)
         return c
 
     def forward(self, inputs):
@@ -200,11 +194,10 @@ class FPN_CARAFE(nn.Module):
                 if (self.upsample == 'nearest' or self.upsample == 'bilinear'):
                     align_corners = (None
                                      if self.upsample == 'nearest' else False)
-                    upsample_feat = F.interpolate(
-                        laterals[i],
-                        scale_factor=2,
-                        mode=self.upsample,
-                        align_corners=align_corners)
+                    upsample_feat = F.interpolate(laterals[i],
+                                                  scale_factor=2,
+                                                  mode=self.upsample,
+                                                  align_corners=align_corners)
                 elif self.upsample == 'deconv':
                     upsample_feat = self.upsample_modules[i - 1](
                         laterals[i], output_size=laterals[i - 1].size())
