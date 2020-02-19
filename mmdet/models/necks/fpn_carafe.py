@@ -55,7 +55,7 @@ class FPN_CARAFE(nn.Module):
         self.activation = activation
         self.norm_cfg = norm_cfg
         self.with_bias = norm_cfg is None
-        self.upsample_cfg = upsample_cfg
+        self.upsample_cfg = upsample_cfg.copy()
         self.upsample = self.upsample_cfg.pop('type')
         self.relu = nn.ReLU(inplace=False)
 

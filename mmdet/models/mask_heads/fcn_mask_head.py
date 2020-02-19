@@ -23,27 +23,20 @@ class FCNMaskHead(nn.Module):
                  conv_out_channels=256,
                  num_classes=81,
                  class_agnostic=False,
-                 upsample_cfg=dict(
-                     type='carafe',
-                     upsample_ratio=2,
-                     up_kernel=5,
-                     up_group=1,
-                     encoder_kernel=3,
-                     encoder_dilation=1,
-                     compressed_channels=64),
+                 upsample_cfg=dict(type='deconv', upsample_ratio=2),
                  conv_cfg=None,
                  norm_cfg=None,
                  loss_mask=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(FCNMaskHead, self).__init__()
-        if upsample_cfg['type'] not in [
+        self.upsample_cfg = upsample_cfg.copy()
+        if self.upsample_cfg['type'] not in [
                 None, 'deconv', 'nearest', 'bilinear', 'carafe'
         ]:
             raise ValueError(
                 'Invalid upsample method {}, accepted methods '
                 'are "deconv", "nearest", "bilinear", "carafe"'.format(
-                    upsample_cfg['type']))
-        self.upsample_cfg = upsample_cfg
+                    self.upsample_cfg['type']))
         self.num_convs = num_convs
         # WARN: roi_feat_size is reserved and not used
         self.roi_feat_size = _pair(roi_feat_size)
