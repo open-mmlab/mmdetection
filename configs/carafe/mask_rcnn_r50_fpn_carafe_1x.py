@@ -68,7 +68,7 @@ model = dict(
         conv_out_channels=256,
         num_classes=81,
         upsample_method='carafe',
-        carafe_cfg=dict(
+        upsample_cfg=dict(
             up_kernel=5,
             up_group=1,
             encoder_kernel=3,
@@ -178,6 +178,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric=['bbox', 'segm'])
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))

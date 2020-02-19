@@ -17,15 +17,16 @@ class FPN_CARAFE(nn.Module):
     Please refer to https://arxiv.org/abs/1905.02188 for more details.
 
     Args:
-        in_channels (list): Number of channels for each input feature map.
+        in_channels (list[int]): Number of channels for each input feature map.
         out_channels (int): output channels of feature pyramids.
         num_outs (int): number of output stages.
         start_level (int): start level of feature pyramids.
+            (Default: 0)
         end_level (int): end level of feature pyramids.
-            (-1 indicates the last level).
+            (Default: -1 indicates the last level).
         norm_cfg (dict): dictionary to construct and config norm layer.
         activate (str): type of activation function in ConvModule
-            (None indicates w/o activation).
+            (Default: None indicates w/o activation).
         order (dict): order of components in ConvModule.
         upsample (str): type of upsample layer.
         upsample_cfg (dict): dictionary to construct and config upsample layer.
@@ -181,8 +182,9 @@ class FPN_CARAFE(nn.Module):
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
         for m in self.modules():
-            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+            if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
                 xavier_init(m, distribution='uniform')
+        for m in self.modules():
             if isinstance(m, CARAFEPack):
                 m.init_weights()
 
@@ -219,6 +221,7 @@ class FPN_CARAFE(nn.Module):
         for i in range(len(laterals) - 1, 0, -1):
             if self.upsample is not None:
                 if (self.upsample == 'nearest' or self.upsample == 'bilinear'):
+                    # suppress warnings
                     align_corners = (None
                                      if self.upsample == 'nearest' else False)
                     upsample_feat = F.interpolate(

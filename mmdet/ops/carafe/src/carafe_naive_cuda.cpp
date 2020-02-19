@@ -31,6 +31,7 @@ int carafe_naive_forward_cuda(at::Tensor features, at::Tensor masks,
   CHECK_INPUT(features);
   CHECK_INPUT(masks);
   CHECK_INPUT(output);
+  at::DeviceGuard guard(features.device());
 
   int batch_size = output.size(0);
   int num_channels = output.size(1);
@@ -53,6 +54,7 @@ int carafe_naive_backward_cuda(at::Tensor top_grad, at::Tensor features,
   CHECK_INPUT(masks);
   CHECK_INPUT(bottom_grad);
   CHECK_INPUT(mask_grad);
+  at::DeviceGuard guard(top_grad.device());
 
   int batch_size = top_grad.size(0);
   int num_channels = top_grad.size(1);

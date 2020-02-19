@@ -41,6 +41,7 @@ int carafe_forward_cuda(at::Tensor features, at::Tensor rfeatures,
   CHECK_INPUT(rmasks);
   CHECK_INPUT(output);
   CHECK_INPUT(routput);
+  at::DeviceGuard guard(features.device());
 
   const int batch_size = output.size(0);
   const int num_channels = output.size(1);
@@ -79,6 +80,7 @@ int carafe_backward_cuda(at::Tensor top_grad, at::Tensor rfeatures,
   CHECK_INPUT(rmask_grad);
   CHECK_INPUT(bottom_grad);
   CHECK_INPUT(mask_grad);
+  at::DeviceGuard guard(top_grad.device());
 
   const int batch_size = top_grad.size(0);
   const int num_channels = top_grad.size(1);
