@@ -107,9 +107,10 @@ class CityscapesDataset(CocoDataset):
                 the txt files will be named "somepath/xxx.txt".
 
         Returns:
-            dict[str: str]: Possible keys are "bbox", "segm", "proposal", and
-                values are corresponding filenames.
+            list[str: str]: result txt files which contains corresponding
+            instance segmentation images.
         """
+        result_files = []
         os.makedirs(outfile_prefix, exist_ok=True)
         prog_bar = mmcv.ProgressBar(len(self))
         for idx in range(len(self)):
@@ -143,6 +144,42 @@ class CityscapesDataset(CocoDataset):
                     mmcv.imwrite(mask, png_filename)
                     fout.write('{} {} {}\n'.format(
                         osp.basename(png_filename), class_id, score))
+        result_files.append(pred_txt)
+
+        return result_files
+
+    def format_results(self, results, txtfile_prefix=None):
+        """Format the results to txt (standard format for Cityscapes evaluation).
+
+        Args:
+            results (list): Testing results of the dataset.
+            txtfile_prefix (str | None): The prefix of txt files. It includes
+                the file path and the prefix of filename, e.g., "a/b/prefix".
+                If not specified, a temp file will be created. Default: None.
+
+        Returns:
+            tuple: (result_files, tmp_dir), result_files is a dict containing
+                the json filepaths, tmp_dir is the temporal directory created
+                for saving txt/png files when txtfile_prefix is not specified.
+        """
+        assert isinstance(results, list), 'results must be a list'
+        assert len(results) == len(self), (
+            'The length of results is not equal to the dataset len: {} != {}'.
+            format(len(results), len(self)))
+
+        assert isinstance(results, list), 'results must be a list'
+        assert len(results) == len(self), (
+            'The length of results is not equal to the dataset len: {} != {}'.
+            format(len(results), len(self)))
+
+        if txtfile_prefix is None:
+            tmp_dir = tempfile.TemporaryDirectory()
+            txtfile_prefix = osp.join(tmp_dir.name, 'results')
+        else:
+            tmp_dir = None
+        result_files = self.results2txt(results, txtfile_prefix)
+
+        return result_files, tmp_dir
 
     def evaluate(self,
                  results,
@@ -173,11 +210,6 @@ class CityscapesDataset(CocoDataset):
         """
         eval_results = dict()
 
-        assert isinstance(results, list), 'results must be a list'
-        assert len(results) == len(self), (
-            'The length of results is not equal to the dataset len: {} != {}'.
-            format(len(results), len(self)))
-
         metrics = metric if isinstance(metric, list) else [metric]
 
         if 'cityscapes' in metrics:
@@ -197,26 +229,26 @@ class CityscapesDataset(CocoDataset):
         if logger is None:
             msg = '\n' + msg
         print_log(msg, logger=logger)
-        if txtfile_prefix is None:
-            tmp_dir = tempfile.TemporaryDirectory()
-            txtfile_prefix = osp.join(tmp_dir.name, 'results')
+
+        result_files, tmp_dir = self.format_results(results, txtfile_prefix)
+
+        if tmp_dir is None:
+            result_dir = osp.join(txtfile_prefix, 'results')
         else:
-            tmp_dir = None
-        print_log('Temp: {}'.format(txtfile_prefix), logger=logger)
-        self.results2txt(results, txtfile_prefix)
+            result_dir = osp.join(tmp_dir.name, 'results')
 
         eval_results = {}
         print_log(
-            'Evaluating results under {} ...'.format(txtfile_prefix),
+            'Evaluating results under {} ...'.format(result_dir),
             logger=logger)
 
         # set global states in cityscapes evaluation API
         CSEval.args.cityscapesPath = os.path.join(self.img_prefix, '../..')
-        CSEval.args.predictionPath = os.path.abspath(txtfile_prefix)
+        CSEval.args.predictionPath = os.path.abspath(result_dir)
         CSEval.args.predictionWalk = None
         CSEval.args.JSONOutput = False
         CSEval.args.colorized = False
-        CSEval.args.gtInstancesFile = os.path.join(txtfile_prefix,
+        CSEval.args.gtInstancesFile = os.path.join(result_dir,
                                                    'gtInstances.json')
         CSEval.args.groundTruthSearch = os.path.join(
             self.img_prefix.replace('leftImg8bit', 'gtFine'),
