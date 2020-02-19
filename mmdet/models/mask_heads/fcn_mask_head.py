@@ -9,7 +9,7 @@ from mmdet.core import auto_fp16, force_fp32, mask_target
 from mmdet.ops.carafe import CARAFEPack
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import ConvModule
+from ..utils import ConvModule, build_upsampler_layer
 
 
 @HEADS.register_module
@@ -21,25 +21,28 @@ class FCNMaskHead(nn.Module):
                  in_channels=256,
                  conv_kernel_size=3,
                  conv_out_channels=256,
-                 upsample_method='deconv',
-                 upsample_ratio=2,
                  num_classes=81,
                  class_agnostic=False,
-                 upsample_cfg=None,
+                 upsample_cfg=dict(
+                     type='carafe',
+                     upsample_ratio=2,
+                     up_kernel=5,
+                     up_group=1,
+                     encoder_kernel=3,
+                     encoder_dilation=1,
+                     compressed_channels=64),
                  conv_cfg=None,
                  norm_cfg=None,
                  loss_mask=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(FCNMaskHead, self).__init__()
-        if upsample_method not in [
+        if upsample_cfg['type'] not in [
                 None, 'deconv', 'nearest', 'bilinear', 'carafe'
         ]:
             raise ValueError(
                 'Invalid upsample method {}, accepted methods '
                 'are "deconv", "nearest", "bilinear", "carafe"'.format(
-                    upsample_method))
-        if upsample_method == 'carafe':
-            assert upsample_cfg is not None
+                    upsample_cfg['type']))
         self.upsample_cfg = upsample_cfg
         self.num_convs = num_convs
         # WARN: roi_feat_size is reserved and not used
@@ -47,8 +50,8 @@ class FCNMaskHead(nn.Module):
         self.in_channels = in_channels
         self.conv_kernel_size = conv_kernel_size
         self.conv_out_channels = conv_out_channels
-        self.upsample_method = upsample_method
-        self.upsample_ratio = upsample_ratio
+        self.upsample_method = self.upsample_cfg.pop('type')
+        self.upsample_ratio = self.upsample_cfg.pop('upsample_ratio')
         self.num_classes = num_classes
         self.class_agnostic = class_agnostic
         self.conv_cfg = conv_cfg
@@ -74,21 +77,26 @@ class FCNMaskHead(nn.Module):
         if self.upsample_method is None:
             self.upsample = None
         elif self.upsample_method == 'deconv':
-            self.upsample = nn.ConvTranspose2d(
-                upsample_in_channels,
-                self.conv_out_channels,
-                self.upsample_ratio,
+            upsampler_cfg_ = dict(
+                in_channels=upsample_in_channels,
+                out_channels=self.conv_out_channels,
+                kernel_size=self.upsample_ratio,
                 stride=self.upsample_ratio)
         elif self.upsample_method == 'carafe':
-            self.upsample = CARAFEPack(upsample_in_channels,
-                                       self.upsample_ratio,
-                                       **self.upsample_cfg)
+            upsampler_cfg_ = dict(
+                channels=upsample_in_channels,
+                scale_factor=self.upsample_ratio,
+                **self.upsample_cfg)
         else:
-            align_corners = (None if self.upsample == 'nearest' else False)
-            self.upsample = nn.Upsample(
+            # suppress warnings
+            align_corners = (None
+                             if self.upsample_method == 'nearest' else False)
+            upsampler_cfg_ = dict(
                 scale_factor=self.upsample_ratio,
                 mode=self.upsample_method,
                 align_corners=align_corners)
+        upsampler_cfg_['type'] = self.upsample_method
+        _, self.upsample = build_upsampler_layer(upsampler_cfg_)
 
         out_channels = 1 if self.class_agnostic else self.num_classes
         logits_in_channel = (
