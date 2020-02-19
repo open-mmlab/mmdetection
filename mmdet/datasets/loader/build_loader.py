@@ -2,8 +2,8 @@ import platform
 import random
 from functools import partial
 
-import torch
 import numpy as np
+import torch
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader
