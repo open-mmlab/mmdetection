@@ -129,6 +129,16 @@ carafe = CARAFEFunction.apply
 
 
 class CARAFE(Module):
+    """ CARAFE: Content-Aware ReAssembly of FEatures
+    Please refer to https://arxiv.org/abs/1905.02188 for more details.
+
+    Args:
+        kernel_size (int): reassemble kernel size
+        group_size (int): reassemble group size
+        scale_factor (int): upsample ratio
+    Returns:
+        upsampled feature map
+    """
 
     def __init__(self, kernel_size, group_size, scale_factor):
         super(CARAFE, self).__init__()
@@ -143,6 +153,24 @@ class CARAFE(Module):
 
 
 class CARAFEPack(nn.Module):
+    """ A unified package of CARAFE upsampler that contains:
+    1) channel compressor 2) content encoder 3) CARAFE op
+
+    Official implementation of ICCV 2019 paper
+    CARAFE: Content-Aware ReAssembly of FEatures
+    Please refer to https://arxiv.org/abs/1905.02188 for more details.
+
+    Args:
+        channels (int): input feature channels
+        scale_factor (int): upsample ratio
+        up_kernel (int): kernel size of CARAFE op
+        up_group (int): group size of CARAFE op
+        encoder_kernel (int): kernel size of content encoder
+        encoder_dilation (int): dilation of content encoder
+        compressed_channels (int): output channels of channels compressor
+    Returns:
+        upsampled feature map
+    """
 
     def __init__(self,
                  channels,
