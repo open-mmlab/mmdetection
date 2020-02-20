@@ -9,7 +9,7 @@ from mmdet.core import auto_fp16, force_fp32, mask_target
 from mmdet.ops.carafe import CARAFEPack
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import ConvModule, build_upsampler_layer
+from ..utils import ConvModule, build_upsample_layer
 
 
 @HEADS.register_module
@@ -89,7 +89,7 @@ class FCNMaskHead(nn.Module):
                 mode=self.upsample_method,
                 align_corners=align_corners)
         upsampler_cfg_['type'] = self.upsample_method
-        _, self.upsample = build_upsampler_layer(upsampler_cfg_)
+        _, self.upsample = build_upsample_layer(upsampler_cfg_)
 
         out_channels = 1 if self.class_agnostic else self.num_classes
         logits_in_channel = (

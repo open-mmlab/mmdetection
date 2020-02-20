@@ -30,7 +30,7 @@ class PixelShufflePack(nn.Module):
         return x
 
 
-upsampler_cfg = {
+upsample_cfg = {
     # format: layer_type: (abbreviation, module)
     'nearest': ('nearest', nn.Upsample),
     'bilinear': ('bilinear', nn.Upsample),
@@ -40,33 +40,29 @@ upsampler_cfg = {
 }
 
 
-def build_upsampler_layer(cfg, postfix=''):
-    """ Build upsampler layer
+def build_upsample_layer(cfg):
+    """ Build upsample layer
 
     Args:
         cfg (dict): cfg should contain:
-            type (str): identify upsampler layer type.
+            type (str): identify upsample layer type.
             upsample ratio (int): upsample ratio
-            layer args: args needed to instantiate a upsampler layer.
-        postfix (int, str): appended into norm abbreviation to
-            create named layer.
+            layer args: args needed to instantiate a upsample layer.
 
     Returns:
-        name (str): abbreviation + postfix
-        layer (nn.Module): created upsampler layer
+        abbr (str): abbreviation
+        layer (nn.Module): created upsample layer
     """
     assert isinstance(cfg, dict) and 'type' in cfg
     cfg_ = cfg.copy()
 
     layer_type = cfg_.pop('type')
-    if layer_type not in upsampler_cfg:
-        raise KeyError('Unrecognized upsampler type {}'.format(layer_type))
+    if layer_type not in upsample_cfg:
+        raise KeyError('Unrecognized upsample type {}'.format(layer_type))
     else:
-        abbr, upsampler = upsampler_cfg[layer_type]
-        if upsampler is None:
+        abbr, upsample = upsample_cfg[layer_type]
+        if upsample is None:
             raise NotImplementedError
 
-    assert isinstance(postfix, (int, str))
-    name = abbr + str(postfix)
-    layer = upsampler(**cfg_)
-    return name, layer
+    layer = upsample(**cfg_)
+    return abbr, layer

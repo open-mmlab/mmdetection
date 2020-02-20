@@ -3,7 +3,7 @@ from mmcv.cnn import xavier_init
 
 from mmdet.ops.carafe import CARAFEPack
 from ..registry import NECKS
-from ..utils import ConvModule, build_upsampler_layer
+from ..utils import ConvModule, build_upsample_layer
 
 
 @NECKS.register_module
@@ -135,7 +135,7 @@ class FPN_CARAFE(nn.Module):
                         mode=self.upsample,
                         align_corners=align_corners)
                 upsampler_cfg_['type'] = self.upsample
-                _, upsample_module = build_upsampler_layer(upsampler_cfg_)
+                _, upsample_module = build_upsample_layer(upsampler_cfg_)
                 self.upsample_modules.append(upsample_module)
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
@@ -187,7 +187,7 @@ class FPN_CARAFE(nn.Module):
                         mode=self.upsample,
                         align_corners=align_corners)
                 upsampler_cfg_['type'] = self.upsample
-                _, upsample_module = build_upsampler_layer(upsampler_cfg_)
+                _, upsample_module = build_upsample_layer(upsampler_cfg_)
                 extra_fpn_conv = ConvModule(
                     out_channels,
                     out_channels,
