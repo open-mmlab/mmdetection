@@ -56,15 +56,15 @@ class RoIAlignFunction(Function):
 class RoIAlignFunctionV2(Function):
 
     @staticmethod
-    def forward(ctx, input, roi, output_size, spatial_scale, sampling_ratio,
+    def forward(ctx, features, roi, output_size, spatial_scale, sampling_ratio,
                 aligned):
         ctx.save_for_backward(roi)
         ctx.output_size = _pair(output_size)
         ctx.spatial_scale = spatial_scale
         ctx.sampling_ratio = sampling_ratio
-        ctx.input_shape = input.size()
+        ctx.feature_size = features.size()
         ctx.aligned = aligned
-        output = roi_align_cuda.forward_v2(input, roi, spatial_scale,
+        output = roi_align_cuda.forward_v2(features, roi, spatial_scale,
                                            output_size[0], output_size[1],
                                            sampling_ratio, aligned)
         return output
@@ -76,7 +76,7 @@ class RoIAlignFunctionV2(Function):
         output_size = ctx.output_size
         spatial_scale = ctx.spatial_scale
         sampling_ratio = ctx.sampling_ratio
-        bs, ch, h, w = ctx.input_shape
+        bs, ch, h, w = ctx.feature_size
         grad_input = roi_align_cuda.backward_v2(
             grad_output,
             rois,
@@ -145,7 +145,7 @@ class RoIAlign(nn.Module):
     def forward(self, features, rois):
         """
         Args:
-            input: NCHW images
+            features: NCHW images
             rois: Bx5 boxes. First column is the index into N. The other 4
             columns are xyxy.
         """

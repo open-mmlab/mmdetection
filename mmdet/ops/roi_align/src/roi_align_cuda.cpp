@@ -20,27 +20,18 @@ int ROIAlignBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
                             const int pooled_height, const int pooled_width,
                             at::Tensor bottom_grad);
 
-at::Tensor ROIAlign_forward_cuda_v2(
-    const at::Tensor& input,
-    const at::Tensor& rois,
-    const float spatial_scale,
-    const int pooled_height,
-    const int pooled_width,
-    const int sampling_ratio,
-    bool aligned);
+at::Tensor ROIAlign_forward_cuda_v2(const at::Tensor& input,
+                                    const at::Tensor& rois,
+                                    const float spatial_scale,
+                                    const int pooled_height,
+                                    const int pooled_width,
+                                    const int sampling_ratio, bool aligned);
 
 at::Tensor ROIAlign_backward_cuda_v2(
-    const at::Tensor& grad,
-    const at::Tensor& rois,
-    const float spatial_scale,
-    const int pooled_height,
-    const int pooled_width,
-    const int batch_size,
-    const int channels,
-    const int height,
-    const int width,
-    const int sampling_ratio,
-    bool aligned);
+    const at::Tensor& grad, const at::Tensor& rois, const float spatial_scale,
+    const int pooled_height, const int pooled_width, const int batch_size,
+    const int channels, const int height, const int width,
+    const int sampling_ratio, bool aligned);
 #endif
 
 #define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x, " must be a CUDAtensor ")
@@ -50,10 +41,9 @@ at::Tensor ROIAlign_backward_cuda_v2(
   CHECK_CUDA(x);       \
   CHECK_CONTIGUOUS(x)
 
-int ROIAlign_forwardV1(at::Tensor features, at::Tensor rois,
-                           int pooled_height, int pooled_width,
-                           float spatial_scale, int sample_num,
-                           at::Tensor output) {
+int ROIAlign_forwardV1(at::Tensor features, at::Tensor rois, int pooled_height,
+                       int pooled_width, float spatial_scale, int sample_num,
+                       at::Tensor output) {
   CHECK_INPUT(features);
   CHECK_INPUT(rois);
   CHECK_INPUT(output);
@@ -78,10 +68,9 @@ int ROIAlign_forwardV1(at::Tensor features, at::Tensor rois,
   return 1;
 }
 
-int ROIAlign_backwardV1(at::Tensor top_grad, at::Tensor rois,
-                            int pooled_height, int pooled_width,
-                            float spatial_scale, int sample_num,
-                            at::Tensor bottom_grad) {
+int ROIAlign_backwardV1(at::Tensor top_grad, at::Tensor rois, int pooled_height,
+                        int pooled_width, float spatial_scale, int sample_num,
+                        at::Tensor bottom_grad) {
   CHECK_INPUT(top_grad);
   CHECK_INPUT(rois);
   CHECK_INPUT(bottom_grad);
@@ -106,24 +95,16 @@ int ROIAlign_backwardV1(at::Tensor top_grad, at::Tensor rois,
 }
 
 // Interface for Python
-inline at::Tensor ROIAlign_forwardV2(
-    const at::Tensor& input,
-    const at::Tensor& rois,
-    const float spatial_scale,
-    const int pooled_height,
-    const int pooled_width,
-    const int sampling_ratio,
-    bool aligned) {
+inline at::Tensor ROIAlign_forwardV2(const at::Tensor& input,
+                                     const at::Tensor& rois,
+                                     const float spatial_scale,
+                                     const int pooled_height,
+                                     const int pooled_width,
+                                     const int sampling_ratio, bool aligned) {
   if (input.type().is_cuda()) {
 #ifdef WITH_CUDA
-    return ROIAlign_forward_cuda_v2(
-        input,
-        rois,
-        spatial_scale,
-        pooled_height,
-        pooled_width,
-        sampling_ratio,
-        aligned);
+    return ROIAlign_forward_cuda_v2(input, rois, spatial_scale, pooled_height,
+                                    pooled_width, sampling_ratio, aligned);
 #else
     AT_ERROR("Not compiled with GPU support");
 #endif
@@ -131,31 +112,15 @@ inline at::Tensor ROIAlign_forwardV2(
 }
 
 inline at::Tensor ROIAlign_backwardV2(
-    const at::Tensor& grad,
-    const at::Tensor& rois,
-    const float spatial_scale,
-    const int pooled_height,
-    const int pooled_width,
-    const int batch_size,
-    const int channels,
-    const int height,
-    const int width,
-    const int sampling_ratio,
-    bool aligned) {
+    const at::Tensor& grad, const at::Tensor& rois, const float spatial_scale,
+    const int pooled_height, const int pooled_width, const int batch_size,
+    const int channels, const int height, const int width,
+    const int sampling_ratio, bool aligned) {
   if (grad.type().is_cuda()) {
 #ifdef WITH_CUDA
-    return ROIAlign_backward_cuda_v2(
-        grad,
-        rois,
-        spatial_scale,
-        pooled_height,
-        pooled_width,
-        batch_size,
-        channels,
-        height,
-        width,
-        sampling_ratio,
-        aligned);
+    return ROIAlign_backward_cuda_v2(grad, rois, spatial_scale, pooled_height,
+                                     pooled_width, batch_size, channels, height,
+                                     width, sampling_ratio, aligned);
 #else
     AT_ERROR("Not compiled with GPU support");
 #endif
@@ -168,4 +133,3 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("forward_v2", &ROIAlign_forwardV2, "Roi_Align V2 forward (CUDA)");
   m.def("backward_v2", &ROIAlign_backwardV2, "Roi_Align V2 backward (CUDA)");
 }
-
