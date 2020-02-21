@@ -23,7 +23,7 @@ model = dict(
         anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
         target_means=(.0, .0, .0, .0),
         target_stds=(0.1, 0.1, 0.2, 0.2),
-        use_depthwise=False))
+        use_depthwise=True))
 cudnn_benchmark = True
 train_cfg = dict(
     assigner=dict(
@@ -130,7 +130,7 @@ log_config = dict(
 total_epochs = 24
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/ssd300_coco'
+work_dir = './work_dirs/ssdlite_vgg16_300_coco'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

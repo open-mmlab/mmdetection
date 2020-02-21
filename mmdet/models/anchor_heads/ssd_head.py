@@ -7,6 +7,7 @@ from mmcv.cnn import xavier_init
 from mmdet.core import AnchorGenerator, anchor_target, multi_apply
 from ..losses import smooth_l1_loss
 from ..registry import HEADS
+from ..utils import DepthwiseSeparableConv2d
 from .anchor_head import AnchorHead
 
 
@@ -22,7 +23,8 @@ class SSDHead(AnchorHead):
                  basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                  target_means=(.0, .0, .0, .0),
-                 target_stds=(1.0, 1.0, 1.0, 1.0)):
+                 target_stds=(1.0, 1.0, 1.0, 1.0),
+                 use_depthwise=False):
         super(AnchorHead, self).__init__()
         self.input_size = input_size
         self.num_classes = num_classes
@@ -32,14 +34,18 @@ class SSDHead(AnchorHead):
         reg_convs = []
         cls_convs = []
         for i in range(len(in_channels)):
+            if not use_depthwise:
+                Conv2d = nn.Conv2d
+            else:
+                Conv2d = DepthwiseSeparableConv2d
             reg_convs.append(
-                nn.Conv2d(
+                Conv2d(
                     in_channels[i],
                     num_anchors[i] * 4,
                     kernel_size=3,
                     padding=1))
             cls_convs.append(
-                nn.Conv2d(
+                Conv2d(
                     in_channels[i],
                     num_anchors[i] * num_classes,
                     kernel_size=3,
