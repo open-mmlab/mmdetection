@@ -178,12 +178,14 @@ class CustomDataset(Dataset):
             scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
                 Default: None.
         """
+        metrics = metric if isinstance(metric, list) else [metric]
         allowed_metrics = ['mAP', 'recall']
-        if metric not in allowed_metrics:
-            raise KeyError('metric {} is not supported'.format(metric))
-        annotations = [self.get_ann_info(i) for i in range(len(self))]
+        for metric in metrics:
+            if metric not in allowed_metrics:
+                raise KeyError('metric {} is not supported'.format(metric))
+            annotations = [self.get_ann_info(i) for i in range(len(self))]
         eval_results = {}
-        if metric == 'mAP':
+        if 'mAP' in metrics:
             assert isinstance(iou_thr, float)
             mean_ap, _ = eval_map(
                 results,
@@ -193,7 +195,7 @@ class CustomDataset(Dataset):
                 dataset=self.CLASSES,
                 logger=logger)
             eval_results['mAP'] = mean_ap
-        elif metric == 'recall':
+        if 'recall' in metrics:
             gt_bboxes = [ann['bboxes'] for ann in annotations]
             if isinstance(iou_thr, float):
                 iou_thr = [iou_thr]
