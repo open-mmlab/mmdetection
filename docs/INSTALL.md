@@ -103,6 +103,8 @@ The cityscapes annotations have to be converted into the coco format using `tool
 pip install cityscapesscripts
 python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out_dir ./data/cityscapes/annotations
 ```
+Current the config files in `cityscapes` use COCO pre-trained weights to initialize.
+You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
 
 ### A from-scratch setup script
 
