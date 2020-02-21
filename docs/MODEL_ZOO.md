@@ -230,6 +230,9 @@ Please refer to [Weight Standardization](https://github.com/open-mmlab/mmdetecti
 
 Please refer to [Deformable Convolutional Networks](https://github.com/open-mmlab/mmdetection/blob/master/configs/dcn) for details.
 
+### CARAFE: Content-Aware ReAssembly of FEatures
+Please refer to [CARAFE](https://github.com/open-mmlab/mmdetection/blob/master/configs/carafe) for details.
+
 ### Instaboost
 
 Please refer to [Instaboost](https://github.com/open-mmlab/mmdetection/blob/master/configs/instaboost) for details.
