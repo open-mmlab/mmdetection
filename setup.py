@@ -270,6 +270,13 @@ if __name__ == '__main__':
                 sources=[
                     'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
                 ]),
+            make_cuda_ext(
+                name='grid_sampler_cuda',
+                module='mmdet.ops.grid_sampler',
+                sources=[
+                    'src/cpu/grid_sampler_cpu.cpp',
+                    'src/cuda/grid_sampler_cuda.cu', 'src/grid_sampler.cpp'
+                ]),
         ],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)
