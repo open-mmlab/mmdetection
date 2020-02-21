@@ -178,14 +178,15 @@ class CustomDataset(Dataset):
             scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
                 Default: None.
         """
-        metrics = metric if isinstance(metric, list) else [metric]
+        if not isinstance(metric, str):
+            assert len(metric) == 1
+            metric = metric[0]
         allowed_metrics = ['mAP', 'recall']
-        for metric in metrics:
-            if metric not in allowed_metrics:
-                raise KeyError('metric {} is not supported'.format(metric))
-            annotations = [self.get_ann_info(i) for i in range(len(self))]
+        if metric not in allowed_metrics:
+            raise KeyError('metric {} is not supported'.format(metric))
+        annotations = [self.get_ann_info(i) for i in range(len(self))]
         eval_results = {}
-        if 'mAP' in metrics:
+        if metric == 'mAP':
             assert isinstance(iou_thr, float)
             mean_ap, _ = eval_map(
                 results,
@@ -195,16 +196,12 @@ class CustomDataset(Dataset):
                 dataset=self.CLASSES,
                 logger=logger)
             eval_results['mAP'] = mean_ap
-        if 'recall' in metrics:
+        elif metric == 'recall':
             gt_bboxes = [ann['bboxes'] for ann in annotations]
             if isinstance(iou_thr, float):
                 iou_thr = [iou_thr]
             recalls = eval_recalls(
-                gt_bboxes,
-                results,
-                proposal_nums,
-                iou_thr,
-                print_summary=False)
+                gt_bboxes, results, proposal_nums, iou_thr, logger=logger)
             for i, num in enumerate(proposal_nums):
                 for j, iou in enumerate(iou_thr):
                     eval_results['recall@{}@{}'.format(num, iou)] = recalls[i,
