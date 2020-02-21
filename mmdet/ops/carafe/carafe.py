@@ -62,9 +62,11 @@ class CARAFENaive(Module):
     def __init__(self, kernel_size, group_size, scale_factor):
         super(CARAFENaive, self).__init__()
 
-        self.kernel_size = int(kernel_size)
-        self.group_size = int(group_size)
-        self.scale_factor = int(scale_factor)
+        assert isinstance(kernel_size, int) and isinstance(
+            group_size, int) and isinstance(scale_factor, int)
+        self.kernel_size = kernel_size
+        self.group_size = group_size
+        self.scale_factor = scale_factor
 
     def forward(self, features, masks):
         return CARAFENaiveFunction.apply(features, masks, self.kernel_size,
@@ -136,6 +138,7 @@ class CARAFE(Module):
         kernel_size (int): reassemble kernel size
         group_size (int): reassemble group size
         scale_factor (int): upsample ratio
+
     Returns:
         upsampled feature map
     """
@@ -143,9 +146,11 @@ class CARAFE(Module):
     def __init__(self, kernel_size, group_size, scale_factor):
         super(CARAFE, self).__init__()
 
-        self.kernel_size = int(kernel_size)
-        self.group_size = int(group_size)
-        self.scale_factor = int(scale_factor)
+        assert isinstance(kernel_size, int) and isinstance(
+            group_size, int) and isinstance(scale_factor, int)
+        self.kernel_size = kernel_size
+        self.group_size = group_size
+        self.scale_factor = scale_factor
 
     def forward(self, features, masks):
         return CARAFEFunction.apply(features, masks, self.kernel_size,
@@ -168,6 +173,7 @@ class CARAFEPack(nn.Module):
         encoder_kernel (int): kernel size of content encoder
         encoder_dilation (int): dilation of content encoder
         compressed_channels (int): output channels of channels compressor
+
     Returns:
         upsampled feature map
     """

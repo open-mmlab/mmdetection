@@ -23,7 +23,7 @@ class FCNMaskHead(nn.Module):
                  conv_out_channels=256,
                  num_classes=81,
                  class_agnostic=False,
-                 upsample_cfg=dict(type='deconv', upsample_ratio=2),
+                 upsample_cfg=dict(type='deconv', scale_factor=2),
                  conv_cfg=None,
                  norm_cfg=None,
                  loss_mask=dict(
@@ -44,7 +44,7 @@ class FCNMaskHead(nn.Module):
         self.conv_kernel_size = conv_kernel_size
         self.conv_out_channels = conv_out_channels
         self.upsample_method = self.upsample_cfg.pop('type')
-        self.upsample_ratio = self.upsample_cfg.pop('upsample_ratio')
+        self.scale_factor = self.upsample_cfg.pop('scale_factor')
         self.num_classes = num_classes
         self.class_agnostic = class_agnostic
         self.conv_cfg = conv_cfg
@@ -73,19 +73,19 @@ class FCNMaskHead(nn.Module):
             upsampler_cfg_ = dict(
                 in_channels=upsample_in_channels,
                 out_channels=self.conv_out_channels,
-                kernel_size=self.upsample_ratio,
-                stride=self.upsample_ratio)
+                kernel_size=self.scale_factor,
+                stride=self.scale_factor)
         elif self.upsample_method == 'carafe':
             upsampler_cfg_ = dict(
                 channels=upsample_in_channels,
-                scale_factor=self.upsample_ratio,
+                scale_factor=self.scale_factor,
                 **self.upsample_cfg)
         else:
             # suppress warnings
             align_corners = (None
                              if self.upsample_method == 'nearest' else False)
             upsampler_cfg_ = dict(
-                scale_factor=self.upsample_ratio,
+                scale_factor=self.scale_factor,
                 mode=self.upsample_method,
                 align_corners=align_corners)
         upsampler_cfg_['type'] = self.upsample_method

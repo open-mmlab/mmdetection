@@ -6,13 +6,14 @@ from mmdet.ops.carafe import CARAFEPack
 
 
 class PixelShufflePack(nn.Module):
-    """ pixel shuffle upsample layer
+    """ Pixel Shuffle upsample layer
 
     Args:
         in_channels (int): number of input channels
         out_channels (int): number of output channels
         scale_factor (int): upsample ratio
         upsample_kernel (int): kernel size of Conv layer to expand the channels
+
     Returns:
         upsampled feature map
     """
