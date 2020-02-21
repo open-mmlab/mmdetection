@@ -3,7 +3,6 @@ import random
 from functools import partial
 
 import numpy as np
-import torch
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader
@@ -45,8 +44,8 @@ def build_dataloader(dataset,
     Returns:
         DataLoader: A PyTorch dataloader.
     """
+    rank, world_size = get_dist_info()
     if dist:
-        rank, world_size = get_dist_info()
         # DistributedGroupSampler will definitely shuffle the data to satisfy
         # that images on each GPU are in the same group
         if shuffle:
@@ -66,7 +65,6 @@ def build_dataloader(dataset,
         # When enable distributed training, the seed of each worker equals to
         # num_worker * rank + worker_id + user_seed
         # When non-distributed training, rank is 0
-        rank = torch.distributed.get_rank() if dist else 0
         worker_seed = num_workers * rank + worker_id + seed
         np.random.seed(worker_seed)
         random.seed(worker_seed)
