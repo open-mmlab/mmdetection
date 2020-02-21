@@ -132,7 +132,7 @@ class FPN_CARAFE(nn.Module):
                         scale_factor=2,
                         mode=self.upsample,
                         align_corners=align_corners)
-                _, upsample_module = build_upsample_layer(upsample_cfg_)
+                upsample_module = build_upsample_layer(upsample_cfg_)
                 self.upsample_modules.append(upsample_module)
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
@@ -184,7 +184,7 @@ class FPN_CARAFE(nn.Module):
                         mode=self.upsample,
                         align_corners=align_corners)
                 upsampler_cfg_['type'] = self.upsample
-                _, upsample_module = build_upsample_layer(upsampler_cfg_)
+                upsample_module = build_upsample_layer(upsampler_cfg_)
                 extra_fpn_conv = ConvModule(
                     out_channels,
                     out_channels,

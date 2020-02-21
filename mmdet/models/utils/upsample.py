@@ -43,11 +43,11 @@ class PixelShufflePack(nn.Module):
 
 upsample_cfg = {
     # format: layer_type: (abbreviation, module)
-    'nearest': ('nearest', nn.Upsample),
-    'bilinear': ('bilinear', nn.Upsample),
-    'deconv': ('deconv', nn.ConvTranspose2d),
-    'pixel_shuffle': ('pixel_shuffle', PixelShufflePack),
-    'carafe': ('carafe', CARAFEPack)
+    'nearest': nn.Upsample,
+    'bilinear': nn.Upsample,
+    'deconv': nn.ConvTranspose2d,
+    'pixel_shuffle': PixelShufflePack,
+    'carafe': CARAFEPack
 }
 
 
@@ -61,7 +61,6 @@ def build_upsample_layer(cfg):
             layer args: args needed to instantiate a upsample layer.
 
     Returns:
-        abbr (str): Abbreviation
         layer (nn.Module): Created upsample layer
     """
     assert isinstance(cfg, dict) and 'type' in cfg
@@ -71,9 +70,9 @@ def build_upsample_layer(cfg):
     if layer_type not in upsample_cfg:
         raise KeyError('Unrecognized upsample type {}'.format(layer_type))
     else:
-        abbr, upsample = upsample_cfg[layer_type]
+        upsample = upsample_cfg[layer_type]
         if upsample is None:
             raise NotImplementedError
 
     layer = upsample(**cfg_)
-    return abbr, layer
+    return layer

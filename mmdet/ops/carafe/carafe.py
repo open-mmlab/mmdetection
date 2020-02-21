@@ -132,6 +132,7 @@ carafe = CARAFEFunction.apply
 
 class CARAFE(Module):
     """ CARAFE: Content-Aware ReAssembly of FEatures
+
     Please refer to https://arxiv.org/abs/1905.02188 for more details.
 
     Args:

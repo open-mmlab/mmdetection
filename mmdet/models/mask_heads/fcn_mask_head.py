@@ -87,7 +87,7 @@ class FCNMaskHead(nn.Module):
                 scale_factor=self.scale_factor,
                 mode=self.upsample_method,
                 align_corners=align_corners)
-        _, self.upsample = build_upsample_layer(upsample_cfg_)
+        self.upsample = build_upsample_layer(upsample_cfg_)
 
         out_channels = 1 if self.class_agnostic else self.num_classes
         logits_in_channel = (
