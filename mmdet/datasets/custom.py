@@ -152,6 +152,9 @@ class CustomDataset(Dataset):
         self.pre_pipeline(results)
         return self.pipeline(results)
 
+    def format_results(self, results, **kwargs):
+        pass
+
     def evaluate(self,
                  results,
                  metric='mAP',
