@@ -9,10 +9,10 @@ class PixelShufflePack(nn.Module):
     """ Pixel Shuffle upsample layer
 
     Args:
-        in_channels (int): number of input channels
-        out_channels (int): number of output channels
-        scale_factor (int): upsample ratio
-        upsample_kernel (int): kernel size of Conv layer to expand the channels
+        in_channels (int): Number of input channels
+        out_channels (int): Number of output channels
+        scale_factor (int): Upsample ratio
+        upsample_kernel (int): Kernel size of Conv layer to expand the channels
 
     Returns:
         upsampled feature map
@@ -56,13 +56,13 @@ def build_upsample_layer(cfg):
 
     Args:
         cfg (dict): cfg should contain:
-            type (str): identify upsample layer type.
-            upsample ratio (int): upsample ratio
+            type (str): Identify upsample layer type.
+            upsample ratio (int): Upsample ratio
             layer args: args needed to instantiate a upsample layer.
 
     Returns:
-        abbr (str): abbreviation
-        layer (nn.Module): created upsample layer
+        abbr (str): Abbreviation
+        layer (nn.Module): Created upsample layer
     """
     assert isinstance(cfg, dict) and 'type' in cfg
     cfg_ = cfg.copy()

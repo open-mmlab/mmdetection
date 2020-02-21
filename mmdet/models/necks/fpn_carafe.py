@@ -17,18 +17,18 @@ class FPN_CARAFE(nn.Module):
 
     Args:
         in_channels (list[int]): Number of channels for each input feature map.
-        out_channels (int): output channels of feature pyramids.
-        num_outs (int): number of output stages.
-        start_level (int): start level of feature pyramids.
+        out_channels (int): Output channels of feature pyramids.
+        num_outs (int): Number of output stages.
+        start_level (int): Start level of feature pyramids.
             (Default: 0)
-        end_level (int): end level of feature pyramids.
+        end_level (int): End level of feature pyramids.
             (Default: -1 indicates the last level).
-        norm_cfg (dict): dictionary to construct and config norm layer.
-        activate (str): type of activation function in ConvModule
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+        activate (str): Type of activation function in ConvModule
             (Default: None indicates w/o activation).
-        order (dict): order of components in ConvModule.
-        upsample (str): type of upsample layer.
-        upsample_cfg (dict): dictionary to construct and config upsample layer.
+        order (dict): Order of components in ConvModule.
+        upsample (str): Type of upsample layer.
+        upsample_cfg (dict): Dictionary to construct and config upsample layer.
     """
 
     def __init__(self,
