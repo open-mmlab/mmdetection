@@ -74,14 +74,14 @@ Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 
 Other features
 - [x] [CARAFE](configs/carafe/README.md)
-- [x] DCNv2
-- [x] Group Normalization
-- [x] Weight Standardization
+- [x] [DCNv2](configs/dcn/README.md)
+- [x] [Group Normalization](configs/gn/README.md)
+- [x] [Weight Standardization](configs/gn+ws/README.md)
 - [x] OHEM
 - [x] Soft-NMS
-- [x] Generalized Attention
-- [x] GCNet
-- [x] Mixed Precision (FP16) Training
+- [x] [Generalized Attention](configs/empirical_attention/README.md)
+- [x] [GCNet](configs/gcnet/README.md)
+- [x] [Mixed Precision (FP16) Training](https://github.com/open-mmlab/mmdetection/blob/master/configs/fp16)
 - [x] [InstaBoost](configs/instaboost/README.md)
 
 
