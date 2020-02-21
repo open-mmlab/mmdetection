@@ -73,6 +73,7 @@ Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 | ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     |
 
 Other features
+- [x] [CARAFE](configs/carafe/README.md)
 - [x] DCNv2
 - [x] Group Normalization
 - [x] Weight Standardization
