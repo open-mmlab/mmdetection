@@ -56,7 +56,7 @@ class FPN_CARAFE(nn.Module):
         self.norm_cfg = norm_cfg
         self.with_bias = norm_cfg is None
         self.upsample_cfg = upsample_cfg.copy()
-        self.upsample = self.upsample_cfg.pop('type')
+        self.upsample = self.upsample_cfg.get('type')
         self.relu = nn.ReLU(inplace=False)
 
         self.order = order
@@ -69,7 +69,7 @@ class FPN_CARAFE(nn.Module):
             assert hasattr(
                 self.upsample_cfg,
                 'upsample_kernel') and self.upsample_cfg.upsample_kernel > 0
-            self.upsample_kernel = self.upsample_cfg.upsample_kernel
+            self.upsample_kernel = self.upsample_cfg.pop('upsample_kernel')
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -107,8 +107,9 @@ class FPN_CARAFE(nn.Module):
                 inplace=False,
                 order=self.order)
             if i != self.backbone_end_level - 1:
+                upsample_cfg_ = self.upsample_cfg.copy()
                 if self.upsample == 'deconv':
-                    upsampler_cfg_ = dict(
+                    upsample_cfg_.update(
                         in_channels=out_channels,
                         out_channels=out_channels,
                         kernel_size=self.upsample_kernel,
@@ -116,26 +117,22 @@ class FPN_CARAFE(nn.Module):
                         padding=(self.upsample_kernel - 1) // 2,
                         output_padding=(self.upsample_kernel - 1) // 2)
                 elif self.upsample == 'pixel_shuffle':
-                    upsampler_cfg_ = dict(
+                    upsample_cfg_.update(
                         in_channels=out_channels,
                         out_channels=out_channels,
                         scale_factor=2,
                         upsample_kernel=self.upsample_kernel)
                 elif self.upsample == 'carafe':
-                    upsampler_cfg_ = dict(
-                        channels=out_channels,
-                        scale_factor=2,
-                        **self.upsample_cfg)
+                    upsample_cfg_.update(channels=out_channels, scale_factor=2)
                 else:
                     # suppress warnings
                     align_corners = (None
                                      if self.upsample == 'nearest' else False)
-                    upsampler_cfg_ = dict(
+                    upsample_cfg_.update(
                         scale_factor=2,
                         mode=self.upsample,
                         align_corners=align_corners)
-                upsampler_cfg_['type'] = self.upsample
-                _, upsample_module = build_upsample_layer(upsampler_cfg_)
+                _, upsample_module = build_upsample_layer(upsample_cfg_)
                 self.upsample_modules.append(upsample_module)
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)

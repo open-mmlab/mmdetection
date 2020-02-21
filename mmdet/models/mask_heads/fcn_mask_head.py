@@ -43,7 +43,7 @@ class FCNMaskHead(nn.Module):
         self.in_channels = in_channels
         self.conv_kernel_size = conv_kernel_size
         self.conv_out_channels = conv_out_channels
-        self.upsample_method = self.upsample_cfg.pop('type')
+        self.upsample_method = self.upsample_cfg.get('type')
         self.scale_factor = self.upsample_cfg.pop('scale_factor')
         self.num_classes = num_classes
         self.class_agnostic = class_agnostic
@@ -67,29 +67,27 @@ class FCNMaskHead(nn.Module):
                     norm_cfg=norm_cfg))
         upsample_in_channels = (
             self.conv_out_channels if self.num_convs > 0 else in_channels)
+        upsample_cfg_ = self.upsample_cfg.copy()
         if self.upsample_method is None:
             self.upsample = None
         elif self.upsample_method == 'deconv':
-            upsampler_cfg_ = dict(
+            upsample_cfg_.update(
                 in_channels=upsample_in_channels,
                 out_channels=self.conv_out_channels,
                 kernel_size=self.scale_factor,
                 stride=self.scale_factor)
         elif self.upsample_method == 'carafe':
-            upsampler_cfg_ = dict(
-                channels=upsample_in_channels,
-                scale_factor=self.scale_factor,
-                **self.upsample_cfg)
+            upsample_cfg_.update(
+                channels=upsample_in_channels, scale_factor=self.scale_factor)
         else:
             # suppress warnings
             align_corners = (None
                              if self.upsample_method == 'nearest' else False)
-            upsampler_cfg_ = dict(
+            upsample_cfg_.update(
                 scale_factor=self.scale_factor,
                 mode=self.upsample_method,
                 align_corners=align_corners)
-        upsampler_cfg_['type'] = self.upsample_method
-        _, self.upsample = build_upsample_layer(upsampler_cfg_)
+        _, self.upsample = build_upsample_layer(upsample_cfg_)
 
         out_channels = 1 if self.class_agnostic else self.num_classes
         logits_in_channel = (
