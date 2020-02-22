@@ -62,9 +62,8 @@ def build_dataloader(dataset,
         num_workers = num_gpus * workers_per_gpu
 
     def worker_init_fn(worker_id):
-        # When enable distributed training, the seed of each worker equals to
+        # The seed of each worker equals to
         # num_worker * rank + worker_id + user_seed
-        # When non-distributed training, rank is 0
         worker_seed = num_workers * rank + worker_id + seed
         np.random.seed(worker_seed)
         random.seed(worker_seed)
