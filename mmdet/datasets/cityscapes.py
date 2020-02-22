@@ -72,7 +72,6 @@ class CityscapesDataset(CocoDataset):
             else:
                 gt_bboxes.append(bbox)
                 gt_labels.append(self.cat2label[ann['category_id']])
-                ann['segmentation']['counts'] = ann['segmentation']['counts']
                 gt_masks_ann.append(ann['segmentation'])
 
         if gt_bboxes:
