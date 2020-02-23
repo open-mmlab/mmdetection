@@ -1,8 +1,5 @@
 import re
 
-import torch
-from mmcv.runner import obj_from_dict
-
 from mmdet.utils import build_from_cfg
 from .registry import OPTIMIZERS
 
@@ -31,6 +28,7 @@ def build_optimizer(model, optimizer_cfg):
         torch.optim.Optimizer: The initialized optimizer.
 
     Example:
+        >>> import torch
         >>> model = torch.nn.modules.Conv1d(1, 1, 1)
         >>> optimizer_cfg = dict(type='SGD', lr=0.01, momentum=0.9,
         >>>                      weight_decay=0.0001)
@@ -83,8 +81,5 @@ def build_optimizer(model, optimizer_cfg):
             params.append(param_group)
 
     optimizer_cfg['params'] = params
-    # torch native optimizers have higher priority
-    if hasattr(torch.optim, optimizer_cfg['type']):
-        return obj_from_dict(optimizer_cfg, torch.optim)
-    else:
-        return build_from_cfg(optimizer_cfg, OPTIMIZERS)
+
+    return build_from_cfg(optimizer_cfg, OPTIMIZERS)
