@@ -133,14 +133,17 @@ def test_max_iou_assigner_with_empty_boxes_and_ignore():
     gt_labels = torch.LongTensor([2, 3])
 
     # Test with gt_labels
-    assign_result = self.assign(bboxes, gt_bboxes, gt_labels=gt_labels,
-                                gt_bboxes_ignore=gt_bboxes_ignore)
+    assign_result = self.assign(
+        bboxes,
+        gt_bboxes,
+        gt_labels=gt_labels,
+        gt_bboxes_ignore=gt_bboxes_ignore)
     assert len(assign_result.gt_inds) == 0
     assert tuple(assign_result.labels.shape) == (0, )
 
     # Test without gt_labels
-    assign_result = self.assign(bboxes, gt_bboxes, gt_labels=None,
-                                gt_bboxes_ignore=gt_bboxes_ignore)
+    assign_result = self.assign(
+        bboxes, gt_bboxes, gt_labels=None, gt_bboxes_ignore=gt_bboxes_ignore)
     assert len(assign_result.gt_inds) == 0
     assert assign_result.labels is None
 
