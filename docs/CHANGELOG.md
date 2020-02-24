@@ -7,7 +7,7 @@
 - Support new methods: [CARAFE](https://arxiv.org/abs/1905.02188).
 
 **Breaking Changes**
-- The new MMDDP inheirts from the official DDP, thus the `__init__` api is changed to be the same as official DDP.
+- The new MMDDP inherits from the official DDP, thus the `__init__` api is changed to be the same as official DDP.
 - The `mask_head` field in HTC config files is modified.
 - The evaluation and testing script is updated.
 - In all transforms, instance masks are stored as a numpy array shaped (n, h, w) instead of a list of (h, w) arrays, where n is the number of instances.
