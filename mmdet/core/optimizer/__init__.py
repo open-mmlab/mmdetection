@@ -1,6 +1,5 @@
-from torch.optim import *  # noqa: F401, F403
-
+from .builder import build_optimizer
 from .copy_of_sgd import CopyOfSGD
-from .registry import OPTIMIZERS, TORCH_OPTIMIZERS
+from .registry import OPTIMIZERS
 
-__all__ = ['OPTIMIZERS', 'CopyOfSGD', *TORCH_OPTIMIZERS]
+__all__ = ['OPTIMIZERS', 'build_optimizer', 'CopyOfSGD']
