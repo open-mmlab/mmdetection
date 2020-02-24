@@ -422,6 +422,31 @@ There are two ways to work with custom datasets.
   a pickle or json file, like [pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/pascal_voc.py).
   Then you can simply use `CustomDataset`.
 
+### Customize optimizer
+
+An example of customized optimizer `CopyOfSGD` is defined in `mmdet/core/optimizer/copy_of_sgd.py`.
+More generally, a customized optimizer could be defined as following.
+
+In `mmdet/core/optimizer/my_optimizer.py`:
+
+```python
+from .registry import OPTIMIZERS
+from torch.optim import Optimizer
+
+
+@OPTIMIZERS.register_module
+class MyOptimizer(Optimizer):
+
+```
+
+In `mmdet/core/optimizer/__init__.py`:
+
+```python
+from .my_optimizer import MyOptimizer
+```
+
+Then you can use `MyOptimizer` in `optimizer` field of config files.
+
 ### Develop new components
 
 We basically categorize model components into 4 types.
