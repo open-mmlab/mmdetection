@@ -1,3 +1,5 @@
+// Modified from https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/native/GridSampler.h
+
 #pragma once
 
 #include <ATen/ATen.h>

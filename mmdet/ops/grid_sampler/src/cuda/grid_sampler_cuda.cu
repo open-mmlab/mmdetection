@@ -1,3 +1,5 @@
+// Modified from https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/native/cuda/GridSampler.cu
+
 #include <ATen/ATen.h>
 #include "grid_sampler_cuda.cuh"
 #include <ATen/cuda/CUDAContext.h>

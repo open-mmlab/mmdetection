@@ -1,3 +1,5 @@
+// Modified from https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/native/GridSampler.cpp
+
 #include <torch/extension.h>
 #include "grid_sampler_cpu.h"
 #include <ATen/ATen.h>
