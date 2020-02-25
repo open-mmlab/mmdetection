@@ -216,10 +216,16 @@ class CityscapesDataset(CocoDataset):
                 self._evaluate_cityscapes(results, jsonfile_prefix, logger))
             metrics.remove('cityscapes')
 
-        eval_results.update(
-            super(CityscapesDataset,
-                  self).evaluate(results, metric, logger, jsonfile_prefix,
-                                 classwise, proposal_nums, iou_thrs))
+        # left metrics are all coco metric
+        if len(metric) > 0:
+            # create CocoDataset with CityscapesDataset annotation
+            self_coco = CocoDataset(self.ann_file, self.pipeline.transforms,
+                                    self.data_root, self.img_prefix,
+                                    self.seg_prefix, self.proposal_file,
+                                    self.test_mode, self.filter_empty_gt)
+            eval_results.update(
+                self_coco.evaluate(results, metric, logger, jsonfile_prefix,
+                                   classwise, proposal_nums, iou_thrs))
 
         return eval_results
 
