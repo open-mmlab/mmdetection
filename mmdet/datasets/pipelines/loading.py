@@ -54,7 +54,7 @@ class LoadAnnotations(object):
         results['gt_bboxes'] = ann_info['bboxes']
 
         gt_bboxes_ignore = ann_info.get('bboxes_ignore', None)
-        if gt_bboxes_ignore is not None:
+        if gt_bboxes_ignore:
             results['gt_bboxes_ignore'] = gt_bboxes_ignore
             results['bbox_fields'].append('gt_bboxes_ignore')
         results['bbox_fields'].append('gt_bboxes')
