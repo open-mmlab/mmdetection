@@ -198,7 +198,8 @@ def main_openvino(args):
         classes_num = 2
 
         model = DetectorOpenVINO(args.with_detection_output,
-                                 args.model, args.ckpt, mapping_file_path=args.mapping,
+                                 args.model, args.model[:-3] + 'bin',
+                                 mapping_file_path=args.model[:-3] + 'mapping',
                                  cfg=cfg,
                                  classes=dataset.CLASSES)
 
@@ -345,16 +346,12 @@ def main(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test ONNX model')
-    parser.add_argument('config', help='path to configuration file')
     parser.add_argument(
-        '--model',
-        type=str,
-        help='path to onnx model file. If not set, try to load results'
-        'from the file specified by `--out` key.')
+        'config', help='path to configuration file')
     parser.add_argument(
-        '--ckpt',
-        type=str)
-    parser.add_argument("--mapping", help="path to mapping file", default=None, type=str)
+        'model', help='path to onnx model file or xml file in case of OpenVINO. '
+                      'If not set, try to load results from the file specified by '
+                      '`--out` key.')
     parser.add_argument(
         '--out', type=str, help='path to file with inference results')
     parser.add_argument(
@@ -376,8 +373,7 @@ def parse_args():
         type=float,
         default=0.3,
         help='show only detection with confidence larger than threshold')
-    parser.add_argument('--backend', default='onnx', choices=('onnx', 'openvino'))
-    parser.add_argument('--cpu_ext_path', type=str, help='')
+    parser.add_argument('--backend', default='openvino', choices=('onnx', 'openvino'))
     parser.add_argument('--with_detection_output', action='store_true')
     parser.add_argument('--do_not_normalize', action='store_true')
     args = parser.parse_args()
