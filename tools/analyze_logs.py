@@ -154,6 +154,9 @@ def load_json_logs(json_logs):
         with open(json_log, 'r') as log_file:
             for l in log_file:
                 log = json.loads(l.strip())
+                # skip lines without `epoch` field
+                if 'epoch' not in log:
+                    continue
                 epoch = log.pop('epoch')
                 if epoch not in log_dict:
                     log_dict[epoch] = defaultdict(list)
