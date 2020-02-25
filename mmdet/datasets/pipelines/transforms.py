@@ -261,23 +261,18 @@ class RandomFlip(object):
         else:
             flipped_masks = []
             if direction == 'horizontal':
-                w = img_shape[1]
-                for poly_per_instance in masks:
-                    flipped_poly_per_instance = []
-                    for p in poly_per_instance:
-                        p = p.copy()
-                        p[0::2] = w - p[0::2] - 1
-                        flipped_poly_per_instance.append(p)
-                    flipped_masks.append(flipped_poly_per_instance)
+                dim = img_shape[1]
+                idx = 0
             elif direction == 'vertical':
-                h = img_shape[0]
-                for poly_per_instance in masks:
-                    flipped_poly_per_instance = []
-                    for p in poly_per_instance:
-                        p = p.copy()
-                        p[1::2] = h - p[1::2] - 1
-                        flipped_poly_per_instance.append(p)
-                    flipped_masks.append(flipped_poly_per_instance)
+                dim = img_shape[0]
+                idx = 1
+            for poly_per_instance in masks:
+                flipped_poly_per_instance = []
+                for p in poly_per_instance:
+                    p = p.copy()
+                    p[idx::2] = dim - p[idx::2] - 1
+                    flipped_poly_per_instance.append(p)
+                flipped_masks.append(flipped_poly_per_instance)
         return flipped_masks
 
     def __call__(self, results):
@@ -345,10 +340,7 @@ class Pad(object):
         results['pad_size_divisor'] = self.size_divisor
 
     def _pad_masks(self, results):
-        if 'poly2mask' not in results:
-            return
-        # polygons no need pad
-        if not results['poly2mask']:
+        if 'poly2mask' not in results or not results['poly2mask']:
             return
         pad_shape = results['pad_shape'][:2]
         for key in results.get('mask_fields', []):
@@ -911,8 +903,6 @@ class Albu(object):
                     results[label] = np.array(
                         [results[label][i] for i in results['idx_mapper']])
                 if 'masks' in results:
-                    # TODO: support polygons
-                    assert results['poly2mask']
                     results['masks'] = np.array(
                         [results['masks'][i] for i in results['idx_mapper']])
 
