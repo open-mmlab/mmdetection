@@ -260,13 +260,13 @@ class ATSSHead(AnchorHead):
                    img_metas,
                    cfg,
                    rescale=False):
-
+        from torch.onnx import is_in_onnx_export
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         device = cls_scores[0].device
         mlvl_anchors = [
             self.anchor_generators[i].grid_anchors(
-                cls_scores[i].size()[-2:],
+                cls_scores[i] if is_in_onnx_export() else cls_scores[i].size()[-2:],
                 self.anchor_strides[i],
                 device=device) for i in range(num_levels)
         ]
