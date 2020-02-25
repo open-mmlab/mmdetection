@@ -204,6 +204,12 @@ def parse_args():
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('--out', help='output result file in pickle format')
     parser.add_argument(
+        '--format_only',
+        action='store_true',
+        help='Format the output results without perform evaluation. It is'
+        'useful when you want to format the result to a specific format and '
+        'submit it to the test server')
+    parser.add_argument(
         '--eval',
         type=str,
         nargs='+',
@@ -235,9 +241,13 @@ def parse_args():
 def main():
     args = parse_args()
 
-    assert args.out or args.eval or args.show, \
-        ('Please specify at least one operation (save or eval or show the '
-         'results) with the argument "--out", "--eval" or "--show"')
+    assert args.out or args.eval or args.format_only or args.show, \
+        ('Please specify at least one operation (save/eval/format/show the '
+         'results) with the argument "--out", "--eval", "--format_only" '
+         'or "--show"')
+
+    if args.eval and args.format_only:
+        raise ValueError('--eval and --format_only cannot be both specified')
 
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
@@ -295,8 +305,10 @@ def main():
         if args.out:
             print('\nwriting results to {}'.format(args.out))
             mmcv.dump(outputs, args.out)
+        kwargs = {} if args.options is None else args.options
+        if args.format_only:
+            dataset.format_results(outputs, **kwargs)
         if args.eval:
-            kwargs = {} if args.options is None else args.options
             dataset.evaluate(outputs, args.eval, **kwargs)
 
 

@@ -44,8 +44,8 @@ def build_dataloader(dataset,
     Returns:
         DataLoader: A PyTorch dataloader.
     """
+    rank, world_size = get_dist_info()
     if dist:
-        rank, world_size = get_dist_info()
         # DistributedGroupSampler will definitely shuffle the data to satisfy
         # that images on each GPU are in the same group
         if shuffle:
@@ -61,6 +61,13 @@ def build_dataloader(dataset,
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
+    def worker_init_fn(worker_id):
+        # The seed of each worker equals to
+        # num_worker * rank + worker_id + user_seed
+        worker_seed = num_workers * rank + worker_id + seed
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
+
     data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -72,8 +79,3 @@ def build_dataloader(dataset,
         **kwargs)
 
     return data_loader
-
-
-def worker_init_fn(seed):
-    np.random.seed(seed)
-    random.seed(seed)

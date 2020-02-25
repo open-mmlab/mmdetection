@@ -118,8 +118,8 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
 
         bboxes = squares[:, :4]
 
-        if (self.ignore_iof_thr > 0) and (gt_bboxes_ignore is not None) and (
-                gt_bboxes_ignore.numel() > 0):
+        if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
+                and gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
             if self.ignore_wrt_candidates:
                 ignore_overlaps = bbox_overlaps(
                     bboxes, gt_bboxes_ignore, mode='iof')

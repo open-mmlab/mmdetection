@@ -16,7 +16,7 @@ def readme():
 
 
 MAJOR = 1
-MINOR = 0
+MINOR = 1
 PATCH = 0
 SUFFIX = ''
 if PATCH != '':
@@ -270,6 +270,17 @@ if __name__ == '__main__':
                 sources=[
                     'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
                 ]),
+            make_cuda_ext(
+                name='carafe_cuda',
+                module='mmdet.ops.carafe',
+                sources=['src/carafe_cuda.cpp', 'src/carafe_cuda_kernel.cu']),
+            make_cuda_ext(
+                name='carafe_naive_cuda',
+                module='mmdet.ops.carafe',
+                sources=[
+                    'src/carafe_naive_cuda.cpp',
+                    'src/carafe_naive_cuda_kernel.cu'
+                ])
         ],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)
