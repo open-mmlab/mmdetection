@@ -84,6 +84,11 @@ class LoadAnnotations(object):
         gt_masks = results['ann_info']['masks']
         if self.poly2mask:
             gt_masks = [self._poly2mask(mask, h, w) for mask in gt_masks]
+        else:
+            gt_masks = [
+                self.process_polygons(polygons) for polygons in gt_masks
+            ]
+        results['poly2mask'] = self.poly2mask
         results['gt_masks'] = gt_masks
         results['mask_fields'].append('gt_masks')
         return results
@@ -114,6 +119,21 @@ class LoadAnnotations(object):
                      ' with_seg={})').format(self.with_bbox, self.with_label,
                                              self.with_mask, self.with_seg)
         return repr_str
+
+    def process_polygons(self, polygons):
+        """ Convert polygons to ndarray and filter invalid polygons.
+        Args:
+            polygons (list of list): polygons of one instance.
+
+        Returns:
+            polygons (list of ndarray).
+        """
+        polygons = [np.array(p) for p in polygons]
+        valid_polygons = []
+        for polygon in polygons:
+            if len(polygon) % 2 == 0 and len(polygon) >= 6:
+                valid_polygons.append(polygon)
+        return valid_polygons
 
 
 @PIPELINES.register_module

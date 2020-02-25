@@ -141,22 +141,48 @@ class Resize(object):
             results[key] = bboxes
 
     def _resize_masks(self, results):
-        for key in results.get('mask_fields', []):
-            if results[key] is None:
-                continue
-            if self.keep_ratio:
-                masks = [
-                    mmcv.imrescale(
-                        mask, results['scale_factor'], interpolation='nearest')
-                    for mask in results[key]
-                ]
-            else:
-                mask_size = (results['img_shape'][1], results['img_shape'][0])
-                masks = [
-                    mmcv.imresize(mask, mask_size, interpolation='nearest')
-                    for mask in results[key]
-                ]
-            results[key] = np.stack(masks)
+        if 'poly2mask' not in results:
+            return
+        if results['poly2mask']:
+            # resize masks in bitmap form
+            for key in results.get('mask_fields', []):
+                if results[key] is None:
+                    continue
+                if self.keep_ratio:
+                    masks = [
+                        mmcv.imrescale(
+                            mask,
+                            results['scale_factor'],
+                            interpolation='nearest') for mask in results[key]
+                    ]
+                else:
+                    mask_size = (results['img_shape'][1],
+                                 results['img_shape'][0])
+                    masks = [
+                        mmcv.imresize(
+                            mask, mask_size, interpolation='nearest')
+                        for mask in results[key]
+                    ]
+                results[key] = np.stack(masks)
+        else:
+            # resize masks in polygon form
+            for key in results.get('mask_fields', []):
+                if results[key] is None:
+                    continue
+                if self.keep_ratio:
+                    w_scale = h_scale = results['scale_factor']
+                else:
+                    w_scale, h_scale = results['scale_factor'][:2]
+                scaled_polygons = []
+                for polygons_per_instance in results[key]:
+                    scaled_polygon = []
+                    for p in polygons_per_instance:
+                        p = p.copy()
+                        p[0::2] *= w_scale
+                        p[1::2] *= h_scale
+                        scaled_polygon.append(p)
+                    scaled_polygons.append(scaled_polygon)
+                results[key] = scaled_polygons
 
     def _resize_seg(self, results):
         for key in results.get('seg_fields', []):
@@ -228,6 +254,32 @@ class RandomFlip(object):
                 'Invalid flipping direction "{}"'.format(direction))
         return flipped
 
+    def mask_flip(self, masks, img_shape, direction, poly2mask):
+        if poly2mask:
+            flipped_masks = np.stack(
+                [mmcv.imflip(mask, direction=direction) for mask in masks])
+        else:
+            flipped_masks = []
+            if direction == 'horizontal':
+                w = img_shape[1]
+                for poly_per_instance in masks:
+                    flipped_poly_per_instance = []
+                    for p in poly_per_instance:
+                        p = p.copy()
+                        p[0::2] = w - p[0::2] - 1
+                        flipped_poly_per_instance.append(p)
+                    flipped_masks.append(flipped_poly_per_instance)
+            elif direction == 'vertical':
+                h = img_shape[0]
+                for poly_per_instance in masks:
+                    flipped_poly_per_instance = []
+                    for p in poly_per_instance:
+                        p = p.copy()
+                        p[1::2] = h - p[1::2] - 1
+                        flipped_poly_per_instance.append(p)
+                    flipped_masks.append(flipped_poly_per_instance)
+        return flipped_masks
+
     def __call__(self, results):
         if 'flip' not in results:
             flip = True if np.random.rand() < self.flip_ratio else False
@@ -245,11 +297,10 @@ class RandomFlip(object):
                                               results['flip_direction'])
             # flip masks
             for key in results.get('mask_fields', []):
-                results[key] = np.stack([
-                    mmcv.imflip(mask, direction=results['flip_direction'])
-                    for mask in results[key]
-                ])
-
+                results[key] = self.mask_flip(results[key],
+                                              results['img_shape'],
+                                              results['flip_direction'],
+                                              results['poly2mask'])
             # flip segs
             for key in results.get('seg_fields', []):
                 results[key] = mmcv.imflip(
@@ -294,6 +345,11 @@ class Pad(object):
         results['pad_size_divisor'] = self.size_divisor
 
     def _pad_masks(self, results):
+        if 'poly2mask' not in results:
+            return
+        # polygons no need pad
+        if not results['poly2mask']:
+            return
         pad_shape = results['pad_shape'][:2]
         for key in results.get('mask_fields', []):
             padded_masks = [
@@ -405,6 +461,8 @@ class RandomCrop(object):
 
             # filter and crop the masks
             if 'gt_masks' in results:
+                # TODO: support polygons
+                assert results['poly2mask']
                 valid_gt_masks = []
                 for i in np.where(valid_inds)[0]:
                     gt_mask = results['gt_masks'][i][crop_y1:crop_y2,
@@ -580,6 +638,8 @@ class Expand(object):
         results['gt_bboxes'] = boxes
 
         if 'gt_masks' in results:
+            # TODO: support polygons
+            assert results['poly2mask']
             expand_gt_masks = []
             for mask in results['gt_masks']:
                 expand_mask = np.full((int(h * ratio), int(w * ratio)),
@@ -674,6 +734,8 @@ class MinIoURandomCrop(object):
                 results['gt_labels'] = labels
 
                 if 'gt_masks' in results:
+                    # TODO: support polygons
+                    assert results['poly2mask']
                     valid_masks = [
                         results['gt_masks'][i] for i in range(len(mask))
                         if mask[i]
@@ -849,6 +911,8 @@ class Albu(object):
                     results[label] = np.array(
                         [results[label][i] for i in results['idx_mapper']])
                 if 'masks' in results:
+                    # TODO: support polygons
+                    assert results['poly2mask']
                     results['masks'] = np.array(
                         [results['masks'][i] for i in results['idx_mapper']])
 

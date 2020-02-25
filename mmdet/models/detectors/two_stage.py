@@ -251,7 +251,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             if mask_feats.shape[0] > 0:
                 mask_pred = self.mask_head(mask_feats)
                 mask_targets = self.mask_head.get_target(
-                    sampling_results, gt_masks, self.train_cfg.rcnn)
+                    sampling_results, gt_masks, self.train_cfg.rcnn, img_meta)
                 pos_labels = torch.cat(
                     [res.pos_gt_labels for res in sampling_results])
                 loss_mask = self.mask_head.loss(mask_pred, mask_targets,
