@@ -187,7 +187,7 @@ def main_openvino(args):
             workers_per_gpu=cfg.data.workers_per_gpu,
             dist=False,
             shuffle=False)
-        wait_key = 0
+        wait_key = -1
 
     dataset_volume = len(dataset)
 
@@ -200,7 +200,7 @@ def main_openvino(args):
         model = DetectorOpenVINO(args.with_detection_output,
                                  args.model, args.ckpt, mapping_file_path=args.mapping,
                                  cfg=cfg,
-                                 classes=['person'])
+                                 classes=dataset.CLASSES)
 
         results = []
         prog_bar = mmcv.ProgressBar(dataset_volume)
