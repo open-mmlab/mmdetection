@@ -195,7 +195,8 @@ def main_openvino(args):
         print('No model file provided. Trying to load evaluation results.')
         results = mmcv.load(args.out)
     else:
-        classes_num = 2
+        # +1 is for background
+        classes_num = len(dataset.CLASSES) + 1
 
         model = DetectorOpenVINO(args.with_detection_output,
                                  args.model, args.model[:-3] + 'bin',
@@ -255,7 +256,6 @@ def main(args):
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
-
     if args.do_not_normalize:
         assert cfg.data.test.pipeline[1]['type'] == 'MultiScaleFlipAug'
         normalize_idx = [i for i, v in enumerate(cfg.data.test.pipeline[1]['transforms']) if v['type'] == 'Normalize'][0]
@@ -264,7 +264,6 @@ def main(args):
         cfg.data.test.pipeline[1]['transforms'][normalize_idx]['std'] = [1.0, 1.0, 1.0]
 
         print(cfg.data.test)
-
 
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
@@ -277,7 +276,6 @@ def main(args):
         dataset = data_loader.dataset
         # +1 is for background
         classes_num = len(dataset.CLASSES) + 1
-
 
         model = ONNXModel(args.model, cfg=cfg, classes=dataset.CLASSES)
         run_opts = onnxruntime.RunOptions()
