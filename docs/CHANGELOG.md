@@ -1,5 +1,41 @@
 ## Changelog
 
+### v1.1.0 (24/2/2020)
+
+**Highlights**
+- Dataset evaluation is rewritten with a unified api, which is used by both evaluation hooks and test scripts.
+- Support new methods: [CARAFE](https://arxiv.org/abs/1905.02188).
+
+**Breaking Changes**
+- The new MMDDP inherits from the official DDP, thus the `__init__` api is changed to be the same as official DDP.
+- The `mask_head` field in HTC config files is modified.
+- The evaluation and testing script is updated.
+- In all transforms, instance masks are stored as a numpy array shaped (n, h, w) instead of a list of (h, w) arrays, where n is the number of instances.
+
+**Bug Fixes**
+- Fix IOU assigners when ignore_iof_thr > 0 and there is no pred boxes. (#2135)
+- Fix mAP evaluation when there are no ignored boxes. (#2116)
+- Fix the empty RoI input for Deformable RoI Pooling. (#2099)
+- Fix the dataset settings for multiple workflows. (#2103)
+- Fix the warning related to `torch.uint8` in PyTorch 1.4. (#2105)
+- Fix the inference demo on devices other than gpu:0. (#2098)
+- Fix Dockerfile. (#2097)
+- Fix the bug that `pad_val` is unused in Pad transform. (#2093)
+- Fix the albumentation transform when there is no ground truth bbox. (#2032)
+
+**Improvements**
+- Use torch instead of numpy for random sampling. (#2094)
+- Migrate to the new MMDDP implementation in MMCV v0.3. (#2090)
+- Add meta information in logs. (#2086)
+- Rewrite Soft NMS with pytorch extension and remove cython as a dependency. (#2056)
+- Rewrite dataset evaluation. (#2042, #2087, #2114, #2128)
+- Use numpy array for masks in transforms. (#2030)
+
+**New Features**
+- Implement "CARAFE: Content-Aware ReAssembly of FEatures". (#1583)
+- Add `worker_init_fn()` in data_loader when seed is set. (#2066, #2111)
+- Add logging utils. (#2035)
+
 ### v1.0.0 (30/1/2020)
 
 This release mainly improves the code quality and add more docstrings.
