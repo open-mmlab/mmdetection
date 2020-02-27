@@ -205,7 +205,7 @@ class SSDHead(AnchorHead):
             gt_labels_list=gt_labels,
             label_channels=1,
             sampling=False,
-            unmap_outputs=False)
+            unmap_outputs=True)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
