@@ -5,4 +5,4 @@ from .resnext import ResNeXt
 from .ssd_vgg import SSDVGG
 from .imgclsmob import *
 
-__all__ = ['ResNet', 'make_res_layer', 'ResNeXt', 'SSDVGG', 'HRNet']
+__all__ = ['ResNet', 'make_res_layer', 'ResNeXt', 'SSDVGG', 'HRNet', 'SSDMobilenetV2']
