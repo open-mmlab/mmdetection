@@ -77,19 +77,10 @@ class RoIAlignFunctionV2(Function):
         spatial_scale = ctx.spatial_scale
         sampling_ratio = ctx.sampling_ratio
         bs, ch, h, w = ctx.feature_size
-        grad_input = roi_align_cuda.backward_v2(
-            grad_output,
-            rois,
-            spatial_scale,
-            output_size[0],
-            output_size[1],
-            bs,
-            ch,
-            h,
-            w,
-            sampling_ratio,
-            ctx.aligned
-        )
+        grad_input = roi_align_cuda.backward_v2(grad_output, rois,
+                                                spatial_scale, output_size[0],
+                                                output_size[1], bs, ch, h, w,
+                                                sampling_ratio, ctx.aligned)
         return grad_input, None, None, None, None, None
 
 
