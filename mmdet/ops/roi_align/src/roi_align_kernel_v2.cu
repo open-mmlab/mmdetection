@@ -262,7 +262,7 @@ __global__ void RoIAlignBackwardFeatureV2(
   }        // CUDA_1D_KERNEL_LOOP
 }  // RoIAlignBackward
 
-at::Tensor ROIAlign_forward_cuda_v2(const at::Tensor& input,
+at::Tensor ROIAlignForwardV2Laucher(const at::Tensor& input,
                                     const at::Tensor& rois,
                                     const float spatial_scale,
                                     const int pooled_height,

@@ -88,7 +88,7 @@ class RoIAlignFunctionV2(Function):
             h,
             w,
             sampling_ratio,
-            ctx.aligned,
+            ctx.aligned
         )
         return grad_input, None, None, None, None, None
 
