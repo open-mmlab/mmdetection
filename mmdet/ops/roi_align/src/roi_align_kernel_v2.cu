@@ -307,7 +307,7 @@ at::Tensor ROIAlignForwardV2Laucher(const at::Tensor& input,
 }
 
 // TODO remove the dependency on input and use instead its sizes -> save memory
-at::Tensor ROIAlign_backward_cuda_v2(
+at::Tensor ROIAlignBackwardV2Laucher(
     const at::Tensor& grad, const at::Tensor& rois, const float spatial_scale,
     const int pooled_height, const int pooled_width, const int batch_size,
     const int channels, const int height, const int width,
