@@ -271,6 +271,13 @@ if __name__ == '__main__':
                     'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
                 ]),
             make_cuda_ext(
+                name='grid_sampler_cuda',
+                module='mmdet.ops.grid_sampler',
+                sources=[
+                    'src/cpu/grid_sampler_cpu.cpp',
+                    'src/cuda/grid_sampler_cuda.cu', 'src/grid_sampler.cpp'
+                ]),
+            make_cuda_ext(
                 name='carafe_cuda',
                 module='mmdet.ops.carafe',
                 sources=['src/carafe_cuda.cpp', 'src/carafe_cuda_kernel.cu']),
