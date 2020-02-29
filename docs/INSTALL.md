@@ -39,11 +39,13 @@ git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Install mmdetection (other dependencies will be installed automatically).
+d. Install build requirements and then install mmdetection.
+(We install pycocotools via the github repo instead of pypi because the pypi version is old and not compatible with the latest numpy.)
 
 ```shell
-pip install mmcv
-python setup.py develop  # or "pip install -v -e ."
+pip install -r requirements/build.txt
+pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
+pip install -v -e .  # or "python setup.py develop"
 ```
 
 Note:
@@ -55,6 +57,8 @@ It is recommended that you run step d each time you pull some updates from githu
 
 3. If you would like to use `opencv-python-headless` instead of `opencv-python`,
 you can install it before installing MMCV.
+
+4. Some dependencies are optional. Simply running `pip install -v -e .` will only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
 ### Another option: Docker Image
 
@@ -100,16 +104,17 @@ mv train/*/* train/
 
 ### A from-scratch setup script
 
-Here is a full script for setting up mmdetection with conda and link the dataset path.
+Here is a full script for setting up mmdetection with conda and link the dataset path (supposing that your COCO dataset path is $COCO_ROOT).
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
 conda activate open-mmlab
 
 conda install -c pytorch pytorch torchvision -y
-conda install cython -y
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
+pip install -r requirements/build.txt
+pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 pip install -v -e .
 
 mkdir data

@@ -1,6 +1,8 @@
 import platform
+import random
 from functools import partial
 
+import numpy as np
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader
@@ -20,6 +22,7 @@ def build_dataloader(dataset,
                      num_gpus=1,
                      dist=True,
                      shuffle=True,
+                     seed=None,
                      **kwargs):
     """Build PyTorch DataLoader.
 
@@ -41,8 +44,8 @@ def build_dataloader(dataset,
     Returns:
         DataLoader: A PyTorch dataloader.
     """
+    rank, world_size = get_dist_info()
     if dist:
-        rank, world_size = get_dist_info()
         # DistributedGroupSampler will definitely shuffle the data to satisfy
         # that images on each GPU are in the same group
         if shuffle:
@@ -58,6 +61,10 @@ def build_dataloader(dataset,
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
+    init_fn = partial(
+        worker_init_fn, num_workers=num_workers, rank=rank,
+        seed=seed) if seed is not None else None
+
     data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -65,6 +72,15 @@ def build_dataloader(dataset,
         num_workers=num_workers,
         collate_fn=partial(collate, samples_per_gpu=imgs_per_gpu),
         pin_memory=False,
+        worker_init_fn=init_fn,
         **kwargs)
 
     return data_loader
+
+
+def worker_init_fn(worker_id, num_workers, rank, seed):
+    # The seed of each worker equals to
+    # num_worker * rank + worker_id + user_seed
+    worker_seed = num_workers * rank + worker_id + seed
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)

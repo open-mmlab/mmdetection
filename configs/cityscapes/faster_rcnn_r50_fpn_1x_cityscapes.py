@@ -152,6 +152,7 @@ data = dict(
         'annotations/instancesonly_filtered_gtFine_val.json',
         img_prefix=data_root + 'val/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric='bbox')
 # optimizer
 # lr is set for a batch size of 8
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)

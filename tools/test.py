@@ -11,7 +11,7 @@ import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 
-from mmdet.core import coco_eval, results2json, wrap_fp16_model
+from mmdet.core import wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
@@ -153,27 +153,79 @@ def collect_results_gpu(result_part, size):
         return ordered_results
 
 
+class MultipleKVAction(argparse.Action):
+    """
+    argparse action to split an argument into KEY=VALUE form
+    on the first = and append to a dictionary.
+    """
+
+    def _is_int(self, val):
+        try:
+            _ = int(val)
+            return True
+        except Exception:
+            return False
+
+    def _is_float(self, val):
+        try:
+            _ = float(val)
+            return True
+        except Exception:
+            return False
+
+    def _is_bool(self, val):
+        return val.lower() in ['true', 'false']
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        options = {}
+        for val in values:
+            parts = val.split('=')
+            key = parts[0].strip()
+            if len(parts) > 2:
+                val = '='.join(parts[1:])
+            else:
+                val = parts[1].strip()
+            # try parsing val to bool/int/float first
+            if self._is_bool(val):
+                import json
+                val = json.loads(val.lower())
+            elif self._is_int(val):
+                val = int(val)
+            elif self._is_float(val):
+                val = float(val)
+            options[key] = val
+        setattr(namespace, self.dest, options)
+
+
 def parse_args():
-    parser = argparse.ArgumentParser(description='MMDet test detector')
+    parser = argparse.ArgumentParser(
+        description='MMDet test (and eval) a model')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
-    parser.add_argument('--out', help='output result file')
+    parser.add_argument('--out', help='output result file in pickle format')
     parser.add_argument(
-        '--json_out',
-        help='output result file name without extension',
-        type=str)
+        '--format_only',
+        action='store_true',
+        help='Format the output results without perform evaluation. It is'
+        'useful when you want to format the result to a specific format and '
+        'submit it to the test server')
     parser.add_argument(
         '--eval',
         type=str,
         nargs='+',
-        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
-        help='eval types')
+        help='evaluation metrics, which depends on the dataset, e.g., "bbox",'
+        ' "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument(
         '--gpu_collect',
         action='store_true',
-        help='whether to use gpu to collect results')
-    parser.add_argument('--tmpdir', help='tmp dir for writing some results')
+        help='whether to use gpu to collect results.')
+    parser.add_argument(
+        '--tmpdir',
+        help='tmp directory used for collecting results from multiple '
+        'workers, available when gpu_collect is not specified')
+    parser.add_argument(
+        '--options', nargs='+', action=MultipleKVAction, help='custom options')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
@@ -189,15 +241,16 @@ def parse_args():
 def main():
     args = parse_args()
 
-    assert args.out or args.show or args.json_out, \
-        ('Please specify at least one operation (save or show the results) '
-         'with the argument "--out" or "--show" or "--json_out"')
+    assert args.out or args.eval or args.format_only or args.show, \
+        ('Please specify at least one operation (save/eval/format/show the '
+         'results) with the argument "--out", "--eval", "--format_only" '
+         'or "--show"')
+
+    if args.eval and args.format_only:
+        raise ValueError('--eval and --format_only cannot be both specified')
 
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
-
-    if args.json_out is not None and args.json_out.endswith('.json'):
-        args.json_out = args.json_out[:-5]
 
     cfg = mmcv.Config.fromfile(args.config)
     # set cudnn_benchmark
@@ -240,42 +293,23 @@ def main():
         model = MMDataParallel(model, device_ids=[0])
         outputs = single_gpu_test(model, data_loader, args.show)
     else:
-        model = MMDistributedDataParallel(model.cuda())
+        model = MMDistributedDataParallel(
+            model.cuda(),
+            device_ids=[torch.cuda.current_device()],
+            broadcast_buffers=False)
         outputs = multi_gpu_test(model, data_loader, args.tmpdir,
                                  args.gpu_collect)
 
     rank, _ = get_dist_info()
-    if args.out and rank == 0:
-        print('\nwriting results to {}'.format(args.out))
-        mmcv.dump(outputs, args.out)
-        eval_types = args.eval
-        if eval_types:
-            print('Starting evaluate {}'.format(' and '.join(eval_types)))
-            if eval_types == ['proposal_fast']:
-                result_file = args.out
-                coco_eval(result_file, eval_types, dataset.coco)
-            else:
-                if not isinstance(outputs[0], dict):
-                    result_files = results2json(dataset, outputs, args.out)
-                    coco_eval(result_files, eval_types, dataset.coco)
-                else:
-                    for name in outputs[0]:
-                        print('\nEvaluating {}'.format(name))
-                        outputs_ = [out[name] for out in outputs]
-                        result_file = args.out + '.{}'.format(name)
-                        result_files = results2json(dataset, outputs_,
-                                                    result_file)
-                        coco_eval(result_files, eval_types, dataset.coco)
-
-    # Save predictions in the COCO json format
-    if args.json_out and rank == 0:
-        if not isinstance(outputs[0], dict):
-            results2json(dataset, outputs, args.json_out)
-        else:
-            for name in outputs[0]:
-                outputs_ = [out[name] for out in outputs]
-                result_file = args.json_out + '.{}'.format(name)
-                results2json(dataset, outputs_, result_file)
+    if rank == 0:
+        if args.out:
+            print('\nwriting results to {}'.format(args.out))
+            mmcv.dump(outputs, args.out)
+        kwargs = {} if args.options is None else args.options
+        if args.format_only:
+            dataset.format_results(outputs, **kwargs)
+        if args.eval:
+            dataset.evaluate(outputs, args.eval, **kwargs)
 
 
 if __name__ == '__main__':

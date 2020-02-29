@@ -1,10 +1,4 @@
-albumentations>=0.3.2
-imagecorruptions
-matplotlib
-mmcv>=0.2.15
-numpy
-pycocotools
-six
-terminaltables
-torch>=1.1
-torchvision
+-r requirements/runtime.txt
+-r requirements/optional.txt
+-r requirements/tests.txt
+-r requirements/build.txt

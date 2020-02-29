@@ -1,5 +1,84 @@
 ## Changelog
 
+### v1.1.0 (24/2/2020)
+
+**Highlights**
+- Dataset evaluation is rewritten with a unified api, which is used by both evaluation hooks and test scripts.
+- Support new methods: [CARAFE](https://arxiv.org/abs/1905.02188).
+
+**Breaking Changes**
+- The new MMDDP inherits from the official DDP, thus the `__init__` api is changed to be the same as official DDP.
+- The `mask_head` field in HTC config files is modified.
+- The evaluation and testing script is updated.
+- In all transforms, instance masks are stored as a numpy array shaped (n, h, w) instead of a list of (h, w) arrays, where n is the number of instances.
+
+**Bug Fixes**
+- Fix IOU assigners when ignore_iof_thr > 0 and there is no pred boxes. (#2135)
+- Fix mAP evaluation when there are no ignored boxes. (#2116)
+- Fix the empty RoI input for Deformable RoI Pooling. (#2099)
+- Fix the dataset settings for multiple workflows. (#2103)
+- Fix the warning related to `torch.uint8` in PyTorch 1.4. (#2105)
+- Fix the inference demo on devices other than gpu:0. (#2098)
+- Fix Dockerfile. (#2097)
+- Fix the bug that `pad_val` is unused in Pad transform. (#2093)
+- Fix the albumentation transform when there is no ground truth bbox. (#2032)
+
+**Improvements**
+- Use torch instead of numpy for random sampling. (#2094)
+- Migrate to the new MMDDP implementation in MMCV v0.3. (#2090)
+- Add meta information in logs. (#2086)
+- Rewrite Soft NMS with pytorch extension and remove cython as a dependency. (#2056)
+- Rewrite dataset evaluation. (#2042, #2087, #2114, #2128)
+- Use numpy array for masks in transforms. (#2030)
+
+**New Features**
+- Implement "CARAFE: Content-Aware ReAssembly of FEatures". (#1583)
+- Add `worker_init_fn()` in data_loader when seed is set. (#2066, #2111)
+- Add logging utils. (#2035)
+
+### v1.0.0 (30/1/2020)
+
+This release mainly improves the code quality and add more docstrings.
+
+**Highlights**
+- Documentation is online now: https://mmdetection.readthedocs.io.
+- Support new models: [ATSS](https://arxiv.org/abs/1912.02424).
+- DCN is now available with the api `build_conv_layer` and `ConvModule` like the normal conv layer.
+- A tool to collect environment information is available for trouble shooting.
+
+**Bug Fixes**
+- Fix the incompatibility of the latest numpy and pycocotools. (#2024)
+- Fix the case when distributed package is unavailable, e.g., on Windows. (#1985)
+- Fix the dimension issue for `refine_bboxes()`. (#1962)
+- Fix the typo when `seg_prefix` is a list. (#1906)
+- Add segmentation map cropping to RandomCrop. (#1880)
+- Fix the return value of `ga_shape_target_single()`. (#1853)
+- Fix the loaded shape of empty proposals. (#1819)
+- Fix the mask data type when using albumentation. (#1818)
+
+**Improvements**
+- Enhance AssignResult and SamplingResult. (#1995)
+- Add ability to overwrite existing module in Registry. (#1982)
+- Reorganize requirements and make albumentations and imagecorruptions optional. (#1969)
+- Check NaN in `SSDHead`. (#1935)
+- Encapsulate the DCN in ResNe(X)t into a ConvModule & Conv_layers. (#1894)
+- Refactoring for mAP evaluation and support multiprocessing and logging. (#1889)
+- Init the root logger before constructing Runner to log more information. (#1865)
+- Split `SegResizeFlipPadRescale` into different existing transforms. (#1852)
+- Move `init_dist()` to MMCV. (#1851)
+- Documentation and docstring improvements. (#1971, #1938, #1869, #1838)
+- Fix the color of the same class for mask visualization. (#1834)
+- Remove the option `keep_all_stages` in HTC and Cascade R-CNN. (#1806)
+
+**New Features**
+- Add two test-time options `crop_mask` and `rle_mask_encode` for mask heads. (#2013)
+- Support loading grayscale images as single channel. (#1975)
+- Implement "Bridging the Gap Between Anchor-based and Anchor-free Detection via Adaptive Training Sample Selection". (#1872)
+- Add sphinx generated docs. (#1859, #1864)
+- Add GN support for flops computation. (#1850)
+- Collect env info for trouble shooting. (#1812)
+
+
 ### v1.0rc1 (13/12/2019)
 
 The RC1 release mainly focuses on improving the user experience, and fixing bugs.
