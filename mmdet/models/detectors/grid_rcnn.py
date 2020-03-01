@@ -198,7 +198,7 @@ class GridRCNN(TwoStageDetector):
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         """Test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
+        assert self.with_bbox, 'Bbox head must be implemented.'
 
         x = self.extract_feat(img)
 

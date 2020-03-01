@@ -779,10 +779,10 @@ class Albu(object):
         Returns:
             obj: The constructed object.
         """
-        assert isinstance(cfg, dict) and "type" in cfg
+        assert isinstance(cfg, dict) and 'type' in cfg
         args = cfg.copy()
 
-        obj_type = args.pop("type")
+        obj_type = args.pop('type')
         if mmcv.is_str(obj_type):
             if albumentations is None:
                 raise RuntimeError('albumentations is not installed')
