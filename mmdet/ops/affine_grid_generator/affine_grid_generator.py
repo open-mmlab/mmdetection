@@ -48,14 +48,12 @@ def affine_grid(theta, size, align_corners=False):
                 format(theta.dtype))
         # check that shapes and sizes match
         if len(size) == 4:
-            if theta.dim(
-            ) != 3 or theta.shape[-2] != 2 or theta.shape[-1] != 3:
+            if theta.dim() != 3 or theta.size(-2) != 2 or theta.size(-1) != 3:
                 raise ValueError(
                     'Expected a batch of 2D affine matrices of shape Nx2x3 '
                     'for size {}. Got {}.'.format(size, theta.shape))
         elif len(size) == 5:
-            if theta.dim(
-            ) != 3 or theta.shape[-2] != 3 or theta.shape[-1] != 4:
+            if theta.dim() != 3 or theta.size(-2) != 3 or theta.size(-1) != 4:
                 raise ValueError(
                     'Expected a batch of 3D affine matrices of shape Nx3x4 '
                     'for size {}. Got {}.'.format(size, theta.shape))
