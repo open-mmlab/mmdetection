@@ -97,7 +97,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmedetection/tools/get_flops.py`
+        See `mmdetection/tools/get_flops.py`
         """
         outs = ()
         # backbone
@@ -266,7 +266,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                                 proposals=None,
                                 rescale=False):
         """Async test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
+        assert self.with_bbox, 'Bbox head must be implemented.'
         x = self.extract_feat(img)
 
         if proposals is None:
@@ -294,7 +294,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         """Test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
+        assert self.with_bbox, 'Bbox head must be implemented.'
 
         x = self.extract_feat(img)
 

@@ -12,7 +12,7 @@
 
 @article{SunZJCXLMWLW19,
   title={High-Resolution Representations for Labeling Pixels and Regions},
-  author={Ke Sun and Yang Zhao and Borui Jiang and Tianheng Cheng and Bin Xiao 
+  author={Ke Sun and Yang Zhao and Borui Jiang and Tianheng Cheng and Bin Xiao
   and Dong Liu and Yadong Mu and Xinggang Wang and Wenyu Liu and Jingdong Wang},
   journal   = {CoRR},
   volume    = {abs/1904.04514},
