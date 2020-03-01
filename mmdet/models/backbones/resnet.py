@@ -28,9 +28,9 @@ class BasicBlock(nn.Module):
                  gcb=None,
                  gen_attention=None):
         super(BasicBlock, self).__init__()
-        assert dcn is None, "Not implemented yet."
-        assert gen_attention is None, "Not implemented yet."
-        assert gcb is None, "Not implemented yet."
+        assert dcn is None, 'Not implemented yet.'
+        assert gen_attention is None, 'Not implemented yet.'
+        assert gcb is None, 'Not implemented yet.'
 
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
