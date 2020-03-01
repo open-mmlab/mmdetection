@@ -136,17 +136,20 @@ data = dict(
         times=8,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root + 'annotations/instance_train_gtFine.json',
+            ann_file=data_root +
+            'annotations/instancesonly_filtered_gtFine_train.json',
             img_prefix=data_root + 'leftImg8bit/train/',
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instance_val_gtFine.json',
+        ann_file=data_root +
+        'annotations/instancesonly_filtered_gtFine_val.json',
         img_prefix=data_root + 'leftImg8bit/val/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instance_val_gtFine.json',
+        ann_file=data_root +
+        'annotations/instancesonly_filtered_gtFine_val.json',
         img_prefix=data_root + 'leftImg8bit/val/',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='bbox')

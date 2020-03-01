@@ -122,7 +122,7 @@ def organize_files(files, target_dir, copy=True):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Convert Cityscapes annotations to mmdetection format')
+        description='Convert Cityscapes annotations to COCO format')
     parser.add_argument('cityscapes_path', help='cityscapes data path')
     parser.add_argument('--img_dir', default='leftImg8bit', type=str)
     parser.add_argument('--gt_dir', default='gtFine', type=str)
@@ -147,9 +147,9 @@ def main():
     gt_dir = osp.join(cityscapes_path, args.gt_dir)
 
     set_name = dict(
-        train='instance_train_gtFine.json',
-        val='instance_val_gtFine.json',
-        test='image_info_test_gtFine.json')
+        train='instancesonly_filtered_gtFine_train.json',
+        val='instancesonly_filtered_gtFine_val.json',
+        test='instancesonly_filtered_gtFine_test.json')
 
     for split, json_name in set_name.items():
         print('Converting {} into {}'.format(split, json_name))

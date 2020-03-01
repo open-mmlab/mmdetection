@@ -19,11 +19,7 @@ from .registry import DATASETS
 
 @DATASETS.register_module
 class CityscapesDataset(CocoDataset):
-    """
-    The correct CLASSES order in official cityscapes should be
-    CLASSES = ('person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
-                'bicycle')
-    """
+
     CLASSES = ('person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
                'bicycle')
 
@@ -184,7 +180,7 @@ class CityscapesDataset(CocoDataset):
                  results,
                  metric='bbox',
                  logger=None,
-                 jsonfile_prefix=None,
+                 outfile_prefix=None,
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05)):
@@ -195,7 +191,7 @@ class CityscapesDataset(CocoDataset):
             metric (str | list[str]): Metrics to be evaluated.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
-            jsonfile_prefix (str | None):
+            outfile_prefix (str | None):
             classwise (bool): Whether to evaluating the AP for each class.
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.
@@ -209,11 +205,11 @@ class CityscapesDataset(CocoDataset):
         """
         eval_results = dict()
 
-        metrics = metric if isinstance(metric, list) else [metric]
+        metrics = metric.copy() if isinstance(metric, list) else [metric]
 
         if 'cityscapes' in metrics:
             eval_results.update(
-                self._evaluate_cityscapes(results, jsonfile_prefix, logger))
+                self._evaluate_cityscapes(results, outfile_prefix, logger))
             metrics.remove('cityscapes')
 
         # left metrics are all coco metric
@@ -224,7 +220,7 @@ class CityscapesDataset(CocoDataset):
                                     self.seg_prefix, self.proposal_file,
                                     self.test_mode, self.filter_empty_gt)
             eval_results.update(
-                self_coco.evaluate(results, metric, logger, jsonfile_prefix,
+                self_coco.evaluate(results, metric, logger, outfile_prefix,
                                    classwise, proposal_nums, iou_thrs))
 
         return eval_results
