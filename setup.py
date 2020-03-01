@@ -16,7 +16,7 @@ def readme():
 
 
 MAJOR = 1
-MINOR = 0
+MINOR = 1
 PATCH = 0
 SUFFIX = ''
 if PATCH != '':
@@ -269,6 +269,13 @@ if __name__ == '__main__':
                 module='mmdet.ops.masked_conv',
                 sources=[
                     'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
+                ]),
+            make_cuda_ext(
+                name='grid_sampler_cuda',
+                module='mmdet.ops.grid_sampler',
+                sources=[
+                    'src/cpu/grid_sampler_cpu.cpp',
+                    'src/cuda/grid_sampler_cuda.cu', 'src/grid_sampler.cpp'
                 ]),
             make_cuda_ext(
                 name='carafe_cuda',

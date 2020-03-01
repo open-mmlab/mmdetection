@@ -64,7 +64,7 @@ python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
 ```shell
 ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --format_only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
 ```
 
 You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
@@ -431,6 +431,31 @@ There are two ways to work with custom datasets.
   You can convert the annotation format to the expected format above and save it to
   a pickle or json file, like [pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/pascal_voc.py).
   Then you can simply use `CustomDataset`.
+
+### Customize optimizer
+
+An example of customized optimizer `CopyOfSGD` is defined in `mmdet/core/optimizer/copy_of_sgd.py`.
+More generally, a customized optimizer could be defined as following.
+
+In `mmdet/core/optimizer/my_optimizer.py`:
+
+```python
+from .registry import OPTIMIZERS
+from torch.optim import Optimizer
+
+
+@OPTIMIZERS.register_module
+class MyOptimizer(Optimizer):
+
+```
+
+In `mmdet/core/optimizer/__init__.py`:
+
+```python
+from .my_optimizer import MyOptimizer
+```
+
+Then you can use `MyOptimizer` in `optimizer` field of config files.
 
 ### Develop new components
 
