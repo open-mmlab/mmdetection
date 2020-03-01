@@ -97,7 +97,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmedetection/tools/get_flops.py`
+        See `mmdetection/tools/get_flops.py`
         """
         outs = ()
         # backbone
