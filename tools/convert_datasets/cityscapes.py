@@ -1,7 +1,6 @@
 import argparse
 import glob
 import os.path as osp
-from shutil import copyfile, move
 
 import cityscapesscripts.helpers.labels as CSLabels
 import mmcv
@@ -70,13 +69,14 @@ def load_img_info(files):
             area=area.tolist(),
             segmentation=mask_rle)
         anno_info.append(anno)
+    video_name = osp.basename(osp.dirname(img_file))
     img_info = dict(
         # remove img_prefix for filename
-        file_name=osp.basename(img_file),
+        file_name=osp.join(video_name, osp.basename(img_file)),
         height=inst_img.shape[0],
         width=inst_img.shape[1],
         anno_info=anno_info,
-        segm_file=osp.basename(segm_file))
+        segm_file=osp.join(video_name, osp.basename(segm_file)))
 
     return img_info
 
@@ -110,16 +110,6 @@ def cvt_annotations(image_infos, out_json_name):
     return out_json
 
 
-def organize_files(files, target_dir, copy=True):
-    for img_file, _, segm_file in files:
-        if copy:
-            copyfile(img_file, osp.join(target_dir, osp.basename(img_file)))
-            copyfile(segm_file, osp.join(target_dir, osp.basename(segm_file)))
-        else:
-            move(img_file, osp.join(target_dir, osp.basename(img_file)))
-            move(segm_file, osp.join(target_dir, osp.basename(segm_file)))
-
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert Cityscapes annotations to COCO format')
@@ -129,10 +119,6 @@ def parse_args():
     parser.add_argument('-o', '--out_dir', help='output path')
     parser.add_argument(
         '--nproc', default=1, type=int, help='number of process')
-    parser.add_argument(
-        '--clean',
-        action='store_true',
-        help='whether delete img_dir and gt_dir')
     args = parser.parse_args()
     return args
 
@@ -159,10 +145,6 @@ def main():
                 osp.join(img_dir, split), osp.join(gt_dir, split))
             image_infos = collect_annotations(files, nproc=args.nproc)
             cvt_annotations(image_infos, osp.join(out_dir, json_name))
-            organize_files(
-                files,
-                target_dir=osp.join(img_dir, split),
-                copy=not args.clean)
 
 
 if __name__ == '__main__':
