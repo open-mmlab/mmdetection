@@ -1,6 +1,6 @@
 ## Common settings
 
-- All baselines were trained using 8 GPU with a batch size of 8 (1 images per GPU) using the [linear scaling rule](https://arxiv.org/abs/1706.02677) to scale the learning rate. 
+- All baselines were trained using 8 GPU with a batch size of 8 (1 images per GPU) using the [linear scaling rule](https://arxiv.org/abs/1706.02677) to scale the learning rate.
 - All models were trained on `cityscapes_train`, and tested on `cityscapes_val`.
 - 1x training schedule indicates 64 epochs which corresponds to slightly less than the 24k iterations reported in the original schedule from the [Mask R-CNN paper](https://arxiv.org/abs/1703.06870)
 - All pytorch-style pretrained backbones on ImageNet are from PyTorch model zoo.
@@ -25,4 +25,3 @@ Download links and more models with different backbones and training schemes wil
 
 **Notes:**
 - In the original paper, the mask AP of Mask R-CNN R-50-FPN is 31.5.
-
