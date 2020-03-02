@@ -270,6 +270,10 @@ if __name__ == '__main__':
                     'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
                 ]),
             make_cuda_ext(
+                name='affine_grid_cuda',
+                module='mmdet.ops.affine_grid',
+                sources=['src/affine_grid_cuda.cpp']),
+            make_cuda_ext(
                 name='grid_sampler_cuda',
                 module='mmdet.ops.grid_sampler',
                 sources=[

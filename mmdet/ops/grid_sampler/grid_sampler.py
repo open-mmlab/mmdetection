@@ -61,8 +61,10 @@ def grid_sample(input,
                 mode='bilinear',
                 padding_mode='zeros',
                 align_corners=False):
-    if torch.__version__ >= '1.3' or align_corners:
+    if torch.__version__ >= '1.3':
         return F.grid_sample(input, grid, mode, padding_mode, align_corners)
+    elif align_corners:
+        return F.grid_sample(input, grid, mode, padding_mode)
     else:
 
         # use self-compiled grid_sampler to support align_corners=False
