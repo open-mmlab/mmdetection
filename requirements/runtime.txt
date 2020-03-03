@@ -7,3 +7,7 @@ six
 terminaltables
 torch>=1.1
 torchvision
+pytorchcv==0.0.55
+tqdm
+onnx==1.6.0
+onnxruntime==1.1.2
