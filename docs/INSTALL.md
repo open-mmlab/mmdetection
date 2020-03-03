@@ -1,21 +1,15 @@
 ## Installation
 
-### Requirements
+### Prerequisites
+
+Make sure that all of the listed below system-level requirements are installed:
 
 - Linux (Windows is not officially supported)
-- Python 3.5+
-- PyTorch 1.1 or higher
+- Python 3.6+
 - CUDA 9.0 or higher
 - NCCL 2
 - GCC 4.9 or higher
-- [mmcv](https://github.com/open-mmlab/mmcv)
-
-We have tested the following versions of OS and softwares:
-
-- OS: Ubuntu 16.04/18.04 and CentOS 7.2
-- CUDA: 9.0/9.2/10.0/10.1
-- NCCL: 2.1.15/2.2.13/2.3.7/2.4.2
-- GCC(G++): 4.9/5.3/5.4/7.3
+- [Intel® Distribution of OpenVINO™ Toolkit](https://software.intel.com/en-us/openvino-toolkit) 2020.1 
 
 ### Install mmdetection
 
