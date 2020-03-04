@@ -15,7 +15,6 @@ model = dict(
             in_channels=[256, 512, 1024, 2048],
             out_channels=256,
             start_level=1,
-            extra_convs_on_inputs=True,
             add_extra_convs=True,
             num_outs=5),
         dict(
@@ -57,9 +56,6 @@ train_cfg = dict(
         neg_iou_thr=0.4,
         min_pos_iou=0,
         ignore_iof_thr=-1),
-    smoothl1_beta=0.11,
-    gamma=2.0,
-    alpha=0.25,
     allowed_border=-1,
     pos_weight=-1,
     debug=False)
@@ -117,6 +113,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric='bbox')
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))

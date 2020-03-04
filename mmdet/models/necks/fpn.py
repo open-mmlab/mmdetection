@@ -9,6 +9,43 @@ from ..utils import ConvModule
 
 @NECKS.register_module
 class FPN(nn.Module):
+    """
+    Feature Pyramid Network.
+
+    This is an implementation of - Feature Pyramid Networks for Object
+    Detection (https://arxiv.org/abs/1612.03144)
+
+    Args:
+        in_channels (List[int]):
+            number of input channels per scale
+
+        out_channels (int):
+            number of output channels (used at each scale)
+
+        num_outs (int):
+            number of output scales
+
+        start_level (int):
+            index of the first input scale to use as an output scale
+
+        end_level (int, default=-1):
+            index of the last input scale to use as an output scale
+
+    Example:
+        >>> import torch
+        >>> in_channels = [2, 3, 5, 7]
+        >>> scales = [340, 170, 84, 43]
+        >>> inputs = [torch.rand(1, c, s, s)
+        ...           for c, s in zip(in_channels, scales)]
+        >>> self = FPN(in_channels, 11, len(in_channels)).eval()
+        >>> outputs = self.forward(inputs)
+        >>> for i in range(len(outputs)):
+        ...     print('outputs[{}].shape = {!r}'.format(i, outputs[i].shape))
+        outputs[0].shape = torch.Size([1, 11, 340, 340])
+        outputs[1].shape = torch.Size([1, 11, 170, 170])
+        outputs[2].shape = torch.Size([1, 11, 84, 84])
+        outputs[3].shape = torch.Size([1, 11, 43, 43])
+    """
 
     def __init__(self,
                  in_channels,
@@ -111,8 +148,9 @@ class FPN(nn.Module):
         # build top-down path
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
+            prev_shape = laterals[i - 1].shape[2:]
             laterals[i - 1] += F.interpolate(
-                laterals[i], scale_factor=2, mode='nearest')
+                laterals[i], size=prev_shape, mode='nearest')
 
         # build outputs
         # part 1: from original levels

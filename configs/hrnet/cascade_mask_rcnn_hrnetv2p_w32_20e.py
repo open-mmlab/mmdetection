@@ -190,8 +190,7 @@ test_cfg = dict(
         score_thr=0.05,
         nms=dict(type='nms', iou_thr=0.5),
         max_per_img=100,
-        mask_thr_binary=0.5),
-    keep_all_stages=False)
+        mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
@@ -240,6 +239,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric=['bbox', 'segm'])
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))

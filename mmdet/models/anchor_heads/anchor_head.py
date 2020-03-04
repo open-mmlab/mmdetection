@@ -127,7 +127,7 @@ class AnchorHead(nn.Module):
             for i in range(num_levels):
                 anchor_stride = self.anchor_strides[i]
                 feat_h, feat_w = featmap_sizes[i]
-                h, w, _ = img_meta['pad_shape']
+                h, w = img_meta['pad_shape'][:2]
                 valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.anchor_generators[i].valid_flags(
@@ -206,7 +206,11 @@ class AnchorHead(nn.Module):
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg,
+    def get_bboxes(self,
+                   cls_scores,
+                   bbox_preds,
+                   img_metas,
+                   cfg,
                    rescale=False):
         """
         Transform network output for a batch into labeled boxes.

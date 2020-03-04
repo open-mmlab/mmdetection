@@ -1,14 +1,23 @@
 import inspect
 
-import albumentations
 import mmcv
 import numpy as np
-from albumentations import Compose
-from imagecorruptions import corrupt
 from numpy import random
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..registry import PIPELINES
+
+try:
+    from imagecorruptions import corrupt
+except ImportError:
+    corrupt = None
+
+try:
+    import albumentations
+    from albumentations import Compose
+except ImportError:
+    albumentations = None
+    Compose = None
 
 
 @PIPELINES.register_module
@@ -147,7 +156,17 @@ class Resize(object):
                     mmcv.imresize(mask, mask_size, interpolation='nearest')
                     for mask in results[key]
                 ]
-            results[key] = masks
+            results[key] = np.stack(masks)
+
+    def _resize_seg(self, results):
+        for key in results.get('seg_fields', []):
+            if self.keep_ratio:
+                gt_seg = mmcv.imrescale(
+                    results[key], results['scale'], interpolation='nearest')
+            else:
+                gt_seg = mmcv.imresize(
+                    results[key], results['scale'], interpolation='nearest')
+            results['gt_semantic_seg'] = gt_seg
 
     def __call__(self, results):
         if 'scale' not in results:
@@ -155,6 +174,7 @@ class Resize(object):
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
+        self._resize_seg(results)
         return results
 
     def __repr__(self):
@@ -179,12 +199,14 @@ class RandomFlip(object):
         flip_ratio (float, optional): The flipping probability.
     """
 
-    def __init__(self, flip_ratio=None):
+    def __init__(self, flip_ratio=None, direction='horizontal'):
         self.flip_ratio = flip_ratio
+        self.direction = direction
         if flip_ratio is not None:
             assert flip_ratio >= 0 and flip_ratio <= 1
+        assert direction in ['horizontal', 'vertical']
 
-    def bbox_flip(self, bboxes, img_shape):
+    def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
 
         Args:
@@ -192,26 +214,46 @@ class RandomFlip(object):
             img_shape(tuple): (height, width)
         """
         assert bboxes.shape[-1] % 4 == 0
-        w = img_shape[1]
         flipped = bboxes.copy()
-        flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
-        flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+        if direction == 'horizontal':
+            w = img_shape[1]
+            flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
+            flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+        elif direction == 'vertical':
+            h = img_shape[0]
+            flipped[..., 1::4] = h - bboxes[..., 3::4] - 1
+            flipped[..., 3::4] = h - bboxes[..., 1::4] - 1
+        else:
+            raise ValueError(
+                'Invalid flipping direction "{}"'.format(direction))
         return flipped
 
     def __call__(self, results):
         if 'flip' not in results:
             flip = True if np.random.rand() < self.flip_ratio else False
             results['flip'] = flip
+        if 'flip_direction' not in results:
+            results['flip_direction'] = self.direction
         if results['flip']:
             # flip image
-            results['img'] = mmcv.imflip(results['img'])
+            results['img'] = mmcv.imflip(
+                results['img'], direction=results['flip_direction'])
             # flip bboxes
             for key in results.get('bbox_fields', []):
                 results[key] = self.bbox_flip(results[key],
-                                              results['img_shape'])
+                                              results['img_shape'],
+                                              results['flip_direction'])
             # flip masks
             for key in results.get('mask_fields', []):
-                results[key] = [mask[:, ::-1] for mask in results[key]]
+                results[key] = np.stack([
+                    mmcv.imflip(mask, direction=results['flip_direction'])
+                    for mask in results[key]
+                ])
+
+            # flip segs
+            for key in results.get('seg_fields', []):
+                results[key] = mmcv.imflip(
+                    results[key], direction=results['flip_direction'])
         return results
 
     def __repr__(self):
@@ -242,7 +284,7 @@ class Pad(object):
 
     def _pad_img(self, results):
         if self.size is not None:
-            padded_img = mmcv.impad(results['img'], self.size)
+            padded_img = mmcv.impad(results['img'], self.size, self.pad_val)
         elif self.size_divisor is not None:
             padded_img = mmcv.impad_to_multiple(
                 results['img'], self.size_divisor, pad_val=self.pad_val)
@@ -258,11 +300,19 @@ class Pad(object):
                 mmcv.impad(mask, pad_shape, pad_val=self.pad_val)
                 for mask in results[key]
             ]
-            results[key] = np.stack(padded_masks, axis=0)
+            if padded_masks:
+                results[key] = np.stack(padded_masks, axis=0)
+            else:
+                results[key] = np.empty((0, ) + pad_shape, dtype=np.uint8)
+
+    def _pad_seg(self, results):
+        for key in results.get('seg_fields', []):
+            results[key] = mmcv.impad(results[key], results['pad_shape'][:2])
 
     def __call__(self, results):
         self._pad_img(results)
         self._pad_masks(results)
+        self._pad_seg(results)
         return results
 
     def __repr__(self):
@@ -323,7 +373,7 @@ class RandomCrop(object):
         crop_x1, crop_x2 = offset_w, offset_w + self.crop_size[1]
 
         # crop the image
-        img = img[crop_y1:crop_y2, crop_x1:crop_x2, :]
+        img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
         img_shape = img.shape
         results['img'] = img
         results['img_shape'] = img_shape
@@ -336,6 +386,10 @@ class RandomCrop(object):
             bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1] - 1)
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)
             results[key] = bboxes
+
+        # crop semantic seg
+        for key in results.get('seg_fields', []):
+            results[key] = results[key][crop_y1:crop_y2, crop_x1:crop_x2]
 
         # filter out the gt bboxes that are completely cropped
         if 'gt_bboxes' in results:
@@ -353,10 +407,10 @@ class RandomCrop(object):
             if 'gt_masks' in results:
                 valid_gt_masks = []
                 for i in np.where(valid_inds)[0]:
-                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2, crop_x1:
-                                                     crop_x2]
+                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2,
+                                                     crop_x1:crop_x2]
                     valid_gt_masks.append(gt_mask)
-                results['gt_masks'] = valid_gt_masks
+                results['gt_masks'] = np.stack(valid_gt_masks)
 
         return results
 
@@ -366,15 +420,8 @@ class RandomCrop(object):
 
 
 @PIPELINES.register_module
-class SegResizeFlipPadRescale(object):
-    """A sequential transforms to semantic segmentation maps.
-
-    The same pipeline as input images is applied to the semantic segmentation
-    map, and finally rescale it by some scale factor. The transforms include:
-    1. resize
-    2. flip
-    3. pad
-    4. rescale (so that the final size can be different from the image size)
+class SegRescale(object):
+    """Rescale semantic segmentation maps.
 
     Args:
         scale_factor (float): The scale factor of the final output.
@@ -384,24 +431,10 @@ class SegResizeFlipPadRescale(object):
         self.scale_factor = scale_factor
 
     def __call__(self, results):
-        if results['keep_ratio']:
-            gt_seg = mmcv.imrescale(
-                results['gt_semantic_seg'],
-                results['scale'],
-                interpolation='nearest')
-        else:
-            gt_seg = mmcv.imresize(
-                results['gt_semantic_seg'],
-                results['scale'],
-                interpolation='nearest')
-        if results['flip']:
-            gt_seg = mmcv.imflip(gt_seg)
-        if gt_seg.shape != results['pad_shape']:
-            gt_seg = mmcv.impad(gt_seg, results['pad_shape'][:2])
-        if self.scale_factor != 1:
-            gt_seg = mmcv.imrescale(
-                gt_seg, self.scale_factor, interpolation='nearest')
-        results['gt_semantic_seg'] = gt_seg
+        for key in results.get('seg_fields', []):
+            if self.scale_factor != 1:
+                results[key] = mmcv.imrescale(
+                    results[key], self.scale_factor, interpolation='nearest')
         return results
 
     def __repr__(self):
@@ -553,7 +586,7 @@ class Expand(object):
                                       0).astype(mask.dtype)
                 expand_mask[top:top + h, left:left + w] = mask
                 expand_gt_masks.append(expand_mask)
-            results['gt_masks'] = expand_gt_masks
+            results['gt_masks'] = np.stack(expand_gt_masks)
 
         # not tested
         if 'gt_semantic_seg' in results:
@@ -645,10 +678,10 @@ class MinIoURandomCrop(object):
                         results['gt_masks'][i] for i in range(len(mask))
                         if mask[i]
                     ]
-                    results['gt_masks'] = [
+                    results['gt_masks'] = np.stack([
                         gt_mask[patch[1]:patch[3], patch[0]:patch[2]]
                         for gt_mask in valid_masks
-                    ]
+                    ])
 
                 # not tested
                 if 'gt_semantic_seg' in results:
@@ -671,6 +704,8 @@ class Corrupt(object):
         self.severity = severity
 
     def __call__(self, results):
+        if corrupt is None:
+            raise RuntimeError('imagecorruptions is not installed')
         results['img'] = corrupt(
             results['img'].astype(np.uint8),
             corruption_name=self.corruption,
@@ -704,6 +739,8 @@ class Albu(object):
         skip_img_without_anno (bool): whether to skip the image
                                       if no ann left after aug
         """
+        if Compose is None:
+            raise RuntimeError('albumentations is not installed')
 
         self.transforms = transforms
         self.filter_lost_elements = False
@@ -742,11 +779,13 @@ class Albu(object):
         Returns:
             obj: The constructed object.
         """
-        assert isinstance(cfg, dict) and "type" in cfg
+        assert isinstance(cfg, dict) and 'type' in cfg
         args = cfg.copy()
 
-        obj_type = args.pop("type")
+        obj_type = args.pop('type')
         if mmcv.is_str(obj_type):
+            if albumentations is None:
+                raise RuntimeError('albumentations is not installed')
             obj_cls = getattr(albumentations, obj_type)
         elif inspect.isclass(obj_type):
             obj_cls = obj_type
@@ -799,6 +838,7 @@ class Albu(object):
             if isinstance(results['bboxes'], list):
                 results['bboxes'] = np.array(
                     results['bboxes'], dtype=np.float32)
+            results['bboxes'] = results['bboxes'].reshape(-1, 4)
 
             # filter label_fields
             if self.filter_lost_elements:
@@ -809,9 +849,8 @@ class Albu(object):
                     results[label] = np.array(
                         [results[label][i] for i in results['idx_mapper']])
                 if 'masks' in results:
-                    results['masks'] = [
-                        results['masks'][i] for i in results['idx_mapper']
-                    ]
+                    results['masks'] = np.array(
+                        [results['masks'][i] for i in results['idx_mapper']])
 
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):
@@ -820,6 +859,7 @@ class Albu(object):
         if 'gt_labels' in results:
             if isinstance(results['gt_labels'], list):
                 results['gt_labels'] = np.array(results['gt_labels'])
+            results['gt_labels'] = results['gt_labels'].astype(np.int64)
 
         # back to the original format
         results = self.mapper(results, self.keymap_back)

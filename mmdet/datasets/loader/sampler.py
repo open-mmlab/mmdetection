@@ -3,7 +3,7 @@ import math
 
 import numpy as np
 import torch
-from mmcv.runner.utils import get_dist_info
+from mmcv.runner import get_dist_info
 from torch.utils.data import DistributedSampler as _DistributedSampler
 from torch.utils.data import Sampler
 

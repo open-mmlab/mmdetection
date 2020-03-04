@@ -94,9 +94,9 @@ class RepPointsHead(nn.Module):
         self.dcn_kernel = int(np.sqrt(num_points))
         self.dcn_pad = int((self.dcn_kernel - 1) / 2)
         assert self.dcn_kernel * self.dcn_kernel == num_points, \
-            "The points number should be a square number."
+            'The points number should be a square number.'
         assert self.dcn_kernel % 2 == 1, \
-            "The points number should be an odd square number."
+            'The points number should be an odd square number.'
         dcn_base = np.arange(-self.dcn_pad,
                              self.dcn_pad + 1).astype(np.float64)
         dcn_base_y = np.repeat(dcn_base, self.dcn_kernel)
@@ -320,7 +320,7 @@ class RepPointsHead(nn.Module):
             for i in range(num_levels):
                 point_stride = self.point_strides[i]
                 feat_h, feat_w = featmap_sizes[i]
-                h, w, _ = img_meta['pad_shape']
+                h, w = img_meta['pad_shape'][:2]
                 valid_feat_h = min(int(np.ceil(h / point_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / point_stride)), feat_w)
                 flags = self.point_generators[i].valid_flags(

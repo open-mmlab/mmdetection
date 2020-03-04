@@ -94,31 +94,32 @@ class GuidedAnchorHead(AnchorHead):
     """
 
     def __init__(
-            self,
-            num_classes,
-            in_channels,
-            feat_channels=256,
-            octave_base_scale=8,
-            scales_per_octave=3,
-            octave_ratios=[0.5, 1.0, 2.0],
-            anchor_strides=[4, 8, 16, 32, 64],
-            anchor_base_sizes=None,
-            anchoring_means=(.0, .0, .0, .0),
-            anchoring_stds=(1.0, 1.0, 1.0, 1.0),
-            target_means=(.0, .0, .0, .0),
-            target_stds=(1.0, 1.0, 1.0, 1.0),
-            deformable_groups=4,
-            loc_filter_thr=0.01,
-            loss_loc=dict(
-                type='FocalLoss',
-                use_sigmoid=True,
-                gamma=2.0,
-                alpha=0.25,
-                loss_weight=1.0),
-            loss_shape=dict(type='BoundedIoULoss', beta=0.2, loss_weight=1.0),
-            loss_cls=dict(
-                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
+        self,
+        num_classes,
+        in_channels,
+        feat_channels=256,
+        octave_base_scale=8,
+        scales_per_octave=3,
+        octave_ratios=[0.5, 1.0, 2.0],
+        anchor_strides=[4, 8, 16, 32, 64],
+        anchor_base_sizes=None,
+        anchoring_means=(.0, .0, .0, .0),
+        anchoring_stds=(1.0, 1.0, 1.0, 1.0),
+        target_means=(.0, .0, .0, .0),
+        target_stds=(1.0, 1.0, 1.0, 1.0),
+        deformable_groups=4,
+        loc_filter_thr=0.01,
+        loss_loc=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_shape=dict(type='BoundedIoULoss', beta=0.2, loss_weight=1.0),
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0,
+                       loss_weight=1.0)):  # yapf: disable
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -209,7 +210,10 @@ class GuidedAnchorHead(AnchorHead):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
 
-    def get_sampled_approxs(self, featmap_sizes, img_metas, cfg,
+    def get_sampled_approxs(self,
+                            featmap_sizes,
+                            img_metas,
+                            cfg,
                             device='cuda'):
         """Get sampled approxs and inside flags according to feature map sizes.
 
@@ -242,7 +246,7 @@ class GuidedAnchorHead(AnchorHead):
                 approxs = multi_level_approxs[i]
                 anchor_stride = self.anchor_strides[i]
                 feat_h, feat_w = featmap_sizes[i]
-                h, w, _ = img_meta['pad_shape']
+                h, w = img_meta['pad_shape'][:2]
                 valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.approx_generators[i].valid_flags(
