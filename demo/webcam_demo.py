@@ -3,6 +3,7 @@ import argparse
 import cv2
 import torch
 
+import mmdet
 from mmdet.apis import inference_detector, init_detector, show_result
 
 
@@ -22,8 +23,13 @@ def parse_args():
 def main():
     args = parse_args()
 
+    if mmdet.version.CPU_ONLY:
+        device = torch.device('cpu')
+    else:
+        device = torch.device('cuda', args.device)
+
     model = init_detector(
-        args.config, args.checkpoint, device=torch.device('cuda', args.device))
+        args.config, args.checkpoint, device=device)
 
     camera = cv2.VideoCapture(args.camera_id)
 

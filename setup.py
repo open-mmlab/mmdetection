@@ -1,11 +1,13 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
+import sys
 import subprocess
 import time
 from setuptools import find_packages, setup
 
 import torch
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CppExtension
 
 
 def readme():
@@ -67,18 +69,19 @@ def get_hash():
     return sha
 
 
-def write_version_py():
+def write_version_py(cpu_only=False):
     content = """# GENERATED VERSION FILE
 # TIME: {}
 
 __version__ = '{}'
 short_version = '{}'
+CPU_ONLY = {}
 """
     sha = get_hash()
     VERSION = SHORT_VERSION + '+' + sha
 
     with open(version_file, 'w') as f:
-        f.write(content.format(time.asctime(), VERSION, SHORT_VERSION))
+        f.write(content.format(time.asctime(), VERSION, SHORT_VERSION, 'True' if cpu_only else 'False'))
 
 
 def get_version():
@@ -92,7 +95,7 @@ def make_cuda_ext(name, module, sources):
     define_macros = []
 
     if torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1':
-        define_macros += [('WITH_CUDA', None)]
+        define_macros += [("WITH_CUDA", None)]
     else:
         raise EnvironmentError('CUDA is required to compile MMDetection!')
 
@@ -108,6 +111,12 @@ def make_cuda_ext(name, module, sources):
                 '-D__CUDA_NO_HALF2_OPERATORS__',
             ]
         })
+
+
+def make_cpp_ext(name, module, sources):
+    return CppExtension(
+        name='{}.{}'.format(module, name),
+        sources=[os.path.join(*module.split('.'), p) for p in sources])
 
 
 def parse_requirements(fname='requirements.txt', with_version=True):
@@ -190,47 +199,25 @@ def parse_requirements(fname='requirements.txt', with_version=True):
 
 
 if __name__ == '__main__':
-    write_version_py()
-    setup(
-        name='mmdet',
-        version=get_version(),
-        description='Open MMLab Detection Toolbox and Benchmark',
-        long_description=readme(),
-        author='OpenMMLab',
-        author_email='chenkaidev@gmail.com',
-        keywords='computer vision, object detection',
-        url='https://github.com/open-mmlab/mmdetection',
-        packages=find_packages(exclude=('configs', 'tools', 'demo')),
-        package_data={'mmdet.ops': ['*/*.so']},
-        classifiers=[
-            'Development Status :: 4 - Beta',
-            'License :: OSI Approved :: Apache Software License',
-            'Operating System :: OS Independent',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.5',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7',
-        ],
-        license='Apache License 2.0',
-        setup_requires=parse_requirements('requirements/build.txt'),
-        tests_require=parse_requirements('requirements/tests.txt'),
-        install_requires=parse_requirements('requirements/runtime.txt'),
-        extras_require={
-            'all': parse_requirements('requirements.txt'),
-            'tests': parse_requirements('requirements/tests.txt'),
-            'build': parse_requirements('requirements/build.txt'),
-            'optional': parse_requirements('requirements/optional.txt'),
-        },
-        ext_modules=[
-            make_cuda_ext(
+    cpu_only = False
+    if "--cpu" in sys.argv:
+        cpu_only = True
+        sys.argv.remove("--cpu")
+
+    write_version_py(cpu_only=cpu_only)
+
+    ext_modules = [
+            make_cpp_ext(
                 name='compiling_info',
                 module='mmdet.ops.utils',
                 sources=['src/compiling_info.cpp']),
-            make_cuda_ext(
+            make_cpp_ext(
                 name='nms_cpu',
                 module='mmdet.ops.nms',
-                sources=['src/nms_cpu.cpp']),
-            make_cuda_ext(
+                sources=['src/nms_cpu.cpp'])]
+
+    if not cpu_only:
+        ext_modules += [make_cuda_ext(
                 name='nms_cuda',
                 module='mmdet.ops.nms',
                 sources=['src/nms_cuda.cpp', 'src/nms_kernel.cu']),
@@ -290,7 +277,38 @@ if __name__ == '__main__':
                 sources=[
                     'src/carafe_naive_cuda.cpp',
                     'src/carafe_naive_cuda_kernel.cu'
-                ])
+                ])]
+
+    setup(
+        name='mmdet',
+        version=get_version(),
+        description='Open MMLab Detection Toolbox and Benchmark',
+        long_description=readme(),
+        author='OpenMMLab',
+        author_email='chenkaidev@gmail.com',
+        keywords='computer vision, object detection',
+        url='https://github.com/open-mmlab/mmdetection',
+        packages=find_packages(exclude=('configs', 'tools', 'demo')),
+        package_data={'mmdet.ops': ['*/*.so']},
+        classifiers=[
+            'Development Status :: 4 - Beta',
+            'License :: OSI Approved :: Apache Software License',
+            'Operating System :: OS Independent',
+            'Programming Language :: Python :: 3',
+            'Programming Language :: Python :: 3.5',
+            'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
         ],
+        license='Apache License 2.0',
+        setup_requires=parse_requirements('requirements/build.txt'),
+        tests_require=parse_requirements('requirements/tests.txt'),
+        install_requires=parse_requirements('requirements/runtime.txt'),
+        extras_require={
+            'all': parse_requirements('requirements.txt'),
+            'tests': parse_requirements('requirements/tests.txt'),
+            'build': parse_requirements('requirements/build.txt'),
+            'optional': parse_requirements('requirements/optional.txt'),
+        },
+        ext_modules=ext_modules,
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)

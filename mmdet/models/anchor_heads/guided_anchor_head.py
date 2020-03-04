@@ -5,10 +5,14 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
+import mmdet
 from mmdet.core import (AnchorGenerator, anchor_inside_flags, anchor_target,
                         delta2bbox, force_fp32, ga_loc_target, ga_shape_target,
                         multi_apply, multiclass_nms)
-from mmdet.ops import DeformConv, MaskedConv2d
+
+if not mmdet.version.CPU_ONLY:
+    from mmdet.ops import DeformConv, MaskedConv2d
+
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import bias_init_with_prob

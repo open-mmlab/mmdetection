@@ -1,13 +1,15 @@
 import warnings
 
 import matplotlib.pyplot as plt
-import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
+
+import mmcv
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
+import mmdet
 from mmdet.core import get_classes
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
@@ -80,7 +82,14 @@ def inference_detector(model, img):
     # prepare data
     data = dict(img=img)
     data = test_pipeline(data)
-    data = scatter(collate([data], samples_per_gpu=1), [device])[0]
+    data = collate([data], samples_per_gpu=1)
+    if mmdet.version.CPU_ONLY:
+        # just get the actual data from DataContainer
+        data['img_meta'] = data['img_meta'][0].data
+    else:
+        # scatter to multiple GPUs
+        data = scatter(data, [device])[0]
+
     # forward the model
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)

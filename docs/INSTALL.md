@@ -60,6 +60,25 @@ you can install it before installing MMCV.
 
 4. Some dependencies are optional. Simply running `pip install -v -e .` will only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
+## Install in CPU_ONLY mode
+The code can be built for CPU only environment (where CUDA isn't available) by using the install command :
+```shell
+python setup.py install --cpu
+```
+After installation, you can always get the current mode by checking the constant : ```mmdet.version.CPU_ONLY```
+
+In CPU_ONLY mode you can run the demo/webcam_demo.py for example.
+However some functionality is gone in this mode : 
+* Deformable Convolution
+* Deformable ROI pooling
+* CARAFE: Content-Aware ReAssembly of FEatures
+* nms_cuda
+* roi_align_cuda
+* roi_pool_cuda
+* sigmoid_focal_loss_cuda
+
+So if you try to run inference with a model containing deformable convolution you will get an error.
+
 ### Another option: Docker Image
 
 We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image.

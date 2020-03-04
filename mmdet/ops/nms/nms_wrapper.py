@@ -1,7 +1,11 @@
 import numpy as np
 import torch
 
-from . import nms_cpu, nms_cuda
+import mmdet
+
+from . import nms_cpu
+if not mmdet.version.CPU_ONLY:
+    from . import nms_cuda
 
 
 def nms(dets, iou_thr, device_id=None):
