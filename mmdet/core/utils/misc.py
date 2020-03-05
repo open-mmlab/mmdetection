@@ -111,6 +111,19 @@ def topk(x, k, dim=None, **kwargs):
     return values, keep
 
 
+def meshgrid(x, y, row_major=True, flatten=True):
+    n, m = y.shape[0], x.shape[0]
+    yy = y.view(-1, 1).expand(n, m)
+    xx = x.view(1, -1).expand(n, m)
+    if flatten:
+        xx = xx.reshape(-1)
+        yy = yy.reshape(-1)
+    if row_major:
+        return xx, yy
+    else:
+        return yy, xx
+
+
 def dummy_pad(x, padding):
 
     class DummyPad(torch.autograd.Function):

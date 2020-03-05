@@ -1,6 +1,6 @@
 import torch
 
-from mmdet.core.utils.misc import arange
+from mmdet.core.utils.misc import arange, meshgrid
 
 
 class AnchorGenerator(object):
@@ -70,15 +70,6 @@ class AnchorGenerator(object):
 
         return base_anchors
 
-    def _meshgrid(self, x, y, row_major=True):
-        n, m = y.shape[0], x.shape[0]
-        yy = y.view(-1, 1).expand(n, m).reshape(-1)
-        xx = x.view(1, -1).expand(n, m).reshape(-1)
-        if row_major:
-            return xx, yy
-        else:
-            return yy, xx
-
     def grid_anchors(self, featmap_size, stride=16, device='cuda'):
         base_anchors = self.base_anchors.to(device)
 
@@ -88,7 +79,7 @@ class AnchorGenerator(object):
         shift_y = arange(
             start=0, end=featmap_size[0], dtype=torch.float32,
             device=device) * stride
-        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
+        shift_xx, shift_yy = meshgrid(shift_x, shift_y)
         shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=1)
         shifts = shifts.type_as(base_anchors)
         # first feat_w elements correspond to the first row of shifts
@@ -109,7 +100,7 @@ class AnchorGenerator(object):
         valid_y = torch.zeros(feat_h, dtype=torch.uint8, device=device)
         valid_x[:valid_w] = 1
         valid_y[:valid_h] = 1
-        valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
+        valid_xx, valid_yy = meshgrid(valid_x, valid_y)
         valid = valid_xx & valid_yy
         valid = valid[:,
                       None].expand(valid.size(0),
