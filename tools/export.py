@@ -69,24 +69,23 @@ def topk_symbolic(g, self, k, dim, largest, sorted, out=None):
 
 @parse_args('v', 'i', 'v', 'v', 'f', 'i')
 def group_norm_symbolic(g, input, num_groups, weight, bias, eps, cudnn_enabled):
-    from torch.onnx.symbolic_opset9 import reshape, mul, add
+    from torch.onnx.symbolic_opset9 import reshape, mul, add, reshape_as
 
-    input_shape = list(input.type().sizes())
+    channels_num = input.type().sizes()[1]
 
-    if num_groups == input_shape[1]:
+    if num_groups == channels_num:
         output = g.op('InstanceNormalization', input, weight, bias, epsilon_f=eps)
     else:
-        print('WARNING. Potential problem with ONNX Runtime.')
-        intermediate_shape = copy(input_shape)
-        intermediate_shape[0] *= num_groups
-        intermediate_shape[1] //= num_groups
-        x = reshape(g, input, g.op("Constant", value_t=torch.LongTensor(intermediate_shape)))
-        x = g.op('MeanVarianceNormalization', x, axes_i=[1, 2, 3])
-        normalized_input = reshape(g, x, g.op("Constant", value_t=torch.LongTensor(input_shape)))
-
-        weights_shape = g.op("Constant", value_t=torch.LongTensor([1, input_shape[1], 1, 1]))
-        output = mul(g, normalized_input, reshape(g, weight, weights_shape))
-        output = add(g, output, reshape(g, bias, weights_shape))
+        # Reshape from [n, g * cg, h, w] to [1, n * g, cg * h, w].
+        x = reshape(g, input, [0, num_groups, -1, 0])
+        x = reshape(g, x, [1, -1, 0, 0])
+        # Normalize channel-wise.
+        x = g.op('MeanVarianceNormalization', x)
+        # Reshape back.
+        x = reshape_as(g, x, input)
+        # Apply affine transform.
+        x = mul(g, x, reshape(g, weight, [1, channels_num, 1, 1]))
+        output = add(g, x, reshape(g, bias, [1, channels_num, 1, 1]))
 
     return output
 
