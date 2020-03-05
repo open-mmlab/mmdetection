@@ -3,7 +3,7 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
-from mmdet.core.utils.misc import topk
+from mmdet.core.utils.misc import arange, topk
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, Scale, bias_init_with_prob
@@ -302,15 +302,20 @@ class FCOSHead(nn.Module):
                                        dtype, device))
         return mlvl_points
 
+    def _meshgrid(self, x, y, row_major=True):
+        n, m = y.shape[0], x.shape[0]
+        yy = y.view(-1, 1).expand(n, m).reshape(-1)
+        xx = x.view(1, -1).expand(n, m).reshape(-1)
+        if row_major:
+            return xx, yy
+        else:
+            return yy, xx
+
     def get_points_single(self, featmap_size, stride, dtype, device):
-        h, w = featmap_size
-        x_range = torch.arange(
-            0, w * stride, stride, dtype=dtype, device=device)
-        y_range = torch.arange(
-            0, h * stride, stride, dtype=dtype, device=device)
-        y, x = torch.meshgrid(y_range, x_range)
-        points = torch.stack(
-            (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
+        x_range = arange(0, end=featmap_size[1], dtype=dtype, device=device) * stride
+        y_range = arange(0, end=featmap_size[0], dtype=dtype, device=device) * stride
+        x, y = self._meshgrid(x_range, y_range)
+        points = torch.stack((x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
         return points
 
     def fcos_target(self, points, gt_bboxes_list, gt_labels_list):
