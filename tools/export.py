@@ -80,7 +80,7 @@ def group_norm_symbolic(g, input, num_groups, weight, bias, eps, cudnn_enabled):
         x = reshape(g, input, [0, num_groups, -1, 0])
         x = reshape(g, x, [1, -1, 0, 0])
         # Normalize channel-wise.
-        x = g.op('MeanVarianceNormalization', x)
+        x = g.op('MeanVarianceNormalization', x, axes_i=[2, 3])
         # Reshape back.
         x = reshape_as(g, x, input)
         # Apply affine transform.
