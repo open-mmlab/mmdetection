@@ -83,10 +83,10 @@ class ONNXModel(object):
         for output in self.session.get_outputs():
             self.output_names.append(output.name)
 
-    def show(self, data, result, dataset=None, score_thr=0.3):
+    def show(self, data, result, dataset=None, score_thr=0.3, wait_time=0):
         if self.pt_model is not None:
             self.pt_model.show_result(
-                data, result, dataset=dataset, score_thr=score_thr)
+                data, result, dataset=dataset, score_thr=score_thr, wait_time=wait_time)
 
     def add_output(self, output_ids):
         if not isinstance(output_ids, (tuple, list, set)):
@@ -299,7 +299,7 @@ def main(args):
             results.append(result)
 
             if args.show:
-                model.show(data, result, score_thr=args.score_thr)
+                model.show(data, result, score_thr=args.score_thr, wait_time=-1)
 
             batch_size = data['img'][0].size(0)
             for _ in range(batch_size):
