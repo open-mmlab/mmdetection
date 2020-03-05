@@ -72,9 +72,7 @@ class ONNXModel(object):
                 self.pt_model.CLASSES = classes
 
         self.sess_options = onnxruntime.SessionOptions()
-        self.sess_options.enable_sequential_execution = True
-        self.sess_options.set_graph_optimization_level(2)
-        self.sess_options.enable_profiling = False
+        # self.sess_options.enable_profiling = False
 
         self.session = onnxruntime.InferenceSession(
             self.model.SerializeToString(), self.sess_options)
