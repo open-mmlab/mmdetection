@@ -74,11 +74,6 @@ def group_norm_symbolic(g, input, num_groups, weight, bias, eps, cudnn_enabled):
     input_shape = list(input.type().sizes())
 
     if num_groups == input_shape[1]:
-        # normalized_input = g.op('MeanVarianceNormalization', input, axes_i=[2, 3])
-        # weights_shape = g.op("Constant", value_t=torch.LongTensor([1, input_shape[1], 1, 1]))
-        # output = mul(g, normalized_input, reshape(g, weight, weights_shape))
-        # output = add(g, output, reshape(g, bias, weights_shape))
-
         output = g.op('InstanceNormalization', input, weight, bias, epsilon_f=eps)
     else:
         print('WARNING. Potential problem with ONNX Runtime.')
@@ -100,11 +95,12 @@ def export(model,
            img,
            export_name="/tmp/model.onnx",
            verbose=False,
-           strip_doc_string=False):
-    register_op("addcmul", addcmul_symbolic, "", 10)
-    register_op("view_as", view_as_symbolic, "", 10)
-    register_op("topk", topk_symbolic, "", 10)
-    register_op("group_norm", group_norm_symbolic, "", 10)
+           strip_doc_string=False,
+           opset=10):
+    register_op("addcmul", addcmul_symbolic, "", opset)
+    register_op("view_as", view_as_symbolic, "", opset)
+    register_op("topk", topk_symbolic, "", opset)
+    register_op("group_norm", group_norm_symbolic, "", opset)
 
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
@@ -137,7 +133,7 @@ def export(model,
             **data,
             export_name=export_name,
             verbose=verbose,
-            opset_version=10,
+            opset_version=opset,
             strip_doc_string=strip_doc_string,
             operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
             input_names=["image"],
@@ -201,22 +197,6 @@ def main(args):
     model.eval().cuda()
     torch.set_default_tensor_type(torch.FloatTensor)
 
-    # class StubModule(TracerStub):
-    #     def __init__(self, inner):
-    #         super().__init__(inner, 'mmdet_custom', 'x')
-    #
-    #     def forward(self, *input, **kwargs):
-    #         return self.inner(*input, **kwargs)[0]
-    #
-    # class Stub(TracerStub):
-    #
-    #     def symbolic(self, g, *args):
-    #         return g.op(self.name, *args, outputs=self.num_outputs)
-
-    # model.backbone = Stub(model.backbone, name='EfficientNet', namespace='mmdet_custom')
-    # model.bbox_head = Stub(StubModule(model.bbox_head), name='DetectionOutput', namespace='mmdet_custom')
-    # model.bbox_head.get_bboxes = Stub(model.bbox_head.get_bboxes, name='DetectionOutput', namespace='mmdet_custom')
-
     if isinstance(model.bbox_head, AnchorHead):
         anchor_generators = model.bbox_head.anchor_generators
         for i in range(len(anchor_generators)):
@@ -228,7 +208,7 @@ def main(args):
 
     image = np.zeros((128, 128, 3), dtype=np.uint8)
     with torch.no_grad():
-        export(model, image, export_name=args.model)
+        export(model, image, export_name=args.model, opset=10)
 
     # add_node_names(args.model)
 
