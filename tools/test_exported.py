@@ -170,6 +170,7 @@ def main_openvino(args):
 
         cfg.data.test.pipeline[1]['transforms'][normalize_idx]['mean'] = [0.0, 0.0, 0.0]
         cfg.data.test.pipeline[1]['transforms'][normalize_idx]['std'] = [1.0, 1.0, 1.0]
+        cfg.data.test.pipeline[1]['transforms'][normalize_idx]['to_rgb'] = False
 
         print(cfg.data.test)
 
