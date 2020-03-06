@@ -63,7 +63,7 @@ you can install it before installing MMCV.
 ## Install in CPU_ONLY mode
 The code can be built for CPU only environment (where CUDA isn't available) by using the install command :
 ```shell
-python setup.py install --cpu
+python setup.py develop --cpu
 ```
 After installation, you can always get the current mode by checking the constant : ```mmdet.version.CPU_ONLY```
 

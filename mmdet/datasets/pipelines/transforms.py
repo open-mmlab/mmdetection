@@ -615,15 +615,19 @@ class MinIoURandomCrop(object):
 
     Args:
         min_ious (tuple): minimum IoU threshold for all intersections with
-        bounding boxes
+                          bounding boxes
         min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
-        where a >= min_crop_size).
+                               where a >= min_crop_size).
+        ar_range (tuple) : tuple of (ar_min, ar_max)
+                           which defines the valid aspect ratio for the crop
     """
 
-    def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3):
+    def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
+                 min_crop_size=0.3, ar_range=None):
         # 1: return ori img
         self.sample_mode = (1, *min_ious, 0)
         self.min_crop_size = min_crop_size
+        self.ar_range = ar_range
 
     def __call__(self, results):
         img, boxes, labels = [
@@ -637,12 +641,18 @@ class MinIoURandomCrop(object):
 
             min_iou = mode
             for i in range(50):
-                new_w = random.uniform(self.min_crop_size * w, w)
-                new_h = random.uniform(self.min_crop_size * h, h)
+                if self.ar_range is not None:
+                    # aspect ratio is restricted to specific range
+                    new_h = random.uniform(self.min_crop_size * h, h)
+                    new_ar = random.uniform(self.ar_range[0], self.ar_range[1])
+                    new_w = new_h * new_ar
+                else:
+                    new_w = random.uniform(self.min_crop_size * w, w)
+                    new_h = random.uniform(self.min_crop_size * h, h)
 
-                # h / w in [0.5, 2]
-                if new_h / new_w < 0.5 or new_h / new_w > 2:
-                    continue
+                    # h / w in [0.5, 2]
+                    if new_h / new_w < 0.5 or new_h / new_w > 2:
+                        continue
 
                 left = random.uniform(w - new_w)
                 top = random.uniform(h - new_h)

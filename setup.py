@@ -7,7 +7,9 @@ import time
 from setuptools import find_packages, setup
 
 import torch
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CppExtension
+from torch.utils.cpp_extension import BuildExtension
+from torch.utils.cpp_extension import CUDAExtension
+from torch.utils.cpp_extension import CppExtension
 
 
 def readme():
@@ -79,9 +81,10 @@ CPU_ONLY = {}
 """
     sha = get_hash()
     VERSION = SHORT_VERSION + '+' + sha
-
+    CPU = 'True' if cpu_only else 'False'
+    content = content.format(time.asctime(), VERSION, SHORT_VERSION, CPU)
     with open(version_file, 'w') as f:
-        f.write(content.format(time.asctime(), VERSION, SHORT_VERSION, 'True' if cpu_only else 'False'))
+        f.write(content)
 
 
 def get_version():
