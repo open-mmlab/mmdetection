@@ -4,7 +4,7 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import multi_apply, multiclass_nms
 from mmdet.ops import DeformConv
-from mmdet.core.utils.misc import topk
+from mmdet.core.utils.misc import topk, arange, meshgrid
 from mmdet.core.bbox.transforms import clamp
 from ..builder import build_loss
 from ..registry import HEADS
@@ -174,15 +174,10 @@ class FoveaHead(nn.Module):
     def get_points(self, featmap_sizes, dtype, device, flatten=False):
         points = []
         for featmap_size in featmap_sizes:
-            x_range = torch.arange(
-                featmap_size[1], dtype=dtype, device=device) + 0.5
-            y_range = torch.arange(
-                featmap_size[0], dtype=dtype, device=device) + 0.5
-            y, x = torch.meshgrid(y_range, x_range)
-            if flatten:
-                points.append((y.flatten(), x.flatten()))
-            else:
-                points.append((y, x))
+            x_range = arange(0, featmap_size[1], dtype=dtype, device=device) + 0.5
+            y_range = arange(0, featmap_size[0], dtype=dtype, device=device) + 0.5
+            x, y = meshgrid(x_range, y_range, flatten=flatten)
+            points.append((y, x))
         return points
 
     def loss(self,

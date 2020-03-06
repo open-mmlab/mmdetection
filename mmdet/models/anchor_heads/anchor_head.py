@@ -315,11 +315,8 @@ class AnchorHead(nn.Module):
 
             if 0 < nms_pre:
                 # Get maximum scores for foreground classes.
-                if self.use_sigmoid_cls:
-                    max_scores, _ = scores.max(dim=1)
-                else:
-                    max_scores, _ = scores.max(dim=1)
-                topk_inds = topk(max_scores, nms_pre)
+                max_scores, _ = scores.max(dim=1)
+                _, topk_inds = topk(max_scores, nms_pre)
                 anchors = anchors[topk_inds]
                 bbox_pred = bbox_pred[topk_inds]
                 scores = scores[topk_inds]
@@ -331,10 +328,6 @@ class AnchorHead(nn.Module):
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
-        if self.use_sigmoid_cls:
-            # Add a dummy background class to the front when using sigmoid
-            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
         det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

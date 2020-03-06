@@ -147,6 +147,55 @@ asyncio.run(main())
 ```
 
 
+## Export pretrained model
+
+We provide you a way to export pretrained models to OpenVINO IR and ONNX as an intermediate representation.
+
+### Export to ONNX
+
+As a first step pretrained model has to be exported to ONNX format.
+To do this you can use the following command:
+
+```shell
+# python tools/export.py config.py checkpoint.pth checkpoint.onnx
+```
+
+For SSD networks `tools/export_ssd.py` script might be used as an alternative. This way exported model will contain higher level custom operations to make it easier to analyse the model and enable more optimizations for deployed model:
+
+```shell
+# python tools/export_ssd.py config.py checkpoint.pth checkpoint.onnx
+```
+
+### Export to OpenVINO IR
+
+To further convert ONNX model to IR you can run the script:
+
+```shell
+# py tools/convert_to_ir.py config.py checkpoint.onnx ${DEPLOY_DIR}
+```
+
+**Note**: Before running the script make sure that all OpenVINO-related environment variables are set properly. To do this run the following command:
+
+```shell
+# source /opt/intel/openvino/bin/setupvars.sh
+```
+
+### Test exported model
+
+In order to test the model being exported via a `tools/export.py` script run the following command:
+
+```shell
+# python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out /tmp/out.pkl --backend openvino --do_not_normalize
+``` 
+
+To test an SSD model being exported via `tools/export_ssd.py` run command:
+
+```shell
+# python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out test_results.pkl --backend openvino --do_not_normalize --with_detection_output
+```
+
+To get quality metrics on test dataset either add `--eval bbox` argument to the call of the `tools/test_exported.py` script for COCO-style dataset, or run `tools/voc_eval.py` script passing dumped detection results (`test_results.pkl`) to it for a VOC-style dataset. 
+
 ## Train a model
 
 MMDetection implements distributed training and non-distributed training,
