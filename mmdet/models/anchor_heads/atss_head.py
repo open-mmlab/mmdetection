@@ -260,13 +260,13 @@ class ATSSHead(AnchorHead):
                    img_metas,
                    cfg,
                    rescale=False):
-
+        from torch.onnx import is_in_onnx_export
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         device = cls_scores[0].device
         mlvl_anchors = [
             self.anchor_generators[i].grid_anchors(
-                cls_scores[i].size()[-2:],
+                cls_scores[i] if is_in_onnx_export() else cls_scores[i].size()[-2:],
                 self.anchor_strides[i],
                 device=device) for i in range(num_levels)
         ]
@@ -333,8 +333,6 @@ class ATSSHead(AnchorHead):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
 
         mlvl_scores = torch.cat(mlvl_scores)
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
 
         det_bboxes, det_labels = multiclass_nms(

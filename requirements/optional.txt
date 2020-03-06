@@ -1,2 +1,5 @@
 albumentations>=0.3.2
 imagecorruptions
+scikit-learn
+ninja
+tensorboard

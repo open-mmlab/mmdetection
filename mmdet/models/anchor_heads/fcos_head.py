@@ -3,6 +3,7 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
+from mmdet.core.utils.misc import arange, topk, meshgrid
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, Scale, bias_init_with_prob
@@ -258,12 +259,12 @@ class FCOSHead(nn.Module):
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+            if nms_pre > 0:
                 max_scores, _ = (scores * centerness[:, None]).max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                points = points[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
+                _, topk_inds = topk(max_scores, nms_pre)
+                points = points[topk_inds]
+                bbox_pred = bbox_pred[topk_inds]
+                scores = scores[topk_inds]
                 centerness = centerness[topk_inds]
             bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
@@ -273,8 +274,6 @@ class FCOSHead(nn.Module):
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
         det_bboxes, det_labels = multiclass_nms(
             mlvl_bboxes,
@@ -304,14 +303,10 @@ class FCOSHead(nn.Module):
         return mlvl_points
 
     def get_points_single(self, featmap_size, stride, dtype, device):
-        h, w = featmap_size
-        x_range = torch.arange(
-            0, w * stride, stride, dtype=dtype, device=device)
-        y_range = torch.arange(
-            0, h * stride, stride, dtype=dtype, device=device)
-        y, x = torch.meshgrid(y_range, x_range)
-        points = torch.stack(
-            (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
+        x_range = arange(0, end=featmap_size[1], dtype=dtype, device=device) * stride
+        y_range = arange(0, end=featmap_size[0], dtype=dtype, device=device) * stride
+        x, y = meshgrid(x_range, y_range, flatten=True)
+        points = torch.stack((x, y), dim=-1) + stride // 2
         return points
 
     def fcos_target(self, points, gt_bboxes_list, gt_labels_list):

@@ -10,6 +10,9 @@ from . import masked_conv2d_cuda
 
 
 class MaskedConv2dFunction(Function):
+    @staticmethod
+    def symbolic(g, features, mask, weight, bias, padding=0, stride=1):
+        return g.op('MaskedConv2d', features, mask, weight, bias, pad_i=padding, stride_i=stride)
 
     @staticmethod
     def forward(ctx, features, mask, weight, bias, padding=0, stride=1):

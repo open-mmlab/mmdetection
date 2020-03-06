@@ -1,5 +1,7 @@
 import torch
 
+from mmdet.core.utils.misc import arange, meshgrid
+
 
 class AnchorGenerator(object):
     """
@@ -14,11 +16,20 @@ class AnchorGenerator(object):
                 [16., 16., 24., 24.]])
     """
 
-    def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None):
+    def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None,
+                 widths=None, heights=None):
         self.base_size = base_size
-        self.scales = torch.Tensor(scales)
-        self.ratios = torch.Tensor(ratios)
-        self.scale_major = scale_major
+        if widths is not None and heights is not None:
+            self.clustered = True
+            assert len(heights) == len(widths)
+            self.heights = torch.Tensor(heights)
+            self.widths = torch.Tensor(widths)
+        else:
+            self.clustered = False
+            self.scales = torch.Tensor(scales)
+            self.ratios = torch.Tensor(ratios)
+            self.scale_major = scale_major
+
         self.ctr = ctr
         self.base_anchors = self.gen_base_anchors()
 
@@ -35,14 +46,18 @@ class AnchorGenerator(object):
         else:
             x_ctr, y_ctr = self.ctr
 
-        h_ratios = torch.sqrt(self.ratios)
-        w_ratios = 1 / h_ratios
-        if self.scale_major:
-            ws = (w * w_ratios[:, None] * self.scales[None, :]).view(-1)
-            hs = (h * h_ratios[:, None] * self.scales[None, :]).view(-1)
+        if self.clustered:
+            ws = self.widths
+            hs = self.heights
         else:
-            ws = (w * self.scales[:, None] * w_ratios[None, :]).view(-1)
-            hs = (h * self.scales[:, None] * h_ratios[None, :]).view(-1)
+            h_ratios = torch.sqrt(self.ratios)
+            w_ratios = 1 / h_ratios
+            if self.scale_major:
+                ws = (w * w_ratios[:, None] * self.scales[None, :]).view(-1)
+                hs = (h * h_ratios[:, None] * self.scales[None, :]).view(-1)
+            else:
+                ws = (w * self.scales[:, None] * w_ratios[None, :]).view(-1)
+                hs = (h * self.scales[:, None] * h_ratios[None, :]).view(-1)
 
         # yapf: disable
         base_anchors = torch.stack(
@@ -55,22 +70,17 @@ class AnchorGenerator(object):
 
         return base_anchors
 
-    def _meshgrid(self, x, y, row_major=True):
-        xx = x.repeat(len(y))
-        yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
-        if row_major:
-            return xx, yy
-        else:
-            return yy, xx
-
     def grid_anchors(self, featmap_size, stride=16, device='cuda'):
         base_anchors = self.base_anchors.to(device)
 
-        feat_h, feat_w = featmap_size
-        shift_x = torch.arange(0, feat_w, device=device) * stride
-        shift_y = torch.arange(0, feat_h, device=device) * stride
-        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
-        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
+        shift_x = arange(
+            start=0, end=featmap_size[1], dtype=torch.float32,
+            device=device) * stride
+        shift_y = arange(
+            start=0, end=featmap_size[0], dtype=torch.float32,
+            device=device) * stride
+        shift_xx, shift_yy = meshgrid(shift_x, shift_y)
+        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=1)
         shifts = shifts.type_as(base_anchors)
         # first feat_w elements correspond to the first row of shifts
         # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
@@ -90,7 +100,7 @@ class AnchorGenerator(object):
         valid_y = torch.zeros(feat_h, dtype=torch.uint8, device=device)
         valid_x[:valid_w] = 1
         valid_y[:valid_h] = 1
-        valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
+        valid_xx, valid_yy = meshgrid(valid_x, valid_y)
         valid = valid_xx & valid_yy
         valid = valid[:,
                       None].expand(valid.size(0),

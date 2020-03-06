@@ -7,6 +7,7 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (AnchorGenerator, anchor_target, delta2bbox, force_fp32,
                         multi_apply, multiclass_nms)
+from mmdet.core.utils.misc import topk
 from ..builder import build_loss
 from ..registry import HEADS
 
@@ -251,16 +252,22 @@ class AnchorHead(nn.Module):
             >>> assert det_bboxes.shape[1] == 5
             >>> assert len(det_bboxes) == len(det_labels) == cfg.max_per_img
         """
+        from torch.onnx import operators, is_in_onnx_export
+
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
+        # FIXME. Workaround for OpenVINO-friendly export.
+        #        cls_scores[i] is_in_onnx_export()
+        in_export = is_in_onnx_export()
         device = cls_scores[0].device
         mlvl_anchors = [
             self.anchor_generators[i].grid_anchors(
-                cls_scores[i].size()[-2:],
+                cls_scores[i] if in_export else cls_scores[i].size()[-2:],
                 self.anchor_strides[i],
                 device=device) for i in range(num_levels)
         ]
+
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -300,18 +307,19 @@ class AnchorHead(nn.Module):
                 scores = cls_score.sigmoid()
             else:
                 scores = cls_score.softmax(-1)
+                scores = scores[:, 1:]
+
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+
+            nms_pre = int(cfg.get('nms_pre', -1))
+
+            if 0 < nms_pre:
                 # Get maximum scores for foreground classes.
-                if self.use_sigmoid_cls:
-                    max_scores, _ = scores.max(dim=1)
-                else:
-                    max_scores, _ = scores[:, 1:].max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
+                max_scores, _ = scores.max(dim=1)
+                _, topk_inds = topk(max_scores, nms_pre)
+                anchors = anchors[topk_inds]
+                bbox_pred = bbox_pred[topk_inds]
+                scores = scores[topk_inds]
             bboxes = delta2bbox(anchors, bbox_pred, self.target_means,
                                 self.target_stds, img_shape)
             mlvl_bboxes.append(bboxes)
@@ -320,10 +328,6 @@ class AnchorHead(nn.Module):
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
-        if self.use_sigmoid_cls:
-            # Add a dummy background class to the front when using sigmoid
-            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
         det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

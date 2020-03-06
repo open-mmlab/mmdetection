@@ -3,7 +3,9 @@ from abc import ABCMeta, abstractmethod
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
+import torch
 import torch.nn as nn
+import torch.onnx
 
 from mmdet.core import auto_fp16, get_classes, tensor2imgs
 
@@ -139,7 +141,22 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         else:
             return self.forward_test(img, img_meta, **kwargs)
 
-    def show_result(self, data, result, dataset=None, score_thr=0.3):
+    def forward_export(self, imgs):
+        from torch.onnx import operators
+        img_shape = operators.shape_as_tensor(imgs[0])
+        imgs_per_gpu = int(imgs[0].size(0))
+        assert imgs_per_gpu == 1
+        self.img_metas[0][0]['img_shape'] = img_shape[2:4]
+        return self.simple_test(imgs[0], self.img_metas[0], postprocess=False)
+
+    def export(self, img, img_meta, export_name='', **kwargs):
+        self.img_metas = img_meta
+        self.forward_backup = self.forward
+        self.forward = self.forward_export
+        torch.onnx.export(self, img, export_name, **kwargs)
+        self.forward = self.forward_backup
+
+    def show_result(self, data, result, dataset=None, score_thr=0.3, wait_time=0):
         if isinstance(result, tuple):
             bbox_result, segm_result = result
         else:
@@ -185,5 +202,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 img_show,
                 bboxes,
                 labels,
+                wait_time=wait_time,
                 class_names=class_names,
                 score_thr=score_thr)
