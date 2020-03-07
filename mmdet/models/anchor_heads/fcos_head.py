@@ -49,7 +49,8 @@ class FCOSHead(nn.Module):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)):
+                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+                 center_sample_radius=0):  # 0 for disable `center sampling`
         super(FCOSHead, self).__init__()
 
         self.num_classes = num_classes
@@ -65,6 +66,7 @@ class FCOSHead(nn.Module):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
+        self.center_sample_radius = center_sample_radius
 
         self._init_layers()
 
