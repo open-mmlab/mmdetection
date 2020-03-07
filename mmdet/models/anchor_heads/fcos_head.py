@@ -394,8 +394,8 @@ class FCOSHead(nn.Module):
 
             # project the points on current lvl back to the `original` sizes
             lvl_begin = 0
-            for lvl_idx, num_points in enumerate(num_points_per_lvl):
-                lvl_end = lvl_begin + num_points
+            for lvl_idx, num_points_lvl in enumerate(num_points_per_lvl):
+                lvl_end = lvl_begin + num_points_lvl
                 stride[lvl_begin:lvl_end] = self.strides[lvl_idx] * radius
                 lvl_begin = lvl_end
 
@@ -412,11 +412,12 @@ class FCOSHead(nn.Module):
             center_gts[..., 3] = torch.where(y_maxs > gt_bboxes[..., 3],
                                              gt_bboxes[..., 3], y_maxs)
 
-            left = xs - center_gts[..., 0]
-            right = center_gts[..., 2] - xs
-            top = ys - center_gts[..., 1]
-            bottom = center_gts[..., 3] - ys
-            center_bbox = torch.stack((left, top, right, bottom), -1)
+            left_cb = xs - center_gts[..., 0]
+            right_cb = center_gts[..., 2] - xs
+            top_cb = ys - center_gts[..., 1]
+            bottom_cb = center_gts[..., 3] - ys
+            center_bbox = torch.stack((left_cb, top_cb, right_cb, bottom_cb),
+                                      -1)
             inside_gt_bbox_mask = center_bbox.min(-1)[0] > 0
         else:
             # condition1: inside a gt bbox
