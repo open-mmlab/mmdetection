@@ -327,16 +327,20 @@ class FCOSHead(nn.Module):
         # concat all levels points and regress ranges
         concat_regress_ranges = torch.cat(expanded_regress_ranges, dim=0)
         concat_points = torch.cat(points, dim=0)
+
+        # the number of points per img, per lvl
+        num_points = [center.size(0) for center in points]
+
         # get labels and bbox_targets of each image
         labels_list, bbox_targets_list = multi_apply(
             self.fcos_target_single,
             gt_bboxes_list,
             gt_labels_list,
             points=concat_points,
-            regress_ranges=concat_regress_ranges)
+            regress_ranges=concat_regress_ranges,
+            num_points_per_lvl=num_points)
 
         # split to per img, per level
-        num_points = [center.size(0) for center in points]
         labels_list = [labels.split(num_points, 0) for labels in labels_list]
         bbox_targets_list = [
             bbox_targets.split(num_points, 0)
@@ -354,7 +358,8 @@ class FCOSHead(nn.Module):
                     [bbox_targets[i] for bbox_targets in bbox_targets_list]))
         return concat_lvl_labels, concat_lvl_bbox_targets
 
-    def fcos_target_single(self, gt_bboxes, gt_labels, points, regress_ranges):
+    def fcos_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
+                           num_points_per_lvl):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
@@ -379,8 +384,43 @@ class FCOSHead(nn.Module):
         bottom = gt_bboxes[..., 3] - ys
         bbox_targets = torch.stack((left, top, right, bottom), -1)
 
-        # condition1: inside a gt bbox
-        inside_gt_bbox_mask = bbox_targets.min(-1)[0] > 0
+        if self.center_sample_radius:
+            # condition1: inside a `center bbox`
+            radius = self.center_sample_radius
+            center_xs = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) / 2
+            center_ys = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) / 2
+            center_gts = gt_bboxes.new_zeros(gt_bboxes.shape)
+            stride = center_xs.new_zeros(center_xs.shape)
+
+            # project the points on current lvl back to the `original` sizes
+            lvl_begin = 0
+            for lvl_idx, num_points in enumerate(num_points_per_lvl):
+                lvl_end = lvl_begin + num_points
+                stride[lvl_begin:lvl_end] = self.strides[lvl_idx] * radius
+                lvl_begin = lvl_end
+
+            x_mins = center_xs - stride
+            y_mins = center_ys - stride
+            x_maxs = center_xs + stride
+            y_maxs = center_ys + stride
+            center_gts[..., 0] = torch.where(x_mins > gt_bboxes[..., 0],
+                                             x_mins, gt_bboxes[..., 0])
+            center_gts[..., 1] = torch.where(y_mins > gt_bboxes[..., 1],
+                                             y_mins, gt_bboxes[..., 1])
+            center_gts[..., 2] = torch.where(x_maxs > gt_bboxes[..., 2],
+                                             gt_bboxes[..., 2], x_maxs)
+            center_gts[..., 3] = torch.where(y_maxs > gt_bboxes[..., 3],
+                                             gt_bboxes[..., 3], y_maxs)
+
+            left = xs - center_gts[..., 0]
+            right = center_gts[..., 2] - xs
+            top = ys - center_gts[..., 1]
+            bottom = center_gts[..., 3] - ys
+            center_bbox = torch.stack((left, top, right, bottom), -1)
+            inside_gt_bbox_mask = center_bbox.min(-1)[0] > 0
+        else:
+            # condition1: inside a gt bbox
+            inside_gt_bbox_mask = bbox_targets.min(-1)[0] > 0
 
         # condition2: limit the regression range for each location
         max_regress_distance = bbox_targets.max(-1)[0]
