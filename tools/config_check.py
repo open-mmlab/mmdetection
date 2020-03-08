@@ -19,6 +19,20 @@ def collect_cfgs(folder):
     return collected_files
 
 
+class no_import(object):
+
+    def __enter__(self):
+        self.before_modules = sys.modules.copy()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.after_modules = sys.modules.copy()
+
+        for m in list(
+                set(self.after_modules.keys()) -
+                set(self.before_modules.keys())):
+            del sys.modules[m]
+
+
 def check(src, dst):
     src_files = collect_cfgs(src)
     dst_files = collect_cfgs(dst)
@@ -29,9 +43,11 @@ def check(src, dst):
     for file_name, dst_path in dst_files.items():
         print('checking: {}'.format(file_name))
         src_path = src_files[file_name]
-        src_dict, _ = Config._file2dict(src_path)
-        del sys.modules[osp.basename(src_path).replace('.py', '')]
-        dst_dict, _ = Config._file2dict(dst_path)
+        with no_import():
+            src_dict, _ = Config._file2dict(src_path)
+
+        with no_import():
+            dst_dict, _ = Config._file2dict(dst_path)
         if src_dict != dst_dict:
             for k in src_dict:
                 if src_dict[k] != dst_dict[k]:
