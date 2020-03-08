@@ -615,19 +615,15 @@ class MinIoURandomCrop(object):
 
     Args:
         min_ious (tuple): minimum IoU threshold for all intersections with
-                          bounding boxes
+        bounding boxes
         min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
-                               where a >= min_crop_size).
-        ar_range (tuple) : tuple of (ar_min, ar_max)
-                           which defines the valid aspect ratio for the crop
+        where a >= min_crop_size).
     """
 
-    def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
-                 min_crop_size=0.3, ar_range=None):
+    def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3):
         # 1: return ori img
         self.sample_mode = (1, *min_ious, 0)
         self.min_crop_size = min_crop_size
-        self.ar_range = ar_range
 
     def __call__(self, results):
         img, boxes, labels = [
