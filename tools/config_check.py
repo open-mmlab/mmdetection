@@ -1,7 +1,6 @@
 import argparse
 import os
 import os.path as osp
-import sys
 
 from mmcv import Config
 
@@ -19,20 +18,6 @@ def collect_cfgs(folder):
     return collected_files
 
 
-class no_import(object):
-
-    def __enter__(self):
-        self.before_modules = sys.modules.copy()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.after_modules = sys.modules.copy()
-
-        for m in list(
-                set(self.after_modules.keys()) -
-                set(self.before_modules.keys())):
-            del sys.modules[m]
-
-
 def check(src, dst):
     src_files = collect_cfgs(src)
     dst_files = collect_cfgs(dst)
@@ -43,23 +28,30 @@ def check(src, dst):
     for file_name, dst_path in dst_files.items():
         print('checking: {}'.format(file_name))
         src_path = src_files[file_name]
-        with no_import():
-            src_dict, _ = Config._file2dict(src_path)
+        src_dict, _ = Config._file2dict(src_path)
 
-        with no_import():
-            dst_dict, _ = Config._file2dict(dst_path)
+        dst_dict, _ = Config._file2dict(dst_path)
         if src_dict != dst_dict:
             for k in src_dict:
                 if src_dict[k] != dst_dict[k]:
                     print('{} does not match'.format(k))
+                    if isinstance(src_dict[k], dict):
+                        for k_ in src_dict[k]:
+                            if src_dict[k][k_] != dst_dict[k][k_]:
+                                print('{}.{} does not match'.format(k, k_))
+                                print(src_dict[k][k_])
+                                print(dst_dict[k][k_])
+
+                    print(src_dict[k])
+                    print(dst_dict[k])
             for k in dst_dict:
                 if src_dict[k] != dst_dict[k]:
                     print('{} does not match'.format(k))
             raise TypeError('dict does not match')
         print('{} is checked'.format(file_name))
 
-    for f in set(src_files.keys()) - set(dst_files.keys()):
-        print('{} is not in dst'.format(f))
+    # for f in set(src_files.keys()) - set(dst_files.keys()):
+    #     print('{} is not in dst'.format(f))
 
     print('{} checked, {} not checked'.format(
         len(dst_files),

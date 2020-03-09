@@ -1,4 +1,4 @@
-_base_ = './faster_rcnn_r50_fpn_1x.py'
+_base_ = './retinanet_r50_fpn_1x.py'
 model = dict(
     pretrained='open-mmlab://resnext101_64x4d',
     backbone=dict(
@@ -10,4 +10,4 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         style='pytorch'))
-work_dir = './work_dirs/faster_rcnn_x101_64x4d_fpn_1x'
+work_dir = './work_dirs/retinanet_x101_64x4d_fpn_1x'
