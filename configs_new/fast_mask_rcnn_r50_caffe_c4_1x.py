@@ -1,7 +1,6 @@
 _base_ = [
-    'component/fast_mask_rcnn_r50_caffe_c4.py',
-    'component/coco_proposal_instance.py', 'component/schedule_1x.py',
-    'component/default_runtime.py'
+    'component/fast_mask_rcnn_r50_caffe_c4.py', 'component/coco_instance.py',
+    'component/schedule_1x.py', 'component/default_runtime.py'
 ]
 # use caffe img_norm
 dataset_type = 'CocoDataset'
