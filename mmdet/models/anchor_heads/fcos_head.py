@@ -50,7 +50,8 @@ class FCOSHead(nn.Module):
                      loss_weight=1.0),
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 center_sample_radius=0):  # 0 for disable `center sampling`
+                 center_sampling=False,
+                 center_sample_radius=1.5):
         super(FCOSHead, self).__init__()
 
         self.num_classes = num_classes
@@ -66,6 +67,7 @@ class FCOSHead(nn.Module):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
+        self.center_sampling = center_sampling
         self.center_sample_radius = center_sample_radius
 
         self._init_layers()
@@ -384,12 +386,12 @@ class FCOSHead(nn.Module):
         bottom = gt_bboxes[..., 3] - ys
         bbox_targets = torch.stack((left, top, right, bottom), -1)
 
-        if self.center_sample_radius:
+        if self.center_sampling:
             # condition1: inside a `center bbox`
             radius = self.center_sample_radius
             center_xs = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) / 2
             center_ys = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) / 2
-            center_gts = gt_bboxes.new_zeros(gt_bboxes.shape)
+            center_gts = torch.zeros_like(gt_bboxes)
             stride = center_xs.new_zeros(center_xs.shape)
 
             # project the points on current lvl back to the `original` sizes
