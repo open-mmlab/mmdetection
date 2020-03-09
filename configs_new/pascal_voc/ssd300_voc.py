@@ -1,10 +1,11 @@
 _base_ = [
-    'component/ssd300.py', 'component/coco_detection.py',
-    'component/schedule_2x.py', 'component/default_runtime.py'
+    '../component/ssd300.py', '../component/voc.py',
+    '../component/default_runtime.py'
 ]
+model = dict(bbox_head=dict(num_classes=21, basesize_ratio_range=(0.2, 0.9)))
 # dataset settings
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+dataset_type = 'VOCDataset'
+data_root = 'data/VOCdevkit/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
@@ -47,17 +48,20 @@ data = dict(
     imgs_per_gpu=8,
     workers_per_gpu=3,
     train=dict(
-        _delete_=True,
-        type='RepeatDataset',
-        times=5,
-        dataset=dict(
-            type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
-            pipeline=train_pipeline)),
+        type='RepeatDataset', times=10, dataset=dict(pipeline=train_pipeline)),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict(_delete_=True)
-work_dir = './work_dirs/ssd300_coco'
+optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
+optimizer_config = dict()
+# learning policy
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=1.0 / 3,
+    step=[16, 20])
+checkpoint_config = dict(interval=1)
+# runtime settings
+total_epochs = 24
+work_dir = './work_dirs/ssd300_voc'

@@ -1,10 +1,6 @@
-_base_ = [
-    'component/ssd300.py', 'component/coco_detection.py',
-    'component/schedule_2x.py', 'component/default_runtime.py'
-]
 # dataset settings
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+dataset_type = 'WIDERFaceDataset'
+data_root = 'data/WIDERFace/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
@@ -44,20 +40,24 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=8,
-    workers_per_gpu=3,
+    imgs_per_gpu=60,
+    workers_per_gpu=2,
     train=dict(
-        _delete_=True,
         type='RepeatDataset',
-        times=5,
+        times=2,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
+            ann_file=data_root + 'train.txt',
+            img_prefix=data_root + 'WIDER_train/',
+            min_size=17,
             pipeline=train_pipeline)),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
-# optimizer
-optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict(_delete_=True)
-work_dir = './work_dirs/ssd300_coco'
+    val=dict(
+        type=dataset_type,
+        ann_file=data_root + 'val.txt',
+        img_prefix=data_root + 'WIDER_val/',
+        pipeline=test_pipeline),
+    test=dict(
+        type=dataset_type,
+        ann_file=data_root + 'val.txt',
+        img_prefix=data_root + 'WIDER_val/',
+        pipeline=test_pipeline))
