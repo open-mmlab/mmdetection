@@ -19,8 +19,10 @@ def parse_args():
 def clear_config(config_path, skip_type):
     c = open(config_path).read()
     c = c.replace('to_rgb=True', 'to_rgb=False') \
-        .replace('mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375]', 'mean=[0] * 3, std=[1] * 3')
-
+        .replace('mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375]', 'mean=[0] * 3, std=[1] * 3') \
+        .replace("dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])",
+                 """dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+                    dict(type='ToUint8')""")
     for s in skip_type:
         c = c.replace(s, 'Pass')
 
