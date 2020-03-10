@@ -526,7 +526,8 @@ class PhotoMetricDistortion(object):
         repr_str = self.__class__.__name__
         repr_str += ('(brightness_delta={}, contrast_range={}, '
                      'saturation_range={}, hue_delta={})').format(
-                         self.brightness_delta, self.contrast_range,
+                         self.brightness_delta,
+                         (self.contrast_lower, self.contrast_upper),
                          self.saturation_range, self.hue_delta)
         return repr_str
 
