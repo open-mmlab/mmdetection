@@ -119,7 +119,7 @@ log_config = dict(
 total_epochs = 24
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fovea_align_gn_ms_r50_fpn_4gpu_2x'
+work_dir = __file__.replace('configs', 'work_dirs').rstrip('.py')
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

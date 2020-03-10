@@ -192,7 +192,7 @@ log_config = dict(
 total_epochs = 8  # actual epoch = 8 * 8 = 64
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes'
+work_dir = __file__.replace('configs', 'work_dirs').rstrip('.py')
 # For better, more stable performance initialize from COCO
 load_from = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_2x_20181010-41d35c05.pth'  # noqa
 resume_from = None

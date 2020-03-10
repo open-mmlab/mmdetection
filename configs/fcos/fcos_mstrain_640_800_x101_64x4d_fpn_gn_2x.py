@@ -134,7 +134,7 @@ log_config = dict(
 total_epochs = 24
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_mstrain_640_800_x101_64x4d_fpn_gn_2x'
+work_dir = __file__.replace('configs', 'work_dirs').rstrip('.py')
 load_from = None
 resume_from = None
 workflow = [('train', 1)]

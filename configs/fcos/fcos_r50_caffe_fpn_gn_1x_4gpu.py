@@ -129,7 +129,7 @@ log_config = dict(
 total_epochs = 12
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fcos_r50_caffe_fpn_gn_1x_4gpu'
+work_dir = __file__.replace('configs', 'work_dirs').rstrip('.py')
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
