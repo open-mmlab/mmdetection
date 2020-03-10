@@ -129,7 +129,7 @@ def _dist_train(model,
             seed=cfg.seed) for ds in dataset
     ]
     # put model on gpus
-    find_unused_parameters = cfg.get('find_unused_paramaters', False)
+    find_unused_parameters = cfg.get('find_unused_parameters', False)
     # Sets the `find_unused_parameters` parameter in
     # torch.nn.parallel.DistributedDataParallel
     model = MMDistributedDataParallel(
