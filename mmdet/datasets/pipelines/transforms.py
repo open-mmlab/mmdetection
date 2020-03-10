@@ -872,5 +872,5 @@ class Albu(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += '(transformations={})'.format(self.transformations)
+        repr_str += '(transforms={})'.format(self.transforms)
         return repr_str
