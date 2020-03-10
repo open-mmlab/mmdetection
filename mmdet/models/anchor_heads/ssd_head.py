@@ -182,6 +182,12 @@ class SSDHead(AnchorHead):
         all_bbox_weights = torch.cat(bbox_weights_list,
                                      -2).view(num_images, -1, 4)
 
+        # check NaN and Inf
+        assert torch.isfinite(all_cls_scores).all().item(), \
+            'classification scores become infinite or NaN!'
+        assert torch.isfinite(all_bbox_preds).all().item(), \
+            'bbox predications become infinite or NaN!'
+
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             all_cls_scores,

@@ -6,7 +6,6 @@ import shutil
 import tempfile
 
 import mmcv
-import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
@@ -17,8 +16,7 @@ from robustness_eval import get_results
 
 from mmdet import datasets
 from mmdet.apis import set_random_seed
-from mmdet.core import (eval_map, fast_eval_recall, results2json,
-                        wrap_fp16_model)
+from mmdet.core import eval_map, wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
@@ -28,19 +26,11 @@ def coco_eval_with_return(result_files,
                           coco,
                           max_dets=(100, 300, 1000)):
     for res_type in result_types:
-        assert res_type in [
-            'proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'
-        ]
+        assert res_type in ['proposal', 'bbox', 'segm', 'keypoints']
 
     if mmcv.is_str(coco):
         coco = COCO(coco)
     assert isinstance(coco, COCO)
-
-    if result_types == ['proposal_fast']:
-        ar = fast_eval_recall(result_files, coco, np.array(max_dets))
-        for i, num in enumerate(max_dets):
-            print('AR@{}\t= {:.4f}'.format(num, ar[i]))
-        return
 
     eval_results = {}
     for res_type in result_types:
@@ -320,6 +310,7 @@ def main():
     else:
         corruptions = args.corruptions
 
+    rank, _ = get_dist_info()
     aggregated_results = {}
     for corr_i, corruption in enumerate(corruptions):
         aggregated_results[corruption] = {}
@@ -375,10 +366,12 @@ def main():
                 model = MMDataParallel(model, device_ids=[0])
                 outputs = single_gpu_test(model, data_loader, args.show)
             else:
-                model = MMDistributedDataParallel(model.cuda())
+                model = MMDistributedDataParallel(
+                    model.cuda(),
+                    device_ids=[torch.cuda.current_device()],
+                    broadcast_buffers=False)
                 outputs = multi_gpu_test(model, data_loader, args.tmpdir)
 
-            rank, _ = get_dist_info()
             if args.out and rank == 0:
                 eval_results_filename = (
                     osp.splitext(args.out)[0] + '_results' +
@@ -409,16 +402,16 @@ def main():
                             result_file = args.out
                         else:
                             if not isinstance(outputs[0], dict):
-                                result_files = results2json(
-                                    dataset, outputs, args.out)
+                                result_files = dataset.results2json(
+                                    outputs, args.out)
                             else:
                                 for name in outputs[0]:
                                     print('\nEvaluating {}'.format(name))
                                     outputs_ = [out[name] for out in outputs]
                                     result_file = args.out
                                     + '.{}'.format(name)
-                                    result_files = results2json(
-                                        dataset, outputs_, result_file)
+                                    result_files = dataset.results2json(
+                                        outputs_, result_file)
                         eval_results = coco_eval_with_return(
                             result_files, eval_types, dataset.coco)
                         aggregated_results[corruption][
@@ -427,26 +420,27 @@ def main():
                         print('\nNo task was selected for evaluation;'
                               '\nUse --eval to select a task')
 
-            # save results after each evaluation
-            mmcv.dump(aggregated_results, eval_results_filename)
+                # save results after each evaluation
+                mmcv.dump(aggregated_results, eval_results_filename)
 
-    # print filan results
-    print('\nAggregated results:')
-    prints = args.final_prints
-    aggregate = args.final_prints_aggregate
+    if rank == 0:
+        # print filan results
+        print('\nAggregated results:')
+        prints = args.final_prints
+        aggregate = args.final_prints_aggregate
 
-    if cfg.dataset_type == 'VOCDataset':
-        get_results(
-            eval_results_filename,
-            dataset='voc',
-            prints=prints,
-            aggregate=aggregate)
-    else:
-        get_results(
-            eval_results_filename,
-            dataset='coco',
-            prints=prints,
-            aggregate=aggregate)
+        if cfg.dataset_type == 'VOCDataset':
+            get_results(
+                eval_results_filename,
+                dataset='voc',
+                prints=prints,
+                aggregate=aggregate)
+        else:
+            get_results(
+                eval_results_filename,
+                dataset='coco',
+                prints=prints,
+                aggregate=aggregate)
 
 
 if __name__ == '__main__':

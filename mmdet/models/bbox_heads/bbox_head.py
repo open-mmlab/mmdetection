@@ -178,7 +178,8 @@ class BBoxHead(nn.Module):
 
         Args:
             rois (Tensor): Shape (n*bs, 5), where n is image number per GPU,
-                and bs is the sampled RoIs per image.
+                and bs is the sampled RoIs per image. The first column is
+                the image id and the next 4 columns are x1, y1, x2, y2.
             labels (Tensor): Shape (n*bs, ).
             bbox_preds (Tensor): Shape (n*bs, 4) or (n*bs, 4*#class).
             pos_is_gts (list[Tensor]): Flags indicating if each positive bbox
@@ -187,13 +188,48 @@ class BBoxHead(nn.Module):
 
         Returns:
             list[Tensor]: Refined bboxes of each image in a mini-batch.
+
+        Example:
+            >>> # xdoctest: +REQUIRES(module:kwarray)
+            >>> import kwarray
+            >>> import numpy as np
+            >>> from mmdet.core.bbox.demodata import random_boxes
+            >>> self = BBoxHead(reg_class_agnostic=True)
+            >>> n_roi = 2
+            >>> n_img = 4
+            >>> scale = 512
+            >>> rng = np.random.RandomState(0)
+            >>> img_metas = [{'img_shape': (scale, scale)}
+            ...              for _ in range(n_img)]
+            >>> # Create rois in the expected format
+            >>> roi_boxes = random_boxes(n_roi, scale=scale, rng=rng)
+            >>> img_ids = torch.randint(0, n_img, (n_roi,))
+            >>> img_ids = img_ids.float()
+            >>> rois = torch.cat([img_ids[:, None], roi_boxes], dim=1)
+            >>> # Create other args
+            >>> labels = torch.randint(0, 2, (n_roi,)).long()
+            >>> bbox_preds = random_boxes(n_roi, scale=scale, rng=rng)
+            >>> # For each image, pretend random positive boxes are gts
+            >>> is_label_pos = (labels.numpy() > 0).astype(np.int)
+            >>> lbl_per_img = kwarray.group_items(is_label_pos,
+            ...                                   img_ids.numpy())
+            >>> pos_per_img = [sum(lbl_per_img.get(gid, []))
+            ...                for gid in range(n_img)]
+            >>> pos_is_gts = [
+            >>>     torch.randint(0, 2, (npos,)).byte().sort(
+            >>>         descending=True)[0]
+            >>>     for npos in pos_per_img
+            >>> ]
+            >>> bboxes_list = self.refine_bboxes(rois, labels, bbox_preds,
+            >>>                    pos_is_gts, img_metas)
+            >>> print(bboxes_list)
         """
         img_ids = rois[:, 0].long().unique(sorted=True)
-        assert img_ids.numel() == len(img_metas)
+        assert img_ids.numel() <= len(img_metas)
 
         bboxes_list = []
         for i in range(len(img_metas)):
-            inds = torch.nonzero(rois[:, 0] == i).squeeze()
+            inds = torch.nonzero(rois[:, 0] == i).squeeze(dim=1)
             num_rois = inds.numel()
 
             bboxes_ = rois[inds, 1:]
@@ -204,6 +240,7 @@ class BBoxHead(nn.Module):
 
             bboxes = self.regress_by_class(bboxes_, label_, bbox_pred_,
                                            img_meta_)
+
             # filter gt bboxes
             pos_keep = 1 - pos_is_gts_
             keep_inds = pos_is_gts_.new_ones(num_rois)
@@ -226,7 +263,7 @@ class BBoxHead(nn.Module):
         Returns:
             Tensor: Regressed bboxes, the same shape as input rois.
         """
-        assert rois.size(1) == 4 or rois.size(1) == 5
+        assert rois.size(1) == 4 or rois.size(1) == 5, repr(rois.shape)
 
         if not self.reg_class_agnostic:
             label = label * 4

@@ -5,7 +5,8 @@ from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.plugins import GeneralizedAttention
-from mmdet.ops import ContextBlock, DeformConv, ModulatedDeformConv
+from mmdet.ops import ContextBlock
+from mmdet.utils import get_root_logger
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
 
@@ -27,9 +28,9 @@ class BasicBlock(nn.Module):
                  gcb=None,
                  gen_attention=None):
         super(BasicBlock, self).__init__()
-        assert dcn is None, "Not implemented yet."
-        assert gen_attention is None, "Not implemented yet."
-        assert gcb is None, "Not implemented yet."
+        assert dcn is None, 'Not implemented yet.'
+        assert gen_attention is None, 'Not implemented yet.'
+        assert gcb is None, 'Not implemented yet.'
 
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
@@ -143,10 +144,8 @@ class Bottleneck(nn.Module):
             bias=False)
         self.add_module(self.norm1_name, norm1)
         fallback_on_stride = False
-        self.with_modulated_dcn = False
         if self.with_dcn:
-            fallback_on_stride = dcn.get('fallback_on_stride', False)
-            self.with_modulated_dcn = dcn.get('modulated', False)
+            fallback_on_stride = dcn.pop('fallback_on_stride', False)
         if not self.with_dcn or fallback_on_stride:
             self.conv2 = build_conv_layer(
                 conv_cfg,
@@ -158,30 +157,17 @@ class Bottleneck(nn.Module):
                 dilation=dilation,
                 bias=False)
         else:
-            assert conv_cfg is None, 'conv_cfg must be None for DCN'
-            self.deformable_groups = dcn.get('deformable_groups', 1)
-            if not self.with_modulated_dcn:
-                conv_op = DeformConv
-                offset_channels = 18
-            else:
-                conv_op = ModulatedDeformConv
-                offset_channels = 27
-            self.conv2_offset = nn.Conv2d(
-                planes,
-                self.deformable_groups * offset_channels,
-                kernel_size=3,
-                stride=self.conv2_stride,
-                padding=dilation,
-                dilation=dilation)
-            self.conv2 = conv_op(
+            assert self.conv_cfg is None, 'conv_cfg cannot be None for DCN'
+            self.conv2 = build_conv_layer(
+                dcn,
                 planes,
                 planes,
                 kernel_size=3,
                 stride=self.conv2_stride,
                 padding=dilation,
                 dilation=dilation,
-                deformable_groups=self.deformable_groups,
                 bias=False)
+
         self.add_module(self.norm2_name, norm2)
         self.conv3 = build_conv_layer(
             conv_cfg,
@@ -224,17 +210,7 @@ class Bottleneck(nn.Module):
             out = self.norm1(out)
             out = self.relu(out)
 
-            if not self.with_dcn:
-                out = self.conv2(out)
-            elif self.with_modulated_dcn:
-                offset_mask = self.conv2_offset(out)
-                offset = offset_mask[:, :18 * self.deformable_groups, :, :]
-                mask = offset_mask[:, -9 * self.deformable_groups:, :, :]
-                mask = mask.sigmoid()
-                out = self.conv2(out, offset, mask)
-            else:
-                offset = self.conv2_offset(out)
-                out = self.conv2(out, offset)
+            out = self.conv2(out)
             out = self.norm2(out)
             out = self.relu(out)
 
@@ -493,7 +469,6 @@ class ResNet(nn.Module):
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
-            from mmdet.apis import get_root_logger
             logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)
         elif pretrained is None:

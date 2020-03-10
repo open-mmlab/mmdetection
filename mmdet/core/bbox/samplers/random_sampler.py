@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 
 from .base_sampler import BaseSampler
@@ -12,25 +11,36 @@ class RandomSampler(BaseSampler):
                  neg_pos_ub=-1,
                  add_gt_as_proposals=True,
                  **kwargs):
+        from mmdet.core.bbox import demodata
         super(RandomSampler, self).__init__(num, pos_fraction, neg_pos_ub,
                                             add_gt_as_proposals)
+        self.rng = demodata.ensure_rng(kwargs.get('rng', None))
 
-    @staticmethod
-    def random_choice(gallery, num):
+    def random_choice(self, gallery, num):
         """Random select some elements from the gallery.
 
-        It seems that Pytorch's implementation is slower than numpy so we use
-        numpy to randperm the indices.
+        If `gallery` is a Tensor, the returned indices will be a Tensor;
+        If `gallery` is a ndarray or list, the returned indices will be a
+        ndarray.
+
+        Args:
+            gallery (Tensor | ndarray | list): indices pool.
+            num (int): expected sample num.
+
+        Returns:
+            Tensor or ndarray: sampled indices.
         """
         assert len(gallery) >= num
-        if isinstance(gallery, list):
-            gallery = np.array(gallery)
-        cands = np.arange(len(gallery))
-        np.random.shuffle(cands)
-        rand_inds = cands[:num]
-        if not isinstance(gallery, np.ndarray):
-            rand_inds = torch.from_numpy(rand_inds).long().to(gallery.device)
-        return gallery[rand_inds]
+
+        is_tensor = isinstance(gallery, torch.Tensor)
+        if not is_tensor:
+            gallery = torch.tensor(
+                gallery, dtype=torch.long, device=torch.cuda.current_device())
+        perm = torch.randperm(gallery.numel(), device=gallery.device)[:num]
+        rand_inds = gallery[perm]
+        if not is_tensor:
+            rand_inds = rand_inds.cpu().numpy()
+        return rand_inds
 
     def _sample_pos(self, assign_result, num_expected, **kwargs):
         """Randomly sample some positive samples."""
