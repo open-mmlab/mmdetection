@@ -120,8 +120,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
         if num_augs == 1:
             """
-            proposals (List[List[Tensor | None]]): predefiend proposals for
-                each test-time augmentation and each item.
+            proposals (List[Tensor]): the outer list indicates test-time 
+                augmentation and inner Tensor are predefined proposals.
             """
             if 'proposals' in kwargs:
                 kwargs['proposals'] = kwargs['proposals'][0]
