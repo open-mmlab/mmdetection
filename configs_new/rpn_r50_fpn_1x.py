@@ -16,6 +16,4 @@ train_pipeline = [
 ]
 data = dict(train=dict(pipeline=train_pipeline))
 evaluation = dict(interval=1, metric='proposal_fast')
-# optimizer
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 work_dir = './work_dirs/rpn_r50_fpn_1x'
