@@ -34,10 +34,10 @@ class FastRCNN(TwoStageDetector):
             imgs (List[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains all images in the batch.
-            img_meta (List[list[dict]]): the outer list indicates test-time
+            img_meta (List[List[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
-            proposals (List[list[Tensor]]): the outer list indicates test-time
+            proposals (List[List[Tensor]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch. The Tensor should have a shape 1xPx4, where
                 P is the number of proposals.
@@ -61,4 +61,4 @@ class FastRCNN(TwoStageDetector):
                                     **kwargs)
         else:
             # TODO: support test-time augmentation
-            assert not NotImplementedError
+            assert NotImplementedError
