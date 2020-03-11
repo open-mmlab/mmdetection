@@ -145,5 +145,4 @@ log_level = 'INFO'
 work_dir = './work_dirs/bbox_r50_grid_fpn_1x'
 load_from = None
 resume_from = None
-auto_resume = True
 workflow = [('train', 1)]

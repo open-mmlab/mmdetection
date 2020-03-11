@@ -146,5 +146,4 @@ log_level = 'INFO'
 work_dir = './work_dirs/reppoints_moment_r101_dcn_fpn_2x_mt'
 load_from = None
 resume_from = None
-auto_resume = True
 workflow = [('train', 1)]

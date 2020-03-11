@@ -139,5 +139,4 @@ log_level = 'INFO'
 work_dir = './work_dirs/reppoints_partial_minmax_r50_fpn_1x'
 load_from = None
 resume_from = None
-auto_resume = True
 workflow = [('train', 1)]
