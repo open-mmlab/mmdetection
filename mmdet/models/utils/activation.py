@@ -4,6 +4,12 @@ activation_cfg = {
     # format: layer_type: (abbreviation, module)
     'relu': nn.ReLU,
     'leaky_relu': nn.LeakyReLU,
+    'p_relu': nn.PReLU,
+    'r_relu': nn.RReLU,
+    'relu6': nn.ReLU6,
+    'selu': nn.SELU,
+    'celu': nn.CELU,
+    'GELU': nn.GELU
 }
 
 
