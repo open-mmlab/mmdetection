@@ -8,8 +8,7 @@ activation_cfg = {
     'r_relu': nn.RReLU,
     'relu6': nn.ReLU6,
     'selu': nn.SELU,
-    'celu': nn.CELU,
-    'GELU': nn.GELU
+    'celu': nn.CELU
 }
 
 
