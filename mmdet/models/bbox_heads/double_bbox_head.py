@@ -41,7 +41,7 @@ class BasicResBlock(nn.Module):
             out_channels,
             kernel_size=1,
             bias=False,
-            activation=None,
+            act_cfg=None,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg)
 
@@ -52,7 +52,7 @@ class BasicResBlock(nn.Module):
             kernel_size=1,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
-            activation=None)
+            act_cfg=None)
 
         self.relu = nn.ReLU(inplace=True)
 

@@ -18,7 +18,7 @@ model = dict(
         start_level=0,
         end_level=-1,
         norm_cfg=None,
-        activation=None,
+        act_cfg=dict(type='relu'),
         order=('conv', 'norm', 'act'),
         upsample_cfg=dict(
             type='carafe',
