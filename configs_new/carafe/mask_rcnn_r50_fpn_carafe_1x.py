@@ -18,11 +18,6 @@ model = dict(
             encoder_dilation=1,
             compressed_channels=64)),
     mask_head=dict(
-        type='FCNMaskHead',
-        num_convs=4,
-        in_channels=256,
-        conv_out_channels=256,
-        num_classes=81,
         upsample_cfg=dict(
             type='carafe',
             scale_factor=2,
@@ -30,9 +25,7 @@ model = dict(
             up_group=1,
             encoder_kernel=3,
             encoder_dilation=1,
-            compressed_channels=64),
-        loss_mask=dict(
-            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)))
+            compressed_channels=64)))
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
