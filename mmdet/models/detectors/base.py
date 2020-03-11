@@ -120,13 +120,18 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
         if num_augs == 1:
             """
-            proposals (List[Tensor]): the outer list indicates test-time 
-                augmentation and inner Tensor are predefined proposals.
+            proposals (List[Tensor]): a list of predefined proposals
+                corresponding to a batch of images. The Tensor should have a
+                shape 1xPx4, where P is the number of proposals.
             """
             if 'proposals' in kwargs:
-                kwargs['proposals'] = kwargs['proposals'][0]
+                kwargs['proposals'] = [
+                    p.squeeze() for p in kwargs['proposals']
+                ]  # TODO: remove this squeeze
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
+            # TODO: support test augmentation for predefined proposals
+            assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
 
     @auto_fp16(apply_to=('img', ))
