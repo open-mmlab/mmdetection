@@ -143,7 +143,7 @@ total_epochs = 50
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = __file__.replace('configs', 'work_dirs').rstrip('.py')
+work_dir = '.'.join(__file__.replace('configs', 'work_dirs').split('.')[:-1])
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
