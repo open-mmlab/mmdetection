@@ -89,7 +89,6 @@ train_cfg = dict(
             pos_fraction=0.25,
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
-        mask_size=28,
         pos_weight=-1,
         debug=False))
 test_cfg = dict(

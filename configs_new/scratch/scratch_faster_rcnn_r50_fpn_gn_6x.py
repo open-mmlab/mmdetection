@@ -1,7 +1,18 @@
 _base_ = [
-    '../component/faster_rcnn_r50_fpn_gn.py', '../component/coco_detection.py',
-    '../component/default_runtime.py'
+    '../component/faster_rcnn_r50_fpn_4conv1fc.py',
+    '../component/coco_detection.py', '../component/default_runtime.py'
 ]
+norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
+model = dict(
+    pretrained=None,
+    backbone=dict(
+        frozen_stages=-1, zero_init_residual=False, norm_cfg=norm_cfg),
+    neck=dict(norm_cfg=norm_cfg),
+    bbox_head=dict(
+        norm_cfg=norm_cfg,
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)))
 # optimizer
 optimizer = dict(
     type='SGD',
