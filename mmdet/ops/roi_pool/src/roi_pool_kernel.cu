@@ -120,9 +120,11 @@ __global__ void ROIPoolBackward(const int nthreads, const scalar_t *top_diff,
     int bottom_index = argmax_data[(n * channels + c) * pooled_h * pooled_w +
                                    ph * pooled_w + pw];
 
-    atomicAdd(bottom_diff + (roi_batch_ind * channels + c) * height * width +
-                  bottom_index,
-              top_diff[index]);
+    if (bottom_index != -1) {
+        atomicAdd(bottom_diff + (roi_batch_ind * channels + c) * height * width +
+                      bottom_index,
+                  top_diff[index]);
+    }
   }
 }
 
