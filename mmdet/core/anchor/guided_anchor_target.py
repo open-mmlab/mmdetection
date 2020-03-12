@@ -250,7 +250,7 @@ def ga_shape_target_single(flat_approxs,
         tuple
     """
     if not inside_flags.any():
-        return (None, ) * 6
+        return (None, ) * 5
     # assign gt and sample anchors
     expand_inside_flags = inside_flags[:, None].expand(
         -1, approxs_per_octave).reshape(-1)

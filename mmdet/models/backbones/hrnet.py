@@ -1,10 +1,9 @@
-import logging
-
 import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from mmdet.utils import get_root_logger
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
 from .resnet import BasicBlock, Bottleneck
@@ -462,7 +461,7 @@ class HRNet(nn.Module):
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
-            logger = logging.getLogger()
+            logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)
         elif pretrained is None:
             for m in self.modules():

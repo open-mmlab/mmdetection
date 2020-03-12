@@ -3,12 +3,16 @@ import warnings
 import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
 
+from mmdet.ops import DeformConvPack, ModulatedDeformConvPack
+from .activation import build_activation_layer
 from .conv_ws import ConvWS2d
 from .norm import build_norm_layer
 
 conv_cfg = {
     'Conv': nn.Conv2d,
     'ConvWS': ConvWS2d,
+    'DCN': DeformConvPack,
+    'DCNv2': ModulatedDeformConvPack,
     # TODO: octave conv
 }
 
@@ -57,7 +61,7 @@ class ConvModule(nn.Module):
             False.
         conv_cfg (dict): Config dict for convolution layer.
         norm_cfg (dict): Config dict for normalization layer.
-        activation (str or None): Activation type, "ReLU" by default.
+        act_cfg (dict): Config dict for activation layer, "relu" by default.
         inplace (bool): Whether to use inplace mode for activation.
         order (tuple[str]): The order of conv/norm/activation layers. It is a
             sequence of "conv", "norm" and "act". Examples are
@@ -75,22 +79,23 @@ class ConvModule(nn.Module):
                  bias='auto',
                  conv_cfg=None,
                  norm_cfg=None,
-                 activation='relu',
+                 act_cfg=dict(type='relu'),
                  inplace=True,
                  order=('conv', 'norm', 'act')):
         super(ConvModule, self).__init__()
         assert conv_cfg is None or isinstance(conv_cfg, dict)
         assert norm_cfg is None or isinstance(norm_cfg, dict)
+        assert act_cfg is None or isinstance(act_cfg, dict)
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.activation = activation
+        self.act_cfg = act_cfg
         self.inplace = inplace
         self.order = order
         assert isinstance(self.order, tuple) and len(self.order) == 3
         assert set(order) == set(['conv', 'norm', 'act'])
 
         self.with_norm = norm_cfg is not None
-        self.with_activatation = activation is not None
+        self.with_activation = act_cfg is not None
         # if the conv layer is before a norm layer, bias is unnecessary.
         if bias == 'auto':
             bias = False if self.with_norm else True
@@ -132,13 +137,10 @@ class ConvModule(nn.Module):
             self.add_module(self.norm_name, norm)
 
         # build activation layer
-        if self.with_activatation:
-            # TODO: introduce `act_cfg` and supports more activation layers
-            if self.activation not in ['relu']:
-                raise ValueError('{} is currently not supported.'.format(
-                    self.activation))
-            if self.activation == 'relu':
-                self.activate = nn.ReLU(inplace=inplace)
+        if self.with_activation:
+            act_cfg_ = act_cfg.copy()
+            act_cfg_.setdefault('inplace', inplace)
+            self.activate = build_activation_layer(act_cfg_)
 
         # Use msra init by default
         self.init_weights()
@@ -148,7 +150,10 @@ class ConvModule(nn.Module):
         return getattr(self, self.norm_name)
 
     def init_weights(self):
-        nonlinearity = 'relu' if self.activation is None else self.activation
+        if self.with_activation and self.act_cfg['type'] == 'leaky_relu':
+            nonlinearity = 'leaky_relu'
+        else:
+            nonlinearity = 'relu'
         kaiming_init(self.conv, nonlinearity=nonlinearity)
         if self.with_norm:
             constant_init(self.norm, 1, bias=0)
@@ -159,6 +164,6 @@ class ConvModule(nn.Module):
                 x = self.conv(x)
             elif layer == 'norm' and norm and self.with_norm:
                 x = self.norm(x)
-            elif layer == 'act' and activate and self.with_activatation:
+            elif layer == 'act' and activate and self.with_activation:
                 x = self.activate(x)
         return x

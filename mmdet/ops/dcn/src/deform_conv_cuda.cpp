@@ -164,7 +164,7 @@ int deform_conv_forward_cuda(at::Tensor input, at::Tensor weight,
   shape_check(input, offset, NULL, weight, kH, kW, dH, dW, padH, padW,
               dilationH, dilationW, group, deformable_group);
   at::DeviceGuard guard(input.device());
-  
+
   input = input.contiguous();
   offset = offset.contiguous();
   weight = weight.contiguous();
@@ -386,7 +386,7 @@ int deform_conv_backward_parameters_cuda(
   shape_check(input, offset, &gradOutput, gradWeight, kH, kW, dH, dW, padH,
               padW, dilationH, dilationW, group, deformable_group);
   at::DeviceGuard guard(input.device());
-  
+
   input = input.contiguous();
   offset = offset.contiguous();
   gradOutput = gradOutput.contiguous();
@@ -497,7 +497,7 @@ void modulated_deform_conv_cuda_forward(
   AT_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
   AT_CHECK(weight.is_contiguous(), "weight tensor has to be contiguous");
   at::DeviceGuard guard(input.device());
-  
+
   const int batch = input.size(0);
   const int channels = input.size(1);
   const int height = input.size(2);

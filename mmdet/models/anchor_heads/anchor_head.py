@@ -127,7 +127,7 @@ class AnchorHead(nn.Module):
             for i in range(num_levels):
                 anchor_stride = self.anchor_strides[i]
                 feat_h, feat_w = featmap_sizes[i]
-                h, w, _ = img_meta['pad_shape']
+                h, w = img_meta['pad_shape'][:2]
                 valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.anchor_generators[i].valid_flags(
