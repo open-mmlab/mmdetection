@@ -5,14 +5,12 @@ _base_ = [
 model = dict(
     pretrained='open-mmlab://resnet50_caffe',
     backbone=dict(
-        _delete_=True,
         type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
-        norm_eval=True,
         style='caffe'),
     bbox_head=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))
 # model training and testing settings

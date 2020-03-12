@@ -1,38 +1,51 @@
-_base_ = [
-    '../component/guided_anchoring/ga_retinanet_r50_caffe_fpn.py',
-    '../component/coco_detection.py', '../component/schedule_1x.py',
-    '../component/default_runtime.py'
-]
-img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
-train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
-]
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
-]
-data = dict(
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+_base_ = '../retinanet_r50_caffe_fpn_1x.py'
+model = dict(
+    bbox_head=dict(
+        _delete_=True,
+        type='GARetinaHead',
+        num_classes=81,
+        in_channels=256,
+        stacked_convs=4,
+        feat_channels=256,
+        octave_base_scale=4,
+        scales_per_octave=3,
+        octave_ratios=[0.5, 1.0, 2.0],
+        anchor_strides=[8, 16, 32, 64, 128],
+        anchor_base_sizes=None,
+        anchoring_means=[.0, .0, .0, .0],
+        anchoring_stds=[1.0, 1.0, 1.0, 1.0],
+        target_means=(.0, .0, .0, .0),
+        target_stds=[1.0, 1.0, 1.0, 1.0],
+        loc_filter_thr=0.01,
+        loss_loc=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_shape=dict(type='BoundedIoULoss', beta=0.2, loss_weight=1.0),
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=0.04, loss_weight=1.0)))
+# training and testing settings
+train_cfg = dict(
+    ga_assigner=dict(
+        type='ApproxMaxIoUAssigner',
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.4,
+        min_pos_iou=0.4,
+        ignore_iof_thr=-1),
+    ga_sampler=dict(
+        type='RandomSampler',
+        num=256,
+        pos_fraction=0.5,
+        neg_pos_ub=-1,
+        add_gt_as_proposals=False),
+    assigner=dict(neg_iou_thr=0.5, min_pos_iou=0.0),
+    center_ratio=0.2,
+    ignore_ratio=0.5)
 work_dir = './work_dirs/ga_retinanet_r50_caffe_fpn_1x'

@@ -1,7 +1,10 @@
 _base_ = [
-    '../component/fcos/fcos_r50_caffe_fpn_gn.py',
-    '../component/coco_detection.py', '../component/default_runtime.py'
+    '../component/fcos/fcos_r50_fpn_gn.py', '../component/coco_detection.py',
+    '../component/default_runtime.py'
 ]
+model = dict(
+    pretrained='open-mmlab://resnet50_caffe',
+    backbone=dict(norm_cfg=dict(requires_grad=False), style='caffe'))
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [

@@ -4,16 +4,13 @@ import os.path as osp
 
 from mmcv import Config
 
-# These files are added in configs_new only
-FILE_BLACK_LIST = ['fcos_r50_fpn_gn_1x_4gpu.py', 'ms_rcnn_r50_fpn_1x.py']
-
 
 def collect_cfgs(folder):
     collected_files = dict()
     for root, _, files in os.walk(folder):
         if 'component' not in root:
             for file in files:
-                if file.endswith('.py') and file not in FILE_BLACK_LIST:
+                if file.endswith('.py'):
                     file_path = osp.abspath(osp.join(root, file))
                     file_name = file_path.replace(osp.abspath(folder), '')
                     collected_files[file_name] = file_path

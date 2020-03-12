@@ -1,24 +1,7 @@
-# model settings
+_base_ = '../retinanet_r50_fpn_1x.py'
 model = dict(
-    type='RetinaNet',
-    pretrained='open-mmlab://resnet50_caffe',
-    backbone=dict(
-        type='ResNet',
-        depth=50,
-        num_stages=4,
-        out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
-        norm_eval=True,
-        style='caffe'),
-    neck=dict(
-        type='FPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
-        start_level=1,
-        add_extra_convs=True,
-        num_outs=5),
     bbox_head=dict(
+        _delete_=True,
         type='GARetinaHead',
         num_classes=81,
         in_channels=256,
@@ -62,20 +45,7 @@ train_cfg = dict(
         pos_fraction=0.5,
         neg_pos_ub=-1,
         add_gt_as_proposals=False),
-    assigner=dict(
-        type='MaxIoUAssigner',
-        pos_iou_thr=0.5,
-        neg_iou_thr=0.5,
-        min_pos_iou=0.0,
-        ignore_iof_thr=-1),
-    allowed_border=-1,
-    pos_weight=-1,
+    assigner=dict(neg_iou_thr=0.5, min_pos_iou=0.0),
     center_ratio=0.2,
-    ignore_ratio=0.5,
-    debug=False)
-test_cfg = dict(
-    nms_pre=1000,
-    min_bbox_size=0,
-    score_thr=0.05,
-    nms=dict(type='nms', iou_thr=0.5),
-    max_per_img=100)
+    ignore_ratio=0.5)
+work_dir = './work_dirs/ga_retinanet_r50_fpn_1x'

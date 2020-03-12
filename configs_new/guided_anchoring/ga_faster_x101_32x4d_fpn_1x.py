@@ -1,12 +1,7 @@
-_base_ = [
-    '../component/guided_anchoring/ga_faster_r50_caffe_fpn.py',
-    '../component/coco_detection.py', '../component/schedule_1x.py',
-    '../component/default_runtime.py'
-]
+_base_ = './ga_faster_r50_fpn_1x.py'
 model = dict(
     pretrained='open-mmlab://resnext101_32x4d',
     backbone=dict(
-        _delete_=True,
         type='ResNeXt',
         depth=101,
         groups=32,
