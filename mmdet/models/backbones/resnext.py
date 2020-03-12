@@ -62,6 +62,7 @@ class Bottleneck(_Bottleneck):
                 stride=self.conv2_stride,
                 padding=self.dilation,
                 dilation=self.dilation,
+                groups=groups,
                 bias=False)
 
         self.add_module(self.norm2_name, norm2)
