@@ -39,7 +39,7 @@ class FastRCNN(TwoStageDetector):
                 images in a batch.
             proposals (List[List[Tensor]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch. The Tensor should have a shape 1xPx4, where
+                images in a batch. The Tensor should have a shape Px4, where
                 P is the number of proposals.
         """
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:

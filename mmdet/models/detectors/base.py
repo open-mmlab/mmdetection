@@ -120,14 +120,13 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
         if num_augs == 1:
             """
-            proposals (List[Tensor]): a list of predefined proposals
-                corresponding to a batch of images. The Tensor should have a
-                shape 1xPx4, where P is the number of proposals.
+            proposals (List[List[Tensor]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. The Tensor should have a shape Px4, where
+                P is the number of proposals.
             """
             if 'proposals' in kwargs:
-                kwargs['proposals'] = [
-                    p.squeeze() for p in kwargs['proposals']
-                ]  # TODO: remove this squeeze
+                kwargs['proposals'] = kwargs['proposals'][0]
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
             # TODO: support test augmentation for predefined proposals
