@@ -41,9 +41,9 @@ class BasicResBlock(nn.Module):
             out_channels,
             kernel_size=1,
             bias=False,
-            act_cfg=None,
             conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg)
+            norm_cfg=norm_cfg,
+            act_cfg=None)
 
         # identity path
         self.conv_identity = ConvModule(

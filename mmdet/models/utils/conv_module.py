@@ -61,7 +61,7 @@ class ConvModule(nn.Module):
             False.
         conv_cfg (dict): Config dict for convolution layer.
         norm_cfg (dict): Config dict for normalization layer.
-        act_cfg (str or None): Activation type, "ReLU" by default.
+        act_cfg (dict): Config dict for activation layer, "relu" by default.
         inplace (bool): Whether to use inplace mode for activation.
         order (tuple[str]): The order of conv/norm/activation layers. It is a
             sequence of "conv", "norm" and "act". Examples are

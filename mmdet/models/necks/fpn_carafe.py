@@ -53,6 +53,7 @@ class FPN_CARAFE(nn.Module):
         self.num_ins = len(in_channels)
         self.num_outs = num_outs
         self.norm_cfg = norm_cfg
+        self.act_cfg = act_cfg
         self.with_bias = norm_cfg is None
         self.upsample_cfg = upsample_cfg.copy()
         self.upsample = self.upsample_cfg.get('type')
