@@ -12,14 +12,6 @@ model = dict(
         type='YoloHead',))
 # training and testing settings
 train_cfg = dict(
-    # assigner=dict(
-    #     type='MaxIoUAssigner',
-    #     pos_iou_thr=0.5,
-    #     neg_iou_thr=0.4,
-    #     min_pos_iou=0,
-    #     ignore_iof_thr=-1),
-    # allowed_border=-1,
-    # pos_weight=-1,
     one_hot_smoother=0.,
     ignore_config=0.5,
     xy_use_logit=False,
@@ -79,53 +71,18 @@ data = dict(
         ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
         pipeline=train_pipeline,
-        # img_scale=[(320, 320), (608, 608)],
-        # multiscale_mode='range',
-        # img_norm_cfg=img_norm_cfg,
-        # size_divisor=32,
-        # flip_ratio=0.5,
-        # with_mask=False,
-        # with_crowd=False,
-        # with_label=True,
-        # extra_aug=dict(
-        #     photo_metric_distortion=dict(
-        #         brightness_delta=32,
-        #         contrast_range=(0.5, 1.5),
-        #         saturation_range=(0.5, 1.5),
-        #         hue_delta=18),
-        #     expand=dict(
-        #         mean=img_norm_cfg['mean'],
-        #         to_rgb=img_norm_cfg['to_rgb'],
-        #         ratio_range=(1, 2)),
-        #     random_crop=dict(
-        #         min_ious=(0.4, 0.5, 0.6, 0.7, 0.8, 0.9), min_crop_size=0.3)),
     ),
     val=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline,
-        # img_scale=(608, 608),
-        # img_norm_cfg=img_norm_cfg,
-        # size_divisor=32,
-        # flip_ratio=0,
-        # with_mask=False,
-        # with_crowd=False,
-        # with_label=True
     ),
     test=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline,
-        # img_scale=(608, 608),
-        # img_norm_cfg=img_norm_cfg,
-        # size_divisor=32,
-        # flip_ratio=0,
-        # with_mask=False,
-        # with_crowd=False,
-        # with_label=False,
-        # test_mode=True
     )
 )
 # optimizer
