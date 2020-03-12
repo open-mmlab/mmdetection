@@ -51,7 +51,7 @@ class HRFPN(nn.Module):
             out_channels,
             kernel_size=1,
             conv_cfg=self.conv_cfg,
-            activation=None)
+            act_cfg=None)
 
         self.fpn_convs = nn.ModuleList()
         for i in range(self.num_outs):
@@ -63,7 +63,7 @@ class HRFPN(nn.Module):
                     padding=1,
                     stride=stride,
                     conv_cfg=self.conv_cfg,
-                    activation=None))
+                    act_cfg=None))
 
         if pooling_type == 'MAX':
             self.pooling = F.max_pool2d
