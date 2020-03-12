@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 activation_cfg = {
-    # format: layer_type: (abbreviation, module)
+    # layer_abbreviation: module
     'relu': nn.ReLU,
     'leaky_relu': nn.LeakyReLU,
     'p_relu': nn.PReLU,
