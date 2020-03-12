@@ -102,7 +102,7 @@ test_pipeline = [
             dict(type='ToTensor', keys=['proposals']),
             dict(
                 type='ToDataContainer',
-                fields=(dict(key='proposals', stack=False),)),
+                fields=(dict(key='proposals', stack=False), )),
             dict(type='Collect', keys=['img', 'proposals']),
         ])
 ]
