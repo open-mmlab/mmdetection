@@ -95,6 +95,9 @@ class RoIAlign(nn.Module):
                 MMDetection. If True, align the results more perfectly.
 
         Note:
+            The implementation of RoIAlign when aligned=True is modified from
+            https://github.com/facebookresearch/detectron2/
+
             The meaning of aligned=True:
 
             Given a continuous coordinate c, its two neighboring pixel
