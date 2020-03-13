@@ -281,7 +281,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                                 device=device,
                                 dtype=torch.uint8))
                     pos_inds = torch.cat(pos_inds)
-                    mask_feats = bbox_feats[pos_inds]
+                    mask_feats = bbox_feats[pos_inds.type(torch.bool)]
                 mask_head = self.mask_head[i]
                 mask_pred = mask_head(mask_feats)
                 mask_targets = mask_head.get_target(sampling_results, gt_masks,
