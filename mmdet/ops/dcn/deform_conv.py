@@ -6,8 +6,10 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair, _single
 
+import mmdet
 from mmdet.utils import print_log
-from . import deform_conv_cuda
+if not mmdet.version.CPU_ONLY:
+    from . import deform_conv_cuda
 
 
 class DeformConvFunction(Function):
