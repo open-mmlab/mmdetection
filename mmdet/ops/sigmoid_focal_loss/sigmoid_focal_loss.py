@@ -3,6 +3,7 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 
 import mmdet
+
 if not mmdet.version.CPU_ONLY:
     from . import sigmoid_focal_loss_cuda
 

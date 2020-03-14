@@ -8,7 +8,6 @@ from mmcv.cnn import normal_init
 from mmdet.core import (PointGenerator, multi_apply, multiclass_nms,
                         point_target)
 from mmdet.ops import DeformConv
-
 from ..builder import build_loss
 from ..registry import HEADS
 from ..utils import ConvModule, bias_init_with_prob

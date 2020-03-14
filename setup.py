@@ -1,15 +1,13 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import os
-import sys
 import subprocess
+import sys
 import time
 from setuptools import find_packages, setup
 
 import torch
-from torch.utils.cpp_extension import BuildExtension
-from torch.utils.cpp_extension import CUDAExtension
-from torch.utils.cpp_extension import CppExtension
+from torch.utils.cpp_extension import (BuildExtension, CppExtension,
+                                       CUDAExtension)
 
 
 def readme():
@@ -98,7 +96,7 @@ def make_cuda_ext(name, module, sources):
     define_macros = []
 
     if torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1':
-        define_macros += [("WITH_CUDA", None)]
+        define_macros += [('WITH_CUDA', None)]
     else:
         raise EnvironmentError('CUDA is required to compile MMDetection!')
 
@@ -203,24 +201,26 @@ def parse_requirements(fname='requirements.txt', with_version=True):
 
 if __name__ == '__main__':
     cpu_only = False
-    if "--cpu" in sys.argv:
+    if '--cpu' in sys.argv:
         cpu_only = True
-        sys.argv.remove("--cpu")
+        sys.argv.remove('--cpu')
 
     write_version_py(cpu_only=cpu_only)
 
     ext_modules = [
-            make_cpp_ext(
-                name='compiling_info',
-                module='mmdet.ops.utils',
-                sources=['src/compiling_info.cpp']),
-            make_cpp_ext(
-                name='nms_cpu',
-                module='mmdet.ops.nms',
-                sources=['src/nms_cpu.cpp'])]
+        make_cpp_ext(
+            name='compiling_info',
+            module='mmdet.ops.utils',
+            sources=['src/compiling_info.cpp']),
+        make_cpp_ext(
+            name='nms_cpu',
+            module='mmdet.ops.nms',
+            sources=['src/nms_cpu.cpp'])
+    ]
 
     if not cpu_only:
-        ext_modules += [make_cuda_ext(
+        ext_modules += [
+            make_cuda_ext(
                 name='nms_cuda',
                 module='mmdet.ops.nms',
                 sources=['src/nms_cuda.cpp', 'src/nms_kernel.cu']),
@@ -284,7 +284,8 @@ if __name__ == '__main__':
                 sources=[
                     'src/carafe_naive_cuda.cpp',
                     'src/carafe_naive_cuda_kernel.cu'
-                ])]
+                ])
+        ]
 
     setup(
         name='mmdet',

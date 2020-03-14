@@ -1,11 +1,9 @@
 import mmdet
-
 from .context_block import ContextBlock
 from .dcn import (DeformConv, DeformConvPack, DeformRoIPooling,
                   DeformRoIPoolingPack, ModulatedDeformConv,
                   ModulatedDeformConvPack, ModulatedDeformRoIPoolingPack)
 from .masked_conv import MaskedConv2d
-
 from .nms import nms, soft_nms
 from .roi_align import RoIAlign, roi_align
 from .roi_pool import RoIPool, roi_pool

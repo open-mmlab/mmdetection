@@ -1,11 +1,10 @@
 import warnings
 
 import matplotlib.pyplot as plt
+import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
-
-import mmcv
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 

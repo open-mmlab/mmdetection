@@ -8,6 +8,7 @@ from torch.nn.modules.utils import _pair, _single
 
 import mmdet
 from mmdet.utils import print_log
+
 if not mmdet.version.CPU_ONLY:
     from . import deform_conv_cuda
 
