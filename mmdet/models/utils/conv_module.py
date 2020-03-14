@@ -79,7 +79,7 @@ class ConvModule(nn.Module):
                  bias='auto',
                  conv_cfg=None,
                  norm_cfg=None,
-                 act_cfg=dict(type='relu'),
+                 act_cfg=dict(type='ReLU'),
                  inplace=True,
                  order=('conv', 'norm', 'act')):
         super(ConvModule, self).__init__()
@@ -150,7 +150,7 @@ class ConvModule(nn.Module):
         return getattr(self, self.norm_name)
 
     def init_weights(self):
-        if self.with_activation and self.act_cfg['type'] == 'leaky_relu':
+        if self.with_activation and self.act_cfg['type'] == 'LeakyReLU':
             nonlinearity = 'leaky_relu'
         else:
             nonlinearity = 'relu'
