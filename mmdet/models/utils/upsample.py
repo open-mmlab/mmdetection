@@ -42,7 +42,7 @@ class PixelShufflePack(nn.Module):
 
 
 upsample_cfg = {
-    # format: layer_type: (abbreviation, module)
+    # layer_abbreviation: module
     'nearest': nn.Upsample,
     'bilinear': nn.Upsample,
     'deconv': nn.ConvTranspose2d,

@@ -6,8 +6,6 @@ import os
 import os.path as osp
 import tempfile
 
-import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval
-import cityscapesscripts.helpers.labels as CSLabels
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -105,6 +103,11 @@ class CityscapesDataset(CocoDataset):
             list[str: str]: result txt files which contains corresponding
             instance segmentation images.
         """
+        try:
+            import cityscapesscripts.helpers.labels as CSLabels
+        except ImportError:
+            raise ImportError('Please run "pip install citscapesscripts" to '
+                              'install cityscapesscripts first.')
         result_files = []
         os.makedirs(outfile_prefix, exist_ok=True)
         prog_bar = mmcv.ProgressBar(len(self))
@@ -226,6 +229,11 @@ class CityscapesDataset(CocoDataset):
         return eval_results
 
     def _evaluate_cityscapes(self, results, txtfile_prefix, logger):
+        try:
+            import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval  # noqa
+        except ImportError:
+            raise ImportError('Please run "pip install citscapesscripts" to '
+                              'install cityscapesscripts first.')
         msg = 'Evaluating in Cityscapes style'
         if logger is None:
             msg = '\n' + msg
