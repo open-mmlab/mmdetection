@@ -5,15 +5,18 @@ from mmdet.models.utils import build_conv_layer, build_norm_layer
 
 class ResLayer(nn.Sequential):
 
-    def __init__(self, block, inplanes, planes, num_blocks, **kwargs):
+    def __init__(self,
+                 block,
+                 inplanes,
+                 planes,
+                 num_blocks,
+                 stride=1,
+                 avg_down=False,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN'),
+                 **kwargs):
         self.block = block
 
-        stride = kwargs.pop('stride')
-        avg_down = kwargs.pop('avg_down')
-        conv_cfg = kwargs.get('conv_cfg')
-        norm_cfg = kwargs.get('norm_cfg')
-        gen_attention = kwargs.pop('gen_attention')
-        gen_attention_blocks = kwargs.pop('gen_attention_blocks')
         downsample = None
         if stride != 1 or inplanes != planes * block.expansion:
             downsample = []
@@ -38,6 +41,8 @@ class ResLayer(nn.Sequential):
             ])
             downsample = nn.Sequential(*downsample)
 
+        gen_attention = kwargs.pop('gen_attention', None)
+        gen_attention_blocks = kwargs.pop('gen_attention_blocks', tuple())
         layers = []
         layers.append(
             block(
