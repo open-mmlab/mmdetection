@@ -353,22 +353,6 @@ class Normalize(object):
 
 
 @PIPELINES.register_module
-class ToUint8(object):
-    def __call__(self, results):
-        results['img'] = results['img'].astype(np.uint8)
-        return results
-
-
-@PIPELINES.register_module
-class Pass(object):
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __call__(self, results):
-        return results
-
-
-@PIPELINES.register_module
 class RandomCrop(object):
     """Random crop the image & bboxes & masks.
 
