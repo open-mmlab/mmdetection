@@ -8,7 +8,7 @@ from mmdet.models.plugins import GeneralizedAttention
 from mmdet.ops import ContextBlock
 from mmdet.utils import get_root_logger
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
+from ..utils import ResLayer, build_conv_layer, build_norm_layer
 
 
 class BasicBlock(nn.Module):
@@ -240,69 +240,6 @@ class Bottleneck(nn.Module):
         return out
 
 
-def make_res_layer(block,
-                   inplanes,
-                   planes,
-                   blocks,
-                   stride=1,
-                   dilation=1,
-                   style='pytorch',
-                   with_cp=False,
-                   conv_cfg=None,
-                   norm_cfg=dict(type='BN'),
-                   dcn=None,
-                   gcb=None,
-                   gen_attention=None,
-                   gen_attention_blocks=[]):
-    downsample = None
-    if stride != 1 or inplanes != planes * block.expansion:
-        downsample = nn.Sequential(
-            build_conv_layer(
-                conv_cfg,
-                inplanes,
-                planes * block.expansion,
-                kernel_size=1,
-                stride=stride,
-                bias=False),
-            build_norm_layer(norm_cfg, planes * block.expansion)[1],
-        )
-
-    layers = []
-    layers.append(
-        block(
-            inplanes=inplanes,
-            planes=planes,
-            stride=stride,
-            dilation=dilation,
-            downsample=downsample,
-            style=style,
-            with_cp=with_cp,
-            conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg,
-            dcn=dcn,
-            gcb=gcb,
-            gen_attention=gen_attention if
-            (0 in gen_attention_blocks) else None))
-    inplanes = planes * block.expansion
-    for i in range(1, blocks):
-        layers.append(
-            block(
-                inplanes=inplanes,
-                planes=planes,
-                stride=1,
-                dilation=dilation,
-                style=style,
-                with_cp=with_cp,
-                conv_cfg=conv_cfg,
-                norm_cfg=norm_cfg,
-                dcn=dcn,
-                gcb=gcb,
-                gen_attention=gen_attention if
-                (i in gen_attention_blocks) else None))
-
-    return nn.Sequential(*layers)
-
-
 @BACKBONES.register_module
 class ResNet(nn.Module):
     """ResNet backbone.
@@ -359,6 +296,8 @@ class ResNet(nn.Module):
                  dilations=(1, 1, 1, 1),
                  out_indices=(0, 1, 2, 3),
                  style='pytorch',
+                 deep_stem=False,
+                 avg_down=False,
                  frozen_stages=-1,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
@@ -383,6 +322,8 @@ class ResNet(nn.Module):
         self.out_indices = out_indices
         assert max(out_indices) < num_stages
         self.style = style
+        self.deep_stem = deep_stem
+        self.avg_down = avg_down
         self.frozen_stages = frozen_stages
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -411,7 +352,7 @@ class ResNet(nn.Module):
             dcn = self.dcn if self.stage_with_dcn[i] else None
             gcb = self.gcb if self.stage_with_gcb[i] else None
             planes = 64 * 2**i
-            res_layer = make_res_layer(
+            res_layer = ResLayer(
                 self.block,
                 self.inplanes,
                 planes,
@@ -419,13 +360,15 @@ class ResNet(nn.Module):
                 stride=stride,
                 dilation=dilation,
                 style=self.style,
+                avg_down=self.avg_down,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
                 gcb=gcb,
                 gen_attention=gen_attention,
-                gen_attention_blocks=stage_with_gen_attention[i])
+                gen_attention_blocks=stage_with_gen_attention[i],
+                **self.block_kwargs)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
@@ -437,29 +380,69 @@ class ResNet(nn.Module):
             len(self.stage_blocks) - 1)
 
     @property
+    def block_kwargs(self):
+        return dict()
+
+    @property
     def norm1(self):
         return getattr(self, self.norm1_name)
 
     def _make_stem_layer(self, in_channels):
-        self.conv1 = build_conv_layer(
-            self.conv_cfg,
-            in_channels,
-            64,
-            kernel_size=7,
-            stride=2,
-            padding=3,
-            bias=False)
-        self.norm1_name, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
-        self.add_module(self.norm1_name, norm1)
-        self.relu = nn.ReLU(inplace=True)
+        if self.deep_stem:
+            self.input_stem = nn.Sequential(
+                build_conv_layer(
+                    self.conv_cfg,
+                    in_channels,
+                    32,
+                    kernel_size=3,
+                    stride=2,
+                    padding=1,
+                    bias=False),
+                build_norm_layer(self.norm_cfg, 32)[1], nn.ReLU(inplace=True),
+                build_conv_layer(
+                    self.conv_cfg,
+                    32,
+                    32,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False),
+                build_norm_layer(self.norm_cfg, 32)[1], nn.ReLU(inplace=True),
+                build_conv_layer(
+                    self.conv_cfg,
+                    32,
+                    64,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False),
+                build_norm_layer(self.norm_cfg, 64)[1], nn.ReLU(inplace=True))
+        else:
+            self.conv1 = build_conv_layer(
+                self.conv_cfg,
+                in_channels,
+                64,
+                kernel_size=7,
+                stride=2,
+                padding=3,
+                bias=False)
+            self.norm1_name, norm1 = build_norm_layer(
+                self.norm_cfg, 64, postfix=1)
+            self.add_module(self.norm1_name, norm1)
+            self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
-            self.norm1.eval()
-            for m in [self.conv1, self.norm1]:
-                for param in m.parameters():
+            if self.deep_stem:
+                self.input_stem.eval()
+                for param in self.input_stem.parameters():
                     param.requires_grad = False
+            else:
+                self.norm1.eval()
+                for m in [self.conv1, self.norm1]:
+                    for param in m.parameters():
+                        param.requires_grad = False
 
         for i in range(1, self.frozen_stages + 1):
             m = getattr(self, 'layer{}'.format(i))
@@ -494,9 +477,12 @@ class ResNet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.norm1(x)
-        x = self.relu(x)
+        if self.deep_stem:
+            x = self.input_stem(x)
+        else:
+            x = self.conv1(x)
+            x = self.norm1(x)
+            x = self.relu(x)
         x = self.maxpool(x)
         outs = []
         for i, layer_name in enumerate(self.res_layers):
