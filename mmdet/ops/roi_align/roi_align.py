@@ -5,7 +5,7 @@ from torch.nn.modules.utils import _pair
 
 import mmdet
 
-if not mmdet.version. CPU_ONLY:
+if not mmdet.version.CPU_ONLY:
     from . import roi_align_cuda
 
 
