@@ -5,41 +5,15 @@ from mmdet.models.utils import build_conv_layer, build_norm_layer
 
 class ResLayer(nn.Sequential):
 
-    def __init__(self,
-                 block,
-                 inplanes,
-                 planes,
-                 blocks,
-                 stride=1,
-                 dilation=1,
-                 style='pytorch',
-                 avg_down=False,
-                 with_cp=False,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN'),
-                 dcn=None,
-                 gcb=None,
-                 gen_attention=None,
-                 gen_attention_blocks=[],
-                 **block_kwargs):
+    def __init__(self, block, inplanes, planes, num_blocks, **kwargs):
         self.block = block
-        self.inplanes = inplanes
-        self.planes = planes
-        self.blocks = blocks
-        self.stride = stride
-        self.dilation = dilation
-        self.style = style
-        self.avg_down = avg_down
-        self.with_cp = with_cp
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.dcn = dcn
-        self.with_dcn = dcn is not None
-        self.gcb = gcb
-        self.with_gcb = gcb is not None
-        self.gen_attention = gen_attention
-        self.with_gen_attention = gen_attention is not None
 
+        stride = kwargs.pop('stride')
+        avg_down = kwargs.pop('avg_down')
+        conv_cfg = kwargs.get('conv_cfg')
+        norm_cfg = kwargs.get('norm_cfg')
+        gen_attention = kwargs.pop('gen_attention')
+        gen_attention_blocks = kwargs.pop('gen_attention_blocks')
         downsample = None
         if stride != 1 or inplanes != planes * block.expansion:
             downsample = []
@@ -70,32 +44,18 @@ class ResLayer(nn.Sequential):
                 inplanes=inplanes,
                 planes=planes,
                 stride=stride,
-                dilation=dilation,
                 downsample=downsample,
-                style=style,
-                with_cp=with_cp,
-                conv_cfg=conv_cfg,
-                norm_cfg=norm_cfg,
-                dcn=dcn,
-                gcb=gcb,
-                gen_attention=gen_attention if
-                (0 in gen_attention_blocks) else None,
-                **block_kwargs))
+                gen_attention=gen_attention
+                if 0 in gen_attention_blocks else None,
+                **kwargs))
         inplanes = planes * block.expansion
-        for i in range(1, blocks):
+        for i in range(1, num_blocks):
             layers.append(
                 block(
                     inplanes=inplanes,
                     planes=planes,
                     stride=1,
-                    dilation=dilation,
-                    style=style,
-                    with_cp=with_cp,
-                    conv_cfg=conv_cfg,
-                    norm_cfg=norm_cfg,
-                    dcn=dcn,
-                    gcb=gcb,
                     gen_attention=gen_attention if
                     (i in gen_attention_blocks) else None,
-                    **block_kwargs))
+                    **kwargs))
         super(ResLayer, self).__init__(*layers)

@@ -254,6 +254,9 @@ class ResNet(nn.Module):
         style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
             layer is the 3x3 conv layer, otherwise the stride-two layer is
             the first 1x1 conv layer.
+        deep_stem (bool): Replace 7x7 conv in input stem with 3 3x3 conv
+        avg_down (bool): Use AvgPool instead of stride conv when
+            downsampling in the bottleneck.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
             -1 means not freezing any parameters.
         norm_cfg (dict): dictionary to construct and config norm layer.
