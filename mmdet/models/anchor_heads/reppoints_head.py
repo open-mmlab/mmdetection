@@ -9,8 +9,8 @@ from mmdet.core import (PointGenerator, multi_apply, multiclass_nms,
                         point_target)
 from mmdet.ops import DeformConv
 from ..builder import build_loss
+from ..common import ConvModule, bias_init_with_prob
 from ..registry import HEADS
-from ..utils import ConvModule, bias_init_with_prob
 
 
 @HEADS.register_module

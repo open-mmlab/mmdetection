@@ -2,8 +2,8 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 
 from mmdet.ops import MaskedConv2d
+from ..common import ConvModule, bias_init_with_prob
 from ..registry import HEADS
-from ..utils import ConvModule, bias_init_with_prob
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 
 

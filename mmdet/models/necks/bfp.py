@@ -2,9 +2,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
+from ..common import ConvModule
 from ..plugins import NonLocal2D
 from ..registry import NECKS
-from ..utils import ConvModule
 
 
 @NECKS.register_module

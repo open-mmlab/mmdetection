@@ -10,8 +10,8 @@ from mmdet.core import (AnchorGenerator, anchor_inside_flags, anchor_target,
                         multi_apply, multiclass_nms)
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import build_loss
+from ..common import bias_init_with_prob
 from ..registry import HEADS
-from ..utils import bias_init_with_prob
 from .anchor_head import AnchorHead
 
 

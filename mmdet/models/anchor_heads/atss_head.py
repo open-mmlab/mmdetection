@@ -8,8 +8,8 @@ from mmdet.core import (PseudoSampler, anchor_inside_flags, bbox2delta,
                         build_assigner, delta2bbox, force_fp32,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from ..builder import build_loss
+from ..common import ConvModule, Scale, bias_init_with_prob
 from ..registry import HEADS
-from ..utils import ConvModule, Scale, bias_init_with_prob
 from .anchor_head import AnchorHead
 
 

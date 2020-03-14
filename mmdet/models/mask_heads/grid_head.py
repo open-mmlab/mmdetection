@@ -5,8 +5,8 @@ import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
 
 from ..builder import build_loss
+from ..common import ConvModule
 from ..registry import HEADS
-from ..utils import ConvModule
 
 
 @HEADS.register_module

@@ -4,8 +4,8 @@ import torch.nn.functional as F
 from mmcv.cnn.weight_init import caffe2_xavier_init
 from torch.utils.checkpoint import checkpoint
 
+from ..common import ConvModule
 from ..registry import NECKS
-from ..utils import ConvModule
 
 
 @NECKS.register_module

@@ -7,8 +7,8 @@ from torch.nn.modules.batchnorm import _BatchNorm
 from mmdet.models.plugins import GeneralizedAttention
 from mmdet.ops import ContextBlock
 from mmdet.utils import get_root_logger
+from ..common import build_conv_layer, build_norm_layer
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
 
 
 class BasicBlock(nn.Module):
