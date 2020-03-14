@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-import mmdet
 from mmdet.core import multi_apply, multiclass_nms
 from mmdet.ops import DeformConv
 

@@ -5,11 +5,9 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-import mmdet
 from mmdet.core import (PointGenerator, multi_apply, multiclass_nms,
                         point_target)
-if not mmdet.version.CPU_ONLY:
-    from mmdet.ops import DeformConv
+from mmdet.ops import DeformConv
 
 from ..builder import build_loss
 from ..registry import HEADS
