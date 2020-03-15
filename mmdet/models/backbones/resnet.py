@@ -392,7 +392,7 @@ class ResNet(nn.Module):
 
     def _make_stem_layer(self, in_channels):
         if self.deep_stem:
-            self.input_stem = nn.Sequential(
+            self.stem = nn.Sequential(
                 build_conv_layer(
                     self.conv_cfg,
                     in_channels,
@@ -438,8 +438,8 @@ class ResNet(nn.Module):
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
             if self.deep_stem:
-                self.input_stem.eval()
-                for param in self.input_stem.parameters():
+                self.stem.eval()
+                for param in self.stem.parameters():
                     param.requires_grad = False
             else:
                 self.norm1.eval()
@@ -481,7 +481,7 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         if self.deep_stem:
-            x = self.input_stem(x)
+            x = self.stem(x)
         else:
             x = self.conv1(x)
             x = self.norm1(x)
@@ -503,3 +503,13 @@ class ResNet(nn.Module):
                 # trick: eval have effect on BatchNorm only
                 if isinstance(m, _BatchNorm):
                     m.eval()
+
+
+@BACKBONES.register_module
+class ResNetV1d(ResNet):
+    """ResNetV1d backbone.
+    """
+
+    def __init__(self, **kwargs):
+        super(ResNetV1d, self).__init__(
+            deep_stem=True, avg_down=True, **kwargs)
