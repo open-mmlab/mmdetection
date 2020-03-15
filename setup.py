@@ -103,15 +103,9 @@ def make_extension(name, module, sources, is_cuda_ext=False):
     sources = [os.path.join(*module.split('.'), p) for p in sources]
     define_macros = []
 
-    is_cuda_ext = any([source.endswith('.cu') for source in sources])
-    if is_cuda_ext:
-        if use_cuda():
-            define_macros += [('WITH_CUDA', None)]
-        else:
-            print('module {0} will not be included, since CUDA isnt available'.
-                  format(name))
-            return None
-
+    if use_cuda():
+        # compile with CUDA
+        define_macros += [('WITH_CUDA', None)]
         return CUDAExtension(
             name=name,
             sources=sources,
@@ -125,8 +119,14 @@ def make_extension(name, module, sources, is_cuda_ext=False):
                 ]
             })
     else:
-        return CppExtension(
-            name=name, sources=sources, define_macros=define_macros)
+        is_cuda_src = any([source.endswith('.cu') for source in sources])
+        if is_cuda_src:
+            print('module {0} will not be included, since CUDA isnt available'.
+                  format(name))
+            return None
+        else:
+            return CppExtension(
+                name=name, sources=sources, define_macros=define_macros)
 
 
 def make_cpp_ext(name, module, sources):
