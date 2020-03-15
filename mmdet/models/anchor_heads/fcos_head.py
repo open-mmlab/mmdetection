@@ -37,6 +37,8 @@ class FCOSHead(nn.Module):
                  strides=(4, 8, 16, 32, 64),
                  regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 512),
                                  (512, INF)),
+                 center_sampling=False,
+                 center_sample_radius=1.5,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -49,9 +51,7 @@ class FCOSHead(nn.Module):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 center_sampling=False,
-                 center_sample_radius=1.5):
+                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)):
         super(FCOSHead, self).__init__()
 
         self.num_classes = num_classes
@@ -414,12 +414,12 @@ class FCOSHead(nn.Module):
             center_gts[..., 3] = torch.where(y_maxs > gt_bboxes[..., 3],
                                              gt_bboxes[..., 3], y_maxs)
 
-            left_cb = xs - center_gts[..., 0]
-            right_cb = center_gts[..., 2] - xs
-            top_cb = ys - center_gts[..., 1]
-            bottom_cb = center_gts[..., 3] - ys
-            center_bbox = torch.stack((left_cb, top_cb, right_cb, bottom_cb),
-                                      -1)
+            cb_dist_left = xs - center_gts[..., 0]
+            cb_dist_right = center_gts[..., 2] - xs
+            cb_dist_top = ys - center_gts[..., 1]
+            cb_dist_bottom = center_gts[..., 3] - ys
+            center_bbox = torch.stack(
+                (cb_dist_left, cb_dist_top, cb_dist_right, cb_dist_bottom), -1)
             inside_gt_bbox_mask = center_bbox.min(-1)[0] > 0
         else:
             # condition1: inside a gt bbox
