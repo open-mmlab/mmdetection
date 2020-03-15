@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import os
 import subprocess
-import sys
 import time
 from setuptools import find_packages, setup
 
@@ -91,27 +90,36 @@ def get_version():
     return locals()['__version__']
 
 
-def make_cuda_ext(name, module, sources):
+def should_use_cuda():
+    return torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1'
 
+
+def make_extension(name, module, sources, is_cuda_ext=False):
+    name = '{}.{}'.format(module, name)
+    sources = [os.path.join(*module.split('.'), p) for p in sources]
     define_macros = []
 
-    if torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1':
-        define_macros += [('WITH_CUDA', None)]
-    else:
-        raise EnvironmentError('CUDA is required to compile MMDetection!')
+    if is_cuda_ext:
+        if should_use_cuda():
+            define_macros += [('WITH_CUDA', None)]
+        else:
+            raise EnvironmentError('CUDA is required to compile MMDetection!')
 
-    return CUDAExtension(
-        name='{}.{}'.format(module, name),
-        sources=[os.path.join(*module.split('.'), p) for p in sources],
-        define_macros=define_macros,
-        extra_compile_args={
-            'cxx': [],
-            'nvcc': [
-                '-D__CUDA_NO_HALF_OPERATORS__',
-                '-D__CUDA_NO_HALF_CONVERSIONS__',
-                '-D__CUDA_NO_HALF2_OPERATORS__',
-            ]
-        })
+        return CUDAExtension(
+            name=name,
+            sources=sources,
+            define_macros=define_macros,
+            extra_compile_args={
+                'cxx': [],
+                'nvcc': [
+                    '-D__CUDA_NO_HALF_OPERATORS__',
+                    '-D__CUDA_NO_HALF_CONVERSIONS__',
+                    '-D__CUDA_NO_HALF2_OPERATORS__',
+                ]
+            })
+    else:
+        return CppExtension(
+            name=name, sources=sources, define_macros=define_macros)
 
 
 def make_cpp_ext(name, module, sources):
@@ -200,19 +208,15 @@ def parse_requirements(fname='requirements.txt', with_version=True):
 
 
 if __name__ == '__main__':
-    cpu_only = False
-    if '--cpu' in sys.argv:
-        cpu_only = True
-        sys.argv.remove('--cpu')
-
+    cpu_only = not should_use_cuda()
     write_version_py(cpu_only=cpu_only)
 
     ext_modules = [
-        make_cpp_ext(
+        make_extension(
             name='compiling_info',
             module='mmdet.ops.utils',
             sources=['src/compiling_info.cpp']),
-        make_cpp_ext(
+        make_extension(
             name='nms_cpu',
             module='mmdet.ops.nms',
             sources=['src/nms_cpu.cpp'])
@@ -220,71 +224,82 @@ if __name__ == '__main__':
 
     if not cpu_only:
         ext_modules += [
-            make_cuda_ext(
+            make_extension(
                 name='nms_cuda',
                 module='mmdet.ops.nms',
-                sources=['src/nms_cuda.cpp', 'src/nms_kernel.cu']),
-            make_cuda_ext(
+                sources=['src/nms_cuda.cpp', 'src/nms_kernel.cu'],
+                is_cuda_ext=True),
+            make_extension(
                 name='roi_align_cuda',
                 module='mmdet.ops.roi_align',
                 sources=[
                     'src/roi_align_cuda.cpp',
                     'src/roi_align_kernel.cu',
                     'src/roi_align_kernel_v2.cu',
-                ]),
-            make_cuda_ext(
+                ],
+                is_cuda_ext=True),
+            make_extension(
                 name='roi_pool_cuda',
                 module='mmdet.ops.roi_pool',
-                sources=['src/roi_pool_cuda.cpp', 'src/roi_pool_kernel.cu']),
-            make_cuda_ext(
+                sources=['src/roi_pool_cuda.cpp', 'src/roi_pool_kernel.cu'],
+                is_cuda_ext=True),
+            make_extension(
                 name='deform_conv_cuda',
                 module='mmdet.ops.dcn',
                 sources=[
                     'src/deform_conv_cuda.cpp',
                     'src/deform_conv_cuda_kernel.cu'
-                ]),
-            make_cuda_ext(
+                ],
+                is_cuda_ext=True),
+            make_extension(
                 name='deform_pool_cuda',
                 module='mmdet.ops.dcn',
                 sources=[
                     'src/deform_pool_cuda.cpp',
                     'src/deform_pool_cuda_kernel.cu'
-                ]),
-            make_cuda_ext(
+                ],
+                is_cuda_ext=True),
+            make_extension(
                 name='sigmoid_focal_loss_cuda',
                 module='mmdet.ops.sigmoid_focal_loss',
                 sources=[
                     'src/sigmoid_focal_loss.cpp',
                     'src/sigmoid_focal_loss_cuda.cu'
-                ]),
-            make_cuda_ext(
+                ],
+                is_cuda_ext=True),
+            make_extension(
                 name='masked_conv2d_cuda',
                 module='mmdet.ops.masked_conv',
                 sources=[
                     'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
-                ]),
-            make_cuda_ext(
+                ],
+                is_cuda_ext=True),
+            make_extension(
                 name='affine_grid_cuda',
                 module='mmdet.ops.affine_grid',
-                sources=['src/affine_grid_cuda.cpp']),
-            make_cuda_ext(
+                sources=['src/affine_grid_cuda.cpp'],
+                is_cuda_ext=True),
+            make_extension(
                 name='grid_sampler_cuda',
                 module='mmdet.ops.grid_sampler',
                 sources=[
                     'src/cpu/grid_sampler_cpu.cpp',
                     'src/cuda/grid_sampler_cuda.cu', 'src/grid_sampler.cpp'
-                ]),
-            make_cuda_ext(
+                ],
+                is_cuda_ext=True),
+            make_extension(
                 name='carafe_cuda',
                 module='mmdet.ops.carafe',
-                sources=['src/carafe_cuda.cpp', 'src/carafe_cuda_kernel.cu']),
-            make_cuda_ext(
+                sources=['src/carafe_cuda.cpp', 'src/carafe_cuda_kernel.cu'],
+                is_cuda_ext=True),
+            make_extension(
                 name='carafe_naive_cuda',
                 module='mmdet.ops.carafe',
                 sources=[
                     'src/carafe_naive_cuda.cpp',
                     'src/carafe_naive_cuda_kernel.cu'
-                ])
+                ],
+                is_cuda_ext=True)
         ]
 
     setup(

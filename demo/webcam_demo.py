@@ -23,13 +23,12 @@ def parse_args():
 def main():
     args = parse_args()
 
-    if mmdet.version.CPU_ONLY:
+    if mmdet.CPU_ONLY:
         device = torch.device('cpu')
     else:
         device = torch.device('cuda', args.device)
 
-    model = init_detector(
-        args.config, args.checkpoint, device=device)
+    model = init_detector(args.config, args.checkpoint, device=device)
 
     camera = cv2.VideoCapture(args.camera_id)
 

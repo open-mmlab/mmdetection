@@ -7,7 +7,7 @@ from torch.nn.modules.module import Module
 
 import mmdet
 
-if not mmdet.version.CPU_ONLY:
+if not mmdet.CPU_ONLY:
     from . import carafe_cuda, carafe_naive_cuda
 
 

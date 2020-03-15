@@ -82,7 +82,7 @@ def inference_detector(model, img):
     data = dict(img=img)
     data = test_pipeline(data)
     data = collate([data], samples_per_gpu=1)
-    if mmdet.version.CPU_ONLY:
+    if mmdet.CPU_ONLY:
         # just get the actual data from DataContainer
         data['img_meta'] = data['img_meta'][0].data
     else:

@@ -4,7 +4,7 @@ import torch
 import mmdet
 from . import nms_cpu
 
-if not mmdet.version.CPU_ONLY:
+if not mmdet.CPU_ONLY:
     from . import nms_cuda
 
 
