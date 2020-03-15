@@ -638,18 +638,12 @@ class MinIoURandomCrop(object):
 
             min_iou = mode
             for i in range(50):
-                if self.ar_range is not None:
-                    # aspect ratio is restricted to specific range
-                    new_h = random.uniform(self.min_crop_size * h, h)
-                    new_ar = random.uniform(self.ar_range[0], self.ar_range[1])
-                    new_w = new_h * new_ar
-                else:
-                    new_w = random.uniform(self.min_crop_size * w, w)
-                    new_h = random.uniform(self.min_crop_size * h, h)
+                new_w = random.uniform(self.min_crop_size * w, w)
+                new_h = random.uniform(self.min_crop_size * h, h)
 
-                    # h / w in [0.5, 2]
-                    if new_h / new_w < 0.5 or new_h / new_w > 2:
-                        continue
+                # h / w in [0.5, 2]
+                if new_h / new_w < 0.5 or new_h / new_w > 2:
+                    continue
 
                 left = random.uniform(w - new_w)
                 top = random.uniform(h - new_h)
