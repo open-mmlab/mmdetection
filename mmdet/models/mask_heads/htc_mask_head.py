@@ -1,4 +1,4 @@
-from ..common import ConvModule
+from mmdet.ops import ConvModule
 from ..registry import HEADS
 from .fcn_mask_head import FCNMaskHead
 

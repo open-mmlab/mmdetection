@@ -1,7 +1,7 @@
 from torch import nn as nn
 
-from mmdet.ops import DeformConvPack, ModulatedDeformConvPack
 from .conv_ws import ConvWS2d
+from .dcn import DeformConvPack, ModulatedDeformConvPack
 
 conv_cfg = {
     'Conv': nn.Conv2d,

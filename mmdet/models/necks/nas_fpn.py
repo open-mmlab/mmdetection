@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import caffe2_xavier_init
 
-from ..common import ConvModule
+from mmdet.ops import ConvModule
 from ..registry import NECKS
 
 

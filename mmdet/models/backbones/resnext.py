@@ -2,7 +2,7 @@ import math
 
 import torch.nn as nn
 
-from ..common import build_conv_layer, build_norm_layer
+from mmdet.ops import build_conv_layer, build_norm_layer
 from ..registry import BACKBONES
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet

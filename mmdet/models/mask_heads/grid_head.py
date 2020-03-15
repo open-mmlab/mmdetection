@@ -4,8 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
 
+from mmdet.ops import ConvModule
 from ..builder import build_loss
-from ..common import ConvModule
 from ..registry import HEADS
 
 
