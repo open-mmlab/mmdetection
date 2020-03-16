@@ -60,14 +60,17 @@ def multiclass_nms(multi_bboxes,
     nms_cfg_ = nms_cfg.copy()
     nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = getattr(nms_wrapper, nms_type)
-    _, keep = nms_op(
+    dets, keep = nms_op(
         torch.cat([bboxes_for_nms, scores[:, None]], 1), **nms_cfg_)
+    bboxes = bboxes[keep]
+    scores = dets[:, -1]  # soft_nms will modify scores
+    labels = labels[keep]
 
     if keep.size(0) > max_num:
-        _, inds = scores[keep].sort(descending=True)
-        keep = keep[inds[:max_num]]
-    bboxes = bboxes[keep]
-    scores = scores[keep]
-    labels = labels[keep]
+        _, inds = scores.sort(descending=True)
+        inds = inds[:max_num]
+        bboxes = bboxes[inds]
+        scores = scores[inds]
+        labels = labels[inds]
 
     return torch.cat([bboxes, scores[:, None]], 1), labels
