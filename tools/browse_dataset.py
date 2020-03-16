@@ -25,7 +25,7 @@ def parse_args():
     parser.add_argument('--not-show', default=False, action='store_true')
     parser.add_argument(
         '--show-interval',
-        type=float,
+        type=int,
         default=999,
         help='the interval of show (ms)')
     args = parser.parse_args()
