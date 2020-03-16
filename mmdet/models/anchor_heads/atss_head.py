@@ -427,6 +427,7 @@ class ATSSHead(AnchorHead):
                                            cfg.allowed_border)
         if not inside_flags.any():
             return (None, ) * 6
+        inside_flags = inside_flags.type(torch.bool)
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 
