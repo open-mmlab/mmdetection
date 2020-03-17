@@ -1006,7 +1006,7 @@ class RandomRescale(Rescale):
         return repr
 
 
-@PIPELINES.register_module(force=True)
+@PIPELINES.register_module
 class AutoContrast(object):
     """ Autocontrast image by subtracting specified image percentile and dividing
     by the specified percentile of the intensity distribution according to the
@@ -1030,7 +1030,7 @@ class AutoContrast(object):
                                              self.pbkg, self.pmax)
 
 
-@PIPELINES.register_module(force=True)
+@PIPELINES.register_module
 class RandomGamma(object):
     """ Apply Gamma correction to specific channels, with gamma randomly
     selelcted from the list of possible values.
@@ -1062,7 +1062,7 @@ class RandomGamma(object):
                                                    self.gammas, self.channels)
 
 
-@PIPELINES.register_module(force=True)
+@PIPELINES.register_module
 class RandomBlur(object):
     """ Randomly Blur or Deblur specific channels of the image.
     Takes sigmas from the list. Negative sigmas correspond to unsharp mask,
@@ -1104,7 +1104,7 @@ class RandomBlur(object):
             self.__class__.__name__, self.sigmas, self.k, self.channels)
 
 
-@PIPELINES.register_module(force=True)
+@PIPELINES.register_module
 class RandomChannelPermutation(object):
     """ Randomly flip channels
     """
@@ -1124,7 +1124,7 @@ class RandomChannelPermutation(object):
         return '{}(channels={})'.format(self.__class__.__name__, self.channels)
 
 
-@PIPELINES.register_module(force=True)
+@PIPELINES.register_module
 class ConvertToMultiChannel(object):
     """ Convert single channel image to multichannel by
     replicating single channel.
