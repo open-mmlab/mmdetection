@@ -1,10 +1,7 @@
 # model settings
 model = dict(
     type='HybridTaskCascade',
-    num_stages=3,
     pretrained='open-mmlab://resnext101_64x4d',
-    interleaved=True,
-    mask_info_flow=True,
     backbone=dict(
         type='ResNeXt',
         depth=101,

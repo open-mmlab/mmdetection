@@ -20,8 +20,8 @@ def test_config_build_detector():
     """
     Test that all detection models defined in the configs can be initialized.
     """
-    from xdoctest.utils import import_module_from_path
     from mmdet.models import build_detector
+    from mmcv import Config
 
     config_dpath = _get_config_directory()
     print('Found config_dpath = {!r}'.format(config_dpath))
@@ -147,14 +147,16 @@ def test_config_build_detector():
         # ---
         # 'fp16/retinanet_r50_fpn_fp16_1x.py',
         'fp16/mask_rcnn_r50_fpn_fp16_1x.py',
-        'fp16/faster_rcnn_r50_fpn_fp16_1x.py'
+        'fp16/faster_rcnn_r50_fpn_fp16_1x.py',
+        'carafe/mask_rcnn_r50_fpn_carafe_1x.py',
+        'carafe/faster_rcnn_r50_fpn_carafe_1x.py'
     ]
 
     print('Using {} config files'.format(len(config_names)))
 
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
-        config_mod = import_module_from_path(config_fpath)
+        config_mod = Config.fromfile(config_fpath)
 
         config_mod.model
         config_mod.train_cfg
