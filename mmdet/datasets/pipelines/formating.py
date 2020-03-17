@@ -190,3 +190,16 @@ class Collect(object):
     def __repr__(self):
         return self.__class__.__name__ + '(keys={}, meta_keys={})'.format(
             self.keys, self.meta_keys)
+
+
+@PIPELINES.register_module
+class WrapFieldsToLists(object):
+
+    def __call__(self, results):
+        # Wrap dict fields into lists
+        for key, val in results.items():
+            results[key] = [val]
+        return results
+
+    def __repr__(self):
+        return '{}()'.format(self.__class__.__name__)
