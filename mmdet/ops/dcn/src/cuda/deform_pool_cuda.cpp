@@ -80,11 +80,3 @@ void deform_psroi_pooling_cuda_backward(
       spatial_scale, output_dim, group_size, pooled_size, part_size,
       sample_per_part, trans_std);
 }
-
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("deform_psroi_pooling_cuda_forward", &deform_psroi_pooling_cuda_forward,
-        "deform psroi pooling forward(CUDA)");
-  m.def("deform_psroi_pooling_cuda_backward",
-        &deform_psroi_pooling_cuda_backward,
-        "deform psroi pooling backward(CUDA)");
-}
