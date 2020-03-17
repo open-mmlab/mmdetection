@@ -5,7 +5,7 @@ For installation instructions, please see [INSTALL.md](INSTALL.md).
 
 ## Inference with pretrained models
 
-We provide testing scripts to evaluate a whole dataset (COCO, PASCAL VOC, etc.),
+We provide testing scripts to evaluate a whole dataset (COCO, PASCAL VOC, Cityscapes, etc.),
 and also some high-level apis for easier integration to other projects.
 
 ### Test a dataset
@@ -26,14 +26,16 @@ python tools/test.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}] [-
 
 Optional arguments:
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
-- `EVAL_METRICS`: Items to be evaluated on the results. Allowed values are: `proposal_fast`, `proposal`, `bbox`, `segm`, `keypoints`.
-- `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing. Please make sure that GUI is available in your environment, otherwise you may encounter the error like `cannot connect to X server`.
+- `EVAL_METRICS`: Items to be evaluated on the results. Allowed values depend on the dataset, e.g., `proposal_fast`, `proposal`, `bbox`, `segm` are available for COCO, `mAP`, `recall` for PASCAL VOC. Cityscapes could be evaluated by `cityscapes` as well as all COCO metrics.
+- `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment, otherwise you may encounter the error like `cannot connect to X server`.
+
+If you would like to evaluate the dataset, do not specify `--show` at the same time.
 
 Examples:
 
-Assume that you have already downloaded the checkpoints to `checkpoints/`.
+Assume that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
-1. Test Faster R-CNN and show the results.
+1. Test Faster R-CNN and visualize the results. Press any key for the next image.
 
 ```shell
 python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
@@ -41,12 +43,12 @@ python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
     --show
 ```
 
-2. Test Mask R-CNN and evaluate the bbox and mask AP.
+2. Test Faster R-CNN on PASCAL VOC (without saving the test results) and evaluate the mAP.
 
 ```shell
-python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    --out results.pkl --eval bbox segm
+python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
+    checkpoints/SOME_CHECKPOINT.pth \
+    --eval mAP
 ```
 
 3. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
@@ -56,6 +58,26 @@ python tools/test.py configs/mask_rcnn_r50_fpn_1x.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
     8 --out results.pkl --eval bbox segm
 ```
+
+4. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
+
+```shell
+./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x.py \
+    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+```
+
+You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+
+5. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate the txt and png files to be submit to the official evaluation server.
+
+```shell
+./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
+    checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
+    8  --format_only --options "outfile_prefix=./mask_rcnn_cityscapes_test_results"
+```
+
+The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
 ### Webcam demo
 
@@ -189,7 +211,7 @@ Difference between `resume_from` and `load_from`:
 
 ### Train with multiple machines
 
-If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`.
+If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`. (This script also supports single machine training.)
 
 ```shell
 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR} [${GPUS}]
@@ -219,7 +241,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
 CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
-If you use launch training jobs with slurm, you need to modify the config files (usually the 6th line from the bottom in config files) to set different communication ports. 
+If you use launch training jobs with slurm, you need to modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
 
 In `config1.py`,
 ```python
@@ -239,6 +261,8 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} con
 ```
 
 ## Useful tools
+
+We provide lots of useful tools under `tools/` directory.
 
 ### Analyze logs
 
@@ -286,16 +310,6 @@ time std over epochs is 0.0028
 average iter time: 1.1959 s/iter
 
 ```
-
-### Analyse class-wise performance
-
-You can analyse the class-wise mAP to have a more comprehensive understanding of the model.
-
-```shell
-python coco_eval.py ${RESULT} --ann ${ANNOTATION_PATH} --types bbox --classwise
-```
-
-Now we only support class-wise mAP for all the evaluation types, we will support class-wise mAR in the future.
 
 ### Get the FLOPs and params (experimental)
 
@@ -417,6 +431,31 @@ There are two ways to work with custom datasets.
   You can convert the annotation format to the expected format above and save it to
   a pickle or json file, like [pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/pascal_voc.py).
   Then you can simply use `CustomDataset`.
+
+### Customize optimizer
+
+An example of customized optimizer `CopyOfSGD` is defined in `mmdet/core/optimizer/copy_of_sgd.py`.
+More generally, a customized optimizer could be defined as following.
+
+In `mmdet/core/optimizer/my_optimizer.py`:
+
+```python
+from .registry import OPTIMIZERS
+from torch.optim import Optimizer
+
+
+@OPTIMIZERS.register_module
+class MyOptimizer(Optimizer):
+
+```
+
+In `mmdet/core/optimizer/__init__.py`:
+
+```python
+from .my_optimizer import MyOptimizer
+```
+
+Then you can use `MyOptimizer` in `optimizer` field of config files.
 
 ### Develop new components
 

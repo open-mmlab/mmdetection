@@ -1,10 +1,10 @@
-import logging
 from multiprocessing import Pool
 
 import mmcv
 import numpy as np
 from terminaltables import AsciiTable
 
+from mmdet.utils import print_log
 from .bbox_overlaps import bbox_overlaps
 from .class_names import get_classes
 
@@ -258,7 +258,7 @@ def get_cls_results(det_results, annotations, class_id):
             ignore_inds = ann['labels_ignore'] == (class_id + 1)
             cls_gts_ignore.append(ann['bboxes_ignore'][ignore_inds, :])
         else:
-            cls_gts_ignore.append(np.array((0, 4), dtype=np.float32))
+            cls_gts_ignore.append(np.empty((0, 4), dtype=np.float32))
 
     return cls_dets, cls_gts, cls_gts_ignore
 
@@ -268,7 +268,7 @@ def eval_map(det_results,
              scale_ranges=None,
              iou_thr=0.5,
              dataset=None,
-             logger='default',
+             logger=None,
              nproc=4):
     """Evaluate mAP of a dataset.
 
@@ -291,11 +291,8 @@ def eval_map(det_results,
         dataset (list[str] | str | None): Dataset name or dataset classes,
             there are minor differences in metrics for different datsets, e.g.
             "voc07", "imagenet_det", etc. Default: None.
-        logger (logging.Logger | 'print' | None): The way to print the mAP
-            summary. If a Logger is specified, then the summary will be logged
-            with `logger.info()`; if set to "print", then it will be simply
-            printed to stdout; if set to None, then no information will be
-            printed. Default: 'print'.
+        logger (logging.Logger | str | None): The way to print the mAP
+            summary. See `mmdet.utils.print_log()` for details. Default: None.
         nproc (int): Processes used for computing TP and FP.
             Default: 4.
 
@@ -383,9 +380,9 @@ def eval_map(det_results,
             if cls_result['num_gts'] > 0:
                 aps.append(cls_result['ap'])
         mean_ap = np.array(aps).mean().item() if aps else 0.0
-    if logger is not None:
-        print_map_summary(
-            mean_ap, eval_results, dataset, area_ranges, logger=logger)
+
+    print_map_summary(
+        mean_ap, eval_results, dataset, area_ranges, logger=logger)
 
     return mean_ap, eval_results
 
@@ -405,18 +402,12 @@ def print_map_summary(mean_ap,
         results (list[dict]): Calculated from `eval_map()`.
         dataset (list[str] | str | None): Dataset name or dataset classes.
         scale_ranges (list[tuple] | None): Range of scales to be evaluated.
-        logger (logging.Logger | 'print' | None): The way to print the mAP
-            summary. If a Logger is specified, then the summary will be logged
-            with `logger.info()`; if set to "print", then it will be simply
-            printed to stdout; if set to None, then no information will be
-            printed. Default: 'print'.
+        logger (logging.Logger | str | None): The way to print the mAP
+            summary. See `mmdet.utils.print_log()` for details. Default: None.
     """
 
-    def _print(content):
-        if logger == 'print':
-            print(content)
-        elif isinstance(logger, logging.Logger):
-            logger.info(content)
+    if logger == 'silent':
+        return
 
     if isinstance(results[0]['ap'], np.ndarray):
         num_scales = len(results[0]['ap'])
@@ -425,9 +416,6 @@ def print_map_summary(mean_ap,
 
     if scale_ranges is not None:
         assert len(scale_ranges) == num_scales
-
-    assert logger is None or logger == 'print' or isinstance(
-        logger, logging.Logger)
 
     num_classes = len(results)
 
@@ -453,7 +441,7 @@ def print_map_summary(mean_ap,
     header = ['class', 'gts', 'dets', 'recall', 'ap']
     for i in range(num_scales):
         if scale_ranges is not None:
-            _print('Scale range ', scale_ranges[i])
+            print_log('Scale range {}'.format(scale_ranges[i]), logger=logger)
         table_data = [header]
         for j in range(num_classes):
             row_data = [
@@ -464,4 +452,4 @@ def print_map_summary(mean_ap,
         table_data.append(['mAP', '', '', '', '{:.3f}'.format(mean_ap[i])])
         table = AsciiTable(table_data)
         table.inner_footing_row_border = True
-        _print('\n' + table.table)
+        print_log('\n' + table.table, logger=logger)

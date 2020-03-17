@@ -114,6 +114,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric='bbox')
 # optimizer
 optimizer = dict(
     type='SGD',
@@ -140,7 +141,6 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 total_epochs = 50
-device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/retinanet_crop640_r50_fpn_50e'

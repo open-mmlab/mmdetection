@@ -136,7 +136,7 @@ class GridRoIHead(BaseRoIHead):
         assert self.with_bbox, "Bbox head must be implemented."
 
         det_bboxes, det_labels = self.simple_test_bboxes(
-            x, img_meta, proposal_list, self.test_cfg, rescale=rescale)
+            x, img_meta, proposal_list, self.test_cfg, rescale=False)
         # pack rois into bboxes
         grid_rois = bbox2roi([det_bboxes[:, :4]])
         grid_feats = self.grid_roi_extractor(

@@ -24,15 +24,15 @@ before_install:
   - PATH=${CUDA_HOME}/bin:${PATH}
 
 install:
-  - pip install Cython torch==1.2
-  - pip install Pillow==6.2.2
+  - pip install Pillow==6.2.2  # remove this line when torchvision>=0.5
+  - pip install torch==1.2 torchvision==0.4.0  # TODO: fix CI for pytorch>1.2
+  - pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
   - pip install -r requirements.txt
-  - pip install -r tests/requirements.txt
 
 before_script:
   - flake8 .
   - isort -rc --check-only --diff mmdet/ tools/ tests/
-  - yapf -r -d --style .style.yapf mmdet/ tools/ tests/
+  - yapf -r -d --style .style.yapf mmdet/ tools/ tests/ configs/
 
 script:
   - python setup.py check -m -s

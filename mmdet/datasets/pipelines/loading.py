@@ -10,8 +10,9 @@ from ..registry import PIPELINES
 @PIPELINES.register_module
 class LoadImageFromFile(object):
 
-    def __init__(self, to_float32=False):
+    def __init__(self, to_float32=False, color_type='color'):
         self.to_float32 = to_float32
+        self.color_type = color_type
 
     def __call__(self, results):
         if results['img_prefix'] is not None:
@@ -19,7 +20,7 @@ class LoadImageFromFile(object):
                                 results['img_info']['filename'])
         else:
             filename = results['img_info']['filename']
-        img = mmcv.imread(filename)
+        img = mmcv.imread(filename, self.color_type)
         if self.to_float32:
             img = img.astype(np.float32)
         results['filename'] = filename
@@ -29,8 +30,8 @@ class LoadImageFromFile(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(to_float32={})'.format(
-            self.to_float32)
+        return '{} (to_float32={}, color_type={})'.format(
+            self.__class__.__name__, self.to_float32, self.color_type)
 
 
 @PIPELINES.register_module

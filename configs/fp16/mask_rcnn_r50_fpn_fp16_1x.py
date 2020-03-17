@@ -11,6 +11,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch'),
     neck=dict(
         type='FPN',
@@ -162,6 +163,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric=['bbox', 'segm'])
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
@@ -181,7 +183,6 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
-evaluation = dict(interval=1)
 # runtime settings
 total_epochs = 12
 dist_params = dict(backend='nccl')

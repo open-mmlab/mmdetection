@@ -34,6 +34,7 @@ int masked_im2col_forward_cuda(const at::Tensor im, const at::Tensor mask_h_idx,
   CHECK_INPUT(col);
   // im: (n, ic, h, w), kernel size (kh, kw)
   // kernel: (oc, ic * kh * kw), col: (kh * kw * ic, ow * oh)
+  at::DeviceGuard guard(im.device());
 
   int channels = im.size(1);
   int height = im.size(2);
@@ -57,6 +58,7 @@ int masked_col2im_forward_cuda(const at::Tensor col,
   CHECK_INPUT(im);
   // im: (n, ic, h, w), kernel size (kh, kw)
   // kernel: (oc, ic * kh * kh), col: (kh * kw * ic, ow * oh)
+  at::DeviceGuard guard(col.device());
 
   int mask_cnt = mask_h_idx.size(0);
 

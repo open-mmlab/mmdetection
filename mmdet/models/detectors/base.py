@@ -6,6 +6,7 @@ import pycocotools.mask as maskUtils
 import torch.nn as nn
 
 from mmdet.core import auto_fp16, get_classes, tensor2imgs
+from mmdet.utils import print_log
 
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
@@ -19,6 +20,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
     def with_neck(self):
         return hasattr(self, 'neck') and self.neck is not None
 
+    # TODO: these properties need to be carefully handled
+    # for both single stage & two stage detectors
     @property
     def with_shared_head(self):
         return hasattr(self.roi_head,
@@ -26,13 +29,15 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     @property
     def with_bbox(self):
-        return hasattr(self.roi_head,
-                       'bbox_head') and self.roi_head.bbox_head is not None
+        return ((hasattr(self.roi_head, 'bbox_head')
+                 and self.roi_head.bbox_head is not None)
+                or (hasattr(self, 'bbox_head') and self.bbox_head is not None))
 
     @property
     def with_mask(self):
-        return hasattr(self.roi_head,
-                       'mask_head') and self.roi_head.mask_head is not None
+        return ((hasattr(self.roi_head, 'mask_head')
+                 and self.roi_head.mask_head is not None)
+                or (hasattr(self, 'mask_head') and self.mask_head is not None))
 
     @abstractmethod
     def extract_feat(self, imgs):
@@ -74,9 +79,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     def init_weights(self, pretrained=None):
         if pretrained is not None:
-            from mmdet.apis import get_root_logger
-            logger = get_root_logger()
-            logger.info('load model from: {}'.format(pretrained))
+            print_log('load model from: {}'.format(pretrained), logger='root')
 
     async def aforward_test(self, *, img, img_meta, **kwargs):
         for var, name in [(img, 'img'), (img_meta, 'img_meta')]:
@@ -104,9 +107,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             imgs (List[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains all images in the batch.
-            img_meta (List[List[dict]]): the outer list indicates test-time
+            img_metas (List[List[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch
+                images in a batch.
         """
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
@@ -123,8 +126,18 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         assert imgs_per_gpu == 1
 
         if num_augs == 1:
+            """
+            proposals (List[List[Tensor]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. The Tensor should have a shape Px4, where
+                P is the number of proposals.
+            """
+            if 'proposals' in kwargs:
+                kwargs['proposals'] = kwargs['proposals'][0]
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
+            # TODO: support test augmentation for predefined proposals
+            assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
 
     @auto_fp16(apply_to=('img', ))

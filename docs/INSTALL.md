@@ -39,11 +39,13 @@ git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Install mmdetection (other dependencies will be installed automatically).
+d. Install build requirements and then install mmdetection.
+(We install pycocotools via the github repo instead of pypi because the pypi version is old and not compatible with the latest numpy.)
 
 ```shell
-pip install mmcv
-python setup.py develop  # or "pip install -v -e ."
+pip install -r requirements/build.txt
+pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
+pip install -v -e .  # or "python setup.py develop"
 ```
 
 Note:
@@ -55,6 +57,8 @@ It is recommended that you run step d each time you pull some updates from githu
 
 3. If you would like to use `opencv-python-headless` instead of `opencv-python`,
 you can install it before installing MMCV.
+
+4. Some dependencies are optional. Simply running `pip install -v -e .` will only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
 ### Another option: Docker Image
 
@@ -83,33 +87,38 @@ mmdetection
 │   │   ├── test2017
 │   ├── cityscapes
 │   │   ├── annotations
-│   │   ├── train
-│   │   ├── val
+│   │   ├── leftImg8bit
+│   │   │   ├── train
+│   │   │   ├── val
+│   │   ├── gtFine
+│   │   │   ├── train
+│   │   │   ├── val
 │   ├── VOCdevkit
 │   │   ├── VOC2007
 │   │   ├── VOC2012
 
 ```
-The cityscapes annotations have to be converted into the coco format using the [cityscapesScripts](https://github.com/mcordts/cityscapesScripts) toolbox.
-We plan to provide an easy to use conversion script. For the moment we recommend following the instructions provided in the
-[maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/tree/master/maskrcnn_benchmark/data) toolbox. When using this script all images have to be moved into the same folder. On linux systems this can e.g. be done for the train images with:
+The cityscapes annotations have to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
 ```shell
-cd data/cityscapes/
-mv train/*/* train/
+pip install cityscapesscripts
+python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out_dir ./data/cityscapes/annotations
 ```
+Current the config files in `cityscapes` use COCO pre-trained weights to initialize.
+You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
 
 ### A from-scratch setup script
 
-Here is a full script for setting up mmdetection with conda and link the dataset path.
+Here is a full script for setting up mmdetection with conda and link the dataset path (supposing that your COCO dataset path is $COCO_ROOT).
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
 conda activate open-mmlab
 
 conda install -c pytorch pytorch torchvision -y
-conda install cython -y
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
+pip install -r requirements/build.txt
+pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 pip install -v -e .
 
 mkdir data
