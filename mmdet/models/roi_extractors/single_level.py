@@ -88,14 +88,17 @@ class SingleRoIExtractor(nn.Module):
 
     @force_fp32(apply_to=('feats', ), out_fp16=True)
     def forward(self, feats, rois, roi_scale_factor=None):
-        if len(feats) == 1:
-            return self.roi_layers[0](feats[0], rois)
-
         out_size = self.roi_layers[0].out_size
         num_levels = len(feats)
-        target_lvls = self.map_roi_levels(rois, num_levels)
         roi_feats = feats[0].new_zeros(
             rois.size(0), self.out_channels, *out_size)
+
+        if num_levels == 1:
+            if len(rois) == 0:
+                return roi_feats
+            return self.roi_layers[0](feats[0], rois)
+
+        target_lvls = self.map_roi_levels(rois, num_levels)
         if roi_scale_factor is not None:
             rois = self.roi_rescale(rois, roi_scale_factor)
         for i in range(num_levels):

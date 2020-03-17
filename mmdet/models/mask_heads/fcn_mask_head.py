@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import auto_fp16, force_fp32, mask_target
-from mmdet.ops import ConvModule, build_upsample_layer
+from mmdet.ops import Conv2d, ConvModule, build_upsample_layer
 from mmdet.ops.carafe import CARAFEPack
 from ..builder import build_loss
 from ..registry import HEADS
@@ -93,7 +93,7 @@ class FCNMaskHead(nn.Module):
         logits_in_channel = (
             self.conv_out_channels
             if self.upsample_method == 'deconv' else upsample_in_channels)
-        self.conv_logits = nn.Conv2d(logits_in_channel, out_channels, 1)
+        self.conv_logits = Conv2d(logits_in_channel, out_channels, 1)
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
@@ -131,11 +131,14 @@ class FCNMaskHead(nn.Module):
     @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, mask_targets, labels):
         loss = dict()
-        if self.class_agnostic:
-            loss_mask = self.loss_mask(mask_pred, mask_targets,
-                                       torch.zeros_like(labels))
+        if mask_pred.size(0) == 0:
+            loss_mask = mask_pred.sum() * 0
         else:
-            loss_mask = self.loss_mask(mask_pred, mask_targets, labels)
+            if self.class_agnostic:
+                loss_mask = self.loss_mask(mask_pred, mask_targets,
+                                           torch.zeros_like(labels))
+            else:
+                loss_mask = self.loss_mask(mask_pred, mask_targets, labels)
         loss['loss_mask'] = loss_mask
         return loss
 
