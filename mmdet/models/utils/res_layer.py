@@ -1,6 +1,6 @@
 from torch import nn as nn
 
-from mmdet.models.utils import build_conv_layer, build_norm_layer
+from mmdet.ops import build_conv_layer, build_norm_layer
 
 
 class ResLayer(nn.Sequential):
