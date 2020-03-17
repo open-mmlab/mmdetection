@@ -103,7 +103,7 @@ def _context_for_ohem():
         'faster_rcnn_ohem_r50_fpn_1x.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
-    model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
+    model['roi_head']['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
     from mmdet.models import build_detector
     context = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
     return context
