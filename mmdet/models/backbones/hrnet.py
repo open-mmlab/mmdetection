@@ -3,9 +3,9 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from mmdet.ops import build_conv_layer, build_norm_layer
 from mmdet.utils import get_root_logger
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
 from .resnet import BasicBlock, Bottleneck
 
 

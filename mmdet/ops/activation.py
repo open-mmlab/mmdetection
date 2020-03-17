@@ -2,13 +2,13 @@ import torch.nn as nn
 
 activation_cfg = {
     # layer_abbreviation: module
-    'relu': nn.ReLU,
-    'leaky_relu': nn.LeakyReLU,
-    'p_relu': nn.PReLU,
-    'r_relu': nn.RReLU,
-    'relu6': nn.ReLU6,
-    'selu': nn.SELU,
-    'celu': nn.CELU
+    'ReLU': nn.ReLU,
+    'LeakyReLU': nn.LeakyReLU,
+    'PReLU': nn.PReLU,
+    'RReLU': nn.RReLU,
+    'ReLU6': nn.ReLU6,
+    'SELU': nn.SELU,
+    'CELU': nn.CELU
 }
 
 

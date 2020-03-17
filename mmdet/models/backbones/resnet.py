@@ -4,11 +4,11 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.plugins import GeneralizedAttention
-from mmdet.ops import ContextBlock
+from mmdet.ops import (ContextBlock, GeneralizedAttention, build_conv_layer,
+                       build_norm_layer)
 from mmdet.utils import get_root_logger
 from ..registry import BACKBONES
-from ..utils import ResLayer, build_conv_layer, build_norm_layer
+from ..utils import ResLayer
 
 
 class BasicBlock(nn.Module):

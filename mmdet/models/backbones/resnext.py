@@ -1,7 +1,7 @@
 import math
 
+from mmdet.ops import build_conv_layer, build_norm_layer
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 
