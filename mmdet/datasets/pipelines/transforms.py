@@ -844,8 +844,6 @@ class Albu(object):
             # filter label_fields
             if self.filter_lost_elements:
 
-                results['idx_mapper'] = np.arange(len(results['bboxes']))
-
                 for label in self.origin_label_fields:
                     results[label] = np.array(
                         [results[label][i] for i in results['idx_mapper']])
