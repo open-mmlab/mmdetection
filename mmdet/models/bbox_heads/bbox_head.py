@@ -61,6 +61,7 @@ class BBoxHead(nn.Module):
         self.debug_imgs = None
 
     def init_weights(self):
+        # conv layers are already initialized by ConvModule
         if self.with_cls:
             nn.init.normal_(self.fc_cls.weight, 0, 0.01)
             nn.init.constant_(self.fc_cls.bias, 0)
