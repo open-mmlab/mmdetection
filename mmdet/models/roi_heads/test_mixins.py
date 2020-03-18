@@ -30,10 +30,10 @@ class BBoxTestMixin(object):
                 x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
             if self.with_shared_head:
                 roi_feats = self.shared_head(roi_feats)
-            sleep_interval = rcnn_test_cfg.get("async_sleep_interval", 0.017)
+            sleep_interval = rcnn_test_cfg.get('async_sleep_interval', 0.017)
 
             async with completed(
-                    __name__, "bbox_head_forward",
+                    __name__, 'bbox_head_forward',
                     sleep_interval=sleep_interval):
                 cls_score, bbox_pred = self.bbox_head(roi_feats)
 
@@ -146,7 +146,7 @@ class MaskTestMixin(object):
                     sleep_interval = 0.035
                 async with completed(
                         __name__,
-                        "mask_head_forward",
+                        'mask_head_forward',
                         sleep_interval=sleep_interval):
                     mask_pred = self.mask_head(mask_feats)
                 segm_result = self.mask_head.get_seg_masks(

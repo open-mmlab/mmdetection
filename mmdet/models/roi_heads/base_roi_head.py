@@ -226,7 +226,7 @@ class BaseRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                                 proposals=None,
                                 rescale=False):
         """Async test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
+        assert self.with_bbox, 'Bbox head must be implemented.'
 
         det_bboxes, det_labels = await self.async_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg, rescale=rescale)
@@ -252,7 +252,7 @@ class BaseRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                     proposals=None,
                     rescale=False):
         """Test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
+        assert self.with_bbox, 'Bbox head must be implemented.'
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg, rescale=rescale)

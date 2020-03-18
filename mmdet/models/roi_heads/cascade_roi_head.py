@@ -267,7 +267,7 @@ class CascadeRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
 
     def simple_test(self, x, proposal_list, img_meta, rescale=False):
         """Test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
+        assert self.with_bbox, 'Bbox head must be implemented.'
         img_shape = img_meta[0]['img_shape']
         ori_shape = img_meta[0]['ori_shape']
         scale_factor = img_meta[0]['scale_factor']
