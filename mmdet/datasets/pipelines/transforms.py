@@ -156,7 +156,11 @@ class Resize(object):
                     mmcv.imresize(mask, mask_size, interpolation='nearest')
                     for mask in results[key]
                 ]
-            results[key] = np.stack(masks)
+            if masks:
+                results[key] = np.stack(masks)
+            else:
+                results[key] = np.empty(
+                    (0, ) + results['img_shape'], dtype=np.uint8)
 
     def _resize_seg(self, results):
         for key in results.get('seg_fields', []):
@@ -245,10 +249,15 @@ class RandomFlip(object):
                                               results['flip_direction'])
             # flip masks
             for key in results.get('mask_fields', []):
-                results[key] = np.stack([
+                masks = [
                     mmcv.imflip(mask, direction=results['flip_direction'])
                     for mask in results[key]
-                ])
+                ]
+                if masks:
+                    results[key] = np.stack(masks)
+                else:
+                    results[key] = np.empty(
+                        (0, ) + results['img_shape'], dtype=np.uint8)
 
             # flip segs
             for key in results.get('seg_fields', []):
