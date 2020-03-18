@@ -126,7 +126,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
             outs = outs + (rpn_outs, )
-        proposals = torch.randn(1000, 4).cuda()
+        proposals = torch.randn(1000, 4).to(device=img.device)
         # bbox heads
         rois = bbox2roi([proposals])
         if self.with_bbox:
