@@ -2,6 +2,7 @@ import math
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair, _single
@@ -236,8 +237,18 @@ class DeformConv(nn.Module):
         self.weight.data.uniform_(-stdv, stdv)
 
     def forward(self, x, offset):
-        return deform_conv(x, offset, self.weight, self.stride, self.padding,
-                           self.dilation, self.groups, self.deformable_groups)
+        input_pad = (
+            x.size()[2] < self.kernel_size or x.size()[3] < self.kernel_size)
+        if input_pad:
+            pad_x = max(self.kernel_size - x.size()[2], 0)
+            pad_y = max(self.kernel_size - x.size()[3], 0)
+            x = F.pad(x, (0, pad_x, 0, pad_y), 'constant', 0)
+            offset = F.pad(offset, (0, pad_x, 0, pad_y), 'constant', 0)
+        out = deform_conv(x, offset, self.weight, self.stride, self.padding,
+                          self.dilation, self.groups, self.deformable_groups)
+        if input_pad:
+            out = out[:, :, :-pad_x, :-pad_y]
+        return
 
 
 class DeformConvPack(DeformConv):
