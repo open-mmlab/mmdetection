@@ -1,5 +1,3 @@
-# Modified from https://github.com/open-mmlab/mmdetection/pull/1082
-# and https://github.com/facebookresearch/detectron2/blob/master/detectron2/export/api.py # noqa
 import argparse
 import io
 
@@ -14,13 +12,15 @@ from mmdet.models import build_detector
 from mmdet.ops import RoIAlign, RoIPool
 
 
-def export_onnx_model(model, inputs):
+def export_onnx_model(model, inputs, passes):
     """
     Trace and export a model to onnx format.
+    Modified from https://github.com/facebookresearch/detectron2/
 
     Args:
         model (nn.Module):
         inputs (tuple[args]): the model will be called by `model(*inputs)`
+        passes (None or list[str]): the optimization passed for ONNX model
 
     Returns:
         an onnx model
@@ -49,8 +49,10 @@ def export_onnx_model(model, inputs):
 
     # Apply ONNX's Optimization
     all_passes = optimizer.get_available_passes()
-    passes = ['fuse_bn_into_conv']
-    assert all(p in all_passes for p in passes)
+    print(all_passes)
+    if passes is not None:
+        assert all(p in all_passes for p in passes), \
+            'Only {} are supported'.format(all_passes)
     onnx_model = optimizer.optimize(onnx_model, passes)
     return onnx_model
 
@@ -68,6 +70,8 @@ def parse_args():
         nargs='+',
         default=[1280, 800],
         help='input image size')
+    parser.add_argument(
+        '--passes', type=str, nargs='+', help='ONNX optimization passes')
     args = parser.parse_args()
     return args
 
@@ -111,7 +115,7 @@ def main():
                              dtype=next(model.parameters()).dtype,
                              device=next(model.parameters()).device)
 
-    onnx_model = export_onnx_model(model, (input_data, ))
+    onnx_model = export_onnx_model(model, (input_data, ), args.passes)
     # Print a human readable representation of the graph
     onnx.helper.printable_graph(onnx_model.graph)
     print('saving model in {}'.format(args.out))
