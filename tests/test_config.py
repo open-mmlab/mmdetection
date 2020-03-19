@@ -185,10 +185,6 @@ def test_config_data_pipeline():
     config_dpath = _get_config_directory()
     print('Found config_dpath = {!r}'.format(config_dpath))
 
-    # import glob
-    # config_fpaths = list(glob.glob(join(config_dpath, '**', '*.py')))
-    # config_names = [relpath(p, config_dpath) for p in config_fpaths]
-
     # Only tests a representative subset of configurations
     # TODO: test pipelines using Albu, current Albu throw None given empty GT
     config_names = [
