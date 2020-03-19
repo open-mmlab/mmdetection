@@ -48,9 +48,8 @@ def export_onnx_model(model, inputs, passes):
             onnx_model = onnx.load_from_string(f.getvalue())
 
     # Apply ONNX's Optimization
-    all_passes = optimizer.get_available_passes()
-    print(all_passes)
     if passes is not None:
+        all_passes = optimizer.get_available_passes()
         assert all(p in all_passes for p in passes), \
             'Only {} are supported'.format(all_passes)
     onnx_model = optimizer.optimize(onnx_model, passes)
