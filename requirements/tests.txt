@@ -7,6 +7,6 @@ kwarray
 pytest
 pytest-cov
 pytest-runner
-ubelt == 0.8.8
+ubelt
 xdoctest >= 0.10.0
 yapf

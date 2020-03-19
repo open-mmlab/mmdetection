@@ -7,11 +7,11 @@ This page provides basic tutorials how to use the benchmark.
 
 ```
 @article{michaelis2019winter,
-  title={Benchmarking Robustness in Object Detection: 
+  title={Benchmarking Robustness in Object Detection:
     Autonomous Driving when Winter is Coming},
-  author={Michaelis, Claudio and Mitzkus, Benjamin and 
-    Geirhos, Robert and Rusak, Evgenia and 
-    Bringmann, Oliver and Ecker, Alexander S. and 
+  author={Michaelis, Claudio and Mitzkus, Benjamin and
+    Geirhos, Robert and Rusak, Evgenia and
+    Bringmann, Oliver and Ecker, Alexander S. and
     Bethge, Matthias and Brendel, Wieland},
   journal={arXiv:1907.07484},
   year={2019}
@@ -25,7 +25,7 @@ This page provides basic tutorials how to use the benchmark.
 To submit results to the benchmark please visit the [benchmark homepage](https://github.com/bethgelab/robust-detection-benchmark)
 
 The benchmark is modelled after the [imagenet-c benchmark](https://github.com/hendrycks/robustness) which was originally
-published in [Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261) (ICLR 2019) by Dan Hendrycks and Thomas Dietterich. 
+published in [Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261) (ICLR 2019) by Dan Hendrycks and Thomas Dietterich.
 
 The image corruption functions are included in this library but can be installed separately using:
 
@@ -34,7 +34,7 @@ pip install imagecorruptions
 ```
 
 Compared to imagenet-c a few changes had to be made to handle images of arbitrary size and greyscale images.
-We also modfied the 'motion blur' and 'snow' corruptions to remove dependency from a linux specific library, 
+We also modfied the 'motion blur' and 'snow' corruptions to remove dependency from a linux specific library,
 which would have to be installed separately otherwise. For details please refer to the [imagecorruptions repository](https://github.com/bethgelab/imagecorruptions).
 
 ## Inference with pretrained models
@@ -106,5 +106,4 @@ Cascade Mask R-CNN | R-50-FPN  | pytorch | 1x| 41.2   | 20.7         | 50.2  | 3
 RetinaNet    | R-50-FPN  | pytorch | 1x      | 35.6   | 17.8         | 50.1  | -             | -             | -      |
 Hybrid Task Cascade | X-101-64x4d-FPN-DCN | pytorch | 1x | 50.6 | 32.7 | 64.7 | 43.8         | 28.1          | 64.0   |
 
-Results may vary slightly due to the stochastic application of the corruptions. 
-
+Results may vary slightly due to the stochastic application of the corruptions.

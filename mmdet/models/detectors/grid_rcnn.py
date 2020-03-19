@@ -88,7 +88,7 @@ class GridRCNN(TwoStageDetector):
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
             outs = outs + (rpn_outs, )
-        proposals = torch.randn(1000, 4).cuda()
+        proposals = torch.randn(1000, 4).to(device=img.device)
         # bbox head
         rois = bbox2roi([proposals])
         bbox_feats = self.bbox_roi_extractor(
@@ -198,7 +198,7 @@ class GridRCNN(TwoStageDetector):
 
     def simple_test(self, img, img_meta, proposals=None, rescale=False):
         """Test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
+        assert self.with_bbox, 'Bbox head must be implemented.'
 
         x = self.extract_feat(img)
 

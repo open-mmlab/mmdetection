@@ -10,6 +10,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch'),
     neck=dict(
         type='FPN',
@@ -139,5 +140,4 @@ log_level = 'INFO'
 work_dir = './work_dirs/bbox_r50_grid_center_fpn_1x'
 load_from = None
 resume_from = None
-auto_resume = True
 workflow = [('train', 1)]

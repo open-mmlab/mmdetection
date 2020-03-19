@@ -100,9 +100,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             imgs (List[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains all images in the batch.
-            img_meta (List[List[dict]]): the outer list indicates test-time
+            img_metas (List[List[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch
+                images in a batch.
         """
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
@@ -119,8 +119,18 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         assert imgs_per_gpu == 1
 
         if num_augs == 1:
+            """
+            proposals (List[List[Tensor]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. The Tensor should have a shape Px4, where
+                P is the number of proposals.
+            """
+            if 'proposals' in kwargs:
+                kwargs['proposals'] = kwargs['proposals'][0]
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
+            # TODO: support test augmentation for predefined proposals
+            assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
 
     @auto_fp16(apply_to=('img', ))

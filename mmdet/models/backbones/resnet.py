@@ -4,11 +4,10 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.plugins import GeneralizedAttention
-from mmdet.ops import ContextBlock
+from mmdet.ops import (ContextBlock, GeneralizedAttention, build_conv_layer,
+                       build_norm_layer)
 from mmdet.utils import get_root_logger
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
 
 
 class BasicBlock(nn.Module):
@@ -28,9 +27,9 @@ class BasicBlock(nn.Module):
                  gcb=None,
                  gen_attention=None):
         super(BasicBlock, self).__init__()
-        assert dcn is None, "Not implemented yet."
-        assert gen_attention is None, "Not implemented yet."
-        assert gcb is None, "Not implemented yet."
+        assert dcn is None, 'Not implemented yet.'
+        assert gen_attention is None, 'Not implemented yet.'
+        assert gcb is None, 'Not implemented yet.'
 
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)

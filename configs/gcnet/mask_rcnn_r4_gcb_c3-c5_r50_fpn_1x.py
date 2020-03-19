@@ -8,6 +8,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch',
         gcb=dict(ratio=1. / 4., ),
         stage_with_gcb=(False, True, True, True)),

@@ -58,6 +58,6 @@ def collect_env():
     return env_info
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     for name, val in collect_env().items():
         print('{}: {}'.format(name, val))

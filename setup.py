@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import os
 import subprocess
 import time
@@ -16,7 +15,7 @@ def readme():
 
 
 MAJOR = 1
-MINOR = 0
+MINOR = 1
 PATCH = 0
 SUFFIX = ''
 if PATCH != '':
@@ -93,7 +92,7 @@ def make_cuda_ext(name, module, sources):
     define_macros = []
 
     if torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1':
-        define_macros += [("WITH_CUDA", None)]
+        define_macros += [('WITH_CUDA', None)]
     else:
         raise EnvironmentError('CUDA is required to compile MMDetection!')
 
@@ -238,7 +237,11 @@ if __name__ == '__main__':
             make_cuda_ext(
                 name='roi_align_cuda',
                 module='mmdet.ops.roi_align',
-                sources=['src/roi_align_cuda.cpp', 'src/roi_align_kernel.cu']),
+                sources=[
+                    'src/roi_align_cuda.cpp',
+                    'src/roi_align_kernel.cu',
+                    'src/roi_align_kernel_v2.cu',
+                ]),
             make_cuda_ext(
                 name='roi_pool_cuda',
                 module='mmdet.ops.roi_pool',
@@ -270,6 +273,28 @@ if __name__ == '__main__':
                 sources=[
                     'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
                 ]),
+            make_cuda_ext(
+                name='affine_grid_cuda',
+                module='mmdet.ops.affine_grid',
+                sources=['src/affine_grid_cuda.cpp']),
+            make_cuda_ext(
+                name='grid_sampler_cuda',
+                module='mmdet.ops.grid_sampler',
+                sources=[
+                    'src/cpu/grid_sampler_cpu.cpp',
+                    'src/cuda/grid_sampler_cuda.cu', 'src/grid_sampler.cpp'
+                ]),
+            make_cuda_ext(
+                name='carafe_cuda',
+                module='mmdet.ops.carafe',
+                sources=['src/carafe_cuda.cpp', 'src/carafe_cuda_kernel.cu']),
+            make_cuda_ext(
+                name='carafe_naive_cuda',
+                module='mmdet.ops.carafe',
+                sources=[
+                    'src/carafe_naive_cuda.cpp',
+                    'src/carafe_naive_cuda_kernel.cu'
+                ])
         ],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)
