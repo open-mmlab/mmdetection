@@ -1,4 +1,5 @@
-# Modified from https://github.com/facebookresearch/detectron2/blob/master/detectron2/export/api.py # noqa
+# Modified from https://github.com/open-mmlab/mmdetection/pull/1082
+# and https://github.com/facebookresearch/detectron2/blob/master/detectron2/export/api.py # noqa
 import argparse
 import io
 
@@ -10,6 +11,7 @@ from onnx import optimizer
 from torch.onnx import OperatorExportTypes
 
 from mmdet.models import build_detector
+from mmdet.ops import RoIAlign, RoIPool
 
 
 def export_onnx_model(model, inputs):
@@ -55,7 +57,7 @@ def export_onnx_model(model, inputs):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='MMDet test (and eval) a model')
+        description='MMDet pytorch model conversion to ONNX')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument(
@@ -89,8 +91,14 @@ def main():
     # build the model and load checkpoint
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
     load_checkpoint(model, args.checkpoint, map_location='cpu')
-    # Only support CPU mode
+    # Only support CPU mode for now
     model.cpu().eval()
+    # Customized ops are not supported, use torchvision ops instead.
+    for m in model.modules():
+        if isinstance(m, (RoIPool, RoIAlign)):
+            # set use_torchvision on-the-fly
+            m.use_torchvision = True
+
     # TODO: a better way to override forward function
     if hasattr(model, 'forward_dummy'):
         model.forward = model.forward_dummy
@@ -99,10 +107,9 @@ def main():
             'ONNX conversion is currently not currently supported with '
             '{}'.format(model.__class__.__name__))
 
-    input_data = torch.ones(()).new_empty(
-        (1, *input_shape),
-        dtype=next(model.parameters()).dtype,
-        device=next(model.parameters()).device)
+    input_data = torch.empty((1, *input_shape),
+                             dtype=next(model.parameters()).dtype,
+                             device=next(model.parameters()).device)
 
     onnx_model = export_onnx_model(model, (input_data, ))
     # Print a human readable representation of the graph

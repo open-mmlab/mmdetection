@@ -366,7 +366,7 @@ We provide a script convert model to [ONNX](https://github.com/onnx/onnx) format
 python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --out ${ONNX_FILE} [--shape ${INPUT_SHAPE}]
 ```
 
-**Note**: This tool is still experimental. Only CPU operators are supported for now. For example, you may need to set `use_torchvision=True` for `RoIAlign`.
+**Note**: This tool is still experimental. Customized operators are not supported for now. We set `use_torchvision=True` on-the-fly for `RoIPool` and `RoIAlign`.
 
 ## How-to
 
