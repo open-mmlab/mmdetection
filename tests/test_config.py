@@ -190,7 +190,7 @@ def test_config_data_pipeline():
     # config_names = [relpath(p, config_dpath) for p in config_fpaths]
 
     # Only tests a representative subset of configurations
-    # TODO: test pipelines using Albu
+    # TODO: test pipelines using Albu, current Albu throw None given empty GT
     config_names = [
         'wider_face/ssd300_wider_face.py',
         'pascal_voc/ssd300_voc.py',
@@ -215,9 +215,8 @@ def test_config_data_pipeline():
 
         print(
             'Building data pipeline, config_fpath = {!r}'.format(config_fpath))
-        print('Test training data pipeline: \n{!r}'.format(train_pipeline))
-        print('Test testing data pipeline: \n{!r}'.format(test_pipeline))
 
+        print('Test training data pipeline: \n{!r}'.format(train_pipeline))
         img = np.random.randint(0, 255, size=(888, 666, 3), dtype=np.uint8)
         if loading_pipeline.get('to_float32', False):
             img = img.astype(np.float32)
@@ -235,6 +234,7 @@ def test_config_data_pipeline():
         output_results = train_pipeline(results)
         assert output_results is not None
 
+        print('Test testing data pipeline: \n{!r}'.format(test_pipeline))
         results = dict(
             filename='test_img.png',
             img=img,
@@ -250,6 +250,8 @@ def test_config_data_pipeline():
         assert output_results is not None
 
         # test empty GT
+        print('Test empty GT with training data pipeline: \n{!r}'.format(
+            train_pipeline))
         results = dict(
             filename='test_img.png',
             img=img,
@@ -264,6 +266,8 @@ def test_config_data_pipeline():
         output_results = train_pipeline(results)
         assert output_results is not None
 
+        print('Test empty GT with testing data pipeline: \n{!r}'.format(
+            test_pipeline))
         results = dict(
             filename='test_img.png',
             img=img,
