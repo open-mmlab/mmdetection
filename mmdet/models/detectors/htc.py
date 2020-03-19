@@ -162,7 +162,7 @@ class HybridTaskCascade(CascadeRCNN):
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
             outs = outs + (rpn_outs, )
-        proposals = torch.randn(1000, 4).cuda()
+        proposals = torch.randn(1000, 4).to(device=img.device)
         # semantic head
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)
