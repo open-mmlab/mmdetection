@@ -179,9 +179,9 @@ def show_result(img,
         score_thr=score_thr,
         show=show,
         wait_time=wait_time,
-        out_file=out_file
-        thickness=3,
-        font_scale=1
+        out_file=out_file,
+        thickness=4,
+        font_scale=2
         )
     if not (show or out_file):
         return img
