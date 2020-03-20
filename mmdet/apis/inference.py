@@ -181,7 +181,7 @@ def show_result(img,
         wait_time=wait_time,
         out_file=out_file,
         thickness=4,
-        font_scale=2
+        font_scale=4
         )
     if not (show or out_file):
         return img
