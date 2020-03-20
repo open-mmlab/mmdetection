@@ -2,6 +2,7 @@ import math
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair, _single
@@ -236,8 +237,22 @@ class DeformConv(nn.Module):
         self.weight.data.uniform_(-stdv, stdv)
 
     def forward(self, x, offset):
-        return deform_conv(x, offset, self.weight, self.stride, self.padding,
-                           self.dilation, self.groups, self.deformable_groups)
+        # To fix an assert error in deform_conv_cuda.cpp:128
+        # input image is smaller than kernel
+        input_pad = (
+            x.size(2) < self.kernel_size[0] or x.size(3) < self.kernel_size[1])
+        if input_pad:
+            pad_h = max(self.kernel_size[0] - x.size(2), 0)
+            pad_w = max(self.kernel_size[1] - x.size(3), 0)
+            x = F.pad(x, (0, pad_w, 0, pad_h), 'constant', 0).contiguous()
+            offset = F.pad(offset, (0, pad_w, 0, pad_h), 'constant',
+                           0).contiguous()
+        out = deform_conv(x, offset, self.weight, self.stride, self.padding,
+                          self.dilation, self.groups, self.deformable_groups)
+        if input_pad:
+            out = out[:, :, :out.size(2) - pad_h, :out.size(3) -
+                      pad_w].contiguous()
+        return out
 
 
 class DeformConvPack(DeformConv):
