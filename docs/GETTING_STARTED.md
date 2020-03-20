@@ -64,7 +64,7 @@ python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
 ```shell
 ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+    8 --format_only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
 ```
 
 You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
