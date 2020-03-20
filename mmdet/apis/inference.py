@@ -179,11 +179,12 @@ def show_result(img,
         score_thr=score_thr,
         show=show,
         wait_time=wait_time,
-        out_file=out_file,
-        thickness=2,
-        font_scale=1,
-        bbox_color='red',
-        text_color='red'
+        out_file=out_file
+        #,
+        # thickness=2,
+        # font_scale=1,
+        # bbox_color='red',
+        # text_color='red'
         )
     if not (show or out_file):
         return img
