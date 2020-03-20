@@ -194,6 +194,21 @@ class Collect(object):
 
 @PIPELINES.register_module
 class WrapFieldsToLists(object):
+    """
+    Wrap fields of the data dictionary into lists for evaluation.
+
+    This class can be used as a last step of a test or validation
+    pipeline for single image evaluation or inference.
+    Example:
+        >>> test_pipeline = [
+        >>>    dict(type='LoadImageFromFile'),
+        >>>    dict(type='Normalize', **img_norm_cfg),
+        >>>    dict(type='Pad', size_divisor=32),
+        >>>    dict(type='ImageToTensor', keys=['img']),
+        >>>    dict(type='Collect', keys=['img']),
+        >>>    dict(type='WrapIntoLists')
+        >>> ]
+    """
 
     def __call__(self, results):
         # Wrap dict fields into lists
