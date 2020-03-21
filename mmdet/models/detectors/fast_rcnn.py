@@ -34,7 +34,7 @@ class FastRCNN(TwoStageDetector):
             imgs (List[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains all images in the batch.
-            img_meta (List[List[dict]]): the outer list indicates test-time
+            img_metas (List[List[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
             proposals (List[List[Tensor]]): the outer list indicates test-time
