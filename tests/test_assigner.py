@@ -112,6 +112,42 @@ def test_max_iou_assigner_with_empty_boxes():
     assert assign_result.labels is None
 
 
+def test_max_iou_assigner_with_empty_boxes_and_ignore():
+    """
+    Test corner case where an network might predict no boxes and ignore_iof_thr
+    is on
+    """
+    self = MaxIoUAssigner(
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+        ignore_iof_thr=0.5,
+    )
+    bboxes = torch.empty((0, 4))
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ])
+    gt_bboxes_ignore = torch.Tensor([
+        [30, 30, 40, 40],
+    ])
+    gt_labels = torch.LongTensor([2, 3])
+
+    # Test with gt_labels
+    assign_result = self.assign(
+        bboxes,
+        gt_bboxes,
+        gt_labels=gt_labels,
+        gt_bboxes_ignore=gt_bboxes_ignore)
+    assert len(assign_result.gt_inds) == 0
+    assert tuple(assign_result.labels.shape) == (0, )
+
+    # Test without gt_labels
+    assign_result = self.assign(
+        bboxes, gt_bboxes, gt_labels=None, gt_bboxes_ignore=gt_bboxes_ignore)
+    assert len(assign_result.gt_inds) == 0
+    assert assign_result.labels is None
+
+
 def test_max_iou_assigner_with_empty_boxes_and_gt():
     """
     Test corner case where an network might predict no boxes and no gt

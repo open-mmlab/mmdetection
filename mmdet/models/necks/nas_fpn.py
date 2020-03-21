@@ -2,8 +2,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import caffe2_xavier_init
 
+from mmdet.ops import ConvModule
 from ..registry import NECKS
-from ..utils import ConvModule
 
 
 class MergingCell(nn.Module):
@@ -110,7 +110,7 @@ class NASFPN(nn.Module):
                 out_channels,
                 1,
                 norm_cfg=norm_cfg,
-                activation=None)
+                act_cfg=None)
             self.lateral_convs.append(l_conv)
 
         # add extra downsample layers (stride-2 pooling or conv)
@@ -118,11 +118,7 @@ class NASFPN(nn.Module):
         self.extra_downsamples = nn.ModuleList()
         for i in range(extra_levels):
             extra_conv = ConvModule(
-                out_channels,
-                out_channels,
-                1,
-                norm_cfg=norm_cfg,
-                activation=None)
+                out_channels, out_channels, 1, norm_cfg=norm_cfg, act_cfg=None)
             self.extra_downsamples.append(
                 nn.Sequential(extra_conv, nn.MaxPool2d(2, 2)))
 

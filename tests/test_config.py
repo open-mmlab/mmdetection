@@ -170,3 +170,110 @@ def test_config_build_detector():
             train_cfg=config_mod.train_cfg,
             test_cfg=config_mod.test_cfg)
         assert detector is not None
+
+
+def test_config_data_pipeline():
+    """
+    Test whether the data pipeline is valid and can process corner cases.
+    CommandLine:
+        xdoctest -m tests/test_config.py test_config_build_data_pipeline
+    """
+    from xdoctest.utils import import_module_from_path
+    from mmdet.datasets.pipelines import Compose
+    import numpy as np
+
+    config_dpath = _get_config_directory()
+    print('Found config_dpath = {!r}'.format(config_dpath))
+
+    # Only tests a representative subset of configurations
+    # TODO: test pipelines using Albu, current Albu throw None given empty GT
+    config_names = [
+        'wider_face/ssd300_wider_face.py',
+        'pascal_voc/ssd300_voc.py',
+        'pascal_voc/ssd512_voc.py',
+        # 'albu_example/mask_rcnn_r50_fpn_1x.py',
+        'fp16/mask_rcnn_r50_fpn_fp16_1x.py',
+    ]
+
+    print('Using {} config files'.format(len(config_names)))
+
+    for config_fname in config_names:
+        config_fpath = join(config_dpath, config_fname)
+        config_mod = import_module_from_path(config_fpath)
+
+        # remove loading pipeline
+        loading_pipeline = config_mod.train_pipeline.pop(0)
+        config_mod.train_pipeline.pop(0)
+        config_mod.test_pipeline.pop(0)
+
+        train_pipeline = Compose(config_mod.train_pipeline)
+        test_pipeline = Compose(config_mod.test_pipeline)
+
+        print(
+            'Building data pipeline, config_fpath = {!r}'.format(config_fpath))
+
+        print('Test training data pipeline: \n{!r}'.format(train_pipeline))
+        img = np.random.randint(0, 255, size=(888, 666, 3), dtype=np.uint8)
+        if loading_pipeline.get('to_float32', False):
+            img = img.astype(np.float32)
+        results = dict(
+            filename='test_img.png',
+            img=img,
+            img_shape=img.shape,
+            ori_shape=img.shape,
+            gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
+            gt_labels=np.array([1], dtype=np.int64),
+            gt_masks=[(img[..., 0] == 233).astype(np.uint8)],
+        )
+        results['bbox_fields'] = ['gt_bboxes']
+        results['mask_fields'] = ['gt_masks']
+        output_results = train_pipeline(results)
+        assert output_results is not None
+
+        print('Test testing data pipeline: \n{!r}'.format(test_pipeline))
+        results = dict(
+            filename='test_img.png',
+            img=img,
+            img_shape=img.shape,
+            ori_shape=img.shape,
+            gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
+            gt_labels=np.array([1], dtype=np.int64),
+            gt_masks=[(img[..., 0] == 233).astype(np.uint8)],
+        )
+        results['bbox_fields'] = ['gt_bboxes']
+        results['mask_fields'] = ['gt_masks']
+        output_results = test_pipeline(results)
+        assert output_results is not None
+
+        # test empty GT
+        print('Test empty GT with training data pipeline: \n{!r}'.format(
+            train_pipeline))
+        results = dict(
+            filename='test_img.png',
+            img=img,
+            img_shape=img.shape,
+            ori_shape=img.shape,
+            gt_bboxes=np.zeros((0, 4), dtype=np.float32),
+            gt_labels=np.array([], dtype=np.int64),
+            gt_masks=[],
+        )
+        results['bbox_fields'] = ['gt_bboxes']
+        results['mask_fields'] = ['gt_masks']
+        output_results = train_pipeline(results)
+        assert output_results is not None
+
+        print('Test empty GT with testing data pipeline: \n{!r}'.format(
+            test_pipeline))
+        results = dict(
+            filename='test_img.png',
+            img=img,
+            img_shape=img.shape,
+            ori_shape=img.shape,
+            gt_bboxes=np.zeros((0, 4), dtype=np.float32),
+            gt_labels=np.array([], dtype=np.int64),
+            gt_masks=[],
+        )
+        results['bbox_fields'] = ['gt_bboxes']
+        results['mask_fields'] = ['gt_masks']
+        output_results = test_pipeline(results)
+        assert output_results is not None

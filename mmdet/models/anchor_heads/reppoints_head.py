@@ -7,10 +7,10 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (PointGenerator, multi_apply, multiclass_nms,
                         point_target)
-from mmdet.ops import DeformConv
+from mmdet.ops import ConvModule, DeformConv
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import ConvModule, bias_init_with_prob
+from ..utils import bias_init_with_prob
 
 
 @HEADS.register_module
@@ -94,9 +94,9 @@ class RepPointsHead(nn.Module):
         self.dcn_kernel = int(np.sqrt(num_points))
         self.dcn_pad = int((self.dcn_kernel - 1) / 2)
         assert self.dcn_kernel * self.dcn_kernel == num_points, \
-            "The points number should be a square number."
+            'The points number should be a square number.'
         assert self.dcn_kernel % 2 == 1, \
-            "The points number should be an odd square number."
+            'The points number should be an odd square number.'
         dcn_base = np.arange(-self.dcn_pad,
                              self.dcn_pad + 1).astype(np.float64)
         dcn_base_y = np.repeat(dcn_base, self.dcn_kernel)

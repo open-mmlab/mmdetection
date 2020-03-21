@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender-dev libx
  && rm -rf /var/lib/apt/lists/*
 
 # Install mmdetection
-RUN conda install cython -y && conda clean --all
+RUN conda clean --all
 RUN git clone https://github.com/open-mmlab/mmdetection.git /mmdetection
 WORKDIR /mmdetection
+ENV FORCE_CUDA="1"
 RUN pip install --no-cache-dir -e .

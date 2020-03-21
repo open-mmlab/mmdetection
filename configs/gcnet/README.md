@@ -55,4 +55,3 @@ The results on COCO 2017val are shown in the below table.
 - `GC` denotes Global Context (GC) block is inserted after 1x1 conv of backbone.
 - `DCN` denotes replace 3x3 conv with 3x3 Deformable Convolution in `c3-c5` stages of backbone.
 - `r4` and `r16` denote ratio 4 and ratio 16 in GC block respectively.
-
