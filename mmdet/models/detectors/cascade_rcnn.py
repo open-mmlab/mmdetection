@@ -375,8 +375,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                         scale_factor if rescale else det_bboxes)
                 else:
                     _bboxes = (
-                        det_bboxes[:, :4] *
-                        torch.from_numpy(scale_factor).to(det_bboxes.device)
+                        det_bboxes[:, :4] * det_bboxes.new_tensor(scale_factor)
                         if rescale else det_bboxes)
 
                 mask_rois = bbox2roi([_bboxes])

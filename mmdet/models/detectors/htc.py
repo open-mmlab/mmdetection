@@ -359,8 +359,8 @@ class HybridTaskCascade(CascadeRCNN):
                 segm_result = [[] for _ in range(mask_classes)]
             else:
                 _bboxes = (
-                    det_bboxes[:, :4] *
-                    scale_factor if rescale else det_bboxes)
+                    det_bboxes[:, :4] * det_bboxes.new_tensor(scale_factor)
+                    if rescale else det_bboxes)
 
                 mask_rois = bbox2roi([_bboxes])
                 aug_masks = []
