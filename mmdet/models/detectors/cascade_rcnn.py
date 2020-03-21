@@ -151,7 +151,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
     def forward_train(self,
                       img,
-                      img_meta,
+                      img_metas,
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None,
@@ -162,8 +162,8 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             img (Tensor): of shape (N, C, H, W) encoding input images.
                 Typically these should be mean centered and std scaled.
 
-            img_meta (list[dict]): list of image info dict where each dict has:
-                'img_shape', 'scale_factor', 'flip', and my also contain
+            img_metas (list[dict]): list of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and my also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
@@ -191,7 +191,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
-            rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
+            rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas,
                                           self.train_cfg.rpn)
             rpn_losses = self.rpn_head.loss(
                 *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
@@ -199,7 +199,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
-            proposal_inputs = rpn_outs + (img_meta, proposal_cfg)
+            proposal_inputs = rpn_outs + (img_metas, proposal_cfg)
             proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         else:
             proposal_list = proposals
@@ -299,16 +299,16 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 roi_labels = bbox_targets[0]  # bbox_targets is a tuple
                 with torch.no_grad():
                     proposal_list = bbox_head.refine_bboxes(
-                        rois, roi_labels, bbox_pred, pos_is_gts, img_meta)
+                        rois, roi_labels, bbox_pred, pos_is_gts, img_metas)
 
         return losses
 
-    def simple_test(self, img, img_meta, proposals=None, rescale=False):
+    def simple_test(self, img, img_metas, proposals=None, rescale=False):
         """Run inference on a single image.
 
         Args:
             img (Tensor): must be in shape (N, C, H, W)
-            img_meta (list[dict]): a list with one dictionary element.
+            img_metas (list[dict]): a list with one dictionary element.
                 See `mmdet/datasets/pipelines/formatting.py:Collect` for
                 details of meta dicts.
             proposals : if specified overrides rpn proposals
@@ -320,11 +320,12 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
 
         proposal_list = self.simple_test_rpn(
-            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
+            x, img_metas,
+            self.test_cfg.rpn) if proposals is None else proposals
 
-        img_shape = img_meta[0]['img_shape']
-        ori_shape = img_meta[0]['ori_shape']
-        scale_factor = img_meta[0]['scale_factor']
+        img_shape = img_metas[0]['img_shape']
+        ori_shape = img_metas[0]['ori_shape']
+        scale_factor = img_metas[0]['scale_factor']
 
         # "ms" in variable names means multi-stage
         ms_bbox_result = {}
@@ -348,7 +349,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             if i < self.num_stages - 1:
                 bbox_label = cls_score.argmax(dim=1)
                 rois = bbox_head.regress_by_class(rois, bbox_label, bbox_pred,
-                                                  img_meta[0])
+                                                  img_metas[0])
 
         cls_score = sum(ms_scores) / self.num_stages
         det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
@@ -389,7 +390,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     mask_pred = self.mask_head[i](mask_feats)
                     aug_masks.append(mask_pred.sigmoid().cpu().numpy())
                 merged_masks = merge_aug_masks(aug_masks,
-                                               [img_meta] * self.num_stages,
+                                               [img_metas] * self.num_stages,
                                                self.test_cfg.rcnn)
                 segm_result = self.mask_head[-1].get_seg_masks(
                     merged_masks, _bboxes, det_labels, rcnn_test_cfg,
@@ -418,9 +419,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         aug_scores = []
         for x, img_meta in zip(self.extract_feats(imgs), img_metas):
             # only one image in the batch
-            img_shape = img_meta[0]['img_shape']
-            scale_factor = img_meta[0]['scale_factor']
-            flip = img_meta[0]['flip']
+            img_shape = img_metas[0]['img_shape']
+            scale_factor = img_metas[0]['scale_factor']
+            flip = img_metas[0]['flip']
 
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
                                      scale_factor, flip)
@@ -443,7 +444,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 if i < self.num_stages - 1:
                     bbox_label = cls_score.argmax(dim=1)
                     rois = bbox_head.regress_by_class(rois, bbox_label,
-                                                      bbox_pred, img_meta[0])
+                                                      bbox_pred, img_metas[0])
 
             cls_score = sum(ms_scores) / float(len(ms_scores))
             bboxes, scores = self.bbox_head[-1].get_det_bboxes(
@@ -477,9 +478,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 aug_masks = []
                 aug_img_metas = []
                 for x, img_meta in zip(self.extract_feats(imgs), img_metas):
-                    img_shape = img_meta[0]['img_shape']
-                    scale_factor = img_meta[0]['scale_factor']
-                    flip = img_meta[0]['flip']
+                    img_shape = img_metas[0]['img_shape']
+                    scale_factor = img_metas[0]['scale_factor']
+                    flip = img_metas[0]['flip']
                     _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
                                            scale_factor, flip)
                     mask_rois = bbox2roi([_bboxes])
