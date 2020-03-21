@@ -2,14 +2,14 @@
 Modified from https://github.com/facebookresearch/detectron2/blob/master
 /detectron2/layers/wrappers.py
 Wrap some nn modules to support empty tensor input.
+Currently, these wrappers are mainly used in mask heads like fcn_mask_head
+and maskiou_heads since mask heads are trained on only positive RoIs.
 """
 import math
 
 import torch
 import torch.nn as nn
 from torch.nn.modules.utils import _pair
-
-TORCH_VERSION = tuple(int(x) for x in torch.__version__.split('.')[:2])
 
 
 class NewEmptyTensorOp(torch.autograd.Function):
@@ -28,7 +28,7 @@ class NewEmptyTensorOp(torch.autograd.Function):
 class Conv2d(nn.Conv2d):
 
     def forward(self, x):
-        if x.numel() == 0 and TORCH_VERSION <= (1, 4):
+        if x.numel() == 0 and torch.__version__ <= '1.4':
             out_shape = list(x.shape[:2])
             for i, k, p, s, d in zip(x.shape[-2:], self.kernel_size,
                                      self.padding, self.stride, self.dilation):
@@ -48,13 +48,12 @@ class Conv2d(nn.Conv2d):
 class ConvTranspose2d(nn.ConvTranspose2d):
 
     def forward(self, x):
-        if x.numel() == 0 and TORCH_VERSION <= (1, 4):
+        if x.numel() == 0 and torch.__version__ <= '1.4':
             out_shape = list(x.shape[:2])
             for i, k, p, s, d, op in zip(x.shape[-2:], self.kernel_size,
                                          self.padding, self.stride,
                                          self.dilation, self.output_padding):
-                out_shape.append((i - 1) * s - 2 * p + (d * (k - 1) + 1) +
-                                 2 * op)
+                out_shape.append((i - 1) * s - 2 * p + (d * (k - 1) + 1) + op)
             empty = NewEmptyTensorOp.apply(x, out_shape)
             if self.training:
                 # produce dummy gradient to avoid DDP warning.
@@ -69,7 +68,7 @@ class ConvTranspose2d(nn.ConvTranspose2d):
 class MaxPool2d(nn.MaxPool2d):
 
     def forward(self, x):
-        if x.numel() == 0 and TORCH_VERSION <= (1, 4):
+        if x.numel() == 0 and torch.__version__ <= '1.4':
             out_shape = list(x.shape[:2])
             for i, k, p, s, d in zip(x.shape[-2:], _pair(self.kernel_size),
                                      _pair(self.padding), _pair(self.stride),
