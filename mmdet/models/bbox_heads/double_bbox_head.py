@@ -1,9 +1,9 @@
 import torch.nn as nn
 from mmcv.cnn.weight_init import normal_init, xavier_init
 
+from mmdet.ops import ConvModule
 from ..backbones.resnet import Bottleneck
 from ..registry import HEADS
-from ..utils import ConvModule
 from .bbox_head import BBoxHead
 
 
@@ -41,9 +41,9 @@ class BasicResBlock(nn.Module):
             out_channels,
             kernel_size=1,
             bias=False,
-            activation=None,
             conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg)
+            norm_cfg=norm_cfg,
+            act_cfg=None)
 
         # identity path
         self.conv_identity = ConvModule(
@@ -52,7 +52,7 @@ class BasicResBlock(nn.Module):
             kernel_size=1,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
-            activation=None)
+            act_cfg=None)
 
         self.relu = nn.ReLU(inplace=True)
 
@@ -140,6 +140,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
         return branch_fcs
 
     def init_weights(self):
+        # conv layers are already initialized by ConvModule
         normal_init(self.fc_cls, std=0.01)
         normal_init(self.fc_reg, std=0.001)
 

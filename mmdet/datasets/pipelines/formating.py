@@ -52,7 +52,10 @@ class ImageToTensor(object):
 
     def __call__(self, results):
         for key in self.keys:
-            results[key] = to_tensor(results[key].transpose(2, 0, 1))
+            img = results[key]
+            if len(img.shape) < 3:
+                img = np.expand_dims(img, -1)
+            results[key] = to_tensor(img.transpose(2, 0, 1))
         return results
 
     def __repr__(self):
@@ -115,7 +118,10 @@ class DefaultFormatBundle(object):
 
     def __call__(self, results):
         if 'img' in results:
-            img = np.ascontiguousarray(results['img'].transpose(2, 0, 1))
+            img = results['img']
+            if len(img.shape) < 3:
+                img = np.expand_dims(img, -1)
+            img = np.ascontiguousarray(img.transpose(2, 0, 1))
             results['img'] = DC(to_tensor(img), stack=True)
         for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
             if key not in results:

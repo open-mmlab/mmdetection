@@ -8,6 +8,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch'),
     neck=dict(
         type='FPN',
@@ -81,6 +82,10 @@ test_pipeline = [
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
+            dict(type='ToTensor', keys=['proposals']),
+            dict(
+                type='ToDataContainer',
+                fields=[dict(key='proposals', stack=False)]),
             dict(type='Collect', keys=['img', 'proposals']),
         ])
 ]
@@ -105,6 +110,7 @@ data = dict(
         proposal_file=data_root + 'proposals/rpn_r50_fpn_1x_val2017.pkl',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric='bbox')
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))

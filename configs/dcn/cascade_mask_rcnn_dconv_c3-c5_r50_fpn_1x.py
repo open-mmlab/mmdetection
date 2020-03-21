@@ -9,9 +9,9 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch',
-        dcn=dict(
-            modulated=False, deformable_groups=1, fallback_on_stride=False),
+        dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)),
     neck=dict(
         type='FPN',
@@ -177,8 +177,7 @@ test_cfg = dict(
         score_thr=0.05,
         nms=dict(type='nms', iou_thr=0.5),
         max_per_img=100,
-        mask_thr_binary=0.5),
-    keep_all_stages=False)
+        mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
@@ -227,6 +226,7 @@ data = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=test_pipeline))
+evaluation = dict(interval=1, metric=['bbox', 'segm'])
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))

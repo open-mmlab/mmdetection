@@ -1,5 +1,4 @@
 import os.path as osp
-import warnings
 
 import mmcv
 import numpy as np
@@ -11,8 +10,9 @@ from ..registry import PIPELINES
 @PIPELINES.register_module
 class LoadImageFromFile(object):
 
-    def __init__(self, to_float32=False):
+    def __init__(self, to_float32=False, color_type='color'):
         self.to_float32 = to_float32
+        self.color_type = color_type
 
     def __call__(self, results):
         if results['img_prefix'] is not None:
@@ -20,7 +20,47 @@ class LoadImageFromFile(object):
                                 results['img_info']['filename'])
         else:
             filename = results['img_info']['filename']
-        img = mmcv.imread(filename)
+        img = mmcv.imread(filename, self.color_type)
+        if self.to_float32:
+            img = img.astype(np.float32)
+        results['filename'] = filename
+        results['img'] = img
+        results['img_shape'] = img.shape
+        results['ori_shape'] = img.shape
+        # Set initial values for default meta_keys
+        results['pad_shape'] = img.shape
+        results['flip'] = False
+        results['scale_factor'] = 1.0
+        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
+        results['img_norm_cfg'] = [[0.0] * num_channels, [1.0] * num_channels,
+                                   False]
+        return results
+
+    def __repr__(self):
+        return '{} (to_float32={}, color_type={})'.format(
+            self.__class__.__name__, self.to_float32, self.color_type)
+
+
+@PIPELINES.register_module
+class LoadMultiChannelImageFromFiles(object):
+    """ Load multi channel images from a list of separate channel files.
+    Expects results['filename'] to be a list of filenames
+    """
+
+    def __init__(self, to_float32=True, color_type='unchanged'):
+        self.to_float32 = to_float32
+        self.color_type = color_type
+
+    def __call__(self, results):
+        if results['img_prefix'] is not None:
+            filename = [
+                osp.join(results['img_prefix'], fname)
+                for fname in results['img_info']['filename']
+            ]
+        else:
+            filename = results['img_info']['filename']
+        img = np.stack(
+            [mmcv.imread(name, self.color_type) for name in filename], axis=-1)
         if self.to_float32:
             img = img.astype(np.float32)
         results['filename'] = filename
@@ -30,8 +70,8 @@ class LoadImageFromFile(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(to_float32={})'.format(
-            self.to_float32)
+        return '{} (to_float32={}, color_type={})'.format(
+            self.__class__.__name__, self.to_float32, self.color_type)
 
 
 @PIPELINES.register_module
@@ -42,30 +82,22 @@ class LoadAnnotations(object):
                  with_label=True,
                  with_mask=False,
                  with_seg=False,
-                 poly2mask=True,
-                 skip_img_without_anno=True):
+                 poly2mask=True):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
-        self.skip_img_without_anno = skip_img_without_anno
 
     def _load_bboxes(self, results):
         ann_info = results['ann_info']
         results['gt_bboxes'] = ann_info['bboxes']
-        if len(results['gt_bboxes']) == 0 and self.skip_img_without_anno:
-            if results['img_prefix'] is not None:
-                file_path = osp.join(results['img_prefix'],
-                                     results['img_info']['filename'])
-            else:
-                file_path = results['img_info']['filename']
-            warnings.warn(
-                'Skip the image "{}" that has no valid gt bbox'.format(
-                    file_path))
-            return None
-        results['gt_bboxes_ignore'] = ann_info.get('bboxes_ignore', None)
-        results['bbox_fields'].extend(['gt_bboxes', 'gt_bboxes_ignore'])
+
+        gt_bboxes_ignore = ann_info.get('bboxes_ignore', None)
+        if gt_bboxes_ignore is not None:
+            results['gt_bboxes_ignore'] = gt_bboxes_ignore
+            results['bbox_fields'].append('gt_bboxes_ignore')
+        results['bbox_fields'].append('gt_bboxes')
         return results
 
     def _load_labels(self, results):
@@ -100,6 +132,7 @@ class LoadAnnotations(object):
         results['gt_semantic_seg'] = mmcv.imread(
             osp.join(results['seg_prefix'], results['ann_info']['seg_map']),
             flag='unchanged').squeeze()
+        results['seg_fields'].append('gt_semantic_seg')
         return results
 
     def __call__(self, results):
@@ -141,7 +174,7 @@ class LoadProposals(object):
             proposals = proposals[:self.num_max_proposals]
 
         if len(proposals) == 0:
-            proposals = np.array([0, 0, 0, 0], dtype=np.float32)
+            proposals = np.array([[0, 0, 0, 0]], dtype=np.float32)
         results['proposals'] = proposals
         results['bbox_fields'].append('proposals')
         return results
