@@ -68,7 +68,7 @@ __global__ void nms_kernel(const int n_boxes, const float nms_overlap_thresh,
 }
 
 // boxes is a N x 5 tensor
-at::Tensor nms_cuda(const at::Tensor boxes, float nms_overlap_thresh) {
+at::Tensor nms_cuda_forward(const at::Tensor boxes, float nms_overlap_thresh) {
 
   // Ensure CUDA uses the input tensor device.
   at::DeviceGuard guard(boxes.device());

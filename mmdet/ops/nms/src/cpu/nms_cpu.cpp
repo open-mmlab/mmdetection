@@ -59,7 +59,7 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
   return at::nonzero(suppressed_t == 0).squeeze(1);
 }
 
-at::Tensor nms(const at::Tensor& dets, const float threshold) {
+at::Tensor nms_cpu(const at::Tensor& dets, const float threshold) {
   at::Tensor result;
   AT_DISPATCH_FLOATING_TYPES(dets.scalar_type(), "nms", [&] {
     result = nms_cpu_kernel<scalar_t>(dets, threshold);
@@ -200,16 +200,11 @@ at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
   return result;
 }
 
-at::Tensor soft_nms(const at::Tensor& dets, const float threshold,
+at::Tensor soft_nms_cpu(const at::Tensor& dets, const float threshold,
                     const unsigned char method, const float sigma, const float min_score) {
   at::Tensor result;
   AT_DISPATCH_FLOATING_TYPES(dets.scalar_type(), "soft_nms", [&] {
     result = soft_nms_cpu_kernel<scalar_t>(dets, threshold, method, sigma, min_score);
   });
   return result;
-}
-
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("nms", &nms, "non-maximum suppression");
-  m.def("soft_nms", &soft_nms, "soft non-maximum suppression");
 }
