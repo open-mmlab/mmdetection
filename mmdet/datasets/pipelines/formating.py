@@ -199,10 +199,14 @@ class WrapFieldsToLists(object):
 
     This class can be used as a last step of a test or validation
     pipeline for single image evaluation or inference.
+
     Example:
         >>> test_pipeline = [
         >>>    dict(type='LoadImageFromFile'),
-        >>>    dict(type='Normalize', **img_norm_cfg),
+        >>>    dict(type='Normalize',
+                    mean=[123.675, 116.28, 103.53],
+                    std=[58.395, 57.12, 57.375],
+                    to_rgb=True),
         >>>    dict(type='Pad', size_divisor=32),
         >>>    dict(type='ImageToTensor', keys=['img']),
         >>>    dict(type='Collect', keys=['img']),
