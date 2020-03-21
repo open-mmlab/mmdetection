@@ -100,11 +100,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             imgs (List[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains all images in the batch.
-<<<<<<< HEAD
-            img_metas (List[dict]): the outer list indicates test-time
-=======
             img_metas (List[List[dict]]): the outer list indicates test-time
->>>>>>> upstream/master
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
         """
