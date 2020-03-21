@@ -59,7 +59,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         """
         pass
 
-    async def async_simple_test(self, img, img_meta, **kwargs):
+    async def async_simple_test(self, img, img_metas, **kwargs):
         raise NotImplementedError
 
     @abstractmethod
@@ -74,23 +74,23 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if pretrained is not None:
             print_log('load model from: {}'.format(pretrained), logger='root')
 
-    async def aforward_test(self, *, img, img_meta, **kwargs):
-        for var, name in [(img, 'img'), (img_meta, 'img_meta')]:
+    async def aforward_test(self, *, img, img_metas, **kwargs):
+        for var, name in [(img, 'img'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError('{} must be a list, but got {}'.format(
                     name, type(var)))
 
         num_augs = len(img)
-        if num_augs != len(img_meta):
+        if num_augs != len(img_metas):
             raise ValueError(
-                'num of augmentations ({}) != num of image meta ({})'.format(
-                    len(img), len(img_meta)))
+                'num of augmentations ({}) != num of image metas ({})'.format(
+                    len(img), len(img_metas)))
         # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
         imgs_per_gpu = img[0].size(0)
         assert imgs_per_gpu == 1
 
         if num_augs == 1:
-            return await self.async_simple_test(img[0], img_meta[0], **kwargs)
+            return await self.async_simple_test(img[0], img_metas[0], **kwargs)
         else:
             raise NotImplementedError
 
