@@ -179,7 +179,8 @@ class MaskScoringRCNN(TwoStageDetector):
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
             _bboxes = (
-                det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
+                det_bboxes[:, :4] *
+                det_bboxes.new_tensor(scale_factor) if rescale else det_bboxes)
             mask_rois = bbox2roi([_bboxes])
             mask_feats = self.mask_roi_extractor(
                 x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)

@@ -333,7 +333,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             _det_bboxes = det_bboxes
         else:
             _det_bboxes = det_bboxes.clone()
-            _det_bboxes[:, :4] *= img_metas[0][0]['scale_factor']
+            _det_bboxes[:, :4] *= det_bboxes.new_tensor(
+                img_metas[0][0]['scale_factor'])
         bbox_results = bbox2result(_det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
 
