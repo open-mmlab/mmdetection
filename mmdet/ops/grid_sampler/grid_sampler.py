@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 
-from . import grid_sampler_cuda
+from . import grid_sampler_ext
 
 
 class _GridSampler(Function):
@@ -16,18 +16,9 @@ class _GridSampler(Function):
         ctx.padding_mode_enum = padding_mode_enum
         ctx.align_corners = align_corners
 
-        if input.is_cuda:
-            if input.dim() == 4:
-                func = grid_sampler_cuda.grid_sampler_2d_forward_cuda
-            else:
-                func = grid_sampler_cuda.grid_sampler_3d_forward_cuda
-        else:
-            if input.dim() == 4:
-                func = grid_sampler_cuda.grid_sampler_2d_forward_cpu
-            else:
-                func = grid_sampler_cuda.grid_sampler_3d_forward_cpu
-
-        output = func(input, grid, mode_enum, padding_mode_enum, align_corners)
+        output = grid_sampler_ext.grid_sampler_forward(input, grid, mode_enum,
+                                                       padding_mode_enum,
+                                                       align_corners)
 
         return output
 
@@ -39,19 +30,9 @@ class _GridSampler(Function):
         padding_mode_enum = ctx.padding_mode_enum
         align_corners = ctx.align_corners
 
-        if input.is_cuda:
-            if input.dim() == 4:
-                func = grid_sampler_cuda.grid_sampler_2d_backward_cuda
-            else:
-                func = grid_sampler_cuda.grid_sampler_3d_backward_cuda
-        else:
-            if input.dim() == 4:
-                func = grid_sampler_cuda.grid_sampler_2d_backward_cpu
-            else:
-                func = grid_sampler_cuda.grid_sampler_3d_backward_cpu
-
-        grad_input, grad_grid = func(grad_output, input, grid, mode_enum,
-                                     padding_mode_enum, align_corners)
+        grad_input, grad_grid = grid_sampler_ext.grid_sampler_backward(
+            grad_output, input, grid, mode_enum, padding_mode_enum,
+            align_corners)
 
         return grad_input, grad_grid, None, None, None
 

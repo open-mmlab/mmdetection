@@ -683,19 +683,3 @@ void modulated_deform_conv_cuda_backward(
                                   grad_output.size(2), grad_output.size(3),
                                   grad_output.size(4)});
 }
-
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("deform_conv_forward_cuda", &deform_conv_forward_cuda,
-        "deform forward (CUDA)");
-  m.def("deform_conv_backward_input_cuda", &deform_conv_backward_input_cuda,
-        "deform_conv_backward_input (CUDA)");
-  m.def("deform_conv_backward_parameters_cuda",
-        &deform_conv_backward_parameters_cuda,
-        "deform_conv_backward_parameters (CUDA)");
-  m.def("modulated_deform_conv_cuda_forward",
-        &modulated_deform_conv_cuda_forward,
-        "modulated deform conv forward (CUDA)");
-  m.def("modulated_deform_conv_cuda_backward",
-        &modulated_deform_conv_cuda_backward,
-        "modulated deform conv backward (CUDA)");
-}

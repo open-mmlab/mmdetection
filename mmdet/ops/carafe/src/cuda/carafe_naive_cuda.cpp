@@ -67,9 +67,3 @@ int carafe_naive_backward_cuda(at::Tensor top_grad, at::Tensor features,
 
   return 1;
 }
-
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("forward", &carafe_naive_forward_cuda, "carafe_naive forward (CUDA)");
-  m.def("backward", &carafe_naive_backward_cuda,
-        "carafe_naive backward (CUDA)");
-}

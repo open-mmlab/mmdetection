@@ -3,7 +3,7 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
-from . import roi_align_cuda
+from . import roi_align_ext
 
 
 class RoIAlignFunction(Function):
@@ -32,12 +32,12 @@ class RoIAlignFunction(Function):
 
                 output = features.new_zeros(num_rois, num_channels, out_h,
                                             out_w)
-                roi_align_cuda.forward_v1(features, rois, out_h, out_w,
-                                          spatial_scale, sample_num, output)
+                roi_align_ext.forward_v1(features, rois, out_h, out_w,
+                                         spatial_scale, sample_num, output)
             else:
-                output = roi_align_cuda.forward_v2(features, rois,
-                                                   spatial_scale, out_h, out_w,
-                                                   sample_num, aligned)
+                output = roi_align_ext.forward_v2(features, rois,
+                                                  spatial_scale, out_h, out_w,
+                                                  sample_num, aligned)
         else:
             raise NotImplementedError
 
@@ -62,13 +62,15 @@ class RoIAlignFunction(Function):
             if ctx.needs_input_grad[0]:
                 grad_input = rois.new_zeros(batch_size, num_channels,
                                             data_height, data_width)
-                roi_align_cuda.backward_v1(grad_output.contiguous(), rois,
-                                           out_h, out_w, spatial_scale,
-                                           sample_num, grad_input)
+                roi_align_ext.backward_v1(grad_output.contiguous(), rois,
+                                          out_h, out_w, spatial_scale,
+                                          sample_num, grad_input)
         else:
-            grad_input = roi_align_cuda.backward_v2(
-                grad_output, rois, spatial_scale, out_h, out_w, batch_size,
-                num_channels, data_height, data_width, sample_num, aligned)
+            grad_input = roi_align_ext.backward_v2(grad_output, rois,
+                                                   spatial_scale, out_h, out_w,
+                                                   batch_size, num_channels,
+                                                   data_height, data_width,
+                                                   sample_num, aligned)
 
         return grad_input, grad_rois, None, None, None, None
 
