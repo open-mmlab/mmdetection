@@ -7,7 +7,7 @@ from .utils import weighted_loss
 
 @weighted_loss
 def mse_loss(pred, target):
-    return F.mse_loss(pred, target, reduction="none")
+    return F.mse_loss(pred, target, reduction='none')
 
 
 @LOSSES.register_module
