@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/foveabox/fovea_r50_fpn.py', '../_base_/coco_detection.py',
+    '../_base_/fovea_r50_fpn.py', '../_base_/coco_detection.py',
     '../_base_/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 data = dict(imgs_per_gpu=4, workers_per_gpu=4)
