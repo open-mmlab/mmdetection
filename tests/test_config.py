@@ -137,7 +137,7 @@ def test_config_build_detector():
         # 'fcos/fcos_mstrain_640_800_r101_caffe_fpn_gn_2x_4gpu_coco.py',
         'fcos/fcos_r50_caffe_fpn_gn_1x_4gpu_coco.py',
         # ---
-        'albu_example/mask_rcnn_r50_fpn_1x_coco.py',
+        'albu_example/mask_rcnn_r50_fpn_1x_albu_coco.py',
         # ---
         'libra_rcnn/libra_faster_rcnn_r50_fpn_1x_coco.py',
         # 'libra_rcnn/libra_retinanet_r50_fpn_1x_coco.py',
