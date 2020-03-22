@@ -1,7 +1,7 @@
 import torch.nn as nn
 
+from mmdet.ops import ConvModule
 from ..registry import HEADS
-from ..utils import ConvModule
 from .bbox_head import BBoxHead
 
 
@@ -123,6 +123,7 @@ class ConvFCBBoxHead(BBoxHead):
 
     def init_weights(self):
         super(ConvFCBBoxHead, self).init_weights()
+        # conv layers are already initialized by ConvModule
         for module_list in [self.shared_fcs, self.cls_fcs, self.reg_fcs]:
             for m in module_list.modules():
                 if isinstance(m, nn.Linear):

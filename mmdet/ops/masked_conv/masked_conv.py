@@ -6,7 +6,7 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
-from . import masked_conv2d_cuda
+from . import masked_conv2d_ext
 
 
 class MaskedConv2dFunction(Function):
@@ -40,16 +40,16 @@ class MaskedConv2dFunction(Function):
             mask_w_idx = mask_inds[:, 1].contiguous()
             data_col = features.new_zeros(in_channel * kernel_h * kernel_w,
                                           mask_inds.size(0))
-            masked_conv2d_cuda.masked_im2col_forward(features, mask_h_idx,
-                                                     mask_w_idx, kernel_h,
-                                                     kernel_w, pad_h, pad_w,
-                                                     data_col)
+            masked_conv2d_ext.masked_im2col_forward(features, mask_h_idx,
+                                                    mask_w_idx, kernel_h,
+                                                    kernel_w, pad_h, pad_w,
+                                                    data_col)
 
             masked_output = torch.addmm(1, bias[:, None], 1,
                                         weight.view(out_channel, -1), data_col)
-            masked_conv2d_cuda.masked_col2im_forward(masked_output, mask_h_idx,
-                                                     mask_w_idx, out_h, out_w,
-                                                     out_channel, output)
+            masked_conv2d_ext.masked_col2im_forward(masked_output, mask_h_idx,
+                                                    mask_w_idx, out_h, out_w,
+                                                    out_channel, output)
         return output
 
     @staticmethod

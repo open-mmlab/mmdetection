@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from . import nms_cpu, nms_cuda
+from . import nms_ext
 
 
 def nms(dets, iou_thr, device_id=None):
@@ -51,9 +51,9 @@ def nms(dets, iou_thr, device_id=None):
         inds = dets_th.new_zeros(0, dtype=torch.long)
     else:
         if dets_th.is_cuda:
-            inds = nms_cuda.nms(dets_th, iou_thr)
+            inds = nms_ext.nms(dets_th, iou_thr)
         else:
-            inds = nms_cpu.nms(dets_th, iou_thr)
+            inds = nms_ext.nms(dets_th, iou_thr)
 
     if is_numpy:
         inds = inds.cpu().numpy()
@@ -103,7 +103,7 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
     method_codes = {'linear': 1, 'gaussian': 2}
     if method not in method_codes:
         raise ValueError('Invalid method for SoftNMS: {}'.format(method))
-    results = nms_cpu.soft_nms(dets_t, iou_thr, method_codes[method], sigma,
+    results = nms_ext.soft_nms(dets_t, iou_thr, method_codes[method], sigma,
                                min_score)
 
     new_dets = results[:, :5]

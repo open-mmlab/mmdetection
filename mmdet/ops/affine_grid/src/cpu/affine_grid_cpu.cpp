@@ -105,11 +105,4 @@ Tensor affine_grid_generator_backward(const Tensor& grad, IntArrayRef size,
                                              size[3], size[4], align_corners);
   }
 }
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("affine_grid_generator_forward", &affine_grid_generator_forward,
-        "affine_grid_generator_forward");
-  m.def("affine_grid_generator_backward", &affine_grid_generator_backward,
-        "affine_grid_generator_backward");
-}
-
 }  // namespace mmdetection
