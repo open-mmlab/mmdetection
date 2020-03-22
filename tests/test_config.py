@@ -1,5 +1,7 @@
 from os.path import dirname, exists, join
 
+from mmcv import Config
+
 
 def _get_config_directory():
     """ Find the predefined detector config directory """
@@ -20,7 +22,6 @@ def test_config_build_detector():
     """
     Test that all detection models defined in the configs can be initialized.
     """
-    from xdoctest.utils import import_module_from_path
     from mmdet.models import build_detector
 
     config_dpath = _get_config_directory()
@@ -156,7 +157,7 @@ def test_config_build_detector():
 
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
-        config_mod = import_module_from_path(config_fpath)
+        config_mod = Config.fromfile(config_fpath)
 
         config_mod.model
         config_mod.train_cfg
