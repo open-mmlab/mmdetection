@@ -70,7 +70,7 @@ class AsyncInferenceTestCase(AsyncTestCase):
 
             root_dir = os.path.dirname(os.path.dirname(__name__))
             model_config = os.path.join(root_dir,
-                                        'configs/mask_rcnn_r50_fpn_1x.py')
+                                        'configs/mask_rcnn_r50_fpn_1x_coco.py')
             detector = MaskRCNNDetector(model_config)
             await detector.init()
             img_path = os.path.join(root_dir, 'demo/demo.jpg')

@@ -1,4 +1,4 @@
-_base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x.py'
+_base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         gen_attention=dict(

@@ -1,4 +1,4 @@
-_base_ = './retinanet_r50_fpn_1x.py'
+_base_ = './retinanet_r50_fpn_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://resnet50_caffe',
     backbone=dict(norm_cfg=dict(requires_grad=False), style='caffe'))

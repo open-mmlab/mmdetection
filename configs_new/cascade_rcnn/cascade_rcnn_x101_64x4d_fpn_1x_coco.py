@@ -1,4 +1,4 @@
-_base_ = './cascade_rcnn_r50_fpn_1x.py'
+_base_ = './cascade_rcnn_r50_fpn_1x_coco.py'
 model = dict(
     type='CascadeRCNN',
     num_stages=3,

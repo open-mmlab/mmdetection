@@ -1,4 +1,4 @@
-_base_ = './ga_rpn_r50_fpn_1x.py'
+_base_ = './ga_rpn_r50_fpn_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://resnext101_32x4d',
     backbone=dict(

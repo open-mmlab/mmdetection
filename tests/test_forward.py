@@ -82,7 +82,7 @@ def test_ssd300_forward():
 
 
 def test_rpn_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg('rpn_r50_fpn_1x.py')
+    model, train_cfg, test_cfg = _get_detector_cfg('rpn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
@@ -112,7 +112,7 @@ def test_rpn_forward():
 
 def test_retina_ghm_forward():
     model, train_cfg, test_cfg = _get_detector_cfg(
-        'ghm/retinanet_ghm_r50_fpn_1x.py')
+        'ghm/retinanet_ghm_r50_fpn_1x_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
@@ -176,7 +176,7 @@ def test_cascade_forward():
         raise pytest.skip('requires torchvision on cpu')
 
     model, train_cfg, test_cfg = _get_detector_cfg(
-        'cascade_rcnn_r50_fpn_1x.py')
+        'cascade_rcnn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
     model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
@@ -228,7 +228,7 @@ def test_faster_rcnn_forward():
         import pytest
         raise pytest.skip('requires torchvision on cpu')
 
-    model, train_cfg, test_cfg = _get_detector_cfg('faster_rcnn_r50_fpn_1x.py')
+    model, train_cfg, test_cfg = _get_detector_cfg('faster_rcnn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
     model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
@@ -281,7 +281,7 @@ def test_faster_rcnn_ohem_forward():
         raise pytest.skip('requires torchvision on cpu')
 
     model, train_cfg, test_cfg = _get_detector_cfg(
-        'faster_rcnn_ohem_r50_fpn_1x.py')
+        'faster_rcnn_ohem_r50_fpn_1x_coco.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
     model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True

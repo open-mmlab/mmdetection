@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_r101_fpn_1x.py'
+_base_ = './mask_rcnn_r101_fpn_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://resnext101_32x4d',
     backbone=dict(
