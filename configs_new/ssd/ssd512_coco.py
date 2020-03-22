@@ -1,8 +1,13 @@
-# model settings
-_base_ = [
-    '../_base_/models/ssd512.py', '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
-]
+_base_ = 'ssd300_coco.py'
+input_size = 512
+model = dict(
+    backbone=dict(input_size=input_size),
+    bbox_head=dict(
+        input_size=input_size,
+        in_channels=(512, 1024, 512, 256, 256, 256, 256),
+        anchor_strides=(8, 16, 32, 64, 128, 256, 512),
+        basesize_ratio_range=(0.1, 0.9),
+        anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2, 3], [2], [2])))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

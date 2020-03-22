@@ -1,11 +1,13 @@
-_base_ = [
-    '../_base_/models/ssd512.py', '../_base_/datasets/voc.py',
-    '../_base_/default_runtime.py'
-]
-model = dict(bbox_head=dict(num_classes=21, basesize_ratio_range=(0.15, 0.9)))
-# dataset settings
-dataset_type = 'VOCDataset'
-data_root = 'data/VOCdevkit/'
+_base_ = 'ssd300_voc.py'
+input_size = 512
+model = dict(
+    backbone=dict(input_size=input_size),
+    bbox_head=dict(
+        input_size=input_size,
+        in_channels=(512, 1024, 512, 256, 256, 256, 256),
+        anchor_strides=(8, 16, 32, 64, 128, 256, 512),
+        basesize_ratio_range=(0.15, 0.9),
+        anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2, 3], [2], [2])))
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
@@ -45,23 +47,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=8,
-    workers_per_gpu=3,
-    train=dict(
-        type='RepeatDataset', times=10, dataset=dict(pipeline=train_pipeline)),
+    train=dict(dataset=dict(pipeline=train_pipeline)),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-# optimizer
-optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict()
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=1.0 / 3,
-    step=[16, 20])
-checkpoint_config = dict(interval=1)
-# runtime settings
-total_epochs = 24
 work_dir = './work_dirs/ssd512_voc'
