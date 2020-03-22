@@ -1,7 +1,4 @@
-_base_ = [
-    '../_base_/mask_rcnn_r50_fpn.py', '../_base_/coco_instance.py',
-    '../_base_/schedule_2x.py', '../_base_/default_runtime.py'
-]
+_base_ = '../mask_rcnn_r50_fpn_1x.py'
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
     pretrained='open-mmlab://detectron/resnet50_gn',
@@ -43,4 +40,7 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
+# learning policy
+lr_config = dict(step=[16, 22])
+total_epochs = 24
 work_dir = './work_dirs/mask_rcnn_r50_fpn_gn_2x'

@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/faster_rcnn_r50_fpn.py', '../_base_/voc.py',
+    '../_base_/models/faster_rcnn_r50_fpn.py', '../_base_/datasets/voc.py',
     '../_base_/default_runtime.py'
 ]
 model = dict(bbox_head=dict(num_classes=21))

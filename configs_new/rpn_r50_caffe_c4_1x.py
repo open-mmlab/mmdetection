@@ -1,6 +1,6 @@
 _base_ = [
-    '_base_/rpn_r50_caffe_c4.py', '_base_/coco_detection.py',
-    '_base_/schedule_1x.py', '_base_/default_runtime.py'
+    '_base_/models/rpn_r50_caffe_c4.py', '_base_/datasets/coco_detection.py',
+    '_base_/schedules/schedule_1x.py', '_base_/default_runtime.py'
 ]
 # dataset settings
 img_norm_cfg = dict(

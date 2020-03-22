@@ -46,15 +46,7 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-# optimizer
-optimizer = dict(
-    type='SGD',
-    lr=0.01,
-    momentum=0.9,
-    weight_decay=0.0001,
-    paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
 # learning policy
 lr_config = dict(step=[16, 22])
-checkpoint_config = dict(interval=1)
 total_epochs = 24
 work_dir = './work_dirs/fcos_mstrain_640_800_r101_caffe_fpn_gn_2x_4gpu'

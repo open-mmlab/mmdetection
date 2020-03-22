@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/ssd300.py', '../_base_/wider_face.py',
+    '../_base_/models/ssd300.py', '../_base_/datasets/wider_face.py',
     '../_base_/default_runtime.py'
 ]
 model = dict(bbox_head=dict(num_classes=2))

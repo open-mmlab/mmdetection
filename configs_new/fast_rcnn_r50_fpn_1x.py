@@ -1,6 +1,6 @@
 _base_ = [
-    '_base_/fast_rcnn_r50_fpn.py', '_base_/coco_detection.py',
-    '_base_/schedule_1x.py', '_base_/default_runtime.py'
+    '_base_/models/fast_rcnn_r50_fpn.py', '_base_/datasets/coco_detection.py',
+    '_base_/schedules/schedule_1x.py', '_base_/default_runtime.py'
 ]
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

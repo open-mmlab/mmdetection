@@ -1,6 +1,7 @@
 _base_ = [
-    '../_base_/fcos_r50_fpn_gn.py', '../_base_/coco_detection.py',
-    '../_base_/default_runtime.py'
+    '../_base_/models/fcos_r50_fpn_gn.py',
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 model = dict(
     pretrained='open-mmlab://resnext101_64x4d',
@@ -34,18 +35,8 @@ data = dict(
     imgs_per_gpu=2, workers_per_gpu=2, train=dict(pipeline=train_pipeline))
 # optimizer
 optimizer = dict(
-    type='SGD',
-    lr=0.01,
-    momentum=0.9,
-    weight_decay=0.0001,
-    paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
-optimizer_config = dict(grad_clip=None)
+    lr=0.01, paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
+optimizer_config = dict(_delete_=True, grad_clip=None)
 # learning policy
-lr_config = dict(
-    policy='step',
-    warmup='constant',
-    warmup_iters=500,
-    warmup_ratio=1.0 / 3,
-    step=[16, 22])
-total_epochs = 24
+lr_config = dict(warmup='constant')
 work_dir = './work_dirs/fcos_mstrain_640_800_x101_64x4d_fpn_gn_2x'

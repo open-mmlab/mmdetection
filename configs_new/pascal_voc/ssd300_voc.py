@@ -1,5 +1,6 @@
 _base_ = [
-    '../_base_/ssd300.py', '../_base_/voc.py', '../_base_/default_runtime.py'
+    '../_base_/models/ssd300.py', '../_base_/datasets/voc.py',
+    '../_base_/default_runtime.py'
 ]
 model = dict(bbox_head=dict(num_classes=21, basesize_ratio_range=(0.2, 0.9)))
 # dataset settings

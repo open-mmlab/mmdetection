@@ -1,6 +1,7 @@
 _base_ = [
-    '../_base_/mask_rcnn_r50_fpn.py', '../_base_/coco_instance.py',
-    '../_base_/default_runtime.py'
+    '../_base_/models/mask_rcnn_r50_fpn.py',
+    '../_base_/datasets/coco_instance.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
@@ -14,19 +15,9 @@ model = dict(
         norm_cfg=norm_cfg),
     mask_head=dict(norm_cfg=norm_cfg))
 # optimizer
-optimizer = dict(
-    type='SGD',
-    lr=0.02,
-    momentum=0.9,
-    weight_decay=0.0001,
-    paramwise_options=dict(norm_decay_mult=0))
-optimizer_config = dict(grad_clip=None)
+optimizer = dict(paramwise_options=dict(norm_decay_mult=0))
+optimizer_config = dict(_delete_=True, grad_clip=None)
 # learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=0.1,
-    step=[65, 71])
+lr_config = dict(warmup_ratio=0.1, step=[65, 71])
 total_epochs = 73
 work_dir = './work_dirs/scratch_mask_rcnn_r50_fpn_gn_6x'

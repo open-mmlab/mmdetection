@@ -1,7 +1,4 @@
-_base_ = [
-    '../_base_/cascade_rcnn_r50_fpn.py', '../_base_/coco_detection.py',
-    '../_base_/schedule_20e.py', '../_base_/default_runtime.py'
-]
+_base_ = '../cascade_rcnn_r50_fpn_1x.py'
 model = dict(
     pretrained='open-mmlab://msra/hrnetv2_w32',
     backbone=dict(
@@ -37,4 +34,7 @@ model = dict(
         type='HRFPN',
         in_channels=[32, 64, 128, 256],
         out_channels=256))
+# learning policy
+lr_config = dict(step=[16, 19])
+total_epochs = 20
 work_dir = './work_dirs/cascade_rcnn_hrnetv2p_w32'
