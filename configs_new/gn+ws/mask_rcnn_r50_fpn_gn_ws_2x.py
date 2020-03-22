@@ -1,6 +1,6 @@
 _base_ = [
-    '../component/mask_rcnn_r50_fpn.py', '../component/coco_instance.py',
-    '../component/schedule_2x.py', '../component/default_runtime.py'
+    '../_base_/mask_rcnn_r50_fpn.py', '../_base_/coco_instance.py',
+    '../_base_/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 conv_cfg = dict(type='ConvWS')
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)

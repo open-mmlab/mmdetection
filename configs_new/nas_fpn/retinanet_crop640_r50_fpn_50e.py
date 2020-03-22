@@ -1,6 +1,6 @@
 _base_ = [
-    '../component/retinanet_r50_fpn.py', '../component/coco_detection.py',
-    '../component/default_runtime.py'
+    '../_base_/retinanet_r50_fpn.py', '../_base_/coco_detection.py',
+    '../_base_/default_runtime.py'
 ]
 cudnn_benchmark = True
 norm_cfg = dict(type='BN', requires_grad=True)

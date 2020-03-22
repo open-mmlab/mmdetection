@@ -1,7 +1,6 @@
 _base_ = [
-    '../component/cascade_mask_rcnn_r50_fpn.py',
-    '../component/coco_instance.py', '../component/schedule_20e.py',
-    '../component/default_runtime.py'
+    '../_base_/cascade_mask_rcnn_r50_fpn.py', '../_base_/coco_instance.py',
+    '../_base_/schedule_20e.py', '../_base_/default_runtime.py'
 ]
 model = dict(
     pretrained='open-mmlab://msra/hrnetv2_w32',

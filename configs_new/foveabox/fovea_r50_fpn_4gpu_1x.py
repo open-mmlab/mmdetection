@@ -1,6 +1,6 @@
 _base_ = [
-    '../component/foveabox/fovea_r50_fpn.py', '../component/coco_detection.py',
-    '../component/schedule_1x.py', '../component/default_runtime.py'
+    '../_base_/foveabox/fovea_r50_fpn.py', '../_base_/coco_detection.py',
+    '../_base_/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 data = dict(imgs_per_gpu=4, workers_per_gpu=4)
 # optimizer

@@ -1,6 +1,6 @@
 _base_ = [
-    '../component/fcos/fcos_r50_fpn_gn.py', '../component/coco_detection.py',
-    '../component/default_runtime.py'
+    '../_base_/fcos/fcos_r50_fpn_gn.py', '../_base_/coco_detection.py',
+    '../_base_/default_runtime.py'
 ]
 model = dict(
     pretrained='open-mmlab://resnet50_caffe',

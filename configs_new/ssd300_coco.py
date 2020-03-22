@@ -1,6 +1,6 @@
 _base_ = [
-    'component/ssd300.py', 'component/coco_detection.py',
-    'component/schedule_2x.py', 'component/default_runtime.py'
+    '_base_/ssd300.py', '_base_/coco_detection.py', '_base_/schedule_2x.py',
+    '_base_/default_runtime.py'
 ]
 # dataset settings
 dataset_type = 'CocoDataset'

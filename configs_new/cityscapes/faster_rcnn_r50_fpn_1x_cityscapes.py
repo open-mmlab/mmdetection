@@ -1,6 +1,6 @@
 _base_ = [
-    '../component/faster_rcnn_r50_fpn.py',
-    '../component/cityscapes_detection.py', '../component/default_runtime.py'
+    '../_base_/faster_rcnn_r50_fpn.py', '../_base_/cityscapes_detection.py',
+    '../_base_/default_runtime.py'
 ]
 model = dict(
     pretrained=None,

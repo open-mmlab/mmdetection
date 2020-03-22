@@ -1,6 +1,6 @@
 _base_ = [
-    '../component/faster_rcnn_r50_fpn.py', '../component/voc.py',
-    '../component/default_runtime.py'
+    '../_base_/faster_rcnn_r50_fpn.py', '../_base_/voc.py',
+    '../_base_/default_runtime.py'
 ]
 model = dict(bbox_head=dict(num_classes=21))
 # optimizer

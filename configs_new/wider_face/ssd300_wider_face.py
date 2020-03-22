@@ -1,6 +1,6 @@
 _base_ = [
-    '../component/ssd300.py', '../component/wider_face.py',
-    '../component/default_runtime.py'
+    '../_base_/ssd300.py', '../_base_/wider_face.py',
+    '../_base_/default_runtime.py'
 ]
 model = dict(bbox_head=dict(num_classes=2))
 # optimizer

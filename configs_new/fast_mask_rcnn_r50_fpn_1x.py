@@ -1,6 +1,6 @@
 _base_ = [
-    'component/fast_mask_rcnn_r50_fpn.py', 'component/coco_instance.py',
-    'component/schedule_1x.py', 'component/default_runtime.py'
+    '_base_/fast_mask_rcnn_r50_fpn.py', '_base_/coco_instance.py',
+    '_base_/schedule_1x.py', '_base_/default_runtime.py'
 ]
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'

@@ -8,7 +8,7 @@ from mmcv import Config
 def collect_cfgs(folder):
     collected_files = dict()
     for root, _, files in os.walk(folder):
-        if 'component' not in root:
+        if '_base_' not in root:
             for file in files:
                 if file.endswith('.py'):
                     file_path = osp.abspath(osp.join(root, file))

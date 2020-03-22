@@ -1,6 +1,6 @@
 _base_ = [
-    'component/retinanet_r50_fpn.py', 'component/coco_detection.py',
-    'component/schedule_1x.py', 'component/default_runtime.py'
+    '_base_/retinanet_r50_fpn.py', '_base_/coco_detection.py',
+    '_base_/schedule_1x.py', '_base_/default_runtime.py'
 ]
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
