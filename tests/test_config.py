@@ -1,7 +1,5 @@
 from os.path import dirname, exists, join
 
-from mmcv import Config
-
 
 def _get_config_directory():
     """ Find the predefined detector config directory """
@@ -22,6 +20,7 @@ def test_config_build_detector():
     """
     Test that all detection models defined in the configs can be initialized.
     """
+    from mmcv import Config
     from mmdet.models import build_detector
 
     config_dpath = _get_config_directory()
@@ -181,7 +180,7 @@ def test_config_data_pipeline():
     CommandLine:
         xdoctest -m tests/test_config.py test_config_build_data_pipeline
     """
-    from xdoctest.utils import import_module_from_path
+    from mmcv import Config
     from mmdet.datasets.pipelines import Compose
     import numpy as np
 
@@ -195,14 +194,14 @@ def test_config_data_pipeline():
         'pascal_voc/ssd300_voc.py',
         'pascal_voc/ssd512_voc.py',
         # 'albu_example/mask_rcnn_r50_fpn_1x.py',
-        'fp16/mask_rcnn_r50_fpn_fp16_1x.py',
+        'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
     ]
 
     print('Using {} config files'.format(len(config_names)))
 
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
-        config_mod = import_module_from_path(config_fpath)
+        config_mod = Config.fromfile(config_fpath)
 
         # remove loading pipeline
         loading_pipeline = config_mod.train_pipeline.pop(0)

@@ -27,10 +27,10 @@ def _get_config_module(fname):
     """
     Load a configuration as a python module
     """
-    from xdoctest.utils import import_module_from_path
+    from mmcv import Config
     config_dpath = _get_config_directory()
     config_fpath = join(config_dpath, fname)
-    config_mod = import_module_from_path(config_fpath)
+    config_mod = Config.fromfile(config_fpath)
     return config_mod
 
 
@@ -48,7 +48,7 @@ def _get_detector_cfg(fname):
 
 
 def test_ssd300_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg('ssd300_coco.py')
+    model, train_cfg, test_cfg = _get_detector_cfg('ssd/ssd300_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
@@ -82,7 +82,8 @@ def test_ssd300_forward():
 
 
 def test_rpn_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg('rpn_r50_fpn_1x_coco.py')
+    model, train_cfg, test_cfg = _get_detector_cfg(
+        'rpn/rpn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
@@ -228,7 +229,8 @@ def test_faster_rcnn_forward():
         import pytest
         raise pytest.skip('requires torchvision on cpu')
 
-    model, train_cfg, test_cfg = _get_detector_cfg('faster_rcnn_r50_fpn_1x_coco.py')
+    model, train_cfg, test_cfg = _get_detector_cfg(
+        'faster_rcnn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
     model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
