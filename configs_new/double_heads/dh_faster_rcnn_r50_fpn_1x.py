@@ -1,4 +1,4 @@
-_base_ = '../faster_rcnn_r50_fpn_1x.py'
+_base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x.py'
 model = dict(
     type='DoubleHeadRCNN',
     reg_roi_scale_factor=1.3,

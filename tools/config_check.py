@@ -12,7 +12,8 @@ def collect_cfgs(folder):
             for file in files:
                 if file.endswith('.py'):
                     file_path = osp.abspath(osp.join(root, file))
-                    file_name = file_path.replace(osp.abspath(folder), '')
+                    # file_name = file_path.replace(osp.abspath(folder), '')
+                    file_name = file
                     collected_files[file_name] = file_path
 
     return collected_files

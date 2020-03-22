@@ -1,4 +1,4 @@
-_base_ = '../faster_rcnn_r50_fpn_1x.py'
+_base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x.py'
 model = dict(
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',

@@ -1,4 +1,4 @@
-_base_ = '../mask_rcnn_r50_fpn_1x.py'
+_base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x.py'
 model = dict(
     backbone=dict(
         dcn=dict(type='DCNv2', deformable_groups=1, fallback_on_stride=False),

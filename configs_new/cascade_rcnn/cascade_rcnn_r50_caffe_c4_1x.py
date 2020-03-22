@@ -1,19 +1,21 @@
 _base_ = [
-    '_base_/models/rpn_r50_caffe_c4.py', '_base_/datasets/coco_detection.py',
-    '_base_/schedules/schedule_1x.py', '_base_/default_runtime.py'
+    '../_base_/models/cascade_rcnn_r50_caffe_c4.py',
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-# dataset settings
+# use caffe img_norm
+# use caffe img_norm
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True, with_label=False),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes']),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -34,5 +36,6 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='proposal_fast')
-work_dir = './work_dirs/rpn_r50_caffe_c4_1x'
+# optimizer
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+work_dir = './work_dirs/cascade_rcnn_r50_c4_1x'

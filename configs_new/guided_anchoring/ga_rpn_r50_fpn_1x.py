@@ -1,4 +1,4 @@
-_base_ = '../rpn_r50_fpn_1x.py'
+_base_ = '../rpn/rpn_r50_fpn_1x.py'
 model = dict(
     rpn_head=dict(
         _delete_=True,
