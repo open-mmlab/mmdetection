@@ -1,4 +1,4 @@
-_base_ = './faster_rcnn_hrnetv2p_w32_1x.py'
+_base_ = './faster_rcnn_hrnetv2p_w32_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://msra/hrnetv2_w40',
     backbone=dict(

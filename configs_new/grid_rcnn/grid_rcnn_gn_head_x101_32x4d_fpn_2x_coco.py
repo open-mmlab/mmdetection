@@ -1,4 +1,4 @@
-_base_ = './grid_rcnn_gn_head_r50_fpn_2x.py'
+_base_ = './grid_rcnn_gn_head_r50_fpn_2x_coco.py'
 model = dict(
     pretrained='open-mmlab://resnext101_32x4d',
     backbone=dict(

@@ -1,4 +1,4 @@
-_base_ = './fcos_r50_caffe_fpn_gn_1x_4gpu.py'
+_base_ = './fcos_r50_caffe_fpn_gn_1x_4gpu_coco.py'
 model = dict(
     pretrained='open-mmlab://resnet101_caffe',
     backbone=dict(

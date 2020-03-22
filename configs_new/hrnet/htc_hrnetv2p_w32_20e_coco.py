@@ -1,4 +1,4 @@
-_base_ = '../htc/htc_r50_fpn_20e.py'
+_base_ = '../htc/htc_r50_fpn_20e_coco.py'
 model = dict(
     pretrained='open-mmlab://msra/hrnetv2_w32',
     backbone=dict(
