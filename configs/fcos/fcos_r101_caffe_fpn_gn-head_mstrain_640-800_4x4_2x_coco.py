@@ -1,14 +1,6 @@
 _base_ = './fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
 model = dict(
-    pretrained='open-mmlab://resnet101_caffe',
-    backbone=dict(
-        type='ResNet',
-        depth=101,
-        num_stages=4,
-        out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
-        style='caffe'))
+    pretrained='open-mmlab://resnet101_caffe', backbone=dict(depth=101))
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
