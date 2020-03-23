@@ -1,4 +1,4 @@
-_base_ = './reppoints_moment_r50_fpn_gn-neck_head_mstrain_480-960_2x_coco.py'
+_base_ = './reppoints_moment_r50_fpn_gn-neck+head_2x_coco.py'
 model = dict(
     pretrained='open-mmlab://resnext101_32x4d',
     backbone=dict(
@@ -13,4 +13,4 @@ model = dict(
         style='pytorch',
         dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)))
-work_dir = './work_dirs/reppoints_moment_x101_dcn_fpn_2x_mt'
+work_dir = './work_dirs/reppoints_moment_x101_dcn_fpn_2x'
