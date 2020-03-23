@@ -36,7 +36,7 @@ def test_config_build_detector():
         # 'dcn/faster_rcnn_dconv_c3-c5_r50_fpn_1x_coco.py',
         # 'dcn/cascade_mask_rcnn_dconv_c3-c5_r50_fpn_1x_coco.py',
         # 'dcn/faster_rcnn_dpool_r50_fpn_1x_coco.py',
-        'dcn/mask_rcnn_dconv_c3-c5_r50_fpn_1x_coco.py',
+        'dcn/mask_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py',
         # 'dcn/faster_rcnn_dconv_c3-c5_x101_32x4d_fpn_1x_coco.py',
         # 'dcn/cascade_rcnn_dconv_c3-c5_r50_fpn_1x_coco.py',
         # 'dcn/faster_rcnn_mdpool_r50_fpn_1x_coco.py',
@@ -58,7 +58,7 @@ def test_config_build_detector():
         # 'scratch/scratch_mask_rcnn_r50_fpn_gn_6x_coco.py',
         # ---
         # 'grid_rcnn/grid_rcnn_gn_head_x101_32x4d_fpn_2x_coco.py',
-        'grid_rcnn/grid_rcnn_gn_head_r50_fpn_2x_coco.py',
+        'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
         # ---
         'double_heads/dh_faster_rcnn_r50_fpn_1x_coco.py',
         # ---
@@ -82,11 +82,11 @@ def test_config_build_detector():
         # 'guided_anchoring/ga_faster_r50_caffe_fpn_1x_coco.py',
         'guided_anchoring/ga_rpn_r50_caffe_fpn_1x_coco.py',
         # ---
-        'foveabox/fovea_r50_fpn_4gpu_1x_coco.py',
+        'foveabox/fovea_r50_fpn_4x4_1x_coco.py',
         # 'foveabox/fovea_align_gn_ms_r101_fpn_4gpu_2x_coco.py',
         # 'foveabox/fovea_align_gn_r50_fpn_4gpu_2x_coco.py',
         # 'foveabox/fovea_align_gn_r101_fpn_4gpu_2x_coco.py',
-        'foveabox/fovea_align_gn_ms_r50_fpn_4gpu_2x_coco.py',
+        'foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py',
         # ---
         # 'hrnet/cascade_rcnn_hrnetv2p_w32_20e_coco.py',
         # 'hrnet/mask_rcnn_hrnetv2p_w32_1x_coco.py',
@@ -96,48 +96,48 @@ def test_config_build_detector():
         # 'hrnet/mask_rcnn_hrnetv2p_w18_1x_coco.py',
         # 'hrnet/faster_rcnn_hrnetv2p_w32_1x_coco.py',
         # 'hrnet/faster_rcnn_hrnetv2p_w40_1x_coco.py',
-        'hrnet/fcos_hrnetv2p_w32_gn_1x_4gpu_coco.py',
+        'hrnet/fcos_hrnetv2p_w32_gn-head_4x4_1x_coco.py',
         # ---
         # 'gn+ws/faster_rcnn_r50_fpn_gn_ws_1x_coco.py',
         # 'gn+ws/mask_rcnn_x101_32x4d_fpn_gn_ws_2x_coco.py',
-        'gn+ws/mask_rcnn_r50_fpn_gn_ws_2x_coco.py',
+        'gn+ws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py',
         # 'gn+ws/mask_rcnn_r50_fpn_gn_ws_20_23_24e_coco.py',
         # ---
         # 'wider_face/ssd300_wider_face.py',
         # ---
-        'pascal_voc/ssd300_voc.py',
+        'pascal_voc/ssd300_voc0712.py',
         'pascal_voc/faster_rcnn_r50_fpn_1x_voc0712.py',
-        'pascal_voc/ssd512_voc.py',
+        'pascal_voc/ssd512_voc0712.py',
         # ---
         # 'gcnet/mask_rcnn_r4_gcb_c3-c5_r50_fpn_syncbn_1x_coco.py',
         # 'gcnet/mask_rcnn_r16_gcb_c3-c5_r50_fpn_syncbn_1x_coco.py',
         # 'gcnet/mask_rcnn_r4_gcb_c3-c5_r50_fpn_1x_coco.py',
         # 'gcnet/mask_rcnn_r16_gcb_c3-c5_r50_fpn_1x_coco.py',
-        'gcnet/mask_rcnn_r50_fpn_sbn_1x_coco.py',
+        'gcnet/mask_rcnn_r50_fpn_syncbn-backbone_1x_coco.py',
         # ---
-        'gn/mask_rcnn_r50_fpn_gn_contrib_2x_coco.py',
+        'gn/mask_rcnn_r50_fpn_gn-all_contrib_2x_coco.py',
         # 'gn/mask_rcnn_r50_fpn_gn_2x_coco.py',
         # 'gn/mask_rcnn_r101_fpn_gn_2x_coco.py',
         # ---
         # 'reppoints/reppoints_moment_x101_dcn_fpn_2x.py',
-        'reppoints/reppoints_moment_r50_fpn_2x_coco.py',
+        'reppoints/reppoints_moment_r50_fpn_gn-neck_head_2x_coco.py',
         # 'reppoints/reppoints_moment_x101_dcn_fpn_2x_mt_coco.py',
-        'reppoints/reppoints_partial_minmax_r50_fpn_1x_coco.py',
-        'reppoints/bbox_r50_grid_center_fpn_1x_coco.py',
+        'reppoints/reppoints_partial_minmax_r50_fpn_gn-neck_head_1x_coco.py',
+        'reppoints/bbox_r50_grid_center_fpn_gn-neck_head_1x_coco.py',
         # 'reppoints/reppoints_moment_r101_dcn_fpn_2x_coco.py',
         # 'reppoints/reppoints_moment_r101_fpn_2x_mt_coco.py',
         # 'reppoints/reppoints_moment_r50_fpn_2x_mt_coco.py',
-        'reppoints/reppoints_minmax_r50_fpn_1x_coco.py',
+        'reppoints/reppoints_minmax_r50_fpn_gn-neck_head_1x_coco.py',
         # 'reppoints/reppoints_moment_r50_fpn_1x_coco.py',
         # 'reppoints/reppoints_moment_r101_fpn_2x_coco.py',
         # 'reppoints/reppoints_moment_r101_dcn_fpn_2x_mt_coco.py',
-        'reppoints/bbox_r50_grid_fpn_1x_coco.py',
+        'reppoints/bbox_r50_grid_fpn_gn-neck_head_1x_coco.py',
         # ---
         # 'fcos/fcos_mstrain_640_800_x101_64x4d_fpn_gn_2x_coco.py',
         # 'fcos/fcos_mstrain_640_800_r101_caffe_fpn_gn_2x_4gpu_coco.py',
-        'fcos/fcos_r50_caffe_fpn_gn_1x_4gpu_coco.py',
+        'fcos/fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py',
         # ---
-        'albu_example/mask_rcnn_r50_fpn_1x_albu_coco.py',
+        'albu_example/mask_rcnn_r50_fpn_albu_1x_coco.py',
         # ---
         'libra_rcnn/libra_faster_rcnn_r50_fpn_1x_coco.py',
         # 'libra_rcnn/libra_retinanet_r50_fpn_1x_coco.py',
@@ -191,8 +191,8 @@ def test_config_data_pipeline():
     # TODO: test pipelines using Albu, current Albu throw None given empty GT
     config_names = [
         'wider_face/ssd300_wider_face.py',
-        'pascal_voc/ssd300_voc.py',
-        'pascal_voc/ssd512_voc.py',
+        'pascal_voc/ssd300_voc0712.py',
+        'pascal_voc/ssd512_voc0712.py',
         # 'albu_example/mask_rcnn_r50_fpn_1x.py',
         'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
     ]

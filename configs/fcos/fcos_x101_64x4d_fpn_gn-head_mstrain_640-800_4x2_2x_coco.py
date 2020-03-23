@@ -1,7 +1,4 @@
-_base_ = [
-    'fcos_r50_fpn_gn.py', '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
-]
+_base_ = './fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://resnext101_64x4d',
     backbone=dict(

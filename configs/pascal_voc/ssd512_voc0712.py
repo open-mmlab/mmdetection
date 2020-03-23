@@ -1,4 +1,4 @@
-_base_ = 'ssd300_voc.py'
+_base_ = 'ssd300_voc0712.py'
 input_size = 512
 model = dict(
     backbone=dict(input_size=input_size),
