@@ -43,4 +43,3 @@ train_cfg = dict(
         allowed_border=-1,
         center_ratio=0.2,
         ignore_ratio=0.5))
-work_dir = './work_dirs/ga_rpn_r50_fpn_1x'

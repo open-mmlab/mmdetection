@@ -71,4 +71,3 @@ train_pipeline = [
                    'pad_shape', 'scale_factor'))
 ]
 data = dict(train=dict(pipeline=train_pipeline))
-work_dir = './work_dirs/mask_rcnn_r50_fpn_1x'

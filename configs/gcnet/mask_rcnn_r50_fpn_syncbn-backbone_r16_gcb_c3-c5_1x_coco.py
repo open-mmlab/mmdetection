@@ -5,4 +5,3 @@ model = dict(
         norm_eval=False,
         stage_with_gcb=(False, True, True, True),
         gcb=dict(ratio=1. / 16., )))
-work_dir = './work_dirs/mask_rcnn_r16_gcb_c3-c5_r50_fpn_syncbn_1x'

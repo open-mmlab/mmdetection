@@ -36,4 +36,3 @@ data = dict(
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='proposal_fast')
-work_dir = './work_dirs/rpn_r50_caffe_c4_1x'

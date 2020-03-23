@@ -122,4 +122,3 @@ lr_config = dict(
     warmup_ratio=1.0 / 80,
     step=[17, 23])
 total_epochs = 25
-work_dir = './work_dirs/grid_rcnn_gn_head_r50_fpn_2x'

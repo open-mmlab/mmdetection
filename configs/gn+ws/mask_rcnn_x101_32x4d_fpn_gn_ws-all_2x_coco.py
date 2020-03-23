@@ -15,4 +15,3 @@ model = dict(
         style='pytorch',
         conv_cfg=conv_cfg,
         norm_cfg=norm_cfg))
-work_dir = './work_dirs/mask_rcnn_x101_32x4d_fpn_gn_ws_2x'

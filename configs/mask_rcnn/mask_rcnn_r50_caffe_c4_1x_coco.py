@@ -37,4 +37,3 @@ data = dict(
     test=dict(pipeline=test_pipeline))
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-work_dir = './work_dirs/mask_rcnn_r50_caffe_c4_1x'

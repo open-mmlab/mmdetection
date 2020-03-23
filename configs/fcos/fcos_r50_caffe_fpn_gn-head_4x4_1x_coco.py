@@ -96,4 +96,3 @@ optimizer_config = dict(_delete_=True, grad_clip=None)
 # learning policy
 lr_config = dict(warmup='constant')
 total_epochs = 12
-work_dir = './work_dirs/fcos_r50_caffe_fpn_gn_1x_4gpu'

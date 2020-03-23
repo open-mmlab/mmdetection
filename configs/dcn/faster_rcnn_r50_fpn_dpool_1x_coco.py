@@ -12,4 +12,3 @@ model = dict(
             trans_std=0.1),
         out_channels=256,
         featmap_strides=[4, 8, 16, 32]))
-work_dir = './work_dirs/faster_rcnn_dpool_r50_fpn_1x'

@@ -15,4 +15,3 @@ model = dict(
             bins=10,
             momentum=0.7,
             loss_weight=10.0)))
-work_dir = './work_dirs/ghm'
