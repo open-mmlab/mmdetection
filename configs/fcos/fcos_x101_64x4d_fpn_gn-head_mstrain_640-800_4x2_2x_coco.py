@@ -27,12 +27,32 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(1333, 800),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='RandomFlip'),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Pad', size_divisor=32),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img']),
+        ])
+]
 data = dict(
-    imgs_per_gpu=2, workers_per_gpu=2, train=dict(pipeline=train_pipeline))
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
+    train=dict(pipeline=train_pipeline),
+    val=dict(pipeline=test_pipeline),
+    test=dict(pipeline=test_pipeline))
 # optimizer
 optimizer = dict(
     lr=0.01, paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
 optimizer_config = dict(_delete_=True, grad_clip=None)
 # learning policy
-lr_config = dict(warmup='constant')
+lr_config = dict(warmup='constant', step=[16, 22])
+total_epochs = 24
 work_dir = './work_dirs/fcos_mstrain_640_800_x101_64x4d_fpn_gn_2x'
