@@ -283,7 +283,7 @@ def test_faster_rcnn_ohem_forward():
         raise pytest.skip('requires torchvision on cpu')
 
     model, train_cfg, test_cfg = _get_detector_cfg(
-        'faster_rcnn/faster_rcnn_ohem_r50_fpn_1x_coco.py')
+        'faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
     model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
