@@ -38,7 +38,7 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
 
 ```shell
-python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
+python tools/test.py configs/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
     --show
 ```
@@ -54,7 +54,7 @@ python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
 3. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
 
 ```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x.py \
+./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
     8 --out results.pkl --eval bbox segm
 ```
@@ -62,7 +62,7 @@ python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
 4. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
 
 ```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x.py \
+./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
     8 --format_only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
 ```
@@ -90,7 +90,7 @@ python demo/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}
 Examples:
 
 ```shell
-python demo/webcam_demo.py configs/faster_rcnn_r50_fpn_1x.py \
+python demo/webcam_demo.py configs/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth
 ```
 
@@ -103,7 +103,7 @@ Here is an example of building the model and test given images.
 from mmdet.apis import init_detector, inference_detector, show_result
 import mmcv
 
-config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
+config_file = 'configs/faster_rcnn_r50_fpn_1x_coco.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
 
 # build the model from a config file and a checkpoint file
@@ -139,7 +139,7 @@ from mmdet.apis import init_detector, async_inference_detector, show_result
 from mmdet.utils.contextmanagers import concurrent
 
 async def main():
-    config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
+    config_file = 'configs/faster_rcnn_r50_fpn_1x_coco.py'
     checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
     device = 'cuda:0'
     model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
@@ -201,7 +201,7 @@ If you want to specify the working directory in the command, you can add an argu
 
 Optional arguments are:
 
-- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn_r50_fpn_1x.py#L174)) epochs during the training.
+- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training.
 - `--work_dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume_from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
 
@@ -220,7 +220,7 @@ If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.c
 Here is an example of using 16 GPUs to train Mask R-CNN on the dev partition.
 
 ```shell
-./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x.py /nfs/xxxx/mask_rcnn_r50_fpn_1x 16
+./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x 16
 ```
 
 You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
