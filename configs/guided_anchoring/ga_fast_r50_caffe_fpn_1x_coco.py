@@ -57,4 +57,3 @@ data = dict(
     test=dict(
         proposal_file=data_root + 'proposals/ga_rpn_r50_fpn_1x_val2017.pkl',
         pipeline=test_pipeline))
-work_dir = './work_dirs/ga_fast_rcnn_r50_caffe_fpn_1x'

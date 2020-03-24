@@ -26,4 +26,3 @@ data = dict(train=dict(pipeline=train_pipeline))
 # learning policy
 lr_config = dict(step=[32, 44])
 total_epochs = 48
-work_dir = './work_dirs/cascade_mask_rcnn_r50_fpn_instaboost_4x'

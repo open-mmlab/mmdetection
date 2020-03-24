@@ -64,4 +64,3 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # runtime settings
 total_epochs = 24
-work_dir = './work_dirs/ssd300_voc'

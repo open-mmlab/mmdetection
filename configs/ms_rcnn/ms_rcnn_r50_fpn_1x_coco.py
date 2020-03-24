@@ -12,4 +12,3 @@ model = dict(
         num_classes=81))
 # model training and testing settings
 train_cfg = dict(rcnn=dict(mask_thr_binary=0.5))
-work_dir = './work_dirs/ms_rcnn_r50_fpn_1x'

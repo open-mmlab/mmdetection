@@ -78,4 +78,3 @@ lr_config = dict(
     step=[30, 40])
 # runtime settings
 total_epochs = 50
-work_dir = './work_dirs/retinanet_crop640_r50_fpn_50e'

@@ -55,4 +55,3 @@ optimizer_config = dict(_delete_=True, grad_clip=None)
 # learning policy
 lr_config = dict(warmup='constant', step=[16, 22])
 total_epochs = 24
-work_dir = './work_dirs/fcos_mstrain_640_800_x101_64x4d_fpn_gn_2x'

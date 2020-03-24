@@ -11,4 +11,3 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(policy='step', step=[3])
 # runtime settings
 total_epochs = 4  # actual epoch = 4 * 3 = 12
-work_dir = './work_dirs/faster_rcnn_r50_fpn_1x_voc0712'

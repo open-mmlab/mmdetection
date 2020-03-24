@@ -31,6 +31,5 @@ lr_config = dict(
     step=[7])
 total_epochs = 8  # actual epoch = 8 * 8 = 64
 log_config = dict(interval=100)
-work_dir = './work_dirs/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes'
 # For better, more stable performance initialize from COCO
 load_from = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/faster_rcnn_r50_fpn_2x_20181010-443129e1.pth'  # noqa

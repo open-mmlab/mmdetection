@@ -15,4 +15,3 @@ data = dict(imgs_per_gpu=1, workers_per_gpu=1)
 # learning policy
 lr_config = dict(step=[16, 19])
 total_epochs = 20
-work_dir = './work_dirs/htc_x101_64x4d_fpn_20e'

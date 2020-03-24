@@ -20,4 +20,3 @@ optimizer_config = dict(_delete_=True, grad_clip=None)
 # learning policy
 lr_config = dict(warmup_ratio=0.1, step=[65, 71])
 total_epochs = 73
-work_dir = './work_dirs/scratch_mask_rcnn_r50_fpn_gn_6x'

@@ -38,4 +38,3 @@ train_cfg = dict(
                 floor_thr=-1,
                 floor_fraction=0,
                 num_bins=3))))
-work_dir = './work_dirs/libra_faster_rcnn_r50_fpn_1x'

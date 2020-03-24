@@ -13,4 +13,3 @@ model = dict(
         style='pytorch',
         dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)))
-work_dir = './work_dirs/reppoints_moment_x101_dcn_fpn_2x'

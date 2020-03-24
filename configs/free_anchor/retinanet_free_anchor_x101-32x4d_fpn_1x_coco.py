@@ -10,4 +10,3 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         style='pytorch'))
-work_dir = './work_dirs/retinanet_free_anchor_x101-32x4d_fpn_1x'

@@ -39,4 +39,3 @@ data = dict(train=dict(dataset=dict(pipeline=train_pipeline)))
 # learning policy
 lr_config = dict(step=[64, 88])
 total_epochs = 96
-work_dir = './work_dirs/ssd300_coco_instaboost_4x'

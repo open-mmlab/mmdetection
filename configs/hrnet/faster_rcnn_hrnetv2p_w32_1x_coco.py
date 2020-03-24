@@ -34,4 +34,3 @@ model = dict(
         type='HRFPN',
         in_channels=[32, 64, 128, 256],
         out_channels=256))
-work_dir = './work_dirs/faster_rcnn_hrnetv2p_w32_1x'

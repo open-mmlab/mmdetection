@@ -47,4 +47,3 @@ data = dict(
              'libra_proposals/rpn_r50_fpn_1x_val2017.pkl'),
     test=dict(proposal_file=data_root +
               'libra_proposals/rpn_r50_fpn_1x_val2017.pkl'))
-work_dir = './work_dirs/libra_fast_rcnn_r50_fpn_1x'

@@ -8,4 +8,3 @@ model = dict(
             stage3=dict(num_channels=(40, 80, 160)),
             stage4=dict(num_channels=(40, 80, 160, 320)))),
     neck=dict(type='HRFPN', in_channels=[40, 80, 160, 320], out_channels=256))
-work_dir = './work_dirs/faster_rcnn_hrnetv2p_w40_1x'
