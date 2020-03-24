@@ -24,4 +24,3 @@ model = dict(
             gamma=1.5,
             beta=0.11,
             loss_weight=1.0)))
-work_dir = './work_dirs/libra_retinanet_r50_fpn_1x'

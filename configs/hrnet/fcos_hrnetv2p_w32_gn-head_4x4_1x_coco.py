@@ -36,4 +36,3 @@ model = dict(
         out_channels=256,
         stride=2,
         num_outs=5))
-work_dir = './work_dirs/fcos_hrnetv2p_w32_gn_1x_4gpu'

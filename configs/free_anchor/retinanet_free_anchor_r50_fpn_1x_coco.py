@@ -14,4 +14,3 @@ model = dict(
         target_means=[.0, .0, .0, .0],
         target_stds=[0.1, 0.1, 0.2, 0.2],
         loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=0.75)))
-work_dir = './work_dirs/retinanet_free_anchor_r50_fpn_1x'

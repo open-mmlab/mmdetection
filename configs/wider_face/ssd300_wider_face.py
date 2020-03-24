@@ -16,4 +16,3 @@ lr_config = dict(
 # runtime settings
 total_epochs = 24
 log_config = dict(interval=1)
-work_dir = './work_dirs/ssd300_wider'

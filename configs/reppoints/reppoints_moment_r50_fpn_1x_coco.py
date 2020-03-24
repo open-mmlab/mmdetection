@@ -64,4 +64,3 @@ test_cfg = dict(
     nms=dict(type='nms', iou_thr=0.5),
     max_per_img=100)
 optimizer = dict(lr=0.01)
-work_dir = './work_dirs/reppoints_moment_r50_no_gn_fpn_1x'

@@ -50,4 +50,3 @@ data = dict(
     train=dict(dataset=dict(pipeline=train_pipeline)),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-work_dir = './work_dirs/ssd512_voc'

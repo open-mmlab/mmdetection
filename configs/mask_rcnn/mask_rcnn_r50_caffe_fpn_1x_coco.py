@@ -34,4 +34,3 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-work_dir = './work_dirs/mask_rcnn_r50_caffe_fpn_1x'

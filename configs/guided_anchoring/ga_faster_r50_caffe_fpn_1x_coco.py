@@ -49,4 +49,3 @@ train_cfg = dict(
         assigner=dict(pos_iou_thr=0.6, neg_iou_thr=0.6, min_pos_iou=0.6),
         sampler=dict(type='RandomSampler', num=256)))
 test_cfg = dict(rpn=dict(max_num=300), rcnn=dict(score_thr=1e-3))
-work_dir = './work_dirs/ga_faster_rcnn_r50_caffe_fpn_1x'

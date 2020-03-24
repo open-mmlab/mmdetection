@@ -10,4 +10,3 @@ model = dict(
         conv_out_channels=256,
         conv_cfg=conv_cfg,
         norm_cfg=norm_cfg))
-work_dir = './work_dirs/faster_rcnn_r50_fpn_gn_ws_1x'

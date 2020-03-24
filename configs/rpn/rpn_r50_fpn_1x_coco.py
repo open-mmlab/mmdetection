@@ -16,4 +16,3 @@ train_pipeline = [
 ]
 data = dict(train=dict(pipeline=train_pipeline))
 evaluation = dict(interval=1, metric='proposal_fast')
-work_dir = './work_dirs/rpn_r50_fpn_1x'

@@ -37,4 +37,3 @@ model = dict(
 # learning policy
 lr_config = dict(step=[16, 19])
 total_epochs = 20
-work_dir = './work_dirs/cascade_mask_rcnn_hrnetv2p_w32_20e'

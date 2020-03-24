@@ -10,4 +10,3 @@ train_cfg = dict(
             neg_iou_thr=0.4,
             min_pos_iou=0,
             ignore_iof_thr=-1)))
-work_dir = './work_dirs/bbox_r50_grid_fpn_1x'

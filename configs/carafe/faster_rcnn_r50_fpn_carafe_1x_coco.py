@@ -48,4 +48,3 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-work_dir = './work_dirs/faster_rcnn_r50_fpn_carafe_1x'

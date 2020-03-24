@@ -18,4 +18,3 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=2.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=2.0)))
-work_dir = './work_dirs/dh_faster_rcnn_r50_fpn_1x'

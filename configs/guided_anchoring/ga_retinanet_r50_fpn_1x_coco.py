@@ -48,4 +48,3 @@ train_cfg = dict(
     assigner=dict(neg_iou_thr=0.5, min_pos_iou=0.0),
     center_ratio=0.2,
     ignore_ratio=0.5)
-work_dir = './work_dirs/ga_retinanet_r50_fpn_1x'

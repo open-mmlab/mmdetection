@@ -41,4 +41,3 @@ data = dict(
 # learning policy
 lr_config = dict(step=[16, 22])
 total_epochs = 24
-work_dir = './work_dirs/fcos_mstrain_640_800_r101_caffe_fpn_gn_2x_4gpu'
