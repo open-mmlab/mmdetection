@@ -294,6 +294,7 @@ class ResNet(nn.Module):
     def __init__(self,
                  depth,
                  in_channels=3,
+                 base_channels=64,
                  num_stages=4,
                  strides=(1, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
@@ -317,6 +318,7 @@ class ResNet(nn.Module):
         if depth not in self.arch_settings:
             raise KeyError('invalid depth {} for resnet'.format(depth))
         self.depth = depth
+        self.base_channels = base_channels
         self.num_stages = num_stages
         assert num_stages >= 1 and num_stages <= 4
         self.strides = strides
@@ -344,9 +346,9 @@ class ResNet(nn.Module):
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
-        self.inplanes = 64
+        self.inplanes = base_channels
 
-        self._make_stem_layer(in_channels)
+        self._make_stem_layer(in_channels, base_channels)
 
         self.res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
@@ -354,12 +356,12 @@ class ResNet(nn.Module):
             dilation = dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
             gcb = self.gcb if self.stage_with_gcb[i] else None
-            planes = 64 * 2**i
-            res_layer = ResLayer(
-                self.block,
-                self.inplanes,
-                planes,
-                num_blocks,
+            planes = base_channels * 2**i
+            res_layer = self.make_res_layer(
+                block=self.block,
+                inplanes=self.inplanes,
+                planes=planes,
+                num_blocks=num_blocks,
                 stride=stride,
                 dilation=dilation,
                 style=self.style,
@@ -370,8 +372,7 @@ class ResNet(nn.Module):
                 dcn=dcn,
                 gcb=gcb,
                 gen_attention=gen_attention,
-                gen_attention_blocks=stage_with_gen_attention[i],
-                **self.block_kwargs)
+                gen_attention_blocks=stage_with_gen_attention[i])
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
@@ -379,58 +380,60 @@ class ResNet(nn.Module):
 
         self._freeze_stages()
 
-        self.feat_dim = self.block.expansion * 64 * 2**(
+        self.feat_dim = self.block.expansion * base_channels * 2**(
             len(self.stage_blocks) - 1)
 
-    @property
-    def block_kwargs(self):
-        return dict()
+    def make_res_layer(self, **kwargs):
+        return ResLayer(**kwargs)
 
     @property
     def norm1(self):
         return getattr(self, self.norm1_name)
 
-    def _make_stem_layer(self, in_channels):
+    def _make_stem_layer(self, in_channels, base_channels):
         if self.deep_stem:
             self.stem = nn.Sequential(
                 build_conv_layer(
                     self.conv_cfg,
                     in_channels,
-                    32,
+                    base_channels // 2,
                     kernel_size=3,
                     stride=2,
                     padding=1,
                     bias=False),
-                build_norm_layer(self.norm_cfg, 32)[1], nn.ReLU(inplace=True),
+                build_norm_layer(self.norm_cfg, base_channels // 2)[1],
+                nn.ReLU(inplace=True),
                 build_conv_layer(
                     self.conv_cfg,
-                    32,
-                    32,
+                    base_channels // 2,
+                    base_channels // 2,
                     kernel_size=3,
                     stride=1,
                     padding=1,
                     bias=False),
-                build_norm_layer(self.norm_cfg, 32)[1], nn.ReLU(inplace=True),
+                build_norm_layer(self.norm_cfg, base_channels // 2)[1],
+                nn.ReLU(inplace=True),
                 build_conv_layer(
                     self.conv_cfg,
-                    32,
-                    64,
+                    base_channels // 2,
+                    base_channels,
                     kernel_size=3,
                     stride=1,
                     padding=1,
                     bias=False),
-                build_norm_layer(self.norm_cfg, 64)[1], nn.ReLU(inplace=True))
+                build_norm_layer(self.norm_cfg, base_channels)[1],
+                nn.ReLU(inplace=True))
         else:
             self.conv1 = build_conv_layer(
                 self.conv_cfg,
                 in_channels,
-                64,
+                base_channels,
                 kernel_size=7,
                 stride=2,
                 padding=3,
                 bias=False)
             self.norm1_name, norm1 = build_norm_layer(
-                self.norm_cfg, 64, postfix=1)
+                self.norm_cfg, base_channels, postfix=1)
             self.add_module(self.norm1_name, norm1)
             self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
