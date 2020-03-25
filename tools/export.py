@@ -205,9 +205,8 @@ def main(args):
     model.eval().cuda()
     torch.set_default_tensor_type(torch.FloatTensor)
 
-    if not args.no_anchor_stub:
-        stub_anchor_generator(getattr(model, 'rpn_head', None))
-        stub_anchor_generator(getattr(model, 'bbox_head', None))
+    stub_anchor_generator(getattr(model, 'rpn_head', None))
+    stub_anchor_generator(getattr(model, 'bbox_head', None))
     
     image = np.zeros((128, 128, 3), dtype=np.uint8)
     with torch.no_grad():
@@ -224,8 +223,6 @@ def parse_args():
     parser.add_argument("config", help="test config file path")
     parser.add_argument("checkpoint", help="path to file with model's weights")
     parser.add_argument("model", help="path to output onnx model file")
-    parser.add_argument("--no_anchor_stub", action="store_true",
-                        help="don't use custom ONNX operation for anchor grid generator")
     parser.add_argument("--check", action="store_true",
                         help="check that resulting onnx model is valid")
 
