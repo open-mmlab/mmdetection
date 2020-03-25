@@ -15,6 +15,19 @@ class ResLayer(nn.Sequential):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  **kwargs):
+        """ResLayer to build ResNet style backbone.
+
+        Args:
+            block (nn.Module): block used to build ResLayer
+            inplanes (int): inplanes of block
+            planes (int): planes of block
+            num_blocks (int): number of blocks
+            stride (int): stride of the first block
+            avg_down (bool): Use AvgPool instead of stride conv when
+                downsampling in the bottleneck.
+            conv_cfg (dict): dictionary to construct and config conv layer
+            norm_cfg (dict): dictionary to construct and config norm layer.
+        """
         self.block = block
 
         downsample = None

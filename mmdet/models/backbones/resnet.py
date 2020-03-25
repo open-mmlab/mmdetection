@@ -510,7 +510,15 @@ class ResNet(nn.Module):
 
 @BACKBONES.register_module
 class ResNetV1d(ResNet):
-    """ResNetV1d backbone.
+    """ResNetV1d variant described in [1]_.
+
+    Compared with default ResNet(ResNetV1b), ResNetV1d replaces the 7x7 conv
+    in the input stem with three 3x3 convs. And in the downsampling block,
+    a 2x2 avg_pool with stride 2 is added before conv, whose stride is
+    changed to 1.
+
+    References:
+        .. [1] https://arxiv.org/pdf/1812.01187.pdf
     """
 
     def __init__(self, **kwargs):
