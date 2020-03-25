@@ -9,7 +9,7 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         style='caffe'),
-    bbox_head=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))
+    roi_head=dict(bbox_head=dict(target_stds=[0.05, 0.05, 0.1, 0.1])))
 # model training and testing settings
 train_cfg = dict(
     rcnn=dict(

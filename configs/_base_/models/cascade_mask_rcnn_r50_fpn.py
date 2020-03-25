@@ -55,7 +55,8 @@ model = dict(
             dict(
                 type='Shared2FCBBoxHead',
                 in_channels=256,
-                conv_out_channels=256,
+                fc_out_channels=1024,
+                roi_feat_size=7,
                 num_classes=81,
                 target_means=[0., 0., 0., 0.],
                 target_stds=[0.05, 0.05, 0.1, 0.1],
