@@ -206,8 +206,8 @@ def main(args):
     torch.set_default_tensor_type(torch.FloatTensor)
 
     if not args.no_anchor_stub:
-        stub_anchor_generator(model.rpn_head)
-        stub_anchor_generator(model.bbox_head)
+        stub_anchor_generator(getattr(model, 'rpn_head', None))
+        stub_anchor_generator(getattr(model, 'bbox_head', None))
     
     image = np.zeros((128, 128, 3), dtype=np.uint8)
     with torch.no_grad():
