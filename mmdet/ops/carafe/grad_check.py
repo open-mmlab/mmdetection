@@ -6,9 +6,8 @@ import torch
 from torch.autograd import gradcheck
 
 sys.path.append(osp.abspath(osp.join(__file__, '../../')))
-from mmdet.ops.carafe import CARAFENAIVE  # noqa: E402, isort:skip
-from mmdet.ops.carafe import carafe_naive  # noqa: E402, isort:skip
-from mmdet.ops.carafe import carafe, CARAFE  # noqa: E402, isort:skip
+from mmdet.ops.carafe import CARAFE, CARAFENaive  # noqa: E402, isort:skip
+from mmdet.ops.carafe import carafe, carafe_naive  # noqa: E402, isort:skip
 
 feat = torch.randn(2, 64, 3, 3, requires_grad=True, device='cuda:0').double()
 mask = torch.randn(
@@ -19,7 +18,7 @@ test = gradcheck(CARAFE(5, 4, 2), (feat, mask), atol=1e-4, eps=1e-4)
 print(test)
 
 print('Gradcheck for carafe naive...')
-test = gradcheck(CARAFENAIVE(5, 4, 2), (feat, mask), atol=1e-4, eps=1e-4)
+test = gradcheck(CARAFENaive(5, 4, 2), (feat, mask), atol=1e-4, eps=1e-4)
 print(test)
 
 feat = torch.randn(

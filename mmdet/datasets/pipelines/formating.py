@@ -182,7 +182,7 @@ class Collect(object):
         img_meta = {}
         for key in self.meta_keys:
             img_meta[key] = results[key]
-        data['img_meta'] = DC(img_meta, cpu_only=True)
+        data['img_metas'] = DC(img_meta, cpu_only=True)
         for key in self.keys:
             data[key] = results[key]
         return data
@@ -190,3 +190,35 @@ class Collect(object):
     def __repr__(self):
         return self.__class__.__name__ + '(keys={}, meta_keys={})'.format(
             self.keys, self.meta_keys)
+
+
+@PIPELINES.register_module
+class WrapFieldsToLists(object):
+    """
+    Wrap fields of the data dictionary into lists for evaluation.
+
+    This class can be used as a last step of a test or validation
+    pipeline for single image evaluation or inference.
+
+    Example:
+        >>> test_pipeline = [
+        >>>    dict(type='LoadImageFromFile'),
+        >>>    dict(type='Normalize',
+                    mean=[123.675, 116.28, 103.53],
+                    std=[58.395, 57.12, 57.375],
+                    to_rgb=True),
+        >>>    dict(type='Pad', size_divisor=32),
+        >>>    dict(type='ImageToTensor', keys=['img']),
+        >>>    dict(type='Collect', keys=['img']),
+        >>>    dict(type='WrapIntoLists')
+        >>> ]
+    """
+
+    def __call__(self, results):
+        # Wrap dict fields into lists
+        for key, val in results.items():
+            results[key] = [val]
+        return results
+
+    def __repr__(self):
+        return '{}()'.format(self.__class__.__name__)

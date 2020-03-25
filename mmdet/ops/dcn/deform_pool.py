@@ -4,7 +4,7 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
-from . import deform_pool_cuda
+from . import deform_pool_ext
 
 
 class DeformRoIPoolingFunction(Function):
@@ -44,7 +44,7 @@ class DeformRoIPoolingFunction(Function):
         n = rois.shape[0]
         output = data.new_empty(n, out_channels, out_size, out_size)
         output_count = data.new_empty(n, out_channels, out_size, out_size)
-        deform_pool_cuda.deform_psroi_pooling_cuda_forward(
+        deform_pool_ext.deform_psroi_pooling_forward(
             data, rois, offset, output, output_count, ctx.no_trans,
             ctx.spatial_scale, ctx.out_channels, ctx.group_size, ctx.out_size,
             ctx.part_size, ctx.sample_per_part, ctx.trans_std)
@@ -67,7 +67,7 @@ class DeformRoIPoolingFunction(Function):
         grad_rois = None
         grad_offset = torch.zeros_like(offset)
 
-        deform_pool_cuda.deform_psroi_pooling_cuda_backward(
+        deform_pool_ext.deform_psroi_pooling_backward(
             grad_output, data, rois, offset, output_count, grad_input,
             grad_offset, ctx.no_trans, ctx.spatial_scale, ctx.out_channels,
             ctx.group_size, ctx.out_size, ctx.part_size, ctx.sample_per_part,

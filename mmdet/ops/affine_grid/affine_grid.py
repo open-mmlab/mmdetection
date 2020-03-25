@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 
-from . import affine_grid_cuda
+from . import affine_grid_ext
 
 
 class _AffineGridGenerator(Function):
@@ -15,7 +15,7 @@ class _AffineGridGenerator(Function):
         ctx.size = size
         ctx.align_corners = align_corners
 
-        func = affine_grid_cuda.affine_grid_generator_forward
+        func = affine_grid_ext.affine_grid_generator_forward
 
         output = func(theta, size, align_corners)
 
@@ -28,7 +28,7 @@ class _AffineGridGenerator(Function):
         size = ctx.size
         align_corners = ctx.align_corners
 
-        func = affine_grid_cuda.affine_grid_generator_backward
+        func = affine_grid_ext.affine_grid_generator_backward
 
         grad_input = func(grad_output, theta, size, align_corners)
 

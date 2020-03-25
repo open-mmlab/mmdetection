@@ -148,7 +148,10 @@ class GridRoIHead(BaseRoIHead):
                                                    grid_pred['fused'],
                                                    img_meta)
             if rescale:
-                det_bboxes[:, :4] /= img_meta[0]['scale_factor']
+                scale_factor = img_meta[0]['scale_factor']
+                if not isinstance(scale_factor, (float, torch.Tensor)):
+                    scale_factor = det_bboxes.new_tensor(scale_factor)
+                det_bboxes[:, :4] /= scale_factor
         else:
             det_bboxes = torch.Tensor([])
 
