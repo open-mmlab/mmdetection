@@ -172,7 +172,7 @@ def show_result(img,
         show = False
     # draw bounding boxes
     print("# draw bounding boxes")
-    mmcv.imshow_det_bboxes(
+    mmcv.imshow_det_bboxes1(
         img,
         bboxes,
         labels,
