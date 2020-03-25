@@ -180,11 +180,8 @@ def show_result(img,
         show=show,
         wait_time=wait_time,
         out_file=out_file,
-        thickness=6,
-        font_scale=6,
-        #,
-        # thickness=2,
-        # font_scale=1,
+        thickness=3,
+        font_scale=0.9,
         bbox_color='red',
         text_color='red'
         )
