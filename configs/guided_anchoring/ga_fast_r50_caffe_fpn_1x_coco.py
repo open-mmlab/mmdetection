@@ -8,6 +8,7 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
+        norm_eval=True,
         style='caffe'),
     roi_head=dict(bbox_head=dict(target_stds=[0.05, 0.05, 0.1, 0.1])))
 # model training and testing settings
