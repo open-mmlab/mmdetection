@@ -157,7 +157,7 @@ class Bottleneck(nn.Module):
                 dilation=dilation,
                 bias=False)
         else:
-            assert self.conv_cfg is None, 'conv_cfg cannot be None for DCN'
+            assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
             self.conv2 = build_conv_layer(
                 dcn,
                 planes,
