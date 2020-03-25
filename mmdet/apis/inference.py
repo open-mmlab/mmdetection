@@ -171,6 +171,7 @@ def show_result(img,
     if out_file is not None:
         show = False
     # draw bounding boxes
+    print("# draw bounding boxes")
     mmcv.imshow_det_bboxes(
         img,
         bboxes,
