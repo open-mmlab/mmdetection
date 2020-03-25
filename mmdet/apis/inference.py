@@ -172,7 +172,7 @@ def show_result(img,
         show = False
     # draw bounding boxes
     print("# draw bounding boxes")
-    mmcv.imshow_det_bboxes1(
+    mmcv.imshow_det_bboxes(
         img,
         bboxes,
         labels,
@@ -180,11 +180,12 @@ def show_result(img,
         score_thr=score_thr,
         show=show,
         wait_time=wait_time,
-        out_file=out_file,
-        thickness=3,
-        font_scale=0.9,
-        bbox_color='red',
-        text_color='red'
+        out_file=out_file
+        #,
+        #thickness=3,
+        #font_scale=0.9,
+        #bbox_color='red',
+        #text_color='red'
         )
     if not (show or out_file):
         return img
