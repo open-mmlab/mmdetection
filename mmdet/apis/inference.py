@@ -180,13 +180,13 @@ def show_result(img,
         show=show,
         wait_time=wait_time,
         out_file=out_file,
-        thickness=14,
-        font_scale=14
+        thickness=6,
+        font_scale=6,
         #,
         # thickness=2,
         # font_scale=1,
-        # bbox_color='red',
-        # text_color='red'
+        bbox_color='red',
+        text_color='red'
         )
     if not (show or out_file):
         return img
