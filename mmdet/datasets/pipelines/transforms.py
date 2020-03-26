@@ -967,7 +967,7 @@ class RandomRescale(Rescale):
     """Rescale images & bbox & mask with random scale factor.
 
     This transform randomly rescales input image to a new size.
-    Unlike Resize you provide the range of scale factors, interpolation method
+    Unlike Resize you provide the list of scale factors, interpolation method
     and wether to keep aspect ratio. Bboxes and masks are resized accordingly.
 
     Args:
@@ -1044,12 +1044,17 @@ class RandomGamma(object):
     def __call__(self, results):
         gamma = np.random.choice(self.gammas)
         img = results['img']
-        dtype = img.dtype
         gimg = img if self.channels is None else img[..., self.channels]
-        min_val = gimg.min(axis=(0, 1))
-        max_val = gimg.max(axis=(0, 1))
-        gimg = cv2.pow((gimg - min_val) / max_val, gamma) * max_val
-        gimg = gimg.astype(dtype)
+        if gimg.dtype == np.uint8:
+            lut = ((np.arange(0, 256 / 255, 1 / 255)**gamma) * 255).astype(
+                np.uint8)
+            gimg = cv2.LUT(gimg, lut)
+        else:
+            min_val = gimg.min(axis=(0, 1))
+            max_val = gimg.max(axis=(0, 1))
+            gimg = cv2.pow(
+                (gimg - min_val) / max_val, gamma) * max_val + min_val
+            gimg = gimg.astype(img.dtype)
         if self.channels is None:
             img = gimg
         else:
@@ -1110,7 +1115,8 @@ class RandomChannelPermutation(object):
     """
 
     def __init__(self, channels):
-        assert len(channels) > 1, 'there should be at least 2 channels'
+        assert len(
+            channels) > 1, 'there should be at least 2 channels to permute'
         self.channels = np.array(channels)
 
     def __call__(self, results):
@@ -1127,7 +1133,7 @@ class RandomChannelPermutation(object):
 @PIPELINES.register_module
 class ConvertToMultiChannel(object):
     """ Convert single channel image to multichannel by
-    replicating single channel.
+    replicating the image.
     """
 
     def __init__(self, channels):
