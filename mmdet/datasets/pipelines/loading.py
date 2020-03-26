@@ -45,6 +45,7 @@ class LoadImageFromFile:
         self.file_client_args = file_client_args.copy()
         self.file_client = None
 
+<<<<<<< HEAD
     def __call__(self, results):
         """Call functions to load image and get image meta information.
 
@@ -58,6 +59,9 @@ class LoadImageFromFile:
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
+=======
+    def _load_image(self, results):
+>>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
         if results['img_prefix'] is not None:
             filename = osp.join(results['img_prefix'],
                                 results['img_info']['filename'])
@@ -69,7 +73,14 @@ class LoadImageFromFile:
             img_bytes, flag=self.color_type, channel_order=self.channel_order)
         if self.to_float32:
             img = img.astype(np.float32)
+<<<<<<< HEAD
 
+=======
+        return img, filename
+
+    def __call__(self, results):
+        img, filename = self._load_image(results)
+>>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
         results['filename'] = filename
         results['ori_filename'] = results['img_info']['filename']
         results['img'] = img
@@ -129,6 +140,7 @@ class LoadMultiChannelImageFromFiles:
     "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
     "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
 
+<<<<<<< HEAD
     Args:
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
@@ -138,6 +150,12 @@ class LoadMultiChannelImageFromFiles:
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
+=======
+@PIPELINES.register_module
+class LoadMultiChannelImageFromFiles(LoadImageFromFile):
+    """ Load multi channel images from a list of separate channel files.
+    Expects results['filename'] to be a list of filenames
+>>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
     """
 
     def __init__(self,
@@ -149,6 +167,7 @@ class LoadMultiChannelImageFromFiles:
         self.file_client_args = file_client_args.copy()
         self.file_client = None
 
+<<<<<<< HEAD
     def __call__(self, results):
         """Call functions to load multiple images and get images meta
         information.
@@ -163,6 +182,9 @@ class LoadMultiChannelImageFromFiles:
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
+=======
+    def _load_image(self, results):
+>>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
         if results['img_prefix'] is not None:
             filename = [
                 osp.join(results['img_prefix'], fname)
@@ -178,6 +200,7 @@ class LoadMultiChannelImageFromFiles:
         img = np.stack(img, axis=-1)
         if self.to_float32:
             img = img.astype(np.float32)
+<<<<<<< HEAD
 
         results['filename'] = filename
         results['ori_filename'] = results['img_info']['filename']
@@ -193,6 +216,9 @@ class LoadMultiChannelImageFromFiles:
             std=np.ones(num_channels, dtype=np.float32),
             to_rgb=False)
         return results
+=======
+        return img, filename
+>>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
 
     def __repr__(self):
         repr_str = (f'{self.__class__.__name__}('
