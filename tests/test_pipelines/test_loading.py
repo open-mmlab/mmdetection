@@ -7,16 +7,6 @@ from mmdet.datasets.pipelines import (LoadImageFromFile,
                                       LoadMultiChannelImageFromFiles)
 
 
-def check_keys_contain(result_keys, target_keys):
-    """Check if all elements in target_keys is in result_keys."""
-    return set(target_keys).issubset(set(result_keys))
-
-
-def assert_set_equal(set1, set2):
-    """Assert set1 and set2 are equal"""
-    return set(set1) == set(set2)
-
-
 class TestLoading(object):
 
     @classmethod
@@ -36,6 +26,8 @@ class TestLoading(object):
         assert results['pad_shape'] == (288, 512, 3)
         assert results['flip'] is False
         assert results['scale_factor'] == 1.0
+        np.testing.assert_equal(results['img_norm_cfg']['mean'],
+                                np.zeros(3, dtype=np.float32))
         assert repr(transform) == transform.__class__.__name__ + \
             " (to_float32=False, color_type='color')"
 
@@ -59,6 +51,13 @@ class TestLoading(object):
         results = transform(copy.deepcopy(results))
         assert results['img'].shape == (288, 512, 3)
         assert results['img'].dtype == np.uint8
+
+        transform = LoadImageFromFile(color_type='unchanged')
+        results = transform(copy.deepcopy(results))
+        assert results['img'].shape == (288, 512)
+        assert results['img'].dtype == np.uint8
+        np.testing.assert_equal(results['img_norm_cfg']['mean'],
+                                np.zeros(1, dtype=np.float32))
 
     def test_load_multi_channel_img(self):
         results = dict(
