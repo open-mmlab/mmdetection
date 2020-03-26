@@ -169,7 +169,8 @@ class GenericMulticlassNMS(Function):
         out_scores = reshape(
             g, g.op('Gather', multi_scores_flat, flat_score_indices, axis_i=0),
             [-1, 1])
-        class_indices = reshape(g, cast(class_indices, 'Float'), [-1, 1])
+        # Having either batch size or number of classes here equal to one is the limitation of implementation.
+        class_indices = reshape(g, cast(add(class_indices, batch_indices), 'Float'), [-1, 1])
 
         # Combine bboxes, scores and labels into a single tensor.
         # This a workaround for a PyTorch bug (feature?),
