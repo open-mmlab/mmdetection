@@ -14,7 +14,7 @@ class LoadImageFromFile(object):
         self.to_float32 = to_float32
         self.color_type = color_type
 
-    def __call__(self, results):
+    def _load_image(self, results):
         if results['img_prefix'] is not None:
             filename = osp.join(results['img_prefix'],
                                 results['img_info']['filename'])
@@ -23,6 +23,10 @@ class LoadImageFromFile(object):
         img = mmcv.imread(filename, self.color_type)
         if self.to_float32:
             img = img.astype(np.float32)
+        return img, filename
+
+    def __call__(self, results):
+        img, filename = self._load_image(results)
         results['filename'] = filename
         results['img'] = img
         results['img_shape'] = img.shape
@@ -42,7 +46,7 @@ class LoadImageFromFile(object):
 
 
 @PIPELINES.register_module
-class LoadMultiChannelImageFromFiles(object):
+class LoadMultiChannelImageFromFiles(LoadImageFromFile):
     """ Load multi channel images from a list of separate channel files.
     Expects results['filename'] to be a list of filenames
     """
@@ -51,7 +55,7 @@ class LoadMultiChannelImageFromFiles(object):
         self.to_float32 = to_float32
         self.color_type = color_type
 
-    def __call__(self, results):
+    def _load_image(self, results):
         if results['img_prefix'] is not None:
             filename = [
                 osp.join(results['img_prefix'], fname)
@@ -63,11 +67,7 @@ class LoadMultiChannelImageFromFiles(object):
             [mmcv.imread(name, self.color_type) for name in filename], axis=-1)
         if self.to_float32:
             img = img.astype(np.float32)
-        results['filename'] = filename
-        results['img'] = img
-        results['img_shape'] = img.shape
-        results['ori_shape'] = img.shape
-        return results
+        return img, filename
 
     def __repr__(self):
         return '{} (to_float32={}, color_type={})'.format(
