@@ -32,12 +32,14 @@ class LoadImageFromFile(object):
         results['flip'] = False
         results['scale_factor'] = 1.0
         num_channels = 1 if len(img.shape) < 3 else img.shape[2]
-        results['img_norm_cfg'] = [[0.0] * num_channels, [1.0] * num_channels,
-                                   False]
+        results['img_norm_cfg'] = dict(
+            mean=np.zeros(num_channels, dtype=np.float32),
+            std=np.ones(num_channels, dtype=np.float32),
+            to_rgb=False)
         return results
 
     def __repr__(self):
-        return '{} (to_float32={}, color_type={})'.format(
+        return "{} (to_float32={}, color_type='{}')".format(
             self.__class__.__name__, self.to_float32, self.color_type)
 
 
@@ -47,7 +49,7 @@ class LoadMultiChannelImageFromFiles(object):
     Expects results['filename'] to be a list of filenames
     """
 
-    def __init__(self, to_float32=True, color_type='unchanged'):
+    def __init__(self, to_float32=False, color_type='unchanged'):
         self.to_float32 = to_float32
         self.color_type = color_type
 
@@ -67,10 +69,19 @@ class LoadMultiChannelImageFromFiles(object):
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
+        # Set initial values for default meta_keys
+        results['pad_shape'] = img.shape
+        results['flip'] = False
+        results['scale_factor'] = 1.0
+        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
+        results['img_norm_cfg'] = dict(
+            mean=np.zeros(num_channels, dtype=np.float32),
+            std=np.ones(num_channels, dtype=np.float32),
+            to_rgb=False)
         return results
 
     def __repr__(self):
-        return '{} (to_float32={}, color_type={})'.format(
+        return "{} (to_float32={}, color_type='{}')".format(
             self.__class__.__name__, self.to_float32, self.color_type)
 
 
