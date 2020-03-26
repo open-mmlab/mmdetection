@@ -5,6 +5,7 @@ import mmcv
 import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
+from tools.merge_conv_bn import merge_module
 
 from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.core import wrap_fp16_model
@@ -49,6 +50,11 @@ def parse_args():
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('--out', help='output result file in pickle format')
+    parser.add_argument(
+        '--merge_conv_bn',
+        action='store_true',
+        help='Whether to merge conv and bn, this will slightly increase'
+        'the inference speed')
     parser.add_argument(
         '--format_only',
         action='store_true',
@@ -128,6 +134,8 @@ def main():
     if fp16_cfg is not None:
         wrap_fp16_model(model)
     checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
+    if args.merge_conv_bn:
+        model = merge_module(model)
     # old versions did not save class info in checkpoints, this walkaround is
     # for backward compatibility
     if 'CLASSES' in checkpoint['meta']:
