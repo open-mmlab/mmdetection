@@ -190,14 +190,9 @@ class AnchorsGridGeneratorStub(TracerStub):
                     flatten_i=1,
                     outputs=self.num_outputs)
 
-
-def main(args):
-    model = init_detector(args.config, args.checkpoint, device="cpu")
-    model.eval().cuda()
-    torch.set_default_tensor_type(torch.FloatTensor)
-
-    if isinstance(model.bbox_head, AnchorHead):
-        anchor_generators = model.bbox_head.anchor_generators
+def stub_anchor_generator(anchor_head):
+    if anchor_head is not None and isinstance(anchor_head, AnchorHead):
+        anchor_generators = anchor_head.anchor_generators
         for i in range(len(anchor_generators)):
             anchor_generators[i].grid_anchors = AnchorsGridGeneratorStub(
                 anchor_generators[i].grid_anchors)
@@ -205,6 +200,14 @@ def main(args):
             anchor_generators[i].grid_anchors.params['base_anchors'] = anchor_generators[
                 i].base_anchors.cpu().numpy()
 
+def main(args):
+    model = init_detector(args.config, args.checkpoint, device="cpu")
+    model.eval().cuda()
+    torch.set_default_tensor_type(torch.FloatTensor)
+
+    stub_anchor_generator(getattr(model, 'rpn_head', None))
+    stub_anchor_generator(getattr(model, 'bbox_head', None))
+    
     image = np.zeros((128, 128, 3), dtype=np.uint8)
     with torch.no_grad():
         export(model, image, export_name=args.model, opset=10)
@@ -220,10 +223,8 @@ def parse_args():
     parser.add_argument("config", help="test config file path")
     parser.add_argument("checkpoint", help="path to file with model's weights")
     parser.add_argument("model", help="path to output onnx model file")
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="check that resulting onnx model is valid")
+    parser.add_argument("--check", action="store_true",
+                        help="check that resulting onnx model is valid")
 
     args = parser.parse_args()
     return args
