@@ -35,6 +35,11 @@ def test_resnet_basic_block():
             spatial_range=-1, num_heads=8, attention_type='0010', kv_stride=2)
         BasicBlock(64, 64, gen_attention=gen_attention)
 
+    block = BasicBlock(64, 64)
+    x = torch.randn(2, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([2, 64, 56, 56])
+
 
 def test_resnet_bottleneck():
 
@@ -43,9 +48,11 @@ def test_resnet_bottleneck():
         Bottleneck(64, 64, style='tensorflow')
 
     block = Bottleneck(64, 64, stride=2, style='pytorch')
+    assert block.conv1.stride == (1, 1)
     assert block.conv2.stride == (2, 2)
     block = Bottleneck(64, 64, stride=2, style='caffe')
     assert block.conv1.stride == (2, 2)
+    assert block.conv2.stride == (1, 1)
 
     dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
     with pytest.raises(AssertionError):
@@ -73,13 +80,16 @@ def test_resnet_bottleneck():
 
 def test_resnet_res_layer():
     layer = ResLayer(Bottleneck, 64, 16, 3)
+    assert len(layer) == 3
+    assert layer[0].conv1.in_channels == 64
+    assert layer[0].conv1.out_channels == 16
     for i in range(len(layer)):
         assert layer[i].downsample is None
 
     layer = ResLayer(Bottleneck, 64, 64, 3)
-    for i in range(len(layer)):
-        if layer[i].downsample is not None:
-            assert layer[i].downsample[0].out_channels == 256
+    assert layer[0].downsample[0].out_channels == 256
+    for i in range(1, len(layer)):
+        assert layer[i].downsample is None
 
     layer = ResLayer(Bottleneck, 64, 64, 3, stride=2)
     for i in range(len(layer)):
