@@ -14,7 +14,7 @@ inline int GET_BLOCKS(const int N) {
   return min(optimal_block_num, max_block_num);
 }
 
-template <typename scalar_t>
+template<typename scalar_t>
 __global__ void ROIPoolForward(const int nthreads, const scalar_t *bottom_data,
                                const scalar_t *rois,
                                const scalar_t spatial_scale, const int channels,
@@ -94,16 +94,17 @@ int ROIPoolForwardLaucher(const at::Tensor features, const at::Tensor rois,
         int *argmax_data = argmax.data<int>();
 
         ROIPoolForward<scalar_t>
-            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()>>>(
+            << < GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0,
+            at::cuda::getCurrentCUDAStream() >> > (
                 output_size, bottom_data, rois_data, scalar_t(spatial_scale),
-                channels, height, width, pooled_h, pooled_w, top_data,
-                argmax_data);
+                    channels, height, width, pooled_h, pooled_w, top_data,
+                    argmax_data);
       }));
   THCudaCheck(cudaGetLastError());
   return 1;
 }
 
-template <typename scalar_t>
+template<typename scalar_t>
 __global__ void ROIPoolBackward(const int nthreads, const scalar_t *top_diff,
                                 const scalar_t *rois, const int *argmax_data,
                                 const scalar_t spatial_scale,
@@ -118,12 +119,12 @@ __global__ void ROIPoolBackward(const int nthreads, const scalar_t *top_diff,
 
     int roi_batch_ind = rois[n * 5];
     int bottom_index = argmax_data[(n * channels + c) * pooled_h * pooled_w +
-                                   ph * pooled_w + pw];
+        ph * pooled_w + pw];
 
     if (bottom_index != -1) {
-        atomicAdd(bottom_diff + (roi_batch_ind * channels + c) * height * width +
-                      bottom_index,
-                  top_diff[index]);
+      atomicAdd(bottom_diff + (roi_batch_ind * channels + c) * height * width +
+                    bottom_index,
+                top_diff[index]);
     }
   }
 }
@@ -149,10 +150,11 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
         }
 
         ROIPoolBackward<scalar_t>
-            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()>>>(
+            << < GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0,
+            at::cuda::getCurrentCUDAStream() >> > (
                 output_size, top_diff, rois_data, argmax_data,
-                scalar_t(spatial_scale), channels, height, width, pooled_h,
-                pooled_w, bottom_diff);
+                    scalar_t(spatial_scale), channels, height, width, pooled_h,
+                    pooled_w, bottom_diff);
       }));
   THCudaCheck(cudaGetLastError());
   return 1;
