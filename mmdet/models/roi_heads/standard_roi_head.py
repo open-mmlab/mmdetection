@@ -25,29 +25,37 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.shared_head = builder.build_shared_head(shared_head)
 
         if bbox_head is not None:
-            self.bbox_roi_extractor = builder.build_roi_extractor(
-                bbox_roi_extractor)
-            self.bbox_head = builder.build_head(bbox_head)
+            self.init_bboxhead(bbox_roi_extractor, bbox_head)
 
         if mask_head is not None:
-            if mask_roi_extractor is not None:
-                self.mask_roi_extractor = builder.build_roi_extractor(
-                    mask_roi_extractor)
-                self.share_roi_extractor = False
-            else:
-                self.share_roi_extractor = True
-                self.mask_roi_extractor = self.bbox_roi_extractor
-            self.mask_head = builder.build_head(mask_head)
+            self.init_maskhead(mask_roi_extractor, mask_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.init_assigner_sampler()
 
+    def init_assigner_sampler(self):
         self.bbox_assigner = None
         self.bbox_sampler = None
         if self.train_cfg:
             self.bbox_assigner = build_assigner(self.train_cfg.assigner)
             self.bbox_sampler = build_sampler(
                 self.train_cfg.sampler, context=self)
+
+    def init_bboxhead(self, bbox_roi_extractor, bbox_head):
+        self.bbox_roi_extractor = builder.build_roi_extractor(
+            bbox_roi_extractor)
+        self.bbox_head = builder.build_head(bbox_head)
+
+    def init_maskhead(self, mask_roi_extractor, mask_head):
+        if mask_roi_extractor is not None:
+            self.mask_roi_extractor = builder.build_roi_extractor(
+                mask_roi_extractor)
+            self.share_roi_extractor = False
+        else:
+            self.share_roi_extractor = True
+            self.mask_roi_extractor = self.bbox_roi_extractor
+        self.mask_head = builder.build_head(mask_head)
 
     def init_weights(self, pretrained):
         if self.with_shared_head:

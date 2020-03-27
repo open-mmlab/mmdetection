@@ -26,6 +26,18 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def init_bboxhead(self):
+        pass
+
+    @abstractmethod
+    def init_maskhead(self):
+        pass
+
+    @abstractmethod
+    def init_assigner_sampler(self):
+        pass
+
+    @abstractmethod
     def forward_train(self,
                       x,
                       img_meta,

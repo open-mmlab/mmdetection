@@ -37,45 +37,53 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.shared_head = builder.build_shared_head(shared_head)
 
         if bbox_head is not None:
-            self.bbox_roi_extractor = nn.ModuleList()
-            self.bbox_head = nn.ModuleList()
-            if not isinstance(bbox_roi_extractor, list):
-                bbox_roi_extractor = [
-                    bbox_roi_extractor for _ in range(num_stages)
-                ]
-            if not isinstance(bbox_head, list):
-                bbox_head = [bbox_head for _ in range(num_stages)]
-            assert len(bbox_roi_extractor) == len(bbox_head) == self.num_stages
-            for roi_extractor, head in zip(bbox_roi_extractor, bbox_head):
-                self.bbox_roi_extractor.append(
-                    builder.build_roi_extractor(roi_extractor))
-                self.bbox_head.append(builder.build_head(head))
+            self.init_bboxhead(bbox_roi_extractor, bbox_head)
 
         if mask_head is not None:
-            self.mask_head = nn.ModuleList()
-            if not isinstance(mask_head, list):
-                mask_head = [mask_head for _ in range(num_stages)]
-            assert len(mask_head) == self.num_stages
-            for head in mask_head:
-                self.mask_head.append(builder.build_head(head))
-            if mask_roi_extractor is not None:
-                self.share_roi_extractor = False
-                self.mask_roi_extractor = nn.ModuleList()
-                if not isinstance(mask_roi_extractor, list):
-                    mask_roi_extractor = [
-                        mask_roi_extractor for _ in range(num_stages)
-                    ]
-                assert len(mask_roi_extractor) == self.num_stages
-                for roi_extractor in mask_roi_extractor:
-                    self.mask_roi_extractor.append(
-                        builder.build_roi_extractor(roi_extractor))
-            else:
-                self.share_roi_extractor = True
-                self.mask_roi_extractor = self.bbox_roi_extractor
+            self.init_maskhead(mask_roi_extractor, mask_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.init_assigner_sampler()
 
+    def init_bboxhead(self, bbox_roi_extractor, bbox_head):
+        self.bbox_roi_extractor = nn.ModuleList()
+        self.bbox_head = nn.ModuleList()
+        if not isinstance(bbox_roi_extractor, list):
+            bbox_roi_extractor = [
+                bbox_roi_extractor for _ in range(self.num_stages)
+            ]
+        if not isinstance(bbox_head, list):
+            bbox_head = [bbox_head for _ in range(self.num_stages)]
+        assert len(bbox_roi_extractor) == len(bbox_head) == self.num_stages
+        for roi_extractor, head in zip(bbox_roi_extractor, bbox_head):
+            self.bbox_roi_extractor.append(
+                builder.build_roi_extractor(roi_extractor))
+            self.bbox_head.append(builder.build_head(head))
+
+    def init_maskhead(self, mask_roi_extractor, mask_head):
+        self.mask_head = nn.ModuleList()
+        if not isinstance(mask_head, list):
+            mask_head = [mask_head for _ in range(self.num_stages)]
+        assert len(mask_head) == self.num_stages
+        for head in mask_head:
+            self.mask_head.append(builder.build_head(head))
+        if mask_roi_extractor is not None:
+            self.share_roi_extractor = False
+            self.mask_roi_extractor = nn.ModuleList()
+            if not isinstance(mask_roi_extractor, list):
+                mask_roi_extractor = [
+                    mask_roi_extractor for _ in range(self.num_stages)
+                ]
+            assert len(mask_roi_extractor) == self.num_stages
+            for roi_extractor in mask_roi_extractor:
+                self.mask_roi_extractor.append(
+                    builder.build_roi_extractor(roi_extractor))
+        else:
+            self.share_roi_extractor = True
+            self.mask_roi_extractor = self.bbox_roi_extractor
+
+    def init_assigner_sampler(self):
         # build assigner and smapler for each stage
         self.bbox_assigner = []
         self.bbox_sampler = []
