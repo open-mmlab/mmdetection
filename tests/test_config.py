@@ -239,6 +239,21 @@ def test_config_build_detector():
             test_cfg=config_mod.test_cfg)
         assert detector is not None
 
+        if 'roi_head' in config_mod.model.keys():
+            # for two stage detector
+            # detectors must have bbox head
+            assert detector.roi_head.with_bbox and detector.with_bbox
+            assert detector.roi_head.with_mask == detector.with_mask
+
+            head_config = config_mod.model['roi_head']
+            _check_roihead(head_config, detector.roi_head)
+        # else:
+        #     # for single stage detector
+        #     # detectors must have bbox head
+        #     # assert detector.with_bbox
+        #     head_config = config_mod.model['bbox_head']
+        #     _check_bboxhead(head_config, detector.bbox_head)
+
 
 def test_config_data_pipeline():
     """
@@ -345,3 +360,144 @@ def test_config_data_pipeline():
         results['mask_fields'] = ['gt_masks']
         output_results = test_pipeline(results)
         assert output_results is not None
+
+
+def _check_roihead(config, head):
+    # check consistency between head_config and roi_head
+    assert config['type'] == head.__class__.__name__
+
+    # check roi_align
+    bbox_roi_cfg = config.bbox_roi_extractor
+    bbox_roi_extractor = head.bbox_roi_extractor
+    _check_roi_extractor(bbox_roi_cfg, bbox_roi_extractor)
+
+    # check bbox head infos
+    bbox_cfg = config.bbox_head
+    bbox_head = head.bbox_head
+    _check_bboxhead(bbox_cfg, bbox_head)
+
+    if head.with_mask:
+        # check roi_align
+        if config.mask_roi_extractor:
+            mask_roi_cfg = config.mask_roi_extractor
+            mask_roi_extractor = head.mask_roi_extractor
+            _check_roi_extractor(mask_roi_cfg, mask_roi_extractor,
+                                 bbox_roi_extractor)
+
+        # check mask head infos
+        mask_head = head.mask_head
+        mask_cfg = config.mask_head
+        _check_maskhead(mask_cfg, mask_head)
+
+    # check arch specific settings, e.g., cascade/htc
+    if config['type'] in ['CascadeRoIHead', 'HybridTaskCascadeRoIHead']:
+        assert config.num_stages == len(head.bbox_head)
+        assert config.num_stages == len(head.bbox_roi_extractor)
+
+        if head.with_mask:
+            assert config.num_stages == len(head.mask_head)
+            assert config.num_stages == len(head.mask_roi_extractor)
+
+    elif config['type'] in ['MaskScoringRoIHead']:
+        assert (hasattr(head, 'mask_iou_head')
+                and head.mask_iou_head is not None)
+        mask_iou_cfg = config.mask_iou_head
+        mask_iou_head = head.mask_iou_head
+        assert (mask_iou_cfg.fc_out_channels ==
+                mask_iou_head.fc_mask_iou.in_features)
+
+    elif config['type'] in ['GridRoIHead']:
+        grid_roi_cfg = config.grid_roi_extractor
+        grid_roi_extractor = head.grid_roi_extractor
+        _check_roi_extractor(grid_roi_cfg, grid_roi_extractor,
+                             bbox_roi_extractor)
+
+        config.grid_head.grid_points = head.grid_head.grid_points
+
+
+def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
+    import torch.nn as nn
+    if isinstance(roi_extractor, nn.ModuleList):
+        if prev_roi_extractor:
+            prev_roi_extractor = prev_roi_extractor[0]
+        roi_extractor = roi_extractor[0]
+
+    assert (len(config.featmap_strides) == len(roi_extractor.roi_layers))
+    assert (config.out_channels == roi_extractor.out_channels)
+    from torch.nn.modules.utils import _pair
+    assert (_pair(
+        config.roi_layer.out_size) == roi_extractor.roi_layers[0].out_size)
+
+    if 'use_torchvision' in config.roi_layer:
+        assert (config.roi_layer.use_torchvision ==
+                roi_extractor.roi_layers[0].use_torchvision)
+    elif 'aligned' in config.roi_layer:
+        assert (
+            config.roi_layer.aligned == roi_extractor.roi_layers[0].aligned)
+
+    if prev_roi_extractor:
+        assert (roi_extractor.roi_layers[0].aligned ==
+                prev_roi_extractor.roi_layers[0].aligned)
+        assert (roi_extractor.roi_layers[0].use_torchvision ==
+                prev_roi_extractor.roi_layers[0].use_torchvision)
+
+
+def _check_maskhead(mask_cfg, mask_head):
+    import torch.nn as nn
+    if isinstance(mask_cfg, list):
+        for single_mask_cfg, single_mask_head in zip(mask_cfg, mask_head):
+            _check_maskhead(single_mask_cfg, single_mask_head)
+    elif isinstance(mask_head, nn.ModuleList):
+        for single_mask_head in mask_head:
+            _check_maskhead(mask_cfg, single_mask_head)
+    else:
+        assert mask_cfg['type'] == mask_head.__class__.__name__
+        assert mask_cfg.in_channels == mask_head.in_channels
+        assert (
+            mask_cfg.conv_out_channels == mask_head.conv_logits.in_channels)
+        class_agnostic = mask_cfg.get('class_agnostic', False)
+        out_dim = (1 if class_agnostic else mask_cfg.num_classes)
+        assert mask_head.conv_logits.out_channels == out_dim
+
+
+def _check_bboxhead(bbox_cfg, bbox_head):
+    import torch.nn as nn
+    if isinstance(bbox_cfg, list):
+        for single_bbox_cfg, single_bbox_head in zip(bbox_cfg, bbox_head):
+            _check_bboxhead(single_bbox_cfg, single_bbox_head)
+    elif isinstance(bbox_head, nn.ModuleList):
+        for single_bbox_head in bbox_head:
+            _check_bboxhead(bbox_cfg, single_bbox_head)
+    else:
+        assert bbox_cfg['type'] == bbox_head.__class__.__name__
+        assert bbox_cfg.in_channels == bbox_head.in_channels
+        with_cls = bbox_cfg.get('with_cls', True)
+        if with_cls:
+            fc_out_channels = bbox_cfg.get('fc_out_channels', 2048)
+            assert (fc_out_channels == bbox_head.fc_cls.in_features)
+            assert bbox_cfg.num_classes == bbox_head.fc_cls.out_features
+
+        with_reg = bbox_cfg.get('with_reg', True)
+        if with_reg:
+            out_dim = (4 if bbox_cfg.reg_class_agnostic else 4 *
+                       bbox_cfg.num_classes)
+            assert bbox_head.fc_reg.out_features == out_dim
+
+
+def _check_anchorhead(config, head):
+    # check consistency between head_config and roi_head
+    assert config['type'] == head.__class__.__name__
+    assert config.in_channels == head.in_channels
+
+    num_classes = (
+        config.num_classes -
+        1 if config.loss_cls.get('use_sigmoid', False) else config.num_classes)
+    if config['type'] == 'ATSSHead':
+        assert (config.feat_channels == head.atss_cls.in_channels)
+        assert (config.feat_channels == head.atss_reg.in_channels)
+        assert (config.feat_channels == head.atss_centerness.in_channels)
+    else:
+        assert (config.in_channels == head.conv_cls.in_channels)
+        assert (config.in_channels == head.conv_reg.in_channels)
+        assert (head.conv_cls.out_channels == num_classes * head.num_anchors)
+        assert head.fc_reg.out_channels == 4 * head.num_anchors
