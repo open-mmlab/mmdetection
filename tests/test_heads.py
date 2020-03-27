@@ -241,7 +241,7 @@ def test_refine_boxes():
             'rng': 699807
         },
 
-        # Corner case: similar num rois and images
+        # Corner case: cal_similarity num rois and images
         {
             'n_roi': 20,
             'n_img': 20,

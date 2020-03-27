@@ -31,7 +31,8 @@ async def main():
     """
     project_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-    config_file = os.path.join(project_dir, 'configs/mask_rcnn_r50_fpn_1x.py')
+    config_file = os.path.join(project_dir,
+                               'configs/mask_rcnn_r50_fpn_1x_coco.py')
     checkpoint_file = os.path.join(
         project_dir, 'checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth')
 
