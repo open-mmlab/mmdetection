@@ -50,7 +50,7 @@ class LoadMultiImagesFromMultiFiles(object):
         self.key_prefix = key_prefix
 
     def __call__(self, results):
-        imgs_info_key = f'{self.key_prefix}_imgs_info'
+        imgs_info_key = '{}_imgs_info'.format(self.key_prefix)
         if imgs_info_key not in results.keys():
             return results
         assert type(results[imgs_info_key]
@@ -69,9 +69,9 @@ class LoadMultiImagesFromMultiFiles(object):
             for i in range(len(imgs)):
                 imgs[i] = imgs[i].astype(np.float32)
 
-        filenames_key = f'{self.key_prefix}_filenames'
+        filenames_key = '{}_filenames'.format(self.key_prefix)
         results[filenames_key] = filenames
-        imgs_key = f'{self.key_prefix}_imgs'
+        imgs_key = '{}_imgs'.format(self.key_prefix)
         results[imgs_key] = imgs
         results['img_fields'].append(imgs_key)
 
