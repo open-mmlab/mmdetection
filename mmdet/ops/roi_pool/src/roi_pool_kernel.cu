@@ -94,8 +94,8 @@ int ROIPoolForwardLaucher(const at::Tensor features, const at::Tensor rois,
         int *argmax_data = argmax.data<int>();
 
         ROIPoolForward<scalar_t>
-            << < GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0,
-            at::cuda::getCurrentCUDAStream() >> > (
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0,
+            at::cuda::getCurrentCUDAStream()>>> (
                 output_size, bottom_data, rois_data, scalar_t(spatial_scale),
                     channels, height, width, pooled_h, pooled_w, top_data,
                     argmax_data);
@@ -150,8 +150,8 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
         }
 
         ROIPoolBackward<scalar_t>
-            << < GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0,
-            at::cuda::getCurrentCUDAStream() >> > (
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0,
+            at::cuda::getCurrentCUDAStream()>>> (
                 output_size, top_diff, rois_data, argmax_data,
                     scalar_t(spatial_scale), channels, height, width, pooled_h,
                     pooled_w, bottom_diff);
