@@ -1,10 +1,10 @@
 from mmdet.core import bbox2roi
 from ..registry import HEADS
-from .base_roi_head import BaseRoIHead
+from .standard_roi_head import StandardRoIHead
 
 
 @HEADS.register_module
-class DoubleHeadRoIHead(BaseRoIHead):
+class DoubleHeadRoIHead(StandardRoIHead):
     """RoI head for Double Head RCNN
 
     https://arxiv.org/abs/1904.06493

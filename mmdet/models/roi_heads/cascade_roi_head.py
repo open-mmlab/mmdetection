@@ -6,11 +6,12 @@ from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
                         multiclass_nms)
 from .. import builder
 from ..registry import HEADS
+from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
 @HEADS.register_module
-class CascadeRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
+class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Cascade roi head including one bbox head and one mask head.
 
     https://arxiv.org/abs/1712.00726
@@ -83,18 +84,6 @@ class CascadeRoIHead(nn.Module, BBoxTestMixin, MaskTestMixin):
                 self.bbox_assigner.append(
                     build_assigner(rcnn_train_cfg.assigner))
                 self.bbox_sampler.append(build_sampler(rcnn_train_cfg.sampler))
-
-    @property
-    def with_bbox(self):
-        return hasattr(self, 'bbox_head') and self.bbox_head is not None
-
-    @property
-    def with_mask(self):
-        return hasattr(self, 'mask_head') and self.mask_head is not None
-
-    @property
-    def with_shared_head(self):
-        return hasattr(self, 'shared_head') and self.shared_head is not None
 
     def init_weights(self, pretrained):
         if self.with_shared_head:

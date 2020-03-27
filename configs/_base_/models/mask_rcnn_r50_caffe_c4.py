@@ -27,7 +27,7 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
     roi_head=dict(
-        type='BaseRoIHead',
+        type='StandardRoIHead',
         shared_head=dict(
             type='ResLayer',
             depth=50,

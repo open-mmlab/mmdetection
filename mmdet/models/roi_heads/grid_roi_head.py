@@ -3,11 +3,11 @@ import torch
 from mmdet.core import bbox2result, bbox2roi
 from .. import builder
 from ..registry import HEADS
-from .base_roi_head import BaseRoIHead
+from .standard_roi_head import StandardRoIHead
 
 
 @HEADS.register_module
-class GridRoIHead(BaseRoIHead):
+class GridRoIHead(StandardRoIHead):
     """Grid roi head for Grid R-CNN.
 
     https://arxiv.org/abs/1811.12030

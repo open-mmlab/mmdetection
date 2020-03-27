@@ -16,7 +16,7 @@ model = dict(
         out_channels=256,
         num_outs=5),
     roi_head=dict(
-        type='BaseRoIHead',
+        type='StandardRoIHead',
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),

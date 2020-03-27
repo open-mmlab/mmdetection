@@ -3,11 +3,11 @@ import torch
 from mmdet.core import bbox2roi
 from .. import builder
 from ..registry import HEADS
-from .base_roi_head import BaseRoIHead
+from .standard_roi_head import StandardRoIHead
 
 
 @HEADS.register_module
-class MaskScoringRoIHead(BaseRoIHead):
+class MaskScoringRoIHead(StandardRoIHead):
     """Mask Scoring RoIHead for Mask Scoring RCNN.
 
     https://arxiv.org/abs/1903.00241
