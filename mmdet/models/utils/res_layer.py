@@ -7,15 +7,17 @@ class ResLayer(nn.Sequential):
     """ResLayer to build ResNet style backbone.
 
     Args:
-        block (nn.Module): block used to build ResLayer
-        inplanes (int): inplanes of block
-        planes (int): planes of block
-        num_blocks (int): number of blocks
-        stride (int): stride of the first block
+        block (nn.Module): block used to build ResLayer.
+        inplanes (int): inplanes of block.
+        planes (int): planes of block.
+        num_blocks (int): number of blocks.
+        stride (int): stride of the first block. Default: 1
         avg_down (bool): Use AvgPool instead of stride conv when
-            downsampling in the bottleneck.
-        conv_cfg (dict): dictionary to construct and config conv layer
+            downsampling in the bottleneck. Default: False
+        conv_cfg (dict): dictionary to construct and config conv layer.
+            Default: None
         norm_cfg (dict): dictionary to construct and config norm layer.
+            Default: dict(type='BN')
     """
 
     def __init__(self,
@@ -63,6 +65,8 @@ class ResLayer(nn.Sequential):
                 planes=planes,
                 stride=stride,
                 downsample=downsample,
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg,
                 gen_attention=gen_attention
                 if 0 in gen_attention_blocks else None,
                 **kwargs))
@@ -73,6 +77,8 @@ class ResLayer(nn.Sequential):
                     inplanes=inplanes,
                     planes=planes,
                     stride=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
                     gen_attention=gen_attention if
                     (i in gen_attention_blocks) else None,
                     **kwargs))
