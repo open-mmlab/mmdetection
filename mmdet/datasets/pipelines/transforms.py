@@ -151,22 +151,10 @@ class Resize(object):
             if results[key] is None:
                 continue
             if self.keep_ratio:
-                masks = [
-                    mmcv.imrescale(
-                        mask, results['scale'], interpolation='nearest')
-                    for mask in results[key]
-                ]
+                results[key] = results[key].rescale(results['scale'])
             else:
-                mask_size = (results['img_shape'][1], results['img_shape'][0])
-                masks = [
-                    mmcv.imresize(mask, mask_size, interpolation='nearest')
-                    for mask in results[key]
-                ]
-            if masks:
-                results[key] = np.stack(masks)
-            else:
-                results[key] = np.empty(
-                    (0, ) + results['img_shape'], dtype=np.uint8)
+                results[key] = results[key].resize(
+                    h=results['img_shape'][0], w=results['img_shape'][1])
 
     def _resize_seg(self, results):
         for key in results.get('seg_fields', []):
@@ -255,15 +243,7 @@ class RandomFlip(object):
                                               results['flip_direction'])
             # flip masks
             for key in results.get('mask_fields', []):
-                masks = [
-                    mmcv.imflip(mask, direction=results['flip_direction'])
-                    for mask in results[key]
-                ]
-                if masks:
-                    results[key] = np.stack(masks)
-                else:
-                    results[key] = np.empty(
-                        (0, ) + results['img_shape'], dtype=np.uint8)
+                results[key] = results[key].flip(results['flip_direction'])
 
             # flip segs
             for key in results.get('seg_fields', []):
@@ -311,14 +291,8 @@ class Pad(object):
     def _pad_masks(self, results):
         pad_shape = results['pad_shape'][:2]
         for key in results.get('mask_fields', []):
-            padded_masks = [
-                mmcv.impad(mask, pad_shape, pad_val=self.pad_val)
-                for mask in results[key]
-            ]
-            if padded_masks:
-                results[key] = np.stack(padded_masks, axis=0)
-            else:
-                results[key] = np.empty((0, ) + pad_shape, dtype=np.uint8)
+            results[key] = results[key].pad(
+                h=pad_shape[0], w=pad_shape[1], pad_val=self.pad_val)
 
     def _pad_seg(self, results):
         for key in results.get('seg_fields', []):
