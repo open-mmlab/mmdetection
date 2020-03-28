@@ -14,9 +14,12 @@ class MaskScoringRoIHead(StandardRoIHead):
     """
 
     def __init__(self, mask_iou_head, **kwargs):
-        super(MaskScoringRoIHead, self).__init__(**kwargs)
         assert mask_iou_head is not None
+        super(MaskScoringRoIHead, self).__init__(**kwargs)
         self.mask_iou_head = builder.build_head(mask_iou_head)
+
+    def init_weights(self, pretrained):
+        super(MaskScoringRoIHead, self).init_weights(pretrained)
         self.mask_iou_head.init_weights()
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,

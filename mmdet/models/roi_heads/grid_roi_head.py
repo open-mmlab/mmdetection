@@ -24,9 +24,9 @@ class GridRoIHead(StandardRoIHead):
             self.share_roi_extractor = True
             self.grid_roi_extractor = self.bbox_roi_extractor
         self.grid_head = builder.build_head(grid_head)
-        self.init_extra_weights()
 
-    def init_extra_weights(self):
+    def init_weights(self, pretrained):
+        super(GridRoIHead, self).init_weights(pretrained)
         self.grid_head.init_weights()
         if not self.share_roi_extractor:
             self.grid_roi_extractor.init_weights()
