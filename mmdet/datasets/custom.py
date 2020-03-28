@@ -37,6 +37,7 @@ class CustomDataset(Dataset):
     def __init__(self,
                  ann_file,
                  pipeline,
+                 class_names=None,
                  data_root=None,
                  img_prefix='',
                  seg_prefix=None,
@@ -50,6 +51,7 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
+        self.class_names = class_names
 
         # join paths if data_root is specified
         if self.data_root is not None:

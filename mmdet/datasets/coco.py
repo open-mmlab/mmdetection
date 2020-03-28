@@ -32,13 +32,25 @@ class CocoDataset(CustomDataset):
                'vase', 'scissors', 'teddy_bear', 'hair_drier', 'toothbrush')
 
     def load_annotations(self, ann_file):
+        if not self.class_names:
+            self.class_names = [res.replace('_', ' ') for res in self.CLASSES]
         self.coco = COCO(ann_file)
-        self.cat_ids = self.coco.getCatIds()
+        # send class_names into the getCatIds function
+        # in case we only need to train on several classes
+        # by default self.class_names = CLASSES
+        self.cat_ids = self.coco.getCatIds(catNms=self.class_names)
+
         self.cat2label = {
             cat_id: i + 1
             for i, cat_id in enumerate(self.cat_ids)
         }
-        self.img_ids = self.coco.getImgIds()
+        # send cat ids to the get img id
+        # in case we only need to train on several classes
+        if len(self.cat_ids) < len(self.CLASSES):
+            self.img_ids = getImgIds(self.coco, catIds=self.cat_ids)
+        else:
+            self.img_ids = self.coco.getImgIds()
+
         img_infos = []
         for i in self.img_ids:
             info = self.coco.loadImgs([i])[0]
@@ -85,6 +97,9 @@ class CocoDataset(CustomDataset):
                 continue
             x1, y1, w, h = ann['bbox']
             if ann['area'] <= 0 or w < 1 or h < 1:
+                continue
+            if ann['category_id'] not in self.cat_ids:
+                # skip ann when only train on several cats
                 continue
             bbox = [x1, y1, x1 + w - 1, y1 + h - 1]
             if ann.get('iscrowd', False):
@@ -357,6 +372,7 @@ class CocoDataset(CustomDataset):
 
             iou_type = 'bbox' if metric == 'proposal' else metric
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
+            cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
             if metric == 'proposal':
                 cocoEval.params.useCats = 0
@@ -390,3 +406,24 @@ class CocoDataset(CustomDataset):
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
+
+
+def getImgIds(coco, imgIds=[], catIds=[]):
+    '''
+    Get img ids that satisfy given filter conditions.
+    Different from the coco.getImgIds, this function returns the id if
+    the img contains one of the cat rather than all.
+    :param imgIds (int array) : get imgs for given ids
+    :param catIds (int array) : get imgs with all given cats
+    :return: ids (int array)  : integer array of img ids
+    '''
+    if len(imgIds) == len(catIds) == 0:
+        ids = coco.imgs.keys()
+    else:
+        ids = set(imgIds)
+        for i, catId in enumerate(catIds):
+            if i == 0 and len(ids) == 0:
+                ids = set(coco.catToImgs[catId])
+            else:
+                ids |= set(coco.catToImgs[catId])
+    return list(ids)
