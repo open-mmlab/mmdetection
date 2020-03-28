@@ -45,7 +45,7 @@ class RPN(BaseDetector, RPNTestMixin):
 
     def forward_train(self,
                       img,
-                      img_meta,
+                      img_metas,
                       gt_bboxes=None,
                       gt_bboxes_ignore=None):
         if self.train_cfg.rpn.get('debug', False):
@@ -54,16 +54,16 @@ class RPN(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
         rpn_outs = self.rpn_head(x)
 
-        rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta, self.train_cfg.rpn)
+        rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas, self.train_cfg.rpn)
         losses = self.rpn_head.loss(
             *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
-    def simple_test(self, img, img_meta, rescale=False):
+    def simple_test(self, img, img_metas, rescale=False):
         x = self.extract_feat(img)
-        proposal_list = self.simple_test_rpn(x, img_meta, self.test_cfg.rpn)
+        proposal_list = self.simple_test_rpn(x, img_metas, self.test_cfg.rpn)
         if rescale:
-            for proposals, meta in zip(proposal_list, img_meta):
+            for proposals, meta in zip(proposal_list, img_metas):
                 proposals[:, :4] /= meta['scale_factor']
         # TODO: remove this restriction
         return proposal_list[0].cpu().numpy()
@@ -88,7 +88,7 @@ class RPN(BaseDetector, RPNTestMixin):
         batch size.
         """
         img_tensor = data['img'][0]
-        img_metas = data['img_meta'][0].data[0]
+        img_metas = data['img_metas'][0].data[0]
         imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
         assert len(imgs) == len(img_metas)
         for img, img_meta in zip(imgs, img_metas):

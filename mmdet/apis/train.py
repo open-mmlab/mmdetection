@@ -9,7 +9,7 @@ from mmcv.runner import DistSamplerSeedHook, Runner
 
 from mmdet.core import (DistEvalHook, DistOptimizerHook, Fp16OptimizerHook,
                         build_optimizer)
-from mmdet.datasets import build_dataloader
+from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.utils import get_root_logger
 
 
@@ -129,10 +129,14 @@ def _dist_train(model,
             seed=cfg.seed) for ds in dataset
     ]
     # put model on gpus
+    find_unused_parameters = cfg.get('find_unused_parameters', False)
+    # Sets the `find_unused_parameters` parameter in
+    # torch.nn.parallel.DistributedDataParallel
     model = MMDistributedDataParallel(
         model.cuda(),
         device_ids=[torch.cuda.current_device()],
-        broadcast_buffers=False)
+        broadcast_buffers=False,
+        find_unused_parameters=find_unused_parameters)
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
@@ -160,9 +164,15 @@ def _dist_train(model,
     runner.register_hook(DistSamplerSeedHook())
     # register eval hooks
     if validate:
-        val_dataset_cfg = cfg.data.val
+        val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
+        val_dataloader = build_dataloader(
+            val_dataset,
+            imgs_per_gpu=1,
+            workers_per_gpu=cfg.data.workers_per_gpu,
+            dist=True,
+            shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
-        runner.register_hook(DistEvalHook(val_dataset_cfg, **eval_cfg))
+        runner.register_hook(DistEvalHook(val_dataloader, **eval_cfg))
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)

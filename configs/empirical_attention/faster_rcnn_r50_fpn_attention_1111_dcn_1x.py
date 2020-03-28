@@ -8,6 +8,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch',
         gen_attention=dict(
             spatial_range=-1, num_heads=8, attention_type='1111', kv_stride=2),

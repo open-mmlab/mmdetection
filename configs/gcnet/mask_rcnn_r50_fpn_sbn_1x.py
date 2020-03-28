@@ -1,6 +1,4 @@
 # model settings
-norm_cfg = dict(type='SyncBN', requires_grad=True)
-
 model = dict(
     type='MaskRCNN',
     pretrained='torchvision://resnet50',
@@ -10,9 +8,9 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        style='pytorch',
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=False,
-        norm_cfg=norm_cfg),
+        style='pytorch'),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],

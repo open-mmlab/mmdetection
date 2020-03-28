@@ -12,12 +12,9 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch',
-        dcn=dict(
-            modulated=False,
-            groups=32,
-            deformable_groups=1,
-            fallback_on_stride=False),
+        dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)),
     neck=dict(
         type='FPN',
@@ -150,5 +147,4 @@ log_level = 'INFO'
 work_dir = './work_dirs/reppoints_moment_x101_dcn_fpn_2x_mt'
 load_from = None
 resume_from = None
-auto_resume = True
 workflow = [('train', 1)]

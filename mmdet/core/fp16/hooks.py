@@ -97,8 +97,7 @@ def wrap_fp16_model(model):
 def patch_norm_fp32(module):
     if isinstance(module, (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
         module.float()
-        torch_version = [int(v) for v in torch.__version__.split('.')]
-        if isinstance(module, nn.GroupNorm) or torch_version < [1, 3]:
+        if isinstance(module, nn.GroupNorm) or torch.__version__ < '1.3':
             module.forward = patch_forward_method(module.forward, torch.half,
                                                   torch.float)
     for child in module.children():

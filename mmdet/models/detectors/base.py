@@ -59,11 +59,11 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         """
         pass
 
-    async def async_simple_test(self, img, img_meta, **kwargs):
+    async def async_simple_test(self, img, img_metas, **kwargs):
         raise NotImplementedError
 
     @abstractmethod
-    def simple_test(self, img, img_meta, **kwargs):
+    def simple_test(self, img, img_metas, **kwargs):
         pass
 
     @abstractmethod
@@ -74,23 +74,23 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if pretrained is not None:
             print_log('load model from: {}'.format(pretrained), logger='root')
 
-    async def aforward_test(self, *, img, img_meta, **kwargs):
-        for var, name in [(img, 'img'), (img_meta, 'img_meta')]:
+    async def aforward_test(self, *, img, img_metas, **kwargs):
+        for var, name in [(img, 'img'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError('{} must be a list, but got {}'.format(
                     name, type(var)))
 
         num_augs = len(img)
-        if num_augs != len(img_meta):
+        if num_augs != len(img_metas):
             raise ValueError(
-                'num of augmentations ({}) != num of image meta ({})'.format(
-                    len(img), len(img_meta)))
+                'num of augmentations ({}) != num of image metas ({})'.format(
+                    len(img), len(img_metas)))
         # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
         imgs_per_gpu = img[0].size(0)
         assert imgs_per_gpu == 1
 
         if num_augs == 1:
-            return await self.async_simple_test(img[0], img_meta[0], **kwargs)
+            return await self.async_simple_test(img[0], img_metas[0], **kwargs)
         else:
             raise NotImplementedError
 
@@ -100,9 +100,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             imgs (List[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains all images in the batch.
-            img_meta (List[List[dict]]): the outer list indicates test-time
+            img_metas (List[List[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch
+                images in a batch.
         """
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
@@ -119,12 +119,22 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         assert imgs_per_gpu == 1
 
         if num_augs == 1:
+            """
+            proposals (List[List[Tensor]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. The Tensor should have a shape Px4, where
+                P is the number of proposals.
+            """
+            if 'proposals' in kwargs:
+                kwargs['proposals'] = kwargs['proposals'][0]
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
+            # TODO: support test augmentation for predefined proposals
+            assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
 
     @auto_fp16(apply_to=('img', ))
-    def forward(self, img, img_meta, return_loss=True, **kwargs):
+    def forward(self, img, img_metas, return_loss=True, **kwargs):
         """
         Calls either forward_train or forward_test depending on whether
         return_loss=True. Note this setting will change the expected inputs.
@@ -134,9 +144,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         the outer list indicating test time augmentations.
         """
         if return_loss:
-            return self.forward_train(img, img_meta, **kwargs)
+            return self.forward_train(img, img_metas, **kwargs)
         else:
-            return self.forward_test(img, img_meta, **kwargs)
+            return self.forward_test(img, img_metas, **kwargs)
 
     def show_result(self, data, result, dataset=None, score_thr=0.3):
         if isinstance(result, tuple):
@@ -145,7 +155,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             bbox_result, segm_result = result, None
 
         img_tensor = data['img'][0]
-        img_metas = data['img_meta'][0].data[0]
+        img_metas = data['img_metas'][0].data[0]
         imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
         assert len(imgs) == len(img_metas)
 
