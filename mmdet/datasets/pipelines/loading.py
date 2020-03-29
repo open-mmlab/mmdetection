@@ -31,8 +31,10 @@ class LoadImageFromFile(object):
         results['pad_shape'] = img.shape
         results['scale_factor'] = 1.0
         num_channels = 1 if len(img.shape) < 3 else img.shape[2]
-        results['img_norm_cfg'] = [[0.0] * num_channels, [1.0] * num_channels,
-                                   False]
+        results['img_norm_cfg'] = dict(
+            mean=np.zeros(num_channels, dtype=np.float32),
+            std=np.ones(num_channels, dtype=np.float32),
+            to_rgb=False)
         return results
 
     def __repr__(self):
