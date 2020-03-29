@@ -14,7 +14,7 @@ class GeneralizedAttention(nn.Module):
     (https://arxiv.org/abs/1711.07971) for details.
 
     Args:
-        in_dim (int): Channels of the input feature map.
+        in_channels (int): Channels of the input feature map.
         spatial_range (int): The spatial range.
             -1 indicates no spatial range constraint.
         num_heads (int): The head number of empirical_attention module.
@@ -32,7 +32,7 @@ class GeneralizedAttention(nn.Module):
     """
 
     def __init__(self,
-                 in_dim,
+                 in_channels,
                  spatial_range=-1,
                  num_heads=9,
                  position_embedding_dim=-1,
@@ -45,21 +45,22 @@ class GeneralizedAttention(nn.Module):
 
         # hard range means local range for non-local operation
         self.position_embedding_dim = (
-            position_embedding_dim if position_embedding_dim > 0 else in_dim)
+            position_embedding_dim
+            if position_embedding_dim > 0 else in_channels)
 
         self.position_magnitude = position_magnitude
         self.num_heads = num_heads
-        self.channel_in = in_dim
+        self.in_channels = in_channels
         self.spatial_range = spatial_range
         self.kv_stride = kv_stride
         self.q_stride = q_stride
         self.attention_type = [bool(int(_)) for _ in attention_type]
-        self.qk_embed_dim = in_dim // num_heads
+        self.qk_embed_dim = in_channels // num_heads
         out_c = self.qk_embed_dim * num_heads
 
         if self.attention_type[0] or self.attention_type[1]:
             self.query_conv = nn.Conv2d(
-                in_channels=in_dim,
+                in_channels=in_channels,
                 out_channels=out_c,
                 kernel_size=1,
                 bias=False)
@@ -67,15 +68,15 @@ class GeneralizedAttention(nn.Module):
 
         if self.attention_type[0] or self.attention_type[2]:
             self.key_conv = nn.Conv2d(
-                in_channels=in_dim,
+                in_channels=in_channels,
                 out_channels=out_c,
                 kernel_size=1,
                 bias=False)
             self.key_conv.kaiming_init = True
 
-        self.v_dim = in_dim // num_heads
+        self.v_dim = in_channels // num_heads
         self.value_conv = nn.Conv2d(
-            in_channels=in_dim,
+            in_channels=in_channels,
             out_channels=self.v_dim * num_heads,
             kernel_size=1,
             bias=False)
@@ -102,7 +103,7 @@ class GeneralizedAttention(nn.Module):
 
         self.proj_conv = nn.Conv2d(
             in_channels=self.v_dim * num_heads,
-            out_channels=in_dim,
+            out_channels=in_channels,
             kernel_size=1,
             bias=True)
         self.proj_conv.kaiming_init = True
@@ -110,9 +111,9 @@ class GeneralizedAttention(nn.Module):
 
         if self.spatial_range >= 0:
             # only works when non local is after 3*3 conv
-            if in_dim == 256:
+            if in_channels == 256:
                 max_len = 84
-            elif in_dim == 512:
+            elif in_channels == 512:
                 max_len = 42
 
             max_len_kv = int((max_len - 1.0) / self.kv_stride + 1)

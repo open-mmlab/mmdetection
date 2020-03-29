@@ -4,8 +4,7 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.ops import (ContextBlock, GeneralizedAttention, build_conv_layer,
-                       build_norm_layer)
+from mmdet.ops import build_conv_layer, build_norm_layer, build_plugin_layer
 from mmdet.utils import get_root_logger
 from ..registry import BACKBONES
 from ..utils import ResLayer
@@ -25,12 +24,10 @@ class BasicBlock(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 gcb=None,
-                 gen_attention=None):
+                 plugin=None):
         super(BasicBlock, self).__init__()
         assert dcn is None, 'Not implemented yet.'
-        assert gen_attention is None, 'Not implemented yet.'
-        assert gcb is None, 'Not implemented yet.'
+        assert plugin is None, 'Not implemented yet.'
 
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
@@ -96,8 +93,7 @@ class Bottleneck(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 gcb=None,
-                 gen_attention=None):
+                 plugin=None):
         """Bottleneck block for ResNet.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
@@ -105,8 +101,9 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
         assert dcn is None or isinstance(dcn, dict)
-        assert gcb is None or isinstance(gcb, dict)
-        assert gen_attention is None or isinstance(gen_attention, dict)
+        assert plugin is None or isinstance(plugin, dict)
+        if plugin is not None:
+            assert all(p in ['conv1', 'conv2', 'conv3'] for p in plugin)
 
         self.inplanes = inplanes
         self.planes = planes
@@ -118,10 +115,12 @@ class Bottleneck(nn.Module):
         self.norm_cfg = norm_cfg
         self.dcn = dcn
         self.with_dcn = dcn is not None
-        self.gcb = gcb
-        self.with_gcb = gcb is not None
-        self.gen_attention = gen_attention
-        self.with_gen_attention = gen_attention is not None
+        self.conv1_plugin = plugin.get('conv1',
+                                       []) if plugin is not None else []
+        self.conv2_plugin = plugin.get('conv2',
+                                       []) if plugin is not None else []
+        self.conv3_plugin = plugin.get('conv3',
+                                       []) if plugin is not None else []
 
         if self.style == 'pytorch':
             self.conv1_stride = 1
@@ -180,14 +179,25 @@ class Bottleneck(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
 
-        if self.with_gcb:
-            gcb_inplanes = planes * self.expansion
-            self.context_block = ContextBlock(inplanes=gcb_inplanes, **gcb)
+        self.conv1_plugin_names = self.make_plugin(planes, self.conv1_plugin)
+        self.conv2_plugin_names = self.make_plugin(planes, self.conv2_plugin)
+        self.conv3_plugin_names = self.make_plugin(planes * self.expansion,
+                                                   self.conv3_plugin)
 
-        # gen_attention
-        if self.with_gen_attention:
-            self.gen_attention_block = GeneralizedAttention(
-                planes, **gen_attention)
+    def make_plugin(self, in_channels, plugin):
+        assert isinstance(plugin, list)
+        plugin_names = []
+        for plugin in plugin:
+            name, layer = build_plugin_layer(plugin, in_channels=in_channels)
+            self.add_module(name, layer)
+            plugin_names.append(name)
+        return plugin_names
+
+    def forward_plugin(self, x, plugin_names):
+        out = x
+        for name in plugin_names:
+            out = getattr(self, name)(x)
+        return out
 
     @property
     def norm1(self):
@@ -210,18 +220,18 @@ class Bottleneck(nn.Module):
             out = self.norm1(out)
             out = self.relu(out)
 
+            out = self.forward_plugin(out, self.conv1_plugin_names)
+
             out = self.conv2(out)
             out = self.norm2(out)
             out = self.relu(out)
 
-            if self.with_gen_attention:
-                out = self.gen_attention_block(out)
+            out = self.forward_plugin(out, self.conv2_plugin_names)
 
             out = self.conv3(out)
             out = self.norm3(out)
 
-            if self.with_gcb:
-                out = self.context_block(out)
+            out = self.forward_plugin(out, self.conv3_plugin_names)
 
             if self.downsample is not None:
                 identity = self.downsample(x)
@@ -308,10 +318,8 @@ class ResNet(nn.Module):
                  norm_eval=True,
                  dcn=None,
                  stage_with_dcn=(False, False, False, False),
-                 gcb=None,
-                 stage_with_gcb=(False, False, False, False),
-                 gen_attention=None,
-                 stage_with_gen_attention=((), (), (), ()),
+                 plugin=None,
+                 stage_with_plugin=(False, False, False, False),
                  with_cp=False,
                  zero_init_residual=True):
         super(ResNet, self).__init__()
@@ -338,11 +346,10 @@ class ResNet(nn.Module):
         self.stage_with_dcn = stage_with_dcn
         if dcn is not None:
             assert len(stage_with_dcn) == num_stages
-        self.gen_attention = gen_attention
-        self.gcb = gcb
-        self.stage_with_gcb = stage_with_gcb
-        if gcb is not None:
-            assert len(stage_with_gcb) == num_stages
+        self.plugin = plugin
+        self.stage_with_plugin = stage_with_plugin
+        if plugin is not None:
+            assert len(stage_with_plugin) == num_stages
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
@@ -355,7 +362,7 @@ class ResNet(nn.Module):
             stride = strides[i]
             dilation = dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
-            gcb = self.gcb if self.stage_with_gcb[i] else None
+            plugin = self.plugin if self.stage_with_plugin[i] else None
             planes = base_channels * 2**i
             res_layer = self.make_res_layer(
                 block=self.block,
@@ -370,9 +377,7 @@ class ResNet(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
-                gcb=gcb,
-                gen_attention=gen_attention,
-                gen_attention_blocks=stage_with_gen_attention[i])
+                plugin=plugin)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)

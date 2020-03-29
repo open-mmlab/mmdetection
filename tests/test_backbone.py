@@ -57,14 +57,20 @@ def test_resnet_basic_block():
 
     with pytest.raises(AssertionError):
         # Not implemented yet.
-        gcb = dict(ratio=1. / 4., )
-        BasicBlock(64, 64, gcb=gcb)
+        plugin = dict(conv3=[dict(type='ContextBlock', ratio=1. / 4)])
+        BasicBlock(64, 64, plugin=plugin)
 
     with pytest.raises(AssertionError):
         # Not implemented yet
-        gen_attention = dict(
-            spatial_range=-1, num_heads=8, attention_type='0010', kv_stride=2)
-        BasicBlock(64, 64, gen_attention=gen_attention)
+        plugin = dict(conv2=[
+            dict(
+                type='GeneralizedAttention',
+                spatial_range=-1,
+                num_heads=8,
+                attention_type='0010',
+                kv_stride=2),
+        ])
+        BasicBlock(64, 64, plugin=plugin)
 
     block = BasicBlock(64, 64)
     assert block.conv1.in_channels == 64
@@ -83,6 +89,14 @@ def test_resnet_bottleneck():
     with pytest.raises(AssertionError):
         # style must be in ['pytorch', 'caffe']
         Bottleneck(64, 64, style='tensorflow')
+
+    with pytest.raises(AssertionError):
+        plugin = dict(conv4=[dict(type='ContextBlock', ratio=1. / 4)])
+        Bottleneck(64, 16, plugin=plugin)
+
+    with pytest.raises(KeyError):
+        plugin = dict(conv3=[dict(type='WrongPlugin')])
+        Bottleneck(64, 16, plugin=plugin)
 
     block = Bottleneck(64, 16, with_cp=True)
     assert block.with_cp
@@ -108,17 +122,39 @@ def test_resnet_bottleneck():
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
-    gcb = dict(ratio=1. / 4., )
-    block = Bottleneck(64, 16, gcb=gcb)
-    assert hasattr(block, 'context_block')
+    plugin = dict(conv3=[dict(type='ContextBlock', ratio=1. / 4)])
+    block = Bottleneck(64, 16, plugin=plugin)
+    assert block.context_block.in_channels == 64
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
-    gen_attention = dict(
-        spatial_range=-1, num_heads=8, attention_type='0010', kv_stride=2)
-    block = Bottleneck(64, 16, gen_attention=gen_attention)
-    assert hasattr(block, 'gen_attention')
+    plugin = dict(conv2=[
+        dict(
+            type='GeneralizedAttention',
+            spatial_range=-1,
+            num_heads=8,
+            attention_type='0010',
+            kv_stride=2),
+    ])
+    block = Bottleneck(64, 16, plugin=plugin)
+    assert block.gen_attention_block.in_channels == 16
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
+    plugin = dict(conv2=[
+        dict(
+            type='GeneralizedAttention',
+            spatial_range=-1,
+            num_heads=8,
+            attention_type='0010',
+            kv_stride=2),
+        dict(type='NonLocal2D')
+    ])
+    block = Bottleneck(64, 16, plugin=plugin)
+    assert block.gen_attention_block.in_channels == 16
+    assert block.nonlocal_block.in_channels == 16
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
@@ -185,9 +221,9 @@ def test_resnet_backbone():
         ResNet(50, dcn=dcn, stage_with_dcn=(True, ))
 
     with pytest.raises(AssertionError):
-        # len(stage_with_gcb) == num_stages
-        gcb = dict(ratio=1. / 4., )
-        ResNet(50, gcb=gcb, stage_with_gcb=(True, ))
+        # len(stage_with_plugin) == num_stages
+        plugin = dict(conv3=[dict(type='ContextBlock', ratio=1. / 4)])
+        ResNet(50, plugin=plugin, stage_with_plugin=(True, ))
 
     with pytest.raises(AssertionError):
         # In ResNet: 1 <= num_stages <= 4

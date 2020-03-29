@@ -56,8 +56,6 @@ class ResLayer(nn.Sequential):
             ])
             downsample = nn.Sequential(*downsample)
 
-        gen_attention = kwargs.pop('gen_attention', None)
-        gen_attention_blocks = kwargs.pop('gen_attention_blocks', tuple())
         layers = []
         layers.append(
             block(
@@ -67,8 +65,6 @@ class ResLayer(nn.Sequential):
                 downsample=downsample,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
-                gen_attention=gen_attention
-                if 0 in gen_attention_blocks else None,
                 **kwargs))
         inplanes = planes * block.expansion
         for i in range(1, num_blocks):
@@ -79,7 +75,5 @@ class ResLayer(nn.Sequential):
                     stride=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
-                    gen_attention=gen_attention if
-                    (i in gen_attention_blocks) else None,
                     **kwargs))
         super(ResLayer, self).__init__(*layers)
