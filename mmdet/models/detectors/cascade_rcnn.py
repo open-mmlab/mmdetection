@@ -419,9 +419,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         aug_scores = []
         for x, img_meta in zip(self.extract_feats(imgs), img_metas):
             # only one image in the batch
-            img_shape = img_metas[0]['img_shape']
-            scale_factor = img_metas[0]['scale_factor']
-            flip = img_metas[0]['flip']
+            img_shape = img_meta[0]['img_shape']
+            scale_factor = img_meta[0]['scale_factor']
+            flip = img_meta[0]['flip']
 
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
                                      scale_factor, flip)
@@ -444,7 +444,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 if i < self.num_stages - 1:
                     bbox_label = cls_score.argmax(dim=1)
                     rois = bbox_head.regress_by_class(rois, bbox_label,
-                                                      bbox_pred, img_metas[0])
+                                                      bbox_pred, img_meta[0])
 
             cls_score = sum(ms_scores) / float(len(ms_scores))
             bboxes, scores = self.bbox_head[-1].get_det_bboxes(
@@ -478,9 +478,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 aug_masks = []
                 aug_img_metas = []
                 for x, img_meta in zip(self.extract_feats(imgs), img_metas):
-                    img_shape = img_metas[0]['img_shape']
-                    scale_factor = img_metas[0]['scale_factor']
-                    flip = img_metas[0]['flip']
+                    img_shape = img_meta[0]['img_shape']
+                    scale_factor = img_meta[0]['scale_factor']
+                    flip = img_meta[0]['flip']
                     _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
                                            scale_factor, flip)
                     mask_rois = bbox2roi([_bboxes])

@@ -38,7 +38,7 @@ class RPNTestMixin(object):
         imgs_per_gpu = len(img_metas[0])
         aug_proposals = [[] for _ in range(imgs_per_gpu)]
         for x, img_meta in zip(feats, img_metas):
-            proposal_list = self.simple_test_rpn(x, img_metas, rpn_test_cfg)
+            proposal_list = self.simple_test_rpn(x, img_meta, rpn_test_cfg)
             for i, proposals in enumerate(proposal_list):
                 aug_proposals[i].append(proposals)
         # reorganize the order of 'img_metas' to match the dimensions
@@ -124,9 +124,9 @@ class BBoxTestMixin(object):
         aug_scores = []
         for x, img_meta in zip(feats, img_metas):
             # only one image in the batch
-            img_shape = img_metas[0]['img_shape']
-            scale_factor = img_metas[0]['scale_factor']
-            flip = img_metas[0]['flip']
+            img_shape = img_meta[0]['img_shape']
+            scale_factor = img_meta[0]['scale_factor']
+            flip = img_meta[0]['flip']
             # TODO more flexible
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
                                      scale_factor, flip)
@@ -237,9 +237,9 @@ class MaskTestMixin(object):
         else:
             aug_masks = []
             for x, img_meta in zip(feats, img_metas):
-                img_shape = img_metas[0]['img_shape']
-                scale_factor = img_metas[0]['scale_factor']
-                flip = img_metas[0]['flip']
+                img_shape = img_meta[0]['img_shape']
+                scale_factor = img_meta[0]['scale_factor']
+                flip = img_meta[0]['flip']
                 _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
                                        scale_factor, flip)
                 mask_rois = bbox2roi([_bboxes])
