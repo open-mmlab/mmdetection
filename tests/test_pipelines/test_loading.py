@@ -24,7 +24,6 @@ class TestLoading(object):
         assert results['img_shape'] == (288, 512, 3)
         assert results['ori_shape'] == (288, 512, 3)
         assert results['pad_shape'] == (288, 512, 3)
-        assert results['flip'] is False
         assert results['scale_factor'] == 1.0
         np.testing.assert_equal(results['img_norm_cfg']['mean'],
                                 np.zeros(3, dtype=np.float32))
@@ -74,7 +73,6 @@ class TestLoading(object):
         assert results['img_shape'] == (288, 512, 3, 2)
         assert results['ori_shape'] == (288, 512, 3, 2)
         assert results['pad_shape'] == (288, 512, 3, 2)
-        assert results['flip'] is False
         assert results['scale_factor'] == 1.0
         assert repr(transform) == transform.__class__.__name__ + \
             " (to_float32=False, color_type='unchanged')"
