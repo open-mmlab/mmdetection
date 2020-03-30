@@ -41,7 +41,7 @@ class DoubleHeadRoIHead(StandardRoIHead):
         return outs
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
-                            img_meta):
+                            img_metas):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         # TODO: a more flexible way to decide which feature maps to use
         bbox_cls_feats = self.bbox_roi_extractor(
@@ -61,7 +61,7 @@ class DoubleHeadRoIHead(StandardRoIHead):
 
     def simple_test_bboxes(self,
                            x,
-                           img_meta,
+                           img_metas,
                            proposals,
                            rcnn_test_cfg,
                            rescale=False):
@@ -77,8 +77,8 @@ class DoubleHeadRoIHead(StandardRoIHead):
             bbox_cls_feats = self.shared_head(bbox_cls_feats)
             bbox_reg_feats = self.shared_head(bbox_reg_feats)
         cls_score, bbox_pred = self.bbox_head(bbox_cls_feats, bbox_reg_feats)
-        img_shape = img_meta[0]['img_shape']
-        scale_factor = img_meta[0]['scale_factor']
+        img_shape = img_metas[0]['img_shape']
+        scale_factor = img_metas[0]['scale_factor']
         det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
             rois,
             cls_score,

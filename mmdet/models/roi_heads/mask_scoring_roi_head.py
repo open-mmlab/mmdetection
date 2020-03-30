@@ -23,7 +23,7 @@ class MaskScoringRoIHead(StandardRoIHead):
         self.mask_iou_head.init_weights()
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
-                            img_meta):
+                            img_metas):
         mask_feats = self.extract_mask_feats(x, sampling_results, bbox_feats)
 
         if mask_feats.shape[0] > 0:
@@ -52,13 +52,13 @@ class MaskScoringRoIHead(StandardRoIHead):
 
     def simple_test_mask(self,
                          x,
-                         img_meta,
+                         img_metas,
                          det_bboxes,
                          det_labels,
                          rescale=False):
         # image shape of the first image in the batch (only one)
-        ori_shape = img_meta[0]['ori_shape']
-        scale_factor = img_meta[0]['scale_factor']
+        ori_shape = img_metas[0]['ori_shape']
+        scale_factor = img_metas[0]['scale_factor']
 
         if det_bboxes.shape[0] == 0:
             segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]

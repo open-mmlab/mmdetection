@@ -92,7 +92,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def forward_train(self,
                       x,
-                      img_meta,
+                      img_metas,
                       proposal_list,
                       gt_bboxes,
                       gt_labels,
@@ -102,8 +102,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         Args:
             x (list[Tensor]): list of multi-level img features.
 
-            img_meta (list[dict]): list of image info dict where each dict has:
-                'img_shape', 'scale_factor', 'flip', and may also contain
+            img_metas (list[dict]): list of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
@@ -126,7 +126,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         """
         # assign gts and sample proposals
         if self.with_bbox or self.with_mask:
-            num_imgs = len(img_meta)
+            num_imgs = len(img_metas)
             if gt_bboxes_ignore is None:
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
             sampling_results = []
@@ -146,21 +146,21 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         # bbox head forward and loss
         if self.with_bbox:
             loss_bbox, bbox_feats = self._bbox_forward_train(
-                x, sampling_results, gt_bboxes, gt_labels, img_meta)
+                x, sampling_results, gt_bboxes, gt_labels, img_metas)
             losses.update(loss_bbox)
 
         # mask head forward and loss
         if self.with_mask:
             loss_mask = self._mask_forward_train(x, sampling_results,
                                                  bbox_feats, gt_masks,
-                                                 img_meta)
+                                                 img_metas)
             if loss_mask is not None:
                 losses.update(loss_mask)
 
         return losses
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
-                            img_meta):
+                            img_metas):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
@@ -175,7 +175,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return loss_bbox, bbox_feats
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
-                            img_meta):
+                            img_metas):
         mask_feats = self.extract_mask_feats(x, sampling_results, bbox_feats)
 
         if mask_feats.shape[0] > 0:
@@ -218,14 +218,14 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     async def async_simple_test(self,
                                 x,
                                 proposal_list,
-                                img_meta,
+                                img_metas,
                                 proposals=None,
                                 rescale=False):
         """Async test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
 
         det_bboxes, det_labels = await self.async_test_bboxes(
-            x, img_meta, proposal_list, self.test_cfg, rescale=rescale)
+            x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
         bbox_results = bbox2result(det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
         if not self.with_mask:
@@ -233,7 +233,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         else:
             segm_results = await self.async_test_mask(
                 x,
-                img_meta,
+                img_metas,
                 det_bboxes,
                 det_labels,
                 rescale=rescale,
@@ -243,14 +243,14 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def simple_test(self,
                     x,
                     proposal_list,
-                    img_meta,
+                    img_metas,
                     proposals=None,
                     rescale=False):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
 
         det_bboxes, det_labels = self.simple_test_bboxes(
-            x, img_meta, proposal_list, self.test_cfg, rescale=rescale)
+            x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
         bbox_results = bbox2result(det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
 
@@ -258,7 +258,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             return bbox_results
         else:
             segm_results = self.simple_test_mask(
-                x, img_meta, det_bboxes, det_labels, rescale=rescale)
+                x, img_metas, det_bboxes, det_labels, rescale=rescale)
             return bbox_results, segm_results
 
     def aug_test(self, x, proposal_list, img_metas, rescale=False):

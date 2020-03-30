@@ -199,7 +199,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
     def forward_train(self,
                       x,
-                      img_meta,
+                      img_metas,
                       proposal_list,
                       gt_bboxes,
                       gt_labels,
@@ -225,7 +225,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             sampling_results = []
             bbox_assigner = self.bbox_assigner[i]
             bbox_sampler = self.bbox_sampler[i]
-            num_imgs = len(img_meta)
+            num_imgs = len(img_metas)
             if gt_bboxes_ignore is None:
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
 
@@ -261,7 +261,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     pos_is_gts = [res.pos_is_gt for res in sampling_results]
                     with torch.no_grad():
                         proposal_list = self.bbox_head[i].refine_bboxes(
-                            rois, roi_labels, bbox_pred, pos_is_gts, img_meta)
+                            rois, roi_labels, bbox_pred, pos_is_gts, img_metas)
                         # re-assign and sample 512 RoIs from 512 RoIs
                         sampling_results = []
                         for j in range(num_imgs):
@@ -287,19 +287,19 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                 pos_is_gts = [res.pos_is_gt for res in sampling_results]
                 with torch.no_grad():
                     proposal_list = self.bbox_head[i].refine_bboxes(
-                        rois, roi_labels, bbox_pred, pos_is_gts, img_meta)
+                        rois, roi_labels, bbox_pred, pos_is_gts, img_metas)
 
         return losses
 
-    def simple_test(self, x, proposal_list, img_meta, rescale=False):
+    def simple_test(self, x, proposal_list, img_metas, rescale=False):
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)
         else:
             semantic_feat = None
 
-        img_shape = img_meta[0]['img_shape']
-        ori_shape = img_meta[0]['ori_shape']
-        scale_factor = img_meta[0]['scale_factor']
+        img_shape = img_metas[0]['img_shape']
+        ori_shape = img_metas[0]['ori_shape']
+        scale_factor = img_metas[0]['scale_factor']
 
         # "ms" in variable names means multi-stage
         ms_bbox_result = {}
@@ -317,7 +317,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             if i < self.num_stages - 1:
                 bbox_label = cls_score.argmax(dim=1)
                 rois = bbox_head.regress_by_class(rois, bbox_label, bbox_pred,
-                                                  img_meta[0])
+                                                  img_metas[0])
 
         cls_score = sum(ms_scores) / float(len(ms_scores))
         det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
@@ -359,7 +359,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                         mask_pred = mask_head(mask_feats)
                     aug_masks.append(mask_pred.sigmoid().cpu().numpy())
                 merged_masks = merge_aug_masks(aug_masks,
-                                               [img_meta] * self.num_stages,
+                                               [img_metas] * self.num_stages,
                                                self.test_cfg)
                 segm_result = self.mask_head[-1].get_seg_masks(
                     merged_masks, _bboxes, det_labels, rcnn_test_cfg,

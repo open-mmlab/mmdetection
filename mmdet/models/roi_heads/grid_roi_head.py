@@ -89,7 +89,7 @@ class GridRoIHead(StandardRoIHead):
         return outs
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
-                            img_meta):
+                            img_metas):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
@@ -103,7 +103,7 @@ class GridRoIHead(StandardRoIHead):
         loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
 
         # Grid head forward and loss
-        sampling_results = self._random_jitter(sampling_results, img_meta)
+        sampling_results = self._random_jitter(sampling_results, img_metas)
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
         grid_feats = self.grid_roi_extractor(
             x[:self.grid_roi_extractor.num_inputs], pos_rois)
@@ -129,14 +129,14 @@ class GridRoIHead(StandardRoIHead):
     def simple_test(self,
                     x,
                     proposal_list,
-                    img_meta,
+                    img_metas,
                     proposals=None,
                     rescale=False):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
 
         det_bboxes, det_labels = self.simple_test_bboxes(
-            x, img_meta, proposal_list, self.test_cfg, rescale=False)
+            x, img_metas, proposal_list, self.test_cfg, rescale=False)
         # pack rois into bboxes
         grid_rois = bbox2roi([det_bboxes[:, :4]])
         grid_feats = self.grid_roi_extractor(
@@ -146,9 +146,9 @@ class GridRoIHead(StandardRoIHead):
             grid_pred = self.grid_head(grid_feats)
             det_bboxes = self.grid_head.get_bboxes(det_bboxes,
                                                    grid_pred['fused'],
-                                                   img_meta)
+                                                   img_metas)
             if rescale:
-                scale_factor = img_meta[0]['scale_factor']
+                scale_factor = img_metas[0]['scale_factor']
                 if not isinstance(scale_factor, (float, torch.Tensor)):
                     scale_factor = det_bboxes.new_tensor(scale_factor)
                 det_bboxes[:, :4] /= scale_factor
@@ -162,5 +162,5 @@ class GridRoIHead(StandardRoIHead):
             return bbox_results
         else:
             segm_results = self.simple_test_mask(
-                x, img_meta, det_bboxes, det_labels, rescale=rescale)
+                x, img_metas, det_bboxes, det_labels, rescale=rescale)
             return bbox_results, segm_results

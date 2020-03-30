@@ -18,7 +18,7 @@ class BBoxTestMixin(object):
 
         async def async_test_bboxes(self,
                                     x,
-                                    img_meta,
+                                    img_metas,
                                     proposals,
                                     rcnn_test_cfg,
                                     rescale=False,
@@ -37,8 +37,8 @@ class BBoxTestMixin(object):
                     sleep_interval=sleep_interval):
                 cls_score, bbox_pred = self.bbox_head(roi_feats)
 
-            img_shape = img_meta[0]['img_shape']
-            scale_factor = img_meta[0]['scale_factor']
+            img_shape = img_metas[0]['img_shape']
+            scale_factor = img_metas[0]['scale_factor']
             det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
                 rois,
                 cls_score,
@@ -51,7 +51,7 @@ class BBoxTestMixin(object):
 
     def simple_test_bboxes(self,
                            x,
-                           img_meta,
+                           img_metas,
                            proposals,
                            rcnn_test_cfg,
                            rescale=False):
@@ -62,8 +62,8 @@ class BBoxTestMixin(object):
         if self.with_shared_head:
             roi_feats = self.shared_head(roi_feats)
         cls_score, bbox_pred = self.bbox_head(roi_feats)
-        img_shape = img_meta[0]['img_shape']
-        scale_factor = img_meta[0]['scale_factor']
+        img_shape = img_metas[0]['img_shape']
+        scale_factor = img_metas[0]['scale_factor']
         det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
             rois,
             cls_score,
@@ -118,14 +118,14 @@ class MaskTestMixin(object):
 
         async def async_test_mask(self,
                                   x,
-                                  img_meta,
+                                  img_metas,
                                   det_bboxes,
                                   det_labels,
                                   rescale=False,
                                   mask_test_cfg=None):
             # image shape of the first image in the batch (only one)
-            ori_shape = img_meta[0]['ori_shape']
-            scale_factor = img_meta[0]['scale_factor']
+            ori_shape = img_metas[0]['ori_shape']
+            scale_factor = img_metas[0]['scale_factor']
             if det_bboxes.shape[0] == 0:
                 segm_result = [[]
                                for _ in range(self.mask_head.num_classes - 1)]
@@ -156,13 +156,13 @@ class MaskTestMixin(object):
 
     def simple_test_mask(self,
                          x,
-                         img_meta,
+                         img_metas,
                          det_bboxes,
                          det_labels,
                          rescale=False):
         # image shape of the first image in the batch (only one)
-        ori_shape = img_meta[0]['ori_shape']
-        scale_factor = img_meta[0]['scale_factor']
+        ori_shape = img_metas[0]['ori_shape']
+        scale_factor = img_metas[0]['scale_factor']
         if det_bboxes.shape[0] == 0:
             segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
         else:
