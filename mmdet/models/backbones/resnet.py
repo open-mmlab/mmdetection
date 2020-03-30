@@ -24,10 +24,10 @@ class BasicBlock(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 plugin=None):
+                 plugins=None):
         super(BasicBlock, self).__init__()
         assert dcn is None, 'Not implemented yet.'
-        assert plugin is None, 'Not implemented yet.'
+        assert plugins is None, 'Not implemented yet.'
 
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
@@ -93,7 +93,7 @@ class Bottleneck(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 plugin=None):
+                 plugins=None):
         """Bottleneck block for ResNet.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
@@ -101,9 +101,9 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
         assert dcn is None or isinstance(dcn, dict)
-        assert plugin is None or isinstance(plugin, dict)
-        if plugin is not None:
-            assert all(p in ['conv1', 'conv2', 'conv3'] for p in plugin)
+        assert plugins is None or isinstance(plugins, dict)
+        if plugins is not None:
+            assert all(p in ['conv1', 'conv2', 'conv3'] for p in plugins)
 
         self.inplanes = inplanes
         self.planes = planes
@@ -115,12 +115,12 @@ class Bottleneck(nn.Module):
         self.norm_cfg = norm_cfg
         self.dcn = dcn
         self.with_dcn = dcn is not None
-        self.conv1_plugin = plugin.get('conv1',
-                                       []) if plugin is not None else []
-        self.conv2_plugin = plugin.get('conv2',
-                                       []) if plugin is not None else []
-        self.conv3_plugin = plugin.get('conv3',
-                                       []) if plugin is not None else []
+        self.conv1_plugins = plugins.get('conv1',
+                                         []) if plugins is not None else []
+        self.conv2_plugins = plugins.get('conv2',
+                                         []) if plugins is not None else []
+        self.conv3_plugins = plugins.get('conv3',
+                                         []) if plugins is not None else []
 
         if self.style == 'pytorch':
             self.conv1_stride = 1
@@ -179,15 +179,23 @@ class Bottleneck(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
 
-        self.conv1_plugin_names = self.make_plugin(planes, self.conv1_plugin)
-        self.conv2_plugin_names = self.make_plugin(planes, self.conv2_plugin)
-        self.conv3_plugin_names = self.make_plugin(planes * self.expansion,
-                                                   self.conv3_plugin)
+        self.conv1_plugin_names = self.make_block_plugins(
+            planes, self.conv1_plugins)
+        self.conv2_plugin_names = self.make_block_plugins(
+            planes, self.conv2_plugins)
+        self.conv3_plugin_names = self.make_block_plugins(
+            planes * self.expansion, self.conv3_plugins)
 
-    def make_plugin(self, in_channels, plugin):
-        assert isinstance(plugin, list)
+    def make_block_plugins(self, in_channels, plugins):
+        """ make plugins for block
+
+        Args:
+            in_channels (int): in_channels of plugin
+            plugins (list[dict]): list of plugins cfg to build
+        """
+        assert isinstance(plugins, list)
         plugin_names = []
-        for plugin in plugin:
+        for plugin in plugins:
             name, layer = build_plugin_layer(plugin, in_channels=in_channels)
             self.add_module(name, layer)
             plugin_names.append(name)
@@ -273,6 +281,7 @@ class ResNet(nn.Module):
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
+        plugins (dict): plugins cfg for each stage
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
@@ -318,8 +327,7 @@ class ResNet(nn.Module):
                  norm_eval=True,
                  dcn=None,
                  stage_with_dcn=(False, False, False, False),
-                 plugin=None,
-                 stage_with_plugin=(False, False, False, False),
+                 plugins=None,
                  with_cp=False,
                  zero_init_residual=True):
         super(ResNet, self).__init__()
@@ -346,10 +354,7 @@ class ResNet(nn.Module):
         self.stage_with_dcn = stage_with_dcn
         if dcn is not None:
             assert len(stage_with_dcn) == num_stages
-        self.plugin = plugin
-        self.stage_with_plugin = stage_with_plugin
-        if plugin is not None:
-            assert len(stage_with_plugin) == num_stages
+        self.plugins = plugins
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
@@ -362,7 +367,8 @@ class ResNet(nn.Module):
             stride = strides[i]
             dilation = dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
-            plugin = self.plugin if self.stage_with_plugin[i] else None
+            stage_plugins = self.make_stage_plugins(
+                plugins, i, num_stages) if plugins is not None else None
             planes = base_channels * 2**i
             res_layer = self.make_res_layer(
                 block=self.block,
@@ -377,7 +383,7 @@ class ResNet(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
-                plugin=plugin)
+                plugins=stage_plugins)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
@@ -387,6 +393,51 @@ class ResNet(nn.Module):
 
         self.feat_dim = self.block.expansion * base_channels * 2**(
             len(self.stage_blocks) - 1)
+
+    def make_stage_plugins(self, plugins, stage_idx, num_stages):
+        """ make plugins for stage.
+
+        An example of plugins format couold be :
+        >>> plugins=dict(
+        ...     conv2=[
+        ...         dict(cfg=dict(type='xxx', arg1='xxx'),
+        ...              stages=(False, True, True, True)),
+        ...     ],
+        ...     conv3=[
+        ...         dict(cfg=dict(type='yyy')),
+        ...         dict(cfg=dict(type='yy2'),
+        ...              stages=(False, False, True, True)),
+        ...     ])
+        if stages is missing, the plugin would be applied to all stages.
+
+        Args:
+            plugins (list[dict]): list of plugins cfg to build.
+            stage_idx (int): index of stage to build
+            num_stages (int): total number of stages
+
+        Return:
+            After whether applied in this stage is determined, the plugins
+            will be packed into this style, suppose stage_idx=2:
+        >>> plugins=dict(conv2=[
+        ...                 dict(type='xxx', arg1='xxx')
+        ...              ]),
+        ...             conv3=[dict(type='yyy'), dict(type='yy2')])
+
+        """
+        plugins = plugins.copy()
+        for conv_stage in plugins:
+            stage_plugins = []
+            for plugin in plugins[conv_stage]:
+                assert isinstance(plugin, dict)
+                assert 'cfg' in plugin.keys()
+                stages = plugin.get('stages', None)
+                if stages is not None:
+                    assert len(stages) == num_stages
+                if stages is None or stages[stage_idx]:
+                    stage_plugins.append(plugin['cfg'])
+            plugins[conv_stage] = stage_plugins
+
+        return plugins
 
     def make_res_layer(self, **kwargs):
         return ResLayer(**kwargs)

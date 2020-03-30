@@ -3,5 +3,8 @@ model = dict(
     backbone=dict(
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=False,
-        plugin=dict(conv3=[dict(type='ContextBlock', ratio=1. / 16)]),
-        stage_with_plugin=(False, True, True, True)))
+        plugins=dict(conv3=[
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 16),
+                stages=(False, True, True, True)),
+        ])))

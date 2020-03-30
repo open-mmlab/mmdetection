@@ -58,7 +58,7 @@ def test_resnet_basic_block():
     with pytest.raises(AssertionError):
         # Not implemented yet.
         plugin = dict(conv3=[dict(type='ContextBlock', ratio=1. / 4)])
-        BasicBlock(64, 64, plugin=plugin)
+        BasicBlock(64, 64, plugins=plugin)
 
     with pytest.raises(AssertionError):
         # Not implemented yet
@@ -70,7 +70,7 @@ def test_resnet_basic_block():
                 attention_type='0010',
                 kv_stride=2),
         ])
-        BasicBlock(64, 64, plugin=plugin)
+        BasicBlock(64, 64, plugins=plugin)
 
     block = BasicBlock(64, 64)
     assert block.conv1.in_channels == 64
@@ -92,11 +92,11 @@ def test_resnet_bottleneck():
 
     with pytest.raises(AssertionError):
         plugin = dict(conv4=[dict(type='ContextBlock', ratio=1. / 4)])
-        Bottleneck(64, 16, plugin=plugin)
+        Bottleneck(64, 16, plugins=plugin)
 
     with pytest.raises(KeyError):
         plugin = dict(conv3=[dict(type='WrongPlugin')])
-        Bottleneck(64, 16, plugin=plugin)
+        Bottleneck(64, 16, plugins=plugin)
 
     block = Bottleneck(64, 16, with_cp=True)
     assert block.with_cp
@@ -123,7 +123,7 @@ def test_resnet_bottleneck():
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
     plugin = dict(conv3=[dict(type='ContextBlock', ratio=1. / 4)])
-    block = Bottleneck(64, 16, plugin=plugin)
+    block = Bottleneck(64, 16, plugins=plugin)
     assert block.context_block.in_channels == 64
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
@@ -137,24 +137,28 @@ def test_resnet_bottleneck():
             attention_type='0010',
             kv_stride=2),
     ])
-    block = Bottleneck(64, 16, plugin=plugin)
+    block = Bottleneck(64, 16, plugins=plugin)
     assert block.gen_attention_block.in_channels == 16
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
-    plugin = dict(conv2=[
-        dict(
-            type='GeneralizedAttention',
-            spatial_range=-1,
-            num_heads=8,
-            attention_type='0010',
-            kv_stride=2),
-        dict(type='NonLocal2D')
-    ])
-    block = Bottleneck(64, 16, plugin=plugin)
+    plugin = dict(
+        conv2=[
+            dict(
+                type='GeneralizedAttention',
+                spatial_range=-1,
+                num_heads=8,
+                attention_type='0010',
+                kv_stride=2),
+            dict(type='NonLocal2D')
+        ],
+        conv3=[dict(type='ContextBlock', ratio=1. / 4)],
+    )
+    block = Bottleneck(64, 16, plugins=plugin)
     assert block.gen_attention_block.in_channels == 16
     assert block.nonlocal_block.in_channels == 16
+    assert block.context_block.in_channels == 64
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
@@ -222,8 +226,11 @@ def test_resnet_backbone():
 
     with pytest.raises(AssertionError):
         # len(stage_with_plugin) == num_stages
-        plugin = dict(conv3=[dict(type='ContextBlock', ratio=1. / 4)])
-        ResNet(50, plugin=plugin, stage_with_plugin=(True, ))
+        plugins = dict(conv3=[
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 16), stages=(False, ))
+        ])
+        ResNet(50, plugins=plugins)
 
     with pytest.raises(AssertionError):
         # In ResNet: 1 <= num_stages <= 4
@@ -347,6 +354,56 @@ def test_resnet_backbone():
     for m in model.modules():
         if is_norm(m):
             assert isinstance(m, GroupNorm)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 224, 224)
+    feat = model(imgs)
+    assert len(feat) == 4
+    assert feat[0].shape == torch.Size([1, 256, 56, 56])
+    assert feat[1].shape == torch.Size([1, 512, 28, 28])
+    assert feat[2].shape == torch.Size([1, 1024, 14, 14])
+    assert feat[3].shape == torch.Size([1, 2048, 7, 7])
+
+    plugins = dict(
+        conv2=[
+            dict(
+                cfg=dict(
+                    type='GeneralizedAttention',
+                    spatial_range=-1,
+                    num_heads=8,
+                    attention_type='0010',
+                    kv_stride=2),
+                stages=(False, True, True, True)),
+            dict(cfg=dict(type='NonLocal2D')),
+        ],
+        conv3=[
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 16),
+                stages=(False, True, True, True))
+        ],
+    )
+    model = ResNet(50, plugins=plugins)
+    for m in model.layer1.modules():
+        if is_block(m):
+            assert m.nonlocal_block.in_channels == 64
+    for m in model.layer2.modules():
+        if is_block(m):
+            assert m.nonlocal_block.in_channels == 128
+            assert m.gen_attention_block.in_channels == 128
+            assert m.context_block.in_channels == 512
+
+    for m in model.layer3.modules():
+        if is_block(m):
+            assert m.nonlocal_block.in_channels == 256
+            assert m.gen_attention_block.in_channels == 256
+            assert m.context_block.in_channels == 1024
+
+    for m in model.layer4.modules():
+        if is_block(m):
+            assert m.nonlocal_block.in_channels == 512
+            assert m.gen_attention_block.in_channels == 512
+            assert m.context_block.in_channels == 2048
     model.init_weights()
     model.train()
 

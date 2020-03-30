@@ -11,6 +11,18 @@ def last_zero_init(m):
 
 
 class ContextBlock(nn.Module):
+    """ContextBlock module in GCNet.
+
+    See 'GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond'
+    (https://arxiv.org/abs/1904.11492) for details.
+
+    Args:
+        in_channels (int): Channels of the input feature map.
+        ratio (float): ratio of channels of transform bottleneck
+        pooling_type (str): pooling method to use in context modeling
+        fusion_types (list[str]|tuple[str]): fusion method  to use in
+            feature fusion
+    """
 
     def __init__(self,
                  in_channels,

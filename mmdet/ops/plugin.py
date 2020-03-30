@@ -12,10 +12,12 @@ plugin_cfg = {
 
 def build_plugin_layer(cfg, *args, **kwargs):
     """ Build plugin layer
+
     Args:
         cfg (None or dict): cfg should contain:
             type (str): identify plugin layer type.
             layer args: args needed to instantiate a plugin layer.
+
     Returns:
         layer (nn.Module): created plugin layer
     """
