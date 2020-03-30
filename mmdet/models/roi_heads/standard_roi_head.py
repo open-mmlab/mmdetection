@@ -73,11 +73,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         outs = ()
         rois = bbox2roi([proposals])
         if self.with_bbox:
-            bbox_feats = self.bbox_roi_extractor(
-                x[:self.bbox_roi_extractor.num_inputs], rois)
-            if self.with_shared_head:
-                bbox_feats = self.shared_head(bbox_feats)
-            cls_score, bbox_pred = self.bbox_head(bbox_feats)
+            cls_score, bbox_pred, _ = self._bbox_forward(x, rois)
             outs = outs + (cls_score, bbox_pred)
         # mask head
         if self.with_mask:
@@ -159,15 +155,19 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         return losses
 
-    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
-                            img_metas):
-        rois = bbox2roi([res.bboxes for res in sampling_results])
+    def _bbox_forward(self, x, rois):
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
         cls_score, bbox_pred = self.bbox_head(bbox_feats)
+        return cls_score, bbox_pred, bbox_feats
+
+    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
+                            img_metas):
+        rois = bbox2roi([res.bboxes for res in sampling_results])
+        cls_score, bbox_pred, bbox_feats = self._bbox_forward(x, rois)
 
         bbox_targets = self.bbox_head.get_target(sampling_results, gt_bboxes,
                                                  gt_labels, self.train_cfg)

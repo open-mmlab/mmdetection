@@ -27,7 +27,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         super(HybridTaskCascadeRoIHead,
               self).__init__(num_stages, stage_loss_weights, **kwargs)
         assert self.with_bbox and self.with_mask
-        assert not self.with_shared_head  # shared head not supported
+        assert not self.with_shared_head  # shared head is not supported
 
         if semantic_head is not None:
             self.semantic_roi_extractor = builder.build_roi_extractor(
@@ -60,7 +60,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         # bbox heads
         rois = bbox2roi([proposals])
         for i in range(self.num_stages):
-            cls_score, bbox_pred = self._bbox_forward_test(
+            cls_score, bbox_pred = self._bbox_forward(
                 i, x, rois, semantic_feat=semantic_feat)
             outs = outs + (cls_score, bbox_pred)
         # mask heads
@@ -91,22 +91,10 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                             gt_labels,
                             rcnn_train_cfg,
                             semantic_feat=None):
-        rois = bbox2roi([res.bboxes for res in sampling_results])
-        bbox_roi_extractor = self.bbox_roi_extractor[stage]
         bbox_head = self.bbox_head[stage]
-        bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
-                                        rois)
-        # semantic feature fusion
-        # element-wise sum for original features and pooled semantic features
-        if self.with_semantic and 'bbox' in self.semantic_fusion:
-            bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
-                                                             rois)
-            if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
-                bbox_semantic_feat = F.adaptive_avg_pool2d(
-                    bbox_semantic_feat, bbox_feats.shape[-2:])
-            bbox_feats += bbox_semantic_feat
-
-        cls_score, bbox_pred = bbox_head(bbox_feats)
+        rois = bbox2roi([res.bboxes for res in sampling_results])
+        cls_score, bbox_pred = cls_score, bbox_pred = self._bbox_forward(
+            stage, x, rois, semantic_feat=semantic_feat)
 
         bbox_targets = bbox_head.get_target(sampling_results, gt_bboxes,
                                             gt_labels, rcnn_train_cfg)
@@ -154,7 +142,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         loss_mask = mask_head.loss(mask_pred, mask_targets, pos_labels)
         return loss_mask
 
-    def _bbox_forward_test(self, stage, x, rois, semantic_feat=None):
+    def _bbox_forward(self, stage, x, rois, semantic_feat=None):
         bbox_roi_extractor = self.bbox_roi_extractor[stage]
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(
@@ -310,7 +298,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         rois = bbox2roi(proposal_list)
         for i in range(self.num_stages):
             bbox_head = self.bbox_head[i]
-            cls_score, bbox_pred = self._bbox_forward_test(
+            cls_score, bbox_pred = self._bbox_forward(
                 i, x, rois, semantic_feat=semantic_feat)
             ms_scores.append(cls_score)
 
@@ -407,7 +395,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             rois = bbox2roi([proposals])
             for i in range(self.num_stages):
                 bbox_head = self.bbox_head[i]
-                cls_score, bbox_pred = self._bbox_forward_test(
+                cls_score, bbox_pred = self._bbox_forward(
                     i, x, rois, semantic_feat=semantic)
                 ms_scores.append(cls_score)
 

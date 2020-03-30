@@ -57,11 +57,7 @@ class BBoxTestMixin(object):
                            rescale=False):
         """Test only det bboxes without augmentation."""
         rois = bbox2roi(proposals)
-        roi_feats = self.bbox_roi_extractor(
-            x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
-        if self.with_shared_head:
-            roi_feats = self.shared_head(roi_feats)
-        cls_score, bbox_pred = self.bbox_head(roi_feats)
+        cls_score, bbox_pred, _ = self._bbox_forward(x, rois)
         img_shape = img_metas[0]['img_shape']
         scale_factor = img_metas[0]['scale_factor']
         det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
@@ -87,11 +83,7 @@ class BBoxTestMixin(object):
                                      scale_factor, flip)
             rois = bbox2roi([proposals])
             # recompute feature maps to save GPU memory
-            roi_feats = self.bbox_roi_extractor(
-                x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
-            if self.with_shared_head:
-                roi_feats = self.shared_head(roi_feats)
-            cls_score, bbox_pred = self.bbox_head(roi_feats)
+            cls_score, bbox_pred, _ = self._bbox_forward(x, rois)
             bboxes, scores = self.bbox_head.get_det_bboxes(
                 rois,
                 cls_score,

@@ -61,11 +61,7 @@ class GridRoIHead(StandardRoIHead):
         outs = ()
         rois = bbox2roi([proposals])
         if self.with_bbox:
-            bbox_feats = self.bbox_roi_extractor(
-                x[:self.bbox_roi_extractor.num_inputs], rois)
-            if self.with_shared_head:
-                bbox_feats = self.shared_head(bbox_feats)
-            cls_score, bbox_pred = self.bbox_head(bbox_feats)
+            cls_score, bbox_pred, _ = self._bbox_forward(x, rois)
             outs = outs + (cls_score, bbox_pred)
 
         # grid head
@@ -90,17 +86,8 @@ class GridRoIHead(StandardRoIHead):
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
-        rois = bbox2roi([res.bboxes for res in sampling_results])
-        # TODO: a more flexible way to decide which feature maps to use
-        bbox_feats = self.bbox_roi_extractor(
-            x[:self.bbox_roi_extractor.num_inputs], rois)
-        if self.with_shared_head:
-            bbox_feats = self.shared_head(bbox_feats)
-        cls_score, bbox_pred = self.bbox_head(bbox_feats)
-
-        bbox_targets = self.bbox_head.get_target(sampling_results, gt_bboxes,
-                                                 gt_labels, self.train_cfg)
-        loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
+        loss_bbox, bbox_feats = super(GridRoIHead, self)._bbox_forward(
+            x, sampling_results, gt_bboxes, gt_labels, img_metas)
 
         # Grid head forward and loss
         sampling_results = self._random_jitter(sampling_results, img_metas)
