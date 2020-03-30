@@ -394,18 +394,8 @@ class RandomCrop(object):
 
             # filter and crop the masks
             if 'gt_masks' in results:
-                valid_gt_masks = []
-                for i in np.where(valid_inds)[0]:
-                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2,
-                                                     crop_x1:crop_x2]
-                    valid_gt_masks.append(gt_mask)
-
-                if valid_gt_masks:
-                    results['gt_masks'] = np.stack(valid_gt_masks)
-                else:
-                    results['gt_masks'] = np.empty(
-                        (0, ) + results['img_shape'], dtype=np.uint8)
-
+                results['gt_masks'] = results['gt_masks'].crop(
+                    np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
         return results
 
     def __repr__(self):
@@ -576,18 +566,8 @@ class Expand(object):
         results['gt_bboxes'] = boxes
 
         if 'gt_masks' in results:
-            expand_gt_masks = []
-            for mask in results['gt_masks']:
-                expand_mask = np.full((int(h * ratio), int(w * ratio)),
-                                      0).astype(mask.dtype)
-                expand_mask[top:top + h, left:left + w] = mask
-                expand_gt_masks.append(expand_mask)
-
-            if expand_gt_masks:
-                results['gt_masks'] = np.stack(expand_gt_masks)
-            else:
-                results['gt_masks'] = np.empty(
-                    (0, ) + results['img_shape'], dtype=np.uint8)
+            results['gt_masks'] = results['gt_masks'].expand(
+                int(h * ratio), int(w * ratio), top, left)
 
         # not tested
         if 'gt_semantic_seg' in results:
@@ -679,15 +659,8 @@ class MinIoURandomCrop(object):
                     results['gt_labels'] = labels
 
                     if 'gt_masks' in results:
-                        valid_masks = [
-                            results['gt_masks'][i] for i in range(len(mask))
-                            if mask[i]
-                        ]
-                        # here the valid_masks is not empty
-                        results['gt_masks'] = np.stack([
-                            gt_mask[patch[1]:patch[3], patch[0]:patch[2]]
-                            for gt_mask in valid_masks
-                        ])
+                        results['gt_masks'] = results['gt_masks'][
+                            mask.nonzero()[0]].crop(patch)
 
                 # adjust the img no matter whether the gt is empty before crop
                 img = img[patch[1]:patch[3], patch[0]:patch[2]]
@@ -842,6 +815,11 @@ class Albu(object):
             if self.filter_lost_elements:
                 results['idx_mapper'] = np.arange(len(results['bboxes']))
 
+        # TODO: Support mask structure in albu
+        if 'masks' in results:
+            ori_masks = results['masks']
+            results['masks'] = results['masks'].masks
+
         results = self.aug(**results)
 
         if 'bboxes' in results:
@@ -859,6 +837,9 @@ class Albu(object):
                 if 'masks' in results:
                     results['masks'] = np.array(
                         [results['masks'][i] for i in results['idx_mapper']])
+                    results['masks'] = ori_masks.__class__(
+                        results['masks'], results['image'].shape[0],
+                        results['image'].shape[1])
 
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):
