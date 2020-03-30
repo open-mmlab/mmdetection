@@ -142,7 +142,7 @@ class CityscapesDataset(CocoDataset):
                     mmcv.imwrite(mask, png_filename)
                     fout.write('{} {} {}\n'.format(
                         osp.basename(png_filename), class_id, score))
-        result_files.append(pred_txt)
+            result_files.append(pred_txt)
 
         return result_files
 
@@ -216,14 +216,14 @@ class CityscapesDataset(CocoDataset):
             metrics.remove('cityscapes')
 
         # left metrics are all coco metric
-        if len(metric) > 0:
+        if len(metrics) > 0:
             # create CocoDataset with CityscapesDataset annotation
             self_coco = CocoDataset(self.ann_file, self.pipeline.transforms,
                                     self.data_root, self.img_prefix,
                                     self.seg_prefix, self.proposal_file,
                                     self.test_mode, self.filter_empty_gt)
             eval_results.update(
-                self_coco.evaluate(results, metric, logger, outfile_prefix,
+                self_coco.evaluate(results, metrics, logger, outfile_prefix,
                                    classwise, proposal_nums, iou_thrs))
 
         return eval_results
