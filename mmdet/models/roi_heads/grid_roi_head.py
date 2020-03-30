@@ -86,7 +86,7 @@ class GridRoIHead(StandardRoIHead):
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
-        loss_bbox, bbox_feats = super(GridRoIHead, self)._bbox_forward(
+        loss_bbox, bbox_feats = super(GridRoIHead, self)._bbox_forward_train(
             x, sampling_results, gt_bboxes, gt_labels, img_metas)
 
         # Grid head forward and loss
