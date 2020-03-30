@@ -51,9 +51,9 @@ def parse_args():
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('--out', help='output result file in pickle format')
     parser.add_argument(
-        '--merge_conv_bn',
+        '--fuse_conv_bn',
         action='store_true',
-        help='Whether to merge conv and bn, this will slightly increase'
+        help='Whether to fuse conv and bn, this will slightly increase'
         'the inference speed')
     parser.add_argument(
         '--format_only',
@@ -134,7 +134,7 @@ def main():
     if fp16_cfg is not None:
         wrap_fp16_model(model)
     checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
-    if args.merge_conv_bn:
+    if args.fuse_conv_bn:
         model = fuse_module(model)
     # old versions did not save class info in checkpoints, this walkaround is
     # for backward compatibility
