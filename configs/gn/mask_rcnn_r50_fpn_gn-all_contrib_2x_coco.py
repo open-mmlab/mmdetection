@@ -4,11 +4,12 @@ model = dict(
     pretrained='open-mmlab://contrib/resnet50_gn',
     backbone=dict(norm_cfg=norm_cfg),
     neck=dict(norm_cfg=norm_cfg),
-    bbox_head=dict(
-        type='Shared4Conv1FCBBoxHead',
-        conv_out_channels=256,
-        norm_cfg=norm_cfg),
-    mask_head=dict(norm_cfg=norm_cfg))
+    roi_head=dict(
+        bbox_head=dict(
+            type='Shared4Conv1FCBBoxHead',
+            conv_out_channels=256,
+            norm_cfg=norm_cfg),
+        mask_head=dict(norm_cfg=norm_cfg)))
 # learning policy
 lr_config = dict(step=[16, 22])
 total_epochs = 24

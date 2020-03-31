@@ -1,7 +1,6 @@
 _base_ = './cascade_rcnn_r50_fpn_1x_coco.py'
 model = dict(
     type='CascadeRCNN',
-    num_stages=3,
     pretrained='open-mmlab://resnext101_64x4d',
     backbone=dict(
         type='ResNeXt',

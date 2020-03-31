@@ -4,11 +4,12 @@ model = dict(
     pretrained='open-mmlab://detectron/resnet50_gn',
     backbone=dict(norm_cfg=norm_cfg),
     neck=dict(norm_cfg=norm_cfg),
-    bbox_head=dict(
-        type='Shared4Conv1FCBBoxHead',
-        conv_out_channels=256,
-        norm_cfg=norm_cfg),
-    mask_head=dict(norm_cfg=norm_cfg))
+    roi_head=dict(
+        bbox_head=dict(
+            type='Shared4Conv1FCBBoxHead',
+            conv_out_channels=256,
+            norm_cfg=norm_cfg),
+        mask_head=dict(norm_cfg=norm_cfg)))
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [

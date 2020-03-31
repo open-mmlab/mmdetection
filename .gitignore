@@ -116,3 +116,4 @@ work_dirs/
 
 # Pytorch
 *.pth
+*.py~
