@@ -19,9 +19,9 @@ class ContextBlock(nn.Module):
     Args:
         in_channels (int): Channels of the input feature map.
         ratio (float): ratio of channels of transform bottleneck
-        pooling_type (str): pooling method to use in context modeling
-        fusion_types (list[str]|tuple[str]): fusion method  to use in
-            feature fusion
+        pooling_type (str): pooling method for context modeling
+        fusion_types (list[str]|tuple[str]): fusion method  for feature
+            fusion, options: 'channels_add', 'channel_mul'
     """
 
     def __init__(self,

@@ -298,17 +298,19 @@ class ResNet(nn.Module):
             downsampling in the bottleneck.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
             -1 means not freezing any parameters.
-        norm_cfg (dict): dictionary to construct and config norm layer.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
-        plugins (list[dict]): list of plugins for stages, each dict contains:
-            cfg (dict): cfg dict to build plugin
-            position (str): position inside block to insert plugin
-            stages (tuple(bool)|None): stages to apply plugin
+        plugins (list[dict]): List of plugins for stages, each dict contains:
+            cfg (dict, required): Cfg dict to build plugin.
+            position (str, required): Position inside block to insert plugin,
+                options: 'after_conv1', 'after_conv2', 'after_conv3'.
+            stages (tuple(bool), optional): Stages to apply plugin, length
+                should be same as 'num_stages'
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
-        zero_init_residual (bool): whether to use zero init for last norm layer
+        zero_init_residual (bool): Whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
 
     Example:
@@ -421,14 +423,12 @@ class ResNet(nn.Module):
             len(self.stage_blocks) - 1)
 
     def make_stage_plugins(self, plugins, stage_idx):
-        """ make plugins for stage.
+        """ make plugins for ResNet 'stage_idx'th stage .
 
         Currently we support to insert 'context_block',
         'empirical_attention_block', 'nonlocal_block' into the backbone like
         ResNet/ResNeXt. They could be inserted after conv1/conv2/conv3 of
-        Bottleneck. These blocks are implemented with skip connection,
-        namely the input features would be added with the block output.
-        Please refer to the blocks under 'mmdet/ops' for details.
+        Bottleneck.
 
         An example of plugins format could be :
         >>> plugins=[
@@ -444,16 +444,37 @@ class ResNet(nn.Module):
         ...     dict(cfg=dict(type='zzz', postfix='2'),
         ...          stages=(True, True, True, True),
         ...          position='after_conv3')
-        ...     ]
+        ... ]
+        Suppose 'stage_idx=0', the output would be:
+        >>> [
+        ...     dict(cfg=dict(type='yyy'),
+        ...          position='after_conv3'),
+        ...     dict(cfg=dict(type='zzz', postfix='1'),
+        ...          position='after_conv3')
+        ...     dict(cfg=dict(type='zzz', postfix='2'),
+        ...          position='after_conv3')
+        ... ]
+        Suppose 'stage_idx=1', the output would be:
+        >>> plugins=[
+        ...     dict(cfg=dict(type='xxx', arg1='xxx'),
+        ...          position='after_conv2'),
+        ...     dict(cfg=dict(type='yyy'),
+        ...          position='after_conv3'),
+        ...     dict(cfg=dict(type='zzz', postfix='1'),
+        ...          position='after_conv3')
+        ...     dict(cfg=dict(type='zzz', postfix='2'),
+        ...          position='after_conv3')
+        ... ]
+
         if stages is missing, the plugin would be applied to all stages.
 
         Args:
-            plugins (list[dict]): list of plugins cfg to build. The postfix is
+            plugins (list[dict]): List of plugins cfg to build. The postfix is
                 required if multiple same type plugins are inserted.
-            stage_idx (int): index of stage to build
+            stage_idx (int): Index of stage to build
 
         Returns:
-            list[dict]: plugins for current stage
+            list[dict]: Plugins for current stage
 
         """
         stage_plugins = []
