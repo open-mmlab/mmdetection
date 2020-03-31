@@ -2,12 +2,33 @@ from abc import ABCMeta, abstractmethod
 
 import torch.nn as nn
 
+from .. import builder
+
 
 class BaseRoIHead(nn.Module, metaclass=ABCMeta):
     """Base class for RoIHeads"""
 
-    def __init__(self):
+    def __init__(self,
+                 bbox_roi_extractor=None,
+                 bbox_head=None,
+                 mask_roi_extractor=None,
+                 mask_head=None,
+                 shared_head=None,
+                 train_cfg=None,
+                 test_cfg=None):
         super(BaseRoIHead, self).__init__()
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
+        if shared_head is not None:
+            self.shared_head = builder.build_shared_head(shared_head)
+
+        if bbox_head is not None:
+            self.init_bbox_head(bbox_roi_extractor, bbox_head)
+
+        if mask_head is not None:
+            self.init_mask_head(mask_roi_extractor, mask_head)
+
+        self.init_assigner_sampler()
 
     @property
     def with_bbox(self):
@@ -26,11 +47,11 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def init_bboxhead(self):
+    def init_bbox_head(self):
         pass
 
     @abstractmethod
-    def init_maskhead(self):
+    def init_mask_head(self):
         pass
 
     @abstractmethod

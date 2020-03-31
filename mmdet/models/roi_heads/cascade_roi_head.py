@@ -29,25 +29,20 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                  test_cfg=None):
         assert bbox_roi_extractor is not None
         assert bbox_head is not None
-        assert shared_head is None  # shared head is not supported
-        super(CascadeRoIHead, self).__init__()
+        assert shared_head is None, \
+            'Shared head is not supported in Cascade RCNN anymore'
+        super(CascadeRoIHead, self).__init__(
+            bbox_roi_extractor=bbox_roi_extractor,
+            bbox_head=bbox_head,
+            mask_roi_extractor=mask_roi_extractor,
+            mask_head=mask_head,
+            shared_head=shared_head,
+            train_cfg=train_cfg,
+            test_cfg=test_cfg)
         self.num_stages = num_stages
         self.stage_loss_weights = stage_loss_weights
 
-        if shared_head is not None:
-            self.shared_head = builder.build_shared_head(shared_head)
-
-        if bbox_head is not None:
-            self.init_bboxhead(bbox_roi_extractor, bbox_head)
-
-        if mask_head is not None:
-            self.init_maskhead(mask_roi_extractor, mask_head)
-
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-        self.init_assigner_sampler()
-
-    def init_bboxhead(self, bbox_roi_extractor, bbox_head):
+    def init_bbox_head(self, bbox_roi_extractor, bbox_head):
         self.bbox_roi_extractor = nn.ModuleList()
         self.bbox_head = nn.ModuleList()
         if not isinstance(bbox_roi_extractor, list):
@@ -62,7 +57,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 builder.build_roi_extractor(roi_extractor))
             self.bbox_head.append(builder.build_head(head))
 
-    def init_maskhead(self, mask_roi_extractor, mask_head):
+    def init_mask_head(self, mask_roi_extractor, mask_head):
         self.mask_head = nn.ModuleList()
         if not isinstance(mask_head, list):
             mask_head = [mask_head for _ in range(self.num_stages)]
@@ -135,8 +130,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                         rois)
-        if self.with_shared_head:
-            bbox_feats = self.shared_head(bbox_feats)
+        # do not support caffe_c4 model anymore
         cls_score, bbox_pred = bbox_head(bbox_feats)
         return cls_score, bbox_pred, bbox_feats
 
@@ -155,9 +149,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         mask_head = self.mask_head[stage]
         mask_feats = mask_roi_extractor(x[:mask_roi_extractor.num_inputs],
                                         rois)
-        if self.with_shared_head:
-            mask_feats = self.shared_head(mask_feats)
-        # not support caffe_c4 model anymore
+        # do not support caffe_c4 model anymore
         mask_pred = mask_head(mask_feats)
         return mask_pred
 

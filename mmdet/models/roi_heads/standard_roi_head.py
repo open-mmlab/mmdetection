@@ -12,28 +12,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Simplest base roi head including one bbox head and one mask head.
     """
 
-    def __init__(self,
-                 bbox_roi_extractor=None,
-                 bbox_head=None,
-                 mask_roi_extractor=None,
-                 mask_head=None,
-                 shared_head=None,
-                 train_cfg=None,
-                 test_cfg=None):
-        super(StandardRoIHead, self).__init__()
-        if shared_head is not None:
-            self.shared_head = builder.build_shared_head(shared_head)
-
-        if bbox_head is not None:
-            self.init_bboxhead(bbox_roi_extractor, bbox_head)
-
-        if mask_head is not None:
-            self.init_maskhead(mask_roi_extractor, mask_head)
-
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-        self.init_assigner_sampler()
-
     def init_assigner_sampler(self):
         self.bbox_assigner = None
         self.bbox_sampler = None
@@ -42,12 +20,12 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.bbox_sampler = build_sampler(
                 self.train_cfg.sampler, context=self)
 
-    def init_bboxhead(self, bbox_roi_extractor, bbox_head):
+    def init_bbox_head(self, bbox_roi_extractor, bbox_head):
         self.bbox_roi_extractor = builder.build_roi_extractor(
             bbox_roi_extractor)
         self.bbox_head = builder.build_head(bbox_head)
 
-    def init_maskhead(self, mask_roi_extractor, mask_head):
+    def init_mask_head(self, mask_roi_extractor, mask_head):
         if mask_roi_extractor is not None:
             self.mask_roi_extractor = builder.build_roi_extractor(
                 mask_roi_extractor)
@@ -78,11 +56,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         # mask head
         if self.with_mask:
             mask_rois = rois[:100]
-            mask_feats = self.mask_roi_extractor(
-                x[:self.mask_roi_extractor.num_inputs], mask_rois)
-            if self.with_shared_head:
-                mask_feats = self.shared_head(mask_feats)
-            mask_pred = self.mask_head(mask_feats)
+            mask_pred, _ = self._mask_forward(x, mask_rois)
             outs = outs + (mask_pred, )
         return outs
 
@@ -176,27 +150,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
-        mask_feats = self.extract_mask_feats(x, sampling_results, bbox_feats)
-
-        if mask_feats.shape[0] > 0:
-            mask_pred = self.mask_head(mask_feats)
-            mask_targets = self.mask_head.get_target(sampling_results,
-                                                     gt_masks, self.train_cfg)
-            pos_labels = torch.cat(
-                [res.pos_gt_labels for res in sampling_results])
-            loss_mask = self.mask_head.loss(mask_pred, mask_targets,
-                                            pos_labels)
-            return loss_mask
-        else:
-            return None
-
-    def extract_mask_feats(self, x, sampling_results, bbox_feats):
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-            mask_feats = self.mask_roi_extractor(
-                x[:self.mask_roi_extractor.num_inputs], pos_rois)
-            if self.with_shared_head:
-                mask_feats = self.shared_head(mask_feats)
+            mask_pred, _ = self._mask_forward(x, pos_rois)
         else:
             pos_inds = []
             device = bbox_feats.device
@@ -212,8 +168,29 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                         device=device,
                         dtype=torch.uint8))
             pos_inds = torch.cat(pos_inds)
+            mask_pred, _ = self._mask_forward(
+                x, pos_inds=pos_inds, bbox_feats=bbox_feats)
+
+        mask_targets = self.mask_head.get_target(sampling_results, gt_masks,
+                                                 self.train_cfg)
+        pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
+        loss_mask = self.mask_head.loss(mask_pred, mask_targets, pos_labels)
+        return loss_mask
+
+    def _mask_forward(self, x, rois=None, pos_inds=None, bbox_feats=None):
+        assert (rois is not None ^
+                (pos_inds is not None and bbox_feats is not None))
+        if rois:
+            mask_feats = self.mask_roi_extractor(
+                x[:self.mask_roi_extractor.num_inputs], rois)
+            if self.with_shared_head:
+                mask_feats = self.shared_head(mask_feats)
+        else:
+            assert bbox_feats is not None
             mask_feats = bbox_feats[pos_inds]
-        return mask_feats
+
+        mask_pred = self.mask_head(mask_feats)
+        return mask_pred, mask_feats
 
     async def async_simple_test(self,
                                 x,

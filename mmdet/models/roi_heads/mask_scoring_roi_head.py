@@ -24,31 +24,26 @@ class MaskScoringRoIHead(StandardRoIHead):
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
-        mask_feats = self.extract_mask_feats(x, sampling_results, bbox_feats)
+        # in ms_rcnn, c4 model is not supported anymore
+        pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
+        mask_pred, mask_feats = self._mask_forward(x, pos_rois)
+        mask_targets = self.mask_head.get_target(sampling_results, gt_masks,
+                                                 self.train_cfg)
+        pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
+        loss_mask = self.mask_head.loss(mask_pred, mask_targets, pos_labels)
 
-        if mask_feats.shape[0] > 0:
-            mask_pred = self.mask_head(mask_feats)
-            mask_targets = self.mask_head.get_target(sampling_results,
-                                                     gt_masks, self.train_cfg)
-            pos_labels = torch.cat(
-                [res.pos_gt_labels for res in sampling_results])
-            loss_mask = self.mask_head.loss(mask_pred, mask_targets,
-                                            pos_labels)
-
-            # mask iou head forward and loss
-            pos_mask_pred = mask_pred[range(mask_pred.size(0)), pos_labels]
-            mask_iou_pred = self.mask_iou_head(mask_feats, pos_mask_pred)
-            pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)),
-                                              pos_labels]
-            mask_iou_targets = self.mask_iou_head.get_target(
-                sampling_results, gt_masks, pos_mask_pred, mask_targets,
-                self.train_cfg)
-            loss_mask_iou = self.mask_iou_head.loss(pos_mask_iou_pred,
-                                                    mask_iou_targets)
-            loss_mask.update(loss_mask_iou)
-            return loss_mask
-        else:
-            return None
+        # mask iou head forward and loss
+        pos_mask_pred = mask_pred[range(mask_pred.size(0)), pos_labels]
+        mask_iou_pred = self.mask_iou_head(mask_feats, pos_mask_pred)
+        pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)),
+                                          pos_labels]
+        mask_iou_targets = self.mask_iou_head.get_target(
+            sampling_results, gt_masks, pos_mask_pred, mask_targets,
+            self.train_cfg)
+        loss_mask_iou = self.mask_iou_head.loss(pos_mask_iou_pred,
+                                                mask_iou_targets)
+        loss_mask.update(loss_mask_iou)
+        return loss_mask
 
     def simple_test_mask(self,
                          x,
@@ -70,11 +65,7 @@ class MaskScoringRoIHead(StandardRoIHead):
                 det_bboxes[:, :4] *
                 det_bboxes.new_tensor(scale_factor) if rescale else det_bboxes)
             mask_rois = bbox2roi([_bboxes])
-            mask_feats = self.mask_roi_extractor(
-                x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
-            if self.with_shared_head:
-                mask_feats = self.shared_head(mask_feats)
-            mask_pred = self.mask_head(mask_feats)
+            mask_pred, mask_feats = self._mask_forward(x, mask_rois)
             segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
                                                        det_labels,
                                                        self.test_cfg,
