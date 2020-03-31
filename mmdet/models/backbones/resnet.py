@@ -203,8 +203,12 @@ class Bottleneck(nn.Module):
         """ make plugins for block
 
         Args:
-            in_channels (int): in_channels of plugin
-            plugins (list[dict]): list of plugins cfg to build
+            in_channels (int): Input channels of plugin.
+            plugins (list[dict]): List of plugins cfg to build.
+
+        Returns:
+            list[str]: List of the names of plugin.
+
         """
         assert isinstance(plugins, list)
         plugin_names = []
@@ -306,7 +310,7 @@ class ResNet(nn.Module):
             cfg (dict, required): Cfg dict to build plugin.
             position (str, required): Position inside block to insert plugin,
                 options: 'after_conv1', 'after_conv2', 'after_conv3'.
-            stages (tuple(bool), optional): Stages to apply plugin, length
+            stages (tuple[bool], optional): Stages to apply plugin, length
                 should be same as 'num_stages'
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
@@ -445,26 +449,10 @@ class ResNet(nn.Module):
         ...          stages=(True, True, True, True),
         ...          position='after_conv3')
         ... ]
-        Suppose 'stage_idx=0', the output would be:
-        >>> [
-        ...     dict(cfg=dict(type='yyy'),
-        ...          position='after_conv3'),
-        ...     dict(cfg=dict(type='zzz', postfix='1'),
-        ...          position='after_conv3')
-        ...     dict(cfg=dict(type='zzz', postfix='2'),
-        ...          position='after_conv3')
-        ... ]
-        Suppose 'stage_idx=1', the output would be:
-        >>> plugins=[
-        ...     dict(cfg=dict(type='xxx', arg1='xxx'),
-        ...          position='after_conv2'),
-        ...     dict(cfg=dict(type='yyy'),
-        ...          position='after_conv3'),
-        ...     dict(cfg=dict(type='zzz', postfix='1'),
-        ...          position='after_conv3')
-        ...     dict(cfg=dict(type='zzz', postfix='2'),
-        ...          position='after_conv3')
-        ... ]
+        Suppose 'stage_idx=0', the structure of blocks in the stage would be:
+            conv1-> conv2->conv3->yyy->zzz1->zzz2
+        Suppose 'stage_idx=1', the structure of blocks in the stage would be:
+            conv1-> conv2->xxx->conv3->yyy->zzz1->zzz2
 
         if stages is missing, the plugin would be applied to all stages.
 
