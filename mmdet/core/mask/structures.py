@@ -4,16 +4,49 @@ import pycocotools.mask as maskUtils
 import torch
 
 
-class BitMapMasks:
+class Masks(object):
+
+    def rescale(self, scale, interpolation='nearest'):
+        pass
+
+    def resize(self, h, w, interpolation='nearest'):
+        pass
+
+    def flip(self, flip_direction):
+        pass
+
+    def pad(self, h, w, pad_val):
+        pass
+
+    def crop(self, bbox):
+        pass
+
+    def crop_and_resize(self,
+                        bboxes,
+                        mask_h,
+                        mask_w,
+                        assigned_inds,
+                        interpolation='bilinear'):
+        pass
+
+    def expand(self, expanded_h, expanded_w, top, left):
+        pass
+
+    def to_tensor(self, dtype, device):
+        pass
+
+
+class BitMapMasks(Masks):
+    """This class represents masks in the form of bitmaps.
+
+    Args:
+        masks (ndarray): ndarray of masks in shape (N, H, W), where N is
+            the number of objects.
+        height (int): height of masks
+        width (int): width of masks
+    """
 
     def __init__(self, masks, height, width):
-        """
-        Args:
-            masks (ndarray): ndarray of masks in shape (N, H, W), where N is
-                the number of objects.
-            height (int): height of masks
-            width (int): width of masks
-        """
         self.height = height
         self.width = width
         if len(masks) == 0:
@@ -60,6 +93,7 @@ class BitMapMasks:
         Args:
             h (int): height of resized mask
             w (int): width of resized mask
+            interpolation (str): see `mmcv.imresize`
 
         Returns:
             BitMapMasks: the resized masks
@@ -93,12 +127,13 @@ class BitMapMasks:
             ])
         return BitMapMasks(flipped_masks, self.height, self.width)
 
-    def pad(self, h, w, pad_val):
+    def pad(self, h, w, pad_val=0):
         """Pad masks to the given size of (h, w).
 
         Args:
             h (int): height of padded mask
             w (int): width of padded mask
+            pad_val (int): the padded value
 
         Returns:
             BitMapMasks: the padded masks
@@ -135,6 +170,44 @@ class BitMapMasks:
             cropped_masks = self.masks[:, y1:y1 + h, x1:x1 + w]
         return BitMapMasks(cropped_masks, h, w)
 
+    def crop_and_resize(self,
+                        bboxes,
+                        mask_h,
+                        mask_w,
+                        assigned_inds,
+                        interpolation='bilinear'):
+        """Crop and resize masks by the given bboxes.
+
+        This function is mainly used in mask targets computation.
+        It firstly align mask to bboxes by assigned_inds, then crop mask by the
+        assigned bbox and resize to the size of (mask_h, mask_w)
+
+        Args:
+            bboxes (ndarray): bboxes in format [x1, y1, x2, y2], shape (N, 4)
+            mask_h (int): height of resized mask
+            mask_w (int): width of resized mask
+            assigned_inds (ndarray): indexes to assign masks to each bbox
+            interpolation (str): see `mmcv.imresize`
+
+        Return:
+            ndarray: the cropped and resized masks.
+        """
+        if len(self.masks) == 0:
+            return np.empty((0, mask_h, mask_w), dtype=np.unit8)
+
+        resized_masks = []
+        for i in range(len(bboxes)):
+            mask = self.masks[assigned_inds[i]]
+            bbox = bboxes[i, :].astype(np.int32)
+            x1, y1, x2, y2 = bbox
+            w = np.maximum(x2 - x1 + 1, 1)
+            h = np.maximum(y2 - y1 + 1, 1)
+            resized_masks.append(
+                mmcv.imresize(
+                    mask[y1:y1 + h, x1:x1 + w], (mask_w, mask_h),
+                    interpolation=interpolation))
+        return np.stack(resized_masks)
+
     def expand(self, expanded_h, expanded_w, top, left):
         """see `transforms.Expand`."""
         if len(self.masks) == 0:
@@ -148,22 +221,25 @@ class BitMapMasks:
         return BitMapMasks(expanded_mask, expanded_h, expanded_w)
 
     def to_tensor(self, dtype, device):
-        return torch.tensor(self.masks, dtype=dtype, device=device)
+        return torch.from_numpy(self.masks, dtype=dtype, device=device)
 
 
-class PolygonMasks:
+class PolygonMasks(Masks):
+    """This class represents masks in the form of polygons.
+
+    Polygons is a list of three levels. The first level of the list
+    corresponds to objects, the second level to the polys that compose the
+    object, the third level to the poly coordinates
+
+    Args:
+        masks (list[list[ndarray]]): The first level of the list
+            corresponds to objects, the second level to the polys that
+            compose the object, the third level to the poly coordinates
+        height (int): height of masks
+        width (int): width of masks
+    """
 
     def __init__(self, masks, height, width):
-        """ mask is represented as a list of polys, and a poly is represented
-        as a 1-D array.
-
-        Args:
-            masks (list[list[ndarray]]): The first level of the list
-                corresponds to objects, the second level to the polys that
-                compose the object, the third level to the poly coordinates
-            height (int): height of masks
-            width (int): width of masks
-        """
         self.height = height
         self.width = width
         self.masks = masks
@@ -190,7 +266,7 @@ class PolygonMasks:
     def __len__(self):
         return len(self.masks)
 
-    def rescale(self, scale):
+    def rescale(self, scale, interpolation=None):
         """see BitMapMasks.rescale"""
         new_w, new_h = mmcv.rescale_size((self.width, self.height), scale)
         if len(self.masks) == 0:
@@ -230,6 +306,8 @@ class PolygonMasks:
             elif flip_direction == 'vertical':
                 dim = self.height
                 idx = 1
+            else:
+                raise NotImplementedError
             flipped_masks = []
             for poly_per_obj in self.masks:
                 flipped_poly_per_obj = []
@@ -272,7 +350,43 @@ class PolygonMasks:
         return self
 
     def expand(self, *args, **kwargs):
-        assert NotImplementedError
+        raise NotImplementedError
+
+    def crop_and_resize(self,
+                        bboxes,
+                        mask_h,
+                        mask_w,
+                        assigned_inds,
+                        interpolation='bilinear'):
+        """see BitMapMasks.crop_and_resize"""
+        if len(self.masks) == 0:
+            return np.empty((0, mask_h, mask_w), dtype=np.unit8)
+
+        resized_masks = []
+        for i in range(len(bboxes)):
+            mask = self.masks[assigned_inds[i]]
+            bbox = bboxes[i, :].astype(np.int32)
+            x1, y1, x2, y2 = bbox
+            w = np.maximum(x2 - x1 + 1, 1)
+            h = np.maximum(y2 - y1 + 1, 1)
+            h_scale = mask_h / h
+            w_scale = mask_w / w
+
+            resized_mask = []
+            for p in mask:
+                p = p.copy()
+                # crop
+                p[0::2] -= bbox[0]
+                p[1::2] -= bbox[1]
+
+                # resize
+                p[0::2] *= w_scale
+                p[1::2] *= h_scale
+                resized_mask.append(p)
+            resized_masks.append(
+                polygon_to_bitmap(resized_mask, mask_h, mask_w))
+
+        return np.stack(resized_masks)
 
     def to_bitmap(self):
         """convert polygon masks to bitmap masks"""
@@ -282,11 +396,28 @@ class PolygonMasks:
                 self.height, self.width)
         bitmap_masks = []
         for poly_per_obj in self.masks:
-            rles = maskUtils.frPyObjects(poly_per_obj, self.height, self.width)
-            rle = maskUtils.merge(rles)
-            bitmap_mask = maskUtils.decode(rle).astype(np.bool)
-            bitmap_masks.append(bitmap_mask)
+            bitmap_masks.append(
+                polygon_to_bitmap(poly_per_obj, self.height, self.width))
         return BitMapMasks(bitmap_masks, self.height, self.width)
 
     def to_tensor(self, dtype, device):
-        return self.to_bitmap().to_tensor(dtype, device)
+        bitmap_masks = polygon_to_bitmap(self.masks, self.height,
+                                         self.width).to_tensor(dtype, device)
+        return torch.from_numpy(bitmap_masks, dtype=dtype, device=device)
+
+
+def polygon_to_bitmap(polygons, height, width):
+    """Convert masks from the form of polygons to bitmaps.
+
+        Args:
+            polygons (list[ndarray]): masks in polygon representation
+            height (int): mask height
+            width (int): mask width
+
+        Return:
+            ndarray: the converted masks in bitmap representation
+    """
+    rles = maskUtils.frPyObjects(polygons, height, width)
+    rle = maskUtils.merge(rles)
+    bitmap_mask = maskUtils.decode(rle).astype(np.bool)
+    return bitmap_mask

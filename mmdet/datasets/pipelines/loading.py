@@ -4,8 +4,8 @@ import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 
+from mmdet.core import BitMapMasks, PolygonMasks
 from ..registry import PIPELINES
-from ..structures import BitMapMasks, PolygonMasks
 
 
 @PIPELINES.register_module
