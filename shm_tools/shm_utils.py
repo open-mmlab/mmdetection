@@ -118,8 +118,9 @@ def connect_cracks(mask_output, epsilon = 200):
     2 . Add connection option considering a direction of a crack 
     '''
 
-
+    # label each crack
     labels, num = label(mask_output, connectivity=2, return_num=True)
+    # get information of each crack area
     crack_region_table = regionprops_table(labels, properties=('label', 'bbox', 'coords', 'orientation'))
 
     width = crack_region_table['bbox-3'] - crack_region_table['bbox-1']
@@ -134,8 +135,8 @@ def connect_cracks(mask_output, epsilon = 200):
 
         min_row = crack_region_table['bbox-0'][crack_num]
         min_col = crack_region_table['bbox-1'][crack_num]
-        max_row = crack_region_table['bbox-2'][crack_num] - 1
-        max_col = crack_region_table['bbox-3'][crack_num] - 1
+        max_row = crack_region_table['bbox-2'][crack_num]-1
+        max_col = crack_region_table['bbox-3'][crack_num]-1
 
         if crack_region_table['is_horizontal'][crack_num]:
             # max col / min col
@@ -162,20 +163,24 @@ def connect_cracks(mask_output, epsilon = 200):
 
     connect_line_img = np.zeros_like(mask_output, dtype=np.uint8)
     n = len(crack_region_table['label'])
-    color = (1)
+    color = (1) # binary image
 
-    for i in range(n):
+    for i in range(n):  # scan through all of crack area
         k_list = []
         for k in range(n):
-            if not k == i:
+            if not k == i: # compare with all the other cracks
                 distance = []
                 e_list = []
+
+                # compare every direction
+                # close-close / far-close / close-far / far-far
                 for e1 in ['e1', 'e2']:
                     for e2 in ['e1', 'e2']:
                         d = np.subtract(crack_region_table[e1][k], crack_region_table[e2][i])
                         distance.append(np.sqrt(d[0] ** 2 + d[1] ** 2))
                         e_list.append([e1, e2])
-                if not k_list:
+
+                if not k_list: # when k_list is empty,
                     k_list.append([distance, e_list, k])
 
                 elif np.min(k_list[0][0]) > np.min(distance):
@@ -219,4 +224,86 @@ def remove_cracks(mask_output, threshold = 300):
                 mask_output[c[0], c[1]] = 0
 
     return mask_output
+
+
+class AverageMeter(object):
+    # This function is imported from https://github.com/hszhao/semseg/blob/master/util/util.py
+    """Computes and stores the average and current value"""
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+
+def comparison_operator(img, thr, ind='>'):
+    import operator
+    if ind == '==':
+        return operator.eq(img, thr)
+    elif ind == '<':
+        return operator.lt(img, thr)
+    elif ind == '>':
+        return operator.gt(img, thr)
+    elif ind == '!=':
+        return operator.ne(img, thr)
+
+
+def intersectionAndUnion(output, target, K, ignore_index=255):
+    # This function is imported from https://github.com/hszhao/semseg/blob/master/util/util.py
+    # 'K' classes, output and target sizes are N or N * L or N * H * W, each value in range 0 to K - 1.
+    assert (output.ndim in [1, 2, 3])
+    assert output.shape == target.shape
+    output = output.reshape(output.size).copy()
+    target = target.reshape(target.size)
+    output[np.where(target == ignore_index)[0]] = ignore_index
+    intersection = output[np.where(output == target)[0]]
+    area_intersection, _ = np.histogram(intersection, bins=np.arange(K + 1))
+    area_output, _ = np.histogram(output, bins=np.arange(K + 1))
+    area_target, _ = np.histogram(target, bins=np.arange(K + 1))
+    area_union = area_output + area_target - area_intersection
+    return area_intersection, area_union, area_target
+
+
+def cal_acc(data_list, pred_folder, classes, names):
+    # This function is imported from https://github.com/hszhao/semseg/blob/master/util/util.py
+    intersection_meter = AverageMeter()
+    union_meter = AverageMeter()
+    target_meter = AverageMeter()
+
+    for i, (image_path, target_path) in enumerate(data_list):
+        image_name = image_path.split('/')[-1].split('.')[0]
+        pred = cv2.imread(os.path.join(pred_folder, image_name + '.png'), cv2.IMREAD_GRAYSCALE)
+        target = cv2.imread(target_path, cv2.IMREAD_GRAYSCALE)
+        intersection, union, target = intersectionAndUnion(pred, target, classes)
+        intersection_meter.update(intersection)
+        union_meter.update(union)
+        target_meter.update(target)
+        accuracy = sum(intersection_meter.val) / (sum(target_meter.val) + 1e-10)
+        logger.info(
+            'Evaluating {0}/{1} on image {2}, accuracy {3:.4f}.'.format(i + 1, len(data_list), image_name + '.png',
+                                                                        accuracy))
+
+    iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
+    accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
+    mIoU = np.mean(iou_class)
+    mAcc = np.mean(accuracy_class)
+    allAcc = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
+
+    logger.info('Eval result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU, mAcc, allAcc))
+    for i in range(classes):
+        logger.info('Class_{} result: iou/accuracy {:.4f}/{:.4f}, name: {}.'.format(i, iou_class[i], accuracy_class[i],
+                                                                                    names[i]))
+
+
+
 
