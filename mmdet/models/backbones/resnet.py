@@ -120,6 +120,7 @@ class Bottleneck(nn.Module):
         self.with_plugins = plugins is not None
 
         if self.with_plugins:
+            # collect plugins for conv1/conv2/conv3
             self.after_conv1_plugins = [
                 plugin['cfg'] for plugin in plugins
                 if plugin['position'] == 'after_conv1'
@@ -213,6 +214,7 @@ class Bottleneck(nn.Module):
                 plugin,
                 in_channels=in_channels,
                 postfix=plugin.pop('postfix', ''))
+            assert not hasattr(self, name), 'duplicate plugin {}'.format(name)
             self.add_module(name, layer)
             plugin_names.append(name)
         return plugin_names
@@ -421,6 +423,13 @@ class ResNet(nn.Module):
     def make_stage_plugins(self, plugins, stage_idx):
         """ make plugins for stage.
 
+        Currently we support to insert 'context_block',
+        'empirical_attention_block', 'nonlocal_block' into the backbone like
+        ResNet/ResNeXt. They could be inserted after conv1/conv2/conv3 of
+        Bottleneck. These blocks are implemented with skip connection,
+        namely the input features would be added with the block output.
+        Please refer to the blocks under 'mmdet/ops' for details.
+
         An example of plugins format could be :
         >>> plugins=[
         ...     dict(cfg=dict(type='xxx', arg1='xxx'),
@@ -439,7 +448,8 @@ class ResNet(nn.Module):
         if stages is missing, the plugin would be applied to all stages.
 
         Args:
-            plugins (list[dict]): list of plugins cfg to build.
+            plugins (list[dict]): list of plugins cfg to build. The postfix is
+                required if multiple same type plugins are inserted.
             stage_idx (int): index of stage to build
 
         Returns:
@@ -451,6 +461,7 @@ class ResNet(nn.Module):
             plugin = plugin.copy()
             stages = plugin.pop('stages', None)
             assert stages is None or len(stages) == self.num_stages
+            # whether to insert plugin into current stage
             if stages is None or stages[stage_idx]:
                 stage_plugins.append(plugin)
 

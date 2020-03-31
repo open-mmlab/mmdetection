@@ -104,6 +104,17 @@ def test_resnet_bottleneck():
         ]
         Bottleneck(64, 16, plugins=plugins)
 
+    with pytest.raises(AssertionError):
+        plugins = [
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 16),
+                position='after_conv3'),
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 16),
+                position='after_conv3')
+        ]
+        Bottleneck(64, 16, plugins=plugins)
+
     with pytest.raises(KeyError):
         plugins = [dict(cfg=dict(type='WrongPlugin'), position='after_conv3')]
         Bottleneck(64, 16, plugins=plugins)
