@@ -20,7 +20,7 @@ class DoubleHeadRCNN(TwoStageDetector):
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
             outs = outs + (rpn_outs, )
-        proposals = torch.randn(1000, 4).cuda()
+        proposals = torch.randn(1000, 4).to(device=img.device)
         # bbox head
         rois = bbox2roi([proposals])
         bbox_cls_feats = self.bbox_roi_extractor(
@@ -38,7 +38,7 @@ class DoubleHeadRCNN(TwoStageDetector):
 
     def forward_train(self,
                       img,
-                      img_meta,
+                      img_metas,
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None,
@@ -51,7 +51,7 @@ class DoubleHeadRCNN(TwoStageDetector):
         # RPN forward and loss
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
-            rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
+            rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas,
                                           self.train_cfg.rpn)
             rpn_losses = self.rpn_head.loss(
                 *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
@@ -59,7 +59,7 @@ class DoubleHeadRCNN(TwoStageDetector):
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
-            proposal_inputs = rpn_outs + (img_meta, proposal_cfg)
+            proposal_inputs = rpn_outs + (img_metas, proposal_cfg)
             proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         else:
             proposal_list = proposals
@@ -149,7 +149,7 @@ class DoubleHeadRCNN(TwoStageDetector):
 
     def simple_test_bboxes(self,
                            x,
-                           img_meta,
+                           img_metas,
                            proposals,
                            rcnn_test_cfg,
                            rescale=False):
@@ -165,8 +165,8 @@ class DoubleHeadRCNN(TwoStageDetector):
             bbox_cls_feats = self.shared_head(bbox_cls_feats)
             bbox_reg_feats = self.shared_head(bbox_reg_feats)
         cls_score, bbox_pred = self.bbox_head(bbox_cls_feats, bbox_reg_feats)
-        img_shape = img_meta[0]['img_shape']
-        scale_factor = img_meta[0]['scale_factor']
+        img_shape = img_metas[0]['img_shape']
+        scale_factor = img_metas[0]['scale_factor']
         det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
             rois,
             cls_score,

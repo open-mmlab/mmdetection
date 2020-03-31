@@ -1,9 +1,9 @@
 import torch.nn as nn
 from mmcv.cnn import xavier_init
 
+from mmdet.ops import ConvModule, build_upsample_layer
 from mmdet.ops.carafe import CARAFEPack
 from ..registry import NECKS
-from ..utils import ConvModule, build_upsample_layer
 
 
 @NECKS.register_module
