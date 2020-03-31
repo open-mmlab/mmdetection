@@ -2,9 +2,8 @@ import math
 
 import torch.nn as nn
 
-from mmdet.ops import DeformConv, ModulatedDeformConv
+from mmdet.ops import build_conv_layer, build_norm_layer
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 
@@ -41,8 +40,7 @@ class Bottleneck(_Bottleneck):
         fallback_on_stride = False
         self.with_modulated_dcn = False
         if self.with_dcn:
-            fallback_on_stride = self.dcn.get('fallback_on_stride', False)
-            self.with_modulated_dcn = self.dcn.get('modulated', False)
+            fallback_on_stride = self.dcn.pop('fallback_on_stride', False)
         if not self.with_dcn or fallback_on_stride:
             self.conv2 = build_conv_layer(
                 self.conv_cfg,
@@ -56,22 +54,8 @@ class Bottleneck(_Bottleneck):
                 bias=False)
         else:
             assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
-            groups = self.dcn.get('groups', 1)
-            deformable_groups = self.dcn.get('deformable_groups', 1)
-            if not self.with_modulated_dcn:
-                conv_op = DeformConv
-                offset_channels = 18
-            else:
-                conv_op = ModulatedDeformConv
-                offset_channels = 27
-            self.conv2_offset = nn.Conv2d(
-                width,
-                deformable_groups * offset_channels,
-                kernel_size=3,
-                stride=self.conv2_stride,
-                padding=self.dilation,
-                dilation=self.dilation)
-            self.conv2 = conv_op(
+            self.conv2 = build_conv_layer(
+                self.dcn,
                 width,
                 width,
                 kernel_size=3,
@@ -79,8 +63,8 @@ class Bottleneck(_Bottleneck):
                 padding=self.dilation,
                 dilation=self.dilation,
                 groups=groups,
-                deformable_groups=deformable_groups,
                 bias=False)
+
         self.add_module(self.norm2_name, norm2)
         self.conv3 = build_conv_layer(
             self.conv_cfg,
@@ -160,6 +144,7 @@ class ResNeXt(ResNet):
 
     Args:
         depth (int): Depth of resnet, from {18, 34, 50, 101, 152}.
+        in_channels (int): Number of input image channels. Normally 3.
         num_stages (int): Resnet stages, normally 4.
         groups (int): Group of resnext.
         base_width (int): Base width of resnext.
@@ -179,6 +164,20 @@ class ResNeXt(ResNet):
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+
+    Example:
+        >>> from mmdet.models import ResNeXt
+        >>> import torch
+        >>> self = ResNeXt(depth=50)
+        >>> self.eval()
+        >>> inputs = torch.rand(1, 3, 32, 32)
+        >>> level_outputs = self.forward(inputs)
+        >>> for level_out in level_outputs:
+        ...     print(tuple(level_out.shape))
+        (1, 256, 8, 8)
+        (1, 512, 4, 4)
+        (1, 1024, 2, 2)
+        (1, 2048, 1, 1)
     """
 
     arch_settings = {

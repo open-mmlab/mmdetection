@@ -5,11 +5,11 @@ import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
+from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import get_classes
-from mmdet.datasets import to_tensor
-from mmdet.datasets.transforms import ImageTransform
+from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
 
 
@@ -46,7 +46,21 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
     return model
 
 
-def inference_detector(model, imgs):
+class LoadImage(object):
+
+    def __call__(self, results):
+        if isinstance(results['img'], str):
+            results['filename'] = results['img']
+        else:
+            results['filename'] = None
+        img = mmcv.imread(results['img'])
+        results['img'] = img
+        results['img_shape'] = img.shape
+        results['ori_shape'] = img.shape
+        return results
+
+
+def inference_detector(model, img):
     """Inference image(s) with the detector.
 
     Args:
@@ -59,45 +73,46 @@ def inference_detector(model, imgs):
         detection results directly.
     """
     cfg = model.cfg
-    img_transform = ImageTransform(
-        size_divisor=cfg.data.test.size_divisor, **cfg.img_norm_cfg)
-
     device = next(model.parameters()).device  # model device
-    if not isinstance(imgs, list):
-        return _inference_single(model, imgs, img_transform, device)
-    else:
-        return _inference_generator(model, imgs, img_transform, device)
-
-
-def _prepare_data(img, img_transform, cfg, device):
-    ori_shape = img.shape
-    img, img_shape, pad_shape, scale_factor = img_transform(
-        img,
-        scale=cfg.data.test.img_scale,
-        keep_ratio=cfg.data.test.get('resize_keep_ratio', True))
-    img = to_tensor(img).to(device).unsqueeze(0)
-    img_meta = [
-        dict(
-            ori_shape=ori_shape,
-            img_shape=img_shape,
-            pad_shape=pad_shape,
-            scale_factor=scale_factor,
-            flip=False)
-    ]
-    return dict(img=[img], img_meta=[img_meta])
-
-
-def _inference_single(model, img, img_transform, device):
-    img = mmcv.imread(img)
-    data = _prepare_data(img, img_transform, model.cfg, device)
+    # build the data pipeline
+    test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
+    test_pipeline = Compose(test_pipeline)
+    # prepare data
+    data = dict(img=img)
+    data = test_pipeline(data)
+    data = scatter(collate([data], samples_per_gpu=1), [device])[0]
+    # forward the model
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
     return result
 
 
-def _inference_generator(model, imgs, img_transform, device):
-    for img in imgs:
-        yield _inference_single(model, img, img_transform, device)
+async def async_inference_detector(model, img):
+    """Async inference image(s) with the detector.
+
+    Args:
+        model (nn.Module): The loaded detector.
+        imgs (str/ndarray or list[str/ndarray]): Either image files or loaded
+            images.
+
+    Returns:
+        Awaitable detection results.
+    """
+    cfg = model.cfg
+    device = next(model.parameters()).device  # model device
+    # build the data pipeline
+    test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
+    test_pipeline = Compose(test_pipeline)
+    # prepare data
+    data = dict(img=img)
+    data = test_pipeline(data)
+    data = scatter(collate([data], samples_per_gpu=1), [device])[0]
+
+    # We don't restore `torch.is_grad_enabled()` value during concurrent
+    # inference since execution can overlap
+    torch.set_grad_enabled(False)
+    result = await model.aforward_test(rescale=True, **data)
+    return result
 
 
 # TODO: merge this method with the one in BaseDetector
@@ -133,20 +148,29 @@ def show_result(img,
     else:
         bbox_result, segm_result = result, None
     bboxes = np.vstack(bbox_result)
-    # draw segmentation masks
-    if segm_result is not None:
-        segms = mmcv.concat_list(segm_result)
-        inds = np.where(bboxes[:, -1] > score_thr)[0]
-        for i in inds:
-            color_mask = np.random.randint(0, 256, (1, 3), dtype=np.uint8)
-            mask = maskUtils.decode(segms[i]).astype(np.bool)
-            img[mask] = img[mask] * 0.5 + color_mask * 0.5
-    # draw bounding boxes
     labels = [
         np.full(bbox.shape[0], i, dtype=np.int32)
         for i, bbox in enumerate(bbox_result)
     ]
     labels = np.concatenate(labels)
+    # draw segmentation masks
+    if segm_result is not None:
+        segms = mmcv.concat_list(segm_result)
+        inds = np.where(bboxes[:, -1] > score_thr)[0]
+        np.random.seed(42)
+        color_masks = [
+            np.random.randint(0, 256, (1, 3), dtype=np.uint8)
+            for _ in range(max(labels) + 1)
+        ]
+        for i in inds:
+            i = int(i)
+            color_mask = color_masks[labels[i]]
+            mask = maskUtils.decode(segms[i]).astype(np.bool)
+            img[mask] = img[mask] * 0.5 + color_mask * 0.5
+    # if out_file specified, do not show image in window
+    if out_file is not None:
+        show = False
+    # draw bounding boxes
     mmcv.imshow_det_bboxes(
         img,
         bboxes,

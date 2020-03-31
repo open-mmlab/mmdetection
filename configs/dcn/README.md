@@ -24,6 +24,7 @@
 |:---------:|:------------:|:-------:|:-------------:|:------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:-------:|:--------:|
 | R-50-FPN  | Faster       | pytorch | dconv(c3-c5)  | -      | 1x      | 3.9      | 0.594               | 10.2           | 40.0   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/dcn/faster_rcnn_dconv_c3-c5_r50_fpn_1x_20190125-e41688c9.pth) |
 | R-50-FPN  | Faster       | pytorch | mdconv(c3-c5) | -      | 1x      | 3.7      | 0.598               | 10.0           | 40.2   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/dcn/faster_rcnn_mdconv_c3-c5_r50_fpn_1x_20190125-1b768045.pth) |
+| *R-50-FPN (dg=4) | Faster | pytorch | mdconv(c3-c5) | -     | 1x      | 3.9      | 0.350               | 11.36           | 40.4   | -       | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/dcn/faster_rcnn_mdconv_c3-c5_group4_r50_fpn_1x_20190911-5591a7e4.pth) |
 | R-50-FPN  | Faster       | pytorch | -             | dpool  | 1x      | 4.6      | 0.714               | 8.7            | 37.8   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/dcn/faster_rcnn_dpool_r50_fpn_1x_20190125-f4fc1d70.pth) |
 | R-50-FPN  | Faster       | pytorch | -             | mdpool | 1x      | 5.2      | 0.769               | 8.2            | 38.0   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/dcn/faster_rcnn_mdpool_r50_fpn_1x_20190125-473d0f3d.pth) |
 | R-101-FPN | Faster       | pytorch | dconv(c3-c5)  | -      | 1x      | 5.8      | 0.811               | 8.0            | 42.1   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/dcn/faster_rcnn_dconv_c3-c5_r101_fpn_1x_20190125-a7e31b65.pth) |
@@ -40,4 +41,5 @@
 
 - `dconv` and `mdconv` denote (modulated) deformable convolution, `c3-c5` means adding dconv in resnet stage 3 to 5. `dpool` and `mdpool` denote (modulated) deformable roi pooling.
 - The dcn ops are modified from https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch, which should be more memory efficient and slightly faster.
+- (*) For R-50-FPN (dg=4), dg is short for deformable_group. This model is trained and tested on Amazon EC2 p3dn.24xlarge instance.
 - **Memory, Train/Inf time is outdated.**

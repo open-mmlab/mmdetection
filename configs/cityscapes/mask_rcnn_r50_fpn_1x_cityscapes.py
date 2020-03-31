@@ -1,13 +1,14 @@
 # model settings
 model = dict(
     type='MaskRCNN',
-    pretrained='modelzoo://resnet50',
+    pretrained=None,
     backbone=dict(
         type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch'),
     neck=dict(
         type='FPN',
@@ -116,49 +117,57 @@ dataset_type = 'CityscapesDataset'
 data_root = 'data/cityscapes/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(
+        type='Resize', img_scale=[(2048, 800), (2048, 1024)], keep_ratio=True),
+    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Pad', size_divisor=32),
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+]
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(2048, 1024),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='RandomFlip'),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Pad', size_divisor=32),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img']),
+        ])
+]
 data = dict(
     imgs_per_gpu=1,
     workers_per_gpu=2,
     train=dict(
-        type='RepeatDataset',  # to avoid reloading datasets frequently
+        type='RepeatDataset',
         times=8,
         dataset=dict(
             type=dataset_type,
             ann_file=data_root +
             'annotations/instancesonly_filtered_gtFine_train.json',
-            img_prefix=data_root + 'train/',
-            img_scale=[(2048, 800), (2048, 1024)],
-            img_norm_cfg=img_norm_cfg,
-            multiscale_mode='range',
-            size_divisor=32,
-            flip_ratio=0.5,
-            with_mask=True,
-            with_crowd=True,
-            with_label=True)),
+            img_prefix=data_root + 'leftImg8bit/train/',
+            pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
         ann_file=data_root +
         'annotations/instancesonly_filtered_gtFine_val.json',
-        img_prefix=data_root + 'val/',
-        img_scale=(2048, 1024),
-        img_norm_cfg=img_norm_cfg,
-        size_divisor=32,
-        flip_ratio=0,
-        with_mask=True,
-        with_crowd=True,
-        with_label=True),
+        img_prefix=data_root + 'leftImg8bit/val/',
+        pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
         ann_file=data_root +
-        'annotations/instancesonly_filtered_gtFine_val.json',
-        img_prefix=data_root + 'val/',
-        img_scale=(2048, 1024),
-        img_norm_cfg=img_norm_cfg,
-        size_divisor=32,
-        flip_ratio=0,
-        with_mask=False,
-        with_label=False,
-        test_mode=True))
+        'annotations/instancesonly_filtered_gtFine_test.json',
+        img_prefix=data_root + 'leftImg8bit/test/',
+        pipeline=test_pipeline))
+evaluation = dict(interval=1, metric=['bbox', 'segm'])
 # optimizer
 # lr is set for a batch size of 8
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
@@ -169,7 +178,8 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
-    step=[6])
+    # [7] yields higher performance than [6]
+    step=[7])
 checkpoint_config = dict(interval=1)
 # yapf:disable
 log_config = dict(
@@ -184,6 +194,7 @@ total_epochs = 8  # actual epoch = 8 * 8 = 64
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes'
-load_from = None
+# For better, more stable performance initialize from COCO
+load_from = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/mask_rcnn_r50_fpn_2x_20181010-41d35c05.pth'  # noqa
 resume_from = None
 workflow = [('train', 1)]

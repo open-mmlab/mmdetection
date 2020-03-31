@@ -1,11 +1,12 @@
-
 # MMDetection
 
 **News**: We released the technical report on [ArXiv](https://arxiv.org/abs/1906.07155).
 
+Documentation: https://mmdetection.readthedocs.io/
+
 ## Introduction
 
-The master branch works with **PyTorch 1.1** or higher.
+The master branch works with **PyTorch 1.1 to 1.4**.
 
 mmdetection is an open source object detection toolbox based on PyTorch. It is
 a part of the open-mmlab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
@@ -36,51 +37,10 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 This project is released under the [Apache 2.0 license](LICENSE).
 
-## Updates
+## Changelog
 
-v1.0rc0 (27/07/2019)
-- Implement lots of new methods and components (Mixed Precision Training, HTC, Libra R-CNN, Guided Anchoring, Empirical Attention, Mask Scoring R-CNN, Grid R-CNN (Plus), GHM, GCNet, FCOS, HRNet, Weight Standardization, etc.). Thank all collaborators!
-- Support two additional datasets: WIDER FACE and Cityscapes.
-- Refactoring for loss APIs and make it more flexible to adopt different losses and related hyper-parameters.
-- Speed up multi-gpu testing.
-- Integrate all compiling and installing in a single script.
-
-v0.6.0 (14/04/2019)
-- Up to 30% speedup compared to the model zoo.
-- Support both PyTorch stable and nightly version.
-- Replace NMS and SigmoidFocalLoss with Pytorch CUDA extensions.
-
-v0.6rc0(06/02/2019)
-- Migrate to PyTorch 1.0.
-
-v0.5.7 (06/02/2019)
-- Add support for Deformable ConvNet v2. (Many thanks to the authors and [@chengdazhi](https://github.com/chengdazhi))
-- This is the last release based on PyTorch 0.4.1.
-
-v0.5.6 (17/01/2019)
-- Add support for Group Normalization.
-- Unify RPNHead and single stage heads (RetinaHead, SSDHead) with AnchorHead.
-
-v0.5.5 (22/12/2018)
-- Add SSD for COCO and PASCAL VOC.
-- Add ResNeXt backbones and detection models.
-- Refactoring for Samplers/Assigners and add OHEM.
-- Add VOC dataset and evaluation scripts.
-
-v0.5.4 (27/11/2018)
-- Add SingleStageDetector and RetinaNet.
-
-v0.5.3 (26/11/2018)
-- Add Cascade R-CNN and Cascade Mask R-CNN.
-- Add support for Soft-NMS in config files.
-
-v0.5.2 (21/10/2018)
-- Add support for custom datasets.
-- Add a script to convert PASCAL VOC annotations to the expected format.
-
-v0.5.1 (20/10/2018)
-- Add BBoxAssigner and BBoxSampler, the `train_cfg` field in config files are restructured.
-- `ConvFCRoIHead` / `SharedFCRoIHead` are renamed to `ConvFCBBoxHead` / `SharedFCBBoxHead` for consistency.
+v1.1.0 was released in 24/2/2020.
+Please refer to [CHANGELOG.md](docs/CHANGELOG.md) for details and release history.
 
 ## Benchmark and model zoo
 
@@ -99,22 +59,29 @@ Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 | RetinaNet          | ✓        | ✓        | ☐        | ✗        | ✓     |
 | GHM                | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
-| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Double-Head R-CNN  | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Grid R-CNN (Plus)  | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     |
 | Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     |
 | Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     |
+| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     |
+| RepPoints          | ✓        | ✓        | ☐        | ✗        | ✓     |
+| Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     |
+| FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     |
+| NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     |
+| ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     |
 
 Other features
-- [x] DCNv2
-- [x] Group Normalization
-- [x] Weight Standardization
-- [x] OHEM
+- [x] [CARAFE](configs/carafe/README.md)
+- [x] [DCNv2](configs/dcn/README.md)
+- [x] [Group Normalization](configs/gn/README.md)
+- [x] [Weight Standardization](configs/gn+ws/README.md)
+- [x] [OHEM](configs/faster_rcnn_ohem_r50_fpn_1x.py)
 - [x] Soft-NMS
-- [x] Generalized Attention
-- [x] GCNet
-- [x] Mixed Precision (FP16) Training
+- [x] [Generalized Attention](configs/empirical_attention/README.md)
+- [x] [GCNet](configs/gcnet/README.md)
+- [x] [Mixed Precision (FP16) Training](configs/fp16)
+- [x] [InstaBoost](configs/instaboost/README.md)
 
 
 ## Installation
@@ -157,4 +124,5 @@ If you use this toolbox or benchmark in your research, please cite this project.
 
 ## Contact
 
-This repo is currently maintained by Kai Chen ([@hellock](http://github.com/hellock)), Jiangmiao Pang ([@OceanPang](https://github.com/OceanPang)), Jiaqi Wang ([@myownskyW7](https://github.com/myownskyW7)) and Yuhang Cao ([@yhcao6](https://github.com/yhcao6)).
+This repo is currently maintained by Kai Chen ([@hellock](http://github.com/hellock)), Yuhang Cao ([@yhcao6](https://github.com/yhcao6)), Wenwei Zhang ([@ZwwWayne](https://github.com/ZwwWayne)),
+Jiarui Xu ([@xvjiarui](https://github.com/xvjiarui)). Other core developers include Jiangmiao Pang ([@OceanPang](https://github.com/OceanPang)) and Jiaqi Wang ([@myownskyW7](https://github.com/myownskyW7)).

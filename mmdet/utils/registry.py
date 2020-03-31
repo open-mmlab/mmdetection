@@ -1,4 +1,5 @@
 import inspect
+from functools import partial
 
 import mmcv
 
@@ -25,7 +26,7 @@ class Registry(object):
     def get(self, key):
         return self._module_dict.get(key, None)
 
-    def _register_module(self, module_class):
+    def _register_module(self, module_class, force=False):
         """Register a module.
 
         Args:
@@ -35,13 +36,15 @@ class Registry(object):
             raise TypeError('module must be a class, but got {}'.format(
                 type(module_class)))
         module_name = module_class.__name__
-        if module_name in self._module_dict:
+        if not force and module_name in self._module_dict:
             raise KeyError('{} is already registered in {}'.format(
                 module_name, self.name))
         self._module_dict[module_name] = module_class
 
-    def register_module(self, cls):
-        self._register_module(cls)
+    def register_module(self, cls=None, force=False):
+        if cls is None:
+            return partial(self.register_module, force=force)
+        self._register_module(cls, force=force)
         return cls
 
 
@@ -61,14 +64,16 @@ def build_from_cfg(cfg, registry, default_args=None):
     args = cfg.copy()
     obj_type = args.pop('type')
     if mmcv.is_str(obj_type):
-        obj_type = registry.get(obj_type)
-        if obj_type is None:
+        obj_cls = registry.get(obj_type)
+        if obj_cls is None:
             raise KeyError('{} is not in the {} registry'.format(
                 obj_type, registry.name))
-    elif not inspect.isclass(obj_type):
+    elif inspect.isclass(obj_type):
+        obj_cls = obj_type
+    else:
         raise TypeError('type must be a str or valid type, but got {}'.format(
             type(obj_type)))
     if default_args is not None:
         for name, value in default_args.items():
             args.setdefault(name, value)
-    return obj_type(**args)
+    return obj_cls(**args)

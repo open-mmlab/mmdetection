@@ -1,6 +1,7 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 #include <ATen/ATen.h>
 #include <ATen/cuda/CUDAContext.h>
+#include <ATen/DeviceGuard.h>
 
 #include <THC/THC.h>
 #include <THC/THCDeviceUtils.cuh>
@@ -68,6 +69,10 @@ __global__ void nms_kernel(const int n_boxes, const float nms_overlap_thresh,
 
 // boxes is a N x 5 tensor
 at::Tensor nms_cuda(const at::Tensor boxes, float nms_overlap_thresh) {
+
+  // Ensure CUDA uses the input tensor device.
+  at::DeviceGuard guard(boxes.device());
+
   using scalar_t = float;
   AT_ASSERTM(boxes.type().is_cuda(), "boxes must be a CUDA tensor");
   auto scores = boxes.select(1, 4);
@@ -91,16 +96,19 @@ at::Tensor nms_cuda(const at::Tensor boxes, float nms_overlap_thresh) {
   dim3 blocks(THCCeilDiv(boxes_num, threadsPerBlock),
               THCCeilDiv(boxes_num, threadsPerBlock));
   dim3 threads(threadsPerBlock);
-  nms_kernel<<<blocks, threads>>>(boxes_num,
+  nms_kernel<<<blocks, threads, 0, at::cuda::getCurrentCUDAStream()>>>(boxes_num,
                                   nms_overlap_thresh,
                                   boxes_dev,
                                   mask_dev);
 
   std::vector<unsigned long long> mask_host(boxes_num * col_blocks);
-  THCudaCheck(cudaMemcpy(&mask_host[0],
-                        mask_dev,
-                        sizeof(unsigned long long) * boxes_num * col_blocks,
-                        cudaMemcpyDeviceToHost));
+  THCudaCheck(cudaMemcpyAsync(
+			  &mask_host[0],
+			  mask_dev,
+			  sizeof(unsigned long long) * boxes_num * col_blocks,
+			  cudaMemcpyDeviceToHost,
+			  at::cuda::getCurrentCUDAStream()
+			  ));
 
   std::vector<unsigned long long> remv(col_blocks);
   memset(&remv[0], 0, sizeof(unsigned long long) * col_blocks);

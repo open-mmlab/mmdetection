@@ -13,6 +13,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch'),
     neck=dict(
         type='FPN',
@@ -48,13 +49,8 @@ model = dict(
             target_stds=[0.1, 0.1, 0.2, 0.2],
             reg_class_agnostic=True,
             loss_cls=dict(
-                type='CrossEntropyLoss',
-                use_sigmoid=False,
-                loss_weight=1.0),
-            loss_bbox=dict(
-                type='SmoothL1Loss',
-                beta=1.0,
-                loss_weight=1.0)),
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
         dict(
             type='SharedFCBBoxHead',
             num_fcs=2,
@@ -66,13 +62,8 @@ model = dict(
             target_stds=[0.05, 0.05, 0.1, 0.1],
             reg_class_agnostic=True,
             loss_cls=dict(
-                type='CrossEntropyLoss',
-                use_sigmoid=False,
-                loss_weight=1.0),
-            loss_bbox=dict(
-                type='SmoothL1Loss',
-                beta=1.0,
-                loss_weight=1.0)),
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
         dict(
             type='SharedFCBBoxHead',
             num_fcs=2,
@@ -84,27 +75,41 @@ model = dict(
             target_stds=[0.033, 0.033, 0.067, 0.067],
             reg_class_agnostic=True,
             loss_cls=dict(
-                type='CrossEntropyLoss',
-                use_sigmoid=False,
-                loss_weight=1.0),
-            loss_bbox=dict(
-                type='SmoothL1Loss',
-                beta=1.0,
-                loss_weight=1.0))
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
     ],
     mask_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
         out_channels=256,
         featmap_strides=[4, 8, 16, 32]),
-    mask_head=dict(
-        type='HTCMaskHead',
-        num_convs=4,
-        in_channels=256,
-        conv_out_channels=256,
-        num_classes=81,
-        loss_mask=dict(
-            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)),
+    mask_head=[
+        dict(
+            type='HTCMaskHead',
+            with_conv_res=False,
+            num_convs=4,
+            in_channels=256,
+            conv_out_channels=256,
+            num_classes=81,
+            loss_mask=dict(
+                type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)),
+        dict(
+            type='HTCMaskHead',
+            num_convs=4,
+            in_channels=256,
+            conv_out_channels=256,
+            num_classes=81,
+            loss_mask=dict(
+                type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)),
+        dict(
+            type='HTCMaskHead',
+            num_convs=4,
+            in_channels=256,
+            conv_out_channels=256,
+            num_classes=81,
+            loss_mask=dict(
+                type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))
+    ],
     semantic_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
@@ -208,13 +213,41 @@ test_cfg = dict(
         score_thr=0.001,
         nms=dict(type='nms', iou_thr=0.5),
         max_per_img=100,
-        mask_thr_binary=0.5),
-    keep_all_stages=False)
+        mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadAnnotations', with_bbox=True, with_mask=True, with_seg=True),
+    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Pad', size_divisor=32),
+    dict(type='SegRescale', scale_factor=1 / 8),
+    dict(type='DefaultFormatBundle'),
+    dict(
+        type='Collect',
+        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg']),
+]
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(1333, 800),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='RandomFlip', flip_ratio=0.5),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Pad', size_divisor=32),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img']),
+        ])
+]
 data = dict(
     imgs_per_gpu=1,
     workers_per_gpu=1,
@@ -222,38 +255,19 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
-        img_scale=(1333, 800),
-        img_norm_cfg=img_norm_cfg,
-        size_divisor=32,
-        flip_ratio=0.5,
         seg_prefix=data_root + 'stuffthingmaps/train2017/',
-        seg_scale_factor=1 / 8,
-        with_mask=True,
-        with_crowd=True,
-        with_label=True,
-        with_semantic_seg=True),
+        pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
-        img_scale=(1333, 800),
-        img_norm_cfg=img_norm_cfg,
-        size_divisor=32,
-        flip_ratio=0,
-        with_mask=True,
-        with_crowd=True,
-        with_label=True),
+        pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
-        img_scale=(1333, 800),
-        img_norm_cfg=img_norm_cfg,
-        size_divisor=32,
-        flip_ratio=0,
-        with_mask=True,
-        with_label=False,
-        test_mode=True))
+        pipeline=test_pipeline))
+evaluation = dict(interval=1, metric=['bbox', 'segm'])
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))

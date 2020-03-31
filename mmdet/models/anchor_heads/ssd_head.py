@@ -143,8 +143,10 @@ class SSDHead(AnchorHead):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
 
+        device = cls_scores[0].device
+
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas)
+            featmap_sizes, img_metas, device=device)
         cls_reg_targets = anchor_target(
             anchor_list,
             valid_flag_list,
@@ -179,6 +181,12 @@ class SSDHead(AnchorHead):
                                      -2).view(num_images, -1, 4)
         all_bbox_weights = torch.cat(bbox_weights_list,
                                      -2).view(num_images, -1, 4)
+
+        # check NaN and Inf
+        assert torch.isfinite(all_cls_scores).all().item(), \
+            'classification scores become infinite or NaN!'
+        assert torch.isfinite(all_bbox_preds).all().item(), \
+            'bbox predications become infinite or NaN!'
 
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,

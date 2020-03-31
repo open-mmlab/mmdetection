@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
 
+from mmdet.ops import ConvModule
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import ConvModule
 
 
 @HEADS.register_module
@@ -293,7 +293,7 @@ class GridHead(nn.Module):
         loss_grid = loss_fused + loss_unfused
         return dict(loss_grid=loss_grid)
 
-    def get_bboxes(self, det_bboxes, grid_pred, img_meta):
+    def get_bboxes(self, det_bboxes, grid_pred, img_metas):
         # TODO: refactoring
         assert det_bboxes.shape[0] == grid_pred.shape[0]
         det_bboxes = det_bboxes.cpu()
@@ -355,7 +355,7 @@ class GridHead(nn.Module):
 
         bbox_res = torch.cat(
             [bboxes_x1, bboxes_y1, bboxes_x2, bboxes_y2, cls_scores], dim=1)
-        bbox_res[:, [0, 2]].clamp_(min=0, max=img_meta[0]['img_shape'][1] - 1)
-        bbox_res[:, [1, 3]].clamp_(min=0, max=img_meta[0]['img_shape'][0] - 1)
+        bbox_res[:, [0, 2]].clamp_(min=0, max=img_metas[0]['img_shape'][1] - 1)
+        bbox_res[:, [1, 3]].clamp_(min=0, max=img_metas[0]['img_shape'][0] - 1)
 
         return bbox_res

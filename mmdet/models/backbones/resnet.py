@@ -1,15 +1,13 @@
-import logging
-
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.plugins import GeneralizedAttention
-from mmdet.ops import ContextBlock, DeformConv, ModulatedDeformConv
+from mmdet.ops import (ContextBlock, GeneralizedAttention, build_conv_layer,
+                       build_norm_layer)
+from mmdet.utils import get_root_logger
 from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
 
 
 class BasicBlock(nn.Module):
@@ -29,9 +27,9 @@ class BasicBlock(nn.Module):
                  gcb=None,
                  gen_attention=None):
         super(BasicBlock, self).__init__()
-        assert dcn is None, "Not implemented yet."
-        assert gen_attention is None, "Not implemented yet."
-        assert gcb is None, "Not implemented yet."
+        assert dcn is None, 'Not implemented yet.'
+        assert gen_attention is None, 'Not implemented yet.'
+        assert gcb is None, 'Not implemented yet.'
 
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
@@ -145,10 +143,8 @@ class Bottleneck(nn.Module):
             bias=False)
         self.add_module(self.norm1_name, norm1)
         fallback_on_stride = False
-        self.with_modulated_dcn = False
         if self.with_dcn:
-            fallback_on_stride = dcn.get('fallback_on_stride', False)
-            self.with_modulated_dcn = dcn.get('modulated', False)
+            fallback_on_stride = dcn.pop('fallback_on_stride', False)
         if not self.with_dcn or fallback_on_stride:
             self.conv2 = build_conv_layer(
                 conv_cfg,
@@ -160,30 +156,17 @@ class Bottleneck(nn.Module):
                 dilation=dilation,
                 bias=False)
         else:
-            assert conv_cfg is None, 'conv_cfg must be None for DCN'
-            deformable_groups = dcn.get('deformable_groups', 1)
-            if not self.with_modulated_dcn:
-                conv_op = DeformConv
-                offset_channels = 18
-            else:
-                conv_op = ModulatedDeformConv
-                offset_channels = 27
-            self.conv2_offset = nn.Conv2d(
-                planes,
-                deformable_groups * offset_channels,
-                kernel_size=3,
-                stride=self.conv2_stride,
-                padding=dilation,
-                dilation=dilation)
-            self.conv2 = conv_op(
+            assert self.conv_cfg is None, 'conv_cfg cannot be None for DCN'
+            self.conv2 = build_conv_layer(
+                dcn,
                 planes,
                 planes,
                 kernel_size=3,
                 stride=self.conv2_stride,
                 padding=dilation,
                 dilation=dilation,
-                deformable_groups=deformable_groups,
                 bias=False)
+
         self.add_module(self.norm2_name, norm2)
         self.conv3 = build_conv_layer(
             conv_cfg,
@@ -226,16 +209,7 @@ class Bottleneck(nn.Module):
             out = self.norm1(out)
             out = self.relu(out)
 
-            if not self.with_dcn:
-                out = self.conv2(out)
-            elif self.with_modulated_dcn:
-                offset_mask = self.conv2_offset(out)
-                offset = offset_mask[:, :18, :, :]
-                mask = offset_mask[:, -9:, :, :].sigmoid()
-                out = self.conv2(out, offset, mask)
-            else:
-                offset = self.conv2_offset(out)
-                out = self.conv2(out, offset)
+            out = self.conv2(out)
             out = self.norm2(out)
             out = self.relu(out)
 
@@ -334,6 +308,7 @@ class ResNet(nn.Module):
 
     Args:
         depth (int): Depth of resnet, from {18, 34, 50, 101, 152}.
+        in_channels (int): Number of input image channels. Normally 3.
         num_stages (int): Resnet stages, normally 4.
         strides (Sequence[int]): Strides of the first block of each stage.
         dilations (Sequence[int]): Dilation of each stage.
@@ -351,6 +326,20 @@ class ResNet(nn.Module):
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+
+    Example:
+        >>> from mmdet.models import ResNet
+        >>> import torch
+        >>> self = ResNet(depth=18)
+        >>> self.eval()
+        >>> inputs = torch.rand(1, 3, 32, 32)
+        >>> level_outputs = self.forward(inputs)
+        >>> for level_out in level_outputs:
+        ...     print(tuple(level_out.shape))
+        (1, 64, 8, 8)
+        (1, 128, 4, 4)
+        (1, 256, 2, 2)
+        (1, 512, 1, 1)
     """
 
     arch_settings = {
@@ -363,6 +352,7 @@ class ResNet(nn.Module):
 
     def __init__(self,
                  depth,
+                 in_channels=3,
                  num_stages=4,
                  strides=(1, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
@@ -411,7 +401,7 @@ class ResNet(nn.Module):
         self.stage_blocks = stage_blocks[:num_stages]
         self.inplanes = 64
 
-        self._make_stem_layer()
+        self._make_stem_layer(in_channels)
 
         self.res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
@@ -449,10 +439,10 @@ class ResNet(nn.Module):
     def norm1(self):
         return getattr(self, self.norm1_name)
 
-    def _make_stem_layer(self):
+    def _make_stem_layer(self, in_channels):
         self.conv1 = build_conv_layer(
             self.conv_cfg,
-            3,
+            in_channels,
             64,
             kernel_size=7,
             stride=2,
@@ -478,7 +468,7 @@ class ResNet(nn.Module):
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
-            logger = logging.getLogger()
+            logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)
         elif pretrained is None:
             for m in self.modules():

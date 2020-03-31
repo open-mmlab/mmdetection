@@ -11,6 +11,11 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin, RPNTestMixin
 @DETECTORS.register_module
 class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                        MaskTestMixin):
+    """Base class for two-stage detectors.
+
+    Two-stage detectors typically consisting of a region proposal network and a
+    task-specific regression head.
+    """
 
     def __init__(self,
                  backbone,
@@ -82,12 +87,18 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                 self.mask_roi_extractor.init_weights()
 
     def extract_feat(self, img):
+        """Directly extract features from the backbone+neck
+        """
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
         return x
 
     def forward_dummy(self, img):
+        """Used for computing network flops.
+
+        See `mmdetection/tools/get_flops.py`
+        """
         outs = ()
         # backbone
         x = self.extract_feat(img)
@@ -95,7 +106,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
             outs = outs + (rpn_outs, )
-        proposals = torch.randn(1000, 4).cuda()
+        proposals = torch.randn(1000, 4).to(device=img.device)
         # bbox head
         rois = bbox2roi([proposals])
         if self.with_bbox:
@@ -118,12 +129,40 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
     def forward_train(self,
                       img,
-                      img_meta,
+                      img_metas,
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       proposals=None):
+        """
+        Args:
+            img (Tensor): of shape (N, C, H, W) encoding input images.
+                Typically these should be mean centered and std scaled.
+
+            img_metas (list[dict]): list of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+
+            gt_labels (list[Tensor]): class indices corresponding to each box
+
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+            gt_masks (None | Tensor) : true segmentation masks for each box
+                used if the architecture supports a segmentation task.
+
+            proposals : override rpn proposals with custom proposals. Use when
+                `with_rpn` is False.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
         x = self.extract_feat(img)
 
         losses = dict()
@@ -131,7 +170,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         # RPN forward and loss
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
-            rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
+            rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas,
                                           self.train_cfg.rpn)
             rpn_losses = self.rpn_head.loss(
                 *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
@@ -139,7 +178,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
-            proposal_inputs = rpn_outs + (img_meta, proposal_cfg)
+            proposal_inputs = rpn_outs + (img_metas, proposal_cfg)
             proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
         else:
             proposal_list = proposals
@@ -208,29 +247,35 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                             dtype=torch.uint8))
                 pos_inds = torch.cat(pos_inds)
                 mask_feats = bbox_feats[pos_inds]
-            mask_pred = self.mask_head(mask_feats)
 
-            mask_targets = self.mask_head.get_target(sampling_results,
-                                                     gt_masks,
-                                                     self.train_cfg.rcnn)
-            pos_labels = torch.cat(
-                [res.pos_gt_labels for res in sampling_results])
-            loss_mask = self.mask_head.loss(mask_pred, mask_targets,
-                                            pos_labels)
-            losses.update(loss_mask)
+            if mask_feats.shape[0] > 0:
+                mask_pred = self.mask_head(mask_feats)
+                mask_targets = self.mask_head.get_target(
+                    sampling_results, gt_masks, self.train_cfg.rcnn)
+                pos_labels = torch.cat(
+                    [res.pos_gt_labels for res in sampling_results])
+                loss_mask = self.mask_head.loss(mask_pred, mask_targets,
+                                                pos_labels)
+                losses.update(loss_mask)
 
         return losses
 
-    def simple_test(self, img, img_meta, proposals=None, rescale=False):
-        """Test without augmentation."""
-        assert self.with_bbox, "Bbox head must be implemented."
-
+    async def async_simple_test(self,
+                                img,
+                                img_meta,
+                                proposals=None,
+                                rescale=False):
+        """Async test without augmentation."""
+        assert self.with_bbox, 'Bbox head must be implemented.'
         x = self.extract_feat(img)
 
-        proposal_list = self.simple_test_rpn(
-            x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
+        if proposals is None:
+            proposal_list = await self.async_test_rpn(x, img_meta,
+                                                      self.test_cfg.rpn)
+        else:
+            proposal_list = proposals
 
-        det_bboxes, det_labels = self.simple_test_bboxes(
+        det_bboxes, det_labels = await self.async_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
         bbox_results = bbox2result(det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
@@ -238,8 +283,37 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         if not self.with_mask:
             return bbox_results
         else:
+            segm_results = await self.async_test_mask(
+                x,
+                img_meta,
+                det_bboxes,
+                det_labels,
+                rescale=rescale,
+                mask_test_cfg=self.test_cfg.get('mask'))
+            return bbox_results, segm_results
+
+    def simple_test(self, img, img_metas, proposals=None, rescale=False):
+        """Test without augmentation."""
+        assert self.with_bbox, 'Bbox head must be implemented.'
+
+        x = self.extract_feat(img)
+
+        if proposals is None:
+            proposal_list = self.simple_test_rpn(x, img_metas,
+                                                 self.test_cfg.rpn)
+        else:
+            proposal_list = proposals
+
+        det_bboxes, det_labels = self.simple_test_bboxes(
+            x, img_metas, proposal_list, self.test_cfg.rcnn, rescale=rescale)
+        bbox_results = bbox2result(det_bboxes, det_labels,
+                                   self.bbox_head.num_classes)
+
+        if not self.with_mask:
+            return bbox_results
+        else:
             segm_results = self.simple_test_mask(
-                x, img_meta, det_bboxes, det_labels, rescale=rescale)
+                x, img_metas, det_bboxes, det_labels, rescale=rescale)
             return bbox_results, segm_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
