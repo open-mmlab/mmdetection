@@ -57,20 +57,26 @@ def test_resnet_basic_block():
 
     with pytest.raises(AssertionError):
         # Not implemented yet.
-        plugin = dict(conv3=[dict(type='ContextBlock', ratio=1. / 4)])
-        BasicBlock(64, 64, plugins=plugin)
+        plugins = [
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 16),
+                position='after_conv3')
+        ]
+        BasicBlock(64, 64, plugins=plugins)
 
     with pytest.raises(AssertionError):
         # Not implemented yet
-        plugin = dict(conv2=[
+        plugins = [
             dict(
-                type='GeneralizedAttention',
-                spatial_range=-1,
-                num_heads=8,
-                attention_type='0010',
-                kv_stride=2),
-        ])
-        BasicBlock(64, 64, plugins=plugin)
+                cfg=dict(
+                    type='GeneralizedAttention',
+                    spatial_range=-1,
+                    num_heads=8,
+                    attention_type='0010',
+                    kv_stride=2),
+                position='after_conv2')
+        ]
+        BasicBlock(64, 64, plugins=plugins)
 
     block = BasicBlock(64, 64)
     assert block.conv1.in_channels == 64
@@ -91,12 +97,16 @@ def test_resnet_bottleneck():
         Bottleneck(64, 64, style='tensorflow')
 
     with pytest.raises(AssertionError):
-        plugin = dict(conv4=[dict(type='ContextBlock', ratio=1. / 4)])
-        Bottleneck(64, 16, plugins=plugin)
+        plugins = [
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 16),
+                position='after_conv4')
+        ]
+        Bottleneck(64, 16, plugins=plugins)
 
     with pytest.raises(KeyError):
-        plugin = dict(conv3=[dict(type='WrongPlugin')])
-        Bottleneck(64, 16, plugins=plugin)
+        plugins = [dict(cfg=dict(type='WrongPlugin'), position='after_conv3')]
+        Bottleneck(64, 16, plugins=plugins)
 
     block = Bottleneck(64, 16, with_cp=True)
     assert block.with_cp
@@ -122,43 +132,70 @@ def test_resnet_bottleneck():
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
-    plugin = dict(conv3=[dict(type='ContextBlock', ratio=1. / 4)])
-    block = Bottleneck(64, 16, plugins=plugin)
+    plugins = [
+        dict(
+            cfg=dict(type='ContextBlock', ratio=1. / 16),
+            position='after_conv3')
+    ]
+    block = Bottleneck(64, 16, plugins=plugins)
     assert block.context_block.in_channels == 64
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
-    plugin = dict(conv2=[
+    plugins = [
         dict(
-            type='GeneralizedAttention',
-            spatial_range=-1,
-            num_heads=8,
-            attention_type='0010',
-            kv_stride=2),
-    ])
-    block = Bottleneck(64, 16, plugins=plugin)
-    assert block.gen_attention_block.in_channels == 16
-    x = torch.randn(1, 64, 56, 56)
-    x_out = block(x)
-    assert x_out.shape == torch.Size([1, 64, 56, 56])
-
-    plugin = dict(
-        conv2=[
-            dict(
+            cfg=dict(
                 type='GeneralizedAttention',
                 spatial_range=-1,
                 num_heads=8,
                 attention_type='0010',
                 kv_stride=2),
-            dict(type='NonLocal2D')
-        ],
-        conv3=[dict(type='ContextBlock', ratio=1. / 4)],
-    )
-    block = Bottleneck(64, 16, plugins=plugin)
+            position='after_conv2')
+    ]
+    block = Bottleneck(64, 16, plugins=plugins)
+    assert block.gen_attention_block.in_channels == 16
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
+    plugins = [
+        dict(
+            cfg=dict(
+                type='GeneralizedAttention',
+                spatial_range=-1,
+                num_heads=8,
+                attention_type='0010',
+                kv_stride=2),
+            position='after_conv2'),
+        dict(cfg=dict(type='NonLocal2D'), position='after_conv2'),
+        dict(
+            cfg=dict(type='ContextBlock', ratio=1. / 16),
+            position='after_conv3')
+    ]
+    block = Bottleneck(64, 16, plugins=plugins)
     assert block.gen_attention_block.in_channels == 16
     assert block.nonlocal_block.in_channels == 16
     assert block.context_block.in_channels == 64
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
+    plugins = [
+        dict(
+            cfg=dict(type='ContextBlock', ratio=1. / 16, postfix=1),
+            position='after_conv2'),
+        dict(
+            cfg=dict(type='ContextBlock', ratio=1. / 16, postfix=2),
+            position='after_conv3'),
+        dict(
+            cfg=dict(type='ContextBlock', ratio=1. / 16, postfix=3),
+            position='after_conv3')
+    ]
+    block = Bottleneck(64, 16, plugins=plugins)
+    assert block.context_block1.in_channels == 16
+    assert block.context_block2.in_channels == 64
+    assert block.context_block3.in_channels == 64
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
@@ -226,10 +263,12 @@ def test_resnet_backbone():
 
     with pytest.raises(AssertionError):
         # len(stage_with_plugin) == num_stages
-        plugins = dict(conv3=[
+        plugins = [
             dict(
-                cfg=dict(type='ContextBlock', ratio=1. / 16), stages=(False, ))
-        ])
+                cfg=dict(type='ContextBlock', ratio=1. / 16),
+                stages=(False, True, True),
+                position='after_conv3')
+        ]
         ResNet(50, plugins=plugins)
 
     with pytest.raises(AssertionError):
@@ -365,27 +404,27 @@ def test_resnet_backbone():
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
 
-    plugins = dict(
-        conv2=[
-            dict(
-                cfg=dict(
-                    type='GeneralizedAttention',
-                    spatial_range=-1,
-                    num_heads=8,
-                    attention_type='0010',
-                    kv_stride=2),
-                stages=(False, True, True, True)),
-            dict(cfg=dict(type='NonLocal2D')),
-        ],
-        conv3=[
-            dict(
-                cfg=dict(type='ContextBlock', ratio=1. / 16),
-                stages=(False, True, True, True))
-        ],
-    )
+    plugins = [
+        dict(
+            cfg=dict(
+                type='GeneralizedAttention',
+                spatial_range=-1,
+                num_heads=8,
+                attention_type='0010',
+                kv_stride=2),
+            stages=(False, True, True, True),
+            position='after_conv2'),
+        dict(cfg=dict(type='NonLocal2D'), position='after_conv2'),
+        dict(
+            cfg=dict(type='ContextBlock', ratio=1. / 16),
+            stages=(False, True, True, False),
+            position='after_conv3')
+    ]
     model = ResNet(50, plugins=plugins)
     for m in model.layer1.modules():
         if is_block(m):
+            assert not hasattr(m, 'context_block')
+            assert not hasattr(m, 'gen_attention_block')
             assert m.nonlocal_block.in_channels == 64
     for m in model.layer2.modules():
         if is_block(m):
@@ -403,7 +442,52 @@ def test_resnet_backbone():
         if is_block(m):
             assert m.nonlocal_block.in_channels == 512
             assert m.gen_attention_block.in_channels == 512
-            assert m.context_block.in_channels == 2048
+            assert not hasattr(m, 'context_block')
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 224, 224)
+    feat = model(imgs)
+    assert len(feat) == 4
+    assert feat[0].shape == torch.Size([1, 256, 56, 56])
+    assert feat[1].shape == torch.Size([1, 512, 28, 28])
+    assert feat[2].shape == torch.Size([1, 1024, 14, 14])
+    assert feat[3].shape == torch.Size([1, 2048, 7, 7])
+
+    plugins = [
+        dict(
+            cfg=dict(type='ContextBlock', ratio=1. / 16, postfix=1),
+            stages=(False, True, True, False),
+            position='after_conv3'),
+        dict(
+            cfg=dict(type='ContextBlock', ratio=1. / 16, postfix=2),
+            stages=(False, True, True, False),
+            position='after_conv3')
+    ]
+
+    model = ResNet(50, plugins=plugins)
+    for m in model.layer1.modules():
+        if is_block(m):
+            assert not hasattr(m, 'context_block')
+            assert not hasattr(m, 'context_block1')
+            assert not hasattr(m, 'context_block2')
+    for m in model.layer2.modules():
+        if is_block(m):
+            assert not hasattr(m, 'context_block')
+            assert m.context_block1.in_channels == 512
+            assert m.context_block2.in_channels == 512
+
+    for m in model.layer3.modules():
+        if is_block(m):
+            assert not hasattr(m, 'context_block')
+            assert m.context_block1.in_channels == 1024
+            assert m.context_block2.in_channels == 1024
+
+    for m in model.layer4.modules():
+        if is_block(m):
+            assert not hasattr(m, 'context_block')
+            assert not hasattr(m, 'context_block1')
+            assert not hasattr(m, 'context_block2')
     model.init_weights()
     model.train()
 

@@ -10,15 +10,18 @@ plugin_cfg = {
 }
 
 
-def build_plugin_layer(cfg, *args, **kwargs):
+def build_plugin_layer(cfg, postfix='', **kwargs):
     """ Build plugin layer
 
     Args:
         cfg (None or dict): cfg should contain:
             type (str): identify plugin layer type.
             layer args: args needed to instantiate a plugin layer.
+        postfix (int, str): appended into norm abbreviation to
+            create named layer.
 
     Returns:
+        name (str): abbreviation + postfix
         layer (nn.Module): created plugin layer
     """
     assert isinstance(cfg, dict) and 'type' in cfg
@@ -30,6 +33,9 @@ def build_plugin_layer(cfg, *args, **kwargs):
     else:
         name, plugin_layer = plugin_cfg[layer_type]
 
-    layer = plugin_layer(*args, **kwargs, **cfg_)
+    assert isinstance(postfix, (int, str))
+    name = name + str(postfix)
+
+    layer = plugin_layer(**kwargs, **cfg_)
 
     return name, layer

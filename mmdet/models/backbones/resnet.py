@@ -101,9 +101,10 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
         assert dcn is None or isinstance(dcn, dict)
-        assert plugins is None or isinstance(plugins, dict)
+        assert plugins is None or isinstance(plugins, list)
         if plugins is not None:
-            assert all(p in ['conv1', 'conv2', 'conv3'] for p in plugins)
+            allowed_position = ['after_conv1', 'after_conv2', 'after_conv3']
+            assert all(p['position'] in allowed_position for p in plugins)
 
         self.inplanes = inplanes
         self.planes = planes
@@ -115,12 +116,22 @@ class Bottleneck(nn.Module):
         self.norm_cfg = norm_cfg
         self.dcn = dcn
         self.with_dcn = dcn is not None
-        self.conv1_plugins = plugins.get('conv1',
-                                         []) if plugins is not None else []
-        self.conv2_plugins = plugins.get('conv2',
-                                         []) if plugins is not None else []
-        self.conv3_plugins = plugins.get('conv3',
-                                         []) if plugins is not None else []
+        self.plugins = plugins
+        self.with_plugins = plugins is not None
+
+        if self.with_plugins:
+            self.after_conv1_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv1'
+            ]
+            self.after_conv2_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv2'
+            ]
+            self.after_conv3_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv3'
+            ]
 
         if self.style == 'pytorch':
             self.conv1_stride = 1
@@ -179,12 +190,13 @@ class Bottleneck(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
 
-        self.conv1_plugin_names = self.make_block_plugins(
-            planes, self.conv1_plugins)
-        self.conv2_plugin_names = self.make_block_plugins(
-            planes, self.conv2_plugins)
-        self.conv3_plugin_names = self.make_block_plugins(
-            planes * self.expansion, self.conv3_plugins)
+        if self.with_plugins:
+            self.after_conv1_plugin_names = self.make_block_plugins(
+                planes, self.after_conv1_plugins)
+            self.after_conv2_plugin_names = self.make_block_plugins(
+                planes, self.after_conv2_plugins)
+            self.after_conv3_plugin_names = self.make_block_plugins(
+                planes * self.expansion, self.after_conv3_plugins)
 
     def make_block_plugins(self, in_channels, plugins):
         """ make plugins for block
@@ -196,7 +208,11 @@ class Bottleneck(nn.Module):
         assert isinstance(plugins, list)
         plugin_names = []
         for plugin in plugins:
-            name, layer = build_plugin_layer(plugin, in_channels=in_channels)
+            plugin = plugin.copy()
+            name, layer = build_plugin_layer(
+                plugin,
+                in_channels=in_channels,
+                postfix=plugin.pop('postfix', ''))
             self.add_module(name, layer)
             plugin_names.append(name)
         return plugin_names
@@ -228,18 +244,21 @@ class Bottleneck(nn.Module):
             out = self.norm1(out)
             out = self.relu(out)
 
-            out = self.forward_plugin(out, self.conv1_plugin_names)
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv1_plugin_names)
 
             out = self.conv2(out)
             out = self.norm2(out)
             out = self.relu(out)
 
-            out = self.forward_plugin(out, self.conv2_plugin_names)
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv2_plugin_names)
 
             out = self.conv3(out)
             out = self.norm3(out)
 
-            out = self.forward_plugin(out, self.conv3_plugin_names)
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv3_plugin_names)
 
             if self.downsample is not None:
                 identity = self.downsample(x)
@@ -281,7 +300,10 @@ class ResNet(nn.Module):
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
-        plugins (dict): plugins cfg for each stage
+        plugins (list[dict]): list of plugins for stages, each dict contains:
+            cfg (dict): cfg dict to build plugin
+            position (str): position inside block to insert plugin
+            stages (tuple(bool)|None): stages to apply plugin
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
         zero_init_residual (bool): whether to use zero init for last norm layer
@@ -367,8 +389,10 @@ class ResNet(nn.Module):
             stride = strides[i]
             dilation = dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
-            stage_plugins = self.make_stage_plugins(
-                plugins, i, num_stages) if plugins is not None else None
+            if plugins is not None:
+                stage_plugins = self.make_stage_plugins(plugins, i)
+            else:
+                stage_plugins = None
             planes = base_channels * 2**i
             res_layer = self.make_res_layer(
                 block=self.block,
@@ -394,50 +418,43 @@ class ResNet(nn.Module):
         self.feat_dim = self.block.expansion * base_channels * 2**(
             len(self.stage_blocks) - 1)
 
-    def make_stage_plugins(self, plugins, stage_idx, num_stages):
+    def make_stage_plugins(self, plugins, stage_idx):
         """ make plugins for stage.
 
-        An example of plugins format couold be :
-        >>> plugins=dict(
-        ...     conv2=[
-        ...         dict(cfg=dict(type='xxx', arg1='xxx'),
-        ...              stages=(False, True, True, True)),
-        ...     ],
-        ...     conv3=[
-        ...         dict(cfg=dict(type='yyy')),
-        ...         dict(cfg=dict(type='yy2'),
-        ...              stages=(False, False, True, True)),
-        ...     ])
+        An example of plugins format could be :
+        >>> plugins=[
+        ...     dict(cfg=dict(type='xxx', arg1='xxx'),
+        ...          stages=(False, True, True, True),
+        ...          position='after_conv2'),
+        ...     dict(cfg=dict(type='yyy'),
+        ...          stages=(True, True, True, True),
+        ...          position='after_conv3'),
+        ...     dict(cfg=dict(type='zzz', postfix='1'),
+        ...          stages=(True, True, True, True),
+        ...          position='after_conv3')
+        ...     dict(cfg=dict(type='zzz', postfix='2'),
+        ...          stages=(True, True, True, True),
+        ...          position='after_conv3')
+        ...     ]
         if stages is missing, the plugin would be applied to all stages.
 
         Args:
             plugins (list[dict]): list of plugins cfg to build.
             stage_idx (int): index of stage to build
-            num_stages (int): total number of stages
 
-        Return:
-            After whether applied in this stage is determined, the plugins
-            will be packed into this style, suppose stage_idx=2:
-        >>> plugins=dict(conv2=[
-        ...                 dict(type='xxx', arg1='xxx')
-        ...              ]),
-        ...             conv3=[dict(type='yyy'), dict(type='yy2')])
+        Returns:
+            list[dict]: plugins for current stage
 
         """
-        plugins = plugins.copy()
-        for conv_stage in plugins:
-            stage_plugins = []
-            for plugin in plugins[conv_stage]:
-                assert isinstance(plugin, dict)
-                assert 'cfg' in plugin.keys()
-                stages = plugin.get('stages', None)
-                if stages is not None:
-                    assert len(stages) == num_stages
-                if stages is None or stages[stage_idx]:
-                    stage_plugins.append(plugin['cfg'])
-            plugins[conv_stage] = stage_plugins
+        stage_plugins = []
+        for plugin in plugins:
+            plugin = plugin.copy()
+            stages = plugin.pop('stages', None)
+            assert stages is None or len(stages) == self.num_stages
+            if stages is None or stages[stage_idx]:
+                stage_plugins.append(plugin)
 
-        return plugins
+        return stage_plugins
 
     def make_res_layer(self, **kwargs):
         return ResLayer(**kwargs)
