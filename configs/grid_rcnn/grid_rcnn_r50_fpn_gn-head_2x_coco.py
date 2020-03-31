@@ -31,35 +31,37 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
-    bbox_roi_extractor=dict(
-        type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
-        out_channels=256,
-        featmap_strides=[4, 8, 16, 32]),
-    bbox_head=dict(
-        type='Shared2FCBBoxHead',
-        with_reg=False,
-        in_channels=256,
-        fc_out_channels=1024,
-        roi_feat_size=7,
-        num_classes=81,
-        target_means=[0., 0., 0., 0.],
-        target_stds=[0.1, 0.1, 0.2, 0.2],
-        reg_class_agnostic=False),
-    grid_roi_extractor=dict(
-        type='SingleRoIExtractor',
-        roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
-        out_channels=256,
-        featmap_strides=[4, 8, 16, 32]),
-    grid_head=dict(
-        type='GridHead',
-        grid_points=9,
-        num_convs=8,
-        in_channels=256,
-        point_feat_channels=64,
-        norm_cfg=dict(type='GN', num_groups=36),
-        loss_grid=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=15)))
+    roi_head=dict(
+        type='GridRoIHead',
+        bbox_roi_extractor=dict(
+            type='SingleRoIExtractor',
+            roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
+            out_channels=256,
+            featmap_strides=[4, 8, 16, 32]),
+        bbox_head=dict(
+            type='Shared2FCBBoxHead',
+            with_reg=False,
+            in_channels=256,
+            fc_out_channels=1024,
+            roi_feat_size=7,
+            num_classes=81,
+            target_means=[0., 0., 0., 0.],
+            target_stds=[0.1, 0.1, 0.2, 0.2],
+            reg_class_agnostic=False),
+        grid_roi_extractor=dict(
+            type='SingleRoIExtractor',
+            roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
+            out_channels=256,
+            featmap_strides=[4, 8, 16, 32]),
+        grid_head=dict(
+            type='GridHead',
+            grid_points=9,
+            num_convs=8,
+            in_channels=256,
+            point_feat_channels=64,
+            norm_cfg=dict(type='GN', num_groups=36),
+            loss_grid=dict(
+                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=15))))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(

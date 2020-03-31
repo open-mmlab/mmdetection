@@ -180,7 +180,8 @@ def test_cascade_forward():
         'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
-    model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
+    model['roi_head']['bbox_roi_extractor']['roi_layer'][
+        'use_torchvision'] = True
 
     from mmdet.models import build_detector
     detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
@@ -233,7 +234,8 @@ def test_faster_rcnn_forward():
         'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
-    model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
+    model['roi_head']['bbox_roi_extractor']['roi_layer'][
+        'use_torchvision'] = True
 
     from mmdet.models import build_detector
     detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
@@ -286,7 +288,8 @@ def test_faster_rcnn_ohem_forward():
         'faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
-    model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
+    model['roi_head']['bbox_roi_extractor']['roi_layer'][
+        'use_torchvision'] = True
 
     from mmdet.models import build_detector
     detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)

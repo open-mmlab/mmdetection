@@ -14,14 +14,15 @@ model = dict(
             refine_level=2,
             refine_type='non_local')
     ],
-    bbox_head=dict(
-        loss_bbox=dict(
-            _delete_=True,
-            type='BalancedL1Loss',
-            alpha=0.5,
-            gamma=1.5,
-            beta=1.0,
-            loss_weight=1.0)))
+    roi_head=dict(
+        bbox_head=dict(
+            loss_bbox=dict(
+                _delete_=True,
+                type='BalancedL1Loss',
+                alpha=0.5,
+                gamma=1.5,
+                beta=1.0,
+                loss_weight=1.0))))
 # model training and testing settings
 train_cfg = dict(
     rcnn=dict(
