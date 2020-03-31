@@ -51,13 +51,14 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         outs = ()
         rois = bbox2roi([proposals])
         if self.with_bbox:
-            cls_score, bbox_pred, _ = self._bbox_forward(x, rois)
-            outs = outs + (cls_score, bbox_pred)
+            bbox_results = self._bbox_forward(x, rois)
+            outs = outs + (bbox_results['cls_score'],
+                           bbox_results['bbox_pred'])
         # mask head
         if self.with_mask:
             mask_rois = rois[:100]
-            mask_pred, _ = self._mask_forward(x, mask_rois)
-            outs = outs + (mask_pred, )
+            mask_results = self._mask_forward(x, mask_rois)
+            outs = outs + (mask_results['mask_pred'], )
         return outs
 
     def forward_train(self,
@@ -115,17 +116,18 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         losses = dict()
         # bbox head forward and loss
         if self.with_bbox:
-            loss_bbox, bbox_feats = self._bbox_forward_train(
-                x, sampling_results, gt_bboxes, gt_labels, img_metas)
-            losses.update(loss_bbox)
+            bbox_results = self._bbox_forward_train(x, sampling_results,
+                                                    gt_bboxes, gt_labels,
+                                                    img_metas)
+            losses.update(bbox_results['loss_bbox'])
 
         # mask head forward and loss
         if self.with_mask:
-            loss_mask = self._mask_forward_train(x, sampling_results,
-                                                 bbox_feats, gt_masks,
-                                                 img_metas)
-            if loss_mask is not None:
-                losses.update(loss_mask)
+            mask_results = self._mask_forward_train(x, sampling_results,
+                                                    bbox_results['bbox_feats'],
+                                                    gt_masks, img_metas)
+            if mask_results['loss_mask'] is not None:
+                losses.update(mask_results['loss_mask'])
 
         return losses
 
@@ -136,23 +138,30 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
         cls_score, bbox_pred = self.bbox_head(bbox_feats)
-        return cls_score, bbox_pred, bbox_feats
+
+        bbox_results = dict(
+            cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
+        return bbox_results
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
         rois = bbox2roi([res.bboxes for res in sampling_results])
-        cls_score, bbox_pred, bbox_feats = self._bbox_forward(x, rois)
+        bbox_results = self._bbox_forward(x, rois)
 
         bbox_targets = self.bbox_head.get_target(sampling_results, gt_bboxes,
                                                  gt_labels, self.train_cfg)
-        loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
-        return loss_bbox, bbox_feats
+        loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],
+                                        bbox_results['bbox_pred'],
+                                        *bbox_targets)
+
+        bbox_results.update(loss_bbox=loss_bbox)
+        return bbox_results
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-            mask_pred, _ = self._mask_forward(x, pos_rois)
+            mask_results = self._mask_forward(x, pos_rois)
         else:
             pos_inds = []
             device = bbox_feats.device
@@ -168,19 +177,22 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                         device=device,
                         dtype=torch.uint8))
             pos_inds = torch.cat(pos_inds)
-            mask_pred, _ = self._mask_forward(
+            mask_results = self._mask_forward(
                 x, pos_inds=pos_inds, bbox_feats=bbox_feats)
 
         mask_targets = self.mask_head.get_target(sampling_results, gt_masks,
                                                  self.train_cfg)
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
-        loss_mask = self.mask_head.loss(mask_pred, mask_targets, pos_labels)
-        return loss_mask
+        loss_mask = self.mask_head.loss(mask_results['mask_pred'],
+                                        mask_targets, pos_labels)
+
+        mask_results.update(loss_mask=loss_mask, mask_targets=mask_targets)
+        return mask_results
 
     def _mask_forward(self, x, rois=None, pos_inds=None, bbox_feats=None):
-        assert (rois is not None ^
+        assert ((rois is not None) ^
                 (pos_inds is not None and bbox_feats is not None))
-        if rois:
+        if rois is not None:
             mask_feats = self.mask_roi_extractor(
                 x[:self.mask_roi_extractor.num_inputs], rois)
             if self.with_shared_head:
@@ -190,7 +202,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_feats = bbox_feats[pos_inds]
 
         mask_pred = self.mask_head(mask_feats)
-        return mask_pred, mask_feats
+        mask_results = dict(mask_pred=mask_pred, mask_feats=mask_feats)
+        return mask_results
 
     async def async_simple_test(self,
                                 x,

@@ -60,9 +60,10 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         # bbox heads
         rois = bbox2roi([proposals])
         for i in range(self.num_stages):
-            cls_score, bbox_pred = self._bbox_forward(
+            bbox_results = self._bbox_forward(
                 i, x, rois, semantic_feat=semantic_feat)
-            outs = outs + (cls_score, bbox_pred)
+            outs = outs + (bbox_results['cls_score'],
+                           bbox_results['bbox_pred'])
         # mask heads
         if self.with_mask:
             mask_rois = rois[:100]
@@ -93,13 +94,20 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                             semantic_feat=None):
         bbox_head = self.bbox_head[stage]
         rois = bbox2roi([res.bboxes for res in sampling_results])
-        cls_score, bbox_pred = cls_score, bbox_pred = self._bbox_forward(
+        bbox_results = self._bbox_forward(
             stage, x, rois, semantic_feat=semantic_feat)
 
         bbox_targets = bbox_head.get_target(sampling_results, gt_bboxes,
                                             gt_labels, rcnn_train_cfg)
-        loss_bbox = bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
-        return loss_bbox, rois, bbox_targets, bbox_pred
+        loss_bbox = bbox_head.loss(bbox_results['cls_score'],
+                                   bbox_results['bbox_pred'], *bbox_targets)
+
+        bbox_results.update(
+            loss_bbox=loss_bbox,
+            rois=rois,
+            bbox_targets=bbox_targets,
+        )
+        return bbox_results
 
     def _mask_forward_train(self,
                             stage,
@@ -140,7 +148,9 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                                             rcnn_train_cfg)
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
         loss_mask = mask_head.loss(mask_pred, mask_targets, pos_labels)
-        return loss_mask
+
+        mask_results = dict(loss_mask=loss_mask)
+        return mask_results
 
     def _bbox_forward(self, stage, x, rois, semantic_feat=None):
         bbox_roi_extractor = self.bbox_roi_extractor[stage]
@@ -155,7 +165,9 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
         cls_score, bbox_pred = bbox_head(bbox_feats)
-        return cls_score, bbox_pred
+
+        bbox_results = dict(cls_score=cls_score, bbox_pred=bbox_pred)
+        return bbox_results
 
     def _mask_forward_test(self, stage, x, bboxes, semantic_feat=None):
         mask_roi_extractor = self.mask_roi_extractor[stage]
@@ -231,13 +243,13 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                 sampling_results.append(sampling_result)
 
             # bbox head forward and loss
-            loss_bbox, rois, bbox_targets, bbox_pred = \
+            bbox_results = \
                 self._bbox_forward_train(
                     i, x, sampling_results, gt_bboxes, gt_labels,
                     rcnn_train_cfg, semantic_feat)
-            roi_labels = bbox_targets[0]
+            roi_labels = bbox_results['bbox_targets'][0]
 
-            for name, value in loss_bbox.items():
+            for name, value in bbox_results['loss_bbox'].items():
                 losses['s{}.{}'.format(i, name)] = (
                     value * lw if 'loss' in name else value)
 
@@ -249,7 +261,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     pos_is_gts = [res.pos_is_gt for res in sampling_results]
                     with torch.no_grad():
                         proposal_list = self.bbox_head[i].refine_bboxes(
-                            rois, roi_labels, bbox_pred, pos_is_gts, img_metas)
+                            bbox_results['rois'], roi_labels,
+                            bbox_results['bbox_pred'], pos_is_gts, img_metas)
                         # re-assign and sample 512 RoIs from 512 RoIs
                         sampling_results = []
                         for j in range(num_imgs):
@@ -263,10 +276,10 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                                 gt_labels[j],
                                 feats=[lvl_feat[j][None] for lvl_feat in x])
                             sampling_results.append(sampling_result)
-                loss_mask = self._mask_forward_train(i, x, sampling_results,
-                                                     gt_masks, rcnn_train_cfg,
-                                                     semantic_feat)
-                for name, value in loss_mask.items():
+                mask_results = self._mask_forward_train(
+                    i, x, sampling_results, gt_masks, rcnn_train_cfg,
+                    semantic_feat)
+                for name, value in mask_results['loss_mask'].items():
                     losses['s{}.{}'.format(i, name)] = (
                         value * lw if 'loss' in name else value)
 
@@ -275,7 +288,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                 pos_is_gts = [res.pos_is_gt for res in sampling_results]
                 with torch.no_grad():
                     proposal_list = self.bbox_head[i].refine_bboxes(
-                        rois, roi_labels, bbox_pred, pos_is_gts, img_metas)
+                        bbox_results['rois'], roi_labels,
+                        bbox_results['bbox_pred'], pos_is_gts, img_metas)
 
         return losses
 
@@ -298,20 +312,21 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         rois = bbox2roi(proposal_list)
         for i in range(self.num_stages):
             bbox_head = self.bbox_head[i]
-            cls_score, bbox_pred = self._bbox_forward(
+            bbox_results = self._bbox_forward(
                 i, x, rois, semantic_feat=semantic_feat)
-            ms_scores.append(cls_score)
+            ms_scores.append(bbox_results['cls_score'])
 
             if i < self.num_stages - 1:
-                bbox_label = cls_score.argmax(dim=1)
-                rois = bbox_head.regress_by_class(rois, bbox_label, bbox_pred,
+                bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                rois = bbox_head.regress_by_class(rois, bbox_label,
+                                                  bbox_results['bbox_pred'],
                                                   img_metas[0])
 
         cls_score = sum(ms_scores) / float(len(ms_scores))
         det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
             rois,
             cls_score,
-            bbox_pred,
+            bbox_results['bbox_pred'],
             img_shape,
             scale_factor,
             rescale=rescale,
@@ -395,20 +410,21 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             rois = bbox2roi([proposals])
             for i in range(self.num_stages):
                 bbox_head = self.bbox_head[i]
-                cls_score, bbox_pred = self._bbox_forward(
+                bbox_results = self._bbox_forward(
                     i, x, rois, semantic_feat=semantic)
-                ms_scores.append(cls_score)
+                ms_scores.append(bbox_results['cls_score'])
 
                 if i < self.num_stages - 1:
-                    bbox_label = cls_score.argmax(dim=1)
-                    rois = bbox_head.regress_by_class(rois, bbox_label,
-                                                      bbox_pred, img_meta[0])
+                    bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                    rois = bbox_head.regress_by_class(
+                        rois, bbox_label, bbox_results['bbox_pred'],
+                        img_meta[0])
 
             cls_score = sum(ms_scores) / float(len(ms_scores))
             bboxes, scores = self.bbox_head[-1].get_det_bboxes(
                 rois,
                 cls_score,
-                bbox_pred,
+                bbox_results['bbox_pred'],
                 img_shape,
                 scale_factor,
                 rescale=False,

@@ -24,4 +24,9 @@ class DoubleHeadRoIHead(StandardRoIHead):
             bbox_cls_feats = self.shared_head(bbox_cls_feats)
             bbox_reg_feats = self.shared_head(bbox_reg_feats)
         cls_score, bbox_pred = self.bbox_head(bbox_cls_feats, bbox_reg_feats)
-        return cls_score, bbox_pred, bbox_cls_feats
+
+        bbox_results = dict(
+            cls_score=cls_score,
+            bbox_pred=bbox_pred,
+            bbox_feats=bbox_cls_feats)
+        return bbox_results

@@ -61,8 +61,9 @@ class GridRoIHead(StandardRoIHead):
         outs = ()
         rois = bbox2roi([proposals])
         if self.with_bbox:
-            cls_score, bbox_pred, _ = self._bbox_forward(x, rois)
-            outs = outs + (cls_score, bbox_pred)
+            bbox_results = self._bbox_forward(x, rois)
+            outs = outs + (bbox_results['cls_score'],
+                           bbox_results['bbox_pred'])
 
         # grid head
         grid_rois = rois[:100]
@@ -76,18 +77,16 @@ class GridRoIHead(StandardRoIHead):
         # mask head
         if self.with_mask:
             mask_rois = rois[:100]
-            mask_feats = self.mask_roi_extractor(
-                x[:self.mask_roi_extractor.num_inputs], mask_rois)
-            if self.with_shared_head:
-                mask_feats = self.shared_head(mask_feats)
-            mask_pred = self.mask_head(mask_feats)
-            outs = outs + (mask_pred, )
+            mask_results = self._mask_forward(x, mask_rois)
+            outs = outs + (mask_results['mask_pred'], )
         return outs
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
-        loss_bbox, bbox_feats = super(GridRoIHead, self)._bbox_forward_train(
-            x, sampling_results, gt_bboxes, gt_labels, img_metas)
+        bbox_results = super(GridRoIHead,
+                             self)._bbox_forward_train(x, sampling_results,
+                                                       gt_bboxes, gt_labels,
+                                                       img_metas)
 
         # Grid head forward and loss
         sampling_results = self._random_jitter(sampling_results, img_metas)
@@ -110,8 +109,9 @@ class GridRoIHead(StandardRoIHead):
         grid_targets = grid_targets[sample_idx]
 
         loss_grid = self.grid_head.loss(grid_pred, grid_targets)
-        loss_bbox.update(loss_grid)
-        return loss_bbox, bbox_feats
+
+        bbox_results['loss_bbox'].update(loss_grid)
+        return bbox_results
 
     def simple_test(self,
                     x,

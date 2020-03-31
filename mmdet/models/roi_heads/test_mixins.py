@@ -57,13 +57,13 @@ class BBoxTestMixin(object):
                            rescale=False):
         """Test only det bboxes without augmentation."""
         rois = bbox2roi(proposals)
-        cls_score, bbox_pred, _ = self._bbox_forward(x, rois)
+        bbox_results = self._bbox_forward(x, rois)
         img_shape = img_metas[0]['img_shape']
         scale_factor = img_metas[0]['scale_factor']
         det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
             rois,
-            cls_score,
-            bbox_pred,
+            bbox_results['cls_score'],
+            bbox_results['bbox_pred'],
             img_shape,
             scale_factor,
             rescale=rescale,
@@ -83,11 +83,11 @@ class BBoxTestMixin(object):
                                      scale_factor, flip)
             rois = bbox2roi([proposals])
             # recompute feature maps to save GPU memory
-            cls_score, bbox_pred, _ = self._bbox_forward(x, rois)
+            bbox_results = self._bbox_forward(x, rois)
             bboxes, scores = self.bbox_head.get_det_bboxes(
                 rois,
-                cls_score,
-                bbox_pred,
+                bbox_results['cls_score'],
+                bbox_results['bbox_pred'],
                 img_shape,
                 scale_factor,
                 rescale=False,
@@ -166,12 +166,10 @@ class MaskTestMixin(object):
             _bboxes = (
                 det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
             mask_rois = bbox2roi([_bboxes])
-            mask_pred, _ = self._mask_forward(x, mask_rois)
-            segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
-                                                       det_labels,
-                                                       self.test_cfg,
-                                                       ori_shape, scale_factor,
-                                                       rescale)
+            mask_results = self._mask_forward(x, mask_rois)
+            segm_result = self.mask_head.get_seg_masks(
+                mask_results['mask_pred'], _bboxes, det_labels, self.test_cfg,
+                ori_shape, scale_factor, rescale)
         return segm_result
 
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):
@@ -186,9 +184,10 @@ class MaskTestMixin(object):
                 _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
                                        scale_factor, flip)
                 mask_rois = bbox2roi([_bboxes])
-                mask_pred, _ = self._mask_forward(x, mask_rois)
+                mask_results = self._mask_forward(x, mask_rois)
                 # convert to numpy array to save memory
-                aug_masks.append(mask_pred.sigmoid().cpu().numpy())
+                aug_masks.append(
+                    mask_results['mask_pred'].sigmoid().cpu().numpy())
             merged_masks = merge_aug_masks(aug_masks, img_metas, self.test_cfg)
 
             ori_shape = img_metas[0][0]['ori_shape']

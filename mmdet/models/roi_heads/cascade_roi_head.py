@@ -107,22 +107,15 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = bbox2roi([proposals])
         if self.with_bbox:
             for i in range(self.num_stages):
-                bbox_feats = self.bbox_roi_extractor[i](
-                    x[:self.bbox_roi_extractor[i].num_inputs], rois)
-                if self.with_shared_head:
-                    bbox_feats = self.shared_head(bbox_feats)
-                cls_score, bbox_pred = self.bbox_head[i](bbox_feats)
-                outs = outs + (cls_score, bbox_pred)
+                bbox_results = self._bbox_forward(i, x, rois)
+                outs = outs + (bbox_results['cls_score'],
+                               bbox_results['bbox_pred'])
         # mask heads
         if self.with_mask:
             mask_rois = rois[:100]
             for i in range(self.num_stages):
-                mask_feats = self.mask_roi_extractor[i](
-                    x[:self.mask_roi_extractor[i].num_inputs], mask_rois)
-                if self.with_shared_head:
-                    mask_feats = self.shared_head(mask_feats)
-                mask_pred = self.mask_head[i](mask_feats)
-                outs = outs + (mask_pred, )
+                mask_results = self._mask_forward(i, x, mask_rois)
+                outs = outs + (mask_results['mask_pred'], )
         return outs
 
     def _bbox_forward(self, stage, x, rois):
@@ -132,17 +125,24 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                         rois)
         # do not support caffe_c4 model anymore
         cls_score, bbox_pred = bbox_head(bbox_feats)
-        return cls_score, bbox_pred, bbox_feats
+
+        bbox_results = dict(
+            cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
+        return bbox_results
 
     def _bbox_forward_train(self, stage, x, sampling_results, gt_bboxes,
                             gt_labels, rcnn_train_cfg):
         rois = bbox2roi([res.bboxes for res in sampling_results])
-        cls_score, bbox_pred, bbox_feats = self._bbox_forward(stage, x, rois)
+        bbox_results = self._bbox_forward(stage, x, rois)
         bbox_targets = self.bbox_head[stage].get_target(
             sampling_results, gt_bboxes, gt_labels, rcnn_train_cfg)
-        loss_bbox = self.bbox_head[stage].loss(cls_score, bbox_pred,
+        loss_bbox = self.bbox_head[stage].loss(bbox_results['cls_score'],
+                                               bbox_results['bbox_pred'],
                                                *bbox_targets)
-        return loss_bbox, rois, bbox_targets, bbox_pred, bbox_feats
+
+        bbox_results.update(
+            loss_bbox=loss_bbox, rois=rois, bbox_targets=bbox_targets)
+        return bbox_results
 
     def _mask_forward(self, stage, x, rois):
         mask_roi_extractor = self.mask_roi_extractor[stage]
@@ -151,7 +151,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                         rois)
         # do not support caffe_c4 model anymore
         mask_pred = mask_head(mask_feats)
-        return mask_pred
+
+        mask_results = dict(mask_pred=mask_pred)
+        return mask_results
 
     def _mask_forward_train(self,
                             stage,
@@ -161,14 +163,16 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                             rcnn_train_cfg,
                             bbox_feats=None):
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-        mask_pred = self._mask_forward(stage, x, pos_rois)
+        mask_results = self._mask_forward(stage, x, pos_rois)
 
         mask_targets = self.mask_head[stage].get_target(
             sampling_results, gt_masks, rcnn_train_cfg)
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
-        loss_mask = self.mask_head[stage].loss(mask_pred, mask_targets,
-                                               pos_labels)
-        return loss_mask
+        loss_mask = self.mask_head[stage].loss(mask_results['mask_pred'],
+                                               mask_targets, pos_labels)
+
+        mask_results.update(loss_mask=loss_mask)
+        return mask_results
 
     def forward_train(self,
                       x,
@@ -232,32 +236,33 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     sampling_results.append(sampling_result)
 
             # bbox head forward and loss
-            output = self._bbox_forward_train(i, x, sampling_results,
-                                              gt_bboxes, gt_labels,
-                                              rcnn_train_cfg)
-            (loss_bbox, rois, bbox_targets, bbox_pred, bbox_feats) = output
+            bbox_results = self._bbox_forward_train(i, x, sampling_results,
+                                                    gt_bboxes, gt_labels,
+                                                    rcnn_train_cfg)
 
-            for name, value in loss_bbox.items():
+            for name, value in bbox_results['loss_bbox'].items():
                 losses['s{}.{}'.format(i, name)] = (
                     value * lw if 'loss' in name else value)
 
             # mask head forward and loss
             if self.with_mask:
-                loss_mask = self._mask_forward_train(i, x, sampling_results,
-                                                     gt_masks, rcnn_train_cfg,
-                                                     bbox_feats)
+                mask_results = self._mask_forward_train(
+                    i, x, sampling_results, gt_masks, rcnn_train_cfg,
+                    bbox_results['bbox_feats'])
 
-                for name, value in loss_mask.items():
+                for name, value in mask_results['loss_mask'].items():
                     losses['s{}.{}'.format(i, name)] = (
                         value * lw if 'loss' in name else value)
 
             # refine bboxes
             if i < self.num_stages - 1:
                 pos_is_gts = [res.pos_is_gt for res in sampling_results]
-                roi_labels = bbox_targets[0]  # bbox_targets is a tuple
+                # bbox_targets is a tuple
+                roi_labels = bbox_results['bbox_targets'][0]
                 with torch.no_grad():
                     proposal_list = self.bbox_head[i].refine_bboxes(
-                        rois, roi_labels, bbox_pred, pos_is_gts, img_metas)
+                        bbox_results['rois'], roi_labels,
+                        bbox_results['bbox_pred'], pos_is_gts, img_metas)
 
         return losses
 
@@ -276,19 +281,19 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         rois = bbox2roi(proposal_list)
         for i in range(self.num_stages):
-            cls_score, bbox_pred, bbox_feats = self._bbox_forward(i, x, rois)
-            ms_scores.append(cls_score)
+            bbox_results = self._bbox_forward(i, x, rois)
+            ms_scores.append(bbox_results['cls_score'])
 
             if i < self.num_stages - 1:
-                bbox_label = cls_score.argmax(dim=1)
+                bbox_label = bbox_results['cls_score'].argmax(dim=1)
                 rois = self.bbox_head[i].regress_by_class(
-                    rois, bbox_label, bbox_pred, img_metas[0])
+                    rois, bbox_label, bbox_results['bbox_pred'], img_metas[0])
 
         cls_score = sum(ms_scores) / self.num_stages
         det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
             rois,
             cls_score,
-            bbox_pred,
+            bbox_results['bbox_pred'],
             img_shape,
             scale_factor,
             rescale=rescale,
@@ -309,8 +314,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 mask_rois = bbox2roi([_bboxes])
                 aug_masks = []
                 for i in range(self.num_stages):
-                    mask_pred = self._mask_forward(i, x, mask_rois)
-                    aug_masks.append(mask_pred.sigmoid().cpu().numpy())
+                    mask_results = self._mask_forward(i, x, mask_rois)
+                    aug_masks.append(
+                        mask_results['mask_pred'].sigmoid().cpu().numpy())
                 merged_masks = merge_aug_masks(aug_masks,
                                                [img_metas] * self.num_stages,
                                                self.test_cfg)
@@ -348,20 +354,20 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
             rois = bbox2roi([proposals])
             for i in range(self.num_stages):
-                cls_score, bbox_pred, bbox_feats = self._bbox_forward(
-                    i, x, rois)
-                ms_scores.append(cls_score)
+                bbox_results = self._bbox_forward(i, x, rois)
+                ms_scores.append(bbox_results['cls_score'])
 
                 if i < self.num_stages - 1:
-                    bbox_label = cls_score.argmax(dim=1)
+                    bbox_label = bbox_results['cls_score'].argmax(dim=1)
                     rois = self.bbox_head[i].regress_by_class(
-                        rois, bbox_label, bbox_pred, img_meta[0])
+                        rois, bbox_label, bbox_results['bbox_pred'],
+                        img_meta[0])
 
             cls_score = sum(ms_scores) / float(len(ms_scores))
             bboxes, scores = self.bbox_head[-1].get_det_bboxes(
                 rois,
                 cls_score,
-                bbox_pred,
+                bbox_results['bbox_pred'],
                 img_shape,
                 scale_factor,
                 rescale=False,
@@ -396,8 +402,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                            scale_factor, flip)
                     mask_rois = bbox2roi([_bboxes])
                     for i in range(self.num_stages):
-                        mask_pred = self._mask_forward(i, x, mask_rois)
-                        aug_masks.append(mask_pred.sigmoid().cpu().numpy())
+                        mask_results = self._mask_forward(i, x, mask_rois)
+                        aug_masks.append(
+                            mask_results['mask_pred'].sigmoid().cpu().numpy())
                         aug_img_metas.append(img_meta)
                 merged_masks = merge_aug_masks(aug_masks, aug_img_metas,
                                                self.test_cfg)
