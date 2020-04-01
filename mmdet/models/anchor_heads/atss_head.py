@@ -455,6 +455,8 @@ class ATSSHead(AnchorHead):
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
+        if gt_labels is not None:
+            labels += self.num_classes
         if len(pos_inds) > 0:
             pos_bbox_targets = bbox2delta(sampling_result.pos_bboxes,
                                           sampling_result.pos_gt_bboxes,
