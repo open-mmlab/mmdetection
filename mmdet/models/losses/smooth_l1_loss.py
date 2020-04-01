@@ -15,6 +15,13 @@ def smooth_l1_loss(pred, target, beta=1.0):
     return loss
 
 
+@weighted_loss
+def l1_loss(pred, target):
+    assert pred.size() == target.size() and target.numel() > 0
+    loss = torch.abs(pred - target)
+    return loss
+
+
 @LOSSES.register_module
 class SmoothL1Loss(nn.Module):
 
@@ -34,12 +41,21 @@ class SmoothL1Loss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
-        loss_bbox = self.loss_weight * smooth_l1_loss(
-            pred,
-            target,
-            weight,
-            beta=self.beta,
-            reduction=reduction,
-            avg_factor=avg_factor,
-            **kwargs)
+        if self.beta < 1e-5:
+            loss_bbox = self.loss_weight * l1_loss(
+                pred,
+                target,
+                weight,
+                reduction=reduction,
+                avg_factor=avg_factor,
+                **kwargs)
+        else:
+            loss_bbox = self.loss_weight * smooth_l1_loss(
+                pred,
+                target,
+                weight,
+                beta=self.beta,
+                reduction=reduction,
+                avg_factor=avg_factor,
+                **kwargs)
         return loss_bbox
