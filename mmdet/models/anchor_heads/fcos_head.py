@@ -56,7 +56,7 @@ class FCOSHead(nn.Module):
         super(FCOSHead, self).__init__()
 
         self.num_classes = num_classes
-        self.cls_out_channels = num_classes - 1
+        self.cls_out_channels = num_classes
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
@@ -174,7 +174,10 @@ class FCOSHead(nn.Module):
         flatten_points = torch.cat(
             [points.repeat(num_imgs, 1) for points in all_level_points])
 
-        pos_inds = flatten_labels.nonzero().reshape(-1)
+        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+        bg_class_ind = self.num_classes
+        pos_inds = ((flatten_labels >= 0)
+                    & (flatten_labels < bg_class_ind)).nonzero().reshape(-1)
         num_pos = len(pos_inds)
         loss_cls = self.loss_cls(
             flatten_cls_scores, flatten_labels,
@@ -279,7 +282,9 @@ class FCOSHead(nn.Module):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
+        # remind new system set FG cat_id: [0, num_class-1]
+        # BG cat_id: num_class
+        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
         det_bboxes, det_labels = multiclass_nms(
             mlvl_bboxes,
@@ -366,7 +371,7 @@ class FCOSHead(nn.Module):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
-            return gt_labels.new_zeros(num_points), \
+            return gt_labels.new_zeros(num_points) + self.num_classes, \
                    gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
@@ -439,7 +444,7 @@ class FCOSHead(nn.Module):
         min_area, min_area_inds = areas.min(dim=1)
 
         labels = gt_labels[min_area_inds]
-        labels[min_area == INF] = 0
+        labels[min_area == INF] = self.num_classes  # set as BG
         bbox_targets = bbox_targets[range(num_points), min_area_inds]
 
         return labels, bbox_targets

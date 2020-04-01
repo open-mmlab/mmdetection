@@ -15,19 +15,20 @@ from ..registry import HEADS
 @HEADS.register_module
 class FCNMaskHead(nn.Module):
 
-    def __init__(self,
-                 num_convs=4,
-                 roi_feat_size=14,
-                 in_channels=256,
-                 conv_kernel_size=3,
-                 conv_out_channels=256,
-                 num_classes=81,
-                 class_agnostic=False,
-                 upsample_cfg=dict(type='deconv', scale_factor=2),
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 loss_mask=dict(
-                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
+    def __init__(
+        self,
+        num_convs=4,
+        roi_feat_size=14,
+        in_channels=256,
+        conv_kernel_size=3,
+        conv_out_channels=256,
+        num_classes=80,  # do not count background anymore
+        class_agnostic=False,
+        upsample_cfg=dict(type='deconv', scale_factor=2),
+        conv_cfg=None,
+        norm_cfg=None,
+        loss_mask=dict(
+            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(FCNMaskHead, self).__init__()
         self.upsample_cfg = upsample_cfg.copy()
         if self.upsample_cfg['type'] not in [
@@ -144,7 +145,7 @@ class FCNMaskHead(nn.Module):
         """Get segmentation masks from mask_pred and bboxes.
 
         Args:
-            mask_pred (Tensor or ndarray): shape (n, #class+1, h, w).
+            mask_pred (Tensor or ndarray): shape (n, #class, h, w).
                 For single-scale testing, mask_pred is the direct output of
                 model, whose type is Tensor, while for multi-scale testing,
                 it will be converted to numpy array outside of this method.
@@ -164,7 +165,7 @@ class FCNMaskHead(nn.Module):
         # numpy array
         mask_pred = mask_pred.astype(np.float32)
 
-        cls_segms = [[] for _ in range(self.num_classes - 1)]
+        cls_segms = [[] for _ in range(self.num_classes)]
         bboxes = det_bboxes.cpu().numpy()[:, :4]
         labels = det_labels.cpu().numpy() + 1
 
@@ -201,8 +202,8 @@ class FCNMaskHead(nn.Module):
             if rcnn_test_cfg.get('rle_mask_encode', True):
                 rle = mask_util.encode(
                     np.array(im_mask[:, :, np.newaxis], order='F'))[0]
-                cls_segms[label - 1].append(rle)
+                cls_segms[label].append(rle)
             else:
-                cls_segms[label - 1].append(im_mask)
+                cls_segms[label].append(im_mask)
 
         return cls_segms

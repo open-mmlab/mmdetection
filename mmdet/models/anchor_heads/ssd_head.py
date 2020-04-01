@@ -16,7 +16,7 @@ class SSDHead(AnchorHead):
 
     def __init__(self,
                  input_size=300,
-                 num_classes=81,
+                 num_classes=80,
                  in_channels=(512, 1024, 512, 256, 256, 256),
                  anchor_strides=(8, 16, 32, 64, 100, 300),
                  basesize_ratio_range=(0.1, 0.9),
@@ -27,7 +27,7 @@ class SSDHead(AnchorHead):
         self.input_size = input_size
         self.num_classes = num_classes
         self.in_channels = in_channels
-        self.cls_out_channels = num_classes
+        self.cls_out_channels = num_classes + 1  # add background class
         num_anchors = [len(ratios) * 2 + 2 for ratios in anchor_ratios]
         reg_convs = []
         cls_convs = []
@@ -41,7 +41,7 @@ class SSDHead(AnchorHead):
             cls_convs.append(
                 nn.Conv2d(
                     in_channels[i],
-                    num_anchors[i] * num_classes,
+                    num_anchors[i] * (num_classes + 1),
                     kernel_size=3,
                     padding=1))
         self.reg_convs = nn.ModuleList(reg_convs)
@@ -112,8 +112,11 @@ class SSDHead(AnchorHead):
                     bbox_targets, bbox_weights, num_total_samples, cfg):
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
-        pos_inds = (labels > 0).nonzero().view(-1)
-        neg_inds = (labels == 0).nonzero().view(-1)
+        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+        bg_class_ind = self.num_classes
+        pos_inds = ((labels >= 0) &
+                    (labels < bg_class_ind)).nonzero().reshape(-1)
+        neg_inds = (labels == bg_class_ind).nonzero().view(-1)
 
         num_pos_samples = pos_inds.size(0)
         num_neg_samples = cfg.neg_pos_ratio * num_pos_samples
@@ -158,6 +161,7 @@ class SSDHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=1,
+            num_classes=self.num_classes,
             sampling=False,
             unmap_outputs=False)
         if cls_reg_targets is None:

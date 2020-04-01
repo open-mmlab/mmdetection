@@ -63,8 +63,8 @@ class MaskScoringRoIHead(StandardRoIHead):
         scale_factor = img_metas[0]['scale_factor']
 
         if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
-            mask_scores = [[] for _ in range(self.mask_head.num_classes - 1)]
+            segm_result = [[] for _ in range(self.mask_head.num_classes)]
+            mask_scores = [[] for _ in range(self.mask_head.num_classes)]
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.

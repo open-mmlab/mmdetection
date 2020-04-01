@@ -64,7 +64,7 @@ class FoveaHead(nn.Module):
                  norm_cfg=None):
         super(FoveaHead, self).__init__()
         self.num_classes = num_classes
-        self.cls_out_channels = num_classes - 1
+        self.cls_out_channels = num_classes
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
@@ -209,8 +209,13 @@ class FoveaHead(nn.Module):
         flatten_bbox_preds = torch.cat(flatten_bbox_preds)
         flatten_labels, flatten_bbox_targets = self.fovea_target(
             gt_bbox_list, gt_label_list, featmap_sizes, points)
-        pos_inds = (flatten_labels > 0).nonzero().view(-1)
+
+        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+        bg_class_ind = self.num_classes
+        pos_inds = ((flatten_labels >= 0)
+                    & (flatten_labels < bg_class_ind)).nonzero().view(-1)
         num_pos = len(pos_inds)
+
         loss_cls = self.loss_cls(
             flatten_cls_scores, flatten_labels, avg_factor=num_pos + num_imgs)
         if num_pos > 0:
@@ -265,7 +270,8 @@ class FoveaHead(nn.Module):
         for base_len, (lower_bound, upper_bound), stride, featmap_size, \
             (y, x) in zip(self.base_edge_list, self.scale_ranges,
                           self.strides, featmap_size_list, point_list):
-            labels = gt_labels_raw.new_zeros(featmap_size)
+            # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+            labels = gt_labels_raw.new_zeros(featmap_size) + self.num_classes
             bbox_targets = gt_bboxes_raw.new(featmap_size[0], featmap_size[1],
                                              4) + 1
             # scale assignment
@@ -380,7 +386,9 @@ class FoveaHead(nn.Module):
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_scores = torch.cat(det_scores)
         padding = det_scores.new_zeros(det_scores.shape[0], 1)
-        det_scores = torch.cat([padding, det_scores], dim=1)
+        # remind new system set FG cat_id: [0, num_class-1]
+        # BG cat_id: num_class
+        det_scores = torch.cat([det_scores, padding], dim=1)
         det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

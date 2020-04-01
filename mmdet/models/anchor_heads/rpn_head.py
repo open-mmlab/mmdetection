@@ -13,7 +13,7 @@ from .anchor_head import AnchorHead
 class RPNHead(AnchorHead):
 
     def __init__(self, in_channels, **kwargs):
-        super(RPNHead, self).__init__(2, in_channels, **kwargs)
+        super(RPNHead, self).__init__(1, in_channels, **kwargs)
 
     def _init_layers(self):
         self.rpn_conv = nn.Conv2d(

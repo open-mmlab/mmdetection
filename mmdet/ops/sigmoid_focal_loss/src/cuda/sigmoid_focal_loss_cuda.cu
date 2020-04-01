@@ -30,11 +30,11 @@ __global__ void SigmoidFocalLossForward(const int nthreads,
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     int n = i / num_classes;
     int d = i % num_classes;  // current class[0~79];
-    int t = targets[n];       // target class [1~80];
+    int t = targets[n];       // target class [0~79];
 
     // Decide it is positive or negative case.
-    scalar_t c1 = (t == (d + 1));
-    scalar_t c2 = (t >= 0 & t != (d + 1));
+    scalar_t c1 = (t == d);
+    scalar_t c2 = (t >= 0 & t != d);
 
     scalar_t zn = (1.0 - alpha);
     scalar_t zp = (alpha);
@@ -66,11 +66,11 @@ __global__ void SigmoidFocalLossBackward(
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
     int n = i / num_classes;
     int d = i % num_classes;  // current class[0~79];
-    int t = targets[n];       // target class [1~80], 0 is background;
+    int t = targets[n];       // target class [0~79], 80 is background;
 
     // Decide it is positive or negative case.
-    scalar_t c1 = (t == (d + 1));
-    scalar_t c2 = (t >= 0 & t != (d + 1));
+    scalar_t c1 = (t == d);
+    scalar_t c2 = (t >= 0 & t != d);
 
     scalar_t zn = (1.0 - alpha);
     scalar_t zp = (alpha);

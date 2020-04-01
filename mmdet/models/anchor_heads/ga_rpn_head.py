@@ -14,7 +14,7 @@ class GARPNHead(GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""
 
     def __init__(self, in_channels, **kwargs):
-        super(GARPNHead, self).__init__(2, in_channels, **kwargs)
+        super(GARPNHead, self).__init__(1, in_channels, **kwargs)
 
     def _init_layers(self):
         self.rpn_conv = nn.Conv2d(
@@ -82,7 +82,9 @@ class GARPNHead(GuidedAnchorHead):
                 scores = rpn_cls_score.sigmoid()
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
-                scores = rpn_cls_score.softmax(dim=1)[:, 1]
+                # remind new system set FG cat_id: [0, num_class-1]
+                # BG cat_id: num_class
+                scores = rpn_cls_score.softmax(dim=1)[:, :-1]
             # filter scores, bbox_pred w.r.t. mask.
             # anchors are filtered in get_anchors() beforehand.
             scores = scores[mask]

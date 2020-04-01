@@ -337,7 +337,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                mask_classes = self.mask_head[-1].num_classes - 1
+                mask_classes = self.mask_head[-1].num_classes
                 segm_result = [[] for _ in range(mask_classes)]
             else:
                 _bboxes = (

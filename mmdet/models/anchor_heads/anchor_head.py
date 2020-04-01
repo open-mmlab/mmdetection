@@ -16,7 +16,7 @@ class AnchorHead(nn.Module):
     """Anchor-based head (RPN, RetinaNet, SSD, etc.).
 
     Args:
-        num_classes (int): Number of categories including the background
+        num_classes (int): Number of categories not including the background
             category.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of hidden channels. Used in child classes.
@@ -61,9 +61,9 @@ class AnchorHead(nn.Module):
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.sampling = loss_cls['type'] not in ['FocalLoss', 'GHMC']
         if self.use_sigmoid_cls:
-            self.cls_out_channels = num_classes - 1
-        else:
             self.cls_out_channels = num_classes
+        else:
+            self.cls_out_channels = num_classes + 1
 
         if self.cls_out_channels <= 0:
             raise ValueError('num_classes={} is too small'.format(num_classes))
@@ -186,6 +186,7 @@ class AnchorHead(nn.Module):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
+            num_classes=self.num_classes,
             sampling=self.sampling)
         if cls_reg_targets is None:
             return None
@@ -307,7 +308,9 @@ class AnchorHead(nn.Module):
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
-                    max_scores, _ = scores[:, 1:].max(dim=1)
+                    # remind new system set FG cat_id: [0, num_class-1]
+                    # BG cat_id: num_class
+                    max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
@@ -321,9 +324,11 @@ class AnchorHead(nn.Module):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
         if self.use_sigmoid_cls:
-            # Add a dummy background class to the front when using sigmoid
+            # Add a dummy background class to the backend when using sigmoid
+            # remind new system set FG cat_id: [0, num_class-1]
+            # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
+            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)
