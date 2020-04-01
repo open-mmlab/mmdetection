@@ -4,8 +4,7 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.ops import (ContextBlock, GeneralizedAttention, build_conv_layer,
-                       build_norm_layer)
+from mmdet.ops import build_conv_layer, build_norm_layer, build_plugin_layer
 from mmdet.utils import get_root_logger
 from ..registry import BACKBONES
 from ..utils import ResLayer
@@ -25,12 +24,10 @@ class BasicBlock(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 gcb=None,
-                 gen_attention=None):
+                 plugins=None):
         super(BasicBlock, self).__init__()
         assert dcn is None, 'Not implemented yet.'
-        assert gen_attention is None, 'Not implemented yet.'
-        assert gcb is None, 'Not implemented yet.'
+        assert plugins is None, 'Not implemented yet.'
 
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
@@ -96,8 +93,7 @@ class Bottleneck(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 gcb=None,
-                 gen_attention=None):
+                 plugins=None):
         """Bottleneck block for ResNet.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
@@ -105,8 +101,10 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
         assert dcn is None or isinstance(dcn, dict)
-        assert gcb is None or isinstance(gcb, dict)
-        assert gen_attention is None or isinstance(gen_attention, dict)
+        assert plugins is None or isinstance(plugins, list)
+        if plugins is not None:
+            allowed_position = ['after_conv1', 'after_conv2', 'after_conv3']
+            assert all(p['position'] in allowed_position for p in plugins)
 
         self.inplanes = inplanes
         self.planes = planes
@@ -118,10 +116,23 @@ class Bottleneck(nn.Module):
         self.norm_cfg = norm_cfg
         self.dcn = dcn
         self.with_dcn = dcn is not None
-        self.gcb = gcb
-        self.with_gcb = gcb is not None
-        self.gen_attention = gen_attention
-        self.with_gen_attention = gen_attention is not None
+        self.plugins = plugins
+        self.with_plugins = plugins is not None
+
+        if self.with_plugins:
+            # collect plugins for conv1/conv2/conv3
+            self.after_conv1_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv1'
+            ]
+            self.after_conv2_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv2'
+            ]
+            self.after_conv3_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv3'
+            ]
 
         if self.style == 'pytorch':
             self.conv1_stride = 1
@@ -180,14 +191,43 @@ class Bottleneck(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
 
-        if self.with_gcb:
-            gcb_inplanes = planes * self.expansion
-            self.context_block = ContextBlock(inplanes=gcb_inplanes, **gcb)
+        if self.with_plugins:
+            self.after_conv1_plugin_names = self.make_block_plugins(
+                planes, self.after_conv1_plugins)
+            self.after_conv2_plugin_names = self.make_block_plugins(
+                planes, self.after_conv2_plugins)
+            self.after_conv3_plugin_names = self.make_block_plugins(
+                planes * self.expansion, self.after_conv3_plugins)
 
-        # gen_attention
-        if self.with_gen_attention:
-            self.gen_attention_block = GeneralizedAttention(
-                planes, **gen_attention)
+    def make_block_plugins(self, in_channels, plugins):
+        """ make plugins for block
+
+        Args:
+            in_channels (int): Input channels of plugin.
+            plugins (list[dict]): List of plugins cfg to build.
+
+        Returns:
+            list[str]: List of the names of plugin.
+
+        """
+        assert isinstance(plugins, list)
+        plugin_names = []
+        for plugin in plugins:
+            plugin = plugin.copy()
+            name, layer = build_plugin_layer(
+                plugin,
+                in_channels=in_channels,
+                postfix=plugin.pop('postfix', ''))
+            assert not hasattr(self, name), 'duplicate plugin {}'.format(name)
+            self.add_module(name, layer)
+            plugin_names.append(name)
+        return plugin_names
+
+    def forward_plugin(self, x, plugin_names):
+        out = x
+        for name in plugin_names:
+            out = getattr(self, name)(x)
+        return out
 
     @property
     def norm1(self):
@@ -210,18 +250,21 @@ class Bottleneck(nn.Module):
             out = self.norm1(out)
             out = self.relu(out)
 
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv1_plugin_names)
+
             out = self.conv2(out)
             out = self.norm2(out)
             out = self.relu(out)
 
-            if self.with_gen_attention:
-                out = self.gen_attention_block(out)
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv2_plugin_names)
 
             out = self.conv3(out)
             out = self.norm3(out)
 
-            if self.with_gcb:
-                out = self.context_block(out)
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv3_plugin_names)
 
             if self.downsample is not None:
                 identity = self.downsample(x)
@@ -259,13 +302,19 @@ class ResNet(nn.Module):
             downsampling in the bottleneck.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
             -1 means not freezing any parameters.
-        norm_cfg (dict): dictionary to construct and config norm layer.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
+        plugins (list[dict]): List of plugins for stages, each dict contains:
+            cfg (dict, required): Cfg dict to build plugin.
+            position (str, required): Position inside block to insert plugin,
+                options: 'after_conv1', 'after_conv2', 'after_conv3'.
+            stages (tuple[bool], optional): Stages to apply plugin, length
+                should be same as 'num_stages'
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
-        zero_init_residual (bool): whether to use zero init for last norm layer
+        zero_init_residual (bool): Whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
 
     Example:
@@ -308,10 +357,7 @@ class ResNet(nn.Module):
                  norm_eval=True,
                  dcn=None,
                  stage_with_dcn=(False, False, False, False),
-                 gcb=None,
-                 stage_with_gcb=(False, False, False, False),
-                 gen_attention=None,
-                 stage_with_gen_attention=((), (), (), ()),
+                 plugins=None,
                  with_cp=False,
                  zero_init_residual=True):
         super(ResNet, self).__init__()
@@ -338,11 +384,7 @@ class ResNet(nn.Module):
         self.stage_with_dcn = stage_with_dcn
         if dcn is not None:
             assert len(stage_with_dcn) == num_stages
-        self.gen_attention = gen_attention
-        self.gcb = gcb
-        self.stage_with_gcb = stage_with_gcb
-        if gcb is not None:
-            assert len(stage_with_gcb) == num_stages
+        self.plugins = plugins
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
@@ -355,7 +397,10 @@ class ResNet(nn.Module):
             stride = strides[i]
             dilation = dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
-            gcb = self.gcb if self.stage_with_gcb[i] else None
+            if plugins is not None:
+                stage_plugins = self.make_stage_plugins(plugins, i)
+            else:
+                stage_plugins = None
             planes = base_channels * 2**i
             res_layer = self.make_res_layer(
                 block=self.block,
@@ -370,9 +415,7 @@ class ResNet(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
-                gcb=gcb,
-                gen_attention=gen_attention,
-                gen_attention_blocks=stage_with_gen_attention[i])
+                plugins=stage_plugins)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
@@ -382,6 +425,56 @@ class ResNet(nn.Module):
 
         self.feat_dim = self.block.expansion * base_channels * 2**(
             len(self.stage_blocks) - 1)
+
+    def make_stage_plugins(self, plugins, stage_idx):
+        """ make plugins for ResNet 'stage_idx'th stage .
+
+        Currently we support to insert 'context_block',
+        'empirical_attention_block', 'nonlocal_block' into the backbone like
+        ResNet/ResNeXt. They could be inserted after conv1/conv2/conv3 of
+        Bottleneck.
+
+        An example of plugins format could be :
+        >>> plugins=[
+        ...     dict(cfg=dict(type='xxx', arg1='xxx'),
+        ...          stages=(False, True, True, True),
+        ...          position='after_conv2'),
+        ...     dict(cfg=dict(type='yyy'),
+        ...          stages=(True, True, True, True),
+        ...          position='after_conv3'),
+        ...     dict(cfg=dict(type='zzz', postfix='1'),
+        ...          stages=(True, True, True, True),
+        ...          position='after_conv3')
+        ...     dict(cfg=dict(type='zzz', postfix='2'),
+        ...          stages=(True, True, True, True),
+        ...          position='after_conv3')
+        ... ]
+        Suppose 'stage_idx=0', the structure of blocks in the stage would be:
+            conv1-> conv2->conv3->yyy->zzz1->zzz2
+        Suppose 'stage_idx=1', the structure of blocks in the stage would be:
+            conv1-> conv2->xxx->conv3->yyy->zzz1->zzz2
+
+        If stages is missing, the plugin would be applied to all stages.
+
+        Args:
+            plugins (list[dict]): List of plugins cfg to build. The postfix is
+                required if multiple same type plugins are inserted.
+            stage_idx (int): Index of stage to build
+
+        Returns:
+            list[dict]: Plugins for current stage
+
+        """
+        stage_plugins = []
+        for plugin in plugins:
+            plugin = plugin.copy()
+            stages = plugin.pop('stages', None)
+            assert stages is None or len(stages) == self.num_stages
+            # whether to insert plugin into current stage
+            if stages is None or stages[stage_idx]:
+                stage_plugins.append(plugin)
+
+        return stage_plugins
 
     def make_res_layer(self, **kwargs):
         return ResLayer(**kwargs)
