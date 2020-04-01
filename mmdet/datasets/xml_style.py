@@ -47,8 +47,7 @@ class XMLDataset(CustomDataset):
             label = self.cat2label[name]
             difficult = int(obj.find('difficult').text)
             bnd_box = obj.find('bndbox')
-	    
-	    # Coordinates may be float type
+            # Coordinates may be float type
             bbox = [
                 int(float(bnd_box.find('xmin').text)),
                 int(float(bnd_box.find('ymin').text)),
