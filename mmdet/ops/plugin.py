@@ -31,10 +31,10 @@ def build_plugin_layer(cfg, postfix='', **kwargs):
     if layer_type not in plugin_cfg:
         raise KeyError('Unrecognized plugin type {}'.format(layer_type))
     else:
-        name, plugin_layer = plugin_cfg[layer_type]
+        abbr, plugin_layer = plugin_cfg[layer_type]
 
     assert isinstance(postfix, (int, str))
-    name = name + str(postfix)
+    name = abbr + str(postfix)
 
     layer = plugin_layer(**kwargs, **cfg_)
 

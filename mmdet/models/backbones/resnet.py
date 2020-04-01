@@ -454,7 +454,7 @@ class ResNet(nn.Module):
         Suppose 'stage_idx=1', the structure of blocks in the stage would be:
             conv1-> conv2->xxx->conv3->yyy->zzz1->zzz2
 
-        if stages is missing, the plugin would be applied to all stages.
+        If stages is missing, the plugin would be applied to all stages.
 
         Args:
             plugins (list[dict]): List of plugins cfg to build. The postfix is
