@@ -59,13 +59,13 @@ def test_config_build_detector():
             assert detector.roi_head.with_mask == detector.with_mask
 
             head_config = config_mod.model['roi_head']
-            _check_roihead(head_config, detector.roi_head)
+            _check_roi_head(head_config, detector.roi_head)
         # else:
         #     # for single stage detector
         #     # detectors must have bbox head
         #     # assert detector.with_bbox
         #     head_config = config_mod.model['bbox_head']
-        #     _check_bboxhead(head_config, detector.bbox_head)
+        #     _check_bbox_head(head_config, detector.bbox_head)
 
 
 def test_config_data_pipeline():
@@ -175,7 +175,7 @@ def test_config_data_pipeline():
         assert output_results is not None
 
 
-def _check_roihead(config, head):
+def _check_roi_head(config, head):
     # check consistency between head_config and roi_head
     assert config['type'] == head.__class__.__name__
 
@@ -187,7 +187,7 @@ def _check_roihead(config, head):
     # check bbox head infos
     bbox_cfg = config.bbox_head
     bbox_head = head.bbox_head
-    _check_bboxhead(bbox_cfg, bbox_head)
+    _check_bbox_head(bbox_cfg, bbox_head)
 
     if head.with_mask:
         # check roi_align
@@ -200,7 +200,7 @@ def _check_roihead(config, head):
         # check mask head infos
         mask_head = head.mask_head
         mask_cfg = config.mask_head
-        _check_maskhead(mask_cfg, mask_head)
+        _check_mask_head(mask_cfg, mask_head)
 
     # check arch specific settings, e.g., cascade/htc
     if config['type'] in ['CascadeRoIHead', 'HybridTaskCascadeRoIHead']:
@@ -255,14 +255,14 @@ def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
                 prev_roi_extractor.roi_layers[0].use_torchvision)
 
 
-def _check_maskhead(mask_cfg, mask_head):
+def _check_mask_head(mask_cfg, mask_head):
     import torch.nn as nn
     if isinstance(mask_cfg, list):
         for single_mask_cfg, single_mask_head in zip(mask_cfg, mask_head):
-            _check_maskhead(single_mask_cfg, single_mask_head)
+            _check_mask_head(single_mask_cfg, single_mask_head)
     elif isinstance(mask_head, nn.ModuleList):
         for single_mask_head in mask_head:
-            _check_maskhead(mask_cfg, single_mask_head)
+            _check_mask_head(mask_cfg, single_mask_head)
     else:
         assert mask_cfg['type'] == mask_head.__class__.__name__
         assert mask_cfg.in_channels == mask_head.in_channels
@@ -273,14 +273,14 @@ def _check_maskhead(mask_cfg, mask_head):
         assert mask_head.conv_logits.out_channels == out_dim
 
 
-def _check_bboxhead(bbox_cfg, bbox_head):
+def _check_bbox_head(bbox_cfg, bbox_head):
     import torch.nn as nn
     if isinstance(bbox_cfg, list):
         for single_bbox_cfg, single_bbox_head in zip(bbox_cfg, bbox_head):
-            _check_bboxhead(single_bbox_cfg, single_bbox_head)
+            _check_bbox_head(single_bbox_cfg, single_bbox_head)
     elif isinstance(bbox_head, nn.ModuleList):
         for single_bbox_head in bbox_head:
-            _check_bboxhead(bbox_cfg, single_bbox_head)
+            _check_bbox_head(bbox_cfg, single_bbox_head)
     else:
         assert bbox_cfg['type'] == bbox_head.__class__.__name__
         assert bbox_cfg.in_channels == bbox_head.in_channels
