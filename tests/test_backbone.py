@@ -25,6 +25,7 @@ def is_norm(modules):
 
 
 def all_zeros(modules):
+    """Check if the weight(and bias) is all zero."""
     weight_zero = torch.allclose(modules.weight.data,
                                  torch.zeros_like(modules.weight.data))
     if hasattr(modules, 'bias'):
@@ -48,6 +49,7 @@ def check_norm_state(modules, train_state):
 def test_resnet_basic_block():
 
     with pytest.raises(AssertionError):
+        # Not implemented yet.
         BasicBlock(64, 64, with_cp=True)
 
     with pytest.raises(AssertionError):
@@ -78,6 +80,7 @@ def test_resnet_basic_block():
         ]
         BasicBlock(64, 64, plugins=plugins)
 
+    # test BasicBlock structure and forward
     block = BasicBlock(64, 64)
     assert block.conv1.in_channels == 64
     assert block.conv1.out_channels == 64
@@ -93,10 +96,11 @@ def test_resnet_basic_block():
 def test_resnet_bottleneck():
 
     with pytest.raises(AssertionError):
-        # style must be in ['pytorch', 'caffe']
+        # Style must be in ['pytorch', 'caffe']
         Bottleneck(64, 64, style='tensorflow')
 
     with pytest.raises(AssertionError):
+        # Allowed positions are 'after_conv1', 'after_conv2', 'after_conv3'
         plugins = [
             dict(
                 cfg=dict(type='ContextBlock', ratio=1. / 16),
@@ -105,6 +109,7 @@ def test_resnet_bottleneck():
         Bottleneck(64, 16, plugins=plugins)
 
     with pytest.raises(AssertionError):
+        # Need to specify different postfix to avoid duplicate plugin name
         plugins = [
             dict(
                 cfg=dict(type='ContextBlock', ratio=1. / 16),
@@ -116,15 +121,18 @@ def test_resnet_bottleneck():
         Bottleneck(64, 16, plugins=plugins)
 
     with pytest.raises(KeyError):
+        # Plugin type is not supported
         plugins = [dict(cfg=dict(type='WrongPlugin'), position='after_conv3')]
         Bottleneck(64, 16, plugins=plugins)
 
+    # Test Bottleneck with checkpoint forward
     block = Bottleneck(64, 16, with_cp=True)
     assert block.with_cp
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
+    # Test Bottleneck style
     block = Bottleneck(64, 64, stride=2, style='pytorch')
     assert block.conv1.stride == (1, 1)
     assert block.conv2.stride == (2, 2)
@@ -132,17 +140,20 @@ def test_resnet_bottleneck():
     assert block.conv1.stride == (2, 2)
     assert block.conv2.stride == (1, 1)
 
+    # Test Bottleneck DCN
     dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
     with pytest.raises(AssertionError):
         Bottleneck(64, 64, dcn=dcn, conv_cfg=dict(type='Conv'))
     block = Bottleneck(64, 64, dcn=dcn)
     assert isinstance(block.conv2, DeformConvPack)
 
+    # Test Bottleneck forward
     block = Bottleneck(64, 16)
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
+    # Test Bottleneck with 1 ContextBlock after conv3
     plugins = [
         dict(
             cfg=dict(type='ContextBlock', ratio=1. / 16),
@@ -154,6 +165,7 @@ def test_resnet_bottleneck():
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
+    # Test Bottleneck with 1 GeneralizedAttention after conv2
     plugins = [
         dict(
             cfg=dict(
@@ -170,6 +182,8 @@ def test_resnet_bottleneck():
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
+    # Test Bottleneck with 1 GeneralizedAttention after conv2, 1 NonLocal2D
+    # after conv2, 1 ContextBlock after conv3
     plugins = [
         dict(
             cfg=dict(
@@ -192,6 +206,8 @@ def test_resnet_bottleneck():
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
+    # Test Bottleneck with 1 ContextBlock after conv2, 2 ContextBlock after
+    # conv3
     plugins = [
         dict(
             cfg=dict(type='ContextBlock', ratio=1. / 16, postfix=1),
@@ -213,6 +229,7 @@ def test_resnet_bottleneck():
 
 
 def test_resnet_res_layer():
+    # Test ResLayer of 3 Bottleneck w\o downsample
     layer = ResLayer(Bottleneck, 64, 16, 3)
     assert len(layer) == 3
     assert layer[0].conv1.in_channels == 64
@@ -226,6 +243,7 @@ def test_resnet_res_layer():
     x_out = layer(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
 
+    # Test ResLayer of 3 Bottleneck with downsample
     layer = ResLayer(Bottleneck, 64, 64, 3)
     assert layer[0].downsample[0].out_channels == 256
     for i in range(1, len(layer)):
@@ -234,6 +252,7 @@ def test_resnet_res_layer():
     x_out = layer(x)
     assert x_out.shape == torch.Size([1, 256, 56, 56])
 
+    # Test ResLayer of 3 Bottleneck with stride=2
     layer = ResLayer(Bottleneck, 64, 64, 3, stride=2)
     assert layer[0].downsample[0].out_channels == 256
     assert layer[0].downsample[0].stride == (2, 2)
@@ -243,6 +262,7 @@ def test_resnet_res_layer():
     x_out = layer(x)
     assert x_out.shape == torch.Size([1, 256, 28, 28])
 
+    # Test ResLayer of 3 Bottleneck with stride=2 and average downsample
     layer = ResLayer(Bottleneck, 64, 64, 3, stride=2, avg_down=True)
     assert isinstance(layer[0].downsample[0], AvgPool2d)
     assert layer[0].downsample[1].out_channels == 256
@@ -265,6 +285,7 @@ def test_resnet_backbone():
         ResNet(50, num_stages=0)
 
     with pytest.raises(AssertionError):
+        # with checkpoint is not implemented in BasicBlock of ResNet18
         ResNet(18, with_cp=True)
 
     with pytest.raises(AssertionError):
@@ -291,30 +312,27 @@ def test_resnet_backbone():
         ResNet(50, strides=(1, ), dilations=(1, 1), num_stages=3)
 
     with pytest.raises(TypeError):
+        # pretrained must be a string path
         model = ResNet(50)
         model.init_weights(pretrained=0)
 
     with pytest.raises(AssertionError):
-        # style must be in ['pytorch', 'caffe']
+        # Style must be in ['pytorch', 'caffe']
         ResNet(50, style='tensorflow')
 
-    with pytest.raises(AssertionError):
-        # assert not with_cp
-        ResNet(18, with_cp=True)
-
-    model = ResNet(18)
-    model.init_weights()
-
+    # Test ResNet50 norm_eval=True
     model = ResNet(50, norm_eval=True)
     model.init_weights()
     model.train()
     assert check_norm_state(model.modules(), False)
 
+    # Test ResNet50 with torchvision pretrained weight
     model = ResNet(depth=50, norm_eval=True)
     model.init_weights('torchvision://resnet50')
     model.train()
     assert check_norm_state(model.modules(), False)
 
+    # Test ResNet50 with first stage frozen
     frozen_stages = 1
     model = ResNet(50, frozen_stages=frozen_stages)
     model.init_weights()
@@ -331,6 +349,7 @@ def test_resnet_backbone():
         for param in layer.parameters():
             assert param.requires_grad is False
 
+    # Test ResNet50V1d with first stage frozen
     model = ResNetV1d(depth=50, frozen_stages=frozen_stages)
     assert len(model.stem) == 9
     model.init_weights()
@@ -346,6 +365,7 @@ def test_resnet_backbone():
         for param in layer.parameters():
             assert param.requires_grad is False
 
+    # Test ResNet18 forward
     model = ResNet(18)
     model.init_weights()
     model.train()
@@ -358,6 +378,7 @@ def test_resnet_backbone():
     assert feat[2].shape == torch.Size([1, 256, 14, 14])
     assert feat[3].shape == torch.Size([1, 512, 7, 7])
 
+    # Test ResNet50 with BatchNorm forward
     model = ResNet(50)
     for m in model.modules():
         if is_norm(m):
@@ -373,6 +394,7 @@ def test_resnet_backbone():
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
 
+    # Test ResNet50 with layers 1, 2, 3 out forward
     model = ResNet(50, out_indices=(0, 1, 2))
     model.init_weights()
     model.train()
@@ -384,6 +406,7 @@ def test_resnet_backbone():
     assert feat[1].shape == torch.Size([1, 512, 28, 28])
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
 
+    # Test ResNet50 with checkpoint forward
     model = ResNet(50, with_cp=True)
     for m in model.modules():
         if is_block(m):
@@ -399,6 +422,7 @@ def test_resnet_backbone():
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
 
+    # Test ResNet50 with GroupNorm forward
     model = ResNet(
         50, norm_cfg=dict(type='GN', num_groups=32, requires_grad=True))
     for m in model.modules():
@@ -415,6 +439,8 @@ def test_resnet_backbone():
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
 
+    # Test ResNet50 with 1 GeneralizedAttention after conv2, 1 NonLocal2D
+    # after conv2, 1 ContextBlock after conv3 in layers 2, 3, 4
     plugins = [
         dict(
             cfg=dict(
@@ -465,6 +491,8 @@ def test_resnet_backbone():
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
 
+    # Test ResNet50 with 1 ContextBlock after conv2, 1 ContextBlock after
+    # conv3 in layers 2, 3, 4
     plugins = [
         dict(
             cfg=dict(type='ContextBlock', ratio=1. / 16, postfix=1),
@@ -510,6 +538,7 @@ def test_resnet_backbone():
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
 
+    # Test ResNet50 zero initialization of residual
     model = ResNet(50, zero_init_residual=True)
     model.init_weights()
     for m in model.modules():
@@ -527,6 +556,7 @@ def test_resnet_backbone():
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
 
+    # Test ResNetV1d forward
     model = ResNetV1d(depth=50)
     model.init_weights()
     model.train()
@@ -542,17 +572,20 @@ def test_resnet_backbone():
 
 def test_renext_bottleneck():
     with pytest.raises(AssertionError):
-        # style must be in ['pytorch', 'caffe']
+        # Style must be in ['pytorch', 'caffe']
         BottleneckX(64, 64, groups=32, base_width=4, style='tensorflow')
 
+    # Test ResNeXt Bottleneck structure
     block = BottleneckX(
         64, 64, groups=32, base_width=4, stride=2, style='pytorch')
     assert block.conv2.stride == (2, 2)
     assert block.conv2.groups == 32
     assert block.conv2.out_channels == 128
 
+    # Test ResNeXt Bottleneck with DCN
     dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
     with pytest.raises(AssertionError):
+        # conv_cfg must be None if dcn is not None
         BottleneckX(
             64,
             64,
@@ -562,6 +595,7 @@ def test_renext_bottleneck():
             conv_cfg=dict(type='Conv'))
     BottleneckX(64, 64, dcn=dcn)
 
+    # Test ResNeXt Bottleneck forward
     block = BottleneckX(64, 16, groups=32, base_width=4)
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
@@ -573,6 +607,7 @@ def test_resnext_backbone():
         # ResNeXt depth should be in [50, 101, 152]
         ResNeXt(depth=18)
 
+    # Test ResNeXt with group 32, base_width 4
     model = ResNeXt(depth=50, groups=32, base_width=4)
     for m in model.modules():
         if is_block(m):
