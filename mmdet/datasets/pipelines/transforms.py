@@ -153,8 +153,7 @@ class Resize(object):
             if self.keep_ratio:
                 results[key] = results[key].rescale(results['scale'])
             else:
-                results[key] = results[key].resize(
-                    h=results['img_shape'][0], w=results['img_shape'][1])
+                results[key] = results[key].resize(results['img_shape'][:2])
 
     def _resize_seg(self, results):
         for key in results.get('seg_fields', []):
@@ -292,7 +291,7 @@ class Pad(object):
         pad_shape = results['pad_shape'][:2]
         for key in results.get('mask_fields', []):
             results[key] = results[key].pad(
-                h=pad_shape[0], w=pad_shape[1], pad_val=self.pad_val)
+                pad_shape[:2], pad_val=self.pad_val)
 
     def _pad_seg(self, results):
         for key in results.get('seg_fields', []):
