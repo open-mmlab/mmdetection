@@ -27,6 +27,9 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
             ignoring any bboxes.
         ignore_wrt_candidates (bool): Whether to compute the iof between
             `bboxes` and `gt_bboxes_ignore`, or the contrary.
+        match_low_quality (bool): Whether to allow quality matches. This is
+            usually allowed for RPN and single stage detectors, but not allowed
+            in the second stage.
         gpu_assign_thr (int): The upper bound of the number of GT for GPU
             assign. When the number of gt is above this threshold, will assign
             on CPU device. Negative values mean not assign on CPU.
@@ -39,6 +42,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                  gt_max_assign_all=True,
                  ignore_iof_thr=-1,
                  ignore_wrt_candidates=True,
+                 match_low_quality=True,
                  gpu_assign_thr=-1):
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
@@ -47,6 +51,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         self.ignore_iof_thr = ignore_iof_thr
         self.ignore_wrt_candidates = ignore_wrt_candidates
         self.gpu_assign_thr = gpu_assign_thr
+        self.match_low_quality = match_low_quality
 
     def assign(self,
                approxs,
