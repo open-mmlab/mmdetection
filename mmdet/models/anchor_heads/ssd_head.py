@@ -75,7 +75,7 @@ class SSDHead(AnchorHead):
         for k in range(len(anchor_strides)):
             base_size = min_sizes[k]
             stride = anchor_strides[k]
-            ctr = ((stride - 1) / 2., (stride - 1) / 2.)
+            ctr = ((stride) / 2., (stride) / 2.)
             scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
             ratios = [1.]
             for r in anchor_ratios[k]:
