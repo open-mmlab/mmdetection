@@ -249,6 +249,14 @@ def test_bitmap_mask_index():
     assert (bitmap_masks[range(2)].masks == raw_masks[range(2)]).all()
 
 
+def test_bitmap_mask_iter():
+    raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
+    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    for i, bitmap_mask in enumerate(bitmap_masks):
+        assert bitmap_mask.shape == (28, 28)
+        assert (bitmap_mask == raw_masks[i]).all()
+
+
 def test_polygon_mask_init():
     # init with empty masks
     raw_masks = []
@@ -451,3 +459,10 @@ def test_polygon_mask_index():
     with pytest.raises(ValueError):
         # invalid index
         polygon_masks[torch.Tensor([1, 2])]
+
+
+def test_polygon_mask_iter():
+    raw_masks = dummy_raw_polygon_masks((3, 28, 28))
+    polygon_masks = PolygonMasks(raw_masks, 28, 28)
+    for i, polygon_mask in enumerate(polygon_masks):
+        assert np.equal(polygon_mask, raw_masks[i]).all()
