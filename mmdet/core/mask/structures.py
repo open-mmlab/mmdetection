@@ -77,7 +77,8 @@ class BitMapMasks(BaseInstanceMasks):
             assert self.masks.shape[2] == self.width
 
     def __getitem__(self, index):
-        return BitMapMasks(self.masks[index], self.height, self.width)
+        masks = self.masks[index].reshape(-1, self.height, self.width)
+        return BitMapMasks(masks, self.height, self.width)
 
     def __iter__(self):
         return iter(self.masks)
@@ -141,7 +142,7 @@ class BitMapMasks(BaseInstanceMasks):
             flipped_masks = self.masks
         else:
             flipped_masks = np.stack([
-                mmcv.imflip_(mask, direction=flip_direction)
+                mmcv.imflip(mask, direction=flip_direction)
                 for mask in self.masks
             ])
         return BitMapMasks(flipped_masks, self.height, self.width)
@@ -212,7 +213,8 @@ class BitMapMasks(BaseInstanceMasks):
             ndarray: the cropped and resized masks.
         """
         if len(self.masks) == 0:
-            return np.empty((0, *out_shape), dtype=np.unit8)
+            empty_masks = np.empty((0, *out_shape), dtype=np.uint8)
+            return BitMapMasks(empty_masks, *out_shape)
 
         resized_masks = []
         for i in range(len(bboxes)):
@@ -244,7 +246,7 @@ class BitMapMasks(BaseInstanceMasks):
         return self.masks
 
     def to_tensor(self, dtype, device):
-        return torch.from_numpy(self.masks, dtype=dtype, device=device)
+        return torch.tensor(self.masks, dtype=dtype, device=device)
 
 
 class PolygonMasks(BaseInstanceMasks):
@@ -331,11 +333,9 @@ class PolygonMasks(BaseInstanceMasks):
             if flip_direction == 'horizontal':
                 dim = self.width
                 idx = 0
-            elif flip_direction == 'vertical':
+            else:
                 dim = self.height
                 idx = 1
-            else:
-                raise NotImplementedError
             flipped_masks = []
             for poly_per_obj in self.masks:
                 flipped_poly_per_obj = []
@@ -350,6 +350,9 @@ class PolygonMasks(BaseInstanceMasks):
 
     def crop(self, bbox):
         """see BitMapMasks.crop"""
+        assert isinstance(bbox, np.ndarray)
+        assert bbox.ndim == 1
+
         # clip the boundary
         bbox = bbox.copy()
         bbox[0::2] = np.clip(bbox[0::2], 0, self.width - 1)
@@ -373,9 +376,9 @@ class PolygonMasks(BaseInstanceMasks):
             cropped_masks = PolygonMasks(cropped_masks, h, w)
         return cropped_masks
 
-    def pad(self, *args, **kwargs):
+    def pad(self, out_shape, pad_val=0):
         """padding has no effect on polygons"""
-        return self
+        return PolygonMasks(self.masks, *out_shape)
 
     def expand(self, *args, **kwargs):
         raise NotImplementedError
@@ -388,7 +391,7 @@ class PolygonMasks(BaseInstanceMasks):
         """see BitMapMasks.crop_and_resize"""
         out_h, out_w = out_shape
         if len(self.masks) == 0:
-            return np.empty((0, out_h, out_w), dtype=np.unit8)
+            return PolygonMasks([], out_h, out_w)
 
         resized_masks = []
         for i in range(len(bboxes)):
@@ -429,9 +432,12 @@ class PolygonMasks(BaseInstanceMasks):
         return np.stack(bitmap_masks)
 
     def to_tensor(self, dtype, device):
-        bitmap_masks = polygon_to_bitmap(self.masks, self.height,
-                                         self.width).to_tensor(dtype, device)
-        return torch.from_numpy(bitmap_masks, dtype=dtype, device=device)
+        if len(self.masks) == 0:
+            return torch.empty((0, self.height, self.width),
+                               dtype=dtype,
+                               device=device)
+        ndarray_masks = self.to_ndarray()
+        return torch.tensor(ndarray_masks, dtype=dtype, device=device)
 
 
 def polygon_to_bitmap(polygons, height, width):
