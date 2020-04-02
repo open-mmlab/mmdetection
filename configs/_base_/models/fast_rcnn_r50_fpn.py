@@ -43,6 +43,7 @@ train_cfg = dict(
             pos_iou_thr=0.5,
             neg_iou_thr=0.5,
             min_pos_iou=0.5,
+            match_low_quality=False,
             ignore_iof_thr=-1),
         sampler=dict(
             type='RandomSampler',
