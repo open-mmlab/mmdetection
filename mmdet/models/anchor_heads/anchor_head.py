@@ -16,7 +16,7 @@ class AnchorHead(nn.Module):
     """Anchor-based head (RPN, RetinaNet, SSD, etc.).
 
     Args:
-        num_classes (int): Number of categories not including the background
+        num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of hidden channels. Used in child classes.
