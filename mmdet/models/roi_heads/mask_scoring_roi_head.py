@@ -80,7 +80,7 @@ class MaskScoringRoIHead(StandardRoIHead):
             mask_iou_pred = self.mask_iou_head(
                 mask_results['mask_feats'],
                 mask_results['mask_pred'][range(det_labels.size(0)),
-                                          det_labels + 1])
+                                          det_labels])
             mask_scores = self.mask_iou_head.get_mask_scores(
                 mask_iou_pred, det_bboxes, det_labels)
         return segm_result, mask_scores
