@@ -28,9 +28,9 @@ class MaxIoUAssigner(BaseAssigner):
             ignoring any bboxes.
         ignore_wrt_candidates (bool): Whether to compute the iof between
             `bboxes` and `gt_bboxes_ignore`, or the contrary.
-        match_low_quality (bool): Whether to allow quality matches. This is
+        match_low_quality (bool): Whether to allow low quality matches. This is
             usually allowed for RPN and single stage detectors, but not allowed
-            in the second stage.
+            in the second stage. Details are demonetrates in Step 4.
         gpu_assign_thr (int): The upper bound of the number of GT for GPU
             assign. When the number of gt is above this threshold, will assign
             on CPU device. Negative values mean not assign on CPU.
@@ -180,11 +180,13 @@ class MaxIoUAssigner(BaseAssigner):
         assigned_gt_inds[pos_inds] = argmax_overlaps[pos_inds] + 1
 
         if self.match_low_quality:
-            # low-quality matching will overwirte the assigned_gt_inds assigned
-            # in Step 3
-            # thus the assigned gt might not be the best one for the prediction
-            # e.g., bbox A has 0.9 and 0.8 iou with GT bbox 1 & 2
-            # GT bbox 1's & 2's gt_argmax_overlaps = A
+            # Low-quality matching will overwirte the assigned_gt_inds assigned
+            # in Step 3. Thus, the assigned gt might not be the best one for
+            # prediction.
+            # For example, if bbox A has 0.9 and 0.8 iou with GT bbox 1 & 2,
+            # bbox 1 will be assigned as the best target for bbox A in step 3.
+            # However, if GT bbox 2's gt_argmax_overlaps = A, bbox A's
+            # assigned_gt_inds will be overwritten to be bbox B.
             # This might be the reason that it is not used in ROI Heads.
             for i in range(num_gts):
                 if gt_max_overlaps[i] >= self.min_pos_iou:
