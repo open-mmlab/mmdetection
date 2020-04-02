@@ -9,11 +9,12 @@ model = dict(
     backbone=dict(
         frozen_stages=-1, zero_init_residual=False, norm_cfg=norm_cfg),
     neck=dict(norm_cfg=norm_cfg),
-    bbox_head=dict(
-        type='Shared4Conv1FCBBoxHead',
-        conv_out_channels=256,
-        norm_cfg=norm_cfg),
-    mask_head=dict(norm_cfg=norm_cfg))
+    roi_head=dict(
+        bbox_head=dict(
+            type='Shared4Conv1FCBBoxHead',
+            conv_out_channels=256,
+            norm_cfg=norm_cfg),
+        mask_head=dict(norm_cfg=norm_cfg)))
 # optimizer
 optimizer = dict(paramwise_options=dict(norm_decay_mult=0))
 optimizer_config = dict(_delete_=True, grad_clip=None)

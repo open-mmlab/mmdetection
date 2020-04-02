@@ -5,8 +5,9 @@ model = dict(
     pretrained='open-mmlab://jhu/resnet50_gn_ws',
     backbone=dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg),
     neck=dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg),
-    bbox_head=dict(
-        type='Shared4Conv1FCBBoxHead',
-        conv_out_channels=256,
-        conv_cfg=conv_cfg,
-        norm_cfg=norm_cfg))
+    roi_head=dict(
+        bbox_head=dict(
+            type='Shared4Conv1FCBBoxHead',
+            conv_out_channels=256,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg)))

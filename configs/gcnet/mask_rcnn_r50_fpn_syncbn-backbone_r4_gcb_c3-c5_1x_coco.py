@@ -3,5 +3,9 @@ model = dict(
     backbone=dict(
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=False,
-        gcb=dict(ratio=1. / 4., ),
-        stage_with_gcb=(False, True, True, True)))
+        plugins=[
+            dict(
+                cfg=dict(type='ContextBlock', ratio=1. / 4),
+                stages=(False, True, True, True),
+                position='after_conv3')
+        ]))

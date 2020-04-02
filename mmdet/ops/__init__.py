@@ -11,6 +11,7 @@ from .masked_conv import MaskedConv2d
 from .nms import nms, soft_nms
 from .non_local import NonLocal2D
 from .norm import build_norm_layer
+from .plugin import build_plugin_layer
 from .roi_align import RoIAlign, roi_align
 from .roi_pool import RoIPool, roi_pool
 from .scale import Scale
@@ -27,5 +28,5 @@ __all__ = [
     'MaskedConv2d', 'ContextBlock', 'GeneralizedAttention', 'NonLocal2D',
     'get_compiler_version', 'get_compiling_cuda_version', 'build_conv_layer',
     'ConvModule', 'ConvWS2d', 'conv_ws_2d', 'build_norm_layer', 'Scale',
-    'build_upsample_layer'
+    'build_upsample_layer', 'build_plugin_layer'
 ]

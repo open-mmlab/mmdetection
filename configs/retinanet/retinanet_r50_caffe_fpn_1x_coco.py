@@ -1,7 +1,8 @@
 _base_ = './retinanet_r50_fpn_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://resnet50_caffe',
-    backbone=dict(norm_cfg=dict(requires_grad=False), style='caffe'))
+    backbone=dict(
+        norm_cfg=dict(requires_grad=False), norm_eval=True, style='caffe'))
 # use caffe img_norm
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
