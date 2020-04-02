@@ -144,6 +144,7 @@ def anchor_target_single(flat_anchors,
         bbox_targets[pos_inds, :] = pos_bbox_targets
         bbox_weights[pos_inds, :] = 1.0
         if gt_labels is None:
+            # only rpn gives gt_labels as None, this time FG is 1
             labels[pos_inds] = 1
         else:
             labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds]
