@@ -130,11 +130,13 @@ class LoadAnnotations(object):
         return mask
 
     def process_polygons(self, polygons):
-        """ Convert polygons to ndarray and filter invalid polygons.
+        """ Convert polygons to list of ndarray and filter invalid polygons.
+
         Args:
-            polygons (list of list): polygons of one instance.
+            polygons (list[list]): polygons of one instance.
+
         Returns:
-            polygons (list of ndarray).
+            list[ndarray]: processed polygons.
         """
         polygons = [np.array(p) for p in polygons]
         valid_polygons = []

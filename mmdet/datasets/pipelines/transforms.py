@@ -4,6 +4,7 @@ import mmcv
 import numpy as np
 from numpy import random
 
+from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..registry import PIPELINES
 
@@ -816,6 +817,9 @@ class Albu(object):
 
         # TODO: Support mask structure in albu
         if 'masks' in results:
+            if isinstance(results['masks'], PolygonMasks):
+                raise NotImplementedError(
+                    'Albu only supports BitMap masks now')
             ori_masks = results['masks']
             results['masks'] = results['masks'].masks
 
