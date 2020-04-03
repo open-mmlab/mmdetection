@@ -3,7 +3,6 @@ import argparse
 import cv2
 import torch
 
-import mmdet
 from mmdet.apis import inference_detector, init_detector, show_result
 
 
@@ -11,7 +10,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='MMDetection webcam demo')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
-    parser.add_argument('--device', type=int, default=0, help='CUDA device id')
+    parser.add_argument(
+        '--device', type=str, default='cuda:0', help='CPU/CUDA device option')
     parser.add_argument(
         '--camera-id', type=int, default=0, help='camera device id')
     parser.add_argument(
@@ -23,10 +23,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    if mmdet.CPU_ONLY:
-        device = torch.device('cpu')
-    else:
-        device = torch.device('cuda', args.device)
+    device = torch.device(args.device)
 
     model = init_detector(args.config, args.checkpoint, device=device)
 

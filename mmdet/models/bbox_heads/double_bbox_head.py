@@ -140,6 +140,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
         return branch_fcs
 
     def init_weights(self):
+        # conv layers are already initialized by ConvModule
         normal_init(self.fc_cls, std=0.01)
         normal_init(self.fc_reg, std=0.001)
 

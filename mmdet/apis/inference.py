@@ -8,10 +8,10 @@ import torch
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
-import mmdet
 from mmdet.core import get_classes
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
+from mmdet.ops import RoIAlign, RoIPool
 
 
 def init_detector(config, checkpoint=None, device='cuda:0'):
@@ -82,12 +82,18 @@ def inference_detector(model, img):
     data = dict(img=img)
     data = test_pipeline(data)
     data = collate([data], samples_per_gpu=1)
-    if mmdet.CPU_ONLY:
-        # just get the actual data from DataContainer
-        data['img_meta'] = data['img_meta'][0].data
-    else:
+    if next(model.parameters()).is_cuda:
         # scatter to multiple GPUs
         data = scatter(data, [device])[0]
+    else:
+        # Use torchvision ops for CPU mode instead
+        for m in model.modules():
+            if isinstance(m, (RoIPool, RoIAlign)):
+                # set use_torchvision on-the-fly
+                m.use_torchvision = True
+        warnings.warn('We set use_torchvision=True in CPU mode.')
+        # just get the actual data from DataContainer
+        data['img_meta'] = data['img_meta'][0].data
 
     # forward the model
     with torch.no_grad():

@@ -61,6 +61,7 @@ class BBoxHead(nn.Module):
         self.debug_imgs = None
 
     def init_weights(self):
+        # conv layers are already initialized by ConvModule
         if self.with_cls:
             nn.init.normal_(self.fc_cls.weight, 0, 0.01)
             nn.init.constant_(self.fc_cls.bias, 0)
@@ -160,7 +161,7 @@ class BBoxHead(nn.Module):
             if isinstance(scale_factor, float):
                 bboxes /= scale_factor
             else:
-                scale_factor = torch.from_numpy(scale_factor).to(bboxes.device)
+                scale_factor = bboxes.new_tensor(scale_factor)
                 bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
                           scale_factor).view(bboxes.size()[0], -1)
 

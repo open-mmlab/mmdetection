@@ -2,10 +2,7 @@ import torch.nn as nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 
-import mmdet
-
-if not mmdet.CPU_ONLY:
-    from . import sigmoid_focal_loss_cuda
+from . import sigmoid_focal_loss_ext
 
 
 class SigmoidFocalLossFunction(Function):
@@ -18,8 +15,8 @@ class SigmoidFocalLossFunction(Function):
         ctx.gamma = gamma
         ctx.alpha = alpha
 
-        loss = sigmoid_focal_loss_cuda.forward(input, target, num_classes,
-                                               gamma, alpha)
+        loss = sigmoid_focal_loss_ext.forward(input, target, num_classes,
+                                              gamma, alpha)
         return loss
 
     @staticmethod
@@ -30,8 +27,8 @@ class SigmoidFocalLossFunction(Function):
         gamma = ctx.gamma
         alpha = ctx.alpha
         d_loss = d_loss.contiguous()
-        d_input = sigmoid_focal_loss_cuda.backward(input, target, d_loss,
-                                                   num_classes, gamma, alpha)
+        d_input = sigmoid_focal_loss_ext.backward(input, target, d_loss,
+                                                  num_classes, gamma, alpha)
         return d_input, None, None, None, None
 
 
