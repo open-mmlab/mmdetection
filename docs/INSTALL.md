@@ -62,7 +62,6 @@ you can install it before installing MMCV.
 
 ## Install with CPU only
 The code can be built for CPU only environment (where CUDA isn't available).
-To bypass the cuda check, run `FORCE_CUDA=1 pip install -v -e .`
 
 In CPU mode you can run the demo/webcam_demo.py for example.
 However some functionality is gone in this mode :
