@@ -30,8 +30,8 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
         >>>     [10, 10, 20, 20],
         >>> ])
         >>> bbox_overlaps(bboxes1, bboxes2)
-        tensor([[0.5238, 0.0500, 0.0041],
-                [0.0323, 0.0452, 1.0000],
+        tensor([[0.5000, 0.0000, 0.0000],
+                [0.0000, 0.0000, 1.0000],
                 [0.0000, 0.0000, 0.0000]])
 
     Example:

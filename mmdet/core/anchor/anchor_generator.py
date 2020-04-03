@@ -8,10 +8,10 @@ class AnchorGenerator(object):
         >>> self = AnchorGenerator(9, [1.], [1.])
         >>> all_anchors = self.grid_anchors((2, 2), device='cpu')
         >>> print(all_anchors)
-        tensor([[ 0.,  0.,  8.,  8.],
-                [16.,  0., 24.,  8.],
-                [ 0., 16.,  8., 24.],
-                [16., 16., 24., 24.]])
+        tensor([[-4.5000, -4.5000,  4.5000,  4.5000],
+                [11.5000, -4.5000, 20.5000,  4.5000],
+                [-4.5000, 11.5000,  4.5000, 20.5000],
+                [11.5000, 11.5000, 20.5000, 20.5000]])
     """
 
     def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None):
