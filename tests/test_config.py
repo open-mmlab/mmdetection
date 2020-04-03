@@ -1,5 +1,7 @@
 from os.path import dirname, exists, join, relpath
 
+from mmdet.core import BitMapMasks, PolygonMasks
+
 
 def _get_config_directory():
     """ Find the predefined detector config directory """
@@ -88,8 +90,25 @@ def test_config_data_pipeline():
         'pascal_voc/ssd300_voc0712.py',
         'pascal_voc/ssd512_voc0712.py',
         # 'albu_example/mask_rcnn_r50_fpn_1x.py',
+        'mask_rcnn/mask_rcnn_r50_fpn_poly_1x_coco.py',
         'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
     ]
+
+    def dummy_masks(h, w, num_obj=3, mode='bitmap'):
+        assert mode in ('polygon', 'bitmap')
+        if mode == 'bitmap':
+            masks = np.random.randint(0, 2, (num_obj, h, w), dtype=np.uint8)
+            masks = BitMapMasks(masks, h, w)
+        else:
+            masks = []
+            for i in range(num_obj):
+                masks.append([])
+                masks[-1].append(
+                    np.random.uniform(0, min(h - 1, w - 1), (8 + 4 * i, )))
+                masks[-1].append(
+                    np.random.uniform(0, min(h - 1, w - 1), (10 + 4 * i, )))
+            masks = PolygonMasks(masks, h, w)
+        return masks
 
     print('Using {} config files'.format(len(config_names)))
 
@@ -99,7 +118,7 @@ def test_config_data_pipeline():
 
         # remove loading pipeline
         loading_pipeline = config_mod.train_pipeline.pop(0)
-        config_mod.train_pipeline.pop(0)
+        loading_ann_pipeline = config_mod.train_pipeline.pop(0)
         config_mod.test_pipeline.pop(0)
 
         train_pipeline = Compose(config_mod.train_pipeline)
@@ -112,6 +131,8 @@ def test_config_data_pipeline():
         img = np.random.randint(0, 255, size=(888, 666, 3), dtype=np.uint8)
         if loading_pipeline.get('to_float32', False):
             img = img.astype(np.float32)
+        mode = 'bitmap' if loading_ann_pipeline.get('poly2mask',
+                                                    True) else 'polygon'
         results = dict(
             filename='test_img.png',
             img=img,
@@ -119,7 +140,7 @@ def test_config_data_pipeline():
             ori_shape=img.shape,
             gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
             gt_labels=np.array([1], dtype=np.int64),
-            gt_masks=[(img[..., 0] == 233).astype(np.uint8)],
+            gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
         )
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
@@ -134,7 +155,7 @@ def test_config_data_pipeline():
             ori_shape=img.shape,
             gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
             gt_labels=np.array([1], dtype=np.int64),
-            gt_masks=[(img[..., 0] == 233).astype(np.uint8)],
+            gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
         )
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
@@ -151,7 +172,8 @@ def test_config_data_pipeline():
             ori_shape=img.shape,
             gt_bboxes=np.zeros((0, 4), dtype=np.float32),
             gt_labels=np.array([], dtype=np.int64),
-            gt_masks=[],
+            gt_masks=dummy_masks(
+                img.shape[0], img.shape[1], num_obj=0, mode=mode),
         )
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
@@ -167,7 +189,8 @@ def test_config_data_pipeline():
             ori_shape=img.shape,
             gt_bboxes=np.zeros((0, 4), dtype=np.float32),
             gt_labels=np.array([], dtype=np.int64),
-            gt_masks=[],
+            gt_masks=dummy_masks(
+                img.shape[0], img.shape[1], num_obj=0, mode=mode),
         )
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
