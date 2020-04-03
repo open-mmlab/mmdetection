@@ -131,8 +131,8 @@ def train_detector(model,
     # fp16 setting
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
-        optimizer_config = Fp16OptimizerHook(**cfg.optimizer_config,
-                                             **fp16_cfg)
+        optimizer_config = Fp16OptimizerHook(
+            **cfg.optimizer_config, **fp16_cfg, distributed=distributed)
     elif distributed:
         optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
     else:
