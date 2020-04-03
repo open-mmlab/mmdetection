@@ -62,6 +62,7 @@ you can install it before installing MMCV.
 
 ## Install with CPU only
 The code can be built for CPU only environment (where CUDA isn't available).
+To bypass the cuda check, run `FORCE_CUDA=1 pip install -v -e .`
 
 In CPU mode you can run the demo/webcam_demo.py for example.
 However some functionality is gone in this mode :
@@ -71,8 +72,7 @@ However some functionality is gone in this mode :
 * nms_cuda
 * sigmoid_focal_loss_cuda
 So if you try to run inference with a model containing deformable convolution you will get an error.
-Note: We set `use_torchvision=True` on-the-fly in CPU mode for `RoIPool` and
- `RoIAlign`
+Note: We set `use_torchvision=True` on-the-fly in CPU mode for `RoIPool` and `RoIAlign`
 
 ### Another option: Docker Image
 

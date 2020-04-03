@@ -93,7 +93,7 @@ def inference_detector(model, img):
                 m.use_torchvision = True
         warnings.warn('We set use_torchvision=True in CPU mode.')
         # just get the actual data from DataContainer
-        data['img_meta'] = data['img_meta'][0].data
+        data['img_metas'] = data['img_metas'][0].data
 
     # forward the model
     with torch.no_grad():
