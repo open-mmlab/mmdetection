@@ -10,7 +10,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='MMDetection webcam demo')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
-    parser.add_argument('--device', type=int, default=0, help='CUDA device id')
+    parser.add_argument(
+        '--device', type=str, default='cuda:0', help='CPU/CUDA device option')
     parser.add_argument(
         '--camera-id', type=int, default=0, help='camera device id')
     parser.add_argument(
@@ -22,8 +23,9 @@ def parse_args():
 def main():
     args = parse_args()
 
-    model = init_detector(
-        args.config, args.checkpoint, device=torch.device('cuda', args.device))
+    device = torch.device(args.device)
+
+    model = init_detector(args.config, args.checkpoint, device=device)
 
     camera = cv2.VideoCapture(args.camera_id)
 

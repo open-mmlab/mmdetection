@@ -1,6 +1,5 @@
-#include <torch/extension.h>
-
 #include <ATen/ATen.h>
+#include <torch/extension.h>
 
 #include <cmath>
 #include <vector>
@@ -33,6 +32,19 @@ at::Tensor ROIAlignBackwardV2Laucher(
     const int channels, const int height, const int width,
     const int sampling_ratio, bool aligned);
 #endif
+
+at::Tensor ROIAlignForwardV2CPULaucher(const at::Tensor& input,
+                                       const at::Tensor& rois,
+                                       const float spatial_scale,
+                                       const int pooled_height,
+                                       const int pooled_width,
+                                       const int sampling_ratio, bool aligned);
+
+at::Tensor ROIAlignBackwardV2CPULaucher(
+    const at::Tensor& grad, const at::Tensor& rois, const float spatial_scale,
+    const int pooled_height, const int pooled_width, const int batch_size,
+    const int channels, const int height, const int width,
+    const int sampling_ratio, bool aligned);
 
 #define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x, " must be a CUDAtensor ")
 #define CHECK_CONTIGUOUS(x) \
@@ -125,7 +137,8 @@ inline at::Tensor ROIAlign_forwardV2(const at::Tensor& input,
     AT_ERROR("ROIAlignV2 is not compiled with GPU support");
 #endif
   }
-  AT_ERROR("ROIAlignV2 is not implemented on CPU");
+  return ROIAlignForwardV2CPULaucher(input, rois, spatial_scale, pooled_height,
+                                     pooled_width, sampling_ratio, aligned);
 }
 
 inline at::Tensor ROIAlign_backwardV2(
@@ -142,7 +155,9 @@ inline at::Tensor ROIAlign_backwardV2(
     AT_ERROR("ROIAlignV2 is not compiled with GPU support");
 #endif
   }
-  AT_ERROR("ROIAlignV2 is not implemented on CPU");
+  return ROIAlignBackwardV2CPULaucher(grad, rois, spatial_scale, pooled_height,
+                                      pooled_width, batch_size, channels,
+                                      height, width, sampling_ratio, aligned);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
