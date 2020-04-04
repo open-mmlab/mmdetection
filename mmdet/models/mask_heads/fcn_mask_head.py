@@ -247,6 +247,10 @@ def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
         skip_empty (bool): only paste masks within the region that
             tightly bound all boxes, and returns the results this region only.
             An important optimization for CPU.
+
+    This implementation is modified from
+    https://github.com/facebookresearch/detectron2/
+
     Returns:
         if skip_empty == False, a mask of shape (N, img_h, img_w)
         if skip_empty == True, a mask of shape (N, h', w'), and the slice

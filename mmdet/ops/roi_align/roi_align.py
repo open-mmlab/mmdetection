@@ -83,7 +83,7 @@ class RoIAlign(nn.Module):
                  spatial_scale,
                  sample_num=0,
                  use_torchvision=False,
-                 aligned=False):
+                 aligned=True):
         """
         Args:
             out_size (tuple): h, w

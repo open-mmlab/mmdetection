@@ -207,7 +207,7 @@ class BitMapMasks(BaseInstanceMasks):
         assigned bbox and resize to the size of (mask_h, mask_w)
 
         Args:
-            bboxes (ndarray): bboxes in format [x1, y1, x2, y2], shape (N, 4)
+            bboxes (Tensor): bboxes in format [x1, y1, x2, y2], shape (N, 4)
             out_shape (tuple[int]): target (h, w) of resized mask
             inds (ndarray): indexes to assign masks to each bbox
             device (str): device of bboxes
@@ -227,18 +227,15 @@ class BitMapMasks(BaseInstanceMasks):
             inds = torch.from_numpy(inds).to(device=device)
 
         num_bbox = bboxes.shape[0]
-        fake_inds = (
-            torch.arange(num_bbox, device=device).to(dtype=bboxes.dtype)[:,
-                                                                         None])
+        fake_inds = torch.arange(
+            num_bbox, device=device).to(dtype=bboxes.dtype)[:, None]
         rois = torch.cat([fake_inds, bboxes], dim=1)  # Nx5
         rois = rois.to(device=device)
         if num_bbox > 0:
-            gt_masks_th = (
-                torch.from_numpy(self.masks).to(device).index_select(
-                    0, inds).to(dtype=rois.dtype))
-            targets = (
-                roi_align(gt_masks_th[:, None, :, :], rois, out_shape, 1.0, 0,
-                          True).squeeze(1))
+            gt_masks_th = torch.from_numpy(self.masks).to(device).index_select(
+                0, inds).to(dtype=rois.dtype)
+            targets = roi_align(gt_masks_th[:, None, :, :], rois, out_shape,
+                                1.0, 0, True).squeeze(1)
             resized_masks = (targets >= 0.5).cpu().numpy()
         return BitMapMasks(np.stack(resized_masks), *out_shape)
 
