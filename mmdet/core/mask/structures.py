@@ -237,6 +237,8 @@ class BitMapMasks(BaseInstanceMasks):
             targets = roi_align(gt_masks_th[:, None, :, :], rois, out_shape,
                                 1.0, 0, True).squeeze(1)
             resized_masks = (targets >= 0.5).cpu().numpy()
+        else:
+            resized_masks = []
         return BitMapMasks(np.stack(resized_masks), *out_shape)
 
     def expand(self, expanded_h, expanded_w, top, left):
