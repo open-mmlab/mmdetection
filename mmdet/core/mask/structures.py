@@ -50,7 +50,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
 
 
 class BitmapMasks(BaseInstanceMasks):
-    """This class represents masks in the form of Bitmaps.
+    """This class represents masks in the form of bitmaps.
 
     Args:
         masks (ndarray): ndarray of masks in shape (N, H, W), where N is
@@ -375,7 +375,9 @@ class PolygonMasks(BaseInstanceMasks):
                 for p in poly_per_obj:
                     p = p.copy()
                     p[0::2] -= bbox[0]
+                    np.clip(p[0::2], 0, w, out=p[0::2])
                     p[1::2] -= bbox[1]
+                    np.clip(p[1::2], 0, h, out=p[1::2])
                     cropped_poly_per_obj.append(p)
                 cropped_masks.append(cropped_poly_per_obj)
             cropped_masks = PolygonMasks(cropped_masks, h, w)

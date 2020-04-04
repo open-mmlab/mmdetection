@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch
 
-from mmdet.core import BitMapMasks, PolygonMasks
+from mmdet.core import BitmapMasks, PolygonMasks
 
 
 def dummy_raw_bitmap_masks(size):
@@ -42,28 +42,28 @@ def dummy_bboxes(num, max_height, max_width):
 def test_bitmap_mask_init():
     # init with empty ndarray masks
     raw_masks = np.empty((0, 28, 28), dtype=np.uint8)
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     assert bitmap_masks.masks.shape[0] == 0
     assert bitmap_masks.height == bitmap_masks.masks.shape[1]
     assert bitmap_masks.width == bitmap_masks.masks.shape[2]
 
     # init with empty list masks
     raw_masks = []
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     assert bitmap_masks.masks.shape[0] == 0
     assert bitmap_masks.height == bitmap_masks.masks.shape[1]
     assert bitmap_masks.width == bitmap_masks.masks.shape[2]
 
     # init with ndarray masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     assert bitmap_masks.masks.shape[0] == 3
     assert bitmap_masks.height == bitmap_masks.masks.shape[1]
     assert bitmap_masks.width == bitmap_masks.masks.shape[2]
 
     # init with list masks contain 3 instances
     raw_masks = [dummy_raw_bitmap_masks((28, 28)) for _ in range(3)]
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     assert bitmap_masks.masks.shape[0] == 3
     assert bitmap_masks.height == bitmap_masks.masks.shape[1]
     assert bitmap_masks.width == bitmap_masks.masks.shape[2]
@@ -71,20 +71,20 @@ def test_bitmap_mask_init():
     # init with raw masks of unsupported type
     with pytest.raises(AssertionError):
         raw_masks = [[dummy_raw_bitmap_masks((28, 28))]]
-        BitMapMasks(raw_masks, 28, 28)
+        BitmapMasks(raw_masks, 28, 28)
 
 
 def test_bitmap_mask_rescale():
     # rescale with empty bitmap masks
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     rescaled_masks = bitmap_masks.rescale((56, 72))
     assert rescaled_masks.height == 56
     assert rescaled_masks.width == 56
 
     # rescale with bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     rescaled_masks = bitmap_masks.rescale((56, 72))
     assert rescaled_masks.height == 56
     assert rescaled_masks.width == 56
@@ -93,14 +93,14 @@ def test_bitmap_mask_rescale():
 def test_bitmap_mask_resize():
     # resize with empty bitmap masks
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     rescaled_masks = bitmap_masks.resize((56, 72))
     assert rescaled_masks.height == 56
     assert rescaled_masks.width == 72
 
     # resize with bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     rescaled_masks = bitmap_masks.resize((56, 72))
     assert rescaled_masks.height == 56
     assert rescaled_masks.width == 72
@@ -109,20 +109,20 @@ def test_bitmap_mask_resize():
 def test_bitmap_mask_flip():
     # flip with empty bitmap masks
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     flipped_masks = bitmap_masks.flip(flip_direction='horizontal')
     assert len(flipped_masks) == 0
 
     # horizontally flip with bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     flipped_masks = bitmap_masks.flip(flip_direction='horizontal')
     flipped_flipped_masks = flipped_masks.flip(flip_direction='horizontal')
     assert (bitmap_masks.masks == flipped_flipped_masks.masks).all()
 
     # vertically flip with bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     flipped_masks = bitmap_masks.flip(flip_direction='vertical')
     flipped_flipped_masks = flipped_masks.flip(flip_direction='vertical')
     assert (bitmap_masks.masks == flipped_flipped_masks.masks).all()
@@ -131,7 +131,7 @@ def test_bitmap_mask_flip():
 def test_bitmap_mask_pad():
     # pad with empty bitmap masks
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     padded_masks = bitmap_masks.pad((56, 56))
     assert len(padded_masks) == 0
     assert padded_masks.height == 56
@@ -139,7 +139,7 @@ def test_bitmap_mask_pad():
 
     # pad with bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     padded_masks = bitmap_masks.pad((56, 56))
     assert padded_masks.height == 56
     assert padded_masks.width == 56
@@ -150,7 +150,7 @@ def test_bitmap_mask_crop():
     # crop with empty bitmap masks
     dummy_bbox = np.array([0, 10, 10, 27], dtype=np.int)
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     cropped_masks = bitmap_masks.crop(dummy_bbox)
     assert len(cropped_masks) == 0
     assert cropped_masks.height == 18
@@ -158,7 +158,7 @@ def test_bitmap_mask_crop():
 
     # crop with bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     cropped_masks = bitmap_masks.crop(dummy_bbox)
     assert cropped_masks.height == 18
     assert cropped_masks.width == 11
@@ -175,7 +175,7 @@ def test_bitmap_mask_crop_and_resize():
 
     # crop and resize with empty bitmap masks
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     cropped_resized_masks = bitmap_masks.crop_and_resize(
         dummy_bbox, (56, 56), inds)
     assert len(cropped_resized_masks) == 0
@@ -184,7 +184,7 @@ def test_bitmap_mask_crop_and_resize():
 
     # crop and resize with bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     cropped_resized_masks = bitmap_masks.crop_and_resize(
         dummy_bbox, (56, 56), inds)
     assert cropped_resized_masks.height == 56
@@ -194,7 +194,7 @@ def test_bitmap_mask_crop_and_resize():
 def test_bitmap_mask_expand():
     # expand with empty bitmap masks
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     cropped_masks = bitmap_masks.expand(56, 56, 12, 14)
     assert len(cropped_masks) == 0
     assert cropped_masks.height == 56
@@ -202,7 +202,7 @@ def test_bitmap_mask_expand():
 
     # expand with bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     cropped_masks = bitmap_masks.expand(56, 56, 12, 14)
     assert cropped_masks.height == 56
     assert cropped_masks.width == 56
@@ -211,14 +211,14 @@ def test_bitmap_mask_expand():
 def test_bitmap_mask_to_ndarray():
     # empty bitmap masks to ndarray
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     ndarray_masks = bitmap_masks.to_ndarray()
     assert isinstance(ndarray_masks, np.ndarray)
     assert ndarray_masks.shape == (0, 28, 28)
 
     # bitmap masks contain 3 instances to ndarray
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     ndarray_masks = bitmap_masks.to_ndarray()
     assert isinstance(ndarray_masks, np.ndarray)
     assert ndarray_masks.shape == (3, 28, 28)
@@ -228,14 +228,14 @@ def test_bitmap_mask_to_ndarray():
 def test_bitmap_mask_to_tensor():
     # empty bitmap masks to tensor
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     tensor_masks = bitmap_masks.to_tensor(dtype=torch.uint8, device='cpu')
     assert isinstance(tensor_masks, torch.Tensor)
     assert tensor_masks.shape == (0, 28, 28)
 
     # bitmap masks contain 3 instances to tensor
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     tensor_masks = bitmap_masks.to_tensor(dtype=torch.uint8, device='cpu')
     assert isinstance(tensor_masks, torch.Tensor)
     assert tensor_masks.shape == (3, 28, 28)
@@ -244,14 +244,14 @@ def test_bitmap_mask_to_tensor():
 
 def test_bitmap_mask_index():
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     assert (bitmap_masks[0].masks == raw_masks[0]).all()
     assert (bitmap_masks[range(2)].masks == raw_masks[range(2)]).all()
 
 
 def test_bitmap_mask_iter():
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitMapMasks(raw_masks, 28, 28)
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     for i, bitmap_mask in enumerate(bitmap_masks):
         assert bitmap_mask.shape == (28, 28)
         assert (bitmap_mask == raw_masks[i]).all()
@@ -260,7 +260,7 @@ def test_bitmap_mask_iter():
 def test_polygon_mask_init():
     # init with empty masks
     raw_masks = []
-    polygon_masks = BitMapMasks(raw_masks, 28, 28)
+    polygon_masks = BitmapMasks(raw_masks, 28, 28)
     assert len(polygon_masks) == 0
     assert polygon_masks.height == 28
     assert polygon_masks.width == 28
