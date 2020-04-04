@@ -33,6 +33,12 @@ def parse_args():
         default=1,
         help='number of gpus to use '
         '(only applicable to non-distributed training)')
+    parser.add_argument(
+        '--gpu-ids',
+        type=int,
+        nargs='*',
+        help='ids of gpus to use '
+        '(only applicable to non-distributed training)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
     parser.add_argument(
         '--deterministic',
@@ -68,6 +74,7 @@ def main():
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     cfg.gpus = args.gpus
+    cfg.gpu_ids = args.gpu_ids
 
     if args.autoscale_lr:
         # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)

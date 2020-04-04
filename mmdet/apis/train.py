@@ -200,7 +200,9 @@ def _non_dist_train(model,
             seed=cfg.seed) for ds in dataset
     ]
     # put model on gpus
-    model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
+    gpu_ids = range(cfg.gpus) if cfg.gpu_ids is None else cfg.gpu_ids
+    assert len(gpu_ids) == cfg.gpus
+    model = MMDataParallel(model.cuda(gpu_ids[0]), device_ids=gpu_ids)
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
