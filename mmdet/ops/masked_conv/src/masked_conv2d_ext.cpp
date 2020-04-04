@@ -47,8 +47,8 @@ int masked_col2im_forward(const at::Tensor col,
 
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("masked_im2col_forward", &masked_im2col_forward_cuda,
-        "masked_im2col forward (CUDA)");
-  m.def("masked_col2im_forward", &masked_col2im_forward_cuda,
-        "masked_col2im forward (CUDA)");
+  m.def("masked_im2col_forward", &masked_im2col_forward,
+        "masked_im2col forward");
+  m.def("masked_col2im_forward", &masked_col2im_forward,
+        "masked_col2im forward");
 }
