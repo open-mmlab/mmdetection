@@ -477,12 +477,6 @@ class ResNet(nn.Module):
                 elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
                     constant_init(m, 1)
 
-            if self.dcn is not None:
-                for m in self.modules():
-                    if isinstance(m, Bottleneck) and hasattr(
-                            m, 'conv2_offset'):
-                        constant_init(m.conv2_offset, 0)
-
             if self.zero_init_residual:
                 for m in self.modules():
                     if isinstance(m, Bottleneck):
