@@ -38,6 +38,7 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
         if 'CLASSES' in checkpoint['meta']:
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
+            warnings.simplefilter('once')
             warnings.warn('Class names are not saved in the checkpoint\'s '
                           'meta data, use COCO classes by default.')
             model.CLASSES = get_classes('coco')
@@ -83,7 +84,7 @@ def inference_detector(model, img):
     data = test_pipeline(data)
     data = collate([data], samples_per_gpu=1)
     if next(model.parameters()).is_cuda:
-        # scatter to multiple GPUs
+        # scatter to specified GPU
         data = scatter(data, [device])[0]
     else:
         # Use torchvision ops for CPU mode instead
