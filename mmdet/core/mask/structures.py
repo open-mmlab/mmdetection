@@ -41,6 +41,10 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def area(self):
+        pass
+
+    @abstractmethod
     def to_ndarray(self):
         pass
 
@@ -242,6 +246,14 @@ class BitmapMasks(BaseInstanceMasks):
                           left:left + self.width] = self.masks
         return BitmapMasks(expanded_mask, expanded_h, expanded_w)
 
+    def area(self):
+        """Compute area of each instance
+
+        Return:
+            ndarray: areas of each instance
+        """
+        return self.masks.sum((1, 2))
+
     def to_ndarray(self):
         return self.masks
 
@@ -269,11 +281,6 @@ class PolygonMasks(BaseInstanceMasks):
         if len(masks) > 0:
             assert isinstance(masks[0], list)
             assert isinstance(masks[0][0], np.ndarray)
-
-        for poly_per_obj in masks:
-            for part in poly_per_obj:
-                assert part[0::2].max().round() <= width
-                assert part[1::2].max().round() <= height
 
         self.height = height
         self.width = width
@@ -373,11 +380,10 @@ class PolygonMasks(BaseInstanceMasks):
             for poly_per_obj in self.masks:
                 cropped_poly_per_obj = []
                 for p in poly_per_obj:
+                    # pycocotools will clip the boundary
                     p = p.copy()
                     p[0::2] -= bbox[0]
-                    np.clip(p[0::2], 0, w, out=p[0::2])
                     p[1::2] -= bbox[1]
-                    np.clip(p[1::2], 0, h, out=p[1::2])
                     cropped_poly_per_obj.append(p)
                 cropped_masks.append(cropped_poly_per_obj)
             cropped_masks = PolygonMasks(cropped_masks, h, w)
@@ -414,10 +420,9 @@ class PolygonMasks(BaseInstanceMasks):
             for p in mask:
                 p = p.copy()
                 # crop
+                # pycocotools will clip the boundary
                 p[0::2] -= bbox[0]
-                np.clip(p[0::2], 0, w, out=p[0::2])
                 p[1::2] -= bbox[1]
-                np.clip(p[1::2], 0, h, out=p[1::2])
 
                 # resize
                 p[0::2] *= w_scale
@@ -430,6 +435,23 @@ class PolygonMasks(BaseInstanceMasks):
         """convert polygon masks to bitmap masks"""
         bitmap_masks = self.to_ndarray()
         return BitmapMasks(bitmap_masks, self.height, self.width)
+
+    def area(self):
+        """ Compute area of masks using the shoelace formula
+        https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+        This func is modified from
+        https://github.com/facebookresearch/detectron2/blob/ffff8acc35ea88ad1cb1806ab0f00b4c1c5dbfd9/detectron2/structures/masks.py#L387
+
+        Return:
+            ndarray: areas of each instance
+        """  # noqa: W501
+        area = []
+        for polygons_per_obj in self.masks:
+            area_per_obj = 0
+            for p in polygons_per_obj:
+                area_per_obj += polygon_area(p[0::2], p[1::2])
+            area.append(area_per_obj)
+        return np.asarray(area)
 
     def to_ndarray(self):
         if len(self.masks) == 0:
@@ -464,3 +486,10 @@ def polygon_to_bitmap(polygons, height, width):
     rle = maskUtils.merge(rles)
     bitmap_mask = maskUtils.decode(rle).astype(np.bool)
     return bitmap_mask
+
+
+def polygon_area(x, y):
+    """Using the shoelace formula
+       https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+    """  # noqa: 501
+    return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
