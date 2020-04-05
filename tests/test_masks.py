@@ -338,13 +338,21 @@ def test_polygon_mask_rescale():
     assert rescaled_masks.to_ndarray().shape == (0, 56, 56)
 
     # rescale with polygon masks contain 3 instances
-    raw_masks = dummy_raw_polygon_masks((3, 28, 28))
-    polygon_masks = PolygonMasks(raw_masks, 28, 28)
-    rescaled_masks = polygon_masks.rescale((56, 72))
-    assert len(rescaled_masks) == 3
-    assert rescaled_masks.height == 56
-    assert rescaled_masks.width == 56
-    assert rescaled_masks.to_ndarray().shape == (3, 56, 56)
+    raw_masks = [[np.array([1, 1, 3, 1, 4, 3, 2, 4, 1, 3], dtype=np.float)]]
+    polygon_masks = PolygonMasks(raw_masks, 5, 5)
+    rescaled_masks = polygon_masks.rescale((12, 10))
+    assert len(rescaled_masks) == 1
+    assert rescaled_masks.height == 10
+    assert rescaled_masks.width == 10
+    assert rescaled_masks.to_ndarray().shape == (1, 10, 10)
+    truth = np.array(
+        [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 1, 1, 1, 1, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+         [0, 0, 1, 1, 1, 1, 1, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+         [0, 0, 0, 1, 1, 1, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+        np.uint8)
+    assert (rescaled_masks.to_ndarray() == truth).all()
 
 
 def test_polygon_mask_resize():
@@ -357,14 +365,49 @@ def test_polygon_mask_resize():
     assert resized_masks.width == 72
     assert resized_masks.to_ndarray().shape == (0, 56, 72)
 
-    # resize with polygon masks contain 3 instances
-    raw_masks = dummy_raw_polygon_masks((3, 28, 28))
-    polygon_masks = PolygonMasks(raw_masks, 28, 28)
-    resized_masks = polygon_masks.resize((56, 72))
-    assert len(resized_masks) == 3
-    assert resized_masks.height == 56
-    assert resized_masks.width == 72
-    assert resized_masks.to_ndarray().shape == (3, 56, 72)
+    # resize with polygon masks contain 1 instance 1 part
+    raw_masks1 = [[np.array([1, 1, 3, 1, 4, 3, 2, 4, 1, 3], dtype=np.float)]]
+    polygon_masks1 = PolygonMasks(raw_masks1, 5, 5)
+    resized_masks1 = polygon_masks1.resize((10, 10))
+    assert len(resized_masks1) == 1
+    assert resized_masks1.height == 10
+    assert resized_masks1.width == 10
+    assert resized_masks1.to_ndarray().shape == (1, 10, 10)
+    truth1 = np.array(
+        [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 1, 1, 1, 1, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+         [0, 0, 1, 1, 1, 1, 1, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+         [0, 0, 0, 1, 1, 1, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+        np.uint8)
+    assert (resized_masks1.to_ndarray() == truth1).all()
+
+    # resize with polygon masks contain 1 instance 2 part
+    raw_masks2 = [[
+        np.array([0., 0., 1., 0., 1., 1.]),
+        np.array([1., 1., 2., 1., 2., 2., 1., 2.])
+    ]]
+    polygon_masks2 = PolygonMasks(raw_masks2, 3, 3)
+    resized_masks2 = polygon_masks2.resize((6, 6))
+    assert len(resized_masks2) == 1
+    assert resized_masks2.height == 6
+    assert resized_masks2.width == 6
+    assert resized_masks2.to_ndarray().shape == (1, 6, 6)
+    truth2 = np.array(
+        [[0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 0, 0],
+         [0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]], np.uint8)
+    assert (resized_masks2.to_ndarray() == truth2).all()
+
+    # resize with polygon masks contain 2 instances
+    raw_masks3 = [raw_masks1[0], raw_masks2[0]]
+    polygon_masks3 = PolygonMasks(raw_masks3, 5, 5)
+    resized_masks3 = polygon_masks3.resize((10, 10))
+    assert len(resized_masks3) == 2
+    assert resized_masks3.height == 10
+    assert resized_masks3.width == 10
+    assert resized_masks3.to_ndarray().shape == (2, 10, 10)
+    truth3 = np.stack([truth1, np.pad(truth2, ((0, 4), (0, 4)), 'constant')])
+    assert (resized_masks3.to_ndarray() == truth3).all()
 
 
 def test_polygon_mask_flip():
