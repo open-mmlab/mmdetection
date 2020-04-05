@@ -328,7 +328,7 @@ def test_build_optimizer_constructor():
     optimizer = optim_constructor(model)
     check_optimizer(optimizer, model, **paramwise_cfg)
 
-    from mmaction.core import OPTIMIZERS
+    from mmdet.core import OPTIMIZERS
     from mmcv.utils import build_from_cfg
 
     @OPTIMIZER_BUILDERS.register_module
