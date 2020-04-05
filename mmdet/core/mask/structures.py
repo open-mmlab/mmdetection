@@ -40,8 +40,9 @@ class BaseInstanceMasks(metaclass=ABCMeta):
     def expand(self, expanded_h, expanded_w, top, left):
         pass
 
+    @property
     @abstractmethod
-    def area(self):
+    def areas(self):
         pass
 
     @abstractmethod
@@ -246,7 +247,8 @@ class BitmapMasks(BaseInstanceMasks):
                           left:left + self.width] = self.masks
         return BitmapMasks(expanded_mask, expanded_h, expanded_w)
 
-    def area(self):
+    @property
+    def areas(self):
         """Compute area of each instance
 
         Return:
@@ -436,11 +438,13 @@ class PolygonMasks(BaseInstanceMasks):
         bitmap_masks = self.to_ndarray()
         return BitmapMasks(bitmap_masks, self.height, self.width)
 
-    def area(self):
-        """ Compute area of masks using the shoelace formula
-        https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+    @property
+    def areas(self):
+        """Compute areas of masks.
+
         This func is modified from
         https://github.com/facebookresearch/detectron2/blob/ffff8acc35ea88ad1cb1806ab0f00b4c1c5dbfd9/detectron2/structures/masks.py#L387
+        Only works with Polygons, using the shoelace formula
 
         Return:
             ndarray: areas of each instance
@@ -449,9 +453,25 @@ class PolygonMasks(BaseInstanceMasks):
         for polygons_per_obj in self.masks:
             area_per_obj = 0
             for p in polygons_per_obj:
-                area_per_obj += polygon_area(p[0::2], p[1::2])
+                area_per_obj += self._polygon_area(p[0::2], p[1::2])
             area.append(area_per_obj)
         return np.asarray(area)
+
+    def _polygon_area(self, x, y):
+        """Compute the area of a component of a polygon.
+
+        Using the shoelace formula:
+        https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+
+        Args:
+            x (ndarray): x coordinates of the component
+            y (ndarray): y coordinates of the component
+
+        Return:
+            float: the are of the component
+        """  # noqa: 501
+        return 0.5 * np.abs(
+            np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
 
     def to_ndarray(self):
         if len(self.masks) == 0:
@@ -486,10 +506,3 @@ def polygon_to_bitmap(polygons, height, width):
     rle = maskUtils.merge(rles)
     bitmap_mask = maskUtils.decode(rle).astype(np.bool)
     return bitmap_mask
-
-
-def polygon_area(x, y):
-    """Using the shoelace formula
-       https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
-    """  # noqa: 501
-    return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))

@@ -83,13 +83,16 @@ def test_bitmap_mask_rescale():
     assert rescaled_masks.height == 56
     assert rescaled_masks.width == 56
 
-    # rescale with bitmap masks contain 3 instances
-    raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
-    rescaled_masks = bitmap_masks.rescale((56, 72))
-    assert len(rescaled_masks) == 3
-    assert rescaled_masks.height == 56
-    assert rescaled_masks.width == 56
+    # rescale with bitmap masks contain 1 instances
+    raw_masks = np.array([[[1, 0, 0, 0], [0, 1, 0, 1]]])
+    bitmap_masks = BitmapMasks(raw_masks, 2, 4)
+    rescaled_masks = bitmap_masks.rescale((8, 8))
+    assert len(rescaled_masks) == 1
+    assert rescaled_masks.height == 4
+    assert rescaled_masks.width == 8
+    truth = np.array([[[1, 1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0, 0],
+                       [0, 0, 1, 1, 0, 0, 1, 1], [0, 0, 1, 1, 0, 0, 1, 1]]])
+    assert (rescaled_masks.masks == truth).all()
 
 
 def test_bitmap_mask_resize():
@@ -101,13 +104,19 @@ def test_bitmap_mask_resize():
     assert resized_masks.height == 56
     assert resized_masks.width == 72
 
-    # resize with bitmap masks contain 3 instances
-    raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
-    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
-    resized_masks = bitmap_masks.resize((56, 72))
-    assert len(resized_masks) == 3
-    assert resized_masks.height == 56
-    assert resized_masks.width == 72
+    # resize with bitmap masks contain 1 instances
+    raw_masks = np.array([[[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0],
+                           [0, 0, 0, 1]]])
+    bitmap_masks = BitmapMasks(raw_masks, 4, 4)
+    resized_masks = bitmap_masks.resize((8, 8))
+    assert len(resized_masks) == 1
+    assert resized_masks.height == 8
+    assert resized_masks.width == 8
+    truth = np.array([[[1, 1, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 0, 0],
+                       [0, 0, 1, 1, 0, 0, 0, 0], [0, 0, 1, 1, 0, 0, 0, 0],
+                       [0, 0, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 1, 1, 0, 0],
+                       [0, 0, 0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0, 1, 1]]])
+    assert (resized_masks.masks == truth).all()
 
 
 def test_bitmap_mask_flip():
@@ -232,12 +241,12 @@ def test_bitmap_mask_area():
     # area of empty bitmap mask
     raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
     bitmap_masks = BitmapMasks(raw_masks, 28, 28)
-    assert bitmap_masks.area().sum() == 0
+    assert bitmap_masks.areas.sum() == 0
 
     # area of bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
     bitmap_masks = BitmapMasks(raw_masks, 28, 28)
-    areas = bitmap_masks.area()
+    areas = bitmap_masks.areas
     assert len(areas) == 3
     assert (areas == raw_masks.sum((1, 2))).all()
 
@@ -478,15 +487,15 @@ def test_polygon_mask_area():
     # area of empty polygon masks
     raw_masks = dummy_raw_polygon_masks((0, 28, 28))
     polygon_masks = PolygonMasks(raw_masks, 28, 28)
-    assert polygon_masks.area().sum() == 0
+    assert polygon_masks.areas.sum() == 0
 
     # area of polygon masks contain 1 instance
     # here we hack a case that the gap between the area of bitmap and polygon
     # is minor
     raw_masks = [[np.array([1, 1, 5, 1, 3, 4])]]
     polygon_masks = PolygonMasks(raw_masks, 6, 6)
-    polygon_area = polygon_masks.area()
-    bitmap_area = polygon_masks.to_bitmap().area()
+    polygon_area = polygon_masks.areas
+    bitmap_area = polygon_masks.to_bitmap().areas
     assert len(polygon_area) == 1
     assert np.isclose(polygon_area, bitmap_area).all()
 
