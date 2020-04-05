@@ -239,7 +239,7 @@ class BitMapMasks(BaseInstanceMasks):
             resized_masks = (targets >= 0.5).cpu().numpy()
         else:
             resized_masks = []
-        return BitMapMasks(np.stack(resized_masks), *out_shape)
+        return BitMapMasks(resized_masks, *out_shape)
 
     def expand(self, expanded_h, expanded_w, top, left):
         """see `transforms.Expand`."""

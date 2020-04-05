@@ -27,8 +27,7 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
             proposals_np, mask_size, device=device,
             inds=pos_assigned_gt_inds).to_ndarray()
 
-        mask_targets = torch.from_numpy(
-            np.stack(mask_targets)).float().to(device)
+        mask_targets = torch.from_numpy(mask_targets).float().to(device)
     else:
         mask_targets = pos_proposals.new_zeros((0, ) + mask_size)
 
