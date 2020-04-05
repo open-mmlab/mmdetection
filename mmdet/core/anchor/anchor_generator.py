@@ -44,16 +44,13 @@ class AnchorGenerator(object):
             ws = (w * self.scales[:, None] * w_ratios[None, :]).view(-1)
             hs = (h * self.scales[:, None] * h_ratios[None, :]).view(-1)
 
-        # yapf: disable
         # use float anchor and the anchor's center is aligned with the
         # pixel center
-        base_anchors = torch.stack(
-            [
-                x_ctr - 0.5 * ws, y_ctr - 0.5 * hs,
-                x_ctr + 0.5 * ws, y_ctr + 0.5 * hs
-            ],
-            dim=-1)
-        # yapf: enable
+        base_anchors = [
+            x_ctr - 0.5 * ws, y_ctr - 0.5 * hs, x_ctr + 0.5 * ws,
+            y_ctr + 0.5 * hs
+        ]
+        base_anchors = torch.stack(base_anchors, dim=-1)
 
         return base_anchors
 
