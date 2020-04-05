@@ -457,14 +457,18 @@ def test_polygon_mask_crop():
     assert cropped_masks.width == 11
     assert cropped_masks.to_ndarray().shape == (0, 18, 11)
 
-    # crop with polygon masks contain 3 instances
-    raw_masks = dummy_raw_polygon_masks((3, 28, 28))
-    polygon_masks = PolygonMasks(raw_masks, 28, 28)
-    cropped_masks = polygon_masks.crop(dummy_bbox)
-    assert len(cropped_masks) == 3
-    assert cropped_masks.height == 18
-    assert cropped_masks.width == 11
-    assert cropped_masks.to_ndarray().shape == (3, 18, 11)
+    # crop with polygon masks contain 1 instances
+    raw_masks = [[np.array([1., 3., 5., 1., 5., 6., 1, 6])]]
+    polygon_masks = PolygonMasks(raw_masks, 7, 7)
+    bbox = np.array([0, 0, 3, 4])
+    cropped_masks = polygon_masks.crop(bbox)
+    assert len(cropped_masks) == 1
+    assert cropped_masks.height == 5
+    assert cropped_masks.width == 4
+    assert cropped_masks.to_ndarray().shape == (1, 5, 4)
+    truth = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 1, 1],
+                      [0, 1, 1, 1]])
+    assert (cropped_masks.to_ndarray() == truth).all()
 
     # crop with invalid bbox
     with pytest.raises(AssertionError):
