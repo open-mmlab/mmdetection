@@ -105,8 +105,7 @@ def test_bitmap_mask_resize():
     assert resized_masks.width == 72
 
     # resize with bitmap masks contain 1 instances
-    raw_masks = np.array([[[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0],
-                           [0, 0, 0, 1]]])
+    raw_masks = np.diag(np.ones(4, dtype=np.uint8))[np.newaxis, ...]
     bitmap_masks = BitmapMasks(raw_masks, 4, 4)
     resized_masks = bitmap_masks.resize((8, 8))
     assert len(resized_masks) == 1
