@@ -37,15 +37,15 @@ class DefaultOptimizerConstructor(object):
         >>> optimizer_cfg = dict(type='SGD', lr=0.01, momentum=0.9,
         >>>                      weight_decay=0.0001)
         >>> paramwise_cfg = dict(norm_decay_mult=0.)
-        >>> optimizer_builder = DefaultOptimizerConstructor(
+        >>> optim_builder = DefaultOptimizerConstructor(
         >>>     optimizer_cfg, paramwise_cfg)
-        >>> optimizer = optimizer_builder(model, optimizer_cfg)
+        >>> optimizer = optim_builder(model)
     """
 
     def __init__(self, optimizer_cfg, paramwise_cfg=None):
         if not isinstance(optimizer_cfg, dict):
-            raise TypeError(f'optimizer_cfg should be a dict',
-                            f'but got {type(optimizer_cfg)}')
+            raise TypeError('optimizer_cfg should be a dict',
+                            'but got {}'.format(type(optimizer_cfg)))
         self.optimizer_cfg = optimizer_cfg
         self.paramwise_cfg = {} if paramwise_cfg is None else paramwise_cfg
         self.base_lr = optimizer_cfg['lr']
@@ -54,15 +54,15 @@ class DefaultOptimizerConstructor(object):
 
     def _validate_cfg(self):
         if not isinstance(self.paramwise_cfg, dict):
-            raise TypeError(f'paramwise_cfg should be None or a dict, '
-                            f'but got {type(self.paramwise_cfg)}')
+            raise TypeError('paramwise_cfg should be None or a dict, '
+                            'but got {}'.format(type(self.paramwise_cfg)))
         # get base lr and weight decay
         # weight_decay must be explicitly specified if mult is specified
         if ('bias_decay_mult' in self.paramwise_cfg
                 or 'norm_decay_mult' in self.paramwise_cfg
                 or 'dwconv_decay_mult' in self.paramwise_cfg):
             if self.base_wd is None:
-                raise ValueError(f'base_wd should not be None')
+                raise ValueError('base_wd should not be None')
 
     def add_params(self, params, module):
         """Add all parameters of module to the params list.
