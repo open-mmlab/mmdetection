@@ -1,7 +1,7 @@
+// Soft-NMS is added by MMDetection.
 // Modified from
-// https://github.com/bharatsingh430/soft-nms/blob/master/lib/nms/cpu_nms.pyx,
-// Soft-NMS is added Copyright (c) Facebook, Inc. and its affiliates. All Rights
-// Reserved.
+// https://github.com/bharatsingh430/soft-nms/blob/master/lib/nms/cpu_nms.pyx.
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 #include <torch/extension.h>
 
 template <typename scalar_t>
