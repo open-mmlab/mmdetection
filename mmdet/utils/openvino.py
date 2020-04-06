@@ -163,7 +163,7 @@ class ModelOpenVINO(object):
     def rename_outputs(self, outputs):
         return {self.net_outputs_mapping[k]: v for k, v in outputs.items() if k in self.net_outputs_mapping}
 
-    def forward(self, inputs):
+    def __call__(self, inputs):
         if not isinstance(inputs, dict):
             if len(self.net_inputs_mapping) == 1 and not isinstance(inputs, (list, tuple)):
                 inputs = [inputs]
@@ -174,9 +174,6 @@ class ModelOpenVINO(object):
             perf_counters = self.exec_net.requests[0].get_perf_counts()
             self.perf_counters.update(perf_counters)
         return self.rename_outputs(outputs)
-
-    def __call__(self, inputs):
-        return self.forward(inputs)
 
     def __del__(self):
         del self.net
@@ -193,7 +190,7 @@ class ModelOpenVINO(object):
 
 
 class DetectorOpenVINO(ModelOpenVINO):
-    def __init__(self, with_detection_output, *args, **kwargs):
+    def __init__(self, *args, with_detection_output=False, **kwargs):
         super().__init__(*args,
                          required_inputs=('image', ),
                          required_outputs=('detection_out',) if with_detection_output else ('boxes', 'labels'),
