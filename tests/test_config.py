@@ -1,5 +1,7 @@
 from os.path import dirname, exists, join, relpath
 
+from mmdet.core import BitmapMasks, PolygonMasks
+
 
 def _get_config_directory():
     """ Find the predefined detector config directory """
@@ -59,13 +61,13 @@ def test_config_build_detector():
             assert detector.roi_head.with_mask == detector.with_mask
 
             head_config = config_mod.model['roi_head']
-            _check_roihead(head_config, detector.roi_head)
+            _check_roi_head(head_config, detector.roi_head)
         # else:
         #     # for single stage detector
         #     # detectors must have bbox head
         #     # assert detector.with_bbox
         #     head_config = config_mod.model['bbox_head']
-        #     _check_bboxhead(head_config, detector.bbox_head)
+        #     _check_bbox_head(head_config, detector.bbox_head)
 
 
 def test_config_data_pipeline():
@@ -88,8 +90,25 @@ def test_config_data_pipeline():
         'pascal_voc/ssd300_voc0712.py',
         'pascal_voc/ssd512_voc0712.py',
         # 'albu_example/mask_rcnn_r50_fpn_1x.py',
+        'mask_rcnn/mask_rcnn_r50_fpn_poly_1x_coco.py',
         'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
     ]
+
+    def dummy_masks(h, w, num_obj=3, mode='bitmap'):
+        assert mode in ('polygon', 'bitmap')
+        if mode == 'bitmap':
+            masks = np.random.randint(0, 2, (num_obj, h, w), dtype=np.uint8)
+            masks = BitmapMasks(masks, h, w)
+        else:
+            masks = []
+            for i in range(num_obj):
+                masks.append([])
+                masks[-1].append(
+                    np.random.uniform(0, min(h - 1, w - 1), (8 + 4 * i, )))
+                masks[-1].append(
+                    np.random.uniform(0, min(h - 1, w - 1), (10 + 4 * i, )))
+            masks = PolygonMasks(masks, h, w)
+        return masks
 
     print('Using {} config files'.format(len(config_names)))
 
@@ -99,7 +118,7 @@ def test_config_data_pipeline():
 
         # remove loading pipeline
         loading_pipeline = config_mod.train_pipeline.pop(0)
-        config_mod.train_pipeline.pop(0)
+        loading_ann_pipeline = config_mod.train_pipeline.pop(0)
         config_mod.test_pipeline.pop(0)
 
         train_pipeline = Compose(config_mod.train_pipeline)
@@ -112,6 +131,8 @@ def test_config_data_pipeline():
         img = np.random.randint(0, 255, size=(888, 666, 3), dtype=np.uint8)
         if loading_pipeline.get('to_float32', False):
             img = img.astype(np.float32)
+        mode = 'bitmap' if loading_ann_pipeline.get('poly2mask',
+                                                    True) else 'polygon'
         results = dict(
             filename='test_img.png',
             img=img,
@@ -119,7 +140,7 @@ def test_config_data_pipeline():
             ori_shape=img.shape,
             gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
             gt_labels=np.array([1], dtype=np.int64),
-            gt_masks=[(img[..., 0] == 233).astype(np.uint8)],
+            gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
         )
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
@@ -134,7 +155,7 @@ def test_config_data_pipeline():
             ori_shape=img.shape,
             gt_bboxes=np.array([[35.2, 11.7, 39.7, 15.7]], dtype=np.float32),
             gt_labels=np.array([1], dtype=np.int64),
-            gt_masks=[(img[..., 0] == 233).astype(np.uint8)],
+            gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
         )
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
@@ -151,7 +172,8 @@ def test_config_data_pipeline():
             ori_shape=img.shape,
             gt_bboxes=np.zeros((0, 4), dtype=np.float32),
             gt_labels=np.array([], dtype=np.int64),
-            gt_masks=[],
+            gt_masks=dummy_masks(
+                img.shape[0], img.shape[1], num_obj=0, mode=mode),
         )
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
@@ -167,7 +189,8 @@ def test_config_data_pipeline():
             ori_shape=img.shape,
             gt_bboxes=np.zeros((0, 4), dtype=np.float32),
             gt_labels=np.array([], dtype=np.int64),
-            gt_masks=[],
+            gt_masks=dummy_masks(
+                img.shape[0], img.shape[1], num_obj=0, mode=mode),
         )
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
@@ -175,7 +198,7 @@ def test_config_data_pipeline():
         assert output_results is not None
 
 
-def _check_roihead(config, head):
+def _check_roi_head(config, head):
     # check consistency between head_config and roi_head
     assert config['type'] == head.__class__.__name__
 
@@ -187,7 +210,7 @@ def _check_roihead(config, head):
     # check bbox head infos
     bbox_cfg = config.bbox_head
     bbox_head = head.bbox_head
-    _check_bboxhead(bbox_cfg, bbox_head)
+    _check_bbox_head(bbox_cfg, bbox_head)
 
     if head.with_mask:
         # check roi_align
@@ -200,7 +223,7 @@ def _check_roihead(config, head):
         # check mask head infos
         mask_head = head.mask_head
         mask_cfg = config.mask_head
-        _check_maskhead(mask_cfg, mask_head)
+        _check_mask_head(mask_cfg, mask_head)
 
     # check arch specific settings, e.g., cascade/htc
     if config['type'] in ['CascadeRoIHead', 'HybridTaskCascadeRoIHead']:
@@ -255,14 +278,14 @@ def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
                 prev_roi_extractor.roi_layers[0].use_torchvision)
 
 
-def _check_maskhead(mask_cfg, mask_head):
+def _check_mask_head(mask_cfg, mask_head):
     import torch.nn as nn
     if isinstance(mask_cfg, list):
         for single_mask_cfg, single_mask_head in zip(mask_cfg, mask_head):
-            _check_maskhead(single_mask_cfg, single_mask_head)
+            _check_mask_head(single_mask_cfg, single_mask_head)
     elif isinstance(mask_head, nn.ModuleList):
         for single_mask_head in mask_head:
-            _check_maskhead(mask_cfg, single_mask_head)
+            _check_mask_head(mask_cfg, single_mask_head)
     else:
         assert mask_cfg['type'] == mask_head.__class__.__name__
         assert mask_cfg.in_channels == mask_head.in_channels
@@ -273,14 +296,14 @@ def _check_maskhead(mask_cfg, mask_head):
         assert mask_head.conv_logits.out_channels == out_dim
 
 
-def _check_bboxhead(bbox_cfg, bbox_head):
+def _check_bbox_head(bbox_cfg, bbox_head):
     import torch.nn as nn
     if isinstance(bbox_cfg, list):
         for single_bbox_cfg, single_bbox_head in zip(bbox_cfg, bbox_head):
-            _check_bboxhead(single_bbox_cfg, single_bbox_head)
+            _check_bbox_head(single_bbox_cfg, single_bbox_head)
     elif isinstance(bbox_head, nn.ModuleList):
         for single_bbox_head in bbox_head:
-            _check_bboxhead(bbox_cfg, single_bbox_head)
+            _check_bbox_head(bbox_cfg, single_bbox_head)
     else:
         assert bbox_cfg['type'] == bbox_head.__class__.__name__
         assert bbox_cfg.in_channels == bbox_head.in_channels

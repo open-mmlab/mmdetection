@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from ..registry import LOSSES
 
 
-def _expand_binary_labels(labels, label_weights, label_channels):
+def _expand_onehot_labels(labels, label_weights, label_channels):
     bin_labels = labels.new_full((labels.size(0), label_channels), 0)
     inds = torch.nonzero((labels >= 0) & (labels < label_channels)).squeeze()
     if inds.numel() > 0:
@@ -61,7 +61,7 @@ class GHMC(nn.Module):
         """
         # the target should be binary class label
         if pred.dim() != target.dim():
-            target, label_weight = _expand_binary_labels(
+            target, label_weight = _expand_onehot_labels(
                 target, label_weight, pred.size(-1))
         target, label_weight = target.float(), label_weight.float()
         edges = self.edges

@@ -11,6 +11,7 @@ from mmcv.runner import load_checkpoint
 from mmdet.core import get_classes
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
+from mmdet.ops import RoIAlign, RoIPool
 
 
 def init_detector(config, checkpoint=None, device='cuda:0'):
@@ -37,6 +38,7 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
         if 'CLASSES' in checkpoint['meta']:
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
+            warnings.simplefilter('once')
             warnings.warn('Class names are not saved in the checkpoint\'s '
                           'meta data, use COCO classes by default.')
             model.CLASSES = get_classes('coco')
@@ -80,7 +82,20 @@ def inference_detector(model, img):
     # prepare data
     data = dict(img=img)
     data = test_pipeline(data)
-    data = scatter(collate([data], samples_per_gpu=1), [device])[0]
+    data = collate([data], samples_per_gpu=1)
+    if next(model.parameters()).is_cuda:
+        # scatter to specified GPU
+        data = scatter(data, [device])[0]
+    else:
+        # Use torchvision ops for CPU mode instead
+        for m in model.modules():
+            if isinstance(m, (RoIPool, RoIAlign)):
+                # set use_torchvision on-the-fly
+                m.use_torchvision = True
+        warnings.warn('We set use_torchvision=True in CPU mode.')
+        # just get the actual data from DataContainer
+        data['img_metas'] = data['img_metas'][0].data
+
     # forward the model
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
