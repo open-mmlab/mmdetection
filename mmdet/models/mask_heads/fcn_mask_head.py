@@ -247,16 +247,20 @@ def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
     Args:
         masks (Tensor): N, 1, H, W
         boxes (Tensor): N, 4
-        img_h, img_w (int):
-        skip_empty (bool): only paste masks within the region that
+        img_h (int): Height of the image to be pasted.
+        img_w (int): Width of the image to be pasted.
+        skip_empty (bool): Only paste masks within the region that
             tightly bound all boxes, and returns the results this region only.
             An important optimization for CPU.
 
     Returns:
-        tuple
-        if skip_empty == False, a mask of shape (N, img_h, img_w)
-        if skip_empty == True, a mask of shape (N, h', w'), and the slice
-            object for the corresponding region.
+        tuple: (Tensor, tuple). The first item is mask tensor, the second one
+            is the slice object.
+        If skip_empty == False, the whole image will be pasted. It will
+            return a mask of shape (N, img_h, img_w) and an empty tuple.
+        If skip_empty == True, only area around the mask will be pasted.
+            A mask of shape (N, h', w') and its start and end coordinates
+            in the original image will be returned.
     """
     # On GPU, paste all masks together (up to chunk size)
     # by using the entire image to sample the masks
