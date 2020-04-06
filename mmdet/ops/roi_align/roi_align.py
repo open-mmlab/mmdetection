@@ -24,20 +24,18 @@ class RoIAlignFunction(Function):
         ctx.feature_size = features.size()
         ctx.aligned = aligned
 
-        if features.is_cuda:
-            if not aligned:
-                (batch_size, num_channels, data_height,
-                 data_width) = features.size()
-                num_rois = rois.size(0)
+        if aligned:
+            output = roi_align_ext.forward_v2(features, rois, spatial_scale,
+                                              out_h, out_w, sample_num,
+                                              aligned)
+        elif features.is_cuda:
+            (batch_size, num_channels, data_height,
+             data_width) = features.size()
+            num_rois = rois.size(0)
 
-                output = features.new_zeros(num_rois, num_channels, out_h,
-                                            out_w)
-                roi_align_ext.forward_v1(features, rois, out_h, out_w,
-                                         spatial_scale, sample_num, output)
-            else:
-                output = roi_align_ext.forward_v2(features, rois,
-                                                  spatial_scale, out_h, out_w,
-                                                  sample_num, aligned)
+            output = features.new_zeros(num_rois, num_channels, out_h, out_w)
+            roi_align_ext.forward_v1(features, rois, out_h, out_w,
+                                     spatial_scale, sample_num, output)
         else:
             raise NotImplementedError
 
@@ -85,7 +83,7 @@ class RoIAlign(nn.Module):
                  spatial_scale,
                  sample_num=0,
                  use_torchvision=False,
-                 aligned=False):
+                 aligned=True):
         """
         Args:
             out_size (tuple): h, w

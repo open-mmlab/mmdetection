@@ -1,4 +1,6 @@
-// Modified from https://github.com/bharatsingh430/soft-nms/blob/master/lib/nms/cpu_nms.pyx, Soft-NMS is added
+// Soft-NMS is added by MMDetection.
+// Modified from
+// https://github.com/bharatsingh430/soft-nms/blob/master/lib/nms/cpu_nms.pyx.
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 #include <torch/extension.h>
 
@@ -16,7 +18,7 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
   auto y2_t = dets.select(1, 3).contiguous();
   auto scores = dets.select(1, 4).contiguous();
 
-  at::Tensor areas_t = (x2_t - x1_t + 1) * (y2_t - y1_t + 1);
+  at::Tensor areas_t = (x2_t - x1_t) * (y2_t - y1_t);
 
   auto order_t = std::get<1>(scores.sort(0, /* descending=*/true));
 
@@ -49,8 +51,8 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
       auto xx2 = std::min(ix2, x2[j]);
       auto yy2 = std::min(iy2, y2[j]);
 
-      auto w = std::max(static_cast<scalar_t>(0), xx2 - xx1 + 1);
-      auto h = std::max(static_cast<scalar_t>(0), yy2 - yy1 + 1);
+      auto w = std::max(static_cast<scalar_t>(0), xx2 - xx1);
+      auto h = std::max(static_cast<scalar_t>(0), yy2 - yy1);
       auto inter = w * h;
       auto ovr = inter / (iarea + areas[j] - inter);
       if (ovr >= threshold) suppressed[j] = 1;
@@ -69,7 +71,8 @@ at::Tensor nms_cpu(const at::Tensor& dets, const float threshold) {
 
 template <typename scalar_t>
 at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
-                               const unsigned char method, const float sigma, const float min_score) {
+                               const unsigned char method, const float sigma,
+                               const float min_score) {
   AT_ASSERTM(!dets.type().is_cuda(), "dets must be a CPU tensor");
 
   if (dets.numel() == 0) {
@@ -82,7 +85,7 @@ at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
   auto y2_t = dets.select(1, 3).contiguous();
   auto scores_t = dets.select(1, 4).contiguous();
 
-  at::Tensor areas_t = (x2_t - x1_t + 1) * (y2_t - y1_t + 1);
+  at::Tensor areas_t = (x2_t - x1_t) * (y2_t - y1_t);
 
   auto ndets = dets.size(0);
   auto x1 = x1_t.data<scalar_t>();
@@ -110,12 +113,12 @@ at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
 
     pos = i + 1;
     // get max box
-    while (pos < ndets){
-        if (max_score < scores[pos]) {
-            max_score = scores[pos];
-            max_pos = pos;
-        }
-        pos = pos + 1;
+    while (pos < ndets) {
+      if (max_score < scores[pos]) {
+        max_score = scores[pos];
+        max_pos = pos;
+      }
+      pos = pos + 1;
     }
     // add max box as a detection
     x1[i] = x1[max_pos];
@@ -127,10 +130,10 @@ at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
     inds[i] = inds[max_pos];
 
     // swap ith box with position of max box
-    x1[max_pos] =  ix1;
-    y1[max_pos] =  iy1;
-    x2[max_pos] =  ix2;
-    y2[max_pos] =  iy2;
+    x1[max_pos] = ix1;
+    y1[max_pos] = iy1;
+    x2[max_pos] = ix2;
+    y2[max_pos] = iy2;
     scores[max_pos] = iscore;
     areas[max_pos] = iarea;
     inds[max_pos] = iind;
@@ -143,32 +146,30 @@ at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
     iarea = areas[i];
 
     pos = i + 1;
-    // NMS iterations, note that N changes if detection boxes fall below threshold
+    // NMS iterations, note that N changes if detection boxes fall below
+    // threshold
     while (pos < ndets) {
       auto xx1 = std::max(ix1, x1[pos]);
       auto yy1 = std::max(iy1, y1[pos]);
       auto xx2 = std::min(ix2, x2[pos]);
       auto yy2 = std::min(iy2, y2[pos]);
 
-      auto w = std::max(static_cast<scalar_t>(0), xx2 - xx1 + 1);
-      auto h = std::max(static_cast<scalar_t>(0), yy2 - yy1 + 1);
+      auto w = std::max(static_cast<scalar_t>(0), xx2 - xx1);
+      auto h = std::max(static_cast<scalar_t>(0), yy2 - yy1);
       auto inter = w * h;
       auto ovr = inter / (iarea + areas[pos] - inter);
 
       scalar_t weight = 1.;
       if (method == 1) {
         if (ovr > threshold) weight = 1 - ovr;
-      }
-      else if (method == 2) {
+      } else if (method == 2) {
         weight = std::exp(-(ovr * ovr) / sigma);
-      }
-      else {
+      } else {
         // original NMS
         if (ovr > threshold) {
-            weight = 0;
-        }
-        else {
-            weight = 1;
+          weight = 0;
+        } else {
+          weight = 1;
         }
       }
       scores[pos] = weight * scores[pos];
@@ -182,7 +183,7 @@ at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
         scores[pos] = scores[ndets - 1];
         areas[pos] = areas[ndets - 1];
         inds[pos] = inds[ndets - 1];
-        ndets = ndets -1;
+        ndets = ndets - 1;
         pos = pos - 1;
       }
       pos = pos + 1;
@@ -196,15 +197,17 @@ at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
   result[4] = scores_t.slice(0, 0, ndets);
   result[5] = inds_t.slice(0, 0, ndets);
 
-  result =result.t().contiguous();
+  result = result.t().contiguous();
   return result;
 }
 
 at::Tensor soft_nms_cpu(const at::Tensor& dets, const float threshold,
-                    const unsigned char method, const float sigma, const float min_score) {
+                        const unsigned char method, const float sigma,
+                        const float min_score) {
   at::Tensor result;
   AT_DISPATCH_FLOATING_TYPES(dets.scalar_type(), "soft_nms", [&] {
-    result = soft_nms_cpu_kernel<scalar_t>(dets, threshold, method, sigma, min_score);
+    result = soft_nms_cpu_kernel<scalar_t>(dets, threshold, method, sigma,
+                                           min_score);
   });
   return result;
 }

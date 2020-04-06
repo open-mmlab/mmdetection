@@ -36,7 +36,7 @@ def dummy_bboxes(num, max_height, max_width):
     x1y1 = np.random.randint(0, min(max_height // 2, max_width // 2), (num, 2))
     wh = np.random.randint(0, min(max_height // 2, max_width // 2), (num, 2))
     x2y2 = x1y1 + wh
-    return np.concatenate([x1y1, x2y2], axis=1).squeeze()
+    return np.concatenate([x1y1, x2y2], axis=1).squeeze().astype(np.float32)
 
 
 def test_bitmap_mask_init():
@@ -174,18 +174,18 @@ def test_bitmap_mask_crop():
     bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     cropped_masks = bitmap_masks.crop(dummy_bbox)
     assert len(cropped_masks) == 0
-    assert cropped_masks.height == 18
-    assert cropped_masks.width == 11
+    assert cropped_masks.height == 17
+    assert cropped_masks.width == 10
 
     # crop with bitmap masks contain 3 instances
     raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
     bitmap_masks = BitmapMasks(raw_masks, 28, 28)
     cropped_masks = bitmap_masks.crop(dummy_bbox)
     assert len(cropped_masks) == 3
-    assert cropped_masks.height == 18
-    assert cropped_masks.width == 11
+    assert cropped_masks.height == 17
+    assert cropped_masks.width == 10
     x1, y1, x2, y2 = dummy_bbox
-    assert (cropped_masks.masks == raw_masks[:, y1:y2 + 1, x1:x2 + 1]).all()
+    assert (cropped_masks.masks == raw_masks[:, y1:y2, x1:x2]).all()
 
     # crop with invalid bbox
     with pytest.raises(AssertionError):
@@ -453,9 +453,9 @@ def test_polygon_mask_crop():
     polygon_masks = PolygonMasks(raw_masks, 28, 28)
     cropped_masks = polygon_masks.crop(dummy_bbox)
     assert len(cropped_masks) == 0
-    assert cropped_masks.height == 18
-    assert cropped_masks.width == 11
-    assert cropped_masks.to_ndarray().shape == (0, 18, 11)
+    assert cropped_masks.height == 17
+    assert cropped_masks.width == 10
+    assert cropped_masks.to_ndarray().shape == (0, 17, 10)
 
     # crop with polygon masks contain 1 instances
     raw_masks = [[np.array([1., 3., 5., 1., 5., 6., 1, 6])]]
@@ -463,11 +463,10 @@ def test_polygon_mask_crop():
     bbox = np.array([0, 0, 3, 4])
     cropped_masks = polygon_masks.crop(bbox)
     assert len(cropped_masks) == 1
-    assert cropped_masks.height == 5
-    assert cropped_masks.width == 4
-    assert cropped_masks.to_ndarray().shape == (1, 5, 4)
-    truth = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 1, 1],
-                      [0, 1, 1, 1]])
+    assert cropped_masks.height == 4
+    assert cropped_masks.width == 3
+    assert cropped_masks.to_ndarray().shape == (1, 4, 3)
+    truth = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 1, 1]])
     assert (cropped_masks.to_ndarray() == truth).all()
 
     # crop with invalid bbox
