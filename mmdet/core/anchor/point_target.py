@@ -22,7 +22,15 @@ def point_target(proposals_list,
         valid_flag_list (list[list]): Multi level valid flags of each image.
         gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
         img_metas (list[dict]): Meta info of each image.
-        cfg (dict): train sample configs.
+        cfg (dict): Train sample configs.
+        gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
+            ignored.
+        gt_bboxes_list (list[Tensor]): Ground truth labels of each box.
+        label_channels (int): Channel of label.
+        background_label (int): Label ID of background.
+        sampling (bool): Whether to do sampling.
+        upmap_outputs (bool): Whether to map outputs back to the original set
+            of anchors.
 
     Returns:
         tuple
@@ -120,8 +128,8 @@ def point_target_single(flat_proposals,
     bbox_gt = proposals.new_zeros([num_valid_proposals, 4])
     pos_proposals = torch.zeros_like(proposals)
     proposals_weights = proposals.new_zeros([num_valid_proposals, 4])
-    labels = proposals.new_full(
-        num_valid_proposals, background_label, dtype=torch.long)
+    labels = proposals.new_zeros(
+        num_valid_proposals, dtype=torch.long) + background_label
     label_weights = proposals.new_zeros(num_valid_proposals, dtype=torch.float)
 
     pos_inds = sampling_result.pos_inds

@@ -87,6 +87,9 @@ class GuidedAnchorHead(AnchorHead):
         deformable_groups: (int): Group number of DCN in
             FeatureAdaption module.
         loc_filter_thr (float): Threshold to filter out unconcerned regions.
+        background_label (int | None): Label ID of background, set as 0 for
+            RPN and num_classes for other heads. It will automatically set as
+            num_classes if None is given.
         loss_loc (dict): Config of location loss.
         loss_shape (dict): Config of anchor shape loss.
         loss_cls (dict): Config of classification loss.
@@ -109,6 +112,7 @@ class GuidedAnchorHead(AnchorHead):
         target_stds=(1.0, 1.0, 1.0, 1.0),
         deformable_groups=4,
         loc_filter_thr=0.01,
+        background_label=None,
         loss_loc=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -124,6 +128,8 @@ class GuidedAnchorHead(AnchorHead):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
+        self.background_label = (
+            num_classes if background_label is None else background_label)
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
         self.octave_scales = octave_base_scale * np.array(
@@ -462,7 +468,7 @@ class GuidedAnchorHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            background_label=self.num_classes,
+            background_label=self.background_label,
             sampling=sampling)
         if cls_reg_targets is None:
             return None
@@ -599,7 +605,8 @@ class GuidedAnchorHead(AnchorHead):
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
-                    # remind new system set FG cat_id: [0, num_class-1]
+                    # remind that we set FG labels to [0, num_class-1]
+                    # since mmdet v2.0
                     # BG cat_id: num_class
                     max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
@@ -616,7 +623,7 @@ class GuidedAnchorHead(AnchorHead):
         mlvl_scores = torch.cat(mlvl_scores)
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
-            # remind new system set FG cat_id: [0, num_class-1]
+            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
             # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)

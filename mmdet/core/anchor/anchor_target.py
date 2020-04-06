@@ -27,7 +27,14 @@ def anchor_target(anchor_list,
         target_means (Iterable): Mean value of regression targets.
         target_stds (Iterable): Std value of regression targets.
         cfg (dict): RPN train configs.
-        background_label (int): label id of background
+        gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
+            ignored.
+        gt_bboxes_list (list[Tensor]): Ground truth labels of each box.
+        label_channels (int): Channel of label.
+        background_label (int): Label ID of background.
+        sampling (bool): Whether to do sampling.
+        upmap_outputs (bool): Whether to map outputs back to the original set
+            of anchors.
 
     Returns:
         tuple
@@ -129,8 +136,8 @@ def anchor_target_single(flat_anchors,
     num_valid_anchors = anchors.shape[0]
     bbox_targets = torch.zeros_like(anchors)
     bbox_weights = torch.zeros_like(anchors)
-    labels = anchors.new_full(
-        num_valid_anchors, background_label, dtype=torch.long)
+    labels = anchors.new_zeros(
+        num_valid_anchors, dtype=torch.long) + background_label
     label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
     pos_inds = sampling_result.pos_inds

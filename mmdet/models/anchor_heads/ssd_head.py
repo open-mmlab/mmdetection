@@ -21,6 +21,7 @@ class SSDHead(AnchorHead):
                  anchor_strides=(8, 16, 32, 64, 100, 300),
                  basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
+                 background_label=None,
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0)):
         super(AnchorHead, self).__init__()
@@ -88,6 +89,8 @@ class SSDHead(AnchorHead):
                 anchor_generator.base_anchors, 0, torch.LongTensor(indices))
             self.anchor_generators.append(anchor_generator)
 
+        self.background_label = (
+            num_classes if background_label is None else background_label)
         self.target_means = target_means
         self.target_stds = target_stds
         self.use_sigmoid_cls = False
@@ -113,10 +116,9 @@ class SSDHead(AnchorHead):
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        bg_class_ind = self.num_classes
         pos_inds = ((labels >= 0) &
-                    (labels < bg_class_ind)).nonzero().reshape(-1)
-        neg_inds = (labels == bg_class_ind).nonzero().view(-1)
+                    (labels < self.background_label)).nonzero().reshape(-1)
+        neg_inds = (labels == self.background_label).nonzero().view(-1)
 
         num_pos_samples = pos_inds.size(0)
         num_neg_samples = cfg.neg_pos_ratio * num_pos_samples
@@ -161,7 +163,7 @@ class SSDHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=1,
-            num_classes=self.num_classes,
+            background_label=self.background_label,
             sampling=False,
             unmap_outputs=False)
         if cls_reg_targets is None:

@@ -58,6 +58,7 @@ class FoveaHead(nn.Module):
                  sigma=0.4,
                  with_deform=False,
                  deformable_groups=4,
+                 background_label=None,
                  loss_cls=None,
                  loss_bbox=None,
                  conv_cfg=None,
@@ -74,6 +75,8 @@ class FoveaHead(nn.Module):
         self.sigma = sigma
         self.with_deform = with_deform
         self.deformable_groups = deformable_groups
+        self.background_label = (
+            num_classes if background_label is None else background_label)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.conv_cfg = conv_cfg
@@ -211,9 +214,9 @@ class FoveaHead(nn.Module):
             gt_bbox_list, gt_label_list, featmap_sizes, points)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        bg_class_ind = self.num_classes
-        pos_inds = ((flatten_labels >= 0)
-                    & (flatten_labels < bg_class_ind)).nonzero().view(-1)
+        pos_inds = (
+            (flatten_labels >= 0)
+            & (flatten_labels < self.background_label)).nonzero().view(-1)
         num_pos = len(pos_inds)
 
         loss_cls = self.loss_cls(
@@ -386,7 +389,7 @@ class FoveaHead(nn.Module):
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_scores = torch.cat(det_scores)
         padding = det_scores.new_zeros(det_scores.shape[0], 1)
-        # remind new system set FG cat_id: [0, num_class-1]
+        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         det_scores = torch.cat([det_scores, padding], dim=1)
         det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,

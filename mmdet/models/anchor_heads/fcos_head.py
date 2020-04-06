@@ -40,6 +40,7 @@ class FCOSHead(nn.Module):
                                  (512, INF)),
                  center_sampling=False,
                  center_sample_radius=1.5,
+                 background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -70,6 +71,8 @@ class FCOSHead(nn.Module):
         self.fp16_enabled = False
         self.center_sampling = center_sampling
         self.center_sample_radius = center_sample_radius
+        self.background_label = (
+            num_classes if background_label is None else background_label)
 
         self._init_layers()
 
@@ -282,7 +285,7 @@ class FCOSHead(nn.Module):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        # remind new system set FG cat_id: [0, num_class-1]
+        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
@@ -371,7 +374,7 @@ class FCOSHead(nn.Module):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
-            return gt_labels.new_zeros(num_points) + self.num_classes, \
+            return gt_labels.new_zeros(num_points) + self.background_label, \
                    gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
@@ -444,7 +447,7 @@ class FCOSHead(nn.Module):
         min_area, min_area_inds = areas.min(dim=1)
 
         labels = gt_labels[min_area_inds]
-        labels[min_area == INF] = self.num_classes  # set as BG
+        labels[min_area == INF] = self.background_label  # set as BG
         bbox_targets = bbox_targets[range(num_points), min_area_inds]
 
         return labels, bbox_targets

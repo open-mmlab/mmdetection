@@ -26,6 +26,9 @@ class RepPointsHead(nn.Module):
             points refinement and recognition.
         point_strides (Iterable): points strides.
         point_base_scale (int): bbox scale for assigning labels.
+        background_label (int | None): Label ID of background, set as 0 for
+            RPN and num_classes for other heads. It will automatically set as
+            num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox_init (dict): Config of initial points loss.
         loss_bbox_refine (dict): Config of points loss in refinement.
@@ -47,6 +50,7 @@ class RepPointsHead(nn.Module):
                  point_base_scale=4,
                  conv_cfg=None,
                  norm_cfg=None,
+                 background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -73,6 +77,8 @@ class RepPointsHead(nn.Module):
         self.point_strides = point_strides
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.background_label = (
+            num_classes if background_label is None else background_label)
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.sampling = loss_cls['type'] not in ['FocalLoss']
         self.loss_cls = build_loss(loss_cls)
@@ -440,7 +446,7 @@ class RepPointsHead(nn.Module):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            background_label=self.num_classes,
+            background_label=self.background_label,
             sampling=self.sampling)
         (*_, bbox_gt_list_init, candidate_list_init, bbox_weights_list_init,
          num_total_pos_init, num_total_neg_init) = cls_reg_targets_init
@@ -474,7 +480,7 @@ class RepPointsHead(nn.Module):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            num_classes=self.num_classes,
+            background_label=self.background_label,
             sampling=self.sampling)
         (labels_list, label_weights_list, bbox_gt_list_refine,
          candidate_list_refine, bbox_weights_list_refine, num_total_pos_refine,
@@ -568,7 +574,8 @@ class RepPointsHead(nn.Module):
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
-                    # remind new system set FG cat_id: [0, num_class-1]
+                    # remind that we set FG labels to [0, num_class-1]
+                    # since mmdet v2.0
                     # BG cat_id: num_class
                     max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
@@ -590,7 +597,7 @@ class RepPointsHead(nn.Module):
         mlvl_scores = torch.cat(mlvl_scores)
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
-            # remind new system set FG cat_id: [0, num_class-1]
+            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
             # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)

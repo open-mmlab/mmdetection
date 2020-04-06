@@ -20,20 +20,19 @@ GPU_MEM_LIMIT = 1024**3  # 1 GB memory limit
 @HEADS.register_module
 class FCNMaskHead(nn.Module):
 
-    def __init__(
-        self,
-        num_convs=4,
-        roi_feat_size=14,
-        in_channels=256,
-        conv_kernel_size=3,
-        conv_out_channels=256,
-        num_classes=80,  # do not count background anymore
-        class_agnostic=False,
-        upsample_cfg=dict(type='deconv', scale_factor=2),
-        conv_cfg=None,
-        norm_cfg=None,
-        loss_mask=dict(
-            type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
+    def __init__(self,
+                 num_convs=4,
+                 roi_feat_size=14,
+                 in_channels=256,
+                 conv_kernel_size=3,
+                 conv_out_channels=256,
+                 num_classes=80,
+                 class_agnostic=False,
+                 upsample_cfg=dict(type='deconv', scale_factor=2),
+                 conv_cfg=None,
+                 norm_cfg=None,
+                 loss_mask=dict(
+                     type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(FCNMaskHead, self).__init__()
         self.upsample_cfg = upsample_cfg.copy()
         if self.upsample_cfg['type'] not in [

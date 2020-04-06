@@ -172,7 +172,8 @@ class AssignResult(util_mixins.NiceRepr):
                     labels = torch.zeros(num_preds, dtype=torch.int64)
                 else:
                     labels = torch.from_numpy(
-                        # remind new system set FG cat_id: [0, num_class-1]
+                        # remind that we set FG labels to [0, num_class-1]
+                        # since mmdet v2.0
                         # BG cat_id: num_class
                         rng.randint(0, num_classes, size=num_preds))
                     labels[~is_assigned] = 0

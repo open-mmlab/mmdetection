@@ -26,6 +26,9 @@ class AnchorHead(nn.Module):
         anchor_base_sizes (Iterable): Anchor base sizes.
         target_means (Iterable): Mean values of regression targets.
         target_stds (Iterable): Std values of regression targets.
+        background_label (int | None): Label ID of background, set as 0 for
+            RPN and num_classes for other heads. It will automatically set as
+            num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
     """  # noqa: W605
@@ -40,6 +43,7 @@ class AnchorHead(nn.Module):
                  anchor_base_sizes=None,
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
+                 background_label=None,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
@@ -67,6 +71,9 @@ class AnchorHead(nn.Module):
 
         if self.cls_out_channels <= 0:
             raise ValueError('num_classes={} is too small'.format(num_classes))
+
+        self.background_label = (
+            num_classes if background_label is None else background_label)
 
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
@@ -186,7 +193,7 @@ class AnchorHead(nn.Module):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            background_label=self.num_classes,
+            background_label=self.background_label,
             sampling=self.sampling)
         if cls_reg_targets is None:
             return None
@@ -308,7 +315,8 @@ class AnchorHead(nn.Module):
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
-                    # remind new system set FG cat_id: [0, num_class-1]
+                    # remind that we set FG labels to [0, num_class-1]
+                    # since mmdet v2.0
                     # BG cat_id: num_class
                     max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
@@ -325,7 +333,7 @@ class AnchorHead(nn.Module):
         mlvl_scores = torch.cat(mlvl_scores)
         if self.use_sigmoid_cls:
             # Add a dummy background class to the backend when using sigmoid
-            # remind new system set FG cat_id: [0, num_class-1]
+            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
             # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
