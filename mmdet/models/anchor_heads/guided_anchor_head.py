@@ -462,7 +462,7 @@ class GuidedAnchorHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            num_classes=self.num_classes,
+            background_label=self.num_classes,
             sampling=sampling)
         if cls_reg_targets is None:
             return None

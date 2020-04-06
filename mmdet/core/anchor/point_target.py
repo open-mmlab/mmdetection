@@ -12,7 +12,7 @@ def point_target(proposals_list,
                  gt_bboxes_ignore_list=None,
                  gt_labels_list=None,
                  label_channels=1,
-                 num_classes=80,
+                 background_label=80,
                  sampling=True,
                  unmap_outputs=True):
     """Compute corresponding GT box and classification targets for proposals.
@@ -54,7 +54,7 @@ def point_target(proposals_list,
          gt_labels_list,
          cfg=cfg,
          label_channels=label_channels,
-         num_classes=num_classes,
+         background_label=background_label,
          sampling=sampling,
          unmap_outputs=unmap_outputs)
     # no valid points
@@ -96,7 +96,7 @@ def point_target_single(flat_proposals,
                         gt_labels,
                         cfg,
                         label_channels=1,
-                        num_classes=80,
+                        background_label=80,
                         sampling=True,
                         unmap_outputs=True):
     inside_flags = valid_flags
@@ -120,14 +120,12 @@ def point_target_single(flat_proposals,
     bbox_gt = proposals.new_zeros([num_valid_proposals, 4])
     pos_proposals = torch.zeros_like(proposals)
     proposals_weights = proposals.new_zeros([num_valid_proposals, 4])
-    labels = proposals.new_zeros(num_valid_proposals, dtype=torch.long)
+    labels = proposals.new_full(
+        num_valid_proposals, background_label, dtype=torch.long)
     label_weights = proposals.new_zeros(num_valid_proposals, dtype=torch.float)
 
     pos_inds = sampling_result.pos_inds
     neg_inds = sampling_result.neg_inds
-    # remind new system set FG cat_id: [0, num_class-1], BG cat_id: num_class
-    if gt_labels is not None:
-        labels += num_classes
     if len(pos_inds) > 0:
         pos_gt_bboxes = sampling_result.pos_gt_bboxes
         bbox_gt[pos_inds, :] = pos_gt_bboxes

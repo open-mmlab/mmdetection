@@ -397,6 +397,7 @@ class ATSSHead(AnchorHead):
              img_metas,
              cfg=cfg,
              label_channels=label_channels,
+             background_label=self.num_classes,
              unmap_outputs=unmap_outputs)
         # no valid anchors
         if any([labels is None for labels in all_labels]):
@@ -427,6 +428,7 @@ class ATSSHead(AnchorHead):
                            img_meta,
                            cfg,
                            label_channels=1,
+                           background_label=80,
                            unmap_outputs=True):
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
@@ -450,13 +452,12 @@ class ATSSHead(AnchorHead):
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
-        labels = anchors.new_zeros(num_valid_anchors, dtype=torch.long)
+        labels = anchors.new_full(
+            num_valid_anchors, background_label, dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
-        if gt_labels is not None:
-            labels += self.num_classes
         if len(pos_inds) > 0:
             pos_bbox_targets = bbox2delta(sampling_result.pos_bboxes,
                                           sampling_result.pos_gt_bboxes,

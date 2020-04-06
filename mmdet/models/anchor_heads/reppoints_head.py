@@ -440,7 +440,7 @@ class RepPointsHead(nn.Module):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            num_classes=self.num_classes,
+            background_label=self.num_classes,
             sampling=self.sampling)
         (*_, bbox_gt_list_init, candidate_list_init, bbox_weights_list_init,
          num_total_pos_init, num_total_neg_init) = cls_reg_targets_init
