@@ -1,6 +1,6 @@
 from os.path import dirname, exists, join, relpath
 
-from mmdet.core import BitMapMasks, PolygonMasks
+from mmdet.core import BitmapMasks, PolygonMasks
 
 
 def _get_config_directory():
@@ -98,7 +98,7 @@ def test_config_data_pipeline():
         assert mode in ('polygon', 'bitmap')
         if mode == 'bitmap':
             masks = np.random.randint(0, 2, (num_obj, h, w), dtype=np.uint8)
-            masks = BitMapMasks(masks, h, w)
+            masks = BitmapMasks(masks, h, w)
         else:
             masks = []
             for i in range(num_obj):
