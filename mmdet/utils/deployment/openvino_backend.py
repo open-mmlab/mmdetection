@@ -1,5 +1,5 @@
 """
- Copyright (c) 2019 Intel Corporation
+ Copyright (c) 2020 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -163,12 +163,16 @@ class ModelOpenVINO(object):
     def rename_outputs(self, outputs):
         return {self.net_outputs_mapping[k]: v for k, v in outputs.items() if k in self.net_outputs_mapping}
 
-    def __call__(self, inputs):
+    def normalize_inputs(self, inputs):
         if not isinstance(inputs, dict):
             if len(self.net_inputs_mapping) == 1 and not isinstance(inputs, (list, tuple)):
                 inputs = [inputs]
             inputs = {k: v for (k, _), v in zip(self.net_inputs_mapping.items(), inputs)}
         inputs = {self.net_inputs_mapping[k]: v for k, v in inputs.items()}
+        return inputs
+
+    def __call__(self, inputs):
+        inputs = self.normalize_inputs(inputs)
         outputs = self.exec_net.infer(inputs)
         if self.perf_counters:
             perf_counters = self.exec_net.requests[0].get_perf_counts()
@@ -202,6 +206,7 @@ class DetectorOpenVINO(ModelOpenVINO):
         assert self.n == 1, 'Only batch 1 is supported.'
 
     def __call__(self, inputs, **kwargs):
+        inputs = self.normalize_inputs(inputs)
         output = super().__call__(inputs)
         if self.with_detection_output:
             detection_out = output['detection_out']

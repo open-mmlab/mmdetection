@@ -6,7 +6,7 @@ from onnx.utils import polish_model
 from mmdet.models import build_detector
 
 
-class ONNXModel(object):
+class ModelONNXRuntime(object):
 
     def __init__(self, model_file_path, cfg=None, classes=None):
         self.device = onnxruntime.get_device()
@@ -64,11 +64,15 @@ class ONNXModel(object):
         self.session = onnxruntime.InferenceSession(
             self.model.SerializeToString(), self.sess_options)
 
-    def __call__(self, inputs, *args, **kwargs):
+    def normalize_inputs(self, inputs):
         if not isinstance(inputs, dict):
             if len(self.input_names) == 1 and not isinstance(inputs, (list, tuple)):
                 inputs = [inputs]
             inputs = dict(zip(self.input_names, inputs))
+        return inputs
+
+    def __call__(self, inputs, *args, **kwargs):
+        inputs = self.normalize_inputs(inputs)
         outputs = self.session.run(None, inputs, *args, **kwargs)
         outputs = dict(zip(self.output_names, outputs))
         return outputs

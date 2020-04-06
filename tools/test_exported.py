@@ -123,7 +123,7 @@ def main(args):
     classes_num = len(dataset.CLASSES) + 1
 
     if backend == 'openvino':
-        from mmdet.utils.openvino import DetectorOpenVINO
+        from mmdet.utils.deployment import DetectorOpenVINO
         model = DetectorOpenVINO(args.model,
                                  args.model[:-3] + 'bin',
                                  mapping_file_path=args.model[:-3] + 'mapping',
@@ -131,8 +131,8 @@ def main(args):
                                  cfg=cfg,
                                  classes=dataset.CLASSES)
     else:
-        from mmdet.utils.onnxruntime_backend import ONNXModel
-        model = ONNXModel(args.model, cfg=cfg, classes=dataset.CLASSES)
+        from mmdet.utils.deployment import ModelONNXRuntime
+        model = ModelONNXRuntime(args.model, cfg=cfg, classes=dataset.CLASSES)
 
     results = []
     prog_bar = mmcv.ProgressBar(len(dataset))
@@ -148,6 +148,7 @@ def main(args):
         except Exception as ex:
             print('\nException raised while processing item {}:'.format(i))
             print(ex)
+            raise(ex)
             result = empty_result(
                 num_classes=classes_num,
                 with_mask=model.pt_model.with_mask)

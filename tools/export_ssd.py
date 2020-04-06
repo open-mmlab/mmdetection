@@ -23,9 +23,8 @@ from mmcv.parallel import MMDataParallel
 
 from mmdet.apis import init_detector
 from mmdet.models import detectors
-
-from tools.ssd_export_helpers import (get_proposals, PriorBox,
-                                      PriorBoxClustered, DetectionOutput)
+from mmdet.utils.deployment.ssd_export_helpers import (get_proposals, PriorBox,
+                                                       PriorBoxClustered, DetectionOutput)
 
 
 def onnx_export(self, img, img_meta, export_name='', **kwargs):
