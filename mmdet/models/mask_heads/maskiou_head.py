@@ -112,8 +112,8 @@ class MaskIoUHead(nn.Module):
 
         Args:
             sampling_results (list[:obj:`SamplingResult`]): sampling results.
-            gt_masks (list[ndarray]): Gt masks (the whole instance) of each
-                image, binary maps with the same shape of the input image.
+            gt_masks (BitmapMask | PolygonMask): Gt masks (the whole instance)
+                of each image, with the same shape of the input image.
             mask_pred (Tensor): Predicted masks of each positive proposal,
                 shape (num_pos, h, w).
             mask_targets (Tensor): Gt mask of each positive proposal,
@@ -157,15 +157,15 @@ class MaskIoUHead(nn.Module):
             proposals_np = pos_proposals.cpu().numpy()
             pos_assigned_gt_inds = pos_assigned_gt_inds.cpu().numpy()
             # compute mask areas of gt instances (batch processing for speedup)
-            gt_instance_mask_area = gt_masks.sum((-1, -2))
+            gt_instance_mask_area = gt_masks.areas
             for i in range(num_pos):
                 gt_mask = gt_masks[pos_assigned_gt_inds[i]]
 
                 # crop the gt mask inside the proposal
-                x1, y1, x2, y2 = proposals_np[i, :].astype(np.int32)
-                gt_mask_in_proposal = gt_mask[y1:y2 + 1, x1:x2 + 1]
+                bbox = proposals_np[i, :].astype(np.int32)
+                gt_mask_in_proposal = gt_mask.crop(bbox)
 
-                ratio = gt_mask_in_proposal.sum() / (
+                ratio = gt_mask_in_proposal.areas[0] / (
                     gt_instance_mask_area[pos_assigned_gt_inds[i]] + 1e-7)
                 area_ratios.append(ratio)
             area_ratios = torch.from_numpy(np.stack(area_ratios)).float().to(
