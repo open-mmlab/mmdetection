@@ -22,10 +22,10 @@ def calc_region(bbox, ratio, featmap_size=None):
     x2 = torch.round(ratio * bbox[0] + (1 - ratio) * bbox[2]).long()
     y2 = torch.round(ratio * bbox[1] + (1 - ratio) * bbox[3]).long()
     if featmap_size is not None:
-        x1 = x1.clamp(min=0, max=featmap_size[1] - 1)
-        y1 = y1.clamp(min=0, max=featmap_size[0] - 1)
-        x2 = x2.clamp(min=0, max=featmap_size[1] - 1)
-        y2 = y2.clamp(min=0, max=featmap_size[0] - 1)
+        x1 = x1.clamp(min=0, max=featmap_size[1])
+        y1 = y1.clamp(min=0, max=featmap_size[0])
+        x2 = x2.clamp(min=0, max=featmap_size[1])
+        y2 = y2.clamp(min=0, max=featmap_size[0])
     return (x1, y1, x2, y2)
 
 
@@ -76,8 +76,8 @@ def ga_loc_target(gt_bboxes_list,
         all_ignore_map.append(ignore_map)
     for img_id in range(img_per_gpu):
         gt_bboxes = gt_bboxes_list[img_id]
-        scale = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) *
-                           (gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1))
+        scale = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
+                           (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
         min_anchor_size = scale.new_full(
             (1, ), float(anchor_scale * anchor_strides[0]))
         # assign gt bboxes to different feature levels w.r.t. their scales

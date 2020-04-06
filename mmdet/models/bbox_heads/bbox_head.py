@@ -154,8 +154,8 @@ class BBoxHead(nn.Module):
         else:
             bboxes = rois[:, 1:].clone()
             if img_shape is not None:
-                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1] - 1)
-                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
+                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
+                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
         if rescale:
             if isinstance(scale_factor, float):

@@ -5,6 +5,8 @@ import numpy as np
 import pycocotools.mask as maskUtils
 import torch
 
+from mmdet.ops.roi_align import roi_align
+
 
 class BaseInstanceMasks(metaclass=ABCMeta):
 
@@ -185,11 +187,11 @@ class BitmapMasks(BaseInstanceMasks):
 
         # clip the boundary
         bbox = bbox.copy()
-        bbox[0::2] = np.clip(bbox[0::2], 0, self.width - 1)
-        bbox[1::2] = np.clip(bbox[1::2], 0, self.height - 1)
+        bbox[0::2] = np.clip(bbox[0::2], 0, self.width)
+        bbox[1::2] = np.clip(bbox[1::2], 0, self.height)
         x1, y1, x2, y2 = bbox
-        w = np.maximum(x2 - x1 + 1, 1)
-        h = np.maximum(y2 - y1 + 1, 1)
+        w = np.maximum(x2 - x1, 1)
+        h = np.maximum(y2 - y1, 1)
 
         if len(self.masks) == 0:
             cropped_masks = np.empty((0, h, w), dtype=np.uint8)
@@ -201,6 +203,7 @@ class BitmapMasks(BaseInstanceMasks):
                         bboxes,
                         out_shape,
                         inds,
+                        device='cpu',
                         interpolation='bilinear'):
         """Crop and resize masks by the given bboxes.
 
@@ -209,9 +212,10 @@ class BitmapMasks(BaseInstanceMasks):
         assigned bbox and resize to the size of (mask_h, mask_w)
 
         Args:
-            bboxes (ndarray): bboxes in format [x1, y1, x2, y2], shape (N, 4)
+            bboxes (Tensor): bboxes in format [x1, y1, x2, y2], shape (N, 4)
             out_shape (tuple[int]): target (h, w) of resized mask
             inds (ndarray): indexes to assign masks to each bbox
+            device (str): device of bboxes
             interpolation (str): see `mmcv.imresize`
 
         Return:
@@ -221,19 +225,26 @@ class BitmapMasks(BaseInstanceMasks):
             empty_masks = np.empty((0, *out_shape), dtype=np.uint8)
             return BitmapMasks(empty_masks, *out_shape)
 
-        resized_masks = []
-        for i in range(len(bboxes)):
-            mask = self.masks[inds[i]]
-            bbox = bboxes[i, :].astype(np.int32)
-            x1, y1, x2, y2 = bbox
-            w = np.maximum(x2 - x1 + 1, 1)
-            h = np.maximum(y2 - y1 + 1, 1)
-            resized_masks.append(
-                mmcv.imresize(
-                    mask[y1:y1 + h, x1:x1 + w],
-                    out_shape,
-                    interpolation=interpolation))
-        return BitmapMasks(np.stack(resized_masks), *out_shape)
+        # convert bboxes to tensor
+        if isinstance(bboxes, np.ndarray):
+            bboxes = torch.from_numpy(bboxes).to(device=device)
+        if isinstance(inds, np.ndarray):
+            inds = torch.from_numpy(inds).to(device=device)
+
+        num_bbox = bboxes.shape[0]
+        fake_inds = torch.arange(
+            num_bbox, device=device).to(dtype=bboxes.dtype)[:, None]
+        rois = torch.cat([fake_inds, bboxes], dim=1)  # Nx5
+        rois = rois.to(device=device)
+        if num_bbox > 0:
+            gt_masks_th = torch.from_numpy(self.masks).to(device).index_select(
+                0, inds).to(dtype=rois.dtype)
+            targets = roi_align(gt_masks_th[:, None, :, :], rois, out_shape,
+                                1.0, 0, True).squeeze(1)
+            resized_masks = (targets >= 0.5).cpu().numpy()
+        else:
+            resized_masks = []
+        return BitmapMasks(resized_masks, *out_shape)
 
     def expand(self, expanded_h, expanded_w, top, left):
         """see `transforms.Expand`."""
@@ -355,7 +366,7 @@ class PolygonMasks(BaseInstanceMasks):
                 flipped_poly_per_obj = []
                 for p in poly_per_obj:
                     p = p.copy()
-                    p[idx::2] = dim - p[idx::2] - 1
+                    p[idx::2] = dim - p[idx::2]
                     flipped_poly_per_obj.append(p)
                 flipped_masks.append(flipped_poly_per_obj)
             flipped_masks = PolygonMasks(flipped_masks, self.height,
@@ -369,11 +380,11 @@ class PolygonMasks(BaseInstanceMasks):
 
         # clip the boundary
         bbox = bbox.copy()
-        bbox[0::2] = np.clip(bbox[0::2], 0, self.width - 1)
-        bbox[1::2] = np.clip(bbox[1::2], 0, self.height - 1)
+        bbox[0::2] = np.clip(bbox[0::2], 0, self.width)
+        bbox[1::2] = np.clip(bbox[1::2], 0, self.height)
         x1, y1, x2, y2 = bbox
-        w = np.maximum(x2 - x1 + 1, 1)
-        h = np.maximum(y2 - y1 + 1, 1)
+        w = np.maximum(x2 - x1, 1)
+        h = np.maximum(y2 - y1, 1)
 
         if len(self.masks) == 0:
             cropped_masks = PolygonMasks([], h, w)
@@ -402,6 +413,7 @@ class PolygonMasks(BaseInstanceMasks):
                         bboxes,
                         out_shape,
                         inds,
+                        device='cpu',
                         interpolation='bilinear'):
         """see BitmapMasks.crop_and_resize"""
         out_h, out_w = out_shape
@@ -413,8 +425,8 @@ class PolygonMasks(BaseInstanceMasks):
             mask = self.masks[inds[i]]
             bbox = bboxes[i, :].astype(np.int32)
             x1, y1, x2, y2 = bbox
-            w = np.maximum(x2 - x1 + 1, 1)
-            h = np.maximum(y2 - y1 + 1, 1)
+            w = np.maximum(x2 - x1, 1)
+            h = np.maximum(y2 - y1, 1)
             h_scale = out_h / h
             w_scale = out_w / w
 

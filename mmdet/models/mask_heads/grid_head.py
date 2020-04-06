@@ -355,7 +355,7 @@ class GridHead(nn.Module):
 
         bbox_res = torch.cat(
             [bboxes_x1, bboxes_y1, bboxes_x2, bboxes_y2, cls_scores], dim=1)
-        bbox_res[:, [0, 2]].clamp_(min=0, max=img_metas[0]['img_shape'][1] - 1)
-        bbox_res[:, [1, 3]].clamp_(min=0, max=img_metas[0]['img_shape'][0] - 1)
+        bbox_res[:, [0, 2]].clamp_(min=0, max=img_metas[0]['img_shape'][1])
+        bbox_res[:, [1, 3]].clamp_(min=0, max=img_metas[0]['img_shape'][0])
 
         return bbox_res
