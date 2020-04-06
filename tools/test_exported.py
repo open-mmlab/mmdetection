@@ -148,7 +148,6 @@ def main(args):
         except Exception as ex:
             print('\nException raised while processing item {}:'.format(i))
             print(ex)
-            raise(ex)
             result = empty_result(
                 num_classes=classes_num,
                 with_mask=model.pt_model.with_mask)
