@@ -10,13 +10,13 @@ def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
     gt = gt.float()
     px = (proposals[..., 0] + proposals[..., 2]) * 0.5
     py = (proposals[..., 1] + proposals[..., 3]) * 0.5
-    pw = proposals[..., 2] - proposals[..., 0] + 1.0
-    ph = proposals[..., 3] - proposals[..., 1] + 1.0
+    pw = proposals[..., 2] - proposals[..., 0]
+    ph = proposals[..., 3] - proposals[..., 1]
 
     gx = (gt[..., 0] + gt[..., 2]) * 0.5
     gy = (gt[..., 1] + gt[..., 3]) * 0.5
-    gw = gt[..., 2] - gt[..., 0] + 1.0
-    gh = gt[..., 3] - gt[..., 1] + 1.0
+    gw = gt[..., 2] - gt[..., 0]
+    gh = gt[..., 3] - gt[..., 1]
 
     dx = (gx - px) / pw
     dy = (gy - py) / ph
@@ -71,9 +71,9 @@ def delta2bbox(rois,
         >>>                        [ 0.7, -1.9, -0.5,  0.3]])
         >>> delta2bbox(rois, deltas, max_shape=(32, 32))
         tensor([[0.0000, 0.0000, 1.0000, 1.0000],
-                [0.2817, 0.2817, 4.7183, 4.7183],
-                [0.0000, 0.6321, 7.3891, 0.3679],
-                [5.8967, 2.9251, 5.5033, 3.2749]])
+                [0.1409, 0.1409, 2.8591, 2.8591],
+                [0.0000, 0.3161, 4.1945, 0.6839],
+                [5.0000, 5.0000, 5.0000, 5.0000]])
     """
     means = deltas.new_tensor(means).repeat(1, deltas.size(1) // 4)
     stds = deltas.new_tensor(stds).repeat(1, deltas.size(1) // 4)
@@ -89,8 +89,8 @@ def delta2bbox(rois,
     px = ((rois[:, 0] + rois[:, 2]) * 0.5).unsqueeze(1).expand_as(dx)
     py = ((rois[:, 1] + rois[:, 3]) * 0.5).unsqueeze(1).expand_as(dy)
     # Compute width/height of each roi
-    pw = (rois[:, 2] - rois[:, 0] + 1.0).unsqueeze(1).expand_as(dw)
-    ph = (rois[:, 3] - rois[:, 1] + 1.0).unsqueeze(1).expand_as(dh)
+    pw = (rois[:, 2] - rois[:, 0]).unsqueeze(1).expand_as(dw)
+    ph = (rois[:, 3] - rois[:, 1]).unsqueeze(1).expand_as(dh)
     # Use exp(network energy) to enlarge/shrink each roi
     gw = pw * dw.exp()
     gh = ph * dh.exp()
@@ -98,15 +98,15 @@ def delta2bbox(rois,
     gx = torch.addcmul(px, 1, pw, dx)  # gx = px + pw * dx
     gy = torch.addcmul(py, 1, ph, dy)  # gy = py + ph * dy
     # Convert center-xy/width/height to top-left, bottom-right
-    x1 = gx - gw * 0.5 + 0.5
-    y1 = gy - gh * 0.5 + 0.5
-    x2 = gx + gw * 0.5 - 0.5
-    y2 = gy + gh * 0.5 - 0.5
+    x1 = gx - gw * 0.5
+    y1 = gy - gh * 0.5
+    x2 = gx + gw * 0.5
+    y2 = gy + gh * 0.5
     if max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1] - 1)
-        y1 = y1.clamp(min=0, max=max_shape[0] - 1)
-        x2 = x2.clamp(min=0, max=max_shape[1] - 1)
-        y2 = y2.clamp(min=0, max=max_shape[0] - 1)
+        x1 = x1.clamp(min=0, max=max_shape[1])
+        y1 = y1.clamp(min=0, max=max_shape[0])
+        x2 = x2.clamp(min=0, max=max_shape[1])
+        y2 = y2.clamp(min=0, max=max_shape[0])
     bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view_as(deltas)
     return bboxes
 
@@ -124,8 +124,8 @@ def bbox_flip(bboxes, img_shape):
     if isinstance(bboxes, torch.Tensor):
         assert bboxes.shape[-1] % 4 == 0
         flipped = bboxes.clone()
-        flipped[:, 0::4] = img_shape[1] - bboxes[:, 2::4] - 1
-        flipped[:, 2::4] = img_shape[1] - bboxes[:, 0::4] - 1
+        flipped[:, 0::4] = img_shape[1] - bboxes[:, 2::4]
+        flipped[:, 2::4] = img_shape[1] - bboxes[:, 0::4]
         return flipped
     elif isinstance(bboxes, np.ndarray):
         return mmcv.bbox_flip(bboxes, img_shape)
@@ -216,8 +216,8 @@ def distance2bbox(points, distance, max_shape=None):
     x2 = points[:, 0] + distance[:, 2]
     y2 = points[:, 1] + distance[:, 3]
     if max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1] - 1)
-        y1 = y1.clamp(min=0, max=max_shape[0] - 1)
-        x2 = x2.clamp(min=0, max=max_shape[1] - 1)
-        y2 = y2.clamp(min=0, max=max_shape[0] - 1)
+        x1 = x1.clamp(min=0, max=max_shape[1])
+        y1 = y1.clamp(min=0, max=max_shape[0])
+        x2 = x2.clamp(min=0, max=max_shape[1])
+        y2 = y2.clamp(min=0, max=max_shape[0])
     return torch.stack([x1, y1, x2, y2], -1)

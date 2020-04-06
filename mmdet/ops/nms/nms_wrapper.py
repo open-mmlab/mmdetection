@@ -29,7 +29,7 @@ def nms(dets, iou_thr, device_id=None):
         >>>                  [35.6, 11.8, 39.3, 14.2, 0.5],
         >>>                  [35.3, 11.5, 39.9, 14.5, 0.4],
         >>>                  [35.2, 11.7, 39.7, 15.7, 0.3]], dtype=np.float32)
-        >>> iou_thr = 0.7
+        >>> iou_thr = 0.6
         >>> suppressed, inds = nms(dets, iou_thr)
         >>> assert len(inds) == len(suppressed) == 3
     """
@@ -84,9 +84,9 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
         >>>                  [3., 1., 3., 1., 0.5],
         >>>                  [3., 1., 3., 1., 0.4],
         >>>                  [3., 1., 3., 1., 0.0]], dtype=np.float32)
-        >>> iou_thr = 0.7
+        >>> iou_thr = 0.6
         >>> new_dets, inds = soft_nms(dets, iou_thr, sigma=0.5)
-        >>> assert len(inds) == len(new_dets) == 3
+        >>> assert len(inds) == len(new_dets) == 5
     """
     # convert dets (tensor or numpy array) to tensor
     if isinstance(dets, torch.Tensor):

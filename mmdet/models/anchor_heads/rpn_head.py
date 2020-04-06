@@ -82,8 +82,8 @@ class RPNHead(AnchorHead):
             proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
                                    self.target_stds, img_shape)
             if cfg.min_bbox_size > 0:
-                w = proposals[:, 2] - proposals[:, 0] + 1
-                h = proposals[:, 3] - proposals[:, 1] + 1
+                w = proposals[:, 2] - proposals[:, 0]
+                h = proposals[:, 3] - proposals[:, 1]
                 valid_inds = torch.nonzero((w >= cfg.min_bbox_size) &
                                            (h >= cfg.min_bbox_size)).squeeze()
                 proposals = proposals[valid_inds, :]
