@@ -234,7 +234,7 @@ class FCNMaskHead(nn.Module):
                     im_mask[i][:, :, None].cpu().numpy(),
                     order='F',
                     dtype='uint8'))[0]
-            cls_segms[labels[i] - 1].append(rle)
+            cls_segms[labels[i]].append(rle)
         return cls_segms
 
 
