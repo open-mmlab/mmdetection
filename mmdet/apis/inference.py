@@ -115,7 +115,6 @@ async def async_inference_detector(model, img):
     return result
 
 
-# TODO: merge this method with the one in BaseDetector
 def show_result(img,
                 result,
                 class_names,

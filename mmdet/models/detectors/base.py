@@ -1,10 +1,9 @@
 from abc import ABCMeta, abstractmethod
+from pathlib import Path
 
-import mmcv
-import numpy as np
-import pycocotools.mask as maskUtils
 import torch.nn as nn
 
+from mmdet.apis.inference import show_result as show_single_image_result
 from mmdet.core import auto_fp16, get_classes, tensor2imgs
 from mmdet.utils import print_log
 
@@ -148,12 +147,13 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         else:
             return self.forward_test(img, img_metas, **kwargs)
 
-    def show_result(self, data, result, dataset=None, score_thr=0.3):
-        if isinstance(result, tuple):
-            bbox_result, segm_result = result
-        else:
-            bbox_result, segm_result = result, None
-
+    def show_result(self,
+                    data,
+                    result,
+                    dataset=None,
+                    score_thr=0.3,
+                    show=False,
+                    images_out_dir=None):
         img_tensor = data['img'][0]
         img_metas = data['img_metas'][0].data[0]
         imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
@@ -174,25 +174,13 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             h, w, _ = img_meta['img_shape']
             img_show = img[:h, :w, :]
 
-            bboxes = np.vstack(bbox_result)
-            # draw segmentation masks
-            if segm_result is not None:
-                segms = mmcv.concat_list(segm_result)
-                inds = np.where(bboxes[:, -1] > score_thr)[0]
-                for i in inds:
-                    color_mask = np.random.randint(
-                        0, 256, (1, 3), dtype=np.uint8)
-                    mask = maskUtils.decode(segms[i]).astype(np.bool)
-                    img_show[mask] = img_show[mask] * 0.5 + color_mask * 0.5
-            # draw bounding boxes
-            labels = [
-                np.full(bbox.shape[0], i, dtype=np.int32)
-                for i, bbox in enumerate(bbox_result)
-            ]
-            labels = np.concatenate(labels)
-            mmcv.imshow_det_bboxes(
-                img_show,
-                bboxes,
-                labels,
+            out_file = '{}/{}'.format(images_out_dir,
+                                      Path(img_meta['filename']).name)
+
+            show_single_image_result(
+                img=img_show,
+                result=result,
                 class_names=class_names,
-                score_thr=score_thr)
+                score_thr=score_thr,
+                show=show,
+                out_file=out_file if images_out_dir else None)
