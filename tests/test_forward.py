@@ -170,14 +170,8 @@ def test_retina_ghm_forward():
 
 
 def test_cascade_forward():
-    try:
-        from torchvision import _C as C  # NOQA
-    except ImportError:
-        import pytest
-        raise pytest.skip('requires torchvision on cpu')
-
     model, train_cfg, test_cfg = _get_detector_cfg(
-        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py')
+        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
@@ -191,11 +185,13 @@ def test_cascade_forward():
     img_metas = mm_inputs.pop('img_metas')
     gt_bboxes = mm_inputs['gt_bboxes']
     gt_labels = mm_inputs['gt_labels']
+    gt_masks = mm_inputs['gt_masks']
     losses = detector.forward(
         imgs,
         img_metas,
         gt_bboxes=gt_bboxes,
         gt_labels=gt_labels,
+        gt_masks=gt_masks,
         return_loss=True)
     assert isinstance(losses, dict)
     from mmdet.apis.train import parse_losses
@@ -208,27 +204,32 @@ def test_cascade_forward():
     img_metas = mm_inputs.pop('img_metas')
     gt_bboxes = mm_inputs['gt_bboxes']
     gt_labels = mm_inputs['gt_labels']
+    gt_masks = mm_inputs['gt_masks']
     losses = detector.forward(
         imgs,
         img_metas,
         gt_bboxes=gt_bboxes,
         gt_labels=gt_labels,
+        gt_masks=gt_masks,
         return_loss=True)
     assert isinstance(losses, dict)
     from mmdet.apis.train import parse_losses
     total_loss = float(parse_losses(losses)[0].item())
     assert total_loss > 0
 
+    # Test forward test
+    with torch.no_grad():
+        img_list = [g[None, :] for g in imgs]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      return_loss=False)
+            batch_results.append(result)
 
-def test_faster_rcnn_forward():
-    try:
-        from torchvision import _C as C  # NOQA
-    except ImportError:
-        import pytest
-        raise pytest.skip('requires torchvision on cpu')
 
+def test_mask_rcnn_forward():
     model, train_cfg, test_cfg = _get_detector_cfg(
-        'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py')
+        'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector
@@ -242,11 +243,13 @@ def test_faster_rcnn_forward():
     img_metas = mm_inputs.pop('img_metas')
     gt_bboxes = mm_inputs['gt_bboxes']
     gt_labels = mm_inputs['gt_labels']
+    gt_masks = mm_inputs['gt_masks']
     losses = detector.forward(
         imgs,
         img_metas,
         gt_bboxes=gt_bboxes,
         gt_labels=gt_labels,
+        gt_masks=gt_masks,
         return_loss=True)
     assert isinstance(losses, dict)
     from mmdet.apis.train import parse_losses
@@ -259,25 +262,30 @@ def test_faster_rcnn_forward():
     img_metas = mm_inputs.pop('img_metas')
     gt_bboxes = mm_inputs['gt_bboxes']
     gt_labels = mm_inputs['gt_labels']
+    gt_masks = mm_inputs['gt_masks']
     losses = detector.forward(
         imgs,
         img_metas,
         gt_bboxes=gt_bboxes,
         gt_labels=gt_labels,
+        gt_masks=gt_masks,
         return_loss=True)
     assert isinstance(losses, dict)
     from mmdet.apis.train import parse_losses
     total_loss = float(parse_losses(losses)[0].item())
     assert total_loss > 0
+
+    # Test forward test
+    with torch.no_grad():
+        img_list = [g[None, :] for g in imgs]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      return_loss=False)
+            batch_results.append(result)
 
 
 def test_faster_rcnn_ohem_forward():
-    try:
-        from torchvision import _C as C  # NOQA
-    except ImportError:
-        import pytest
-        raise pytest.skip('requires torchvision on cpu')
-
     model, train_cfg, test_cfg = _get_detector_cfg(
         'faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py')
     model['pretrained'] = None
@@ -337,6 +345,8 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
         num_classes (int):
             number of different labels a box might have
     """
+    from mmdet.core import BitmapMasks
+
     (N, C, H, W) = input_shape
 
     rng = np.random.RandomState(0)
@@ -354,6 +364,7 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
 
     gt_bboxes = []
     gt_labels = []
+    gt_masks = []
 
     for batch_idx in range(N):
         if num_items is None:
@@ -374,11 +385,15 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
         gt_bboxes.append(torch.FloatTensor(boxes))
         gt_labels.append(torch.LongTensor(class_idxs))
 
+    mask = np.random.randint(0, 2, (len(boxes), H, W), dtype=np.uint8)
+    gt_masks.append(BitmapMasks(mask, H, W))
+
     mm_inputs = {
         'imgs': torch.FloatTensor(imgs),
         'img_metas': img_metas,
         'gt_bboxes': gt_bboxes,
         'gt_labels': gt_labels,
         'gt_bboxes_ignore': None,
+        'gt_masks': gt_masks,
     }
     return mm_inputs
