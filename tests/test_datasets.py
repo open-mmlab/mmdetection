@@ -22,6 +22,5 @@ def test_custom_classes_override_default(dataset):
         test_mode=True,
         img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
 
-    assert custom_dataset.custom_classes
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ('foo', 'bar')
