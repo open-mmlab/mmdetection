@@ -171,7 +171,7 @@ class FCNMaskHead(nn.Module):
         cls_segms = [[] for _ in range(self.num_classes)
                      ]  # BG is not included in num_classes
         bboxes = det_bboxes[:, :4]
-        labels = det_labels + 1
+        labels = det_labels
 
         if rescale:
             img_h, img_w = ori_shape[:2]
