@@ -19,7 +19,7 @@ if platform.system() != 'Windows':
 
 
 def build_dataloader(dataset,
-                     imgs_per_gpu,
+                     samples_per_gpu,
                      workers_per_gpu,
                      num_gpus=1,
                      dist=True,
@@ -33,8 +33,8 @@ def build_dataloader(dataset,
 
     Args:
         dataset (Dataset): A PyTorch dataset.
-        imgs_per_gpu (int): Number of images on each GPU, i.e., batch size of
-            each GPU.
+        samples_per_gpu (int): Number of training samples on each GPU, i.e.,
+            batch size of each GPU.
         workers_per_gpu (int): How many subprocesses to use for data loading
             for each GPU.
         num_gpus (int): Number of GPUs. Only used in non-distributed training.
@@ -51,16 +51,16 @@ def build_dataloader(dataset,
         # DistributedGroupSampler will definitely shuffle the data to satisfy
         # that images on each GPU are in the same group
         if shuffle:
-            sampler = DistributedGroupSampler(dataset, imgs_per_gpu,
+            sampler = DistributedGroupSampler(dataset, samples_per_gpu,
                                               world_size, rank)
         else:
             sampler = DistributedSampler(
                 dataset, world_size, rank, shuffle=False)
-        batch_size = imgs_per_gpu
+        batch_size = samples_per_gpu
         num_workers = workers_per_gpu
     else:
-        sampler = GroupSampler(dataset, imgs_per_gpu) if shuffle else None
-        batch_size = num_gpus * imgs_per_gpu
+        sampler = GroupSampler(dataset, samples_per_gpu) if shuffle else None
+        batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
     init_fn = partial(
@@ -72,7 +72,7 @@ def build_dataloader(dataset,
         batch_size=batch_size,
         sampler=sampler,
         num_workers=num_workers,
-        collate_fn=partial(collate, samples_per_gpu=imgs_per_gpu),
+        collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
         pin_memory=False,
         worker_init_fn=init_fn,
         **kwargs)
