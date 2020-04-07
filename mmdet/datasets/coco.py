@@ -33,6 +33,8 @@ class CocoDataset(CustomDataset):
 
     def load_annotations(self, ann_file):
         if not self.class_names:
+            # Use all the classes by default
+            # replace the '_' to match the class names in the annotations
             self.class_names = [res.replace('_', ' ') for res in self.CLASSES]
         self.coco = COCO(ann_file)
         # send class_names into the getCatIds function
