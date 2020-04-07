@@ -128,8 +128,8 @@ def point_target_single(flat_proposals,
     bbox_gt = proposals.new_zeros([num_valid_proposals, 4])
     pos_proposals = torch.zeros_like(proposals)
     proposals_weights = proposals.new_zeros([num_valid_proposals, 4])
-    labels = proposals.new_zeros(
-        num_valid_proposals, dtype=torch.long) + background_label
+    labels = proposals.new_empty(
+        num_valid_proposals, dtype=torch.long).fill_(background_label)
     label_weights = proposals.new_zeros(num_valid_proposals, dtype=torch.float)
 
     pos_inds = sampling_result.pos_inds
