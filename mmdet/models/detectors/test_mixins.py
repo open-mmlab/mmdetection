@@ -217,6 +217,7 @@ class MaskTestMixin(object):
             # So add one zero / dummy ROI that will be mapped
             # to an Identity op in the graph.
             det_bboxes = dummy_pad(det_bboxes, (0, 0, 0, 1))
+            det_labels = dummy_pad(det_labels, (0, 1))
 
         if det_bboxes.shape[0] == 0:
             det_masks = torch.empty([0, 0, 0],
