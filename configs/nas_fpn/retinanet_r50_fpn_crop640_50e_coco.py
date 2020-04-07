@@ -68,7 +68,7 @@ optimizer = dict(
     momentum=0.9,
     weight_decay=0.0001,
     paramwise_options=dict(norm_decay_mult=0))
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
     policy='step',

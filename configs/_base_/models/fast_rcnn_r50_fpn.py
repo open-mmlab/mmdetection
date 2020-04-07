@@ -34,7 +34,7 @@ model = dict(
             reg_class_agnostic=False,
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))))
+            loss_bbox=dict(type='L1Loss', loss_weight=1.0))))
 # model training and testing settings
 train_cfg = dict(
     rcnn=dict(
