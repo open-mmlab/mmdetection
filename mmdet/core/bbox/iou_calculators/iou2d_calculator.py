@@ -1,8 +1,8 @@
 from ..geometry import bbox_overlaps
-from .registry import IOUCALCULATOR
+from .registry import IOU_CALCULATOR
 
 
-@IOUCALCULATOR.register_module
+@IOU_CALCULATOR.register_module
 class BboxOverlaps2D(object):
     """2D IoU Calculator"""
 
