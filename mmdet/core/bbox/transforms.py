@@ -190,13 +190,11 @@ def bbox2result(bboxes, labels, num_classes):
         list(ndarray): bbox results of each class
     """
     if bboxes.shape[0] == 0:
-        return [
-            np.zeros((0, 5), dtype=np.float32) for i in range(num_classes - 1)
-        ]
+        return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
     else:
         bboxes = bboxes.cpu().numpy()
         labels = labels.cpu().numpy()
-        return [bboxes[labels == i, :] for i in range(num_classes - 1)]
+        return [bboxes[labels == i, :] for i in range(num_classes)]
 
 
 def distance2bbox(points, distance, max_shape=None):

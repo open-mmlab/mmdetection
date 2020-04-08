@@ -243,6 +243,7 @@ def get_cls_results(det_results, annotations, class_id):
     Args:
         det_results (list[list]): Same as `eval_map()`.
         annotations (list[dict]): Same as `eval_map()`.
+        class_id (int): ID of a specific class.
 
     Returns:
         tuple[list[np.ndarray]]: detected bboxes, gt bboxes, ignored gt bboxes
@@ -251,11 +252,11 @@ def get_cls_results(det_results, annotations, class_id):
     cls_gts = []
     cls_gts_ignore = []
     for ann in annotations:
-        gt_inds = ann['labels'] == (class_id + 1)
+        gt_inds = ann['labels'] == class_id
         cls_gts.append(ann['bboxes'][gt_inds, :])
 
         if ann.get('labels_ignore', None) is not None:
-            ignore_inds = ann['labels_ignore'] == (class_id + 1)
+            ignore_inds = ann['labels_ignore'] == class_id
             cls_gts_ignore.append(ann['bboxes_ignore'][ignore_inds, :])
         else:
             cls_gts_ignore.append(np.empty((0, 4), dtype=np.float32))
@@ -429,7 +430,7 @@ def print_map_summary(mean_ap,
         num_gts[:, i] = cls_result['num_gts']
 
     if dataset is None:
-        label_names = [str(i) for i in range(1, num_classes + 1)]
+        label_names = [str(i) for i in range(num_classes)]
     elif mmcv.is_str(dataset):
         label_names = get_classes(dataset)
     else:

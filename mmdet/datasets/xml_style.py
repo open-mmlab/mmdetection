@@ -13,7 +13,7 @@ class XMLDataset(CustomDataset):
 
     def __init__(self, min_size=None, **kwargs):
         super(XMLDataset, self).__init__(**kwargs)
-        self.cat2label = {cat: i + 1 for i, cat in enumerate(self.CLASSES)}
+        self.cat2label = {cat: i for i, cat in enumerate(self.CLASSES)}
         self.min_size = min_size
 
     def load_annotations(self, ann_file):
