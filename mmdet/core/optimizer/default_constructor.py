@@ -88,9 +88,7 @@ class DefaultOptimizerConstructor(object):
             isinstance(module, torch.nn.Conv2d)
             and module.in_channels == module.groups)
 
-        children = list(module.children())
-        recursive = False if len(children) > 0 else True
-        for name, param in module.named_parameters(recurse=recursive):
+        for name, param in module.named_parameters(recurse=False):
             param_group = {'params': [param]}
             if not param.requires_grad:
                 params.append(param_group)
@@ -114,8 +112,8 @@ class DefaultOptimizerConstructor(object):
                         'weight_decay'] = self.base_wd * bias_decay_mult
             params.append(param_group)
 
-        for module in children:
-            self.add_params(params, module)
+        for child_mod in module.children():
+            self.add_params(params, child_mod)
 
     def __call__(self, model):
         if hasattr(model, 'module'):
