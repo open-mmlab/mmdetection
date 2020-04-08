@@ -3,7 +3,6 @@ from pathlib import Path
 
 import torch.nn as nn
 
-from mmdet.apis.inference import show_result as show_single_image_result
 from mmdet.core import auto_fp16, get_classes, tensor2imgs
 from mmdet.utils import print_log
 
@@ -154,6 +153,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     score_thr=0.3,
                     show=False,
                     images_out_dir=None):
+        from mmdet.apis.inference import show_result as show_single_result
+
         img_tensor = data['img'][0]
         img_metas = data['img_metas'][0].data[0]
         imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
@@ -177,7 +178,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             out_file = '{}/{}'.format(images_out_dir,
                                       Path(img_meta['filename']).name)
 
-            show_single_image_result(
+            show_single_result(
                 img=img_show,
                 result=result,
                 class_names=class_names,
