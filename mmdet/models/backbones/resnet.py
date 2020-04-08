@@ -480,8 +480,8 @@ class ResNet(nn.Module):
             if self.dcn is not None:
                 for m in self.modules():
                     if isinstance(m, Bottleneck) and hasattr(
-                            m, 'conv2_offset'):
-                        constant_init(m.conv2_offset, 0)
+                            m.conv2, 'conv_offset'):
+                        constant_init(m.conv2.conv_offset, 0)
 
             if self.zero_init_residual:
                 for m in self.modules():
