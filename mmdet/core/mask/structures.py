@@ -92,7 +92,9 @@ class BitmapMasks(BaseInstanceMasks):
 
     def __repr__(self) -> str:
         s = self.__class__.__name__ + '('
-        s += 'num_masks={})'.format(len(self.masks))
+        s += 'num_masks={}, '.format(len(self.masks))
+        s += 'height={}, '.format(len(self.height))
+        s += 'width={})'.format(len(self.width))
         return s
 
     def __len__(self):
@@ -325,7 +327,9 @@ class PolygonMasks(BaseInstanceMasks):
 
     def __repr__(self) -> str:
         s = self.__class__.__name__ + '('
-        s += 'num_masks={})'.format(len(self.masks))
+        s += 'num_masks={}, '.format(len(self.masks))
+        s += 'height={}, '.format(len(self.height))
+        s += 'width={})'.format(len(self.width))
         return s
 
     def __len__(self):

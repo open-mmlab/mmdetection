@@ -77,6 +77,9 @@ class FoveaHead(nn.Module):
         self.deformable_groups = deformable_groups
         self.background_label = (
             num_classes if background_label is None else background_label)
+        # background_label should be either 0 or num_classes
+        assert (self.background_label == 0
+                or self.background_label == num_classes)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.conv_cfg = conv_cfg

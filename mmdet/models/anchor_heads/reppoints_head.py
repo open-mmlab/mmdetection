@@ -77,8 +77,13 @@ class RepPointsHead(nn.Module):
         self.point_strides = point_strides
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+
         self.background_label = (
             num_classes if background_label is None else background_label)
+        # background_label should be either 0 or num_classes
+        assert (self.background_label == 0
+                or self.background_label == num_classes)
+
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.sampling = loss_cls['type'] not in ['FocalLoss']
         self.loss_cls = build_loss(loss_cls)

@@ -128,8 +128,6 @@ class GuidedAnchorHead(AnchorHead):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
-        self.background_label = (
-            num_classes if background_label is None else background_label)
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
         self.octave_scales = octave_base_scale * np.array(
@@ -155,6 +153,13 @@ class GuidedAnchorHead(AnchorHead):
             # Generators for squares
             self.square_generators.append(
                 AnchorGenerator(anchor_base, [self.octave_base_scale], [1.0]))
+
+        self.background_label = (
+            num_classes if background_label is None else background_label)
+        # background_label should be either 0 or num_classes
+        assert (self.background_label == 0
+                or self.background_label == num_classes)
+
         # one anchor per location
         self.num_anchors = 1
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)

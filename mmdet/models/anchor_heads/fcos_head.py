@@ -55,7 +55,6 @@ class FCOSHead(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)):
         super(FCOSHead, self).__init__()
-
         self.num_classes = num_classes
         self.cls_out_channels = num_classes
         self.in_channels = in_channels
@@ -73,6 +72,9 @@ class FCOSHead(nn.Module):
         self.center_sample_radius = center_sample_radius
         self.background_label = (
             num_classes if background_label is None else background_label)
+        # background_label should be either 0 or num_classes
+        assert (self.background_label == 0
+                or self.background_label == num_classes)
 
         self._init_layers()
 
