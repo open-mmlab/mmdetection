@@ -64,7 +64,7 @@ class ModelONNXRuntime(object):
         self.session = onnxruntime.InferenceSession(
             self.model.SerializeToString(), self.sess_options)
 
-    def normalize_inputs(self, inputs):
+    def unify_inputs(self, inputs):
         if not isinstance(inputs, dict):
             if len(self.input_names) == 1 and not isinstance(inputs, (list, tuple)):
                 inputs = [inputs]
@@ -72,7 +72,7 @@ class ModelONNXRuntime(object):
         return inputs
 
     def __call__(self, inputs, *args, **kwargs):
-        inputs = self.normalize_inputs(inputs)
+        inputs = self.unify_inputs(inputs)
         outputs = self.session.run(None, inputs, *args, **kwargs)
         outputs = dict(zip(self.output_names, outputs))
         return outputs

@@ -163,7 +163,7 @@ class ModelOpenVINO(object):
     def rename_outputs(self, outputs):
         return {self.net_outputs_mapping[k]: v for k, v in outputs.items() if k in self.net_outputs_mapping}
 
-    def normalize_inputs(self, inputs):
+    def unify_inputs(self, inputs):
         if not isinstance(inputs, dict):
             if len(self.net_inputs_mapping) == 1 and not isinstance(inputs, (list, tuple)):
                 inputs = [inputs]
@@ -172,7 +172,7 @@ class ModelOpenVINO(object):
         return inputs
 
     def __call__(self, inputs):
-        inputs = self.normalize_inputs(inputs)
+        inputs = self.unify_inputs(inputs)
         outputs = self.exec_net.infer(inputs)
         if self.perf_counters:
             perf_counters = self.exec_net.requests[0].get_perf_counts()
@@ -206,7 +206,7 @@ class DetectorOpenVINO(ModelOpenVINO):
         assert self.n == 1, 'Only batch 1 is supported.'
 
     def __call__(self, inputs, **kwargs):
-        inputs = self.normalize_inputs(inputs)
+        inputs = self.unify_inputs(inputs)
         output = super().__call__(inputs)
         if self.with_detection_output:
             detection_out = output['detection_out']
