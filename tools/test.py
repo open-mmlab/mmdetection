@@ -96,10 +96,11 @@ def parse_args():
 def main():
     args = parse_args()
 
-    assert args.out or args.eval or args.format_only or args.show, \
+    assert args.out or args.eval or args.format_only or args.show \
+        or args.images_out_dir, \
         ('Please specify at least one operation (save/eval/format/show the '
-         'results) with the argument "--out", "--eval", "--format_only" '
-         'or "--show"')
+         'results / save the results) with the argument "--out", "--eval"'
+         ', "--format_only", "--show" or "--images_out_dir"')
 
     if args.eval and args.format_only:
         raise ValueError('--eval and --format_only cannot be both specified')
