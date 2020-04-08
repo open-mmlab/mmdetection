@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-#
-# Copyright (C) 2019 Intel Corporation
+# Copyright (C) 2020 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +15,8 @@
 # pylint: disable=all
 
 import torch
-from mmdet.core import (delta2bbox, multiclass_nms)
+
+from ...core import delta2bbox, multiclass_nms
 
 
 def get_proposals(img_metas, cls_scores, bbox_preds, priors,

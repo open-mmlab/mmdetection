@@ -14,15 +14,20 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import argparse
-
-import mmcv
 import os
+
+import argparse
+import mmcv
+import onnx
+
 
 def main(args):
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
+
+    onnx_model = onnx.load(args.input_model)
+    output_names = ','.join(out.name for out in onnx_model.graph.output)
 
     assert cfg.data.test.pipeline[1]['type'] == 'MultiScaleFlipAug'
     normalize = [v for v in cfg.data.test.pipeline[1]['transforms']
@@ -33,11 +38,12 @@ def main(args):
 
     mean_values = normalize['mean']
     scale_values = normalize['std']
-    command_line = f'mo.py --input_model {args.input_model} ' \
+    command_line = f'mo.py --input_model="{args.input_model}" ' \
                    f'--mean_values="{mean_values}" ' \
                    f'--scale_values="{scale_values}" ' \
-                   f'--output_dir={args.output_dir} ' \
-                   f'--input_shape="[1,3,{shape[0]},{shape[1]}]"'
+                   f'--output_dir="{args.output_dir}" ' \
+                   f'--input_shape="[1,3,{shape[0]},{shape[1]}]" ' \
+                   f'--output="{output_names}"' 
     if normalize['to_rgb']:
         command_line += ' --reverse_input_channels'
 
@@ -46,10 +52,10 @@ def main(args):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Test ONNX model')
+    parser = argparse.ArgumentParser(description='Export ONNX model to OpenVINO IR')
     parser.add_argument('config', help='path to configuration file')
-    parser.add_argument('input_model', help='path to onnx model')
-    parser.add_argument('output_dir', help='where IR will be saved to')
+    parser.add_argument('input_model', help='path to ONNX model')
+    parser.add_argument('output_dir', help='where OpenVINO IR will be saved to')
     parser.add_argument('--input_shape', nargs=2, help='input shape')
     args = parser.parse_args()
     return args

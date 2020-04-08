@@ -1,5 +1,5 @@
 """
- Copyright (c) 2019 Intel Corporation
+ Copyright (c) 2020 Intel Corporation
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -157,26 +157,27 @@ class ModelOpenVINO(object):
                 if output in net.outputs:
                     net_outputs_mapping[output] = required_output
                 else:
-                    raise ValueError('Failed to identify output {}'.format(required_output))
+                    raise ValueError('Failed to identify output "{}"'.format(required_output))
         return net_outputs_mapping
 
     def rename_outputs(self, outputs):
         return {self.net_outputs_mapping[k]: v for k, v in outputs.items() if k in self.net_outputs_mapping}
 
-    def forward(self, inputs):
+    def unify_inputs(self, inputs):
         if not isinstance(inputs, dict):
             if len(self.net_inputs_mapping) == 1 and not isinstance(inputs, (list, tuple)):
                 inputs = [inputs]
             inputs = {k: v for (k, _), v in zip(self.net_inputs_mapping.items(), inputs)}
         inputs = {self.net_inputs_mapping[k]: v for k, v in inputs.items()}
+        return inputs
+
+    def __call__(self, inputs):
+        inputs = self.unify_inputs(inputs)
         outputs = self.exec_net.infer(inputs)
         if self.perf_counters:
             perf_counters = self.exec_net.requests[0].get_perf_counts()
             self.perf_counters.update(perf_counters)
         return self.rename_outputs(outputs)
-
-    def __call__(self, inputs):
-        return self.forward(inputs)
 
     def __del__(self):
         del self.net
@@ -193,7 +194,7 @@ class ModelOpenVINO(object):
 
 
 class DetectorOpenVINO(ModelOpenVINO):
-    def __init__(self, with_detection_output, *args, **kwargs):
+    def __init__(self, *args, with_detection_output=False, **kwargs):
         super().__init__(*args,
                          required_inputs=('image', ),
                          required_outputs=('detection_out',) if with_detection_output else ('boxes', 'labels'),
@@ -205,6 +206,7 @@ class DetectorOpenVINO(ModelOpenVINO):
         assert self.n == 1, 'Only batch 1 is supported.'
 
     def __call__(self, inputs, **kwargs):
+        inputs = self.unify_inputs(inputs)
         output = super().__call__(inputs)
         if self.with_detection_output:
             detection_out = output['detection_out']
