@@ -90,6 +90,7 @@ def test_config_data_pipeline():
         'pascal_voc/ssd300_voc0712.py',
         'pascal_voc/ssd512_voc0712.py',
         # 'albu_example/mask_rcnn_r50_fpn_1x.py',
+        'foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py',
         'mask_rcnn/mask_rcnn_r50_fpn_poly_1x_coco.py',
         'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
     ]
@@ -311,7 +312,7 @@ def _check_bbox_head(bbox_cfg, bbox_head):
         if with_cls:
             fc_out_channels = bbox_cfg.get('fc_out_channels', 2048)
             assert (fc_out_channels == bbox_head.fc_cls.in_features)
-            assert bbox_cfg.num_classes == bbox_head.fc_cls.out_features
+            assert bbox_cfg.num_classes + 1 == bbox_head.fc_cls.out_features
 
         with_reg = bbox_cfg.get('with_reg', True)
         if with_reg:

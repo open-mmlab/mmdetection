@@ -119,8 +119,7 @@ class MaskTestMixin(object):
             ori_shape = img_metas[0]['ori_shape']
             scale_factor = img_metas[0]['scale_factor']
             if det_bboxes.shape[0] == 0:
-                segm_result = [[]
-                               for _ in range(self.mask_head.num_classes - 1)]
+                segm_result = [[] for _ in range(self.mask_head.num_classes)]
             else:
                 _bboxes = (
                     det_bboxes[:, :4] *
@@ -156,7 +155,7 @@ class MaskTestMixin(object):
         ori_shape = img_metas[0]['ori_shape']
         scale_factor = img_metas[0]['scale_factor']
         if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
+            segm_result = [[] for _ in range(self.mask_head.num_classes)]
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
@@ -174,7 +173,7 @@ class MaskTestMixin(object):
 
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):
         if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
+            segm_result = [[] for _ in range(self.mask_head.num_classes)]
         else:
             aug_masks = []
             for x, img_meta in zip(feats, img_metas):

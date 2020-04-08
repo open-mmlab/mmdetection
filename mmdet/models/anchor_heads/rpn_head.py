@@ -13,7 +13,8 @@ from .anchor_head import AnchorHead
 class RPNHead(AnchorHead):
 
     def __init__(self, in_channels, **kwargs):
-        super(RPNHead, self).__init__(2, in_channels, **kwargs)
+        super(RPNHead, self).__init__(
+            1, in_channels, background_label=0, **kwargs)
 
     def _init_layers(self):
         self.rpn_conv = nn.Conv2d(
@@ -71,7 +72,10 @@ class RPNHead(AnchorHead):
                 scores = rpn_cls_score.sigmoid()
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
-                scores = rpn_cls_score.softmax(dim=1)[:, 1]
+                # remind that we set FG labels to [0, num_class-1]
+                # since mmdet v2.0
+                # BG cat_id: num_class
+                scores = rpn_cls_score.softmax(dim=1)[:, :-1]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:

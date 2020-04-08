@@ -138,7 +138,10 @@ class ATSSHead(AnchorHead):
         loss_cls = self.loss_cls(
             cls_score, labels, label_weights, avg_factor=num_total_samples)
 
-        pos_inds = torch.nonzero(labels).squeeze(1)
+        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+        bg_class_ind = self.num_classes
+        pos_inds = ((labels >= 0)
+                    & (labels < bg_class_ind)).nonzero().squeeze(1)
 
         if len(pos_inds) > 0:
             pos_bbox_targets = bbox_targets[pos_inds]
@@ -334,8 +337,11 @@ class ATSSHead(AnchorHead):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
 
         mlvl_scores = torch.cat(mlvl_scores)
+        # Add a dummy background class to the backend when using sigmoid
+        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
+        # BG cat_id: num_class
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
+        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
 
         det_bboxes, det_labels = multiclass_nms(
@@ -391,6 +397,7 @@ class ATSSHead(AnchorHead):
              img_metas,
              cfg=cfg,
              label_channels=label_channels,
+             background_label=self.background_label,
              unmap_outputs=unmap_outputs)
         # no valid anchors
         if any([labels is None for labels in all_labels]):
@@ -421,6 +428,7 @@ class ATSSHead(AnchorHead):
                            img_meta,
                            cfg,
                            label_channels=1,
+                           background_label=80,
                            unmap_outputs=True):
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
@@ -444,7 +452,9 @@ class ATSSHead(AnchorHead):
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
-        labels = anchors.new_zeros(num_valid_anchors, dtype=torch.long)
+        labels = anchors.new_full((num_valid_anchors, ),
+                                  background_label,
+                                  dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
         pos_inds = sampling_result.pos_inds
@@ -472,7 +482,8 @@ class ATSSHead(AnchorHead):
             inside_flags = inside_flags.type(torch.bool)
             num_total_anchors = flat_anchors.size(0)
             anchors = unmap(anchors, num_total_anchors, inside_flags)
-            labels = unmap(labels, num_total_anchors, inside_flags)
+            labels = unmap(
+                labels, num_total_anchors, inside_flags, fill=self.num_classes)
             label_weights = unmap(label_weights, num_total_anchors,
                                   inside_flags)
             bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)

@@ -4,6 +4,7 @@ import torch
 from mmdet.core import build_assigner, build_sampler
 from mmdet.models.anchor_heads import AnchorHead
 from mmdet.models.bbox_heads import BBoxHead
+from mmdet.models.mask_heads import FCNMaskHead, MaskIoUHead
 
 
 def test_anchor_head_loss():
@@ -80,51 +81,12 @@ def test_bbox_head_loss():
     """
     self = BBoxHead(in_channels=8, roi_feat_size=3)
 
-    num_imgs = 1
-    feat = torch.rand(1, 1, 3, 3)
-
     # Dummy proposals
     proposal_list = [
         torch.Tensor([[23.6667, 23.8757, 228.6326, 153.8874]]),
     ]
 
     target_cfg = mmcv.Config({'pos_weight': 1})
-
-    def _dummy_bbox_sampling(proposal_list, gt_bboxes, gt_labels):
-        """
-        Create sample results that can be passed to BBoxHead.get_target
-        """
-        assign_config = {
-            'type': 'MaxIoUAssigner',
-            'pos_iou_thr': 0.5,
-            'neg_iou_thr': 0.5,
-            'min_pos_iou': 0.5,
-            'ignore_iof_thr': -1
-        }
-        sampler_config = {
-            'type': 'RandomSampler',
-            'num': 512,
-            'pos_fraction': 0.25,
-            'neg_pos_ub': -1,
-            'add_gt_as_proposals': True
-        }
-        bbox_assigner = build_assigner(assign_config)
-        bbox_sampler = build_sampler(sampler_config)
-        gt_bboxes_ignore = [None for _ in range(num_imgs)]
-        sampling_results = []
-        for i in range(num_imgs):
-            assign_result = bbox_assigner.assign(proposal_list[i],
-                                                 gt_bboxes[i],
-                                                 gt_bboxes_ignore[i],
-                                                 gt_labels[i])
-            sampling_result = bbox_sampler.sample(
-                assign_result,
-                proposal_list[i],
-                gt_bboxes[i],
-                gt_labels[i],
-                feats=feat)
-            sampling_results.append(sampling_result)
-        return sampling_results
 
     # Test bbox loss when truth is empty
     gt_bboxes = [torch.empty((0, 4))]
@@ -338,3 +300,107 @@ def _demodata_refine_boxes(n_roi, n_img, rng=0):
         torch.from_numpy(p).sort(descending=True)[0] for p in _pos_is_gts
     ]
     return rois, labels, bbox_preds, pos_is_gts, img_metas
+
+
+def test_mask_head_loss():
+    """
+    Test mask head loss when mask target is empty
+    """
+    self = FCNMaskHead(
+        num_convs=1,
+        roi_feat_size=6,
+        in_channels=8,
+        conv_out_channels=8,
+        num_classes=8)
+
+    # Dummy proposals
+    proposal_list = [
+        torch.Tensor([[23.6667, 23.8757, 228.6326, 153.8874]]),
+    ]
+
+    gt_bboxes = [
+        torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
+    ]
+    gt_labels = [torch.LongTensor([2])]
+    sampling_results = _dummy_bbox_sampling(proposal_list, gt_bboxes,
+                                            gt_labels)
+
+    # create dummy mask
+    import numpy as np
+    from mmdet.core import BitmapMasks
+    dummy_mask = np.random.randint(0, 2, (1, 160, 240), dtype=np.uint8)
+    gt_masks = [BitmapMasks(dummy_mask, 160, 240)]
+
+    # create dummy train_cfg
+    train_cfg = mmcv.Config({'mask_size': 12, 'mask_thr_binary': 0.5})
+
+    # Create dummy features "extracted" for each sampled bbox
+    num_sampled = sum(len(res.bboxes) for res in sampling_results)
+    dummy_feats = torch.rand(num_sampled, 8, 6, 6)
+
+    mask_pred = self.forward(dummy_feats)
+    mask_targets = self.get_target(sampling_results, gt_masks, train_cfg)
+    pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
+    loss_mask = self.loss(mask_pred, mask_targets, pos_labels)
+
+    onegt_mask_loss = sum(loss_mask['loss_mask'])
+    assert onegt_mask_loss.item() > 0, 'mask loss should be non-zero'
+
+    # test mask_iou_head
+    mask_iou_head = MaskIoUHead(
+        num_convs=1,
+        num_fcs=1,
+        roi_feat_size=6,
+        in_channels=8,
+        conv_out_channels=8,
+        fc_out_channels=8,
+        num_classes=8)
+
+    pos_mask_pred = mask_pred[range(mask_pred.size(0)), pos_labels]
+    mask_iou_pred = mask_iou_head(dummy_feats, pos_mask_pred)
+    pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)), pos_labels]
+
+    mask_iou_targets = mask_iou_head.get_target(sampling_results, gt_masks,
+                                                pos_mask_pred, mask_targets,
+                                                train_cfg)
+    loss_mask_iou = mask_iou_head.loss(pos_mask_iou_pred, mask_iou_targets)
+    onegt_mask_iou_loss = loss_mask_iou['loss_mask_iou'].sum()
+    assert onegt_mask_iou_loss.item() >= 0
+
+
+def _dummy_bbox_sampling(proposal_list, gt_bboxes, gt_labels):
+    """
+    Create sample results that can be passed to BBoxHead.get_target
+    """
+    num_imgs = 1
+    feat = torch.rand(1, 1, 3, 3)
+    assign_config = {
+        'type': 'MaxIoUAssigner',
+        'pos_iou_thr': 0.5,
+        'neg_iou_thr': 0.5,
+        'min_pos_iou': 0.5,
+        'ignore_iof_thr': -1
+    }
+    sampler_config = {
+        'type': 'RandomSampler',
+        'num': 512,
+        'pos_fraction': 0.25,
+        'neg_pos_ub': -1,
+        'add_gt_as_proposals': True
+    }
+    bbox_assigner = build_assigner(assign_config)
+    bbox_sampler = build_sampler(sampler_config)
+    gt_bboxes_ignore = [None for _ in range(num_imgs)]
+    sampling_results = []
+    for i in range(num_imgs):
+        assign_result = bbox_assigner.assign(proposal_list[i], gt_bboxes[i],
+                                             gt_bboxes_ignore[i], gt_labels[i])
+        sampling_result = bbox_sampler.sample(
+            assign_result,
+            proposal_list[i],
+            gt_bboxes[i],
+            gt_labels[i],
+            feats=feat)
+        sampling_results.append(sampling_result)
+
+    return sampling_results
