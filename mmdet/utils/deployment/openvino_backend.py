@@ -157,7 +157,7 @@ class ModelOpenVINO(object):
                 if output in net.outputs:
                     net_outputs_mapping[output] = required_output
                 else:
-                    raise ValueError('Failed to identify output {}'.format(required_output))
+                    raise ValueError('Failed to identify output "{}"'.format(required_output))
         return net_outputs_mapping
 
     def rename_outputs(self, outputs):

@@ -13,6 +13,7 @@ from mmdet.apis.inference import LoadImage
 from mmdet.datasets.pipelines import Compose
 from mmdet.models.anchor_heads.anchor_head import AnchorHead
 from mmdet.models.roi_extractors import SingleRoIExtractor
+from mmdet.ops import RoIAlign
 from mmdet.utils.deployment import register_extra_symbolics, TracerStub
 
 
@@ -109,7 +110,8 @@ class AnchorsGridGeneratorStub(TracerStub):
                     flatten_i=1,
                     outputs=self.num_outputs)
 
-def stub_anchor_generator(anchor_head):
+def stub_anchor_generator(model, anchor_head_name):
+    anchor_head = getattr(model, anchor_head_name, None)
     if anchor_head is not None and isinstance(anchor_head, AnchorHead):
         anchor_generators = anchor_head.anchor_generators
         for i in range(len(anchor_generators)):
@@ -127,8 +129,8 @@ class ROIFeatureExtractorStub(TracerStub):
             super().__init__()
             self.inner = inner
 
-        def __call__(self, rois, *feats, roi_scale_factor=None):
-            return self.inner(feats, rois, roi_scale_factor=roi_scale_factor)
+        def __call__(self, rois, *feats):
+            return self.inner(feats, rois)
 
         def __getattr__(self, item):
             if item == 'inner':
@@ -144,16 +146,19 @@ class ROIFeatureExtractorStub(TracerStub):
     def __init__(self, inner, namespace='mmdet_custom',
                  name='roi_feature_extractor', **kwargs):
         super().__init__(self.Wrapper(inner), namespace=namespace, name=name, **kwargs)
+        out_size = self.inner.roi_layers[0].out_size[0]
+        for roi_layer in self.inner.roi_layers:
+            size = roi_layer.out_size
+            assert isinstance(roi_layer, RoIAlign)
+            assert len(size) == 2
+            assert size[0] == size[1]
+            assert size[0] == out_size
 
     def forward(self, feats, rois, roi_scale_factor=None):
-        # Force `roi_scale_factor` to be passed in as kwarg.
-        if roi_scale_factor is None:
-            return super().forward(rois, *feats)
-        else:
-            return super().forward(rois, *feats, roi_scale_factor=roi_scale_factor)
+        assert roi_scale_factor is None, 'roi_scale_factor is not supported'
+        return super().forward(rois, *feats)
 
     def symbolic(self, g, rois, *feats):
-        # roi_scale_factor = float(self.params.get('roi_scale_factor', 1.0))
         rois = sym_help._slice_helper(g, rois, axes=[1], starts=[1], ends=[5])
         roi_feats, _ = g.op('ExperimentalDetectronROIFeatureExtractor',
             rois,
@@ -169,11 +174,11 @@ class ROIFeatureExtractorStub(TracerStub):
         return roi_feats
 
 
-def stub_roi_feature_extractor(extractor):
-    if extractor is not None and isinstance(extractor, SingleRoIExtractor):
-        return ROIFeatureExtractorStub(extractor)
-    else:
-        return extractor
+def stub_roi_feature_extractor(model, extractor_name):
+    if hasattr(model, extractor_name):
+         extractor = getattr(model, extractor_name)
+         if isinstance(extractor, SingleRoIExtractor):
+             setattr(model, extractor_name, ROIFeatureExtractorStub(extractor))
 
 
 def main(args):
@@ -182,9 +187,10 @@ def main(args):
     torch.set_default_tensor_type(torch.FloatTensor)
 
     if not args.no_stubs:
-        stub_anchor_generator(getattr(model, 'rpn_head', None))
-        stub_anchor_generator(getattr(model, 'bbox_head', None))
-        model.bbox_roi_extractor = stub_roi_feature_extractor(getattr(model, 'bbox_roi_extractor', None))
+        stub_anchor_generator(model, 'rpn_head')
+        stub_anchor_generator(model, 'bbox_head')
+        stub_roi_feature_extractor(model, 'bbox_roi_extractor')
+        stub_roi_feature_extractor(model, 'mask_roi_extractor')
     
     image = np.zeros((128, 128, 3), dtype=np.uint8)
     with torch.no_grad():
