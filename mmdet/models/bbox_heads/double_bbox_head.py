@@ -114,7 +114,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
         out_dim_reg = 4 if self.reg_class_agnostic else 4 * self.num_classes
         self.fc_reg = nn.Linear(self.conv_out_channels, out_dim_reg)
 
-        self.fc_cls = nn.Linear(self.fc_out_channels, self.num_classes)
+        self.fc_cls = nn.Linear(self.fc_out_channels, self.num_classes + 1)
         self.relu = nn.ReLU(inplace=True)
 
     def _add_conv_branch(self):

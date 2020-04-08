@@ -91,6 +91,11 @@ class GridRoIHead(StandardRoIHead):
         # Grid head forward and loss
         sampling_results = self._random_jitter(sampling_results, img_metas)
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
+
+        # GN in head does not support zero shape input
+        if pos_rois.shape[0] == 0:
+            return bbox_results
+
         grid_feats = self.grid_roi_extractor(
             x[:self.grid_roi_extractor.num_inputs], pos_rois)
         if self.with_shared_head:

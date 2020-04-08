@@ -24,17 +24,13 @@ class MaskScoringRoIHead(StandardRoIHead):
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
-        # in ms_rcnn, c4 model is not supported anymore
-        # pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
-        # mask_pred, mask_feats = self._mask_forward(x, pos_rois)
-        # mask_targets = self.mask_head.get_target(sampling_results, gt_masks,
-        #                                          self.train_cfg)
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
-        # loss_mask = self.mask_head.loss(mask_pred, mask_targets, pos_labels)
         mask_results = super(MaskScoringRoIHead,
                              self)._mask_forward_train(x, sampling_results,
                                                        bbox_feats, gt_masks,
                                                        img_metas)
+        if mask_results['loss_mask'] is None:
+            return mask_results
 
         # mask iou head forward and loss
         pos_mask_pred = mask_results['mask_pred'][
@@ -63,8 +59,8 @@ class MaskScoringRoIHead(StandardRoIHead):
         scale_factor = img_metas[0]['scale_factor']
 
         if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
-            mask_scores = [[] for _ in range(self.mask_head.num_classes - 1)]
+            segm_result = [[] for _ in range(self.mask_head.num_classes)]
+            mask_scores = [[] for _ in range(self.mask_head.num_classes)]
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
@@ -80,7 +76,7 @@ class MaskScoringRoIHead(StandardRoIHead):
             mask_iou_pred = self.mask_iou_head(
                 mask_results['mask_feats'],
                 mask_results['mask_pred'][range(det_labels.size(0)),
-                                          det_labels + 1])
+                                          det_labels])
             mask_scores = self.mask_iou_head.get_mask_scores(
                 mask_iou_pred, det_bboxes, det_labels)
         return segm_result, mask_scores

@@ -23,7 +23,7 @@ class MaskIoUHead(nn.Module):
                  in_channels=256,
                  conv_out_channels=256,
                  fc_out_channels=1024,
-                 num_classes=81,
+                 num_classes=80,
                  loss_iou=dict(type='MSELoss', loss_weight=0.5)):
         super(MaskIoUHead, self).__init__()
         self.in_channels = in_channels
@@ -112,8 +112,8 @@ class MaskIoUHead(nn.Module):
 
         Args:
             sampling_results (list[:obj:`SamplingResult`]): sampling results.
-            gt_masks (list[ndarray]): Gt masks (the whole instance) of each
-                image, binary maps with the same shape of the input image.
+            gt_masks (BitmapMask | PolygonMask): Gt masks (the whole instance)
+                of each image, with the same shape of the input image.
             mask_pred (Tensor): Predicted masks of each positive proposal,
                 shape (num_pos, h, w).
             mask_targets (Tensor): Gt mask of each positive proposal,
@@ -157,15 +157,15 @@ class MaskIoUHead(nn.Module):
             proposals_np = pos_proposals.cpu().numpy()
             pos_assigned_gt_inds = pos_assigned_gt_inds.cpu().numpy()
             # compute mask areas of gt instances (batch processing for speedup)
-            gt_instance_mask_area = gt_masks.sum((-1, -2))
+            gt_instance_mask_area = gt_masks.areas
             for i in range(num_pos):
                 gt_mask = gt_masks[pos_assigned_gt_inds[i]]
 
                 # crop the gt mask inside the proposal
-                x1, y1, x2, y2 = proposals_np[i, :].astype(np.int32)
-                gt_mask_in_proposal = gt_mask[y1:y2 + 1, x1:x2 + 1]
+                bbox = proposals_np[i, :].astype(np.int32)
+                gt_mask_in_proposal = gt_mask.crop(bbox)
 
-                ratio = gt_mask_in_proposal.sum() / (
+                ratio = gt_mask_in_proposal.areas[0] / (
                     gt_instance_mask_area[pos_assigned_gt_inds[i]] + 1e-7)
                 area_ratios.append(ratio)
             area_ratios = torch.from_numpy(np.stack(area_ratios)).float().to(
@@ -181,10 +181,7 @@ class MaskIoUHead(nn.Module):
         mask_score = bbox_score * mask_iou
         """
         inds = range(det_labels.size(0))
-        mask_scores = mask_iou_pred[inds, det_labels + 1] * det_bboxes[inds,
-                                                                       -1]
+        mask_scores = mask_iou_pred[inds, det_labels] * det_bboxes[inds, -1]
         mask_scores = mask_scores.cpu().numpy()
         det_labels = det_labels.cpu().numpy()
-        return [
-            mask_scores[det_labels == i] for i in range(self.num_classes - 1)
-        ]
+        return [mask_scores[det_labels == i] for i in range(self.num_classes)]
