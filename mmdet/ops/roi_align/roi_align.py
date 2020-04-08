@@ -49,7 +49,7 @@ class RoIAlignFunction(Function):
         sample_num = ctx.sample_num
         rois = ctx.saved_tensors[0]
         aligned = ctx.aligned
-        assert (feature_size is not None and grad_output.is_cuda)
+        assert feature_size is not None
 
         batch_size, num_channels, data_height, data_width = feature_size
         out_w = grad_output.size(3)

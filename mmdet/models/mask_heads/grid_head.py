@@ -284,7 +284,7 @@ class GridHead(nn.Module):
             sub_x1, sub_y1, sub_x2, sub_y2 = self.sub_regions[i]
             sub_targets.append(targets[:, [i], sub_y1:sub_y2, sub_x1:sub_x2])
         sub_targets = torch.cat(sub_targets, dim=1)
-        sub_targets = sub_targets.cuda()
+        sub_targets = sub_targets.to(sampling_results[0].pos_bboxes.device)
         return sub_targets
 
     def loss(self, grid_pred, grid_targets):

@@ -126,6 +126,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_results = self._mask_forward_train(x, sampling_results,
                                                     bbox_results['bbox_feats'],
                                                     gt_masks, img_metas)
+            # TODO: Support empty tensor input. #2280
             if mask_results['loss_mask'] is not None:
                 losses.update(mask_results['loss_mask'])
 
@@ -161,6 +162,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                             img_metas):
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
+            if pos_rois.shape[0] == 0:
+                return dict(loss_mask=None)
             mask_results = self._mask_forward(x, pos_rois)
         else:
             pos_inds = []
@@ -177,6 +180,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                         device=device,
                         dtype=torch.uint8))
             pos_inds = torch.cat(pos_inds)
+            if pos_inds.shape[0] == 0:
+                return dict(loss_mask=None)
             mask_results = self._mask_forward(
                 x, pos_inds=pos_inds, bbox_feats=bbox_feats)
 
