@@ -1,4 +1,6 @@
 import copy
+import fnmatch
+import os
 
 from mmdet.utils import build_from_cfg
 from .dataset_wrappers import ConcatDataset, RepeatDataset
@@ -34,6 +36,22 @@ def build_dataset(cfg, default_args=None):
         dataset = RepeatDataset(
             build_dataset(cfg['dataset'], default_args), cfg['times'])
     elif isinstance(cfg['ann_file'], (list, tuple)):
+        dataset = _concat_dataset(cfg, default_args)
+    elif '*' in cfg['ann_file']:
+        dirname = os.path.dirname(cfg['ann_file'].split('*')[0])
+        pattern = cfg['ann_file'].replace(dirname, '')
+        while pattern.startswith('/'):
+            pattern = pattern[1:]
+
+        matches = []
+        for root, dirnames, filenames in os.walk(dirname):
+            filenames = [os.path.relpath(os.path.join(root, filename), dirname) for filename in filenames]
+            for filename in fnmatch.filter(filenames, pattern):
+                matches.append(os.path.join(dirname, filename))
+
+        print(matches)
+
+        cfg['ann_file'] = matches
         dataset = _concat_dataset(cfg, default_args)
     else:
         dataset = build_from_cfg(cfg, DATASETS, default_args)
