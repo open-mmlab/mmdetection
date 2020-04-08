@@ -30,12 +30,12 @@ class PublicModelsTestCase(unittest.TestCase):
     def setUpClass(cls):
         os.makedirs(cls.coco_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cls.coco_dir, 'val2017.zip')):
-            os.system(f'wget http://images.cocodataset.org/zips/val2017.zip -P {cls.coco_dir}')
+            os.system(f'wget --no-verbose http://images.cocodataset.org/zips/val2017.zip -P {cls.coco_dir}')
         if not os.path.exists(os.path.join(cls.coco_dir, 'val2017')):
             os.system(f'unzip {os.path.join(cls.coco_dir, "val2017.zip")} -d {cls.coco_dir}')
         if not os.path.exists(os.path.join(cls.coco_dir, "annotations_trainval2017.zip")):
             os.system(
-                f'wget http://images.cocodataset.org/annotations/annotations_trainval2017.zip -P {cls.coco_dir}')
+                f'wget --no-verbose http://images.cocodataset.org/annotations/annotations_trainval2017.zip -P {cls.coco_dir}')
         if not os.path.exists(os.path.join(cls.coco_dir, 'annotations/instances_val2017.json')):
             os.system(
                 f'unzip {os.path.join(cls.coco_dir, "annotations_trainval2017.zip")} -d {cls.coco_dir}')
@@ -70,7 +70,7 @@ class PublicModelsTestCase(unittest.TestCase):
         os.makedirs(self.snapshots_dir, exist_ok=True)
         path = os.path.join(self.snapshots_dir, os.path.basename(url))
         if not os.path.exists(path):
-            os.system(f'wget  {url} -P {self.snapshots_dir}')
+            os.system(f'wget --no-verbose  {url} -P {self.snapshots_dir}')
         return path
 
     def test_atss__atss_r50_fpn_1x(self):
