@@ -147,11 +147,6 @@ def main():
     else:
         model.CLASSES = dataset.CLASSES
 
-    if isinstance(model.CLASSES, str):
-        # When model only have one class. The one element tuple
-        # gets parsed as string, breaking things bellow.
-        model.CLASSES = [model.CLASSES]
-
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
         outputs = single_gpu_test(model, data_loader, args.show,
