@@ -253,6 +253,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 mask_results = self._mask_forward_train(
                     i, x, sampling_results, gt_masks, rcnn_train_cfg,
                     bbox_results['bbox_feats'])
+                # TODO: Support empty tensor input. #2280
                 if mask_results['loss_mask'] is not None:
                     for name, value in mask_results['loss_mask'].items():
                         losses['s{}.{}'.format(i, name)] = (
