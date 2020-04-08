@@ -364,7 +364,7 @@ def test_mask_head_loss():
                                                 pos_mask_pred, mask_targets,
                                                 train_cfg)
     loss_mask_iou = mask_iou_head.loss(pos_mask_iou_pred, mask_iou_targets)
-    onegt_mask_iou_loss = sum(loss_mask_iou['loss_mask_iou'])
+    onegt_mask_iou_loss = loss_mask_iou['loss_mask_iou'].sum()
     assert onegt_mask_iou_loss.item() >= 0
 
 

@@ -231,8 +231,9 @@ def _test_two_stage_forward(cfg_file):
         return_loss=True)
     assert isinstance(losses, dict)
     from mmdet.apis.train import parse_losses
-    total_loss = float(parse_losses(losses)[0].item())
-    assert total_loss > 0
+    total_loss = parse_losses(losses)[0].requires_grad_(True)
+    assert float(total_loss.item()) > 0
+    total_loss.backward()
 
     # Test forward train with an empty truth batch
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
@@ -250,8 +251,9 @@ def _test_two_stage_forward(cfg_file):
         return_loss=True)
     assert isinstance(losses, dict)
     from mmdet.apis.train import parse_losses
-    total_loss = float(parse_losses(losses)[0].item())
-    assert total_loss > 0
+    total_loss = parse_losses(losses)[0].requires_grad_(True)
+    assert float(total_loss.item()) > 0
+    total_loss.backward()
 
     # Test forward test
     with torch.no_grad():
@@ -356,7 +358,7 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
     gt_masks.append(BitmapMasks(mask, H, W))
 
     mm_inputs = {
-        'imgs': torch.FloatTensor(imgs),
+        'imgs': torch.FloatTensor(imgs).requires_grad_(True),
         'img_metas': img_metas,
         'gt_bboxes': gt_bboxes,
         'gt_labels': gt_labels,
