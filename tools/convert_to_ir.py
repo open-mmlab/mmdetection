@@ -52,10 +52,10 @@ def main(args):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Test ONNX model')
+    parser = argparse.ArgumentParser(description='Export ONNX model to OpenVINO IR')
     parser.add_argument('config', help='path to configuration file')
-    parser.add_argument('input_model', help='path to onnx model')
-    parser.add_argument('output_dir', help='where IR will be saved to')
+    parser.add_argument('input_model', help='path to ONNX model')
+    parser.add_argument('output_dir', help='where OpenVINO IR will be saved to')
     parser.add_argument('--input_shape', nargs=2, help='input shape')
     args = parser.parse_args()
     return args

@@ -185,13 +185,13 @@ To further convert ONNX model to IR you can run the script:
 In order to test the model being exported via a `tools/export.py` script run the following command:
 
 ```shell
-# python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out /tmp/out.pkl --backend openvino --do_not_normalize
+# python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out /tmp/out.pkl
 ``` 
 
 To test an SSD model being exported via `tools/export_ssd.py` run command:
 
 ```shell
-# python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out test_results.pkl --backend openvino --do_not_normalize --with_detection_output
+# python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out test_results.pkl --with_detection_output
 ```
 
 To get quality metrics on test dataset either add `--eval bbox` argument to the call of the `tools/test_exported.py` script for COCO-style dataset, or run `tools/voc_eval.py` script passing dumped detection results (`test_results.pkl`) to it for a VOC-style dataset. 
