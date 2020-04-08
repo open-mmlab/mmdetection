@@ -1,10 +1,10 @@
 import inspect
 
 import torch
-
-from mmdet.utils import Registry
+from mmcv.utils import Registry
 
 OPTIMIZERS = Registry('optimizer')
+OPTIMIZER_BUILDERS = Registry('optimizer builder')
 
 
 def register_torch_optimizers():
