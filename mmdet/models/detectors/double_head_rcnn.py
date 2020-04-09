@@ -126,12 +126,12 @@ class DoubleHeadRCNN(TwoStageDetector):
                         torch.ones(
                             res.pos_bboxes.shape[0],
                             device=device,
-                            dtype=torch.uint8))
+                            dtype=torch.bool))
                     pos_inds.append(
                         torch.zeros(
                             res.neg_bboxes.shape[0],
                             device=device,
-                            dtype=torch.uint8))
+                            dtype=torch.bool))
                 pos_inds = torch.cat(pos_inds)
                 mask_feats = bbox_cls_feats[pos_inds]
             mask_pred = self.mask_head(mask_feats)

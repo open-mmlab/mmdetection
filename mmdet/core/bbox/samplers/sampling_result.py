@@ -17,7 +17,7 @@ class SamplingResult(util_mixins.NiceRepr):
             'pos_assigned_gt_inds': tensor([], dtype=torch.int64),
             'pos_bboxes': torch.Size([0, 4]),
             'pos_inds': tensor([], dtype=torch.int64),
-            'pos_is_gt': tensor([], dtype=torch.uint8)
+            'pos_is_gt': tensor([], dtype=torch.bool)
         })>
     """
 
