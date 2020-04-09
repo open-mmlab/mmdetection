@@ -49,7 +49,9 @@ class AnchorHead(nn.Module):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  loss_bbox=dict(
-                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)):
+                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
+                 train_cfg=None,
+                 test_cfg=None):
         super(AnchorHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -80,6 +82,8 @@ class AnchorHead(nn.Module):
 
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
         self.fp16_enabled = False
 
         self.anchor_generators = []
@@ -149,7 +153,7 @@ class AnchorHead(nn.Module):
         return anchor_list, valid_flag_list
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples, cfg):
+                    bbox_targets, bbox_weights, num_total_samples):
         # classification loss
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
@@ -175,7 +179,6 @@ class AnchorHead(nn.Module):
              gt_bboxes,
              gt_labels,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
@@ -192,7 +195,7 @@ class AnchorHead(nn.Module):
             img_metas,
             self.target_means,
             self.target_stds,
-            cfg,
+            self.train_cfg,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
@@ -212,8 +215,7 @@ class AnchorHead(nn.Module):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples,
-            cfg=cfg)
+            num_total_samples=num_total_samples)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))

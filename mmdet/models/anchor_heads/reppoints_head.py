@@ -64,7 +64,9 @@ class RepPointsHead(nn.Module):
                  use_grid_points=False,
                  center_init=True,
                  transform_method='moment',
-                 moment_mul=0.01):
+                 moment_mul=0.01,
+                 train_cfg=None,
+                 test_cfg=None):
         super(RepPointsHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -77,6 +79,8 @@ class RepPointsHead(nn.Module):
         self.point_strides = point_strides
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
 
         self.background_label = (
             num_classes if background_label is None else background_label)
@@ -423,7 +427,6 @@ class RepPointsHead(nn.Module):
              gt_bboxes,
              gt_labels,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.point_generators)
@@ -434,7 +437,7 @@ class RepPointsHead(nn.Module):
                                                        img_metas)
         pts_coordinate_preds_init = self.offset_to_pts(center_list,
                                                        pts_preds_init)
-        if cfg.init.assigner['type'] == 'PointAssigner':
+        if self.train_cfg.init.assigner['type'] == 'PointAssigner':
             # Assign target for center list
             candidate_list = center_list
         else:
@@ -447,7 +450,7 @@ class RepPointsHead(nn.Module):
             valid_flag_list,
             gt_bboxes,
             img_metas,
-            cfg.init,
+            self.train_cfg.init,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
@@ -481,7 +484,7 @@ class RepPointsHead(nn.Module):
             valid_flag_list,
             gt_bboxes,
             img_metas,
-            cfg.refine,
+            self.train_cfg.refine,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,

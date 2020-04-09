@@ -123,7 +123,7 @@ class ATSSHead(AnchorHead):
         return cls_score, bbox_pred, centerness
 
     def loss_single(self, anchors, cls_score, bbox_pred, centerness, labels,
-                    label_weights, bbox_targets, num_total_samples, cfg):
+                    label_weights, bbox_targets, num_total_samples):
 
         anchors = anchors.reshape(-1, 4)
         cls_score = cls_score.permute(0, 2, 3,
@@ -186,7 +186,6 @@ class ATSSHead(AnchorHead):
              gt_bboxes,
              gt_labels,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
@@ -202,7 +201,6 @@ class ATSSHead(AnchorHead):
             valid_flag_list,
             gt_bboxes,
             img_metas,
-            cfg,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels)
@@ -226,8 +224,7 @@ class ATSSHead(AnchorHead):
                 labels_list,
                 label_weights_list,
                 bbox_targets_list,
-                num_total_samples=num_total_samples,
-                cfg=cfg)
+                num_total_samples=num_total_samples)
 
         bbox_avg_factor = sum(bbox_avg_factor)
         bbox_avg_factor = reduce_mean(bbox_avg_factor).item()
