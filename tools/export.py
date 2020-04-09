@@ -13,9 +13,12 @@
 # and limitations under the License.
 
 import argparse
+import os.path as osp
 import sys
 from copy import copy
+from subprocess import call, check_call, CalledProcessError, DEVNULL
 
+import mmcv
 import numpy as np
 import onnx
 import torch
@@ -31,12 +34,12 @@ from mmdet.ops import RoIAlign
 from mmdet.utils.deployment import register_extra_symbolics, TracerStub
 
 
-def export(model,
-           img,
-           export_name,
-           verbose=False,
-           strip_doc_string=False,
-           opset=10):
+def export_to_onnx(model,
+                   img,
+                   export_name,
+                   verbose=False,
+                   strip_doc_string=False,
+                   opset=10):
     register_extra_symbolics(opset)
 
     cfg = model.cfg
@@ -91,9 +94,46 @@ def check_onnx_model(export_name):
 def add_node_names(export_name):
     model = onnx.load(export_name)
     for n in model.graph.node:
-        n.name = 'in: ' + ','.join([i for i in n.input]) + '. ' + \
-                 'out: ' + ','.join([i for i in n.output])
+        if not n.name:
+            n.name = '_'.join([i for i in n.output])
     onnx.save(model, export_name)
+
+
+def export_to_openvino(config, onnx_model_path, output_dir_path, input_shape=None):
+    cfg = mmcv.Config.fromfile(config)
+    cfg.model.pretrained = None
+    cfg.data.test.test_mode = True
+
+    onnx_model = onnx.load(onnx_model_path)
+    output_names = ','.join(out.name for out in onnx_model.graph.output)
+
+    assert cfg.data.test.pipeline[1]['type'] == 'MultiScaleFlipAug'
+    normalize = [v for v in cfg.data.test.pipeline[1]['transforms']
+                 if v['type'] == 'Normalize'][0]
+    shape = cfg.data.test.pipeline[1]['img_scale'][::-1]
+    if input_shape:
+        shape = input_shape
+
+    mean_values = normalize['mean']
+    scale_values = normalize['std']
+    command_line = f'mo.py --input_model="{onnx_model_path}" ' \
+                   f'--mean_values="{mean_values}" ' \
+                   f'--scale_values="{scale_values}" ' \
+                   f'--output_dir="{output_dir_path}" ' \
+                   f'--input_shape="[1,3,{shape[0]},{shape[1]}]" ' \
+                   f'--output="{output_names}"' 
+    if normalize['to_rgb']:
+        command_line += ' --reverse_input_channels'
+
+    try:
+        check_call('mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True)
+    except CalledProcessError as ex:
+        print('OpenVINO Model Optimizer not found, please source '
+              'openvino/bin/setupvars.sh before running this script.')
+        return
+
+    print(command_line)
+    call(command_line, shell=True)
 
 
 class AnchorsGridGeneratorStub(TracerStub):
@@ -200,31 +240,35 @@ def main(args):
     model.eval().cuda()
     torch.set_default_tensor_type(torch.FloatTensor)
 
-    if not args.no_stubs:
+    if args.target == 'openvino':
         stub_anchor_generator(model, 'rpn_head')
         stub_anchor_generator(model, 'bbox_head')
         stub_roi_feature_extractor(model, 'bbox_roi_extractor')
         stub_roi_feature_extractor(model, 'mask_roi_extractor')
+
+    onnx_model_path = osp.join(args.output_dir,
+                               osp.splitext(osp.basename(args.config))[0] + '.onnx')
     
     image = np.zeros((128, 128, 3), dtype=np.uint8)
     with torch.no_grad():
-        export(model, image, export_name=args.model, opset=10)
+        export_to_onnx(model, image, export_name=onnx_model_path, opset=10)
+        add_node_names(onnx_model_path)
+        print(f'ONNX model has been saved to "{onnx_model_path}"')
 
-    # add_node_names(args.model)
-
-    if args.check:
-        check_onnx_model(args.model)
+    if args.target == 'openvino':
+        export_to_openvino(args.config, onnx_model_path, args.output_dir, args.input_shape)
+    else:
+        check_onnx_model(onnx_model_path)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Export model to ONNX')
+    parser = argparse.ArgumentParser(description='Export model')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help="path to file with model's weights")
-    parser.add_argument('model', help='path to output onnx model file')
-    parser.add_argument('--check', action='store_true',
-                        help='check that resulting onnx model is valid')
-    parser.add_argument('--no_stubs', action='store_true',
-                        help='disable all exporting stubs')
+    parser.add_argument('output_dir', help='path to directory to save exported models in')
+    parser.add_argument('--target', choices=('onnx', 'openvino'), default='openvino',
+                        help='path to output onnx model file')
+    parser.add_argument('--input_shape', nargs=2, default=None, help='input shape')
     args = parser.parse_args()
     return args
 
