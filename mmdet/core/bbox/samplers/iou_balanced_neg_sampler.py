@@ -1,9 +1,11 @@
 import numpy as np
 import torch
 
+from ..registry import SAMPLERS
 from .random_sampler import RandomSampler
 
 
+@SAMPLERS.register_module
 class IoUBalancedNegSampler(RandomSampler):
     """IoU Balanced Sampling
 

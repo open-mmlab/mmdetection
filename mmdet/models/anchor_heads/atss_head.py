@@ -4,8 +4,8 @@ import torch.distributed as dist
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (PseudoSampler, anchor_inside_flags, bbox2delta,
-                        build_assigner, delta2bbox, force_fp32,
+from mmdet.core import (anchor_inside_flags, bbox2delta, build_assigner,
+                        build_sampler, delta2bbox, force_fp32,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from mmdet.ops import ConvModule, Scale
 from ..builder import build_loss
@@ -445,7 +445,7 @@ class ATSSHead(AnchorHead):
                                              gt_bboxes, gt_bboxes_ignore,
                                              gt_labels)
 
-        bbox_sampler = PseudoSampler()
+        bbox_sampler = build_sampler(dict(type='PseudoSampler'))
         sampling_result = bbox_sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 

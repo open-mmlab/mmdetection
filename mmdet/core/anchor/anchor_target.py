@@ -1,6 +1,7 @@
 import torch
 
-from ..bbox import PseudoSampler, assign_and_sample, bbox2delta, build_assigner
+from ..bbox import assign_and_sample, bbox2delta, build_assigner
+from ..bbox.samplers.pseudo_sampler import PseudoSampler
 from ..utils import multi_apply
 
 

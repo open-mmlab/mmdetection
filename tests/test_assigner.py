@@ -10,8 +10,8 @@ CommandLine:
 """
 import torch
 
-from mmdet.core import MaxIoUAssigner
-from mmdet.core.bbox.assigners import ApproxMaxIoUAssigner, PointAssigner
+from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner, MaxIoUAssigner,
+                                       PointAssigner)
 
 
 def test_max_iou_assigner():
