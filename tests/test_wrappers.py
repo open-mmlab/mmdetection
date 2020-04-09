@@ -1,5 +1,5 @@
 from itertools import product
-from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import torch
 import torch.nn as nn
@@ -169,24 +169,28 @@ def test_nn_op_forward_called():
     torch.__version__ = '1.4.1'
 
     for m in ['Conv2d', 'ConvTranspose2d', 'MaxPool2d']:
-        nn_module = getattr(nn, m)
-        nn_module.forward = MagicMock()
+        with patch('torch.nn.{}.forward'.format(m)) as nn_module_forward:
+            # empty input
+            x = torch.empty(0, 3, 10, 10)
+            wrapper = eval(m)(3, 2, 1)
+            wrapper(x)
+            nn_module_forward.assert_called_with(x)
 
+            # non-empty input
+            x = torch.empty(1, 3, 10, 10)
+            wrapper = eval(m)(3, 2, 1)
+            wrapper(x)
+            nn_module_forward.assert_called_with(x)
+
+    with patch('torch.nn.Linear.forward') as nn_module_forward:
         # empty input
-        x = torch.empty(0, 3, 5, 5)
-        wrapper = eval(m)(3, 3, 3)
+        x = torch.empty(0, 3)
+        wrapper = Linear(3, 3)
         wrapper(x)
-        nn_module.forward.assert_called_with(x)
+        nn_module_forward.assert_not_called()
 
         # non-empty input
-        x = torch.empty(1, 3, 5, 5)
-        wrapper = eval(m)(3, 3, 3)
+        x = torch.empty(1, 3)
+        wrapper = Linear(3, 3)
         wrapper(x)
-        nn_module.forward.assert_called_with(x)
-
-    nn_module = nn.Linear
-    nn_module.forward = MagicMock()
-    x = torch.empty(1, 3)
-    wrapper = Linear(3, 3)
-    wrapper(x)
-    nn_module.forward.assert_called_with(x)
+        nn_module_forward.assert_called_with(x)
