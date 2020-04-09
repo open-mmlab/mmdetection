@@ -1,4 +1,4 @@
 from mmdet.utils import Registry
 
-ASSIGNERS = Registry('assigner')
-SAMPLERS = Registry('sampler')
+BBOX_ASSIGNERS = Registry('bbox_assigner')
+BBOX_SAMPLERS = Registry('bbox_sampler')

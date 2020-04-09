@@ -1,12 +1,12 @@
 import torch
 
 from ..geometry import bbox_overlaps
-from ..registry import ASSIGNERS
+from ..registry import BBOX_ASSIGNERS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
-@ASSIGNERS.register_module
+@BBOX_ASSIGNERS.register_module
 class MaxIoUAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 

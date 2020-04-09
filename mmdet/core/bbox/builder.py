@@ -1,19 +1,19 @@
 from mmdet.utils import build_from_cfg
 from .assigners.base_assigner import BaseAssigner
-from .registry import ASSIGNERS, SAMPLERS
+from .registry import BBOX_ASSIGNERS, BBOX_SAMPLERS
 from .samplers.base_sampler import BaseSampler
 
 
 def build_assigner(cfg, **default_args):
     if isinstance(cfg, BaseAssigner):
         return cfg
-    return build_from_cfg(cfg, ASSIGNERS, default_args)
+    return build_from_cfg(cfg, BBOX_ASSIGNERS, default_args)
 
 
 def build_sampler(cfg, **default_args):
     if isinstance(cfg, BaseSampler):
         return cfg
-    return build_from_cfg(cfg, SAMPLERS, default_args)
+    return build_from_cfg(cfg, BBOX_SAMPLERS, default_args)
 
 
 # TODO remove this function in anchor_target in the future

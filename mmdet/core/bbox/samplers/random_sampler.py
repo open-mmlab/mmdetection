@@ -1,10 +1,10 @@
 import torch
 
-from ..registry import SAMPLERS
+from ..registry import BBOX_SAMPLERS
 from .base_sampler import BaseSampler
 
 
-@SAMPLERS.register_module
+@BBOX_SAMPLERS.register_module
 class RandomSampler(BaseSampler):
 
     def __init__(self,
