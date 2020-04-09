@@ -109,23 +109,23 @@ class PublicModelsTestCase(unittest.TestCase):
               'foveabox/fovea_r50_fpn_4gpu_1x_20190905-3b185a5d.pth'
         self.run_test(origin_config, self.download_if_not_yet(url))
 
-    def test_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
-        origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py'
-        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ms-rcnn/' \
-              'ms_rcnn_r50_caffe_fpn_1x_20190624-619934b5.pth'
-        self.run_test(origin_config, self.download_if_not_yet(url))
-
-    def test_htc__htc_r50_fpn_1x(self):
-        origin_config = 'configs/htc/htc_r50_fpn_1x.py'
-        url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/' \
-              'htc_r50_fpn_1x_20190408-878c1712.pth'
-        self.run_test(origin_config, self.download_if_not_yet(url))
-
-    def test_cascade_mask_rcnn_r50_fpn_1x(self):
-        origin_config = 'configs/cascade_mask_rcnn_r50_fpn_1x.py'
-        url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-              'cascade_mask_rcnn_r50_fpn_1x_20181123-88b170c9.pth'
-        self.run_test(origin_config, self.download_if_not_yet(url))
+    # def test_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
+    #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py'
+    #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ms-rcnn/' \
+    #           'ms_rcnn_r50_caffe_fpn_1x_20190624-619934b5.pth'
+    #     self.run_test(origin_config, self.download_if_not_yet(url))
+    #
+    # def test_htc__htc_r50_fpn_1x(self):
+    #     origin_config = 'configs/htc/htc_r50_fpn_1x.py'
+    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/' \
+    #           'htc_r50_fpn_1x_20190408-878c1712.pth'
+    #     self.run_test(origin_config, self.download_if_not_yet(url))
+    #
+    # def test_cascade_mask_rcnn_r50_fpn_1x(self):
+    #     origin_config = 'configs/cascade_mask_rcnn_r50_fpn_1x.py'
+    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
+    #           'cascade_mask_rcnn_r50_fpn_1x_20181123-88b170c9.pth'
+    #     self.run_test(origin_config, self.download_if_not_yet(url))
 
     def test_cascade_rcnn_r50_caffe_c4_1x(self):
         origin_config = 'configs/cascade_rcnn_r50_caffe_c4_1x.py'
