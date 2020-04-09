@@ -58,7 +58,7 @@ class RepPointsDetector(SingleStageDetector):
         for x, img_meta in zip(feats, img_metas):
             # only one image in the batch
             outs = self.bbox_head(x)
-            bbox_inputs = outs + (img_meta, self.test_cfg, False, False)
+            bbox_inputs = outs + (img_metas, self.test_cfg, False, False)
             det_bboxes, det_scores = self.bbox_head.get_bboxes(*bbox_inputs)[0]
             aug_bboxes.append(det_bboxes)
             aug_scores.append(det_scores)
@@ -75,7 +75,8 @@ class RepPointsDetector(SingleStageDetector):
             _det_bboxes = det_bboxes
         else:
             _det_bboxes = det_bboxes.clone()
-            _det_bboxes[:, :4] *= img_metas[0][0]['scale_factor']
+            _det_bboxes[:, :4] *= det_bboxes.new_tensor(
+                img_metas[0][0]['scale_factor'])
         bbox_results = bbox2result(_det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
         return bbox_results

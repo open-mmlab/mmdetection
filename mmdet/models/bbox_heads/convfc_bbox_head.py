@@ -74,7 +74,7 @@ class ConvFCBBoxHead(BBoxHead):
         self.relu = nn.ReLU(inplace=True)
         # reconstruct fc_cls and fc_reg since input channels are changed
         if self.with_cls:
-            self.fc_cls = nn.Linear(self.cls_last_dim, self.num_classes)
+            self.fc_cls = nn.Linear(self.cls_last_dim, self.num_classes + 1)
         if self.with_reg:
             out_dim_reg = (4 if self.reg_class_agnostic else 4 *
                            self.num_classes)
@@ -123,6 +123,7 @@ class ConvFCBBoxHead(BBoxHead):
 
     def init_weights(self):
         super(ConvFCBBoxHead, self).init_weights()
+        # conv layers are already initialized by ConvModule
         for module_list in [self.shared_fcs, self.cls_fcs, self.reg_fcs]:
             for m in module_list.modules():
                 if isinstance(m, nn.Linear):
@@ -171,13 +172,28 @@ class ConvFCBBoxHead(BBoxHead):
 
 
 @HEADS.register_module
-class SharedFCBBoxHead(ConvFCBBoxHead):
+class Shared2FCBBoxHead(ConvFCBBoxHead):
 
-    def __init__(self, num_fcs=2, fc_out_channels=1024, *args, **kwargs):
-        assert num_fcs >= 1
-        super(SharedFCBBoxHead, self).__init__(
+    def __init__(self, fc_out_channels=1024, *args, **kwargs):
+        super(Shared2FCBBoxHead, self).__init__(
             num_shared_convs=0,
-            num_shared_fcs=num_fcs,
+            num_shared_fcs=2,
+            num_cls_convs=0,
+            num_cls_fcs=0,
+            num_reg_convs=0,
+            num_reg_fcs=0,
+            fc_out_channels=fc_out_channels,
+            *args,
+            **kwargs)
+
+
+@HEADS.register_module
+class Shared4Conv1FCBBoxHead(ConvFCBBoxHead):
+
+    def __init__(self, fc_out_channels=1024, *args, **kwargs):
+        super(Shared4Conv1FCBBoxHead, self).__init__(
+            num_shared_convs=4,
+            num_shared_fcs=1,
             num_cls_convs=0,
             num_cls_fcs=0,
             num_reg_convs=0,

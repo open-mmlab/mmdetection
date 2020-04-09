@@ -8,10 +8,10 @@ class AnchorGenerator(object):
         >>> self = AnchorGenerator(9, [1.], [1.])
         >>> all_anchors = self.grid_anchors((2, 2), device='cpu')
         >>> print(all_anchors)
-        tensor([[ 0.,  0.,  8.,  8.],
-                [16.,  0., 24.,  8.],
-                [ 0., 16.,  8., 24.],
-                [16., 16., 24., 24.]])
+        tensor([[-4.5000, -4.5000,  4.5000,  4.5000],
+                [11.5000, -4.5000, 20.5000,  4.5000],
+                [-4.5000, 11.5000,  4.5000, 20.5000],
+                [11.5000, 11.5000, 20.5000, 20.5000]])
     """
 
     def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None):
@@ -30,8 +30,8 @@ class AnchorGenerator(object):
         w = self.base_size
         h = self.base_size
         if self.ctr is None:
-            x_ctr = 0.5 * (w - 1)
-            y_ctr = 0.5 * (h - 1)
+            x_ctr = 0.
+            y_ctr = 0.
         else:
             x_ctr, y_ctr = self.ctr
 
@@ -44,14 +44,13 @@ class AnchorGenerator(object):
             ws = (w * self.scales[:, None] * w_ratios[None, :]).view(-1)
             hs = (h * self.scales[:, None] * h_ratios[None, :]).view(-1)
 
-        # yapf: disable
-        base_anchors = torch.stack(
-            [
-                x_ctr - 0.5 * (ws - 1), y_ctr - 0.5 * (hs - 1),
-                x_ctr + 0.5 * (ws - 1), y_ctr + 0.5 * (hs - 1)
-            ],
-            dim=-1).round()
-        # yapf: enable
+        # use float anchor and the anchor's center is aligned with the
+        # pixel center
+        base_anchors = [
+            x_ctr - 0.5 * ws, y_ctr - 0.5 * hs, x_ctr + 0.5 * ws,
+            y_ctr + 0.5 * hs
+        ]
+        base_anchors = torch.stack(base_anchors, dim=-1)
 
         return base_anchors
 

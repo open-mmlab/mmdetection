@@ -4,6 +4,7 @@ import mmcv
 import numpy as np
 from numpy import random
 
+from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..registry import PIPELINES
 
@@ -121,11 +122,17 @@ class Resize(object):
         if self.keep_ratio:
             img, scale_factor = mmcv.imrescale(
                 results['img'], results['scale'], return_scale=True)
+            # the w_scale and h_scale has minor difference
+            # a real fix should be done in the mmcv.imrescale in the future
+            new_h, new_w = img.shape[:2]
+            h, w = results['img'].shape[:2]
+            w_scale = new_w / w
+            h_scale = new_h / h
         else:
             img, w_scale, h_scale = mmcv.imresize(
                 results['img'], results['scale'], return_scale=True)
-            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
-                                    dtype=np.float32)
+        scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
+                                dtype=np.float32)
         results['img'] = img
         results['img_shape'] = img.shape
         results['pad_shape'] = img.shape  # in case that there is no padding
@@ -136,8 +143,8 @@ class Resize(object):
         img_shape = results['img_shape']
         for key in results.get('bbox_fields', []):
             bboxes = results[key] * results['scale_factor']
-            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1] - 1)
-            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)
+            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
+            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
             results[key] = bboxes
 
     def _resize_masks(self, results):
@@ -145,18 +152,9 @@ class Resize(object):
             if results[key] is None:
                 continue
             if self.keep_ratio:
-                masks = [
-                    mmcv.imrescale(
-                        mask, results['scale_factor'], interpolation='nearest')
-                    for mask in results[key]
-                ]
+                results[key] = results[key].rescale(results['scale'])
             else:
-                mask_size = (results['img_shape'][1], results['img_shape'][0])
-                masks = [
-                    mmcv.imresize(mask, mask_size, interpolation='nearest')
-                    for mask in results[key]
-                ]
-            results[key] = np.stack(masks)
+                results[key] = results[key].resize(results['img_shape'][:2])
 
     def _resize_seg(self, results):
         for key in results.get('seg_fields', []):
@@ -217,12 +215,12 @@ class RandomFlip(object):
         flipped = bboxes.copy()
         if direction == 'horizontal':
             w = img_shape[1]
-            flipped[..., 0::4] = w - bboxes[..., 2::4] - 1
-            flipped[..., 2::4] = w - bboxes[..., 0::4] - 1
+            flipped[..., 0::4] = w - bboxes[..., 2::4]
+            flipped[..., 2::4] = w - bboxes[..., 0::4]
         elif direction == 'vertical':
             h = img_shape[0]
-            flipped[..., 1::4] = h - bboxes[..., 3::4] - 1
-            flipped[..., 3::4] = h - bboxes[..., 1::4] - 1
+            flipped[..., 1::4] = h - bboxes[..., 3::4]
+            flipped[..., 3::4] = h - bboxes[..., 1::4]
         else:
             raise ValueError(
                 'Invalid flipping direction "{}"'.format(direction))
@@ -245,10 +243,7 @@ class RandomFlip(object):
                                               results['flip_direction'])
             # flip masks
             for key in results.get('mask_fields', []):
-                results[key] = np.stack([
-                    mmcv.imflip(mask, direction=results['flip_direction'])
-                    for mask in results[key]
-                ])
+                results[key] = results[key].flip(results['flip_direction'])
 
             # flip segs
             for key in results.get('seg_fields', []):
@@ -296,14 +291,8 @@ class Pad(object):
     def _pad_masks(self, results):
         pad_shape = results['pad_shape'][:2]
         for key in results.get('mask_fields', []):
-            padded_masks = [
-                mmcv.impad(mask, pad_shape, pad_val=self.pad_val)
-                for mask in results[key]
-            ]
-            if padded_masks:
-                results[key] = np.stack(padded_masks, axis=0)
-            else:
-                results[key] = np.empty((0, ) + pad_shape, dtype=np.uint8)
+            results[key] = results[key].pad(
+                pad_shape[:2], pad_val=self.pad_val)
 
     def _pad_seg(self, results):
         for key in results.get('seg_fields', []):
@@ -383,8 +372,8 @@ class RandomCrop(object):
             bbox_offset = np.array([offset_w, offset_h, offset_w, offset_h],
                                    dtype=np.float32)
             bboxes = results[key] - bbox_offset
-            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1] - 1)
-            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0] - 1)
+            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
+            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
             results[key] = bboxes
 
         # crop semantic seg
@@ -405,13 +394,8 @@ class RandomCrop(object):
 
             # filter and crop the masks
             if 'gt_masks' in results:
-                valid_gt_masks = []
-                for i in np.where(valid_inds)[0]:
-                    gt_mask = results['gt_masks'][i][crop_y1:crop_y2,
-                                                     crop_x1:crop_x2]
-                    valid_gt_masks.append(gt_mask)
-                results['gt_masks'] = np.stack(valid_gt_masks)
-
+                results['gt_masks'] = results['gt_masks'].crop(
+                    np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
         return results
 
     def __repr__(self):
@@ -528,7 +512,8 @@ class PhotoMetricDistortion(object):
                      'saturation_range={}, hue_delta={})').format(
                          self.brightness_delta,
                          (self.contrast_lower, self.contrast_upper),
-                         self.saturation_range, self.hue_delta)
+                         (self.saturation_lower, self.saturation_upper),
+                         self.hue_delta)
         return repr_str
 
 
@@ -581,13 +566,8 @@ class Expand(object):
         results['gt_bboxes'] = boxes
 
         if 'gt_masks' in results:
-            expand_gt_masks = []
-            for mask in results['gt_masks']:
-                expand_mask = np.full((int(h * ratio), int(w * ratio)),
-                                      0).astype(mask.dtype)
-                expand_mask[top:top + h, left:left + w] = mask
-                expand_gt_masks.append(expand_mask)
-            results['gt_masks'] = np.stack(expand_gt_masks)
+            results['gt_masks'] = results['gt_masks'].expand(
+                int(h * ratio), int(w * ratio), top, left)
 
         # not tested
         if 'gt_semantic_seg' in results:
@@ -623,6 +603,7 @@ class MinIoURandomCrop(object):
 
     def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3):
         # 1: return ori img
+        self.min_ious = min_ious
         self.sample_mode = (1, *min_ious, 0)
         self.min_crop_size = min_crop_size
 
@@ -652,37 +633,38 @@ class MinIoURandomCrop(object):
                     (int(left), int(top), int(left + new_w), int(top + new_h)))
                 overlaps = bbox_overlaps(
                     patch.reshape(-1, 4), boxes.reshape(-1, 4)).reshape(-1)
-                if overlaps.min() < min_iou:
+                if len(overlaps) > 0 and overlaps.min() < min_iou:
                     continue
 
                 # center of boxes should inside the crop img
-                center = (boxes[:, :2] + boxes[:, 2:]) / 2
-                mask = ((center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) *
-                        (center[:, 0] < patch[2]) * (center[:, 1] < patch[3]))
-                if not mask.any():
-                    continue
-                boxes = boxes[mask]
-                labels = labels[mask]
+                # only adjust boxes and instance masks when the gt is not empty
+                if len(overlaps) > 0:
+                    # adjust boxes
+                    center = (boxes[:, :2] + boxes[:, 2:]) / 2
+                    mask = ((center[:, 0] > patch[0]) *
+                            (center[:, 1] > patch[1]) *
+                            (center[:, 0] < patch[2]) *
+                            (center[:, 1] < patch[3]))
+                    if not mask.any():
+                        continue
 
-                # adjust boxes
+                    boxes = boxes[mask]
+                    labels = labels[mask]
+
+                    boxes[:, 2:] = boxes[:, 2:].clip(max=patch[2:])
+                    boxes[:, :2] = boxes[:, :2].clip(min=patch[:2])
+                    boxes -= np.tile(patch[:2], 2)
+
+                    results['gt_bboxes'] = boxes
+                    results['gt_labels'] = labels
+
+                    if 'gt_masks' in results:
+                        results['gt_masks'] = results['gt_masks'][
+                            mask.nonzero()[0]].crop(patch)
+
+                # adjust the img no matter whether the gt is empty before crop
                 img = img[patch[1]:patch[3], patch[0]:patch[2]]
-                boxes[:, 2:] = boxes[:, 2:].clip(max=patch[2:])
-                boxes[:, :2] = boxes[:, :2].clip(min=patch[:2])
-                boxes -= np.tile(patch[:2], 2)
-
                 results['img'] = img
-                results['gt_bboxes'] = boxes
-                results['gt_labels'] = labels
-
-                if 'gt_masks' in results:
-                    valid_masks = [
-                        results['gt_masks'][i] for i in range(len(mask))
-                        if mask[i]
-                    ]
-                    results['gt_masks'] = np.stack([
-                        gt_mask[patch[1]:patch[3], patch[0]:patch[2]]
-                        for gt_mask in valid_masks
-                    ])
 
                 # not tested
                 if 'gt_semantic_seg' in results:
@@ -833,6 +815,14 @@ class Albu(object):
             if self.filter_lost_elements:
                 results['idx_mapper'] = np.arange(len(results['bboxes']))
 
+        # TODO: Support mask structure in albu
+        if 'masks' in results:
+            if isinstance(results['masks'], PolygonMasks):
+                raise NotImplementedError(
+                    'Albu only supports BitMap masks now')
+            ori_masks = results['masks']
+            results['masks'] = results['masks'].masks
+
         results = self.aug(**results)
 
         if 'bboxes' in results:
@@ -844,14 +834,15 @@ class Albu(object):
             # filter label_fields
             if self.filter_lost_elements:
 
-                results['idx_mapper'] = np.arange(len(results['bboxes']))
-
                 for label in self.origin_label_fields:
                     results[label] = np.array(
                         [results[label][i] for i in results['idx_mapper']])
                 if 'masks' in results:
                     results['masks'] = np.array(
                         [results['masks'][i] for i in results['idx_mapper']])
+                    results['masks'] = ori_masks.__class__(
+                        results['masks'], results['image'].shape[0],
+                        results['image'].shape[1])
 
                 if (not len(results['idx_mapper'])
                         and self.skip_img_without_anno):

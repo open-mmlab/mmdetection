@@ -13,7 +13,7 @@ class XMLDataset(CustomDataset):
 
     def __init__(self, min_size=None, **kwargs):
         super(XMLDataset, self).__init__(**kwargs)
-        self.cat2label = {cat: i + 1 for i, cat in enumerate(self.CLASSES)}
+        self.cat2label = {cat: i for i, cat in enumerate(self.CLASSES)}
         self.min_size = min_size
 
     def load_annotations(self, ann_file):
@@ -47,11 +47,13 @@ class XMLDataset(CustomDataset):
             label = self.cat2label[name]
             difficult = int(obj.find('difficult').text)
             bnd_box = obj.find('bndbox')
+            # TODO: check whether it is necessary to use int
+            # Coordinates may be float type
             bbox = [
-                int(bnd_box.find('xmin').text),
-                int(bnd_box.find('ymin').text),
-                int(bnd_box.find('xmax').text),
-                int(bnd_box.find('ymax').text)
+                int(float(bnd_box.find('xmin').text)),
+                int(float(bnd_box.find('ymin').text)),
+                int(float(bnd_box.find('xmax').text)),
+                int(float(bnd_box.find('ymax').text))
             ]
             ignore = False
             if self.min_size:

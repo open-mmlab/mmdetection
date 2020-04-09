@@ -75,5 +75,7 @@ class OHEMSampler(BaseSampler):
         if len(neg_inds) <= num_expected:
             return neg_inds
         else:
+            neg_labels = assign_result.labels.new_empty(
+                neg_inds.size(0)).fill_(self.bbox_head.num_classes)
             return self.hard_mining(neg_inds, num_expected, bboxes[neg_inds],
-                                    assign_result.labels[neg_inds], feats)
+                                    neg_labels, feats)

@@ -26,6 +26,9 @@ class RepPointsHead(nn.Module):
             points refinement and recognition.
         point_strides (Iterable): points strides.
         point_base_scale (int): bbox scale for assigning labels.
+        background_label (int | None): Label ID of background, set as 0 for
+            RPN and num_classes for other heads. It will automatically set as
+            num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox_init (dict): Config of initial points loss.
         loss_bbox_refine (dict): Config of points loss in refinement.
@@ -47,6 +50,7 @@ class RepPointsHead(nn.Module):
                  point_base_scale=4,
                  conv_cfg=None,
                  norm_cfg=None,
+                 background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -73,6 +77,13 @@ class RepPointsHead(nn.Module):
         self.point_strides = point_strides
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+
+        self.background_label = (
+            num_classes if background_label is None else background_label)
+        # background_label should be either 0 or num_classes
+        assert (self.background_label == 0
+                or self.background_label == num_classes)
+
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.sampling = loss_cls['type'] not in ['FocalLoss']
         self.loss_cls = build_loss(loss_cls)
@@ -86,9 +97,9 @@ class RepPointsHead(nn.Module):
                 data=torch.zeros(2), requires_grad=True)
             self.moment_mul = moment_mul
         if self.use_sigmoid_cls:
-            self.cls_out_channels = self.num_classes - 1
-        else:
             self.cls_out_channels = self.num_classes
+        else:
+            self.cls_out_channels = self.num_classes + 1
         self.point_generators = [PointGenerator() for _ in self.point_strides]
         # we use deformable conv to extract points features
         self.dcn_kernel = int(np.sqrt(num_points))
@@ -440,6 +451,7 @@ class RepPointsHead(nn.Module):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
+            background_label=self.background_label,
             sampling=self.sampling)
         (*_, bbox_gt_list_init, candidate_list_init, bbox_weights_list_init,
          num_total_pos_init, num_total_neg_init) = cls_reg_targets_init
@@ -473,6 +485,7 @@ class RepPointsHead(nn.Module):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
+            background_label=self.background_label,
             sampling=self.sampling)
         (labels_list, label_weights_list, bbox_gt_list_refine,
          candidate_list_refine, bbox_weights_list_refine, num_total_pos_refine,
@@ -566,7 +579,10 @@ class RepPointsHead(nn.Module):
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
-                    max_scores, _ = scores[:, 1:].max(dim=1)
+                    # remind that we set FG labels to [0, num_class-1]
+                    # since mmdet v2.0
+                    # BG cat_id: num_class
+                    max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 points = points[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
@@ -585,8 +601,11 @@ class RepPointsHead(nn.Module):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
         if self.use_sigmoid_cls:
+            # Add a dummy background class to the backend when using sigmoid
+            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
+            # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
+            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         if nms:
             det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                     cfg.score_thr, cfg.nms,
