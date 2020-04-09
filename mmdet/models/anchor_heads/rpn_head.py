@@ -2,10 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
-from torchvision.ops import boxes as box_ops
 
 from mmdet.core import delta2bbox
-from mmdet.ops import nms
+from mmdet.ops import batched_nms
 from ..registry import HEADS
 from .anchor_head import AnchorHead
 
@@ -62,16 +61,18 @@ class RPNHead(AnchorHead):
                           scale_factor,
                           cfg,
                           rescale=False):
-        mlvl_proposals = []
-        mlvl_ids = []
+        level_ids = []
         mlvl_scores = []
+        mlvl_bbox_preds = []
+        mlvl_valid_anchors = []
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
             assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
             rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
             if self.use_sigmoid_cls:
-                scores = rpn_cls_score.reshape(-1)
+                rpn_cls_score = rpn_cls_score.reshape(-1)
+                scores = rpn_cls_score.sigmoid()
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
                 # remind that we set FG labels to [0, num_class-1]
@@ -87,19 +88,21 @@ class RPNHead(AnchorHead):
                 scores = ranked_scores[:cfg.nms_pre]
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
                 anchors = anchors[topk_inds, :]
-            proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
-                                   self.target_stds, img_shape)
             mlvl_scores.append(scores)
-            mlvl_proposals.append(proposals)
-            mlvl_ids.append(
+            mlvl_bbox_preds.append(rpn_bbox_pred)
+            mlvl_valid_anchors.append(anchors)
+            level_ids.append(
                 torch.full((scores.size(0), ),
                            idx,
                            dtype=torch.long,
                            device=scores.device))
 
         scores = torch.cat(mlvl_scores)
-        proposals = torch.cat(mlvl_proposals)
-        ids = torch.cat(mlvl_ids)
+        anchors = torch.cat(mlvl_valid_anchors)
+        rpn_bbox_pred = torch.cat(mlvl_bbox_preds)
+        proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
+                               self.target_stds, img_shape)
+        ids = torch.cat(level_ids)
 
         if cfg.min_bbox_size > 0:
             w = proposals[:, 2] - proposals[:, 0]
@@ -111,27 +114,6 @@ class RPNHead(AnchorHead):
                 scores = scores[valid_inds]
                 ids = ids[valid_inds]
 
-        keep = batched_nms(proposals, scores, ids, cfg.nms_thr)
-        keep = keep[:cfg.nms_post]
-        res = torch.cat([proposals[keep], scores[keep][:, None]], -1)
-        return res
-
-
-def batched_nms(boxes, scores, idxs, iou_threshold):
-    """
-    Same as torchvision.ops.boxes.batched_nms, but safer.
-    """
-    assert boxes.shape[-1] == 4
-    # TODO may need better strategy.
-    # Investigate after having a fully-cuda NMS op.
-    if len(boxes) < 40000:
-        return box_ops.batched_nms(boxes, scores, idxs, iou_threshold)
-
-    result_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
-    for id in torch.unique(idxs).cpu().tolist():
-        mask = (idxs == id).nonzero().view(-1)
-        keep = nms(boxes[mask], scores[mask], iou_threshold)
-        result_mask[mask[keep]] = True
-    keep = result_mask.nonzero().view(-1)
-    keep = keep[scores[keep].argsort(descending=True)]
-    return keep
+        nms_cfg = dict(type='nms', iou_thr=cfg.nms_thr)
+        dets, keep = batched_nms(proposals, scores, ids, nms_cfg)
+        return dets[:cfg.nms_post]
