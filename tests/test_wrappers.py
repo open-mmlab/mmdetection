@@ -41,6 +41,15 @@ def test_conv_2d():
         assert wrapper.weight.grad is not None
         assert wrapper.weight.grad.shape == wrapper.weight.shape
 
+        x = torch.randn(3, in_cha, in_h, in_w)
+        torch.manual_seed(0)
+        wrapper = Conv2d(in_cha, out_cha, k, stride=s, padding=p, dilation=d)
+        wrapper_out = wrapper(x)
+        torch.manual_seed(0)
+        ref = nn.Conv2d(in_cha, out_cha, k, stride=s, padding=p, dilation=d)
+        ref_out = ref(x)
+        assert torch.equal(wrapper_out, ref_out)
+
     # eval mode
     x = torch.empty(0, in_cha, in_h, in_w)
     wrapper = Conv2d(in_cha, out_cha, k, stride=s, padding=p, dilation=d)
@@ -95,6 +104,29 @@ def test_conv_transposed_2d():
         assert wrapper.weight.grad is not None
         assert wrapper.weight.grad.shape == wrapper.weight.shape
 
+        x = torch.randn(3, in_cha, in_h, in_w)
+        torch.manual_seed(0)
+        wrapper = ConvTranspose2d(
+            in_cha,
+            out_cha,
+            k,
+            stride=s,
+            padding=p,
+            dilation=d,
+            output_padding=op)
+        wrapper_out = wrapper(x)
+        torch.manual_seed(0)
+        ref = nn.ConvTranspose2d(
+            in_cha,
+            out_cha,
+            k,
+            stride=s,
+            padding=p,
+            dilation=d,
+            output_padding=op)
+        ref_out = ref(x)
+        assert torch.equal(wrapper_out, ref_out)
+
     # eval mode
     x = torch.empty(0, in_cha, in_h, in_w)
     wrapper = ConvTranspose2d(
@@ -130,6 +162,15 @@ def test_max_pool_2d():
         assert wrapper_out.shape[0] == 0
         assert wrapper_out.shape[1:] == ref_out.shape[1:]
 
+        x = torch.randn(3, in_cha, in_h, in_w)
+        torch.manual_seed(0)
+        wrapper = MaxPool2d(k, stride=s, padding=p, dilation=d)
+        wrapper_out = wrapper(x)
+        torch.manual_seed(0)
+        ref = nn.MaxPool2d(k, stride=s, padding=p, dilation=d)
+        ref_out = ref(x)
+        assert torch.equal(wrapper_out, ref_out)
+
 
 def test_linear():
     test_cases = {
@@ -157,6 +198,15 @@ def test_linear():
         wrapper_out.sum().backward()
         assert wrapper.weight.grad is not None
         assert wrapper.weight.grad.shape == wrapper.weight.shape
+
+        x = torch.empty(3, in_feature)
+        torch.manual_seed(0)
+        wrapper = Linear(in_feature, out_feature)
+        wrapper_out = wrapper(x)
+        torch.manual_seed(0)
+        ref = nn.Linear(in_feature, out_feature)
+        ref_out = ref(x)
+        assert torch.equal(wrapper_out, ref_out)
 
     # eval mode
     x = torch.empty(0, in_feature)
