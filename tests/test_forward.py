@@ -169,12 +169,6 @@ def test_retina_ghm_forward():
 
 
 def test_cascade_forward():
-    try:
-        from torchvision import _C as C  # NOQA
-    except ImportError:
-        import pytest
-        raise pytest.skip('requires torchvision on cpu')
-
     model, train_cfg, test_cfg = _get_detector_cfg(
         'cascade_rcnn_r50_fpn_1x.py')
     model['pretrained'] = None
@@ -222,12 +216,6 @@ def test_cascade_forward():
 
 
 def test_faster_rcnn_forward():
-    try:
-        from torchvision import _C as C  # NOQA
-    except ImportError:
-        import pytest
-        raise pytest.skip('requires torchvision on cpu')
-
     model, train_cfg, test_cfg = _get_detector_cfg('faster_rcnn_r50_fpn_1x.py')
     model['pretrained'] = None
     # torchvision roi align supports CPU
@@ -274,12 +262,6 @@ def test_faster_rcnn_forward():
 
 
 def test_faster_rcnn_ohem_forward():
-    try:
-        from torchvision import _C as C  # NOQA
-    except ImportError:
-        import pytest
-        raise pytest.skip('requires torchvision on cpu')
-
     model, train_cfg, test_cfg = _get_detector_cfg(
         'faster_rcnn_ohem_r50_fpn_1x.py')
     model['pretrained'] = None
