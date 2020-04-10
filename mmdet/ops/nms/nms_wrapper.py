@@ -119,12 +119,25 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
 
 
 def batched_nms(bboxes, scores, idxs, nms_cfg):
-    # Modified from https://github.com/pytorch/vision/blob
-    # /505cd6957711af790211896d32b40291bea1bc21/torchvision/ops/boxes.py#L39.
-    # strategy: in order to perform NMS independently per class.
-    # we add an offset to all the boxes. The offset is dependent
-    # only on the class idx, and is large enough so that boxes
-    # from different classes do not overlap
+    """Performs non-maximum suppression in a batched fashion.
+
+    Modified from https://github.com/pytorch/vision/blob
+    /505cd6957711af790211896d32b40291bea1bc21/torchvision/ops/boxes.py#L39.
+    In order to perform NMS independently per class, we add an offset to all
+    the boxes. The offset is dependent only on the class idx, and is large
+    enough so that boxes from different classes do not overlap.
+
+    Arguments:
+        bboxes (torch.Tensor): bboxes in shape (N, 4).
+        scores (torch.Tensor): scores in shape (N, ).
+        idxes (torch.Tensor): each index value correspond to a category, and
+            NMS will not be applied between elements of different categories,
+            shape (N, ).
+        nms_cfg (dict): specify nms type and other parameters like iou_thr.
+
+    Returns:
+        tuple: kept bboxes and indice.
+    """
     max_coordinate = bboxes.max()
     offsets = idxs.to(bboxes) * (max_coordinate + 1)
     bboxes_for_nms = bboxes + offsets[:, None]

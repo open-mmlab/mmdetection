@@ -95,10 +95,7 @@ class RPNHead(AnchorHead):
             mlvl_bbox_preds.append(rpn_bbox_pred)
             mlvl_valid_anchors.append(anchors)
             level_ids.append(
-                torch.full((scores.size(0), ),
-                           idx,
-                           dtype=torch.long,
-                           device=scores.device))
+                scores.new_full((scores.size(0), ), idx, dtype=torch.long))
 
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
@@ -117,6 +114,7 @@ class RPNHead(AnchorHead):
                 scores = scores[valid_inds]
                 ids = ids[valid_inds]
 
+        # TODO: remove the hard coded nms type
         nms_cfg = dict(type='nms', iou_thr=cfg.nms_thr)
         dets, keep = batched_nms(proposals, scores, ids, nms_cfg)
         return dets[:cfg.nms_post]
