@@ -118,7 +118,7 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
             np.int64)
 
 
-def batched_nms(bboxes, scores, idxs, nms_cfg):
+def batched_nms(bboxes, scores, inds, nms_cfg):
     """Performs non-maximum suppression in a batched fashion.
 
     Modified from https://github.com/pytorch/vision/blob
@@ -130,8 +130,8 @@ def batched_nms(bboxes, scores, idxs, nms_cfg):
     Arguments:
         bboxes (torch.Tensor): bboxes in shape (N, 4).
         scores (torch.Tensor): scores in shape (N, ).
-        idxes (torch.Tensor): each index value correspond to a category, and
-            NMS will not be applied between elements of different categories,
+        inds (torch.Tensor): each index value correspond to a bbox cluster,
+            and NMS will not be applied between elements of different inds,
             shape (N, ).
         nms_cfg (dict): specify nms type and other parameters like iou_thr.
 
@@ -139,7 +139,7 @@ def batched_nms(bboxes, scores, idxs, nms_cfg):
         tuple: kept bboxes and indice.
     """
     max_coordinate = bboxes.max()
-    offsets = idxs.to(bboxes) * (max_coordinate + 1)
+    offsets = inds.to(bboxes) * (max_coordinate + 1)
     bboxes_for_nms = bboxes + offsets[:, None]
     nms_cfg_ = nms_cfg.copy()
     nms_type = nms_cfg_.pop('type', 'nms')
