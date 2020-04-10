@@ -1,7 +1,7 @@
 from mmdet.utils import build_from_cfg
-from .assigners.base_assigner import BaseAssigner
+from .assigners import BaseAssigner
 from .registry import BBOX_ASSIGNERS, BBOX_SAMPLERS
-from .samplers.base_sampler import BaseSampler
+from .samplers import BaseSampler
 
 
 def build_assigner(cfg, **default_args):
