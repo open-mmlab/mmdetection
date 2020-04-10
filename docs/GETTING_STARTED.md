@@ -151,34 +151,48 @@ asyncio.run(main())
 
 We provide you a way to export pretrained models to OpenVINO IR and ONNX as an intermediate representation.
 
-### Export to ONNX
+### Export to ONNX and OpenVINO IR
 
-As a first step pretrained model has to be exported to ONNX format.
-To do this you can use the following command:
-
-```shell
-# python tools/export.py config.py checkpoint.pth checkpoint.onnx
-```
-
-For SSD networks `tools/export_ssd.py` script might be used as an alternative. This way exported model will contain higher level custom operations to make it easier to analyse the model and enable more optimizations for deployed model:
+To export pretrained model to ONNX format run the script:
 
 ```shell
-# python tools/export_ssd.py config.py checkpoint.pth checkpoint.onnx
+# python tools/export.py config.py checkpoint.pth ${DEPLOY_DIR} onnx
 ```
 
-### Export to OpenVINO IR
-
-To further convert ONNX model to IR you can run the script:
+To export pretrained model to OpenVINO IR format run the script:
 
 ```shell
-# py tools/convert_to_ir.py config.py checkpoint.onnx ${DEPLOY_DIR}
+# python tools/export.py config.py checkpoint.pth ${DEPLOY_DIR} openvino
 ```
 
-**Note**: Before running the script make sure that all OpenVINO-related environment variables are set properly. To do this run the following command:
+OpenVINO exports models with a fixed input resolution, the scripts tries to derive it
+from data pre-processing pipeline config, though sometimes it's hard to get correct resolution.
+In this case, or if you simply want to use resolution different from the one used in test config,
+specify target resolution via `--input_shape` option.
 
-```shell
-# source /opt/intel/openvino/bin/setupvars.sh
-```
+For SSD networks there's an alternative model representation that contains higher level custom operations
+which make it easier to analyse the model and enable more optimizations,
+but this may come at a cost of a small accuracy drop.
+To opt for this model representation use `--alt_ssd_export` option.
+
+*KNOWN ISSUES*:
+
+* Not all models are currently exportable.
+
+* Before running the script make sure that all OpenVINO-related environment variables are set properly. To do this run the following command:
+
+  ```shell
+  # source /opt/intel/openvino/bin/setupvars.sh
+  ```
+
+* If export crashes with an error
+
+  ```
+      return _registry[(domain, version)][opname]
+  KeyError: 'anchor_grid_generator_*'
+  ```
+
+  try running export script one more time. Sometimes extra operations failed to register on-the-fly.
 
 ### Test exported model
 
@@ -188,11 +202,8 @@ In order to test the model being exported via a `tools/export.py` script run the
 # python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out /tmp/out.pkl
 ``` 
 
-To test an SSD model being exported via `tools/export_ssd.py` run command:
-
-```shell
-# python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out test_results.pkl --with_detection_output
-```
+If you chose to use alternative SSD model representation, specifying the `--alt_ssd_export` key for `tools/export.py`,
+use an extra `--with_detection_output` key for the test script.
 
 To get quality metrics on test dataset either add `--eval bbox` argument to the call of the `tools/test_exported.py` script for COCO-style dataset, or run `tools/voc_eval.py` script passing dumped detection results (`test_results.pkl`) to it for a VOC-style dataset. 
 
