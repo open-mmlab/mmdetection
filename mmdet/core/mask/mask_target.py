@@ -9,7 +9,9 @@ def mask_target(pos_proposals_list, pos_assigned_gt_inds_list, gt_masks_list,
     mask_targets = map(mask_target_single, pos_proposals_list,
                        pos_assigned_gt_inds_list, gt_masks_list, cfg_list)
     mask_targets = list(mask_targets)
-    return torch.cat(mask_targets) if len(mask_targets) > 0 else mask_targets
+    if len(mask_targets) > 0:
+        mask_targets = torch.cat(mask_targets)
+    return mask_targets
 
 
 def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
