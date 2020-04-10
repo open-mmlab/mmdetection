@@ -35,7 +35,7 @@ class TracerStub(nn.Module):
         self.namespace = namespace
         self.name = name
         if unique_name:
-            self.name = name + '_' + next(tempfile._get_candidate_names())
+            self.name = name + '_' + next(tempfile._get_candidate_names()) + 'x'
         self.qualified_name = '{}::{}'.format(self.namespace, self.name)
         self.num_outputs = 1
         self.params = {}
