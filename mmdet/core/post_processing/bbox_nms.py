@@ -1,6 +1,6 @@
 import torch
 
-from mmdet.ops.nms import nms_wrapper
+from mmdet.ops.nms import batched_nms
 
 
 def multiclass_nms(multi_bboxes,
@@ -48,29 +48,5 @@ def multiclass_nms(multi_bboxes,
         labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
         return bboxes, labels
 
-    # Modified from https://github.com/pytorch/vision/blob
-    # /505cd6957711af790211896d32b40291bea1bc21/torchvision/ops/boxes.py#L39.
-    # strategy: in order to perform NMS independently per class.
-    # we add an offset to all the boxes. The offset is dependent
-    # only on the class idx, and is large enough so that boxes
-    # from different classes do not overlap
-    max_coordinate = bboxes.max()
-    offsets = labels.to(bboxes) * (max_coordinate + 1)
-    bboxes_for_nms = bboxes + offsets[:, None]
-    nms_cfg_ = nms_cfg.copy()
-    nms_type = nms_cfg_.pop('type', 'nms')
-    nms_op = getattr(nms_wrapper, nms_type)
-    dets, keep = nms_op(
-        torch.cat([bboxes_for_nms, scores[:, None]], 1), **nms_cfg_)
-    bboxes = bboxes[keep]
-    scores = dets[:, -1]  # soft_nms will modify scores
-    labels = labels[keep]
-
-    if keep.size(0) > max_num:
-        _, inds = scores.sort(descending=True)
-        inds = inds[:max_num]
-        bboxes = bboxes[inds]
-        scores = scores[inds]
-        labels = labels[inds]
-
-    return torch.cat([bboxes, scores[:, None]], 1), labels
+    dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
+    return dets[:max_num], labels[keep[:max_num]]
