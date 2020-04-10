@@ -61,6 +61,8 @@ class RPNHead(AnchorHead):
                           scale_factor,
                           cfg,
                           rescale=False):
+        # bboxes from different level should be independent during NMS,
+        # level_ids are used as labels for batched NMS to separate them
         level_ids = []
         mlvl_scores = []
         mlvl_bbox_preds = []
@@ -82,6 +84,7 @@ class RPNHead(AnchorHead):
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
+                # sort is faster than topk
                 # _, topk_inds = scores.topk(cfg.nms_pre)
                 ranked_scores, rank_inds = scores.sort(descending=True)
                 topk_inds = rank_inds[:cfg.nms_pre]
