@@ -43,7 +43,7 @@ def test_conv_2d():
         assert wrapper.weight.grad is not None
         assert wrapper.weight.grad.shape == wrapper.weight.shape
 
-        assert torch.equal(wrapper(x_normal), ref(x_normal))
+        assert torch.equal(wrapper(x_normal), ref_out)
 
     # eval mode
     x_empty = torch.randn(0, in_cha, in_h, in_w)
@@ -101,7 +101,7 @@ def test_conv_transposed_2d():
         assert wrapper.weight.grad is not None
         assert wrapper.weight.grad.shape == wrapper.weight.shape
 
-        assert torch.equal(wrapper(x_normal), ref(x_normal))
+        assert torch.equal(wrapper(x_normal), ref_out)
 
     # eval mode
     x_empty = torch.randn(0, in_cha, in_h, in_w)
@@ -138,7 +138,7 @@ def test_max_pool_2d():
         assert wrapper_out.shape[0] == 0
         assert wrapper_out.shape[1:] == ref_out.shape[1:]
 
-        assert torch.equal(wrapper(x_normal), ref(x_normal))
+        assert torch.equal(wrapper(x_normal), ref_out)
 
 
 def test_linear():
@@ -170,7 +170,7 @@ def test_linear():
         assert wrapper.weight.grad is not None
         assert wrapper.weight.grad.shape == wrapper.weight.shape
 
-        assert torch.equal(wrapper(x_normal), ref(x_normal))
+        assert torch.equal(wrapper(x_normal), ref_out)
 
     # eval mode
     x_empty = torch.randn(0, in_feature)
