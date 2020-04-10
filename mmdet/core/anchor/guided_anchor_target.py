@@ -1,7 +1,6 @@
 import torch
 
-from ..bbox import build_assigner, build_sampler
-from ..bbox.samplers.pseudo_sampler import PseudoSampler
+from ..bbox import PseudoSampler, build_assigner, build_sampler
 from ..utils import multi_apply, unmap
 
 

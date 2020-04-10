@@ -49,7 +49,7 @@ class BaseSampler(metaclass=ABCMeta):
             :obj:`SamplingResult`: Sampling result.
 
         Example:
-            >>> from mmdet.core.bbox.samplers import RandomSampler
+            >>> from mmdet.core.bbox import RandomSampler
             >>> from mmdet.core.bbox import AssignResult
             >>> from mmdet.core.bbox.demodata import ensure_rng, random_boxes
             >>> rng = ensure_rng(None)
