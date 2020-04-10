@@ -13,6 +13,24 @@ def _concat_dataset(cfg, default_args=None):
     seg_prefixes = cfg.get('seg_prefix', None)
     proposal_files = cfg.get('proposal_file', None)
 
+    if cfg.get('img_prefix_auto', False):
+        del cfg['img_prefix_auto']
+        assert img_prefixes is None
+        if cfg['type'] == 'CustomCocoDataset':
+            # assuming following dataset structure:
+            # dataset_root
+            # ├── annotations
+            # │   ├── instances_train.json
+            # │   ├── ...
+            # ├── images
+            #     ├── image_name1
+            #     ├── image_name2
+            #     ├── ...
+            # and file_name inside instances_train.json is relative to dataset root
+            img_prefixes = [os.path.join(os.path.dirname(ann_file), '..') for ann_file in ann_files]
+        else:
+            raise NotImplementedError
+
     datasets = []
     num_dset = len(ann_files)
     for i in range(num_dset):
@@ -48,8 +66,6 @@ def build_dataset(cfg, default_args=None):
             filenames = [os.path.relpath(os.path.join(root, filename), dirname) for filename in filenames]
             for filename in fnmatch.filter(filenames, pattern):
                 matches.append(os.path.join(dirname, filename))
-
-        print(matches)
 
         cfg['ann_file'] = matches
         dataset = _concat_dataset(cfg, default_args)
