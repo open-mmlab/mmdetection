@@ -12,20 +12,16 @@ class PAFPN(FPN):
     """Path Aggregation Network for Instance Segmentation.
 
     This is an implementation of the PAFPN in Path Aggregation Network
-    (https://arxiv.org/abs/1803.01534)
+    (https://arxiv.org/abs/1803.01534).
 
     Args:
-        in_channels (List[int]): number of input channels per scale
-
-        out_channels (int): number of output channels (used at each scale)
-
-        num_outs (int): number of output scales
-
-        start_level (int): index of the first input scale to use as an output
-            scale
-
-        end_level (int, default=-1): index of the last input scale to use as
-            an output scale
+        in_channels (List[int]): Number of input channels per scale.
+        out_channels (int): Number of output channels (used at each scale)
+        num_outs (int): Number of output scales.
+        start_level (int): Index of the first input scale to use as an output
+            scale.
+        end_level (int, default=-1): Index of the last input scale to use as
+            an output scale.
     """
 
     def __init__(self,
