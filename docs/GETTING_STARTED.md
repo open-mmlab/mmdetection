@@ -175,7 +175,7 @@ which make it easier to analyse the model and enable more optimizations,
 but this may come at a cost of a small accuracy drop.
 To opt for this model representation use `--alt_ssd_export` option.
 
-*KNOWN ISSUES*:
+**KNOWN ISSUES**:
 
 * Not all models are currently exportable.
 
@@ -184,15 +184,6 @@ To opt for this model representation use `--alt_ssd_export` option.
   ```shell
   # source /opt/intel/openvino/bin/setupvars.sh
   ```
-
-* If export crashes with an error
-
-  ```
-      return _registry[(domain, version)][opname]
-  KeyError: 'anchor_grid_generator_*'
-  ```
-
-  try running export script one more time. Sometimes extra operations failed to register on-the-fly.
 
 ### Test exported model
 
