@@ -286,7 +286,7 @@ def parse_args():
     parser.add_argument('checkpoint', help="path to file with model's weights")
     parser.add_argument('output_dir', help='path to directory to save exported models in')
 
-    subparsers = parser.add_subparsers(title='target', help='target model format')
+    subparsers = parser.add_subparsers(title='target', dest='target', help='target model format')
     parser_onnx = subparsers.add_parser('onnx', help='export to ONNX')
     parser_openvino = subparsers.add_parser('openvino', help='export to OpenVINO')
     parser_openvino.add_argument('--input_shape', nargs=2, default=None,
