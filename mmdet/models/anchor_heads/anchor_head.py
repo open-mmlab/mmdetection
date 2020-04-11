@@ -5,8 +5,9 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (AnchorGenerator, anchor_target, delta2bbox, force_fp32,
-                        multi_apply, multiclass_nms)
+from mmdet.core import (AnchorGenerator, anchor_inside_flags, bbox2delta,
+                        build_assigner, build_sampler, delta2bbox, force_fp32,
+                        images_to_levels, multi_apply, multiclass_nms, unmap)
 from ..builder import build_loss
 from ..registry import HEADS
 
@@ -65,6 +66,7 @@ class AnchorHead(nn.Module):
         self.target_stds = target_stds
 
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
+        # TODO better way to determine whether sample or not
         self.sampling = loss_cls['type'] not in ['FocalLoss', 'GHMC']
         if self.use_sigmoid_cls:
             self.cls_out_channels = num_classes
@@ -84,6 +86,14 @@ class AnchorHead(nn.Module):
         self.loss_bbox = build_loss(loss_bbox)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        if self.train_cfg:
+            self.assigner = build_assigner(self.train_cfg.assigner)
+            # use PseudoSampler when sampling is False
+            if self.sampling and hasattr(self.train_cfg, 'sampler'):
+                sampler_cfg = self.train_cfg.sampler
+            else:
+                sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
 
         self.anchor_generators = []
@@ -152,6 +162,141 @@ class AnchorHead(nn.Module):
 
         return anchor_list, valid_flag_list
 
+    def anchor_target_single(self,
+                             flat_anchors,
+                             valid_flags,
+                             gt_bboxes,
+                             gt_bboxes_ignore,
+                             gt_labels,
+                             img_meta,
+                             label_channels=1,
+                             unmap_outputs=True):
+        inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
+                                           img_meta['img_shape'][:2],
+                                           self.train_cfg.allowed_border)
+        if not inside_flags.any():
+            return (None, ) * 6
+        # assign gt and sample anchors
+        anchors = flat_anchors[inside_flags.type(torch.bool), :]
+
+        assign_result = self.assigner.assign(
+            anchors, gt_bboxes, gt_bboxes_ignore,
+            None if self.sampling else gt_labels)
+        sampling_result = self.sampler.sample(assign_result, anchors,
+                                              gt_bboxes)
+
+        num_valid_anchors = anchors.shape[0]
+        bbox_targets = torch.zeros_like(anchors)
+        bbox_weights = torch.zeros_like(anchors)
+        labels = anchors.new_full((num_valid_anchors, ),
+                                  self.background_label,
+                                  dtype=torch.long)
+        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
+
+        pos_inds = sampling_result.pos_inds
+        neg_inds = sampling_result.neg_inds
+        if len(pos_inds) > 0:
+            pos_bbox_targets = bbox2delta(sampling_result.pos_bboxes,
+                                          sampling_result.pos_gt_bboxes,
+                                          self.target_means, self.target_stds)
+            bbox_targets[pos_inds, :] = pos_bbox_targets
+            bbox_weights[pos_inds, :] = 1.0
+            if gt_labels is None:
+                # only rpn gives gt_labels as None, this time FG is 1
+                labels[pos_inds] = 1
+            else:
+                labels[pos_inds] = gt_labels[
+                    sampling_result.pos_assigned_gt_inds]
+            if self.train_cfg.pos_weight <= 0:
+                label_weights[pos_inds] = 1.0
+            else:
+                label_weights[pos_inds] = self.train_cfg.pos_weight
+        if len(neg_inds) > 0:
+            label_weights[neg_inds] = 1.0
+
+        # map up to original set of anchors
+        if unmap_outputs:
+            num_total_anchors = flat_anchors.size(0)
+            labels = unmap(labels, num_total_anchors, inside_flags)
+            label_weights = unmap(label_weights, num_total_anchors,
+                                  inside_flags)
+            bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
+            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
+
+        return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
+                neg_inds)
+
+    def anchor_target(self,
+                      anchor_list,
+                      valid_flag_list,
+                      gt_bboxes_list,
+                      img_metas,
+                      gt_bboxes_ignore_list=None,
+                      gt_labels_list=None,
+                      label_channels=1,
+                      unmap_outputs=True):
+        """Compute regression and classification targets for anchors.
+
+        Args:
+            anchor_list (list[list]): Multi level anchors of each image.
+            valid_flag_list (list[list]): Multi level valid flags of each
+                image.
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
+            img_metas (list[dict]): Meta info of each image.
+            gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
+                ignored.
+            gt_bboxes_list (list[Tensor]): Ground truth labels of each box.
+            label_channels (int): Channel of label.
+            unmap_outputs (bool): Whether to map outputs back to the original
+                set of anchors.
+
+        Returns:
+            tuple
+        """
+        num_imgs = len(img_metas)
+        assert len(anchor_list) == len(valid_flag_list) == num_imgs
+
+        # anchor number of multi levels
+        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
+        # concat all level anchors and flags to a single tensor
+        for i in range(num_imgs):
+            assert len(anchor_list[i]) == len(valid_flag_list[i])
+            anchor_list[i] = torch.cat(anchor_list[i])
+            valid_flag_list[i] = torch.cat(valid_flag_list[i])
+
+        # compute targets for each image
+        if gt_bboxes_ignore_list is None:
+            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+        if gt_labels_list is None:
+            gt_labels_list = [None for _ in range(num_imgs)]
+        (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
+         pos_inds_list, neg_inds_list) = multi_apply(
+             self.anchor_target_single,
+             anchor_list,
+             valid_flag_list,
+             gt_bboxes_list,
+             gt_bboxes_ignore_list,
+             gt_labels_list,
+             img_metas,
+             label_channels=label_channels,
+             unmap_outputs=unmap_outputs)
+        # no valid anchors
+        if any([labels is None for labels in all_labels]):
+            return None
+        # sampled anchors of all images
+        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
+        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        # split targets to a list w.r.t. multiple levels
+        labels_list = images_to_levels(all_labels, num_level_anchors)
+        label_weights_list = images_to_levels(all_label_weights,
+                                              num_level_anchors)
+        bbox_targets_list = images_to_levels(all_bbox_targets,
+                                             num_level_anchors)
+        bbox_weights_list = images_to_levels(all_bbox_weights,
+                                             num_level_anchors)
+        return (labels_list, label_weights_list, bbox_targets_list,
+                bbox_weights_list, num_total_pos, num_total_neg)
+
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):
         # classification loss
@@ -188,19 +333,14 @@ class AnchorHead(nn.Module):
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        cls_reg_targets = anchor_target(
+        cls_reg_targets = self.anchor_target(
             anchor_list,
             valid_flag_list,
             gt_bboxes,
             img_metas,
-            self.target_means,
-            self.target_stds,
-            self.train_cfg,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
-            label_channels=label_channels,
-            background_label=self.background_label,
-            sampling=self.sampling)
+            label_channels=label_channels)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,

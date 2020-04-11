@@ -4,8 +4,8 @@ import torch.distributed as dist
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (PseudoSampler, anchor_inside_flags, bbox2delta,
-                        build_assigner, delta2bbox, force_fp32,
+from mmdet.core import (anchor_inside_flags, bbox2delta, build_assigner,
+                        build_sampler, delta2bbox, force_fp32,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from mmdet.ops import ConvModule, Scale
 from ..builder import build_loss
@@ -46,12 +46,23 @@ class ATSSHead(AnchorHead):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
+                 train_cfg=None,
+                 test_cfg=None,
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.sampling = False
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
+
+        if self.train_cfg:
+            self.assigner = build_assigner(self.train_cfg.assigner)
+            # SSD sampling=False so use PseudoSampler
+            sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
 
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
@@ -437,13 +448,11 @@ class ATSSHead(AnchorHead):
 
         num_level_anchors_inside = self.get_num_level_anchors_inside(
             num_level_anchors, inside_flags)
-        bbox_assigner = build_assigner(cfg.assigner)
-        assign_result = bbox_assigner.assign(anchors, num_level_anchors_inside,
+        assign_result = self.assigner.assign(anchors, num_level_anchors_inside,
                                              gt_bboxes, gt_bboxes_ignore,
                                              gt_labels)
 
-        bbox_sampler = PseudoSampler()
-        sampling_result = bbox_sampler.sample(assign_result, anchors,
+        sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 
         num_valid_anchors = anchors.shape[0]

@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (PointGenerator, multi_apply, multiclass_nms,
-                        point_target)
+from mmdet.core import (PointGenerator, build_assigner, build_sampler,
+                        images_to_levels, multi_apply, multiclass_nms, unmap)
 from mmdet.ops import ConvModule, DeformConv
 from ..builder import build_loss
 from ..registry import HEADS
@@ -93,6 +93,16 @@ class RepPointsHead(nn.Module):
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox_init = build_loss(loss_bbox_init)
         self.loss_bbox_refine = build_loss(loss_bbox_refine)
+        if self.train_cfg:
+            self.init_assigner = build_assigner(self.train_cfg.init.assigner)
+            self.refine_assigner = build_assigner(
+                self.train_cfg.refine.assigner)
+            # use PseudoSampler when sampling is False
+            if self.sampling and hasattr(self.train_cfg, 'sampler'):
+                sampler_cfg = self.train_cfg.sampler
+            else:
+                sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
         self.use_grid_points = use_grid_points
         self.center_init = center_init
         self.transform_method = transform_method
@@ -383,6 +393,145 @@ class RepPointsHead(nn.Module):
             pts_list.append(pts_lvl)
         return pts_list
 
+    def point_target_single(self,
+                            flat_proposals,
+                            valid_flags,
+                            gt_bboxes,
+                            gt_bboxes_ignore,
+                            gt_labels,
+                            label_channels=1,
+                            init=True,
+                            unmap_outputs=True):
+        inside_flags = valid_flags
+        if not inside_flags.any():
+            return (None, ) * 7
+        # assign gt and sample proposals
+        proposals = flat_proposals[inside_flags, :]
+
+        assigner = self.init_assigner if init else self.refine_assigner
+        assign_result = assigner.assign(proposals, gt_bboxes, gt_bboxes_ignore,
+                                        None if self.sampling else gt_labels)
+        sampling_result = self.sampler.sample(assign_result, proposals,
+                                              gt_bboxes)
+
+        num_valid_proposals = proposals.shape[0]
+        bbox_gt = proposals.new_zeros([num_valid_proposals, 4])
+        pos_proposals = torch.zeros_like(proposals)
+        proposals_weights = proposals.new_zeros([num_valid_proposals, 4])
+        labels = proposals.new_full((num_valid_proposals, ),
+                                    self.background_label,
+                                    dtype=torch.long)
+        label_weights = proposals.new_zeros(
+            num_valid_proposals, dtype=torch.float)
+
+        pos_inds = sampling_result.pos_inds
+        neg_inds = sampling_result.neg_inds
+        if len(pos_inds) > 0:
+            pos_gt_bboxes = sampling_result.pos_gt_bboxes
+            bbox_gt[pos_inds, :] = pos_gt_bboxes
+            pos_proposals[pos_inds, :] = proposals[pos_inds, :]
+            proposals_weights[pos_inds, :] = 1.0
+            if gt_labels is None:
+                labels[pos_inds] = 1
+            else:
+                labels[pos_inds] = gt_labels[
+                    sampling_result.pos_assigned_gt_inds]
+            if self.train_cfg.pos_weight <= 0:
+                label_weights[pos_inds] = 1.0
+            else:
+                label_weights[pos_inds] = self.train_cfg.pos_weight
+        if len(neg_inds) > 0:
+            label_weights[neg_inds] = 1.0
+
+        # map up to original set of proposals
+        if unmap_outputs:
+            num_total_proposals = flat_proposals.size(0)
+            labels = unmap(labels, num_total_proposals, inside_flags)
+            label_weights = unmap(label_weights, num_total_proposals,
+                                  inside_flags)
+            bbox_gt = unmap(bbox_gt, num_total_proposals, inside_flags)
+            pos_proposals = unmap(pos_proposals, num_total_proposals,
+                                  inside_flags)
+            proposals_weights = unmap(proposals_weights, num_total_proposals,
+                                      inside_flags)
+
+        return (labels, label_weights, bbox_gt, pos_proposals,
+                proposals_weights, pos_inds, neg_inds)
+
+    def point_target(self,
+                     proposals_list,
+                     valid_flag_list,
+                     gt_bboxes_list,
+                     img_metas,
+                     gt_bboxes_ignore_list=None,
+                     gt_labels_list=None,
+                     init=True,
+                     label_channels=1,
+                     unmap_outputs=True):
+        """Compute corresponding GT box and classification targets for
+            proposals.
+
+        Args:
+            points_list (list[list]): Multi level points of each image.
+            valid_flag_list (list[list]): Multi level valid flags of each
+                image.
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
+            img_metas (list[dict]): Meta info of each image.
+            gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
+                ignored.
+            gt_bboxes_list (list[Tensor]): Ground truth labels of each box.
+            init (bool): Generate target for init stage or refine stage
+            label_channels (int): Channel of label.
+            unmap_outputs (bool): Whether to map outputs back to the original
+                set of anchors.
+
+        Returns:
+            tuple
+        """
+        num_imgs = len(img_metas)
+        assert len(proposals_list) == len(valid_flag_list) == num_imgs
+
+        # points number of multi levels
+        num_level_proposals = [points.size(0) for points in proposals_list[0]]
+
+        # concat all level points and flags to a single tensor
+        for i in range(num_imgs):
+            assert len(proposals_list[i]) == len(valid_flag_list[i])
+            proposals_list[i] = torch.cat(proposals_list[i])
+            valid_flag_list[i] = torch.cat(valid_flag_list[i])
+
+        # compute targets for each image
+        if gt_bboxes_ignore_list is None:
+            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+        if gt_labels_list is None:
+            gt_labels_list = [None for _ in range(num_imgs)]
+        (all_labels, all_label_weights, all_bbox_gt, all_proposals,
+         all_proposal_weights, pos_inds_list, neg_inds_list) = multi_apply(
+             self.point_target_single,
+             proposals_list,
+             valid_flag_list,
+             gt_bboxes_list,
+             gt_bboxes_ignore_list,
+             gt_labels_list,
+             init=init,
+             label_channels=label_channels,
+             unmap_outputs=unmap_outputs)
+        # no valid points
+        if any([labels is None for labels in all_labels]):
+            return None
+        # sampled points of all images
+        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
+        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        labels_list = images_to_levels(all_labels, num_level_proposals)
+        label_weights_list = images_to_levels(all_label_weights,
+                                              num_level_proposals)
+        bbox_gt_list = images_to_levels(all_bbox_gt, num_level_proposals)
+        proposals_list = images_to_levels(all_proposals, num_level_proposals)
+        proposal_weights_list = images_to_levels(all_proposal_weights,
+                                                 num_level_proposals)
+        return (labels_list, label_weights_list, bbox_gt_list, proposals_list,
+                proposal_weights_list, num_total_pos, num_total_neg)
+
     def loss_single(self, cls_score, pts_pred_init, pts_pred_refine, labels,
                     label_weights, bbox_gt_init, bbox_weights_init,
                     bbox_gt_refine, bbox_weights_refine, stride,
@@ -445,17 +594,15 @@ class RepPointsHead(nn.Module):
             #   assign target for bbox list
             bbox_list = self.centers_to_bboxes(center_list)
             candidate_list = bbox_list
-        cls_reg_targets_init = point_target(
+        cls_reg_targets_init = self.point_target(
             candidate_list,
             valid_flag_list,
             gt_bboxes,
             img_metas,
-            self.train_cfg.init,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
-            label_channels=label_channels,
-            background_label=self.background_label,
-            sampling=self.sampling)
+            init=True,
+            label_channels=label_channels)
         (*_, bbox_gt_list_init, candidate_list_init, bbox_weights_list_init,
          num_total_pos_init, num_total_neg_init) = cls_reg_targets_init
         num_total_samples_init = (
@@ -479,17 +626,15 @@ class RepPointsHead(nn.Module):
                 bbox.append(bbox_center +
                             bbox_shift[i_img].permute(1, 2, 0).reshape(-1, 4))
             bbox_list.append(bbox)
-        cls_reg_targets_refine = point_target(
+        cls_reg_targets_refine = self.point_target(
             bbox_list,
             valid_flag_list,
             gt_bboxes,
             img_metas,
-            self.train_cfg.refine,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
-            label_channels=label_channels,
-            background_label=self.background_label,
-            sampling=self.sampling)
+            init=False,
+            label_channels=label_channels)
         (labels_list, label_weights_list, bbox_gt_list_refine,
          candidate_list_refine, bbox_weights_list_refine, num_total_pos_refine,
          num_total_neg_refine) = cls_reg_targets_refine
