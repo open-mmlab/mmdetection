@@ -33,13 +33,8 @@ class CocoDataset(CustomDataset):
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)
-        # send class_names into the getCatIds function
-        # in case we only need to train on several classes
         self.cat_ids = self.coco.getCatIds(catNms=self.CLASSES)
-
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
-        # send cat ids to the get img id
-        # in case we only need to train on several classes
         self.img_ids = self.get_subset_by_classes(class_ids=self.cat_ids)
 
         data_infos = []
@@ -108,6 +103,8 @@ class CocoDataset(CustomDataset):
                 continue
             x1, y1, w, h = ann['bbox']
             if ann['area'] <= 0 or w < 1 or h < 1:
+                continue
+            if ann['category_id'] not in self.cat_ids:
                 continue
             bbox = [x1, y1, x1 + w, y1 + h]
             if ann.get('iscrowd', False):
