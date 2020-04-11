@@ -44,7 +44,7 @@ class CocoDataset(CustomDataset):
         # send cat ids to the get img id
         # in case we only need to train on several classes
         if self.custom_classes:
-            self.img_ids = self.get_imgs_by_cat(self.coco, catIds=self.cat_ids)
+            self.img_ids = self.get_imgs_by_cat(catIds=self.cat_ids)
         else:
             self.img_ids = self.coco.getImgIds()
 
@@ -72,7 +72,7 @@ class CocoDataset(CustomDataset):
                 valid_inds.append(i)
         return valid_inds
 
-    def get_imgs_by_cat(coco, imgIds=[], catIds=[]):
+    def get_imgs_by_cat(self, imgIds=[], catIds=[]):
         '''
         Get img ids that satisfy given filter conditions.
         Different from the coco.getImgIds, this function returns the id if
@@ -82,14 +82,14 @@ class CocoDataset(CustomDataset):
         :return: ids (int array)  : integer array of img ids
         '''
         if len(imgIds) == len(catIds) == 0:
-            ids = coco.imgs.keys()
+            ids = self.coco.imgs.keys()
         else:
             ids = set(imgIds)
             for i, catId in enumerate(catIds):
                 if i == 0 and len(ids) == 0:
-                    ids = set(coco.catToImgs[catId])
+                    ids = set(self.coco.catToImgs[catId])
                 else:
-                    ids |= set(coco.catToImgs[catId])
+                    ids |= set(self.coco.catToImgs[catId])
         return list(ids)
 
     def _parse_ann_info(self, img_info, ann_info):

@@ -30,6 +30,25 @@ class XMLDataset(CustomDataset):
             height = int(size.find('height').text)
             img_infos.append(
                 dict(id=img_id, filename=filename, width=width, height=height))
+        img_infos = self.get_img_by_cat(img_infos)
+        return img_infos
+
+    def get_img_by_cat(self, img_infos):
+        """Filter imgs by user-defined categories
+        """
+        clean_img_infos = []
+        for img_info in img_infos:
+            img_id = img_info['id']
+            xml_path = osp.join(self.img_prefix, 'Annotations',
+                                '{}.xml'.format(img_id))
+            tree = ET.parse(xml_path)
+            root = tree.getroot()
+            for obj in root.findall('object'):
+                name = obj.find('name').text
+                if name in self.CLASSES:
+                    clean_img_infos.append(img_info)
+                    break
+
         return img_infos
 
     def get_ann_info(self, idx):

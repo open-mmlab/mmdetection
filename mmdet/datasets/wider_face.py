@@ -39,4 +39,5 @@ class WIDERFaceDataset(XMLDataset):
                     width=width,
                     height=height))
 
+        img_infos = self.get_img_by_cat(img_infos)
         return img_infos

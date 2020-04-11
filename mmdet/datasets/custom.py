@@ -51,11 +51,7 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
-
-        self.custom_classes = False
-        if classes is not None:
-            self.CLASSES = classes
-            self.custom_classes = True
+        self.get_classes(classes)
 
         # join paths if data_root is specified
         if self.data_root is not None:
@@ -157,6 +153,27 @@ class CustomDataset(Dataset):
             results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
         return self.pipeline(results)
+
+    def get_classes(self, classes):
+        """Get classes of current dataset
+
+        Args:
+            classes (None | str | tuple | list): If classes is None, use
+                default CLASSES defined by builtin dataset. If classes is
+                a string, take it as a file name. If classes is a tuple or
+                list, override the CLASSES defined by builtin dataset.
+
+        """
+        if classes is None:
+            self.custom_classes = False
+            return
+
+        self.custom_classes = True
+        if isinstance(classes, str):
+            # take it as a file path
+            self.CLASSES = mmcv.list_from_file(classes)
+        elif isinstance(classes, (tuple, list)):
+            self.CLASSES = classes
 
     def format_results(self, results, **kwargs):
         pass
