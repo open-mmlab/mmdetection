@@ -27,7 +27,7 @@ lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=500,
-    warmup_ratio=1.0 / 1000,
+    warmup_ratio=0.001,
     # [7] yields higher performance than [6]
     step=[7])
 total_epochs = 8  # actual epoch = 8 * 8 = 64
