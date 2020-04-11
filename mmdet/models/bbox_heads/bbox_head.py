@@ -138,6 +138,8 @@ class BBoxHead(nn.Module):
                     bbox_weights[pos_inds.type(torch.bool)],
                     avg_factor=bbox_targets.size(0),
                     reduction_override=reduction_override)
+            else:
+                losses['loss_bbox'] = bbox_pred.sum() * 0
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
