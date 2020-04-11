@@ -5,6 +5,7 @@ from mmcv.cnn import kaiming_init, normal_init
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import force_fp32
+from mmdet.ops import Conv2d, Linear, MaxPool2d
 from ..builder import build_loss
 from ..registry import HEADS
 
@@ -41,7 +42,7 @@ class MaskIoUHead(nn.Module):
                 in_channels = self.conv_out_channels
             stride = 2 if i == num_convs - 1 else 1
             self.convs.append(
-                nn.Conv2d(
+                Conv2d(
                     in_channels,
                     self.conv_out_channels,
                     3,
@@ -55,11 +56,11 @@ class MaskIoUHead(nn.Module):
             in_channels = (
                 self.conv_out_channels *
                 pooled_area if i == 0 else self.fc_out_channels)
-            self.fcs.append(nn.Linear(in_channels, self.fc_out_channels))
+            self.fcs.append(Linear(in_channels, self.fc_out_channels))
 
-        self.fc_mask_iou = nn.Linear(self.fc_out_channels, self.num_classes)
+        self.fc_mask_iou = Linear(self.fc_out_channels, self.num_classes)
         self.relu = nn.ReLU()
-        self.max_pool = nn.MaxPool2d(2, 2)
+        self.max_pool = MaxPool2d(2, 2)
         self.loss_iou = build_loss(loss_iou)
 
     def init_weights(self):
@@ -82,7 +83,7 @@ class MaskIoUHead(nn.Module):
 
         for conv in self.convs:
             x = self.relu(conv(x))
-        x = x.view(x.size(0), -1)
+        x = x.flatten(1)
         for fc in self.fcs:
             x = self.relu(fc(x))
         mask_iou = self.fc_mask_iou(x)
@@ -95,7 +96,7 @@ class MaskIoUHead(nn.Module):
             loss_mask_iou = self.loss_iou(mask_iou_pred[pos_inds],
                                           mask_iou_targets[pos_inds])
         else:
-            loss_mask_iou = mask_iou_pred * 0
+            loss_mask_iou = mask_iou_pred.sum() * 0
         return dict(loss_mask_iou=loss_mask_iou)
 
     @force_fp32(apply_to=('mask_pred', ))
