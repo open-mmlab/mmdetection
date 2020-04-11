@@ -55,7 +55,7 @@ class PAFPN(FPN):
                              relu_before_extra_convs, no_norm_on_lateral,
                              conv_cfg, norm_cfg, act_cfg)
         # add extra bottom up pathway
-        self.lateral_deconvs = nn.ModuleList()
+        self.downsample_convs = nn.ModuleList()
         self.pafpn_convs = nn.ModuleList()
         for i in range(self.start_level + 1, self.backbone_end_level):
             d_conv = ConvModule(
@@ -77,7 +77,7 @@ class PAFPN(FPN):
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg,
                 inplace=False)
-            self.lateral_deconvs.append(d_conv)
+            self.downsample_convs.append(d_conv)
             self.pafpn_convs.append(pafpn_conv)
 
     @auto_fp16()
@@ -105,7 +105,7 @@ class PAFPN(FPN):
 
         # part 2: add bottom-up path
         for i in range(0, used_backbone_levels - 1):
-            inter_outs[i + 1] += self.lateral_deconvs[i](inter_outs[i])
+            inter_outs[i + 1] += self.downsample_convs[i](inter_outs[i])
 
         outs = []
         outs.append(inter_outs[0])
