@@ -62,7 +62,9 @@ class FoveaHead(nn.Module):
                  loss_cls=None,
                  loss_bbox=None,
                  conv_cfg=None,
-                 norm_cfg=None):
+                 norm_cfg=None,
+                 train_cfg=None,
+                 test_cfg=None):
         super(FoveaHead, self).__init__()
         self.num_classes = num_classes
         self.cls_out_channels = num_classes
@@ -84,6 +86,8 @@ class FoveaHead(nn.Module):
         self.loss_bbox = build_loss(loss_bbox)
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
         self._init_layers()
 
     def _init_layers(self):
@@ -195,7 +199,6 @@ class FoveaHead(nn.Module):
              gt_bbox_list,
              gt_label_list,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
         assert len(cls_scores) == len(bbox_preds)
 
