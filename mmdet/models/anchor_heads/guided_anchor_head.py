@@ -113,6 +113,8 @@ class GuidedAnchorHead(AnchorHead):
         deformable_groups=4,
         loc_filter_thr=0.01,
         background_label=None,
+        train_cfg=None,
+        test_cfg=None,
         loss_loc=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -175,6 +177,9 @@ class GuidedAnchorHead(AnchorHead):
         self.loss_shape = build_loss(loss_shape)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
+
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
 
         self.fp16_enabled = False
 
@@ -418,7 +423,6 @@ class GuidedAnchorHead(AnchorHead):
              gt_bboxes,
              gt_labels,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.approx_generators)
@@ -431,18 +435,18 @@ class GuidedAnchorHead(AnchorHead):
             featmap_sizes,
             self.octave_base_scale,
             self.anchor_strides,
-            center_ratio=cfg.center_ratio,
-            ignore_ratio=cfg.ignore_ratio)
+            center_ratio=self.train_cfg.center_ratio,
+            ignore_ratio=self.train_cfg.ignore_ratio)
 
         # get sampled approxes
         approxs_list, inside_flag_list = self.get_sampled_approxs(
-            featmap_sizes, img_metas, cfg, device=device)
+            featmap_sizes, img_metas, self.train_cfg, device=device)
         # get squares and guided anchors
         squares_list, guided_anchors_list, _ = self.get_anchors(
             featmap_sizes, shape_preds, loc_preds, img_metas, device=device)
 
         # get shape targets
-        sampling = False if not hasattr(cfg, 'ga_sampler') else True
+        sampling = False if not hasattr(self.train_cfg, 'ga_sampler') else True
         shape_targets = ga_shape_target(
             approxs_list,
             inside_flag_list,
@@ -450,7 +454,7 @@ class GuidedAnchorHead(AnchorHead):
             gt_bboxes,
             img_metas,
             self.approxs_per_octave,
-            cfg,
+            self.train_cfg,
             sampling=sampling)
         if shape_targets is None:
             return None
@@ -469,7 +473,7 @@ class GuidedAnchorHead(AnchorHead):
             img_metas,
             self.target_means,
             self.target_stds,
-            cfg,
+            self.train_cfg,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
@@ -492,8 +496,7 @@ class GuidedAnchorHead(AnchorHead):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples,
-            cfg=cfg)
+            num_total_samples=num_total_samples)
 
         # get anchor location loss
         losses_loc = []
@@ -503,7 +506,7 @@ class GuidedAnchorHead(AnchorHead):
                 loc_targets[i],
                 loc_weights[i],
                 loc_avg_factor=loc_avg_factor,
-                cfg=cfg)
+                cfg=self.train_cfg)
             losses_loc.append(loss_loc)
 
         # get anchor shape loss

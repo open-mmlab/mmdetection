@@ -1,6 +1,6 @@
 import torch
 
-from mmdet.core import MaxIoUAssigner
+from mmdet.core.bbox.assigners import MaxIoUAssigner
 from mmdet.core.bbox.samplers import OHEMSampler, RandomSampler
 
 

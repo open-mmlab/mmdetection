@@ -1,9 +1,11 @@
 import torch
 
 from ..geometry import bbox_overlaps
+from ..registry import BBOX_ASSIGNERS
 from .max_iou_assigner import MaxIoUAssigner
 
 
+@BBOX_ASSIGNERS.register_module
 class ApproxMaxIoUAssigner(MaxIoUAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
