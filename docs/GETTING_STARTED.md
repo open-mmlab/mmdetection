@@ -374,29 +374,33 @@ python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --out ${ONNX_FILE
 
 The simplest way is to convert your dataset to existing dataset formats (COCO or PASCAL VOC).
 
-Here we show an example of adding a custom dataset of 5 classes, assuming it is also in COCO format.
+Here we show an example of using a custom dataset of 5 classes, assuming it is also in COCO format.
 
-In `mmdet/datasets/my_dataset.py`:
-
-```python
-from .coco import CocoDataset
-from .registry import DATASETS
-
-
-@DATASETS.register_module
-class MyDataset(CocoDataset):
-
-    CLASSES = ('a', 'b', 'c', 'd', 'e')
-```
-
-In `mmdet/datasets/__init__.py`:
+In `configs/my_custom_config.py`:
 
 ```python
-from .my_dataset import MyDataset
+...
+# dataset settings
+dataset_type = 'CocoDataset'
+classes = ('a', 'b', 'c', 'd', 'e')
+...
+data = dict(
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
+    train=dict(
+        type=dataset_type,
+        classes=classes,
+        ...),
+    val=dict(
+        type=dataset_type,
+        classes=classes,
+        ...),
+    test=dict(
+        type=dataset_type,
+        classes=classes,
+        ...))
+...
 ```
-
-Then you can use `MyDataset` in config files, with the same API as CocoDataset.
-
 
 It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
 Actually, we define a simple annotation format and all existing datasets are

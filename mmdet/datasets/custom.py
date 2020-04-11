@@ -43,7 +43,8 @@ class CustomDataset(Dataset):
                  seg_prefix=None,
                  proposal_file=None,
                  test_mode=False,
-                 filter_empty_gt=True):
+                 filter_empty_gt=True,
+                 classes=None):
         self.ann_file = ann_file
         self.data_root = data_root
         self.img_prefix = img_prefix
@@ -52,6 +53,9 @@ class CustomDataset(Dataset):
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
         self.get_classes(classes)
+
+        if classes is not None:
+            self.CLASSES = classes
 
         # join paths if data_root is specified
         if self.data_root is not None:
