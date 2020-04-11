@@ -40,10 +40,7 @@ class CocoDataset(CustomDataset):
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         # send cat ids to the get img id
         # in case we only need to train on several classes
-        if self.custom_classes:
-            self.img_ids = self.get_imgs_by_cat(catIds=self.cat_ids)
-        else:
-            self.img_ids = self.coco.getImgIds()
+        self.img_ids = self.get_subset_by_classes(class_ids=self.cat_ids)
 
         data_infos = []
         for i in self.img_ids:
@@ -69,24 +66,24 @@ class CocoDataset(CustomDataset):
                 valid_inds.append(i)
         return valid_inds
 
-    def get_imgs_by_cat(self, imgIds=[], catIds=[]):
-        '''
-        Get img ids that satisfy given filter conditions.
+    def get_subset_by_classes(self, class_ids=None):
+        '''Get img ids that contain any category in class_ids.
+
         Different from the coco.getImgIds, this function returns the id if
         the img contains one of the cat rather than all.
-        :param imgIds (int array) : get imgs for given ids
-        :param catIds (int array) : get imgs with all given cats
-        :return: ids (int array)  : integer array of img ids
+
+        Args:
+            class_ids (list[int]): list of category ids
+
+        Return:
+            ids (list[int]): integer list of img ids
         '''
-        if len(imgIds) == len(catIds) == 0:
-            ids = self.coco.imgs.keys()
-        else:
-            ids = set(imgIds)
-            for i, catId in enumerate(catIds):
-                if i == 0 and len(ids) == 0:
-                    ids = set(self.coco.catToImgs[catId])
-                else:
-                    ids |= set(self.coco.catToImgs[catId])
+        if class_ids is None:
+            return self.coco.imgs.keys()
+
+        ids = set()
+        for i, class_id in enumerate(class_ids):
+            ids |= set(self.coco.catToImgs[class_id])
         return list(ids)
 
     def _parse_ann_info(self, img_info, ann_info):

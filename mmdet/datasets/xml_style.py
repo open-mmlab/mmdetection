@@ -31,10 +31,10 @@ class XMLDataset(CustomDataset):
             data_infos.append(
                 dict(id=img_id, filename=filename, width=width, height=height))
 
-        data_infos = self.get_img_by_cat(data_infos)
+        data_infos = self.get_subset_by_classes(data_infos)
         return data_infos
 
-    def get_img_by_cat(self, data_infos):
+    def get_subset_by_classes(self, data_infos):
         """Filter imgs by user-defined categories
         """
         clean_data_infos = []
