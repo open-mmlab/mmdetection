@@ -3,7 +3,7 @@ import inspect
 import cv2
 import mmcv
 import numpy as np
-from mmcv.image.transforms.resize import interp_codes
+from mmcv.image.resize import interp_codes
 from numpy import random
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -1000,7 +1000,7 @@ class RandomRescale(Rescale):
         return results
 
     def __repr__(self):
-        repr = '{}(scale_factors={}, keep_ration={}, interpolation={})'.format(
+        repr = '{}(scale_factors={}, keep_ratio={}, interpolation={})'.format(
             self.__class__.__name__, self.scale_factors, self.keep_ratio,
             self.interpolation)
         return repr
@@ -1013,15 +1013,16 @@ class AutoContrast(object):
     formula img = (img-pbkg(img))/(pmax(img)-pbkg(img))
     """
 
-    def __init__(self, pbkg=.05, pmax=.95):
+    def __init__(self, pbkg=.01, pmax=.99):
         self.pbkg = pbkg
         self.pmax = pmax
 
     def __call__(self, results):
         img = results['img']
         bkg, max_val = np.quantile(
-            img, (self.pbkg, self.pmax), axis=(0, 1)).astype(img.dtype)
-        results['img'] = (img - bkg) / (max_val - bkg)
+            img, (self.pbkg, self.pmax), axis=(0, 1)).astype(np.float32)
+        img = np.clip((img - bkg) / (max_val - bkg), 0, 1)
+        results['img'] = img
         results['img_norm_cfg'] = dict(mean=bkg, std=max_val, to_rgb=False)
         return results
 
@@ -1041,24 +1042,27 @@ class RandomGamma(object):
         self.channels = channels if channels is None else \
             np.squeeze(np.array(channels))
 
+    def _apply_gamma(self, img, gamma):
+        if img.dtype == np.uint8:
+            lut = ((np.arange(0, 256 / 255, 1 / 255)**gamma) * 255).astype(
+                np.uint8)
+            img = cv2.LUT(img, lut)
+        else:
+            min_val = img.min(axis=(0, 1))
+            max_val = img.max(axis=(0, 1)) - min_val
+            img = (cv2.pow((img - min_val) / max_val, gamma) * max_val +
+                   min_val).astype(img.dtype)
+        return img
+
     def __call__(self, results):
         gamma = np.random.choice(self.gammas)
         img = results['img']
-        gimg = img if self.channels is None else img[..., self.channels]
-        if gimg.dtype == np.uint8:
-            lut = ((np.arange(0, 256 / 255, 1 / 255)**gamma) * 255).astype(
-                np.uint8)
-            gimg = cv2.LUT(gimg, lut)
-        else:
-            min_val = gimg.min(axis=(0, 1))
-            max_val = gimg.max(axis=(0, 1))
-            gimg = cv2.pow(
-                (gimg - min_val) / max_val, gamma) * max_val + min_val
-            gimg = gimg.astype(img.dtype)
         if self.channels is None:
-            img = gimg
+            img = self._apply_gamma(img, gamma)
         else:
-            img[..., self.channels] = gimg
+            img[...,
+                self.channels] = self._apply_gamma(img[..., self.channels],
+                                                   gamma)
         results['img'] = img
         return results
 
@@ -1080,27 +1084,22 @@ class RandomBlur(object):
         self.channels = channels if channels is None else \
             np.squeeze(np.array(channels))
 
-    def __call__(self, results):
-        img = results['img']
-        sigma = np.random.choice(self.sigmas)
+    def _apply_blur(self, img, sigma):
         if sigma > 0:
-            if self.channels is None:
-                img = cv2.GaussianBlur(img, (0, 0), sigma)
-            else:
-                img[...,
-                    self.channels] = cv2.GaussianBlur(img[..., self.channels],
-                                                      (0, 0), sigma)
+            img = cv2.GaussianBlur(img, (0, 0), sigma)
         elif sigma < 0:
-            sigma = -sigma
-            k = self.k
-            if self.channels is None:
-                img = (img - cv2.GaussianBlur(img,
-                                              (0, 0), sigma) * k) / (1 - k)
-            else:
-                img[..., self.channels] = (
-                    img[..., self.channels] -
-                    cv2.GaussianBlur(img[..., self.channels],
-                                     (0, 0), sigma) * k) / (1 - k)
+            img = ((img - cv2.GaussianBlur(img, (0, 0), -sigma) * self.k) /
+                   (1 - self.k)).astype(img.dtype)
+        return img
+
+    def __call__(self, results):
+        sigma = np.random.choice(self.sigmas)
+        img = results['img']
+        if self.channels is None:
+            img = self._apply_blur(img, sigma)
+        else:
+            img[..., self.channels] = self._apply_blur(img[..., self.channels],
+                                                       sigma)
         results['img'] = img
         return results
 
