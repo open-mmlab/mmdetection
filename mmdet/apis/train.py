@@ -123,7 +123,7 @@ def _dist_train(model,
     data_loaders = [
         build_dataloader(
             ds,
-            cfg.data.imgs_per_gpu,
+            cfg.data.samples_per_gpu,
             cfg.data.workers_per_gpu,
             dist=True,
             seed=cfg.seed) for ds in dataset
@@ -167,7 +167,7 @@ def _dist_train(model,
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
         val_dataloader = build_dataloader(
             val_dataset,
-            imgs_per_gpu=1,
+            samples_per_gpu=1,
             workers_per_gpu=cfg.data.workers_per_gpu,
             dist=True,
             shuffle=False)
@@ -193,7 +193,7 @@ def _non_dist_train(model,
     data_loaders = [
         build_dataloader(
             ds,
-            cfg.data.imgs_per_gpu,
+            cfg.data.samples_per_gpu,
             cfg.data.workers_per_gpu,
             cfg.gpus,
             dist=False,
@@ -228,7 +228,7 @@ def _non_dist_train(model,
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
         val_dataloader = build_dataloader(
             val_dataset,
-            imgs_per_gpu=1,
+            samples_per_gpu=1,
             workers_per_gpu=cfg.data.workers_per_gpu,
             dist=False,
             shuffle=False)

@@ -47,6 +47,6 @@ test_cfg = dict(
     score_thr=0.05,
     nms=dict(type='nms', iou_thr=0.5),
     max_per_img=100)
-data = dict(imgs_per_gpu=4, workers_per_gpu=4)
+data = dict(samples_per_gpu=4, workers_per_gpu=4)
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)

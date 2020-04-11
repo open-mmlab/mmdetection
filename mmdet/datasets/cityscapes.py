@@ -25,7 +25,7 @@ class CityscapesDataset(CocoDataset):
         """Filter images too small or without ground truths."""
         valid_inds = []
         ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
-        for i, img_info in enumerate(self.img_infos):
+        for i, img_info in enumerate(self.data_infos):
             img_id = img_info['id']
             ann_ids = self.coco.getAnnIds(imgIds=[img_id])
             ann_info = self.coco.loadAnns(ann_ids)
@@ -113,7 +113,7 @@ class CityscapesDataset(CocoDataset):
         prog_bar = mmcv.ProgressBar(len(self))
         for idx in range(len(self)):
             result = results[idx]
-            filename = self.img_infos[idx]['filename']
+            filename = self.data_infos[idx]['filename']
             basename = osp.splitext(osp.basename(filename))[0]
             pred_txt = osp.join(outfile_prefix, basename + '_pred.txt')
 
