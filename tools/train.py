@@ -27,13 +27,14 @@ def parse_args():
         '--validate',
         action='store_true',
         help='whether to evaluate the checkpoint during training')
-    parser.add_argument(
+    group_gpus = parser.add_mutually_exclusive_group()
+    group_gpus.add_argument(
         '--gpus',
         type=int,
         default=1,
         help='number of gpus to use '
         '(only applicable to non-distributed training)')
-    parser.add_argument(
+    group_gpus.add_argument(
         '--gpu-ids',
         type=int,
         nargs='*',
@@ -73,12 +74,11 @@ def main():
         cfg.work_dir = args.work_dir
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
-    cfg.gpus = args.gpus
-    cfg.gpu_ids = args.gpu_ids
+    cfg.gpu_ids = range(args.gpus) if args.gpu_ids is None else args.gpu_ids
 
     if args.autoscale_lr:
         # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
-        cfg.optimizer['lr'] = cfg.optimizer['lr'] * cfg.gpus / 8
+        cfg.optimizer['lr'] = cfg.optimizer['lr'] * len(cfg.gpu_ids) / 8
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
