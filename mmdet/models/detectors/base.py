@@ -1,9 +1,11 @@
 from abc import ABCMeta, abstractmethod
-from pathlib import Path
 
+import mmcv
+import numpy as np
+import pycocotools.mask as maskUtils
 import torch.nn as nn
 
-from mmdet.core import auto_fp16, get_classes, tensor2imgs
+from mmdet.core import auto_fp16
 from mmdet.utils import print_log
 
 
@@ -147,41 +149,50 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             return self.forward_test(img, img_metas, **kwargs)
 
     def show_result(self,
-                    data,
+                    img,
                     result,
-                    dataset=None,
                     score_thr=0.3,
+                    wait_time=0,
                     show=False,
-                    images_out_dir=None):
-        from mmdet.apis.inference import show_result as show_single_result
-
-        img_tensor = data['img'][0]
-        img_metas = data['img_metas'][0].data[0]
-        imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
-        assert len(imgs) == len(img_metas)
-
-        if dataset is None:
-            class_names = self.CLASSES
-        elif isinstance(dataset, str):
-            class_names = get_classes(dataset)
-        elif isinstance(dataset, (list, tuple)):
-            class_names = dataset
+                    out_file=None):
+        img = mmcv.imread(img)
+        img = img.copy()
+        if isinstance(result, tuple):
+            bbox_result, segm_result = result
         else:
-            raise TypeError(
-                'dataset must be a valid dataset name or a sequence'
-                ' of class names, not {}'.format(type(dataset)))
-
-        for img, img_meta in zip(imgs, img_metas):
-            h, w, _ = img_meta['img_shape']
-            img_show = img[:h, :w, :]
-
-            out_file = '{}/{}'.format(images_out_dir,
-                                      Path(img_meta['filename']).name)
-
-            show_single_result(
-                img=img_show,
-                result=result,
-                class_names=class_names,
-                score_thr=score_thr,
-                show=show,
-                out_file=out_file if images_out_dir else None)
+            bbox_result, segm_result = result, None
+        bboxes = np.vstack(bbox_result)
+        labels = [
+            np.full(bbox.shape[0], i, dtype=np.int32)
+            for i, bbox in enumerate(bbox_result)
+        ]
+        labels = np.concatenate(labels)
+        # draw segmentation masks
+        if segm_result is not None:
+            segms = mmcv.concat_list(segm_result)
+            inds = np.where(bboxes[:, -1] > score_thr)[0]
+            np.random.seed(42)
+            color_masks = [
+                np.random.randint(0, 256, (1, 3), dtype=np.uint8)
+                for _ in range(max(labels) + 1)
+            ]
+            for i in inds:
+                i = int(i)
+                color_mask = color_masks[labels[i]]
+                mask = maskUtils.decode(segms[i]).astype(np.bool)
+                img[mask] = img[mask] * 0.5 + color_mask * 0.5
+        # if out_file specified, do not show image in window
+        if out_file is not None:
+            show = False
+        # draw bounding boxes
+        mmcv.imshow_det_bboxes(
+            img,
+            bboxes,
+            labels,
+            class_names=self.class_names,
+            score_thr=score_thr,
+            show=show,
+            wait_time=wait_time,
+            out_file=out_file)
+        if not (show or out_file):
+            return img
