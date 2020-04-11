@@ -17,30 +17,25 @@ from .registry import DATASETS
 class CocoDataset(CustomDataset):
 
     CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
-               'train', 'truck', 'boat', 'traffic_light', 'fire_hydrant',
-               'stop_sign', 'parking_meter', 'bench', 'bird', 'cat', 'dog',
+               'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
+               'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
                'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
                'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-               'skis', 'snowboard', 'sports_ball', 'kite', 'baseball_bat',
-               'baseball_glove', 'skateboard', 'surfboard', 'tennis_racket',
-               'bottle', 'wine_glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
+               'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat',
+               'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
+               'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
                'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
-               'hot_dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-               'potted_plant', 'bed', 'dining_table', 'toilet', 'tv', 'laptop',
-               'mouse', 'remote', 'keyboard', 'cell_phone', 'microwave',
+               'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+               'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
+               'mouse', 'remote', 'keyboard', 'cell phone', 'microwave',
                'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock',
-               'vase', 'scissors', 'teddy_bear', 'hair_drier', 'toothbrush')
+               'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
 
     def load_annotations(self, ann_file):
-        if not self.class_names:
-            # Use all the classes by default
-            # replace the '_' to match the class names in the annotations
-            self.class_names = [res.replace('_', ' ') for res in self.CLASSES]
         self.coco = COCO(ann_file)
         # send class_names into the getCatIds function
         # in case we only need to train on several classes
-        # by default self.class_names = CLASSES
-        self.cat_ids = self.coco.getCatIds(catNms=self.class_names)
+        self.cat_ids = self.coco.getCatIds(catNms=self.CLASSES)
 
         self.cat2label = {
             cat_id: i + 1
@@ -48,8 +43,8 @@ class CocoDataset(CustomDataset):
         }
         # send cat ids to the get img id
         # in case we only need to train on several classes
-        if len(self.cat_ids) < len(self.CLASSES):
-            self.img_ids = getImgIds(self.coco, catIds=self.cat_ids)
+        if self.custom_classes:
+            self.img_ids = self.get_imgs_by_cat(self.coco, catIds=self.cat_ids)
         else:
             self.img_ids = self.coco.getImgIds()
 
@@ -76,6 +71,26 @@ class CocoDataset(CustomDataset):
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
         return valid_inds
+
+    def get_imgs_by_cat(coco, imgIds=[], catIds=[]):
+        '''
+        Get img ids that satisfy given filter conditions.
+        Different from the coco.getImgIds, this function returns the id if
+        the img contains one of the cat rather than all.
+        :param imgIds (int array) : get imgs for given ids
+        :param catIds (int array) : get imgs with all given cats
+        :return: ids (int array)  : integer array of img ids
+        '''
+        if len(imgIds) == len(catIds) == 0:
+            ids = coco.imgs.keys()
+        else:
+            ids = set(imgIds)
+            for i, catId in enumerate(catIds):
+                if i == 0 and len(ids) == 0:
+                    ids = set(coco.catToImgs[catId])
+                else:
+                    ids |= set(coco.catToImgs[catId])
+        return list(ids)
 
     def _parse_ann_info(self, img_info, ann_info):
         """Parse bbox and mask annotation.
@@ -408,24 +423,3 @@ class CocoDataset(CustomDataset):
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
-
-
-def getImgIds(coco, imgIds=[], catIds=[]):
-    '''
-    Get img ids that satisfy given filter conditions.
-    Different from the coco.getImgIds, this function returns the id if
-    the img contains one of the cat rather than all.
-    :param imgIds (int array) : get imgs for given ids
-    :param catIds (int array) : get imgs with all given cats
-    :return: ids (int array)  : integer array of img ids
-    '''
-    if len(imgIds) == len(catIds) == 0:
-        ids = coco.imgs.keys()
-    else:
-        ids = set(imgIds)
-        for i, catId in enumerate(catIds):
-            if i == 0 and len(ids) == 0:
-                ids = set(coco.catToImgs[catId])
-            else:
-                ids |= set(coco.catToImgs[catId])
-    return list(ids)
