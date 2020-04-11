@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from itertools import product
 from unittest.mock import patch
 
@@ -10,16 +11,10 @@ torch.__version__ = '1.1'  # force test
 
 
 def test_conv_2d():
-    test_cases = {
-        'in_w': [10, 20],
-        'in_h': [10, 20],
-        'in_channel': [1, 3],
-        'out_channel': [1, 3],
-        'kernel_size': [3, 5],
-        'stride': [1, 2],
-        'padding': [0, 1],
-        'dilation': [1, 2]
-    }
+    test_cases = OrderedDict([('in_w', [10, 20]), ('in_h', [10, 20]),
+                              ('in_channel', [1, 3]), ('out_channel', [1, 3]),
+                              ('kernel_size', [3, 5]), ('stride', [1, 2]),
+                              ('padding', [0, 1]), ('dilation', [1, 2])])
 
     # train mode
     for in_h, in_w, in_cha, out_cha, k, s, p, d in product(
@@ -53,16 +48,10 @@ def test_conv_2d():
 
 
 def test_conv_transposed_2d():
-    test_cases = {
-        'in_w': [10, 20],
-        'in_h': [10, 20],
-        'in_channel': [1, 3],
-        'out_channel': [1, 3],
-        'kernel_size': [3, 5],
-        'stride': [1, 2],
-        'padding': [0, 1],
-        'dilation': [1, 2]
-    }
+    test_cases = OrderedDict([('in_w', [10, 20]), ('in_h', [10, 20]),
+                              ('in_channel', [1, 3]), ('out_channel', [1, 3]),
+                              ('kernel_size', [3, 5]), ('stride', [1, 2]),
+                              ('padding', [0, 1]), ('dilation', [1, 2])])
 
     for in_h, in_w, in_cha, out_cha, k, s, p, d in product(
             *list(test_cases.values())):
@@ -112,16 +101,10 @@ def test_conv_transposed_2d():
 
 
 def test_max_pool_2d():
-    test_cases = {
-        'in_w': [10, 20],
-        'in_h': [10, 20],
-        'in_channel': [1, 3],
-        'out_channel': [1, 3],
-        'kernel_size': [3, 5],
-        'stride': [1, 2],
-        'padding': [0, 1],
-        'dilation': [1, 2]
-    }
+    test_cases = OrderedDict([('in_w', [10, 20]), ('in_h', [10, 20]),
+                              ('in_channel', [1, 3]), ('out_channel', [1, 3]),
+                              ('kernel_size', [3, 5]), ('stride', [1, 2]),
+                              ('padding', [0, 1]), ('dilation', [1, 2])])
 
     for in_h, in_w, in_cha, out_cha, k, s, p, d in product(
             *list(test_cases.values())):
@@ -142,12 +125,12 @@ def test_max_pool_2d():
 
 
 def test_linear():
-    test_cases = {
-        'in_w': [10, 20],
-        'in_h': [10, 20],
-        'in_feature': [1, 3],
-        'out_feature': [1, 3]
-    }
+    test_cases = OrderedDict([
+        ('in_w', [10, 20]),
+        ('in_h', [10, 20]),
+        ('in_feature', [1, 3]),
+        ('out_feature', [1, 3]),
+    ])
 
     for in_h, in_w, in_feature, out_feature in product(
             *list(test_cases.values())):
