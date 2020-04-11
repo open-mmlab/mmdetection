@@ -32,9 +32,9 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
         if rpn_head is not None:
             rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
-            rpn_head.update(train_cfg=rpn_train_cfg)
-            rpn_head.update(test_cfg=test_cfg.rpn)
-            self.rpn_head = builder.build_head(rpn_head)
+            rpn_head_ = rpn_head.copy()
+            rpn_head_.update(train_cfg=rpn_train_cfg, test_cfg=test_cfg.rpn)
+            self.rpn_head = builder.build_head(rpn_head_)
 
         if roi_head is not None:
             # update train and test cfg here for now
