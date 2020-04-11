@@ -31,7 +31,6 @@ def parse_args():
     group_gpus.add_argument(
         '--gpus',
         type=int,
-        default=1,
         help='number of gpus to use '
         '(only applicable to non-distributed training)')
     group_gpus.add_argument(
@@ -74,7 +73,10 @@ def main():
         cfg.work_dir = args.work_dir
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
-    cfg.gpu_ids = range(args.gpus) if args.gpu_ids is None else args.gpu_ids
+    if args.gpu_ids is not None:
+        cfg.gpu_ids = args.gpu_ids
+    else:
+        cfg.gpu_ids = range(1) if args.gpus is None else range(args.gpus)
 
     if args.autoscale_lr:
         # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
