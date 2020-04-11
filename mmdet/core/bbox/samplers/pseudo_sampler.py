@@ -1,9 +1,11 @@
 import torch
 
+from ..registry import BBOX_SAMPLERS
 from .base_sampler import BaseSampler
 from .sampling_result import SamplingResult
 
 
+@BBOX_SAMPLERS.register_module
 class PseudoSampler(BaseSampler):
 
     def __init__(self, **kwargs):

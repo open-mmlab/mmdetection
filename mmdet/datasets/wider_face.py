@@ -20,7 +20,7 @@ class WIDERFaceDataset(XMLDataset):
         super(WIDERFaceDataset, self).__init__(**kwargs)
 
     def load_annotations(self, ann_file):
-        img_infos = []
+        data_infos = []
         img_ids = mmcv.list_from_file(ann_file)
         for img_id in img_ids:
             filename = '{}.jpg'.format(img_id)
@@ -32,12 +32,12 @@ class WIDERFaceDataset(XMLDataset):
             width = int(size.find('width').text)
             height = int(size.find('height').text)
             folder = root.find('folder').text
-            img_infos.append(
+            data_infos.append(
                 dict(
                     id=img_id,
                     filename=osp.join(folder, filename),
                     width=width,
                     height=height))
 
-        img_infos = self.get_img_by_cat(img_infos)
-        return img_infos
+        data_infos = self.get_img_by_cat(data_infos)
+        return data_infos

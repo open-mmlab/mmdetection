@@ -1,10 +1,9 @@
-from torch import nn as nn
-
 from .conv_ws import ConvWS2d
 from .dcn import DeformConvPack, ModulatedDeformConvPack
+from .wrappers import Conv2d
 
 conv_cfg = {
-    'Conv': nn.Conv2d,
+    'Conv': Conv2d,
     'ConvWS': ConvWS2d,
     'DCN': DeformConvPack,
     'DCNv2': ModulatedDeformConvPack,

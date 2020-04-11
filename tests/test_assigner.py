@@ -10,8 +10,8 @@ CommandLine:
 """
 import torch
 
-from mmdet.core import MaxIoUAssigner
-from mmdet.core.bbox.assigners import ApproxMaxIoUAssigner, PointAssigner
+from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner, MaxIoUAssigner,
+                                       PointAssigner)
 
 
 def test_max_iou_assigner():
@@ -49,7 +49,7 @@ def test_max_iou_assigner_with_ignore():
         [0, 0, 10, 10],
         [10, 10, 20, 20],
         [5, 5, 15, 15],
-        [32, 32, 38, 42],
+        [30, 32, 40, 42],
     ])
     gt_bboxes = torch.FloatTensor([
         [0, 0, 10, 9],

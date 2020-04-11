@@ -5,6 +5,7 @@ from mmcv.cnn import kaiming_init, normal_init
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import force_fp32
+from mmdet.ops import Conv2d, Linear, MaxPool2d
 from ..builder import build_loss
 from ..registry import HEADS
 
@@ -23,7 +24,7 @@ class MaskIoUHead(nn.Module):
                  in_channels=256,
                  conv_out_channels=256,
                  fc_out_channels=1024,
-                 num_classes=81,
+                 num_classes=80,
                  loss_iou=dict(type='MSELoss', loss_weight=0.5)):
         super(MaskIoUHead, self).__init__()
         self.in_channels = in_channels
@@ -41,7 +42,7 @@ class MaskIoUHead(nn.Module):
                 in_channels = self.conv_out_channels
             stride = 2 if i == num_convs - 1 else 1
             self.convs.append(
-                nn.Conv2d(
+                Conv2d(
                     in_channels,
                     self.conv_out_channels,
                     3,
@@ -55,11 +56,11 @@ class MaskIoUHead(nn.Module):
             in_channels = (
                 self.conv_out_channels *
                 pooled_area if i == 0 else self.fc_out_channels)
-            self.fcs.append(nn.Linear(in_channels, self.fc_out_channels))
+            self.fcs.append(Linear(in_channels, self.fc_out_channels))
 
-        self.fc_mask_iou = nn.Linear(self.fc_out_channels, self.num_classes)
+        self.fc_mask_iou = Linear(self.fc_out_channels, self.num_classes)
         self.relu = nn.ReLU()
-        self.max_pool = nn.MaxPool2d(2, 2)
+        self.max_pool = MaxPool2d(2, 2)
         self.loss_iou = build_loss(loss_iou)
 
     def init_weights(self):
@@ -82,7 +83,7 @@ class MaskIoUHead(nn.Module):
 
         for conv in self.convs:
             x = self.relu(conv(x))
-        x = x.view(x.size(0), -1)
+        x = x.flatten(1)
         for fc in self.fcs:
             x = self.relu(fc(x))
         mask_iou = self.fc_mask_iou(x)
@@ -95,7 +96,7 @@ class MaskIoUHead(nn.Module):
             loss_mask_iou = self.loss_iou(mask_iou_pred[pos_inds],
                                           mask_iou_targets[pos_inds])
         else:
-            loss_mask_iou = mask_iou_pred * 0
+            loss_mask_iou = mask_iou_pred.sum() * 0
         return dict(loss_mask_iou=loss_mask_iou)
 
     @force_fp32(apply_to=('mask_pred', ))
@@ -112,8 +113,8 @@ class MaskIoUHead(nn.Module):
 
         Args:
             sampling_results (list[:obj:`SamplingResult`]): sampling results.
-            gt_masks (list[ndarray]): Gt masks (the whole instance) of each
-                image, binary maps with the same shape of the input image.
+            gt_masks (BitmapMask | PolygonMask): Gt masks (the whole instance)
+                of each image, with the same shape of the input image.
             mask_pred (Tensor): Predicted masks of each positive proposal,
                 shape (num_pos, h, w).
             mask_targets (Tensor): Gt mask of each positive proposal,
@@ -157,15 +158,15 @@ class MaskIoUHead(nn.Module):
             proposals_np = pos_proposals.cpu().numpy()
             pos_assigned_gt_inds = pos_assigned_gt_inds.cpu().numpy()
             # compute mask areas of gt instances (batch processing for speedup)
-            gt_instance_mask_area = gt_masks.sum((-1, -2))
+            gt_instance_mask_area = gt_masks.areas
             for i in range(num_pos):
                 gt_mask = gt_masks[pos_assigned_gt_inds[i]]
 
                 # crop the gt mask inside the proposal
-                x1, y1, x2, y2 = proposals_np[i, :].astype(np.int32)
-                gt_mask_in_proposal = gt_mask[y1:y2 + 1, x1:x2 + 1]
+                bbox = proposals_np[i, :].astype(np.int32)
+                gt_mask_in_proposal = gt_mask.crop(bbox)
 
-                ratio = gt_mask_in_proposal.sum() / (
+                ratio = gt_mask_in_proposal.areas[0] / (
                     gt_instance_mask_area[pos_assigned_gt_inds[i]] + 1e-7)
                 area_ratios.append(ratio)
             area_ratios = torch.from_numpy(np.stack(area_ratios)).float().to(
@@ -181,10 +182,7 @@ class MaskIoUHead(nn.Module):
         mask_score = bbox_score * mask_iou
         """
         inds = range(det_labels.size(0))
-        mask_scores = mask_iou_pred[inds, det_labels + 1] * det_bboxes[inds,
-                                                                       -1]
+        mask_scores = mask_iou_pred[inds, det_labels] * det_bboxes[inds, -1]
         mask_scores = mask_scores.cpu().numpy()
         det_labels = det_labels.cpu().numpy()
-        return [
-            mask_scores[det_labels == i] for i in range(self.num_classes - 1)
-        ]
+        return [mask_scores[det_labels == i] for i in range(self.num_classes)]

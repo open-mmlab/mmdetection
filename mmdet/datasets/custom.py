@@ -66,7 +66,7 @@ class CustomDataset(Dataset):
                 self.proposal_file = osp.join(self.data_root,
                                               self.proposal_file)
         # load annotations (and proposals)
-        self.img_infos = self.load_annotations(self.ann_file)
+        self.data_infos = self.load_annotations(self.ann_file)
         if self.proposal_file is not None:
             self.proposals = self.load_proposals(self.proposal_file)
         else:
@@ -74,7 +74,7 @@ class CustomDataset(Dataset):
         # filter images too small
         if not test_mode:
             valid_inds = self._filter_imgs()
-            self.img_infos = [self.img_infos[i] for i in valid_inds]
+            self.data_infos = [self.data_infos[i] for i in valid_inds]
             if self.proposals is not None:
                 self.proposals = [self.proposals[i] for i in valid_inds]
         # set group flag for the sampler
@@ -84,7 +84,7 @@ class CustomDataset(Dataset):
         self.pipeline = Compose(pipeline)
 
     def __len__(self):
-        return len(self.img_infos)
+        return len(self.data_infos)
 
     def load_annotations(self, ann_file):
         return mmcv.load(ann_file)
@@ -93,7 +93,7 @@ class CustomDataset(Dataset):
         return mmcv.load(proposal_file)
 
     def get_ann_info(self, idx):
-        return self.img_infos[idx]['ann']
+        return self.data_infos[idx]['ann']
 
     def pre_pipeline(self, results):
         results['img_prefix'] = self.img_prefix
@@ -106,7 +106,7 @@ class CustomDataset(Dataset):
     def _filter_imgs(self, min_size=32):
         """Filter images too small."""
         valid_inds = []
-        for i, img_info in enumerate(self.img_infos):
+        for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
         return valid_inds
@@ -119,7 +119,7 @@ class CustomDataset(Dataset):
         """
         self.flag = np.zeros(len(self), dtype=np.uint8)
         for i in range(len(self)):
-            img_info = self.img_infos[i]
+            img_info = self.data_infos[i]
             if img_info['width'] / img_info['height'] > 1:
                 self.flag[i] = 1
 
@@ -138,7 +138,7 @@ class CustomDataset(Dataset):
             return data
 
     def prepare_train_img(self, idx):
-        img_info = self.img_infos[idx]
+        img_info = self.data_infos[idx]
         ann_info = self.get_ann_info(idx)
         results = dict(img_info=img_info, ann_info=ann_info)
         if self.proposals is not None:
@@ -147,7 +147,7 @@ class CustomDataset(Dataset):
         return self.pipeline(results)
 
     def prepare_test_img(self, idx):
-        img_info = self.img_infos[idx]
+        img_info = self.data_infos[idx]
         results = dict(img_info=img_info)
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]

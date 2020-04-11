@@ -37,10 +37,7 @@ class CocoDataset(CustomDataset):
         # in case we only need to train on several classes
         self.cat_ids = self.coco.getCatIds(catNms=self.CLASSES)
 
-        self.cat2label = {
-            cat_id: i + 1
-            for i, cat_id in enumerate(self.cat_ids)
-        }
+        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         # send cat ids to the get img id
         # in case we only need to train on several classes
         if self.custom_classes:
@@ -48,24 +45,24 @@ class CocoDataset(CustomDataset):
         else:
             self.img_ids = self.coco.getImgIds()
 
-        img_infos = []
+        data_infos = []
         for i in self.img_ids:
             info = self.coco.loadImgs([i])[0]
             info['filename'] = info['file_name']
-            img_infos.append(info)
-        return img_infos
+            data_infos.append(info)
+        return data_infos
 
     def get_ann_info(self, idx):
-        img_id = self.img_infos[idx]['id']
+        img_id = self.data_infos[idx]['id']
         ann_ids = self.coco.getAnnIds(imgIds=[img_id])
         ann_info = self.coco.loadAnns(ann_ids)
-        return self._parse_ann_info(self.img_infos[idx], ann_info)
+        return self._parse_ann_info(self.data_infos[idx], ann_info)
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small or without ground truths."""
         valid_inds = []
         ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
-        for i, img_info in enumerate(self.img_infos):
+        for i, img_info in enumerate(self.data_infos):
             if self.filter_empty_gt and self.img_ids[i] not in ids_with_ann:
                 continue
             if min(img_info['width'], img_info['height']) >= min_size:
@@ -115,10 +112,7 @@ class CocoDataset(CustomDataset):
             x1, y1, w, h = ann['bbox']
             if ann['area'] <= 0 or w < 1 or h < 1:
                 continue
-            if ann['category_id'] not in self.cat_ids:
-                # skip ann when only train on several cats
-                continue
-            bbox = [x1, y1, x1 + w - 1, y1 + h - 1]
+            bbox = [x1, y1, x1 + w, y1 + h]
             if ann.get('iscrowd', False):
                 gt_bboxes_ignore.append(bbox)
             else:
@@ -154,8 +148,8 @@ class CocoDataset(CustomDataset):
         return [
             _bbox[0],
             _bbox[1],
-            _bbox[2] - _bbox[0] + 1,
-            _bbox[3] - _bbox[1] + 1,
+            _bbox[2] - _bbox[0],
+            _bbox[3] - _bbox[1],
         ]
 
     def _proposal2json(self, results):
@@ -281,7 +275,7 @@ class CocoDataset(CustomDataset):
                 if ann.get('ignore', False) or ann['iscrowd']:
                     continue
                 x1, y1, w, h = ann['bbox']
-                bboxes.append([x1, y1, x1 + w - 1, y1 + h - 1])
+                bboxes.append([x1, y1, x1 + w, y1 + h])
             bboxes = np.array(bboxes, dtype=np.float32)
             if bboxes.shape[0] == 0:
                 bboxes = np.zeros((0, 4))

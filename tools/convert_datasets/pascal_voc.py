@@ -7,7 +7,7 @@ import numpy as np
 
 from mmdet.core import voc_classes
 
-label_ids = {name: i + 1 for i, name in enumerate(voc_classes())}
+label_ids = {name: i for i, name in enumerate(voc_classes())}
 
 
 def parse_xml(args):

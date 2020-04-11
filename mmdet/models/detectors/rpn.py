@@ -20,6 +20,9 @@ class RPN(BaseDetector, RPNTestMixin):
         super(RPN, self).__init__()
         self.backbone = builder.build_backbone(backbone)
         self.neck = builder.build_neck(neck) if neck is not None else None
+        rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
+        rpn_head.update(train_cfg=rpn_train_cfg)
+        rpn_head.update(test_cfg=test_cfg.rpn)
         self.rpn_head = builder.build_head(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -54,7 +57,7 @@ class RPN(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
         rpn_outs = self.rpn_head(x)
 
-        rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas, self.train_cfg.rpn)
+        rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas)
         losses = self.rpn_head.loss(
             *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
@@ -64,7 +67,8 @@ class RPN(BaseDetector, RPNTestMixin):
         proposal_list = self.simple_test_rpn(x, img_metas, self.test_cfg.rpn)
         if rescale:
             for proposals, meta in zip(proposal_list, img_metas):
-                proposals[:, :4] /= meta['scale_factor']
+                proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])
+
         # TODO: remove this restriction
         return proposal_list[0].cpu().numpy()
 

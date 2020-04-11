@@ -16,18 +16,21 @@ class SSDHead(AnchorHead):
 
     def __init__(self,
                  input_size=300,
-                 num_classes=81,
+                 num_classes=80,
                  in_channels=(512, 1024, 512, 256, 256, 256),
                  anchor_strides=(8, 16, 32, 64, 100, 300),
                  basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
+                 background_label=None,
                  target_means=(.0, .0, .0, .0),
-                 target_stds=(1.0, 1.0, 1.0, 1.0)):
+                 target_stds=(1.0, 1.0, 1.0, 1.0),
+                 train_cfg=None,
+                 test_cfg=None):
         super(AnchorHead, self).__init__()
         self.input_size = input_size
         self.num_classes = num_classes
         self.in_channels = in_channels
-        self.cls_out_channels = num_classes
+        self.cls_out_channels = num_classes + 1  # add background class
         num_anchors = [len(ratios) * 2 + 2 for ratios in anchor_ratios]
         reg_convs = []
         cls_convs = []
@@ -41,7 +44,7 @@ class SSDHead(AnchorHead):
             cls_convs.append(
                 nn.Conv2d(
                     in_channels[i],
-                    num_anchors[i] * num_classes,
+                    num_anchors[i] * (num_classes + 1),
                     kernel_size=3,
                     padding=1))
         self.reg_convs = nn.ModuleList(reg_convs)
@@ -75,7 +78,7 @@ class SSDHead(AnchorHead):
         for k in range(len(anchor_strides)):
             base_size = min_sizes[k]
             stride = anchor_strides[k]
-            ctr = ((stride - 1) / 2., (stride - 1) / 2.)
+            ctr = ((stride) / 2., (stride) / 2.)
             scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
             ratios = [1.]
             for r in anchor_ratios[k]:
@@ -88,10 +91,18 @@ class SSDHead(AnchorHead):
                 anchor_generator.base_anchors, 0, torch.LongTensor(indices))
             self.anchor_generators.append(anchor_generator)
 
+        self.background_label = (
+            num_classes if background_label is None else background_label)
+        # background_label should be either 0 or num_classes
+        assert (self.background_label == 0
+                or self.background_label == num_classes)
+
         self.target_means = target_means
         self.target_stds = target_stds
         self.use_sigmoid_cls = False
         self.cls_focal_loss = False
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
         self.fp16_enabled = False
 
     def init_weights(self):
@@ -109,14 +120,16 @@ class SSDHead(AnchorHead):
         return cls_scores, bbox_preds
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples, cfg):
+                    bbox_targets, bbox_weights, num_total_samples):
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
-        pos_inds = (labels > 0).nonzero().view(-1)
-        neg_inds = (labels == 0).nonzero().view(-1)
+        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+        pos_inds = ((labels >= 0) &
+                    (labels < self.background_label)).nonzero().reshape(-1)
+        neg_inds = (labels == self.background_label).nonzero().view(-1)
 
         num_pos_samples = pos_inds.size(0)
-        num_neg_samples = cfg.neg_pos_ratio * num_pos_samples
+        num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples
         if num_neg_samples > neg_inds.size(0):
             num_neg_samples = neg_inds.size(0)
         topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
@@ -128,7 +141,7 @@ class SSDHead(AnchorHead):
             bbox_pred,
             bbox_targets,
             bbox_weights,
-            beta=cfg.smoothl1_beta,
+            beta=self.train_cfg.smoothl1_beta,
             avg_factor=num_total_samples)
         return loss_cls[None], loss_bbox
 
@@ -138,7 +151,6 @@ class SSDHead(AnchorHead):
              gt_bboxes,
              gt_labels,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
@@ -154,10 +166,11 @@ class SSDHead(AnchorHead):
             img_metas,
             self.target_means,
             self.target_stds,
-            cfg,
+            self.train_cfg,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=1,
+            background_label=self.background_label,
             sampling=False,
             unmap_outputs=False)
         if cls_reg_targets is None:
@@ -196,6 +209,5 @@ class SSDHead(AnchorHead):
             all_label_weights,
             all_bbox_targets,
             all_bbox_weights,
-            num_total_samples=num_total_pos,
-            cfg=cfg)
+            num_total_samples=num_total_pos)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)

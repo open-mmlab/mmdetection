@@ -38,7 +38,6 @@ class FreeAnchorRetinaHead(RetinaHead):
              gt_bboxes,
              gt_labels,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
@@ -66,7 +65,6 @@ class FreeAnchorRetinaHead(RetinaHead):
         for _, (anchors_, gt_labels_, gt_bboxes_, cls_prob_,
                 bbox_preds_) in enumerate(
                     zip(anchors, gt_labels, gt_bboxes, cls_prob, bbox_preds)):
-            gt_labels_ -= 1
 
             with torch.no_grad():
                 # box_localization: a_{j}^{loc}, shape: [j, 4]
