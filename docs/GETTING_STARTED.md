@@ -109,7 +109,7 @@ python demo/webcam_demo.py configs/faster_rcnn_r50_fpn_1x.py \
 Here is an example of building the model and test given images.
 
 ```python
-from mmdet.apis import init_detector, inference_detector, show_result
+from mmdet.apis import init_detector, inference_detector
 import mmcv
 
 config_file = 'configs/faster_rcnn_r50_fpn_1x.py'
@@ -122,15 +122,15 @@ model = init_detector(config_file, checkpoint_file, device='cuda:0')
 img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
 result = inference_detector(model, img)
 # visualize the results in a new window
-show_result(img, result, model.CLASSES)
+model.module.show_result(img, result)
 # or save the visualization results to image files
-show_result(img, result, model.CLASSES, out_file='result.jpg')
+model.module.show_result(img, result, out_file='result.jpg')
 
 # test a video and show the results
 video = mmcv.VideoReader('video.mp4')
 for frame in video:
     result = inference_detector(model, frame)
-    show_result(frame, result, model.CLASSES, wait_time=1)
+    model.module.show_result(frame, result, wait_time=1)
 ```
 
 A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb).
@@ -144,7 +144,7 @@ See `tests/async_benchmark.py` to compare the speed of synchronous and asynchron
 ```python
 import asyncio
 import torch
-from mmdet.apis import init_detector, async_inference_detector, show_result
+from mmdet.apis import init_detector, async_inference_detector
 from mmdet.utils.contextmanagers import concurrent
 
 async def main():
@@ -168,9 +168,9 @@ async def main():
         result = await async_inference_detector(model, img)
 
     # visualize the results in a new window
-    show_result(img, result, model.CLASSES)
+    model.module.show_result(img, result)
     # or save the visualization results to image files
-    show_result(img, result, model.CLASSES, out_file='result.jpg')
+    model.module.show_result(img, result out_file='result.jpg')
 
 
 asyncio.run(main())
