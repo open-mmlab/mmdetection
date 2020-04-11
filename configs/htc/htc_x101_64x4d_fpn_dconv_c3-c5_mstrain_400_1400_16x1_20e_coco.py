@@ -36,7 +36,7 @@ train_pipeline = [
         keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg']),
 ]
 data = dict(
-    imgs_per_gpu=1, workers_per_gpu=1, train=dict(pipeline=train_pipeline))
+    samples_per_gpu=1, workers_per_gpu=1, train=dict(pipeline=train_pipeline))
 # learning policy
 lr_config = dict(step=[16, 19])
 total_epochs = 20
