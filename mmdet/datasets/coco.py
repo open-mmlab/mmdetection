@@ -67,17 +67,17 @@ class CocoDataset(CustomDataset):
         return valid_inds
 
     def get_subset_by_classes(self, class_ids=None):
-        '''Get img ids that contain any category in class_ids.
+        """Get img ids that contain any category in class_ids.
 
-        Different from the coco.getImgIds, this function returns the id if
-        the img contains one of the cat rather than all.
+        Different from the coco.getImgIds(), this function returns the id if
+        the img contains one of the categories rather than all.
 
         Args:
             class_ids (list[int]): list of category ids
 
         Return:
             ids (list[int]): integer list of img ids
-        '''
+        """
         if class_ids is None:
             return self.coco.imgs.keys()
 

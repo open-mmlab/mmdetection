@@ -5,10 +5,8 @@ import pytest
 from mmdet.datasets import DATASETS
 
 
-@pytest.mark.parametrize('dataset', [
-    'CocoDataset', 'VOCDataset', 'CityscapesDataset', 'WIDERFaceDataset',
-    'CustomDataset'
-])
+@pytest.mark.parametrize('dataset',
+                         ['CocoDataset', 'VOCDataset', 'CityscapesDataset'])
 def test_custom_classes_override_default(dataset):
     dataset_class = DATASETS.get(dataset)
     dataset_class.load_annotations = MagicMock()
@@ -19,23 +17,23 @@ def test_custom_classes_override_default(dataset):
     custom_dataset = dataset_class(
         ann_file=MagicMock(),
         pipeline=[],
-        classes=('foo', 'bar'),
+        classes=('bus', 'car'),
         test_mode=True,
         img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
 
     assert custom_dataset.CLASSES != original_classes
-    assert custom_dataset.CLASSES == ('foo', 'bar')
+    assert custom_dataset.CLASSES == ('bus', 'car')
 
     # Test setting classes as a list
     custom_dataset = dataset_class(
         ann_file=MagicMock(),
         pipeline=[],
-        classes=['foo', 'bar'],
+        classes=['bus', 'car'],
         test_mode=True,
         img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
 
     assert custom_dataset.CLASSES != original_classes
-    assert custom_dataset.CLASSES == ['foo', 'bar']
+    assert custom_dataset.CLASSES == ['bus', 'car']
 
     # Test default behavior
     custom_dataset = dataset_class(
@@ -53,7 +51,7 @@ def test_custom_classes_override_default(dataset):
     tmp_file = tempfile.TemporaryDirectory()
     file_name = osp.join(tmp_file.name, 'label.txt')
     with open(file_name, 'w') as f:
-        f.write('foo\nbar\n')
+        f.write('bus\ncar\n')
 
     custom_dataset = dataset_class(
         ann_file=MagicMock(),
@@ -63,5 +61,5 @@ def test_custom_classes_override_default(dataset):
         img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
 
     assert custom_dataset.CLASSES != original_classes
-    assert custom_dataset.CLASSES == ['foo', 'bar']
+    assert custom_dataset.CLASSES == ['bus', 'car']
     tmp_file.cleanup()

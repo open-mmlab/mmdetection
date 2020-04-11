@@ -175,6 +175,8 @@ class CustomDataset(Dataset):
         elif isinstance(classes, (tuple, list)):
             class_names = classes
 
+        assert set(class_names).issubset(set(cls.CLASSES))
+
         return class_names
 
     def format_results(self, results, **kwargs):
