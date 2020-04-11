@@ -25,7 +25,7 @@ model = dict(
         target_stds=[1.0, 1.0, 1.0, 1.0],
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
+        loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
     roi_head=dict(
         type='StandardRoIHead',
         shared_head=dict(
@@ -39,7 +39,7 @@ model = dict(
             norm_eval=True),
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
+            roi_layer=dict(type='RoIAlign', out_size=14, sample_num=0),
             out_channels=1024,
             featmap_strides=[16]),
         bbox_head=dict(
@@ -53,7 +53,7 @@ model = dict(
             reg_class_agnostic=False,
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
+            loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
         mask_roi_extractor=None,
         mask_head=dict(
             type='FCNMaskHead',
