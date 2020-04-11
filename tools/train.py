@@ -36,7 +36,7 @@ def parse_args():
     group_gpus.add_argument(
         '--gpu-ids',
         type=int,
-        nargs='*',
+        nargs='+',
         help='ids of gpus to use '
         '(only applicable to non-distributed training)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
