@@ -53,7 +53,9 @@ class FCOSHead(nn.Module):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)):
+                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+                 train_cfg=None,
+                 test_cfg=None):
         super(FCOSHead, self).__init__()
         self.num_classes = num_classes
         self.cls_out_channels = num_classes
@@ -65,6 +67,8 @@ class FCOSHead(nn.Module):
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.loss_centerness = build_loss(loss_centerness)
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
@@ -147,7 +151,6 @@ class FCOSHead(nn.Module):
              gt_bboxes,
              gt_labels,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
         assert len(cls_scores) == len(bbox_preds) == len(centernesses)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]

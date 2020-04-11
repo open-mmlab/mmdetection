@@ -40,7 +40,6 @@ class GARPNHead(GuidedAnchorHead):
              loc_preds,
              gt_bboxes,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
         losses = super(GARPNHead, self).loss(
             cls_scores,
@@ -50,7 +49,6 @@ class GARPNHead(GuidedAnchorHead):
             gt_bboxes,
             None,
             img_metas,
-            cfg,
             gt_bboxes_ignore=gt_bboxes_ignore)
         return dict(
             loss_rpn_cls=losses['loss_cls'],

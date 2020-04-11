@@ -11,7 +11,6 @@ def test_anchor_head_loss():
     """
     Tests anchor head loss when truth is empty and non-empty
     """
-    self = AnchorHead(num_classes=4, in_channels=1)
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),
@@ -38,6 +37,7 @@ def test_anchor_head_loss():
         'pos_weight': -1,
         'debug': False
     })
+    self = AnchorHead(num_classes=4, in_channels=1, train_cfg=cfg)
 
     # Anchor head expects a multiple levels of features per image
     feat = [
@@ -52,7 +52,7 @@ def test_anchor_head_loss():
 
     gt_bboxes_ignore = None
     empty_gt_losses = self.loss(cls_scores, bbox_preds, gt_bboxes, gt_labels,
-                                img_metas, cfg, gt_bboxes_ignore)
+                                img_metas, gt_bboxes_ignore)
     # When there is no truth, the cls loss should be nonzero but there should
     # be no box loss.
     empty_cls_loss = sum(empty_gt_losses['loss_cls'])
@@ -68,7 +68,7 @@ def test_anchor_head_loss():
     ]
     gt_labels = [torch.LongTensor([2])]
     one_gt_losses = self.loss(cls_scores, bbox_preds, gt_bboxes, gt_labels,
-                              img_metas, cfg, gt_bboxes_ignore)
+                              img_metas, gt_bboxes_ignore)
     onegt_cls_loss = sum(one_gt_losses['loss_cls'])
     onegt_box_loss = sum(one_gt_losses['loss_bbox'])
     assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
