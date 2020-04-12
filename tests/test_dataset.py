@@ -10,6 +10,9 @@ from mmdet.datasets import DATASETS
 def test_custom_classes_override_default(dataset):
     dataset_class = DATASETS.get(dataset)
     dataset_class.load_annotations = MagicMock()
+    if dataset in ['CocoDataset', 'CityscapesDataset']:
+        dataset_class.coco = MagicMock()
+        dataset_class.cat_ids = MagicMock()
 
     original_classes = dataset_class.CLASSES
 
