@@ -114,9 +114,9 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert Cityscapes annotations to COCO format')
     parser.add_argument('cityscapes_path', help='cityscapes data path')
-    parser.add_argument('--img_dir', default='leftImg8bit', type=str)
-    parser.add_argument('--gt_dir', default='gtFine', type=str)
-    parser.add_argument('-o', '--out_dir', help='output path')
+    parser.add_argument('--img-dir', default='leftImg8bit', type=str)
+    parser.add_argument('--gt-dir', default='gtFine', type=str)
+    parser.add_argument('-o', '--out-dir', help='output path')
     parser.add_argument(
         '--nproc', default=1, type=int, help='number of process')
     args = parser.parse_args()
