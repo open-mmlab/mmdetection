@@ -4,7 +4,7 @@ from mmcv.cnn import xavier_init
 
 from mmdet.core import auto_fp16
 from ..registry import NECKS
-from ..utils import ConvModule
+from mmdet.ops import ConvModule
 import torch
 eps=0.0001
 
