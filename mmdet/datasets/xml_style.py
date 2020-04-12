@@ -28,28 +28,16 @@ class XMLDataset(CustomDataset):
             size = root.find('size')
             width = int(size.find('width').text)
             height = int(size.find('height').text)
-            if self.classes_in_img(root):
-                data_infos.append(
-                    dict(
-                        id=img_id,
-                        filename=filename,
-                        width=width,
-                        height=height))
+            data_infos.append(
+                dict(id=img_id, filename=filename, width=width, height=height))
 
         return data_infos
 
-    def classes_in_img(self, root):
-        for obj in root.findall('object'):
-            name = obj.find('name').text
-            if name in self.CLASSES:
-                return True
-        return False
-
-    def get_subset_by_classes(self, data_infos):
+    def get_subset_by_classes(self):
         """Filter imgs by user-defined categories
         """
         clean_data_infos = []
-        for data_info in data_infos:
+        for data_info in self.data_infos:
             img_id = data_info['id']
             xml_path = osp.join(self.img_prefix, 'Annotations',
                                 '{}.xml'.format(img_id))
@@ -61,7 +49,7 @@ class XMLDataset(CustomDataset):
                     clean_data_infos.append(data_info)
                     break
 
-        return data_infos
+        return clean_data_infos
 
     def get_ann_info(self, idx):
         img_id = self.data_infos[idx]['id']

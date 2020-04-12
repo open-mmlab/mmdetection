@@ -67,6 +67,10 @@ class CustomDataset(Dataset):
                                               self.proposal_file)
         # load annotations (and proposals)
         self.data_infos = self.load_annotations(self.ann_file)
+        # filter data infos if classes are customized
+        if self.custom_classes:
+            self.data_infos = self.get_subset_by_classes()
+
         if self.proposal_file is not None:
             self.proposals = self.load_proposals(self.proposal_file)
         else:
@@ -167,8 +171,10 @@ class CustomDataset(Dataset):
 
         """
         if classes is None:
+            cls.custom_classes = True
             return cls.CLASSES
 
+        cls.custom_classes = False
         if isinstance(classes, str):
             # take it as a file path
             class_names = mmcv.list_from_file(classes)
@@ -179,8 +185,10 @@ class CustomDataset(Dataset):
                 type(classes)))
 
         assert set(class_names).issubset(set(cls.CLASSES))
-
         return class_names
+
+    def get_subset_by_classes(self):
+        pass
 
     def format_results(self, results, **kwargs):
         pass

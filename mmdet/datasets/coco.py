@@ -35,8 +35,7 @@ class CocoDataset(CustomDataset):
         self.coco = COCO(ann_file)
         self.cat_ids = self.coco.getCatIds(catNms=self.CLASSES)
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
-        self.img_ids = self.get_subset_by_classes(class_ids=self.cat_ids)
-
+        self.img_ids = self.coco.getImgIds()
         data_infos = []
         for i in self.img_ids:
             info = self.coco.loadImgs([i])[0]
@@ -61,7 +60,7 @@ class CocoDataset(CustomDataset):
                 valid_inds.append(i)
         return valid_inds
 
-    def get_subset_by_classes(self, class_ids=None):
+    def get_subset_by_classes(self):
         """Get img ids that contain any category in class_ids.
 
         Different from the coco.getImgIds(), this function returns the id if
@@ -73,13 +72,18 @@ class CocoDataset(CustomDataset):
         Return:
             ids (list[int]): integer list of img ids
         """
-        if class_ids is None:
-            return self.coco.imgs.keys()
 
         ids = set()
-        for i, class_id in enumerate(class_ids):
+        for i, class_id in enumerate(self.cat_ids):
             ids |= set(self.coco.catToImgs[class_id])
-        return list(ids)
+        self.img_ids = list(ids)
+
+        data_infos = []
+        for i in self.img_ids:
+            info = self.coco.loadImgs([i])[0]
+            info['filename'] = info['file_name']
+            data_infos.append(info)
+        return data_infos
 
     def _parse_ann_info(self, img_info, ann_info):
         """Parse bbox and mask annotation.
