@@ -36,7 +36,7 @@ class XMLDataset(CustomDataset):
     def get_subset_by_classes(self):
         """Filter imgs by user-defined categories
         """
-        clean_data_infos = []
+        subset_data_infos = []
         for data_info in self.data_infos:
             img_id = data_info['id']
             xml_path = osp.join(self.img_prefix, 'Annotations',
@@ -46,10 +46,10 @@ class XMLDataset(CustomDataset):
             for obj in root.findall('object'):
                 name = obj.find('name').text
                 if name in self.CLASSES:
-                    clean_data_infos.append(data_info)
+                    subset_data_infos.append(data_info)
                     break
 
-        return clean_data_infos
+        return subset_data_infos
 
     def get_ann_info(self, idx):
         img_id = self.data_infos[idx]['id']
