@@ -32,12 +32,12 @@ class WIDERFaceDataset(XMLDataset):
             width = int(size.find('width').text)
             height = int(size.find('height').text)
             folder = root.find('folder').text
-            data_infos.append(
-                dict(
-                    id=img_id,
-                    filename=osp.join(folder, filename),
-                    width=width,
-                    height=height))
+            if self.classes_in_img(root):
+                data_infos.append(
+                    dict(
+                        id=img_id,
+                        filename=osp.join(folder, filename),
+                        width=width,
+                        height=height))
 
-        data_infos = self.get_subset_by_classes(data_infos)
         return data_infos

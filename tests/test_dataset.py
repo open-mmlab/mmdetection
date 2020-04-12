@@ -47,19 +47,16 @@ def test_custom_classes_override_default(dataset):
 
     # Test sending file path
     import tempfile
-    import os.path as osp
-    tmp_file = tempfile.TemporaryDirectory()
-    file_name = osp.join(tmp_file.name, 'label.txt')
-    with open(file_name, 'w') as f:
+    tmp_file = tempfile.NamedTemporaryFile()
+    with open(tmp_file.name, 'w') as f:
         f.write('bus\ncar\n')
-
     custom_dataset = dataset_class(
         ann_file=MagicMock(),
         pipeline=[],
-        classes=file_name,
+        classes=tmp_file.name,
         test_mode=True,
         img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
+    tmp_file.close()
 
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ['bus', 'car']
-    tmp_file.cleanup()

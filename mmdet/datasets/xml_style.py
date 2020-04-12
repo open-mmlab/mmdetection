@@ -28,11 +28,22 @@ class XMLDataset(CustomDataset):
             size = root.find('size')
             width = int(size.find('width').text)
             height = int(size.find('height').text)
-            data_infos.append(
-                dict(id=img_id, filename=filename, width=width, height=height))
+            if self.classes_in_img(root):
+                data_infos.append(
+                    dict(
+                        id=img_id,
+                        filename=filename,
+                        width=width,
+                        height=height))
 
-        data_infos = self.get_subset_by_classes(data_infos)
         return data_infos
+
+    def classes_in_img(self, root):
+        for obj in root.findall('object'):
+            name = obj.find('name').text
+            if name in self.CLASSES:
+                return True
+        return False
 
     def get_subset_by_classes(self, data_infos):
         """Filter imgs by user-defined categories

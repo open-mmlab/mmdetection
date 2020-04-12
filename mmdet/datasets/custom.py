@@ -155,7 +155,7 @@ class CustomDataset(Dataset):
         return self.pipeline(results)
 
     @classmethod
-    def get_classes(cls, classes):
+    def get_classes(cls, classes=None):
         """Get class names of current dataset
 
         Args:
