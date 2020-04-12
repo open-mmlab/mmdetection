@@ -30,7 +30,26 @@ class XMLDataset(CustomDataset):
             height = int(size.find('height').text)
             data_infos.append(
                 dict(id=img_id, filename=filename, width=width, height=height))
+
         return data_infos
+
+    def get_subset_by_classes(self):
+        """Filter imgs by user-defined categories
+        """
+        subset_data_infos = []
+        for data_info in self.data_infos:
+            img_id = data_info['id']
+            xml_path = osp.join(self.img_prefix, 'Annotations',
+                                '{}.xml'.format(img_id))
+            tree = ET.parse(xml_path)
+            root = tree.getroot()
+            for obj in root.findall('object'):
+                name = obj.find('name').text
+                if name in self.CLASSES:
+                    subset_data_infos.append(data_info)
+                    break
+
+        return subset_data_infos
 
     def get_ann_info(self, idx):
         img_id = self.data_infos[idx]['id']
@@ -44,6 +63,8 @@ class XMLDataset(CustomDataset):
         labels_ignore = []
         for obj in root.findall('object'):
             name = obj.find('name').text
+            if name not in self.CLASSES:
+                continue
             label = self.cat2label[name]
             difficult = int(obj.find('difficult').text)
             bnd_box = obj.find('bndbox')
