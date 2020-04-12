@@ -64,7 +64,7 @@ python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
 ```shell
 ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --format_only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
 ```
 
 You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
@@ -74,7 +74,7 @@ You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcn
 ```shell
 ./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
     checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
-    8  --format_only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+    8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
 ```
 
 The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
@@ -202,12 +202,12 @@ If you want to specify the working directory in the command, you can add an argu
 Optional arguments are:
 
 - `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training.
-- `--work_dir ${WORK_DIR}`: Override the working directory specified in the config file.
-- `--resume_from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
+- `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
+- `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
 
-Difference between `resume_from` and `load_from`:
-`resume_from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
-`load_from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
+Difference between `resume-from` and `load-from`:
+`resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
+`load-from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
 ### Train with multiple machines
 

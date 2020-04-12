@@ -7,8 +7,8 @@ import torch
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Process a checkpoint to be published')
-    parser.add_argument('in_file', help='input checkpoint filename')
-    parser.add_argument('out_file', help='output checkpoint filename')
+    parser.add_argument('in-file', help='input checkpoint filename')
+    parser.add_argument('out-file', help='output checkpoint filename')
     args = parser.parse_args()
     return args
 
