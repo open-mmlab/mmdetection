@@ -174,6 +174,9 @@ class CustomDataset(Dataset):
             class_names = mmcv.list_from_file(classes)
         elif isinstance(classes, (tuple, list)):
             class_names = classes
+        else:
+            raise ValueError('Unsupported type {} of classes.'.format(
+                type(classes)))
 
         assert set(class_names).issubset(set(cls.CLASSES))
 
