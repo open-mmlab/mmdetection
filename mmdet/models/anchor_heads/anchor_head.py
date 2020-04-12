@@ -32,6 +32,8 @@ class AnchorHead(nn.Module):
             num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
+        train_cfg (dict): Training config of anchor head.
+        test_cfg (dict): Testing config of anchor head.
     """  # noqa: W605
 
     def __init__(self,
@@ -130,7 +132,8 @@ class AnchorHead(nn.Module):
             device (torch.device | str): device for returned tensors
 
         Returns:
-            tuple: anchors of each image, valid flags of each image
+            anchor_list: anchors of each image
+            valid_flag_list: valid flags of each image
         """
         num_imgs = len(img_metas)
         num_levels = len(featmap_sizes)
@@ -171,6 +174,34 @@ class AnchorHead(nn.Module):
                              img_meta,
                              label_channels=1,
                              unmap_outputs=True):
+        """Compute regression and classification targets for anchors in
+            a single image.
+
+        Args:
+            flat_anchors (Tensor): Multi level anchors of the image,
+                shape (num_anchors ,4).
+            valid_flags (Tensor): Multi level valid flags of the image,
+                shape (num_anchors,).
+            gt_bboxes (Tensor): Ground truth bboxes of the image,
+                shape (num_gts, 4).
+            img_meta (dict): Meta info of the image.
+            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
+                ignored, shape (num_ignored_gts, 4).
+            img_meta (dict): Meta info of the image.
+            gt_labels (Tensor): Ground truth labels of each box,
+                shape (num_gts,).
+            label_channels (int): Channel of label.
+            unmap_outputs (bool): Whether to map outputs back to the original
+                set of anchors.
+
+        Returns:
+            labels_list (list[Tensor]): Labels of each level
+            label_weights_list (list[Tensor]): Label weights of each level
+            bbox_targets_list (list[Tensor]): BBox targets of each level
+            bbox_weights_list (list[Tensor]): BBox weights of each level
+            num_total_pos (int): Number of positive samples in all images
+            num_total_neg (int): Number of negative samples in all images
+        """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
@@ -235,7 +266,8 @@ class AnchorHead(nn.Module):
                       gt_labels_list=None,
                       label_channels=1,
                       unmap_outputs=True):
-        """Compute regression and classification targets for anchors.
+        """Compute regression and classification targets for anchors in
+            multiple images.
 
         Args:
             anchor_list (list[list]): Multi level anchors of each image.
@@ -245,13 +277,18 @@ class AnchorHead(nn.Module):
             img_metas (list[dict]): Meta info of each image.
             gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
                 ignored.
-            gt_bboxes_list (list[Tensor]): Ground truth labels of each box.
+            gt_labels_list (list[Tensor]): Ground truth labels of each box.
             label_channels (int): Channel of label.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
 
         Returns:
-            tuple
+            labels_list (list[Tensor]): Labels of each level
+            label_weights_list (list[Tensor]): Label weights of each level
+            bbox_targets_list (list[Tensor]): BBox targets of each level
+            bbox_weights_list (list[Tensor]): BBox weights of each level
+            num_total_pos (int): Number of positive samples in all images
+            num_total_neg (int): Number of negative samples in all images
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
