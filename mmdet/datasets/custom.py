@@ -171,10 +171,10 @@ class CustomDataset(Dataset):
 
         """
         if classes is None:
-            cls.custom_classes = True
+            cls.custom_classes = False
             return cls.CLASSES
 
-        cls.custom_classes = False
+        cls.custom_classes = True
         if isinstance(classes, str):
             # take it as a file path
             class_names = mmcv.list_from_file(classes)
@@ -188,7 +188,7 @@ class CustomDataset(Dataset):
         return class_names
 
     def get_subset_by_classes(self):
-        pass
+        return self.data_infos
 
     def format_results(self, results, **kwargs):
         pass
