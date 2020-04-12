@@ -444,11 +444,15 @@ class ResNet(nn.Module):
         ...          position='after_conv3'),
         ...     dict(cfg=dict(type='zzz', postfix='1'),
         ...          stages=(True, True, True, True),
-        ...          position='after_conv3')
+        ...          position='after_conv3'),
         ...     dict(cfg=dict(type='zzz', postfix='2'),
         ...          stages=(True, True, True, True),
         ...          position='after_conv3')
         ... ]
+        >>> self = ResNet(depth=18)
+        >>> stage_plugins = self.make_stage_plugins(plugins, 0)
+        >>> assert len(stage_plugins) == 3
+
         Suppose 'stage_idx=0', the structure of blocks in the stage would be:
             conv1-> conv2->conv3->yyy->zzz1->zzz2
         Suppose 'stage_idx=1', the structure of blocks in the stage would be:
