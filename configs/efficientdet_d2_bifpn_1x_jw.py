@@ -63,26 +63,26 @@ img_norm_cfg = dict(
 train_pipeline = [
 	dict(type='LodaImageFromFile'),
 	dict(type='LoadAnnotations', with_bbox=True),
-	dict(tpye='Resize', img_scale=(768, 768), keep_ratio=True),
-	dict(tpye='RandomFlip', flip_ratio=0.5),
-	dict(tpye='Normalize', **img_norm_cfg),
-	dict(tpye='Pad', size_divisor=128), # [JW] ??
-	dict(tpye='DefaultFormatBundle'),
-	dict(tpye='Collect', keys=['img', 'gt_bboxed', 'gt_labels']),
+	dict(type='Resize', img_scale=(768, 768), keep_ratio=True),
+	dict(type='RandomFlip', flip_ratio=0.5),
+	dict(type='Normalize', **img_norm_cfg),
+	dict(type='Pad', size_divisor=128), # [JW] ??
+	dict(type='DefaultFormatBundle'),
+	dict(type='Collect', keys=['img', 'gt_bboxed', 'gt_labels']),
 ]
 test_pipeline =[
-	dict(tpye='LodaImageFromFile'),
+	dict(type='LodaImageFromFile'),
 	dict(
 		type='MultiScalarFlipAug',
 		img_scale=(768, 768),
 		flip=False,
 		transforms=[
-			dict(tpye='Resize', keep_ratio=True),
-			dict(tpye='RandomFlip'),
-			dict(tpye='Normalize', **img_norm_cfg),
-			dict(tpye='Pad', size_divisor=128),
-			dict(tpye='ImageToTensor', keys=['img']),
-			dict(tpye='Collect', keys=['img']),
+			dict(type='Resize', keep_ratio=True),
+			dict(type='RandomFlip'),
+			dict(type='Normalize', **img_norm_cfg),
+			dict(type='Pad', size_divisor=128),
+			dict(type='ImageToTensor', keys=['img']),
+			dict(type='Collect', keys=['img']),
 		])
 ]
 data = dict(
@@ -94,18 +94,18 @@ data = dict(
 		img_prefix=data_root + 'train2017/',
 		pipeline=train_pipeline),
 	val=dict(
-		tpye=dataset_type,
+		type=dataset_type,
 		ann_file=data_root + 'annotations/instances_val2017.json',
 		img_prefix=data_root + 'val2017/',
 		pipeline=test_pipeline),
 	test=dict(
-		tpye=dataset_type,
+		type=dataset_type,
 		ann_file=data_root + 'annotations/instances_val2017.json',
 		img_prefix=data_root + 'val2017/',
 		pipeline=test_pipeline))
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum-0.9, weight_decay=4e-5) # wd 0.0001->4e-5
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=4e-5) # wd 0.0001->4e-5
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2)) # [JW] ??
 # learning policy
 lr_config = dict(
