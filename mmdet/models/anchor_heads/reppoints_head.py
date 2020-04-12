@@ -472,7 +472,8 @@ class RepPointsHead(nn.Module):
             proposals.
 
         Args:
-            points_list (list[list]): Multi level points of each image.
+            proposals_list (list[list]): Multi level points/bboxes of each
+                image.
             valid_flag_list (list[list]): Multi level valid flags of each
                 image.
             gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
@@ -487,6 +488,15 @@ class RepPointsHead(nn.Module):
 
         Returns:
             tuple
+                labels_list (list[Tensor]): Labels of each level
+                label_weights_list (list[Tensor]): Label weights of each level
+                bbox_gt_list (list[Tensor]): Ground truth bbox of each level
+                proposal_list (list[Tensor]): Proposals(points/bboxes) of each
+                    level
+                proposal_weights_list (list[Tensor]): Proposal weights of each
+                    level
+                num_total_pos (int): Number of positive samples in all images
+                num_total_neg (int): Number of negative samples in all images
         """
         num_imgs = len(img_metas)
         assert len(proposals_list) == len(valid_flag_list) == num_imgs

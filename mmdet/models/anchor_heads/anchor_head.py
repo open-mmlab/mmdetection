@@ -129,11 +129,12 @@ class AnchorHead(nn.Module):
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
             img_metas (list[dict]): Image meta info.
-            device (torch.device | str): device for returned tensors
+            device (torch.device | str): Device for returned tensors
 
         Returns:
-            anchor_list: anchors of each image
-            valid_flag_list: valid flags of each image
+            tuple:
+                anchor_list (list[Tensor]): anchors of each image
+                valid_flag_list (list[Tensor]): valid flags of each image
         """
         num_imgs = len(img_metas)
         num_levels = len(featmap_sizes)
@@ -195,12 +196,13 @@ class AnchorHead(nn.Module):
                 set of anchors.
 
         Returns:
-            labels_list (list[Tensor]): Labels of each level
-            label_weights_list (list[Tensor]): Label weights of each level
-            bbox_targets_list (list[Tensor]): BBox targets of each level
-            bbox_weights_list (list[Tensor]): BBox weights of each level
-            num_total_pos (int): Number of positive samples in all images
-            num_total_neg (int): Number of negative samples in all images
+            tuple:
+                labels_list (list[Tensor]): Labels of each level
+                label_weights_list (list[Tensor]): Label weights of each level
+                bbox_targets_list (list[Tensor]): BBox targets of each level
+                bbox_weights_list (list[Tensor]): BBox weights of each level
+                num_total_pos (int): Number of positive samples in all images
+                num_total_neg (int): Number of negative samples in all images
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
@@ -283,12 +285,13 @@ class AnchorHead(nn.Module):
                 set of anchors.
 
         Returns:
-            labels_list (list[Tensor]): Labels of each level
-            label_weights_list (list[Tensor]): Label weights of each level
-            bbox_targets_list (list[Tensor]): BBox targets of each level
-            bbox_weights_list (list[Tensor]): BBox weights of each level
-            num_total_pos (int): Number of positive samples in all images
-            num_total_neg (int): Number of negative samples in all images
+            tuple:
+                labels_list (list[Tensor]): Labels of each level
+                label_weights_list (list[Tensor]): Label weights of each level
+                bbox_targets_list (list[Tensor]): BBox targets of each level
+                bbox_weights_list (list[Tensor]): BBox weights of each level
+                num_total_pos (int): Number of positive samples in all images
+                num_total_neg (int): Number of negative samples in all images
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
