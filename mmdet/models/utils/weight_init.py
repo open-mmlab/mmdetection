@@ -1,7 +1,7 @@
 import numpy as np
 import torch.nn as nn
 
-
+#根据参数来制定所需要的参数初始化函数
 def xavier_init(module, gain=1, bias=0, distribution='normal'):
     assert distribution in ['uniform', 'normal']
     if distribution == 'uniform':
