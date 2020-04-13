@@ -30,19 +30,19 @@ def anchor_target(anchor_list,
     Returns:
         tuple
     """
-    num_imgs = len(img_metas)
-    assert len(anchor_list) == len(valid_flag_list) == num_imgs
+    num_imgs = len(img_metas)#图片个数
+    assert len(anchor_list) == len(valid_flag_list) == num_imgs #保证图片个数和标签个数全部一致
 
-    # anchor number of multi levels
+    # anchor number of multi levels特征层数
     num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
-    # concat all level anchors and flags to a single tensor
+    # concat all level anchors and flags to a single tensor将所有层的anchor还有他的标志全部组合成一个tensor
     for i in range(num_imgs):
         assert len(anchor_list[i]) == len(valid_flag_list[i])
         anchor_list[i] = torch.cat(anchor_list[i])
         valid_flag_list[i] = torch.cat(valid_flag_list[i])
 
     # compute targets for each image
-    if gt_bboxes_ignore_list is None:
+    if gt_bboxes_ignore_list is None:#有效图片
         gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
     if gt_labels_list is None:
         gt_labels_list = [None for _ in range(num_imgs)]
@@ -78,7 +78,7 @@ def anchor_target(anchor_list,
 
 def images_to_levels(target, num_level_anchors):
     """Convert targets by image to targets by feature level.
-
+        将图片标签GT转化到各个特征图上
     [target_img0, target_img1] -> [target_level0, target_level1, ...]
     """
     target = torch.stack(target, 0)
