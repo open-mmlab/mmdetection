@@ -8,7 +8,7 @@ import torch.nn as nn
 from mmdet.core import auto_fp16, get_classes, tensor2imgs
 
 
-class BaseDetector(nn.Module, metaclass=ABCMeta):
+class BaseDetector(nn.Module, metaclass=ABCMeta):#基类
     """Base class for detectors"""
 
     def __init__(self):
@@ -16,11 +16,11 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         self.fp16_enabled = False
 
     @property
-    def with_neck(self):
+    def with_neck(self):#是否有neck
         return hasattr(self, 'neck') and self.neck is not None
 
     @property
-    def with_shared_head(self):
+    def with_shared_head(self):#是否有共享的头
         return hasattr(self, 'shared_head') and self.shared_head is not None
 
     @property
@@ -32,16 +32,16 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         return hasattr(self, 'mask_head') and self.mask_head is not None
 
     @abstractmethod
-    def extract_feat(self, imgs):
+    def extract_feat(self, imgs):#对一个图抽取特征，要求重写
         pass
 
-    def extract_feats(self, imgs):
+    def extract_feats(self, imgs):#对多个图抽取特征
         assert isinstance(imgs, list)
         for img in imgs:
             yield self.extract_feat(img)
 
     @abstractmethod
-    def forward_train(self, imgs, img_metas, **kwargs):
+    def forward_train(self, imgs, img_metas, **kwargs):#要求重写
         """
         Args:
             img (list[Tensor]): list of tensors of shape (1, C, H, W).
@@ -62,18 +62,18 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def simple_test(self, img, img_meta, **kwargs):
+    def simple_test(self, img, img_meta, **kwargs):#重写
         pass
 
     @abstractmethod
-    def aug_test(self, imgs, img_metas, **kwargs):
+    def aug_test(self, imgs, img_metas, **kwargs):#重写
         pass
 
     def init_weights(self, pretrained=None):
-        if pretrained is not None:
+        if pretrained is not None:#预训练
             from mmdet.apis import get_root_logger
             logger = get_root_logger()
-            logger.info('load model from: {}'.format(pretrained))
+            logger.info('load model from: {}'.format(pretrained))#载入模型的日志
 
     async def aforward_test(self, *, img, img_meta, **kwargs):
         for var, name in [(img, 'img'), (img_meta, 'img_meta')]:
@@ -105,13 +105,13 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch
         """
-        for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
+        for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:#保证是个batch
             if not isinstance(var, list):
                 raise TypeError('{} must be a list, but got {}'.format(
                     name, type(var)))
 
-        num_augs = len(imgs)
-        if num_augs != len(img_metas):
+        num_augs = len(imgs)#图的个数
+        if num_augs != len(img_metas):#图的数量和标签的数量要保证一样多
             raise ValueError(
                 'num of augmentations ({}) != num of image meta ({})'.format(
                     len(imgs), len(img_metas)))
@@ -119,10 +119,10 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         imgs_per_gpu = imgs[0].size(0)
         assert imgs_per_gpu == 1
 
-        if num_augs == 1:
+        if num_augs == 1:#只有一张图时，进行简单的测试
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
-            return self.aug_test(imgs, img_metas, **kwargs)
+            return self.aug_test(imgs, img_metas, **kwargs)#否则进行增益测试
 
     @auto_fp16(apply_to=('img', ))
     def forward(self, img, img_meta, return_loss=True, **kwargs):
@@ -134,12 +134,13 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
         """
+        #这个是基类的主函数，给定图片和标签，根据return_loss来确定是训练还是测试，调用不同的函数
         if return_loss:
             return self.forward_train(img, img_meta, **kwargs)
         else:
             return self.forward_test(img, img_meta, **kwargs)
 
-    def show_result(self, data, result, dataset=None, score_thr=0.3):
+    def show_result(self, data, result, dataset=None, score_thr=0.3):#对最后的结果进行可视化
         if isinstance(result, tuple):
             bbox_result, segm_result = result
         else:
