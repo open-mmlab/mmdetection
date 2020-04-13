@@ -246,7 +246,7 @@ class BBoxHead(nn.Module):
                                            img_meta_)
 
             # filter gt bboxes
-            pos_keep = 1 - pos_is_gts_
+            pos_keep = pos_is_gts_.logical_not()
             keep_inds = pos_is_gts_.new_ones(num_rois)
             keep_inds[:len(pos_is_gts_)] = pos_keep
 

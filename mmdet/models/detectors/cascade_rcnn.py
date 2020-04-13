@@ -8,6 +8,7 @@ from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
                         build_sampler, merge_aug_bboxes, merge_aug_masks,
                         multiclass_nms)
 from mmdet.core.mask.transforms import mask2result
+from mmdet.core.utils.misc import dummy_pad
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
@@ -362,27 +363,24 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             rescale=False,
             cfg=rcnn_test_cfg)
         bbox_result = (det_bboxes, det_labels)
-        if postprocess:
-            bbox_result = self.postprocess(det_bboxes, det_labels, None,
-                                           img_meta, rescale=rescale)
         ms_bbox_result['ensemble'] = bbox_result
 
         if self.with_mask:
-            if det_bboxes.shape[0] == 0:
-                mask_classes = self.mask_head[-1].num_classes - 1
-                segm_result = [[] for _ in range(mask_classes)]
-            else:
-                if isinstance(scale_factor, float):  # aspect ratio fixed
-                    _bboxes = (
-                        det_bboxes[:, :4] *
-                        scale_factor if rescale else det_bboxes)
-                else:
-                    _bboxes = (
-                        det_bboxes[:, :4] *
-                        torch.from_numpy(scale_factor).to(det_bboxes.device)
-                        if rescale else det_bboxes)
+            if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
+                # If there are no detection there is nothing to do for a mask head.
+                # But during ONNX export we should run mask head
+                # for it to appear in the graph.
+                # So add one zero / dummy ROI that will be mapped
+                # to an Identity op in the graph.
+                det_bboxes = dummy_pad(det_bboxes, (0, 0, 0, 1))
+                det_labels = dummy_pad(det_labels, (0, 1))
 
-                mask_rois = bbox2roi([_bboxes])
+            if det_bboxes.shape[0] == 0:
+                segm_result = torch.empty([0, 0, 0],
+                                          dtype=det_bboxes.dtype,
+                                          device=det_bboxes.device)
+            else:
+                mask_rois = bbox2roi([det_bboxes])
                 aug_masks = []
                 for i in range(self.num_stages):
                     mask_roi_extractor = self.mask_roi_extractor[i]
@@ -391,40 +389,60 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     if self.with_shared_head:
                         mask_feats = self.shared_head(mask_feats)
                     mask_pred = self.mask_head[i](mask_feats)
-                    aug_masks.append(mask_pred.sigmoid().cpu().numpy())
-                merged_masks = merge_aug_masks(aug_masks,
-                                               [img_meta] * self.num_stages,
-                                               self.test_cfg.rcnn)
-                segm_result = self.mask_head[-1].get_seg_masks(
-                    merged_masks, _bboxes, det_labels, rcnn_test_cfg,
-                    ori_shape, scale_factor, rescale)
+                    mask_pred = self.mask_head[i].get_seg_masks(mask_pred, det_labels)
+                    aug_masks.append(mask_pred)
+                segm_result = merge_aug_masks(aug_masks,
+                                              [img_meta] * self.num_stages,
+                                              self.test_cfg.rcnn)
             ms_segm_result['ensemble'] = segm_result
 
-        if self.with_mask:
-            results = (ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
+        if postprocess:
+            det_masks = ms_segm_result['ensemble'] if self.with_mask else None
+            results = self.postprocess(det_bboxes, det_labels, det_masks,
+                                       img_meta, rescale=rescale)
         else:
-            results = ms_bbox_result['ensemble']
+            if self.with_mask:
+                results = (*ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
+            else:
+                results = ms_bbox_result['ensemble']
 
         return results
 
-    def postprocess(self, det_bboxes, det_labels, det_masks, img_meta, rescale=False):
+    def postprocess(self,
+                    det_bboxes,
+                    det_labels,
+                    det_masks,
+                    img_meta,
+                    rescale=False):
         img_h, img_w = img_meta[0]['ori_shape'][:2]
-        scale_factor = img_meta[0]['scale_factor']
         num_classes = self.bbox_head[-1].num_classes
+        scale_factor = img_meta[0]['scale_factor']
+        if isinstance(scale_factor, float):
+            scale_factor = np.asarray((scale_factor, ) * 4)
 
         if rescale:
-            # Keep original image resolution unchanged and scale bboxes and masks to it.
+            # Keep original image resolution unchanged
+            # and scale bboxes and masks to it.
+            if isinstance(det_bboxes, torch.Tensor):
+                scale_factor = det_bboxes.new_tensor(scale_factor)
             det_bboxes[:, :4] /= scale_factor
         else:
-            # Resize image to test resolution and keep bboxes and masks in test scale.
-            img_h = np.round(img_h * scale_factor).astype(np.int32)
-            img_w = np.round(img_w * scale_factor).astype(np.int32)
+            # Resize image to test resolution
+            # and keep bboxes and masks in test scale.
+            img_h = np.round(img_h * scale_factor[1]).astype(np.int32)
+            img_w = np.round(img_w * scale_factor[0]).astype(np.int32)
 
         bbox_results = bbox2result(det_bboxes, det_labels, num_classes)
         if self.with_mask:
-            segm_results = mask2result(det_bboxes, det_labels, det_masks, num_classes,
-                                       mask_thr_binary=self.test_cfg.rcnn.mask_thr_binary,
-                                       rle=True, full_size=True, img_size=(img_h, img_w))
+            segm_results = mask2result(
+                det_bboxes,
+                det_labels,
+                det_masks,
+                num_classes,
+                mask_thr_binary=self.test_cfg.rcnn.mask_thr_binary,
+                rle=True,
+                full_size=True,
+                img_size=(img_h, img_w))
             return bbox_results, segm_results
 
         return bbox_results
@@ -533,14 +551,3 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             return bbox_result, segm_result
         else:
             return bbox_result
-
-    def show_result(self, data, result, **kwargs):
-        if self.with_mask:
-            ms_bbox_result, ms_segm_result = result
-            if isinstance(ms_bbox_result, dict):
-                result = (ms_bbox_result['ensemble'],
-                          ms_segm_result['ensemble'])
-        else:
-            if isinstance(result, dict):
-                result = result['ensemble']
-        super(CascadeRCNN, self).show_result(data, result, **kwargs)
