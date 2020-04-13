@@ -88,6 +88,7 @@ Other features
 - [x] [GCNet](configs/gcnet/README.md)
 - [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
 - [x] [InstaBoost](configs/instaboost/README.md)
+- [x] [GRoIE](configs/groie/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
