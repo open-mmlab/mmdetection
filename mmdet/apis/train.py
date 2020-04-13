@@ -98,7 +98,7 @@ def train_detector(model,
             cfg.data.imgs_per_gpu,
             cfg.data.workers_per_gpu,
             # cfg.gpus will be ignored if distributed
-            cfg.gpus,
+            len(cfg.gpu_ids),
             dist=distributed,
             seed=cfg.seed) for ds in dataset
     ]
@@ -114,7 +114,8 @@ def train_detector(model,
             broadcast_buffers=False,
             find_unused_parameters=find_unused_parameters)
     else:
-        model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
+        model = MMDataParallel(
+            model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
