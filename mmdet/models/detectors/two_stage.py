@@ -335,18 +335,22 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                     img_meta,
                     rescale=False):
         img_h, img_w = img_meta[0]['ori_shape'][:2]
-        scale_factor = img_meta[0]['scale_factor']
         num_classes = self.bbox_head.num_classes
+        scale_factor = img_meta[0]['scale_factor']
+        if isinstance(scale_factor, float):
+            scale_factor = np.asarray((scale_factor, ) * 4)
 
         if rescale:
             # Keep original image resolution unchanged
             # and scale bboxes and masks to it.
+            if isinstance(det_bboxes, torch.Tensor):
+                scale_factor = det_bboxes.new_tensor(scale_factor)
             det_bboxes[:, :4] /= scale_factor
         else:
             # Resize image to test resolution
             # and keep bboxes and masks in test scale.
-            img_h = np.round(img_h * scale_factor).astype(np.int32)
-            img_w = np.round(img_w * scale_factor).astype(np.int32)
+            img_h = np.round(img_h * scale_factor[1]).astype(np.int32)
+            img_w = np.round(img_w * scale_factor[0]).astype(np.int32)
 
         bbox_results = bbox2result(det_bboxes, det_labels, num_classes)
         if self.with_mask:

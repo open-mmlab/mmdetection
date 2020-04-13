@@ -190,9 +190,13 @@ class ROIFeatureExtractorStub(TracerStub):
 
 def stub_roi_feature_extractor(model, extractor_name):
     if hasattr(model, extractor_name):
-         extractor = getattr(model, extractor_name)
-         if isinstance(extractor, SingleRoIExtractor):
-             setattr(model, extractor_name, ROIFeatureExtractorStub(extractor))
+        extractor = getattr(model, extractor_name)
+        if isinstance(extractor, SingleRoIExtractor):
+            setattr(model, extractor_name, ROIFeatureExtractorStub(extractor))
+        elif isinstance(extractor, torch.nn.ModuleList):
+            for i in range(len(extractor)):
+                if isinstance(extractor[i], SingleRoIExtractor):
+                    extractor[i] = ROIFeatureExtractorStub(extractor[i])
 
 
 def main(args):

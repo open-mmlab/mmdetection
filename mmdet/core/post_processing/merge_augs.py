@@ -82,20 +82,31 @@ def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
     """Merge augmented mask prediction.
 
     Args:
-        aug_masks (list[ndarray]): shape (n, #class, h, w)
+        aug_masks (list[ndarray/Tensor]): shape (n, #class, h, w)
         img_shapes (list[ndarray]): shape (3, ).
         rcnn_test_cfg (dict): rcnn test config.
 
     Returns:
-        tuple: (bboxes, scores)
+        ndarray/Tensor: masks
     """
     recovered_masks = [
         mask if not img_info[0]['flip'] else mask[..., ::-1]
         for mask, img_info in zip(aug_masks, img_metas)
     ]
-    if weights is None:
-        merged_masks = np.mean(recovered_masks, axis=0)
+    if isinstance(recovered_masks[0], torch.Tensor):
+        recovered_masks = torch.stack(recovered_masks, dim=0)
+        if weights is None:
+            merged_masks = torch.mean(recovered_masks, dim=0, keepdim=False)
+        else:
+            weights = torch.tensor(weights).to(recovered_masks.device)
+            weights_shape = [1, ] * recovered_masks.dim()
+            weights_shape[0] = -1
+            weights = weights.view(*weights_shape)
+            merged_masks = torch.mean(recovered_masks * weights, dim=0, keepdim=False)
     else:
-        merged_masks = np.average(
-            np.array(recovered_masks), axis=0, weights=np.array(weights))
+        if weights is None:
+            merged_masks = np.mean(recovered_masks, axis=0)
+        else:
+            merged_masks = np.average(
+                np.array(recovered_masks), axis=0, weights=np.array(weights))
     return merged_masks
