@@ -118,6 +118,7 @@ class BBoxHead(nn.Module):
                 losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             pos_inds = labels > 0
+            losses['loss_bbox'] = torch.tensor(0.).to(bbox_pred.device)
             if pos_inds.any():
                 if self.reg_class_agnostic:
                     pos_bbox_pred = bbox_pred.view(
