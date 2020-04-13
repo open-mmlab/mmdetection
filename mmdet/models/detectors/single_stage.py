@@ -42,7 +42,7 @@ class SingleStageDetector(BaseDetector):#继承BASEDETECTOR，单阶段模型
                 self.neck.init_weights()
         self.bbox_head.init_weights()
 
-    def extract_feat(self, img):#抽取图片特征
+    def extract_feat(self, img):#抽取图片特征，就是网络的执行
         """Directly extract features from the backbone+neck
         """
         x = self.backbone(img)
@@ -56,7 +56,7 @@ class SingleStageDetector(BaseDetector):#继承BASEDETECTOR，单阶段模型
         See `mmedetection/tools/get_flops.py`
         """
         x = self.extract_feat(img)
-        outs = self.bbox_head(x)
+        outs = self.bbox_head(x)#这个是比抽取特征加上head，就是backbone+neck+bbox_head
         return outs
 
     def forward_train(self,
@@ -64,23 +64,23 @@ class SingleStageDetector(BaseDetector):#继承BASEDETECTOR，单阶段模型
                       img_metas,
                       gt_bboxes,
                       gt_labels,
-                      gt_bboxes_ignore=None):#这个是用于训练的前向
-        x = self.extract_feat(img)
-        outs = self.bbox_head(x)
+                      gt_bboxes_ignore=None):#这个是用于训练的前向，是对基类的重写，不同于二阶段分类器，它更加简单
+        x = self.extract_feat(img)#直接抽取特征
+        outs = self.bbox_head(x)#这里其实相当于forward_dummy所做的事情
         loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)#将结果和GT放在一起共同进入loss
         losses = self.bbox_head.loss(
             *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
-    def simple_test(self, img, img_meta, rescale=False):
-        x = self.extract_feat(img)
-        outs = self.bbox_head(x)
+    def simple_test(self, img, img_meta, rescale=False):#重写基类，是对于一张图的测试
+        x = self.extract_feat(img)#抽取特征
+        outs = self.bbox_head(x)#加上bbox_head，就是输出的结果
         bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
         bbox_list = self.bbox_head.get_bboxes(*bbox_inputs)
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
-        ]
+        ]#生成的结果
         return bbox_results[0]
 
     def aug_test(self, imgs, img_metas, rescale=False):
