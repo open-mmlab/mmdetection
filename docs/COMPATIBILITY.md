@@ -1,7 +1,7 @@
 # Compatibility with Common Libraries
 
 ## Compatibility with MMDetection 1.x
-MMDetection 2.0 goes through a big refactoring and addresses many legacy issues. It is not compatible with the 1.x version, i.e., running inference with the same model weights in these two version will produce different results. Thus, MMDetection 2.0 re-benchmarks all the models and provids their links and logs in the model zoo. 
+MMDetection 2.0 goes through a big refactoring and addresses many legacy issues. It is not compatible with the 1.x version, i.e., running inference with the same model weights in these two version will produce different results. Thus, MMDetection 2.0 re-benchmarks all the models and provids their links and logs in the model zoo.
 
 The major differences are in four folds: coordinate system, codebase conventions, training hyperparameters, and modular design.
 
@@ -42,8 +42,8 @@ This effect all the classification layers of the model to have a different order
 
   - In MMDetection 1.x and previous version, label "0" means background, and labels [1, K] correspond to the K categories.
 
-- Low quality matching in RCNN is not used. In MMDetection 1.x and previous versions, the `max_iou_assigner` will match low quality boxes for each ground truth box in both rpn and rcnn training. We observe this sometimes does not assign the most perfect GT box to some bounding boxes,
-thus MMDetection 2.0 do not allow low quality matching by default in rcnn training in the new system. This slightly improve the box AP (~0.1% absolute).
+- Low quality matching in R-CNN is not used. In MMDetection 1.x and previous versions, the `max_iou_assigner` will match low quality boxes for each ground truth box in both RPN and R-CNN training. We observe this sometimes does not assign the most perfect GT box to some bounding boxes,
+thus MMDetection 2.0 do not allow low quality matching by default in R-CNN training in the new system. This slightly improve the box AP (~0.1% absolute).
 
 - Seperate scale factors for width and height. In MMDetection 1.x and previous versions, the scale factor is a single float in mode `keep_ratio=True`. This is slightly inaccurate because the scale factors for width and height have slight difference. MMDetection 2.0 adopts separate scale factors for width and height, the improvment on AP ~0.1% absolute.
 
@@ -52,9 +52,13 @@ thus MMDetection 2.0 do not allow low quality matching by default in rcnn traini
 The change in training hyperparameters does not affect
 model-level compatibility but slightly improves the performance. The major ones are:
 
-- We change the number of proposals after nms  from 2000 to 1000 by setting `nms_post=1000` and `max_num=1000`.
+- The number of proposals after nms is changed from 2000 to 1000 by setting `nms_post=1000` and `max_num=1000`.
 This slightly improves both mask AP and bbox AP by ~0.2% absolute.
 
-- For simplicity,  change the default loss in bounding box regression to L1 loss, instead of smooth L1 loss. This leads to an overall improvement in box AP (~0.5% absolute).
+- The default box regression losses for Mask R-CNN, Faster R-CNN and RetinaNet are changed from smooth L1 Loss to L1 loss. This leads to an overall improvement in box AP (~0.6% absolute). However, using L1-loss for other methods such as Cascade R-CNN and HTC does not improve the performance, so we keep the original settings for these methods.
 
-- For simplicity, the sample num of RoIAlign layer is set to be 0. This sometimes leads to slightly improvement on mask AP (~0.1% absolute).
+- The sample num of RoIAlign layer is set to be 0 for simplicity. This sometimes leads to slightly improvement on mask AP (~0.1% absolute).
+
+- The default setting will not use gradient clipping anymore during training for faster training speed. This does not degrade performance of the most of models. For some models such as RepPoints we keep using gradient clipping to stablize the training process and to obtain better performance.
+
+- The default warmup ratio is changed from 1/3 to 0.001 for a more smooth warming up process since the gradient clipping is usually not used. The effect is found negligible during our re-benchmarking, though.
