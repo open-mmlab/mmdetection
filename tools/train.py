@@ -57,7 +57,8 @@ def parse_args():
 
 def main():
     args = parse_args()
-
+    # read parameters from config file
+    # special parameters start with __
     cfg = Config.fromfile(args.config)
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
