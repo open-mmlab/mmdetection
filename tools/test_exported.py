@@ -141,7 +141,6 @@ def main(args):
         model = DetectorOpenVINO(args.model,
                                  args.model[:-3] + 'bin',
                                  mapping_file_path=args.model[:-3] + 'mapping',
-                                 with_detection_output=args.with_detection_output,
                                  cfg=cfg,
                                  classes=dataset.CLASSES)
     else:
@@ -221,9 +220,6 @@ def parse_args():
     parser.add_argument('--show', action='store_true', help='visualize results')
     parser.add_argument('--score_thr', type=float, default=0.3,
                         help='show only detections with confidence larger than the threshold')
-    openvino_args = parser.add_argument_group('OpenVINO-related arguments')
-    openvino_args.add_argument('--with_detection_output', action='store_true',
-                               help='expect DetectionOutput operation at the end of the OpenVINO net')
     args = parser.parse_args()
     return args
 

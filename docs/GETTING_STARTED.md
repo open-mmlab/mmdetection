@@ -193,9 +193,6 @@ In order to test the model being exported via a `tools/export.py` script run the
 # python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out /tmp/out.pkl
 ``` 
 
-If you chose to use alternative SSD model representation, specifying the `--alt_ssd_export` key for `tools/export.py`,
-use an extra `--with_detection_output` key for the test script.
-
 To get quality metrics on test dataset either add `--eval bbox` argument to the call of the `tools/test_exported.py` script for COCO-style dataset, or run `tools/voc_eval.py` script passing dumped detection results (`test_results.pkl`) to it for a VOC-style dataset. 
 
 ## Train a model

@@ -196,7 +196,7 @@ class ModelOpenVINO(object):
 
 
 class DetectorOpenVINO(ModelOpenVINO):
-    def __init__(self, *args, with_detection_output=False, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.with_detection_output = False
         self.with_mask = False
         super().__init__(*args,
