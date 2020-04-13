@@ -165,13 +165,13 @@ To export pretrained model to OpenVINO IR format run the script:
 # python tools/export.py config.py checkpoint.pth ${DEPLOY_DIR} openvino
 ```
 
-OpenVINO exports models with a fixed input resolution, the scripts tries to derive it
-from data pre-processing pipeline config, though sometimes it's hard to get correct resolution.
+OpenVINO exports models with a fixed input resolution, the script tries to derive it
+from data pre-processing pipeline config, though sometimes it's hard to get resolution right.
 In this case, or if you simply want to use resolution different from the one used in test config,
 specify target resolution via `--input_shape` option.
 
-For SSD networks there's an alternative model representation that contains higher level custom operations
-which make it easier to analyse the model and enable more optimizations,
+For SSD networks there's an alternative model representation that contains higher level custom operations,
+which make it easier to analyse the model and enable havier optimizations,
 but this may come at a cost of a small accuracy drop.
 To opt for this model representation use `--alt_ssd_export` option.
 
