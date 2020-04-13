@@ -133,8 +133,8 @@ class AnchorHead(nn.Module):
 
         Returns:
             tuple:
-                anchor_list (list[Tensor]): anchors of each image
-                valid_flag_list (list[Tensor]): valid flags of each image
+                anchor_list (list[Tensor]): Anchors of each image
+                valid_flag_list (list[Tensor]): Valid flags of each image
         """
         num_imgs = len(img_metas)
         num_levels = len(featmap_sizes)
@@ -179,10 +179,11 @@ class AnchorHead(nn.Module):
             a single image.
 
         Args:
-            flat_anchors (Tensor): Multi level anchors of the image,
-                shape (num_anchors ,4).
+            flat_anchors (Tensor): Multi-level anchors of the image, which are
+                concatenated into a single tensor of shape (num_anchors ,4)
             valid_flags (Tensor): Multi level valid flags of the image,
-                shape (num_anchors,).
+                which are concatenated into a single tensor of
+                    shape (num_anchors,).
             gt_bboxes (Tensor): Ground truth bboxes of the image,
                 shape (num_gts, 4).
             img_meta (dict): Meta info of the image.
@@ -259,22 +260,27 @@ class AnchorHead(nn.Module):
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
                 neg_inds)
 
-    def anchor_target(self,
-                      anchor_list,
-                      valid_flag_list,
-                      gt_bboxes_list,
-                      img_metas,
-                      gt_bboxes_ignore_list=None,
-                      gt_labels_list=None,
-                      label_channels=1,
-                      unmap_outputs=True):
+    def get_target(self,
+                   anchor_list,
+                   valid_flag_list,
+                   gt_bboxes_list,
+                   img_metas,
+                   gt_bboxes_ignore_list=None,
+                   gt_labels_list=None,
+                   label_channels=1,
+                   unmap_outputs=True):
         """Compute regression and classification targets for anchors in
             multiple images.
 
         Args:
-            anchor_list (list[list]): Multi level anchors of each image.
-            valid_flag_list (list[list]): Multi level valid flags of each
-                image.
+            anchor_list (list[list[Tensor]]): Multi level anchors of each
+                image. The outer list indicates images, and the inner list
+                corresponds to feature levels of the image. Each element of
+                the inner list is a tensor of shape (num_anchors, 4).
+            valid_flag_list (list[list[Tensor]]): Multi level valid flags of
+                each image. The outer list indicates images, and the inner list
+                corresponds to feature levels of the image. Each element of
+                the inner list is a tensor of shape (num_anchors, )
             gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
             img_metas (list[dict]): Meta info of each image.
             gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
@@ -373,7 +379,7 @@ class AnchorHead(nn.Module):
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        cls_reg_targets = self.anchor_target(
+        cls_reg_targets = self.get_target(
             anchor_list,
             valid_flag_list,
             gt_bboxes,

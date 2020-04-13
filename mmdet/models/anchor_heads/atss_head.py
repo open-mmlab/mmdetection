@@ -207,7 +207,7 @@ class ATSSHead(AnchorHead):
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
-        cls_reg_targets = self.atss_target(
+        cls_reg_targets = self.get_target(
             anchor_list,
             valid_flag_list,
             gt_bboxes,
@@ -361,19 +361,19 @@ class ATSSHead(AnchorHead):
             score_factors=mlvl_centerness)
         return det_bboxes, det_labels
 
-    def atss_target(self,
-                    anchor_list,
-                    valid_flag_list,
-                    gt_bboxes_list,
-                    img_metas,
-                    cfg,
-                    gt_bboxes_ignore_list=None,
-                    gt_labels_list=None,
-                    label_channels=1,
-                    unmap_outputs=True):
+    def get_target(self,
+                   anchor_list,
+                   valid_flag_list,
+                   gt_bboxes_list,
+                   img_metas,
+                   cfg,
+                   gt_bboxes_ignore_list=None,
+                   gt_labels_list=None,
+                   label_channels=1,
+                   unmap_outputs=True):
         """
-        almost the same with anchor_target, with a little modification,
-        here we need return the anchor
+        almost the same with AnchorHead.get_target, with a little modification,
+            here we need return the anchor
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs

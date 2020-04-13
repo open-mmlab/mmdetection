@@ -699,7 +699,7 @@ class GuidedAnchorHead(AnchorHead):
 
         # get anchor targets
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        cls_reg_targets = self.anchor_target(
+        cls_reg_targets = self.get_target(
             guided_anchors_list,
             inside_flag_list,
             gt_bboxes,
