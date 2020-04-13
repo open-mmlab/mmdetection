@@ -30,23 +30,23 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                  test_cfg=None,
                  pretrained=None):
         super(TwoStageDetector, self).__init__()
-        self.backbone = builder.build_backbone(backbone)
+        self.backbone = builder.build_backbone(backbone)#主干构造
 
         if neck is not None:
-            self.neck = builder.build_neck(neck)
+            self.neck = builder.build_neck(neck)#neck构造
 
         if shared_head is not None:
-            self.shared_head = builder.build_shared_head(shared_head)
+            self.shared_head = builder.build_shared_head(shared_head)#共享的特征层
 
         if rpn_head is not None:
-            self.rpn_head = builder.build_head(rpn_head)
+            self.rpn_head = builder.build_head(rpn_head)#RPN头
 
         if bbox_head is not None:
             self.bbox_roi_extractor = builder.build_roi_extractor(
                 bbox_roi_extractor)
             self.bbox_head = builder.build_head(bbox_head)
 
-        if mask_head is not None:
+        if mask_head is not None:#MASK
             if mask_roi_extractor is not None:
                 self.mask_roi_extractor = builder.build_roi_extractor(
                     mask_roi_extractor)
@@ -65,7 +65,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
     def with_rpn(self):
         return hasattr(self, 'rpn_head') and self.rpn_head is not None
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self, pretrained=None):#初始化所有的层
         super(TwoStageDetector, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:
@@ -86,7 +86,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
             if not self.share_roi_extractor:
                 self.mask_roi_extractor.init_weights()
 
-    def extract_feat(self, img):
+    def extract_feat(self, img):#抽取特征
         """Directly extract features from the backbone+neck
         """
         x = self.backbone(img)
@@ -101,12 +101,12 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         """
         outs = ()
         # backbone
-        x = self.extract_feat(img)
+        x = self.extract_feat(img)#抽出特征层
         # rpn
-        if self.with_rpn:
+        if self.with_rpn:#如果有RPN层
             rpn_outs = self.rpn_head(x)
             outs = outs + (rpn_outs, )
-        proposals = torch.randn(1000, 4).cuda()
+        proposals = torch.randn(1000, 4).cuda()#提议
         # bbox head
         rois = bbox2roi([proposals])
         if self.with_bbox:
