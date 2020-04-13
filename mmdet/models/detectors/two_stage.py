@@ -163,67 +163,67 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        x = self.extract_feat(img)
+        x = self.extract_feat(img)#主干执行
 
         losses = dict()
 
-        # RPN forward and loss
-        if self.with_rpn:
-            rpn_outs = self.rpn_head(x)
+        # RPN forward and loss提议层的损失执行
+        if self.with_rpn:#如果有RPN层
+            rpn_outs = self.rpn_head(x)#先生成RPN
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
                                           self.train_cfg.rpn)
             rpn_losses = self.rpn_head.loss(
-                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-            losses.update(rpn_losses)
+                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)#RPN损失
+            losses.update(rpn_losses)#将其放入到LOSSES中
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
             proposal_inputs = rpn_outs + (img_meta, proposal_cfg)
-            proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
-        else:
+            proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)#生成的提议列表
+        else:#如果没有RPN层，那么就必须要给定提议
             proposal_list = proposals
 
         # assign gts and sample proposals
         if self.with_bbox or self.with_mask:
-            bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)
+            bbox_assigner = build_assigner(self.train_cfg.rcnn.assigner)#匹配盒子函数
             bbox_sampler = build_sampler(
-                self.train_cfg.rcnn.sampler, context=self)
-            num_imgs = img.size(0)
-            if gt_bboxes_ignore is None:
+                self.train_cfg.rcnn.sampler, context=self)#对盒子进行采样函数
+            num_imgs = img.size(0)#图片个数
+            if gt_bboxes_ignore is None:#确定要忽略的图片个数
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
-            sampling_results = []
+            sampling_results = []#采样提议的结果
             for i in range(num_imgs):
                 assign_result = bbox_assigner.assign(proposal_list[i],
                                                      gt_bboxes[i],
                                                      gt_bboxes_ignore[i],
-                                                     gt_labels[i])
+                                                     gt_labels[i])#提议匹配GT
                 sampling_result = bbox_sampler.sample(
                     assign_result,
                     proposal_list[i],
                     gt_bboxes[i],
                     gt_labels[i],
-                    feats=[lvl_feat[i][None] for lvl_feat in x])
-                sampling_results.append(sampling_result)
+                    feats=[lvl_feat[i][None] for lvl_feat in x])#采样
+                sampling_results.append(sampling_result)#结果放入列表中
 
         # bbox head forward and loss
         if self.with_bbox:
-            rois = bbox2roi([res.bboxes for res in sampling_results])
+            rois = bbox2roi([res.bboxes for res in sampling_results])#使用roi进行特征抽取
             # TODO: a more flexible way to decide which feature maps to use
             bbox_feats = self.bbox_roi_extractor(
                 x[:self.bbox_roi_extractor.num_inputs], rois)
             if self.with_shared_head:
                 bbox_feats = self.shared_head(bbox_feats)
-            cls_score, bbox_pred = self.bbox_head(bbox_feats)
+            cls_score, bbox_pred = self.bbox_head(bbox_feats)#抽取完roi后进行特征预测结果生成，bbox_head结构
 
             bbox_targets = self.bbox_head.get_target(sampling_results,
                                                      gt_bboxes, gt_labels,
                                                      self.train_cfg.rcnn)
             loss_bbox = self.bbox_head.loss(cls_score, bbox_pred,
-                                            *bbox_targets)
-            losses.update(loss_bbox)
+                                            *bbox_targets)#损失计算
+            losses.update(loss_bbox)#将其也放入到LOSSES中
 
-        # mask head forward and loss
-        if self.with_mask:
+        # mask head forward and loss对于MASK部分的损失计算
+        if self.with_mask:#如果还有MASK部分网络结构
             if not self.share_roi_extractor:
                 pos_rois = bbox2roi(
                     [res.pos_bboxes for res in sampling_results])
@@ -256,7 +256,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
                     [res.pos_gt_labels for res in sampling_results])
                 loss_mask = self.mask_head.loss(mask_pred, mask_targets,
                                                 pos_labels)
-                losses.update(loss_mask)
+                losses.update(loss_mask)#同样放入到总的LOSSES中
 
         return losses
 
