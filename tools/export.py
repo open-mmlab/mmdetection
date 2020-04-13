@@ -22,7 +22,6 @@ import mmcv
 import numpy as np
 import onnx
 import torch
-import torch.onnx.symbolic_helper as sym_help
 from mmcv.parallel import collate, scatter
 
 from mmdet.apis import init_detector
@@ -31,9 +30,9 @@ from mmdet.datasets.pipelines import Compose
 from mmdet.models import detectors
 from mmdet.models.anchor_heads.anchor_head import AnchorHead
 from mmdet.models.roi_extractors import SingleRoIExtractor
-from mmdet.ops import RoIAlign
-from mmdet.utils.deployment import register_extra_symbolics, TracerStub
+from mmdet.utils.deployment import register_extra_symbolics
 from mmdet.utils.deployment.ssd_export_helpers import *
+from mmdet.utils.deployment.tracer_stubs import AnchorsGridGeneratorStub, ROIFeatureExtractorStub
 
 
 def export_to_onnx(model,
@@ -139,34 +138,6 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
     call(command_line, shell=True)
 
 
-class AnchorsGridGeneratorStub(TracerStub):
-    def __init__(self, inner, namespace='mmdet_custom',
-                 name='anchor_grid_generator', **kwargs):
-        super().__init__(inner, namespace=namespace, name=name, **kwargs)
-        self.inner = lambda x, **kw: inner(x.shape[2:4], **kw)
-
-    def forward(self, featmap, stride=16, device='cpu'):
-        # Force `stride` and `device` to be passed in as kwargs.
-        return super().forward(featmap, stride=stride, device=device)
-
-    def symbolic(self, g, featmap):
-        stride = float(self.params['stride'])
-        shift = torch.full(self.params['base_anchors'].shape, - 0.5 * stride, dtype=torch.float32)
-        prior_boxes = g.op('Constant', value_t=torch.tensor(self.params['base_anchors'], dtype=torch.float32) + shift)
-        # TODO. im_data is not needed actually.
-        im_data = g.op('Constant', value_t=torch.zeros([1, 1, 1, 1], dtype=torch.float32))
-
-        return g.op('ExperimentalDetectronPriorGridGenerator',
-                    prior_boxes,
-                    featmap,
-                    im_data,
-                    stride_x_f=stride,
-                    stride_y_f=stride,
-                    h_i=0,
-                    w_i=0,
-                    flatten_i=1,
-                    outputs=self.num_outputs)
-
 def stub_anchor_generator(model, anchor_head_name):
     anchor_head = getattr(model, anchor_head_name, None)
     if anchor_head is not None and isinstance(anchor_head, AnchorHead):
@@ -177,58 +148,6 @@ def stub_anchor_generator(model, anchor_head_name):
             # Save base anchors as operation parameter. It's used at ONNX export time during symbolic call.
             anchor_generators[i].grid_anchors.params['base_anchors'] = anchor_generators[
                 i].base_anchors.cpu().numpy()
-
-
-class ROIFeatureExtractorStub(TracerStub):
-
-    class Wrapper(torch.nn.Module):
-        def __init__(self, inner):
-            super().__init__()
-            self.inner = inner
-
-        def __call__(self, rois, *feats):
-            return self.inner(feats, rois)
-
-        def __getattr__(self, item):
-            if item == 'inner':
-                return super().__getattr__(item)
-            # Forward calls to self.inner.
-            inner = self.inner
-            try:
-                v = inner.__getattribute__(item)
-            except AttributeError:
-                v = inner.__getattr__(item)
-            return v
-
-    def __init__(self, inner, namespace='mmdet_custom',
-                 name='roi_feature_extractor', **kwargs):
-        super().__init__(self.Wrapper(inner), namespace=namespace, name=name, **kwargs)
-        out_size = self.inner.roi_layers[0].out_size[0]
-        for roi_layer in self.inner.roi_layers:
-            size = roi_layer.out_size
-            assert isinstance(roi_layer, RoIAlign)
-            assert len(size) == 2
-            assert size[0] == size[1]
-            assert size[0] == out_size
-
-    def forward(self, feats, rois, roi_scale_factor=None):
-        assert roi_scale_factor is None, 'roi_scale_factor is not supported'
-        return super().forward(rois, *feats)
-
-    def symbolic(self, g, rois, *feats):
-        rois = sym_help._slice_helper(g, rois, axes=[1], starts=[1], ends=[5])
-        roi_feats, _ = g.op('ExperimentalDetectronROIFeatureExtractor',
-            rois,
-            *feats,
-            output_size_i=self.inner.roi_layers[0].out_size[0],
-            pyramid_scales_i=self.inner.featmap_strides,
-            sampling_ratio_i=self.inner.roi_layers[0].sample_num,
-            image_id_i=0,
-            distribute_rois_between_levels_i=1,
-            preserve_rois_order_i=1,
-            outputs=2
-            )
-        return roi_feats
 
 
 def stub_roi_feature_extractor(model, extractor_name):
