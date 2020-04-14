@@ -60,7 +60,7 @@ def build_dataset(cfg, default_args=None):
     else:
         matches = glob.glob(cfg['ann_file'], recursive=True)
         if not matches:
-            raise RuntimeError(f'Failed to fine annotation files that match pattern: '
+            raise RuntimeError(f'Failed to find annotation files that match pattern: '
                                f'{cfg["ann_file"]}')
         cfg['ann_file'] = matches
         if len(cfg['ann_file']) == 1:
