@@ -1,9 +1,9 @@
 import torch
 
-from .registry import IOU_CALCULATOR
+from .registry import IOU_CALCULATORS
 
 
-@IOU_CALCULATOR.register_module
+@IOU_CALCULATORS.register_module
 class BboxOverlaps2D(object):
     """2D IoU Calculator"""
 
