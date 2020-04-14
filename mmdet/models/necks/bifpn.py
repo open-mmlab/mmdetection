@@ -24,7 +24,7 @@ class BIFPN(nn.Module):
                  no_norm_on_lateral=False,
                  conv_cfg=None,
                  norm_cfg=None,
-                 activation=None):
+                activation=None):
         super(BIFPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -61,7 +61,8 @@ class BIFPN(nn.Module):
                 1,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg if not self.no_norm_on_lateral else None,
-                activation=self.activation,
+                # [JW] there is no argument 'activation' in this version's ConvModule
+                # activation=self.activation,
                 inplace=False)
             self.lateral_convs.append(l_conv)
 
@@ -87,7 +88,8 @@ class BIFPN(nn.Module):
                     padding=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
-                    activation=self.activation,
+                    # [JW] there is no argument 'activation' in this version's ConvModule
+                    # activation=self.activation,
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)
 
@@ -161,7 +163,8 @@ class BiFPNModule(nn.Module):
                         groups=channels,
                         conv_cfg=conv_cfg,
                         norm_cfg=norm_cfg,
-                        activation=self.activation,
+                        # [JW] there is no argument 'activation' in this version's ConvModule
+                        # activation=self.activation,
                         inplace=False),
                     ConvModule(
                         channels,
@@ -169,7 +172,8 @@ class BiFPNModule(nn.Module):
                         1,
                         conv_cfg=conv_cfg,
                         norm_cfg=norm_cfg,
-                        activation=self.activation,
+                        # [JW] there is no argument 'activation' in this version's ConvModule
+                        # activation=self.activation,
                         inplace=False))
                 self.bifpn_convs.append(fpn_conv)
 
