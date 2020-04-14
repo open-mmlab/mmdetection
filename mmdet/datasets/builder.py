@@ -29,7 +29,7 @@ def _concat_dataset(cfg, default_args=None):
             #     ├── ...
             # and file_name inside instances_train.json is relative to <dataset_root>/images
             img_prefixes = \
-                [os.path.join(os.path.dirname(ann_file), '../images') for ann_file in ann_files]
+                [os.path.join(os.path.dirname(ann_file), '..', 'images') for ann_file in ann_files]
         else:
             raise NotImplementedError
 
@@ -60,7 +60,7 @@ def build_dataset(cfg, default_args=None):
     else:
         matches = glob.glob(cfg['ann_file'], recursive=True)
         if not matches:
-            raise RuntimeError(f'Failed to fined annotation files that match pattern: '
+            raise RuntimeError(f'Failed to fine annotation files that match pattern: '
                                f'{cfg["ann_file"]}')
         cfg['ann_file'] = matches
         if len(cfg['ann_file']) == 1:
