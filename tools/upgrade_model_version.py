@@ -32,8 +32,8 @@ def convert(in_file, out_file):
 
 def main():
     parser = argparse.ArgumentParser(description='Upgrade model version')
-    parser.add_argument('in-file', help='input checkpoint file')
-    parser.add_argument('out-file', help='output checkpoint file')
+    parser.add_argument('in_file', help='input checkpoint file')
+    parser.add_argument('out_file', help='output checkpoint file')
     args = parser.parse_args()
     convert(args.in_file, args.out_file)
 

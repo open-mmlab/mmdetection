@@ -159,7 +159,7 @@ def analyze_results(res_file, ann_file, res_types, out_dir):
 def main():
     parser = ArgumentParser(description='COCO Error Analysis Tool')
     parser.add_argument('result', help='result file (json format) path')
-    parser.add_argument('out-dir', help='dir to save analyze result images')
+    parser.add_argument('out_dir', help='dir to save analyze result images')
     parser.add_argument(
         '--ann',
         default='data/coco/annotations/instances_val2017.json',
