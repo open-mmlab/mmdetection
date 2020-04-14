@@ -40,6 +40,18 @@ def test_custom_classes_override_default(dataset):
     assert custom_dataset.CLASSES == ['bus', 'car']
     assert custom_dataset.custom_classes
 
+    # Test overriding not a subset
+    custom_dataset = dataset_class(
+        ann_file=MagicMock(),
+        pipeline=[],
+        classes=['foo'],
+        test_mode=True,
+        img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
+
+    assert custom_dataset.CLASSES != original_classes
+    assert custom_dataset.CLASSES == ['foo']
+    assert custom_dataset.custom_classes
+
     # Test default behavior
     custom_dataset = dataset_class(
         ann_file=MagicMock(),
