@@ -171,7 +171,7 @@ In this case, or if you simply want to use resolution different from the one use
 specify target resolution via `--input_shape` option.
 
 For SSD networks there's an alternative model representation that contains higher level custom operations,
-which make it easier to analyse the model and enable havier optimizations,
+which make it easier to analyse the model and enable heavier optimizations,
 but this may come at a cost of a small accuracy drop.
 To opt for this model representation use `--alt_ssd_export` option.
 
