@@ -1,3 +1,3 @@
 from mmdet.utils import Registry
 
-IOU_CALCULATOR = Registry('iou_calculator')
+IOU_CALCULATORS = Registry('IoU calculator')
