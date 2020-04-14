@@ -185,11 +185,13 @@ def main(args):
         stub_roi_feature_extractor(model, 'bbox_roi_extractor')
         stub_roi_feature_extractor(model, 'mask_roi_extractor')
 
+    mmcv.mkdir_or_exist(osp.abspath(args.output_dir))
     onnx_model_path = osp.join(args.output_dir,
                                osp.splitext(osp.basename(args.config))[0] + '.onnx')
     
     with torch.no_grad():
-        export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=10, alt_ssd_export=args.alt_ssd_export)
+        export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=10,
+                       alt_ssd_export=getattr(args, 'alt_ssd_export', False))
         add_node_names(onnx_model_path)
         print(f'ONNX model has been saved to "{onnx_model_path}"')
 
