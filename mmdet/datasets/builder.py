@@ -3,6 +3,7 @@ import glob
 import os
 
 from mmdet.utils import build_from_cfg
+
 from .dataset_wrappers import ConcatDataset, RepeatDataset
 from .registry import DATASETS
 
@@ -26,8 +27,9 @@ def _concat_dataset(cfg, default_args=None):
             #     ├── image_name1
             #     ├── image_name2
             #     ├── ...
-            # and file_name inside instances_train.json is relative to dataset root
-            img_prefixes = [os.path.join(os.path.dirname(ann_file), '..') for ann_file in ann_files]
+            # and file_name inside instances_train.json is relative to <dataset_root>/images
+            img_prefixes = \
+                [os.path.join(os.path.dirname(ann_file), '../images') for ann_file in ann_files]
         else:
             raise NotImplementedError
 
@@ -55,10 +57,16 @@ def build_dataset(cfg, default_args=None):
             build_dataset(cfg['dataset'], default_args), cfg['times'])
     elif isinstance(cfg['ann_file'], (list, tuple)):
         dataset = _concat_dataset(cfg, default_args)
-    elif '*' in cfg['ann_file']:
-        cfg['ann_file'] = glob.glob(cfg['ann_file'], recursive=True)
-        dataset = _concat_dataset(cfg, default_args)
     else:
-        dataset = build_from_cfg(cfg, DATASETS, default_args)
+        matches = glob.glob(cfg['ann_file'], recursive=True)
+        if not matches:
+            raise RuntimeError(f'Failed to fined annotation files that match pattern: '
+                               f'{cfg["ann_file"]}')
+        cfg['ann_file'] = matches
+        if len(cfg['ann_file']) == 1:
+            cfg['ann_file'] = cfg['ann_file'][0]
+            dataset = build_from_cfg(cfg, DATASETS, default_args)
+        else:
+            dataset = _concat_dataset(cfg, default_args)
 
     return dataset
