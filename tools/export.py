@@ -209,6 +209,7 @@ def parse_args():
     parser.add_argument('output_dir', help='path to directory to save exported models in')
 
     subparsers = parser.add_subparsers(title='target', dest='target', help='target model format')
+    subparsers.required = True
     parser_onnx = subparsers.add_parser('onnx', help='export to ONNX')
     parser_openvino = subparsers.add_parser('openvino', help='export to OpenVINO')
     parser_openvino.add_argument('--input_shape', nargs=2, type=int, default=None,
