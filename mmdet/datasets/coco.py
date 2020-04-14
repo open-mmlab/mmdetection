@@ -17,51 +17,73 @@ from .registry import DATASETS
 class CocoDataset(CustomDataset):
 
     CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
-               'train', 'truck', 'boat', 'traffic_light', 'fire_hydrant',
-               'stop_sign', 'parking_meter', 'bench', 'bird', 'cat', 'dog',
+               'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
+               'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
                'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
                'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-               'skis', 'snowboard', 'sports_ball', 'kite', 'baseball_bat',
-               'baseball_glove', 'skateboard', 'surfboard', 'tennis_racket',
-               'bottle', 'wine_glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
+               'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat',
+               'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
+               'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
                'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
-               'hot_dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-               'potted_plant', 'bed', 'dining_table', 'toilet', 'tv', 'laptop',
-               'mouse', 'remote', 'keyboard', 'cell_phone', 'microwave',
+               'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+               'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
+               'mouse', 'remote', 'keyboard', 'cell phone', 'microwave',
                'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock',
-               'vase', 'scissors', 'teddy_bear', 'hair_drier', 'toothbrush')
+               'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)
-        self.cat_ids = self.coco.getCatIds()
-        self.cat2label = {
-            cat_id: i + 1
-            for i, cat_id in enumerate(self.cat_ids)
-        }
+        self.cat_ids = self.coco.getCatIds(catNms=self.CLASSES)
+        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.img_ids = self.coco.getImgIds()
-        img_infos = []
+        data_infos = []
         for i in self.img_ids:
             info = self.coco.loadImgs([i])[0]
             info['filename'] = info['file_name']
-            img_infos.append(info)
-        return img_infos
+            data_infos.append(info)
+        return data_infos
 
     def get_ann_info(self, idx):
-        img_id = self.img_infos[idx]['id']
+        img_id = self.data_infos[idx]['id']
         ann_ids = self.coco.getAnnIds(imgIds=[img_id])
         ann_info = self.coco.loadAnns(ann_ids)
-        return self._parse_ann_info(self.img_infos[idx], ann_info)
+        return self._parse_ann_info(self.data_infos[idx], ann_info)
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small or without ground truths."""
         valid_inds = []
         ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
-        for i, img_info in enumerate(self.img_infos):
+        for i, img_info in enumerate(self.data_infos):
             if self.filter_empty_gt and self.img_ids[i] not in ids_with_ann:
                 continue
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
         return valid_inds
+
+    def get_subset_by_classes(self):
+        """Get img ids that contain any category in class_ids.
+
+        Different from the coco.getImgIds(), this function returns the id if
+        the img contains one of the categories rather than all.
+
+        Args:
+            class_ids (list[int]): list of category ids
+
+        Return:
+            ids (list[int]): integer list of img ids
+        """
+
+        ids = set()
+        for i, class_id in enumerate(self.cat_ids):
+            ids |= set(self.coco.catToImgs[class_id])
+        self.img_ids = list(ids)
+
+        data_infos = []
+        for i in self.img_ids:
+            info = self.coco.loadImgs([i])[0]
+            info['filename'] = info['file_name']
+            data_infos.append(info)
+        return data_infos
 
     def _parse_ann_info(self, img_info, ann_info):
         """Parse bbox and mask annotation.
@@ -86,7 +108,9 @@ class CocoDataset(CustomDataset):
             x1, y1, w, h = ann['bbox']
             if ann['area'] <= 0 or w < 1 or h < 1:
                 continue
-            bbox = [x1, y1, x1 + w - 1, y1 + h - 1]
+            if ann['category_id'] not in self.cat_ids:
+                continue
+            bbox = [x1, y1, x1 + w, y1 + h]
             if ann.get('iscrowd', False):
                 gt_bboxes_ignore.append(bbox)
             else:
@@ -122,8 +146,8 @@ class CocoDataset(CustomDataset):
         return [
             _bbox[0],
             _bbox[1],
-            _bbox[2] - _bbox[0] + 1,
-            _bbox[3] - _bbox[1] + 1,
+            _bbox[2] - _bbox[0],
+            _bbox[3] - _bbox[1],
         ]
 
     def _proposal2json(self, results):
@@ -249,7 +273,7 @@ class CocoDataset(CustomDataset):
                 if ann.get('ignore', False) or ann['iscrowd']:
                     continue
                 x1, y1, w, h = ann['bbox']
-                bboxes.append([x1, y1, x1 + w - 1, y1 + h - 1])
+                bboxes.append([x1, y1, x1 + w, y1 + h])
             bboxes = np.array(bboxes, dtype=np.float32)
             if bboxes.shape[0] == 0:
                 bboxes = np.zeros((0, 4))
@@ -357,6 +381,7 @@ class CocoDataset(CustomDataset):
 
             iou_type = 'bbox' if metric == 'proposal' else metric
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
+            cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
             if metric == 'proposal':
                 cocoEval.params.useCats = 0

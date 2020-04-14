@@ -4,6 +4,7 @@ import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 
+from mmdet.core import BitmapMasks, PolygonMasks
 from ..registry import PIPELINES
 
 
@@ -38,7 +39,7 @@ class LoadImageFromFile(object):
         return results
 
     def __repr__(self):
-        return '{} (to_float32={}, color_type={})'.format(
+        return "{} (to_float32={}, color_type='{}')".format(
             self.__class__.__name__, self.to_float32, self.color_type)
 
 
@@ -48,7 +49,7 @@ class LoadMultiChannelImageFromFiles(object):
     Expects results['filename'] to be a list of filenames
     """
 
-    def __init__(self, to_float32=True, color_type='unchanged'):
+    def __init__(self, to_float32=False, color_type='unchanged'):
         self.to_float32 = to_float32
         self.color_type = color_type
 
@@ -68,10 +69,18 @@ class LoadMultiChannelImageFromFiles(object):
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
+        # Set initial values for default meta_keys
+        results['pad_shape'] = img.shape
+        results['scale_factor'] = 1.0
+        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
+        results['img_norm_cfg'] = dict(
+            mean=np.zeros(num_channels, dtype=np.float32),
+            std=np.ones(num_channels, dtype=np.float32),
+            to_rgb=False)
         return results
 
     def __repr__(self):
-        return '{} (to_float32={}, color_type={})'.format(
+        return "{} (to_float32={}, color_type='{}')".format(
             self.__class__.__name__, self.to_float32, self.color_type)
 
 
@@ -120,11 +129,32 @@ class LoadAnnotations(object):
         mask = maskUtils.decode(rle)
         return mask
 
+    def process_polygons(self, polygons):
+        """ Convert polygons to list of ndarray and filter invalid polygons.
+
+        Args:
+            polygons (list[list]): polygons of one instance.
+
+        Returns:
+            list[ndarray]: processed polygons.
+        """
+        polygons = [np.array(p) for p in polygons]
+        valid_polygons = []
+        for polygon in polygons:
+            if len(polygon) % 2 == 0 and len(polygon) >= 6:
+                valid_polygons.append(polygon)
+        return valid_polygons
+
     def _load_masks(self, results):
         h, w = results['img_info']['height'], results['img_info']['width']
         gt_masks = results['ann_info']['masks']
         if self.poly2mask:
-            gt_masks = [self._poly2mask(mask, h, w) for mask in gt_masks]
+            gt_masks = BitmapMasks(
+                [self._poly2mask(mask, h, w) for mask in gt_masks], h, w)
+        else:
+            gt_masks = PolygonMasks(
+                [self.process_polygons(polygons) for polygons in gt_masks], h,
+                w)
         results['gt_masks'] = gt_masks
         results['mask_fields'].append('gt_masks')
         return results

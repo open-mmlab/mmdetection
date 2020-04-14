@@ -20,6 +20,9 @@ def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
 
 
 def _expand_binary_labels(labels, label_weights, label_channels):
+    # Caution: this function should only be used in RPN
+    # in other files such as in ghm_loss, the _expand_binary_labels
+    # is used for multi-class classification.
     bin_labels = labels.new_full((labels.size(0), label_channels), 0)
     inds = torch.nonzero(labels >= 1).squeeze()
     if inds.numel() > 0:

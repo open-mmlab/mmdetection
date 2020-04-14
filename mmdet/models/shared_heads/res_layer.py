@@ -4,8 +4,9 @@ from mmcv.runner import load_checkpoint
 
 from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
-from ..backbones import ResNet, make_res_layer
+from ..backbones import ResNet
 from ..registry import SHARED_HEADS
+from ..utils import ResLayer as _ResLayer
 
 
 @SHARED_HEADS.register_module
@@ -31,7 +32,7 @@ class ResLayer(nn.Module):
         planes = 64 * 2**stage
         inplanes = 64 * 2**(stage - 1) * block.expansion
 
-        res_layer = make_res_layer(
+        res_layer = _ResLayer(
             block,
             inplanes,
             planes,

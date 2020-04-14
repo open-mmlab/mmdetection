@@ -20,17 +20,24 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
     def with_neck(self):
         return hasattr(self, 'neck') and self.neck is not None
 
+    # TODO: these properties need to be carefully handled
+    # for both single stage & two stage detectors
     @property
     def with_shared_head(self):
-        return hasattr(self, 'shared_head') and self.shared_head is not None
+        return hasattr(self.roi_head,
+                       'shared_head') and self.roi_head.shared_head is not None
 
     @property
     def with_bbox(self):
-        return hasattr(self, 'bbox_head') and self.bbox_head is not None
+        return ((hasattr(self.roi_head, 'bbox_head')
+                 and self.roi_head.bbox_head is not None)
+                or (hasattr(self, 'bbox_head') and self.bbox_head is not None))
 
     @property
     def with_mask(self):
-        return hasattr(self, 'mask_head') and self.mask_head is not None
+        return ((hasattr(self.roi_head, 'mask_head')
+                 and self.roi_head.mask_head is not None)
+                or (hasattr(self, 'mask_head') and self.mask_head is not None))
 
     @abstractmethod
     def extract_feat(self, imgs):
@@ -85,9 +92,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             raise ValueError(
                 'num of augmentations ({}) != num of image metas ({})'.format(
                     len(img), len(img_metas)))
-        # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
-        imgs_per_gpu = img[0].size(0)
-        assert imgs_per_gpu == 1
+        # TODO: remove the restriction of samples_per_gpu == 1 when prepared
+        samples_per_gpu = img[0].size(0)
+        assert samples_per_gpu == 1
 
         if num_augs == 1:
             return await self.async_simple_test(img[0], img_metas[0], **kwargs)
@@ -114,9 +121,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             raise ValueError(
                 'num of augmentations ({}) != num of image meta ({})'.format(
                     len(imgs), len(img_metas)))
-        # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
-        imgs_per_gpu = imgs[0].size(0)
-        assert imgs_per_gpu == 1
+        # TODO: remove the restriction of samples_per_gpu == 1 when prepared
+        samples_per_gpu = imgs[0].size(0)
+        assert samples_per_gpu == 1
 
         if num_augs == 1:
             """

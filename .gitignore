@@ -104,7 +104,7 @@ venv.bak/
 .mypy_cache/
 
 mmdet/version.py
-data
+./data/
 .vscode
 .idea
 
@@ -116,3 +116,5 @@ work_dirs/
 
 # Pytorch
 *.pth
+*.py~
+*.sh~
