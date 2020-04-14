@@ -12,7 +12,7 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch'))
-data = dict(imgs_per_gpu=1, workers_per_gpu=1)
+data = dict(samples_per_gpu=1, workers_per_gpu=1)
 # learning policy
 lr_config = dict(step=[16, 19])
 total_epochs = 20

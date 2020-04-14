@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
 from .carafe import CARAFEPack
+from .wrappers import ConvTranspose2d
 
 
 class PixelShufflePack(nn.Module):
@@ -45,7 +46,7 @@ upsample_cfg = {
     # layer_abbreviation: module
     'nearest': nn.Upsample,
     'bilinear': nn.Upsample,
-    'deconv': nn.ConvTranspose2d,
+    'deconv': ConvTranspose2d,
     'pixel_shuffle': PixelShufflePack,
     'carafe': CARAFEPack
 }

@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
 from mmdet.core import delta2bbox
-from mmdet.ops import nms
+from mmdet.ops import batched_nms
 from ..registry import HEADS
 from .anchor_head import AnchorHead
 
@@ -13,7 +13,8 @@ from .anchor_head import AnchorHead
 class RPNHead(AnchorHead):
 
     def __init__(self, in_channels, **kwargs):
-        super(RPNHead, self).__init__(2, in_channels, **kwargs)
+        super(RPNHead, self).__init__(
+            1, in_channels, background_label=0, **kwargs)
 
     def _init_layers(self):
         self.rpn_conv = nn.Conv2d(
@@ -39,7 +40,6 @@ class RPNHead(AnchorHead):
              bbox_preds,
              gt_bboxes,
              img_metas,
-             cfg,
              gt_bboxes_ignore=None):
         losses = super(RPNHead, self).loss(
             cls_scores,
@@ -47,7 +47,6 @@ class RPNHead(AnchorHead):
             gt_bboxes,
             None,
             img_metas,
-            cfg,
             gt_bboxes_ignore=gt_bboxes_ignore)
         return dict(
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
@@ -60,7 +59,12 @@ class RPNHead(AnchorHead):
                           scale_factor,
                           cfg,
                           rescale=False):
-        mlvl_proposals = []
+        # bboxes from different level should be independent during NMS,
+        # level_ids are used as labels for batched NMS to separate them
+        level_ids = []
+        mlvl_scores = []
+        mlvl_bbox_preds = []
+        mlvl_valid_anchors = []
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
@@ -71,34 +75,44 @@ class RPNHead(AnchorHead):
                 scores = rpn_cls_score.sigmoid()
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
-                scores = rpn_cls_score.softmax(dim=1)[:, 1]
+                # remind that we set FG labels to [0, num_class-1]
+                # since mmdet v2.0
+                # BG cat_id: num_class
+                scores = rpn_cls_score.softmax(dim=1)[:, :-1]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
-                _, topk_inds = scores.topk(cfg.nms_pre)
+                # sort is faster than topk
+                # _, topk_inds = scores.topk(cfg.nms_pre)
+                ranked_scores, rank_inds = scores.sort(descending=True)
+                topk_inds = rank_inds[:cfg.nms_pre]
+                scores = ranked_scores[:cfg.nms_pre]
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
                 anchors = anchors[topk_inds, :]
-                scores = scores[topk_inds]
-            proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
-                                   self.target_stds, img_shape)
-            if cfg.min_bbox_size > 0:
-                w = proposals[:, 2] - proposals[:, 0]
-                h = proposals[:, 3] - proposals[:, 1]
-                valid_inds = torch.nonzero((w >= cfg.min_bbox_size) &
-                                           (h >= cfg.min_bbox_size)).squeeze()
+            mlvl_scores.append(scores)
+            mlvl_bbox_preds.append(rpn_bbox_pred)
+            mlvl_valid_anchors.append(anchors)
+            level_ids.append(
+                scores.new_full((scores.size(0), ), idx, dtype=torch.long))
+
+        scores = torch.cat(mlvl_scores)
+        anchors = torch.cat(mlvl_valid_anchors)
+        rpn_bbox_pred = torch.cat(mlvl_bbox_preds)
+        proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
+                               self.target_stds, img_shape)
+        ids = torch.cat(level_ids)
+
+        if cfg.min_bbox_size > 0:
+            w = proposals[:, 2] - proposals[:, 0]
+            h = proposals[:, 3] - proposals[:, 1]
+            valid_inds = torch.nonzero((w >= cfg.min_bbox_size)
+                                       & (h >= cfg.min_bbox_size)).squeeze()
+            if valid_inds.sum().item() != len(proposals):
                 proposals = proposals[valid_inds, :]
                 scores = scores[valid_inds]
-            proposals = torch.cat([proposals, scores.unsqueeze(-1)], dim=-1)
-            proposals, _ = nms(proposals, cfg.nms_thr)
-            proposals = proposals[:cfg.nms_post, :]
-            mlvl_proposals.append(proposals)
-        proposals = torch.cat(mlvl_proposals, 0)
-        if cfg.nms_across_levels:
-            proposals, _ = nms(proposals, cfg.nms_thr)
-            proposals = proposals[:cfg.max_num, :]
-        else:
-            scores = proposals[:, 4]
-            num = min(cfg.max_num, proposals.shape[0])
-            _, topk_inds = scores.topk(num)
-            proposals = proposals[topk_inds, :]
-        return proposals
+                ids = ids[valid_inds]
+
+        # TODO: remove the hard coded nms type
+        nms_cfg = dict(type='nms', iou_thr=cfg.nms_thr)
+        dets, keep = batched_nms(proposals, scores, ids, nms_cfg)
+        return dets[:cfg.nms_post]

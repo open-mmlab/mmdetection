@@ -39,7 +39,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=2,
+    samples_per_gpu=2,
     workers_per_gpu=2,
     train=dict(
         proposal_file=data_root + 'proposals/rpn_r50_fpn_1x_train2017.pkl',

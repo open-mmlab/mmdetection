@@ -2,7 +2,7 @@ _base_ = [
     '../_base_/models/ssd300.py', '../_base_/datasets/voc0712.py',
     '../_base_/default_runtime.py'
 ]
-model = dict(bbox_head=dict(num_classes=21, basesize_ratio_range=(0.2, 0.9)))
+model = dict(bbox_head=dict(num_classes=20, basesize_ratio_range=(0.2, 0.9)))
 # dataset settings
 dataset_type = 'VOCDataset'
 data_root = 'data/VOCdevkit/'
@@ -45,7 +45,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=8,
+    samples_per_gpu=8,
     workers_per_gpu=3,
     train=dict(
         type='RepeatDataset', times=10, dataset=dict(pipeline=train_pipeline)),
@@ -59,7 +59,7 @@ lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=500,
-    warmup_ratio=1.0 / 3,
+    warmup_ratio=0.001,
     step=[16, 20])
 checkpoint_config = dict(interval=1)
 # runtime settings

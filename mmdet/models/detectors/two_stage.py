@@ -31,7 +31,10 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
             self.neck = builder.build_neck(neck)
 
         if rpn_head is not None:
-            self.rpn_head = builder.build_head(rpn_head)
+            rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
+            rpn_head_ = rpn_head.copy()
+            rpn_head_.update(train_cfg=rpn_train_cfg, test_cfg=test_cfg.rpn)
+            self.rpn_head = builder.build_head(rpn_head_)
 
         if roi_head is not None:
             # update train and test cfg here for now
@@ -138,8 +141,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         # RPN forward and loss
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
-            rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas,
-                                          self.train_cfg.rpn)
+            rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas)
             rpn_losses = self.rpn_head.loss(
                 *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
             losses.update(rpn_losses)

@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import auto_fp16, force_fp32, mask_target
-from mmdet.ops import ConvModule, build_upsample_layer
+from mmdet.ops import Conv2d, ConvModule, build_upsample_layer
 from mmdet.ops.carafe import CARAFEPack
 from mmdet.ops.grid_sampler import grid_sample
 from ..builder import build_loss
@@ -26,7 +26,7 @@ class FCNMaskHead(nn.Module):
                  in_channels=256,
                  conv_kernel_size=3,
                  conv_out_channels=256,
-                 num_classes=81,
+                 num_classes=80,
                  class_agnostic=False,
                  upsample_cfg=dict(type='deconv', scale_factor=2),
                  conv_cfg=None,
@@ -98,7 +98,7 @@ class FCNMaskHead(nn.Module):
         logits_in_channel = (
             self.conv_out_channels
             if self.upsample_method == 'deconv' else upsample_in_channels)
-        self.conv_logits = nn.Conv2d(logits_in_channel, out_channels, 1)
+        self.conv_logits = Conv2d(logits_in_channel, out_channels, 1)
         self.relu = nn.ReLU(inplace=True)
         self.debug_imgs = None
 
@@ -136,11 +136,14 @@ class FCNMaskHead(nn.Module):
     @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, mask_targets, labels):
         loss = dict()
-        if self.class_agnostic:
-            loss_mask = self.loss_mask(mask_pred, mask_targets,
-                                       torch.zeros_like(labels))
+        if mask_pred.size(0) == 0:
+            loss_mask = mask_pred.sum() * 0
         else:
-            loss_mask = self.loss_mask(mask_pred, mask_targets, labels)
+            if self.class_agnostic:
+                loss_mask = self.loss_mask(mask_pred, mask_targets,
+                                           torch.zeros_like(labels))
+            else:
+                loss_mask = self.loss_mask(mask_pred, mask_targets, labels)
         loss['loss_mask'] = loss_mask
         return loss
 
@@ -171,7 +174,7 @@ class FCNMaskHead(nn.Module):
         cls_segms = [[] for _ in range(self.num_classes)
                      ]  # BG is not included in num_classes
         bboxes = det_bboxes[:, :4]
-        labels = det_labels + 1  # TODO: remove + 1 in cat -1
+        labels = det_labels
 
         if rescale:
             img_h, img_w = ori_shape[:2]
@@ -234,7 +237,7 @@ class FCNMaskHead(nn.Module):
                     im_mask[i][:, :, None].cpu().numpy(),
                     order='F',
                     dtype='uint8'))[0]
-            cls_segms[labels[i] - 1].append(rle)  # TODO: remove -1 in cat -1
+            cls_segms[labels[i]].append(rle)
         return cls_segms
 
 

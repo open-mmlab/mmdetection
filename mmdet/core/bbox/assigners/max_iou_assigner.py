@@ -1,10 +1,12 @@
 import torch
 
 from ..iou_calculators import build_iou_calculator
+from ..registry import BBOX_ASSIGNERS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
+@BBOX_ASSIGNERS.register_module
 class MaxIoUAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 

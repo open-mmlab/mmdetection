@@ -342,7 +342,7 @@ def main():
             dataset = build_dataset(test_data_cfg)
             data_loader = build_dataloader(
                 dataset,
-                imgs_per_gpu=1,
+                samples_per_gpu=1,
                 workers_per_gpu=args.workers,
                 dist=distributed,
                 shuffle=False)
