@@ -1,5 +1,5 @@
 import copy
-import fnmatch
+import glob
 import os
 
 from mmdet.utils import build_from_cfg
@@ -56,18 +56,7 @@ def build_dataset(cfg, default_args=None):
     elif isinstance(cfg['ann_file'], (list, tuple)):
         dataset = _concat_dataset(cfg, default_args)
     elif '*' in cfg['ann_file']:
-        dirname = os.path.dirname(cfg['ann_file'].split('*')[0])
-        pattern = cfg['ann_file'].replace(dirname, '')
-        while pattern.startswith('/'):
-            pattern = pattern[1:]
-
-        matches = []
-        for root, dirnames, filenames in os.walk(dirname):
-            filenames = [os.path.relpath(os.path.join(root, filename), dirname) for filename in filenames]
-            for filename in fnmatch.filter(filenames, pattern):
-                matches.append(os.path.join(dirname, filename))
-
-        cfg['ann_file'] = matches
+        cfg['ann_file'] = glob.glob(cfg['ann_file'], recursive=True)
         dataset = _concat_dataset(cfg, default_args)
     else:
         dataset = build_from_cfg(cfg, DATASETS, default_args)
