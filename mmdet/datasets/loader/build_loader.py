@@ -19,7 +19,7 @@ if platform.system() != 'Windows':
 
 
 def build_dataloader(dataset,
-                     imgs_per_gpu=2, # [JW] set default value to 2
+                     imgs_per_gpu,
                      workers_per_gpu,
                      num_gpus=1,
                      dist=True,
