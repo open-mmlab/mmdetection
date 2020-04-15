@@ -1,5 +1,21 @@
 import torch
 
+from .registry import IOU_CALCULATORS
+
+
+@IOU_CALCULATORS.register_module
+class BboxOverlaps2D(object):
+    """2D IoU Calculator"""
+
+    def __call__(self, bboxes1, bboxes2, mode='iou', is_aligned=False):
+        return bbox_overlaps(bboxes1, bboxes2, mode, is_aligned)
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += '(mode={}, is_aligned={})'.format(self.mode,
+                                                      self.is_aligned)
+        return repr_str
+
 
 def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
     """Calculate overlap between two set of bboxes.
