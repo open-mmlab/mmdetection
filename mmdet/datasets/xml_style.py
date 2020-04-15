@@ -6,7 +6,7 @@ import numpy as np
 
 from .custom import CustomDataset
 from .registry import DATASETS
-
+from PIL import Image
 
 @DATASETS.register_module
 class XMLDataset(CustomDataset):
@@ -26,8 +26,16 @@ class XMLDataset(CustomDataset):
             tree = ET.parse(xml_path)
             root = tree.getroot()
             size = root.find('size')
-            width = int(size.find('width').text)
-            height = int(size.find('height').text)
+            width = 0
+            height = 0
+            if size is None:
+                imgname = osp.join(self.img_prefix, 'JPEGImages',
+                                '{}.jpg'.format(img_id))
+                img = Image.open(imgname)
+                width,height = img.size
+            else:
+                width = int(size.find('width').text)
+                height = int(size.find('height').text)
             img_infos.append(
                 dict(id=img_id, filename=filename, width=width, height=height))
         return img_infos
