@@ -64,7 +64,7 @@ python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
 ```shell
 ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
     checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --format_only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
 ```
 
 You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
@@ -74,7 +74,7 @@ You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcn
 ```shell
 ./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
     checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
-    8  --format_only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+    8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
 ```
 
 The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
@@ -202,12 +202,12 @@ If you want to specify the working directory in the command, you can add an argu
 Optional arguments are:
 
 - `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training.
-- `--work_dir ${WORK_DIR}`: Override the working directory specified in the config file.
-- `--resume_from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
+- `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
+- `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
 
-Difference between `resume_from` and `load_from`:
-`resume_from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
-`load_from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
+Difference between `resume-from` and `load-from`:
+`resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
+`load-from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
 ### Train with multiple machines
 
@@ -374,29 +374,33 @@ python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --out ${ONNX_FILE
 
 The simplest way is to convert your dataset to existing dataset formats (COCO or PASCAL VOC).
 
-Here we show an example of adding a custom dataset of 5 classes, assuming it is also in COCO format.
+Here we show an example of using a custom dataset of 5 classes, assuming it is also in COCO format.
 
-In `mmdet/datasets/my_dataset.py`:
-
-```python
-from .coco import CocoDataset
-from .registry import DATASETS
-
-
-@DATASETS.register_module
-class MyDataset(CocoDataset):
-
-    CLASSES = ('a', 'b', 'c', 'd', 'e')
-```
-
-In `mmdet/datasets/__init__.py`:
+In `configs/my_custom_config.py`:
 
 ```python
-from .my_dataset import MyDataset
+...
+# dataset settings
+dataset_type = 'CocoDataset'
+classes = ('a', 'b', 'c', 'd', 'e')
+...
+data = dict(
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
+    train=dict(
+        type=dataset_type,
+        classes=classes,
+        ...),
+    val=dict(
+        type=dataset_type,
+        classes=classes,
+        ...),
+    test=dict(
+        type=dataset_type,
+        classes=classes,
+        ...))
+...
 ```
-
-Then you can use `MyDataset` in config files, with the same API as CocoDataset.
-
 
 It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
 Actually, we define a simple annotation format and all existing datasets are

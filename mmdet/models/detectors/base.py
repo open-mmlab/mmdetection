@@ -92,9 +92,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             raise ValueError(
                 'num of augmentations ({}) != num of image metas ({})'.format(
                     len(img), len(img_metas)))
-        # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
-        imgs_per_gpu = img[0].size(0)
-        assert imgs_per_gpu == 1
+        # TODO: remove the restriction of samples_per_gpu == 1 when prepared
+        samples_per_gpu = img[0].size(0)
+        assert samples_per_gpu == 1
 
         if num_augs == 1:
             return await self.async_simple_test(img[0], img_metas[0], **kwargs)
@@ -121,9 +121,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             raise ValueError(
                 'num of augmentations ({}) != num of image meta ({})'.format(
                     len(imgs), len(img_metas)))
-        # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
-        imgs_per_gpu = imgs[0].size(0)
-        assert imgs_per_gpu == 1
+        # TODO: remove the restriction of samples_per_gpu == 1 when prepared
+        samples_per_gpu = imgs[0].size(0)
+        assert samples_per_gpu == 1
 
         if num_augs == 1:
             """

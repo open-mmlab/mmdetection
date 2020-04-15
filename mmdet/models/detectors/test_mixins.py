@@ -32,8 +32,8 @@ class RPNTestMixin(object):
         return proposal_list
 
     def aug_test_rpn(self, feats, img_metas, rpn_test_cfg):
-        imgs_per_gpu = len(img_metas[0])
-        aug_proposals = [[] for _ in range(imgs_per_gpu)]
+        samples_per_gpu = len(img_metas[0])
+        aug_proposals = [[] for _ in range(samples_per_gpu)]
         for x, img_meta in zip(feats, img_metas):
             proposal_list = self.simple_test_rpn(x, img_meta, rpn_test_cfg)
             for i, proposals in enumerate(proposal_list):
@@ -41,7 +41,7 @@ class RPNTestMixin(object):
         # reorganize the order of 'img_metas' to match the dimensions
         # of 'aug_proposals'
         aug_img_metas = []
-        for i in range(imgs_per_gpu):
+        for i in range(samples_per_gpu):
             aug_img_meta = []
             for j in range(len(img_metas)):
                 aug_img_meta.append(img_metas[j][i])
