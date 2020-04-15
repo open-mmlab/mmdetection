@@ -28,9 +28,9 @@ Optional arguments:
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
 - `EVAL_METRICS`: Items to be evaluated on the results. Allowed values depend on the dataset, e.g., `proposal_fast`, `proposal`, `bbox`, `segm` are available for COCO, `mAP`, `recall` for PASCAL VOC. Cityscapes could be evaluated by `cityscapes` as well as all COCO metrics.
 - `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment, otherwise you may encounter the error like `cannot connect to X server`.
-- `--images_out_dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You **don't** need a GUI available in your environment for using this option.
+- `--images-out-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You **don't** need a GUI available in your environment for using this option.
 
-If you would like to evaluate the dataset, do not specify `--show` nor `--images_out_dir` at the same time.
+If you would like to evaluate the dataset, do not specify `--show` nor `--images-out-dir` at the same time.
 
 Examples:
 
@@ -49,7 +49,7 @@ python tools/test.py configs/faster_rcnn_r50_fpn_1x_coco.py \
 ```shell
 python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
     checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
-    --images_out_dir faster_rcnn_r50_fpn_1x_results
+    --images-out-dir faster_rcnn_r50_fpn_1x_results
 ```
 
 3. Test Faster R-CNN on PASCAL VOC (without saving the test results) and evaluate the mAP.
