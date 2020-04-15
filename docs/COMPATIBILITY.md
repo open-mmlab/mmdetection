@@ -47,6 +47,12 @@ thus MMDetection 2.0 do not allow low quality matching by default in R-CNN train
 
 - Seperate scale factors for width and height. In MMDetection 1.x and previous versions, the scale factor is a single float in mode `keep_ratio=True`. This is slightly inaccurate because the scale factors for width and height have slight difference. MMDetection 2.0 adopts separate scale factors for width and height, the improvment on AP ~0.1% absolute.
 
+- Configs name conventions are changed. MMDetection V2.0 adopts the new name convention to maintain the gradually growing model zoo as the following:
+  ```
+  [model]_(model setting)_[backbone]_[neck]_(norm setting)_(misc)_(gpu x batch)_[schedule]_[dataset].py,
+  ```
+  where the (misc) includes DCN and GCBlock, etc. For example, `reppoints_moment_r101_fpn_gn-neck+head_mstrain_480-960_2x_coco.py` indicates the RepPoints method with moment setting using ResNet101 backbone and FPN with GN in the neck and head, trained by multi-scale augmentation by 2x schedule on COCO dataset.
+
 ### Training Hyperparameters
 
 The change in training hyperparameters does not affect
