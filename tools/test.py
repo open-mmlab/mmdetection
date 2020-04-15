@@ -72,13 +72,13 @@ def parse_args():
         '--images-out-dir',
         help='(Optional) directory where painted images will be saved')
     parser.add_argument(
-        '--gpu_collect',
+        '--gpu-collect',
         action='store_true',
         help='whether to use gpu to collect results.')
     parser.add_argument(
         '--tmpdir',
         help='tmp directory used for collecting results from multiple '
-        'workers, available when gpu_collect is not specified')
+        'workers, available when gpu-collect is not specified')
     parser.add_argument(
         '--options', nargs='+', action=MultipleKVAction, help='custom options')
     parser.add_argument(
@@ -100,7 +100,7 @@ def main():
         or args.images_out_dir, \
         ('Please specify at least one operation (save/eval/format/show the '
          'results / save the results) with the argument "--out", "--eval"'
-         ', "--format_only", "--show" or "--images_out_dir"')
+         ', "--format-only", "--show" or "--images-out-dir"')
 
     if args.eval and args.format_only:
         raise ValueError('--eval and --format_only cannot be both specified')
