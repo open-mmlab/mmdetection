@@ -424,16 +424,18 @@ class CocoDataset(CustomDataset):
                             ('{}'.format(nm['name']),
                              '{:0.3f}'.format(float(ap * 100))))
 
-                    N_COLS = min(6, len(results_per_category) * 2)
+                    num_columns = min(6, len(results_per_category) * 2)
                     results_flatten = list(
                         itertools.chain(*results_per_category))
-                    headers = ['category', 'AP'] * (N_COLS // 2)
-                    results_2d = itertools.zip_longest(
-                        *[results_flatten[i::N_COLS] for i in range(N_COLS)])
+                    headers = ['category', 'AP'] * (num_columns // 2)
+                    results_2d = itertools.zip_longest(*[
+                        results_flatten[i::num_columns]
+                        for i in range(num_columns)
+                    ])
                     table_data = [headers]
                     table_data += [result for result in results_2d]
                     table = AsciiTable(table_data)
-                    print(table.table)
+                    print_log(table.table)
 
                 metric_items = [
                     'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
