@@ -397,7 +397,7 @@ class ATSSHead(AnchorHead):
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
          all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self.atss_target_single,
+             self._get_target_single,
              anchor_list,
              valid_flag_list,
              num_level_anchors_list,
@@ -428,7 +428,7 @@ class ATSSHead(AnchorHead):
                 bbox_targets_list, bbox_weights_list, num_total_pos,
                 num_total_neg)
 
-    def atss_target_single(self,
+    def _get_target_single(self,
                            flat_anchors,
                            valid_flags,
                            num_level_anchors,

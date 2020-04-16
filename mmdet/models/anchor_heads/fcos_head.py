@@ -156,8 +156,8 @@ class FCOSHead(nn.Module):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                            bbox_preds[0].device)
-        labels, bbox_targets = self.fcos_targets(all_level_points, gt_bboxes,
-                                                 gt_labels)
+        labels, bbox_targets = self.get_targets(all_level_points, gt_bboxes,
+                                                gt_labels)
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and centerness
@@ -334,7 +334,7 @@ class FCOSHead(nn.Module):
             (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
         return points
 
-    def fcos_targets(self, points, gt_bboxes_list, gt_labels_list):
+    def get_targets(self, points, gt_bboxes_list, gt_labels_list):
         assert len(points) == len(self.regress_ranges)
         num_levels = len(points)
         # expand regress ranges to align with points
@@ -351,7 +351,7 @@ class FCOSHead(nn.Module):
 
         # get labels and bbox_targets of each image
         labels_list, bbox_targets_list = multi_apply(
-            self._fcos_target_single,
+            self._get_target_single,
             gt_bboxes_list,
             gt_labels_list,
             points=concat_points,
@@ -376,8 +376,8 @@ class FCOSHead(nn.Module):
                     [bbox_targets[i] for bbox_targets in bbox_targets_list]))
         return concat_lvl_labels, concat_lvl_bbox_targets
 
-    def _fcos_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
-                            num_points_per_lvl):
+    def _get_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
+                           num_points_per_lvl):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:

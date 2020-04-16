@@ -461,16 +461,16 @@ class RepPointsHead(nn.Module):
         return (labels, label_weights, bbox_gt, pos_proposals,
                 proposals_weights, pos_inds, neg_inds)
 
-    def point_target(self,
-                     proposals_list,
-                     valid_flag_list,
-                     gt_bboxes_list,
-                     img_metas,
-                     gt_bboxes_ignore_list=None,
-                     gt_labels_list=None,
-                     stage='init',
-                     label_channels=1,
-                     unmap_outputs=True):
+    def get_targets(self,
+                    proposals_list,
+                    valid_flag_list,
+                    gt_bboxes_list,
+                    img_metas,
+                    gt_bboxes_ignore_list=None,
+                    gt_labels_list=None,
+                    stage='init',
+                    label_channels=1,
+                    unmap_outputs=True):
         """Compute corresponding GT box and classification targets for
             proposals.
 
@@ -609,7 +609,7 @@ class RepPointsHead(nn.Module):
             #   assign target for bbox list
             bbox_list = self.centers_to_bboxes(center_list)
             candidate_list = bbox_list
-        cls_reg_targets_init = self.point_target(
+        cls_reg_targets_init = self.get_targets(
             candidate_list,
             valid_flag_list,
             gt_bboxes,
@@ -641,7 +641,7 @@ class RepPointsHead(nn.Module):
                 bbox.append(bbox_center +
                             bbox_shift[i_img].permute(1, 2, 0).reshape(-1, 4))
             bbox_list.append(bbox)
-        cls_reg_targets_refine = self.point_target(
+        cls_reg_targets_refine = self.get_targets(
             bbox_list,
             valid_flag_list,
             gt_bboxes,
@@ -709,21 +709,22 @@ class RepPointsHead(nn.Module):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                               mlvl_points, img_shape,
-                                               scale_factor, cfg, rescale, nms)
+            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                mlvl_points, img_shape,
+                                                scale_factor, cfg, rescale,
+                                                nms)
             result_list.append(proposals)
         return result_list
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          mlvl_points,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False,
-                          nms=True):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           mlvl_points,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False,
+                           nms=True):
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []

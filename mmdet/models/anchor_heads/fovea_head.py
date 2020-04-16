@@ -216,7 +216,7 @@ class FoveaHead(nn.Module):
         ]
         flatten_cls_scores = torch.cat(flatten_cls_scores)
         flatten_bbox_preds = torch.cat(flatten_bbox_preds)
-        flatten_labels, flatten_bbox_targets = self.fovea_targets(
+        flatten_labels, flatten_bbox_targets = self.get_targets(
             gt_bbox_list, gt_label_list, featmap_sizes, points)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
@@ -243,10 +243,9 @@ class FoveaHead(nn.Module):
                                      device=flatten_bbox_preds.device)
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
-    def fovea_targets(self, gt_bbox_list, gt_label_list, featmap_sizes,
-                      points):
+    def get_targets(self, gt_bbox_list, gt_label_list, featmap_sizes, points):
         label_list, bbox_target_list = multi_apply(
-            self._fovea_target_single,
+            self._get_target_single,
             gt_bbox_list,
             gt_label_list,
             featmap_size_list=featmap_sizes,
@@ -266,11 +265,11 @@ class FoveaHead(nn.Module):
         flatten_bbox_targets = torch.cat(flatten_bbox_targets)
         return flatten_labels, flatten_bbox_targets
 
-    def _fovea_target_single(self,
-                             gt_bboxes_raw,
-                             gt_labels_raw,
-                             featmap_size_list=None,
-                             point_list=None):
+    def _get_target_single(self,
+                           gt_bboxes_raw,
+                           gt_labels_raw,
+                           featmap_size_list=None,
+                           point_list=None):
 
         gt_areas = torch.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0]) *
                               (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
