@@ -166,15 +166,15 @@ class AnchorHead(nn.Module):
 
         return anchor_list, valid_flag_list
 
-    def anchor_target_single(self,
-                             flat_anchors,
-                             valid_flags,
-                             gt_bboxes,
-                             gt_bboxes_ignore,
-                             gt_labels,
-                             img_meta,
-                             label_channels=1,
-                             unmap_outputs=True):
+    def _get_targets_single(self,
+                            flat_anchors,
+                            valid_flags,
+                            gt_bboxes,
+                            gt_bboxes_ignore,
+                            gt_labels,
+                            img_meta,
+                            label_channels=1,
+                            unmap_outputs=True):
         """Compute regression and classification targets for anchors in
             a single image.
 
@@ -260,15 +260,15 @@ class AnchorHead(nn.Module):
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
                 neg_inds)
 
-    def get_target(self,
-                   anchor_list,
-                   valid_flag_list,
-                   gt_bboxes_list,
-                   img_metas,
-                   gt_bboxes_ignore_list=None,
-                   gt_labels_list=None,
-                   label_channels=1,
-                   unmap_outputs=True):
+    def get_targets(self,
+                    anchor_list,
+                    valid_flag_list,
+                    gt_bboxes_list,
+                    img_metas,
+                    gt_bboxes_ignore_list=None,
+                    gt_labels_list=None,
+                    label_channels=1,
+                    unmap_outputs=True):
         """Compute regression and classification targets for anchors in
             multiple images.
 
@@ -317,7 +317,7 @@ class AnchorHead(nn.Module):
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
          pos_inds_list, neg_inds_list) = multi_apply(
-             self.anchor_target_single,
+             self._get_targets_single,
              anchor_list,
              valid_flag_list,
              gt_bboxes_list,
@@ -379,7 +379,7 @@ class AnchorHead(nn.Module):
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        cls_reg_targets = self.get_target(
+        cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
             gt_bboxes,
@@ -419,12 +419,12 @@ class AnchorHead(nn.Module):
                 Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
-            img_metas (list[dict]): size / scale info for each image
-            cfg (mmcv.Config): test / postprocessing configuration
-            rescale (bool): if True, return boxes in original image space
+            img_metas (list[dict]): Size / scale info for each image
+            cfg (mmcv.Config): Test / postprocessing configuration
+            rescale (bool): If True, return boxes in original image space
 
         Returns:
-            list[tuple[Tensor, Tensor]]: each item in result_list is 2-tuple.
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
                 The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1. The second item is a
@@ -470,20 +470,20 @@ class AnchorHead(nn.Module):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                               mlvl_anchors, img_shape,
-                                               scale_factor, cfg, rescale)
+            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                mlvl_anchors, img_shape,
+                                                scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
-    def get_bboxes_single(self,
-                          cls_score_list,
-                          bbox_pred_list,
-                          mlvl_anchors,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_score_list,
+                           bbox_pred_list,
+                           mlvl_anchors,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
         """
         Transform outputs for a single batch item into labeled boxes.
         """

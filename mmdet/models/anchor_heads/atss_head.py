@@ -207,7 +207,7 @@ class ATSSHead(AnchorHead):
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
-        cls_reg_targets = self.get_target(
+        cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
             gt_bboxes,
@@ -296,22 +296,22 @@ class ATSSHead(AnchorHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                               centerness_pred_list,
-                                               mlvl_anchors, img_shape,
-                                               scale_factor, cfg, rescale)
+            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                centerness_pred_list,
+                                                mlvl_anchors, img_shape,
+                                                scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          centernesses,
-                          mlvl_anchors,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           centernesses,
+                           mlvl_anchors,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
@@ -361,19 +361,21 @@ class ATSSHead(AnchorHead):
             score_factors=mlvl_centerness)
         return det_bboxes, det_labels
 
-    def get_target(self,
-                   anchor_list,
-                   valid_flag_list,
-                   gt_bboxes_list,
-                   img_metas,
-                   cfg,
-                   gt_bboxes_ignore_list=None,
-                   gt_labels_list=None,
-                   label_channels=1,
-                   unmap_outputs=True):
-        """
-        almost the same with AnchorHead.get_target, with a little modification,
-            here we need return the anchor
+    def get_targets(self,
+                    anchor_list,
+                    valid_flag_list,
+                    gt_bboxes_list,
+                    img_metas,
+                    cfg,
+                    gt_bboxes_ignore_list=None,
+                    gt_labels_list=None,
+                    label_channels=1,
+                    unmap_outputs=True):
+        """Get targets for ATSS head.
+
+        This method is almost the same as `AnchorHead.get_targets()`. Besides
+        returning the targets as the parent method does, it also returns the
+        anchors as the first element of the returned tuple.
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs

@@ -134,7 +134,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                             gt_labels, rcnn_train_cfg):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(stage, x, rois)
-        bbox_targets = self.bbox_head[stage].get_target(
+        bbox_targets = self.bbox_head[stage].get_targets(
             sampling_results, gt_bboxes, gt_labels, rcnn_train_cfg)
         loss_bbox = self.bbox_head[stage].loss(bbox_results['cls_score'],
                                                bbox_results['bbox_pred'],
@@ -169,7 +169,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             return dict(loss_mask=None)
         mask_results = self._mask_forward(stage, x, pos_rois)
 
-        mask_targets = self.mask_head[stage].get_target(
+        mask_targets = self.mask_head[stage].get_targets(
             sampling_results, gt_masks, rcnn_train_cfg)
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
         loss_mask = self.mask_head[stage].loss(mask_results['mask_pred'],

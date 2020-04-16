@@ -79,29 +79,7 @@ class BBoxHead(nn.Module):
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
 
-    def bbox_target(self,
-                    pos_bboxes_list,
-                    neg_bboxes_list,
-                    pos_gt_bboxes_list,
-                    pos_gt_labels_list,
-                    cfg,
-                    concat=True):
-        labels, label_weights, bbox_targets, bbox_weights = multi_apply(
-            self.bbox_target_single,
-            pos_bboxes_list,
-            neg_bboxes_list,
-            pos_gt_bboxes_list,
-            pos_gt_labels_list,
-            cfg=cfg)
-
-        if concat:
-            labels = torch.cat(labels, 0)
-            label_weights = torch.cat(label_weights, 0)
-            bbox_targets = torch.cat(bbox_targets, 0)
-            bbox_weights = torch.cat(bbox_weights, 0)
-        return labels, label_weights, bbox_targets, bbox_weights
-
-    def bbox_target_single(self, pos_bboxes, neg_bboxes, pos_gt_bboxes,
+    def _get_target_single(self, pos_bboxes, neg_bboxes, pos_gt_bboxes,
                            pos_gt_labels, cfg):
         num_pos = pos_bboxes.size(0)
         num_neg = neg_bboxes.size(0)
@@ -129,16 +107,30 @@ class BBoxHead(nn.Module):
 
         return labels, label_weights, bbox_targets, bbox_weights
 
-    def get_target(self, sampling_results, gt_bboxes, gt_labels,
-                   rcnn_train_cfg):
-        pos_proposals = [res.pos_bboxes for res in sampling_results]
-        neg_proposals = [res.neg_bboxes for res in sampling_results]
-        pos_gt_bboxes = [res.pos_gt_bboxes for res in sampling_results]
-        pos_gt_labels = [res.pos_gt_labels for res in sampling_results]
-        cls_reg_targets = self.bbox_target(pos_proposals, neg_proposals,
-                                           pos_gt_bboxes, pos_gt_labels,
-                                           rcnn_train_cfg)
-        return cls_reg_targets
+    def get_targets(self,
+                    sampling_results,
+                    gt_bboxes,
+                    gt_labels,
+                    rcnn_train_cfg,
+                    concat=True):
+        pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
+        neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
+        pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
+        pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
+        labels, label_weights, bbox_targets, bbox_weights = multi_apply(
+            self._get_target_single,
+            pos_bboxes_list,
+            neg_bboxes_list,
+            pos_gt_bboxes_list,
+            pos_gt_labels_list,
+            cfg=rcnn_train_cfg)
+
+        if concat:
+            labels = torch.cat(labels, 0)
+            label_weights = torch.cat(label_weights, 0)
+            bbox_targets = torch.cat(bbox_targets, 0)
+            bbox_weights = torch.cat(bbox_weights, 0)
+        return labels, label_weights, bbox_targets, bbox_weights
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,

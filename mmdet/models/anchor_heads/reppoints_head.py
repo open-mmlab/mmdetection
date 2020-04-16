@@ -393,22 +393,25 @@ class RepPointsHead(nn.Module):
             pts_list.append(pts_lvl)
         return pts_list
 
-    def point_target_single(self,
-                            flat_proposals,
-                            valid_flags,
-                            gt_bboxes,
-                            gt_bboxes_ignore,
-                            gt_labels,
-                            label_channels=1,
-                            init=True,
-                            unmap_outputs=True):
+    def _point_target_single(self,
+                             flat_proposals,
+                             valid_flags,
+                             gt_bboxes,
+                             gt_bboxes_ignore,
+                             gt_labels,
+                             label_channels=1,
+                             stage='init',
+                             unmap_outputs=True):
         inside_flags = valid_flags
         if not inside_flags.any():
             return (None, ) * 7
         # assign gt and sample proposals
         proposals = flat_proposals[inside_flags, :]
 
-        assigner = self.init_assigner if init else self.refine_assigner
+        if stage == 'init':
+            assigner = self.init_assigner
+        else:
+            assigner = self.refine_assigner
         assign_result = assigner.assign(proposals, gt_bboxes, gt_bboxes_ignore,
                                         None if self.sampling else gt_labels)
         sampling_result = self.sampler.sample(assign_result, proposals,
@@ -465,7 +468,7 @@ class RepPointsHead(nn.Module):
                      img_metas,
                      gt_bboxes_ignore_list=None,
                      gt_labels_list=None,
-                     init=True,
+                     stage='init',
                      label_channels=1,
                      unmap_outputs=True):
         """Compute corresponding GT box and classification targets for
@@ -481,7 +484,8 @@ class RepPointsHead(nn.Module):
             gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
                 ignored.
             gt_bboxes_list (list[Tensor]): Ground truth labels of each box.
-            init (bool): Generate target for init stage or refine stage
+            stage (str): `init` or `refine`. Generate target for init stage or
+                refine stage
             label_channels (int): Channel of label.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
@@ -498,6 +502,7 @@ class RepPointsHead(nn.Module):
                 num_total_pos (int): Number of positive samples in all images
                 num_total_neg (int): Number of negative samples in all images
         """
+        assert stage in ['init', 'refine']
         num_imgs = len(img_metas)
         assert len(proposals_list) == len(valid_flag_list) == num_imgs
 
@@ -517,13 +522,13 @@ class RepPointsHead(nn.Module):
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_labels, all_label_weights, all_bbox_gt, all_proposals,
          all_proposal_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self.point_target_single,
+             self._point_target_single,
              proposals_list,
              valid_flag_list,
              gt_bboxes_list,
              gt_bboxes_ignore_list,
              gt_labels_list,
-             init=init,
+             stage=stage,
              label_channels=label_channels,
              unmap_outputs=unmap_outputs)
         # no valid points

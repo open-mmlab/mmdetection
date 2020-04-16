@@ -165,9 +165,8 @@ class GuidedAnchorHead(AnchorHead):
         # one anchor per location
         self.num_anchors = 1
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        self.cls_focal_loss = loss_cls['type'] in ['FocalLoss']
         self.loc_focal_loss = loss_loc['type'] in ['FocalLoss']
-        self.sampling = not self.cls_focal_loss
+        self.sampling = loss_cls['type'] not in ['FocalLoss']
         self.ga_sampling = train_cfg is not None and hasattr(
             train_cfg, 'ga_sampler')
         if self.use_sigmoid_cls:
@@ -347,7 +346,7 @@ class GuidedAnchorHead(AnchorHead):
                 squares = squares_list[img_id][i]
                 shape_pred = shape_preds[i][img_id]
                 loc_pred = loc_preds[i][img_id]
-                guided_anchors, loc_mask = self.get_guided_anchors_single(
+                guided_anchors, loc_mask = self._get_guided_anchors_single(
                     squares,
                     shape_pred,
                     loc_pred,
@@ -358,11 +357,11 @@ class GuidedAnchorHead(AnchorHead):
             loc_mask_list.append(multi_level_loc_mask)
         return squares_list, guided_anchors_list, loc_mask_list
 
-    def get_guided_anchors_single(self,
-                                  squares,
-                                  shape_pred,
-                                  loc_pred,
-                                  use_loc_filter=False):
+    def _get_guided_anchors_single(self,
+                                   squares,
+                                   shape_pred,
+                                   loc_pred,
+                                   use_loc_filter=False):
         """Get guided anchors and loc masks for a single level.
 
         Args:
@@ -396,7 +395,7 @@ class GuidedAnchorHead(AnchorHead):
             wh_ratio_clip=1e-6)
         return guided_anchors, mask
 
-    def ga_loc_target(self, gt_bboxes_list, featmap_sizes):
+    def ga_loc_targets(self, gt_bboxes_list, featmap_sizes):
         """Compute location targets for guided anchoring.
 
         Each feature map is divided into positive, negative and ignore regions.
@@ -493,14 +492,14 @@ class GuidedAnchorHead(AnchorHead):
              for t in all_loc_targets]) / 200
         return all_loc_targets, all_loc_weights, loc_avg_factor
 
-    def ga_shape_target_single(self,
-                               flat_approxs,
-                               inside_flags,
-                               flat_squares,
-                               gt_bboxes,
-                               gt_bboxes_ignore,
-                               img_meta,
-                               unmap_outputs=True):
+    def _ga_shape_target_single(self,
+                                flat_approxs,
+                                inside_flags,
+                                flat_squares,
+                                gt_bboxes,
+                                gt_bboxes_ignore,
+                                img_meta,
+                                unmap_outputs=True):
         """Compute guided anchoring targets.
 
         This function returns sampled anchors and gt bboxes directly
@@ -556,14 +555,14 @@ class GuidedAnchorHead(AnchorHead):
 
         return (bbox_anchors, bbox_gts, bbox_weights, pos_inds, neg_inds)
 
-    def ga_shape_target(self,
-                        approx_list,
-                        inside_flag_list,
-                        square_list,
-                        gt_bboxes_list,
-                        img_metas,
-                        gt_bboxes_ignore_list=None,
-                        unmap_outputs=True):
+    def ga_shape_targets(self,
+                         approx_list,
+                         inside_flag_list,
+                         square_list,
+                         gt_bboxes_list,
+                         img_metas,
+                         gt_bboxes_ignore_list=None,
+                         unmap_outputs=True):
         """Compute guided anchoring targets.
 
         Args:
@@ -599,7 +598,7 @@ class GuidedAnchorHead(AnchorHead):
             gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
         (all_bbox_anchors, all_bbox_gts, all_bbox_weights, pos_inds_list,
          neg_inds_list) = multi_apply(
-             self.ga_shape_target_single,
+             self._ga_shape_target_single,
              approx_flat_list,
              inside_flag_flat_list,
              square_flat_list,
@@ -675,7 +674,7 @@ class GuidedAnchorHead(AnchorHead):
         device = cls_scores[0].device
 
         # get loc targets
-        loc_targets, loc_weights, loc_avg_factor = self.ga_loc_target(
+        loc_targets, loc_weights, loc_avg_factor = self.ga_loc_targets(
             gt_bboxes, featmap_sizes)
 
         # get sampled approxes
@@ -686,9 +685,9 @@ class GuidedAnchorHead(AnchorHead):
             featmap_sizes, shape_preds, loc_preds, img_metas, device=device)
 
         # get shape targets
-        shape_targets = self.ga_shape_target(approxs_list, inside_flag_list,
-                                             squares_list, gt_bboxes,
-                                             img_metas)
+        shape_targets = self.ga_shape_targets(approxs_list, inside_flag_list,
+                                              squares_list, gt_bboxes,
+                                              img_metas)
         if shape_targets is None:
             return None
         (bbox_anchors_list, bbox_gts_list, anchor_weights_list, anchor_fg_num,
@@ -699,7 +698,7 @@ class GuidedAnchorHead(AnchorHead):
 
         # get anchor targets
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        cls_reg_targets = self.get_target(
+        cls_reg_targets = self.get_targets(
             guided_anchors_list,
             inside_flag_list,
             gt_bboxes,
@@ -712,8 +711,7 @@ class GuidedAnchorHead(AnchorHead):
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (
-            num_total_pos if not self.sampling else num_total_pos +
-            num_total_neg)
+            num_total_pos + num_total_neg if self.sampling else num_total_pos)
 
         # get classification and bbox regression losses
         losses_cls, losses_bbox = multi_apply(
@@ -793,22 +791,22 @@ class GuidedAnchorHead(AnchorHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                               guided_anchor_list,
-                                               loc_mask_list, img_shape,
-                                               scale_factor, cfg, rescale)
+            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                guided_anchor_list,
+                                                loc_mask_list, img_shape,
+                                                scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          mlvl_anchors,
-                          mlvl_masks,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           mlvl_anchors,
+                           mlvl_masks,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []

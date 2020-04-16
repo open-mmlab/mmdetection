@@ -100,8 +100,8 @@ class MaskIoUHead(nn.Module):
         return dict(loss_mask_iou=loss_mask_iou)
 
     @force_fp32(apply_to=('mask_pred', ))
-    def get_target(self, sampling_results, gt_masks, mask_pred, mask_targets,
-                   rcnn_train_cfg):
+    def get_targets(self, sampling_results, gt_masks, mask_pred, mask_targets,
+                    rcnn_train_cfg):
         """Compute target of mask IoU.
 
         Mask IoU target is the IoU of the predicted mask (inside a bbox) and
