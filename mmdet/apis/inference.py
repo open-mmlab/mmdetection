@@ -25,35 +25,35 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
     Returns:
         nn.Module: The constructed detector.
     """
-    if isinstance(config, str):
-        config = mmcv.Config.fromfile(config)
-    elif not isinstance(config, mmcv.Config):
+    if isinstance(config, str):#如果给的是文件的路径
+        config = mmcv.Config.fromfile(config)#加载参数字典
+    elif not isinstance(config, mmcv.Config):#这里说的是Config是一个定义的类，如果给的不是这个类就报错
         raise TypeError('config must be a filename or Config object, '
                         'but got {}'.format(type(config)))
-    config.model.pretrained = None
-    model = build_detector(config.model, test_cfg=config.test_cfg)
-    if checkpoint is not None:
-        checkpoint = load_checkpoint(model, checkpoint)
-        if 'CLASSES' in checkpoint['meta']:
-            model.CLASSES = checkpoint['meta']['CLASSES']
-        else:
+    config.model.pretrained = None  #不是预训练
+    model = build_detector(config.model, test_cfg=config.test_cfg)#建立模型，都是使用build_detector方法建立的
+    if checkpoint is not None:#如果有可以加载的预训练参数
+        checkpoint = load_checkpoint(model, checkpoint)#加载参数
+        if 'CLASSES' in checkpoint['meta']:#如果类修改了
+            model.CLASSES = checkpoint['meta']['CLASSES']#将模型中的类名称也要修改
+        else:#如果保存的数据中没有给定的类名称，就要使用COCO数据集的名称来代替
             warnings.warn('Class names are not saved in the checkpoint\'s '
                           'meta data, use COCO classes by default.')
             model.CLASSES = get_classes('coco')
     model.cfg = config  # save the config in the model for convenience
-    model.to(device)
-    model.eval()
+    model.to(device)#放到GPU上，这是要先放好的，后面还要知道是哪个设备
+    model.eval()#要求进行推断
     return model
 
 
 class LoadImage(object):
 
     def __call__(self, results):
-        if isinstance(results['img'], str):
-            results['filename'] = results['img']
+        if isinstance(results['img'], str):#如果给定的是个路径字符串
+            results['filename'] = results['img']#设置名字
         else:
-            results['filename'] = None
-        img = mmcv.imread(results['img'])
+            results['filename'] = None #将名字设空
+        img = mmcv.imread(results['img'])#读取图片，
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
@@ -62,7 +62,7 @@ class LoadImage(object):
 
 def inference_detector(model, img):
     """Inference image(s) with the detector.
-
+        推断，给了一个设为推断模式的model，还有一张图片
     Args:
         model (nn.Module): The loaded detector.
         imgs (str/ndarray or list[str/ndarray]): Either image files or loaded
@@ -72,18 +72,18 @@ def inference_detector(model, img):
         If imgs is a str, a generator will be returned, otherwise return the
         detection results directly.
     """
-    cfg = model.cfg
-    device = next(model.parameters()).device  # model device
+    cfg = model.cfg #模型的参数
+    device = next(model.parameters()).device  # model device确定模型在哪个设备上
     # build the data pipeline
     test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
-    test_pipeline = Compose(test_pipeline)
+    test_pipeline = Compose(test_pipeline)#对图片进行变形预处理的方法
     # prepare data
     data = dict(img=img)
-    data = test_pipeline(data)
+    data = test_pipeline(data)#处理图片
     data = scatter(collate([data], samples_per_gpu=1), [device])[0]
     # forward the model
     with torch.no_grad():
-        result = model(return_loss=False, rescale=True, **data)
+        result = model(return_loss=False, rescale=True, **data)#reture_loss对模型使用，让model执行test函数
     return result
 
 
