@@ -327,7 +327,12 @@ class FoveaHead(nn.Module):
             bbox_target_list.append(torch.log(bbox_targets))
         return label_list, bbox_target_list
 
-    def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg, rescale=None):
+    def get_bboxes(self,
+                   cls_scores,
+                   bbox_preds,
+                   img_metas,
+                   cfg=None,
+                   rescale=None):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
@@ -362,6 +367,7 @@ class FoveaHead(nn.Module):
                            scale_factor,
                            cfg,
                            rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(point_list)
         det_bboxes = []
         det_scores = []

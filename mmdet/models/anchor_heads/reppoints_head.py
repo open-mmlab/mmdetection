@@ -684,7 +684,7 @@ class RepPointsHead(nn.Module):
                    pts_preds_init,
                    pts_preds_refine,
                    img_metas,
-                   cfg,
+                   cfg=None,
                    rescale=False,
                    nms=True):
         assert len(cls_scores) == len(pts_preds_refine)
@@ -724,6 +724,7 @@ class RepPointsHead(nn.Module):
                           cfg,
                           rescale=False,
                           nms=True):
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
         mlvl_scores = []

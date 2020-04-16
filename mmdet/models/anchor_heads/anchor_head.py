@@ -409,7 +409,7 @@ class AnchorHead(nn.Module):
                    cls_scores,
                    bbox_preds,
                    img_metas,
-                   cfg,
+                   cfg=None,
                    rescale=False):
         """
         Transform network output for a batch into labeled boxes.
@@ -420,7 +420,8 @@ class AnchorHead(nn.Module):
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
             img_metas (list[dict]): Size / scale info for each image
-            cfg (mmcv.Config): Test / postprocessing configuration
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used
             rescale (bool): If True, return boxes in original image space
 
         Returns:
@@ -487,6 +488,7 @@ class AnchorHead(nn.Module):
         """
         Transform outputs for a single batch item into labeled boxes.
         """
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []

@@ -760,7 +760,7 @@ class GuidedAnchorHead(AnchorHead):
                    shape_preds,
                    loc_preds,
                    img_metas,
-                   cfg,
+                   cfg=None,
                    rescale=False):
         assert len(cls_scores) == len(bbox_preds) == len(shape_preds) == len(
             loc_preds)
@@ -807,6 +807,7 @@ class GuidedAnchorHead(AnchorHead):
                            scale_factor,
                            cfg,
                            rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []

@@ -270,9 +270,9 @@ class ATSSHead(AnchorHead):
                    bbox_preds,
                    centernesses,
                    img_metas,
-                   cfg,
+                   cfg=None,
                    rescale=False):
-
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         device = cls_scores[0].device

@@ -224,7 +224,7 @@ class FCOSHead(nn.Module):
                    bbox_preds,
                    centernesses,
                    img_metas,
-                   cfg,
+                   cfg=None,
                    rescale=None):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
@@ -262,6 +262,7 @@ class FCOSHead(nn.Module):
                            scale_factor,
                            cfg,
                            rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
         mlvl_scores = []
