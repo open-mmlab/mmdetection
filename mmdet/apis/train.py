@@ -17,7 +17,7 @@ from mmdet.datasets import DATASETS, build_dataloader
 from mmdet.models import RPN
 
 
-def get_root_logger(log_file=None, log_level=logging.INFO):
+def get_root_logger(log_file=None, log_level=logging.INFO):#生成日志
     logger = logging.getLogger('mmdet')
     # if the logger has been initialized, just return it
     if logger.hasHandlers():
@@ -111,8 +111,8 @@ def train_detector(model,
                    cfg,
                    distributed=False,
                    validate=False,
-                   timestamp=None):
-    logger = get_root_logger(cfg.log_level)
+                   timestamp=None):#训练函数
+    logger = get_root_logger(cfg.log_level)#生成日志
 
     # start training
     if distributed:
@@ -166,7 +166,7 @@ def build_optimizer(model, optimizer_cfg):
         model = model.module
 
     optimizer_cfg = optimizer_cfg.copy()
-    paramwise_options = optimizer_cfg.pop('paramwise_options', None)
+    paramwise_options = optimizer_cfg.pop('paramwise_options', None)#字典中包含了参数
     # if no paramwise option is specified, just use the global setting
     if paramwise_options is None:
         return obj_from_dict(optimizer_cfg, torch.optim,
@@ -277,14 +277,14 @@ def _non_dist_train(model,
                     cfg,
                     validate=False,
                     logger=None,
-                    timestamp=None):
+                    timestamp=None):#非分布式训练
     if validate:
         raise NotImplementedError('Built-in validation is not implemented '
                                   'yet in not-distributed training. Use '
                                   'distributed training or test.py and '
                                   '*eval.py scripts instead.')
     # prepare data loaders
-    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
+    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]#准备数据
     data_loaders = [
         build_dataloader(
             ds,
@@ -294,10 +294,10 @@ def _non_dist_train(model,
             dist=False) for ds in dataset
     ]
     # put model on gpus
-    model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
+    model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()#放入GPU
 
     # build runner
-    optimizer = build_optimizer(model, cfg.optimizer)
+    optimizer = build_optimizer(model, cfg.optimizer)#优化器
     runner = Runner(
         model, batch_processor, optimizer, cfg.work_dir, logger=logger)
     # an ugly walkaround to make the .log and .log.json filenames the same
@@ -310,7 +310,7 @@ def _non_dist_train(model,
     else:
         optimizer_config = cfg.optimizer_config
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
-                                   cfg.checkpoint_config, cfg.log_config)
+                                   cfg.checkpoint_config, cfg.log_config)#训练钩子
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
