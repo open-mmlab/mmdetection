@@ -295,7 +295,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     rois, bbox_label, bbox_results['bbox_pred'], img_metas[0])
 
         cls_score = sum(ms_scores) / self.num_stages
-        det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
+        det_bboxes, det_labels = self.bbox_head[-1].get_bboxes(
             rois,
             cls_score,
             bbox_results['bbox_pred'],
@@ -369,7 +369,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                         img_meta[0])
 
             cls_score = sum(ms_scores) / float(len(ms_scores))
-            bboxes, scores = self.bbox_head[-1].get_det_bboxes(
+            bboxes, scores = self.bbox_head[-1].get_bboxes(
                 rois,
                 cls_score,
                 bbox_results['bbox_pred'],

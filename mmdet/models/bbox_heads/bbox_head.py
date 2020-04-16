@@ -177,14 +177,14 @@ class BBoxHead(nn.Module):
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
-    def get_det_bboxes(self,
-                       rois,
-                       cls_score,
-                       bbox_pred,
-                       img_shape,
-                       scale_factor,
-                       rescale=False,
-                       cfg=None):
+    def get_bboxes(self,
+                   rois,
+                   cls_score,
+                   bbox_pred,
+                   img_shape,
+                   scale_factor,
+                   rescale=False,
+                   cfg=None):
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None

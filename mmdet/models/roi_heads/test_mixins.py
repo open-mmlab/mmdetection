@@ -39,7 +39,7 @@ class BBoxTestMixin(object):
 
             img_shape = img_metas[0]['img_shape']
             scale_factor = img_metas[0]['scale_factor']
-            det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
+            det_bboxes, det_labels = self.bbox_head.get_bboxes(
                 rois,
                 cls_score,
                 bbox_pred,
@@ -60,7 +60,7 @@ class BBoxTestMixin(object):
         bbox_results = self._bbox_forward(x, rois)
         img_shape = img_metas[0]['img_shape']
         scale_factor = img_metas[0]['scale_factor']
-        det_bboxes, det_labels = self.bbox_head.get_det_bboxes(
+        det_bboxes, det_labels = self.bbox_head.get_bboxes(
             rois,
             bbox_results['cls_score'],
             bbox_results['bbox_pred'],
@@ -84,7 +84,7 @@ class BBoxTestMixin(object):
             rois = bbox2roi([proposals])
             # recompute feature maps to save GPU memory
             bbox_results = self._bbox_forward(x, rois)
-            bboxes, scores = self.bbox_head.get_det_bboxes(
+            bboxes, scores = self.bbox_head.get_bboxes(
                 rois,
                 bbox_results['cls_score'],
                 bbox_results['bbox_pred'],
