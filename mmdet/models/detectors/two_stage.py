@@ -148,8 +148,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
-            proposal_inputs = rpn_outs + (img_metas, proposal_cfg)
-            proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
+            proposal_list = self.rpn_head.get_bboxes(
+                *rpn_outs, img_metas, cfg=proposal_cfg)
         else:
             proposal_list = proposals
 
@@ -171,8 +171,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
 
         if proposals is None:
-            proposal_list = await self.async_test_rpn(x, img_meta,
-                                                      self.test_cfg.rpn)
+            proposal_list = await self.async_test_rpn(x, img_meta)
         else:
             proposal_list = proposals
 
@@ -186,8 +185,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
 
         if proposals is None:
-            proposal_list = self.simple_test_rpn(x, img_metas,
-                                                 self.test_cfg.rpn)
+            proposal_list = self.simple_test_rpn(x, img_metas)
         else:
             proposal_list = proposals
 
@@ -202,6 +200,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         """
         # recompute feats to save memory
         x = self.extract_feats(imgs)
-        proposal_list = self.aug_test_rpn(x, img_metas, self.test_cfg.rpn)
+        proposal_list = self.aug_test_rpn(x, img_metas)
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)

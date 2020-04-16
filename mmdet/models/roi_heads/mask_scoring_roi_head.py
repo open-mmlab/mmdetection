@@ -40,7 +40,7 @@ class MaskScoringRoIHead(StandardRoIHead):
         pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)),
                                           pos_labels]
 
-        mask_iou_targets = self.mask_iou_head.get_target(
+        mask_iou_targets = self.mask_iou_head.get_targets(
             sampling_results, gt_masks, pos_mask_pred,
             mask_results['mask_targets'], self.train_cfg)
         loss_mask_iou = self.mask_iou_head.loss(pos_mask_iou_pred,
