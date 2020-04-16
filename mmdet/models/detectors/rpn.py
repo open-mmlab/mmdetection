@@ -64,7 +64,7 @@ class RPN(BaseDetector, RPNTestMixin):
 
     def simple_test(self, img, img_metas, rescale=False):
         x = self.extract_feat(img)
-        proposal_list = self.simple_test_rpn(x, img_metas, self.test_cfg.rpn)
+        proposal_list = self.simple_test_rpn(x, img_metas)
         if rescale:
             for proposals, meta in zip(proposal_list, img_metas):
                 proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])

@@ -171,8 +171,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
 
         if proposals is None:
-            proposal_list = await self.async_test_rpn(x, img_meta,
-                                                      self.test_cfg.rpn)
+            proposal_list = await self.async_test_rpn(x, img_meta)
         else:
             proposal_list = proposals
 
