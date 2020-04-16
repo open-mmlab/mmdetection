@@ -56,15 +56,15 @@ class GARPNHead(GuidedAnchorHead):
             loss_anchor_shape=losses['loss_shape'],
             loss_anchor_loc=losses['loss_loc'])
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          mlvl_anchors,
-                          mlvl_masks,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           mlvl_anchors,
+                           mlvl_masks,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
         mlvl_proposals = []
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
