@@ -159,9 +159,37 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     img,
                     result,
                     score_thr=0.3,
-                    wait_time=0,
+                    bbox_color='green',
+                    text_color='green',
+                    thickness=1,
+                    font_scale=0.5,
+                    win_name='',
                     show=False,
+                    wait_time=0,
                     out_file=None):
+        """Draw `result` over `img`.
+
+        Args:
+            img (str or Tensor): The image to be displayed.
+            result (Tensor or tuple): The results to draw over `img`
+                bbox_result or (bbox_result, segm_result).
+            score_thr (float, optional): Minimum score of bboxes to be shown.
+                Default 0.3
+            bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
+            text_color (str or tuple or :obj:`Color`): Color of texts.
+            thickness (int): Thickness of lines.
+            font_scale (float): Font scales of texts.
+            win_name (str): The window name.
+            wait_time (int): Value of waitKey param.
+                Default 0
+            show (bool): Whether to show the image.
+                Default False
+            out_file (str or None): The filename to write the image.
+                Default None
+
+        Returns:
+            img (Tensor): Only if not `show` or `out_file`
+        """
         img = mmcv.imread(img)
         img = img.copy()
         if isinstance(result, tuple):
@@ -198,8 +226,14 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             labels,
             class_names=self.CLASSES,
             score_thr=score_thr,
+            bbox_color=bbox_color,
+            text_color=text_color,
+            thickness=thickness,
+            font_scale=font_scale,
+            win_name=win_name,
             show=show,
             wait_time=wait_time,
             out_file=out_file)
+
         if not (show or out_file):
             return img

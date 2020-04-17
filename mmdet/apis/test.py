@@ -32,8 +32,7 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
             for img, img_meta in zip(imgs, img_metas):
                 h, w, _ = img_meta['img_shape']
                 img_show = img[:h, :w, :]
-                out_file = '{}/{}'.format(out_dir,
-                                          Path(img_meta['filename']).name)
+                out_file = str(Path(out_dir) / Path(img_meta['filename']).name)
                 model.module.show_result(
                     img_show,
                     result,
