@@ -95,8 +95,8 @@ def test_bbox_head_loss():
     sampling_results = _dummy_bbox_sampling(proposal_list, gt_bboxes,
                                             gt_labels)
 
-    bbox_targets = self.get_target(sampling_results, gt_bboxes, gt_labels,
-                                   target_cfg)
+    bbox_targets = self.get_targets(sampling_results, gt_bboxes, gt_labels,
+                                    target_cfg)
     labels, label_weights, bbox_targets, bbox_weights = bbox_targets
 
     # Create dummy features "extracted" for each sampled bbox
@@ -118,8 +118,8 @@ def test_bbox_head_loss():
     sampling_results = _dummy_bbox_sampling(proposal_list, gt_bboxes,
                                             gt_labels)
 
-    bbox_targets = self.get_target(sampling_results, gt_bboxes, gt_labels,
-                                   target_cfg)
+    bbox_targets = self.get_targets(sampling_results, gt_bboxes, gt_labels,
+                                    target_cfg)
     labels, label_weights, bbox_targets, bbox_weights = bbox_targets
 
     # Create dummy features "extracted" for each sampled bbox
@@ -339,7 +339,7 @@ def test_mask_head_loss():
     dummy_feats = torch.rand(num_sampled, 8, 6, 6)
 
     mask_pred = self.forward(dummy_feats)
-    mask_targets = self.get_target(sampling_results, gt_masks, train_cfg)
+    mask_targets = self.get_targets(sampling_results, gt_masks, train_cfg)
     pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
     loss_mask = self.loss(mask_pred, mask_targets, pos_labels)
 
@@ -360,9 +360,9 @@ def test_mask_head_loss():
     mask_iou_pred = mask_iou_head(dummy_feats, pos_mask_pred)
     pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)), pos_labels]
 
-    mask_iou_targets = mask_iou_head.get_target(sampling_results, gt_masks,
-                                                pos_mask_pred, mask_targets,
-                                                train_cfg)
+    mask_iou_targets = mask_iou_head.get_targets(sampling_results, gt_masks,
+                                                 pos_mask_pred, mask_targets,
+                                                 train_cfg)
     loss_mask_iou = mask_iou_head.loss(pos_mask_iou_pred, mask_iou_targets)
     onegt_mask_iou_loss = loss_mask_iou['loss_mask_iou'].sum()
     assert onegt_mask_iou_loss.item() >= 0
@@ -370,7 +370,7 @@ def test_mask_head_loss():
 
 def _dummy_bbox_sampling(proposal_list, gt_bboxes, gt_labels):
     """
-    Create sample results that can be passed to BBoxHead.get_target
+    Create sample results that can be passed to BBoxHead.get_targets
     """
     num_imgs = 1
     feat = torch.rand(1, 1, 3, 3)

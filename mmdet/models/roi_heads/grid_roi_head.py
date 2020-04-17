@@ -109,8 +109,8 @@ class GridRoIHead(StandardRoIHead):
 
         grid_pred = self.grid_head(grid_feats)
 
-        grid_targets = self.grid_head.get_target(sampling_results,
-                                                 self.train_cfg)
+        grid_targets = self.grid_head.get_targets(sampling_results,
+                                                  self.train_cfg)
         grid_targets = grid_targets[sample_idx]
 
         loss_grid = self.grid_head.loss(grid_pred, grid_targets)
