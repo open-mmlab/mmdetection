@@ -23,7 +23,8 @@ class AnchorGenerator(object):
 
     def __init__(self,
                  base_size,
-                 scales, ratios,
+                 scales,
+                 ratios,
                  scale_major=True,
                  ctr=None,
                  ctr_offset=0.):
