@@ -422,7 +422,7 @@ class CocoDataset(CustomDataset):
                             ap = float('nan')
                         results_per_category.append(
                             ('{}'.format(nm['name']),
-                             '{:0.3f}'.format(float(ap * 100))))
+                             '{:0.3f}'.format(float(ap))))
 
                     num_columns = min(6, len(results_per_category) * 2)
                     results_flatten = list(
@@ -435,7 +435,7 @@ class CocoDataset(CustomDataset):
                     table_data = [headers]
                     table_data += [result for result in results_2d]
                     table = AsciiTable(table_data)
-                    print_log(table.table)
+                    print_log('\n' + table.table, logger=logger)
 
                 metric_items = [
                     'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'

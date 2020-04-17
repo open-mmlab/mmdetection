@@ -79,6 +79,14 @@ You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcn
 
 The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
+6. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
+
+```shell
+./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+    8 --out results.pkl --eval bbox segm --options "classwise=True"
+```
+
 ### Webcam demo
 
 We provide a webcam demo to illustrate the results.
