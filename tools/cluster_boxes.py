@@ -13,28 +13,35 @@
 # and limitations under the License.
 
 import argparse
+import json
 import logging
+import os
 
 import mmcv
 import numpy as np
+from mmdet.datasets import build_dataloader, build_dataset
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
-from mmdet.datasets import build_dataloader, build_dataset
-
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('config', type=str)
-    parser.add_argument('n_clust', type=int)
-    parser.add_argument('--min_box_size', help='min bbox Width and Height', nargs=2, type=int, default=(0, 0))
+    parser = argparse.ArgumentParser()
+    input = parser.add_mutually_exclusive_group(required=True)
+    input.add_argument('--config', type=str, help='Training configuration.')
+    input.add_argument('--coco_annotation', type=str,
+                       help='COCO annotation. This variant is much faster than --config in case of '
+                            'COCO annotation.')
+    parser.add_argument('--root', help='Images root folder.')
+    parser.add_argument('--image_size_wh', nargs=2, type=int)
+    parser.add_argument('--n_clust', type=int, required=True)
+    parser.add_argument('--min_box_size', help='min bbox Width and Height', nargs=2, type=int,
+                        default=(0, 0))
     args = parser.parse_args()
     return args
 
 
-def main(args):
-
-    cfg = mmcv.Config.fromfile(args.config)
+def get_sizes_from_config(config_path, min_box_size):
+    cfg = mmcv.Config.fromfile(config_path)
 
     dataset = build_dataset(cfg.data.train)
     logging.info(dataset)
@@ -53,12 +60,50 @@ def main(args):
         for box in boxes:
             w = box[2] - box[0] + 1
             h = box[3] - box[1] + 1
-            if w > args.min_box_size[0] and h > args.min_box_size[1]:
+            if w > min_box_size[0] and h > min_box_size[1]:
                 wh_stats.append((w, h))
+
+    return wh_stats
+
+
+def get_sizes_from_coco(annotation_path, root, target_image_wh, min_box_size):
+    import imagesize
+    with open(annotation_path) as f:
+        content = json.load(f)
+
+    images_wh = {}
+    wh_stats = []
+    for image_info in tqdm(content['images']):
+        image_path = os.path.join(root, image_info['file_name'])
+        images_wh[image_info['id']] = imagesize.get(image_path)
+
+    for ann in content['annotations']:
+        w, h = ann['bbox'][2:4]
+        image_wh = images_wh[ann['image_id']]
+        w, h = w / image_wh[0], h / image_wh[1]
+        w, h = w * target_image_wh[0], h * target_image_wh[1]
+        if w > min_box_size[0] and h > min_box_size[1]:
+            wh_stats.append((w, h))
+
+    return wh_stats
+
+
+def main(args):
+    assert args.config or args.coco_annotation
+
+    if args.config:
+        assert not args.image_size_wh
+        assert not args.root
+        wh_stats = get_sizes_from_config(args.config, args.min_box_size)
+
+    if args.coco_annotation:
+        assert args.image_size_wh
+        assert args.root
+        wh_stats = get_sizes_from_coco(args.coco_annotation, args.root, args.image_size_wh,
+                                       args.min_box_size)
 
     kmeans = KMeans(init='k-means++', n_clusters=args.n_clust, random_state=0).fit(wh_stats)
     centers = kmeans.cluster_centers_
-    labels = kmeans.labels_
 
     areas = np.sqrt([c[0] * c[1] for c in centers])
     idx = np.argsort(areas)
