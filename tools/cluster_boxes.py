@@ -36,6 +36,9 @@ def parse_args():
     parser.add_argument('--n_clust', type=int, required=True)
     parser.add_argument('--min_box_size', help='min bbox Width and Height', nargs=2, type=int,
                         default=(0, 0))
+    parser.add_argument('--group_as', type=int, nargs='+',
+                        help='If it is defined clustered widths and heights will be grouped by '
+                             'numbers specified here.')
     args = parser.parse_args()
     return args
 
@@ -91,6 +94,9 @@ def get_sizes_from_coco(annotation_path, root, target_image_wh, min_box_size):
 def main(args):
     assert args.config or args.coco_annotation
 
+    if args.group_as:
+        assert sum(args.group_as) == args.n_clust
+
     if args.config:
         assert not args.image_size_wh
         assert not args.root
@@ -115,6 +121,14 @@ def main(args):
 
     widths = [centers[i][0] for i in idx]
     heights = [centers[i][1] for i in idx]
+
+    if args.group_as:
+        group_as = np.cumsum([0] + args.group_as)
+        widths = [[widths[i] for i in range(group_as[j], group_as[j + 1])] for j in
+                  range(len(group_as) - 1)]
+        heights = [[heights[i] for i in range(group_as[j], group_as[j + 1])] for j in
+                   range(len(group_as) - 1)]
+
     logging.info(widths)
     logging.info(heights)
 
