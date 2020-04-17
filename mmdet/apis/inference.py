@@ -146,7 +146,8 @@ def show_result_pyplot(model,
         out_file (str, optional): If specified, the visualization result will
             be written to the out file instead of shown in a window.
     """
-    img = model.module.show_result(
-        img, result, score_thr=score_thr, show=False)
+    if hasattr(model, 'module'):
+        model = model.module
+    img = model.show_result(img, result, score_thr=score_thr, show=False)
     plt.figure(figsize=fig_size)
     plt.imshow(mmcv.bgr2rgb(img))
