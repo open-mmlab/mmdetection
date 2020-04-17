@@ -216,7 +216,7 @@ class FoveaHead(nn.Module):
         ]
         flatten_cls_scores = torch.cat(flatten_cls_scores)
         flatten_bbox_preds = torch.cat(flatten_bbox_preds)
-        flatten_labels, flatten_bbox_targets = self.fovea_target(
+        flatten_labels, flatten_bbox_targets = self.get_targets(
             gt_bbox_list, gt_label_list, featmap_sizes, points)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
@@ -243,9 +243,9 @@ class FoveaHead(nn.Module):
                                      device=flatten_bbox_preds.device)
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
-    def fovea_target(self, gt_bbox_list, gt_label_list, featmap_sizes, points):
+    def get_targets(self, gt_bbox_list, gt_label_list, featmap_sizes, points):
         label_list, bbox_target_list = multi_apply(
-            self.fovea_target_single,
+            self._get_target_single,
             gt_bbox_list,
             gt_label_list,
             featmap_size_list=featmap_sizes,
@@ -265,11 +265,11 @@ class FoveaHead(nn.Module):
         flatten_bbox_targets = torch.cat(flatten_bbox_targets)
         return flatten_labels, flatten_bbox_targets
 
-    def fovea_target_single(self,
-                            gt_bboxes_raw,
-                            gt_labels_raw,
-                            featmap_size_list=None,
-                            point_list=None):
+    def _get_target_single(self,
+                           gt_bboxes_raw,
+                           gt_labels_raw,
+                           featmap_size_list=None,
+                           point_list=None):
 
         gt_areas = torch.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0]) *
                               (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
@@ -326,7 +326,12 @@ class FoveaHead(nn.Module):
             bbox_target_list.append(torch.log(bbox_targets))
         return label_list, bbox_target_list
 
-    def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg, rescale=None):
+    def get_bboxes(self,
+                   cls_scores,
+                   bbox_preds,
+                   img_metas,
+                   cfg=None,
+                   rescale=None):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
@@ -345,22 +350,23 @@ class FoveaHead(nn.Module):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                featmap_sizes, points,
-                                                img_shape, scale_factor, cfg,
-                                                rescale)
+            det_bboxes = self._get_bboxes_single(cls_score_list,
+                                                 bbox_pred_list, featmap_sizes,
+                                                 points, img_shape,
+                                                 scale_factor, cfg, rescale)
             result_list.append(det_bboxes)
         return result_list
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          featmap_sizes,
-                          point_list,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           featmap_sizes,
+                           point_list,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(point_list)
         det_bboxes = []
         det_scores = []

@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import (auto_fp16, bbox_target, delta2bbox, force_fp32,
-                        multiclass_nms)
+from mmdet.core import (auto_fp16, bbox2delta, delta2bbox, force_fp32,
+                        multi_apply, multiclass_nms)
 from ..builder import build_loss
 from ..losses import accuracy
 from ..registry import HEADS
@@ -79,24 +79,58 @@ class BBoxHead(nn.Module):
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
 
-    def get_target(self, sampling_results, gt_bboxes, gt_labels,
-                   rcnn_train_cfg):
-        pos_proposals = [res.pos_bboxes for res in sampling_results]
-        neg_proposals = [res.neg_bboxes for res in sampling_results]
-        pos_gt_bboxes = [res.pos_gt_bboxes for res in sampling_results]
-        pos_gt_labels = [res.pos_gt_labels for res in sampling_results]
-        reg_classes = 1 if self.reg_class_agnostic else self.num_classes
-        cls_reg_targets = bbox_target(
-            pos_proposals,
-            neg_proposals,
-            pos_gt_bboxes,
-            pos_gt_labels,
-            rcnn_train_cfg,
-            reg_classes,
-            num_classes=self.num_classes,
-            target_means=self.target_means,
-            target_stds=self.target_stds)
-        return cls_reg_targets
+    def _get_target_single(self, pos_bboxes, neg_bboxes, pos_gt_bboxes,
+                           pos_gt_labels, cfg):
+        num_pos = pos_bboxes.size(0)
+        num_neg = neg_bboxes.size(0)
+        num_samples = num_pos + num_neg
+
+        # original implementation uses new_zeros since BG are set to be 0
+        # now use empty & fill because BG cat_id = num_classes,
+        # FG cat_id = [0, num_classes-1]
+        labels = pos_bboxes.new_full((num_samples, ),
+                                     self.num_classes,
+                                     dtype=torch.long)
+        label_weights = pos_bboxes.new_zeros(num_samples)
+        bbox_targets = pos_bboxes.new_zeros(num_samples, 4)
+        bbox_weights = pos_bboxes.new_zeros(num_samples, 4)
+        if num_pos > 0:
+            labels[:num_pos] = pos_gt_labels
+            pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
+            label_weights[:num_pos] = pos_weight
+            pos_bbox_targets = bbox2delta(pos_bboxes, pos_gt_bboxes,
+                                          self.target_means, self.target_stds)
+            bbox_targets[:num_pos, :] = pos_bbox_targets
+            bbox_weights[:num_pos, :] = 1
+        if num_neg > 0:
+            label_weights[-num_neg:] = 1.0
+
+        return labels, label_weights, bbox_targets, bbox_weights
+
+    def get_targets(self,
+                    sampling_results,
+                    gt_bboxes,
+                    gt_labels,
+                    rcnn_train_cfg,
+                    concat=True):
+        pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
+        neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
+        pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
+        pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
+        labels, label_weights, bbox_targets, bbox_weights = multi_apply(
+            self._get_target_single,
+            pos_bboxes_list,
+            neg_bboxes_list,
+            pos_gt_bboxes_list,
+            pos_gt_labels_list,
+            cfg=rcnn_train_cfg)
+
+        if concat:
+            labels = torch.cat(labels, 0)
+            label_weights = torch.cat(label_weights, 0)
+            bbox_targets = torch.cat(bbox_targets, 0)
+            bbox_weights = torch.cat(bbox_weights, 0)
+        return labels, label_weights, bbox_targets, bbox_weights
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
@@ -143,14 +177,14 @@ class BBoxHead(nn.Module):
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
-    def get_det_bboxes(self,
-                       rois,
-                       cls_score,
-                       bbox_pred,
-                       img_shape,
-                       scale_factor,
-                       rescale=False,
-                       cfg=None):
+    def get_bboxes(self,
+                   rois,
+                   cls_score,
+                   bbox_pred,
+                   img_shape,
+                   scale_factor,
+                   rescale=False,
+                   cfg=None):
         if isinstance(cls_score, list):
             cls_score = sum(cls_score) / float(len(cls_score))
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
