@@ -170,7 +170,7 @@ async def main():
     # visualize the results in a new window
     model.show_result(img, result)
     # or save the visualization results to image files
-    model.show_result(img, result out_file='result.jpg')
+    model.show_result(img, result, out_file='result.jpg')
 
 
 asyncio.run(main())
