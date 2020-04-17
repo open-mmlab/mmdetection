@@ -30,7 +30,6 @@ Optional arguments:
 - `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment, otherwise you may encounter the error like `cannot connect to X server`.
 - `--out-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You **don't** need a GUI available in your environment for using this option.
 
-If you would like to evaluate the dataset, do not specify `--show` nor `--out-dir` at the same time.
 
 Examples:
 
