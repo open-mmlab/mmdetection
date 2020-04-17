@@ -1,9 +1,52 @@
 # Tutorials 2: Adding New Dataset
 
-## Customize datasets
+## Customize datasets by reorganizing data
+
+### Reorganizing dataset to existing format
 
 The simplest way is to convert your dataset to existing dataset formats (COCO or PASCAL VOC).
 
+The annotation json files in COCO format has the following necessary keys:
+
+```python
+'images': [
+    {
+        'file_name': 'COCO_val2014_000000001268.jpg',
+        'height': 427,
+        'width': 640,
+        'id': 1268
+    },
+    ...
+],
+
+'annotations': [
+    {
+        'segmentation': [[192.81,
+            247.09,
+            ...
+            219.03,
+            249.06]],  # if you have mask labels
+        'area': 1035.749,
+        'iscrowd': 0,
+        'image_id': 1268,
+        'bbox': [192.81, 224.8, 74.73, 33.43],
+        'category_id': 16,
+        'id': 42986
+    },
+    ...
+],
+
+'categories': [
+    {'id': 0, 'name': 'car'},
+ ]
+```
+
+There are three necessary keys in the json file:
+- `images`: contains a list of images with theire informations like `file_name`, `height`, `width`, and `id`.
+- `annotations`: contains the list of instance annotations.
+- `categories`: contains the list of categories names and their ID.
+
+After the data pre-processing, the users need to further modify the config files to use the dataset.
 Here we show an example of using a custom dataset of 5 classes, assuming it is also in COCO format.
 
 In `configs/my_custom_config.py`:
@@ -20,17 +63,24 @@ data = dict(
     train=dict(
         type=dataset_type,
         classes=classes,
+        ann_file='path/to/your/train/data',
         ...),
     val=dict(
         type=dataset_type,
         classes=classes,
+        ann_file='path/to/your/val/data',
         ...),
     test=dict(
         type=dataset_type,
         classes=classes,
+        ann_file='path/to/your/test/data',
         ...))
 ...
 ```
+
+We use this way to support CityScapes dataset. The script is in [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/cityscapes.py) and we also provide the finetuning [configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).
+
+### Reorganizing dataset to middle format
 
 It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
 Actually, we define a simple annotation format and all existing datasets are
