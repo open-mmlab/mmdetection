@@ -3,3 +3,4 @@ imagecorruptions
 scikit-learn
 ninja
 tensorboard
+imagesize==1.2.0
