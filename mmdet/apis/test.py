@@ -2,7 +2,6 @@ import os.path as osp
 import pickle
 import shutil
 import tempfile
-from pathlib import Path
 
 import mmcv
 import torch
@@ -33,7 +32,7 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
                 img_show = img[:h, :w, :]
                 img_show = mmcv.imresize(img_show,
                                          img_meta['ori_shape'][:-1][::-1])
-                out_file = str(Path(out_dir) / Path(img_meta['filename']).name)
+                out_file = osp.join(out_dir, img_meta['filename'])
                 model.module.show_result(
                     img_show,
                     result,
