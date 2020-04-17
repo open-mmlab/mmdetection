@@ -33,19 +33,6 @@ def anchor_inside_flags(flat_anchors,
     return inside_flags
 
 
-def unmap(data, count, inds, fill=0):
-    """ Unmap a subset of item (data) back to the original set of items (of
-    size count) """
-    if data.dim() == 1:
-        ret = data.new_full((count, ), fill)
-        ret[inds.type(torch.bool)] = data
-    else:
-        new_size = (count, ) + data.size()[1:]
-        ret = data.new_full(new_size, fill)
-        ret[inds.type(torch.bool), :] = data
-    return ret
-
-
 def calc_region(bbox, ratio, featmap_size=None):
     """Calculate a proportional bbox region.
 
