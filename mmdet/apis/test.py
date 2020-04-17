@@ -19,8 +19,7 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(
-                return_loss=False, rescale=not (show or out_dir), **data)
+            result = model(return_loss=False, rescale=True, **data)
         results.append(result)
 
         if show or out_dir:
@@ -32,6 +31,8 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
             for img, img_meta in zip(imgs, img_metas):
                 h, w, _ = img_meta['img_shape']
                 img_show = img[:h, :w, :]
+                img_show = mmcv.imresize(img_show,
+                                         img_meta['ori_shape'][:-1][::-1])
                 out_file = str(Path(out_dir) / Path(img_meta['filename']).name)
                 model.module.show_result(
                     img_show,
