@@ -25,7 +25,8 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
-    roi_head=dict(bbox_head=dict(target_stds=[0.05, 0.05, 0.1, 0.1])))
+    roi_head=dict(
+        bbox_head=dict(coder=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(

@@ -46,8 +46,8 @@ def delta2bbox(rois,
     Args:
         rois (Tensor): boxes to be transformed. Has shape (N, 4)
         deltas (Tensor): encoded offsets with respect to each roi.
-            Has shape (N, 4). Note N = num_anchors * W * H when rois is a grid
-            of anchors. Offset encoding follows [1]_.
+            Has shape (N, 4 * num_classes). Note N = num_anchors * W * H when
+            rois is a grid of anchors. Offset encoding follows [1]_.
         means (list): denormalizing means for delta coordinates
         stds (list): denormalizing standard deviation for delta coordinates
         max_shape (tuple[int, int]): maximum bounds for boxes. specifies (H, W)
