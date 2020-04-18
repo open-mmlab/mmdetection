@@ -35,18 +35,10 @@ InstaBoost have been already integrated in the data pipeline, thus all you need 
  - The results and models are provided by the [authors](https://github.com/GothicAi/Instaboost) (many thanks).
 
 
-|    InstaBoost   |     Network     |       Backbone       | Lr schd |      box AP       |      mask AP       |      Download       |
-| :-------------: | :-------------: |      :--------:      | :-----: |      :----:       |      :-----:       | :-----------------: |
-|   ×   |    Mask R-CNN   |       R-50-FPN       |   1x    |  37.3  |  34.2   | - |
-|   √   |    Mask R-CNN   |       R-50-FPN       |   4x    |**40.0**|**36.2** |[Baidu](https://pan.baidu.com/s/1PLn1K5qreDoM4wh7nbsLqA) / [Google](https://drive.google.com/file/d/1uUT1qc3oYS8xHLyM7bJWgxBNbW-9sa1f/view?usp=sharing)|
-|   ×   |    Mask R-CNN   |      R-101-FPN       |   1x    |  39.4  |  35.9   | - |
-|   √   |    Mask R-CNN   |      R-101-FPN       |   4x    |**42.1**|**37.8** |[Baidu](https://pan.baidu.com/s/1IZpqCDrcrOiwNJ-Y_3wpOQ) / [Google](https://drive.google.com/file/d/1idGMPexovIDUHXSNlpIA1mjKzgnFrcW3/view?usp=sharing)|
-|   ×   |    Mask R-CNN   |   X-101-64x4d-FPN    |   1x    |  42.1  |  38.0   | - |
-|   ×   |    Mask R-CNN   |   X-101-64x4d-FPN    |   2x    |  *42.0*  |  *37.7*   | - |
-|   √   |    Mask R-CNN   |   X-101-64x4d-FPN    |   4x    |**44.5**|**39.5** |[Baidu](https://pan.baidu.com/s/1KrHQBHcHjWONpXbC2qUzxw) / [Google](https://drive.google.com/file/d/1qD4V9uYbtpaZBmTMTgP7f0uw46zroY9-/view?usp=sharing)|
-|   ×   |  Cascade R-CNN  |       R-101-FPN      |   1x    |  42.6  |  37.0   | - |
-|   √   |  Cascade R-CNN  |       R-101-FPN      |   4x    |**45.4**|**39.2** |[Baidu](https://pan.baidu.com/s/1_4cJ0B9fugcA-oBHYe9o_A) / [Google](https://drive.google.com/file/d/1xhiuFoOMQyDIvOrz6MiAZPboRRe1YK8p/view?usp=sharing)|
-|   ×   |  Cascade R-CNN  |   X-101-64x4d-FPN    |   1x    |  45.4  |  39.1   | - |
-|   √   |  Cascade R-CNN  |   X-101-64x4d-FPN    |   4x    |**47.2**|**40.4** |[Baidu](https://pan.baidu.com/s/1nu73IpRbTEb4caPMHWJMXA) / [Google](https://drive.google.com/file/d/11iaKH-ZeVCi-65wzlT5OxxUOkREMzXRW/view?usp=sharing)|
-|   ×   |       SSD       |      VGG16-512       |   120e  |  29.3  |   -     | - |
-|   √   |       SSD       |      VGG16-512       |   360e  |**30.3**|   -     |[Baidu](https://pan.baidu.com/s/1G-1atZ81A8mLLx8taJAuwQ) / [Google](https://drive.google.com/file/d/1sqMIEusZw2Y7Ge8DuJgmhSP-2V74BNKy/view?usp=sharing)|
+|     Network     |       Backbone       | Lr schd | Mem (GB) | Inf time (fps) | box AP  | mask AP |      Download       |
+| :-------------: |      :--------:      | :-----: | :------: | :------------: | :------:| :-----: | :-----------------: |
+|    Mask R-CNN   |       R-50-FPN       |   4x    | 4.4      | 12.2           | 40.6    | 36.6    |[model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/instaboost/mask_rcnn_r50_fpn_instaboost_4x_coco.py/mask_rcnn_r50_fpn_instaboost_4x_coco.py_20200307-d025f83a.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/instaboost/mask_rcnn_r50_fpn_instaboost_4x_coco.py/mask_rcnn_r50_fpn_instaboost_4x_coco.py_20200307_223635.log.json) |
+|    Mask R-CNN   |      R-101-FPN       |   4x    |          |                |         |         ||
+|    Mask R-CNN   |   X-101-64x4d-FPN    |   4x    |          |                |         |         ||
+|  Cascade R-CNN  |       R-101-FPN      |   4x    |          |                |         |         ||
+|  Cascade R-CNN  |   X-101-64x4d-FPN    |   4x    |          |                |         |         ||

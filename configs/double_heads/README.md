@@ -13,3 +13,7 @@
 ```
 
 ## Results and models
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :----------------: |
+|    R-50-FPN     | pytorch |   1x    | 6.8      | 9.1            | 40.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/double_heads/dh_faster_rcnn_r50_fpn_1x_coco.py/dh_faster_rcnn_r50_fpn_1x_coco.py_20200130-586b67df.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/double_heads/dh_faster_rcnn_r50_fpn_1x_coco.py/dh_faster_rcnn_r50_fpn_1x_coco.py_20200130_220238.log.json) |

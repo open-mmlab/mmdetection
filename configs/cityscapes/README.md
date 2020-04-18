@@ -10,12 +10,12 @@
 
 ### Faster R-CNN
 
-|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
-| :-------------: | :-----: | :-----: | :---:    | :------: | :-----------------: | :------------: | :----: | :------: |
-|    R-50-FPN     | pytorch |   1x    | 800-1024 | 4.9      | -                   | -              | 41.6   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/cityscapes/faster_rcnn_r50_fpn_1x_cityscapes_20200227-362cfbbf.pth) |
+|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | Download |
+| :-------------: | :-----: | :-----: | :---:    | :------: | :------------: | :----: | :------: |
+|    R-50-FPN     | pytorch |   1x    | 800-1024 |          |                |        |          |
 
 ### Mask R-CNN
 
-|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | mask AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------: | :-----------------: | :------------: | :----: | :-----: | :------: |
-|    R-50-FPN     | pytorch |   1x    | 800-1024 | 4.9      | -                   | -              | 41.9  |  37.1   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth) |
+|    Backbone     |  Style  | Lr schd | Scale    | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :------: | :------------: | :----: | :-----: | :------: |
+|    R-50-FPN     | pytorch |   1x    | 800-1024 |          |                |        |         |          |
