@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
-from mmdet.core import (AnchorGenerator, build_assigner, build_sampler,
+from mmdet.core import (build_anchor_generator, build_assigner, build_sampler,
                         multi_apply)
 from ..losses import smooth_l1_loss
 from ..registry import HEADS
@@ -19,6 +19,7 @@ class SSDHead(AnchorHead):
                  input_size=300,
                  num_classes=80,
                  in_channels=(512, 1024, 512, 256, 256, 256),
+                 anchor_generator=dict(type='AnchorGenerator'),
                  anchor_strides=(8, 16, 32, 64, 100, 300),
                  basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
@@ -79,18 +80,25 @@ class SSDHead(AnchorHead):
         for k in range(len(anchor_strides)):
             base_size = min_sizes[k]
             stride = anchor_strides[k]
-            ctr = ((stride) / 2., (stride) / 2.)
+            center = ((stride) / 2., (stride) / 2.)
             scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
             ratios = [1.]
             for r in anchor_ratios[k]:
                 ratios += [1 / r, r]  # 4 or 6 ratio
-            anchor_generator = AnchorGenerator(
-                base_size, scales, ratios, scale_major=False, ctr=ctr)
+            anchor_generator_args = dict(
+                base_size=base_size,
+                scales=scales,
+                ratios=ratios,
+                scale_major=False,
+                center=center)
+            base_anchor_generator = build_anchor_generator(
+                anchor_generator, anchor_generator_args)
             indices = list(range(len(ratios)))
             indices.insert(1, len(indices))
-            anchor_generator.base_anchors = torch.index_select(
-                anchor_generator.base_anchors, 0, torch.LongTensor(indices))
-            self.anchor_generators.append(anchor_generator)
+            base_anchor_generator.base_anchors = torch.index_select(
+                base_anchor_generator.base_anchors, 0,
+                torch.LongTensor(indices))
+            self.anchor_generators.append(base_anchor_generator)
 
         self.background_label = (
             num_classes if background_label is None else background_label)

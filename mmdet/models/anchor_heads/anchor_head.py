@@ -5,9 +5,10 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (AnchorGenerator, anchor_inside_flags, bbox2delta,
-                        build_assigner, build_sampler, delta2bbox, force_fp32,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+from mmdet.core import (anchor_inside_flags, bbox2delta,
+                        build_anchor_generator, build_assigner, build_sampler,
+                        delta2bbox, force_fp32, images_to_levels, multi_apply,
+                        multiclass_nms, unmap)
 from ..builder import build_loss
 from ..registry import HEADS
 
@@ -40,6 +41,7 @@ class AnchorHead(nn.Module):
                  num_classes,
                  in_channels,
                  feat_channels=256,
+                 anchor_generator=dict(type='AnchorGenerator'),
                  anchor_scales=[8, 16, 32],
                  anchor_ratios=[0.5, 1.0, 2.0],
                  anchor_strides=[4, 8, 16, 32, 64],
@@ -100,8 +102,13 @@ class AnchorHead(nn.Module):
 
         self.anchor_generators = []
         for anchor_base in self.anchor_base_sizes:
+            anchor_generator_args = dict(
+                base_size=anchor_base,
+                scales=anchor_scales,
+                ratios=anchor_ratios)
             self.anchor_generators.append(
-                AnchorGenerator(anchor_base, anchor_scales, anchor_ratios))
+                build_anchor_generator(anchor_generator,
+                                       anchor_generator_args))
 
         self.num_anchors = len(self.anchor_ratios) * len(self.anchor_scales)
         self._init_layers()

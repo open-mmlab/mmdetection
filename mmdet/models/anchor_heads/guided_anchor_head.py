@@ -5,9 +5,10 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (AnchorGenerator, anchor_inside_flags, build_assigner,
-                        build_sampler, calc_region, delta2bbox, force_fp32,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+from mmdet.core import (anchor_inside_flags, build_anchor_generator,
+                        build_assigner, build_sampler, calc_region, delta2bbox,
+                        force_fp32, images_to_levels, multi_apply,
+                        multiclass_nms, unmap)
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import build_loss
 from ..registry import HEADS
@@ -104,6 +105,7 @@ class GuidedAnchorHead(AnchorHead):
         octave_base_scale=8,
         scales_per_octave=3,
         octave_ratios=[0.5, 1.0, 2.0],
+        anchor_generator=dict(type='AnchorGenerator'),
         anchor_strides=[4, 8, 16, 32, 64],
         anchor_base_sizes=None,
         anchoring_means=(.0, .0, .0, .0),
@@ -149,12 +151,21 @@ class GuidedAnchorHead(AnchorHead):
         self.square_generators = []
         for anchor_base in self.anchor_base_sizes:
             # Generators for approxs
+            approx_generator_args = dict(
+                base_size=anchor_base,
+                scales=self.octave_scales,
+                ratios=self.octave_ratios)
             self.approx_generators.append(
-                AnchorGenerator(anchor_base, self.octave_scales,
-                                self.octave_ratios))
+                build_anchor_generator(anchor_generator,
+                                       approx_generator_args))
             # Generators for squares
+            square_generator_args = dict(
+                base_size=anchor_base,
+                scales=[self.octave_base_scale],
+                ratios=[1.0])
             self.square_generators.append(
-                AnchorGenerator(anchor_base, [self.octave_base_scale], [1.0]))
+                build_anchor_generator(anchor_generator,
+                                       square_generator_args))
 
         self.background_label = (
             num_classes if background_label is None else background_label)
