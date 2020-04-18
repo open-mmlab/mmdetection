@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import (auto_fp16, builder_coder, force_fp32, multi_apply,
+from mmdet.core import (auto_fp16, build_coder, force_fp32, multi_apply,
                         multiclass_nms)
 from ..builder import build_loss
 from ..losses import accuracy
@@ -25,8 +25,7 @@ class BBoxHead(nn.Module):
                  coder=dict(
                      type='DeltaCoder',
                      target_means=[0., 0., 0., 0.],
-                     target_stds=[0.1, 0.1, 0.2, 0.2],
-                 ),
+                     target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
@@ -46,7 +45,7 @@ class BBoxHead(nn.Module):
         self.reg_class_agnostic = reg_class_agnostic
         self.fp16_enabled = False
 
-        self.coder = builder_coder(coder)
+        self.coder = build_coder(coder)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
 

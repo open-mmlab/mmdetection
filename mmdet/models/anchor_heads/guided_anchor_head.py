@@ -6,7 +6,7 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 
 from mmdet.core import (AnchorGenerator, anchor_inside_flags, build_assigner,
-                        build_sampler, calc_region, delta2bbox, force_fp32,
+                        build_coder, build_sampler, calc_region, force_fp32,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import build_loss
@@ -106,10 +106,16 @@ class GuidedAnchorHead(AnchorHead):
         octave_ratios=[0.5, 1.0, 2.0],
         anchor_strides=[4, 8, 16, 32, 64],
         anchor_base_sizes=None,
-        anchoring_means=(.0, .0, .0, .0),
-        anchoring_stds=(1.0, 1.0, 1.0, 1.0),
-        target_means=(.0, .0, .0, .0),
-        target_stds=(1.0, 1.0, 1.0, 1.0),
+        anchor_coder=dict(
+            type='DeltaCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]
+        ),
+        coder=dict(
+            type='DeltaCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]
+        ),
         deformable_groups=4,
         loc_filter_thr=0.01,
         background_label=None,
@@ -139,10 +145,6 @@ class GuidedAnchorHead(AnchorHead):
         self.anchor_strides = anchor_strides
         self.anchor_base_sizes = list(
             anchor_strides) if anchor_base_sizes is None else anchor_base_sizes
-        self.anchoring_means = anchoring_means
-        self.anchoring_stds = anchoring_stds
-        self.target_means = target_means
-        self.target_stds = target_stds
         self.deformable_groups = deformable_groups
         self.loc_filter_thr = loc_filter_thr
         self.approx_generators = []
@@ -173,6 +175,10 @@ class GuidedAnchorHead(AnchorHead):
             self.cls_out_channels = self.num_classes
         else:
             self.cls_out_channels = self.num_classes + 1
+
+        # build coder
+        self.anchor_coder = build_coder(anchor_coder)
+        self.coder = build_coder(coder)
 
         # build losses
         self.loss_loc = build_loss(loss_loc)
@@ -387,12 +393,8 @@ class GuidedAnchorHead(AnchorHead):
             -1, 2).detach()[mask]
         bbox_deltas = anchor_deltas.new_full(squares.size(), 0)
         bbox_deltas[:, 2:] = anchor_deltas
-        guided_anchors = delta2bbox(
-            squares,
-            bbox_deltas,
-            self.anchoring_means,
-            self.anchoring_stds,
-            wh_ratio_clip=1e-6)
+        guided_anchors = self.anchor_coder.decode(
+            squares, bbox_deltas, wh_ratio_clip=1e-6)
         return guided_anchors, mask
 
     def ga_loc_targets(self, gt_bboxes_list, featmap_sizes):
@@ -635,12 +637,8 @@ class GuidedAnchorHead(AnchorHead):
         bbox_anchors_ = bbox_anchors[inds]
         bbox_gts_ = bbox_gts[inds]
         anchor_weights_ = anchor_weights[inds]
-        pred_anchors_ = delta2bbox(
-            bbox_anchors_,
-            bbox_deltas_,
-            self.anchoring_means,
-            self.anchoring_stds,
-            wh_ratio_clip=1e-6)
+        pred_anchors_ = self.anchor_coder.decode(
+            bbox_anchors_, bbox_deltas_, wh_ratio_clip=1e-6)
         loss_shape = self.loss_shape(
             pred_anchors_,
             bbox_gts_,
@@ -848,8 +846,7 @@ class GuidedAnchorHead(AnchorHead):
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-            bboxes = delta2bbox(anchors, bbox_pred, self.target_means,
-                                self.target_stds, img_shape)
+            bboxes = self.coder.decode(anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)

@@ -9,7 +9,7 @@ from .transforms import (bbox2delta, bbox2result, bbox2roi, bbox_flip,
                          distance2bbox, roi2bbox)
 
 from .builder import (  # isort:skip, avoid recursive imports
-    build_assigner, build_sampler, builder_coder)
+    build_assigner, build_sampler, build_coder)
 
 __all__ = [
     'bbox_overlaps', 'BboxOverlaps2D', 'BaseAssigner', 'MaxIoUAssigner',
@@ -17,6 +17,6 @@ __all__ = [
     'InstanceBalancedPosSampler', 'IoUBalancedNegSampler', 'CombinedSampler',
     'SamplingResult', 'build_assigner', 'build_sampler', 'bbox2delta',
     'delta2bbox', 'bbox_flip', 'bbox_mapping', 'bbox_mapping_back', 'bbox2roi',
-    'roi2bbox', 'bbox2result', 'distance2bbox', 'builder_coder', 'BaseCoder',
+    'roi2bbox', 'bbox2result', 'distance2bbox', 'build_coder', 'BaseCoder',
     'PseudoCoder', 'DeltaCoder'
 ]

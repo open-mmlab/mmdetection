@@ -17,7 +17,7 @@ def build_sampler(cfg, **default_args):
     return build_from_cfg(cfg, BBOX_SAMPLERS, default_args)
 
 
-def builder_coder(cfg, **default_args):
+def build_coder(cfg, **default_args):
     if isinstance(cfg, BaseCoder):
         return cfg
     return build_from_cfg(cfg, BBOX_CODER, default_args)
