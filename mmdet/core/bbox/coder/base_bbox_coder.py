@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class BaseCoder(metaclass=ABCMeta):
+class BaseBBoxCoder(metaclass=ABCMeta):
 
     def __init__(self, **kwargs):
         pass

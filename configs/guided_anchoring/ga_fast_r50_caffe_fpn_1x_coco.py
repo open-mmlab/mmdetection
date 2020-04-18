@@ -11,7 +11,7 @@ model = dict(
         norm_eval=True,
         style='caffe'),
     roi_head=dict(
-        bbox_head=dict(coder=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))))
+        bbox_head=dict(bbox_coder=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))))
 # model training and testing settings
 train_cfg = dict(
     rcnn=dict(

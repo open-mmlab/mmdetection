@@ -6,7 +6,7 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 
 from mmdet.core import (AnchorGenerator, anchor_inside_flags, build_assigner,
-                        build_coder, build_sampler, force_fp32,
+                        build_bbox_coder, build_sampler, force_fp32,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from ..builder import build_loss
 from ..registry import HEADS
@@ -44,8 +44,8 @@ class AnchorHead(nn.Module):
                  anchor_ratios=[0.5, 1.0, 2.0],
                  anchor_strides=[4, 8, 16, 32, 64],
                  anchor_base_sizes=None,
-                 coder=dict(
-                     type='DeltaCoder',
+                 bbox_coder=dict(
+                     type='DeltaXYWHBBoxCoder',
                      target_means=(.0, .0, .0, .0),
                      target_stds=(1.0, 1.0, 1.0, 1.0)),
                  background_label=None,
@@ -84,7 +84,7 @@ class AnchorHead(nn.Module):
         assert (self.background_label == 0
                 or self.background_label == num_classes)
 
-        self.coder = build_coder(coder)
+        self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.train_cfg = train_cfg
@@ -231,8 +231,8 @@ class AnchorHead(nn.Module):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            pos_bbox_targets = self.coder.encode(sampling_result.pos_bboxes,
-                                                 sampling_result.pos_gt_bboxes)
+            pos_bbox_targets = self.bbox_coder.encode(
+                sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
@@ -516,7 +516,8 @@ class AnchorHead(nn.Module):
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-            bboxes = self.coder.decode(anchors, bbox_pred, max_shape=img_shape)
+            bboxes = self.bbox_coder.decode(
+                anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)

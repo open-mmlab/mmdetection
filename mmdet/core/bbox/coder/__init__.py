@@ -1,5 +1,5 @@
-from .base_coder import BaseCoder
-from .delta_coder import DeltaCoder
-from .pseudo_coder import PseudoCoder
+from .base_bbox_coder import BaseBBoxCoder
+from .delta_xywh_bbox_coder import DeltaXYWHBBoxCoder
+from .pseudo_bbox_coder import PseudoBBoxCoder
 
-__all__ = ['BaseCoder', 'PseudoCoder', 'DeltaCoder']
+__all__ = ['BaseBBoxCoder', 'PseudoBBoxCoder', 'DeltaXYWHBBoxCoder']

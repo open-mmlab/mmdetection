@@ -68,7 +68,7 @@ class FreeAnchorRetinaHead(RetinaHead):
 
             with torch.no_grad():
                 # box_localization: a_{j}^{loc}, shape: [j, 4]
-                pred_boxes = self.coder.decode(anchors_, bbox_preds_)
+                pred_boxes = self.bbox_coder.decode(anchors_, bbox_preds_)
 
                 # object_box_iou: IoU_{ij}^{loc}, shape: [i, j]
                 object_box_iou = bbox_overlaps(gt_bboxes_, pred_boxes)
@@ -138,7 +138,7 @@ class FreeAnchorRetinaHead(RetinaHead):
 
             # matched_box_prob: P_{ij}^{loc}
             matched_anchors = anchors_[matched]
-            matched_object_targets = self.coder.encode(
+            matched_object_targets = self.bbox_coder.encode(
                 matched_anchors,
                 gt_bboxes_.unsqueeze(dim=1).expand_as(matched_anchors))
             loss_bbox = self.loss_bbox(

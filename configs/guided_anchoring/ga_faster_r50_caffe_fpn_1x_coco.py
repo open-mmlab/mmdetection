@@ -11,11 +11,11 @@ model = dict(
         anchor_strides=[4, 8, 16, 32, 64],
         anchor_base_sizes=None,
         anchor_coder=dict(
-            type='DeltaCoder',
+            type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[0.07, 0.07, 0.14, 0.14]),
-        coder=dict(
-            type='DeltaCoder',
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[0.07, 0.07, 0.11, 0.11]),
         loc_filter_thr=0.01,
@@ -30,7 +30,7 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
     roi_head=dict(
-        bbox_head=dict(coder=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))))
+        bbox_head=dict(bbox_coder=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(

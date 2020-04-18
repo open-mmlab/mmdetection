@@ -6,8 +6,9 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 
 from mmdet.core import (AnchorGenerator, anchor_inside_flags, build_assigner,
-                        build_coder, build_sampler, calc_region, force_fp32,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+                        build_bbox_coder, build_sampler, calc_region,
+                        force_fp32, images_to_levels, multi_apply,
+                        multiclass_nms, unmap)
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import build_loss
 from ..registry import HEADS
@@ -107,12 +108,12 @@ class GuidedAnchorHead(AnchorHead):
         anchor_strides=[4, 8, 16, 32, 64],
         anchor_base_sizes=None,
         anchor_coder=dict(
-            type='DeltaCoder',
+            type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]
         ),
-        coder=dict(
-            type='DeltaCoder',
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]
         ),
@@ -176,9 +177,9 @@ class GuidedAnchorHead(AnchorHead):
         else:
             self.cls_out_channels = self.num_classes + 1
 
-        # build coder
-        self.anchor_coder = build_coder(anchor_coder)
-        self.coder = build_coder(coder)
+        # build bbox_coder
+        self.anchor_coder = build_bbox_coder(anchor_coder)
+        self.bbox_coder = build_bbox_coder(bbox_coder)
 
         # build losses
         self.loss_loc = build_loss(loss_loc)
@@ -846,7 +847,8 @@ class GuidedAnchorHead(AnchorHead):
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-            bboxes = self.coder.decode(anchors, bbox_pred, max_shape=img_shape)
+            bboxes = self.bbox_coder.decode(
+                anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)

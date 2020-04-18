@@ -162,9 +162,9 @@ class ATSSHead(AnchorHead):
 
             centerness_targets = self.centerness_target(
                 pos_anchors, pos_bbox_targets)
-            pos_decode_bbox_pred = self.coder.decode(pos_anchors,
-                                                     pos_bbox_pred)
-            pos_decode_bbox_targets = self.coder.decode(
+            pos_decode_bbox_pred = self.bbox_coder.decode(
+                pos_anchors, pos_bbox_pred)
+            pos_decode_bbox_targets = self.bbox_coder.decode(
                 pos_anchors, pos_bbox_targets)
 
             # regression loss
@@ -245,7 +245,7 @@ class ATSSHead(AnchorHead):
 
     def centerness_target(self, anchors, bbox_targets):
         # only calculate pos centerness targets, otherwise there may be nan
-        gts = self.coder.decode(anchors, bbox_targets)
+        gts = self.bbox_coder.decode(anchors, bbox_targets)
         anchors_cx = (anchors[:, 2] + anchors[:, 0]) / 2
         anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
         l_ = anchors_cx - gts[:, 0]
@@ -331,7 +331,8 @@ class ATSSHead(AnchorHead):
                 scores = scores[topk_inds, :]
                 centerness = centerness[topk_inds]
 
-            bboxes = self.coder.decode(anchors, bbox_pred, max_shape=img_shape)
+            bboxes = self.bbox_coder.decode(
+                anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
@@ -464,8 +465,8 @@ class ATSSHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            pos_bbox_targets = self.coder.encode(sampling_result.pos_bboxes,
-                                                 sampling_result.pos_gt_bboxes)
+            pos_bbox_targets = self.bbox_coder.encode(
+                sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
