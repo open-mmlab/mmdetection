@@ -7,9 +7,9 @@ from .registry import ANCHOR_GENERATORS
 class AnchorGenerator(object):
     """Standard anchor generator for 2D anchor-based detectors
 
-    Attributes:
-        base_size: The basic size of anchor.
-        scales: Anchor scales.
+    Args:
+        base_size (int): The basic size of anchor.
+        scales (list[int]): Anchor scales.
         ratios (list[float]): The list of ratios between the height and width
             of anchors.
         scale_major (bool): Whether to multiply scales first when generating
@@ -137,9 +137,9 @@ class LegacyAnchorGenerator(AnchorGenerator):
        and corners to meet the V1.x coordinate system.
     3. The anchors' corners are quantized.
 
-    Attributes:
-        base_size: The basic size of anchor.
-        scales: Anchor scales.
+    Args:
+        base_size (int): The basic size of anchor.
+        scales (list[int]): Anchor scales.
         ratios (list[float]): The list of ratios between the height and width
             of anchors.
         scale_major (bool): Whether to multiply scales first when generating
