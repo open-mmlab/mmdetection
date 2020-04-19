@@ -39,6 +39,10 @@ class RetinaHead(AnchorHead):
                  scales_per_octave=3,
                  conv_cfg=None,
                  norm_cfg=None,
+                 anchor_generator=dict(
+                     type='AnchorGenerator',
+                     ratios=[0.5, 1.0, 2.0],
+                     strides=[8, 16, 32, 64, 128]),
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.octave_base_scale = octave_base_scale
@@ -48,8 +52,12 @@ class RetinaHead(AnchorHead):
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
         anchor_scales = octave_scales * octave_base_scale
+        anchor_generator.update(scales=anchor_scales)
         super(RetinaHead, self).__init__(
-            num_classes, in_channels, anchor_scales=anchor_scales, **kwargs)
+            num_classes,
+            in_channels,
+            anchor_generator=anchor_generator,
+            **kwargs)
 
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)

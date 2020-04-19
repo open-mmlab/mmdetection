@@ -24,6 +24,7 @@ class RetinaSepBNHead(AnchorHead):
                  stacked_convs=4,
                  octave_base_scale=4,
                  scales_per_octave=3,
+                 anchor_generator=None,
                  conv_cfg=None,
                  norm_cfg=None,
                  **kwargs):
@@ -36,8 +37,12 @@ class RetinaSepBNHead(AnchorHead):
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
         anchor_scales = octave_scales * octave_base_scale
+        anchor_generator.update(scales=anchor_scales)
         super(RetinaSepBNHead, self).__init__(
-            num_classes, in_channels, anchor_scales=anchor_scales, **kwargs)
+            num_classes,
+            in_channels,
+            anchor_generator=anchor_generator,
+            **kwargs)
 
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)

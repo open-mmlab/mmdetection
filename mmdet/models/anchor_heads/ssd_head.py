@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,24 +15,28 @@ from .anchor_head import AnchorHead
 class SSDHead(AnchorHead):
 
     def __init__(self,
-                 input_size=300,
                  num_classes=80,
                  in_channels=(512, 1024, 512, 256, 256, 256),
-                 anchor_generator=dict(type='AnchorGenerator'),
-                 anchor_strides=(8, 16, 32, 64, 100, 300),
-                 basesize_ratio_range=(0.1, 0.9),
-                 anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
+                 anchor_generator=dict(
+                     type='SSDAnchorGenerator',
+                     num_levels=6,
+                     scale_major=False,
+                     input_size=300,
+                     strides=(8, 16, 32, 64, 100, 300),
+                     ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
+                     basesize_ratio_range=(0.1, 0.9)),
                  background_label=None,
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
-        self.input_size = input_size
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.cls_out_channels = num_classes + 1  # add background class
-        num_anchors = [len(ratios) * 2 + 2 for ratios in anchor_ratios]
+        self.anchor_generator = build_anchor_generator(anchor_generator)
+        num_anchors = self.anchor_generator.num_base_anchors
+
         reg_convs = []
         cls_convs = []
         for i in range(len(in_channels)):
@@ -51,54 +54,6 @@ class SSDHead(AnchorHead):
                     padding=1))
         self.reg_convs = nn.ModuleList(reg_convs)
         self.cls_convs = nn.ModuleList(cls_convs)
-
-        min_ratio, max_ratio = basesize_ratio_range
-        min_ratio = int(min_ratio * 100)
-        max_ratio = int(max_ratio * 100)
-        step = int(np.floor(max_ratio - min_ratio) / (len(in_channels) - 2))
-        min_sizes = []
-        max_sizes = []
-        for r in range(int(min_ratio), int(max_ratio) + 1, step):
-            min_sizes.append(int(input_size * r / 100))
-            max_sizes.append(int(input_size * (r + step) / 100))
-        if input_size == 300:
-            if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
-                min_sizes.insert(0, int(input_size * 7 / 100))
-                max_sizes.insert(0, int(input_size * 15 / 100))
-            elif basesize_ratio_range[0] == 0.2:  # SSD300 VOC
-                min_sizes.insert(0, int(input_size * 10 / 100))
-                max_sizes.insert(0, int(input_size * 20 / 100))
-        elif input_size == 512:
-            if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
-                min_sizes.insert(0, int(input_size * 4 / 100))
-                max_sizes.insert(0, int(input_size * 10 / 100))
-            elif basesize_ratio_range[0] == 0.15:  # SSD512 VOC
-                min_sizes.insert(0, int(input_size * 7 / 100))
-                max_sizes.insert(0, int(input_size * 15 / 100))
-        self.anchor_generators = []
-        self.anchor_strides = anchor_strides
-        for k in range(len(anchor_strides)):
-            base_size = min_sizes[k]
-            stride = anchor_strides[k]
-            center = ((stride) / 2., (stride) / 2.)
-            scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
-            ratios = [1.]
-            for r in anchor_ratios[k]:
-                ratios += [1 / r, r]  # 4 or 6 ratio
-            anchor_generator_args = dict(
-                base_size=base_size,
-                scales=scales,
-                ratios=ratios,
-                scale_major=False,
-                center=center)
-            base_anchor_generator = build_anchor_generator(
-                anchor_generator, anchor_generator_args)
-            indices = list(range(len(ratios)))
-            indices.insert(1, len(indices))
-            base_anchor_generator.base_anchors = torch.index_select(
-                base_anchor_generator.base_anchors, 0,
-                torch.LongTensor(indices))
-            self.anchor_generators.append(base_anchor_generator)
 
         self.background_label = (
             num_classes if background_label is None else background_label)
@@ -169,7 +124,7 @@ class SSDHead(AnchorHead):
              img_metas,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generators)
+        assert len(featmap_sizes) == len(self.anchor_generator.strides)
 
         device = cls_scores[0].device
 

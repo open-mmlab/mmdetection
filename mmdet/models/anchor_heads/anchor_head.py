@@ -1,6 +1,5 @@
 from __future__ import division
 
-import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
@@ -41,11 +40,11 @@ class AnchorHead(nn.Module):
                  num_classes,
                  in_channels,
                  feat_channels=256,
-                 anchor_generator=dict(type='AnchorGenerator'),
-                 anchor_scales=[8, 16, 32],
-                 anchor_ratios=[0.5, 1.0, 2.0],
-                 anchor_strides=[4, 8, 16, 32, 64],
-                 anchor_base_sizes=None,
+                 anchor_generator=dict(
+                     type='AnchorGenerator',
+                     scales=[8, 16, 32],
+                     ratios=[0.5, 1.0, 2.0],
+                     strides=[4, 8, 16, 32, 64]),
                  target_means=(.0, .0, .0, .0),
                  target_stds=(1.0, 1.0, 1.0, 1.0),
                  background_label=None,
@@ -61,11 +60,6 @@ class AnchorHead(nn.Module):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
-        self.anchor_scales = anchor_scales
-        self.anchor_ratios = anchor_ratios
-        self.anchor_strides = anchor_strides
-        self.anchor_base_sizes = list(
-            anchor_strides) if anchor_base_sizes is None else anchor_base_sizes
         self.target_means = target_means
         self.target_stds = target_stds
 
@@ -100,17 +94,10 @@ class AnchorHead(nn.Module):
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
 
-        self.anchor_generators = []
-        for anchor_base in self.anchor_base_sizes:
-            anchor_generator_args = dict(
-                base_size=anchor_base,
-                scales=anchor_scales,
-                ratios=anchor_ratios)
-            self.anchor_generators.append(
-                build_anchor_generator(anchor_generator,
-                                       anchor_generator_args))
-
-        self.num_anchors = len(self.anchor_ratios) * len(self.anchor_scales)
+        self.anchor_generator = build_anchor_generator(anchor_generator)
+        # usually the numbers of anchors for each level are the same
+        # except SSD detectors
+        self.num_anchors = self.anchor_generator.num_base_anchors[0]
         self._init_layers()
 
     def _init_layers(self):
@@ -144,31 +131,18 @@ class AnchorHead(nn.Module):
                 valid_flag_list (list[Tensor]): Valid flags of each image
         """
         num_imgs = len(img_metas)
-        num_levels = len(featmap_sizes)
 
         # since feature map sizes of all images are the same, we only compute
         # anchors for one time
-        multi_level_anchors = []
-        for i in range(num_levels):
-            anchors = self.anchor_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i], device=device)
-            multi_level_anchors.append(anchors)
+        multi_level_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, device)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
         # for each image, we compute valid flags of multi level anchors
         valid_flag_list = []
         for img_id, img_meta in enumerate(img_metas):
-            multi_level_flags = []
-            for i in range(num_levels):
-                anchor_stride = self.anchor_strides[i]
-                feat_h, feat_w = featmap_sizes[i]
-                h, w = img_meta['pad_shape'][:2]
-                valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
-                valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
-                flags = self.anchor_generators[i].valid_flags(
-                    (feat_h, feat_w), (valid_feat_h, valid_feat_w),
-                    device=device)
-                multi_level_flags.append(flags)
+            multi_level_flags = self.anchor_generator.valid_flags(
+                featmap_sizes, img_meta['pad_shape'], device)
             valid_flag_list.append(multi_level_flags)
 
         return anchor_list, valid_flag_list
@@ -379,7 +353,7 @@ class AnchorHead(nn.Module):
              img_metas,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generators)
+        assert len(featmap_sizes) == len(self.anchor_generator.strides)
 
         device = cls_scores[0].device
 
@@ -441,7 +415,14 @@ class AnchorHead(nn.Module):
 
         Example:
             >>> import mmcv
-            >>> self = AnchorHead(num_classes=9, in_channels=1)
+            >>> self = AnchorHead(
+            >>>     num_classes=9,
+            >>>     in_channels=1,
+            >>>     anchor_generator=dict(
+            >>>         type='AnchorGenerator',
+            >>>         scales=[8],
+            >>>         ratios=[0.5, 1.0, 2.0],
+            >>>         strides=[4]))
             >>> img_metas = [{'img_shape': (32, 32, 3), 'scale_factor': 1}]
             >>> cfg = mmcv.Config(dict(
             >>>     score_thr=0.00,
@@ -462,12 +443,10 @@ class AnchorHead(nn.Module):
         num_levels = len(cls_scores)
 
         device = cls_scores[0].device
-        mlvl_anchors = [
-            self.anchor_generators[i].grid_anchors(
-                cls_scores[i].size()[-2:],
-                self.anchor_strides[i],
-                device=device) for i in range(num_levels)
-        ]
+        featmap_sizes = [cls_scores[i].size()[-2:] for i in range(num_levels)]
+        mlvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
+
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [

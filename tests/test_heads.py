@@ -42,7 +42,7 @@ def test_anchor_head_loss():
     # Anchor head expects a multiple levels of features per image
     feat = [
         torch.rand(1, 1, s // (2**(i + 2)), s // (2**(i + 2)))
-        for i in range(len(self.anchor_generators))
+        for i in range(len(self.anchor_generator.strides))
     ]
     cls_scores, bbox_preds = self.forward(feat)
 

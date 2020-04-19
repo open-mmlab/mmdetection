@@ -26,8 +26,9 @@ model = dict(
         feat_channels=256,
         octave_base_scale=8,
         scales_per_octave=1,
-        anchor_ratios=[1.0],
-        anchor_strides=[8, 16, 32, 64, 128],
+        anchor_generator=dict(
+            type='AnchorGenerator', ratios=[1.0], strides=[8, 16, 32, 64,
+                                                           128]),
         target_means=[.0, .0, .0, .0],
         target_stds=[0.1, 0.1, 0.2, 0.2],
         loss_cls=dict(

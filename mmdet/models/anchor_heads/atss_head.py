@@ -42,6 +42,10 @@ class ATSSHead(AnchorHead):
                  scales_per_octave=1,
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+                 anchor_generator=dict(
+                     type='AnchorGenerator',
+                     ratios=[1.0],
+                     strides=[8, 16, 32, 64, 128]),
                  loss_centerness=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
@@ -67,8 +71,12 @@ class ATSSHead(AnchorHead):
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
         anchor_scales = octave_scales * octave_base_scale
+        anchor_generator.update(scales=anchor_scales)
         super(ATSSHead, self).__init__(
-            num_classes, in_channels, anchor_scales=anchor_scales, **kwargs)
+            num_classes,
+            in_channels,
+            anchor_generator=anchor_generator,
+            **kwargs)
 
         self.loss_centerness = build_loss(loss_centerness)
 
@@ -105,7 +113,8 @@ class ATSSHead(AnchorHead):
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
         self.atss_centerness = nn.Conv2d(
             self.feat_channels, self.num_anchors * 1, 3, padding=1)
-        self.scales = nn.ModuleList([Scale(1.0) for _ in self.anchor_strides])
+        self.scales = nn.ModuleList(
+            [Scale(1.0) for _ in self.anchor_generator.strides])
 
     def init_weights(self):
         for m in self.cls_convs:
@@ -276,12 +285,9 @@ class ATSSHead(AnchorHead):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         device = cls_scores[0].device
-        mlvl_anchors = [
-            self.anchor_generators[i].grid_anchors(
-                cls_scores[i].size()[-2:],
-                self.anchor_strides[i],
-                device=device) for i in range(num_levels)
-        ]
+        featmap_sizes = [cls_scores[i].size()[-2:] for i in range(num_levels)]
+        mlvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
 
         result_list = []
         for img_id in range(len(img_metas)):

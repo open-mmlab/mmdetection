@@ -8,8 +8,8 @@ model = dict(
         octave_base_scale=8,
         scales_per_octave=3,
         octave_ratios=[0.5, 1.0, 2.0],
-        anchor_strides=[4, 8, 16, 32, 64],
-        anchor_base_sizes=None,
+        anchor_generator=dict(
+            type='AnchorGenerator', strides=[4, 8, 16, 32, 64]),
         anchoring_means=[.0, .0, .0, .0],
         anchoring_stds=[0.07, 0.07, 0.14, 0.14],
         target_means=(.0, .0, .0, .0),

@@ -27,8 +27,8 @@ model = dict(
         octave_base_scale=4,
         scales_per_octave=3,
         octave_ratios=[0.5, 1.0, 2.0],
-        anchor_strides=[8, 16, 32, 64, 128],
-        anchor_base_sizes=None,
+        anchor_generator=dict(
+            type='AnchorGenerator', strides=[4, 8, 16, 32, 64]),
         anchoring_means=[.0, .0, .0, .0],
         anchoring_stds=[1.0, 1.0, 1.0, 1.0],
         target_means=(.0, .0, .0, .0),
