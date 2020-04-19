@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import (auto_fp16, bbox2delta, delta2bbox, force_fp32,
-                        multi_apply, multiclass_nms)
+from mmdet.core import (auto_fp16, build_bbox_coder, force_fp32, multi_apply,
+                        multiclass_nms)
 from ..builder import build_loss
 from ..losses import accuracy
 from ..registry import HEADS
@@ -22,8 +22,10 @@ class BBoxHead(nn.Module):
                  roi_feat_size=7,
                  in_channels=256,
                  num_classes=80,
-                 target_means=[0., 0., 0., 0.],
-                 target_stds=[0.1, 0.1, 0.2, 0.2],
+                 bbox_coder=dict(
+                     type='DeltaXYWHBBoxCoder',
+                     target_means=[0., 0., 0., 0.],
+                     target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
@@ -40,11 +42,10 @@ class BBoxHead(nn.Module):
         self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
         self.in_channels = in_channels
         self.num_classes = num_classes
-        self.target_means = target_means
-        self.target_stds = target_stds
         self.reg_class_agnostic = reg_class_agnostic
         self.fp16_enabled = False
 
+        self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
 
@@ -98,8 +99,8 @@ class BBoxHead(nn.Module):
             labels[:num_pos] = pos_gt_labels
             pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
             label_weights[:num_pos] = pos_weight
-            pos_bbox_targets = bbox2delta(pos_bboxes, pos_gt_bboxes,
-                                          self.target_means, self.target_stds)
+            pos_bbox_targets = self.bbox_coder.encode(pos_bboxes,
+                                                      pos_gt_bboxes)
             bbox_targets[:num_pos, :] = pos_bbox_targets
             bbox_weights[:num_pos, :] = 1
         if num_neg > 0:
@@ -190,8 +191,8 @@ class BBoxHead(nn.Module):
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
 
         if bbox_pred is not None:
-            bboxes = delta2bbox(rois[:, 1:], bbox_pred, self.target_means,
-                                self.target_stds, img_shape)
+            bboxes = self.bbox_coder.decode(
+                rois[:, 1:], bbox_pred, max_shape=img_shape)
         else:
             bboxes = rois[:, 1:].clone()
             if img_shape is not None:
@@ -315,11 +316,11 @@ class BBoxHead(nn.Module):
         assert bbox_pred.size(1) == 4
 
         if rois.size(1) == 4:
-            new_rois = delta2bbox(rois, bbox_pred, self.target_means,
-                                  self.target_stds, img_meta['img_shape'])
+            new_rois = self.bbox_coder.decode(
+                rois, bbox_pred, max_shape=img_meta['img_shape'])
         else:
-            bboxes = delta2bbox(rois[:, 1:], bbox_pred, self.target_means,
-                                self.target_stds, img_meta['img_shape'])
+            bboxes = self.bbox_coder.decode(
+                rois[:, 1:], bbox_pred, max_shape=img_meta['img_shape'])
             new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
 
         return new_rois

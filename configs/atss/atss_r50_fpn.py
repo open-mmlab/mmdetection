@@ -29,8 +29,10 @@ model = dict(
         anchor_generator=dict(
             type='AnchorGenerator', ratios=[1.0], strides=[8, 16, 32, 64,
                                                            128]),
-        target_means=[.0, .0, .0, .0],
-        target_stds=[0.1, 0.1, 0.2, 0.2],
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[0.1, 0.1, 0.2, 0.2]),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,

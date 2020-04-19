@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from mmdet.core import bbox2delta, bbox_overlaps, delta2bbox
+from mmdet.core import bbox_overlaps
 from ..registry import HEADS
 from .retina_head import RetinaHead
 
@@ -68,8 +68,7 @@ class FreeAnchorRetinaHead(RetinaHead):
 
             with torch.no_grad():
                 # box_localization: a_{j}^{loc}, shape: [j, 4]
-                pred_boxes = delta2bbox(anchors_, bbox_preds_,
-                                        self.target_means, self.target_stds)
+                pred_boxes = self.bbox_coder.decode(anchors_, bbox_preds_)
 
                 # object_box_iou: IoU_{ij}^{loc}, shape: [i, j]
                 object_box_iou = bbox_overlaps(gt_bboxes_, pred_boxes)
@@ -139,10 +138,9 @@ class FreeAnchorRetinaHead(RetinaHead):
 
             # matched_box_prob: P_{ij}^{loc}
             matched_anchors = anchors_[matched]
-            matched_object_targets = bbox2delta(
+            matched_object_targets = self.bbox_coder.encode(
                 matched_anchors,
-                gt_bboxes_.unsqueeze(dim=1).expand_as(matched_anchors),
-                self.target_means, self.target_stds)
+                gt_bboxes_.unsqueeze(dim=1).expand_as(matched_anchors))
             loss_bbox = self.loss_bbox(
                 bbox_preds_[matched],
                 matched_object_targets,
