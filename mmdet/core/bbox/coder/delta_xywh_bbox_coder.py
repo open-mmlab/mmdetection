@@ -10,17 +10,17 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
     """Delta XYWH BBox coder
 
     Following the practice in R-CNN [1]_, this coder encodes bbox (x1, y1, x2,
-    y2) into delta (dx, dy, dw, dh) and
-    decodes delta (dx, dy, dw, dh) back to original bbox (x1, y1, x2, y2).
+    y2) into delta (dx, dy, dw, dh) and decodes delta (dx, dy, dw, dh)
+    back to original bbox (x1, y1, x2, y2).
 
     References:
         .. [1] https://arxiv.org/abs/1311.2524
 
     Args:
-        target_means (list[float]|tuple[float]): denormalizing means of target
-            for delta coordinates
-        target_stds (list[float]|tuple[float]): denormalizing standard
-            deviation of target for delta coordinates
+        target_means (Sequence[float]): denormalizing means of target for
+            delta coordinates
+        target_stds (Sequence[float]): denormalizing standard deviation of
+            target for delta coordinates
     """
 
     def __init__(self,
@@ -49,6 +49,23 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
 
 def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
+    """Compute deltas of proposals w.r.t. gt.
+
+    We usually compute the deltas of x, y, w, h of proposals w.r.t ground
+    truth bboxes to get regression target.
+    This is the inverse function of `delta2bbox()`
+
+    Args:
+        proposals (Tensor): Boxes to be transformed, shape (N, 4)
+        gt (Tensor): Gt bboxes to be used as base, shape (N, 4)
+        means (list): Denormalizing means for delta coordinates
+        stds (list): Denormalizing standard deviation for delta coordinates
+
+    Returns:
+        Tensor: deltas with shape (N, 4), where columns represent dx, dy,
+            dw, dh.
+
+    """
     assert proposals.size() == gt.size()
 
     proposals = proposals.float()
@@ -82,24 +99,24 @@ def delta2bbox(rois,
                stds=[1, 1, 1, 1],
                max_shape=None,
                wh_ratio_clip=16 / 1000):
-    """
-    Apply deltas to shift/scale base boxes.
+    """Apply deltas to shift/scale base boxes.
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are
     network outputs used to shift/scale those boxes.
+    This is the inverse function of `bbox2delta()`
 
     Args:
-        rois (Tensor): boxes to be transformed. Has shape (N, 4)
-        deltas (Tensor): encoded offsets with respect to each roi.
+        rois (Tensor): Boxes to be transformed. Has shape (N, 4)
+        deltas (Tensor): Encoded offsets with respect to each roi.
             Has shape (N, 4 * num_classes). Note N = num_anchors * W * H when
             rois is a grid of anchors. Offset encoding follows [1]_.
-        means (list): denormalizing means for delta coordinates
-        stds (list): denormalizing standard deviation for delta coordinates
-        max_shape (tuple[int, int]): maximum bounds for boxes. specifies (H, W)
-        wh_ratio_clip (float): maximum aspect ratio for boxes.
+        means (list): Denormalizing means for delta coordinates
+        stds (list): Denormalizing standard deviation for delta coordinates
+        max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
+        wh_ratio_clip (float): Maximum aspect ratio for boxes.
 
     Returns:
-        Tensor: boxes with shape (N, 4), where columns represent
+        Tensor: Boxes with shape (N, 4), where columns represent
             tl_x, tl_y, br_x, br_y.
 
     References:
