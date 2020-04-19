@@ -25,7 +25,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
     def __init__(self,
                  target_means=(0., 0., 0., 0.),
-                 target_stds=(0.1, 0.1, 0.2, 0.2)):
+                 target_stds=(1., 1., 1., 1.)):
         super(BaseBBoxCoder, self).__init__()
         self.means = target_means
         self.stds = target_stds
@@ -48,7 +48,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         return decoded_bboxes
 
 
-def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
+def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     """Compute deltas of proposals w.r.t. gt.
 
     We usually compute the deltas of x, y, w, h of proposals w.r.t ground
@@ -58,8 +58,9 @@ def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
     Args:
         proposals (Tensor): Boxes to be transformed, shape (N, 4)
         gt (Tensor): Gt bboxes to be used as base, shape (N, 4)
-        means (list): Denormalizing means for delta coordinates
-        stds (list): Denormalizing standard deviation for delta coordinates
+        means (Sequence[float]): Denormalizing means for delta coordinates
+        stds (Sequence[float]): Denormalizing standard deviation for delta
+            coordinates
 
     Returns:
         Tensor: deltas with shape (N, 4), where columns represent dx, dy,
@@ -95,8 +96,8 @@ def bbox2delta(proposals, gt, means=[0, 0, 0, 0], stds=[1, 1, 1, 1]):
 
 def delta2bbox(rois,
                deltas,
-               means=[0, 0, 0, 0],
-               stds=[1, 1, 1, 1],
+               means=(0., 0., 0., 0.),
+               stds=(1., 1., 1., 1.),
                max_shape=None,
                wh_ratio_clip=16 / 1000):
     """Apply deltas to shift/scale base boxes.
@@ -110,8 +111,9 @@ def delta2bbox(rois,
         deltas (Tensor): Encoded offsets with respect to each roi.
             Has shape (N, 4 * num_classes). Note N = num_anchors * W * H when
             rois is a grid of anchors. Offset encoding follows [1]_.
-        means (list): Denormalizing means for delta coordinates
-        stds (list): Denormalizing standard deviation for delta coordinates
+        means (Sequence[float]): Denormalizing means for delta coordinates
+        stds (Sequence[float]): Denormalizing standard deviation for delta
+            coordinates
         max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
 
