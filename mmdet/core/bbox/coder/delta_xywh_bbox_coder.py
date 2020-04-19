@@ -7,12 +7,26 @@ from .base_bbox_coder import BaseBBoxCoder
 
 @BBOX_CODERS.register_module
 class DeltaXYWHBBoxCoder(BaseBBoxCoder):
+    """Delta XYWH BBox coder
+
+    Following the practice in R-CNN [1]_, this coder encodes bbox (x1, y1, x2,
+    y2) into delta (dx, dy, dw, dh) and
+    decodes delta (dx, dy, dw, dh) back to original bbox (x1, y1, x2, y2).
+
+    References:
+        .. [1] https://arxiv.org/abs/1311.2524
+
+    Args:
+        target_means (list[float]|tuple[float]): denormalizing means of target
+            for delta coordinates
+        target_stds (list[float]|tuple[float]): denormalizing standard
+            deviation of target for delta coordinates
+    """
 
     def __init__(self,
                  target_means=(0., 0., 0., 0.),
-                 target_stds=(0.1, 0.1, 0.2, 0.2),
-                 **kwargs):
-        super(BaseBBoxCoder, self).__init__(**kwargs)
+                 target_stds=(0.1, 0.1, 0.2, 0.2)):
+        super(BaseBBoxCoder, self).__init__()
         self.means = target_means
         self.stds = target_stds
 
