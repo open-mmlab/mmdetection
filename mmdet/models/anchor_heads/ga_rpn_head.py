@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
-from mmdet.core import delta2bbox
 from mmdet.ops import nms
 from ..registry import HEADS
 from .guided_anchor_head import GuidedAnchorHead
@@ -101,8 +100,8 @@ class GARPNHead(GuidedAnchorHead):
                 anchors = anchors[topk_inds, :]
                 scores = scores[topk_inds]
             # get proposals w.r.t. anchors and rpn_bbox_pred
-            proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
-                                   self.target_stds, img_shape)
+            proposals = self.bbox_coder.decode(
+                anchors, rpn_bbox_pred, max_shape=img_shape)
             # filter out too small bboxes
             if cfg.min_bbox_size > 0:
                 w = proposals[:, 2] - proposals[:, 0]

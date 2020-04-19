@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (AnchorGenerator, anchor_inside_flags, bbox2delta,
-                        build_assigner, build_sampler, delta2bbox, force_fp32,
+from mmdet.core import (AnchorGenerator, anchor_inside_flags, build_assigner,
+                        build_bbox_coder, build_sampler, force_fp32,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from ..builder import build_loss
 from ..registry import HEADS
@@ -44,8 +44,10 @@ class AnchorHead(nn.Module):
                  anchor_ratios=[0.5, 1.0, 2.0],
                  anchor_strides=[4, 8, 16, 32, 64],
                  anchor_base_sizes=None,
-                 target_means=(.0, .0, .0, .0),
-                 target_stds=(1.0, 1.0, 1.0, 1.0),
+                 bbox_coder=dict(
+                     type='DeltaXYWHBBoxCoder',
+                     target_means=(.0, .0, .0, .0),
+                     target_stds=(1.0, 1.0, 1.0, 1.0)),
                  background_label=None,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
@@ -64,8 +66,6 @@ class AnchorHead(nn.Module):
         self.anchor_strides = anchor_strides
         self.anchor_base_sizes = list(
             anchor_strides) if anchor_base_sizes is None else anchor_base_sizes
-        self.target_means = target_means
-        self.target_stds = target_stds
 
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         # TODO better way to determine whether sample or not
@@ -84,6 +84,7 @@ class AnchorHead(nn.Module):
         assert (self.background_label == 0
                 or self.background_label == num_classes)
 
+        self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.train_cfg = train_cfg
@@ -230,9 +231,8 @@ class AnchorHead(nn.Module):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            pos_bbox_targets = bbox2delta(sampling_result.pos_bboxes,
-                                          sampling_result.pos_gt_bboxes,
-                                          self.target_means, self.target_stds)
+            pos_bbox_targets = self.bbox_coder.encode(
+                sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
@@ -516,8 +516,8 @@ class AnchorHead(nn.Module):
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-            bboxes = delta2bbox(anchors, bbox_pred, self.target_means,
-                                self.target_stds, img_shape)
+            bboxes = self.bbox_coder.decode(
+                anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)

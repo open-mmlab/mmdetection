@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
-from mmdet.core import delta2bbox
 from mmdet.ops import batched_nms
 from ..registry import HEADS
 from .anchor_head import AnchorHead
@@ -99,8 +98,8 @@ class RPNHead(AnchorHead):
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
         rpn_bbox_pred = torch.cat(mlvl_bbox_preds)
-        proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
-                               self.target_stds, img_shape)
+        proposals = self.bbox_coder.decode(
+            anchors, rpn_bbox_pred, max_shape=img_shape)
         ids = torch.cat(level_ids)
 
         if cfg.min_bbox_size > 0:

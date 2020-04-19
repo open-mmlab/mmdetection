@@ -4,9 +4,9 @@ import torch.distributed as dist
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (anchor_inside_flags, bbox2delta, build_assigner,
-                        build_sampler, delta2bbox, force_fp32,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
+                        force_fp32, images_to_levels, multi_apply,
+                        multiclass_nms, unmap)
 from mmdet.ops import ConvModule, Scale
 from ..builder import build_loss
 from ..registry import HEADS
@@ -162,12 +162,10 @@ class ATSSHead(AnchorHead):
 
             centerness_targets = self.centerness_target(
                 pos_anchors, pos_bbox_targets)
-            pos_decode_bbox_pred = delta2bbox(pos_anchors, pos_bbox_pred,
-                                              self.target_means,
-                                              self.target_stds)
-            pos_decode_bbox_targets = delta2bbox(pos_anchors, pos_bbox_targets,
-                                                 self.target_means,
-                                                 self.target_stds)
+            pos_decode_bbox_pred = self.bbox_coder.decode(
+                pos_anchors, pos_bbox_pred)
+            pos_decode_bbox_targets = self.bbox_coder.decode(
+                pos_anchors, pos_bbox_targets)
 
             # regression loss
             loss_bbox = self.loss_bbox(
@@ -247,8 +245,7 @@ class ATSSHead(AnchorHead):
 
     def centerness_target(self, anchors, bbox_targets):
         # only calculate pos centerness targets, otherwise there may be nan
-        gts = delta2bbox(anchors, bbox_targets, self.target_means,
-                         self.target_stds)
+        gts = self.bbox_coder.decode(anchors, bbox_targets)
         anchors_cx = (anchors[:, 2] + anchors[:, 0]) / 2
         anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
         l_ = anchors_cx - gts[:, 0]
@@ -334,8 +331,8 @@ class ATSSHead(AnchorHead):
                 scores = scores[topk_inds, :]
                 centerness = centerness[topk_inds]
 
-            bboxes = delta2bbox(anchors, bbox_pred, self.target_means,
-                                self.target_stds, img_shape)
+            bboxes = self.bbox_coder.decode(
+                anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
@@ -468,9 +465,8 @@ class ATSSHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            pos_bbox_targets = bbox2delta(sampling_result.pos_bboxes,
-                                          sampling_result.pos_gt_bboxes,
-                                          self.target_means, self.target_stds)
+            pos_bbox_targets = self.bbox_coder.encode(
+                sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
