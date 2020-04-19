@@ -50,9 +50,9 @@ data = dict(
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 # optimizer
-optimizer = dict(
-    lr=0.01, paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
+optimizer = dict(lr=0.01)
 optimizer_config = dict(_delete_=True, grad_clip=None)
+paramwise_config = dict(bias_lr_mult=2., bias_decay_mult=0.)
 # learning policy
 lr_config = dict(warmup='constant', step=[16, 22])
 total_epochs = 24

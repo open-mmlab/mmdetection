@@ -15,8 +15,8 @@ model = dict(
             conv_out_channels=256,
             norm_cfg=norm_cfg)))
 # optimizer
-optimizer = dict(paramwise_options=dict(norm_decay_mult=0))
 optimizer_config = dict(_delete_=True, grad_clip=None)
+paramwise_config = dict(norm_decay_mult=0)
 # learning policy
 lr_config = dict(warmup_ratio=0.1, step=[65, 71])
 total_epochs = 73

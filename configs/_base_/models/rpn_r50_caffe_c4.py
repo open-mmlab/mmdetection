@@ -1,7 +1,7 @@
 # model settings
 model = dict(
     type='RPN',
-    pretrained='open-mmlab://resnet50_caffe',
+    pretrained='open-mmlab://resnet50_caffe_bgr',
     backbone=dict(
         type='ResNet',
         depth=50,

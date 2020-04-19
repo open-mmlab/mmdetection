@@ -1,7 +1,6 @@
 _base_ = './mask_rcnn_r50_fpn_1x_coco.py'
 model = dict(
-    pretrained=('./pretrain_detectron/'
-                'ImageNetPretrained/MSRA/resnet50_msra.pth'),
+    pretrained='open-mmlab://resnet50_caffe_bgr',
     backbone=dict(norm_cfg=dict(requires_grad=False), style='caffe'))
 # use caffe img_norm
 img_norm_cfg = dict(
