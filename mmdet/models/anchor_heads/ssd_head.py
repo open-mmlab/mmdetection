@@ -4,8 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
-from mmdet.core import (AnchorGenerator, build_assigner, build_sampler,
-                        multi_apply)
+from mmdet.core import (AnchorGenerator, build_assigner, build_bbox_coder,
+                        build_sampler, multi_apply)
 from ..losses import smooth_l1_loss
 from ..registry import HEADS
 from .anchor_head import AnchorHead
@@ -23,8 +23,11 @@ class SSDHead(AnchorHead):
                  basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                  background_label=None,
-                 target_means=(.0, .0, .0, .0),
-                 target_stds=(1.0, 1.0, 1.0, 1.0),
+                 bbox_coder=dict(
+                     type='DeltaXYWHBBoxCoder',
+                     target_means=[.0, .0, .0, .0],
+                     target_stds=[1.0, 1.0, 1.0, 1.0],
+                 ),
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
@@ -98,8 +101,7 @@ class SSDHead(AnchorHead):
         assert (self.background_label == 0
                 or self.background_label == num_classes)
 
-        self.target_means = target_means
-        self.target_stds = target_stds
+        self.bbox_coder = build_bbox_coder(bbox_coder)
         self.use_sigmoid_cls = False
         self.cls_focal_loss = False
         self.train_cfg = train_cfg
