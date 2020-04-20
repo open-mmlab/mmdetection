@@ -719,7 +719,7 @@ class GuidedAnchorHead(AnchorHead):
         num_level_anchors = [
             anchors.size(0) for anchors in guided_anchors_list[0]
         ]
-        # concat all level anchors and flags to a single tensor
+        # concat all level anchors to a single tensor
         concat_anchor_list = []
         for i in range(len(guided_anchors_list)):
             concat_anchor_list.append(torch.cat(guided_anchors_list[i]))
