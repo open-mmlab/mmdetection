@@ -91,7 +91,7 @@ class PublicModelsTestCase(unittest.TestCase):
         export_dir = os.path.join(test_dir, "export")
         log_file = os.path.join(export_dir, 'test_export.log')
         os.makedirs(export_dir, exist_ok=True)
-        target_config_path = os.path.join(export_dir, 'config.py')
+        target_config_path = os.path.join(export_dir, os.path.basename(config_path))
         os.system(f'cp {config_path} {target_config_path}')
         assert replace_text_in_file(target_config_path, "data_root = 'data/coco/'",
                                     f"data_root = '{self.coco_dir}/'")
@@ -120,7 +120,8 @@ class PublicModelsTestCase(unittest.TestCase):
 
         reference_ap = [ap - thr for ap in reference_ap]
 
-        self.assertListEqual(reference_ap, ap)
+        for expected, actual in zip(reference_ap, ap):
+            self.assertLess(expected, actual)
 
     def download_if_not_yet(self, url):
         os.makedirs(self.snapshots_dir, exist_ok=True)
