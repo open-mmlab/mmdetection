@@ -350,7 +350,7 @@ def test_default_optimizer_constructor():
         warnings.simplefilter('always')
         assert len(w) == 1
         assert str(w[0].message) == 'conv3.0 is duplicate. It is skipped ' \
-                                    'since bypass duplicate=True'
+                                    'since bypass_duplicate=True'
     model_parameters = list(model.parameters())
     assert len(optimizer.param_groups) == len(model_parameters) == 11
     check_optimizer(optimizer, model, **paramwise_cfg)

@@ -71,20 +71,14 @@ class DefaultOptimizerConstructor(object):
             if self.base_wd is None:
                 raise ValueError('base_wd should not be None')
 
-    def _is_disjoint(self, src_params, dst_params):
+    def _is_in(self, param_group, param_group_list):
+        assert is_list_of(param_group_list, dict)
+        param = set(param_group['params'])
+        param_set = set()
+        for group in param_group_list:
+            param_set.update(set(group['params']))
 
-        def _to_set(params):
-            param_set = set()
-            params = [params] if not isinstance(params, list) else params
-            assert is_list_of(params, dict)
-            for group in params:
-                param_set.update(set(group['params']))
-            return param_set
-
-        src_param_set = _to_set(src_params)
-        dst_param_set = _to_set(dst_params)
-
-        return src_param_set.isdisjoint(dst_param_set)
+        return not param.isdisjoint(param_set)
 
     def add_params(self, params, module, prefix=''):
         """Add all parameters of module to the params list.
@@ -117,9 +111,10 @@ class DefaultOptimizerConstructor(object):
             if not param.requires_grad:
                 params.append(param_group)
                 continue
-            if bypass_duplicate and not self._is_disjoint(params, param_group):
-                warnings.warn('{} is duplicate. It is skipped since bypass '
-                              'duplicate={}'.format(prefix, bypass_duplicate))
+            if bypass_duplicate and self._is_in(param_group, params):
+                warnings.warn('{} is duplicate. It is skipped since '
+                              'bypass_duplicate={}'.format(
+                                  prefix, bypass_duplicate))
                 continue
             # bias_lr_mult affects all bias parameters except for norm.bias
             if name == 'bias' and not is_norm:
