@@ -107,6 +107,7 @@ mmdet/version.py
 data
 .vscode
 .idea
+.DS_Store
 
 # custom
 *.pkl
