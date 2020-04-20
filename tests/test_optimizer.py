@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 import torch
 import torch.nn as nn
@@ -28,6 +30,22 @@ class ExampleModel(nn.Module):
         self.conv2 = nn.Conv2d(4, 2, kernel_size=1)
         self.bn = nn.BatchNorm2d(2)
         self.sub = SubModel()
+
+    def forward(self, x):
+        return x
+
+
+class ExampleDuplicateModel(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.param1 = nn.Parameter(torch.ones(1))
+        self.conv1 = nn.Sequential(nn.Conv2d(3, 4, kernel_size=1, bias=False))
+        self.conv2 = nn.Sequential(nn.Conv2d(4, 2, kernel_size=1))
+        self.bn = nn.BatchNorm2d(2)
+        self.sub = SubModel()
+        self.conv3 = nn.Sequential(nn.Conv2d(3, 4, kernel_size=1, bias=False))
+        self.conv3[0] = self.conv1[0]
 
     def forward(self, x):
         return x
@@ -72,7 +90,8 @@ def check_optimizer(optimizer,
                     bias_lr_mult=1,
                     bias_decay_mult=1,
                     norm_decay_mult=1,
-                    dwconv_decay_mult=1):
+                    dwconv_decay_mult=1,
+                    bypass_duplicate=False):
     param_groups = optimizer.param_groups
     assert isinstance(optimizer, torch.optim.SGD)
     assert optimizer.defaults['lr'] == base_lr
@@ -301,6 +320,40 @@ def test_default_optimizer_constructor():
         assert param_group['momentum'] == momentum
         assert param_group['lr'] == base_lr
         assert param_group['weight_decay'] == base_wd
+
+    # paramwise_cfg with bypass_duplicate option
+    model = ExampleDuplicateModel()
+    optimizer_cfg = dict(
+        type='SGD', lr=base_lr, weight_decay=base_wd, momentum=momentum)
+    paramwise_cfg = dict(
+        bias_lr_mult=2,
+        bias_decay_mult=0.5,
+        norm_decay_mult=0,
+        dwconv_decay_mult=0.1)
+    with pytest.raises(ValueError) as excinfo:
+        optim_constructor = DefaultOptimizerConstructor(
+            optimizer_cfg, paramwise_cfg)
+        optim_constructor(model)
+        assert 'some parameters appear in more than one parameter ' \
+               'group' == excinfo.value
+
+    paramwise_cfg = dict(
+        bias_lr_mult=2,
+        bias_decay_mult=0.5,
+        norm_decay_mult=0,
+        dwconv_decay_mult=0.1,
+        bypass_duplicate=True)
+    optim_constructor = DefaultOptimizerConstructor(optimizer_cfg,
+                                                    paramwise_cfg)
+    with warnings.catch_warnings(record=True) as w:
+        optimizer = optim_constructor(model)
+        warnings.simplefilter('always')
+        assert len(w) == 1
+        assert str(w[0].message) == 'conv3.0 is duplicate. It is skipped ' \
+                                    'since bypass_duplicate=True'
+    model_parameters = list(model.parameters())
+    assert len(optimizer.param_groups) == len(model_parameters) == 11
+    check_optimizer(optimizer, model, **paramwise_cfg)
 
 
 def test_torch_optimizers():
