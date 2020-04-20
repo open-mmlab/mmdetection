@@ -54,8 +54,7 @@ class PublicModelsTestCase(unittest.TestCase):
             os.system(
                 f'unzip {os.path.join(cls.coco_dir, "annotations_trainval2017.zip")} -d {cls.coco_dir}')
 
-        cls.shorten_annotation(os.path.join(cls.coco_dir, 'annotations/instances_val2017.json'),
-                               100)
+        cls.shorten_annotation(os.path.join(cls.coco_dir, 'annotations/instances_val2017.json'), 10)
 
     def run_test(self, config_path, snapshot, metrics=('bbox', )):
         print('\n\ntesting ' + config_path, file=sys.stderr)
@@ -80,12 +79,10 @@ class PublicModelsTestCase(unittest.TestCase):
         with open(f'tests/expected_outputs/public/{name}.json') as read_file:
             content = json.load(read_file)
         reference_ap = content['map']
-        if isinstance(reference_ap, float):
-            reference_ap = [reference_ap, ]
 
         self.assertListEqual(reference_ap, ap)
 
-    def run_export_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.01):
+    def run_export_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.025):
         print('\n\ntesting export ' + config_path, file=sys.stderr)
         name = config_path.replace('configs/', '')[:-3]
         test_dir = f'/tmp/{name}'
@@ -117,13 +114,9 @@ class PublicModelsTestCase(unittest.TestCase):
         with open(f'tests/expected_outputs/public/{name}.json') as read_file:
             content = json.load(read_file)
         reference_ap = content['map']
-        if isinstance(reference_ap, float):
-            reference_ap = [reference_ap, ]
-
-        reference_ap = [ap - thr for ap in reference_ap]
 
         for expected, actual in zip(reference_ap, ap):
-            self.assertLess(expected, actual)
+            self.assertLessEqual(expected - thr, actual)
 
     def download_if_not_yet(self, url):
         os.makedirs(self.snapshots_dir, exist_ok=True)
