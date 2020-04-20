@@ -93,9 +93,9 @@ def plot_curve(log_dicts, args):
 
 def add_plot_parser(subparsers):
     parser_plt = subparsers.add_parser(
-        'plot-curve', help='parser for plotting curves')
+        'plot_curve', help='parser for plotting curves')
     parser_plt.add_argument(
-        'json-logs',
+        'json_logs',
         type=str,
         nargs='+',
         help='path of train log in json format')
@@ -121,10 +121,10 @@ def add_plot_parser(subparsers):
 
 def add_time_parser(subparsers):
     parser_time = subparsers.add_parser(
-        'cal-train-time',
+        'cal_train_time',
         help='parser for computing the average time per training iteration')
     parser_time.add_argument(
-        'json-logs',
+        'json_logs',
         type=str,
         nargs='+',
         help='path of train log in json format')

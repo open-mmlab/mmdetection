@@ -149,8 +149,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(x, rois)
 
-        bbox_targets = self.bbox_head.get_target(sampling_results, gt_bboxes,
-                                                 gt_labels, self.train_cfg)
+        bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
+                                                  gt_labels, self.train_cfg)
         loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],
                                         bbox_results['bbox_pred'],
                                         *bbox_targets)
@@ -185,8 +185,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_results = self._mask_forward(
                 x, pos_inds=pos_inds, bbox_feats=bbox_feats)
 
-        mask_targets = self.mask_head.get_target(sampling_results, gt_masks,
-                                                 self.train_cfg)
+        mask_targets = self.mask_head.get_targets(sampling_results, gt_masks,
+                                                  self.train_cfg)
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
         loss_mask = self.mask_head.loss(mask_results['mask_pred'],
                                         mask_targets, pos_labels)

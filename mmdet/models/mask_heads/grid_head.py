@@ -219,7 +219,7 @@ class GridHead(nn.Module):
                 (sub_x1, sub_y1, sub_x1 + half_size, sub_y1 + half_size))
         return sub_regions
 
-    def get_target(self, sampling_results, rcnn_train_cfg):
+    def get_targets(self, sampling_results, rcnn_train_cfg):
         # mix all samples (across images) together.
         pos_bboxes = torch.cat([res.pos_bboxes for res in sampling_results],
                                dim=0).cpu()

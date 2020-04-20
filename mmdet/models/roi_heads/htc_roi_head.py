@@ -97,8 +97,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         bbox_results = self._bbox_forward(
             stage, x, rois, semantic_feat=semantic_feat)
 
-        bbox_targets = bbox_head.get_target(sampling_results, gt_bboxes,
-                                            gt_labels, rcnn_train_cfg)
+        bbox_targets = bbox_head.get_targets(sampling_results, gt_bboxes,
+                                             gt_labels, rcnn_train_cfg)
         loss_bbox = bbox_head.loss(bbox_results['cls_score'],
                                    bbox_results['bbox_pred'], *bbox_targets)
 
@@ -144,8 +144,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         else:
             mask_pred = mask_head(mask_feats, return_feat=False)
 
-        mask_targets = mask_head.get_target(sampling_results, gt_masks,
-                                            rcnn_train_cfg)
+        mask_targets = mask_head.get_targets(sampling_results, gt_masks,
+                                             rcnn_train_cfg)
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
         loss_mask = mask_head.loss(mask_pred, mask_targets, pos_labels)
 
@@ -323,7 +323,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                                                   img_metas[0])
 
         cls_score = sum(ms_scores) / float(len(ms_scores))
-        det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
+        det_bboxes, det_labels = self.bbox_head[-1].get_bboxes(
             rois,
             cls_score,
             bbox_results['bbox_pred'],
@@ -421,7 +421,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                         img_meta[0])
 
             cls_score = sum(ms_scores) / float(len(ms_scores))
-            bboxes, scores = self.bbox_head[-1].get_det_bboxes(
+            bboxes, scores = self.bbox_head[-1].get_bboxes(
                 rois,
                 cls_score,
                 bbox_results['bbox_pred'],

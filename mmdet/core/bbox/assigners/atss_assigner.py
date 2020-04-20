@@ -1,6 +1,6 @@
 import torch
 
-from ..geometry import bbox_overlaps
+from ..iou_calculators import build_iou_calculator
 from ..registry import BBOX_ASSIGNERS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
@@ -20,8 +20,9 @@ class ATSSAssigner(BaseAssigner):
         topk (float): number of bbox selected in each level
     """
 
-    def __init__(self, topk):
+    def __init__(self, topk, iou_calculator=dict(type='BboxOverlaps2D')):
         self.topk = topk
+        self.iou_calculator = build_iou_calculator(iou_calculator)
 
     # https://github.com/sfzhang15/ATSS/blob/master/atss_core/modeling/rpn/atss/loss.py
 
@@ -63,7 +64,7 @@ class ATSSAssigner(BaseAssigner):
         num_gt, num_bboxes = gt_bboxes.size(0), bboxes.size(0)
 
         # compute iou between all bbox and gt
-        overlaps = bbox_overlaps(bboxes, gt_bboxes)
+        overlaps = self.iou_calculator(bboxes, gt_bboxes)
 
         # assign 0 by default
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),

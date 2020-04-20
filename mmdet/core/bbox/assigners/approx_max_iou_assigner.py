@@ -1,6 +1,6 @@
 import torch
 
-from ..geometry import bbox_overlaps
+from ..iou_calculators import build_iou_calculator
 from ..registry import BBOX_ASSIGNERS
 from .max_iou_assigner import MaxIoUAssigner
 
@@ -45,7 +45,8 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                  ignore_iof_thr=-1,
                  ignore_wrt_candidates=True,
                  match_low_quality=True,
-                 gpu_assign_thr=-1):
+                 gpu_assign_thr=-1,
+                 iou_calculator=dict(type='BboxOverlaps2D')):
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
@@ -54,6 +55,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         self.ignore_wrt_candidates = ignore_wrt_candidates
         self.gpu_assign_thr = gpu_assign_thr
         self.match_low_quality = match_low_quality
+        self.iou_calculator = build_iou_calculator(iou_calculator)
 
     def assign(self,
                approxs,
@@ -117,7 +119,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                 gt_bboxes_ignore = gt_bboxes_ignore.cpu()
             if gt_labels is not None:
                 gt_labels = gt_labels.cpu()
-        all_overlaps = bbox_overlaps(approxs, gt_bboxes)
+        all_overlaps = self.iou_calculator(approxs, gt_bboxes)
 
         overlaps, _ = all_overlaps.view(approxs_per_octave, num_squares,
                                         num_gts).max(dim=0)
@@ -128,11 +130,11 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
                 and gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
             if self.ignore_wrt_candidates:
-                ignore_overlaps = bbox_overlaps(
+                ignore_overlaps = self.iou_calculator(
                     bboxes, gt_bboxes_ignore, mode='iof')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=1)
             else:
-                ignore_overlaps = bbox_overlaps(
+                ignore_overlaps = self.iou_calculator(
                     gt_bboxes_ignore, bboxes, mode='iof')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=0)
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1

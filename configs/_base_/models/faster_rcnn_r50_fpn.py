@@ -22,8 +22,10 @@ model = dict(
         anchor_scales=[8],
         anchor_ratios=[0.5, 1.0, 2.0],
         anchor_strides=[4, 8, 16, 32, 64],
-        target_means=[.0, .0, .0, .0],
-        target_stds=[1.0, 1.0, 1.0, 1.0],
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
@@ -40,8 +42,10 @@ model = dict(
             fc_out_channels=1024,
             roi_feat_size=7,
             num_classes=80,
-            target_means=[0., 0., 0., 0.],
-            target_stds=[0.1, 0.1, 0.2, 0.2],
+            bbox_coder=dict(
+                type='DeltaXYWHBBoxCoder',
+                target_means=[0., 0., 0., 0.],
+                target_stds=[0.1, 0.1, 0.2, 0.2]),
             reg_class_agnostic=False,
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),

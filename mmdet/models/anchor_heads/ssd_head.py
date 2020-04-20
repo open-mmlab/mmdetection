@@ -4,7 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
-from mmdet.core import AnchorGenerator, anchor_target, multi_apply
+from mmdet.core import (AnchorGenerator, build_assigner, build_bbox_coder,
+                        build_sampler, multi_apply)
 from ..losses import smooth_l1_loss
 from ..registry import HEADS
 from .anchor_head import AnchorHead
@@ -22,8 +23,11 @@ class SSDHead(AnchorHead):
                  basesize_ratio_range=(0.1, 0.9),
                  anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                  background_label=None,
-                 target_means=(.0, .0, .0, .0),
-                 target_stds=(1.0, 1.0, 1.0, 1.0),
+                 bbox_coder=dict(
+                     type='DeltaXYWHBBoxCoder',
+                     target_means=[.0, .0, .0, .0],
+                     target_stds=[1.0, 1.0, 1.0, 1.0],
+                 ),
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
@@ -97,12 +101,18 @@ class SSDHead(AnchorHead):
         assert (self.background_label == 0
                 or self.background_label == num_classes)
 
-        self.target_means = target_means
-        self.target_stds = target_stds
+        self.bbox_coder = build_bbox_coder(bbox_coder)
         self.use_sigmoid_cls = False
         self.cls_focal_loss = False
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        # set sampling=False for archor_target
+        self.sampling = False
+        if self.train_cfg:
+            self.assigner = build_assigner(self.train_cfg.assigner)
+            # SSD sampling=False so use PseudoSampler
+            sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
 
     def init_weights(self):
@@ -159,19 +169,14 @@ class SSDHead(AnchorHead):
 
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
-        cls_reg_targets = anchor_target(
+        cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
             gt_bboxes,
             img_metas,
-            self.target_means,
-            self.target_stds,
-            self.train_cfg,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=1,
-            background_label=self.background_label,
-            sampling=False,
             unmap_outputs=False)
         if cls_reg_targets is None:
             return None

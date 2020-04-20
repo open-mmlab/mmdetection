@@ -4,9 +4,9 @@ import torch.distributed as dist
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (PseudoSampler, anchor_inside_flags, bbox2delta,
-                        build_assigner, delta2bbox, force_fp32,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
+                        force_fp32, images_to_levels, multi_apply,
+                        multiclass_nms, unmap)
 from mmdet.ops import ConvModule, Scale
 from ..builder import build_loss
 from ..registry import HEADS
@@ -46,12 +46,23 @@ class ATSSHead(AnchorHead):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
+                 train_cfg=None,
+                 test_cfg=None,
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.sampling = False
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
+
+        if self.train_cfg:
+            self.assigner = build_assigner(self.train_cfg.assigner)
+            # SSD sampling=False so use PseudoSampler
+            sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
 
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
@@ -151,12 +162,10 @@ class ATSSHead(AnchorHead):
 
             centerness_targets = self.centerness_target(
                 pos_anchors, pos_bbox_targets)
-            pos_decode_bbox_pred = delta2bbox(pos_anchors, pos_bbox_pred,
-                                              self.target_means,
-                                              self.target_stds)
-            pos_decode_bbox_targets = delta2bbox(pos_anchors, pos_bbox_targets,
-                                                 self.target_means,
-                                                 self.target_stds)
+            pos_decode_bbox_pred = self.bbox_coder.decode(
+                pos_anchors, pos_bbox_pred)
+            pos_decode_bbox_targets = self.bbox_coder.decode(
+                pos_anchors, pos_bbox_targets)
 
             # regression loss
             loss_bbox = self.loss_bbox(
@@ -196,7 +205,7 @@ class ATSSHead(AnchorHead):
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
-        cls_reg_targets = self.atss_target(
+        cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
             gt_bboxes,
@@ -236,8 +245,7 @@ class ATSSHead(AnchorHead):
 
     def centerness_target(self, anchors, bbox_targets):
         # only calculate pos centerness targets, otherwise there may be nan
-        gts = delta2bbox(anchors, bbox_targets, self.target_means,
-                         self.target_stds)
+        gts = self.bbox_coder.decode(anchors, bbox_targets)
         anchors_cx = (anchors[:, 2] + anchors[:, 0]) / 2
         anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
         l_ = anchors_cx - gts[:, 0]
@@ -259,9 +267,9 @@ class ATSSHead(AnchorHead):
                    bbox_preds,
                    centernesses,
                    img_metas,
-                   cfg,
+                   cfg=None,
                    rescale=False):
-
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         device = cls_scores[0].device
@@ -285,22 +293,22 @@ class ATSSHead(AnchorHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                               centerness_pred_list,
-                                               mlvl_anchors, img_shape,
-                                               scale_factor, cfg, rescale)
+            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                centerness_pred_list,
+                                                mlvl_anchors, img_shape,
+                                                scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          centernesses,
-                          mlvl_anchors,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           centernesses,
+                           mlvl_anchors,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
@@ -323,8 +331,8 @@ class ATSSHead(AnchorHead):
                 scores = scores[topk_inds, :]
                 centerness = centerness[topk_inds]
 
-            bboxes = delta2bbox(anchors, bbox_pred, self.target_means,
-                                self.target_stds, img_shape)
+            bboxes = self.bbox_coder.decode(
+                anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
@@ -350,7 +358,7 @@ class ATSSHead(AnchorHead):
             score_factors=mlvl_centerness)
         return det_bboxes, det_labels
 
-    def atss_target(self,
+    def get_targets(self,
                     anchor_list,
                     valid_flag_list,
                     gt_bboxes_list,
@@ -360,9 +368,11 @@ class ATSSHead(AnchorHead):
                     gt_labels_list=None,
                     label_channels=1,
                     unmap_outputs=True):
-        """
-        almost the same with anchor_target, with a little modification,
-        here we need return the anchor
+        """Get targets for ATSS head.
+
+        This method is almost the same as `AnchorHead.get_targets()`. Besides
+        returning the targets as the parent method does, it also returns the
+        anchors as the first element of the returned tuple.
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
@@ -384,7 +394,7 @@ class ATSSHead(AnchorHead):
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
          all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self.atss_target_single,
+             self._get_target_single,
              anchor_list,
              valid_flag_list,
              num_level_anchors_list,
@@ -415,7 +425,7 @@ class ATSSHead(AnchorHead):
                 bbox_targets_list, bbox_weights_list, num_total_pos,
                 num_total_neg)
 
-    def atss_target_single(self,
+    def _get_target_single(self,
                            flat_anchors,
                            valid_flags,
                            num_level_anchors,
@@ -437,13 +447,11 @@ class ATSSHead(AnchorHead):
 
         num_level_anchors_inside = self.get_num_level_anchors_inside(
             num_level_anchors, inside_flags)
-        bbox_assigner = build_assigner(cfg.assigner)
-        assign_result = bbox_assigner.assign(anchors, num_level_anchors_inside,
+        assign_result = self.assigner.assign(anchors, num_level_anchors_inside,
                                              gt_bboxes, gt_bboxes_ignore,
                                              gt_labels)
 
-        bbox_sampler = PseudoSampler()
-        sampling_result = bbox_sampler.sample(assign_result, anchors,
+        sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 
         num_valid_anchors = anchors.shape[0]
@@ -457,9 +465,8 @@ class ATSSHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            pos_bbox_targets = bbox2delta(sampling_result.pos_bboxes,
-                                          sampling_result.pos_gt_bboxes,
-                                          self.target_means, self.target_stds)
+            pos_bbox_targets = self.bbox_coder.encode(
+                sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
