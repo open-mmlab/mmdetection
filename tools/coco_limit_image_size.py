@@ -46,7 +46,7 @@ def main():
         path = os.path.join(args.input_root, image_info['file_name'])
         image = cv2.imread(path)
         if image is None:
-            print(path)
+            raise FileNotFoundError(f'Failed to read image: {path}.')
 
         height_ratio = image.shape[0] / args.limit_image_size[0]
         width_ratio = image.shape[1] / args.limit_image_size[1]
@@ -56,12 +56,11 @@ def main():
             image = cv2.resize(image, new_size)
             resized += 1
 
-        if i % 1000 == 0:
-            print(f'resized {resized} of {i + 1}')
-
         output_path = os.path.join(args.output_root, image_info['file_name'])
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         cv2.imwrite(output_path, image)
+
+    print(f'Resized images: {resized} of {len(content["images"])}')
 
 
 if __name__ == '__main__':
