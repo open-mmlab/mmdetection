@@ -1,7 +1,5 @@
 from __future__ import division
-import copy
 
-import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
@@ -101,11 +99,16 @@ class GuidedAnchorHead(AnchorHead):
         num_classes,
         in_channels,
         feat_channels=256,
-        octave_base_scale=8,
-        scales_per_octave=3,
-        octave_ratios=[0.5, 1.0, 2.0],
-        anchor_generator=dict(
+        approx_generator=dict(
             type='AnchorGenerator',
+            octave_base_scale=8,
+            scales_per_octave=3,
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64]),
+        square_generator=dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            scales=[8],
             strides=[4, 8, 16, 32, 64]),
         anchor_coder=dict(
             type='DeltaXYWHBBoxCoder',
@@ -137,26 +140,15 @@ class GuidedAnchorHead(AnchorHead):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
-        self.octave_base_scale = octave_base_scale
-        self.scales_per_octave = scales_per_octave
-        self.octave_scales = octave_base_scale * np.array(
-            [2**(i / scales_per_octave) for i in range(scales_per_octave)])
-        self.approxs_per_octave = len(self.octave_scales) * len(octave_ratios)
-        self.octave_ratios = octave_ratios
         self.deformable_groups = deformable_groups
         self.loc_filter_thr = loc_filter_thr
-        self.square_generator = []
 
-        # Generators for approxs
-        approx_generator = copy.deepcopy(anchor_generator)
-        approx_generator.update(
-            scales=self.octave_scales, ratios=self.octave_ratios)
+        # build approx_generator and square_generator
+        assert (approx_generator['octave_base_scale'] ==
+                square_generator['scales'][0])
         self.approx_generator = build_anchor_generator(approx_generator)
-
-        # Generators for squares
-        square_generator = copy.deepcopy(anchor_generator)
-        square_generator.update(scales=[self.octave_base_scale], ratios=[1.0])
         self.square_generator = build_anchor_generator(square_generator)
+        self.approxs_per_octave = self.approx_generator.num_base_anchors
 
         self.background_label = (
             num_classes if background_label is None else background_label)

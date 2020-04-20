@@ -9,25 +9,25 @@ class AnchorGenerator(object):
     """Standard anchor generator for 2D anchor-based detectors
 
     Args:
-        strides (list[int]): Strides of anchors
-        base_size (list[int]): The basic size of anchor for each levels.
-        scales (list[int]): Anchor scales.
+        strides (list[int]): Strides of anchors in multiple feture levels.
+        base_size (list[int]): The basic sizes of anchors in multiple levels.
+        scales (list[int]): Anchor scales for anchors in a single level.
         ratios (list[float]): The list of ratios between the height and width
-            of anchors.
+            of anchors in a single level.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. By default it is True in V2.0
         centers (list[float] | None): The centers of the anchor relative to
-            the feature grid center in each strides. By default it is set to
-            be None and not used. It a list of float is given, this list will
-            be used to shift the centers of anchors.
+            the feature grid center in multiple feature levels. By default it
+            is set to be None and not used. It a list of float is given, this
+            list will be used to shift the centers of anchors.
         center_offset (float): The offset of center in propotion to anchors'
             width and height. By default it is 0 in V2.0.
 
     Examples:
         >>> from mmdet.core import AnchorGenerator
         >>> self = AnchorGenerator([16], [1.], [1.], [9])
-        >>> all_anchors = self.grid_anchors(((2, 2),), device='cpu')
+        >>> all_anchors = self.grid_anchors([(2, 2)], device='cpu')
         >>> print(all_anchors)
         [tensor([[-4.5000, -4.5000,  4.5000,  4.5000],
                 [11.5000, -4.5000, 20.5000,  4.5000],
@@ -37,10 +37,12 @@ class AnchorGenerator(object):
 
     def __init__(self,
                  strides,
-                 scales,
                  ratios,
+                 scales=None,
                  base_sizes=None,
                  scale_major=True,
+                 octave_base_scale=None,
+                 scales_per_octave=None,
                  centers=None,
                  center_offset=0.):
         if center_offset != 0:
@@ -55,7 +57,17 @@ class AnchorGenerator(object):
             'The number of strides should be the same as base sizes, got ' \
             '{} and {}'.format(self.strides, self.base_sizes)
 
-        self.scales = torch.Tensor(scales)
+        if scales is not None:
+            self.scales = torch.Tensor(scales)
+        elif octave_base_scale is not None and scales_per_octave is not None:
+            octave_scales = np.array(
+                [2**(i / scales_per_octave) for i in range(scales_per_octave)])
+            scales = octave_scales * octave_base_scale
+            self.scales = torch.Tensor(scales)
+        else:
+            raise ValueError('Either scales or octave_base_scale with '
+                             'scales_per_octave should be set')
+
         self.ratios = torch.Tensor(ratios)
         self.scale_major = scale_major
         self.centers = centers
@@ -121,6 +133,16 @@ class AnchorGenerator(object):
             return yy, xx
 
     def grid_anchors(self, featmap_sizes, device='cuda'):
+        """Generate grid anchors in multiple feature levels
+
+        Args:
+            featmap_sizes (list(tuple)): List of feature map sizes in
+                multiple feature levels.
+            device (str): Device where the anchors will be put on.
+
+        Return:
+            list(torch.Tensor): Anchors in multiple feature levels.
+        """
         num_levels = len(featmap_sizes)
         assert num_levels == len(self.strides)
         multi_level_anchors = []
@@ -155,6 +177,17 @@ class AnchorGenerator(object):
         return all_anchors
 
     def valid_flags(self, featmap_sizes, pad_shape, device='cuda'):
+        """Generate valid flags of anchors in multiple feature levels
+
+        Args:
+            featmap_sizes (list(tuple)): List of feature map sizes in
+                multiple feature levels.
+            pad_shape (tuple): The padded shape of the image.
+            device (str): Device where the anchors will be put on.
+
+        Return:
+            list(torch.Tensor): Valid flags of anchors in multiple levels.
+        """
         num_levels = len(featmap_sizes)
         multi_level_flags = []
         for i in range(num_levels):
@@ -207,10 +240,10 @@ class SSDAnchorGenerator(AnchorGenerator):
     """Anchor generator for SSD
 
     Args:
-        strides (list[int]): Strides of anchors
+        strides (list[int]): Strides of anchors in multiple feture levels.
         ratios (list[float]): The list of ratios between the height and width
-            of anchors.
-        basesize_ratio_range,
+            of anchors in a single level.
+        basesize_ratio_range (tuple(float)): Ratio range of anchors.
         num_levels (int): Number of feature levels
         input_size (int): Size of feature map, 300 for SSD300, 512 for SSD512.
         scale_major (bool): Whether to multiply scales first when generating
@@ -315,18 +348,20 @@ class LegacyAnchorGenerator(AnchorGenerator):
     3. The anchors' corners are quantized.
 
     Args:
-        strides (list[int]): Strides of anchors
-        base_size (list[int]): The basic size of anchor for each levels.
-        scales (list[int]): Anchor scales.
+        strides (list[int]): Strides of anchors in multiple feture levels.
+        base_size (list[int]): The basic sizes of anchors in multiple levels.
+        scales (list[int]): Anchor scales for anchors in a single level.
         ratios (list[float]): The list of ratios between the height and width
-            of anchors.
+            of anchors in a single level.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
-            same scales. By default it is True in V1.x models.
-        center (float | None): The center of the anchor relative to the feature
-            grid center. By default it is None in V1.x.
+            same scales. By default it is True in V2.0
+        centers (list[float] | None): The centers of the anchor relative to
+            the feature grid center in multiple feature levels. By default it
+            is set to be None and not used. It a list of float is given, this
+            list will be used to shift the centers of anchors.
         center_offset (float): The offset of center in propotion to anchors'
-            width and height. Use 0.5 for V1.0.
+            width and height. By default it is 0 in V2.0.
 
     Examples:
         >>> from mmdet.core import LegacyAnchorGenerator

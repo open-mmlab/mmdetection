@@ -22,6 +22,11 @@ def test_standard_anchor_generator():
 
 def test_ssd_anchor_generator():
     from mmdet.core.anchor import build_anchor_generator
+    if not torch.cuda.is_available():
+        device = 'gpu'
+    else:
+        device = 'cpu'
+
     anchor_generator_cfg = dict(
         type='SSDAnchorGenerator',
         num_levels=6,
@@ -69,12 +74,12 @@ def test_ssd_anchor_generator():
     ]
     base_anchors = anchor_generator.base_anchors
     for i, base_anchor in enumerate(base_anchors):
-        assert base_anchor.allclose(expected_base_anchors[i])
+        assert base_anchor.to(device=device).allclose(expected_base_anchors[i])
 
     # check valid flags
     expect_valid_flags = [5776, 2166, 600, 150, 36, 4]
     multi_level_valid_flags = anchor_generator.valid_flags(
-        featmap_sizes, (300, 300), 'cpu')
+        featmap_sizes, (300, 300), device)
     for i, single_level_valid_flag in enumerate(multi_level_valid_flags):
         assert single_level_valid_flag.sum() == expect_valid_flags[i]
 
@@ -83,12 +88,16 @@ def test_ssd_anchor_generator():
     print(anchor_generator)
 
     # check anchor generation
-    anchors = anchor_generator.grid_anchors(featmap_sizes, 'cpu')
+    anchors = anchor_generator.grid_anchors(featmap_sizes, device)
     assert len(anchors) == 6
 
 
 def test_retina_anchor():
     from mmdet.models import build_head
+    if not torch.cuda.is_available():
+        device = 'gpu'
+    else:
+        device = 'cpu'
 
     # head configs modified from
     # configs/nas_fpn/retinanet_r50_fpn_crop640_50e.py
@@ -99,10 +108,10 @@ def test_retina_anchor():
         in_channels=4,
         stacked_convs=1,
         feat_channels=4,
-        octave_base_scale=4,
-        scales_per_octave=3,
         anchor_generator=dict(
             type='AnchorGenerator',
+            octave_base_scale=4,
+            scales_per_octave=3,
             ratios=[0.5, 1.0, 2.0],
             strides=[8, 16, 32, 64, 128]),
         bbox_coder=dict(
@@ -165,12 +174,12 @@ def test_retina_anchor():
     ]
     base_anchors = retina_head.anchor_generator.base_anchors
     for i, base_anchor in enumerate(base_anchors):
-        assert base_anchor.allclose(expected_base_anchors[i])
+        assert base_anchor.to(device=device).allclose(expected_base_anchors[i])
 
     # check valid flags
     expect_valid_flags = [57600, 14400, 3600, 900, 225]
     multi_level_valid_flags = retina_head.anchor_generator.valid_flags(
-        featmap_sizes, (640, 640), 'cpu')
+        featmap_sizes, (640, 640), device)
     for i, single_level_valid_flag in enumerate(multi_level_valid_flags):
         assert single_level_valid_flag.sum() == expect_valid_flags[i]
 
@@ -179,5 +188,126 @@ def test_retina_anchor():
     print(retina_head.anchor_generator)
 
     # check anchor generation
-    anchors = retina_head.anchor_generator.grid_anchors(featmap_sizes, 'cpu')
+    anchors = retina_head.anchor_generator.grid_anchors(featmap_sizes, device)
+    assert len(anchors) == 5
+
+
+def test_guided_anchor():
+    from mmdet.models import build_head
+    if not torch.cuda.is_available():
+        device = 'gpu'
+    else:
+        device = 'cpu'
+    # head configs modified from
+    # configs/guided_anchoring/ga_retinanet_r50_fpn_1x_coco.py
+    bbox_head = dict(
+        type='GARetinaHead',
+        num_classes=8,
+        in_channels=4,
+        stacked_convs=1,
+        feat_channels=4,
+        approx_generator=dict(
+            type='AnchorGenerator',
+            octave_base_scale=4,
+            scales_per_octave=3,
+            ratios=[0.5, 1.0, 2.0],
+            strides=[8, 16, 32, 64, 128]),
+        square_generator=dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            scales=[4],
+            strides=[8, 16, 32, 64, 128]))
+
+    ga_retina_head = build_head(bbox_head)
+    assert ga_retina_head.approx_generator is not None
+
+    # use the featmap sizes in NASFPN setting to test ga_retina_head
+    featmap_sizes = [(100, 152), (50, 76), (25, 38), (13, 19), (7, 10)]
+    # check base anchors
+    expected_approxs = [
+        torch.Tensor([[-22.6274, -11.3137, 22.6274, 11.3137],
+                      [-28.5088, -14.2544, 28.5088, 14.2544],
+                      [-35.9188, -17.9594, 35.9188, 17.9594],
+                      [-16.0000, -16.0000, 16.0000, 16.0000],
+                      [-20.1587, -20.1587, 20.1587, 20.1587],
+                      [-25.3984, -25.3984, 25.3984, 25.3984],
+                      [-11.3137, -22.6274, 11.3137, 22.6274],
+                      [-14.2544, -28.5088, 14.2544, 28.5088],
+                      [-17.9594, -35.9188, 17.9594, 35.9188]]),
+        torch.Tensor([[-45.2548, -22.6274, 45.2548, 22.6274],
+                      [-57.0175, -28.5088, 57.0175, 28.5088],
+                      [-71.8376, -35.9188, 71.8376, 35.9188],
+                      [-32.0000, -32.0000, 32.0000, 32.0000],
+                      [-40.3175, -40.3175, 40.3175, 40.3175],
+                      [-50.7968, -50.7968, 50.7968, 50.7968],
+                      [-22.6274, -45.2548, 22.6274, 45.2548],
+                      [-28.5088, -57.0175, 28.5088, 57.0175],
+                      [-35.9188, -71.8376, 35.9188, 71.8376]]),
+        torch.Tensor([[-90.5097, -45.2548, 90.5097, 45.2548],
+                      [-114.0350, -57.0175, 114.0350, 57.0175],
+                      [-143.6751, -71.8376, 143.6751, 71.8376],
+                      [-64.0000, -64.0000, 64.0000, 64.0000],
+                      [-80.6349, -80.6349, 80.6349, 80.6349],
+                      [-101.5937, -101.5937, 101.5937, 101.5937],
+                      [-45.2548, -90.5097, 45.2548, 90.5097],
+                      [-57.0175, -114.0350, 57.0175, 114.0350],
+                      [-71.8376, -143.6751, 71.8376, 143.6751]]),
+        torch.Tensor([[-181.0193, -90.5097, 181.0193, 90.5097],
+                      [-228.0701, -114.0350, 228.0701, 114.0350],
+                      [-287.3503, -143.6751, 287.3503, 143.6751],
+                      [-128.0000, -128.0000, 128.0000, 128.0000],
+                      [-161.2699, -161.2699, 161.2699, 161.2699],
+                      [-203.1873, -203.1873, 203.1873, 203.1873],
+                      [-90.5097, -181.0193, 90.5097, 181.0193],
+                      [-114.0350, -228.0701, 114.0350, 228.0701],
+                      [-143.6751, -287.3503, 143.6751, 287.3503]]),
+        torch.Tensor([[-362.0387, -181.0193, 362.0387, 181.0193],
+                      [-456.1401, -228.0701, 456.1401, 228.0701],
+                      [-574.7006, -287.3503, 574.7006, 287.3503],
+                      [-256.0000, -256.0000, 256.0000, 256.0000],
+                      [-322.5398, -322.5398, 322.5398, 322.5398],
+                      [-406.3747, -406.3747, 406.3747, 406.3747],
+                      [-181.0193, -362.0387, 181.0193, 362.0387],
+                      [-228.0701, -456.1401, 228.0701, 456.1401],
+                      [-287.3503, -574.7006, 287.3503, 574.7006]])
+    ]
+    approxs = ga_retina_head.approx_generator.base_anchors
+    for i, base_anchor in enumerate(approxs):
+        assert base_anchor.allclose(expected_approxs[i])
+
+    # check valid flags
+    expect_valid_flags = [136800, 34200, 8550, 2223, 630]
+    multi_level_valid_flags = ga_retina_head.approx_generator.valid_flags(
+        featmap_sizes, (800, 1216), device)
+    for i, single_level_valid_flag in enumerate(multi_level_valid_flags):
+        assert single_level_valid_flag.sum() == expect_valid_flags[i]
+
+    # check number of base anchors for each level
+    assert ga_retina_head.approx_generator.num_base_anchors == [9, 9, 9, 9, 9]
+    print(ga_retina_head.approx_generator)
+
+    # check approx generation
+    squares = ga_retina_head.square_generator.grid_anchors(
+        featmap_sizes, device)
+    assert len(squares) == 5
+
+    expected_squares = [
+        torch.Tensor([[-16., -16., 16., 16.]]),
+        torch.Tensor([[-32., -32., 32., 32]]),
+        torch.Tensor([[-64., -64., 64., 64.]]),
+        torch.Tensor([[-128., -128., 128., 128.]]),
+        torch.Tensor([[-256., -256., 256., 256.]])
+    ]
+    squares = ga_retina_head.square_generator.base_anchors
+    for i, base_anchor in enumerate(squares):
+        assert base_anchor.allclose(expected_squares[i])
+
+    # square_generator does not check valid flags
+    # check number of base anchors for each level
+    assert ga_retina_head.square_generator.num_base_anchors == [1, 1, 1, 1, 1]
+    print(ga_retina_head.square_generator)
+
+    # check square generation
+    anchors = ga_retina_head.square_generator.grid_anchors(
+        featmap_sizes, device)
     assert len(anchors) == 5
