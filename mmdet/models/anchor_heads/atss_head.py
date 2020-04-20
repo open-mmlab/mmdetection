@@ -46,30 +46,24 @@ class ATSSHead(AnchorHead):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 train_cfg=None,
-                 test_cfg=None,
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.sampling = False
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-
-        if self.train_cfg:
-            self.assigner = build_assigner(self.train_cfg.assigner)
-            # SSD sampling=False so use PseudoSampler
-            sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
-
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
         anchor_scales = octave_scales * octave_base_scale
         super(ATSSHead, self).__init__(
             num_classes, in_channels, anchor_scales=anchor_scales, **kwargs)
 
+        self.sampling = False
+        if self.train_cfg:
+            self.assigner = build_assigner(self.train_cfg.assigner)
+            # SSD sampling=False so use PseudoSampler
+            sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
         self.loss_centerness = build_loss(loss_centerness)
 
     def _init_layers(self):

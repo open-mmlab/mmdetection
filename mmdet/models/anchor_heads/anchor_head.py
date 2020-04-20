@@ -48,6 +48,7 @@ class AnchorHead(nn.Module):
                      type='DeltaXYWHBBoxCoder',
                      target_means=(.0, .0, .0, .0),
                      target_stds=(1.0, 1.0, 1.0, 1.0)),
+                 reg_decoded_bbox=False,
                  background_label=None,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
@@ -77,6 +78,7 @@ class AnchorHead(nn.Module):
 
         if self.cls_out_channels <= 0:
             raise ValueError('num_classes={} is too small'.format(num_classes))
+        self.reg_decoded_bbox = reg_decoded_bbox
 
         self.background_label = (
             num_classes if background_label is None else background_label)
@@ -231,8 +233,11 @@ class AnchorHead(nn.Module):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            pos_bbox_targets = self.bbox_coder.encode(
-                sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
+            if not self.reg_decoded_bbox:
+                pos_bbox_targets = self.bbox_coder.encode(
+                    sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
+            else:
+                pos_bbox_targets = sampling_result.pos_gt_bboxes
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
@@ -305,10 +310,12 @@ class AnchorHead(nn.Module):
         # anchor number of multi levels
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
         # concat all level anchors and flags to a single tensor
+        concat_anchor_list = []
+        concat_valid_flag_list = []
         for i in range(num_imgs):
             assert len(anchor_list[i]) == len(valid_flag_list[i])
-            anchor_list[i] = torch.cat(anchor_list[i])
-            valid_flag_list[i] = torch.cat(valid_flag_list[i])
+            concat_anchor_list.append(torch.cat(anchor_list[i]))
+            concat_valid_flag_list.append(torch.cat(valid_flag_list[i]))
 
         # compute targets for each image
         if gt_bboxes_ignore_list is None:
@@ -318,8 +325,8 @@ class AnchorHead(nn.Module):
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
          pos_inds_list, neg_inds_list) = multi_apply(
              self._get_targets_single,
-             anchor_list,
-             valid_flag_list,
+             concat_anchor_list,
+             concat_valid_flag_list,
              gt_bboxes_list,
              gt_bboxes_ignore_list,
              gt_labels_list,
@@ -343,7 +350,7 @@ class AnchorHead(nn.Module):
         return (labels_list, label_weights_list, bbox_targets_list,
                 bbox_weights_list, num_total_pos, num_total_neg)
 
-    def loss_single(self, cls_score, bbox_pred, labels, label_weights,
+    def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):
         # classification loss
         labels = labels.reshape(-1)
@@ -356,6 +363,9 @@ class AnchorHead(nn.Module):
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
+        if self.reg_decoded_bbox:
+            anchors = anchors.reshape(-1, 4)
+            bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
         loss_bbox = self.loss_bbox(
             bbox_pred,
             bbox_targets,
@@ -393,10 +403,21 @@ class AnchorHead(nn.Module):
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (
             num_total_pos + num_total_neg if self.sampling else num_total_pos)
+
+        # anchor number of multi levels
+        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
+        # concat all level anchors and flags to a single tensor
+        concat_anchor_list = []
+        for i in range(len(anchor_list)):
+            concat_anchor_list.append(torch.cat(anchor_list[i]))
+        all_anchor_list = images_to_levels(concat_anchor_list,
+                                           num_level_anchors)
+
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
             bbox_preds,
+            all_anchor_list,
             labels_list,
             label_weights_list,
             bbox_targets_list,
