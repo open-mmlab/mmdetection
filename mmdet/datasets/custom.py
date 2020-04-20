@@ -184,7 +184,6 @@ class CustomDataset(Dataset):
             raise ValueError('Unsupported type {} of classes.'.format(
                 type(classes)))
 
-        assert set(class_names).issubset(set(cls.CLASSES))
         return class_names
 
     def get_subset_by_classes(self):
