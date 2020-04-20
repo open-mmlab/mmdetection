@@ -85,3 +85,99 @@ def test_ssd_anchor_generator():
     # check anchor generation
     anchors = anchor_generator.grid_anchors(featmap_sizes, 'cpu')
     assert len(anchors) == 6
+
+
+def test_retina_anchor():
+    from mmdet.models import build_head
+
+    # head configs modified from
+    # configs/nas_fpn/retinanet_r50_fpn_crop640_50e.py
+    bbox_head = dict(
+        type='RetinaSepBNHead',
+        num_classes=4,
+        num_ins=5,
+        in_channels=4,
+        stacked_convs=1,
+        feat_channels=4,
+        octave_base_scale=4,
+        scales_per_octave=3,
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            ratios=[0.5, 1.0, 2.0],
+            strides=[8, 16, 32, 64, 128]),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]))
+
+    retina_head = build_head(bbox_head)
+    assert retina_head.anchor_generator is not None
+
+    # use the featmap sizes in NASFPN setting to test retina head
+    featmap_sizes = [(80, 80), (40, 40), (20, 20), (10, 10), (5, 5)]
+    # check base anchors
+    expected_base_anchors = [
+        torch.Tensor([[-22.6274, -11.3137, 22.6274, 11.3137],
+                      [-28.5088, -14.2544, 28.5088, 14.2544],
+                      [-35.9188, -17.9594, 35.9188, 17.9594],
+                      [-16.0000, -16.0000, 16.0000, 16.0000],
+                      [-20.1587, -20.1587, 20.1587, 20.1587],
+                      [-25.3984, -25.3984, 25.3984, 25.3984],
+                      [-11.3137, -22.6274, 11.3137, 22.6274],
+                      [-14.2544, -28.5088, 14.2544, 28.5088],
+                      [-17.9594, -35.9188, 17.9594, 35.9188]]),
+        torch.Tensor([[-45.2548, -22.6274, 45.2548, 22.6274],
+                      [-57.0175, -28.5088, 57.0175, 28.5088],
+                      [-71.8376, -35.9188, 71.8376, 35.9188],
+                      [-32.0000, -32.0000, 32.0000, 32.0000],
+                      [-40.3175, -40.3175, 40.3175, 40.3175],
+                      [-50.7968, -50.7968, 50.7968, 50.7968],
+                      [-22.6274, -45.2548, 22.6274, 45.2548],
+                      [-28.5088, -57.0175, 28.5088, 57.0175],
+                      [-35.9188, -71.8376, 35.9188, 71.8376]]),
+        torch.Tensor([[-90.5097, -45.2548, 90.5097, 45.2548],
+                      [-114.0350, -57.0175, 114.0350, 57.0175],
+                      [-143.6751, -71.8376, 143.6751, 71.8376],
+                      [-64.0000, -64.0000, 64.0000, 64.0000],
+                      [-80.6349, -80.6349, 80.6349, 80.6349],
+                      [-101.5937, -101.5937, 101.5937, 101.5937],
+                      [-45.2548, -90.5097, 45.2548, 90.5097],
+                      [-57.0175, -114.0350, 57.0175, 114.0350],
+                      [-71.8376, -143.6751, 71.8376, 143.6751]]),
+        torch.Tensor([[-181.0193, -90.5097, 181.0193, 90.5097],
+                      [-228.0701, -114.0350, 228.0701, 114.0350],
+                      [-287.3503, -143.6751, 287.3503, 143.6751],
+                      [-128.0000, -128.0000, 128.0000, 128.0000],
+                      [-161.2699, -161.2699, 161.2699, 161.2699],
+                      [-203.1873, -203.1873, 203.1873, 203.1873],
+                      [-90.5097, -181.0193, 90.5097, 181.0193],
+                      [-114.0350, -228.0701, 114.0350, 228.0701],
+                      [-143.6751, -287.3503, 143.6751, 287.3503]]),
+        torch.Tensor([[-362.0387, -181.0193, 362.0387, 181.0193],
+                      [-456.1401, -228.0701, 456.1401, 228.0701],
+                      [-574.7006, -287.3503, 574.7006, 287.3503],
+                      [-256.0000, -256.0000, 256.0000, 256.0000],
+                      [-322.5398, -322.5398, 322.5398, 322.5398],
+                      [-406.3747, -406.3747, 406.3747, 406.3747],
+                      [-181.0193, -362.0387, 181.0193, 362.0387],
+                      [-228.0701, -456.1401, 228.0701, 456.1401],
+                      [-287.3503, -574.7006, 287.3503, 574.7006]])
+    ]
+    base_anchors = retina_head.anchor_generator.base_anchors
+    for i, base_anchor in enumerate(base_anchors):
+        assert base_anchor.allclose(expected_base_anchors[i])
+
+    # check valid flags
+    expect_valid_flags = [57600, 14400, 3600, 900, 225]
+    multi_level_valid_flags = retina_head.anchor_generator.valid_flags(
+        featmap_sizes, (640, 640), 'cpu')
+    for i, single_level_valid_flag in enumerate(multi_level_valid_flags):
+        assert single_level_valid_flag.sum() == expect_valid_flags[i]
+
+    # check number of base anchors for each level
+    assert retina_head.anchor_generator.num_base_anchors == [9, 9, 9, 9, 9]
+    print(retina_head.anchor_generator)
+
+    # check anchor generation
+    anchors = retina_head.anchor_generator.grid_anchors(featmap_sizes, 'cpu')
+    assert len(anchors) == 5

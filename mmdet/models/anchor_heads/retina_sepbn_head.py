@@ -24,9 +24,12 @@ class RetinaSepBNHead(AnchorHead):
                  stacked_convs=4,
                  octave_base_scale=4,
                  scales_per_octave=3,
-                 anchor_generator=None,
                  conv_cfg=None,
                  norm_cfg=None,
+                 anchor_generator=dict(
+                     type='AnchorGenerator',
+                     ratios=[0.5, 1.0, 2.0],
+                     strides=[8, 16, 32, 64, 128]),
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.octave_base_scale = octave_base_scale

@@ -16,9 +16,11 @@ class AnchorGenerator(object):
             of anchors.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
-            same scales.
+            same scales. By default it is True in V2.0
         centers (list[float] | None): The centers of the anchor relative to
-            the feature grid center in each strides.
+            the feature grid center in each strides. By default it is set to
+            be None and not used. It a list of float is given, this list will
+            be used to shift the centers of anchors.
         center_offset (float): The offset of center in propotion to anchors'
             width and height. By default it is 0 in V2.0.
 
@@ -187,14 +189,16 @@ class AnchorGenerator(object):
         return valid
 
     def __repr__(self):
+        indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
-        repr_str += '\tstrides={}, '.format(self.strides)
-        repr_str += '\tscales={}, '.format(self.scales)
-        repr_str += '\tratios={}, '.format(self.ratios)
-        repr_str += '\tbase_sizes={}, '.format(self.base_sizes)
-        repr_str += '\tscale_major={}, '.format(self.scale_major)
-        repr_str += '\tcenters={}, '.format(self.centers)
-        repr_str += '\tcenter_offset={})'.format(self.center_offset)
+        repr_str += '{}strides={},\n'.format(indent_str, self.strides)
+        repr_str += '{}scales={},\n'.format(indent_str, self.scales)
+        repr_str += '{}ratios={},\n'.format(indent_str, self.ratios)
+        repr_str += '{}base_sizes={},\n'.format(indent_str, self.base_sizes)
+        repr_str += '{}scale_major={},\n'.format(indent_str, self.scale_major)
+        repr_str += '{}centers={},\n'.format(indent_str, self.centers)
+        repr_str += '{}center_offset={})'.format(indent_str,
+                                                 self.center_offset)
         return repr_str
 
 
@@ -211,11 +215,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         input_size (int): Size of feature map, 300 for SSD300, 512 for SSD512.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
-            same scales.
-        center (float | None): The center of the anchor relative to the feature
-            grid center.
-        center_offset (float): The offset of center in propotion to anchors'
-            width and height. By default it is 0 in V2.0.
+            same scales. It is always set to be False in SSD.
     """
 
     def __init__(self,
@@ -289,18 +289,18 @@ class SSDAnchorGenerator(AnchorGenerator):
         return multi_level_base_anchors
 
     def __repr__(self):
+        indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
-        repr_str += '\tstrides={}, '.format(self.strides)
-        repr_str += '\tscales={}, '.format(self.scales)
-        repr_str += '\tnum_levels={}, '.format(self.num_levels)
-        repr_str += '\t={}, '.format(self.base_sizes)
-        repr_str += '\tscale_major={}, '.format(self.scale_major)
-        repr_str += '\tinput_size={}, '.format(self.input_size)
-        repr_str += '\tscales={}, '.format(self.scales)
-        repr_str += '\tratios={}, '.format(self.ratios)
-        repr_str += '\tbase_sizes={}, '.format(self.base_sizes)
-        repr_str += '\tbasesize_ratio_range={})'.format(
-            self.basesize_ratio_range)
+        repr_str += '{}strides={},\n'.format(indent_str, self.strides)
+        repr_str += '{}scales={},\n'.format(indent_str, self.scales)
+        repr_str += '{}num_levels={},\n'.format(indent_str, self.num_levels)
+        repr_str += '{}scale_major={},\n'.format(indent_str, self.scale_major)
+        repr_str += '{}input_size={},\n'.format(indent_str, self.input_size)
+        repr_str += '{}scales={},\n'.format(indent_str, self.scales)
+        repr_str += '{}ratios={},\n'.format(indent_str, self.ratios)
+        repr_str += '{}base_sizes={},\n'.format(indent_str, self.base_sizes)
+        repr_str += '{}basesize_ratio_range={})'.format(
+            indent_str, self.basesize_ratio_range)
         return repr_str
 
 
@@ -322,9 +322,9 @@ class LegacyAnchorGenerator(AnchorGenerator):
             of anchors.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
-            same scales.
+            same scales. By default it is True in V1.x models.
         center (float | None): The center of the anchor relative to the feature
-            grid center.
+            grid center. By default it is None in V1.x.
         center_offset (float): The offset of center in propotion to anchors'
             width and height. Use 0.5 for V1.0.
 
