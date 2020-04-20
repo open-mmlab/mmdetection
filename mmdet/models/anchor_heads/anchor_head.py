@@ -253,8 +253,7 @@ class AnchorHead(nn.Module):
             >>> assert len(det_bboxes) == len(det_labels) == cfg.max_per_img
         """
         from torch.onnx import is_in_onnx_export
-        if is_in_onnx_export():
-            from ...utils.deployment import TracerStub
+        from ...utils.deployment.tracer_stubs import TracerStub
 
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
