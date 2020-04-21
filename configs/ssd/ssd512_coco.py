@@ -10,7 +10,7 @@ model = dict(
             scale_major=False,
             input_size=input_size,
             basesize_ratio_range=(0.1, 0.9),
-            strides=(8, 16, 32, 64, 128, 256, 512),
+            strides=[8, 16, 32, 64, 128, 256, 512],
             ratios=([2], [2, 3], [2, 3], [2, 3], [2, 3], [2], [2]))))
 # dataset settings
 dataset_type = 'CocoDataset'

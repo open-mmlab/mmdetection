@@ -10,13 +10,20 @@ class AnchorGenerator(object):
 
     Args:
         strides (list[int]): Strides of anchors in multiple feture levels.
-        base_size (list[int]): The basic sizes of anchors in multiple levels.
-        scales (list[int]): Anchor scales for anchors in a single level.
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
+        scales (list[int] | None): Anchor scales for anchors in a single level.
+            It cannot be set at the same time if `octave_base_scale` and
+            `scales_per_octave` are set.
+        base_sizes (list[int] | None): The basic sizes of anchors in multiple
+            levels. If None is given, strides will be used as base_sizes.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. By default it is True in V2.0
+        octave_base_scale (int): The base scale of octave.
+        scales_per_octave (int): Number of scales for each octave.
+            `octave_base_scale` and `scales_per_octave` are usually used in
+            retinanet and the `scales` should be None when they are set.
         centers (list[tuple[float, float]] | None): The centers of the anchor
             relative to the feature grid center in multiple feature levels.
             By default it is set to be None and not used. If a list of tuple of
@@ -55,13 +62,14 @@ class AnchorGenerator(object):
                  center_offset=0.):
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
-                '=0, {} is given.'.format(centers)
+                '!=0, {} is given.'.format(centers)
         if not (0 <= center_offset <= 1):
             raise ValueError('center_offset should be in range [0, 1], {} is'
                              ' given.'.format(center_offset))
 
         # calculate base sizes of anchors
         self.strides = strides
+        self.num_levels = len(strides)
         self.base_sizes = list(strides) if base_sizes is None else base_sizes
         assert len(self.base_sizes) == len(self.strides), \
             'The number of strides should be the same as base sizes, got ' \
@@ -158,15 +166,14 @@ class AnchorGenerator(object):
             device (str): Device where the anchors will be put on.
 
         Return:
-            list(torch.Tensor): Anchors in multiple feature levels.
+            list[torch.Tensor]: Anchors in multiple feature levels.
                 The sizes of each tensor should be [N, 4], where
                 N = width * height, width and height are the sizes of
                 the corresponding feature lavel.
         """
-        num_levels = len(featmap_sizes)
-        assert num_levels == len(self.strides)
+        assert self.num_levels == len(featmap_sizes)
         multi_level_anchors = []
-        for i in range(num_levels):
+        for i in range(self.num_levels):
             anchors = self.single_level_grid_anchors(
                 self.base_anchors[i].to(device),
                 featmap_sizes[i],
@@ -208,9 +215,9 @@ class AnchorGenerator(object):
         Return:
             list(torch.Tensor): Valid flags of anchors in multiple levels.
         """
-        num_levels = len(featmap_sizes)
+        assert self.num_levels == len(featmap_sizes)
         multi_level_flags = []
-        for i in range(num_levels):
+        for i in range(self.num_levels):
             anchor_stride = self.strides[i]
             feat_h, feat_w = featmap_sizes[i]
             h, w = pad_shape[:2]
@@ -253,6 +260,7 @@ class AnchorGenerator(object):
                                                        self.octave_base_scale)
         repr_str += '{}scales_per_octave={},\n'.format(indent_str,
                                                        self.scales_per_octave)
+        repr_str += '{}num_levels={}\n'.format(indent_str, self.num_levels)
         repr_str += '{}centers={},\n'.format(indent_str, self.centers)
         repr_str += '{}center_offset={})'.format(indent_str,
                                                  self.center_offset)
@@ -267,7 +275,6 @@ class SSDAnchorGenerator(AnchorGenerator):
         strides (list[int]): Strides of anchors in multiple feture levels.
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
-        num_levels (int): Number of feature levels
         basesize_ratio_range (tuple(float)): Ratio range of anchors.
         input_size (int): Size of feature map, 300 for SSD300, 512 for SSD512.
         scale_major (bool): Whether to multiply scales first when generating
@@ -278,11 +285,11 @@ class SSDAnchorGenerator(AnchorGenerator):
     def __init__(self,
                  strides,
                  ratios,
-                 num_levels,
                  basesize_ratio_range,
                  input_size=300,
                  scale_major=True):
-        self.num_levels = num_levels
+        assert len(strides) == len(ratios)
+        self.num_levels = len(strides)
         self.strides = strides
         self.input_size = input_size
         self.centers = [(stride / 2., stride / 2.) for stride in strides]
@@ -292,12 +299,12 @@ class SSDAnchorGenerator(AnchorGenerator):
         min_ratio, max_ratio = basesize_ratio_range
         min_ratio = int(min_ratio * 100)
         max_ratio = int(max_ratio * 100)
-        step = int(np.floor(max_ratio - min_ratio) / (num_levels - 2))
+        step = int(np.floor(max_ratio - min_ratio) / (self.num_levels - 2))
         min_sizes = []
         max_sizes = []
-        for r in range(int(min_ratio), int(max_ratio) + 1, step):
-            min_sizes.append(int(input_size * r / 100))
-            max_sizes.append(int(input_size * (r + step) / 100))
+        for ratio in range(int(min_ratio), int(max_ratio) + 1, step):
+            min_sizes.append(int(input_size * ratio / 100))
+            max_sizes.append(int(input_size * (ratio + step) / 100))
         if input_size == 300:
             if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
                 min_sizes.insert(0, int(input_size * 7 / 100))
@@ -312,6 +319,9 @@ class SSDAnchorGenerator(AnchorGenerator):
             elif basesize_ratio_range[0] == 0.15:  # SSD512 VOC
                 min_sizes.insert(0, int(input_size * 7 / 100))
                 max_sizes.insert(0, int(input_size * 15 / 100))
+        else:
+            raise ValueError('Only support 300 or 512 in SSDAnchorGenerator'
+                             ', got {}.'.format(input_size))
 
         anchor_ratios = []
         anchor_scales = []
@@ -350,11 +360,11 @@ class SSDAnchorGenerator(AnchorGenerator):
         repr_str = self.__class__.__name__ + '(\n'
         repr_str += '{}strides={},\n'.format(indent_str, self.strides)
         repr_str += '{}scales={},\n'.format(indent_str, self.scales)
-        repr_str += '{}num_levels={},\n'.format(indent_str, self.num_levels)
         repr_str += '{}scale_major={},\n'.format(indent_str, self.scale_major)
         repr_str += '{}input_size={},\n'.format(indent_str, self.input_size)
         repr_str += '{}scales={},\n'.format(indent_str, self.scales)
         repr_str += '{}ratios={},\n'.format(indent_str, self.ratios)
+        repr_str += '{}num_levels={}\n'.format(indent_str, self.num_levels)
         repr_str += '{}base_sizes={},\n'.format(indent_str, self.base_sizes)
         repr_str += '{}basesize_ratio_range={})'.format(
             indent_str, self.basesize_ratio_range)
@@ -373,19 +383,27 @@ class LegacyAnchorGenerator(AnchorGenerator):
 
     Args:
         strides (list[int]): Strides of anchors in multiple feture levels.
-        base_size (list[int]): The basic sizes of anchors in multiple levels.
-        scales (list[int]): Anchor scales for anchors in a single level.
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
+        scales (list[int] | None): Anchor scales for anchors in a single level.
+            It cannot be set at the same time if `octave_base_scale` and
+            `scales_per_octave` are set.
+        base_sizes (list[int]): The basic sizes of anchors in multiple levels.
+            If None is given, strides will be used to generate base_sizes.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. By default it is True in V2.0
+        octave_base_scale (int): The base scale of octave.
+        scales_per_octave (int): Number of scales for each octave.
+            `octave_base_scale` and `scales_per_octave` are usually used in
+            retinanet and the `scales` should be None when they are set.
         centers (list[tuple[float, float]] | None): The centers of the anchor
             relative to the feature grid center in multiple feature levels.
             By default it is set to be None and not used. It a list of float
             is given, this list will be used to shift the centers of anchors.
         center_offset (float): The offset of center in propotion to anchors'
-            width and height. By default it is 0 in V2.0.
+            width and height. By default it is 0.5 in V2.0 but it should be 0.5
+            in v1.x models.
 
     Examples:
         >>> from mmdet.core import LegacyAnchorGenerator

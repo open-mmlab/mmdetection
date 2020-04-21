@@ -19,10 +19,9 @@ class SSDHead(AnchorHead):
                  in_channels=(512, 1024, 512, 256, 256, 256),
                  anchor_generator=dict(
                      type='SSDAnchorGenerator',
-                     num_levels=6,
                      scale_major=False,
                      input_size=300,
-                     strides=(8, 16, 32, 64, 100, 300),
+                     strides=[8, 16, 32, 64, 100, 300],
                      ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
                      basesize_ratio_range=(0.1, 0.9)),
                  background_label=None,
@@ -131,7 +130,7 @@ class SSDHead(AnchorHead):
              img_metas,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generator.strides)
+        assert len(featmap_sizes) == self.anchor_generator.num_levels
 
         device = cls_scores[0].device
 

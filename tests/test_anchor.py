@@ -17,7 +17,6 @@ def test_standard_anchor_generator():
 
     anchor_generator = build_anchor_generator(anchor_generator_cfg)
     assert anchor_generator is not None
-    print(anchor_generator)
 
 
 def test_ssd_anchor_generator():
@@ -33,7 +32,7 @@ def test_ssd_anchor_generator():
         scale_major=False,
         input_size=300,
         basesize_ratio_range=(0.15, 0.9),
-        strides=(8, 16, 32, 64, 100, 300),
+        strides=[8, 16, 32, 64, 100, 300],
         ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]))
 
     featmap_sizes = [(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)]
@@ -77,15 +76,14 @@ def test_ssd_anchor_generator():
         assert base_anchor.allclose(expected_base_anchors[i])
 
     # check valid flags
-    expect_valid_flags = [5776, 2166, 600, 150, 36, 4]
+    expected_valid_pixels = [5776, 2166, 600, 150, 36, 4]
     multi_level_valid_flags = anchor_generator.valid_flags(
         featmap_sizes, (300, 300), device)
     for i, single_level_valid_flag in enumerate(multi_level_valid_flags):
-        assert single_level_valid_flag.sum() == expect_valid_flags[i]
+        assert single_level_valid_flag.sum() == expected_valid_pixels[i]
 
     # check number of base anchors for each level
     assert anchor_generator.num_base_anchors == [4, 6, 6, 6, 4, 4]
-    print(anchor_generator)
 
     # check anchor generation
     anchors = anchor_generator.grid_anchors(featmap_sizes, device)
@@ -177,15 +175,14 @@ def test_retina_anchor():
         assert base_anchor.allclose(expected_base_anchors[i])
 
     # check valid flags
-    expect_valid_flags = [57600, 14400, 3600, 900, 225]
+    expected_valid_pixels = [57600, 14400, 3600, 900, 225]
     multi_level_valid_flags = retina_head.anchor_generator.valid_flags(
         featmap_sizes, (640, 640), device)
     for i, single_level_valid_flag in enumerate(multi_level_valid_flags):
-        assert single_level_valid_flag.sum() == expect_valid_flags[i]
+        assert single_level_valid_flag.sum() == expected_valid_pixels[i]
 
     # check number of base anchors for each level
     assert retina_head.anchor_generator.num_base_anchors == [9, 9, 9, 9, 9]
-    print(retina_head.anchor_generator)
 
     # check anchor generation
     anchors = retina_head.anchor_generator.grid_anchors(featmap_sizes, device)
@@ -212,7 +209,7 @@ def test_guided_anchor():
             scales_per_octave=3,
             ratios=[0.5, 1.0, 2.0],
             strides=[8, 16, 32, 64, 128]),
-        square_generator=dict(
+        square_anchor_generator=dict(
             type='AnchorGenerator',
             ratios=[1.0],
             scales=[4],
@@ -276,20 +273,19 @@ def test_guided_anchor():
         assert base_anchor.allclose(expected_approxs[i])
 
     # check valid flags
-    expect_valid_flags = [136800, 34200, 8550, 2223, 630]
+    expected_valid_pixels = [136800, 34200, 8550, 2223, 630]
     multi_level_valid_flags = ga_retina_head.approx_anchor_generator \
         .valid_flags(featmap_sizes, (800, 1216), device)
     for i, single_level_valid_flag in enumerate(multi_level_valid_flags):
-        assert single_level_valid_flag.sum() == expect_valid_flags[i]
+        assert single_level_valid_flag.sum() == expected_valid_pixels[i]
 
     # check number of base anchors for each level
     assert ga_retina_head.approx_anchor_generator.num_base_anchors == [
         9, 9, 9, 9, 9
     ]
-    print(ga_retina_head.approx_anchor_generator)
 
     # check approx generation
-    squares = ga_retina_head.square_generator.grid_anchors(
+    squares = ga_retina_head.square_anchor_generator.grid_anchors(
         featmap_sizes, device)
     assert len(squares) == 5
 
@@ -300,16 +296,17 @@ def test_guided_anchor():
         torch.Tensor([[-128., -128., 128., 128.]]),
         torch.Tensor([[-256., -256., 256., 256.]])
     ]
-    squares = ga_retina_head.square_generator.base_anchors
+    squares = ga_retina_head.square_anchor_generator.base_anchors
     for i, base_anchor in enumerate(squares):
         assert base_anchor.allclose(expected_squares[i])
 
-    # square_generator does not check valid flags
+    # square_anchor_generator does not check valid flags
     # check number of base anchors for each level
-    assert ga_retina_head.square_generator.num_base_anchors == [1, 1, 1, 1, 1]
-    print(ga_retina_head.square_generator)
+    assert (ga_retina_head.square_anchor_generator.num_base_anchors == [
+        1, 1, 1, 1, 1
+    ])
 
     # check square generation
-    anchors = ga_retina_head.square_generator.grid_anchors(
+    anchors = ga_retina_head.square_anchor_generator.grid_anchors(
         featmap_sizes, device)
     assert len(anchors) == 5

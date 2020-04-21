@@ -184,7 +184,7 @@ class ATSSHead(AnchorHead):
              gt_bboxes_ignore=None):
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generator.base_anchors)
+        assert len(featmap_sizes) == self.anchor_generator.num_levels
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
