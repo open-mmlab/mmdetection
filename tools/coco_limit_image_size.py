@@ -17,7 +17,6 @@ import json
 import os
 from collections import defaultdict
 from itertools import groupby
-from math import floor
 
 import cv2
 import numpy as np
@@ -37,7 +36,7 @@ def parse_args():
     return args.parse_args()
 
 
-def resize_segmenation(segmentation, ratio, img_h, img_w):
+def resize_segmentation(segmentation, ratio, img_h, img_w):
     if isinstance(segmentation, list):
         return [[x / ratio for x in c] for c in segmentation]
     else:
@@ -86,13 +85,13 @@ def main():
                 content['annotations'][i]['bbox'] = [x / ratio for x in
                                                      content['annotations'][i]['bbox']]
                 if content['annotations'][i]['segmentation']:
-                    content['annotations'][i]['segmentation'] = resize_segmenation(
+                    content['annotations'][i]['segmentation'] = resize_segmentation(
                         content['annotations'][i]['segmentation'],
                         ratio,
                         image.shape[0],
                         image.shape[1]
                     )
-            new_size = int(floor(image.shape[1] / ratio)), int(floor(image.shape[0] / ratio))
+            new_size = int(image.shape[1] / ratio), int(image.shape[0] / ratio)
             image = cv2.resize(image, new_size)
             resized += 1
 
