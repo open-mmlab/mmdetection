@@ -50,24 +50,12 @@ class ATSSHead(AnchorHead):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 train_cfg=None,
-                 test_cfg=None,
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.sampling = False
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-
-        if self.train_cfg:
-            self.assigner = build_assigner(self.train_cfg.assigner)
-            # SSD sampling=False so use PseudoSampler
-            sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
-
         octave_scales = np.array(
             [2**(i / scales_per_octave) for i in range(scales_per_octave)])
         anchor_scales = octave_scales * octave_base_scale
@@ -78,6 +66,12 @@ class ATSSHead(AnchorHead):
             anchor_generator=anchor_generator,
             **kwargs)
 
+        self.sampling = False
+        if self.train_cfg:
+            self.assigner = build_assigner(self.train_cfg.assigner)
+            # SSD sampling=False so use PseudoSampler
+            sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
         self.loss_centerness = build_loss(loss_centerness)
 
     def _init_layers(self):
@@ -369,7 +363,6 @@ class ATSSHead(AnchorHead):
                     valid_flag_list,
                     gt_bboxes_list,
                     img_metas,
-                    cfg,
                     gt_bboxes_ignore_list=None,
                     gt_labels_list=None,
                     label_channels=1,
@@ -408,9 +401,7 @@ class ATSSHead(AnchorHead):
              gt_bboxes_ignore_list,
              gt_labels_list,
              img_metas,
-             cfg=cfg,
              label_channels=label_channels,
-             background_label=self.background_label,
              unmap_outputs=unmap_outputs)
         # no valid anchors
         if any([labels is None for labels in all_labels]):
@@ -439,13 +430,11 @@ class ATSSHead(AnchorHead):
                            gt_bboxes_ignore,
                            gt_labels,
                            img_meta,
-                           cfg,
                            label_channels=1,
-                           background_label=80,
                            unmap_outputs=True):
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           cfg.allowed_border)
+                                           self.train_cfg.allowed_border)
         if not inside_flags.any():
             return (None, ) * 6
         # assign gt and sample anchors
@@ -464,7 +453,7 @@ class ATSSHead(AnchorHead):
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
         labels = anchors.new_full((num_valid_anchors, ),
-                                  background_label,
+                                  self.background_label,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
@@ -480,10 +469,10 @@ class ATSSHead(AnchorHead):
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]
-            if cfg.pos_weight <= 0:
+            if self.train_cfg.pos_weight <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg.pos_weight
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 

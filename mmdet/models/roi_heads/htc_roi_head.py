@@ -100,7 +100,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         bbox_targets = bbox_head.get_targets(sampling_results, gt_bboxes,
                                              gt_labels, rcnn_train_cfg)
         loss_bbox = bbox_head.loss(bbox_results['cls_score'],
-                                   bbox_results['bbox_pred'], *bbox_targets)
+                                   bbox_results['bbox_pred'], rois,
+                                   *bbox_targets)
 
         bbox_results.update(
             loss_bbox=loss_bbox,

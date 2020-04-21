@@ -1,7 +1,7 @@
 import mmcv
 import torch
 
-from mmdet.core import build_assigner, build_sampler
+from mmdet.core import bbox2roi, build_assigner, build_sampler
 from mmdet.models.anchor_heads import AnchorHead
 from mmdet.models.bbox_heads import BBoxHead
 from mmdet.models.mask_heads import FCNMaskHead, MaskIoUHead
@@ -101,10 +101,11 @@ def test_bbox_head_loss():
 
     # Create dummy features "extracted" for each sampled bbox
     num_sampled = sum(len(res.bboxes) for res in sampling_results)
+    rois = bbox2roi([res.bboxes for res in sampling_results])
     dummy_feats = torch.rand(num_sampled, 8 * 3 * 3)
     cls_scores, bbox_preds = self.forward(dummy_feats)
 
-    losses = self.loss(cls_scores, bbox_preds, labels, label_weights,
+    losses = self.loss(cls_scores, bbox_preds, rois, labels, label_weights,
                        bbox_targets, bbox_weights)
     assert losses.get('loss_cls', 0) > 0, 'cls-loss should be non-zero'
     assert losses.get('loss_bbox', 0) == 0, 'empty gt loss should be zero'
@@ -117,6 +118,7 @@ def test_bbox_head_loss():
 
     sampling_results = _dummy_bbox_sampling(proposal_list, gt_bboxes,
                                             gt_labels)
+    rois = bbox2roi([res.bboxes for res in sampling_results])
 
     bbox_targets = self.get_targets(sampling_results, gt_bboxes, gt_labels,
                                     target_cfg)
@@ -127,7 +129,7 @@ def test_bbox_head_loss():
     dummy_feats = torch.rand(num_sampled, 8 * 3 * 3)
     cls_scores, bbox_preds = self.forward(dummy_feats)
 
-    losses = self.loss(cls_scores, bbox_preds, labels, label_weights,
+    losses = self.loss(cls_scores, bbox_preds, rois, labels, label_weights,
                        bbox_targets, bbox_weights)
     assert losses.get('loss_cls', 0) > 0, 'cls-loss should be non-zero'
     assert losses.get('loss_bbox', 0) > 0, 'box-loss should be non-zero'
