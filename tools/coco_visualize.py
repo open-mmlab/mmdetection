@@ -50,7 +50,7 @@ def print_stat(content):
         print('      ', cat)
 
 
-def parse_segmenation(segmentation, img_h, img_w):
+def parse_segmentation(segmentation, img_h, img_w):
     if isinstance(segmentation, list):
         segmentation = [np.array([int(p) for p in s]).reshape((-1, 2)) for s in segmentation]
         mask = np.zeros((img_h, img_w), np.uint8)
@@ -129,7 +129,7 @@ def main():
             cv2.rectangle(image, p1, p2, (255, 0, 0), 2)
 
             if ann['segmentation'] and args.with_masks:
-                masks.append(parse_segmenation(ann['segmentation'], image.shape[0], image.shape[1]))
+                masks.append(parse_segmentation(ann['segmentation'], image.shape[0], image.shape[1]))
 
         image = overlay_mask(image, masks)
 
