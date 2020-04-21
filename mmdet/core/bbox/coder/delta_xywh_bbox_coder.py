@@ -32,7 +32,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
     def encode(self, bboxes, gt_bboxes):
         assert bboxes.size(0) == gt_bboxes.size(0)
-        assert bboxes.size(1) == gt_bboxes.size(1) == 4
+        assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bbox2delta(bboxes, gt_bboxes, self.means, self.stds)
         return encoded_bboxes
 
@@ -56,8 +56,8 @@ def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     This is the inverse function of `delta2bbox()`
 
     Args:
-        proposals (Tensor): Boxes to be transformed, shape (N, 4)
-        gt (Tensor): Gt bboxes to be used as base, shape (N, 4)
+        proposals (Tensor): Boxes to be transformed, shape (N, ..., 4)
+        gt (Tensor): Gt bboxes to be used as base, shape (N, ..., 4)
         means (Sequence[float]): Denormalizing means for delta coordinates
         stds (Sequence[float]): Denormalizing standard deviation for delta
             coordinates
