@@ -40,6 +40,7 @@ class OHEMSampler(BaseSampler):
             loss = self.bbox_head.loss(
                 cls_score=cls_score,
                 bbox_pred=None,
+                rois=rois,
                 labels=labels,
                 label_weights=cls_score.new_ones(cls_score.size(0)),
                 bbox_targets=None,

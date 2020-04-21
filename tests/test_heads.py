@@ -1,7 +1,7 @@
 import mmcv
 import torch
 
-from mmdet.core import build_assigner, build_sampler
+from mmdet.core import bbox2roi, build_assigner, build_sampler
 from mmdet.models.anchor_heads import AnchorHead, GuidedAnchorHead
 from mmdet.models.bbox_heads import BBoxHead
 from mmdet.models.mask_heads import FCNMaskHead, MaskIoUHead
@@ -18,25 +18,24 @@ def test_anchor_head_loss():
         'pad_shape': (s, s, 3)
     }]
 
-    cfg = mmcv.Config({
-        'assigner': {
-            'type': 'MaxIoUAssigner',
-            'pos_iou_thr': 0.7,
-            'neg_iou_thr': 0.3,
-            'min_pos_iou': 0.3,
-            'ignore_iof_thr': -1
-        },
-        'sampler': {
-            'type': 'RandomSampler',
-            'num': 256,
-            'pos_fraction': 0.5,
-            'neg_pos_ub': -1,
-            'add_gt_as_proposals': False
-        },
-        'allowed_border': 0,
-        'pos_weight': -1,
-        'debug': False
-    })
+    cfg = mmcv.Config(
+        dict(
+            assigner=dict(
+                type='MaxIoUAssigner',
+                pos_iou_thr=0.7,
+                neg_iou_thr=0.3,
+                min_pos_iou=0.3,
+                match_low_quality=True,
+                ignore_iof_thr=-1),
+            sampler=dict(
+                type='RandomSampler',
+                num=256,
+                pos_fraction=0.5,
+                neg_pos_ub=-1,
+                add_gt_as_proposals=False),
+            allowed_border=0,
+            pos_weight=-1,
+            debug=False))
     self = AnchorHead(num_classes=4, in_channels=1, train_cfg=cfg)
 
     # Anchor head expects a multiple levels of features per image
@@ -86,41 +85,38 @@ def test_ga_anchor_head_loss():
         'pad_shape': (s, s, 3)
     }]
 
-    cfg = mmcv.Config({
-        'assigner': {
-            'type': 'MaxIoUAssigner',
-            'pos_iou_thr': 0.7,
-            'neg_iou_thr': 0.3,
-            'min_pos_iou': 0.3,
-            'ignore_iof_thr': -1
-        },
-        'sampler': {
-            'type': 'RandomSampler',
-            'num': 256,
-            'pos_fraction': 0.5,
-            'neg_pos_ub': -1,
-            'add_gt_as_proposals': False
-        },
-        'ga_assigner': {
-            'type': 'ApproxMaxIoUAssigner',
-            'pos_iou_thr': 0.7,
-            'neg_iou_thr': 0.3,
-            'min_pos_iou': 0.3,
-            'ignore_iof_thr': -1,
-        },
-        'ga_sampler': {
-            'type': 'RandomSampler',
-            'num': 256,
-            'pos_fraction': 0.5,
-            'neg_pos_ub': -1,
-            'add_gt_as_proposals': False
-        },
-        'center_ratio': 0.2,
-        'ignore_ratio': 0.5,
-        'allowed_border': -1,
-        'pos_weight': -1,
-        'debug': False
-    })
+    cfg = mmcv.Config(
+        dict(
+            assigner=dict(
+                type='MaxIoUAssigner',
+                pos_iou_thr=0.7,
+                neg_iou_thr=0.3,
+                min_pos_iou=0.3,
+                match_low_quality=True,
+                ignore_iof_thr=-1),
+            sampler=dict(
+                type='RandomSampler',
+                num=256,
+                pos_fraction=0.5,
+                neg_pos_ub=-1,
+                add_gt_as_proposals=False),
+            ga_assigner=dict(
+                type='ApproxMaxIoUAssigner',
+                pos_iou_thr=0.7,
+                neg_iou_thr=0.3,
+                min_pos_iou=0.3,
+                ignore_iof_thr=-1),
+            ga_sampler=dict(
+                type='RandomSampler',
+                num=256,
+                pos_fraction=0.5,
+                neg_pos_ub=-1,
+                add_gt_as_proposals=False),
+            allowed_border=-1,
+            center_ratio=0.2,
+            ignore_ratio=0.5,
+            pos_weight=-1,
+            debug=False))
     head = GuidedAnchorHead(num_classes=4, in_channels=4, train_cfg=cfg)
 
     # Anchor head expects a multiple levels of features per image
@@ -177,7 +173,7 @@ def test_bbox_head_loss():
         torch.Tensor([[23.6667, 23.8757, 228.6326, 153.8874]]),
     ]
 
-    target_cfg = mmcv.Config({'pos_weight': 1})
+    target_cfg = mmcv.Config(dict(pos_weight=1))
 
     # Test bbox loss when truth is empty
     gt_bboxes = [torch.empty((0, 4))]
@@ -192,10 +188,11 @@ def test_bbox_head_loss():
 
     # Create dummy features "extracted" for each sampled bbox
     num_sampled = sum(len(res.bboxes) for res in sampling_results)
+    rois = bbox2roi([res.bboxes for res in sampling_results])
     dummy_feats = torch.rand(num_sampled, 8 * 3 * 3)
     cls_scores, bbox_preds = self.forward(dummy_feats)
 
-    losses = self.loss(cls_scores, bbox_preds, labels, label_weights,
+    losses = self.loss(cls_scores, bbox_preds, rois, labels, label_weights,
                        bbox_targets, bbox_weights)
     assert losses.get('loss_cls', 0) > 0, 'cls-loss should be non-zero'
     assert losses.get('loss_bbox', 0) == 0, 'empty gt loss should be zero'
@@ -208,6 +205,7 @@ def test_bbox_head_loss():
 
     sampling_results = _dummy_bbox_sampling(proposal_list, gt_bboxes,
                                             gt_labels)
+    rois = bbox2roi([res.bboxes for res in sampling_results])
 
     bbox_targets = self.get_targets(sampling_results, gt_bboxes, gt_labels,
                                     target_cfg)
@@ -218,7 +216,7 @@ def test_bbox_head_loss():
     dummy_feats = torch.rand(num_sampled, 8 * 3 * 3)
     cls_scores, bbox_preds = self.forward(dummy_feats)
 
-    losses = self.loss(cls_scores, bbox_preds, labels, label_weights,
+    losses = self.loss(cls_scores, bbox_preds, rois, labels, label_weights,
                        bbox_targets, bbox_weights)
     assert losses.get('loss_cls', 0) > 0, 'cls-loss should be non-zero'
     assert losses.get('loss_bbox', 0) > 0, 'box-loss should be non-zero'
@@ -423,7 +421,7 @@ def test_mask_head_loss():
     gt_masks = [BitmapMasks(dummy_mask, 160, 240)]
 
     # create dummy train_cfg
-    train_cfg = mmcv.Config({'mask_size': 12, 'mask_thr_binary': 0.5})
+    train_cfg = mmcv.Config(dict(mask_size=12, mask_thr_binary=0.5))
 
     # Create dummy features "extracted" for each sampled bbox
     num_sampled = sum(len(res.bboxes) for res in sampling_results)
@@ -465,20 +463,18 @@ def _dummy_bbox_sampling(proposal_list, gt_bboxes, gt_labels):
     """
     num_imgs = 1
     feat = torch.rand(1, 1, 3, 3)
-    assign_config = {
-        'type': 'MaxIoUAssigner',
-        'pos_iou_thr': 0.5,
-        'neg_iou_thr': 0.5,
-        'min_pos_iou': 0.5,
-        'ignore_iof_thr': -1
-    }
-    sampler_config = {
-        'type': 'RandomSampler',
-        'num': 512,
-        'pos_fraction': 0.25,
-        'neg_pos_ub': -1,
-        'add_gt_as_proposals': True
-    }
+    assign_config = dict(
+        type='MaxIoUAssigner',
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+        min_pos_iou=0.5,
+        ignore_iof_thr=-1)
+    sampler_config = dict(
+        type='RandomSampler',
+        num=512,
+        pos_fraction=0.25,
+        neg_pos_ub=-1,
+        add_gt_as_proposals=True)
     bbox_assigner = build_assigner(assign_config)
     bbox_sampler = build_sampler(sampler_config)
     gt_bboxes_ignore = [None for _ in range(num_imgs)]
