@@ -143,7 +143,7 @@ class GuidedAnchorHead(AnchorHead):
         assert (approx_anchor_generator['octave_base_scale'] ==
                 square_generator['scales'][0])
         assert (approx_anchor_generator['strides'] ==
-                square_generator['strides'][0])
+                square_generator['strides'])
         self.approx_anchor_generator = build_anchor_generator(
             approx_anchor_generator)
         self.square_generator = build_anchor_generator(square_generator)
