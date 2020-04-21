@@ -28,6 +28,7 @@ class SSDHead(AnchorHead):
                      target_means=[.0, .0, .0, .0],
                      target_stds=[1.0, 1.0, 1.0, 1.0],
                  ),
+                 reg_decoded_bbox=False,
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
@@ -95,6 +96,8 @@ class SSDHead(AnchorHead):
                 anchor_generator.base_anchors, 0, torch.LongTensor(indices))
             self.anchor_generators.append(anchor_generator)
 
+        self.reg_decoded_bbox = reg_decoded_bbox
+
         self.background_label = (
             num_classes if background_label is None else background_label)
         # background_label should be either 0 or num_classes
@@ -129,7 +132,7 @@ class SSDHead(AnchorHead):
             bbox_preds.append(reg_conv(feat))
         return cls_scores, bbox_preds
 
-    def loss_single(self, cls_score, bbox_pred, labels, label_weights,
+    def loss_single(self, cls_score, bbox_pred, anchor, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
@@ -146,6 +149,9 @@ class SSDHead(AnchorHead):
         loss_cls_pos = loss_cls_all[pos_inds].sum()
         loss_cls_neg = topk_loss_cls_neg.sum()
         loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
+
+        if self.reg_decoded_bbox:
+            bbox_pred = self.bbox_coder.decode(anchor, bbox_pred)
 
         loss_bbox = smooth_l1_loss(
             bbox_pred,
@@ -200,6 +206,11 @@ class SSDHead(AnchorHead):
         all_bbox_weights = torch.cat(bbox_weights_list,
                                      -2).view(num_images, -1, 4)
 
+        # concat all level anchors to a single tensor
+        all_anchors = []
+        for i in range(num_images):
+            all_anchors.append(torch.cat(anchor_list[i]))
+
         # check NaN and Inf
         assert torch.isfinite(all_cls_scores).all().item(), \
             'classification scores become infinite or NaN!'
@@ -210,6 +221,7 @@ class SSDHead(AnchorHead):
             self.loss_single,
             all_cls_scores,
             all_bbox_preds,
+            all_anchors,
             all_labels,
             all_label_weights,
             all_bbox_targets,

@@ -27,6 +27,7 @@ class BBoxHead(nn.Module):
                      target_means=[0., 0., 0., 0.],
                      target_stds=[0.1, 0.1, 0.2, 0.2]),
                  reg_class_agnostic=False,
+                 reg_decoded_bbox=False,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
@@ -43,6 +44,7 @@ class BBoxHead(nn.Module):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.reg_class_agnostic = reg_class_agnostic
+        self.reg_decoded_bbox = reg_decoded_bbox
         self.fp16_enabled = False
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
@@ -99,8 +101,11 @@ class BBoxHead(nn.Module):
             labels[:num_pos] = pos_gt_labels
             pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
             label_weights[:num_pos] = pos_weight
-            pos_bbox_targets = self.bbox_coder.encode(pos_bboxes,
-                                                      pos_gt_bboxes)
+            if not self.reg_decoded_bbox:
+                pos_bbox_targets = self.bbox_coder.encode(
+                    pos_bboxes, pos_gt_bboxes)
+            else:
+                pos_bbox_targets = pos_gt_bboxes
             bbox_targets[:num_pos, :] = pos_bbox_targets
             bbox_weights[:num_pos, :] = 1
         if num_neg > 0:
@@ -137,6 +142,7 @@ class BBoxHead(nn.Module):
     def loss(self,
              cls_score,
              bbox_pred,
+             rois,
              labels,
              label_weights,
              bbox_targets,
@@ -159,6 +165,8 @@ class BBoxHead(nn.Module):
             pos_inds = (labels >= 0) & (labels < bg_class_ind)
             # do not perform bounding box regression for BG anymore.
             if pos_inds.any():
+                if self.reg_decoded_bbox:
+                    bbox_pred = self.bbox_coder.decode(rois[:, 1:], bbox_pred)
                 if self.reg_class_agnostic:
                     pos_bbox_pred = bbox_pred.view(
                         bbox_pred.size(0), 4)[pos_inds.type(torch.bool)]
