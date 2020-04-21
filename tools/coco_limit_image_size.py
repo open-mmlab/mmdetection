@@ -16,9 +16,12 @@ import argparse
 import json
 import os
 from collections import defaultdict
+from itertools import groupby
 from math import floor
 
 import cv2
+import numpy as np
+import pycocotools.mask as maskUtils
 from tqdm import tqdm
 
 
@@ -32,6 +35,26 @@ def parse_args():
                       help='Resize images with size greater than specified here size (h, w)! '
                            'keeping aspect ratio.')
     return args.parse_args()
+
+
+def resize_segmenation(segmentation, ratio, img_h, img_w):
+    if isinstance(segmentation, list):
+        return [[x / ratio for x in c] for c in segmentation]
+    else:
+        if isinstance(segmentation['counts'], list):
+            rle = maskUtils.frPyObjects(segmentation, img_h, img_w)
+        else:
+            rle = segmentation
+        mask = maskUtils.decode(rle).astype(np.uint8)
+        new_size = int(mask.shape[1] / ratio), int(mask.shape[0] / ratio)
+        mask = cv2.resize(mask, new_size, interpolation=cv2.INTER_NEAREST)
+        mask = np.asfortranarray(mask)
+        rle = {'counts': [], 'size': list(mask.shape)}
+        for i, (value, elements) in enumerate(groupby(mask.ravel(order='F'))):
+            if i == 0 and value == 1:
+                rle['counts'].append(0)
+            rle['counts'].append(len(list(elements)))
+        return rle
 
 
 def main():
@@ -58,17 +81,20 @@ def main():
         width_ratio = image.shape[1] / args.limit_image_size[1]
         if height_ratio > 1 or width_ratio > 1:
             ratio = height_ratio if height_ratio > width_ratio else width_ratio
-            new_size = int(floor(image.shape[1] / ratio)), int(floor(image.shape[0] / ratio))
-            image = cv2.resize(image, new_size)
-            resized += 1
 
             for i in images_idx_to_annotations_idx[image_info['id']]:
                 content['annotations'][i]['bbox'] = [x / ratio for x in
                                                      content['annotations'][i]['bbox']]
                 if content['annotations'][i]['segmentation']:
-                    content['annotations'][i]['segmentation'] = [
-                        [x / ratio for x in c] for c in content['annotations'][i]['segmentation']
-                    ]
+                    content['annotations'][i]['segmentation'] = resize_segmenation(
+                        content['annotations'][i]['segmentation'],
+                        ratio,
+                        image.shape[0],
+                        image.shape[1]
+                    )
+            new_size = int(floor(image.shape[1] / ratio)), int(floor(image.shape[0] / ratio))
+            image = cv2.resize(image, new_size)
+            resized += 1
 
         output_path = os.path.join(args.output_root, image_info['file_name'])
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -76,6 +102,7 @@ def main():
 
     print(f'Resized images: {resized} of {len(content["images"])}')
 
+    os.makedirs(os.path.dirname(args.output_annotation), exist_ok=True)
     with open(args.output_annotation, 'w') as f:
         json.dump(content, f)
 

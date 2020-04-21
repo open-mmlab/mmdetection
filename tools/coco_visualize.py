@@ -22,6 +22,8 @@ from collections import defaultdict
 from math import floor
 
 import cv2
+import numpy as np
+import pycocotools.mask as maskUtils
 from tqdm import tqdm
 
 
@@ -35,6 +37,7 @@ def parse_args():
                            'keeping aspect ratio.')
     args.add_argument('--shuffle', action='store_true',
                       help='Shuffle annotation before visualization.')
+    args.add_argument('--with_masks', action='store_true', help='Visualize masks as well.')
 
     return args.parse_args()
 
@@ -45,6 +48,44 @@ def print_stat(content):
     print('   categories:')
     for cat in content['categories']:
         print('      ', cat)
+
+
+def parse_segmenation(segmentation, img_h, img_w):
+    if isinstance(segmentation, list):
+        segmentation = [np.array([int(p) for p in s]).reshape((-1, 2)) for s in segmentation]
+        mask = np.zeros((img_h, img_w), np.uint8)
+        cv2.drawContours(mask, segmentation, -1, 1, -1)
+    else:
+        if isinstance(segmentation['counts'], list):
+            rle = maskUtils.frPyObjects(segmentation, img_h, img_w)
+        else:
+            rle = segmentation
+        mask = maskUtils.decode(rle).astype(np.uint8)
+    return mask
+
+
+def overlay_mask(image, masks):
+    mask_color = (255, 0, 0)
+    segments_image = image.copy()
+    aggregated_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    aggregated_colored_mask = np.zeros(image.shape, dtype=np.uint8)
+    black = np.zeros(3, dtype=np.uint8)
+    for i, mask in enumerate(masks):
+        mask = mask.astype(np.uint8)
+
+        cv2.bitwise_or(aggregated_mask, mask, dst=aggregated_mask)
+        cv2.bitwise_or(aggregated_colored_mask, np.asarray(mask_color, dtype=np.uint8),
+                       dst=aggregated_colored_mask, mask=mask)
+
+    # Fill the area occupied by all instances with a colored instances mask image.
+    cv2.bitwise_and(segments_image, black, dst=segments_image, mask=aggregated_mask)
+    cv2.bitwise_or(segments_image, aggregated_colored_mask, dst=segments_image,
+                   mask=aggregated_mask)
+    # Blend original image with the one, where instances are colored.
+    # As a result instances masks become transparent.
+    cv2.addWeighted(image, 0.5, segments_image, 0.5, 0, dst=image)
+
+    return image
 
 
 def main():
@@ -73,6 +114,8 @@ def main():
         if image is None:
             print(path)
 
+        masks = []
+
         for ann in annotations[image_info['id']]:
             bbox = ann['bbox']
             p1 = int(bbox[0]), int(bbox[1])
@@ -84,6 +127,11 @@ def main():
                 print(ann)
 
             cv2.rectangle(image, p1, p2, (255, 0, 0), 2)
+
+            if ann['segmentation'] and args.with_masks:
+                masks.append(parse_segmenation(ann['segmentation'], image.shape[0], image.shape[1]))
+
+        image = overlay_mask(image, masks)
 
         height_ratio = image.shape[0] / args.limit_imshow_size[0]
         width_ratio = image.shape[1] / args.limit_imshow_size[1]
