@@ -117,6 +117,7 @@ class GuidedAnchorHead(AnchorHead):
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]
         ),
+        reg_decoded_bbox=False,
         deformable_groups=4,
         loc_filter_thr=0.01,
         background_label=None,
@@ -158,6 +159,8 @@ class GuidedAnchorHead(AnchorHead):
             # Generators for squares
             self.square_generators.append(
                 AnchorGenerator(anchor_base, [self.octave_base_scale], [1.0]))
+
+        self.reg_decoded_bbox = reg_decoded_bbox
 
         self.background_label = (
             num_classes if background_label is None else background_label)
@@ -712,11 +715,23 @@ class GuidedAnchorHead(AnchorHead):
         num_total_samples = (
             num_total_pos + num_total_neg if self.sampling else num_total_pos)
 
+        # anchor number of multi levels
+        num_level_anchors = [
+            anchors.size(0) for anchors in guided_anchors_list[0]
+        ]
+        # concat all level anchors to a single tensor
+        concat_anchor_list = []
+        for i in range(len(guided_anchors_list)):
+            concat_anchor_list.append(torch.cat(guided_anchors_list[i]))
+        all_anchor_list = images_to_levels(concat_anchor_list,
+                                           num_level_anchors)
+
         # get classification and bbox regression losses
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
             bbox_preds,
+            all_anchor_list,
             labels_list,
             label_weights_list,
             bbox_targets_list,
