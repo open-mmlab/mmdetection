@@ -21,7 +21,7 @@ from math import floor
 
 import cv2
 import numpy as np
-import pycocotools.mask as maskUtils
+import pycocotools.mask as mask_utils
 from tqdm import tqdm
 
 
@@ -42,10 +42,10 @@ def resize_segmenation(segmentation, ratio, img_h, img_w):
         return [[x / ratio for x in c] for c in segmentation]
     else:
         if isinstance(segmentation['counts'], list):
-            rle = maskUtils.frPyObjects(segmentation, img_h, img_w)
+            rle = mask_utils.frPyObjects(segmentation, img_h, img_w)
         else:
             rle = segmentation
-        mask = maskUtils.decode(rle).astype(np.uint8)
+        mask = mask_utils.decode(rle).astype(np.uint8)
         new_size = int(mask.shape[1] / ratio), int(mask.shape[0] / ratio)
         mask = cv2.resize(mask, new_size, interpolation=cv2.INTER_NEAREST)
         mask = np.asfortranarray(mask)

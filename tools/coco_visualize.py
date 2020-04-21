@@ -23,7 +23,7 @@ from math import floor
 
 import cv2
 import numpy as np
-import pycocotools.mask as maskUtils
+import pycocotools.mask as mask_utils
 from tqdm import tqdm
 
 
@@ -57,10 +57,10 @@ def parse_segmenation(segmentation, img_h, img_w):
         cv2.drawContours(mask, segmentation, -1, 1, -1)
     else:
         if isinstance(segmentation['counts'], list):
-            rle = maskUtils.frPyObjects(segmentation, img_h, img_w)
+            rle = mask_utils.frPyObjects(segmentation, img_h, img_w)
         else:
             rle = segmentation
-        mask = maskUtils.decode(rle).astype(np.uint8)
+        mask = mask_utils.decode(rle).astype(np.uint8)
     return mask
 
 
