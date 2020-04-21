@@ -17,10 +17,10 @@ class AnchorGenerator(object):
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. By default it is True in V2.0
-        centers (list[float] | None): The centers of the anchor relative to
-            the feature grid center in multiple feature levels. By default it
-            is set to be None and not used. It a list of float is given, this
-            list will be used to shift the centers of anchors.
+        centers (list[tuple[float, float]] | None): The centers of the anchor
+            relative to the feature grid center in multiple feature levels.
+            By default it is set to be None and not used. It a list of float
+            is given, this list will be used to shift the centers of anchors.
         center_offset (float): The offset of center in propotion to anchors'
             width and height. By default it is 0 in V2.0.
 
@@ -356,10 +356,10 @@ class LegacyAnchorGenerator(AnchorGenerator):
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. By default it is True in V2.0
-        centers (list[float] | None): The centers of the anchor relative to
-            the feature grid center in multiple feature levels. By default it
-            is set to be None and not used. It a list of float is given, this
-            list will be used to shift the centers of anchors.
+        centers (list[tuple[float, float]] | None): The centers of the anchor
+            relative to the feature grid center in multiple feature levels.
+            By default it is set to be None and not used. It a list of float
+            is given, this list will be used to shift the centers of anchors.
         center_offset (float): The offset of center in propotion to anchors'
             width and height. By default it is 0 in V2.0.
 
