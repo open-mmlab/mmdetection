@@ -254,11 +254,7 @@ class GuidedAnchorHead(AnchorHead):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
 
-    def get_sampled_approxs(self,
-                            featmap_sizes,
-                            img_metas,
-                            cfg,
-                            device='cuda'):
+    def get_sampled_approxs(self, featmap_sizes, img_metas, device='cuda'):
         """Get sampled approxs and inside flags according to feature map sizes.
 
         Args:
@@ -302,7 +298,8 @@ class GuidedAnchorHead(AnchorHead):
                     split_approxs = approxs[i::self.approxs_per_octave, :]
                     inside_flags = anchor_inside_flags(
                         split_approxs, split_valid_flags,
-                        img_meta['img_shape'][:2], cfg.allowed_border)
+                        img_meta['img_shape'][:2],
+                        self.train_cfg.allowed_border)
                     inside_flags_list.append(inside_flags)
                 # inside_flag for a position is true if any anchor in this
                 # position is true
@@ -418,8 +415,8 @@ class GuidedAnchorHead(AnchorHead):
             tuple
         """
         anchor_scale = self.octave_base_scale
-        anchor_strides = self.anchor_strides,
-        center_ratio = self.train_cfg.center_ratio,
+        anchor_strides = self.anchor_strides
+        center_ratio = self.train_cfg.center_ratio
         ignore_ratio = self.train_cfg.ignore_ratio
         img_per_gpu = len(gt_bboxes_list)
         num_lvls = len(featmap_sizes)
@@ -650,8 +647,8 @@ class GuidedAnchorHead(AnchorHead):
             avg_factor=anchor_total_num)
         return loss_shape
 
-    def loss_loc_single(self, loc_pred, loc_target, loc_weight, loc_avg_factor,
-                        cfg):
+    def loss_loc_single(self, loc_pred, loc_target, loc_weight,
+                        loc_avg_factor):
         loss_loc = self.loss_loc(
             loc_pred.reshape(-1, 1),
             loc_target.reshape(-1, 1).long(),
@@ -681,7 +678,7 @@ class GuidedAnchorHead(AnchorHead):
 
         # get sampled approxes
         approxs_list, inside_flag_list = self.get_sampled_approxs(
-            featmap_sizes, img_metas, self.train_cfg, device=device)
+            featmap_sizes, img_metas, device=device)
         # get squares and guided anchors
         squares_list, guided_anchors_list, _ = self.get_anchors(
             featmap_sizes, shape_preds, loc_preds, img_metas, device=device)
@@ -745,8 +742,7 @@ class GuidedAnchorHead(AnchorHead):
                 loc_preds[i],
                 loc_targets[i],
                 loc_weights[i],
-                loc_avg_factor=loc_avg_factor,
-                cfg=self.train_cfg)
+                loc_avg_factor=loc_avg_factor)
             losses_loc.append(loss_loc)
 
         # get anchor shape loss
