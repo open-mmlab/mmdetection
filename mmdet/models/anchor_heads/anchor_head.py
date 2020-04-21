@@ -25,8 +25,9 @@ class AnchorHead(nn.Module):
         anchor_ratios (Iterable): Anchor aspect ratios.
         anchor_strides (Iterable): Anchor strides.
         anchor_base_sizes (Iterable): Anchor base sizes.
-        target_means (Iterable): Mean values of regression targets.
-        target_stds (Iterable): Std values of regression targets.
+        bbox_coder (dict): Config of bounding box coder.
+        reg_decoded_bbox (bool): If true, the regression loss would be
+            applied on decoded bounding boxes. Default: False
         background_label (int | None): Label ID of background, set as 0 for
             RPN and num_classes for other heads. It will automatically set as
             num_classes if None is given.

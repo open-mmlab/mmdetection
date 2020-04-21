@@ -206,7 +206,7 @@ class SSDHead(AnchorHead):
         all_bbox_weights = torch.cat(bbox_weights_list,
                                      -2).view(num_images, -1, 4)
 
-        # concat all level anchors and flags to a single tensor
+        # concat all level anchors to a single tensor
         all_anchors = []
         for i in range(num_images):
             all_anchors.append(torch.cat(anchor_list[i]))
