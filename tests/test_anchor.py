@@ -22,8 +22,8 @@ def test_standard_anchor_generator():
 
 def test_ssd_anchor_generator():
     from mmdet.core.anchor import build_anchor_generator
-    if not torch.cuda.is_available():
-        device = 'gpu'
+    if torch.cuda.is_available():
+        device = 'cuda'
     else:
         device = 'cpu'
 
@@ -74,7 +74,7 @@ def test_ssd_anchor_generator():
     ]
     base_anchors = anchor_generator.base_anchors
     for i, base_anchor in enumerate(base_anchors):
-        assert base_anchor.to(device=device).allclose(expected_base_anchors[i])
+        assert base_anchor.allclose(expected_base_anchors[i])
 
     # check valid flags
     expect_valid_flags = [5776, 2166, 600, 150, 36, 4]
@@ -94,8 +94,8 @@ def test_ssd_anchor_generator():
 
 def test_retina_anchor():
     from mmdet.models import build_head
-    if not torch.cuda.is_available():
-        device = 'gpu'
+    if torch.cuda.is_available():
+        device = 'cuda'
     else:
         device = 'cpu'
 
@@ -174,7 +174,7 @@ def test_retina_anchor():
     ]
     base_anchors = retina_head.anchor_generator.base_anchors
     for i, base_anchor in enumerate(base_anchors):
-        assert base_anchor.to(device=device).allclose(expected_base_anchors[i])
+        assert base_anchor.allclose(expected_base_anchors[i])
 
     # check valid flags
     expect_valid_flags = [57600, 14400, 3600, 900, 225]
@@ -194,8 +194,8 @@ def test_retina_anchor():
 
 def test_guided_anchor():
     from mmdet.models import build_head
-    if not torch.cuda.is_available():
-        device = 'gpu'
+    if torch.cuda.is_available():
+        device = 'cuda'
     else:
         device = 'cpu'
     # head configs modified from
