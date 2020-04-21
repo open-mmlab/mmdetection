@@ -206,7 +206,7 @@ def test_guided_anchor():
         in_channels=4,
         stacked_convs=1,
         feat_channels=4,
-        approx_generator=dict(
+        approx_anchor_generator=dict(
             type='AnchorGenerator',
             octave_base_scale=4,
             scales_per_octave=3,
@@ -219,7 +219,7 @@ def test_guided_anchor():
             strides=[8, 16, 32, 64, 128]))
 
     ga_retina_head = build_head(bbox_head)
-    assert ga_retina_head.approx_generator is not None
+    assert ga_retina_head.approx_anchor_generator is not None
 
     # use the featmap sizes in NASFPN setting to test ga_retina_head
     featmap_sizes = [(100, 152), (50, 76), (25, 38), (13, 19), (7, 10)]
@@ -271,20 +271,22 @@ def test_guided_anchor():
                       [-228.0701, -456.1401, 228.0701, 456.1401],
                       [-287.3503, -574.7006, 287.3503, 574.7006]])
     ]
-    approxs = ga_retina_head.approx_generator.base_anchors
+    approxs = ga_retina_head.approx_anchor_generator.base_anchors
     for i, base_anchor in enumerate(approxs):
         assert base_anchor.allclose(expected_approxs[i])
 
     # check valid flags
     expect_valid_flags = [136800, 34200, 8550, 2223, 630]
-    multi_level_valid_flags = ga_retina_head.approx_generator.valid_flags(
-        featmap_sizes, (800, 1216), device)
+    multi_level_valid_flags = ga_retina_head.approx_anchor_generator \
+        .valid_flags(featmap_sizes, (800, 1216), device)
     for i, single_level_valid_flag in enumerate(multi_level_valid_flags):
         assert single_level_valid_flag.sum() == expect_valid_flags[i]
 
     # check number of base anchors for each level
-    assert ga_retina_head.approx_generator.num_base_anchors == [9, 9, 9, 9, 9]
-    print(ga_retina_head.approx_generator)
+    assert ga_retina_head.approx_anchor_generator.num_base_anchors == [
+        9, 9, 9, 9, 9
+    ]
+    print(ga_retina_head.approx_anchor_generator)
 
     # check approx generation
     squares = ga_retina_head.square_generator.grid_anchors(

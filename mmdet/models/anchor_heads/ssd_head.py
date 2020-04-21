@@ -66,6 +66,7 @@ class SSDHead(AnchorHead):
                 or self.background_label == num_classes)
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
+        self.reg_decoded_bbox = reg_decoded_bbox
         self.use_sigmoid_cls = False
         self.cls_focal_loss = False
         self.train_cfg = train_cfg

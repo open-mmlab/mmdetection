@@ -19,8 +19,8 @@ class AnchorGenerator(object):
             same scales. By default it is True in V2.0
         centers (list[tuple[float, float]] | None): The centers of the anchor
             relative to the feature grid center in multiple feature levels.
-            By default it is set to be None and not used. It a list of float
-            is given, this list will be used to shift the centers of anchors.
+            By default it is set to be None and not used. If a list of tuple of
+            float is given, they will be used to shift the centers of anchors.
         center_offset (float): The offset of center in propotion to anchors'
             width and height. By default it is 0 in V2.0.
 
@@ -33,6 +33,14 @@ class AnchorGenerator(object):
                 [11.5000, -4.5000, 20.5000,  4.5000],
                 [-4.5000, 11.5000,  4.5000, 20.5000],
                 [11.5000, 11.5000, 20.5000, 20.5000]])]
+        >>> self = AnchorGenerator([16, 32], [1.], [1.], [9, 18])
+        >>> all_anchors = self.grid_anchors([(2, 2), (1, 1)], device='cpu')
+        >>> print(all_anchors)
+        [tensor([[-4.5000, -4.5000,  4.5000,  4.5000],
+                [11.5000, -4.5000, 20.5000,  4.5000],
+                [-4.5000, 11.5000,  4.5000, 20.5000],
+                [11.5000, 11.5000, 20.5000, 20.5000]]), \
+        tensor([[-9., -9., 9., 9.]])]
     """
 
     def __init__(self,
@@ -48,15 +56,22 @@ class AnchorGenerator(object):
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
                 '=0, {} is given.'.format(centers)
-        assert 0 <= center_offset <= 1, 'center_offset should be in range ' \
-            '[0, 1], {} is given.'.format(center_offset)
+        if not (0 <= center_offset <= 1):
+            raise ValueError('center_offset should be in range [0, 1], {} is'
+                             ' given.'.format(center_offset))
 
+        # calculate base sizes of anchors
         self.strides = strides
         self.base_sizes = list(strides) if base_sizes is None else base_sizes
         assert len(self.base_sizes) == len(self.strides), \
             'The number of strides should be the same as base sizes, got ' \
             '{} and {}'.format(self.strides, self.base_sizes)
 
+        # calculate scales of anchors
+        assert ((octave_base_scale is not None
+                and scales_per_octave is not None) ^ (scales is not None)), \
+            'scales and octave_base_scale with scales_per_octave cannot' \
+            ' be set at the same time'
         if scales is not None:
             self.scales = torch.Tensor(scales)
         elif octave_base_scale is not None and scales_per_octave is not None:
@@ -68,6 +83,8 @@ class AnchorGenerator(object):
             raise ValueError('Either scales or octave_base_scale with '
                              'scales_per_octave should be set')
 
+        self.octave_base_scale = octave_base_scale
+        self.scales_per_octave = scales_per_octave
         self.ratios = torch.Tensor(ratios)
         self.scale_major = scale_major
         self.centers = centers
@@ -136,12 +153,15 @@ class AnchorGenerator(object):
         """Generate grid anchors in multiple feature levels
 
         Args:
-            featmap_sizes (list(tuple)): List of feature map sizes in
+            featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels.
             device (str): Device where the anchors will be put on.
 
         Return:
             list(torch.Tensor): Anchors in multiple feature levels.
+                The sizes of each tensor should be [N, 4], where
+                N = width * height, width and height are the sizes of
+                the corresponding feature lavel.
         """
         num_levels = len(featmap_sizes)
         assert num_levels == len(self.strides)
@@ -225,10 +245,14 @@ class AnchorGenerator(object):
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
         repr_str += '{}strides={},\n'.format(indent_str, self.strides)
-        repr_str += '{}scales={},\n'.format(indent_str, self.scales)
         repr_str += '{}ratios={},\n'.format(indent_str, self.ratios)
+        repr_str += '{}scales={},\n'.format(indent_str, self.scales)
         repr_str += '{}base_sizes={},\n'.format(indent_str, self.base_sizes)
         repr_str += '{}scale_major={},\n'.format(indent_str, self.scale_major)
+        repr_str += '{}octave_base_scale={},\n'.format(indent_str,
+                                                       self.octave_base_scale)
+        repr_str += '{}scales_per_octave={},\n'.format(indent_str,
+                                                       self.scales_per_octave)
         repr_str += '{}centers={},\n'.format(indent_str, self.centers)
         repr_str += '{}center_offset={})'.format(indent_str,
                                                  self.center_offset)
@@ -243,8 +267,8 @@ class SSDAnchorGenerator(AnchorGenerator):
         strides (list[int]): Strides of anchors in multiple feture levels.
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
-        basesize_ratio_range (tuple(float)): Ratio range of anchors.
         num_levels (int): Number of feature levels
+        basesize_ratio_range (tuple(float)): Ratio range of anchors.
         input_size (int): Size of feature map, 300 for SSD300, 512 for SSD512.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
@@ -261,7 +285,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         self.num_levels = num_levels
         self.strides = strides
         self.input_size = input_size
-        self.centers = [((stride) / 2., (stride) / 2.) for stride in strides]
+        self.centers = [(stride / 2., stride / 2.) for stride in strides]
         self.basesize_ratio_range = basesize_ratio_range
 
         # calculate anchor ratios and sizes

@@ -21,10 +21,7 @@ class AnchorHead(nn.Module):
             category.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of hidden channels. Used in child classes.
-        anchor_scales (Iterable): Anchor scales.
-        anchor_ratios (Iterable): Anchor aspect ratios.
-        anchor_strides (Iterable): Anchor strides.
-        anchor_base_sizes (Iterable): Anchor base sizes.
+        anchor_generator (dict): Config dict for anchor generator
         bbox_coder (dict): Config of bounding box coder.
         reg_decoded_bbox (bool): If true, the regression loss would be
             applied on decoded bounding boxes. Default: False
@@ -464,7 +461,7 @@ class AnchorHead(nn.Module):
         num_levels = len(cls_scores)
 
         device = cls_scores[0].device
-        featmap_sizes = [cls_scores[i].size()[-2:] for i in range(num_levels)]
+        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
         mlvl_anchors = self.anchor_generator.grid_anchors(
             featmap_sizes, device=device)
 

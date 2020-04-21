@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn
@@ -38,33 +37,17 @@ class ATSSHead(AnchorHead):
                  num_classes,
                  in_channels,
                  stacked_convs=4,
-                 octave_base_scale=4,
-                 scales_per_octave=1,
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 anchor_generator=dict(
-                     type='AnchorGenerator',
-                     ratios=[1.0],
-                     strides=[8, 16, 32, 64, 128]),
                  loss_centerness=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
                  **kwargs):
         self.stacked_convs = stacked_convs
-        self.octave_base_scale = octave_base_scale
-        self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        octave_scales = np.array(
-            [2**(i / scales_per_octave) for i in range(scales_per_octave)])
-        anchor_scales = octave_scales * octave_base_scale
-        anchor_generator.update(scales=anchor_scales)
-        super(ATSSHead, self).__init__(
-            num_classes,
-            in_channels,
-            anchor_generator=anchor_generator,
-            **kwargs)
+        super(ATSSHead, self).__init__(num_classes, in_channels, **kwargs)
 
         self.sampling = False
         if self.train_cfg:
@@ -276,7 +259,7 @@ class ATSSHead(AnchorHead):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         device = cls_scores[0].device
-        featmap_sizes = [cls_scores[i].size()[-2:] for i in range(num_levels)]
+        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
         mlvl_anchors = self.anchor_generator.grid_anchors(
             featmap_sizes, device=device)
 
