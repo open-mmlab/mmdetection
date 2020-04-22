@@ -2,7 +2,7 @@ from __future__ import division
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import normal_init
+from mmcv.cnn import bias_init_with_prob, normal_init
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
@@ -11,7 +11,6 @@ from mmdet.core import (anchor_inside_flags, build_anchor_generator,
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import bias_init_with_prob
 from .anchor_head import AnchorHead
 
 

@@ -3,14 +3,13 @@ from __future__ import division
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import normal_init
+from mmcv.cnn import bias_init_with_prob, normal_init
 
 from mmdet.core import (PointGenerator, build_assigner, build_sampler,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from mmdet.ops import ConvModule, DeformConv
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import bias_init_with_prob
 
 
 @HEADS.register_module

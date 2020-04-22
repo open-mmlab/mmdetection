@@ -1,7 +1,7 @@
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-from mmcv.cnn import normal_init
+from mmcv.cnn import bias_init_with_prob, normal_init
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
                         force_fp32, images_to_levels, multi_apply,
@@ -9,7 +9,6 @@ from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
 from mmdet.ops import ConvModule, Scale
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import bias_init_with_prob
 from .anchor_head import AnchorHead
 
 

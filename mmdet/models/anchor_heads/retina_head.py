@@ -1,9 +1,8 @@
 import torch.nn as nn
-from mmcv.cnn import normal_init
+from mmcv.cnn import bias_init_with_prob, normal_init
 
 from mmdet.ops import ConvModule
 from ..registry import HEADS
-from ..utils import bias_init_with_prob
 from .anchor_head import AnchorHead
 
 
