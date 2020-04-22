@@ -1,13 +1,12 @@
 from __future__ import division
 
-import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
 
-from mmdet.core import (AnchorGenerator, anchor_inside_flags, build_assigner,
-                        build_bbox_coder, build_sampler, calc_region,
-                        force_fp32, images_to_levels, multi_apply,
+from mmdet.core import (anchor_inside_flags, build_anchor_generator,
+                        build_assigner, build_bbox_coder, build_sampler,
+                        calc_region, force_fp32, images_to_levels, multi_apply,
                         multiclass_nms, unmap)
 from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import build_loss
@@ -74,17 +73,10 @@ class GuidedAnchorHead(AnchorHead):
         num_classes (int): Number of classes.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of hidden channels.
-        octave_base_scale (int): Base octave scale of each level of
-            feature map.
-        scales_per_octave (int): Number of octave scales in each level of
-            feature map
-        octave_ratios (Iterable): octave aspect ratios.
-        anchor_strides (Iterable): Anchor strides.
-        anchor_base_sizes (Iterable): Anchor base sizes.
-        anchoring_means (Iterable): Mean values of anchoring targets.
-        anchoring_stds (Iterable): Std values of anchoring targets.
-        target_means (Iterable): Mean values of regression targets.
-        target_stds (Iterable): Std values of regression targets.
+        approx_anchor_generator (dict): Config dict for approx generator
+        square_anchor_generator (dict): Config dict for square generator
+        anchor_coder (dict): Config dict for anchor coder
+        bbox_coder (dict): Config dict for bbox coder
         deformable_groups: (int): Group number of DCN in
             FeatureAdaption module.
         loc_filter_thr (float): Threshold to filter out unconcerned regions.
@@ -102,11 +94,17 @@ class GuidedAnchorHead(AnchorHead):
         num_classes,
         in_channels,
         feat_channels=256,
-        octave_base_scale=8,
-        scales_per_octave=3,
-        octave_ratios=[0.5, 1.0, 2.0],
-        anchor_strides=[4, 8, 16, 32, 64],
-        anchor_base_sizes=None,
+        approx_anchor_generator=dict(
+            type='AnchorGenerator',
+            octave_base_scale=8,
+            scales_per_octave=3,
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64]),
+        square_anchor_generator=dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            scales=[8],
+            strides=[4, 8, 16, 32, 64]),
         anchor_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
@@ -138,27 +136,20 @@ class GuidedAnchorHead(AnchorHead):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
-        self.octave_base_scale = octave_base_scale
-        self.scales_per_octave = scales_per_octave
-        self.octave_scales = octave_base_scale * np.array(
-            [2**(i / scales_per_octave) for i in range(scales_per_octave)])
-        self.approxs_per_octave = len(self.octave_scales) * len(octave_ratios)
-        self.octave_ratios = octave_ratios
-        self.anchor_strides = anchor_strides
-        self.anchor_base_sizes = list(
-            anchor_strides) if anchor_base_sizes is None else anchor_base_sizes
         self.deformable_groups = deformable_groups
         self.loc_filter_thr = loc_filter_thr
-        self.approx_generators = []
-        self.square_generators = []
-        for anchor_base in self.anchor_base_sizes:
-            # Generators for approxs
-            self.approx_generators.append(
-                AnchorGenerator(anchor_base, self.octave_scales,
-                                self.octave_ratios))
-            # Generators for squares
-            self.square_generators.append(
-                AnchorGenerator(anchor_base, [self.octave_base_scale], [1.0]))
+
+        # build approx_anchor_generator and square_anchor_generator
+        assert (approx_anchor_generator['octave_base_scale'] ==
+                square_anchor_generator['scales'][0])
+        assert (approx_anchor_generator['strides'] ==
+                square_anchor_generator['strides'])
+        self.approx_anchor_generator = build_anchor_generator(
+            approx_anchor_generator)
+        self.square_anchor_generator = build_anchor_generator(
+            square_anchor_generator)
+        self.approxs_per_octave = self.approx_anchor_generator \
+            .num_base_anchors[0]
 
         self.reg_decoded_bbox = reg_decoded_bbox
 
@@ -266,15 +257,11 @@ class GuidedAnchorHead(AnchorHead):
             tuple: approxes of each image, inside flags of each image
         """
         num_imgs = len(img_metas)
-        num_levels = len(featmap_sizes)
 
         # since feature map sizes of all images are the same, we only compute
         # approxes for one time
-        multi_level_approxs = []
-        for i in range(num_levels):
-            approxs = self.approx_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i], device=device)
-            multi_level_approxs.append(approxs)
+        multi_level_approxs = self.approx_anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
         approxs_list = [multi_level_approxs for _ in range(num_imgs)]
 
         # for each image, we compute inside flags of multi level approxes
@@ -282,16 +269,15 @@ class GuidedAnchorHead(AnchorHead):
         for img_id, img_meta in enumerate(img_metas):
             multi_level_flags = []
             multi_level_approxs = approxs_list[img_id]
-            for i in range(num_levels):
+
+            # obtain valid flags for each approx first
+            multi_level_approx_flags = self.approx_anchor_generator \
+                .valid_flags(featmap_sizes,
+                             img_meta['pad_shape'],
+                             device=device)
+
+            for i, flags in enumerate(multi_level_approx_flags):
                 approxs = multi_level_approxs[i]
-                anchor_stride = self.anchor_strides[i]
-                feat_h, feat_w = featmap_sizes[i]
-                h, w = img_meta['pad_shape'][:2]
-                valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
-                valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
-                flags = self.approx_generators[i].valid_flags(
-                    (feat_h, feat_w), (valid_feat_h, valid_feat_w),
-                    device=device)
                 inside_flags_list = []
                 for i in range(self.approxs_per_octave):
                     split_valid_flags = flags[i::self.approxs_per_octave]
@@ -336,11 +322,8 @@ class GuidedAnchorHead(AnchorHead):
 
         # since feature map sizes of all images are the same, we only compute
         # squares for one time
-        multi_level_squares = []
-        for i in range(num_levels):
-            squares = self.square_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i], device=device)
-            multi_level_squares.append(squares)
+        multi_level_squares = self.square_anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
         squares_list = [multi_level_squares for _ in range(num_imgs)]
 
         # for each image, we compute multi level guided anchors
@@ -414,8 +397,8 @@ class GuidedAnchorHead(AnchorHead):
         Returns:
             tuple
         """
-        anchor_scale = self.octave_base_scale
-        anchor_strides = self.anchor_strides
+        anchor_scale = self.approx_anchor_generator.octave_base_scale
+        anchor_strides = self.approx_anchor_generator.strides
         center_ratio = self.train_cfg.center_ratio
         ignore_ratio = self.train_cfg.ignore_ratio
         img_per_gpu = len(gt_bboxes_list)
@@ -668,7 +651,7 @@ class GuidedAnchorHead(AnchorHead):
              img_metas,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.approx_generators)
+        assert len(featmap_sizes) == self.approx_anchor_generator.num_levels
 
         device = cls_scores[0].device
 

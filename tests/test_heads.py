@@ -41,7 +41,7 @@ def test_anchor_head_loss():
     # Anchor head expects a multiple levels of features per image
     feat = [
         torch.rand(1, 1, s // (2**(i + 2)), s // (2**(i + 2)))
-        for i in range(len(self.anchor_generators))
+        for i in range(len(self.anchor_generator.strides))
     ]
     cls_scores, bbox_preds = self.forward(feat)
 
@@ -124,7 +124,7 @@ def test_ga_anchor_head_loss():
         head.cuda()
         feat = [
             torch.rand(1, 4, s // (2**(i + 2)), s // (2**(i + 2))).cuda()
-            for i in range(len(head.anchor_base_sizes))
+            for i in range(len(head.approx_anchor_generator.base_anchors))
         ]
         cls_scores, bbox_preds, shape_preds, loc_preds = head.forward(feat)
 
