@@ -1,8 +1,8 @@
 import torch
 
-from ..bbox import (PseudoSampler, assign_and_sample, bboxes2tblr,
-                    build_assigner)
-from ..utils import multi_apply
+from mmdet.core.bbox import (PseudoSampler, assign_and_sample, bboxes2tblr,
+                             build_assigner)
+from mmdet.core.utils import multi_apply
 
 
 def anchor_tblr_target(anchor_list,
