@@ -2,7 +2,10 @@ _base_ = [
     '../_base_/models/ssd300.py', '../_base_/datasets/voc0712.py',
     '../_base_/default_runtime.py'
 ]
-model = dict(bbox_head=dict(num_classes=20, basesize_ratio_range=(0.2, 0.9)))
+model = dict(
+    bbox_head=dict(
+        num_classes=20, anchor_generator=dict(basesize_ratio_range=(0.2,
+                                                                    0.9))))
 # dataset settings
 dataset_type = 'VOCDataset'
 data_root = 'data/VOCdevkit/'
