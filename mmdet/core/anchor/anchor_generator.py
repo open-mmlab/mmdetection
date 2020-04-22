@@ -1,3 +1,4 @@
+import mmcv
 import numpy as np
 import torch
 
@@ -60,16 +61,20 @@ class AnchorGenerator(object):
                  scales_per_octave=None,
                  centers=None,
                  center_offset=0.):
+        # check center and center_offset
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
                 '!=0, {} is given.'.format(centers)
         if not (0 <= center_offset <= 1):
             raise ValueError('center_offset should be in range [0, 1], {} is'
                              ' given.'.format(center_offset))
+        if centers is not None:
+            assert len(centers) == len(strides), \
+                'The number of strides should be the same as centers, got ' \
+                '{} and {}'.format(strides, centers)
 
         # calculate base sizes of anchors
         self.strides = strides
-        self.num_levels = len(strides)
         self.base_sizes = list(strides) if base_sizes is None else base_sizes
         assert len(self.base_sizes) == len(self.strides), \
             'The number of strides should be the same as base sizes, got ' \
@@ -102,6 +107,10 @@ class AnchorGenerator(object):
     @property
     def num_base_anchors(self):
         return [base_anchors.size(0) for base_anchors in self.base_anchors]
+
+    @property
+    def num_levels(self):
+        return len(self.strides)
 
     def gen_base_anchors(self):
         multi_level_base_anchors = []
@@ -168,8 +177,9 @@ class AnchorGenerator(object):
         Return:
             list[torch.Tensor]: Anchors in multiple feature levels.
                 The sizes of each tensor should be [N, 4], where
-                N = width * height, width and height are the sizes of
-                the corresponding feature lavel.
+                N = width * height * num_base_anchors, width and height
+                are the sizes of the corresponding feature lavel,
+                num_base_anchors is the number of anchors for that level.
         """
         assert self.num_levels == len(featmap_sizes)
         multi_level_anchors = []
@@ -289,7 +299,8 @@ class SSDAnchorGenerator(AnchorGenerator):
                  input_size=300,
                  scale_major=True):
         assert len(strides) == len(ratios)
-        self.num_levels = len(strides)
+        assert mmcv.is_tuple_of(basesize_ratio_range, float)
+
         self.strides = strides
         self.input_size = input_size
         self.centers = [(stride / 2., stride / 2.) for stride in strides]
@@ -312,6 +323,11 @@ class SSDAnchorGenerator(AnchorGenerator):
             elif basesize_ratio_range[0] == 0.2:  # SSD300 VOC
                 min_sizes.insert(0, int(input_size * 10 / 100))
                 max_sizes.insert(0, int(input_size * 20 / 100))
+            else:
+                raise ValueError(
+                    'basesize_ratio_range[0] should be either 0.15'
+                    'or 0.2 when input_size is 300, got {}.'.format(
+                        basesize_ratio_range[0]))
         elif input_size == 512:
             if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
                 min_sizes.insert(0, int(input_size * 4 / 100))
@@ -319,6 +335,11 @@ class SSDAnchorGenerator(AnchorGenerator):
             elif basesize_ratio_range[0] == 0.15:  # SSD512 VOC
                 min_sizes.insert(0, int(input_size * 7 / 100))
                 max_sizes.insert(0, int(input_size * 15 / 100))
+            else:
+                raise ValueError(
+                    'basesize_ratio_range[0] should be either 0.1'
+                    'or 0.15 when input_size is 512, got {}.'.format(
+                        basesize_ratio_range[0]))
         else:
             raise ValueError('Only support 300 or 512 in SSDAnchorGenerator'
                              ', got {}.'.format(input_size))

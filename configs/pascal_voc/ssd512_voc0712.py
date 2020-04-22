@@ -5,7 +5,6 @@ model = dict(
     bbox_head=dict(
         in_channels=(512, 1024, 512, 256, 256, 256, 256),
         anchor_generator=dict(
-            num_levels=7,
             input_size=input_size,
             strides=[8, 16, 32, 64, 128, 256, 512],
             basesize_ratio_range=(0.15, 0.9),

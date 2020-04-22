@@ -28,12 +28,11 @@ def test_ssd_anchor_generator():
 
     anchor_generator_cfg = dict(
         type='SSDAnchorGenerator',
-        num_levels=6,
         scale_major=False,
         input_size=300,
         basesize_ratio_range=(0.15, 0.9),
         strides=[8, 16, 32, 64, 100, 300],
-        ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]))
+        ratios=[[2], [2, 3], [2, 3], [2, 3], [2], [2]])
 
     featmap_sizes = [(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)]
     anchor_generator = build_anchor_generator(anchor_generator_cfg)

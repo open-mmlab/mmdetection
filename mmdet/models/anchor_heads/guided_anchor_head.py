@@ -322,7 +322,7 @@ class GuidedAnchorHead(AnchorHead):
 
         # since feature map sizes of all images are the same, we only compute
         # squares for one time
-        multi_level_squares = self.square_generator.grid_anchors(
+        multi_level_squares = self.square_anchor_generator.grid_anchors(
             featmap_sizes, device=device)
         squares_list = [multi_level_squares for _ in range(num_imgs)]
 
