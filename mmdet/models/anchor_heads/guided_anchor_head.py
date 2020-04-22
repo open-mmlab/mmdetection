@@ -1,5 +1,3 @@
-from __future__ import division
-
 import torch
 import torch.nn as nn
 from mmcv.cnn import bias_init_with_prob, normal_init
