@@ -1,16 +1,13 @@
-from __future__ import division
-
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import normal_init
+from mmcv.cnn import bias_init_with_prob, normal_init
 
 from mmdet.core import (PointGenerator, build_assigner, build_sampler,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from mmdet.ops import ConvModule, DeformConv
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import bias_init_with_prob
 
 
 @HEADS.register_module
@@ -410,8 +407,10 @@ class RepPointsHead(nn.Module):
 
         if stage == 'init':
             assigner = self.init_assigner
+            pos_weight = self.train_cfg.init.pos_weight
         else:
             assigner = self.refine_assigner
+            pos_weight = self.train_cfg.refine.pos_weight
         assign_result = assigner.assign(proposals, gt_bboxes, gt_bboxes_ignore,
                                         None if self.sampling else gt_labels)
         sampling_result = self.sampler.sample(assign_result, proposals,
@@ -439,10 +438,10 @@ class RepPointsHead(nn.Module):
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]
-            if self.train_cfg.pos_weight <= 0:
+            if pos_weight <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = pos_weight
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
@@ -616,7 +615,7 @@ class RepPointsHead(nn.Module):
             img_metas,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
-            init=True,
+            stage='init',
             label_channels=label_channels)
         (*_, bbox_gt_list_init, candidate_list_init, bbox_weights_list_init,
          num_total_pos_init, num_total_neg_init) = cls_reg_targets_init
@@ -648,7 +647,7 @@ class RepPointsHead(nn.Module):
             img_metas,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
-            init=False,
+            stage='refine',
             label_channels=label_channels)
         (labels_list, label_weights_list, bbox_gt_list_refine,
          candidate_list_refine, bbox_weights_list_refine, num_total_pos_refine,

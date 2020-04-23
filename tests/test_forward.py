@@ -5,6 +5,7 @@ import copy
 from os.path import dirname, exists, join
 
 import numpy as np
+import pytest
 import torch
 
 
@@ -47,10 +48,6 @@ def _get_detector_cfg(fname):
     return model, train_cfg, test_cfg
 
 
-def test_ssd300_forward():
-    _test_single_stage_forward('ssd/ssd300_coco.py')
-
-
 def test_rpn_forward():
     model, train_cfg, test_cfg = _get_detector_cfg(
         'rpn/rpn_r50_fpn_1x_coco.py')
@@ -81,23 +78,40 @@ def test_rpn_forward():
             batch_results.append(result)
 
 
-def test_retina_ghm_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg(
-        'ghm/retinanet_ghm_r50_fpn_1x_coco.py')
+@pytest.mark.parametrize(
+    'cfg_file',
+    [
+        'retinanet/retinanet_r50_fpn_1x_coco.py',
+        'guided_anchoring/ga_retinanet_r50_fpn_1x_coco.py',
+        'ghm/retinanet_ghm_r50_fpn_1x_coco.py',
+        'fcos/fcos_center_r50_caffe_fpn_gn-head_4x4_1x_coco.py',
+        'foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py',
+        # 'free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
+        # 'atss/atss_r50_fpn_1x_coco.py',  # not ready for topk
+        'reppoints/reppoints_moment_r50_fpn_1x_coco.py'
+    ])
+def test_single_stage_forward_gpu(cfg_file):
+    if not torch.cuda.is_available():
+        import pytest
+        pytest.skip('test requires GPU and torch+cuda')
+
+    model, train_cfg, test_cfg = _get_detector_cfg(cfg_file)
     model['pretrained'] = None
 
     from mmdet.models import build_detector
     detector = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
 
-    input_shape = (3, 3, 224, 224)
+    input_shape = (2, 3, 224, 224)
     mm_inputs = _demo_mm_inputs(input_shape)
 
     imgs = mm_inputs.pop('imgs')
     img_metas = mm_inputs.pop('img_metas')
 
+    detector = detector.cuda()
+    imgs = imgs.cuda()
     # Test forward train
-    gt_bboxes = mm_inputs['gt_bboxes']
-    gt_labels = mm_inputs['gt_labels']
+    gt_bboxes = [b.cuda() for b in mm_inputs['gt_bboxes']]
+    gt_labels = [g.cuda() for g in mm_inputs['gt_labels']]
     losses = detector.forward(
         imgs,
         img_metas,
@@ -114,51 +128,6 @@ def test_retina_ghm_forward():
             result = detector.forward([one_img], [[one_meta]],
                                       return_loss=False)
             batch_results.append(result)
-
-    if torch.cuda.is_available():
-        detector = detector.cuda()
-        imgs = imgs.cuda()
-        # Test forward train
-        gt_bboxes = [b.cuda() for b in mm_inputs['gt_bboxes']]
-        gt_labels = [g.cuda() for g in mm_inputs['gt_labels']]
-        losses = detector.forward(
-            imgs,
-            img_metas,
-            gt_bboxes=gt_bboxes,
-            gt_labels=gt_labels,
-            return_loss=True)
-        assert isinstance(losses, dict)
-
-        # Test forward test
-        with torch.no_grad():
-            img_list = [g[None, :] for g in imgs]
-            batch_results = []
-            for one_img, one_meta in zip(img_list, img_metas):
-                result = detector.forward([one_img], [[one_meta]],
-                                          return_loss=False)
-                batch_results.append(result)
-
-
-def test_cascade_forward():
-    _test_two_stage_forward(
-        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py')
-
-
-def test_mask_rcnn_forward():
-    _test_two_stage_forward('mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')
-
-
-def test_grid_rcnn_forward():
-    _test_two_stage_forward('grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py')
-
-
-def test_ms_rcnn_forward():
-    _test_two_stage_forward('ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py')
-
-
-# HTC is not ready yet
-# def test_htc_forward():
-#     _test_two_stage_forward('htc/htc_r50_fpn_1x_coco.py')
 
 
 def test_faster_rcnn_ohem_forward():
@@ -206,7 +175,14 @@ def test_faster_rcnn_ohem_forward():
     assert total_loss > 0
 
 
-def _test_two_stage_forward(cfg_file):
+# HTC is not ready yet
+@pytest.mark.parametrize('cfg_file', [
+    'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+    'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
+    'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
+    'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py'
+])
+def test_two_stage_forward(cfg_file):
     model, train_cfg, test_cfg = _get_detector_cfg(cfg_file)
     model['pretrained'] = None
 
@@ -265,7 +241,9 @@ def _test_two_stage_forward(cfg_file):
             batch_results.append(result)
 
 
-def _test_single_stage_forward(cfg_file):
+@pytest.mark.parametrize(
+    'cfg_file', ['ghm/retinanet_ghm_r50_fpn_1x_coco.py', 'ssd/ssd300_coco.py'])
+def test_single_stage_forward_cpu(cfg_file):
     model, train_cfg, test_cfg = _get_detector_cfg(cfg_file)
     model['pretrained'] = None
 

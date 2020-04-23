@@ -13,8 +13,6 @@ class FreeAnchorRetinaHead(RetinaHead):
                  num_classes,
                  in_channels,
                  stacked_convs=4,
-                 octave_base_scale=4,
-                 scales_per_octave=3,
                  conv_cfg=None,
                  norm_cfg=None,
                  pre_anchor_topk=50,
@@ -23,8 +21,7 @@ class FreeAnchorRetinaHead(RetinaHead):
                  alpha=0.5,
                  **kwargs):
         super(FreeAnchorRetinaHead,
-              self).__init__(num_classes, in_channels, stacked_convs,
-                             octave_base_scale, scales_per_octave, conv_cfg,
+              self).__init__(num_classes, in_channels, stacked_convs, conv_cfg,
                              norm_cfg, **kwargs)
 
         self.pre_anchor_topk = pre_anchor_topk
@@ -40,7 +37,7 @@ class FreeAnchorRetinaHead(RetinaHead):
              img_metas,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generators)
+        assert len(featmap_sizes) == len(self.anchor_generator.base_anchors)
 
         anchor_list, _ = self.get_anchors(featmap_sizes, img_metas)
         anchors = [torch.cat(anchor) for anchor in anchor_list]

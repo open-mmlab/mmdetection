@@ -3,11 +3,12 @@ input_size = 512
 model = dict(
     backbone=dict(input_size=input_size),
     bbox_head=dict(
-        input_size=input_size,
         in_channels=(512, 1024, 512, 256, 256, 256, 256),
-        anchor_strides=(8, 16, 32, 64, 128, 256, 512),
-        basesize_ratio_range=(0.15, 0.9),
-        anchor_ratios=([2], [2, 3], [2, 3], [2, 3], [2, 3], [2], [2])))
+        anchor_generator=dict(
+            input_size=input_size,
+            strides=[8, 16, 32, 64, 128, 256, 512],
+            basesize_ratio_range=(0.15, 0.9),
+            ratios=([2], [2, 3], [2, 3], [2, 3], [2, 3], [2], [2]))))
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),

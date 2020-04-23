@@ -1,8 +1,7 @@
-import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-from mmcv.cnn import normal_init
+from mmcv.cnn import bias_init_with_prob, normal_init
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
                         force_fp32, images_to_levels, multi_apply,
@@ -10,7 +9,6 @@ from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
 from mmdet.ops import ConvModule, Scale
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import bias_init_with_prob
 from .anchor_head import AnchorHead
 
 
@@ -38,38 +36,24 @@ class ATSSHead(AnchorHead):
                  num_classes,
                  in_channels,
                  stacked_convs=4,
-                 octave_base_scale=4,
-                 scales_per_octave=1,
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  loss_centerness=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 train_cfg=None,
-                 test_cfg=None,
                  **kwargs):
         self.stacked_convs = stacked_convs
-        self.octave_base_scale = octave_base_scale
-        self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.sampling = False
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
+        super(ATSSHead, self).__init__(num_classes, in_channels, **kwargs)
 
+        self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
             # SSD sampling=False so use PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
-
-        octave_scales = np.array(
-            [2**(i / scales_per_octave) for i in range(scales_per_octave)])
-        anchor_scales = octave_scales * octave_base_scale
-        super(ATSSHead, self).__init__(
-            num_classes, in_channels, anchor_scales=anchor_scales, **kwargs)
-
         self.loss_centerness = build_loss(loss_centerness)
 
     def _init_layers(self):
@@ -105,7 +89,8 @@ class ATSSHead(AnchorHead):
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
         self.atss_centerness = nn.Conv2d(
             self.feat_channels, self.num_anchors * 1, 3, padding=1)
-        self.scales = nn.ModuleList([Scale(1.0) for _ in self.anchor_strides])
+        self.scales = nn.ModuleList(
+            [Scale(1.0) for _ in self.anchor_generator.strides])
 
     def init_weights(self):
         for m in self.cls_convs:
@@ -198,7 +183,7 @@ class ATSSHead(AnchorHead):
              gt_bboxes_ignore=None):
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generators)
+        assert len(featmap_sizes) == self.anchor_generator.num_levels
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
@@ -273,12 +258,9 @@ class ATSSHead(AnchorHead):
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
         device = cls_scores[0].device
-        mlvl_anchors = [
-            self.anchor_generators[i].grid_anchors(
-                cls_scores[i].size()[-2:],
-                self.anchor_strides[i],
-                device=device) for i in range(num_levels)
-        ]
+        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
+        mlvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
 
         result_list = []
         for img_id in range(len(img_metas)):
@@ -363,7 +345,6 @@ class ATSSHead(AnchorHead):
                     valid_flag_list,
                     gt_bboxes_list,
                     img_metas,
-                    cfg,
                     gt_bboxes_ignore_list=None,
                     gt_labels_list=None,
                     label_channels=1,
@@ -402,9 +383,7 @@ class ATSSHead(AnchorHead):
              gt_bboxes_ignore_list,
              gt_labels_list,
              img_metas,
-             cfg=cfg,
              label_channels=label_channels,
-             background_label=self.background_label,
              unmap_outputs=unmap_outputs)
         # no valid anchors
         if any([labels is None for labels in all_labels]):
@@ -433,13 +412,11 @@ class ATSSHead(AnchorHead):
                            gt_bboxes_ignore,
                            gt_labels,
                            img_meta,
-                           cfg,
                            label_channels=1,
-                           background_label=80,
                            unmap_outputs=True):
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           cfg.allowed_border)
+                                           self.train_cfg.allowed_border)
         if not inside_flags.any():
             return (None, ) * 6
         # assign gt and sample anchors
@@ -458,7 +435,7 @@ class ATSSHead(AnchorHead):
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
         labels = anchors.new_full((num_valid_anchors, ),
-                                  background_label,
+                                  self.background_label,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
@@ -474,10 +451,10 @@ class ATSSHead(AnchorHead):
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]
-            if cfg.pos_weight <= 0:
+            if self.train_cfg.pos_weight <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg.pos_weight
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
