@@ -96,7 +96,7 @@ def tblr2bboxes(priors, tblr, normalizer=1.0, max_shape=None):
 
     loc_decode = tblr * normalizer
     prior_centers = (priors[:, 0:2] + priors[:, 2:4]) / 2
-    wh = priors[:, 2:4] - priors[:, 0:2] + 1
+    wh = priors[:, 2:4] - priors[:, 0:2]
     w, h = torch.split(wh, 1, dim=1)
     loc_decode[:, :2] *= h
     loc_decode[:, 2:] *= w
@@ -107,8 +107,8 @@ def tblr2bboxes(priors, tblr, normalizer=1.0, max_shape=None):
     ymax = prior_centers[:, 1].unsqueeze(1) + bottom
     boxes = torch.cat((xmin, ymin, xmax, ymax), dim=1)
     if max_shape is not None:
-        boxes[:, 0].clamp_(min=0, max=max_shape[1] - 1)
-        boxes[:, 1].clamp_(min=0, max=max_shape[0] - 1)
-        boxes[:, 2].clamp_(min=0, max=max_shape[1] - 1)
-        boxes[:, 3].clamp_(min=0, max=max_shape[0] - 1)
+        boxes[:, 0].clamp_(min=0, max=max_shape[1])
+        boxes[:, 1].clamp_(min=0, max=max_shape[0])
+        boxes[:, 2].clamp_(min=0, max=max_shape[1])
+        boxes[:, 3].clamp_(min=0, max=max_shape[0])
     return boxes

@@ -4,9 +4,10 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (anchor_inside_flags, force_fp32, images_to_levels,
                         multi_apply, unmap)
-from .retina_head import RetinaHead
+
 from ..losses.utils import weight_reduce_loss
 from ..registry import HEADS
+from .retina_head import RetinaHead
 
 
 @HEADS.register_module
@@ -112,7 +113,7 @@ class FSAFHead(RetinaHead):
             else:
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
             bbox_targets[pos_inds, :] = pos_bbox_targets
-            bbox_weights[pos_inds, :] = 1.0
+            bbox_weights[pos_inds, :] = 1. / 4.  # avg in tblr dims
             pos_gt_inds[pos_inds] = sampling_result.pos_assigned_gt_inds
             if gt_labels is None:
                 # only rpn gives gt_labels as None, this time FG is 1
@@ -216,7 +217,8 @@ class FSAFHead(RetinaHead):
             list(range(len(losses_cls))),
             min_levels=argmin)
 
-        num_pos = torch.cat(pos_inds, 0).sum().float()
+        num_pos = torch.cat(pos_inds, 0).sum().float().clamp(min=1e-3)
+        # clamp to 1e-3 to prevent 0/0
         acc = self.calculate_accuracy(cls_scores, labels_list, pos_inds)
         for i in range(len(losses_cls)):
             losses_cls[i] /= num_pos
@@ -229,7 +231,7 @@ class FSAFHead(RetinaHead):
 
     def calculate_accuracy(self, cls_scores, labels_list, pos_inds):
         with torch.no_grad():
-            num_pos = torch.cat(pos_inds, 0).sum().float()
+            num_pos = torch.cat(pos_inds, 0).sum().float().clamp(min=1e-3)
             num_class = cls_scores[0].size(1)
             scores = [
                 cls.permute(0, 2, 3, 1).reshape(-1, num_class)[pos]
@@ -244,10 +246,10 @@ class FSAFHead(RetinaHead):
 
             num_correct = sum([(argmax(score) == label).sum()
                                for score, label in zip(scores, labels)])
-            return num_correct.float() / (num_pos + 1e-3)
+            return num_correct.float() / num_pos
 
     def collect_loss_level_single(self, cls_loss, reg_loss,
-                                  pos_assigned_gt_inds, labels_seq):
+                                  assigned_gt_inds, labels_seq):
         """Get the average loss in each FPN level w.r.t. each gt label
 
         Args:
@@ -255,27 +257,26 @@ class FSAFHead(RetinaHead):
               shape (num_anchor, num_class)
             reg_loss (tensor): regression loss of each feature map pixel,
               shape (num_anchor, 4)
-            pos_assigned_gt_inds (tensor): shape (num_anchor), indicating
+            assigned_gt_inds (tensor): shape (num_anchor), indicating
               which gt the prior is assigned to (-1: no assignment)
-            labels_seq: The rank of labels
+            labels_seq: The rank of labels. shape (num_gt)
 
         Returns:
-
+            shape: (num_gt), average loss of each gt in this level
         """
         if len(reg_loss.shape) == 2:  # iou loss has shape [num_prior, 4]
-            reg_loss = reg_loss.sum(dim=-1)
-
-        loss = cls_loss.sum(dim=-1) + reg_loss
+            reg_loss = reg_loss.sum(dim=-1)  # sum loss in tblr dims
         # total loss at each feature map point
-        match = (
-            pos_assigned_gt_inds.reshape(-1).unsqueeze(1) ==
-            labels_seq.unsqueeze(0))
-        loss_ceiling = loss.new_zeros(1).squeeze() + 1e6
-        # default loss value for a layer where no anchor is positive
-        losses_ = torch.stack([
-            torch.mean(loss[match[:, i]])
-            if match[:, i].sum() > 0 else loss_ceiling for i in labels_seq
-        ])
+        if len(cls_loss.shape) == 2:
+            cls_loss = cls_loss.sum(dim=-1)  # sum loss in class dims
+        loss = cls_loss + reg_loss
+        assert loss.size(0) == assigned_gt_inds.size(0)
+        # default loss value is 1e6 for a layer where no anchor is positive
+        losses_ = loss.new_full(labels_seq.shape, 1e6)
+        for i, l in enumerate(labels_seq):
+            match = assigned_gt_inds == l
+            if match.any():
+                losses_[i] = loss[match].mean()
         return losses_,
 
     def reassign_loss_single(self, cls_loss, reg_loss, assigned_gt_inds,
@@ -302,7 +303,7 @@ class FSAFHead(RetinaHead):
             cls_loss: shape (num_anchors, num_classes).
               Corrected classification loss
             reg_loss: shape (num_anchors). Corrected regression loss
-            keep_indices: shape (num_anchors). Indicating final postive anchors
+            pos_flags: shape (num_anchors). Indicating final postive anchors
         """
         loc_weight = torch.ones_like(reg_loss)
         cls_weight = torch.ones_like(cls_loss)
