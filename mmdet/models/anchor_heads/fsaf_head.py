@@ -4,8 +4,8 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (anchor_inside_flags, force_fp32, images_to_levels,
                         multi_apply, unmap)
+from ..builder import HEADS
 from ..losses.utils import weight_reduce_loss
-from ..registry import HEADS
 from .retina_head import RetinaHead
 
 

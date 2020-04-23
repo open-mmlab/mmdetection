@@ -1,5 +1,4 @@
-from ..builder import build_sampler
-from ..registry import BBOX_SAMPLERS
+from ..builder import BBOX_SAMPLERS, build_sampler
 from .base_sampler import BaseSampler
 
 

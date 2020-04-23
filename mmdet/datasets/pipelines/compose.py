@@ -1,7 +1,8 @@
 import collections
 
-from mmdet.utils import build_from_cfg
-from ..registry import PIPELINES
+from mmcv.utils import build_from_cfg
+
+from ..builder import PIPELINES
 
 
 @PIPELINES.register_module

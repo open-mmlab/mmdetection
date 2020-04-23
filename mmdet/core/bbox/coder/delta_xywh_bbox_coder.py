@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from ..registry import BBOX_CODERS
+from ..builder import BBOX_CODERS
 from .base_bbox_coder import BaseBBoxCoder
 
 

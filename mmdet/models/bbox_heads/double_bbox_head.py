@@ -3,7 +3,7 @@ from mmcv.cnn.weight_init import normal_init, xavier_init
 
 from mmdet.ops import ConvModule
 from ..backbones.resnet import Bottleneck
-from ..registry import HEADS
+from ..builder import HEADS
 from .bbox_head import BBoxHead
 
 

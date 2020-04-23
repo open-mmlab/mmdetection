@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from mmcv.cnn import caffe2_xavier_init
 
 from mmdet.ops import ConvModule
-from ..registry import NECKS
+from ..builder import NECKS
 
 
 class MergingCell(nn.Module):
