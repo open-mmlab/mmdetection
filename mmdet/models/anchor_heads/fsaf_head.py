@@ -1,83 +1,12 @@
 import numpy as np
 import torch
-from mmdet.core import (anchor_inside_flags, build_anchor_generator,
-                        build_assigner, build_bbox_coder, build_sampler,
-                        force_fp32, images_to_levels, multi_apply,
-                        multiclass_nms, unmap)
+from mmcv.cnn import normal_init
 
-from ..losses import IoULoss
-from ..losses.utils import weight_reduce_loss, weighted_loss
-from ..registry import HEADS, LOSSES
+from mmdet.core import (anchor_inside_flags, force_fp32, images_to_levels,
+                        multi_apply, unmap)
 from .retina_head import RetinaHead
-
-
-@weighted_loss
-def iou_loss_tblr(pred, target, eps=1e-6):
-    """Calculate the iou loss.
-
-    Get iou loss when both the prediction and targets are
-     encoded in TBLR format.
-
-    Args:
-        pred: shape (num_anchor, 4)
-        target: shape (num_anchor, 4)
-        eps: the minimum iou threshold
-
-    Returns:
-        loss: shape (num_anchor), IoU loss
-    """
-    xt, xb, xl, xr = torch.split(pred, 1, dim=-1)
-
-    # the ground truth position
-    gt, gb, gl, gr = torch.split(target, 1, dim=-1)
-
-    # compute the bounding box size
-    X = (xt + xb) * (xl + xr)  # AreaX
-    G = (gt + gb) * (gl + gr)  # AreaG
-
-    # compute the IOU
-    Ih = torch.min(xt, gt) + torch.min(xb, gb)
-    Iw = torch.min(xl, gl) + torch.min(xr, gr)
-
-    Inter = Ih * Iw
-    Union = (X + G - Inter).clamp(min=1)
-    # minimum area should be 1
-
-    IoU = Inter / Union
-    IoU = IoU.squeeze()
-    ious = IoU.clamp(min=eps)
-    loss = -ious.log()
-    return loss
-
-
-@LOSSES.register_module
-class IoULossTBLR(IoULoss):
-
-    def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
-        super(IoULossTBLR, self).__init__(eps, reduction, loss_weight)
-
-    def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None,
-                **kwargs):
-        if weight is not None and not torch.any(weight > 0):
-            return (pred * weight).sum()  # 0
-        assert reduction_override in (None, 'none', 'mean', 'sum')
-        reduction = (
-            reduction_override if reduction_override else self.reduction)
-        weight = weight.sum(dim=-1) / 4.  # iou loss is a scalar!
-        loss = self.loss_weight * iou_loss_tblr(
-            pred,
-            target,
-            weight,
-            eps=self.eps,
-            reduction=reduction,
-            avg_factor=avg_factor,
-            **kwargs)
-        return loss
+from ..losses.utils import weight_reduce_loss
+from ..registry import HEADS
 
 
 @HEADS.register_module
@@ -125,6 +54,12 @@ class FSAFHead(RetinaHead):
         return cls_score, self.relu(bbox_pred)
         # TBLR encoder only accepts positive bbox_pred
 
+    def init_weights(self):
+        super(FSAFHead, self).init_weights()
+        normal_init(self.retina_reg, std=0.01, bias=0.25)
+        # the positive bias in self.retina_reg conv is to prevent predicted \
+        #  bbox with 0 area
+
     def _get_targets_single(self,
                             flat_anchors,
                             valid_flags,
@@ -134,6 +69,15 @@ class FSAFHead(RetinaHead):
                             img_meta,
                             label_channels=1,
                             unmap_outputs=True):
+        """Compute regression and classification targets for anchors in
+            a single image.
+
+            Most of the codes are the same with the base class
+              ::obj::`AnchorHead`, except that it also collects and returns
+              the matched gt index in the image (from 0 to num_gt-1). If the
+              pixel is not matched to any gt, the corresponding value in
+              pos_gt_inds is -1.
+        """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
@@ -156,8 +100,8 @@ class FSAFHead(RetinaHead):
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
         pos_gt_inds = anchors.new_full((num_valid_anchors,),
-                                                -1,
-                                                dtype=torch.long)
+                                       -1,
+                                       dtype=torch.long)
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
@@ -194,86 +138,19 @@ class FSAFHead(RetinaHead):
             pos_gt_inds = unmap(
                 pos_gt_inds, num_total_anchors, inside_flags, fill=-1)
 
-
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
                 neg_inds, pos_gt_inds)
 
-    def get_targets(self,
-                    anchor_list,
-                    valid_flag_list,
-                    gt_bboxes_list,
-                    img_metas,
-                    gt_bboxes_ignore_list=None,
-                    gt_labels_list=None,
-                    label_channels=1,
-                    unmap_outputs=True):
-        """Compute regression and classification targets for anchors in
-            multiple images.
-
-        """
-        num_imgs = len(img_metas)
-        assert len(anchor_list) == len(valid_flag_list) == num_imgs
-
-        # anchor number of multi levels
-        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
-        # concat all level anchors to a single tensor
-        concat_anchor_list = []
-        concat_valid_flag_list = []
-        for i in range(num_imgs):
-            assert len(anchor_list[i]) == len(valid_flag_list[i])
-            concat_anchor_list.append(torch.cat(anchor_list[i]))
-            concat_valid_flag_list.append(torch.cat(valid_flag_list[i]))
-
-        # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
-        (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
-         pos_inds_list, neg_inds_list, pos_assigned_gt_inds) = multi_apply(
-             self._get_targets_single,
-             concat_anchor_list,
-             concat_valid_flag_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             gt_labels_list,
-             img_metas,
-             label_channels=label_channels,
-             unmap_outputs=unmap_outputs)
-        # no valid anchors
-        if any([labels is None for labels in all_labels]):
-            return None
-        # sampled anchors of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
-        # split targets to a list w.r.t. multiple levels
-        labels_list = images_to_levels(all_labels, num_level_anchors)
-        label_weights_list = images_to_levels(all_label_weights,
-                                              num_level_anchors)
-        bbox_targets_list = images_to_levels(all_bbox_targets,
-                                             num_level_anchors)
-        bbox_weights_list = images_to_levels(all_bbox_weights,
-                                             num_level_anchors)
-        pos_assigned_gt_inds_list = images_to_levels(pos_assigned_gt_inds,
-                                                     num_level_anchors)
-        return (labels_list, label_weights_list, bbox_targets_list,
-                bbox_weights_list, num_total_pos, num_total_neg,
-                pos_assigned_gt_inds_list)
-
-
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(
-        self,
-        cls_scores,
-        bbox_preds,
-        gt_bboxes,
-        gt_labels,
-        img_metas,
-        cfg,
-        gt_bboxes_ignore=None,
-    ):
+    def loss(self,
+             cls_scores,
+             bbox_preds,
+             gt_bboxes,
+             gt_labels,
+             img_metas,
+             gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generators)
+        assert len(featmap_sizes) == len(self.anchor_generator.base_anchors)
         batch_size = len(gt_bboxes)
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
@@ -284,11 +161,8 @@ class FSAFHead(RetinaHead):
             valid_flag_list,
             gt_bboxes,
             img_metas,
-            self.target_normalizer,
-            cfg,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
-            sampling=self.sampling)
+            gt_labels_list=gt_labels)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
@@ -298,16 +172,25 @@ class FSAFHead(RetinaHead):
         num_gts = np.array(list(map(len, gt_labels)))
         num_total_samples = (
             num_total_pos + num_total_neg if self.sampling else num_total_pos)
+        # anchor number of multi levels
+        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
+        # concat all level anchors and flags to a single tensor
+        concat_anchor_list = []
+        for i in range(len(anchor_list)):
+            concat_anchor_list.append(torch.cat(anchor_list[i]))
+        all_anchor_list = images_to_levels(concat_anchor_list,
+                                           num_level_anchors)
+
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
             bbox_preds,
+            all_anchor_list,
             labels_list,
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples,
-            cfg=cfg)
+            num_total_samples=num_total_samples)
         cum_num_gts = list(np.cumsum(num_gts))
         for i, assign in enumerate(pos_assigned_gt_inds_list):
             for j in range(1, batch_size):
@@ -359,7 +242,7 @@ class FSAFHead(RetinaHead):
             def argmax(x):
                 return x.argmax(1) if x.numel() > 0 else -100
 
-            num_correct = sum([(argmax(score) + 1 == label).sum()
+            num_correct = sum([(argmax(score) == label).sum()
                                for score, label in zip(scores, labels)])
             return num_correct.float() / (num_pos + 1e-3)
 
@@ -371,7 +254,7 @@ class FSAFHead(RetinaHead):
             cls_loss (tensor): classification loss of each feature map pixel,
               shape (num_anchor, num_class)
             reg_loss (tensor): regression loss of each feature map pixel,
-              shape (num_anchor)
+              shape (num_anchor, 4)
             pos_assigned_gt_inds (tensor): shape (num_anchor), indicating
               which gt the prior is assigned to (-1: no assignment)
             labels_seq: The rank of labels
@@ -379,6 +262,9 @@ class FSAFHead(RetinaHead):
         Returns:
 
         """
+        if len(reg_loss.shape) == 2:  # iou loss has shape [num_prior, 4]
+            reg_loss = reg_loss.sum(dim=-1)
+
         loss = cls_loss.sum(dim=-1) + reg_loss
         # total loss at each feature map point
         match = (
@@ -392,7 +278,7 @@ class FSAFHead(RetinaHead):
         ])
         return losses_,
 
-    def reassign_loss_single(self, cls_loss, reg_loss, pos_assigned_gt_inds,
+    def reassign_loss_single(self, cls_loss, reg_loss, assigned_gt_inds,
                              labels, level, min_levels):
         """Reassign loss values at each level.
 
@@ -403,7 +289,7 @@ class FSAFHead(RetinaHead):
             cls_loss (tensor): shape (num_anchors, num_classes)
               classification loss
             reg_loss (tensor): shape (num_anchors) regression loss
-            pos_assigned_gt_inds (tensor): shape (num_anchors),
+            assigned_gt_inds (tensor): shape (num_anchors),
               the gt indices that each positive anchor corresponds to.
               (-1 if it is a negative one)
             labels (tensor): shape (num_anchors). Label assigned to each pixel
@@ -418,78 +304,28 @@ class FSAFHead(RetinaHead):
             reg_loss: shape (num_anchors). Corrected regression loss
             keep_indices: shape (num_anchors). Indicating final postive anchors
         """
+        loc_weight = torch.ones_like(reg_loss)
+        cls_weight = torch.ones_like(cls_loss)
+        pos_flags = assigned_gt_inds >= 0  # positive pixel flag
+        pos_indices = torch.nonzero(pos_flags).flatten()
 
-        unmatch_gt_inds = torch.nonzero(min_levels != level)
-        # gts indices that unmatch with the current level
-        match_gt_inds = torch.nonzero(min_levels == level)
-        loc_weight = cls_loss.new_ones(cls_loss.size(0))
-        cls_weight = cls_loss.new_ones(cls_loss.size(0), cls_loss.size(1))
-        zeroing_indices = (pos_assigned_gt_inds.view(
-            -1, 1) == unmatch_gt_inds.view(1, -1)).any(dim=-1)
-        keep_indices = (pos_assigned_gt_inds.view(-1, 1) == match_gt_inds.view(
-            1, -1)).any(dim=-1)
-        loc_weight[zeroing_indices] = 0
+        if pos_flags.any():  # pos pixels exist
+            pos_assigned_gt_inds = assigned_gt_inds[pos_flags]
+            zeroing_indices = (min_levels[pos_assigned_gt_inds] != level)
+            neg_indices = pos_indices[zeroing_indices]
 
-        # Only the weight corresponding to the label is
-        #  zeroed out if not selected
-        zeroing_labels = labels[zeroing_indices] - 1
-        # the original labels assigned to the anchor box
-        assert (zeroing_labels >= 0).all()
-        cls_weight[zeroing_indices, zeroing_labels] = 0
+            if neg_indices.numel():
+                pos_flags[neg_indices] = 0
+                loc_weight[neg_indices] = 0
+                # Only the weight corresponding to the label is
+                #  zeroed out if not selected
+                zeroing_labels = labels[neg_indices]
+                # the original labels assigned to the anchor box
+                assert (zeroing_labels >= 0).all()
+                cls_weight[neg_indices, zeroing_labels] = 0
 
         # weighted loss for both cls and reg loss
         cls_loss = weight_reduce_loss(cls_loss, cls_weight, reduction='sum')
         reg_loss = weight_reduce_loss(reg_loss, loc_weight, reduction='sum')
-        return cls_loss, reg_loss, keep_indices
 
-    def get_bboxes_single(self,
-                          cls_score_list,
-                          bbox_pred_list,
-                          mlvl_anchors,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
-        """
-        Transform outputs for a single batch item into labeled boxes.
-        """
-        assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
-        mlvl_bboxes = []
-        mlvl_scores = []
-        for cls_score, bbox_pred, anchors in zip(cls_score_list,
-                                                 bbox_pred_list, mlvl_anchors):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            cls_score = cls_score.permute(1, 2,
-                                          0).reshape(-1, self.cls_out_channels)
-            if self.use_sigmoid_cls:
-                scores = cls_score.sigmoid()
-            else:
-                scores = cls_score.softmax(-1)
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
-                # Get maximum scores for foreground classes.
-                if self.use_sigmoid_cls:
-                    max_scores, _ = scores.max(dim=1)
-                else:
-                    max_scores, _ = scores[:, 1:].max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-            bboxes = tblr2bboxes(anchors, bbox_pred, self.target_normalizer,
-                                 img_shape)
-            mlvl_bboxes.append(bboxes)
-            mlvl_scores.append(scores)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        if self.use_sigmoid_cls:
-            # Add a dummy background class to the front when using sigmoid
-            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
-        det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                cfg.score_thr, cfg.nms,
-                                                cfg.max_per_img)
-        return det_bboxes, det_labels
+        return cls_loss, reg_loss, pos_flags
