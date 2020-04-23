@@ -1,5 +1,3 @@
-from __future__ import division
-
 import torch
 import torch.nn as nn
 from mmcv.cnn import normal_init
