@@ -5,7 +5,7 @@ from pathlib import Path
 import mmcv
 from mmcv import Config
 
-from mmdet.datasets.builder import build_dataset
+from mmdet.datasets.registry import build_dataset
 
 
 def parse_args():
