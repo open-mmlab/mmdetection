@@ -18,10 +18,9 @@ class DefaultOptimizerConstructor(object):
         optimizer_cfg (dict): The config dict of the optimizer.
             Positional fields are:
                 - type: class name of the optimizer.
-                - lr: base learning rate.
             Optional fields are:
                 - any arguments of the corresponding optimizer type, e.g.,
-                  weight_decay, momentum, etc.
+                  lr, weight_decay, momentum, etc.
         paramwise_cfg (dict, optional): Parameter-wise options. Accepted fields
             are:
             - bias_lr_mult (float): It will be multiplied to the learning
@@ -55,7 +54,7 @@ class DefaultOptimizerConstructor(object):
                             'but got {}'.format(type(optimizer_cfg)))
         self.optimizer_cfg = optimizer_cfg
         self.paramwise_cfg = {} if paramwise_cfg is None else paramwise_cfg
-        self.base_lr = optimizer_cfg['lr']
+        self.base_lr = optimizer_cfg.get('lr', None)
         self.base_wd = optimizer_cfg.get('weight_decay', None)
         self._validate_cfg()
 
