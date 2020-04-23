@@ -2,7 +2,8 @@ from os.path import dirname, exists, join, relpath
 
 import torch
 
-from mmdet.core import BitmapMasks, PolygonMasks, build_optimizer
+from mmdet.core import BitmapMasks, PolygonMasks
+from mmdet.core.optimizer import build_optimizer
 
 
 def _get_config_directory():

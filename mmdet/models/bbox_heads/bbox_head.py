@@ -5,9 +5,8 @@ from torch.nn.modules.utils import _pair
 
 from mmdet.core import (auto_fp16, build_bbox_coder, force_fp32, multi_apply,
                         multiclass_nms)
-from ..builder import build_loss
 from ..losses import accuracy
-from ..registry import HEADS
+from ..registry import HEADS, build_loss
 
 
 @HEADS.register_module
