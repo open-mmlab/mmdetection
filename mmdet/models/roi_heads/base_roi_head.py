@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 import torch.nn as nn
 
-from ..registry import build_shared_head
+from ..builder import build_shared_head
 
 
 class BaseRoIHead(nn.Module, metaclass=ABCMeta):

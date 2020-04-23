@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
 from mmdet.ops import ConvModule, NonLocal2D
-from ..registry import NECKS
+from ..builder import NECKS
 
 
 @NECKS.register_module

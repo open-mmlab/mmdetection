@@ -6,7 +6,7 @@ import torch.nn as nn
 
 from mmdet.core import OPTIMIZER_BUILDERS, DefaultOptimizerConstructor
 from mmdet.core.optimizer import build_optimizer, build_optimizer_constructor
-from mmdet.core.optimizer.registry import TORCH_OPTIMIZERS
+from mmdet.core.optimizer.builder import TORCH_OPTIMIZERS
 
 
 class SubModel(nn.Module):

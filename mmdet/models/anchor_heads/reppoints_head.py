@@ -6,7 +6,7 @@ from mmcv.cnn import bias_init_with_prob, normal_init
 from mmdet.core import (PointGenerator, build_assigner, build_sampler,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from mmdet.ops import ConvModule, DeformConv
-from ..registry import HEADS, build_loss
+from ..builder import HEADS, build_loss
 
 
 @HEADS.register_module

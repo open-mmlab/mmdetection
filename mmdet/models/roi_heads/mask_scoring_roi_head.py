@@ -1,7 +1,7 @@
 import torch
 
 from mmdet.core import bbox2roi
-from ..registry import HEADS, build_head
+from ..builder import HEADS, build_head
 from .standard_roi_head import StandardRoIHead
 
 

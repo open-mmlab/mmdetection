@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
 
 from mmdet.ops import ConvModule
-from ..registry import HEADS, build_loss
+from ..builder import HEADS, build_loss
 
 
 @HEADS.register_module

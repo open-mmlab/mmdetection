@@ -1,7 +1,7 @@
 from .assigners import AssignResult, BaseAssigner, MaxIoUAssigner
+from .builder import build_assigner, build_bbox_coder, build_sampler
 from .coder import BaseBBoxCoder, DeltaXYWHBBoxCoder, PseudoBBoxCoder
 from .iou_calculators import BboxOverlaps2D, bbox_overlaps
-from .registry import build_assigner, build_bbox_coder, build_sampler
 from .samplers import (BaseSampler, CombinedSampler,
                        InstanceBalancedPosSampler, IoUBalancedNegSampler,
                        PseudoSampler, RandomSampler, SamplingResult)

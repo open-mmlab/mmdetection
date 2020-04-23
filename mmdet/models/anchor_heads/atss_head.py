@@ -7,7 +7,7 @@ from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
                         force_fp32, images_to_levels, multi_apply,
                         multiclass_nms, unmap)
 from mmdet.ops import ConvModule, Scale
-from ..registry import HEADS, build_loss
+from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
 

@@ -1,4 +1,4 @@
-from ..registry import HEADS
+from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
 
 

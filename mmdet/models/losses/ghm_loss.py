@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..registry import LOSSES
+from ..builder import LOSSES
 
 
 def _expand_onehot_labels(labels, label_weights, label_channels):

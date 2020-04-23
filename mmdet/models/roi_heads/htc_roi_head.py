@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
-from ..registry import HEADS, build_head, build_roi_extractor
+from ..builder import HEADS, build_head, build_roi_extractor
 from .cascade_roi_head import CascadeRoIHead
 
 

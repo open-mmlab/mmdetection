@@ -4,8 +4,8 @@ import xml.etree.ElementTree as ET
 import mmcv
 import numpy as np
 
+from .builder import DATASETS
 from .custom import CustomDataset
-from .registry import DATASETS
 
 
 @DATASETS.register_module

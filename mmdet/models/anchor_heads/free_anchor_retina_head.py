@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from mmdet.core import bbox_overlaps
-from ..registry import HEADS
+from ..builder import HEADS
 from .retina_head import RetinaHead
 
 

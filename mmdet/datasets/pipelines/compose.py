@@ -2,7 +2,7 @@ import collections
 
 from mmcv.utils import build_from_cfg
 
-from ..registry import PIPELINES
+from ..builder import PIPELINES
 
 
 @PIPELINES.register_module

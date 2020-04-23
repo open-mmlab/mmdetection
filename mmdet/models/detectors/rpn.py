@@ -1,7 +1,7 @@
 import mmcv
 
 from mmdet.core import bbox_mapping, tensor2imgs
-from ..registry import DETECTORS, build_backbone, build_head, build_neck
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 

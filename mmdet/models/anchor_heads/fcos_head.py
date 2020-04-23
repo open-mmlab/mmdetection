@@ -4,7 +4,7 @@ from mmcv.cnn import bias_init_with_prob, normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
 from mmdet.ops import ConvModule, Scale
-from ..registry import HEADS, build_loss
+from ..builder import HEADS, build_loss
 
 INF = 1e8
 
