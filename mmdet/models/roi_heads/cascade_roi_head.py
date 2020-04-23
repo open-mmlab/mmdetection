@@ -4,8 +4,7 @@ import torch.nn as nn
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
                         build_sampler, merge_aug_bboxes, merge_aug_masks,
                         multiclass_nms)
-from .. import builder
-from ..registry import HEADS
+from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
@@ -53,9 +52,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             bbox_head = [bbox_head for _ in range(self.num_stages)]
         assert len(bbox_roi_extractor) == len(bbox_head) == self.num_stages
         for roi_extractor, head in zip(bbox_roi_extractor, bbox_head):
-            self.bbox_roi_extractor.append(
-                builder.build_roi_extractor(roi_extractor))
-            self.bbox_head.append(builder.build_head(head))
+            self.bbox_roi_extractor.append(build_roi_extractor(roi_extractor))
+            self.bbox_head.append(build_head(head))
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
         self.mask_head = nn.ModuleList()
@@ -63,7 +61,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_head = [mask_head for _ in range(self.num_stages)]
         assert len(mask_head) == self.num_stages
         for head in mask_head:
-            self.mask_head.append(builder.build_head(head))
+            self.mask_head.append(build_head(head))
         if mask_roi_extractor is not None:
             self.share_roi_extractor = False
             self.mask_roi_extractor = nn.ModuleList()
@@ -74,7 +72,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             assert len(mask_roi_extractor) == self.num_stages
             for roi_extractor in mask_roi_extractor:
                 self.mask_roi_extractor.append(
-                    builder.build_roi_extractor(roi_extractor))
+                    build_roi_extractor(roi_extractor))
         else:
             self.share_roi_extractor = True
             self.mask_roi_extractor = self.bbox_roi_extractor

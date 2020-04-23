@@ -11,8 +11,8 @@ import numpy as np
 import pycocotools.mask as maskUtils
 
 from mmdet.utils import print_log
+from .builder import DATASETS
 from .coco import CocoDataset
-from .registry import DATASETS
 
 
 @DATASETS.register_module

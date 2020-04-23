@@ -5,8 +5,8 @@ import numpy as np
 from torch.utils.data import Dataset
 
 from mmdet.core import eval_map, eval_recalls
+from .builder import DATASETS
 from .pipelines import Compose
-from .registry import DATASETS
 
 
 @DATASETS.register_module
