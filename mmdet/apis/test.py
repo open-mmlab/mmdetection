@@ -30,14 +30,20 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
             for img, img_meta in zip(imgs, img_metas):
                 h, w, _ = img_meta['img_shape']
                 img_show = img[:h, :w, :]
-                img_show = mmcv.imresize(img_show,
-                                         img_meta['ori_shape'][:-1][::-1])
-                out_file = osp.join(out_dir, img_meta['filename'])
+
+                ori_h, ori_w = img_meta['ori_shape'][:-1]
+                img_show = mmcv.imresize(img_show, (ori_w, ori_h))
+
+                if out_dir:
+                    out_file = osp.join(out_dir, img_meta['filename'])
+                else: 
+                    out_file = None
+    
                 model.module.show_result(
                     img_show,
                     result,
                     show=show,
-                    out_file=out_file if out_dir else None)
+                    out_file=out_file)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
