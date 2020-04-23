@@ -1,4 +1,5 @@
-from mmdet.utils import build_from_cfg
+from mmcv.utils import build_from_cfg
+
 from .assigners import BaseAssigner
 from .coder import BaseBBoxCoder
 from .registry import BBOX_ASSIGNERS, BBOX_CODERS, BBOX_SAMPLERS

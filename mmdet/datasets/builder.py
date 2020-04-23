@@ -6,9 +6,9 @@ from functools import partial
 import numpy as np
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
+from mmcv.utils import build_from_cfg
 from torch.utils.data import DataLoader
 
-from mmdet.utils import build_from_cfg
 from .dataset_wrappers import ConcatDataset, RepeatDataset
 from .registry import DATASETS
 from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler

@@ -1,4 +1,5 @@
-from mmdet.utils import build_from_cfg
+from mmcv.utils import build_from_cfg
+
 from .registry import IOU_CALCULATORS
 
 

@@ -1,3 +1,3 @@
-from mmdet.utils import Registry
+from mmcv.utils import Registry
 
 ANCHOR_GENERATORS = Registry('Anchor generator')

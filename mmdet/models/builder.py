@@ -1,6 +1,6 @@
+from mmcv.utils import build_from_cfg
 from torch import nn
 
-from mmdet.utils import build_from_cfg
 from .registry import (BACKBONES, DETECTORS, HEADS, LOSSES, NECKS,
                        ROI_EXTRACTORS, SHARED_HEADS)
 
