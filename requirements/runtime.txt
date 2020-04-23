@@ -5,8 +5,8 @@ numpy==1.17.5
 Pillow<=6.2.2
 six
 terminaltables
-torch>=1.4
-torchvision
+torch==1.4
+torchvision==0.5.0
 pytorchcv==0.0.55
 tqdm
 onnx==1.6.0
