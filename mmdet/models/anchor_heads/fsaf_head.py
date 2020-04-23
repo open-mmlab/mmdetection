@@ -182,8 +182,8 @@ class FSAFHead(RetinaHead):
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
         for i in range(len(bbox_preds)):
-            bbox_preds[i].clamp_(
-                min=1e-4)  # avoid 0 area of the predicted bbox
+            bbox_preds[i] = bbox_preds[i].clamp(min=1e-4)
+            # avoid 0 area of the predicted bbox
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
