@@ -1,6 +1,6 @@
 import torch
 
-from ..registry import BBOX_ASSIGNERS
+from ..builder import BBOX_ASSIGNERS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 

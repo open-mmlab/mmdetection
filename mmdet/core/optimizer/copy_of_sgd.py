@@ -1,6 +1,6 @@
 from torch.optim import SGD
 
-from .registry import OPTIMIZERS
+from .builder import OPTIMIZERS
 
 
 @OPTIMIZERS.register_module

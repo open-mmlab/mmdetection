@@ -5,7 +5,7 @@ from mmcv.runner import load_checkpoint
 from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
 from ..backbones import ResNet
-from ..registry import SHARED_HEADS
+from ..builder import SHARED_HEADS
 from ..utils import ResLayer as _ResLayer
 
 

@@ -1,6 +1,6 @@
 import torch
 
-from .registry import IOU_CALCULATORS
+from .builder import IOU_CALCULATORS
 
 
 @IOU_CALCULATORS.register_module

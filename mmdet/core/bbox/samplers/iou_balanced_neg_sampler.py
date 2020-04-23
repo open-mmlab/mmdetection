@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from ..registry import BBOX_SAMPLERS
+from ..builder import BBOX_SAMPLERS
 from .random_sampler import RandomSampler
 
 

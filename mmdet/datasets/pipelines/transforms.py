@@ -6,7 +6,7 @@ from numpy import random
 
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-from ..registry import PIPELINES
+from ..builder import PIPELINES
 
 try:
     from imagecorruptions import corrupt

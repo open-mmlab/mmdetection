@@ -1,7 +1,6 @@
 from .anchor_generator import AnchorGenerator, LegacyAnchorGenerator
-from .builder import build_anchor_generator
+from .builder import ANCHOR_GENERATORS, build_anchor_generator
 from .point_generator import PointGenerator
-from .registry import ANCHOR_GENERATORS
 from .utils import anchor_inside_flags, calc_region, images_to_levels
 
 __all__ = [

@@ -8,8 +8,7 @@ from mmdet.core import auto_fp16, force_fp32, mask_target
 from mmdet.ops import Conv2d, ConvModule, build_upsample_layer
 from mmdet.ops.carafe import CARAFEPack
 from mmdet.ops.grid_sampler import grid_sample
-from ..builder import build_loss
-from ..registry import HEADS
+from ..builder import HEADS, build_loss
 
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
