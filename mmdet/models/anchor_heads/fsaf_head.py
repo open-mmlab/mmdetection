@@ -4,7 +4,6 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (anchor_inside_flags, force_fp32, images_to_levels,
                         multi_apply, unmap)
-
 from ..losses.utils import weight_reduce_loss
 from ..registry import HEADS
 from .retina_head import RetinaHead
@@ -100,7 +99,7 @@ class FSAFHead(RetinaHead):
                                   self.background_label,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
-        pos_gt_inds = anchors.new_full((num_valid_anchors,),
+        pos_gt_inds = anchors.new_full((num_valid_anchors, ),
                                        -1,
                                        dtype=torch.long)
 
@@ -250,8 +249,8 @@ class FSAFHead(RetinaHead):
                                for score, label in zip(scores, labels)])
             return num_correct.float() / num_pos
 
-    def collect_loss_level_single(self, cls_loss, reg_loss,
-                                  assigned_gt_inds, labels_seq):
+    def collect_loss_level_single(self, cls_loss, reg_loss, assigned_gt_inds,
+                                  labels_seq):
         """Get the average loss in each FPN level w.r.t. each gt label
 
         Args:

@@ -1,7 +1,7 @@
 import torch
 
-from .base_bbox_coder import BaseBBoxCoder
 from ..registry import BBOX_CODERS
+from .base_bbox_coder import BaseBBoxCoder
 
 
 @BBOX_CODERS.register_module
@@ -15,12 +15,11 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         .. [1] https://arxiv.org/abs/1903.00621
 
     Args:
-        normalizer (Sequence[float] | float): denormalizing standard deviation of
-            target for delta coordinates
+        normalizer (Sequence[float] | float): denormalizing standard deviation
+          of target for delta coordinates
     """
 
-    def __init__(self,
-                 normalizer=1.0):
+    def __init__(self, normalizer=1.0):
         super(BaseBBoxCoder, self).__init__()
         self.normalizer = normalizer
 
@@ -30,10 +29,7 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         encoded_bboxes = bboxes2tblr(bboxes, gt_bboxes, self.normalizer)
         return encoded_bboxes
 
-    def decode(self,
-               bboxes,
-               pred_bboxes,
-               max_shape=None):
+    def decode(self, bboxes, pred_bboxes, max_shape=None):
         assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = tblr2bboxes(bboxes, pred_bboxes, self.normalizer,
                                      max_shape)

@@ -16,10 +16,7 @@ model = dict(
             ratios=[1.0],
             strides=[8, 16, 32, 64, 128],
             center_offset=0.5),
-        bbox_coder=dict(
-            _delete_=True,
-            type='TBLRBBoxCoder',
-            normalizer=1.0),
+        bbox_coder=dict(_delete_=True, type='TBLRBBoxCoder', normalizer=1.0),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -47,5 +44,5 @@ train_cfg = dict(
     pos_weight=-1,
     debug=False)
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(_delete_=True,
-                        grad_clip=dict(max_norm=10, norm_type=2))
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=10, norm_type=2))

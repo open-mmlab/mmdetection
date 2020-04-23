@@ -1,9 +1,9 @@
 import torch
 
-from .assign_result import AssignResult
-from .base_assigner import BaseAssigner
 from ..iou_calculators import build_iou_calculator
 from ..registry import BBOX_ASSIGNERS
+from .assign_result import AssignResult
+from .base_assigner import BaseAssigner
 
 
 def scale_boxes(bboxes, scale):
@@ -128,8 +128,8 @@ class EffectiveAreaAssigner(BaseAssigner):
 
         # Only calculate bbox and gt_eff IoF. This enables small prior bboxes
         #   to match large gts
-        bbox_and_gt_eff_overlaps = self.iou_calculator(bboxes, gt_eff,
-                                                       mode='iof')
+        bbox_and_gt_eff_overlaps = self.iou_calculator(
+            bboxes, gt_eff, mode='iof')
         is_bbox_in_gt_eff = is_bbox_in_gt & (
             bbox_and_gt_eff_overlaps > self.min_pos_iof)
         # shape (n, k)
@@ -137,9 +137,9 @@ class EffectiveAreaAssigner(BaseAssigner):
 
         # constructing ignored gt areas
         gt_ignore = scale_boxes(gt_bboxes, self.neg_area_thr)
-        is_bbox_in_gt_ignore = (self.iou_calculator(bboxes,
-                                                    gt_ignore, mode='iof')
-                                > self.min_pos_iof)
+        is_bbox_in_gt_ignore = (
+            self.iou_calculator(bboxes, gt_ignore, mode='iof') >
+            self.min_pos_iof)
         is_bbox_in_gt_ignore &= (~is_bbox_in_gt_eff)
         # rule out center effective pixels
 

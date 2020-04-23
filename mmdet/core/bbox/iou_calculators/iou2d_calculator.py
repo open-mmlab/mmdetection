@@ -102,4 +102,3 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
             ious = overlap / (area1[:, None])
 
     return ious
-

@@ -1,7 +1,7 @@
-from .assigners import AssignResult, BaseAssigner, MaxIoUAssigner, \
-    EffectiveAreaAssigner
-from .coder import BaseBBoxCoder, DeltaXYWHBBoxCoder, PseudoBBoxCoder, \
-    TBLRBBoxCoder
+from .assigners import (AssignResult, BaseAssigner, EffectiveAreaAssigner,
+                        MaxIoUAssigner)
+from .coder import (BaseBBoxCoder, DeltaXYWHBBoxCoder, PseudoBBoxCoder,
+                    TBLRBBoxCoder)
 from .iou_calculators import BboxOverlaps2D, bbox_overlaps
 from .samplers import (BaseSampler, CombinedSampler,
                        InstanceBalancedPosSampler, IoUBalancedNegSampler,
