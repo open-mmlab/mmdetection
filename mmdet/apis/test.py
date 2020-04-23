@@ -36,14 +36,11 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
 
                 if out_dir:
                     out_file = osp.join(out_dir, img_meta['filename'])
-                else: 
+                else:
                     out_file = None
-    
+
                 model.module.show_result(
-                    img_show,
-                    result,
-                    show=show,
-                    out_file=out_file)
+                    img_show, result, show=show, out_file=out_file)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
