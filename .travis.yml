@@ -12,8 +12,8 @@ env:
     - UBUNTU_VERSION=ubuntu1804
     - FORCE_CUDA=1
   matrix:
-    - TORCH=1.3.1 TORCHVISION=0.4.2 CUDA_ARCH="0.6"
-    - TORCH=1.5.0 TORCHVISION=0.6.0 CUDA_ARCH="0.7"
+    - TORCH=1.3.1 TORCHVISION=0.4.2 CUDA_ARCH=6.0
+    - TORCH=1.5.0 TORCHVISION=0.6.0 CUDA_ARCH=7.0
 
 cache: pip
 
@@ -44,7 +44,7 @@ before_script:
 
 script:
   - python setup.py check -m -s
-  - TORCH_CUDA_ARCH_LIST=${CUDA_ARCH} python setup.py build_ext --inplace
+  - TORCH_CUDA_ARCH_LIST="${CUDA_ARCH}" python setup.py build_ext --inplace
   - coverage run --branch --source mmdet -m py.test -v --xdoctest-modules tests mmdet
 
 after_success:
