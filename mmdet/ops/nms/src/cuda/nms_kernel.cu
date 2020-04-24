@@ -74,7 +74,7 @@ at::Tensor nms_cuda_forward(const at::Tensor boxes, float nms_overlap_thresh) {
   at::DeviceGuard guard(boxes.device());
 
   using scalar_t = float;
-  AT_ASSERTM(boxes.is_cuda(), "boxes must be a CUDA tensor");
+  AT_ASSERTM(boxes.device().is_cuda(), "boxes must be a CUDA tensor");
   auto scores = boxes.select(1, 4);
   auto order_t = std::get<1>(scores.sort(0, /* descending=*/true));
   auto boxes_sorted = boxes.index_select(0, order_t);

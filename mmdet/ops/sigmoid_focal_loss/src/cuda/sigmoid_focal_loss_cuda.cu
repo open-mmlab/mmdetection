@@ -100,8 +100,8 @@ at::Tensor SigmoidFocalLoss_forward_cuda(const at::Tensor &logits,
                                          const at::Tensor &targets,
                                          const int num_classes,
                                          const float gamma, const float alpha) {
-  AT_ASSERTM(logits.is_cuda(), "logits must be a CUDA tensor");
-  AT_ASSERTM(targets.is_cuda(), "targets must be a CUDA tensor");
+  AT_ASSERTM(logits.device().is_cuda(), "logits must be a CUDA tensor");
+  AT_ASSERTM(targets.device().is_cuda(), "targets must be a CUDA tensor");
   AT_ASSERTM(logits.dim() == 2, "logits should be NxClass");
 
   const int num_samples = logits.size(0);
@@ -135,9 +135,9 @@ at::Tensor SigmoidFocalLoss_backward_cuda(const at::Tensor &logits,
                                           const int num_classes,
                                           const float gamma,
                                           const float alpha) {
-  AT_ASSERTM(logits.is_cuda(), "logits must be a CUDA tensor");
-  AT_ASSERTM(targets.is_cuda(), "targets must be a CUDA tensor");
-  AT_ASSERTM(d_losses.is_cuda(), "d_losses must be a CUDA tensor");
+  AT_ASSERTM(logits.device().is_cuda(), "logits must be a CUDA tensor");
+  AT_ASSERTM(targets.device().is_cuda(), "targets must be a CUDA tensor");
+  AT_ASSERTM(d_losses.device().is_cuda(), "d_losses must be a CUDA tensor");
 
   AT_ASSERTM(logits.dim() == 2, "logits should be NxClass");
 
