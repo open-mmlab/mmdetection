@@ -4,6 +4,7 @@ from importlib import import_module
 
 import argparse
 import yaml
+import json
 
 
 def parse_args():
@@ -18,7 +19,7 @@ def main():
     args = parse_args()
     filename = osp.abspath(osp.expanduser(args.input))
     output = args.output
-    assert output.endswith('.yaml') or output.endswith('.yml')
+    assert output.endswith('.yaml') or output.endswith('.yml') or output.endswith('.json')
 
     assert osp.exists(filename)
     if filename.endswith('.py'):
@@ -36,7 +37,10 @@ def main():
         }
 
         with open(output, 'w') as f:
-            yaml.dump(cfg_dict, f)
+            if output.endswith('.json'):
+                json.dump(cfg_dict, f)
+            else:
+                yaml.dump(cfg_dict, f)
 
 
 if __name__ == '__main__':
