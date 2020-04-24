@@ -3,8 +3,7 @@ import torch.nn.functional as F
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
-from .. import builder
-from ..registry import HEADS
+from ..builder import HEADS, build_head, build_roi_extractor
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -30,9 +29,9 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         assert not self.with_shared_head  # shared head is not supported
 
         if semantic_head is not None:
-            self.semantic_roi_extractor = builder.build_roi_extractor(
+            self.semantic_roi_extractor = build_roi_extractor(
                 semantic_roi_extractor)
-            self.semantic_head = builder.build_head(semantic_head)
+            self.semantic_head = build_head(semantic_head)
 
         self.semantic_fusion = semantic_fusion
         self.interleaved = interleaved

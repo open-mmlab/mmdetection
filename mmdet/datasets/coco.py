@@ -11,8 +11,8 @@ from terminaltables import AsciiTable
 
 from mmdet.core import eval_recalls
 from mmdet.utils import print_log
+from .builder import DATASETS
 from .custom import CustomDataset
-from .registry import DATASETS
 
 
 @DATASETS.register_module

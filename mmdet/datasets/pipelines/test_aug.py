@@ -1,6 +1,6 @@
 import mmcv
 
-from ..registry import PIPELINES
+from ..builder import PIPELINES
 from .compose import Compose
 
 

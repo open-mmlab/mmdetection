@@ -6,11 +6,9 @@ from functools import partial
 import numpy as np
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
+from mmcv.utils import Registry, build_from_cfg
 from torch.utils.data import DataLoader
 
-from mmdet.utils import build_from_cfg
-from .dataset_wrappers import ConcatDataset, RepeatDataset
-from .registry import DATASETS
 from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
 
 if platform.system() != 'Windows':
@@ -21,8 +19,12 @@ if platform.system() != 'Windows':
     soft_limit = min(4096, hard_limit)
     resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
 
+DATASETS = Registry('dataset')
+PIPELINES = Registry('pipeline')
+
 
 def _concat_dataset(cfg, default_args=None):
+    from .dataset_wrappers import ConcatDataset
     ann_files = cfg['ann_file']
     img_prefixes = cfg.get('img_prefix', None)
     seg_prefixes = cfg.get('seg_prefix', None)
@@ -45,6 +47,7 @@ def _concat_dataset(cfg, default_args=None):
 
 
 def build_dataset(cfg, default_args=None):
+    from .dataset_wrappers import ConcatDataset, RepeatDataset
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'RepeatDataset':

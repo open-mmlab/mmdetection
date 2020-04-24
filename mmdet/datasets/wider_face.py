@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 import mmcv
 
-from .registry import DATASETS
+from .builder import DATASETS
 from .xml_style import XMLDataset
 
 
