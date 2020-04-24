@@ -227,7 +227,7 @@ class FSAFHead(RetinaHead):
             loss_levels = torch.stack(loss_levels, dim=0)
             loss, argmin = loss_levels.min(dim=0)
         losses_cls, losses_bbox, pos_inds = multi_apply(
-            self.reassign_loss_single,
+            self.reweight_loss_single,
             losses_cls,
             losses_bbox,
             pos_assigned_gt_inds_list,
@@ -297,9 +297,9 @@ class FSAFHead(RetinaHead):
                 losses_[i] = loss[match].mean()
         return losses_,
 
-    def reassign_loss_single(self, cls_loss, reg_loss, assigned_gt_inds,
+    def reweight_loss_single(self, cls_loss, reg_loss, assigned_gt_inds,
                              labels, level, min_levels):
-        """Reassign loss values at each level.
+        """Reweight loss values at each level.
 
          Reassign loss values at each level by masking those where the
           pre-calculated loss is too large

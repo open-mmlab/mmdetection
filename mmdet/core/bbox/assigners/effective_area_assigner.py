@@ -115,92 +115,108 @@ class EffectiveAreaAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
+        # There are in total 5 steps in the pixel assignment
+        # 1. Find core positive and shadow region of every gt
+        # 2. Find all prior bboxes that lie in gt_core and gt_shadow regions
+        # 3. Assign prior bboxes in gt_core with a one-hot id of the gt in
+        #      the image.
+        #    3.1. For overlapping objects, the prior bboxes in gt_core is
+        #           assigned with the object with smallest area
+        # 4. Assign prior bboxes with class label according to its gt id.
+        #    4.1. Assign -1 to prior bboxes lying in ignored gts
+        #    4.2. Assign positive prior boxes with the corresponding label
+        # 5. Find pixels lying in the shadow of an object and assign them with
+        #      background label, but set the loss weight of its corresponding
+        #      gt to zero.
+        #    5.1. For overlapping objects, the foreground one has higher
+        #           priority than that in the shadow.
         if bboxes.shape[0] == 0 or gt_bboxes.shape[0] == 0:
             raise ValueError('No gt or bboxes')
         bboxes = bboxes[:, :4]
 
-        # constructing effective gt areas
-        gt_eff = scale_boxes(gt_bboxes, self.pos_scale)
-        # effective bboxes, i.e. the center 0.2 part
-        bbox_centers = (bboxes[:, 2:4] + bboxes[:, 0:2]) / 2
-        is_bbox_in_gt = is_located_in(bbox_centers, gt_bboxes)
-        # the center points lie within the gt boxes
+        # 1. Find core positive and shadow region of every gt
+        gt_core = scale_boxes(gt_bboxes, self.pos_scale)
+        gt_shadow = scale_boxes(gt_bboxes, self.neg_scale)
 
-        # Only calculate bbox and gt_eff IoF. This enables small prior bboxes
+        # 2. Find prior bboxes that lie in gt_core and gt_shadow regions
+        bbox_centers = (bboxes[:, 2:4] + bboxes[:, 0:2]) / 2
+        # The center points lie within the gt boxes
+        is_bbox_in_gt = is_located_in(bbox_centers, gt_bboxes)
+        # Only calculate bbox and gt_core IoF. This enables small prior bboxes
         #   to match large gts
         bbox_and_gt_eff_overlaps = self.iou_calculator(
-            bboxes, gt_eff, mode='iof')
-        is_bbox_in_gt_eff = is_bbox_in_gt & (
-            bbox_and_gt_eff_overlaps > self.min_pos_iof)
-        # shape (n, k)
+            bboxes, gt_core, mode='iof')
         # the center point of effective priors should be within the gt box
+        is_bbox_in_gt_eff = is_bbox_in_gt & (
+            bbox_and_gt_eff_overlaps > self.min_pos_iof)  # shape (n, k)
 
-        # constructing ignored gt areas
-        gt_ignore = scale_boxes(gt_bboxes, self.neg_scale)
-        is_bbox_in_gt_ignore = (
-            self.iou_calculator(bboxes, gt_ignore, mode='iof') >
+        is_bbox_in_gt_shadow = (
+            self.iou_calculator(bboxes, gt_shadow, mode='iof') >
             self.min_pos_iof)
-        is_bbox_in_gt_ignore &= (~is_bbox_in_gt_eff)
-        # rule out center effective pixels
+        # Rule out center effective positive pixels
+        is_bbox_in_gt_shadow &= (~is_bbox_in_gt_eff)
 
+        # Step 3: assign a one-hot gt id to each pixel, and smaller objects
+        #    have high priority to assign the pixel.
         gt_areas = bboxes_area(gt_bboxes)
+        # Rank all gt bbox areas. Smaller objects has larger priority
         _, sort_idx = gt_areas.sort(descending=True)
-        # rank all gt bbox areas so that smaller instances
-        #   can overlay larger ones
-
-        assigned_gt_inds, ignored_gt_inds = self.assign_one_hot_gt_indices(
-            is_bbox_in_gt_eff, is_bbox_in_gt_ignore, gt_priority=sort_idx)
-
-        # gt bboxes that are either crowded or to be ignored
+        assigned_gt_ids, pixels_in_gt_shadow = self.assign_one_hot_gt_indices(
+            is_bbox_in_gt_eff, is_bbox_in_gt_shadow, gt_priority=sort_idx)
         if gt_bboxes_ignore is not None and gt_bboxes_ignore.numel() > 0:
             gt_bboxes_ignore = scale_boxes(
                 gt_bboxes_ignore, scale=self.ignore_gt_scale)
             is_bbox_in_ignored_gts = is_located_in(bbox_centers,
                                                    gt_bboxes_ignore)
             is_bbox_in_ignored_gts = is_bbox_in_ignored_gts.any(dim=1)
-            assigned_gt_inds[is_bbox_in_ignored_gts] = -1
+            assigned_gt_ids[is_bbox_in_ignored_gts] = -1
 
+        # 4. Assign prior bboxes with class label according to its gt id.
         num_bboxes, num_gts = is_bbox_in_gt_eff.shape
         if gt_labels is not None:
-            assigned_labels = assigned_gt_inds.new_zeros((num_bboxes, ))
-            pos_inds = torch.nonzero(assigned_gt_inds > 0).squeeze()
+            assigned_labels = assigned_gt_ids.new_zeros((num_bboxes, ))
+            pos_inds = torch.nonzero(assigned_gt_ids > 0).squeeze()
             if pos_inds.numel() > 0:
-                assigned_labels[pos_inds] = gt_labels[
-                    assigned_gt_inds[pos_inds] - 1]
-            # convert from ignored gt indices to ignored gt label
-            ignored_gt_labels = ignored_gt_inds.clone()
-            if ignored_gt_inds.numel() > 0:
-                idx, gt_idx = ignored_gt_inds[:, 0], ignored_gt_inds[:, 1]
-                assert (assigned_gt_inds[idx] != gt_idx).all(), \
+                assigned_labels[pos_inds] = gt_labels[assigned_gt_ids[pos_inds]
+                                                      - 1]
+            # 5. Find pixels lying in the shadow of an object
+            shadowed_pixel_labels = pixels_in_gt_shadow.clone()
+            if pixels_in_gt_shadow.numel() > 0:
+                # 5.1. For overlapping objects, the foreground one has higher
+                #       priority than that in the shadow.
+                pixel_idx, gt_idx =\
+                    pixels_in_gt_shadow[:, 0], pixels_in_gt_shadow[:, 1]
+                assert (assigned_gt_ids[pixel_idx] != gt_idx).all(), \
                     'Some pixels are dually assigned to ignore and gt!'
-                ignored_gt_labels[:, 1] = gt_labels[gt_idx - 1]
+                shadowed_pixel_labels[:, 1] = gt_labels[gt_idx - 1]
                 # Positive labels can override ignored labels, e.g. when
                 #   a small horse stands at the ignored region of a large one.
-                override = (assigned_labels[idx] == ignored_gt_labels[:, 1])
-                ignored_gt_labels = ignored_gt_labels[~override]
+                override = (
+                    assigned_labels[pixel_idx] == shadowed_pixel_labels[:, 1])
+                shadowed_pixel_labels = shadowed_pixel_labels[~override]
         else:
             assigned_labels = None
-            ignored_gt_labels = None
+            shadowed_pixel_labels = None
 
         return AssignResult(
             num_gts,
-            assigned_gt_inds,
+            assigned_gt_ids,
             None,
             labels=assigned_labels,
-            ignored_labels=ignored_gt_labels)
+            ignored_labels=shadowed_pixel_labels)
 
     def assign_one_hot_gt_indices(self,
-                                  is_bbox_in_gt_eff,
-                                  is_bbox_in_gt_ignore,
+                                  is_bbox_in_gt_core,
+                                  is_bbox_in_gt_shadow,
                                   gt_priority=None):
         """Assign only one gt index to each prior box
         (smaller gt has higher priority)
 
         Args:
-            is_bbox_in_gt_eff: shape [num_prior, num_gt].
+            is_bbox_in_gt_core: shape [num_prior, num_gt].
               bool tensor indicating the bbox center is in
               the effective area of a gt (e.g. 0-0.2)
-            is_bbox_in_gt_ignore: shape [num_prior, num_gt].
+            is_bbox_in_gt_shadow: shape [num_prior, num_gt].
               bool tensor indicating the bbox
             center is in the ignored area of a gt (e.g. 0.2-0.5)
             gt_labels: shape [num_gt]. gt labels (0-80 for COCO)
@@ -210,58 +226,58 @@ class EffectiveAreaAssigner(BaseAssigner):
 
         Returns:
             :obj:`AssignResult`: The assign result.
-            ignored_gt_inds: ignored gt indices. It is a tensor of shape
+            shadowed_gt_inds: ignored gt indices. It is a tensor of shape
                 [num_ignore, 2] with first column recording the ignored feature
                 map indices and the second column the ignored gt indices
         """
-        num_bboxes, num_gts = is_bbox_in_gt_eff.shape
+        num_bboxes, num_gts = is_bbox_in_gt_core.shape
 
         if gt_priority is None:
-            gt_priority = torch.arange(num_gts).to(is_bbox_in_gt_eff.device)
+            gt_priority = torch.arange(num_gts).to(is_bbox_in_gt_core.device)
             # the bigger, the more preferable to be assigned
         # the assigned inds are by default 0 (background)
-        assigned_gt_inds = is_bbox_in_gt_eff.new_full((num_bboxes, ),
-                                                      0,
-                                                      dtype=torch.long)
-        inds_of_match = torch.any(is_bbox_in_gt_eff, dim=1)
+        assigned_gt_inds = is_bbox_in_gt_core.new_full((num_bboxes, ),
+                                                       0,
+                                                       dtype=torch.long)
+        inds_of_match = torch.any(is_bbox_in_gt_core, dim=1)
         # matched  bboxes (to any gt)
-        inds_of_ignore = torch.any(is_bbox_in_gt_ignore, dim=1)
+        inds_of_shadow = torch.any(is_bbox_in_gt_shadow, dim=1)
         # Ignored indices are assigned to be background. But the corresponding
         #   label is ignored during loss calculation, which is done through
-        #   ignored_gt_inds
-        assigned_gt_inds[inds_of_ignore] = 0
-        ignored_gt_inds = torch.nonzero(is_bbox_in_gt_ignore)
-        if is_bbox_in_gt_eff.sum() == 0:  # No gt match
-            return assigned_gt_inds, ignored_gt_inds
+        #   shadowed_gt_inds
+        assigned_gt_inds[inds_of_shadow] = 0
+        shadowed_gt_inds = torch.nonzero(is_bbox_in_gt_shadow)
+        if is_bbox_in_gt_core.sum() == 0:  # No gt match
+            return assigned_gt_inds, shadowed_gt_inds
 
         # The priority of each prior box and gt pair. If one prior box is
         #  matched bo multiple gts. Only the pair with the highest priority
         #  is saved
-        pair_priority = is_bbox_in_gt_eff.new_full((num_bboxes, num_gts),
-                                                   -1,
-                                                   dtype=torch.long)
+        pair_priority = is_bbox_in_gt_core.new_full((num_bboxes, num_gts),
+                                                    -1,
+                                                    dtype=torch.long)
 
         # Each bbox could match with multiple gts.
         # The following codes deal with this situation
 
         # Whether a bbox match a gt,  bool tensor, shape [num_match, num_gt]
-        matched_bbox_and_gt_correspondence = is_bbox_in_gt_eff[inds_of_match]
+        matched_bbox_and_gt_correspondence = is_bbox_in_gt_core[inds_of_match]
         # The matched gt index of each positive bbox. Length >= num_match,
         #  since one bbox could match multiple gts
         matched_bbox_gt_inds =\
             torch.nonzero(matched_bbox_and_gt_correspondence)[:, 1]
         # Assign priority to each bbox-gt pair.
-        pair_priority[is_bbox_in_gt_eff] = gt_priority[matched_bbox_gt_inds]
+        pair_priority[is_bbox_in_gt_core] = gt_priority[matched_bbox_gt_inds]
         _, argmax_priority = pair_priority[inds_of_match].max(dim=1)
         # the maximum shape [num_match]
         # effective indices. Note that positive assignment can overwrite
         # negative or ignored ones
         assigned_gt_inds[inds_of_match] = argmax_priority + 1  # 1-based
         # Zero-out the assigned pixels to filter the ignored gt indices
-        is_bbox_in_gt_eff[inds_of_match, argmax_priority] = 0
-        # Concat the ignored indices due to overlapping with that out side of
+        is_bbox_in_gt_core[inds_of_match, argmax_priority] = 0
+        # Concat the shadowed indices due to overlapping with that out side of
         #   effective scale. shape: [total_num_ignore, 2]
-        ignored_gt_inds = torch.cat(
-            (ignored_gt_inds, torch.nonzero(is_bbox_in_gt_eff)), dim=0)
-        ignored_gt_inds[:, 1] += 1  # 1-based. For consistency issue
-        return assigned_gt_inds, ignored_gt_inds
+        shadowed_gt_inds = torch.cat(
+            (shadowed_gt_inds, torch.nonzero(is_bbox_in_gt_core)), dim=0)
+        shadowed_gt_inds[:, 1] += 1  # 1-based. For consistency issue
+        return assigned_gt_inds, shadowed_gt_inds
