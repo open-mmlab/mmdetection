@@ -1,12 +1,11 @@
-# Compatibility with Common Libraries
+# Compatibility with MMDetection 1.x
 
-## Compatibility with MMDetection 1.x
 MMDetection 2.0 goes through a big refactoring and addresses many legacy issues. It is not compatible with the 1.x version, i.e., running inference with the same model weights in these two version will produce different results. Thus, MMDetection 2.0 re-benchmarks all the models and provids their links and logs in the model zoo.
 
 The major differences are in four folds: coordinate system, codebase conventions, training hyperparameters, and modular design.
 
-### Coordinate System
-The new coordinate system treats the center of the most left-top pixel as (0, 0) rather than the left-top corner of that pixel.
+## Coordinate System
+The new coordinate system is consistent with [Detectron2](https://github.com/facebookresearch/detectron2/) and treats the center of the most left-top pixel as (0, 0) rather than the left-top corner of that pixel.
 Accordingly, the system interprets the coordinates in COCO bounding box and segmentation annotations as coordinates in range `[0, width]` or `[0, height]`.
 This modification affects all the computation related to the bbox and pixel selection,
 which is more natural and accurate.
@@ -33,17 +32,17 @@ The old behavior is still available by setting `aligned=False` instead of `align
 
   2. In MMDetection 2.0, the "paste_mask()" function is different and should be more accurate than those in previous versions. This change follows the modification in [Detectron2](https://github.com/facebookresearch/detectron2/blob/master/detectron2/structures/masks.py) and can improve mask AP on COCO by ~0.5% absolute.
 
-### Codebase Conventions
+## Codebase Conventions
 
 - MMDetection 2.0 changes the order of class labels to reduce unused parameters in regression and mask branch more naturally (without +1 and -1).
-This effect all the classification layers of the model to have a different ordering of class labels. The final layers of regression branch and mask head no longer keep K+1 channels for K categories.
+This effect all the classification layers of the model to have a different ordering of class labels. The final layers of regression branch and mask head no longer keep K+1 channels for K categories, and their class orders are consistent with the classification branch.
 
   - In MMDetection 2.0, label "K" means background, and labels [0, K-1] correspond to the K = num_categories object categories.
 
   - In MMDetection 1.x and previous version, label "0" means background, and labels [1, K] correspond to the K categories.
 
 - Low quality matching in R-CNN is not used. In MMDetection 1.x and previous versions, the `max_iou_assigner` will match low quality boxes for each ground truth box in both RPN and R-CNN training. We observe this sometimes does not assign the most perfect GT box to some bounding boxes,
-thus MMDetection 2.0 do not allow low quality matching by default in R-CNN training in the new system. This slightly improve the box AP (~0.1% absolute).
+thus MMDetection 2.0 do not allow low quality matching by default in R-CNN training in the new system. This sometimes may slightly improve the box AP (~0.1% absolute).
 
 - Seperate scale factors for width and height. In MMDetection 1.x and previous versions, the scale factor is a single float in mode `keep_ratio=True`. This is slightly inaccurate because the scale factors for width and height have slight difference. MMDetection 2.0 adopts separate scale factors for width and height, the improvment on AP ~0.1% absolute.
 
@@ -53,7 +52,7 @@ thus MMDetection 2.0 do not allow low quality matching by default in R-CNN train
   ```
   where the (misc) includes DCN and GCBlock, etc. For example, `reppoints_moment_r101_fpn_gn-neck+head_mstrain_480-960_2x_coco.py` indicates the RepPoints method with moment setting using ResNet101 backbone and FPN with GN in the neck and head, trained by multi-scale augmentation by 2x schedule on COCO dataset.
 
-### Training Hyperparameters
+## Training Hyperparameters
 
 The change in training hyperparameters does not affect
 model-level compatibility but slightly improves the performance. The major ones are:
@@ -63,7 +62,7 @@ This slightly improves both mask AP and bbox AP by ~0.2% absolute.
 
 - The default box regression losses for Mask R-CNN, Faster R-CNN and RetinaNet are changed from smooth L1 Loss to L1 loss. This leads to an overall improvement in box AP (~0.6% absolute). However, using L1-loss for other methods such as Cascade R-CNN and HTC does not improve the performance, so we keep the original settings for these methods.
 
-- The sample num of RoIAlign layer is set to be 0 for simplicity. This sometimes leads to slightly improvement on mask AP (~0.1% absolute).
+- The sample num of RoIAlign layer is set to be 0 for simplicity. This leads to slightly improvement on mask AP (~0.2% absolute).
 
 - The default setting will not use gradient clipping anymore during training for faster training speed. This does not degrade performance of the most of models. For some models such as RepPoints we keep using gradient clipping to stablize the training process and to obtain better performance.
 
