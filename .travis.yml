@@ -35,7 +35,7 @@ before_script:
 
 script:
   - python setup.py check -m -s
-  - TORCH_CUDA_ARCH_LIST=6.0,7.0 python setup.py build_ext --inplace
+  - TORCH_CUDA_ARCH_LIST="6.0;7.0" python setup.py build_ext --inplace
   - coverage run --branch --source mmdet -m py.test -v --xdoctest-modules tests mmdet
 
 after_success:
