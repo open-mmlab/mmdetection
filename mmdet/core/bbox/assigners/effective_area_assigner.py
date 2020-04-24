@@ -170,8 +170,14 @@ class EffectiveAreaAssigner(BaseAssigner):
             # convert from ignored gt indices to ignored gt label
             ignored_gt_labels = ignored_gt_inds.clone()
             if ignored_gt_inds.numel() > 0:
-                ignored_gt_labels[:, 1] = gt_labels[ignored_gt_inds[:, 1]]
-
+                idx, gt_idx = ignored_gt_inds[:, 0], ignored_gt_inds[:, 1]
+                assert (assigned_gt_inds[idx] != gt_idx).all(), \
+                    'Some pixels are dually assigned to ignore and gt!'
+                ignored_gt_labels[:, 1] = gt_labels[gt_idx - 1]
+                # Positive labels can override ignored labels, e.g. when
+                #   a small horse stands at the ignored region of a large one.
+                override = (assigned_labels[idx] == ignored_gt_labels[:, 1])
+                ignored_gt_labels = ignored_gt_labels[~override]
         else:
             assigned_labels = None
             ignored_gt_labels = None
@@ -254,7 +260,8 @@ class EffectiveAreaAssigner(BaseAssigner):
         # Zero-out the assigned pixels to filter the ignored gt indices
         is_bbox_in_gt_eff[inds_of_match, argmax_priority] = 0
         # Concat the ignored indices due to overlapping with that out side of
-        #   effective scale
+        #   effective scale. shape: [total_num_ignore, 2]
         ignored_gt_inds = torch.cat(
             (ignored_gt_inds, torch.nonzero(is_bbox_in_gt_eff)), dim=0)
+        ignored_gt_inds[:, 1] += 1  # 1-based. For consistency issue
         return assigned_gt_inds, ignored_gt_inds

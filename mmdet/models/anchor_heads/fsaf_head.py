@@ -131,9 +131,12 @@ class FSAFHead(RetinaHead):
         # For some pixels, only specific labels are ignored.
         if ignored_labels is not None and ignored_labels.numel():
             if len(ignored_labels.shape) == 2:
+                idx_, label_ = ignored_labels[:, 0], ignored_labels[:, 1]
+                assert (labels[idx_] != label_).all(), \
+                    'One label cannot be both positive and ignored'
                 # if background_label is 0. Then all labels increase by 1
-                ignored_labels[:, 1] += int(self.background_label == 0)
-                label_weights[ignored_labels[:, 0], ignored_labels[:, 1]] = 0
+                label_ += int(self.background_label == 0)
+                label_weights[idx_, label_] = 0
             else:
                 label_weights[ignored_labels] = 0
 
