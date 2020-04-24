@@ -153,6 +153,9 @@ class FPN(nn.Module):
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
             prev_shape = laterals[i - 1].shape[2:]
+            # convert prev_shape from torch.Size to tuple
+            # so that we can convert F.interpolate into ONNX
+            prev_shape = tuple(int(e) for e in prev_shape)
             laterals[i - 1] += F.interpolate(
                 laterals[i], size=prev_shape, mode='nearest')
 

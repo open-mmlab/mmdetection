@@ -198,6 +198,9 @@ class AnchorGenerator(object):
                                   stride=16,
                                   device='cuda'):
         feat_h, feat_w = featmap_size
+        # convert Tensor to int, so that we can covert to ONNX correctlly
+        feat_h = int(feat_h)
+        feat_w = int(feat_w)
         shift_x = torch.arange(0, feat_w, device=device) * stride
         shift_y = torch.arange(0, feat_h, device=device) * stride
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
