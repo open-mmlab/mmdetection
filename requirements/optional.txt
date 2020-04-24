@@ -4,3 +4,4 @@ scikit-learn
 ninja
 tensorboard
 imagesize==1.2.0
+PyYAML==5.3.1
