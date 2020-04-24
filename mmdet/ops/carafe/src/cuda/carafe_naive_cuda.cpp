@@ -18,7 +18,7 @@ int CARAFENAIVEBackwardLaucher(const at::Tensor top_grad,
                                const int height, const int width,
                                at::Tensor bottom_grad, at::Tensor mask_grad);
 
-#define CHECK_CUDA(x) TORCH_CHECK(x.type().is_cuda(), #x, " must be a CUDAtensor ")
+#define CHECK_CUDA(x) TORCH_CHECK(x.is_cuda(), #x, " must be a CUDAtensor ")
 #define CHECK_CONTIGUOUS(x) \
   TORCH_CHECK(x.is_contiguous(), #x, " must be contiguous ")
 #define CHECK_INPUT(x) \

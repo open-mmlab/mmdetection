@@ -289,13 +289,6 @@ if __name__ == '__main__':
                     'src/affine_grid_ext.cpp', 'src/cpu/affine_grid_cpu.cpp'
                 ]),
             make_cuda_ext(
-                name='grid_sampler_ext',
-                module='mmdet.ops.grid_sampler',
-                sources=[
-                    'src/grid_sampler_ext.cpp', 'src/cpu/grid_sampler_cpu.cpp'
-                ],
-                sources_cuda=['src/cuda/grid_sampler_cuda.cu']),
-            make_cuda_ext(
                 name='carafe_ext',
                 module='mmdet.ops.carafe',
                 sources=['src/carafe_ext.cpp'],
