@@ -38,7 +38,7 @@ def main():
 
         with open(output, 'w') as f:
             if output.endswith('.json'):
-                json.dump(cfg_dict, f)
+                json.dump(cfg_dict, f, indent=4)
             else:
                 yaml.dump(cfg_dict, f)
 
