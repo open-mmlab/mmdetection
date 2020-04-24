@@ -9,8 +9,8 @@ import json
 
 def parse_args():
     args = argparse.ArgumentParser()
-    args.add_argument('input', help='Configuration file as *.py file')
-    args.add_argument('output', help='Configuration file as *.yaml')
+    args.add_argument('input', help='Input configuration file as *.py file')
+    args.add_argument('output', help='Output configuration file as *.yaml or *.json')
 
     return args.parse_args()
 
