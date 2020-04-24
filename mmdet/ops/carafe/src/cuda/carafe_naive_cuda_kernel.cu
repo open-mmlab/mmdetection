@@ -76,10 +76,10 @@ int CARAFENAIVEForwardLaucher(const at::Tensor features, const at::Tensor masks,
                               const int width, at::Tensor output) {
   const int output_size = batch_size * channels * height * width;
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      features.type(), "CARAFENAIVELaucherForward", ([&] {
-        const scalar_t *bottom_data = features.data<scalar_t>();
-        const scalar_t *bottom_masks = masks.data<scalar_t>();
-        scalar_t *top_data = output.data<scalar_t>();
+      features.scalar_type(), "CARAFENAIVELaucherForward", ([&] {
+        const scalar_t *bottom_data = features.data_ptr<scalar_t>();
+        const scalar_t *bottom_masks = masks.data_ptr<scalar_t>();
+        scalar_t *top_data = output.data_ptr<scalar_t>();
 
         CARAFENAIVEForward<scalar_t>
             <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(
@@ -152,12 +152,12 @@ int CARAFENAIVEBackwardLaucher(const at::Tensor top_grad,
   const int output_size = batch_size * channels * height * width;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      top_grad.type(), "CARAFENAIVELaucherBackward", ([&] {
-        const scalar_t *top_diff = top_grad.data<scalar_t>();
-        const scalar_t *bottom_data = features.data<scalar_t>();
-        const scalar_t *bottom_masks = masks.data<scalar_t>();
-        scalar_t *bottom_diff = bottom_grad.data<scalar_t>();
-        scalar_t *mask_diff = mask_grad.data<scalar_t>();
+      top_grad.scalar_type(), "CARAFENAIVELaucherBackward", ([&] {
+        const scalar_t *top_diff = top_grad.data_ptr<scalar_t>();
+        const scalar_t *bottom_data = features.data_ptr<scalar_t>();
+        const scalar_t *bottom_masks = masks.data_ptr<scalar_t>();
+        scalar_t *bottom_diff = bottom_grad.data_ptr<scalar_t>();
+        scalar_t *mask_diff = mask_grad.data_ptr<scalar_t>();
 
         CARAFENAIVEBackward<scalar_t>
             <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK>>>(

@@ -46,9 +46,9 @@ at::Tensor ROIAlignBackwardV2CPULaucher(
     const int channels, const int height, const int width,
     const int sampling_ratio, bool aligned);
 
-#define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x, " must be a CUDAtensor ")
+#define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x, " must be a CUDAtensor ")
 #define CHECK_CONTIGUOUS(x) \
-  AT_CHECK(x.is_contiguous(), #x, " must be contiguous ")
+  TORCH_CHECK(x.is_contiguous(), #x, " must be contiguous ")
 #define CHECK_INPUT(x) \
   CHECK_CUDA(x);       \
   CHECK_CONTIGUOUS(x)
@@ -56,7 +56,7 @@ at::Tensor ROIAlignBackwardV2CPULaucher(
 int ROIAlign_forwardV1(at::Tensor features, at::Tensor rois, int pooled_height,
                        int pooled_width, float spatial_scale, int sample_num,
                        at::Tensor output) {
-  if (features.type().is_cuda()) {
+  if (features.device().is_cuda()) {
 #ifdef WITH_CUDA
     CHECK_INPUT(features);
     CHECK_INPUT(rois);
@@ -91,7 +91,7 @@ int ROIAlign_forwardV1(at::Tensor features, at::Tensor rois, int pooled_height,
 int ROIAlign_backwardV1(at::Tensor top_grad, at::Tensor rois, int pooled_height,
                         int pooled_width, float spatial_scale, int sample_num,
                         at::Tensor bottom_grad) {
-  if (top_grad.type().is_cuda()) {
+  if (top_grad.device().is_cuda()) {
 #ifdef WITH_CUDA
     CHECK_INPUT(top_grad);
     CHECK_INPUT(rois);
@@ -129,7 +129,7 @@ inline at::Tensor ROIAlign_forwardV2(const at::Tensor& input,
                                      const int pooled_height,
                                      const int pooled_width,
                                      const int sampling_ratio, bool aligned) {
-  if (input.type().is_cuda()) {
+  if (input.device().is_cuda()) {
 #ifdef WITH_CUDA
     return ROIAlignForwardV2Laucher(input, rois, spatial_scale, pooled_height,
                                     pooled_width, sampling_ratio, aligned);
@@ -146,7 +146,7 @@ inline at::Tensor ROIAlign_backwardV2(
     const int pooled_height, const int pooled_width, const int batch_size,
     const int channels, const int height, const int width,
     const int sampling_ratio, bool aligned) {
-  if (grad.type().is_cuda()) {
+  if (grad.device().is_cuda()) {
 #ifdef WITH_CUDA
     return ROIAlignBackwardV2Laucher(grad, rois, spatial_scale, pooled_height,
                                      pooled_width, batch_size, channels, height,
