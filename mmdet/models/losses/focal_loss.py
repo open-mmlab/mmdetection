@@ -37,7 +37,14 @@ def sigmoid_focal_loss(pred,
     loss = _sigmoid_focal_loss(pred, target, gamma, alpha)
     # TODO: find a proper way to handle the shape of weight
     if weight is not None:
-        weight = weight.view(-1, 1)
+        if weight.shape != loss.shape:
+            if weight.size(0) == loss.size(0):
+                # weight does not have num_class dim
+                weight = weight.view(-1, 1)
+            else:
+                # weight is flattened while loss is not
+                assert weight.numel() == loss.numel()
+                weight = weight.view(loss.size(0), -1)
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
 

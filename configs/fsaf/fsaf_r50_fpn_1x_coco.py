@@ -37,8 +37,8 @@ train_cfg = dict(
     assigner=dict(
         _delete_=True,
         type='EffectiveAreaAssigner',
-        pos_area_thr=0.2,
-        neg_area_thr=0.2,
+        pos_scale=0.2,
+        neg_scale=0.2,
         min_pos_iof=0.01),
     allowed_border=-1,
     pos_weight=-1,
@@ -46,3 +46,4 @@ train_cfg = dict(
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=10, norm_type=2))
+total_epochs = 13

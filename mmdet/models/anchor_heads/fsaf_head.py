@@ -89,6 +89,7 @@ class FSAFHead(RetinaHead):
         assign_result = self.assigner.assign(
             anchors, gt_bboxes, gt_bboxes_ignore,
             None if self.sampling else gt_labels)
+
         sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 
@@ -98,13 +99,15 @@ class FSAFHead(RetinaHead):
         labels = anchors.new_full((num_valid_anchors, ),
                                   self.background_label,
                                   dtype=torch.long)
-        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
+        label_weights = anchors.new_zeros((num_valid_anchors, label_channels),
+                                          dtype=torch.float)
         pos_gt_inds = anchors.new_full((num_valid_anchors, ),
                                        -1,
                                        dtype=torch.long)
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
+        ignored_labels = assign_result.ignore_labels
         if len(pos_inds) > 0:
             if not self.reg_decoded_bbox:
                 pos_bbox_targets = self.bbox_coder.encode(
@@ -124,6 +127,16 @@ class FSAFHead(RetinaHead):
                 label_weights[pos_inds] = 1.0
             else:
                 label_weights[pos_inds] = self.train_cfg.pos_weight
+
+        # For some pixels, only specific labels are ignored.
+        if ignored_labels is not None and ignored_labels.numel():
+            if len(ignored_labels.shape) == 2:
+                # if background_label is 0. Then all labels increase by 1
+                ignored_labels[:, 1] += int(self.background_label == 0)
+                label_weights[ignored_labels[:, 0], ignored_labels[:, 1]] = 0
+            else:
+                label_weights[ignored_labels] = 0
+
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
@@ -155,14 +168,15 @@ class FSAFHead(RetinaHead):
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
-
+        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
             gt_bboxes,
             img_metas,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels)
+            gt_labels_list=gt_labels,
+            label_channels=label_channels)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,

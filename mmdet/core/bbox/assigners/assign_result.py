@@ -21,6 +21,10 @@ class AssignResult(util_mixins.NiceRepr):
         labels (None | LongTensor): If specified, for each predicted box
             indicates the category label of the assigned truth box.
 
+        ignored_labels (None | LontTensor): If specified, it has a shape:
+            [num_ignored, 2]. The first column records the ignored feature map
+            indices, and the second column is its ignore label
+
     Example:
         >>> # An assign result between 4 predicted boxes and 9 true boxes
         >>> # where only two boxes were assigned.
@@ -40,11 +44,17 @@ class AssignResult(util_mixins.NiceRepr):
                       labels.shape=(7,))>
     """
 
-    def __init__(self, num_gts, gt_inds, max_overlaps, labels=None):
+    def __init__(self,
+                 num_gts,
+                 gt_inds,
+                 max_overlaps,
+                 labels=None,
+                 ignored_labels=None):
         self.num_gts = num_gts
         self.gt_inds = gt_inds
         self.max_overlaps = max_overlaps
         self.labels = labels
+        self.ignore_labels = ignored_labels
 
     @property
     def num_preds(self):
