@@ -11,8 +11,8 @@ import numpy as np
 import pycocotools.mask as maskUtils
 
 from mmdet.utils import print_log
+from .builder import DATASETS
 from .coco import CocoDataset
-from .registry import DATASETS
 
 
 @DATASETS.register_module
@@ -59,6 +59,8 @@ class CityscapesDataset(CocoDataset):
                 continue
             x1, y1, w, h = ann['bbox']
             if ann['area'] <= 0 or w < 1 or h < 1:
+                continue
+            if ann['category_id'] not in self.cat_ids:
                 continue
             bbox = [x1, y1, x1 + w, y1 + h]
             if ann.get('iscrowd', False):

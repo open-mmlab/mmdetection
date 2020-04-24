@@ -6,7 +6,7 @@ from numpy import random
 
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-from ..registry import PIPELINES
+from ..builder import PIPELINES
 
 try:
     from imagecorruptions import corrupt
@@ -460,6 +460,9 @@ class PhotoMetricDistortion(object):
 
     def __call__(self, results):
         img = results['img']
+        assert img.dtype == np.float32, \
+            'PhotoMetricDistortion needs the input image of dtype np.float32,'\
+            ' please set "to_float32=True" in "LoadImageFromFile" pipeline'
         # random brightness
         if random.randint(2):
             delta = random.uniform(-self.brightness_delta,

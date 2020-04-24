@@ -3,9 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
-from mmdet.core import delta2bbox
 from mmdet.ops import batched_nms
-from ..registry import HEADS
+from ..builder import HEADS
 from .anchor_head import AnchorHead
 
 
@@ -51,14 +50,15 @@ class RPNHead(AnchorHead):
         return dict(
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          mlvl_anchors,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           mlvl_anchors,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
         # bboxes from different level should be independent during NMS,
         # level_ids are used as labels for batched NMS to separate them
         level_ids = []
@@ -98,8 +98,8 @@ class RPNHead(AnchorHead):
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
         rpn_bbox_pred = torch.cat(mlvl_bbox_preds)
-        proposals = delta2bbox(anchors, rpn_bbox_pred, self.target_means,
-                               self.target_stds, img_shape)
+        proposals = self.bbox_coder.decode(
+            anchors, rpn_bbox_pred, max_shape=img_shape)
         ids = torch.cat(level_ids)
 
         if cfg.min_bbox_size > 0:

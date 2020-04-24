@@ -51,7 +51,7 @@ data = dict(
     test=dict(pipeline=test_pipeline))
 # optimizer
 optimizer = dict(
-    lr=0.01, paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
+    lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
 optimizer_config = dict(_delete_=True, grad_clip=None)
 # learning policy
 lr_config = dict(warmup='constant', step=[16, 22])

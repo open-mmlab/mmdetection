@@ -5,7 +5,7 @@ import numpy as np
 import pycocotools.mask as maskUtils
 
 from mmdet.core import BitmapMasks, PolygonMasks
-from ..registry import PIPELINES
+from ..builder import PIPELINES
 
 
 @PIPELINES.register_module

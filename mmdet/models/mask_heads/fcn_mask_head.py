@@ -8,8 +8,7 @@ from mmdet.core import auto_fp16, force_fp32, mask_target
 from mmdet.ops import Conv2d, ConvModule, build_upsample_layer
 from mmdet.ops.carafe import CARAFEPack
 from mmdet.ops.grid_sampler import grid_sample
-from ..builder import build_loss
-from ..registry import HEADS
+from ..builder import HEADS, build_loss
 
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
@@ -124,7 +123,7 @@ class FCNMaskHead(nn.Module):
         mask_pred = self.conv_logits(x)
         return mask_pred
 
-    def get_target(self, sampling_results, gt_masks, rcnn_train_cfg):
+    def get_targets(self, sampling_results, gt_masks, rcnn_train_cfg):
         pos_proposals = [res.pos_bboxes for res in sampling_results]
         pos_assigned_gt_inds = [
             res.pos_assigned_gt_inds for res in sampling_results

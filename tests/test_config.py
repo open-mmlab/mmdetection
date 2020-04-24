@@ -1,6 +1,9 @@
 from os.path import dirname, exists, join, relpath
 
+import torch
+
 from mmdet.core import BitmapMasks, PolygonMasks
+from mmdet.core.optimizer import build_optimizer
 
 
 def _get_config_directory():
@@ -53,6 +56,9 @@ def test_config_build_detector():
             train_cfg=config_mod.train_cfg,
             test_cfg=config_mod.test_cfg)
         assert detector is not None
+
+        optimizer = build_optimizer(detector, config_mod.optimizer)
+        assert isinstance(optimizer, torch.optim.Optimizer)
 
         if 'roi_head' in config_mod.model.keys():
             # for two stage detector

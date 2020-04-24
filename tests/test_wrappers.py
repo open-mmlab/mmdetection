@@ -10,7 +10,12 @@ from mmdet.ops import Conv2d, ConvTranspose2d, Linear, MaxPool2d
 torch.__version__ = '1.1'  # force test
 
 
-def test_conv_2d():
+def test_conv2d():
+    """
+    CommandLine:
+        xdoctest -m tests/test_wrappers.py test_conv2d
+    """
+
     test_cases = OrderedDict([('in_w', [10, 20]), ('in_h', [10, 20]),
                               ('in_channel', [1, 3]), ('out_channel', [1, 3]),
                               ('kernel_size', [3, 5]), ('stride', [1, 2]),
@@ -26,7 +31,7 @@ def test_conv_2d():
         wrapper_out = wrapper(x_empty)
 
         # torch op with 3-dim input as shape reference
-        x_normal = torch.randn(3, in_cha, in_h, in_w)
+        x_normal = torch.randn(3, in_cha, in_h, in_w).requires_grad_(True)
         torch.manual_seed(0)
         ref = nn.Conv2d(in_cha, out_cha, k, stride=s, padding=p, dilation=d)
         ref_out = ref(x_normal)
@@ -56,7 +61,7 @@ def test_conv_transposed_2d():
     for in_h, in_w, in_cha, out_cha, k, s, p, d in product(
             *list(test_cases.values())):
         # wrapper op with 0-dim input
-        x_empty = torch.randn(0, in_cha, in_h, in_w)
+        x_empty = torch.randn(0, in_cha, in_h, in_w, requires_grad=True)
         # out padding must be smaller than either stride or dilation
         op = min(s, d) - 1
         torch.manual_seed(0)
@@ -109,7 +114,7 @@ def test_max_pool_2d():
     for in_h, in_w, in_cha, out_cha, k, s, p, d in product(
             *list(test_cases.values())):
         # wrapper op with 0-dim input
-        x_empty = torch.randn(0, in_cha, in_h, in_w)
+        x_empty = torch.randn(0, in_cha, in_h, in_w, requires_grad=True)
         wrapper = MaxPool2d(k, stride=s, padding=p, dilation=d)
         wrapper_out = wrapper(x_empty)
 
@@ -135,7 +140,7 @@ def test_linear():
     for in_h, in_w, in_feature, out_feature in product(
             *list(test_cases.values())):
         # wrapper op with 0-dim input
-        x_empty = torch.randn(0, in_feature)
+        x_empty = torch.randn(0, in_feature, requires_grad=True)
         torch.manual_seed(0)
         wrapper = Linear(in_feature, out_feature)
         wrapper_out = wrapper(x_empty)

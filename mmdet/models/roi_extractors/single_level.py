@@ -1,11 +1,9 @@
-from __future__ import division
-
 import torch
 import torch.nn as nn
 
 from mmdet import ops
 from mmdet.core import force_fp32
-from ..registry import ROI_EXTRACTORS
+from ..builder import ROI_EXTRACTORS
 
 
 @ROI_EXTRACTORS.register_module
@@ -107,4 +105,6 @@ class SingleRoIExtractor(nn.Module):
                 rois_ = rois[inds, :]
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
                 roi_feats[inds] = roi_feats_t
+            else:
+                roi_feats += sum(x.view(-1)[0] for x in self.parameters()) * 0.
         return roi_feats
