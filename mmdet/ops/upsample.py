@@ -69,7 +69,7 @@ def build_upsample_layer(cfg):
 
     layer_type = cfg_.pop('type')
     if layer_type not in upsample_cfg:
-        raise KeyError('Unrecognized upsample type {}'.format(layer_type))
+        raise KeyError(f'Unrecognized upsample type {layer_type}')
     else:
         upsample = upsample_cfg[layer_type]
         if upsample is None:

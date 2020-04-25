@@ -12,8 +12,7 @@ class BboxOverlaps2D(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += '(mode={}, is_aligned={})'.format(self.mode,
-                                                      self.is_aligned)
+        repr_str += f'(mode={self.mode}, is_aligned={self.is_aligned})'
         return repr_str
 
 

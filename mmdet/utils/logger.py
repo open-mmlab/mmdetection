@@ -63,4 +63,4 @@ def print_log(msg, logger=None, level=logging.INFO):
     elif logger != 'silent':
         raise TypeError(
             'logger should be either a logging.Logger object, "root", '
-            '"silent" or None, but got {}'.format(logger))
+            f'"silent" or None, but got {logger}')

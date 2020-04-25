@@ -30,7 +30,7 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
         config = mmcv.Config.fromfile(config)
     elif not isinstance(config, mmcv.Config):
         raise TypeError('config must be a filename or Config object, '
-                        'but got {}'.format(type(config)))
+                        f'but got {type(config)}')
     config.model.pretrained = None
     model = build_detector(config.model, test_cfg=config.test_cfg)
     if checkpoint is not None:

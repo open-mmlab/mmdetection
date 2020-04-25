@@ -241,22 +241,19 @@ class CocoDataset(CustomDataset):
         result_files = dict()
         if isinstance(results[0], list):
             json_results = self._det2json(results)
-            result_files['bbox'] = '{}.{}.json'.format(outfile_prefix, 'bbox')
-            result_files['proposal'] = '{}.{}.json'.format(
-                outfile_prefix, 'bbox')
+            result_files['bbox'] = f'{outfile_prefix}.bbox.json'
+            result_files['proposal'] = f'{outfile_prefix}.bbox.json'
             mmcv.dump(json_results, result_files['bbox'])
         elif isinstance(results[0], tuple):
             json_results = self._segm2json(results)
-            result_files['bbox'] = '{}.{}.json'.format(outfile_prefix, 'bbox')
-            result_files['proposal'] = '{}.{}.json'.format(
-                outfile_prefix, 'bbox')
-            result_files['segm'] = '{}.{}.json'.format(outfile_prefix, 'segm')
+            result_files['bbox'] = f'{outfile_prefix}.bbox.json'
+            result_files['proposal'] = f'{outfile_prefix}.bbox.json'
+            result_files['segm'] = f'{outfile_prefix}.segm.json'
             mmcv.dump(json_results[0], result_files['bbox'])
             mmcv.dump(json_results[1], result_files['segm'])
         elif isinstance(results[0], np.ndarray):
             json_results = self._proposal2json(results)
-            result_files['proposal'] = '{}.{}.json'.format(
-                outfile_prefix, 'proposal')
+            result_files['proposal'] = f'{outfile_prefix}.proposal.json'
             mmcv.dump(json_results, result_files['proposal'])
         else:
             raise TypeError('invalid type of results')
@@ -347,14 +344,14 @@ class CocoDataset(CustomDataset):
         allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast']
         for metric in metrics:
             if metric not in allowed_metrics:
-                raise KeyError('metric {} is not supported'.format(metric))
+                raise KeyError(f'metric {metric} is not supported')
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
         eval_results = {}
         cocoGt = self.coco
         for metric in metrics:
-            msg = 'Evaluating {}...'.format(metric)
+            msg = f'Evaluating {metric}...'
             if logger is None:
                 msg = '\n' + msg
             print_log(msg, logger=logger)
@@ -364,14 +361,14 @@ class CocoDataset(CustomDataset):
                     results, proposal_nums, iou_thrs, logger='silent')
                 log_msg = []
                 for i, num in enumerate(proposal_nums):
-                    eval_results['AR@{}'.format(num)] = ar[i]
-                    log_msg.append('\nAR@{}\t{:.4f}'.format(num, ar[i]))
+                    eval_results[f'AR@{num}'] = ar[i]
+                    log_msg.append(f'\nAR@{num}\t{ar[i]:.4f}')
                 log_msg = ''.join(log_msg)
                 print_log(log_msg, logger=logger)
                 continue
 
             if metric not in result_files:
-                raise KeyError('{} is not in results'.format(metric))
+                raise KeyError(f'{metric} is not in results')
             try:
                 cocoDt = cocoGt.loadRes(result_files[metric])
             except IndexError:
@@ -396,7 +393,7 @@ class CocoDataset(CustomDataset):
                     'AR_l@1000'
                 ]
                 for i, item in enumerate(metric_items):
-                    val = float('{:.3f}'.format(cocoEval.stats[i + 6]))
+                    val = float(f'{cocoEval.stats[i + 6]:.3f}')
                     eval_results[item] = val
             else:
                 cocoEval.evaluate()
@@ -421,8 +418,7 @@ class CocoDataset(CustomDataset):
                         else:
                             ap = float('nan')
                         results_per_category.append(
-                            ('{}'.format(nm['name']),
-                             '{:0.3f}'.format(float(ap))))
+                            (f'{nm["name"]}', f'{float(ap):0.3f}'))
 
                     num_columns = min(6, len(results_per_category) * 2)
                     results_flatten = list(
@@ -441,12 +437,12 @@ class CocoDataset(CustomDataset):
                     'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
                 ]
                 for i in range(len(metric_items)):
-                    key = '{}_{}'.format(metric, metric_items[i])
-                    val = float('{:.3f}'.format(cocoEval.stats[i]))
+                    key = f'{metric}_{metric_items[i]}'
+                    val = float(f'{cocoEval.stats[i]:.3f}')
                     eval_results[key] = val
-                eval_results['{}_mAP_copypaste'.format(metric)] = (
-                    '{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
-                    '{ap[4]:.3f} {ap[5]:.3f}').format(ap=cocoEval.stats[:6])
+                eval_results[f'{metric}_mAP_copypaste'] = (
+                    f'{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
+                    f'{ap[4]:.3f} {ap[5]:.3f}')
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results

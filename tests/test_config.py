@@ -29,14 +29,14 @@ def test_config_build_detector():
     from mmdet.models import build_detector
 
     config_dpath = _get_config_directory()
-    print('Found config_dpath = {!r}'.format(config_dpath))
+    print(f'Found config_dpath = {config_dpath}')
 
     import glob
     config_fpaths = list(glob.glob(join(config_dpath, '**', '*.py')))
     config_fpaths = [p for p in config_fpaths if p.find('_base_') == -1]
     config_names = [relpath(p, config_dpath) for p in config_fpaths]
 
-    print('Using {} config files'.format(len(config_names)))
+    print(f'Using {len(config_names)} config files')
 
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
@@ -45,7 +45,7 @@ def test_config_build_detector():
         config_mod.model
         config_mod.train_cfg
         config_mod.test_cfg
-        print('Building detector, config_fpath = {!r}'.format(config_fpath))
+        print(f'Building detector, config_fpath = {config_fpath}')
 
         # Remove pretrained keys to allow for testing in an offline environment
         if 'pretrained' in config_mod.model:
@@ -87,7 +87,7 @@ def test_config_data_pipeline():
     import numpy as np
 
     config_dpath = _get_config_directory()
-    print('Found config_dpath = {!r}'.format(config_dpath))
+    print(f'Found config_dpath = {config_dpath}')
 
     # Only tests a representative subset of configurations
     # TODO: test pipelines using Albu, current Albu throw None given empty GT
@@ -117,7 +117,7 @@ def test_config_data_pipeline():
             masks = PolygonMasks(masks, h, w)
         return masks
 
-    print('Using {} config files'.format(len(config_names)))
+    print(f'Using {len(config_names)} config files')
 
     for config_fname in config_names:
         config_fpath = join(config_dpath, config_fname)
@@ -131,10 +131,9 @@ def test_config_data_pipeline():
         train_pipeline = Compose(config_mod.train_pipeline)
         test_pipeline = Compose(config_mod.test_pipeline)
 
-        print(
-            'Building data pipeline, config_fpath = {!r}'.format(config_fpath))
+        print(f'Building data pipeline, config_fpath = {config_fpath}')
 
-        print('Test training data pipeline: \n{!r}'.format(train_pipeline))
+        print(f'Test training data pipeline: \n{train_pipeline!r}')
         img = np.random.randint(0, 255, size=(888, 666, 3), dtype=np.uint8)
         if loading_pipeline.get('to_float32', False):
             img = img.astype(np.float32)
@@ -154,7 +153,7 @@ def test_config_data_pipeline():
         output_results = train_pipeline(results)
         assert output_results is not None
 
-        print('Test testing data pipeline: \n{!r}'.format(test_pipeline))
+        print(f'Test testing data pipeline: \n{test_pipeline!r}')
         results = dict(
             filename='test_img.png',
             img=img,
@@ -170,8 +169,8 @@ def test_config_data_pipeline():
         assert output_results is not None
 
         # test empty GT
-        print('Test empty GT with training data pipeline: \n{!r}'.format(
-            train_pipeline))
+        print('Test empty GT with training data pipeline: '
+              f'\n{train_pipeline!r}')
         results = dict(
             filename='test_img.png',
             img=img,
@@ -187,8 +186,7 @@ def test_config_data_pipeline():
         output_results = train_pipeline(results)
         assert output_results is not None
 
-        print('Test empty GT with testing data pipeline: \n{!r}'.format(
-            test_pipeline))
+        print(f'Test empty GT with testing data pipeline: \n{test_pipeline!r}')
         results = dict(
             filename='test_img.png',
             img=img,
