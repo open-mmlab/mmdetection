@@ -22,7 +22,7 @@ int carafe_forward(at::Tensor features, at::Tensor rfeatures,
                    at::Tensor masks, at::Tensor rmasks, int kernel_size,
                    int group_size, int scale_factor, at::Tensor routput,
                    at::Tensor output) {
-  if (features.type().is_cuda()) {
+  if (features.device().is_cuda()) {
 #ifdef WITH_CUDA
     return carafe_forward_cuda(features, rfeatures, masks, rmasks, kernel_size,
                                group_size, scale_factor, routput, output);
@@ -39,7 +39,7 @@ int carafe_backward(at::Tensor top_grad, at::Tensor rfeatures,
                     at::Tensor rbottom_grad_hs, at::Tensor rbottom_grad,
                     at::Tensor rmask_grad, at::Tensor bottom_grad,
                     at::Tensor mask_grad) {
-  if (top_grad.type().is_cuda()) {
+  if (top_grad.device().is_cuda()) {
 #ifdef WITH_CUDA
     return carafe_backward_cuda(top_grad, rfeatures, masks, kernel_size,
         group_size, scale_factor, rtop_grad, rbottom_grad_hs, rbottom_grad,
