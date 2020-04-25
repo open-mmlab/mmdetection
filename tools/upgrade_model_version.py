@@ -21,7 +21,7 @@ def convert(in_file, out_file):
         m = re.search(r'(cls_convs|reg_convs).\d.(weight|bias)', key)
         if m is not None:
             param = m.groups()[1]
-            new_key = key.replace(param, 'conv.{}'.format(param))
+            new_key = key.replace(param, f'conv.{param}')
             out_state_dict[new_key] = val
             continue
 

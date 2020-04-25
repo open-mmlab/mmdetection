@@ -198,7 +198,7 @@ class LoadProposals(object):
         if proposals.shape[1] not in (4, 5):
             raise AssertionError(
                 'proposals should have shapes (n, 4) or (n, 5), '
-                'but found {}'.format(proposals.shape))
+                f'but found {proposals.shape}')
         proposals = proposals[:, :4]
 
         if self.num_max_proposals is not None:
@@ -211,5 +211,5 @@ class LoadProposals(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(num_max_proposals={})'.format(
-            self.num_max_proposals)
+        return self.__class__.__name__ + \
+            f'(num_max_proposals={self.num_max_proposals})'

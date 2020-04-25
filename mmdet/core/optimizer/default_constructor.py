@@ -51,7 +51,7 @@ class DefaultOptimizerConstructor(object):
     def __init__(self, optimizer_cfg, paramwise_cfg=None):
         if not isinstance(optimizer_cfg, dict):
             raise TypeError('optimizer_cfg should be a dict',
-                            'but got {}'.format(type(optimizer_cfg)))
+                            f'but got {type(optimizer_cfg)}')
         self.optimizer_cfg = optimizer_cfg
         self.paramwise_cfg = {} if paramwise_cfg is None else paramwise_cfg
         self.base_lr = optimizer_cfg.get('lr', None)
@@ -61,7 +61,7 @@ class DefaultOptimizerConstructor(object):
     def _validate_cfg(self):
         if not isinstance(self.paramwise_cfg, dict):
             raise TypeError('paramwise_cfg should be None or a dict, '
-                            'but got {}'.format(type(self.paramwise_cfg)))
+                            f'but got {type(self.paramwise_cfg)}')
         # get base lr and weight decay
         # weight_decay must be explicitly specified if mult is specified
         if ('bias_decay_mult' in self.paramwise_cfg
@@ -111,9 +111,8 @@ class DefaultOptimizerConstructor(object):
                 params.append(param_group)
                 continue
             if bypass_duplicate and self._is_in(param_group, params):
-                warnings.warn('{} is duplicate. It is skipped since '
-                              'bypass_duplicate={}'.format(
-                                  prefix, bypass_duplicate))
+                warnings.warn(f'{prefix} is duplicate. It is skipped since '
+                              f'bypass_duplicate={bypass_duplicate}')
                 continue
             # bias_lr_mult affects all bias parameters except for norm.bias
             if name == 'bias' and not is_norm:
@@ -135,8 +134,7 @@ class DefaultOptimizerConstructor(object):
             params.append(param_group)
 
         for child_name, child_mod in module.named_children():
-            child_prefix = '{}.{}'.format(prefix,
-                                          child_name) if prefix else child_name
+            child_prefix = f'{prefix}.{child_name}' if prefix else child_name
             self.add_params(params, child_mod, prefix=child_prefix)
 
     def __call__(self, model):

@@ -38,9 +38,9 @@ class FCNMaskHead(nn.Module):
                 None, 'deconv', 'nearest', 'bilinear', 'carafe'
         ]:
             raise ValueError(
-                'Invalid upsample method {}, accepted methods '
-                'are "deconv", "nearest", "bilinear", "carafe"'.format(
-                    self.upsample_cfg['type']))
+                f'Invalid upsample method {self.upsample_cfg["type"]}, '
+                'accepted methods are "deconv", "nearest", "bilinear", '
+                '"carafe"')
         self.num_convs = num_convs
         # WARN: roi_feat_size is reserved and not used
         self.roi_feat_size = _pair(roi_feat_size)

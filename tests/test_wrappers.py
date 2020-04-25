@@ -171,7 +171,7 @@ def test_nn_op_forward_called():
     torch.__version__ = '1.4.1'
 
     for m in ['Conv2d', 'ConvTranspose2d', 'MaxPool2d']:
-        with patch('torch.nn.{}.forward'.format(m)) as nn_module_forward:
+        with patch(f'torch.nn.{m}.forward') as nn_module_forward:
             # randn input
             x_empty = torch.randn(0, 3, 10, 10)
             wrapper = eval(m)(3, 2, 1)
