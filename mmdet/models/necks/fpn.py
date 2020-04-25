@@ -58,7 +58,7 @@ class FPN(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg if not self.no_norm_on_lateral else None,
                 activation=self.activation,
-                inplace=False)#侧向链接的1*1卷积层，每层一个
+                inplace=False)#侧向链接的1*1卷积层，每层一个，输入通道不一样，但是输出通道全是一样的
             fpn_conv = ConvModule(
                 out_channels,
                 out_channels,
@@ -67,14 +67,14 @@ class FPN(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 activation=self.activation,
-                inplace=False)#3*3卷积的fpn
+                inplace=False)#3*3卷积的fpn，是接生成的特征层，所以输入和输出全是一样的通道个数
 
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
 
         # add extra conv layers (e.g., RetinaNet)
         extra_levels = num_outs - self.backbone_end_level + self.start_level
-        if add_extra_convs and extra_levels >= 1:
+        if add_extra_convs and extra_levels >= 1:#是否要生成更多的FPN层
             for i in range(extra_levels):
                 if i == 0 and self.extra_convs_on_inputs:
                     in_channels = self.in_channels[self.backbone_end_level - 1]
@@ -103,10 +103,7 @@ class FPN(nn.Module):
         assert len(inputs) == len(self.in_channels)
 
         # build laterals建立侧向链接
-        laterals = [
-            lateral_conv(inputs[i + self.start_level])
-            for i, lateral_conv in enumerate(self.lateral_convs)
-        ]
+        laterals = [lateral_conv(inputs[i + self.start_level]) for i, lateral_conv in enumerate(self.lateral_convs)]
 
         # build top-down path开始进行上采样生成FPN层
         used_backbone_levels = len(laterals)#如三层
