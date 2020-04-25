@@ -177,11 +177,10 @@ class Resize(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += ('(img_scale={}, multiscale_mode={}, ratio_range={}, '
-                     'keep_ratio={})').format(self.img_scale,
-                                              self.multiscale_mode,
-                                              self.ratio_range,
-                                              self.keep_ratio)
+        repr_str += f'(img_scale={self.img_scale}, '
+        repr_str += f'multiscale_mode={self.multiscale_mode}, '
+        repr_str += f'ratio_range={self.ratio_range}, '
+        repr_str += f'keep_ratio={self.keep_ratio})'
         return repr_str
 
 
