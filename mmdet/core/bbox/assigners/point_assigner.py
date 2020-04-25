@@ -21,16 +21,21 @@ class PointAssigner(BaseAssigner):
         self.scale = scale
         self.pos_num = pos_num
 
-    def assign(self, points, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
+    def assign(self,
+               points,
+               gt_bboxes,
+               gt_bboxes_ignore=None,
+               gt_labels=None,
+               background_label=-1):
         """Assign gt to points.
 
         This method assign a gt bbox to every points set, each points set
-        will be assigned with  0, or a positive number.
-        0 means negative sample, positive number is the index (1-based) of
+        will be assigned with  the background_label (-1), or a label number.
+        -1 is background, and semi-positive number is the index (0-based) of
         assigned gt.
         The assignment is done in following steps, the order matters.
 
-        1. assign every points to 0
+        1. assign every points to the background_label (-1)
         2. A point is assigned to some gt bbox if
             (i) the point is within the k closest points to the gt bbox
             (ii) the distance between this point and the gt is smaller than
@@ -44,6 +49,7 @@ class PointAssigner(BaseAssigner):
                 labelled as `ignored`, e.g., crowd boxes in COCO.
                 NOTE: currently unused.
             gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
+            background_label (int, optional): background label (default: -1)
 
         Returns:
             :obj:`AssignResult`: The assign result.
@@ -59,8 +65,9 @@ class PointAssigner(BaseAssigner):
             if gt_labels is None:
                 assigned_labels = None
             else:
-                assigned_labels = points.new_zeros((num_points, ),
-                                                   dtype=torch.long)
+                assigned_labels = points.new_full((num_points, ),
+                                                  background_label,
+                                                  dtype=torch.long)
             return AssignResult(
                 num_gts, assigned_gt_inds, None, labels=assigned_labels)
 
@@ -120,7 +127,8 @@ class PointAssigner(BaseAssigner):
                 less_than_recorded_index]
 
         if gt_labels is not None:
-            assigned_labels = assigned_gt_inds.new_zeros((num_points, ))
+            assigned_labels = assigned_gt_inds.new_full((num_points, ),
+                                                        background_label)
             pos_inds = torch.nonzero(assigned_gt_inds > 0).squeeze()
             if pos_inds.numel() > 0:
                 assigned_labels[pos_inds] = gt_labels[

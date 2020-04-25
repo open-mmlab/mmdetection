@@ -31,7 +31,8 @@ class ATSSAssigner(BaseAssigner):
                num_level_bboxes,
                gt_bboxes,
                gt_bboxes_ignore=None,
-               gt_labels=None):
+               gt_labels=None,
+               background_label=-1):
         """Assign gt to bboxes.
 
         The assignment is done in following steps
@@ -55,6 +56,7 @@ class ATSSAssigner(BaseAssigner):
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
             gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
+            background_label (int, optional): background label (default: -1)
 
         Returns:
             :obj:`AssignResult`: The assign result.
@@ -80,8 +82,9 @@ class ATSSAssigner(BaseAssigner):
             if gt_labels is None:
                 assigned_labels = None
             else:
-                assigned_labels = overlaps.new_zeros((num_bboxes, ),
-                                                     dtype=torch.long)
+                assigned_labels = overlaps.new_full((num_bboxes, ),
+                                                    background_label,
+                                                    dtype=torch.long)
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
@@ -151,7 +154,8 @@ class ATSSAssigner(BaseAssigner):
             max_overlaps != -INF] = argmax_overlaps[max_overlaps != -INF] + 1
 
         if gt_labels is not None:
-            assigned_labels = assigned_gt_inds.new_zeros((num_bboxes, ))
+            assigned_labels = assigned_gt_inds.new_full((num_bboxes, ),
+                                                        background_label)
             pos_inds = torch.nonzero(assigned_gt_inds > 0).squeeze()
             if pos_inds.numel() > 0:
                 assigned_labels[pos_inds] = gt_labels[

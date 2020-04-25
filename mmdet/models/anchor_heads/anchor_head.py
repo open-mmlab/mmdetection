@@ -193,7 +193,7 @@ class AnchorHead(nn.Module):
 
         assign_result = self.assigner.assign(
             anchors, gt_bboxes, gt_bboxes_ignore,
-            None if self.sampling else gt_labels)
+            None if self.sampling else gt_labels, self.background_label)
         sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 
