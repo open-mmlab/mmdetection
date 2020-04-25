@@ -20,9 +20,9 @@ MINOR = 1
 PATCH = 0
 SUFFIX = ''
 if PATCH != '':
-    SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
+    SHORT_VERSION = f'{MAJOR}.{MINOR}.{PATCH}{SUFFIX}'
 else:
-    SHORT_VERSION = '{}.{}{}'.format(MAJOR, MINOR, SUFFIX)
+    SHORT_VERSION = f'{MAJOR}.{MINOR}{SUFFIX}'
 
 version_file = 'mmdet/version.py'
 
@@ -103,12 +103,12 @@ def make_cuda_ext(name, module, sources, sources_cuda=[]):
         ]
         sources += sources_cuda
     else:
-        print('Compiling {} without CUDA'.format(name))
+        print(f'Compiling {name} without CUDA')
         extension = CppExtension
         # raise EnvironmentError('CUDA is required to compile MMDetection!')
 
     return extension(
-        name='{}.{}'.format(module, name),
+        name=f'{module}.{name}',
         sources=[os.path.join(*module.split('.'), p) for p in sources],
         define_macros=define_macros,
         extra_compile_args=extra_compile_args)

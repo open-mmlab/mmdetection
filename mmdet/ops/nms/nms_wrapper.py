@@ -39,12 +39,11 @@ def nms(dets, iou_thr, device_id=None):
         dets_th = dets
     elif isinstance(dets, np.ndarray):
         is_numpy = True
-        device = 'cpu' if device_id is None else 'cuda:{}'.format(device_id)
+        device = 'cpu' if device_id is None else f'cuda:{device_id}'
         dets_th = torch.from_numpy(dets).to(device)
     else:
-        raise TypeError(
-            'dets must be either a Tensor or numpy array, but got {}'.format(
-                type(dets)))
+        raise TypeError('dets must be either a Tensor or numpy array, '
+                        f'but got {type(dets)}')
 
     # execute cpu or cuda nms
     if dets_th.shape[0] == 0:
@@ -96,13 +95,12 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
         is_tensor = False
         dets_t = torch.from_numpy(dets)
     else:
-        raise TypeError(
-            'dets must be either a Tensor or numpy array, but got {}'.format(
-                type(dets)))
+        raise TypeError('dets must be either a Tensor or numpy array, '
+                        f'but got {type(dets)}')
 
     method_codes = {'linear': 1, 'gaussian': 2}
     if method not in method_codes:
-        raise ValueError('Invalid method for SoftNMS: {}'.format(method))
+        raise ValueError(f'Invalid method for SoftNMS: {method}')
     results = nms_ext.soft_nms(dets_t, iou_thr, method_codes[method], sigma,
                                min_score)
 

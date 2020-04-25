@@ -138,12 +138,11 @@ class CityscapesDataset(CocoDataset):
                     class_id = CSLabels.name2label[classes].id
                     score = bboxes[i, -1]
                     mask = maskUtils.decode(segms[i]).astype(np.uint8)
-                    png_filename = osp.join(
-                        outfile_prefix,
-                        basename + '_{}_{}.png'.format(i, classes))
+                    png_filename = osp.join(outfile_prefix,
+                                            basename + f'_{i}_{classes}.png')
                     mmcv.imwrite(mask, png_filename)
-                    fout.write('{} {} {}\n'.format(
-                        osp.basename(png_filename), class_id, score))
+                    fout.write(f'{osp.basename(png_filename)} {class_id} '
+                               f'{score}\n')
             result_files.append(pred_txt)
 
         return result_files
@@ -249,9 +248,7 @@ class CityscapesDataset(CocoDataset):
             result_dir = osp.join(tmp_dir.name, 'results')
 
         eval_results = {}
-        print_log(
-            'Evaluating results under {} ...'.format(result_dir),
-            logger=logger)
+        print_log(f'Evaluating results under {result_dir} ...', logger=logger)
 
         # set global states in cityscapes evaluation API
         CSEval.args.cityscapesPath = os.path.join(self.img_prefix, '../..')
@@ -266,9 +263,8 @@ class CityscapesDataset(CocoDataset):
             '*/*_gtFine_instanceIds.png')
 
         groundTruthImgList = glob.glob(CSEval.args.groundTruthSearch)
-        assert len(groundTruthImgList), \
-            'Cannot find ground truth images in {}.'.format(
-                CSEval.args.groundTruthSearch)
+        assert len(groundTruthImgList), 'Cannot find ground truth images' \
+            f' in {CSEval.args.groundTruthSearch}.'
         predictionImgList = []
         for gt in groundTruthImgList:
             predictionImgList.append(CSEval.getPrediction(gt, CSEval.args))
