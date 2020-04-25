@@ -107,7 +107,7 @@ def main():
             if config_path in benchmark_pool:
                 benchmark_configs.append(config_path)
 
-    print(f'Totally find {len(benchmark_configs)} configs to benchmark')
+    print(f'Totally found {len(benchmark_configs)} configs to benchmark')
     config_dicts = dict(models=benchmark_configs)
     mmcv.dump(config_dicts, 'regression_test_configs.json')
 
