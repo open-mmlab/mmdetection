@@ -71,7 +71,7 @@ class SamplingResult(util_mixins.NiceRepr):
         data = self.info.copy()
         data['pos_bboxes'] = data.pop('pos_bboxes').shape
         data['neg_bboxes'] = data.pop('neg_bboxes').shape
-        parts = [f'\'{k}\': {v!r}' for k, v in sorted(data.items())]
+        parts = [f"'{k}': {v!r}" for k, v in sorted(data.items())]
         body = '    ' + ',\n    '.join(parts)
         return '{\n' + body + '\n}'
 

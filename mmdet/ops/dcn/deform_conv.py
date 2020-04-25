@@ -203,9 +203,9 @@ class DeformConv(nn.Module):
 
         assert not bias
         assert in_channels % groups == 0, \
-            f'in_channels {in_channels} cannot be divisible by groups {groups}'
+            f'in_channels {in_channels} is not divisible by groups {groups}'
         assert out_channels % groups == 0, \
-            f'out_channels {out_channels} cannot be divisible ' \
+            f'out_channels {out_channels} is not divisible ' \
             f'by groups {groups}'
 
         self.in_channels = in_channels

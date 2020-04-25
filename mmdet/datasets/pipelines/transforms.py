@@ -222,7 +222,7 @@ class RandomFlip(object):
             flipped[..., 1::4] = h - bboxes[..., 3::4]
             flipped[..., 3::4] = h - bboxes[..., 1::4]
         else:
-            raise ValueError(f'Invalid flipping direction "{direction}"')
+            raise ValueError(f"Invalid flipping direction '{direction}'")
         return flipped
 
     def __call__(self, results):
@@ -860,6 +860,5 @@ class Albu(object):
         return results
 
     def __repr__(self):
-        repr_str = self.__class__.__name__
-        repr_str += f'(transforms={self.transforms})'
+        repr_str = self.__class__.__name__ + f'(transforms={self.transforms})'
         return repr_str

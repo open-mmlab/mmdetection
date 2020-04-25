@@ -29,7 +29,7 @@ def test_config_build_detector():
     from mmdet.models import build_detector
 
     config_dpath = _get_config_directory()
-    print(f'Found config_dpath = {config_dpath!r}')
+    print(f'Found config_dpath = {config_dpath}')
 
     import glob
     config_fpaths = list(glob.glob(join(config_dpath, '**', '*.py')))
@@ -45,7 +45,7 @@ def test_config_build_detector():
         config_mod.model
         config_mod.train_cfg
         config_mod.test_cfg
-        print(f'Building detector, config_fpath = {config_fpath!r}')
+        print(f'Building detector, config_fpath = {config_fpath}')
 
         # Remove pretrained keys to allow for testing in an offline environment
         if 'pretrained' in config_mod.model:
@@ -87,7 +87,7 @@ def test_config_data_pipeline():
     import numpy as np
 
     config_dpath = _get_config_directory()
-    print(f'Found config_dpath = {config_dpath!r}')
+    print(f'Found config_dpath = {config_dpath}')
 
     # Only tests a representative subset of configurations
     # TODO: test pipelines using Albu, current Albu throw None given empty GT
@@ -131,7 +131,7 @@ def test_config_data_pipeline():
         train_pipeline = Compose(config_mod.train_pipeline)
         test_pipeline = Compose(config_mod.test_pipeline)
 
-        print(f'Building data pipeline, config_fpath = {config_fpath!r}')
+        print(f'Building data pipeline, config_fpath = {config_fpath}')
 
         print(f'Test training data pipeline: \n{train_pipeline!r}')
         img = np.random.randint(0, 255, size=(888, 666, 3), dtype=np.uint8)

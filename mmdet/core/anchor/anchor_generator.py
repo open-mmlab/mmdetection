@@ -64,7 +64,7 @@ class AnchorGenerator(object):
         # check center and center_offset
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
-                '!=0, {centers} is given.'
+                f'!=0, {centers} is given.'
         if not (0 <= center_offset <= 1):
             raise ValueError('center_offset should be in range [0, 1], '
                              f'{center_offset} is given.')
@@ -259,17 +259,19 @@ class AnchorGenerator(object):
         return valid
 
     def __repr__(self):
-        indent_str = '\n    '
-        repr_str = self.__class__.__name__ + '('
-        repr_str += f'{indent_str}strides={self.strides},'
-        repr_str += f'{indent_str}ratios={self.ratios},'
-        repr_str += f'{indent_str}scales={self.scales},'
-        repr_str += f'{indent_str}base_sizes={self.base_sizes},'
-        repr_str += f'{indent_str}scale_major={self.scale_major},'
-        repr_str += f'{indent_str}octave_base_scale={self.octave_base_scale}'
-        repr_str += f'{indent_str}scales_per_octave={self.scales_per_octave}'
-        repr_str += f'{indent_str}num_levels={self.num_levels}'
-        repr_str += f'{indent_str}centers={self.centers},'
+        indent_str = '    '
+        repr_str = self.__class__.__name__ + '(\n'
+        repr_str += f'{indent_str}strides={self.strides},\n'
+        repr_str += f'{indent_str}ratios={self.ratios},\n'
+        repr_str += f'{indent_str}scales={self.scales},\n'
+        repr_str += f'{indent_str}base_sizes={self.base_sizes},\n'
+        repr_str += f'{indent_str}scale_major={self.scale_major},\n'
+        repr_str += f'{indent_str}octave_base_scale='
+        repr_str += f'{self.octave_base_scale},\n'
+        repr_str += f'{indent_str}scales_per_octave='
+        repr_str += f'{self.scales_per_octave},\n'
+        repr_str += f'{indent_str}num_levels={self.num_levels}\n'
+        repr_str += f'{indent_str}centers={self.centers},\n'
         repr_str += f'{indent_str}center_offset={self.center_offset})'
         return repr_str
 
@@ -373,16 +375,16 @@ class SSDAnchorGenerator(AnchorGenerator):
         return multi_level_base_anchors
 
     def __repr__(self):
-        indent_str = '\n    '
-        repr_str = self.__class__.__name__ + '('
-        repr_str += f'{indent_str}strides={self.strides},'
-        repr_str += f'{indent_str}scales={self.scales},'
-        repr_str += f'{indent_str}scale_major={self.scale_major},'
-        repr_str += f'{indent_str}input_size={self.input_size},'
-        repr_str += f'{indent_str}scales={self.scales},'
-        repr_str += f'{indent_str}ratios={self.ratios},'
-        repr_str += f'{indent_str}num_levels={self.num_levels}'
-        repr_str += f'{indent_str}base_sizes={self.base_sizes}'
+        indent_str = '    '
+        repr_str = self.__class__.__name__ + '(\n'
+        repr_str += f'{indent_str}strides={self.strides},\n'
+        repr_str += f'{indent_str}scales={self.scales},\n'
+        repr_str += f'{indent_str}scale_major={self.scale_major},\n'
+        repr_str += f'{indent_str}input_size={self.input_size},\n'
+        repr_str += f'{indent_str}scales={self.scales},\n'
+        repr_str += f'{indent_str}ratios={self.ratios},\n'
+        repr_str += f'{indent_str}num_levels={self.num_levels},\n'
+        repr_str += f'{indent_str}base_sizes={self.base_sizes},\n'
         repr_str += f'{indent_str}basesize_ratio_range='
         repr_str += f'{self.basesize_ratio_range})'
         return repr_str
