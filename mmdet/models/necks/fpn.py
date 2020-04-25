@@ -24,10 +24,10 @@ class FPN(nn.Module):
                  norm_cfg=None,
                  activation=None):
         super(FPN, self).__init__()
-        assert isinstance(in_channels, list)
+        assert isinstance(in_channels, list)#输入的是多个通道
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.num_ins = len(in_channels)
+        self.num_ins = len(in_channels) #有多少个输入
         self.num_outs = num_outs
         self.activation = activation
         self.relu_before_extra_convs = relu_before_extra_convs
@@ -47,7 +47,7 @@ class FPN(nn.Module):
         self.add_extra_convs = add_extra_convs
         self.extra_convs_on_inputs = extra_convs_on_inputs
 
-        self.lateral_convs = nn.ModuleList()
+        self.lateral_convs = nn.ModuleList()#用于侧向链接的卷积层
         self.fpn_convs = nn.ModuleList()
 
         for i in range(self.start_level, self.backbone_end_level):
@@ -58,7 +58,7 @@ class FPN(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg if not self.no_norm_on_lateral else None,
                 activation=self.activation,
-                inplace=False)
+                inplace=False)#侧向链接的1*1卷积层，每层一个
             fpn_conv = ConvModule(
                 out_channels,
                 out_channels,
@@ -67,7 +67,7 @@ class FPN(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 activation=self.activation,
-                inplace=False)
+                inplace=False)#3*3卷积的fpn
 
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
@@ -99,37 +99,37 @@ class FPN(nn.Module):
                 xavier_init(m, distribution='uniform')
 
     @auto_fp16()
-    def forward(self, inputs):
+    def forward(self, inputs):#有多个输入
         assert len(inputs) == len(self.in_channels)
 
-        # build laterals
+        # build laterals建立侧向链接
         laterals = [
             lateral_conv(inputs[i + self.start_level])
             for i, lateral_conv in enumerate(self.lateral_convs)
         ]
 
-        # build top-down path
-        used_backbone_levels = len(laterals)
+        # build top-down path开始进行上采样生成FPN层
+        used_backbone_levels = len(laterals)#如三层
         for i in range(used_backbone_levels - 1, 0, -1):
             laterals[i - 1] += F.interpolate(
-                laterals[i], scale_factor=2, mode='nearest')
+                laterals[i], scale_factor=2, mode='nearest')#这种形式就是上采样下一层然后和当前层加就实现了
 
         # build outputs
         # part 1: from original levels
         outs = [
             self.fpn_convs[i](laterals[i]) for i in range(used_backbone_levels)
-        ]
-        # part 2: add extra levels
-        if self.num_outs > len(outs):
+        ]#对已经生成的特征图使用3*3卷积处理，现在只有三个
+        # part 2: add extra levels考虑是否要生成更多的特征图
+        if self.num_outs > len(outs):#如果要输出多个，out还不够
             # use max pool to get more levels on top of outputs
             # (e.g., Faster R-CNN, Mask R-CNN)
-            if not self.add_extra_convs:
-                for i in range(self.num_outs - used_backbone_levels):
-                    outs.append(F.max_pool2d(outs[-1], 1, stride=2))
+            if not self.add_extra_convs:#如果不是用卷积生成更多层
+                for i in range(self.num_outs - used_backbone_levels):#生成多少个
+                    outs.append(F.max_pool2d(outs[-1], 1, stride=2))#使用max_pool，处理最小的特征图，生成的结构直接放到out中，迭代实现
             # add conv layers on top of original feature maps (RetinaNet)
             else:
-                if self.extra_convs_on_inputs:
-                    orig = inputs[self.backbone_end_level - 1]
+                if self.extra_convs_on_inputs:#如果是用卷积层生成的
+                    orig = inputs[self.backbone_end_level - 1]#
                     outs.append(self.fpn_convs[used_backbone_levels](orig))
                 else:
                     outs.append(self.fpn_convs[used_backbone_levels](outs[-1]))
