@@ -9,6 +9,9 @@ Welcome to MMDetection's documentation!
    MODEL_ZOO.md
    TECHNICAL_DETAILS.md
    CHANGELOG.md
+   tutorials/finetune.md
+   tutorials/new_dataset.md
+   tutorials/new_modules.md
 
 
 
