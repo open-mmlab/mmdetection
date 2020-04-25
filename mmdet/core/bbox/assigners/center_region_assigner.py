@@ -23,12 +23,12 @@ def scale_boxes(bboxes, scale):
     w_half *= scale
     h_half *= scale
 
-    boxes_exp = torch.zeros_like(bboxes)
-    boxes_exp[:, 0] = x_c - w_half
-    boxes_exp[:, 2] = x_c + w_half
-    boxes_exp[:, 1] = y_c - h_half
-    boxes_exp[:, 3] = y_c + h_half
-    return boxes_exp
+    boxes_scaled = torch.zeros_like(bboxes)
+    boxes_scaled[:, 0] = x_c - w_half
+    boxes_scaled[:, 2] = x_c + w_half
+    boxes_scaled[:, 1] = y_c - h_half
+    boxes_scaled[:, 3] = y_c + h_half
+    return boxes_scaled
 
 
 def is_located_in(points, bboxes, is_aligned=False):
@@ -64,8 +64,8 @@ def bboxes_area(bboxes):
 
 
 @BBOX_ASSIGNERS.register_module
-class EffectiveAreaAssigner(BaseAssigner):
-    """Assign a corresponding gt bbox or background to each bbox.
+class CenterRegionAssigner(BaseAssigner):
+    """Assign pixels at the center region of a bbox as positive.
 
     Each proposals will be assigned with `-1`, `0`, or a positive integer
     indicating the ground truth index.
@@ -75,14 +75,14 @@ class EffectiveAreaAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-        pos_area_thr (float): threshold within which pixels are
+        pos_scale (float): threshold within which pixels are
           labelled as positive.
-        neg_area_thr (float): threshold above which pixels are
+        neg_scale (float): threshold above which pixels are
           labelled as positive.
         min_pos_iof (float): minimum iof of a pixel with a gt to be
           labelled as positive
-        ignore_gt_area_thr (float): threshold within which the pixels
-        are ignored when the gt is labelled as ignored
+        ignore_gt_scale (float): threshold within which the pixels
+        are ignored when the gt is labelled as shadowed
     """
 
     def __init__(self,
@@ -123,7 +123,7 @@ class EffectiveAreaAssigner(BaseAssigner):
         #    3.1. For overlapping objects, the prior bboxes in gt_core is
         #           assigned with the object with smallest area
         # 4. Assign prior bboxes with class label according to its gt id.
-        #    4.1. Assign -1 to prior bboxes lying in ignored gts
+        #    4.1. Assign -1 to prior bboxes lying in shadowed gts
         #    4.2. Assign positive prior boxes with the corresponding label
         # 5. Find pixels lying in the shadow of an object and assign them with
         #      background label, but set the loss weight of its corresponding
@@ -144,17 +144,17 @@ class EffectiveAreaAssigner(BaseAssigner):
         is_bbox_in_gt = is_located_in(bbox_centers, gt_bboxes)
         # Only calculate bbox and gt_core IoF. This enables small prior bboxes
         #   to match large gts
-        bbox_and_gt_eff_overlaps = self.iou_calculator(
+        bbox_and_gt_core_overlaps = self.iou_calculator(
             bboxes, gt_core, mode='iof')
         # the center point of effective priors should be within the gt box
-        is_bbox_in_gt_eff = is_bbox_in_gt & (
-            bbox_and_gt_eff_overlaps > self.min_pos_iof)  # shape (n, k)
+        is_bbox_in_gt_core = is_bbox_in_gt & (
+            bbox_and_gt_core_overlaps > self.min_pos_iof)  # shape (n, k)
 
         is_bbox_in_gt_shadow = (
             self.iou_calculator(bboxes, gt_shadow, mode='iof') >
             self.min_pos_iof)
         # Rule out center effective positive pixels
-        is_bbox_in_gt_shadow &= (~is_bbox_in_gt_eff)
+        is_bbox_in_gt_shadow &= (~is_bbox_in_gt_core)
 
         # Step 3: assign a one-hot gt id to each pixel, and smaller objects
         #    have high priority to assign the pixel.
@@ -162,7 +162,7 @@ class EffectiveAreaAssigner(BaseAssigner):
         # Rank all gt bbox areas. Smaller objects has larger priority
         _, sort_idx = gt_areas.sort(descending=True)
         assigned_gt_ids, pixels_in_gt_shadow = self.assign_one_hot_gt_indices(
-            is_bbox_in_gt_eff, is_bbox_in_gt_shadow, gt_priority=sort_idx)
+            is_bbox_in_gt_core, is_bbox_in_gt_shadow, gt_priority=sort_idx)
         if gt_bboxes_ignore is not None and gt_bboxes_ignore.numel() > 0:
             gt_bboxes_ignore = scale_boxes(
                 gt_bboxes_ignore, scale=self.ignore_gt_scale)
@@ -172,9 +172,9 @@ class EffectiveAreaAssigner(BaseAssigner):
             assigned_gt_ids[is_bbox_in_ignored_gts] = -1
 
         # 4. Assign prior bboxes with class label according to its gt id.
-        num_bboxes, num_gts = is_bbox_in_gt_eff.shape
+        num_bboxes, num_gts = is_bbox_in_gt_core.shape
         if gt_labels is not None:
-            assigned_labels = assigned_gt_ids.new_zeros((num_bboxes, ))
+            assigned_labels = assigned_gt_ids.new_full((num_bboxes, ), -1)
             pos_inds = torch.nonzero(assigned_gt_ids > 0).squeeze()
             if pos_inds.numel() > 0:
                 assigned_labels[pos_inds] = gt_labels[assigned_gt_ids[pos_inds]
@@ -189,8 +189,8 @@ class EffectiveAreaAssigner(BaseAssigner):
                 assert (assigned_gt_ids[pixel_idx] != gt_idx).all(), \
                     'Some pixels are dually assigned to ignore and gt!'
                 shadowed_pixel_labels[:, 1] = gt_labels[gt_idx - 1]
-                # Positive labels can override ignored labels, e.g. when
-                #   a small horse stands at the ignored region of a large one.
+                # Positive labels can override shadowed labels, e.g. when
+                #   a small horse stands at the shadowed region of a large one.
                 override = (
                     assigned_labels[pixel_idx] == shadowed_pixel_labels[:, 1])
                 shadowed_pixel_labels = shadowed_pixel_labels[~override]
@@ -218,7 +218,7 @@ class EffectiveAreaAssigner(BaseAssigner):
               the effective area of a gt (e.g. 0-0.2)
             is_bbox_in_gt_shadow: shape [num_prior, num_gt].
               bool tensor indicating the bbox
-            center is in the ignored area of a gt (e.g. 0.2-0.5)
+            center is in the shadowed area of a gt (e.g. 0.2-0.5)
             gt_labels: shape [num_gt]. gt labels (0-80 for COCO)
             gt_priority: shape [num_gt]. gt priorities.
               The gt with a higher priority is more likely to be
@@ -226,9 +226,9 @@ class EffectiveAreaAssigner(BaseAssigner):
 
         Returns:
             :obj:`AssignResult`: The assign result.
-            shadowed_gt_inds: ignored gt indices. It is a tensor of shape
-                [num_ignore, 2] with first column recording the ignored feature
-                map indices and the second column the ignored gt indices
+            shadowed_gt_inds: shadowed gt indices. It is a tensor of shape
+                [num_ignore, 2] with first column being the shadowed feature
+                map indices and the second column the shadowed gt indices
         """
         num_bboxes, num_gts = is_bbox_in_gt_core.shape
 
@@ -243,7 +243,7 @@ class EffectiveAreaAssigner(BaseAssigner):
         # matched  bboxes (to any gt)
         inds_of_shadow = torch.any(is_bbox_in_gt_shadow, dim=1)
         # Ignored indices are assigned to be background. But the corresponding
-        #   label is ignored during loss calculation, which is done through
+        #   label is shadowed during loss calculation, which is done through
         #   shadowed_gt_inds
         assigned_gt_inds[inds_of_shadow] = 0
         shadowed_gt_inds = torch.nonzero(is_bbox_in_gt_shadow)
@@ -270,10 +270,9 @@ class EffectiveAreaAssigner(BaseAssigner):
         pair_priority[is_bbox_in_gt_core] = gt_priority[matched_bbox_gt_inds]
         _, argmax_priority = pair_priority[inds_of_match].max(dim=1)
         # the maximum shape [num_match]
-        # effective indices. Note that positive assignment can overwrite
-        # negative or ignored ones
+        # effective indices.
         assigned_gt_inds[inds_of_match] = argmax_priority + 1  # 1-based
-        # Zero-out the assigned pixels to filter the ignored gt indices
+        # Zero-out the assigned pixels to filter the shadowed gt indices
         is_bbox_in_gt_core[inds_of_match, argmax_priority] = 0
         # Concat the shadowed indices due to overlapping with that out side of
         #   effective scale. shape: [total_num_ignore, 2]
