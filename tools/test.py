@@ -83,7 +83,7 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local-rank', type=int, default=0)
+    parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -157,7 +157,7 @@ def main():
     rank, _ = get_dist_info()
     if rank == 0:
         if args.out:
-            print('\nwriting results to {}'.format(args.out))
+            print(f'\nwriting results to {args.out}')
             mmcv.dump(outputs, args.out)
         kwargs = {} if args.options is None else args.options
         if args.format_only:

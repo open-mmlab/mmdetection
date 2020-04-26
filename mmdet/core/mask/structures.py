@@ -92,9 +92,9 @@ class BitmapMasks(BaseInstanceMasks):
 
     def __repr__(self):
         s = self.__class__.__name__ + '('
-        s += 'num_masks={}, '.format(len(self.masks))
-        s += 'height={}, '.format(len(self.height))
-        s += 'width={})'.format(len(self.width))
+        s += f'num_masks={len(self.masks)}, '
+        s += f'height={len(self.height)}, '
+        s += f'width={len(self.width)})'
         return s
 
     def __len__(self):
@@ -316,8 +316,7 @@ class PolygonMasks(BaseInstanceMasks):
                 masks = self.masks[index]
             except Exception:
                 raise ValueError(
-                    'Unsupported input of type {} for indexing!'.format(
-                        type(index)))
+                    f'Unsupported input of type {type(index)} for indexing!')
         if isinstance(masks[0], np.ndarray):
             masks = [masks]  # ensure a list of three levels
         return PolygonMasks(masks, self.height, self.width)
@@ -327,9 +326,9 @@ class PolygonMasks(BaseInstanceMasks):
 
     def __repr__(self):
         s = self.__class__.__name__ + '('
-        s += 'num_masks={}, '.format(len(self.masks))
-        s += 'height={}, '.format(len(self.height))
-        s += 'width={})'.format(len(self.width))
+        s += f'num_masks={len(self.masks)}, '
+        s += f'height={len(self.height)}, '
+        s += f'width={len(self.width)})'
         return s
 
     def __len__(self):

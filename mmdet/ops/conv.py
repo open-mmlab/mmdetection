@@ -30,7 +30,7 @@ def build_conv_layer(cfg, *args, **kwargs):
 
     layer_type = cfg_.pop('type')
     if layer_type not in conv_cfg:
-        raise KeyError('Unrecognized norm type {}'.format(layer_type))
+        raise KeyError(f'Unrecognized norm type {layer_type}')
     else:
         conv_layer = conv_cfg[layer_type]
 

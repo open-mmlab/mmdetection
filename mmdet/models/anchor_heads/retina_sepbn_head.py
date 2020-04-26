@@ -1,10 +1,8 @@
-import numpy as np
 import torch.nn as nn
-from mmcv.cnn import normal_init
+from mmcv.cnn import bias_init_with_prob, normal_init
 
 from mmdet.ops import ConvModule
-from ..registry import HEADS
-from ..utils import bias_init_with_prob
+from ..builder import HEADS
 from .anchor_head import AnchorHead
 
 
@@ -22,22 +20,15 @@ class RetinaSepBNHead(AnchorHead):
                  num_ins,
                  in_channels,
                  stacked_convs=4,
-                 octave_base_scale=4,
-                 scales_per_octave=3,
                  conv_cfg=None,
                  norm_cfg=None,
                  **kwargs):
         self.stacked_convs = stacked_convs
-        self.octave_base_scale = octave_base_scale
-        self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.num_ins = num_ins
-        octave_scales = np.array(
-            [2**(i / scales_per_octave) for i in range(scales_per_octave)])
-        anchor_scales = octave_scales * octave_base_scale
-        super(RetinaSepBNHead, self).__init__(
-            num_classes, in_channels, anchor_scales=anchor_scales, **kwargs)
+        super(RetinaSepBNHead, self).__init__(num_classes, in_channels,
+                                              **kwargs)
 
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)

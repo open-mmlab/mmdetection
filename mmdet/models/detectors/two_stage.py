@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 
 # from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
-from .. import builder
-from ..registry import DETECTORS
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 
@@ -25,16 +24,16 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
                  test_cfg=None,
                  pretrained=None):
         super(TwoStageDetector, self).__init__()
-        self.backbone = builder.build_backbone(backbone)
+        self.backbone = build_backbone(backbone)
 
         if neck is not None:
-            self.neck = builder.build_neck(neck)
+            self.neck = build_neck(neck)
 
         if rpn_head is not None:
             rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
             rpn_head_ = rpn_head.copy()
             rpn_head_.update(train_cfg=rpn_train_cfg, test_cfg=test_cfg.rpn)
-            self.rpn_head = builder.build_head(rpn_head_)
+            self.rpn_head = build_head(rpn_head_)
 
         if roi_head is not None:
             # update train and test cfg here for now
@@ -42,7 +41,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
             rcnn_train_cfg = train_cfg.rcnn if train_cfg is not None else None
             roi_head.update(train_cfg=rcnn_train_cfg)
             roi_head.update(test_cfg=test_cfg.rcnn)
-            self.roi_head = builder.build_head(roi_head)
+            self.roi_head = build_head(roi_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -148,8 +147,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
-            proposal_inputs = rpn_outs + (img_metas, proposal_cfg)
-            proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
+            proposal_list = self.rpn_head.get_bboxes(
+                *rpn_outs, img_metas, cfg=proposal_cfg)
         else:
             proposal_list = proposals
 
@@ -171,8 +170,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
 
         if proposals is None:
-            proposal_list = await self.async_test_rpn(x, img_meta,
-                                                      self.test_cfg.rpn)
+            proposal_list = await self.async_test_rpn(x, img_meta)
         else:
             proposal_list = proposals
 
@@ -186,8 +184,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
 
         if proposals is None:
-            proposal_list = self.simple_test_rpn(x, img_metas,
-                                                 self.test_cfg.rpn)
+            proposal_list = self.simple_test_rpn(x, img_metas)
         else:
             proposal_list = proposals
 
@@ -202,6 +199,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         """
         # recompute feats to save memory
         x = self.extract_feats(imgs)
-        proposal_list = self.aug_test_rpn(x, img_metas, self.test_cfg.rpn)
+        proposal_list = self.aug_test_rpn(x, img_metas)
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)

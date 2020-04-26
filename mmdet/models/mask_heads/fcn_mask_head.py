@@ -2,14 +2,13 @@ import numpy as np
 import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import auto_fp16, force_fp32, mask_target
 from mmdet.ops import Conv2d, ConvModule, build_upsample_layer
 from mmdet.ops.carafe import CARAFEPack
-from mmdet.ops.grid_sampler import grid_sample
-from ..builder import build_loss
-from ..registry import HEADS
+from ..builder import HEADS, build_loss
 
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
@@ -39,9 +38,9 @@ class FCNMaskHead(nn.Module):
                 None, 'deconv', 'nearest', 'bilinear', 'carafe'
         ]:
             raise ValueError(
-                'Invalid upsample method {}, accepted methods '
-                'are "deconv", "nearest", "bilinear", "carafe"'.format(
-                    self.upsample_cfg['type']))
+                f'Invalid upsample method {self.upsample_cfg["type"]}, '
+                'accepted methods are "deconv", "nearest", "bilinear", '
+                '"carafe"')
         self.num_convs = num_convs
         # WARN: roi_feat_size is reserved and not used
         self.roi_feat_size = _pair(roi_feat_size)
@@ -124,7 +123,7 @@ class FCNMaskHead(nn.Module):
         mask_pred = self.conv_logits(x)
         return mask_pred
 
-    def get_target(self, sampling_results, gt_masks, rcnn_train_cfg):
+    def get_targets(self, sampling_results, gt_masks, rcnn_train_cfg):
         pos_proposals = [res.pos_bboxes for res in sampling_results]
         pos_assigned_gt_inds = [
             res.pos_assigned_gt_inds for res in sampling_results
@@ -303,7 +302,7 @@ def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
     gy = img_y[:, :, None].expand(N, img_y.size(1), img_x.size(1))
     grid = torch.stack([gx, gy], dim=3)
 
-    img_masks = grid_sample(
+    img_masks = F.grid_sample(
         masks.to(dtype=torch.float32), grid, align_corners=False)
 
     if skip_empty:

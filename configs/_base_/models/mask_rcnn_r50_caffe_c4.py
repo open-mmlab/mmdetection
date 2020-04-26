@@ -18,11 +18,15 @@ model = dict(
         type='RPNHead',
         in_channels=1024,
         feat_channels=1024,
-        anchor_scales=[2, 4, 8, 16, 32],
-        anchor_ratios=[0.5, 1.0, 2.0],
-        anchor_strides=[16],
-        target_means=[.0, .0, .0, .0],
-        target_stds=[1.0, 1.0, 1.0, 1.0],
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            scales=[2, 4, 8, 16, 32],
+            ratios=[0.5, 1.0, 2.0],
+            strides=[16]),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
@@ -48,8 +52,10 @@ model = dict(
             roi_feat_size=7,
             in_channels=2048,
             num_classes=80,
-            target_means=[0., 0., 0., 0.],
-            target_stds=[0.1, 0.1, 0.2, 0.2],
+            bbox_coder=dict(
+                type='DeltaXYWHBBoxCoder',
+                target_means=[0., 0., 0., 0.],
+                target_stds=[0.1, 0.1, 0.2, 0.2]),
             reg_class_agnostic=False,
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),

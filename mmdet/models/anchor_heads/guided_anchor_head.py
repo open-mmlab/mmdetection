@@ -1,17 +1,13 @@
-from __future__ import division
-
-import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import normal_init
+from mmcv.cnn import bias_init_with_prob, normal_init
 
-from mmdet.core import (AnchorGenerator, anchor_inside_flags, anchor_target,
-                        delta2bbox, force_fp32, ga_loc_target, ga_shape_target,
-                        multi_apply, multiclass_nms)
+from mmdet.core import (anchor_inside_flags, build_anchor_generator,
+                        build_assigner, build_bbox_coder, build_sampler,
+                        calc_region, force_fp32, images_to_levels, multi_apply,
+                        multiclass_nms, unmap)
 from mmdet.ops import DeformConv, MaskedConv2d
-from ..builder import build_loss
-from ..registry import HEADS
-from ..utils import bias_init_with_prob
+from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
 
@@ -73,17 +69,10 @@ class GuidedAnchorHead(AnchorHead):
         num_classes (int): Number of classes.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of hidden channels.
-        octave_base_scale (int): Base octave scale of each level of
-            feature map.
-        scales_per_octave (int): Number of octave scales in each level of
-            feature map
-        octave_ratios (Iterable): octave aspect ratios.
-        anchor_strides (Iterable): Anchor strides.
-        anchor_base_sizes (Iterable): Anchor base sizes.
-        anchoring_means (Iterable): Mean values of anchoring targets.
-        anchoring_stds (Iterable): Std values of anchoring targets.
-        target_means (Iterable): Mean values of regression targets.
-        target_stds (Iterable): Std values of regression targets.
+        approx_anchor_generator (dict): Config dict for approx generator
+        square_anchor_generator (dict): Config dict for square generator
+        anchor_coder (dict): Config dict for anchor coder
+        bbox_coder (dict): Config dict for bbox coder
         deformable_groups: (int): Group number of DCN in
             FeatureAdaption module.
         loc_filter_thr (float): Threshold to filter out unconcerned regions.
@@ -101,15 +90,28 @@ class GuidedAnchorHead(AnchorHead):
         num_classes,
         in_channels,
         feat_channels=256,
-        octave_base_scale=8,
-        scales_per_octave=3,
-        octave_ratios=[0.5, 1.0, 2.0],
-        anchor_strides=[4, 8, 16, 32, 64],
-        anchor_base_sizes=None,
-        anchoring_means=(.0, .0, .0, .0),
-        anchoring_stds=(1.0, 1.0, 1.0, 1.0),
-        target_means=(.0, .0, .0, .0),
-        target_stds=(1.0, 1.0, 1.0, 1.0),
+        approx_anchor_generator=dict(
+            type='AnchorGenerator',
+            octave_base_scale=8,
+            scales_per_octave=3,
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64]),
+        square_anchor_generator=dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            scales=[8],
+            strides=[4, 8, 16, 32, 64]),
+        anchor_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]
+        ),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]
+        ),
+        reg_decoded_bbox=False,
         deformable_groups=4,
         loc_filter_thr=0.01,
         background_label=None,
@@ -130,31 +132,22 @@ class GuidedAnchorHead(AnchorHead):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
-        self.octave_base_scale = octave_base_scale
-        self.scales_per_octave = scales_per_octave
-        self.octave_scales = octave_base_scale * np.array(
-            [2**(i / scales_per_octave) for i in range(scales_per_octave)])
-        self.approxs_per_octave = len(self.octave_scales) * len(octave_ratios)
-        self.octave_ratios = octave_ratios
-        self.anchor_strides = anchor_strides
-        self.anchor_base_sizes = list(
-            anchor_strides) if anchor_base_sizes is None else anchor_base_sizes
-        self.anchoring_means = anchoring_means
-        self.anchoring_stds = anchoring_stds
-        self.target_means = target_means
-        self.target_stds = target_stds
         self.deformable_groups = deformable_groups
         self.loc_filter_thr = loc_filter_thr
-        self.approx_generators = []
-        self.square_generators = []
-        for anchor_base in self.anchor_base_sizes:
-            # Generators for approxs
-            self.approx_generators.append(
-                AnchorGenerator(anchor_base, self.octave_scales,
-                                self.octave_ratios))
-            # Generators for squares
-            self.square_generators.append(
-                AnchorGenerator(anchor_base, [self.octave_base_scale], [1.0]))
+
+        # build approx_anchor_generator and square_anchor_generator
+        assert (approx_anchor_generator['octave_base_scale'] ==
+                square_anchor_generator['scales'][0])
+        assert (approx_anchor_generator['strides'] ==
+                square_anchor_generator['strides'])
+        self.approx_anchor_generator = build_anchor_generator(
+            approx_anchor_generator)
+        self.square_anchor_generator = build_anchor_generator(
+            square_anchor_generator)
+        self.approxs_per_octave = self.approx_anchor_generator \
+            .num_base_anchors[0]
+
+        self.reg_decoded_bbox = reg_decoded_bbox
 
         self.background_label = (
             num_classes if background_label is None else background_label)
@@ -165,12 +158,18 @@ class GuidedAnchorHead(AnchorHead):
         # one anchor per location
         self.num_anchors = 1
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        self.cls_focal_loss = loss_cls['type'] in ['FocalLoss']
         self.loc_focal_loss = loss_loc['type'] in ['FocalLoss']
+        self.sampling = loss_cls['type'] not in ['FocalLoss']
+        self.ga_sampling = train_cfg is not None and hasattr(
+            train_cfg, 'ga_sampler')
         if self.use_sigmoid_cls:
             self.cls_out_channels = self.num_classes
         else:
             self.cls_out_channels = self.num_classes + 1
+
+        # build bbox_coder
+        self.anchor_coder = build_bbox_coder(anchor_coder)
+        self.bbox_coder = build_bbox_coder(bbox_coder)
 
         # build losses
         self.loss_loc = build_loss(loss_loc)
@@ -180,6 +179,22 @@ class GuidedAnchorHead(AnchorHead):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+
+        if self.train_cfg:
+            self.assigner = build_assigner(self.train_cfg.assigner)
+            # use PseudoSampler when sampling is False
+            if self.sampling and hasattr(self.train_cfg, 'sampler'):
+                sampler_cfg = self.train_cfg.sampler
+            else:
+                sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
+
+            self.ga_assigner = build_assigner(self.train_cfg.ga_assigner)
+            if self.ga_sampling:
+                ga_sampler_cfg = self.train_cfg.ga_sampler
+            else:
+                ga_sampler_cfg = dict(type='PseudoSampler')
+            self.ga_sampler = build_sampler(ga_sampler_cfg, context=self)
 
         self.fp16_enabled = False
 
@@ -226,11 +241,7 @@ class GuidedAnchorHead(AnchorHead):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
 
-    def get_sampled_approxs(self,
-                            featmap_sizes,
-                            img_metas,
-                            cfg,
-                            device='cuda'):
+    def get_sampled_approxs(self, featmap_sizes, img_metas, device='cuda'):
         """Get sampled approxs and inside flags according to feature map sizes.
 
         Args:
@@ -242,15 +253,11 @@ class GuidedAnchorHead(AnchorHead):
             tuple: approxes of each image, inside flags of each image
         """
         num_imgs = len(img_metas)
-        num_levels = len(featmap_sizes)
 
         # since feature map sizes of all images are the same, we only compute
         # approxes for one time
-        multi_level_approxs = []
-        for i in range(num_levels):
-            approxs = self.approx_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i], device=device)
-            multi_level_approxs.append(approxs)
+        multi_level_approxs = self.approx_anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
         approxs_list = [multi_level_approxs for _ in range(num_imgs)]
 
         # for each image, we compute inside flags of multi level approxes
@@ -258,23 +265,23 @@ class GuidedAnchorHead(AnchorHead):
         for img_id, img_meta in enumerate(img_metas):
             multi_level_flags = []
             multi_level_approxs = approxs_list[img_id]
-            for i in range(num_levels):
+
+            # obtain valid flags for each approx first
+            multi_level_approx_flags = self.approx_anchor_generator \
+                .valid_flags(featmap_sizes,
+                             img_meta['pad_shape'],
+                             device=device)
+
+            for i, flags in enumerate(multi_level_approx_flags):
                 approxs = multi_level_approxs[i]
-                anchor_stride = self.anchor_strides[i]
-                feat_h, feat_w = featmap_sizes[i]
-                h, w = img_meta['pad_shape'][:2]
-                valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
-                valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
-                flags = self.approx_generators[i].valid_flags(
-                    (feat_h, feat_w), (valid_feat_h, valid_feat_w),
-                    device=device)
                 inside_flags_list = []
                 for i in range(self.approxs_per_octave):
                     split_valid_flags = flags[i::self.approxs_per_octave]
                     split_approxs = approxs[i::self.approxs_per_octave, :]
                     inside_flags = anchor_inside_flags(
                         split_approxs, split_valid_flags,
-                        img_meta['img_shape'][:2], cfg.allowed_border)
+                        img_meta['img_shape'][:2],
+                        self.train_cfg.allowed_border)
                     inside_flags_list.append(inside_flags)
                 # inside_flag for a position is true if any anchor in this
                 # position is true
@@ -311,11 +318,8 @@ class GuidedAnchorHead(AnchorHead):
 
         # since feature map sizes of all images are the same, we only compute
         # squares for one time
-        multi_level_squares = []
-        for i in range(num_levels):
-            squares = self.square_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i], device=device)
-            multi_level_squares.append(squares)
+        multi_level_squares = self.square_anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
         squares_list = [multi_level_squares for _ in range(num_imgs)]
 
         # for each image, we compute multi level guided anchors
@@ -328,7 +332,7 @@ class GuidedAnchorHead(AnchorHead):
                 squares = squares_list[img_id][i]
                 shape_pred = shape_preds[i][img_id]
                 loc_pred = loc_preds[i][img_id]
-                guided_anchors, loc_mask = self.get_guided_anchors_single(
+                guided_anchors, loc_mask = self._get_guided_anchors_single(
                     squares,
                     shape_pred,
                     loc_pred,
@@ -339,11 +343,11 @@ class GuidedAnchorHead(AnchorHead):
             loc_mask_list.append(multi_level_loc_mask)
         return squares_list, guided_anchors_list, loc_mask_list
 
-    def get_guided_anchors_single(self,
-                                  squares,
-                                  shape_pred,
-                                  loc_pred,
-                                  use_loc_filter=False):
+    def _get_guided_anchors_single(self,
+                                   squares,
+                                   shape_pred,
+                                   loc_pred,
+                                   use_loc_filter=False):
         """Get guided anchors and loc masks for a single level.
 
         Args:
@@ -369,13 +373,235 @@ class GuidedAnchorHead(AnchorHead):
             -1, 2).detach()[mask]
         bbox_deltas = anchor_deltas.new_full(squares.size(), 0)
         bbox_deltas[:, 2:] = anchor_deltas
-        guided_anchors = delta2bbox(
-            squares,
-            bbox_deltas,
-            self.anchoring_means,
-            self.anchoring_stds,
-            wh_ratio_clip=1e-6)
+        guided_anchors = self.anchor_coder.decode(
+            squares, bbox_deltas, wh_ratio_clip=1e-6)
         return guided_anchors, mask
+
+    def ga_loc_targets(self, gt_bboxes_list, featmap_sizes):
+        """Compute location targets for guided anchoring.
+
+        Each feature map is divided into positive, negative and ignore regions.
+        - positive regions: target 1, weight 1
+        - ignore regions: target 0, weight 0
+        - negative regions: target 0, weight 0.1
+
+        Args:
+            gt_bboxes_list (list[Tensor]): Gt bboxes of each image.
+            featmap_sizes (list[tuple]): Multi level sizes of each feature
+                maps.
+
+        Returns:
+            tuple
+        """
+        anchor_scale = self.approx_anchor_generator.octave_base_scale
+        anchor_strides = self.approx_anchor_generator.strides
+        center_ratio = self.train_cfg.center_ratio
+        ignore_ratio = self.train_cfg.ignore_ratio
+        img_per_gpu = len(gt_bboxes_list)
+        num_lvls = len(featmap_sizes)
+        r1 = (1 - center_ratio) / 2
+        r2 = (1 - ignore_ratio) / 2
+        all_loc_targets = []
+        all_loc_weights = []
+        all_ignore_map = []
+        for lvl_id in range(num_lvls):
+            h, w = featmap_sizes[lvl_id]
+            loc_targets = torch.zeros(
+                img_per_gpu,
+                1,
+                h,
+                w,
+                device=gt_bboxes_list[0].device,
+                dtype=torch.float32)
+            loc_weights = torch.full_like(loc_targets, -1)
+            ignore_map = torch.zeros_like(loc_targets)
+            all_loc_targets.append(loc_targets)
+            all_loc_weights.append(loc_weights)
+            all_ignore_map.append(ignore_map)
+        for img_id in range(img_per_gpu):
+            gt_bboxes = gt_bboxes_list[img_id]
+            scale = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
+                               (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
+            min_anchor_size = scale.new_full(
+                (1, ), float(anchor_scale * anchor_strides[0]))
+            # assign gt bboxes to different feature levels w.r.t. their scales
+            target_lvls = torch.floor(
+                torch.log2(scale) - torch.log2(min_anchor_size) + 0.5)
+            target_lvls = target_lvls.clamp(min=0, max=num_lvls - 1).long()
+            for gt_id in range(gt_bboxes.size(0)):
+                lvl = target_lvls[gt_id].item()
+                # rescaled to corresponding feature map
+                gt_ = gt_bboxes[gt_id, :4] / anchor_strides[lvl]
+                # calculate ignore regions
+                ignore_x1, ignore_y1, ignore_x2, ignore_y2 = calc_region(
+                    gt_, r2, featmap_sizes[lvl])
+                # calculate positive (center) regions
+                ctr_x1, ctr_y1, ctr_x2, ctr_y2 = calc_region(
+                    gt_, r1, featmap_sizes[lvl])
+                all_loc_targets[lvl][img_id, 0, ctr_y1:ctr_y2 + 1,
+                                     ctr_x1:ctr_x2 + 1] = 1
+                all_loc_weights[lvl][img_id, 0, ignore_y1:ignore_y2 + 1,
+                                     ignore_x1:ignore_x2 + 1] = 0
+                all_loc_weights[lvl][img_id, 0, ctr_y1:ctr_y2 + 1,
+                                     ctr_x1:ctr_x2 + 1] = 1
+                # calculate ignore map on nearby low level feature
+                if lvl > 0:
+                    d_lvl = lvl - 1
+                    # rescaled to corresponding feature map
+                    gt_ = gt_bboxes[gt_id, :4] / anchor_strides[d_lvl]
+                    ignore_x1, ignore_y1, ignore_x2, ignore_y2 = calc_region(
+                        gt_, r2, featmap_sizes[d_lvl])
+                    all_ignore_map[d_lvl][img_id, 0, ignore_y1:ignore_y2 + 1,
+                                          ignore_x1:ignore_x2 + 1] = 1
+                # calculate ignore map on nearby high level feature
+                if lvl < num_lvls - 1:
+                    u_lvl = lvl + 1
+                    # rescaled to corresponding feature map
+                    gt_ = gt_bboxes[gt_id, :4] / anchor_strides[u_lvl]
+                    ignore_x1, ignore_y1, ignore_x2, ignore_y2 = calc_region(
+                        gt_, r2, featmap_sizes[u_lvl])
+                    all_ignore_map[u_lvl][img_id, 0, ignore_y1:ignore_y2 + 1,
+                                          ignore_x1:ignore_x2 + 1] = 1
+        for lvl_id in range(num_lvls):
+            # ignore negative regions w.r.t. ignore map
+            all_loc_weights[lvl_id][(all_loc_weights[lvl_id] < 0)
+                                    & (all_ignore_map[lvl_id] > 0)] = 0
+            # set negative regions with weight 0.1
+            all_loc_weights[lvl_id][all_loc_weights[lvl_id] < 0] = 0.1
+        # loc average factor to balance loss
+        loc_avg_factor = sum(
+            [t.size(0) * t.size(-1) * t.size(-2)
+             for t in all_loc_targets]) / 200
+        return all_loc_targets, all_loc_weights, loc_avg_factor
+
+    def _ga_shape_target_single(self,
+                                flat_approxs,
+                                inside_flags,
+                                flat_squares,
+                                gt_bboxes,
+                                gt_bboxes_ignore,
+                                img_meta,
+                                unmap_outputs=True):
+        """Compute guided anchoring targets.
+
+        This function returns sampled anchors and gt bboxes directly
+        rather than calculates regression targets.
+
+        Args:
+            flat_approxs (Tensor): flat approxs of a single image,
+                shape (n, 4)
+            inside_flags (Tensor): inside flags of a single image,
+                shape (n, ).
+            flat_squares (Tensor): flat squares of a single image,
+                shape (approxs_per_octave * n, 4)
+            gt_bboxes (Tensor): Ground truth bboxes of a single image.
+            img_meta (dict): Meta info of a single image.
+            approxs_per_octave (int): number of approxs per octave
+            cfg (dict): RPN train configs.
+            unmap_outputs (bool): unmap outputs or not.
+
+        Returns:
+            tuple
+        """
+        if not inside_flags.any():
+            return (None, ) * 5
+        # assign gt and sample anchors
+        expand_inside_flags = inside_flags[:, None].expand(
+            -1, self.approxs_per_octave).reshape(-1)
+        approxs = flat_approxs[expand_inside_flags, :]
+        squares = flat_squares[inside_flags, :]
+
+        assign_result = self.ga_assigner.assign(approxs, squares,
+                                                self.approxs_per_octave,
+                                                gt_bboxes, gt_bboxes_ignore)
+        sampling_result = self.ga_sampler.sample(assign_result, squares,
+                                                 gt_bboxes)
+
+        bbox_anchors = torch.zeros_like(squares)
+        bbox_gts = torch.zeros_like(squares)
+        bbox_weights = torch.zeros_like(squares)
+
+        pos_inds = sampling_result.pos_inds
+        neg_inds = sampling_result.neg_inds
+        if len(pos_inds) > 0:
+            bbox_anchors[pos_inds, :] = sampling_result.pos_bboxes
+            bbox_gts[pos_inds, :] = sampling_result.pos_gt_bboxes
+            bbox_weights[pos_inds, :] = 1.0
+
+        # map up to original set of anchors
+        if unmap_outputs:
+            num_total_anchors = flat_squares.size(0)
+            bbox_anchors = unmap(bbox_anchors, num_total_anchors, inside_flags)
+            bbox_gts = unmap(bbox_gts, num_total_anchors, inside_flags)
+            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
+
+        return (bbox_anchors, bbox_gts, bbox_weights, pos_inds, neg_inds)
+
+    def ga_shape_targets(self,
+                         approx_list,
+                         inside_flag_list,
+                         square_list,
+                         gt_bboxes_list,
+                         img_metas,
+                         gt_bboxes_ignore_list=None,
+                         unmap_outputs=True):
+        """Compute guided anchoring targets.
+
+        Args:
+            approx_list (list[list]): Multi level approxs of each image.
+            inside_flag_list (list[list]): Multi level inside flags of each
+                image.
+            square_list (list[list]): Multi level squares of each image.
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
+            img_metas (list[dict]): Meta info of each image.
+            gt_bboxes_ignore_list (list[Tensor]): ignore list of gt bboxes.
+            unmap_outputs (bool): unmap outputs or not.
+
+        Returns:
+            tuple
+        """
+        num_imgs = len(img_metas)
+        assert len(approx_list) == len(inside_flag_list) == len(
+            square_list) == num_imgs
+        # anchor number of multi levels
+        num_level_squares = [squares.size(0) for squares in square_list[0]]
+        # concat all level anchors and flags to a single tensor
+        inside_flag_flat_list = []
+        approx_flat_list = []
+        square_flat_list = []
+        for i in range(num_imgs):
+            assert len(square_list[i]) == len(inside_flag_list[i])
+            inside_flag_flat_list.append(torch.cat(inside_flag_list[i]))
+            approx_flat_list.append(torch.cat(approx_list[i]))
+            square_flat_list.append(torch.cat(square_list[i]))
+
+        # compute targets for each image
+        if gt_bboxes_ignore_list is None:
+            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+        (all_bbox_anchors, all_bbox_gts, all_bbox_weights, pos_inds_list,
+         neg_inds_list) = multi_apply(
+             self._ga_shape_target_single,
+             approx_flat_list,
+             inside_flag_flat_list,
+             square_flat_list,
+             gt_bboxes_list,
+             gt_bboxes_ignore_list,
+             img_metas,
+             unmap_outputs=unmap_outputs)
+        # no valid anchors
+        if any([bbox_anchors is None for bbox_anchors in all_bbox_anchors]):
+            return None
+        # sampled anchors of all images
+        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
+        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        # split targets to a list w.r.t. multiple levels
+        bbox_anchors_list = images_to_levels(all_bbox_anchors,
+                                             num_level_squares)
+        bbox_gts_list = images_to_levels(all_bbox_gts, num_level_squares)
+        bbox_weights_list = images_to_levels(all_bbox_weights,
+                                             num_level_squares)
+        return (bbox_anchors_list, bbox_gts_list, bbox_weights_list,
+                num_total_pos, num_total_neg)
 
     def loss_shape_single(self, shape_pred, bbox_anchors, bbox_gts,
                           anchor_weights, anchor_total_num):
@@ -391,12 +617,8 @@ class GuidedAnchorHead(AnchorHead):
         bbox_anchors_ = bbox_anchors[inds]
         bbox_gts_ = bbox_gts[inds]
         anchor_weights_ = anchor_weights[inds]
-        pred_anchors_ = delta2bbox(
-            bbox_anchors_,
-            bbox_deltas_,
-            self.anchoring_means,
-            self.anchoring_stds,
-            wh_ratio_clip=1e-6)
+        pred_anchors_ = self.anchor_coder.decode(
+            bbox_anchors_, bbox_deltas_, wh_ratio_clip=1e-6)
         loss_shape = self.loss_shape(
             pred_anchors_,
             bbox_gts_,
@@ -404,8 +626,8 @@ class GuidedAnchorHead(AnchorHead):
             avg_factor=anchor_total_num)
         return loss_shape
 
-    def loss_loc_single(self, loc_pred, loc_target, loc_weight, loc_avg_factor,
-                        cfg):
+    def loss_loc_single(self, loc_pred, loc_target, loc_weight,
+                        loc_avg_factor):
         loss_loc = self.loss_loc(
             loc_pred.reshape(-1, 1),
             loc_target.reshape(-1, 1).long(),
@@ -425,73 +647,67 @@ class GuidedAnchorHead(AnchorHead):
              img_metas,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.approx_generators)
+        assert len(featmap_sizes) == self.approx_anchor_generator.num_levels
 
         device = cls_scores[0].device
 
         # get loc targets
-        loc_targets, loc_weights, loc_avg_factor = ga_loc_target(
-            gt_bboxes,
-            featmap_sizes,
-            self.octave_base_scale,
-            self.anchor_strides,
-            center_ratio=self.train_cfg.center_ratio,
-            ignore_ratio=self.train_cfg.ignore_ratio)
+        loc_targets, loc_weights, loc_avg_factor = self.ga_loc_targets(
+            gt_bboxes, featmap_sizes)
 
         # get sampled approxes
         approxs_list, inside_flag_list = self.get_sampled_approxs(
-            featmap_sizes, img_metas, self.train_cfg, device=device)
+            featmap_sizes, img_metas, device=device)
         # get squares and guided anchors
         squares_list, guided_anchors_list, _ = self.get_anchors(
             featmap_sizes, shape_preds, loc_preds, img_metas, device=device)
 
         # get shape targets
-        sampling = False if not hasattr(self.train_cfg, 'ga_sampler') else True
-        shape_targets = ga_shape_target(
-            approxs_list,
-            inside_flag_list,
-            squares_list,
-            gt_bboxes,
-            img_metas,
-            self.approxs_per_octave,
-            self.train_cfg,
-            sampling=sampling)
+        shape_targets = self.ga_shape_targets(approxs_list, inside_flag_list,
+                                              squares_list, gt_bboxes,
+                                              img_metas)
         if shape_targets is None:
             return None
         (bbox_anchors_list, bbox_gts_list, anchor_weights_list, anchor_fg_num,
          anchor_bg_num) = shape_targets
         anchor_total_num = (
-            anchor_fg_num if not sampling else anchor_fg_num + anchor_bg_num)
+            anchor_fg_num if not self.ga_sampling else anchor_fg_num +
+            anchor_bg_num)
 
         # get anchor targets
-        sampling = False if self.cls_focal_loss else True
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
-        cls_reg_targets = anchor_target(
+        cls_reg_targets = self.get_targets(
             guided_anchors_list,
             inside_flag_list,
             gt_bboxes,
             img_metas,
-            self.target_means,
-            self.target_stds,
-            self.train_cfg,
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
-            label_channels=label_channels,
-            background_label=self.background_label,
-            sampling=sampling)
+            label_channels=label_channels)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (
-            num_total_pos if self.cls_focal_loss else num_total_pos +
-            num_total_neg)
+            num_total_pos + num_total_neg if self.sampling else num_total_pos)
+
+        # anchor number of multi levels
+        num_level_anchors = [
+            anchors.size(0) for anchors in guided_anchors_list[0]
+        ]
+        # concat all level anchors to a single tensor
+        concat_anchor_list = []
+        for i in range(len(guided_anchors_list)):
+            concat_anchor_list.append(torch.cat(guided_anchors_list[i]))
+        all_anchor_list = images_to_levels(concat_anchor_list,
+                                           num_level_anchors)
 
         # get classification and bbox regression losses
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
             bbox_preds,
+            all_anchor_list,
             labels_list,
             label_weights_list,
             bbox_targets_list,
@@ -505,8 +721,7 @@ class GuidedAnchorHead(AnchorHead):
                 loc_preds[i],
                 loc_targets[i],
                 loc_weights[i],
-                loc_avg_factor=loc_avg_factor,
-                cfg=self.train_cfg)
+                loc_avg_factor=loc_avg_factor)
             losses_loc.append(loss_loc)
 
         # get anchor shape loss
@@ -534,7 +749,7 @@ class GuidedAnchorHead(AnchorHead):
                    shape_preds,
                    loc_preds,
                    img_metas,
-                   cfg,
+                   cfg=None,
                    rescale=False):
         assert len(cls_scores) == len(bbox_preds) == len(shape_preds) == len(
             loc_preds)
@@ -565,22 +780,23 @@ class GuidedAnchorHead(AnchorHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self.get_bboxes_single(cls_score_list, bbox_pred_list,
-                                               guided_anchor_list,
-                                               loc_mask_list, img_shape,
-                                               scale_factor, cfg, rescale)
+            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                guided_anchor_list,
+                                                loc_mask_list, img_shape,
+                                                scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          mlvl_anchors,
-                          mlvl_masks,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           mlvl_anchors,
+                           mlvl_masks,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
@@ -621,8 +837,8 @@ class GuidedAnchorHead(AnchorHead):
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
-            bboxes = delta2bbox(anchors, bbox_pred, self.target_means,
-                                self.target_stds, img_shape)
+            bboxes = self.bbox_coder.decode(
+                anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
         mlvl_bboxes = torch.cat(mlvl_bboxes)

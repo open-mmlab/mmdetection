@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 import mmcv
 
-from .registry import DATASETS
+from .builder import DATASETS
 from .xml_style import XMLDataset
 
 
@@ -23,9 +23,9 @@ class WIDERFaceDataset(XMLDataset):
         data_infos = []
         img_ids = mmcv.list_from_file(ann_file)
         for img_id in img_ids:
-            filename = '{}.jpg'.format(img_id)
+            filename = '{img_id}.jpg'
             xml_path = osp.join(self.img_prefix, 'Annotations',
-                                '{}.xml'.format(img_id))
+                                f'{img_id}.xml')
             tree = ET.parse(xml_path)
             root = tree.getroot()
             size = root.find('size')

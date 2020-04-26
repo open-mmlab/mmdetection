@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
 
-from mmdet.core import bbox2delta, bbox_overlaps, delta2bbox
-from ..registry import HEADS
+from mmdet.core import bbox_overlaps
+from ..builder import HEADS
 from .retina_head import RetinaHead
 
 
@@ -13,8 +13,6 @@ class FreeAnchorRetinaHead(RetinaHead):
                  num_classes,
                  in_channels,
                  stacked_convs=4,
-                 octave_base_scale=4,
-                 scales_per_octave=3,
                  conv_cfg=None,
                  norm_cfg=None,
                  pre_anchor_topk=50,
@@ -23,8 +21,7 @@ class FreeAnchorRetinaHead(RetinaHead):
                  alpha=0.5,
                  **kwargs):
         super(FreeAnchorRetinaHead,
-              self).__init__(num_classes, in_channels, stacked_convs,
-                             octave_base_scale, scales_per_octave, conv_cfg,
+              self).__init__(num_classes, in_channels, stacked_convs, conv_cfg,
                              norm_cfg, **kwargs)
 
         self.pre_anchor_topk = pre_anchor_topk
@@ -40,7 +37,7 @@ class FreeAnchorRetinaHead(RetinaHead):
              img_metas,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generators)
+        assert len(featmap_sizes) == len(self.anchor_generator.base_anchors)
 
         anchor_list, _ = self.get_anchors(featmap_sizes, img_metas)
         anchors = [torch.cat(anchor) for anchor in anchor_list]
@@ -68,8 +65,7 @@ class FreeAnchorRetinaHead(RetinaHead):
 
             with torch.no_grad():
                 # box_localization: a_{j}^{loc}, shape: [j, 4]
-                pred_boxes = delta2bbox(anchors_, bbox_preds_,
-                                        self.target_means, self.target_stds)
+                pred_boxes = self.bbox_coder.decode(anchors_, bbox_preds_)
 
                 # object_box_iou: IoU_{ij}^{loc}, shape: [i, j]
                 object_box_iou = bbox_overlaps(gt_bboxes_, pred_boxes)
@@ -139,10 +135,9 @@ class FreeAnchorRetinaHead(RetinaHead):
 
             # matched_box_prob: P_{ij}^{loc}
             matched_anchors = anchors_[matched]
-            matched_object_targets = bbox2delta(
+            matched_object_targets = self.bbox_coder.encode(
                 matched_anchors,
-                gt_bboxes_.unsqueeze(dim=1).expand_as(matched_anchors),
-                self.target_means, self.target_stds)
+                gt_bboxes_.unsqueeze(dim=1).expand_as(matched_anchors))
             loss_bbox = self.loss_bbox(
                 bbox_preds_[matched],
                 matched_object_targets,

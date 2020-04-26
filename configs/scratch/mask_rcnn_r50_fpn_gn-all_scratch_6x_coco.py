@@ -16,12 +16,7 @@ model = dict(
             norm_cfg=norm_cfg),
         mask_head=dict(norm_cfg=norm_cfg)))
 # optimizer
-optimizer = dict(
-    type='SGD',
-    lr=0.02,
-    momentum=0.9,
-    weight_decay=0.0001,
-    paramwise_cfg=dict(norm_decay_mult=0))
+optimizer = dict(paramwise_cfg=dict(norm_decay_mult=0))
 optimizer_config = dict(_delete_=True, grad_clip=None)
 # learning policy
 lr_config = dict(warmup_ratio=0.1, step=[65, 71])

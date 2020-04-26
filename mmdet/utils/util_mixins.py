@@ -20,8 +20,8 @@ Example:
     ...        return self.name
     >>> s1 = Student('Alice')
     >>> s2 = Student('Bob')
-    >>> print('s1 = {}'.format(s1))
-    >>> print('s2 = {}'.format(s2))
+    >>> print(f's1 = {s1}')
+    >>> print(f's2 = {s2}')
     s1 = <Student(Alice)>
     s2 = <Student(Bob)>
 
@@ -33,7 +33,7 @@ Example:
     ...    def __len__(self):
     ...        return len(self.data)
     >>> g = Group([1, 2, 3])
-    >>> print('g = {}'.format(g))
+    >>> print(f'g = {g}')
     g = <Group(3)>
 
 """
@@ -83,13 +83,13 @@ class NiceRepr(object):
         else:
             # In all other cases force the subclass to overload __nice__
             raise NotImplementedError(
-                'Define the __nice__ method for {!r}'.format(self.__class__))
+                f'Define the __nice__ method for {self.__class__!r}')
 
     def __repr__(self):
         try:
             nice = self.__nice__()
             classname = self.__class__.__name__
-            return '<{0}({1}) at {2}>'.format(classname, nice, hex(id(self)))
+            return f'<{classname}({nice}) at {hex(id(self))}>'
         except NotImplementedError as ex:
             warnings.warn(str(ex), category=RuntimeWarning)
             return object.__repr__(self)
@@ -98,7 +98,7 @@ class NiceRepr(object):
         try:
             classname = self.__class__.__name__
             nice = self.__nice__()
-            return '<{0}({1})>'.format(classname, nice)
+            return f'<{classname}({nice})>'
         except NotImplementedError as ex:
             warnings.warn(str(ex), category=RuntimeWarning)
             return object.__repr__(self)

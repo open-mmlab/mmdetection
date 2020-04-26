@@ -71,21 +71,20 @@ class AssignResult(util_mixins.NiceRepr):
         Create a "nice" summary string describing this assign result
         """
         parts = []
-        parts.append('num_gts={!r}'.format(self.num_gts))
+        parts.append(f'num_gts={self.num_gts!r}')
         if self.gt_inds is None:
-            parts.append('gt_inds={!r}'.format(self.gt_inds))
+            parts.append(f'gt_inds={self.gt_inds!r}')
         else:
-            parts.append('gt_inds.shape={!r}'.format(
-                tuple(self.gt_inds.shape)))
+            parts.append(f'gt_inds.shape={tuple(self.gt_inds.shape)!r}')
         if self.max_overlaps is None:
-            parts.append('max_overlaps={!r}'.format(self.max_overlaps))
+            parts.append(f'max_overlaps={self.max_overlaps!r}')
         else:
-            parts.append('max_overlaps.shape={!r}'.format(
-                tuple(self.max_overlaps.shape)))
+            parts.append('max_overlaps.shape='
+                         f'{tuple(self.max_overlaps.shape)!r}')
         if self.labels is None:
-            parts.append('labels={!r}'.format(self.labels))
+            parts.append(f'labels={self.labels!r}')
         else:
-            parts.append('labels.shape={!r}'.format(tuple(self.labels.shape)))
+            parts.append(f'labels.shape={tuple(self.labels.shape)!r}')
         return ', '.join(parts)
 
     @classmethod
