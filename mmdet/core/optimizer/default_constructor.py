@@ -6,7 +6,7 @@ from torch.nn import GroupNorm, LayerNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 from torch.nn.modules.instancenorm import _InstanceNorm
 
-from .registry import OPTIMIZER_BUILDERS, OPTIMIZERS
+from .builder import OPTIMIZER_BUILDERS, OPTIMIZERS
 
 
 @OPTIMIZER_BUILDERS.register_module
@@ -18,10 +18,9 @@ class DefaultOptimizerConstructor(object):
         optimizer_cfg (dict): The config dict of the optimizer.
             Positional fields are:
                 - type: class name of the optimizer.
-                - lr: base learning rate.
             Optional fields are:
                 - any arguments of the corresponding optimizer type, e.g.,
-                  weight_decay, momentum, etc.
+                  lr, weight_decay, momentum, etc.
         paramwise_cfg (dict, optional): Parameter-wise options. Accepted fields
             are:
             - bias_lr_mult (float): It will be multiplied to the learning
@@ -52,17 +51,17 @@ class DefaultOptimizerConstructor(object):
     def __init__(self, optimizer_cfg, paramwise_cfg=None):
         if not isinstance(optimizer_cfg, dict):
             raise TypeError('optimizer_cfg should be a dict',
-                            'but got {}'.format(type(optimizer_cfg)))
+                            f'but got {type(optimizer_cfg)}')
         self.optimizer_cfg = optimizer_cfg
         self.paramwise_cfg = {} if paramwise_cfg is None else paramwise_cfg
-        self.base_lr = optimizer_cfg['lr']
+        self.base_lr = optimizer_cfg.get('lr', None)
         self.base_wd = optimizer_cfg.get('weight_decay', None)
         self._validate_cfg()
 
     def _validate_cfg(self):
         if not isinstance(self.paramwise_cfg, dict):
             raise TypeError('paramwise_cfg should be None or a dict, '
-                            'but got {}'.format(type(self.paramwise_cfg)))
+                            f'but got {type(self.paramwise_cfg)}')
         # get base lr and weight decay
         # weight_decay must be explicitly specified if mult is specified
         if ('bias_decay_mult' in self.paramwise_cfg
@@ -112,9 +111,8 @@ class DefaultOptimizerConstructor(object):
                 params.append(param_group)
                 continue
             if bypass_duplicate and self._is_in(param_group, params):
-                warnings.warn('{} is duplicate. It is skipped since '
-                              'bypass_duplicate={}'.format(
-                                  prefix, bypass_duplicate))
+                warnings.warn(f'{prefix} is duplicate. It is skipped since '
+                              f'bypass_duplicate={bypass_duplicate}')
                 continue
             # bias_lr_mult affects all bias parameters except for norm.bias
             if name == 'bias' and not is_norm:
@@ -136,8 +134,7 @@ class DefaultOptimizerConstructor(object):
             params.append(param_group)
 
         for child_name, child_mod in module.named_children():
-            child_prefix = '{}.{}'.format(prefix,
-                                          child_name) if prefix else child_name
+            child_prefix = f'{prefix}.{child_name}' if prefix else child_name
             self.add_params(params, child_mod, prefix=child_prefix)
 
     def __call__(self, model):

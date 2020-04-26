@@ -1,5 +1,6 @@
-from mmdet.utils import build_from_cfg
-from .registry import ANCHOR_GENERATORS
+from mmcv.utils import Registry, build_from_cfg
+
+ANCHOR_GENERATORS = Registry('Anchor generator')
 
 
 def build_anchor_generator(cfg, default_args=None):

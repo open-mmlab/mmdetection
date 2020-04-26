@@ -18,7 +18,7 @@ int carafe_naive_backward_cuda(at::Tensor top_grad, at::Tensor features,
 int carafe_naive_forward(at::Tensor features, at::Tensor masks,
                          int kernel_size, int group_size, int scale_factor,
                          at::Tensor output) {
-  if (features.type().is_cuda()) {
+  if (features.device().is_cuda()) {
 #ifdef WITH_CUDA
     return carafe_naive_forward_cuda(features, masks, kernel_size,
         group_size, scale_factor, output);
@@ -33,7 +33,7 @@ int carafe_naive_backward(at::Tensor top_grad, at::Tensor features,
                                at::Tensor masks, int kernel_size,
                                int group_size, int scale_factor,
                                at::Tensor bottom_grad, at::Tensor mask_grad) {
-  if (top_grad.type().is_cuda()) {
+  if (top_grad.device().is_cuda()) {
 #ifdef WITH_CUDA
     return carafe_naive_backward_cuda(top_grad, features, masks, kernel_size,
         group_size, scale_factor, bottom_grad, mask_grad);

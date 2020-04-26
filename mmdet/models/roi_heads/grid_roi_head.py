@@ -1,8 +1,7 @@
 import torch
 
 from mmdet.core import bbox2result, bbox2roi
-from .. import builder
-from ..registry import HEADS
+from ..builder import HEADS, build_head, build_roi_extractor
 from .standard_roi_head import StandardRoIHead
 
 
@@ -17,13 +16,12 @@ class GridRoIHead(StandardRoIHead):
         assert grid_head is not None
         super(GridRoIHead, self).__init__(**kwargs)
         if grid_roi_extractor is not None:
-            self.grid_roi_extractor = builder.build_roi_extractor(
-                grid_roi_extractor)
+            self.grid_roi_extractor = build_roi_extractor(grid_roi_extractor)
             self.share_roi_extractor = False
         else:
             self.share_roi_extractor = True
             self.grid_roi_extractor = self.bbox_roi_extractor
-        self.grid_head = builder.build_head(grid_head)
+        self.grid_head = build_head(grid_head)
 
     def init_weights(self, pretrained):
         super(GridRoIHead, self).init_weights(pretrained)

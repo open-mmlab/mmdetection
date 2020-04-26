@@ -6,8 +6,7 @@ from torch.nn.modules.utils import _pair
 
 from mmdet.core import force_fp32
 from mmdet.ops import Conv2d, Linear, MaxPool2d
-from ..builder import build_loss
-from ..registry import HEADS
+from ..builder import HEADS, build_loss
 
 
 @HEADS.register_module

@@ -4,8 +4,7 @@ from mmcv.cnn import bias_init_with_prob, normal_init
 
 from mmdet.core import multi_apply, multiclass_nms
 from mmdet.ops import ConvModule, DeformConv
-from ..builder import build_loss
-from ..registry import HEADS
+from ..builder import HEADS, build_loss
 
 INF = 1e8
 
