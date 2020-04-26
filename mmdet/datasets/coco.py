@@ -440,6 +440,7 @@ class CocoDataset(CustomDataset):
                     key = f'{metric}_{metric_items[i]}'
                     val = float(f'{cocoEval.stats[i]:.3f}')
                     eval_results[key] = val
+                ap = cocoEval.stats[:6]
                 eval_results[f'{metric}_mAP_copypaste'] = (
                     f'{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
                     f'{ap[4]:.3f} {ap[5]:.3f}')
