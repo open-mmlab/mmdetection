@@ -82,14 +82,14 @@ class AnchorHead(nn.Module):
 
     def _init_layers(self):
         self.conv_cls = nn.Conv2d(self.in_channels,
-                                  self.num_anchors * self.cls_out_channels, 1)
-        self.conv_reg = nn.Conv2d(self.in_channels, self.num_anchors * 4, 1)
+                                  self.num_anchors * self.cls_out_channels, 1)#1*1卷积，预测分类层
+        self.conv_reg = nn.Conv2d(self.in_channels, self.num_anchors * 4, 1)#1*1卷积，预测回归层
 
     def init_weights(self):
         normal_init(self.conv_cls, std=0.01)
         normal_init(self.conv_reg, std=0.01)
 
-    def forward_single(self, x):
+    def forward_single(self, x):#直接处理，很简单
         cls_score = self.conv_cls(x)
         bbox_pred = self.conv_reg(x)
         return cls_score, bbox_pred
@@ -108,33 +108,34 @@ class AnchorHead(nn.Module):
         Returns:
             tuple: anchors of each image, valid flags of each image
         """
-        num_imgs = len(img_metas)
-        num_levels = len(featmap_sizes)
+        num_imgs = len(img_metas)#有多少个图片
+        num_levels = len(featmap_sizes)#有多少个特征
 
         # since feature map sizes of all images are the same, we only compute
         # anchors for one time
-        multi_level_anchors = []
-        for i in range(num_levels):
+        multi_level_anchors = [] #因为对所有图片来说，anchor都是一样的，所以只是计算一次，然后复制就可以了
+        for i in range(num_levels):#对所有层
             anchors = self.anchor_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i], device=device)
+                featmap_sizes[i], self.anchor_strides[i], device=device)#生成一层anchor
             multi_level_anchors.append(anchors)
-        anchor_list = [multi_level_anchors for _ in range(num_imgs)]
+        anchor_list = [multi_level_anchors for _ in range(num_imgs)]#生成所有图片的所有anchor【[[],[],[],[]],
+                                                                      #                     [[],[],[],[]]】
 
         # for each image, we compute valid flags of multi level anchors
         valid_flag_list = []
-        for img_id, img_meta in enumerate(img_metas):
+        for img_id, img_meta in enumerate(img_metas):#编码每一个图片的标注
             multi_level_flags = []
-            for i in range(num_levels):
+            for i in range(num_levels):#对每一层特征
                 anchor_stride = self.anchor_strides[i]
                 feat_h, feat_w = featmap_sizes[i]
-                h, w, _ = img_meta['pad_shape']
+                h, w, _ = img_meta['pad_shape']#图片大小
                 valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.anchor_generators[i].valid_flags(
                     (feat_h, feat_w), (valid_feat_h, valid_feat_w),
                     device=device)
                 multi_level_flags.append(flags)
-            valid_flag_list.append(multi_level_flags)
+            valid_flag_list.append(multi_level_flags)#生成有效的anchor
 
         return anchor_list, valid_flag_list
 
@@ -146,7 +147,7 @@ class AnchorHead(nn.Module):
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
         loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=num_total_samples)
+            cls_score, labels, label_weights, avg_factor=num_total_samples)#计算分类损失
         # regression loss
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
@@ -155,7 +156,7 @@ class AnchorHead(nn.Module):
             bbox_pred,
             bbox_targets,
             bbox_weights,
-            avg_factor=num_total_samples)
+            avg_factor=num_total_samples)#计算回归损失
         return loss_cls, loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
@@ -167,13 +168,13 @@ class AnchorHead(nn.Module):
              img_metas,
              cfg,
              gt_bboxes_ignore=None):
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generators)
+        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]#特征的大小
+        assert len(featmap_sizes) == len(self.anchor_generators)#保证特征层个数和anchor层数一致
 
         device = cls_scores[0].device
 
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)
+            featmap_sizes, img_metas, device=device)#返回所有的anchor和有效的anchor
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = anchor_target(
             anchor_list,
@@ -186,13 +187,13 @@ class AnchorHead(nn.Module):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            sampling=self.sampling)
+            sampling=self.sampling)#使用GT来编码anchor
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
         num_total_samples = (
-            num_total_pos + num_total_neg if self.sampling else num_total_pos)
+            num_total_pos + num_total_neg if self.sampling else num_total_pos)#所有的样本个数
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
@@ -202,7 +203,7 @@ class AnchorHead(nn.Module):
             bbox_targets_list,
             bbox_weights_list,
             num_total_samples=num_total_samples,
-            cfg=cfg)
+            cfg=cfg)#这里就是使用loss_single函数来计算两个损失
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
