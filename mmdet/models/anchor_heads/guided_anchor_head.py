@@ -37,7 +37,7 @@ class FeatureAdaption(nn.Module):
         super(FeatureAdaption, self).__init__()
         offset_channels = kernel_size * kernel_size * 2
         self.conv_offset = nn.Conv2d(
-            2, deformable_groups * offset_channels, 1, bias=False)#计算偏移的普通卷积，输入为w,h的通道，输出为3*3*2*deformat
+            2, deformable_groups * offset_channels, 1, bias=False)#计算偏移的普通卷积，输入为w,h的通道为2，输出为3*3*2*deformat，计算所有的偏移
         self.conv_adaption = DeformConv(
             in_channels,
             out_channels,
@@ -50,9 +50,9 @@ class FeatureAdaption(nn.Module):
         normal_init(self.conv_offset, std=0.1)
         normal_init(self.conv_adaption, std=0.01)
 
-    def forward(self, x, shape):
-        offset = self.conv_offset(shape.detach())#先计算偏移
-        x = self.relu(self.conv_adaption(x, offset))
+    def forward(self, x, shape):#两个输入，一个是特征图，一个是预测出的w,h
+        offset = self.conv_offset(shape.detach())#先计算偏移，用w,h
+        x = self.relu(self.conv_adaption(x, offset))#计算出的偏移放到x的卷积计算中，形成DCN
         return x
 
 
@@ -196,8 +196,8 @@ class GuidedAnchorHead(AnchorHead):
 
     def forward_single(self, x):#主函数
         loc_pred = self.conv_loc(x)#位置预测，是一个1*1的常规卷积层
-        shape_pred = self.conv_shape(x)#形状预测，也是一个常规1*1卷积，输出是anchors*2  ？？
-        x = self.feature_adaption(x, shape_pred)#主干的DCN部分
+        shape_pred = self.conv_shape(x)#形状预测，也是一个常规1*1卷积，输出是anchors*2 ，wh
+        x = self.feature_adaption(x, shape_pred)#主干的DCN部分，处理完生成新的特征图
         # masked conv is only used during inference for speed-up
         if not self.training:#如果不是训练的时候，就要直接用掩码
             mask = loc_pred.sigmoid()[0] >= self.loc_filter_thr#矩形掩码
@@ -237,7 +237,7 @@ class GuidedAnchorHead(AnchorHead):
             multi_level_approxs.append(approxs)
         approxs_list = [multi_level_approxs for _ in range(num_imgs)]#每个图片都要有所有anchor
 
-        # for each image, we compute inside flags of multi level approxes
+        # for each image, we compute inside flags of multi level approxes计算出所有图的标注标签
         inside_flag_list = []
         for img_id, img_meta in enumerate(img_metas):#对每张图片的标签
             multi_level_flags = []
@@ -251,7 +251,7 @@ class GuidedAnchorHead(AnchorHead):
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.approx_generators[i].valid_flags(
                     (feat_h, feat_w), (valid_feat_h, valid_feat_w),
-                    device=device)
+                    device=device)#让特征和标签在特征重叠，对于超出特征图的标签进行筛选
                 inside_flags_list = []
                 for i in range(self.approxs_per_octave):
                     split_valid_flags = flags[i::self.approxs_per_octave]
