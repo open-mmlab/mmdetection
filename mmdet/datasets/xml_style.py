@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 
 import mmcv
 import numpy as np
+from PIL import Image
 
 from .custom import CustomDataset
 from .registry import DATASETS
@@ -26,8 +27,16 @@ class XMLDataset(CustomDataset):
             tree = ET.parse(xml_path)
             root = tree.getroot()
             size = root.find('size')
-            width = int(size.find('width').text)
-            height = int(size.find('height').text)
+            width = 0
+            height = 0
+            if size is not None:
+                width = int(size.find('width').text)
+                height = int(size.find('height').text)
+            else:
+                img_path = osp.join(self.img_prefix, 'JPEGImages',
+                                    '{}.jpg'.format(img_id))
+                img = Image.open(img_path)
+                width, height = img.size
             img_infos.append(
                 dict(id=img_id, filename=filename, width=width, height=height))
         return img_infos
