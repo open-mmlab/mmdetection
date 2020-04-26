@@ -29,14 +29,14 @@ class XMLDataset(CustomDataset):
             size = root.find('size')
             width = 0
             height = 0
-            if size is None:
+            if size is not None:
+                width = int(size.find('width').text)
+                height = int(size.find('height').text)
+            else:
                 imgname = osp.join(self.img_prefix, 'JPEGImages',
                                 '{}.jpg'.format(img_id))
                 img = Image.open(imgname)
                 width,height = img.size
-            else:
-                width = int(size.find('width').text)
-                height = int(size.find('height').text)
             img_infos.append(
                 dict(id=img_id, filename=filename, width=width, height=height))
         return img_infos
