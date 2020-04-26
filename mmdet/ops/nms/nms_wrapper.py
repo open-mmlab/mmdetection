@@ -9,8 +9,10 @@ class NMS(Function):
 
     @staticmethod
     def forward(ctx, dets_th, iou_thr):
-        inds = nms_ext.nms(dets_th, iou_thr)
-        return inds
+        scores = dets_th.select(1, 4)
+        _, inds = scores.sort(0, True)
+        return dets_th.index_select(0, inds)
+        # return inds
 
     @staticmethod
     def backward(ctx, grad_inds):
@@ -18,9 +20,27 @@ class NMS(Function):
 
     @staticmethod
     def symbolic(g, dets_th, iou_thr):
-        batch_dets_th = g.op('Unsqueeze', dets_th, axes_i=[0])
-        full_ind = g.op('Nms', batch_dets_th, iou_thr_f=iou_thr)
-        return full_ind
+        zero = g.op('Constant', value_t=torch.tensor(0))
+        one = g.op('Constant', value_t=torch.tensor(1))
+        score = g.op(
+            'Gather',
+            dets_th,
+            g.op('Constant', value_t=torch.tensor(4)),
+            axis_i=1)
+        score_shape = g.op('Shape', score)
+        # use slice to get the first bbox_num element
+        unsqueeze_zero = g.op('Unsqueeze', zero, axes_i=[0])
+        unsqueeze_one = g.op('Unsqueeze', one, axes_i=[0])
+        sample_num = g.op('Slice', score_shape, unsqueeze_zero, unsqueeze_one,
+                          unsqueeze_zero)
+        _, top_k_idx = g.op('TopK', score, sample_num, outputs=2)
+        sorted_dets = g.op('Gather', dets_th, top_k_idx)
+        # batch_dets_th = g.op('Unsqueeze', dets_th, axes_i=[0])
+        # full_ind = g.op('Nms', batch_dets_th, iou_thr_f=iou_thr)
+        return sorted_dets
+
+
+nms_function = NMS.apply
 
 
 def nms(dets, iou_thr, device_id=None):
@@ -68,7 +88,10 @@ def nms(dets, iou_thr, device_id=None):
     if dets_th.shape[0] == 0:
         inds = dets_th.new_zeros(0, dtype=torch.long)
     else:
-        inds = NMS.apply(dets_th, iou_thr)
+        # inds = nms_ext.nms(dets_th, iou_thr)
+        inds = nms_function(dets_th, iou_thr)
+        return inds
+        # inds = NMS.apply(dets_th, iou_thr)
 
     if is_numpy:
         inds = inds.cpu().numpy()
