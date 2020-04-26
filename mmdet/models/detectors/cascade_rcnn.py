@@ -28,45 +28,45 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
-        assert bbox_roi_extractor is not None
-        assert bbox_head is not None
+        assert bbox_roi_extractor is not None  #必须要有roi特征提取模块
+        assert bbox_head is not None            #必须要有box模块
         super(CascadeRCNN, self).__init__()
 
-        self.num_stages = num_stages
-        self.backbone = builder.build_backbone(backbone)
+        self.num_stages = num_stages                   #共有几个调整阶段
+        self.backbone = builder.build_backbone(backbone) #主干网络
 
-        if neck is not None:
+        if neck is not None:               #如果有neck，生成
             self.neck = builder.build_neck(neck)
 
-        if rpn_head is not None:
+        if rpn_head is not None:           #如果给定rpn部分，生成
             self.rpn_head = builder.build_head(rpn_head)
 
-        if shared_head is not None:
+        if shared_head is not None:               #需要生成共享的不服
             self.shared_head = builder.build_shared_head(shared_head)
 
-        if bbox_head is not None:
+        if bbox_head is not None:             #
             self.bbox_roi_extractor = nn.ModuleList()
             self.bbox_head = nn.ModuleList()
-            if not isinstance(bbox_roi_extractor, list):
+            if not isinstance(bbox_roi_extractor, list):#如果不是个列表，那么要生成[bbox_roi_extractor，bbox_roi_extractor，bbox_roi_extractor]
                 bbox_roi_extractor = [
                     bbox_roi_extractor for _ in range(num_stages)
-                ]
-            if not isinstance(bbox_head, list):
+                ]#生成的个数和阶段的个数一样，因每个阶段都要重新提取特征
+            if not isinstance(bbox_head, list):#同上，也要做成[bbox_head,bbox_head,bbox_head,]的格式
                 bbox_head = [bbox_head for _ in range(num_stages)]
-            assert len(bbox_roi_extractor) == len(bbox_head) == self.num_stages
+            assert len(bbox_roi_extractor) == len(bbox_head) == self.num_stages #保证三者一样
             for roi_extractor, head in zip(bbox_roi_extractor, bbox_head):
                 self.bbox_roi_extractor.append(
                     builder.build_roi_extractor(roi_extractor))
                 self.bbox_head.append(builder.build_head(head))
 
-        if mask_head is not None:
+        if mask_head is not None: #如果有mask要生成，同上，每次根据调整后的BOX来生成
             self.mask_head = nn.ModuleList()
-            if not isinstance(mask_head, list):
+            if not isinstance(mask_head, list):#如果不是列表格式，要生成[mask_head，mask_head，mask_head，mask_head]
                 mask_head = [mask_head for _ in range(num_stages)]
-            assert len(mask_head) == self.num_stages
-            for head in mask_head:
+            assert len(mask_head) == self.num_stages #保证一样
+            for head in mask_head:  #建立mask部分
                 self.mask_head.append(builder.build_head(head))
-            if mask_roi_extractor is not None:
+            if mask_roi_extractor is not None:  #还有mask_roi的特征提取部分，也是一样的做法
                 self.share_roi_extractor = False
                 self.mask_roi_extractor = nn.ModuleList()
                 if not isinstance(mask_roi_extractor, list):
@@ -90,16 +90,16 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
     def with_rpn(self):
         return hasattr(self, 'rpn_head') and self.rpn_head is not None
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self, pretrained=None):#初始化网络
         super(CascadeRCNN, self).init_weights(pretrained)
-        self.backbone.init_weights(pretrained=pretrained)
-        if self.with_neck:
-            if isinstance(self.neck, nn.Sequential):
+        self.backbone.init_weights(pretrained=pretrained)# 初始化主干
+        if self.with_neck:#如果有neck
+            if isinstance(self.neck, nn.Sequential):#对主干模块初始化
                 for m in self.neck:
                     m.init_weights()
             else:
                 self.neck.init_weights()
-        if self.with_rpn:
+        if self.with_rpn:#如果有rpn
             self.rpn_head.init_weights()
         if self.with_shared_head:
             self.shared_head.init_weights(pretrained=pretrained)
@@ -112,33 +112,33 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                     self.mask_roi_extractor[i].init_weights()
                 self.mask_head[i].init_weights()
 
-    def extract_feat(self, img):
+    def extract_feat(self, img):#抽取特征
         x = self.backbone(img)
         if self.with_neck:
-            x = self.neck(x)
+            x = self.neck(x)#如果有neck部分
         return x
 
-    def forward_dummy(self, img):
+    def forward_dummy(self, img):#前馈
         outs = ()
         # backbone
-        x = self.extract_feat(img)
+        x = self.extract_feat(img)#先抽取图片特征
         # rpn
-        if self.with_rpn:
-            rpn_outs = self.rpn_head(x)
-            outs = outs + (rpn_outs, )
-        proposals = torch.randn(1000, 4).cuda()
+        if self.with_rpn: #如果有rpn层，指的是用网络生成RPN
+            rpn_outs = self.rpn_head(x) #生成RPN
+            outs = outs + (rpn_outs, )#将RPN放入到输出中去
+        proposals = torch.randn(1000, 4).cuda() #随机选RPN
         # bbox heads
-        rois = bbox2roi([proposals])
-        if self.with_bbox:
-            for i in range(self.num_stages):
+        rois = bbox2roi([proposals])#选出ROI
+        if self.with_bbox: #如果有bbox
+            for i in range(self.num_stages): #每个阶段
                 bbox_feats = self.bbox_roi_extractor[i](
-                    x[:self.bbox_roi_extractor[i].num_inputs], rois)
-                if self.with_shared_head:
-                    bbox_feats = self.shared_head(bbox_feats)
-                cls_score, bbox_pred = self.bbox_head[i](bbox_feats)
-                outs = outs + (cls_score, bbox_pred)
+                    x[:self.bbox_roi_extractor[i].num_inputs], rois)#用ROI在x上进行特征提取
+                if self.with_shared_head:#如果还要处理一下
+                    bbox_feats = self.shared_head(bbox_feats)#共享头层处理
+                cls_score, bbox_pred = self.bbox_head[i](bbox_feats)#对其进行预测
+                outs = outs + (cls_score, bbox_pred)#结果放入到输出中
         # mask heads
-        if self.with_mask:
+        if self.with_mask:#这个是计算mask的部分
             mask_rois = rois[:100]
             for i in range(self.num_stages):
                 mask_feats = self.mask_roi_extractor[i](
@@ -156,7 +156,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
-                      proposals=None):
+                      proposals=None):#训练的主函数
         """
         Args:
             img (Tensor): of shape (N, C, H, W) encoding input images.
@@ -185,50 +185,50 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        x = self.extract_feat(img)
+        x = self.extract_feat(img)#抽取特征
 
-        losses = dict()
+        losses = dict()#损失字典
 
-        if self.with_rpn:
-            rpn_outs = self.rpn_head(x)
+        if self.with_rpn:  #如果有了rpn层
+            rpn_outs = self.rpn_head(x)#先生成RPN
             rpn_loss_inputs = rpn_outs + (gt_bboxes, img_meta,
-                                          self.train_cfg.rpn)
+                                          self.train_cfg.rpn)#这里要开始计算RPN损失，先生成损失的输入
             rpn_losses = self.rpn_head.loss(
-                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-            losses.update(rpn_losses)
+                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)#计算RPN损失
+            losses.update(rpn_losses)#更新
 
             proposal_cfg = self.train_cfg.get('rpn_proposal',
-                                              self.test_cfg.rpn)
+                                              self.test_cfg.rpn)#取出要求的提议
             proposal_inputs = rpn_outs + (img_meta, proposal_cfg)
             proposal_list = self.rpn_head.get_bboxes(*proposal_inputs)
-        else:
+        else:#如果没有生成RPN，而是靠给定的RPN，那么就直接复制
             proposal_list = proposals
 
-        for i in range(self.num_stages):
+        for i in range(self.num_stages):#多少次回归调整
             self.current_stage = i
-            rcnn_train_cfg = self.train_cfg.rcnn[i]
+            rcnn_train_cfg = self.train_cfg.rcnn[i] #取出训练的参数
             lw = self.train_cfg.stage_loss_weights[i]
 
             # assign gts and sample proposals
             sampling_results = []
             if self.with_bbox or self.with_mask:
-                bbox_assigner = build_assigner(rcnn_train_cfg.assigner)
+                bbox_assigner = build_assigner(rcnn_train_cfg.assigner) #建立BOX的分配器
                 bbox_sampler = build_sampler(
-                    rcnn_train_cfg.sampler, context=self)
-                num_imgs = img.size(0)
+                    rcnn_train_cfg.sampler, context=self)#建立采样器
+                num_imgs = img.size(0)#多少张图
                 if gt_bboxes_ignore is None:
-                    gt_bboxes_ignore = [None for _ in range(num_imgs)]
+                    gt_bboxes_ignore = [None for _ in range(num_imgs)]#用于保存所有的GT
 
-                for j in range(num_imgs):
+                for j in range(num_imgs):#多少张图
                     assign_result = bbox_assigner.assign(
                         proposal_list[j], gt_bboxes[j], gt_bboxes_ignore[j],
-                        gt_labels[j])
+                        gt_labels[j])#进行BOX匹配
                     sampling_result = bbox_sampler.sample(
                         assign_result,
                         proposal_list[j],
                         gt_bboxes[j],
                         gt_labels[j],
-                        feats=[lvl_feat[j][None] for lvl_feat in x])
+                        feats=[lvl_feat[j][None] for lvl_feat in x])#进行采样
                     sampling_results.append(sampling_result)
 
             # bbox head forward and loss
@@ -244,13 +244,13 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
 
             bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
                                             rois)
-            if self.with_shared_head:
+            if self.with_shared_head:#如果有共享的头部
                 bbox_feats = self.shared_head(bbox_feats)
-            cls_score, bbox_pred = bbox_head(bbox_feats)
+            cls_score, bbox_pred = bbox_head(bbox_feats)#生成分数
 
             bbox_targets = bbox_head.get_target(sampling_results, gt_bboxes,
                                                 gt_labels, rcnn_train_cfg)
-            loss_bbox = bbox_head.loss(cls_score, bbox_pred, *bbox_targets)
+            loss_bbox = bbox_head.loss(cls_score, bbox_pred, *bbox_targets)#计算损失
             for name, value in loss_bbox.items():
                 losses['s{}.{}'.format(i, name)] = (
                     value * lw if 'loss' in name else value)
