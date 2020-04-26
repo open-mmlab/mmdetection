@@ -3,6 +3,7 @@ import os
 
 import mmcv
 import torch
+from mmcv import Config, DictAction
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from tools.fuse_conv_bn import fuse_module
@@ -11,37 +12,6 @@ from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.core import wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
-
-
-class MultipleKVAction(argparse.Action):
-    """
-    argparse action to split an argument into KEY=VALUE form
-    on the first = and append to a dictionary. List options should
-    be passed as comma separated values, i.e KEY=V1,V2,V3
-    """
-
-    def _parse_int_float_bool(self, val):
-        try:
-            return int(val)
-        except ValueError:
-            pass
-        try:
-            return float(val)
-        except ValueError:
-            pass
-        if val.lower() in ['true', 'false']:
-            return True if val.lower() == 'true' else False
-        return val
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        options = {}
-        for kv in values:
-            key, val = kv.split('=', maxsplit=1)
-            val = [self._parse_int_float_bool(v) for v in val.split(',')]
-            if len(val) == 1:
-                val = val[0]
-            options[key] = val
-        setattr(namespace, self.dest, options)
 
 
 def parse_args():
@@ -77,7 +47,7 @@ def parse_args():
         help='tmp directory used for collecting results from multiple '
         'workers, available when gpu_collect is not specified')
     parser.add_argument(
-        '--options', nargs='+', action=MultipleKVAction, help='custom options')
+        '--options', nargs='+', action=DictAction, help='arguments in dict')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
@@ -104,7 +74,7 @@ def main():
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
 
-    cfg = mmcv.Config.fromfile(args.config)
+    cfg = Config.fromfile(args.config)
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
