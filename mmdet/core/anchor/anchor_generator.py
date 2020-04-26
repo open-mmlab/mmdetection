@@ -86,9 +86,9 @@ class AnchorGenerator(object):#生成anchor
         return all_anchors
 
     def valid_flags(self, featmap_size, valid_size, device='cuda'):
-        feat_h, feat_w = featmap_size
-        valid_h, valid_w = valid_size
-        assert valid_h <= feat_h and valid_w <= feat_w
+        feat_h, feat_w = featmap_size #特征大小
+        valid_h, valid_w = valid_size #标注大小
+        assert valid_h <= feat_h and valid_w <= feat_w  #保证标注在特征内
         valid_x = torch.zeros(feat_w, dtype=torch.uint8, device=device)
         valid_y = torch.zeros(feat_h, dtype=torch.uint8, device=device)
         valid_x[:valid_w] = 1
