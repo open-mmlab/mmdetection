@@ -9,10 +9,8 @@ class NMS(Function):
 
     @staticmethod
     def forward(ctx, dets_th, iou_thr):
-        scores = dets_th.select(1, 4)
-        _, inds = scores.sort(0, True)
-        return dets_th.index_select(0, inds)
-        # return inds
+        inds = nms_ext.nms(dets_th, iou_thr)
+        return inds
 
     @staticmethod
     def backward(ctx, grad_inds):
@@ -20,24 +18,22 @@ class NMS(Function):
 
     @staticmethod
     def symbolic(g, dets_th, iou_thr):
-        zero = g.op('Constant', value_t=torch.tensor(0))
-        one = g.op('Constant', value_t=torch.tensor(1))
         score = g.op(
             'Gather',
             dets_th,
             g.op('Constant', value_t=torch.tensor(4)),
             axis_i=1)
-        score_shape = g.op('Shape', score)
-        # use slice to get the first bbox_num element
-        unsqueeze_zero = g.op('Unsqueeze', zero, axes_i=[0])
-        unsqueeze_one = g.op('Unsqueeze', one, axes_i=[0])
-        sample_num = g.op('Slice', score_shape, unsqueeze_zero, unsqueeze_one,
-                          unsqueeze_zero)
-        _, top_k_idx = g.op('TopK', score, sample_num, outputs=2)
+        # TODO (ruobing): try to drop this placeholder
+        _useless_placeholder = g.op('Constant', value_t=torch.tensor(0))
+        _useless_placeholder = g.op(
+            'Unsqueeze', _useless_placeholder, axes_i=[0])
+        # TODO (ruobing): try to remove this hard code '4'
+        _, top_k_idx = g.op(
+            'TopK', score, _useless_placeholder, num_i=4, outputs=2)
         sorted_dets = g.op('Gather', dets_th, top_k_idx)
-        # batch_dets_th = g.op('Unsqueeze', dets_th, axes_i=[0])
-        # full_ind = g.op('Nms', batch_dets_th, iou_thr_f=iou_thr)
-        return sorted_dets
+        batch_sorted_dets = g.op('Unsqueeze', sorted_dets, axes_i=[0])
+        full_ind = g.op('Nms', batch_sorted_dets, iou_thr_f=iou_thr)
+        return full_ind
 
 
 nms_function = NMS.apply
@@ -88,10 +84,9 @@ def nms(dets, iou_thr, device_id=None):
     if dets_th.shape[0] == 0:
         inds = dets_th.new_zeros(0, dtype=torch.long)
     else:
-        # inds = nms_ext.nms(dets_th, iou_thr)
         inds = nms_function(dets_th, iou_thr)
-        return inds
-        # inds = NMS.apply(dets_th, iou_thr)
+        # this might be useful for ONNX, but useless for Pytorch
+        inds = inds[torch.nonzero(inds > -1).squeeze()]
 
     if is_numpy:
         inds = inds.cpu().numpy()
