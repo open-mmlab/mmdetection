@@ -29,7 +29,7 @@ class FSAFHead(RetinaHead):
         >>> # Each anchor predicts a score for each class except background
         >>> cls_per_anchor = cls_score.shape[1] / self.num_anchors
         >>> box_per_anchor = bbox_pred.shape[1] / self.num_anchors
-        >>> assert cls_per_anchor == self.num_classe)
+        >>> assert cls_per_anchor == self.num_classes
         >>> assert box_per_anchor == 4
     """
 

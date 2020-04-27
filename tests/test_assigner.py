@@ -336,7 +336,7 @@ def test_center_region_assigner():
     assert torch.all(assign_result.gt_inds == expected_gt_inds)
 
 
-def test_center_region_assigner_wigh_ignore():
+def test_center_region_assigner_with_ignore():
     self = CenterRegionAssigner(
         pos_scale=0.5,
         neg_scale=1,
