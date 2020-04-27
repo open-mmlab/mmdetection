@@ -41,6 +41,7 @@ class MaxIoUAssigner(BaseAssigner):
                  ignore_iof_thr=-1,
                  ignore_wrt_candidates=True,
                  gpu_assign_thr=-1):
+        #设置根据IOU来分配阀值
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
@@ -99,20 +100,20 @@ class MaxIoUAssigner(BaseAssigner):
                 gt_labels = gt_labels.cpu()
         #取出所有的提议，并和GT进行IOU计算
         bboxes = bboxes[:, :4]
-        overlaps = bbox_overlaps(gt_bboxes, bboxes)
+        overlaps = bbox_overlaps(gt_bboxes, bboxes)#这里计算的是IOU
         #不明白干嘛的
         if (self.ignore_iof_thr > 0) and (gt_bboxes_ignore is not None) and (
                 gt_bboxes_ignore.numel() > 0):
             if self.ignore_wrt_candidates:
                 ignore_overlaps = bbox_overlaps(
-                    bboxes, gt_bboxes_ignore, mode='iof')
+                    bboxes, gt_bboxes_ignore, mode='iof')#不同的mode
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=1)
             else:
                 ignore_overlaps = bbox_overlaps(
                     gt_bboxes_ignore, bboxes, mode='iof')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=0)
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
-
+        #这个函数进行0，1，-1的分配
         assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
         #做完之后还要放回到相应的设备上去
         if assign_on_cpu:
