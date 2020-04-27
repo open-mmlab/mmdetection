@@ -49,7 +49,7 @@ class MaxIoUAssigner(BaseAssigner):
         self.ignore_wrt_candidates = ignore_wrt_candidates
         self.gpu_assign_thr = gpu_assign_thr
 
-    def assign(self, bboxes, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
+    def assign(self, bboxes, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):#被调用的函数
         """Assign gt to bboxes.
 
         This method assign a gt bbox to every bbox (proposal/anchor), each bbox
@@ -83,21 +83,24 @@ class MaxIoUAssigner(BaseAssigner):
             >>> expected_gt_inds = torch.LongTensor([1, 0])
             >>> assert torch.all(assign_result.gt_inds == expected_gt_inds)
         """
+        #在哪里进行匹配
         assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
-            gt_bboxes.shape[0] > self.gpu_assign_thr) else False
-        # compute overlap and assign gt on CPU when number of GT is large
-        if assign_on_cpu:
+            gt_bboxes.shape[0] > self.gpu_assign_thr) else False 
+        # compute overlap and assign gt on CPU when number of GT is large，因为GPU不适合匹配，所以如果太多要在CPU上处理
+        if assign_on_cpu:  
+            #指定设备
             device = bboxes.device
+            #将boxes，GT放到CPU上
             bboxes = bboxes.cpu()
             gt_bboxes = gt_bboxes.cpu()
             if gt_bboxes_ignore is not None:
                 gt_bboxes_ignore = gt_bboxes_ignore.cpu()
             if gt_labels is not None:
                 gt_labels = gt_labels.cpu()
-
+        #取出所有的提议，并和GT进行IOU计算
         bboxes = bboxes[:, :4]
         overlaps = bbox_overlaps(gt_bboxes, bboxes)
-
+        #不明白干嘛的
         if (self.ignore_iof_thr > 0) and (gt_bboxes_ignore is not None) and (
                 gt_bboxes_ignore.numel() > 0):
             if self.ignore_wrt_candidates:
@@ -111,6 +114,7 @@ class MaxIoUAssigner(BaseAssigner):
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 
         assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
+        #做完之后还要放回到相应的设备上去
         if assign_on_cpu:
             assign_result.gt_inds = assign_result.gt_inds.to(device)
             assign_result.max_overlaps = assign_result.max_overlaps.to(device)
@@ -129,47 +133,49 @@ class MaxIoUAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
+        #BOX和GT的数量
         num_gts, num_bboxes = overlaps.size(0), overlaps.size(1)
 
-        # 1. assign -1 by default
+        # 1. assign -1 by default   1是分配到的，-1是默认值，
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),
                                              -1,
                                              dtype=torch.long)
-
+        #如果两者有一个是空的，
         if num_gts == 0 or num_bboxes == 0:
-            # No ground truth or boxes, return empty assignment
+            # No ground truth or boxes, return empty assignment先返回一个没有匹配成功的
             max_overlaps = overlaps.new_zeros((num_bboxes, ))
             if num_gts == 0:
-                # No truth, assign everything to background
+                # No truth, assign everything to background 如果没有GT，那么全部设置成为背景0
                 assigned_gt_inds[:] = 0
             if gt_labels is None:
                 assigned_labels = None
             else:
                 assigned_labels = overlaps.new_zeros((num_bboxes, ),
-                                                     dtype=torch.long)
+                                                     dtype=torch.long)#不是GT为0，那么就是匹配到IOU失败了
             return AssignResult(
                 num_gts,
                 assigned_gt_inds,
                 max_overlaps,
-                labels=assigned_labels)
+                labels=assigned_labels)#返回匹配结果
 
         # for each anchor, which gt best overlaps with it
-        # for each anchor, the max iou of all gts
+        # for each anchor, the max iou of all gts找出匹配最大值
         max_overlaps, argmax_overlaps = overlaps.max(dim=0)
         # for each gt, which anchor best overlaps with it
         # for each gt, the max iou of all proposals
         gt_max_overlaps, gt_argmax_overlaps = overlaps.max(dim=1)
 
-        # 2. assign negative: below
+        # 2. assign negative: below负样本分配，条件是IOU>=0，且IOU<neg_iou_thr，设为0
         if isinstance(self.neg_iou_thr, float):
             assigned_gt_inds[(max_overlaps >= 0)
                              & (max_overlaps < self.neg_iou_thr)] = 0
+        #如果负样本阀值给的是个区间，那么保证IOU在区间之内
         elif isinstance(self.neg_iou_thr, tuple):
             assert len(self.neg_iou_thr) == 2
             assigned_gt_inds[(max_overlaps >= self.neg_iou_thr[0])
                              & (max_overlaps < self.neg_iou_thr[1])] = 0
 
-        # 3. assign positive: above positive IoU threshold
+        # 3. assign positive: above positive IoU threshold，正样本是大于pos_iou_thr的部分，类别要+1，0是背景
         pos_inds = max_overlaps >= self.pos_iou_thr
         assigned_gt_inds[pos_inds] = argmax_overlaps[pos_inds] + 1
 
