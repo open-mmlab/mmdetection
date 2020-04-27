@@ -88,7 +88,7 @@ def nms(dets, iou_thr, device_id=None):
     else:
         inds = nms_function(dets_th, iou_thr)
         # this might be useful for ONNX, but useless for Pytorch
-        inds = inds[torch.nonzero(inds > -1).squeeze()]
+        inds = inds[torch.nonzero(inds > -1).squeeze(1)]
 
     if is_numpy:
         inds = inds.cpu().numpy()
