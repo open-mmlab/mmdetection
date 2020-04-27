@@ -136,10 +136,14 @@ def batched_nms(bboxes, scores, inds, nms_cfg):
     Returns:
         tuple: kept bboxes and indice.
     """
-    max_coordinate = bboxes.max()
-    offsets = inds.to(bboxes) * (max_coordinate + 1)
-    bboxes_for_nms = bboxes + offsets[:, None]
     nms_cfg_ = nms_cfg.copy()
+    class_agnostic = nms_cfg_.pop('class_agnostic', False)
+    if not class_agnostic:
+        max_coordinate = bboxes.max()
+        offsets = inds.to(bboxes) * (max_coordinate + 1)
+        bboxes_for_nms = bboxes + offsets[:, None]
+    else:
+        bboxes_for_nms = bboxes
     nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = eval(nms_type)
     dets, keep = nms_op(
