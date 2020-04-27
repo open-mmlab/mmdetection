@@ -19,7 +19,7 @@ int masked_im2col_forward(const at::Tensor im, const at::Tensor mask_h_idx,
                                const at::Tensor mask_w_idx, const int kernel_h,
                                const int kernel_w, const int pad_h,
                                const int pad_w, at::Tensor col) {
-  if (im.type().is_cuda()) {
+  if (im.device().is_cuda()) {
 #ifdef WITH_CUDA
     return masked_im2col_forward_cuda(im, mask_h_idx, mask_w_idx, kernel_h,
       kernel_w, pad_h, pad_w, col);
@@ -34,7 +34,7 @@ int masked_col2im_forward(const at::Tensor col,
                                const at::Tensor mask_h_idx,
                                const at::Tensor mask_w_idx, int height,
                                int width, int channels, at::Tensor im) {
-  if (col.type().is_cuda()) {
+  if (col.device().is_cuda()) {
 #ifdef WITH_CUDA
     return masked_col2im_forward_cuda(col, mask_h_idx, mask_w_idx, height,
       width, channels, im);

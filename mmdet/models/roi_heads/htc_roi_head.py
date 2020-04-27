@@ -3,8 +3,7 @@ import torch.nn.functional as F
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
-from .. import builder
-from ..registry import HEADS
+from ..builder import HEADS, build_head, build_roi_extractor
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -30,9 +29,9 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         assert not self.with_shared_head  # shared head is not supported
 
         if semantic_head is not None:
-            self.semantic_roi_extractor = builder.build_roi_extractor(
+            self.semantic_roi_extractor = build_roi_extractor(
                 semantic_roi_extractor)
-            self.semantic_head = builder.build_head(semantic_head)
+            self.semantic_head = build_head(semantic_head)
 
         self.semantic_fusion = semantic_fusion
         self.interleaved = interleaved
@@ -100,7 +99,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         bbox_targets = bbox_head.get_targets(sampling_results, gt_bboxes,
                                              gt_labels, rcnn_train_cfg)
         loss_bbox = bbox_head.loss(bbox_results['cls_score'],
-                                   bbox_results['bbox_pred'], *bbox_targets)
+                                   bbox_results['bbox_pred'], rois,
+                                   *bbox_targets)
 
         bbox_results.update(
             loss_bbox=loss_bbox,
@@ -250,7 +250,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             roi_labels = bbox_results['bbox_targets'][0]
 
             for name, value in bbox_results['loss_bbox'].items():
-                losses['s{}.{}'.format(i, name)] = (
+                losses[f's{i}.{name}'] = (
                     value * lw if 'loss' in name else value)
 
             # mask head forward and loss
@@ -280,7 +280,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     i, x, sampling_results, gt_masks, rcnn_train_cfg,
                     semantic_feat)
                 for name, value in mask_results['loss_mask'].items():
-                    losses['s{}.{}'.format(i, name)] = (
+                    losses[f's{i}.{name}'] = (
                         value * lw if 'loss' in name else value)
 
             # refine bboxes (same as Cascade R-CNN)

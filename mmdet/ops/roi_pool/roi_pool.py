@@ -69,7 +69,7 @@ class RoIPool(nn.Module):
 
     def __repr__(self):
         format_str = self.__class__.__name__
-        format_str += '(out_size={}, spatial_scale={}'.format(
-            self.out_size, self.spatial_scale)
-        format_str += ', use_torchvision={})'.format(self.use_torchvision)
+        format_str += f'(out_size={self.out_size}, '
+        format_str += f'spatial_scale={self.spatial_scale}, '
+        format_str += f'use_torchvision={self.use_torchvision})'
         return format_str

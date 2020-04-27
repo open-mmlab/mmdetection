@@ -5,7 +5,7 @@ from mmcv.runner import load_checkpoint
 from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
 from ..backbones import ResNet
-from ..registry import SHARED_HEADS
+from ..builder import SHARED_HEADS
 from ..utils import ResLayer as _ResLayer
 
 
@@ -43,7 +43,7 @@ class ResLayer(nn.Module):
             with_cp=with_cp,
             norm_cfg=self.norm_cfg,
             dcn=dcn)
-        self.add_module('layer{}'.format(stage + 1), res_layer)
+        self.add_module(f'layer{stage + 1}', res_layer)
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
@@ -60,7 +60,7 @@ class ResLayer(nn.Module):
 
     @auto_fp16()
     def forward(self, x):
-        res_layer = getattr(self, 'layer{}'.format(self.stage + 1))
+        res_layer = getattr(self, f'layer{self.stage + 1}')
         out = res_layer(x)
         return out
 

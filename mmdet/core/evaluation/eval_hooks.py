@@ -14,9 +14,8 @@ class EvalHook(Hook):
 
     def __init__(self, dataloader, interval=1, **eval_kwargs):
         if not isinstance(dataloader, DataLoader):
-            raise TypeError(
-                'dataloader must be a pytorch DataLoader, but got {}'.format(
-                    type(dataloader)))
+            raise TypeError('dataloader must be a pytorch DataLoader, but got'
+                            f' {type(dataloader)}')
         self.dataloader = dataloader
         self.interval = interval
         self.eval_kwargs = eval_kwargs
@@ -54,9 +53,8 @@ class DistEvalHook(EvalHook):
                  gpu_collect=False,
                  **eval_kwargs):
         if not isinstance(dataloader, DataLoader):
-            raise TypeError(
-                'dataloader must be a pytorch DataLoader, but got {}'.format(
-                    type(dataloader)))
+            raise TypeError('dataloader must be a pytorch DataLoader, but got '
+                            f'{type(dataloader)}')
         self.dataloader = dataloader
         self.interval = interval
         self.gpu_collect = gpu_collect

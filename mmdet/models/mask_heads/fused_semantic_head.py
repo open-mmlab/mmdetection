@@ -4,7 +4,7 @@ from mmcv.cnn import kaiming_init
 
 from mmdet.core import auto_fp16, force_fp32
 from mmdet.ops import ConvModule
-from ..registry import HEADS
+from ..builder import HEADS
 
 
 @HEADS.register_module

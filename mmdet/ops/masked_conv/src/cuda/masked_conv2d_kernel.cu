@@ -59,10 +59,10 @@ int MaskedIm2colForwardLaucher(const at::Tensor bottom_data, const int height,
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       bottom_data.scalar_type(), "MaskedIm2colLaucherForward", ([&] {
-        const scalar_t *bottom_data_ = bottom_data.data<scalar_t>();
-        const int64_t *mask_h_idx_ = mask_h_idx.data<int64_t>();
-        const int64_t *mask_w_idx_ = mask_w_idx.data<int64_t>();
-        scalar_t *top_data_ = top_data.data<scalar_t>();
+        const scalar_t *bottom_data_ = bottom_data.data_ptr<scalar_t>();
+        const int64_t *mask_h_idx_ = mask_h_idx.data_ptr<int64_t>();
+        const int64_t *mask_w_idx_ = mask_w_idx.data_ptr<int64_t>();
+        scalar_t *top_data_ = top_data.data_ptr<scalar_t>();
         MaskedIm2colForward<scalar_t>
             <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()
 >>>(
@@ -99,10 +99,10 @@ int MaskedCol2imForwardLaucher(const at::Tensor bottom_data, const int height,
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       bottom_data.scalar_type(), "MaskedCol2imLaucherForward", ([&] {
-        const scalar_t *bottom_data_ = bottom_data.data<scalar_t>();
-        const int64_t *mask_h_idx_ = mask_h_idx.data<int64_t>();
-        const int64_t *mask_w_idx_ = mask_w_idx.data<int64_t>();
-        scalar_t *top_data_ = top_data.data<scalar_t>();
+        const scalar_t *bottom_data_ = bottom_data.data_ptr<scalar_t>();
+        const int64_t *mask_h_idx_ = mask_h_idx.data_ptr<int64_t>();
+        const int64_t *mask_w_idx_ = mask_w_idx.data_ptr<int64_t>();
+        scalar_t *top_data_ = top_data.data_ptr<scalar_t>();
 
         MaskedCol2imForward<scalar_t>
             <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()>>>(

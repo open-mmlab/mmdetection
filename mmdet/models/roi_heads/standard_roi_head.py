@@ -1,8 +1,7 @@
 import torch
 
 from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
-from .. import builder
-from ..registry import HEADS
+from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
@@ -21,19 +20,17 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.train_cfg.sampler, context=self)
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
-        self.bbox_roi_extractor = builder.build_roi_extractor(
-            bbox_roi_extractor)
-        self.bbox_head = builder.build_head(bbox_head)
+        self.bbox_roi_extractor = build_roi_extractor(bbox_roi_extractor)
+        self.bbox_head = build_head(bbox_head)
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
         if mask_roi_extractor is not None:
-            self.mask_roi_extractor = builder.build_roi_extractor(
-                mask_roi_extractor)
+            self.mask_roi_extractor = build_roi_extractor(mask_roi_extractor)
             self.share_roi_extractor = False
         else:
             self.share_roi_extractor = True
             self.mask_roi_extractor = self.bbox_roi_extractor
-        self.mask_head = builder.build_head(mask_head)
+        self.mask_head = build_head(mask_head)
 
     def init_weights(self, pretrained):
         if self.with_shared_head:
@@ -152,7 +149,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
                                                   gt_labels, self.train_cfg)
         loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],
-                                        bbox_results['bbox_pred'],
+                                        bbox_results['bbox_pred'], rois,
                                         *bbox_targets)
 
         bbox_results.update(loss_bbox=loss_bbox)

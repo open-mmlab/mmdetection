@@ -5,15 +5,25 @@ model = dict(
         type='GARPNHead',
         in_channels=256,
         feat_channels=256,
-        octave_base_scale=8,
-        scales_per_octave=3,
-        octave_ratios=[0.5, 1.0, 2.0],
-        anchor_strides=[4, 8, 16, 32, 64],
-        anchor_base_sizes=None,
-        anchoring_means=[.0, .0, .0, .0],
-        anchoring_stds=[0.07, 0.07, 0.14, 0.14],
-        target_means=(.0, .0, .0, .0),
-        target_stds=[0.07, 0.07, 0.11, 0.11],
+        approx_anchor_generator=dict(
+            type='AnchorGenerator',
+            octave_base_scale=8,
+            scales_per_octave=3,
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64]),
+        square_anchor_generator=dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            scales=[8],
+            strides=[4, 8, 16, 32, 64]),
+        anchor_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[0.07, 0.07, 0.14, 0.14]),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[0.07, 0.07, 0.11, 0.11]),
         loc_filter_thr=0.01,
         loss_loc=dict(
             type='FocalLoss',
@@ -25,7 +35,8 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
-    roi_head=dict(bbox_head=dict(target_stds=[0.05, 0.05, 0.1, 0.1])))
+    roi_head=dict(
+        bbox_head=dict(bbox_coder=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(

@@ -297,9 +297,9 @@ at::Tensor ROIAlignForwardV2Laucher(const at::Tensor& input,
 
   AT_DISPATCH_FLOATING_TYPES(input.scalar_type(), "ROIAlign_forward", [&] {
     RoIAlignForwardV2<scalar_t><<<grid, block, 0, stream>>>(
-        output_size, input.contiguous().data<scalar_t>(), spatial_scale,
+        output_size, input.contiguous().data_ptr<scalar_t>(), spatial_scale,
         channels, height, width, pooled_height, pooled_width, sampling_ratio,
-        rois.contiguous().data<scalar_t>(), output.data<scalar_t>(), aligned);
+        rois.contiguous().data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), aligned);
   });
   cudaDeviceSynchronize();
   AT_CUDA_CHECK(cudaGetLastError());
@@ -338,10 +338,10 @@ at::Tensor ROIAlignBackwardV2Laucher(
 
   AT_DISPATCH_FLOATING_TYPES(grad.scalar_type(), "ROIAlign_backward", [&] {
     RoIAlignBackwardFeatureV2<scalar_t><<<grid, block, 0, stream>>>(
-        grad.numel(), grad.contiguous().data<scalar_t>(), num_rois,
+        grad.numel(), grad.contiguous().data_ptr<scalar_t>(), num_rois,
         spatial_scale, channels, height, width, pooled_height, pooled_width,
-        sampling_ratio, grad_input.data<scalar_t>(),
-        rois.contiguous().data<scalar_t>(), aligned);
+        sampling_ratio, grad_input.data_ptr<scalar_t>(),
+        rois.contiguous().data_ptr<scalar_t>(), aligned);
   });
   AT_CUDA_CHECK(cudaGetLastError());
   return grad_input;

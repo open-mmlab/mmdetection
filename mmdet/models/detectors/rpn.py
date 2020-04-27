@@ -1,8 +1,7 @@
 import mmcv
 
 from mmdet.core import bbox_mapping, tensor2imgs
-from .. import builder
-from ..registry import DETECTORS
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 
@@ -18,12 +17,12 @@ class RPN(BaseDetector, RPNTestMixin):
                  test_cfg,
                  pretrained=None):
         super(RPN, self).__init__()
-        self.backbone = builder.build_backbone(backbone)
-        self.neck = builder.build_neck(neck) if neck is not None else None
+        self.backbone = build_backbone(backbone)
+        self.neck = build_neck(neck) if neck is not None else None
         rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
         rpn_head.update(train_cfg=rpn_train_cfg)
         rpn_head.update(test_cfg=test_cfg.rpn)
-        self.rpn_head = builder.build_head(rpn_head)
+        self.rpn_head = build_head(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.init_weights(pretrained=pretrained)

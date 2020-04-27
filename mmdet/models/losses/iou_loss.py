@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from mmdet.core import bbox_overlaps
-from ..registry import LOSSES
+from ..builder import LOSSES
 from .utils import weighted_loss
 
 
@@ -23,7 +23,7 @@ def iou_loss(pred, target, eps=1e-6):
         Tensor: Loss tensor.
     """
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
-    loss = -ious.log()
+    loss = -ious.log().unsqueeze(dim=1)
     return loss
 
 

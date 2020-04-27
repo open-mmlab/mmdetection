@@ -1,4 +1,4 @@
-from ..registry import DETECTORS
+from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
 
