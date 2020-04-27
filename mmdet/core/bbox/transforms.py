@@ -160,16 +160,16 @@ def bbox2roi(bbox_list):
     for img_id, bboxes in enumerate(bbox_list):
         if bboxes.size(0) > 0:
             img_inds = bboxes.new_full((bboxes.size(0), 1), img_id)
-            rois = torch.cat([img_inds, bboxes[:, :4]], dim=-1)
+            rois = torch.cat([img_inds, bboxes[:, :4]], dim=-1)#新的rois前面多了一列表示batch个数
         else:
-            rois = bboxes.new_zeros((0, 5))
+            rois = bboxes.new_zeros((0, 5))#这里就是五列，第一列是batch的索引
         rois_list.append(rois)
-    rois = torch.cat(rois_list, 0)
+    rois = torch.cat(rois_list, 0)#全部组合在一起
     return rois
 
 
 def roi2bbox(rois):
-    bbox_list = []
+    bbox_list = []#根据rois第一列的batch个数来区分box，将他们全部分开[[],[],[],[],]
     img_ids = torch.unique(rois[:, 0].cpu(), sorted=True)
     for img_id in img_ids:
         inds = (rois[:, 0] == img_id.item())
