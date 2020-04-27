@@ -16,6 +16,8 @@ class NMS(Function):
     def backward(ctx, grad_inds):
         return None
 
+    # TODO (ruobing): this part might be rewritten as it should co-design
+    # with ONNX and TensorRT
     @staticmethod
     def symbolic(g, dets_th, iou_thr):
         score = g.op(
