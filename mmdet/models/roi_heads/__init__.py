@@ -4,8 +4,9 @@ from .double_roi_head import DoubleHeadRoIHead
 from .grid_roi_head import GridRoIHead
 from .htc_roi_head import HybridTaskCascadeRoIHead
 from .mask_scoring_roi_head import MaskScoringRoIHead
+from .pisa_roi_head import PISARoIHead
 
 __all__ = [
     'BaseRoIHead', 'CascadeRoIHead', 'DoubleHeadRoIHead', 'MaskScoringRoIHead',
-    'HybridTaskCascadeRoIHead', 'GridRoIHead'
+    'HybridTaskCascadeRoIHead', 'GridRoIHead', 'PISARoIHead'
 ]

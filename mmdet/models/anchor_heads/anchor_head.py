@@ -239,7 +239,7 @@ class AnchorHead(nn.Module):
             bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
-                neg_inds)
+                neg_inds, sampling_result)
 
     def get_targets(self,
                     anchor_list,
@@ -249,7 +249,9 @@ class AnchorHead(nn.Module):
                     gt_bboxes_ignore_list=None,
                     gt_labels_list=None,
                     label_channels=1,
-                    unmap_outputs=True):
+                    unmap_outputs=True,
+                    map_to_level=True,
+                    return_sampling_results=False):
         """Compute regression and classification targets for anchors in
             multiple images.
 
@@ -299,7 +301,7 @@ class AnchorHead(nn.Module):
         if gt_labels_list is None:
             gt_labels_list = [None for _ in range(num_imgs)]
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
-         pos_inds_list, neg_inds_list) = multi_apply(
+         pos_inds_list, neg_inds_list, sampling_results_list) = multi_apply(
              self._get_targets_single,
              concat_anchor_list,
              concat_valid_flag_list,
@@ -316,15 +318,23 @@ class AnchorHead(nn.Module):
         num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
         num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
         # split targets to a list w.r.t. multiple levels
-        labels_list = images_to_levels(all_labels, num_level_anchors)
-        label_weights_list = images_to_levels(all_label_weights,
-                                              num_level_anchors)
-        bbox_targets_list = images_to_levels(all_bbox_targets,
-                                             num_level_anchors)
-        bbox_weights_list = images_to_levels(all_bbox_weights,
-                                             num_level_anchors)
-        return (labels_list, label_weights_list, bbox_targets_list,
-                bbox_weights_list, num_total_pos, num_total_neg)
+        if map_to_level:
+            labels_list = images_to_levels(all_labels, num_level_anchors)
+            label_weights_list = images_to_levels(all_label_weights,
+                                                  num_level_anchors)
+            bbox_targets_list = images_to_levels(all_bbox_targets,
+                                                 num_level_anchors)
+            bbox_weights_list = images_to_levels(all_bbox_weights,
+                                                 num_level_anchors)
+            res = (labels_list, label_weights_list, bbox_targets_list,
+                   bbox_weights_list)
+        else:
+            res = (all_labels, all_label_weights, all_bbox_targets,
+                   all_bbox_weights)
+        res = res + (num_total_pos, num_total_neg)
+        if return_sampling_results:
+            res = res + (sampling_results_list, )
+        return res
 
     def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):

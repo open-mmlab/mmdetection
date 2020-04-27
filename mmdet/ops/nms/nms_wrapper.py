@@ -149,3 +149,17 @@ def batched_nms(bboxes, scores, inds, nms_cfg):
     bboxes = bboxes[keep]
     scores = dets[:, -1]
     return torch.cat([bboxes, scores[:, None]], -1), keep
+
+
+def nms_match(dets, thresh, device_id=None):
+    """Dispatch to either CPU or GPU NMS implementations."""
+    if dets.shape[0] == 0:
+        matched = []
+    else:
+        dets_t = dets.detach().cpu()
+        matched = nms_ext.nms_match(dets_t, thresh)
+
+    if isinstance(dets, torch.Tensor):
+        return [dets.new_tensor(m, dtype=torch.long) for m in matched]
+    else:
+        return [np.array(m, dtype=np.int) for m in matched]

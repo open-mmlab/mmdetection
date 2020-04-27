@@ -8,7 +8,7 @@ from .dcn import (DeformConv, DeformConvPack, DeformRoIPooling,
                   deform_conv, deform_roi_pooling, modulated_deform_conv)
 from .generalized_attention import GeneralizedAttention
 from .masked_conv import MaskedConv2d
-from .nms import batched_nms, nms, soft_nms
+from .nms import batched_nms, nms, nms_match, soft_nms
 from .non_local import NonLocal2D
 from .norm import build_norm_layer
 from .plugin import build_plugin_layer
@@ -30,5 +30,5 @@ __all__ = [
     'get_compiler_version', 'get_compiling_cuda_version', 'build_conv_layer',
     'ConvModule', 'ConvWS2d', 'conv_ws_2d', 'build_norm_layer', 'Scale',
     'build_upsample_layer', 'build_plugin_layer', 'batched_nms', 'Conv2d',
-    'ConvTranspose2d', 'MaxPool2d', 'Linear'
+    'ConvTranspose2d', 'MaxPool2d', 'Linear', 'nms_match'
 ]
