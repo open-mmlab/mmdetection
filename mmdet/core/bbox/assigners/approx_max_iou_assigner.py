@@ -62,8 +62,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                approxs_per_octave,
                gt_bboxes,
                gt_bboxes_ignore=None,
-               gt_labels=None,
-               background_label=-1):
+               gt_labels=None):
         """Assign gt to approxs.
 
         This method assign a gt bbox to each group of approxs (bboxes),
@@ -91,7 +90,6 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
             gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
-            background_label (int, optional): background label (default: -1)
 
         Returns:
             :obj:`AssignResult`: The assign result.
@@ -102,8 +100,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         if num_squares == 0 or num_gts == 0:
             # No predictions and/or truth, return empty assignment
             overlaps = approxs.new(num_gts, num_squares)
-            assign_result = self.assign_wrt_overlaps(
-                overlaps, gt_labels, bg_label=background_label)
+            assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
             return assign_result
 
         # re-organize anchors by approxs_per_octave x num_squares
@@ -141,8 +138,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=0)
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 
-        assign_result = self.assign_wrt_overlaps(
-            overlaps, gt_labels, bg_label=background_label)
+        assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
         if assign_on_cpu:
             assign_result.gt_inds = assign_result.gt_inds.to(device)
             assign_result.max_overlaps = assign_result.max_overlaps.to(device)

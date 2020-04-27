@@ -513,8 +513,7 @@ class GuidedAnchorHead(AnchorHead):
 
         assign_result = self.ga_assigner.assign(approxs, squares,
                                                 self.approxs_per_octave,
-                                                gt_bboxes, gt_bboxes_ignore,
-                                                self.background_label)
+                                                gt_bboxes, gt_bboxes_ignore)
         sampling_result = self.ga_sampler.sample(assign_result, squares,
                                                  gt_bboxes)
 
