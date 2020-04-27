@@ -93,8 +93,8 @@ class BitmapMasks(BaseInstanceMasks):
     def __repr__(self):
         s = self.__class__.__name__ + '('
         s += f'num_masks={len(self.masks)}, '
-        s += f'height={len(self.height)}, '
-        s += f'width={len(self.width)})'
+        s += f'height={self.height}, '
+        s += f'width={self.width})'
         return s
 
     def __len__(self):
@@ -327,8 +327,8 @@ class PolygonMasks(BaseInstanceMasks):
     def __repr__(self):
         s = self.__class__.__name__ + '('
         s += f'num_masks={len(self.masks)}, '
-        s += f'height={len(self.height)}, '
-        s += f'width={len(self.width)})'
+        s += f'height={self.height}, '
+        s += f'width={self.width})'
         return s
 
     def __len__(self):
@@ -436,7 +436,7 @@ class PolygonMasks(BaseInstanceMasks):
         resized_masks = []
         for i in range(len(bboxes)):
             mask = self.masks[inds[i]]
-            bbox = bboxes[i, :].astype(np.int32)
+            bbox = bboxes[i, :]
             x1, y1, x2, y2 = bbox
             w = np.maximum(x2 - x1, 1)
             h = np.maximum(y2 - y1, 1)
