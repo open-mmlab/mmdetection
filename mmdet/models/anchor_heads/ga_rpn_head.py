@@ -64,6 +64,7 @@ class GARPNHead(GuidedAnchorHead):
                            scale_factor,
                            cfg,
                            rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
         mlvl_proposals = []
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]

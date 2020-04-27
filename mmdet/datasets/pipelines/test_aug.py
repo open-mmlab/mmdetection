@@ -33,6 +33,6 @@ class MultiScaleFlipAug(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += '(transforms={}, img_scale={}, flip={})'.format(
-            self.transforms, self.img_scale, self.flip)
+        repr_str += f'(transforms={self.transforms}, '
+        repr_str += f'img_scale={self.img_scale}, flip={self.flip})'
         return repr_str

@@ -40,8 +40,7 @@ def parse_losses(losses):
         elif isinstance(loss_value, list):
             log_vars[loss_name] = sum(_loss.mean() for _loss in loss_value)
         else:
-            raise TypeError(
-                '{} is not a tensor or list of tensors'.format(loss_name))
+            raise TypeError(f'{loss_name} is not a tensor or list of tensors')
 
     loss = sum(_value for _key, _value in log_vars.items() if 'loss' in _key)
 

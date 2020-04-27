@@ -13,7 +13,7 @@ at::Tensor nms_cuda(const at::Tensor& dets, const float threshold);
 #endif
 
 at::Tensor nms(const at::Tensor& dets, const float threshold){
-  if (dets.type().is_cuda()) {
+  if (dets.device().is_cuda()) {
 #ifdef WITH_CUDA
     return nms_cuda(dets, threshold);
 #else
@@ -26,7 +26,7 @@ at::Tensor nms(const at::Tensor& dets, const float threshold){
 at::Tensor soft_nms(const at::Tensor& dets, const float threshold,
                         const unsigned char method, const float sigma, const
                         float min_score) {
-  if (dets.type().is_cuda()) {
+  if (dets.device().is_cuda()) {
     AT_ERROR("soft_nms is not implemented on GPU");
   }
   return soft_nms_cpu(dets, threshold, method, sigma, min_score);

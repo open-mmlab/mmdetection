@@ -79,19 +79,17 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     def init_weights(self, pretrained=None):
         if pretrained is not None:
-            print_log('load model from: {}'.format(pretrained), logger='root')
+            print_log(f'load model from: {pretrained}', logger='root')
 
     async def aforward_test(self, *, img, img_metas, **kwargs):
         for var, name in [(img, 'img'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
-                raise TypeError('{} must be a list, but got {}'.format(
-                    name, type(var)))
+                raise TypeError(f'{name} must be a list, but got {type(var)}')
 
         num_augs = len(img)
         if num_augs != len(img_metas):
-            raise ValueError(
-                'num of augmentations ({}) != num of image metas ({})'.format(
-                    len(img), len(img_metas)))
+            raise ValueError(f'num of augmentations ({len(img)}) '
+                             f'!= num of image metas ({len(img_metas)})')
         # TODO: remove the restriction of samples_per_gpu == 1 when prepared
         samples_per_gpu = img[0].size(0)
         assert samples_per_gpu == 1
@@ -113,14 +111,12 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         """
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
-                raise TypeError('{} must be a list, but got {}'.format(
-                    name, type(var)))
+                raise TypeError(f'{name} must be a list, but got {type(var)}')
 
         num_augs = len(imgs)
         if num_augs != len(img_metas):
-            raise ValueError(
-                'num of augmentations ({}) != num of image meta ({})'.format(
-                    len(imgs), len(img_metas)))
+            raise ValueError(f'num of augmentations ({len(imgs)}) '
+                             f'!= num of image meta ({len(img_metas)})')
         # TODO: remove the restriction of samples_per_gpu == 1 when prepared
         samples_per_gpu = imgs[0].size(0)
         assert samples_per_gpu == 1
@@ -175,7 +171,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         else:
             raise TypeError(
                 'dataset must be a valid dataset name or a sequence'
-                ' of class names, not {}'.format(type(dataset)))
+                f' of class names, not {type(dataset)}')
 
         for img, img_meta in zip(imgs, img_metas):
             h, w, _ = img_meta['img_shape']

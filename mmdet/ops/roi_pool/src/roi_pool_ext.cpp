@@ -18,9 +18,9 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
                            const int pooled_w, at::Tensor bottom_grad);
 #endif
 
-#define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x, " must be a CUDAtensor ")
+#define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x, " must be a CUDAtensor ")
 #define CHECK_CONTIGUOUS(x) \
-  AT_CHECK(x.is_contiguous(), #x, " must be contiguous ")
+  TORCH_CHECK(x.is_contiguous(), #x, " must be contiguous ")
 #define CHECK_INPUT(x) \
   CHECK_CUDA(x);       \
   CHECK_CONTIGUOUS(x)
@@ -29,7 +29,7 @@ int roi_pooling_forward(at::Tensor features, at::Tensor rois,
                              int pooled_height, int pooled_width,
                              float spatial_scale, at::Tensor output,
                              at::Tensor argmax) {
-  if (features.type().is_cuda()) {
+  if (features.device().is_cuda()) {
 #ifdef WITH_CUDA
     CHECK_INPUT(features);
     CHECK_INPUT(rois);
@@ -64,7 +64,7 @@ int roi_pooling_forward(at::Tensor features, at::Tensor rois,
 int roi_pooling_backward(at::Tensor top_grad, at::Tensor rois,
                               at::Tensor argmax, float spatial_scale,
                               at::Tensor bottom_grad) {
-  if (top_grad.type().is_cuda()) {
+  if (top_grad.device().is_cuda()) {
 #ifdef WITH_CUDA
     CHECK_INPUT(top_grad);
     CHECK_INPUT(rois);
