@@ -156,9 +156,9 @@ int CARAFEForwardLaucher(const at::Tensor features, const at::Tensor masks,
   // one warp per pixel
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      features.type(), "NCHW2NHWC_Feature", ([&] {
-        const scalar_t *bottom_data = features.data<scalar_t>();
-        scalar_t *top_data = rfeatures.data<scalar_t>();
+      features.scalar_type(), "NCHW2NHWC_Feature", ([&] {
+        const scalar_t *bottom_data = features.data_ptr<scalar_t>();
+        scalar_t *top_data = rfeatures.data_ptr<scalar_t>();
         const int dh = divideUP(channels, kTileDim);
         const int dw = divideUP(input_height * input_width, kTileDim);
         BatchTranspose2DCUDAKernel<scalar_t>
@@ -167,9 +167,9 @@ int CARAFEForwardLaucher(const at::Tensor features, const at::Tensor masks,
                 bottom_data, top_data);
       }));
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      features.type(), "NCHW2NHWC_Masks", ([&] {
-        const scalar_t *bottom_data = masks.data<scalar_t>();
-        scalar_t *top_data = rmasks.data<scalar_t>();
+      features.scalar_type(), "NCHW2NHWC_Masks", ([&] {
+        const scalar_t *bottom_data = masks.data_ptr<scalar_t>();
+        scalar_t *top_data = rmasks.data_ptr<scalar_t>();
         const int dh = divideUP(mask_channels, kTileDim);
         const int dw = divideUP(output_height * output_width, kTileDim);
         BatchTranspose2DCUDAKernel<scalar_t>
@@ -178,12 +178,12 @@ int CARAFEForwardLaucher(const at::Tensor features, const at::Tensor masks,
                 bottom_data, top_data);
       }));
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      features.type(), "CARAFELaucherForward", ([&] {
+      features.scalar_type(), "CARAFELaucherForward", ([&] {
         const int num_kernels =
             batch_size * output_height * output_width * THREADS_PER_PIXEL;
-        const scalar_t *bottom_data = rfeatures.data<scalar_t>();
-        const scalar_t *bottom_masks = rmasks.data<scalar_t>();
-        scalar_t *top_data = routput.data<scalar_t>();
+        const scalar_t *bottom_data = rfeatures.data_ptr<scalar_t>();
+        const scalar_t *bottom_masks = rmasks.data_ptr<scalar_t>();
+        scalar_t *top_data = routput.data_ptr<scalar_t>();
 
         CARAFEForward<scalar_t>
             <<<at::cuda::ATenCeilDiv(num_kernels, THREADS_PER_BLOCK),
@@ -193,9 +193,9 @@ int CARAFEForwardLaucher(const at::Tensor features, const at::Tensor masks,
                 output_height, output_width, mask_channels, top_data);
       }));
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      features.type(), "NHWC2NCHW", ([&] {
-        const scalar_t *bottom_data = routput.data<scalar_t>();
-        scalar_t *top_data = output.data<scalar_t>();
+      features.scalar_type(), "NHWC2NCHW", ([&] {
+        const scalar_t *bottom_data = routput.data_ptr<scalar_t>();
+        scalar_t *top_data = output.data_ptr<scalar_t>();
         const int dh = divideUP(output_height * output_width, kTileDim);
         const int dw = divideUP(channels, kTileDim);
         BatchTranspose2DCUDAKernel<scalar_t>
@@ -388,9 +388,9 @@ int CARAFEBackwardLaucher(const at::Tensor top_grad, const at::Tensor rfeatures,
                           at::Tensor mask_grad) {
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      top_grad.type(), "NCHW2NHWC_Top_Grad", ([&] {
-        const scalar_t *bottom_data = top_grad.data<scalar_t>();
-        scalar_t *top_data = rtop_grad.data<scalar_t>();
+      top_grad.scalar_type(), "NCHW2NHWC_Top_Grad", ([&] {
+        const scalar_t *bottom_data = top_grad.data_ptr<scalar_t>();
+        scalar_t *top_data = rtop_grad.data_ptr<scalar_t>();
         const int dh = divideUP(channels, kTileDim);
         const int dw = divideUP(output_height * output_width, kTileDim);
         BatchTranspose2DCUDAKernel<scalar_t>
@@ -400,12 +400,12 @@ int CARAFEBackwardLaucher(const at::Tensor top_grad, const at::Tensor rfeatures,
       }));
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      top_grad.type(), "CARAFELaucherBackward_Feature", ([&] {
+      top_grad.scalar_type(), "CARAFELaucherBackward_Feature", ([&] {
         const int num_kernels =
             batch_size * output_height * output_width * THREADS_PER_PIXEL;
-        const scalar_t *top_diff = rtop_grad.data<scalar_t>();
-        const scalar_t *bottom_masks = masks.data<scalar_t>();
-        scalar_t *bottom_diff = rbottom_grad_hs.data<scalar_t>();
+        const scalar_t *top_diff = rtop_grad.data_ptr<scalar_t>();
+        const scalar_t *bottom_masks = masks.data_ptr<scalar_t>();
+        scalar_t *bottom_diff = rbottom_grad_hs.data_ptr<scalar_t>();
 
         CARAFEBackward_Feature<scalar_t>
             <<<at::cuda::ATenCeilDiv(num_kernels, THREADS_PER_BLOCK),
@@ -415,11 +415,11 @@ int CARAFEBackwardLaucher(const at::Tensor top_grad, const at::Tensor rfeatures,
                 output_height, output_width, mask_channels, bottom_diff);
       }));
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      top_grad.type(), "FeatureSum", ([&] {
+      top_grad.scalar_type(), "FeatureSum", ([&] {
         const int num_kernels =
             batch_size * input_height * input_width * THREADS_PER_PIXEL;
-        const scalar_t *bottom_diff_hs = rbottom_grad_hs.data<scalar_t>();
-        scalar_t *bottom_diff = rbottom_grad.data<scalar_t>();
+        const scalar_t *bottom_diff_hs = rbottom_grad_hs.data_ptr<scalar_t>();
+        scalar_t *bottom_diff = rbottom_grad.data_ptr<scalar_t>();
 
         FeatureSum<scalar_t>
             <<<at::cuda::ATenCeilDiv(num_kernels, THREADS_PER_BLOCK),
@@ -428,9 +428,9 @@ int CARAFEBackwardLaucher(const at::Tensor top_grad, const at::Tensor rfeatures,
                 input_height, input_width, bottom_diff);
       }));
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      top_grad.type(), "NHWC2NCHW_Bottom_Grad", ([&] {
-        const scalar_t *bottom_data = rbottom_grad.data<scalar_t>();
-        scalar_t *top_data = bottom_grad.data<scalar_t>();
+      top_grad.scalar_type(), "NHWC2NCHW_Bottom_Grad", ([&] {
+        const scalar_t *bottom_data = rbottom_grad.data_ptr<scalar_t>();
+        scalar_t *top_data = bottom_grad.data_ptr<scalar_t>();
         const int dh = divideUP(input_height * input_width, kTileDim);
         const int dw = divideUP(channels, kTileDim);
         BatchTranspose2DCUDAKernel<scalar_t>
@@ -440,12 +440,12 @@ int CARAFEBackwardLaucher(const at::Tensor top_grad, const at::Tensor rfeatures,
       }));
 
   AT_DISPATCH_FLOATING_TYPES(
-      top_grad.type(), "CARAFELaucherBackward_Mask", ([&] {
+      top_grad.scalar_type(), "CARAFELaucherBackward_Mask", ([&] {
         const int num_kernels = batch_size * output_height * output_width *
                                 mask_channels * WARP_SIZE;
-        const scalar_t *top_diff = rtop_grad.data<scalar_t>();
-        const scalar_t *bottom_data = rfeatures.data<scalar_t>();
-        scalar_t *mask_diff = rmask_grad.data<scalar_t>();
+        const scalar_t *top_diff = rtop_grad.data_ptr<scalar_t>();
+        const scalar_t *bottom_data = rfeatures.data_ptr<scalar_t>();
+        scalar_t *mask_diff = rmask_grad.data_ptr<scalar_t>();
 
         CARAFEBackward_Mask<scalar_t>
             <<<at::cuda::ATenCeilDiv(num_kernels, THREADS_PER_BLOCK),
@@ -455,9 +455,9 @@ int CARAFEBackwardLaucher(const at::Tensor top_grad, const at::Tensor rfeatures,
                 output_height, output_width, mask_channels, mask_diff);
       }));
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      top_grad.type(), "NHWC2NCHW_Mask_Grad", ([&] {
-        const scalar_t *bottom_data = rmask_grad.data<scalar_t>();
-        scalar_t *top_data = mask_grad.data<scalar_t>();
+      top_grad.scalar_type(), "NHWC2NCHW_Mask_Grad", ([&] {
+        const scalar_t *bottom_data = rmask_grad.data_ptr<scalar_t>();
+        scalar_t *top_data = mask_grad.data_ptr<scalar_t>();
         const int dh = divideUP(output_height * output_width, kTileDim);
         const int dw = divideUP(mask_channels, kTileDim);
         BatchTranspose2DCUDAKernel<scalar_t>

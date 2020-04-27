@@ -20,9 +20,9 @@ MINOR = 1
 PATCH = 0
 SUFFIX = ''
 if PATCH != '':
-    SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
+    SHORT_VERSION = f'{MAJOR}.{MINOR}.{PATCH}{SUFFIX}'
 else:
-    SHORT_VERSION = '{}.{}{}'.format(MAJOR, MINOR, SUFFIX)
+    SHORT_VERSION = f'{MAJOR}.{MINOR}{SUFFIX}'
 
 version_file = 'mmdet/version.py'
 
@@ -103,12 +103,12 @@ def make_cuda_ext(name, module, sources, sources_cuda=[]):
         ]
         sources += sources_cuda
     else:
-        print('Compiling {} without CUDA'.format(name))
+        print(f'Compiling {name} without CUDA')
         extension = CppExtension
         # raise EnvironmentError('CUDA is required to compile MMDetection!')
 
     return extension(
-        name='{}.{}'.format(module, name),
+        name=f'{module}.{name}',
         sources=[os.path.join(*module.split('.'), p) for p in sources],
         define_macros=define_macros,
         extra_compile_args=extra_compile_args)
@@ -282,19 +282,6 @@ if __name__ == '__main__':
                     'src/cuda/masked_conv2d_cuda.cpp',
                     'src/cuda/masked_conv2d_kernel.cu'
                 ]),
-            make_cuda_ext(
-                name='affine_grid_ext',
-                module='mmdet.ops.affine_grid',
-                sources=[
-                    'src/affine_grid_ext.cpp', 'src/cpu/affine_grid_cpu.cpp'
-                ]),
-            make_cuda_ext(
-                name='grid_sampler_ext',
-                module='mmdet.ops.grid_sampler',
-                sources=[
-                    'src/grid_sampler_ext.cpp', 'src/cpu/grid_sampler_cpu.cpp'
-                ],
-                sources_cuda=['src/cuda/grid_sampler_cuda.cu']),
             make_cuda_ext(
                 name='carafe_ext',
                 module='mmdet.ops.carafe',

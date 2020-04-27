@@ -67,7 +67,7 @@ class AnchorHead(nn.Module):
             self.cls_out_channels = num_classes + 1
 
         if self.cls_out_channels <= 0:
-            raise ValueError('num_classes={} is too small'.format(num_classes))
+            raise ValueError(f'num_classes={num_classes} is too small')
         self.reg_decoded_bbox = reg_decoded_bbox
 
         self.background_label = (

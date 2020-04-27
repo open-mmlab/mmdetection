@@ -39,8 +39,8 @@ class LoadImageFromFile(object):
         return results
 
     def __repr__(self):
-        return "{} (to_float32={}, color_type='{}')".format(
-            self.__class__.__name__, self.to_float32, self.color_type)
+        return f'{self.__class__.__name__}(to_float32={self.to_float32}, ' \
+            f"color_type='{self.color_type}')"
 
 
 @PIPELINES.register_module
@@ -80,8 +80,8 @@ class LoadMultiChannelImageFromFiles(object):
         return results
 
     def __repr__(self):
-        return "{} (to_float32={}, color_type='{}')".format(
-            self.__class__.__name__, self.to_float32, self.color_type)
+        return f'{self.__class__.__name__}(to_float32={self.to_float32}, ' \
+            f"color_type='{self.color_type}')"
 
 
 @PIPELINES.register_module
@@ -181,9 +181,10 @@ class LoadAnnotations(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += ('(with_bbox={}, with_label={}, with_mask={},'
-                     ' with_seg={})').format(self.with_bbox, self.with_label,
-                                             self.with_mask, self.with_seg)
+        repr_str += f'(with_bbox={self.with_bbox}, '
+        repr_str += f'with_label={self.with_label}, '
+        repr_str += f'with_mask={self.with_mask}, '
+        repr_str += f'with_seg={self.with_seg})'
         return repr_str
 
 
@@ -198,7 +199,7 @@ class LoadProposals(object):
         if proposals.shape[1] not in (4, 5):
             raise AssertionError(
                 'proposals should have shapes (n, 4) or (n, 5), '
-                'but found {}'.format(proposals.shape))
+                f'but found {proposals.shape}')
         proposals = proposals[:, :4]
 
         if self.num_max_proposals is not None:
@@ -211,5 +212,5 @@ class LoadProposals(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(num_max_proposals={})'.format(
-            self.num_max_proposals)
+        return self.__class__.__name__ + \
+            f'(num_max_proposals={self.num_max_proposals})'

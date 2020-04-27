@@ -54,7 +54,7 @@ int deform_conv_forward(at::Tensor input, at::Tensor weight,
                              int kH, int dW, int dH, int padW, int padH,
                              int dilationW, int dilationH, int group,
                              int deformable_group, int im2col_step) {
-  if (input.type().is_cuda()) {
+  if (input.device().is_cuda()) {
 #ifdef WITH_CUDA
     return deform_conv_forward_cuda(input, weight, offset, output, columns,
         ones, kW, kH, dW, dH, padW, padH, dilationW, dilationH, group,
@@ -73,7 +73,7 @@ int deform_conv_backward_input(at::Tensor input, at::Tensor offset,
                                     int dH, int padW, int padH, int dilationW,
                                     int dilationH, int group,
                                     int deformable_group, int im2col_step) {
-  if (input.type().is_cuda()) {
+  if (input.device().is_cuda()) {
 #ifdef WITH_CUDA
     return deform_conv_backward_input_cuda(input, offset, gradOutput,
         gradInput, gradOffset, weight, columns, kW, kH, dW, dH, padW, padH,
@@ -91,7 +91,7 @@ int deform_conv_backward_parameters(
     at::Tensor columns, at::Tensor ones, int kW, int kH, int dW, int dH,
     int padW, int padH, int dilationW, int dilationH, int group,
     int deformable_group, float scale, int im2col_step) {
-  if (input.type().is_cuda()) {
+  if (input.device().is_cuda()) {
 #ifdef WITH_CUDA
     return deform_conv_backward_parameters_cuda(input, offset, gradOutput,
         gradWeight, columns, ones, kW, kH, dW, dH, padW, padH, dilationW,
@@ -110,7 +110,7 @@ void modulated_deform_conv_forward(
     const int pad_h, const int pad_w, const int dilation_h,
     const int dilation_w, const int group, const int deformable_group,
     const bool with_bias) {
-  if (input.type().is_cuda()) {
+  if (input.device().is_cuda()) {
 #ifdef WITH_CUDA
     return modulated_deform_conv_cuda_forward(input, weight, bias, ones,
         offset, mask, output, columns, kernel_h, kernel_w, stride_h,
@@ -131,7 +131,7 @@ void modulated_deform_conv_backward(
     int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h,
     int pad_w, int dilation_h, int dilation_w, int group, int deformable_group,
     const bool with_bias) {
-  if (input.type().is_cuda()) {
+  if (input.device().is_cuda()) {
 #ifdef WITH_CUDA
     return modulated_deform_conv_cuda_backward(input, weight, bias, ones,
         offset, mask, columns, grad_input, grad_weight, grad_bias, grad_offset,
