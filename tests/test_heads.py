@@ -334,7 +334,7 @@ def test_refine_boxes():
             n_img = demokw['n_img']
             rng = demokw['rng']
 
-            print('Test refine_boxes case: {!r}'.format(demokw))
+            print(f'Test refine_boxes case: {demokw!r}')
             tup = _demodata_refine_boxes(n_roi, n_img, rng=rng)
             rois, labels, bbox_preds, pos_is_gts, img_metas = tup
             bboxes_list = self.refine_bboxes(rois, labels, bbox_preds,
@@ -343,7 +343,7 @@ def test_refine_boxes():
             assert sum(map(len, bboxes_list)) <= n_roi
             assert all(b.shape[1] == 4 for b in bboxes_list)
         except Exception:
-            print('Test failed with demokw={!r}'.format(demokw))
+            print(f'Test failed with demokw={demokw!r}')
             raise
 
 

@@ -25,8 +25,7 @@ def to_tensor(data):
     elif isinstance(data, float):
         return torch.FloatTensor([data])
     else:
-        raise TypeError('type {} cannot be converted to tensor.'.format(
-            type(data)))
+        raise TypeError(f'type {type(data)} cannot be converted to tensor.')
 
 
 @PIPELINES.register_module
@@ -41,7 +40,7 @@ class ToTensor(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(keys={})'.format(self.keys)
+        return self.__class__.__name__ + f'(keys={self.keys})'
 
 
 @PIPELINES.register_module
@@ -59,7 +58,7 @@ class ImageToTensor(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(keys={})'.format(self.keys)
+        return self.__class__.__name__ + f'(keys={self.keys})'
 
 
 @PIPELINES.register_module
@@ -75,8 +74,8 @@ class Transpose(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(keys={}, order={})'.format(
-            self.keys, self.order)
+        return self.__class__.__name__ + \
+            f'(keys={self.keys}, order={self.order})'
 
 
 @PIPELINES.register_module
@@ -95,7 +94,7 @@ class ToDataContainer(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(fields={})'.format(self.fields)
+        return self.__class__.__name__ + f'(fields={self.fields})'
 
 
 @PIPELINES.register_module
@@ -188,8 +187,8 @@ class Collect(object):
         return data
 
     def __repr__(self):
-        return self.__class__.__name__ + '(keys={}, meta_keys={})'.format(
-            self.keys, self.meta_keys)
+        return self.__class__.__name__ + \
+            f'(keys={self.keys}, meta_keys={self.meta_keys})'
 
 
 @PIPELINES.register_module
@@ -221,4 +220,4 @@ class WrapFieldsToLists(object):
         return results
 
     def __repr__(self):
-        return '{}()'.format(self.__class__.__name__)
+        return f'{self.__class__.__name__}()'

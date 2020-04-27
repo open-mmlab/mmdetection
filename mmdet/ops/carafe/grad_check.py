@@ -39,9 +39,10 @@ for i in range(loop_num):
     torch.cuda.synchronize()
     time_backward += timer.since_last_check()
     bar.update()
-print('\nCARAFE time forward: {} ms/iter | time backward: {} ms/iter'.format(
-    (time_forward + 1e-3) * 1e3 / loop_num,
-    (time_backward + 1e-3) * 1e3 / loop_num))
+forward_speed = (time_forward + 1e-3) * 1e3 / loop_num
+backward_speed = (time_backward + 1e-3) * 1e3 / loop_num
+print(f'\nCARAFE time forward: {forward_speed} '
+      f'ms/iter | time backward: {backward_speed} ms/iter')
 
 time_naive_forward = 0
 time_naive_backward = 0
@@ -55,6 +56,7 @@ for i in range(loop_num):
     torch.cuda.synchronize()
     time_naive_backward += timer.since_last_check()
     bar.update()
-print('\nCARAFE naive time forward: {} ms/iter | time backward: {} ms/iter'.
-      format((time_naive_forward + 1e-3) * 1e3 / loop_num,
-             (time_naive_backward + 1e-3) * 1e3 / loop_num))
+forward_speed = (time_naive_forward + 1e-3) * 1e3 / loop_num
+backward_speed = (time_naive_backward + 1e-3) * 1e3 / loop_num
+print('\nCARAFE naive time forward: '
+      f'{forward_speed} ms/iter | time backward: {backward_speed} ms/iter')
