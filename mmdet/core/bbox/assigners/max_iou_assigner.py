@@ -10,12 +10,11 @@ from .base_assigner import BaseAssigner
 class MaxIoUAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
-    Each proposals will be assigned with `-1`, `0`, or a positive integer
+    Each proposals will be assigned with `-1`, or a semi-positive integer
     indicating the ground truth index.
 
-    - -1: don't care
-    - 0: negative sample, no assigned gt
-    - positive integer: positive sample, index (1-based) of assigned gt
+    - -1: negative sample, no assigned gt
+    - semi-positive integer: positive sample, index (0-based) of assigned gt
 
     Args:
         pos_iou_thr (float): IoU threshold for positive bboxes.
@@ -62,12 +61,11 @@ class MaxIoUAssigner(BaseAssigner):
         """Assign gt to bboxes.
 
         This method assign a gt bbox to every bbox (proposal/anchor), each bbox
-        will be assigned with -1, 0, or a positive number. -1 means don't care,
-        0 means negative sample, positive number is the index (1-based) of
-        assigned gt.
+        will be assigned with -1, or a semi-positive number. -1 means negative
+        sample, semi-positive number is the index (0-based) of assigned gt.
         The assignment is done in following steps, the order matters.
 
-        1. assign every bbox to -1
+        1. assign every bbox to the background
         2. assign proposals whose iou with all gts < neg_iou_thr to 0
         3. for each bbox, if the iou with its nearest gt >= pos_iou_thr,
            assign it to that bbox
@@ -154,8 +152,9 @@ class MaxIoUAssigner(BaseAssigner):
             if gt_labels is None:
                 assigned_labels = None
             else:
-                assigned_labels = overlaps.new_zeros((num_bboxes, ),
-                                                     dtype=torch.long)
+                assigned_labels = overlaps.new_full((num_bboxes, ),
+                                                    -1,
+                                                    dtype=torch.long)
             return AssignResult(
                 num_gts,
                 assigned_gt_inds,
@@ -201,7 +200,7 @@ class MaxIoUAssigner(BaseAssigner):
                         assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
 
         if gt_labels is not None:
-            assigned_labels = assigned_gt_inds.new_zeros((num_bboxes, ))
+            assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
             pos_inds = torch.nonzero(assigned_gt_inds > 0).squeeze()
             if pos_inds.numel() > 0:
                 assigned_labels[pos_inds] = gt_labels[
