@@ -8,6 +8,10 @@ class BboxOverlaps2D(object):
     """2D IoU Calculator"""
 
     def __call__(self, bboxes1, bboxes2, mode='iou', is_aligned=False):
+        if bboxes2.size(-1) >= 4:
+            bboxes2 = bboxes2[..., :4]
+        if bboxes1.size(-1) >= 4:
+            bboxes1 = bboxes1[..., :4]
         return bbox_overlaps(bboxes1, bboxes2, mode, is_aligned)
 
     def __repr__(self):
