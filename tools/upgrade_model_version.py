@@ -112,19 +112,19 @@ def convert(in_file, out_file, num_classes):
         m = re.search(r'(conv_cls|retina_cls|rpn_cls|fc_cls).(weight|bias)',
                       new_key)
         if m is not None:
-            print(new_key)
+            print(f'reorder cls channels of {new_key}')
             new_val = reorder_cls_channel(val, num_classes)
 
         # regression
         m = re.search(r'(fc_reg|rpn_reg).(weight|bias)', new_key)
         if m is not None:
-            print(new_key)
+            print(f'truncate regression channels of {new_key}')
             new_val = truncate_reg_channel(val, num_classes)
 
         # mask head
         m = re.search(r'(conv_logits).(weight|bias)', new_key)
         if m is not None:
-            print(new_key)
+            print(f'truncate mask prediction channels of {new_key}')
             new_val = truncate_cls_channel(val, num_classes)
 
         out_state_dict[new_key] = new_val
@@ -136,7 +136,7 @@ def main():
     parser = argparse.ArgumentParser(description='Upgrade model version')
     parser.add_argument('in_file', help='input checkpoint file')
     parser.add_argument('out_file', help='output checkpoint file')
-    parser.add_argument('--num_classes', type=int, default=81)
+    parser.add_argument('--num-classes', type=int, default=81)
     args = parser.parse_args()
     convert(args.in_file, args.out_file, args.num_classes)
 

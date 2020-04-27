@@ -67,3 +67,9 @@ This slightly improves both mask AP and bbox AP by ~0.2% absolute.
 - The default setting will not use gradient clipping anymore during training for faster training speed. This does not degrade performance of the most of models. For some models such as RepPoints we keep using gradient clipping to stablize the training process and to obtain better performance.
 
 - The default warmup ratio is changed from 1/3 to 0.001 for a more smooth warming up process since the gradient clipping is usually not used. The effect is found negligible during our re-benchmarking, though.
+
+## Upgrade Models from 1.x to 2.0
+
+To convert the models trained by MMDetection V1.x to MMDetection V2.0, the users can use the script `tools/upgrade_model_version.py` to convert
+their models. The converted models can be run in MMDetection V2.0 with slightly dropped performance (less than 1% AP absolute).
+Details can be found in `configs/legacy`.
