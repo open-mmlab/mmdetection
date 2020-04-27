@@ -204,17 +204,22 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
         else:#如果没有生成RPN，而是靠给定的RPN，那么就直接复制
             proposal_list = proposals
 
-        for i in range(self.num_stages):#多少次回归调整
-            self.current_stage = i
+        for i in range(self.num_stages):#多少次回归调整 核心部分代码
+            self.current_stage = i #当前阶段
             rcnn_train_cfg = self.train_cfg.rcnn[i] #取出训练的参数
-            lw = self.train_cfg.stage_loss_weights[i]
+  
+            #sampler=dict(type='RandomSampler',num=512,pos_fraction=0.25, neg_pos_ub=-1,add_gt_as_proposals=True),
+            #mask_size=28,pos_weight=-1,debug=False)
+ 
+            lw = self.train_cfg.stage_loss_weights[i]#stage_loss_weights=[1, 0.5, 0.25]
 
             # assign gts and sample proposals
             sampling_results = []
             if self.with_bbox or self.with_mask:
+            #assigner=dict(type='MaxIoUAssigner', pos_iou_thr=0.5,neg_iou_thr=0.5,min_pos_iou=0.5,ignore_iof_thr=-1),
                 bbox_assigner = build_assigner(rcnn_train_cfg.assigner) #建立BOX的分配器
-                bbox_sampler = build_sampler(
-                    rcnn_train_cfg.sampler, context=self)#建立采样器
+            #sampler=dict(type='RandomSampler',num=512,pos_fraction=0.25, neg_pos_ub=-1,add_gt_as_proposals=True),
+                bbox_sampler = build_sampler(rcnn_train_cfg.sampler, context=self)#建立采样器
                 num_imgs = img.size(0)#多少张图
                 if gt_bboxes_ignore is None:
                     gt_bboxes_ignore = [None for _ in range(num_imgs)]#用于保存所有的GT
@@ -299,7 +304,7 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
                 roi_labels = bbox_targets[0]  # bbox_targets is a tuple
                 with torch.no_grad():
                     proposal_list = bbox_head.refine_bboxes(
-                        rois, roi_labels, bbox_pred, pos_is_gts, img_meta)
+                        rois, roi_labels, bbox_pred, pos_is_gts, img_meta)#调整boxes
 
         return losses
 
