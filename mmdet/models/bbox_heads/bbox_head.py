@@ -12,7 +12,7 @@ from ..registry import HEADS
 
 @HEADS.register_module
 class BBoxHead(nn.Module):
-    """Simplest RoI head, with only two fc layers for classification and
+    """Simplest RoI head, with only two fc layers for classification and ROI的全连接头网络部分
     regression respectively"""
 
     def __init__(self,
@@ -69,10 +69,11 @@ class BBoxHead(nn.Module):
             nn.init.constant_(self.fc_reg.bias, 0)
 
     @auto_fp16()
-    def forward(self, x):
-        if self.with_avg_pool:
+    def forward(self, x):#主函数
+        if self.with_avg_pool:#如果要进行全局池化
             x = self.avg_pool(x)
-        x = x.view(x.size(0), -1)
+        x = x.view(x.size(0), -1)#转变为一列特征
+        #分别进行预测
         cls_score = self.fc_cls(x) if self.with_cls else None
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
@@ -104,23 +105,23 @@ class BBoxHead(nn.Module):
              bbox_targets,
              bbox_weights,
              reduction_override=None):
-        losses = dict()
-        if cls_score is not None:
+        losses = dict()#所有的损失
+        if cls_score is not None: #如果有分类损失要求
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
-            if cls_score.numel() > 0:
+            if cls_score.numel() > 0:#计算分类损失
                 losses['loss_cls'] = self.loss_cls(
                     cls_score,
                     labels,
                     label_weights,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
-                losses['acc'] = accuracy(cls_score, labels)
-        if bbox_pred is not None:
-            pos_inds = labels > 0
+                losses['acc'] = accuracy(cls_score, labels)#计算准确度
+        if bbox_pred is not None: #如果有回归损失
+            pos_inds = labels > 0 #只计算正样本的回归损失，所以要根据labels进行筛选
             if pos_inds.any():
                 if self.reg_class_agnostic:
                     pos_bbox_pred = bbox_pred.view(bbox_pred.size(0),
-                                                   4)[pos_inds]
+                                                   4)[pos_inds]#调整形状
                 else:
                     pos_bbox_pred = bbox_pred.view(bbox_pred.size(0), -1,
                                                    4)[pos_inds,
@@ -130,7 +131,7 @@ class BBoxHead(nn.Module):
                     bbox_targets[pos_inds],
                     bbox_weights[pos_inds],
                     avg_factor=bbox_targets.size(0),
-                    reduction_override=reduction_override)
+                    reduction_override=reduction_override)#计算回归损失
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
@@ -148,7 +149,7 @@ class BBoxHead(nn.Module):
 
         if bbox_pred is not None:
             bboxes = delta2bbox(rois[:, 1:], bbox_pred, self.target_means,
-                                self.target_stds, img_shape)
+                                self.target_stds, img_shape)#将计算出的delta转化为boxes
         else:
             bboxes = rois[:, 1:].clone()
             if img_shape is not None:
