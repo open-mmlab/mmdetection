@@ -64,6 +64,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
     """
 
     assert mode in ['iou', 'iof']
+    assert bboxes1.size(-1) == bboxes2.size(-1) == 4
 
     rows = bboxes1.size(0)
     cols = bboxes2.size(0)
