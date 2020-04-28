@@ -28,7 +28,7 @@ def build_activation_layer(cfg):
 
     layer_type = cfg_.pop('type')
     if layer_type not in activation_cfg:
-        raise KeyError('Unrecognized activation type {}'.format(layer_type))
+        raise KeyError(f'Unrecognized activation type {layer_type}')
     else:
         activation = activation_cfg[layer_type]
         if activation is None:

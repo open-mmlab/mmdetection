@@ -6,7 +6,7 @@
 
 template <typename scalar_t>
 at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
-  AT_ASSERTM(!dets.type().is_cuda(), "dets must be a CPU tensor");
+  AT_ASSERTM(!dets.device().is_cuda(), "dets must be a CPU tensor");
 
   if (dets.numel() == 0) {
     return at::empty({0}, dets.options().dtype(at::kLong).device(at::kCPU));
@@ -26,13 +26,13 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
   at::Tensor suppressed_t =
       at::zeros({ndets}, dets.options().dtype(at::kByte).device(at::kCPU));
 
-  auto suppressed = suppressed_t.data<uint8_t>();
-  auto order = order_t.data<int64_t>();
-  auto x1 = x1_t.data<scalar_t>();
-  auto y1 = y1_t.data<scalar_t>();
-  auto x2 = x2_t.data<scalar_t>();
-  auto y2 = y2_t.data<scalar_t>();
-  auto areas = areas_t.data<scalar_t>();
+  auto suppressed = suppressed_t.data_ptr<uint8_t>();
+  auto order = order_t.data_ptr<int64_t>();
+  auto x1 = x1_t.data_ptr<scalar_t>();
+  auto y1 = y1_t.data_ptr<scalar_t>();
+  auto x2 = x2_t.data_ptr<scalar_t>();
+  auto y2 = y2_t.data_ptr<scalar_t>();
+  auto areas = areas_t.data_ptr<scalar_t>();
 
   for (int64_t _i = 0; _i < ndets; _i++) {
     auto i = order[_i];
@@ -73,7 +73,7 @@ template <typename scalar_t>
 at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
                                const unsigned char method, const float sigma,
                                const float min_score) {
-  AT_ASSERTM(!dets.type().is_cuda(), "dets must be a CPU tensor");
+  AT_ASSERTM(!dets.device().is_cuda(), "dets must be a CPU tensor");
 
   if (dets.numel() == 0) {
     return at::empty({0}, dets.options().dtype(at::kLong).device(at::kCPU));
@@ -88,16 +88,16 @@ at::Tensor soft_nms_cpu_kernel(const at::Tensor& dets, const float threshold,
   at::Tensor areas_t = (x2_t - x1_t) * (y2_t - y1_t);
 
   auto ndets = dets.size(0);
-  auto x1 = x1_t.data<scalar_t>();
-  auto y1 = y1_t.data<scalar_t>();
-  auto x2 = x2_t.data<scalar_t>();
-  auto y2 = y2_t.data<scalar_t>();
-  auto scores = scores_t.data<scalar_t>();
-  auto areas = areas_t.data<scalar_t>();
+  auto x1 = x1_t.data_ptr<scalar_t>();
+  auto y1 = y1_t.data_ptr<scalar_t>();
+  auto x2 = x2_t.data_ptr<scalar_t>();
+  auto y2 = y2_t.data_ptr<scalar_t>();
+  auto scores = scores_t.data_ptr<scalar_t>();
+  auto areas = areas_t.data_ptr<scalar_t>();
 
   int64_t pos = 0;
   at::Tensor inds_t = at::arange(ndets, dets.options());
-  auto inds = inds_t.data<scalar_t>();
+  auto inds = inds_t.data_ptr<scalar_t>();
 
   for (int64_t i = 0; i < ndets; i++) {
     auto max_score = scores[i];

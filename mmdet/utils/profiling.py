@@ -35,7 +35,6 @@ if sys.version_info >= (3, 7):
             end.synchronize()
             cpu_time = (cpu_end - cpu_start) * 1000
             gpu_time = start.elapsed_time(end)
-            msg = '{} {} cpu_time {:.2f} ms '.format(trace_name, name,
-                                                     cpu_time)
-            msg += 'gpu_time {:.2f} ms stream {}'.format(gpu_time, stream)
+            msg = f'{trace_name} {name} cpu_time {cpu_time:.2f} ms '
+            msg += f'gpu_time {gpu_time:.2f} ms stream {stream}'
             print(msg, end_stream)

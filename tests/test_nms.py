@@ -57,7 +57,7 @@ def test_nms_device_and_dtypes_gpu():
                           [35.2, 11.7, 39.7, 15.7, 0.3]])
 
     for device_id in range(torch.cuda.device_count()):
-        print('Run NMS on device_id = {!r}'.format(device_id))
+        print(f'Run NMS on device_id = {device_id!r}')
         # GPU can handle float32 but not float64
         dets = base_dets.astype(np.float32)
         supressed, inds = nms(dets, iou_thr, device_id)

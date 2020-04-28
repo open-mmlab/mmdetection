@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
 from mmdet.ops import batched_nms
-from ..registry import HEADS
+from ..builder import HEADS
 from .anchor_head import AnchorHead
 
 

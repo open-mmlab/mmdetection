@@ -5,7 +5,7 @@ from mmcv.cnn.weight_init import caffe2_xavier_init
 from torch.utils.checkpoint import checkpoint
 
 from mmdet.ops import ConvModule
-from ..registry import NECKS
+from ..builder import NECKS
 
 
 @NECKS.register_module
