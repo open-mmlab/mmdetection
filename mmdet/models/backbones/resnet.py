@@ -296,7 +296,7 @@ def make_res_layer(block,
             build_norm_layer(norm_cfg, planes * block.expansion)[1],
         )
 
-    layers = []
+    layers = []#层列表
     layers.append(
         block(
             inplanes=inplanes,
@@ -311,8 +311,8 @@ def make_res_layer(block,
             dcn=dcn,
             gcb=gcb,
             gen_attention=gen_attention if
-            (0 in gen_attention_blocks) else None))
-    inplanes = planes * block.expansion
+            (0 in gen_attention_blocks) else None))#先构造一个指定卷积模块
+    inplanes = planes * block.expansion #输入通道变了
     for i in range(1, blocks):
         layers.append(
             block(
@@ -327,7 +327,7 @@ def make_res_layer(block,
                 dcn=dcn,
                 gcb=gcb,
                 gen_attention=gen_attention if
-                (i in gen_attention_blocks) else None))
+                (i in gen_attention_blocks) else None))#后面的通道都是一样的，这是一层
 
     return nn.Sequential(*layers)
 
@@ -455,10 +455,10 @@ class ResNet(nn.Module):
                 gcb=gcb,
                 gen_attention=gen_attention,
                 gen_attention_blocks=stage_with_gen_attention[i])
-            self.inplanes = planes * self.block.expansion
+            self.inplanes = planes * self.block.expansion #每个层做完以后才进行通道修改
             layer_name = 'layer{}'.format(i + 1)
-            self.add_module(layer_name, res_layer)
-            self.res_layers.append(layer_name)
+            self.add_module(layer_name, res_layer)#将其放入模块列表中
+            self.res_layers.append(layer_name)#这个是用来保存名字的
 
         self._freeze_stages()#冻结部分层
 
