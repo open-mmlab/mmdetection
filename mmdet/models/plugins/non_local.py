@@ -42,17 +42,17 @@ class NonLocal2D(nn.Module):
             self.in_channels,
             self.inter_channels,
             kernel_size=1,
-            activation=None)
+            activation=None)#1*1卷积，中间层一般为512，三个都是一样的
         self.theta = ConvModule(
             self.in_channels,
             self.inter_channels,
             kernel_size=1,
-            activation=None)
+            activation=None)#1*1卷积，中间层一般为512，三个都是一样的
         self.phi = ConvModule(
             self.in_channels,
             self.inter_channels,
             kernel_size=1,
-            activation=None)
+            activation=None)#1*1卷积，中间层一般为512，三个都是一样的
         self.conv_out = ConvModule(
             self.inter_channels,
             self.in_channels,
@@ -73,15 +73,19 @@ class NonLocal2D(nn.Module):
 
     def embedded_gaussian(self, theta_x, phi_x):
         # pairwise_weight: [N, HxW, HxW]
+        #用高斯来处理像素直接的关系
+        #直接点乘获得相关关系，有时是个矩阵，
         pairwise_weight = torch.matmul(theta_x, phi_x)
         if self.use_scale:
             # theta_x.shape[-1] is `self.inter_channels`
+            #用高斯进行缩放
             pairwise_weight /= theta_x.shape[-1]**0.5
         pairwise_weight = pairwise_weight.softmax(dim=-1)
         return pairwise_weight
 
     def dot_product(self, theta_x, phi_x):
         # pairwise_weight: [N, HxW, HxW]
+        #直接点乘获得
         pairwise_weight = torch.matmul(theta_x, phi_x)
         pairwise_weight /= pairwise_weight.shape[-1]
         return pairwise_weight
@@ -90,6 +94,7 @@ class NonLocal2D(nn.Module):
         n, _, h, w = x.shape
 
         # g_x: [N, HxW, C]
+        #计算完成之后转化为矩阵，进行矩阵乘法
         g_x = self.g(x).view(n, self.inter_channels, -1)
         g_x = g_x.permute(0, 2, 1)
 
