@@ -30,11 +30,12 @@ class OHEMSampler(BaseSampler):
             self.bbox_head = context.bbox_head[context.current_stage]
 
     def hard_mining(self, inds, num_expected, bboxes, labels, feats):
-        with torch.no_grad():
-            rois = bbox2roi([bboxes])
+        #这是不需要求导的
+        with torch.no_grad(): 
+            rois = bbox2roi([bboxes]) #转化为提议区域
             bbox_feats = self.bbox_roi_extractor(
-                feats[:self.bbox_roi_extractor.num_inputs], rois)
-            cls_score, _ = self.bbox_head(bbox_feats)
+                feats[:self.bbox_roi_extractor.num_inputs], rois)#抽取特征
+            cls_score, _ = self.bbox_head(bbox_feats)#进行预测
             loss = self.bbox_head.loss(
                 cls_score=cls_score,
                 bbox_pred=None,
@@ -42,8 +43,8 @@ class OHEMSampler(BaseSampler):
                 label_weights=cls_score.new_ones(cls_score.size(0)),
                 bbox_targets=None,
                 bbox_weights=None,
-                reduction_override='none')['loss_cls']
-            _, topk_loss_inds = loss.topk(num_expected)
+                reduction_override='none')['loss_cls']#计算损失
+            _, topk_loss_inds = loss.topk(num_expected)#需要根据损失进行排序
         return inds[topk_loss_inds]
 
     def _sample_pos(self,
@@ -53,6 +54,7 @@ class OHEMSampler(BaseSampler):
                     feats=None,
                     **kwargs):
         # Sample some hard positive samples
+        #gt_inds表示的是boxes的预测标签，0，-1，>0的三类
         pos_inds = torch.nonzero(assign_result.gt_inds > 0)
         if pos_inds.numel() != 0:
             pos_inds = pos_inds.squeeze(1)
