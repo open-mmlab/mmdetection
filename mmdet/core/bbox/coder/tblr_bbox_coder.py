@@ -14,7 +14,7 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         .. [1] https://arxiv.org/abs/1903.00621
 
     Args:
-        normalizer (Sequence[float] | float): normalization factor to be
+        normalizer (list | float): Normalization factor to be
           divided with when coding the coordinates. If it is a list, it should
           have length of 4 indicating normalization factor in tblr dims.
           Otherwise it is a unified float factor for all dims. Default: 1.0
@@ -38,30 +38,30 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         return decoded_bboxes
 
 
-def bboxes2tblr(priors, gt, normalizer=1.0):
+def bboxes2tblr(priors, gts, normalizer=1.0):
     """Encode ground truth boxes
 
     Args:
         priors (tensor): Prior boxes in point form
-            Shape: [num_proposals,4].
-        gt (tensor): Coords of ground truth for each prior in point-form
-            Shape: [num_proposals, 4].
+            Shape: (num_proposals,4).
+        gts (tensor): Coords of ground truth for each prior in point-form
+            Shape: (num_proposals, 4).
         normalizer (list | float): normalization parameter of
             encoded boxes. If it is a list, it has to have length = 4.
             Default: 1.0
 
     Return:
-        encoded boxes (tensor), Shape: [num_proposals, 4]
+        encoded boxes (tensor), Shape: (num_proposals, 4)
     """
 
     # dist b/t match center and prior's center
     if not isinstance(normalizer, float):
         normalizer = torch.tensor(normalizer).to(priors.device)
         assert len(normalizer) == 4, 'Normalizer must have length = 4'
+    assert priors.size(0) == gts.size(0)
     prior_centers = (priors[:, 0:2] + priors[:, 2:4]) / 2
     wh = priors[:, 2:4] - priors[:, 0:2]
-
-    xmin, ymin, xmax, ymax = gt.split(1, dim=1)
+    xmin, ymin, xmax, ymax = gts.split(1, dim=1)
     top = prior_centers[:, 1].unsqueeze(1) - ymin
     bottom = ymax - prior_centers[:, 1].unsqueeze(1)
     left = prior_centers[:, 0].unsqueeze(1) - xmin
@@ -80,9 +80,9 @@ def tblr2bboxes(priors, tblr, normalizer=1.0, max_shape=None):
 
     Args:
         priors (tensor): Prior boxes in point form
-          Shape: [n,4].
+          Shape: (n,4).
         tblr (tensor): Coords of network output in tblr form
-          Shape: [n, 4].
+          Shape: (n, 4).
         normalizer (list | float): Normalization parameter of encoded boxes.
           By list, it represents the normalization factors at tblr dims.
           By float, it is the unified normalization factor at all dims.
@@ -91,12 +91,12 @@ def tblr2bboxes(priors, tblr, normalizer=1.0, max_shape=None):
           exceeding which will be clamped.
 
     Return:
-        encoded boxes (tensor), Shape: [n, 4]
+        encoded boxes (tensor), Shape: (n, 4)
     """
     if not isinstance(normalizer, float):
         normalizer = torch.tensor(normalizer).to(priors.device)
         assert len(normalizer) == 4, 'Normalizer must have length = 4'
-
+    assert priors.size(0) == tblr.size(0)
     loc_decode = tblr * normalizer
     prior_centers = (priors[:, 0:2] + priors[:, 2:4]) / 2
     wh = priors[:, 2:4] - priors[:, 0:2]

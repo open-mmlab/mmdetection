@@ -331,9 +331,16 @@ def test_center_region_assigner():
     assign_result = self.assign(bboxes, gt_bboxes, gt_labels=gt_labels)
     assert len(assign_result.gt_inds) == 3
     assert len(assign_result.labels) == 3
-
     expected_gt_inds = torch.LongTensor([4, 2, 0])
     assert torch.all(assign_result.gt_inds == expected_gt_inds)
+    shadowed_labels = assign_result.get_extra_property('shadowed_labels')
+    # [8, 8, 9, 9] in the shadowed region of [0, 0, 11, 11] (label: 2)
+    assert torch.any(shadowed_labels == torch.LongTensor([[2, 2]]))
+    # [8, 8, 9, 9] in the shadowed region of [0, 0, 10, 10] (label: 5)
+    assert torch.any(shadowed_labels == torch.LongTensor([[2, 5]]))
+    # [0, 0, 10, 10] is already assigned to [4.5, 4.5, 5.5, 5.5].
+    #   Therefore, [0, 0, 11, 11] (label: 2) is shadowed
+    assert torch.any(shadowed_labels == torch.LongTensor([[0, 2]]))
 
 
 def test_center_region_assigner_with_ignore():

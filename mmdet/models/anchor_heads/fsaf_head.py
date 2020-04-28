@@ -67,7 +67,7 @@ class FSAFHead(RetinaHead):
             a single image.
 
         Most of the codes are the same with the base class
-          ::obj::`AnchorHead`, except that it also collects and returns
+          :obj: `AnchorHead`, except that it also collects and returns
           the matched gt index in the image (from 0 to num_gt-1). If the
           anchor bbox is not matched to any gt, the corresponding value in
           pos_gt_inds is -1.
@@ -109,6 +109,7 @@ class FSAFHead(RetinaHead):
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1. / 4.  # avg in tblr dims
+            # The assigned gt_index for each anchor. (0-based)
             pos_gt_inds[pos_inds] = sampling_result.pos_assigned_gt_inds
             if gt_labels is None:
                 # only rpn gives gt_labels as None, this time FG is 1
@@ -127,7 +128,7 @@ class FSAFHead(RetinaHead):
         #  area.
         #
         # Therefore, only the shadowed labels are ignored for loss calculation.
-        # the key `shadowed_labels` is defined in ::obj::`CenterRegionAssigner`
+        # the key `shadowed_labels` is defined in :obj:`CenterRegionAssigner`
         shadowed_labels = assign_result.get_extra_property('shadowed_labels')
         if shadowed_labels is not None and shadowed_labels.numel():
             if len(shadowed_labels.shape) == 2:
@@ -285,18 +286,18 @@ class FSAFHead(RetinaHead):
         """Get the average loss in each FPN level w.r.t. each gt label
 
         Args:
-            cls_loss (tensor): classification loss of each feature map pixel,
+            cls_loss (tensor): Classification loss of each feature map pixel,
               shape (num_anchor, num_class)
-            reg_loss (tensor): regression loss of each feature map pixel,
+            reg_loss (tensor): Regression loss of each feature map pixel,
               shape (num_anchor, 4)
-            assigned_gt_inds (tensor): shape (num_anchor), indicating
-              which gt the prior is assigned to (-1: no assignment)
+            assigned_gt_inds (tensor): It indicates which gt the prior is
+              assigned to (0-based, -1: no assignment). shape (num_anchor),
             labels_seq: The rank of labels. shape (num_gt)
 
         Returns:
             shape: (num_gt), average loss of each gt in this level
         """
-        if len(reg_loss.shape) == 2:  # iou loss has shape [num_prior, 4]
+        if len(reg_loss.shape) == 2:  # iou loss has shape (num_prior, 4)
             reg_loss = reg_loss.sum(dim=-1)  # sum loss in tblr dims
         if len(cls_loss.shape) == 2:
             cls_loss = cls_loss.sum(dim=-1)  # sum loss in class dims
@@ -315,27 +316,28 @@ class FSAFHead(RetinaHead):
                              labels, level, min_levels):
         """Reweight loss values at each level.
 
-         Reassign loss values at each level by masking those where the
-          pre-calculated loss is too large
+        Reassign loss values at each level by masking those where the
+        pre-calculated loss is too large. Then return the reduced losses.
 
         Args:
-            cls_loss (tensor): shape (num_anchors, num_classes)
-              classification loss
-            reg_loss (tensor): shape (num_anchors) regression loss
-            assigned_gt_inds (tensor): shape (num_anchors),
-              the gt indices that each positive anchor corresponds to.
-              (-1 if it is a negative one)
-            labels (tensor): shape (num_anchors). Label assigned to each pixel
-            level (int): the current level index in the
-              pyramid (0-4 for RetinaNet)
-            min_levels (tensor): shape (num_gts),
-              the best-matching level for each gt
+            cls_loss (tensor): Element-wise classification loss.
+              Shape: (num_anchors, num_classes)
+            reg_loss (tensor): Element-wise regression loss.
+              Shape: (num_anchors, 4)
+            assigned_gt_inds (tensor): The gt indices that each anchor bbox
+              is assigned to. -1 denotes a negative anchor, otherwise it is the
+              gt index (0-based). Shape: (num_anchors, ),
+            labels (tensor): Label assigned to anchors. Shape: (num_anchors, ).
+            level (int): The current level index in the pyramid
+              (0-4 for RetinaNet)
+            min_levels (tensor): The best-matching level for each gt.
+              Shape: (num_gts, ),
 
         Returns:
-            cls_loss: shape (num_anchors, num_classes).
-              Corrected classification loss
-            reg_loss: shape (num_anchors). Corrected regression loss
-            pos_flags: shape (num_anchors). Indicating final postive anchors
+            cls_loss: Reduced corrected classification loss. Scalar.
+            reg_loss: Reduced corrected regression loss. Scalar.
+            pos_flags (tensor): Corrected bool tensor indicating the final
+              postive anchors. Shape: (num_anchors, ).
         """
         loc_weight = torch.ones_like(reg_loss)
         cls_weight = torch.ones_like(cls_loss)
