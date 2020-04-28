@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 def reduce_loss(loss, reduction):
     """Reduce loss as specified.
-
+    对损失进行累计
     Args:
         loss (Tensor): Elementwise loss tensor.
         reduction (str): Options are "none", "mean" and "sum".
@@ -36,10 +36,12 @@ def weight_reduce_loss(loss, weight=None, reduction='mean', avg_factor=None):
         Tensor: Processed loss values.
     """
     # if weight is specified, apply element-wise weight
+    #如果给定了权重，就要和权重相乘，处理损失的权重，缩放两个相关因子
     if weight is not None:
         loss = loss * weight
 
     # if avg_factor is not specified, just reduce the loss
+    #和权重相乘后就可以继续求
     if avg_factor is None:
         loss = reduce_loss(loss, reduction)
     else:
@@ -91,6 +93,7 @@ def weighted_loss(loss_func):
                 avg_factor=None,
                 **kwargs):
         # get element-wise loss
+        #对上面函数的集成调用
         loss = loss_func(pred, target, **kwargs)
         loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
         return loss
