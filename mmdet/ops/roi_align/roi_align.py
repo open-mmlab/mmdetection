@@ -72,6 +72,24 @@ class RoIAlignFunction(Function):
 
         return grad_input, grad_rois, None, None, None, None
 
+    @staticmethod
+    def symbolic(g,
+                 features,
+                 rois,
+                 out_size,
+                 spatial_scale,
+                 sample_num=0,
+                 aligned=True):
+        return g.op(
+            'RoIAlign',
+            features,
+            rois,
+            out_size_h_i=out_size[0],
+            out_size_w_i=out_size[1],
+            spatial_scale_f=spatial_scale,
+            sample_num_i=sample_num,
+            aligned_i=aligned)
+
 
 roi_align = RoIAlignFunction.apply
 
@@ -136,6 +154,8 @@ class RoIAlign(nn.Module):
         assert rois.dim() == 2 and rois.size(1) == 5
 
         if self.use_torchvision:
+            # TODO(ruobing): if use this branch of roi_align, it can not be
+            # converted to ONNX
             from torchvision.ops import roi_align as tv_roi_align
             return tv_roi_align(features, rois, self.out_size,
                                 self.spatial_scale, self.sample_num)

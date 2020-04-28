@@ -92,8 +92,10 @@ class RPNHead(AnchorHead):
             mlvl_scores.append(scores)
             mlvl_bbox_preds.append(rpn_bbox_pred)
             mlvl_valid_anchors.append(anchors)
+            # use new_ones * scalar instead of new_full(scalar), as ONNX
+            # does not support new_full operator
             level_ids.append(
-                scores.new_full((scores.size(0), ), idx, dtype=torch.long))
+                scores.new_ones((scores.size(0), ), dtype=torch.long) * idx)
 
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
