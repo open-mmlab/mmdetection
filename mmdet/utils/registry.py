@@ -59,18 +59,18 @@ def build_from_cfg(cfg, registry, default_args=None):
     assert isinstance(cfg, dict) and 'type' in cfg#保证‘type’在字典中
     assert isinstance(default_args, dict) or default_args is None#保证参数是字典
     args = cfg.copy()
-    obj_type = args.pop('type')#'FCOS'
+    obj_type = args.pop('type')#'FCOS'只是一个字符串名字
     if mmcv.is_str(obj_type):#如果是字符串
-        obj_cls = registry.get(obj_type)
+        obj_cls = registry.get(obj_type)#获得字符串对应的类
         if obj_cls is None:#不能是空
             raise KeyError('{} is not in the {} registry'.format(
                 obj_type, registry.name))
-    elif inspect.isclass(obj_type):#如果是个类
+    elif inspect.isclass(obj_type):#如果已经是一个类了，就不用再去调用了
         obj_cls = obj_type
-    else:
+    else:#如果什么都不是就错了
         raise TypeError('type must be a str or valid type, but got {}'.format(
             type(obj_type)))
     if default_args is not None:
-        for name, value in default_args.items():
+        for name, value in default_args.items():#将额外给定的参数也加入到args中，组合后一起给类
             args.setdefault(name, value)
     return obj_cls(**args)#直接构造成FCOS(config)格式，形成model
