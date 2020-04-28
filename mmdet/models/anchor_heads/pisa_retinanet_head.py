@@ -1,3 +1,7 @@
+import torch
+
+from mmdet.core import force_fp32, images_to_levels
+from ..losses import carl_loss, isr_p
 from ..registry import HEADS
 from .retina_head import RetinaHead
 
@@ -5,4 +9,110 @@ from .retina_head import RetinaHead
 @HEADS.register_module
 class PISARetinaHead(RetinaHead):
 
-    pass
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
+    def loss(self,
+             cls_scores,
+             bbox_preds,
+             gt_bboxes,
+             gt_labels,
+             img_metas,
+             gt_bboxes_ignore=None):
+        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        assert len(featmap_sizes) == self.anchor_generator.num_levels
+
+        device = cls_scores[0].device
+
+        anchor_list, valid_flag_list = self.get_anchors(
+            featmap_sizes, img_metas, device=device)
+        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
+        cls_reg_targets = self.get_targets(
+            anchor_list,
+            valid_flag_list,
+            gt_bboxes,
+            img_metas,
+            gt_bboxes_ignore_list=gt_bboxes_ignore,
+            gt_labels_list=gt_labels,
+            label_channels=label_channels,
+            return_sampling_results=True)
+        if cls_reg_targets is None:
+            return None
+        (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
+         num_total_pos, num_total_neg, sampling_results_list) = cls_reg_targets
+        num_total_samples = (
+            num_total_pos + num_total_neg if self.sampling else num_total_pos)
+
+        # anchor number of multi levels
+        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
+        # concat all level anchors and flags to a single tensor
+        concat_anchor_list = []
+        for i in range(len(anchor_list)):
+            concat_anchor_list.append(torch.cat(anchor_list[i]))
+        all_anchor_list = images_to_levels(concat_anchor_list,
+                                           num_level_anchors)
+
+        num_imgs = len(img_metas)
+        flatten_cls_scores = [
+            cls_score.permute(0, 2, 3, 1).reshape(num_imgs, -1, label_channels)
+            for cls_score in cls_scores
+        ]
+        flatten_cls_scores = torch.cat(
+            flatten_cls_scores, dim=1).reshape(-1,
+                                               flatten_cls_scores[0].size(-1))
+        flatten_bbox_preds = [
+            bbox_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1, 4)
+            for bbox_pred in bbox_preds
+        ]
+        flatten_bbox_preds = torch.cat(
+            flatten_bbox_preds, dim=1).view(-1, flatten_bbox_preds[0].size(-1))
+        flatten_labels = torch.cat(labels_list, dim=1).reshape(-1)
+        flatten_label_weights = torch.cat(
+            label_weights_list, dim=1).reshape(-1)
+        flatten_anchors = torch.cat(all_anchor_list, dim=1).reshape(-1, 4)
+        flatten_bbox_targets = torch.cat(
+            bbox_targets_list, dim=1).reshape(-1, 4)
+        flatten_bbox_weights = torch.cat(
+            bbox_weights_list, dim=1).reshape(-1, 4)
+
+        isr_cfg = self.train_cfg.get('isr', None)
+        if isr_cfg is not None:
+            all_targets = (flatten_labels, flatten_label_weights,
+                           flatten_bbox_targets, flatten_bbox_weights)
+            with torch.no_grad():
+                all_targets = isr_p(
+                    flatten_cls_scores,
+                    flatten_bbox_preds,
+                    all_targets,
+                    flatten_anchors,
+                    sampling_results_list,
+                    bbox_coder=self.bbox_coder,
+                    loss_cls=self.loss_cls,
+                    **self.train_cfg.isr)
+            (flatten_labels, flatten_label_weights, flatten_bbox_targets,
+             flatten_bbox_weights) = all_targets
+
+        losses_cls = self.loss_cls(
+            flatten_cls_scores,
+            flatten_labels,
+            flatten_label_weights,
+            avg_factor=num_total_samples)
+        losses_bbox = self.loss_bbox(
+            flatten_bbox_preds,
+            flatten_bbox_targets,
+            flatten_bbox_weights,
+            avg_factor=num_total_samples)
+        loss_dict = dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
+
+        carl_cfg = self.train_cfg.get('carl', None)
+        if carl_cfg is not None:
+            loss_carl = carl_loss(
+                flatten_cls_scores,
+                flatten_labels,
+                flatten_bbox_preds,
+                flatten_bbox_targets,
+                self.loss_bbox,
+                **self.train_cfg.carl,
+                avg_factor=num_total_pos,
+                sigmoid=True)
+            loss_dict.update(loss_carl)
+
+        return loss_dict

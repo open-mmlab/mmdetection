@@ -232,11 +232,13 @@ class AnchorHead(nn.Module):
         # map up to original set of anchors
         if unmap_outputs:
             num_total_anchors = flat_anchors.size(0)
-            labels = unmap(labels, num_total_anchors, inside_flags)
+            labels = unmap(labels, num_total_anchors, inside_flags, -1)
             label_weights = unmap(label_weights, num_total_anchors,
-                                  inside_flags)
-            bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
-            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
+                                  inside_flags, -1)
+            bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags,
+                                 -1)
+            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags,
+                                 -1)
 
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
                 neg_inds, sampling_result)
@@ -250,7 +252,6 @@ class AnchorHead(nn.Module):
                     gt_labels_list=None,
                     label_channels=1,
                     unmap_outputs=True,
-                    map_to_level=True,
                     return_sampling_results=False):
         """Compute regression and classification targets for anchors in
             multiple images.
@@ -318,20 +319,15 @@ class AnchorHead(nn.Module):
         num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
         num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
         # split targets to a list w.r.t. multiple levels
-        if map_to_level:
-            labels_list = images_to_levels(all_labels, num_level_anchors)
-            label_weights_list = images_to_levels(all_label_weights,
-                                                  num_level_anchors)
-            bbox_targets_list = images_to_levels(all_bbox_targets,
-                                                 num_level_anchors)
-            bbox_weights_list = images_to_levels(all_bbox_weights,
-                                                 num_level_anchors)
-            res = (labels_list, label_weights_list, bbox_targets_list,
-                   bbox_weights_list)
-        else:
-            res = (all_labels, all_label_weights, all_bbox_targets,
-                   all_bbox_weights)
-        res = res + (num_total_pos, num_total_neg)
+        labels_list = images_to_levels(all_labels, num_level_anchors)
+        label_weights_list = images_to_levels(all_label_weights,
+                                              num_level_anchors)
+        bbox_targets_list = images_to_levels(all_bbox_targets,
+                                             num_level_anchors)
+        bbox_weights_list = images_to_levels(all_bbox_weights,
+                                             num_level_anchors)
+        res = (labels_list, label_weights_list, bbox_targets_list,
+               bbox_weights_list, num_total_pos, num_total_neg)
         if return_sampling_results:
             res = res + (sampling_results_list, )
         return res

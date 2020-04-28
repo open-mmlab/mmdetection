@@ -25,16 +25,11 @@ def isr_p(cls_score,
     gts = list()
     last_max_gt = 0
     for i in range(len(sampling_results)):
-        gt_i = sampling_results[i].pos_assigned_gt_inds + last_max_gt
-        gts.append(gt_i)
+        gt_i = sampling_results[i].pos_assigned_gt_inds
+        gts.append(gt_i + last_max_gt)
         last_max_gt = gt_i.max() + 1
     gts = torch.cat(gts)
-    print(len(gts), num_pos)
-    exit()
     assert len(gts) == num_pos
-
-    cls_score = cls_score.detach()
-    bbox_pred = bbox_pred.detach()
 
     if rois.size(-1) == 5:
         pos_rois = rois[pos_label_inds][:, 1:]
@@ -78,12 +73,14 @@ def isr_p(cls_score,
     pos_loss_cls = loss_cls(
         cls_score[pos_label_inds], pos_labels, reduction_override='none')
     if pos_loss_cls.dim() > 1:
-        label_weights = label_weights[:, None]
-        pos_imp_weights = pos_imp_weights[:, None]
-    ori_pos_loss_cls = pos_loss_cls * label_weights[pos_label_inds]
-    new_pos_loss_cls = pos_loss_cls * pos_imp_weights
+        ori_pos_loss_cls = pos_loss_cls * label_weights[pos_label_inds][:,
+                                                                        None]
+        new_pos_loss_cls = pos_loss_cls * pos_imp_weights[:, None]
+    else:
+        ori_pos_loss_cls = pos_loss_cls * label_weights[pos_label_inds]
+        new_pos_loss_cls = pos_loss_cls * pos_imp_weights
     pos_loss_cls_ratio = ori_pos_loss_cls.sum() / new_pos_loss_cls.sum()
-    pos_imp_weights *= pos_loss_cls_ratio
+    pos_imp_weights = pos_imp_weights * pos_loss_cls_ratio
     label_weights[pos_label_inds] = pos_imp_weights
 
     bbox_targets = labels, label_weights, bbox_targets, bbox_weights
@@ -105,7 +102,7 @@ def carl_loss(cls_score,
     # multiply pos_cls_score with the corresponding bbox weight
     # and remain gradient
     if sigmoid:
-        pos_cls_score = cls_score.sigmoid()[pos_label_inds, pos_labels]
+        pos_cls_score = cls_score.sigmoid()[pos_label_inds, pos_labels - 1]
     else:
         pos_cls_score = cls_score.softmax(-1)[pos_label_inds, pos_labels]
     carl_loss_weights = (bias + (1 - bias) * pos_cls_score).pow(k)

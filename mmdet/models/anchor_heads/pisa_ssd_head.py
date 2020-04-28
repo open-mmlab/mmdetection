@@ -61,7 +61,7 @@ class PISASSDHead(SSDHead):
         for i in range(num_images):
             all_anchors.append(torch.cat(anchor_list[i]))
 
-        isr_cfg = self.train_cfg.get('label_weights', None)
+        isr_cfg = self.train_cfg.get('isr', None)
         all_targets = (all_labels.view(-1), all_label_weights.view(-1),
                        all_bbox_targets.view(-1,
                                              4), all_bbox_weights.view(-1, 4))
@@ -112,6 +112,4 @@ class PISASSDHead(SSDHead):
         loss_dict = dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
         if carl_loss_cfg is not None:
             loss_dict.update(loss_carl)
-        print(loss_dict)
-        exit()
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
