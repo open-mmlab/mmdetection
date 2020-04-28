@@ -10,7 +10,8 @@ from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
 
 
-class BasicBlock(nn.Module):
+class BasicBlock(nn.Module):#基本模块
+    #扩大因子
     expansion = 1
 
     def __init__(self,
@@ -27,6 +28,7 @@ class BasicBlock(nn.Module):
                  gcb=None,
                  gen_attention=None):
         super(BasicBlock, self).__init__()
+        #只能是基本的卷积模块
         assert dcn is None, "Not implemented yet."
         assert gen_attention is None, "Not implemented yet."
         assert gcb is None, "Not implemented yet."
@@ -62,16 +64,19 @@ class BasicBlock(nn.Module):
     def norm2(self):
         return getattr(self, self.norm2_name)
 
-    def forward(self, x):
+    def forward(self, x):#残差模块
         identity = x
-
-        out = self.conv1(x)
+        
+        #一层
+        out = self.conv1(x)#3*3卷积
         out = self.norm1(out)
         out = self.relu(out)
-
-        out = self.conv2(out)
+        
+        #第二层
+        out = self.conv2(out)#3*3卷积层
         out = self.norm2(out)
-
+        
+        #是否对残差下采样
         if self.downsample is not None:
             identity = self.downsample(x)
 
@@ -81,7 +86,7 @@ class BasicBlock(nn.Module):
         return out
 
 
-class Bottleneck(nn.Module):
+class Bottleneck(nn.Module):#瓶颈残差结构
     expansion = 4
 
     def __init__(self,
@@ -422,19 +427,19 @@ class ResNet(nn.Module):
         if gcb is not None:
             assert len(stage_with_gcb) == num_stages
         self.zero_init_residual = zero_init_residual
-        self.block, stage_blocks = self.arch_settings[depth]
-        self.stage_blocks = stage_blocks[:num_stages]
+        self.block, stage_blocks = self.arch_settings[depth]#(Bottleneck, (3, 8, 36, 3))
+        self.stage_blocks = stage_blocks[:num_stages]# (3, 8, 36, 3)
         self.inplanes = 64
 
-        self._make_stem_layer(in_channels)
+        self._make_stem_layer(in_channels)#先生成第一层特殊层
 
-        self.res_layers = []
+        self.res_layers = []#其他的层保存在列表中
         for i, num_blocks in enumerate(self.stage_blocks):
-            stride = strides[i]
-            dilation = dilations[i]
+            stride = strides[i]#(1, 2, 2, 2)
+            dilation = dilations[i]#(1, 1, 1, 1)
             dcn = self.dcn if self.stage_with_dcn[i] else None
             gcb = self.gcb if self.stage_with_gcb[i] else None
-            planes = 64 * 2**i
+            planes = 64 * 2**i #通道个数
             res_layer = make_res_layer(
                 self.block,
                 self.inplanes,
@@ -455,7 +460,7 @@ class ResNet(nn.Module):
             self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
 
-        self._freeze_stages()
+        self._freeze_stages()#冻结部分层
 
         self.feat_dim = self.block.expansion * 64 * 2**(
             len(self.stage_blocks) - 1)
@@ -472,20 +477,20 @@ class ResNet(nn.Module):
             kernel_size=7,
             stride=2,
             padding=3,
-            bias=False)
+            bias=False)#开头部分是一个7*7*64,s=2,padding=3的大卷积层，所以要单独处理
         self.norm1_name, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
         self.add_module(self.norm1_name, norm1)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-    def _freeze_stages(self):
-        if self.frozen_stages >= 0:
+    def _freeze_stages(self):#是否有要固定不变的层
+        if self.frozen_stages >= 0:#ie. 1
             self.norm1.eval()
-            for m in [self.conv1, self.norm1]:
+            for m in [self.conv1, self.norm1]:#修改节点，这是第一层要修改和固定的
                 for param in m.parameters():
                     param.requires_grad = False
 
-        for i in range(1, self.frozen_stages + 1):
+        for i in range(1, self.frozen_stages + 1):#如果要冻结更多的层再单独做
             m = getattr(self, 'layer{}'.format(i))
             m.eval()
             for param in m.parameters():
