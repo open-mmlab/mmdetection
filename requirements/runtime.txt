@@ -11,4 +11,7 @@ pytorchcv==0.0.55
 tqdm
 onnx==1.6.0
 onnxruntime==1.1.2
-lxml
+lxml==4.5.0
+pycocotools==2.0.0
+tensorboardX==1.8
+opencv-python==4.1.0.25
