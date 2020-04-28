@@ -8,13 +8,15 @@ from .base_assigner import BaseAssigner
 
 def scale_boxes(bboxes, scale):
     """Expand an array of boxes by a given scale.
-        Args:
-            bboxes (Tensor): shape (m, 4)
-            scale (float): the scale factor of bboxes
 
-        Returns:
-            (Tensor): shape (m, 4) scaled bboxes
-        """
+    Args:
+        bboxes (tensor): Shape (m, 4)
+        scale (float): The scale factor of bboxes
+
+    Returns:
+        (tensor): Shape (m, 4). Scaled bboxes
+    """
+    assert bboxes.size(1) == 4
     w_half = (bboxes[:, 2] - bboxes[:, 0]) * .5
     h_half = (bboxes[:, 3] - bboxes[:, 1]) * .5
     x_c = (bboxes[:, 2] + bboxes[:, 0]) * .5
@@ -31,31 +33,27 @@ def scale_boxes(bboxes, scale):
     return boxes_scaled
 
 
-def is_located_in(points, bboxes, is_aligned=False):
-    """ is center a locates in box b
-    Then we compute the area of intersect between box_a and box_b.
+def is_located_in(points, bboxes):
+    """Are points located in bboxes
+
     Args:
-      points: (tensor) bounding boxes, Shape: [m,2].
-      bboxes: (tensor)  bounding boxes, Shape: [n,4].
-       If is_aligned is ``True``, then m mush be equal to n
+      points (tensor): Points, shape: [m,2].
+      bboxes (tensor): Bounding boxes, shape: [n,4].
+
     Return:
-      (tensor) intersection area, Shape: [m, n]. If is_aligned ``True``,
-       then shape = [m]
+      Flags indicating if points are located in bboxes, shape: [m, n].
     """
-    if not is_aligned:
-        return (points[:, 0].unsqueeze(1) > bboxes[:, 0].unsqueeze(0)) & \
-               (points[:, 0].unsqueeze(1) < bboxes[:, 2].unsqueeze(0)) & \
-               (points[:, 1].unsqueeze(1) > bboxes[:, 1].unsqueeze(0)) & \
-               (points[:, 1].unsqueeze(1) < bboxes[:, 3].unsqueeze(0))
-    else:
-        return (points[:, 0] > bboxes[:, 0]) & \
-               (points[:, 0] < bboxes[:, 2]) & \
-               (points[:, 1] > bboxes[:, 1]) & \
-               (points[:, 1] < bboxes[:, 3])
+    assert points.size(1) == 2
+    assert bboxes.size(1) == 4
+    return (points[:, 0].unsqueeze(1) > bboxes[:, 0].unsqueeze(0)) & \
+           (points[:, 0].unsqueeze(1) < bboxes[:, 2].unsqueeze(0)) & \
+           (points[:, 1].unsqueeze(1) > bboxes[:, 1].unsqueeze(0)) & \
+           (points[:, 1].unsqueeze(1) < bboxes[:, 3].unsqueeze(0))
 
 
 def bboxes_area(bboxes):
     """Compute the area of an array of boxes."""
+    assert bboxes.size(1) == 4
     w = (bboxes[:, 2] - bboxes[:, 0])
     h = (bboxes[:, 3] - bboxes[:, 1])
     areas = w * h
@@ -69,20 +67,18 @@ class CenterRegionAssigner(BaseAssigner):
 
     Each proposals will be assigned with `-1`, `0`, or a positive integer
     indicating the ground truth index.
-
-    - -1: don't care
-    - 0: negative sample, no assigned gt
-    - positive integer: positive sample, index (1-based) of assigned gt
+    - -1: negative samples
+    - semi-positive numbers: positive sample, index (0-based) of assigned gt
 
     Args:
-        pos_scale (float): threshold within which pixels are
+        pos_scale (float): Threshold within which pixels are
           labelled as positive.
-        neg_scale (float): threshold above which pixels are
+        neg_scale (float): Threshold above which pixels are
           labelled as positive.
-        min_pos_iof (float): minimum iof of a pixel with a gt to be
-          labelled as positive
-        ignore_gt_scale (float): threshold within which the pixels
-        are ignored when the gt is labelled as shadowed
+        min_pos_iof (float): Minimum iof of a pixel with a gt to be
+          labelled as positive. Default: 1e-2
+        ignore_gt_scale (float): Threshold within which the pixels
+          are ignored when the gt is labelled as shadowed. Default: 0.5
     """
 
     def __init__(self,
@@ -100,20 +96,20 @@ class CenterRegionAssigner(BaseAssigner):
     def assign(self, bboxes, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
         """Assign gt to bboxes.
 
-        This method assign a gt bbox to every bbox (proposal/anchor), each bbox
-        will be assigned with -1, 0, or a positive number. -1 means don't care,
-        0 means negative sample, positive number is the index (1-based) of
-        assigned gt.
+        This method assigns gts to every bbox (proposal/anchor), each bbox will
+         be assigned with -1, or a semi-positive number. -1 means negative
+         sample, semi-positive number is the index (0-based) of assigned gt.
 
         Args:
-            bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
-            gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
-            gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
-            gt_labels (Tensor, optional): Label of gt_bboxes, shape (num_gts,).
+            bboxes (tensor): Bounding boxes to be assigned, shape(n, 4).
+            gt_bboxes (tensor): Groundtruth boxes, shape (k, 4).
+            gt_bboxes_ignore (tensor, optional): Ground truth bboxes that are
+              labelled as `ignored`, e.g., crowd boxes in COCO.
+            gt_labels (tensor, optional): Label of gt_bboxes, shape (num_gts,).
 
         Returns:
             :obj:`AssignResult`: The assign result.
+
         Example:
             >>> self = CenterRegionAssigner(0.2, 0.2)
             >>> bboxes = torch.Tensor([[0, 0, 10, 10], [10, 10, 20, 20]])
@@ -124,7 +120,9 @@ class CenterRegionAssigner(BaseAssigner):
 
         """
         # There are in total 5 steps in the pixel assignment
-        # 1. Find core positive and shadow region of every gt
+        # 1. Find core (the center region, say inner 0.2)
+        #     and shadow (the relatively ourter part, say inner 0.2-0.5)
+        #     regions of every gt.
         # 2. Find all prior bboxes that lie in gt_core and gt_shadow regions
         # 3. Assign prior bboxes in gt_core with a one-hot id of the gt in
         #      the image.
@@ -136,8 +134,7 @@ class CenterRegionAssigner(BaseAssigner):
         # 5. Find pixels lying in the shadow of an object and assign them with
         #      background label, but set the loss weight of its corresponding
         #      gt to zero.
-        bboxes = bboxes[:, :4]
-
+        assert bboxes.size(1) == 4, 'bboxes must have size of 4'
         # 1. Find core positive and shadow region of every gt
         gt_core = scale_boxes(gt_bboxes, self.pos_scale)
         gt_shadow = scale_boxes(gt_bboxes, self.neg_scale)
@@ -150,7 +147,7 @@ class CenterRegionAssigner(BaseAssigner):
         #   to match large gts
         bbox_and_gt_core_overlaps = self.iou_calculator(
             bboxes, gt_core, mode='iof')
-        # the center point of effective priors should be within the gt box
+        # The center point of effective priors should be within the gt box
         is_bbox_in_gt_core = is_bbox_in_gt & (
             bbox_and_gt_core_overlaps > self.min_pos_iof)  # shape (n, k)
 
@@ -188,6 +185,8 @@ class CenterRegionAssigner(BaseAssigner):
             assigned_gt_ids[is_bbox_in_ignored_gts] = -1
 
         # 4. Assign prior bboxes with class label according to its gt id.
+        assigned_labels = None
+        shadowed_pixel_labels = None
         if gt_labels is not None:
             assigned_labels = assigned_gt_ids.new_full((num_bboxes, ), -1)
             pos_inds = torch.nonzero(assigned_gt_ids > 0).squeeze()
@@ -207,41 +206,38 @@ class CenterRegionAssigner(BaseAssigner):
                     assigned_labels[pixel_idx] == shadowed_pixel_labels[:, 1])
                 assigned_labels[pixel_idx[override]] = -1
                 assigned_gt_ids[pixel_idx[override]] = 0
-        else:
-            assigned_labels = None
-            shadowed_pixel_labels = None
 
-        return AssignResult(
-            num_gts,
-            assigned_gt_ids,
-            None,
-            labels=assigned_labels,
-            ignored_labels=shadowed_pixel_labels)
+        assign_result = AssignResult(
+            num_gts, assigned_gt_ids, None, labels=assigned_labels)
+        assign_result.set_extra_property('shadowed_labels',
+                                         shadowed_pixel_labels)
+        return assign_result
 
     def assign_one_hot_gt_indices(self,
                                   is_bbox_in_gt_core,
                                   is_bbox_in_gt_shadow,
                                   gt_priority=None):
         """Assign only one gt index to each prior box
-        (smaller gt has higher priority)
+
+        Smaller gts have higher priority
 
         Args:
-            is_bbox_in_gt_core: shape [num_prior, num_gt].
-              bool tensor indicating the bbox center is in
-              the effective area of a gt (e.g. 0-0.2)
-            is_bbox_in_gt_shadow: shape [num_prior, num_gt].
-              bool tensor indicating the bbox
-            center is in the shadowed area of a gt (e.g. 0.2-0.5)
-            gt_labels: shape [num_gt]. gt labels (0-80 for COCO)
-            gt_priority: shape [num_gt]. gt priorities.
+            is_bbox_in_gt_core (tensor): shape [num_prior, num_gt].
+              Bool tensor indicating the bbox center is in the core area of a
+              gt (e.g. 0-0.2)
+            is_bbox_in_gt_shadow (tensor): shape [num_prior, num_gt].
+              Bool tensor indicating the bbox center is in the shadowed area
+              of a gt (e.g. 0.2-0.5)
+            gt_priority (tensor): shape [num_gt]. gt priorities.
               The gt with a higher priority is more likely to be
               assigned to the bbox when the bbox match with multiple gts
 
         Returns:
-            :obj:`AssignResult`: The assign result.
+            assigned_gt_inds: Shape [num_prior]. The assigned gt index of each
+              prior bbox (i.e. index from 1 to num_gts).
             shadowed_gt_inds: shadowed gt indices. It is a tensor of shape
-                [num_ignore, 2] with first column being the shadowed feature
-                map indices and the second column the shadowed gt indices
+              [num_ignore, 2] with first column being the shadowed prior bbox
+              indices and the second column the shadowed gt indices
         """
         num_bboxes, num_gts = is_bbox_in_gt_core.shape
 
@@ -286,12 +282,14 @@ class CenterRegionAssigner(BaseAssigner):
         # the maximum shape [num_match]
         # effective indices.
         assigned_gt_inds[inds_of_match] = argmax_priority + 1  # 1-based
-        # Zero-out the assigned pixels to filter the shadowed gt indices
+        # Zero-out the assigned prior box to filter the shadowed gt indices
         is_bbox_in_gt_core[inds_of_match, argmax_priority] = 0
         # Concat the shadowed indices due to overlapping with that out side of
         #   effective scale. shape: [total_num_ignore, 2]
         shadowed_gt_inds = torch.cat(
             (shadowed_gt_inds, torch.nonzero(is_bbox_in_gt_core)), dim=0)
-        is_bbox_in_gt_core[inds_of_match, argmax_priority] = 1  # no change
-        shadowed_gt_inds[:, 1] += 1  # 1-based. For consistency issue
+        # `is_bbox_in_gt_core` should be changed back to keep arguments intact.
+        is_bbox_in_gt_core[inds_of_match, argmax_priority] = 1
+        # 1-based shadowed gt indices, to be consistent with `assigned_gt_inds`
+        shadowed_gt_inds[:, 1] += 1
         return assigned_gt_inds, shadowed_gt_inds

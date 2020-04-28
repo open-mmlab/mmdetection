@@ -39,10 +39,14 @@ def sigmoid_focal_loss(pred,
     if weight is not None:
         if weight.shape != loss.shape:
             if weight.size(0) == loss.size(0):
-                # weight does not have num_class dim
+                # For most cases, weight is of shape (num_priors, ),
+                #  which means it does not have the second axis num_class
                 weight = weight.view(-1, 1)
             else:
-                # weight is flattened while loss is not
+                # Sometimes, weight per anchor per class is also needed. e.g.
+                #  in FSAF. But it may be flattened of shape
+                #  (num_priors x num_class, ), while loss is still of shape
+                #  (num_priors, num_class).
                 assert weight.numel() == loss.numel()
                 weight = weight.view(loss.size(0), -1)
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)

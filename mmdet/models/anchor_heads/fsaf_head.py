@@ -15,8 +15,8 @@ class FSAFHead(RetinaHead):
     FSAF anchor-free head used in [1].
 
     The head contains two subnetworks. The first classifies anchor boxes and
-    the second regresses deltas for the anchors (num_anchors is 1
-    for anchor-free methods)
+    the second regresses deltas for the anchors (num_anchors is 1 for anchor-
+    free methods)
 
     References:
         .. [1]  https://arxiv.org/pdf/1903.00621.pdf
@@ -39,26 +39,20 @@ class FSAFHead(RetinaHead):
                  stacked_convs=4,
                  conv_cfg=None,
                  norm_cfg=None,
-                 effective_threshold=0.2,
-                 ignore_threshold=0.2,
-                 target_normalizer=1.0,
                  **kwargs):
-        self.effective_threshold = effective_threshold
-        self.ignore_threshold = ignore_threshold
-        self.target_normalizer = target_normalizer
         super(FSAFHead, self).__init__(num_classes, in_channels, stacked_convs,
                                        conv_cfg, norm_cfg, **kwargs)
 
     def forward_single(self, x):
         cls_score, bbox_pred = super(FSAFHead, self).forward_single(x)
+        # relu: TBLR encoder only accepts positive bbox_pred
         return cls_score, self.relu(bbox_pred)
-        # TBLR encoder only accepts positive bbox_pred
 
     def init_weights(self):
         super(FSAFHead, self).init_weights()
-        normal_init(self.retina_reg, std=0.01, bias=0.25)
-        # the positive bias in self.retina_reg conv is to prevent predicted \
+        # The positive bias in self.retina_reg conv is to prevent predicted \
         #  bbox with 0 area
+        normal_init(self.retina_reg, std=0.01, bias=0.25)
 
     def _get_targets_single(self,
                             flat_anchors,
@@ -72,18 +66,18 @@ class FSAFHead(RetinaHead):
         """Compute regression and classification targets for anchors in
             a single image.
 
-            Most of the codes are the same with the base class
-              ::obj::`AnchorHead`, except that it also collects and returns
-              the matched gt index in the image (from 0 to num_gt-1). If the
-              pixel is not matched to any gt, the corresponding value in
-              pos_gt_inds is -1.
+        Most of the codes are the same with the base class
+          ::obj::`AnchorHead`, except that it also collects and returns
+          the matched gt index in the image (from 0 to num_gt-1). If the
+          anchor bbox is not matched to any gt, the corresponding value in
+          pos_gt_inds is -1.
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
         if not inside_flags.any():
-            return (None, ) * 6
-        # assign gt and sample anchors
+            return (None, ) * 7
+        # Assign gt and sample anchors
         anchors = flat_anchors[inside_flags.type(torch.bool), :]
         assign_result = self.assigner.assign(
             anchors, gt_bboxes, gt_bboxes_ignore,
@@ -106,7 +100,7 @@ class FSAFHead(RetinaHead):
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
-        ignored_labels = assign_result.ignore_labels
+
         if len(pos_inds) > 0:
             if not self.reg_decoded_bbox:
                 pos_bbox_targets = self.bbox_coder.encode(
@@ -127,17 +121,24 @@ class FSAFHead(RetinaHead):
             else:
                 label_weights[pos_inds] = self.train_cfg.pos_weight
 
-        # For some pixels, only specific labels are ignored.
-        if ignored_labels is not None and ignored_labels.numel():
-            if len(ignored_labels.shape) == 2:
-                idx_, label_ = ignored_labels[:, 0], ignored_labels[:, 1]
+        # shadowed_labels is a tensor composed of tuples
+        #  (anchor_inds, class_label) that indicate those anchors lying in the
+        #  outer region of a gt or overlapped by another gt with a smaller
+        #  area.
+        #
+        # Therefore, only the shadowed labels are ignored for loss calculation.
+        # the key `shadowed_labels` is defined in ::obj::`CenterRegionAssigner`
+        shadowed_labels = assign_result.get_extra_property('shadowed_labels')
+        if shadowed_labels is not None and shadowed_labels.numel():
+            if len(shadowed_labels.shape) == 2:
+                idx_, label_ = shadowed_labels[:, 0], shadowed_labels[:, 1]
                 assert (labels[idx_] != label_).all(), \
                     'One label cannot be both positive and ignored'
-                # if background_label is 0. Then all labels increase by 1
+                # If background_label is 0. Then all labels increase by 1
                 label_ += int(self.background_label == 0)
                 label_weights[idx_, label_] = 0
             else:
-                label_weights[ignored_labels] = 0
+                label_weights[shadowed_labels] = 0
 
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
@@ -165,7 +166,7 @@ class FSAFHead(RetinaHead):
              img_metas,
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generator.base_anchors)
+        assert len(featmap_sizes) == self.anchor_generator.num_levels
         batch_size = len(gt_bboxes)
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
@@ -197,8 +198,8 @@ class FSAFHead(RetinaHead):
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
         for i in range(len(bbox_preds)):
-            bbox_preds[i] = bbox_preds[i].clamp(min=1e-4)
             # avoid 0 area of the predicted bbox
+            bbox_preds[i] = bbox_preds[i].clamp(min=1e-4)
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
@@ -233,9 +234,8 @@ class FSAFHead(RetinaHead):
             labels_list,
             list(range(len(losses_cls))),
             min_levels=argmin)
-
+        # Clamp num_pos to 1e-3 to prevent 0/0
         num_pos = torch.cat(pos_inds, 0).sum().float().clamp(min=1e-3)
-        # clamp to 1e-3 to prevent 0/0
         acc = self.calculate_accuracy(cls_scores, labels_list, pos_inds)
         for i in range(len(losses_cls)):
             losses_cls[i] /= num_pos
@@ -283,12 +283,12 @@ class FSAFHead(RetinaHead):
         """
         if len(reg_loss.shape) == 2:  # iou loss has shape [num_prior, 4]
             reg_loss = reg_loss.sum(dim=-1)  # sum loss in tblr dims
-        # total loss at each feature map point
         if len(cls_loss.shape) == 2:
             cls_loss = cls_loss.sum(dim=-1)  # sum loss in class dims
         loss = cls_loss + reg_loss
         assert loss.size(0) == assigned_gt_inds.size(0)
-        # default loss value is 1e6 for a layer where no anchor is positive
+        # Default loss value is 1e6 for a layer where no anchor is positive
+        #  to ensure it will not be chosen to back-propagate gradient
         losses_ = loss.new_full(labels_seq.shape, 1e6)
         for i, l in enumerate(labels_seq):
             match = assigned_gt_inds == l
@@ -338,11 +338,10 @@ class FSAFHead(RetinaHead):
                 # Only the weight corresponding to the label is
                 #  zeroed out if not selected
                 zeroing_labels = labels[neg_indices]
-                # the original labels assigned to the anchor box
                 assert (zeroing_labels >= 0).all()
                 cls_weight[neg_indices, zeroing_labels] = 0
 
-        # weighted loss for both cls and reg loss
+        # Weighted loss for both cls and reg loss
         cls_loss = weight_reduce_loss(cls_loss, cls_weight, reduction='sum')
         reg_loss = weight_reduce_loss(reg_loss, loc_weight, reduction='sum')
 

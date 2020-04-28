@@ -9,6 +9,9 @@ model = dict(
         stacked_convs=4,
         feat_channels=256,
         reg_decoded_bbox=True,
+        # Only anchor-free branch is implemented. The anchor generator only
+        #  generates 1 anchor at each feature point, as a substitute of the
+        #  grid of features.
         anchor_generator=dict(
             type='AnchorGenerator',
             octave_base_scale=1,

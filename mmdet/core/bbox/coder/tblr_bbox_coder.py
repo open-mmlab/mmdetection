@@ -8,15 +8,16 @@ from .base_bbox_coder import BaseBBoxCoder
 class TBLRBBoxCoder(BaseBBoxCoder):
     """TBLR BBox coder
 
-    Following the practice in FSAF [1]_, this coder encodes bbox (x1, y1, x2,
-    y2) into (top, bottom, left, right) and decode it back to the original.
-
+    Following the practice in FSAF [1]_, this coder encodes gt bboxes (x1, y1,
+    x2, y2) into (top, bottom, left, right) and decode it back to the original.
     References:
         .. [1] https://arxiv.org/abs/1903.00621
 
     Args:
-        normalizer (Sequence[float] | float): denormalizing standard deviation
-          of target for delta coordinates
+        normalizer (Sequence[float] | float): normalization factor to be
+          divided with when coding the coordinates. If it is a list, it should
+          have length of 4 indicating normalization factor in tblr dims.
+          Otherwise it is a unified float factor for all dims. Default: 1.0
     """
 
     def __init__(self, normalizer=1.0):
@@ -41,15 +42,16 @@ def bboxes2tblr(priors, gt, normalizer=1.0):
     """Encode ground truth boxes
 
     Args:
-        priors (FloatTensor): Prior boxes in point form
+        priors (tensor): Prior boxes in point form
             Shape: [num_proposals,4].
-        gt (FloatTensor): Coords of ground truth for each prior in point-form
+        gt (tensor): Coords of ground truth for each prior in point-form
             Shape: [num_proposals, 4].
         normalizer (list | float): normalization parameter of
-            encoded boxes. If it is a FloatTensor, it has to have length = 4
+            encoded boxes. If it is a list, it has to have length = 4.
+            Default: 1.0
 
     Return:
-        encoded boxes (FloatTensor), Shape: [num_proposals, 4]
+        encoded boxes (tensor), Shape: [num_proposals, 4]
     """
 
     # dist b/t match center and prior's center
@@ -65,10 +67,11 @@ def bboxes2tblr(priors, gt, normalizer=1.0):
     left = prior_centers[:, 0].unsqueeze(1) - xmin
     right = xmax - prior_centers[:, 0].unsqueeze(1)
     loc = torch.cat((top, bottom, left, right), dim=1)
+    # First normalize tblr by anchor width and height
     w, h = torch.split(wh, 1, dim=1)
-    loc[:, :2] /= h
-    # convert them to the coordinate on the featuremap: 0 -fm_size
-    loc[:, 2:] /= w
+    loc[:, :2] /= h  # tb is normalized by h
+    loc[:, 2:] /= w  # lr is normalized by w
+    # Then normalize tblr by the given normalization factor
     return loc / normalizer
 
 
@@ -76,15 +79,19 @@ def tblr2bboxes(priors, tblr, normalizer=1.0, max_shape=None):
     """Decode tblr outputs to prediction boxes
 
     Args:
-        priors (FloatTensor): Prior boxes in point form
-            Shape: [n,4].
-        tblr (FloatTensor): Coords of network output in tblr form
-            Shape: [n, 4].
-        normalizer (list | float): normalization parameter of encoded boxes
-        max_shape (tuple): Shape of the image.
+        priors (tensor): Prior boxes in point form
+          Shape: [n,4].
+        tblr (tensor): Coords of network output in tblr form
+          Shape: [n, 4].
+        normalizer (list | float): Normalization parameter of encoded boxes.
+          By list, it represents the normalization factors at tblr dims.
+          By float, it is the unified normalization factor at all dims.
+          Default: 1.0
+        max_shape (tuple, optional): Shape of the image. Decoded bboxes
+          exceeding which will be clamped.
 
     Return:
-        encoded boxes (FloatTensor), Shape: [n, 4]
+        encoded boxes (tensor), Shape: [n, 4]
     """
     if not isinstance(normalizer, float):
         normalizer = torch.tensor(normalizer).to(priors.device)

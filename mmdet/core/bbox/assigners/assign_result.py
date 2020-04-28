@@ -21,10 +21,6 @@ class AssignResult(util_mixins.NiceRepr):
         labels (None | LongTensor): If specified, for each predicted box
             indicates the category label of the assigned truth box.
 
-        ignored_labels (None | LontTensor): If specified, it has a shape:
-            [num_ignored, 2]. The first column records the ignored feature map
-            indices, and the second column is its ignore label
-
     Example:
         >>> # An assign result between 4 predicted boxes and 9 true boxes
         >>> # where only two boxes were assigned.
@@ -44,17 +40,13 @@ class AssignResult(util_mixins.NiceRepr):
                       labels.shape=(7,))>
     """
 
-    def __init__(self,
-                 num_gts,
-                 gt_inds,
-                 max_overlaps,
-                 labels=None,
-                 ignored_labels=None):
+    def __init__(self, num_gts, gt_inds, max_overlaps, labels=None):
         self.num_gts = num_gts
         self.gt_inds = gt_inds
         self.max_overlaps = max_overlaps
         self.labels = labels
-        self.ignore_labels = ignored_labels
+        # Interface for possible user-defined properties
+        self._extra_properties = {}
 
     @property
     def num_preds(self):
@@ -63,18 +55,28 @@ class AssignResult(util_mixins.NiceRepr):
         """
         return len(self.gt_inds)
 
+    def set_extra_property(self, key, value):
+        'Set user-defined new property'
+        self._extra_properties[key] = value
+
+    def get_extra_property(self, key):
+        'Get user-defined property'
+        return self._extra_properties.get(key, None)
+
     @property
     def info(self):
         """
         Returns a dictionary of info about the object
         """
-        return {
+        basic_info = {
             'num_gts': self.num_gts,
             'num_preds': self.num_preds,
             'gt_inds': self.gt_inds,
             'max_overlaps': self.max_overlaps,
             'labels': self.labels,
         }
+        basic_info.update(self._extra_properties)
+        return basic_info
 
     def __nice__(self):
         """
