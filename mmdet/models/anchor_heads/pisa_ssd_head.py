@@ -74,7 +74,7 @@ class PISASSDHead(SSDHead):
                 sampling_results_list,
                 loss_cls=CrossEntropyLoss(),
                 bbox_coder=self.bbox_coder,
-                **self.train_cfg.isr_p)
+                **self.train_cfg.isr)
             (new_labels, new_label_weights, new_bbox_targets,
              new_bbox_weights) = all_targets
             all_labels = new_labels.view(all_labels.shape)
