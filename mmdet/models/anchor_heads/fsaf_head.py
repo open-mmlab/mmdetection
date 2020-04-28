@@ -165,6 +165,10 @@ class FSAFHead(RetinaHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        for i in range(len(bbox_preds)):  # loop over fpn level
+            # avoid 0 area of the predicted bbox
+            bbox_preds[i] = bbox_preds[i].clamp(min=1e-4)
+        # TODO: It may directly use the base-class loss function.
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.anchor_generator.num_levels
         batch_size = len(gt_bboxes)
@@ -197,9 +201,6 @@ class FSAFHead(RetinaHead):
             concat_anchor_list.append(torch.cat(anchor_list[i]))
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
-        for i in range(len(bbox_preds)):
-            # avoid 0 area of the predicted bbox
-            bbox_preds[i] = bbox_preds[i].clamp(min=1e-4)
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
@@ -210,22 +211,36 @@ class FSAFHead(RetinaHead):
             bbox_targets_list,
             bbox_weights_list,
             num_total_samples=num_total_samples)
-        cum_num_gts = list(np.cumsum(num_gts))
+
+        # `pos_assigned_gt_inds_list` (length: fpn_levels) stores the assigned
+        # gt index of each anchor bbox in each fpn level.
+        cum_num_gts = list(np.cumsum(num_gts))  # length of batch_size
         for i, assign in enumerate(pos_assigned_gt_inds_list):
+            # loop over fpn levels
             for j in range(1, batch_size):
+                # loop over batch size
+                # Convert gt indices in each img to those in the batch
                 assign[j][assign[j] >= 0] += int(cum_num_gts[j - 1])
             pos_assigned_gt_inds_list[i] = assign.flatten()
             labels_list[i] = labels_list[i].flatten()
-        num_gts = sum(map(len, gt_labels))
+        num_gts = sum(map(len, gt_labels))  # total number of gt in the batch
+        # The unique label index of each gt in the batch
+        label_sequence = torch.arange(num_gts, device=device)
+        # Collect the average loss of each gt in each level
         with torch.no_grad():
             loss_levels, = multi_apply(
                 self.collect_loss_level_single,
                 losses_cls,
                 losses_bbox,
                 pos_assigned_gt_inds_list,
-                labels_seq=torch.arange(num_gts, device=device))
+                labels_seq=label_sequence)
+            # Shape: (fpn_levels, num_gts). Loss of each gt at each fpn level
             loss_levels = torch.stack(loss_levels, dim=0)
+            # Locate the best fpn level for loss back-propagation
             loss, argmin = loss_levels.min(dim=0)
+
+        # Reweight the loss of each (anchor, label) pair, so that only those
+        #  at the best gt level are back-propagated.
         losses_cls, losses_bbox, pos_inds = multi_apply(
             self.reweight_loss_single,
             losses_cls,
