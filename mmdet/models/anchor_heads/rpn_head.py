@@ -17,10 +17,10 @@ class RPNHead(AnchorHead):
 
     def _init_layers(self):
         self.rpn_conv = nn.Conv2d(
-            self.in_channels, self.feat_channels, 3, padding=1)
+            self.in_channels, self.feat_channels, 3, padding=1)#3*3卷积
         self.rpn_cls = nn.Conv2d(self.feat_channels,
-                                 self.num_anchors * self.cls_out_channels, 1)
-        self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
+                                 self.num_anchors * self.cls_out_channels, 1)#1*1卷积的分类
+        self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)#1*1卷积的回归
 
     def init_weights(self):
         normal_init(self.rpn_conv, std=0.01)
@@ -28,10 +28,10 @@ class RPNHead(AnchorHead):
         normal_init(self.rpn_reg, std=0.01)
 
     def forward_single(self, x):
-        x = self.rpn_conv(x)
-        x = F.relu(x, inplace=True)
-        rpn_cls_score = self.rpn_cls(x)
-        rpn_bbox_pred = self.rpn_reg(x)
+        x = self.rpn_conv(x) #先用一个3*3卷积处理
+        x = F.relu(x, inplace=True) #激活
+        rpn_cls_score = self.rpn_cls(x) #分类网
+        rpn_bbox_pred = self.rpn_reg(x)# 回归网
         return rpn_cls_score, rpn_bbox_pred
 
     def loss(self,
