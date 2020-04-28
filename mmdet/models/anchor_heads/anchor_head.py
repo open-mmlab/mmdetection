@@ -189,7 +189,7 @@ class AnchorHead(nn.Module):
         if not inside_flags.any():
             return (None, ) * 6
         # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags.type(torch.bool), :]
+        anchors = flat_anchors[inside_flags, :]
 
         assign_result = self.assigner.assign(
             anchors, gt_bboxes, gt_bboxes_ignore,
