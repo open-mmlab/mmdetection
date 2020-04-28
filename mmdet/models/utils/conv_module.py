@@ -29,12 +29,12 @@ def build_conv_layer(cfg, *args, **kwargs):
     else:
         assert isinstance(cfg, dict) and 'type' in cfg
         cfg_ = cfg.copy()
-
+    #所有建立的模块都是用cfg来保存所需要的参数，并且里面有type来保留模型类型
     layer_type = cfg_.pop('type')
-    if layer_type not in conv_cfg:
+    if layer_type not in conv_cfg:#如果没有定义这个模型
         raise KeyError('Unrecognized norm type {}'.format(layer_type))
     else:
-        conv_layer = conv_cfg[layer_type]
+        conv_layer = conv_cfg[layer_type]#直接这样调用
 
     layer = conv_layer(*args, **kwargs, **cfg_)
 
