@@ -419,7 +419,7 @@ class ATSSHead(AnchorHead):
         if not inside_flags.any():
             return (None, ) * 6
         # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags.type(torch.bool), :]
+        anchors = flat_anchors[inside_flags, :]
 
         num_level_anchors_inside = self.get_num_level_anchors_inside(
             num_level_anchors, inside_flags)
@@ -459,7 +459,6 @@ class ATSSHead(AnchorHead):
 
         # map up to original set of anchors
         if unmap_outputs:
-            inside_flags = inside_flags.type(torch.bool)
             num_total_anchors = flat_anchors.size(0)
             anchors = unmap(anchors, num_total_anchors, inside_flags)
             labels = unmap(
