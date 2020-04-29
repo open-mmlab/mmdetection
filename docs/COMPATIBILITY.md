@@ -50,9 +50,9 @@ thus MMDetection 2.0 do not allow low quality matching by default in R-CNN train
   ```
   [model]_(model setting)_[backbone]_[neck]_(norm setting)_(misc)_(gpu x batch)_[schedule]_[dataset].py,
   ```
-  where the (misc) includes DCN and GCBlock, etc. More details are in the [Documentation for config](CONFIG.md)
+  where the (misc) includes DCN and GCBlock, etc. More details are illustrated in the [documentation for config](CONFIG.md)
 
-- MMDetection V2.0 uses new ResNet Caffe backbones to reduce warnings when loading pre-trained models. Most of the new backbone's weights are the same as the former ones but do not have `conv.bias`, except that they use a different `img_norm_cfg`. Thus, the new backbone will not cause warning of unexpected keys.
+- MMDetection V2.0 uses new ResNet Caffe backbones to reduce warnings when loading pre-trained models. Most of the new backbones' weights are the same as the former ones but do not have `conv.bias`, except that they use a different `img_norm_cfg`. Thus, the new backbone will not cause warning of unexpected keys.
 
 ## Training Hyperparameters
 
@@ -66,7 +66,7 @@ This slightly improves both mask AP and bbox AP by ~0.2% absolute.
 
 - The sample num of RoIAlign layer is set to be 0 for simplicity. This leads to slightly improvement on mask AP (~0.2% absolute).
 
-- The default setting will not use gradient clipping anymore during training for faster training speed. This does not degrade performance of the most of models. For some models such as RepPoints we keep using gradient clipping to stablize the training process and to obtain better performance.
+- The default setting does not use gradient clipping anymore during training for faster training speed. This does not degrade performance of the most of models. For some models such as RepPoints we keep using gradient clipping to stablize the training process and to obtain better performance.
 
 - The default warmup ratio is changed from 1/3 to 0.001 for a more smooth warming up process since the gradient clipping is usually not used. The effect is found negligible during our re-benchmarking, though.
 

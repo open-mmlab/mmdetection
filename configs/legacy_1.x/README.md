@@ -20,18 +20,13 @@ The users can do the same modification as mentioned above for the self-implement
 detectors. We provide a scripts `tools/upgrade_model_version.py` to convert the model weights in the V1.x model zoo.
 
 ```bash
-python -u tools/upgrade_model_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH} --num-classes ${NUM_CLASSES} [--upgrade-retina] [--ssd] [--reg-cls-agnostic]
+python -u tools/upgrade_model_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH} --num-classes ${NUM_CLASSES}
 
 ```
 - OLD_MODEL_PATH: the path to load the model weights in 1.x version.
 - NEW_MODEL_PATH: the path to save the converted model weights in 2.0 version.
 - NUM_CLASSES: number of classes of the original model weights. Usually it is 81 for COCO dataset, 21 for VOC dataset.
-The number of classes in V2.0 models should equal to the number of classes in V1.x models + 1.
-
-Optional arguments:
-- `--upgrade-retina` Option for some RetinaNet models trained in older codebase (lower than V1.0), which will also upgrade the model weights' name.
-- `--ssd` Option for the SSD Detector, the SSD Detector only need to reorder its classification branch.
-- `--reg-cls-agnostic` Option for Cascade methods whose regression branch is class agnostic.
+The number of classes in V2.0 models should be equal to that in V1.x models - 1.
 
 ### 2. Use configs with legacy settings
 

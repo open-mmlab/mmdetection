@@ -38,7 +38,7 @@ def parse_config(config_strings):
     elif 'reg_class_agnostic' in config.model.bbox_head.keys():
         reg_cls_agnostic = config.model.bbox_head \
             .reg_class_agnostic
-
+    temp_file.close()
     return is_two_stage, is_ssd, is_retina, reg_cls_agnostic
 
 
