@@ -88,10 +88,10 @@ int ROIPoolForwardLaucher(const at::Tensor features, const at::Tensor rois,
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       features.scalar_type(), "ROIPoolLaucherForward", ([&] {
-        const scalar_t *bottom_data = features.data<scalar_t>();
-        const scalar_t *rois_data = rois.data<scalar_t>();
-        scalar_t *top_data = output.data<scalar_t>();
-        int *argmax_data = argmax.data<int>();
+        const scalar_t *bottom_data = features.data_ptr<scalar_t>();
+        const scalar_t *rois_data = rois.data_ptr<scalar_t>();
+        scalar_t *top_data = output.data_ptr<scalar_t>();
+        int *argmax_data = argmax.data_ptr<int>();
 
         ROIPoolForward<scalar_t><<<GET_BLOCKS(output_size), THREADS_PER_BLOCK,
                                    0, at::cuda::getCurrentCUDAStream()>>>(
@@ -132,10 +132,10 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
   const int output_size = num_rois * pooled_h * pooled_w * channels;
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       top_grad.scalar_type(), "ROIPoolLaucherBackward", ([&] {
-        const scalar_t *top_diff = top_grad.data<scalar_t>();
-        const scalar_t *rois_data = rois.data<scalar_t>();
-        const int *argmax_data = argmax.data<int>();
-        scalar_t *bottom_diff = bottom_grad.data<scalar_t>();
+        const scalar_t *top_diff = top_grad.data_ptr<scalar_t>();
+        const scalar_t *rois_data = rois.data_ptr<scalar_t>();
+        const int *argmax_data = argmax.data_ptr<int>();
+        scalar_t *bottom_diff = bottom_grad.data_ptr<scalar_t>();
         if (sizeof(scalar_t) == sizeof(double)) {
           fprintf(stderr, "double is not supported\n");
           exit(-1);

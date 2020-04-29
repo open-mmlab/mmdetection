@@ -144,9 +144,11 @@ class RoIAlign(nn.Module):
                              self.sample_num, self.aligned)
 
     def __repr__(self):
+        indent_str = '\n    '
         format_str = self.__class__.__name__
-        format_str += '(out_size={}, spatial_scale={}, sample_num={}'.format(
-            self.out_size, self.spatial_scale, self.sample_num)
-        format_str += ', use_torchvision={}, aligned={})'.format(
-            self.use_torchvision, self.aligned)
+        format_str += f'({indent_str}out_size={self.out_size},'
+        format_str += f'{indent_str}spatial_scale={self.spatial_scale},'
+        format_str += f'{indent_str}sample_num={self.sample_num},'
+        format_str += f'{indent_str}use_torchvision={self.use_torchvision},'
+        format_str += f'{indent_str}aligned={self.aligned})'
         return format_str

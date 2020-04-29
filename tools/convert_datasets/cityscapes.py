@@ -19,8 +19,8 @@ def collect_files(img_dir, gt_dir):
         segm_file = gt_dir + img_file[
             len(img_dir):-len(suffix)] + 'gtFine_labelIds.png'
         files.append((img_file, inst_file, segm_file))
-    assert len(files), 'No images found in {}'.format(img_dir)
-    print('Loaded {} images from {}'.format(len(files), img_dir))
+    assert len(files), f'No images found in {img_dir}'
+    print(f'Loaded {len(files)} images from {img_dir}')
 
     return files
 
@@ -138,7 +138,7 @@ def main():
         test='instancesonly_filtered_gtFine_test.json')
 
     for split, json_name in set_name.items():
-        print('Converting {} into {}'.format(split, json_name))
+        print(f'Converting {split} into {json_name}')
         with mmcv.Timer(
                 print_tmpl='It tooks {}s to convert Cityscapes annotation'):
             files = collect_files(
