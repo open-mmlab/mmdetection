@@ -10,11 +10,11 @@ def scale_boxes(bboxes, scale):
     """Expand an array of boxes by a given scale.
 
     Args:
-        bboxes (tensor): Shape (m, 4)
+        bboxes (Tensor): Shape (m, 4)
         scale (float): The scale factor of bboxes
 
     Returns:
-        (tensor): Shape (m, 4). Scaled bboxes
+        (Tensor): Shape (m, 4). Scaled bboxes
     """
     assert bboxes.size(1) == 4
     w_half = (bboxes[:, 2] - bboxes[:, 0]) * .5
@@ -37,11 +37,11 @@ def is_located_in(points, bboxes):
     """Are points located in bboxes
 
     Args:
-      points (tensor): Points, shape: (m, 2).
-      bboxes (tensor): Bounding boxes, shape: (n, 4).
+      points (Tensor): Points, shape: (m, 2).
+      bboxes (Tensor): Bounding boxes, shape: (n, 4).
 
     Return:
-      Flags indicating if points are located in bboxes, shape: (m, n).
+      Tensor: Flags indicating if points are located in bboxes, shape: (m, n).
     """
     assert points.size(1) == 2
     assert bboxes.size(1) == 4
@@ -52,12 +52,19 @@ def is_located_in(points, bboxes):
 
 
 def bboxes_area(bboxes):
-    """Compute the area of an array of boxes."""
+    """Compute the area of an array of bboxes.
+
+    Args:
+        bboxes (Tensor): The coordinates ox bboxes. Shape: (m, 4)
+
+    Returns:
+        Tensor: Area of the bboxes. Shape: (m, )
+
+    """
     assert bboxes.size(1) == 4
     w = (bboxes[:, 2] - bboxes[:, 0])
     h = (bboxes[:, 3] - bboxes[:, 1])
     areas = w * h
-
     return areas
 
 
@@ -93,6 +100,24 @@ class CenterRegionAssigner(BaseAssigner):
         self.ignore_gt_scale = ignore_gt_scale
         self.iou_calculator = build_iou_calculator(iou_calculator)
 
+    def get_gt_priorities(self, gt_bboxes):
+        """Get gt priorities according to their areas.
+
+        Smaller gt has higher priority.
+
+        Args:
+            gt_bboxes (Tensor): Ground truth boxes, shape (k, 4).
+
+        Returns:
+            Tensor: The priority of gts so that gts with larger priority is
+              more likely to be assigned. Shape (k, )
+
+        """
+        gt_areas = bboxes_area(gt_bboxes)
+        # Rank all gt bbox areas. Smaller objects has larger priority
+        _, sort_idx = gt_areas.sort(descending=True)
+        return sort_idx
+
     def assign(self, bboxes, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
         """Assign gt to bboxes.
 
@@ -101,8 +126,8 @@ class CenterRegionAssigner(BaseAssigner):
          sample, semi-positive number is the index (0-based) of assigned gt.
 
         Args:
-            bboxes (tensor): Bounding boxes to be assigned, shape(n, 4).
-            gt_bboxes (tensor): Groundtruth boxes, shape (k, 4).
+            bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
+            gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
             gt_bboxes_ignore (tensor, optional): Ground truth bboxes that are
               labelled as `ignored`, e.g., crowd boxes in COCO.
             gt_labels (tensor, optional): Label of gt_bboxes, shape (num_gts,).
@@ -172,9 +197,7 @@ class CenterRegionAssigner(BaseAssigner):
         else:
             # Step 3: assign a one-hot gt id to each pixel, and smaller objects
             #    have high priority to assign the pixel.
-            gt_areas = bboxes_area(gt_bboxes)
-            # Rank all gt bbox areas. Smaller objects has larger priority
-            _, sort_idx = gt_areas.sort(descending=True)
+            sort_idx = self.get_gt_priorities(gt_bboxes)
             assigned_gt_ids, pixels_in_gt_shadow = \
                 self.assign_one_hot_gt_indices(is_bbox_in_gt_core,
                                                is_bbox_in_gt_shadow,
@@ -193,6 +216,7 @@ class CenterRegionAssigner(BaseAssigner):
         assigned_labels = None
         shadowed_pixel_labels = None
         if gt_labels is not None:
+            # Default assigned label is the background (-1)
             assigned_labels = assigned_gt_ids.new_full((num_bboxes, ), -1)
             pos_inds = torch.nonzero(assigned_gt_ids > 0).squeeze()
             if pos_inds.numel() > 0:
@@ -225,16 +249,16 @@ class CenterRegionAssigner(BaseAssigner):
                                   gt_priority=None):
         """Assign only one gt index to each prior box
 
-        Smaller gts have higher priority
+        Gts with large gt_priority are more likely to be assigned.
 
         Args:
-            is_bbox_in_gt_core (tensor): Bool tensor indicating the bbox center
+            is_bbox_in_gt_core (Tensor): Bool tensor indicating the bbox center
               is in the core area of a gt (e.g. 0-0.2).
               Shape: (num_prior, num_gt).
-            is_bbox_in_gt_shadow (tensor): Bool tensor indicating the bbox
+            is_bbox_in_gt_shadow (Tensor): Bool tensor indicating the bbox
               center is in the shadowed area of a gt (e.g. 0.2-0.5).
-              Shape: (num_prior, num_gt(.
-            gt_priority (tensor): Priorities of gts. The gt with a higher
+              Shape: (num_prior, num_gt).
+            gt_priority (Tensor): Priorities of gts. The gt with a higher
               priority is more likely to be assigned to the bbox when the bbox
               match with multiple gts. Shape: (num_gt, ).
 
@@ -248,19 +272,16 @@ class CenterRegionAssigner(BaseAssigner):
         num_bboxes, num_gts = is_bbox_in_gt_core.shape
 
         if gt_priority is None:
-            gt_priority = torch.arange(num_gts).to(is_bbox_in_gt_core.device)
-            # the bigger, the more preferable to be assigned
-        # the assigned inds are by default 0 (background)
-        assigned_gt_inds = is_bbox_in_gt_core.new_full((num_bboxes, ),
-                                                       0,
-                                                       dtype=torch.long)
-        inds_of_match = torch.any(is_bbox_in_gt_core, dim=1)
-        # matched  bboxes (to any gt)
-        inds_of_shadow = torch.any(is_bbox_in_gt_shadow, dim=1)
-        # Ignored indices are assigned to be background. But the corresponding
-        #   label is shadowed during loss calculation, which is done through
+            gt_priority = torch.arange(
+                num_gts, device=is_bbox_in_gt_core.device)
+        assert gt_priority.size(0) == num_gts
+        # The bigger gt_priority, the more preferable to be assigned
+        # The assigned inds are by default 0 (background)
+        assigned_gt_inds = is_bbox_in_gt_core.new_zeros((num_bboxes, ),
+                                                        dtype=torch.long)
+        # Shadowed bboxes are assigned to be background. But the corresponding
+        #   label is ignored during loss calculation, which is done through
         #   shadowed_gt_inds
-        assigned_gt_inds[inds_of_shadow] = 0
         shadowed_gt_inds = torch.nonzero(is_bbox_in_gt_shadow)
         if is_bbox_in_gt_core.sum() == 0:  # No gt match
             shadowed_gt_inds[:, 1] += 1  # 1-based. For consistency issue
@@ -275,20 +296,16 @@ class CenterRegionAssigner(BaseAssigner):
 
         # Each bbox could match with multiple gts.
         # The following codes deal with this situation
-
-        # Whether a bbox match a gt,  bool tensor, shape: (num_match, num_gt)
-        matched_bbox_and_gt_correspondence = is_bbox_in_gt_core[inds_of_match]
-        # The matched gt index of each positive bbox. Length >= num_match,
-        #  since one bbox could match multiple gts
-        matched_bbox_gt_inds =\
-            torch.nonzero(matched_bbox_and_gt_correspondence)[:, 1]
+        # Matched  bboxes (to any gt). Shape: (num_pos_anchor, )
+        inds_of_match = torch.any(is_bbox_in_gt_core, dim=1)
+        # The matched gt index of each positive bbox. Length >= num_pos_anchor
+        #   , since one bbox could match multiple gts
+        matched_bbox_gt_inds = torch.nonzero(is_bbox_in_gt_core)[:, 1]
         # Assign priority to each bbox-gt pair.
         pair_priority[is_bbox_in_gt_core] = gt_priority[matched_bbox_gt_inds]
         _, argmax_priority = pair_priority[inds_of_match].max(dim=1)
-        # the maximum shape (num_match)
-        # effective indices.
         assigned_gt_inds[inds_of_match] = argmax_priority + 1  # 1-based
-        # Zero-out the assigned prior box to filter the shadowed gt indices
+        # Zero-out the assigned anchor box to filter the shadowed gt indices
         is_bbox_in_gt_core[inds_of_match, argmax_priority] = 0
         # Concat the shadowed indices due to overlapping with that out side of
         #   effective scale. shape: (total_num_ignore, 2)

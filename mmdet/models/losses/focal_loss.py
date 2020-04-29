@@ -35,7 +35,6 @@ def sigmoid_focal_loss(pred,
     # Function.apply does not accept keyword arguments, so the decorator
     # "weighted_loss" is not applicable
     loss = _sigmoid_focal_loss(pred, target, gamma, alpha)
-    # TODO: find a proper way to handle the shape of weight
     if weight is not None:
         if weight.shape != loss.shape:
             if weight.size(0) == loss.size(0):
@@ -49,6 +48,7 @@ def sigmoid_focal_loss(pred,
                 #  (num_priors, num_class).
                 assert weight.numel() == loss.numel()
                 weight = weight.view(loss.size(0), -1)
+        assert weight.ndim == loss.ndim
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
 

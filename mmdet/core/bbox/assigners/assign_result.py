@@ -56,11 +56,12 @@ class AssignResult(util_mixins.NiceRepr):
         return len(self.gt_inds)
 
     def set_extra_property(self, key, value):
-        'Set user-defined new property'
+        """Set user-defined new property"""
+        assert key not in self.info
         self._extra_properties[key] = value
 
     def get_extra_property(self, key):
-        'Get user-defined property'
+        """Get user-defined property"""
         return self._extra_properties.get(key, None)
 
     @property

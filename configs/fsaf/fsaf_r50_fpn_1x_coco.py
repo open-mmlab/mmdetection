@@ -18,7 +18,7 @@ model = dict(
             scales_per_octave=1,
             ratios=[1.0],
             strides=[8, 16, 32, 64, 128]),
-        bbox_coder=dict(_delete_=True, type='TBLRBBoxCoder', normalizer=1.0),
+        bbox_coder=dict(_delete_=True, type='TBLRBBoxCoder', normalizer=4.0),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,

@@ -11,16 +11,16 @@ it is empirically found that a hard threshold (0.2-0.2) gives a further gain on 
 ## Main Results
 ### Results on R50/R101/X101-FPN
 
-| Backbone   |  ignore range | ms-train| Lr schd | Train Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
-|:----------:|  :-------:    |:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
-| R-50       |   0.2-0.5     | N       | 1x      |    2.97      | 0.43            |    12.3        | 35.7   | fsaf-r50-fpn-1x-20191226-ee860779ad09031f7a58d193b0438a26.pth  |
-| R-50       |   0.2-0.2     | N       | 1x      |    2.97      | 0.43            |    13.0        | 37.0   | fsaf-r50-fpn-1x-20191225-d388a744213c3bb187e073f5ccdde5d6.pth  |
-| R-101      |   0.2-0.5     | N       | 1x      |    4.87      | 0.58            |    10.6        | 37.8   | fsaf-r101-fpn-1x-20191226-736730f8db59ac0a28262034484ed57d.pth |
-| R-101      |   0.2-0.2     | N       | 1x      |    4.87      | 0.58            |    10.8        | 39.1   | fsaf-r101-fpn-1x-20191225-e1dbbcba40933cd8fc0d0174d1b13aa7.pth |
-| X-101      |   0.2-0.2     | N       | 1x      |    9.02      | 1.23            |    5.6         | 41.8   | fsaf-x101-64x4d-fpn-1x-20191225-82d23b4bc07f2d666eed71fe48de49a9.pth |
+| Backbone   |  ignore range | ms-train| Lr schd |Train Mem (GB)| Train time (s/iter) | Inf time (fps) | box AP | Download |
+|:----------:|  :-------:    |:-------:|:-------:|:------------:|:---------------:|:--------------:|:-------------:|:--------:|
+| R-50       |   0.2-0.5     | N       | 1x      |    3.15      | 0.43            |    12.3        | 37.0 (35.9)   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/fsaf/fsaf_pscale0.2_nscale0.5_r50_fpn_1x_coco-9ad4c643.pth)  |
+| R-50       |   0.2-0.2     | N       | 1x      |    3.15      | 0.43            |    13.0        | 37.4          | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/fsaf/fsaf_r50_fpn_1x_coco-94ccc51f.pth)  |
+| R-101      |   0.2-0.2     | N       | 1x      |    5.08      | 0.58            |    10.8        | 39.3 (37.9)   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/fsaf/fsaf_r101_fpn_1x_coco-9e71098f.pth) |
+| X-101      |   0.2-0.2     | N       | 1x      |    9.38      | 1.23            |    5.6         | 42.4 (41.0)   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/fsaf/fsaf_x101_64x4d_fpn_1x_coco-e3f6e6fd.pth) |
 
 **Notes:**
- - *1x and 2x mean the model is trained for 12 and 24 epochs, respectively.*
+ - *1x means the model is trained for 12 epochs.*
+ - *AP values in the brackets represent those reported in the original paper.*
  - *All results are obtained with a single model and single-scale test.*
  - *X-101 backbone represents ResNext-101-64x4d.*
  - *All pretrained backbones use pytorch style.*

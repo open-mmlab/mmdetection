@@ -315,10 +315,7 @@ def test_random_assign_result():
 
 
 def test_center_region_assigner():
-    self = CenterRegionAssigner(
-        pos_scale=0.3,
-        neg_scale=1,
-    )
+    self = CenterRegionAssigner(pos_scale=0.3, neg_scale=1)
     bboxes = torch.FloatTensor([[0, 0, 10, 10], [10, 10, 20, 20], [8, 8, 9,
                                                                    9]])
     gt_bboxes = torch.FloatTensor([
