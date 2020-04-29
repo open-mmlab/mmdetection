@@ -178,31 +178,31 @@ A more complex example that repeats `Dataset_A` and `Dataset_B` by N and M times
 
 ```python
 dataset_A_train = dict(
-        type='RepeatDataset',
-        times=N,
-        dataset=dict(
-            type='Dataset_A',
-            ...
-            pipeline=train_pipeline
-        )
+    type='RepeatDataset',
+    times=N,
+    dataset=dict(
+        type='Dataset_A',
+        ...
+        pipeline=train_pipeline
     )
+)
 dataset_A_val = dict(
-        ...
-        pipeline=test_pipeline
-    )
+    ...
+    pipeline=test_pipeline
+)
 dataset_A_test = dict(
-        ...
-        pipeline=test_pipeline
-    )
+    ...
+    pipeline=test_pipeline
+)
 dataset_B_train = dict(
-        type='RepeatDataset',
-        times=M,
-        dataset=dict(
-            type='Dataset_B',
-            ...
-            pipeline=train_pipeline
-        )
+    type='RepeatDataset',
+    times=M,
+    dataset=dict(
+        type='Dataset_B',
+        ...
+        pipeline=train_pipeline
     )
+)
 data = dict(
     imgs_per_gpu=2,
     workers_per_gpu=2,
@@ -212,7 +212,7 @@ data = dict(
     ],
     val = dataset_A_val,
     test = dataset_A_test
-    )
+)
 
 ```
 

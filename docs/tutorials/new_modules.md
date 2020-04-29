@@ -5,7 +5,7 @@
 An example of customized optimizer `CopyOfSGD` is defined in `mmdet/core/optimizer/copy_of_sgd.py`.
 More generally, a customized optimizer could be defined as following.
 
-Assume you want to add a optimizer named as `MyOptimizer`, which has arguments `a`, `b`, and `c`. 
+Assume you want to add a optimizer named as `MyOptimizer`, which has arguments `a`, `b`, and `c`.
 You need to first implement the new optimizer in a file, e.g., in `mmdet/core/optimizer/my_optimizer.py`:
 
 ```python
@@ -37,12 +37,37 @@ To use your own optimizer, the field can be changed as
 optimizer = dict(type='MyOptimizer', a=a_value, b=b_value, c=c_value)
 ```
 
-We already support to use all the optimizers implemented by PyTorch, and the only modification is to change the `optimizer` field of config files. 
+We already support to use all the optimizers implemented by PyTorch, and the only modification is to change the `optimizer` field of config files.
 For example, if you want to use `ADAM`, though the performance will drop a lot, the modification could be as the following.
 ```python
 optimizer = dict(type='Adam', lr=0.0003, weight_decay=0.0001)
 ```
 The users can directly set arguments following the [API doc](https://pytorch.org/docs/stable/optim.html?highlight=optim#module-torch.optim) of PyTorch.
+
+## Customize optimizer constructor
+
+Some models may have some parameter-specific settings for optimization, e.g. weight decay for BatchNoarm layers.
+The users can do those fine-grained parameter tuning through customizing optimizer constructor.
+
+```
+from mmcv.utils import build_from_cfg
+
+from mmdet.core.optimizer import OPTIMIZER_BUILDERS, OPTIMIZERS
+from mmdet.utils import get_root_logger
+from .cocktail_optimizer import CocktailOptimizer
+
+
+@OPTIMIZER_BUILDERS.register_module
+class CocktailOptimizerConstructor(object):
+
+    def __init__(self, optimizer_cfg, paramwise_cfg=None):
+
+    def __call__(self, model):
+
+        return my_optimizer
+
+```
+
 
 ## Develop new components
 
@@ -269,7 +294,7 @@ The Double Head R-CNN mainly uses a new DoubleHeadRoIHead and a new
 
 ### Add new loss
 
-Assume you want to add a new loss as `MyLoss`, for bounding box regression. 
+Assume you want to add a new loss as `MyLoss`, for bounding box regression.
 To add a new loss function, the users need implement it in `mmdet/models/losses/my_loss.py`.
 The decorator `weighted_loss` enable the loss to be weighted for each element.
 
@@ -317,5 +342,5 @@ from .my_loss import MyLoss, my_loss
 To use it, modify the `loss_xxx` field.
 Since MyLoss is for regrression, you need to modify the `loss_bbox` field in the head.
 ```python
-loss_bbox=dict(type='L1Loss', loss_weight=1.0))
+loss_bbox=dict(type='MyLoss', loss_weight=1.0))
 ```
