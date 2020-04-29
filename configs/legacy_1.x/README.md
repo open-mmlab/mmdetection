@@ -20,7 +20,7 @@ The users can do the same modification as mentioned above for the self-implement
 detectors. We provide a scripts `tools/upgrade_model_version.py` to convert the model weights in the V1.x model zoo.
 
 ```bash
-python -u tools/upgrade_model_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH} --num-classes ${NUM_CLASSES}
+python tools/upgrade_model_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH} --num-classes ${NUM_CLASSES}
 
 ```
 - OLD_MODEL_PATH: the path to load the model weights in 1.x version.

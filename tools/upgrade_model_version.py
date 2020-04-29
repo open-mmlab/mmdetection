@@ -26,7 +26,7 @@ def parse_config(config_strings):
     is_ssd = False
     is_retina = False
     reg_cls_agnostic = False
-    if 'rpn_head' not in config.model.keys():
+    if 'rpn_head' not in config.model:
         is_two_stage = False
         # check whether it is SSD
         if config.model.bbox_head.type == 'SSDHead':
@@ -35,7 +35,7 @@ def parse_config(config_strings):
             is_retina = True
     elif isinstance(config.model['bbox_head'], list):
         reg_cls_agnostic = True
-    elif 'reg_class_agnostic' in config.model.bbox_head.keys():
+    elif 'reg_class_agnostic' in config.model.bbox_head:
         reg_cls_agnostic = config.model.bbox_head \
             .reg_class_agnostic
     temp_file.close()
