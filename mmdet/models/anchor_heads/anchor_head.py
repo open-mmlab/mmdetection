@@ -128,13 +128,13 @@ class AnchorHead(nn.Module):
             for i in range(num_levels):#对每一层特征
                 anchor_stride = self.anchor_strides[i]
                 feat_h, feat_w = featmap_sizes[i]
-                h, w, _ = img_meta['pad_shape']#图片大小
-                valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
+                h, w, _ = img_meta['pad_shape']#这里说明有些图片是经过了padding处理过的，边框部分是黑色的，不是图片，所以对这个部分的anchor没用
+                valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)#所以要进行有效特征图裁剪，小的才是有用的部分
                 valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
                 flags = self.anchor_generators[i].valid_flags(
                     (feat_h, feat_w), (valid_feat_h, valid_feat_w),
-                    device=device)
-                multi_level_flags.append(flags)
+                    device=device)#这个就是生成哪些anchor是在有效特征图部分的索引
+                multi_level_flags.append(flags)#当然，每个图都不一样，所以要对所有的图都进行处理，才能找到所有在有效区域生成的全部anchors
             valid_flag_list.append(multi_level_flags)#生成有效的anchor
 
         return anchor_list, valid_flag_list
