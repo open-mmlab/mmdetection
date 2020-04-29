@@ -40,7 +40,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 ## Changelog
 
 v1.1.0 was released in 24/2/2020.
-Please refer to [CHANGELOG.md](docs/CHANGELOG.md) for details and release history.
+Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
 ## Benchmark and model zoo
 
@@ -86,12 +86,12 @@ Other features
 
 ## Installation
 
-Please refer to [INSTALL.md](docs/INSTALL.md) for installation and dataset preparation.
+Please refer to [install.md](docs/install.md) for installation and dataset preparation.
 
 
 ## Get Started
 
-Please see [GETTING_STARTED.md](docs/GETTING_STARTED.md) for the basic usage of MMDetection.
+Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection.
 
 ## Contributing
 

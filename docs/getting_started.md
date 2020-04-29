@@ -1,7 +1,7 @@
 # Getting Started
 
 This page provides basic tutorials about the usage of MMDetection.
-For installation instructions, please see [INSTALL.md](INSTALL.md).
+For installation instructions, please see [install.md](install.md).
 
 ## Inference with pretrained models
 
@@ -372,7 +372,7 @@ The final output filename will be `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth
 
 ### Test the robustness of detectors
 
-Please refer to [ROBUSTNESS_BENCHMARKING.md](ROBUSTNESS_BENCHMARKING.md).
+Please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
 
 ### Convert to ONNX (experimental)
 
@@ -387,5 +387,3 @@ python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --out ${ONNX_FILE
 ## Tutorials
 
 Currently, we provide three tutorials for users to [finetune models](tutorials/finetune.md), [add new dataset](tutorials/new_datasets.md), and [add new modules](tutorials/new_modules.md)
-
-For more information on how it works, you can refer to [TECHNICAL_DETAILS.md](TECHNICAL_DETAILS.md) (TODO).

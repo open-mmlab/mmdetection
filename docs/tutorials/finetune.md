@@ -1,6 +1,6 @@
 # Tutorial 3: Finetuning Models
 
-Detectors pre-trained on the COCO dataset always serve as a good pre-trained model for other datasets, e.g., CityScapes and KITTI Dataset.
+Detectors pre-trained on the COCO dataset can serve as a good pre-trained model for other datasets, e.g., CityScapes and KITTI Dataset.
 This tutorial provides instruction for users to use the models provided in the [Model Zoo](../MODEL_ZOO.md) for other datasets to obatin better performance.
 
 There are two steps to finetune a model on a new dataset.
@@ -54,7 +54,7 @@ model = dict(
 The users may also need to prepare the dataset and write the configs about dataset. MMDetection V2.0 already support VOC, WIDER FACE, COCO and Cityscapes Dataset.
 
 ## Modify training schedule
-The finetunings hyperparameters varies from the default schedule. It usually requires smaller learning and less training epochs
+The finetuning hyperparameters vary from the default schedule. It usually requires smaller learning rate and less training epochs
 
 ```python
 # optimizer

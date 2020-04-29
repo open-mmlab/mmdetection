@@ -2,7 +2,7 @@
 
 ## Customize datasets by reorganizing data
 
-### Reorganizing dataset to existing format
+### Reorganize dataset to existing format
 
 The simplest way is to convert your dataset to existing dataset formats (COCO or PASCAL VOC).
 
@@ -80,7 +80,7 @@ data = dict(
 
 We use this way to support CityScapes dataset. The script is in [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/cityscapes.py) and we also provide the finetuning [configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).
 
-### Reorganizing dataset to middle format
+### Reorganize dataset to middle format
 
 It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
 Actually, we define a simple annotation format and all existing datasets are
@@ -214,4 +214,19 @@ data = dict(
     test = dataset_A_test
     )
 
+```
+
+### Modify classes of existing dataset
+
+With existing dataset types, we can modify the class names of them to train subset of the dataset.
+For example, if you want to train only three classes of the current dataset,
+you can modify the classes of dataset.
+The dataset will subtract subset of the data which contains at least one class in the `classes`.
+
+```python
+classes = ('person', 'bicycle', 'car')
+data = dict(
+    train=dict(classes=classes),
+    val=dict(classes=classes),
+    test=dict(classes=classes))
 ```
