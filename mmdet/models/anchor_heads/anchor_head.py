@@ -141,14 +141,14 @@ class AnchorHead(nn.Module):
 
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
-        # classification loss
+        # classification loss  将labels，label_weights,cls_score 全部统一成一个形状，才能进行损失计算，该函数只对一个预测结果使用
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
         loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=num_total_samples)#计算分类损失
-        # regression loss
+            cls_score, labels, label_weights, avg_factor=num_total_samples)#直接调用损失函数即可
+        # regression loss  同上，将bbox_targets,bbox_weights,bbox_pred 统一成一个形状，计算回归损失
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
@@ -167,14 +167,14 @@ class AnchorHead(nn.Module):
              gt_labels,
              img_metas,
              cfg,
-             gt_bboxes_ignore=None):
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]#特征的大小
-        assert len(featmap_sizes) == len(self.anchor_generators)#保证特征层个数和anchor层数一致
+             gt_bboxes_ignore=None):#该函数对多个预测结果使用
+        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]#多少个结果，每个结果的大小
+        assert len(featmap_sizes) == len(self.anchor_generators)#保证特征层个数和anchor层数一致，保证anchor层和结果层一一对应
 
         device = cls_scores[0].device
 
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)#返回所有的anchor和有效的anchor
+            featmap_sizes, img_metas, device=device)#返回所有的anchor和有效的anchor索引
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = anchor_target(
             anchor_list,
@@ -252,8 +252,8 @@ class AnchorHead(nn.Module):
             >>> assert det_bboxes.shape[1] == 5
             >>> assert len(det_bboxes) == len(det_labels) == cfg.max_per_img
         """
-        assert len(cls_scores) == len(bbox_preds)
-        num_levels = len(cls_scores)
+        assert len(cls_scores) == len(bbox_preds)#两者个数相同
+        num_levels = len(cls_scores) #有多少个特征进行预测
 
         device = cls_scores[0].device
         mlvl_anchors = [
@@ -261,21 +261,21 @@ class AnchorHead(nn.Module):
                 cls_scores[i].size()[-2:],
                 self.anchor_strides[i],
                 device=device) for i in range(num_levels)
-        ]
+        ]#生成各个特征层上的anchor
         result_list = []
-        for img_id in range(len(img_metas)):
+        for img_id in range(len(img_metas)):#对每张图
             cls_score_list = [
                 cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
+            ]#取出它对应的分类预测结果，有多个
             bbox_pred_list = [
                 bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
+            ]#这个是回归的结果
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             proposals = self.get_bboxes_single(cls_score_list, bbox_pred_list,
                                                mlvl_anchors, img_shape,
-                                               scale_factor, cfg, rescale)
-            result_list.append(proposals)
+                                               scale_factor, cfg, rescale)#使用anchor和预测的结果进行提议处理
+            result_list.append(proposals)#每个图的结果放入列表
         return result_list
 
     def get_bboxes_single(self,
@@ -287,45 +287,45 @@ class AnchorHead(nn.Module):
                           cfg,
                           rescale=False):
         """
-        Transform outputs for a single batch item into labeled boxes.
+        Transform outputs for a single batch item into labeled boxes.这个函数只是对一张图的多个预测结果进行处理
         """
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
         for cls_score, bbox_pred, anchors in zip(cls_score_list,
-                                                 bbox_pred_list, mlvl_anchors):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+                                                 bbox_pred_list, mlvl_anchors):#每次取出一层的分类，回归和anchor
+            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]#这里两者依然是等大小的张量
             cls_score = cls_score.permute(1, 2,
-                                          0).reshape(-1, self.cls_out_channels)
-            if self.use_sigmoid_cls:
+                                          0).reshape(-1, self.cls_out_channels)#修改形状，
+            if self.use_sigmoid_cls:#使用激活
                 scores = cls_score.sigmoid()
             else:
                 scores = cls_score.softmax(-1)
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)#回归张量形状改变
+            nms_pre = cfg.get('nms_pre', -1)#取出NMS的阀值
+            if nms_pre > 0 and scores.shape[0] > nms_pre: #根据NMS要求，取出前景最大分数的BOXES
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
                     max_scores, _ = scores[:, 1:].max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
+                _, topk_inds = max_scores.topk(nms_pre)#取出多少个
+                anchors = anchors[topk_inds, :]#分别取出TOP-K个
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
             bboxes = delta2bbox(anchors, bbox_pred, self.target_means,
-                                self.target_stds, img_shape)
-            mlvl_bboxes.append(bboxes)
+                                self.target_stds, img_shape)#将给的anchor和预测生成的delta进行加和，形成预测得到的BOXES
+            mlvl_bboxes.append(bboxes)#放入列表保存，这里是完成一层特征预测结果的处理
             mlvl_scores.append(scores)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
+        mlvl_bboxes = torch.cat(mlvl_bboxes)#将所有的预测生成的BOXES组合在一起
         if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
+            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)#考虑是否要对生成的BOXES进行缩放
+        mlvl_scores = torch.cat(mlvl_scores)#组合所有的分类结果
         if self.use_sigmoid_cls:
             # Add a dummy background class to the front when using sigmoid
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
         det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                 cfg.score_thr, cfg.nms,
-                                                cfg.max_per_img)
+                                                cfg.max_per_img)#再使用NMS进行处理
         return det_bboxes, det_labels
