@@ -50,12 +50,12 @@ def parse_args():
     return args.parse_args()
 
 
-def print_stat(content, pallete, cat_id_to_color_id):
+def print_stat(content, palette, cat_id_to_color_id):
     print('   images:', len(content['images']))
     print('   annotations:', len(content['annotations']))
     print('   categories:', len(content['categories']))
     for i, cat in enumerate(content['categories']):
-        color = pallete[cat_id_to_color_id[cat['id']]]
+        color = palette[cat_id_to_color_id[cat['id']]]
         print('      ', bg(*color) + '   ' + bg.rs + ' ' + str(cat))
 
 
