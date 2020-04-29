@@ -298,9 +298,9 @@ class GuidedAnchorHead(AnchorHead):
         multi_level_squares = []
         for i in range(num_levels):
             squares = self.square_generators[i].grid_anchors(
-                featmap_sizes[i], self.anchor_strides[i], device=device)
+                featmap_sizes[i], self.anchor_strides[i], device=device)#生成每个特征层上的anchors
             multi_level_squares.append(squares)
-        squares_list = [multi_level_squares for _ in range(num_imgs)]
+        squares_list = [multi_level_squares for _ in range(num_imgs)]#每张图上都是一样的
 
         # for each image, we compute multi level guided anchors
         guided_anchors_list = []
@@ -342,7 +342,7 @@ class GuidedAnchorHead(AnchorHead):
         # calculate location filtering mask
         loc_pred = loc_pred.sigmoid().detach()
         if use_loc_filter:
-            loc_mask = loc_pred >= self.loc_filter_thr
+            loc_mask = loc_pred >= self.loc_filter_thr #这里有一个阀值过滤的，分类分数要大于这个阀值
         else:
             loc_mask = loc_pred >= 0.0
         mask = loc_mask.permute(1, 2, 0).expand(-1, -1, self.num_anchors)
@@ -358,18 +358,18 @@ class GuidedAnchorHead(AnchorHead):
             bbox_deltas,
             self.anchoring_means,
             self.anchoring_stds,
-            wh_ratio_clip=1e-6)
+            wh_ratio_clip=1e-6)#得到预测的ANCHORS，还有MASK
         return guided_anchors, mask
 
     def loss_shape_single(self, shape_pred, bbox_anchors, bbox_gts,
                           anchor_weights, anchor_total_num):
-        shape_pred = shape_pred.permute(0, 2, 3, 1).contiguous().view(-1, 2)
-        bbox_anchors = bbox_anchors.contiguous().view(-1, 4)
-        bbox_gts = bbox_gts.contiguous().view(-1, 4)
-        anchor_weights = anchor_weights.contiguous().view(-1, 4)
-        bbox_deltas = bbox_anchors.new_full(bbox_anchors.size(), 0)
-        bbox_deltas[:, 2:] += shape_pred
-        # filter out negative samples to speed-up weighted_bounded_iou_loss
+        shape_pred = shape_pred.permute(0, 2, 3, 1).contiguous().view(-1, 2)#单独对于shape的损失，先转话为[[w,h],[w,h]
+        bbox_anchors = bbox_anchors.contiguous().view(-1, 4)#调整BOXES的形状
+        bbox_gts = bbox_gts.contiguous().view(-1, 4)#调整GT的形状
+        anchor_weights = anchor_weights.contiguous().view(-1, 4)#权重
+        bbox_deltas = bbox_anchors.new_full(bbox_anchors.size(), 0)#大小和anchors一样的全是0的张量
+        bbox_deltas[:, 2:] += shape_pred #将预测值放到其w,h位置
+        # filter out negative samples to speed-up weighted_bounded_iou_loss，对一些负样本利用权值进行过滤
         inds = torch.nonzero(anchor_weights[:, 0] > 0).squeeze(1)
         bbox_deltas_ = bbox_deltas[inds]
         bbox_anchors_ = bbox_anchors[inds]
@@ -380,12 +380,12 @@ class GuidedAnchorHead(AnchorHead):
             bbox_deltas_,
             self.anchoring_means,
             self.anchoring_stds,
-            wh_ratio_clip=1e-6)
+            wh_ratio_clip=1e-6)#生成真正预测出的BOXES
         loss_shape = self.loss_shape(
             pred_anchors_,
             bbox_gts_,
             anchor_weights_,
-            avg_factor=anchor_total_num)
+            avg_factor=anchor_total_num)#根据预测anchor和GT计算两者的损失
         return loss_shape
 
     def loss_loc_single(self, loc_pred, loc_target, loc_weight, loc_avg_factor,
@@ -394,7 +394,7 @@ class GuidedAnchorHead(AnchorHead):
             loc_pred.reshape(-1, 1),
             loc_target.reshape(-1, 1).long(),
             loc_weight.reshape(-1, 1),
-            avg_factor=loc_avg_factor)
+            avg_factor=loc_avg_factor)#针对分类的损失
         return loss_loc
 
     @force_fp32(
@@ -574,7 +574,7 @@ class GuidedAnchorHead(AnchorHead):
                                                        mlvl_masks):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             # if no location is kept, end.
-            if mask.sum() == 0:
+            if mask.sum() == 0: #是根据mask来计算的
                 continue
             # reshape scores and bbox_pred
             cls_score = cls_score.permute(1, 2,
