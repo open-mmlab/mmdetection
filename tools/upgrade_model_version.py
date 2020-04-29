@@ -1,8 +1,10 @@
 import argparse
 import re
+import tempfile
 from collections import OrderedDict
 
 import torch
+from mmcv import Config
 
 
 def is_head(key):
@@ -13,11 +15,31 @@ def is_head(key):
     return any(key.startswith(h) for h in valid_head_list)
 
 
-def find_rpn_head(state_dict):
-    for key in state_dict.keys():
-        if key.find('rpn_head') != -1:
-            return True
-    return False
+def parse_config(config_strings):
+    temp_file = tempfile.NamedTemporaryFile()
+    config_path = f'{temp_file.name}.py'
+    with open(config_path, 'w') as f:
+        f.write(config_strings)
+
+    config = Config.fromfile(config_path)
+    is_two_stage = True
+    is_ssd = False
+    is_retina = False
+    reg_cls_agnostic = False
+    if 'rpn_head' not in config.model.keys():
+        is_two_stage = False
+        # check whether it is SSD
+        if config.model.bbox_head.type == 'SSDHead':
+            is_ssd = True
+        elif config.model.bbox_head.type == 'RetinaHead':
+            is_retina = True
+    elif isinstance(config.model['bbox_head'], list):
+        reg_cls_agnostic = True
+    elif 'reg_class_agnostic' in config.model.bbox_head.keys():
+        reg_cls_agnostic = config.model.bbox_head \
+            .reg_class_agnostic
+
+    return is_two_stage, is_ssd, is_retina, reg_cls_agnostic
 
 
 def reorder_cls_channel(val, num_classes=81):
@@ -89,12 +111,7 @@ def truncate_reg_channel(val, num_classes=81):
     return new_val
 
 
-def convert(in_file,
-            out_file,
-            num_classes,
-            upgrade_retina=False,
-            is_ssd=False,
-            reg_cls_agnostic=False):
+def convert(in_file, out_file, num_classes):
     """Convert keys in checkpoints.
 
     There can be some breaking changes during the development of mmdetection,
@@ -104,8 +121,13 @@ def convert(in_file,
     checkpoint = torch.load(in_file)
     in_state_dict = checkpoint.pop('state_dict')
     out_state_dict = OrderedDict()
-
-    is_two_stage = find_rpn_head(in_state_dict)
+    meta_info = checkpoint['meta']
+    is_two_stage, is_ssd, is_retina, reg_cls_agnostic = parse_config(
+        meta_info['config'])
+    if meta_info['mmdet_version'] <= '0.5.3' and is_retina:
+        upgrade_retina = True
+    else:
+        upgrade_retina = False
 
     for key, val in in_state_dict.items():
         new_key = key
@@ -163,22 +185,8 @@ def main():
         type=int,
         default=81,
         help='number of classes of the original model')
-    parser.add_argument(
-        '--upgrade-retina',
-        action='store_true',
-        help='whether to upgrade the retina head')
-    parser.add_argument(
-        '--ssd',
-        action='store_true',
-        help='whether to upgrade the SSD detctor')
-    parser.add_argument(
-        '--reg-cls-agnostic',
-        action='store_true',
-        help='whether the bbox regression is class agnostic '
-        '(Cascade methods and SSD)')
     args = parser.parse_args()
-    convert(args.in_file, args.out_file, args.num_classes, args.upgrade_retina,
-            args.ssd, args.reg_cls_agnostic)
+    convert(args.in_file, args.out_file, args.num_classes)
 
 
 if __name__ == '__main__':
