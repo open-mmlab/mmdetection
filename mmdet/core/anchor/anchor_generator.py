@@ -248,8 +248,8 @@ class AnchorGenerator(object):
         feat_h, feat_w = featmap_size
         valid_h, valid_w = valid_size
         assert valid_h <= feat_h and valid_w <= feat_w
-        valid_x = torch.zeros(feat_w, dtype=torch.uint8, device=device)
-        valid_y = torch.zeros(feat_h, dtype=torch.uint8, device=device)
+        valid_x = torch.zeros(feat_w, dtype=torch.bool, device=device)
+        valid_y = torch.zeros(feat_h, dtype=torch.bool, device=device)
         valid_x[:valid_w] = 1
         valid_y[:valid_h] = 1
         valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
@@ -447,9 +447,9 @@ class LegacyAnchorGenerator(AnchorGenerator):
             x_center = self.center_offset * (w - 1)
             y_center = self.center_offset * (h - 1)
         else:
-            x_center, y_center = self.center
+            x_center, y_center = center
 
-        h_ratios = torch.sqrt(self.ratios)
+        h_ratios = torch.sqrt(ratios)
         w_ratios = 1 / h_ratios
         if self.scale_major:
             ws = (w * w_ratios[:, None] * scales[None, :]).view(-1)
@@ -470,9 +470,22 @@ class LegacyAnchorGenerator(AnchorGenerator):
 
 
 @ANCHOR_GENERATORS.register_module
-class LegacySSDAnchorGenerator(LegacyAnchorGenerator, SSDAnchorGenerator):
+class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x
 
     The difference between `LegacySSDAnchorGenerator` and `SSDAnchorGenerator`
     can be found in `LegacyAnchorGenerator`.
     """
+
+    def __init__(self,
+                 strides,
+                 ratios,
+                 basesize_ratio_range,
+                 input_size=300,
+                 scale_major=True):
+        super(LegacySSDAnchorGenerator,
+              self).__init__(strides, ratios, basesize_ratio_range, input_size,
+                             scale_major)
+        self.centers = [((stride - 1) / 2., (stride - 1) / 2.)
+                        for stride in strides]
+        self.base_anchors = self.gen_base_anchors()
