@@ -15,6 +15,7 @@ model = dict(
             scales=[8],
             ratios=[0.5, 1.0, 2.0],
             strides=[4, 8, 16, 32, 64]),
+        bbox_coder=dict(type='LegacyDeltaXYWHBBoxCoder'),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
     roi_head=dict(
         type='StandardRoIHead',
@@ -25,8 +26,9 @@ model = dict(
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
         bbox_head=dict(
+            bbox_coder=dict(type='LegacyDeltaXYWHBBoxCoder'),
             loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))))
 # model training and testing settings
 train_cfg = dict(
-    rpn_proposal=dict(max_num=1000),
+    rpn_proposal=dict(nms_post=2000, max_num=2000),
     rcnn=dict(assigner=dict(match_low_quality=True)))

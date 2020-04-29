@@ -50,7 +50,9 @@ thus MMDetection 2.0 do not allow low quality matching by default in R-CNN train
   ```
   [model]_(model setting)_[backbone]_[neck]_(norm setting)_(misc)_(gpu x batch)_[schedule]_[dataset].py,
   ```
-  where the (misc) includes DCN and GCBlock, etc. For example, `reppoints_moment_r101_fpn_gn-neck+head_mstrain_480-960_2x_coco.py` indicates the RepPoints method with moment setting using ResNet101 backbone and FPN with GN in the neck and head, trained by multi-scale augmentation by 2x schedule on COCO dataset.
+  where the (misc) includes DCN and GCBlock, etc. More details are in the [Documentation for config](CONFIG.md)
+
+- MMDetection V2.0 uses new ResNet Caffe backbones to reduce warnings when loading pre-trained models. Most of the new backbone's weights are the same as the former ones but do not have `conv.bias`, except that they use a different `img_norm_cfg`. Thus, the new backbone will not cause warning of unexpected keys.
 
 ## Training Hyperparameters
 
