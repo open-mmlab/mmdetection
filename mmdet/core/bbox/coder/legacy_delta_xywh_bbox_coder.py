@@ -143,11 +143,11 @@ def legacy_delta2bbox(rois,
         >>>                        [  1.,   1.,   1.,   1.],
         >>>                        [  0.,   0.,   2.,  -1.],
         >>>                        [ 0.7, -1.9, -0.5,  0.3]])
-        >>> delta2bbox(rois, deltas, max_shape=(32, 32))
-        tensor([[0.0000, 0.0000, 1.0000, 1.0000],
-                [0.1409, 0.1409, 2.8591, 2.8591],
-                [0.0000, 0.3161, 4.1945, 0.6839],
-                [5.0000, 5.0000, 5.0000, 5.0000]])
+        >>> legacy_delta2bbox(rois, deltas, max_shape=(32, 32))
+        tensor([[0.0000, 0.0000, 1.5000, 1.5000],
+                [0.0000, 0.0000, 5.2183, 5.2183],
+                [0.0000, 0.1321, 7.8891, 0.8679],
+                [5.3967, 2.4251, 6.0033, 3.7749]])
     """
     means = deltas.new_tensor(means).repeat(1, deltas.size(1) // 4)
     stds = deltas.new_tensor(stds).repeat(1, deltas.size(1) // 4)
@@ -172,6 +172,10 @@ def legacy_delta2bbox(rois,
     gx = torch.addcmul(px, 1, pw, dx)  # gx = px + pw * dx
     gy = torch.addcmul(py, 1, ph, dy)  # gy = py + ph * dy
     # Convert center-xy/width/height to top-left, bottom-right
+
+    # The true legacy box coder should +- 0.5 here.
+    # However, current implementation improves the performance when testing
+    # the models trained in MMDetection 1.X (~0.5 bbox AP, 0.2 mask AP)
     x1 = gx - gw * 0.5
     y1 = gy - gh * 0.5
     x2 = gx + gw * 0.5

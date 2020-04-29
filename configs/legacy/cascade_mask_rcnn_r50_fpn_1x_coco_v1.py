@@ -35,6 +35,10 @@ model = dict(
             dict(
                 type='Shared2FCBBoxHead',
                 reg_class_agnostic=True,
+                in_channels=256,
+                fc_out_channels=1024,
+                roi_feat_size=7,
+                num_classes=80,
                 bbox_coder=dict(
                     type='LegacyDeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -42,6 +46,10 @@ model = dict(
             dict(
                 type='Shared2FCBBoxHead',
                 reg_class_agnostic=True,
+                in_channels=256,
+                fc_out_channels=1024,
+                roi_feat_size=7,
+                num_classes=80,
                 bbox_coder=dict(
                     type='LegacyDeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
@@ -49,6 +57,10 @@ model = dict(
             dict(
                 type='Shared2FCBBoxHead',
                 reg_class_agnostic=True,
+                in_channels=256,
+                fc_out_channels=1024,
+                roi_feat_size=7,
+                num_classes=80,
                 bbox_coder=dict(
                     type='LegacyDeltaXYWHBBoxCoder',
                     target_means=[0., 0., 0., 0.],
