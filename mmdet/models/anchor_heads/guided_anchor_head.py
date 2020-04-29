@@ -170,14 +170,14 @@ class GuidedAnchorHead(AnchorHead):
         self._init_layers()
 
     def _init_layers(self):
-        self.relu = nn.ReLU(inplace=True)
-        self.conv_loc = nn.Conv2d(self.in_channels, 1, 1)
-        self.conv_shape = nn.Conv2d(self.in_channels, self.num_anchors * 2, 1)
+        self.relu = nn.ReLU(inplace=True)#激活层
+        self.conv_loc = nn.Conv2d(self.in_channels, 1, 1)#中心预测1*1卷积，输出位置中心，只有1个通道
+        self.conv_shape = nn.Conv2d(self.in_channels, self.num_anchors * 2, 1)#形状预测，还是有anchor个数，因为不知道是哪一个匹配最好
         self.feature_adaption = FeatureAdaption(
             self.in_channels,
             self.feat_channels,
             kernel_size=3,
-            deformable_groups=self.deformable_groups)
+            deformable_groups=self.deformable_groups)#DCN卷积
         self.conv_cls = MaskedConv2d(self.feat_channels,
                                      self.num_anchors * self.cls_out_channels,
                                      1)#这个是分类预测层的卷积，如果是推断还需要用到mask
@@ -216,7 +216,7 @@ class GuidedAnchorHead(AnchorHead):
                             cfg,
                             device='cuda'):
         """Get sampled approxs and inside flags according to feature map sizes.
-        用于生成对应的标签属性
+        用于生成所有的anchor，而且还有anchor是否有效
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.特征图大小
             img_metas (list[dict]): Image meta info.图片标签
@@ -235,9 +235,9 @@ class GuidedAnchorHead(AnchorHead):
             approxs = self.approx_generators[i].grid_anchors(
                 featmap_sizes[i], self.anchor_strides[i], device=device)#生成一个特征图上的anchor，是（N,4）
             multi_level_approxs.append(approxs)
-        approxs_list = [multi_level_approxs for _ in range(num_imgs)]#每个图片都要有所有anchor
+        approxs_list = [multi_level_approxs for _ in range(num_imgs)]#每个图片都要有所有anchor，但是每个图片的ANCHOR都是一样的，所以直接复制
 
-        # for each image, we compute inside flags of multi level approxes计算出所有图的标注标签
+        # for each image, we compute inside flags of multi level approxes计算出所有的anchor在每个图上对应的有效标识
         inside_flag_list = []
         for img_id, img_meta in enumerate(img_metas):#对每张图片的标签
             multi_level_flags = []
