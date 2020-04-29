@@ -5,3 +5,5 @@ ninja
 tensorboard
 imagesize==1.2.0
 PyYAML==5.3.1
+sty==1.0.0b12
+seaborn==0.10.1

@@ -25,6 +25,14 @@ import cv2
 import numpy as np
 import pycocotools.mask as mask_utils
 from tqdm import tqdm
+from sty import bg
+import seaborn as sns
+
+
+def colors(n):
+    palette = sns.color_palette(None, n)
+    palette = [(int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)) for x in palette]
+    return palette
 
 
 def parse_args():
@@ -32,7 +40,7 @@ def parse_args():
     args.add_argument('annotation', help='Path to COCO annotation (*.json).')
     args.add_argument('root', help='Path to images root folder.')
     args.add_argument('--delay', type=int, default=0, help='imshow delay.')
-    args.add_argument('--limit_imshow_size', type=int, nargs=2, default=(720, 1280),
+    args.add_argument('--limit_imshow_size', type=int, nargs=2, default=(1080, 1920),
                       help='Resize images with size greater than specified here size (h, w)! '
                            'keeping aspect ratio.')
     args.add_argument('--shuffle', action='store_true',
@@ -42,12 +50,13 @@ def parse_args():
     return args.parse_args()
 
 
-def print_stat(content):
+def print_stat(content, pallete, cat_id_to_color_id):
     print('   images:', len(content['images']))
     print('   annotations:', len(content['annotations']))
-    print('   categories:')
-    for cat in content['categories']:
-        print('      ', cat)
+    print('   categories:', len(content['categories']))
+    for i, cat in enumerate(content['categories']):
+        color = pallete[cat_id_to_color_id[cat['id']]]
+        print('      ', bg(*color) + '   ' + bg.rs + ' ' + str(cat))
 
 
 def parse_segmentation(segmentation, img_h, img_w):
@@ -64,8 +73,7 @@ def parse_segmentation(segmentation, img_h, img_w):
     return mask
 
 
-def overlay_mask(image, masks):
-    mask_color = (255, 0, 0)
+def overlay_mask(image, masks, mask_colors):
     segments_image = image.copy()
     aggregated_mask = np.zeros(image.shape[:2], dtype=np.uint8)
     aggregated_colored_mask = np.zeros(image.shape, dtype=np.uint8)
@@ -74,7 +82,7 @@ def overlay_mask(image, masks):
         mask = mask.astype(np.uint8)
 
         cv2.bitwise_or(aggregated_mask, mask, dst=aggregated_mask)
-        cv2.bitwise_or(aggregated_colored_mask, np.asarray(mask_color, dtype=np.uint8),
+        cv2.bitwise_or(aggregated_colored_mask, np.asarray(mask_colors[i], dtype=np.uint8),
                        dst=aggregated_colored_mask, mask=mask)
 
     # Fill the area occupied by all instances with a colored instances mask image.
@@ -94,8 +102,6 @@ def main():
     with open(args.annotation) as f:
         content = json.load(f)
 
-    print_stat(content)
-
     annotations = defaultdict(list)
     categories = {}
 
@@ -104,6 +110,12 @@ def main():
 
     for cat in content['categories']:
         categories[cat['id']] = cat
+
+    cat_id_to_color_id = {cat['id']: i for i, cat in enumerate(content['categories'])}
+
+    palette = colors(len(categories))
+
+    print_stat(content, palette, cat_id_to_color_id)
 
     if args.shuffle:
         random.shuffle(content['images'])
@@ -115,23 +127,27 @@ def main():
             print(path)
 
         masks = []
+        masks_colors = []
 
         for ann in annotations[image_info['id']]:
             bbox = ann['bbox']
             p1 = int(bbox[0]), int(bbox[1])
             p2 = int(bbox[2] + bbox[0]), int(bbox[3] + bbox[1])
 
+            bgr_color = palette[cat_id_to_color_id[ann['category_id']]][::-1]
+
             try:
-                cv2.putText(image, categories[ann['category_id']]['name'], p1, 1, 2, (255, 0, 0), 2)
+                cv2.putText(image, categories[ann['category_id']]['name'], p1, 1, bbox[2] * 0.01, bgr_color, 2)
             except:
                 print(ann)
 
-            cv2.rectangle(image, p1, p2, (255, 0, 0), 2)
+            cv2.rectangle(image, p1, p2, bgr_color, 2)
 
             if ann['segmentation'] and args.with_masks:
                 masks.append(parse_segmentation(ann['segmentation'], image.shape[0], image.shape[1]))
+                masks_colors.append(bgr_color)
 
-        image = overlay_mask(image, masks)
+        image = overlay_mask(image, masks, masks_colors)
 
         height_ratio = image.shape[0] / args.limit_imshow_size[0]
         width_ratio = image.shape[1] / args.limit_imshow_size[1]
