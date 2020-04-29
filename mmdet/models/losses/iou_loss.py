@@ -139,7 +139,8 @@ class IoULoss(nn.Module):
             # TODO: remove this in the future
             # reduce the weight of shape (n, 4) to (n,) to match the
             # iou_loss of shape (n,)
-            weight = weight.view(pred.shape[0], -1).mean(-1)
+            assert weight.shape == pred.shape
+            weight = weight.mean(-1)
         loss = self.loss_weight * iou_loss(
             pred,
             target,
@@ -210,7 +211,8 @@ class GIoULoss(nn.Module):
             # TODO: remove this in the future
             # reduce the weight of shape (n, 4) to (n,) to match the
             # giou_loss of shape (n,)
-            weight = weight.view(pred.shape[0], -1).mean(-1)
+            assert weight.shape == pred.shape
+            weight = weight.mean(-1)
         loss = self.loss_weight * giou_loss(
             pred,
             target,
