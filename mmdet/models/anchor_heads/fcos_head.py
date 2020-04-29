@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.cnn import normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
@@ -52,7 +53,9 @@ class FCOSHead(nn.Module):
                      use_sigmoid=True,
                      loss_weight=1.0),
                  conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)):
+                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+                 ctr_on_reg=False,
+                 reg_norm=False):
         super(FCOSHead, self).__init__()
 
         self.num_classes = num_classes
@@ -70,6 +73,8 @@ class FCOSHead(nn.Module):
         self.fp16_enabled = False
         self.center_sampling = center_sampling
         self.center_sample_radius = center_sample_radius
+        self.ctr_on_reg = ctr_on_reg
+        self.reg_norm = reg_norm
 
         self._init_layers()
 
@@ -116,22 +121,29 @@ class FCOSHead(nn.Module):
         normal_init(self.fcos_centerness, std=0.01)
 
     def forward(self, feats):
-        return multi_apply(self.forward_single, feats, self.scales)
+        return multi_apply(self.forward_single, feats, self.scales, self.strides)
 
-    def forward_single(self, x, scale):
+    def forward_single(self, x, scale, stride):
         cls_feat = x
         reg_feat = x
 
         for cls_layer in self.cls_convs:
             cls_feat = cls_layer(cls_feat)
         cls_score = self.fcos_cls(cls_feat)
-        centerness = self.fcos_centerness(cls_feat)
 
         for reg_layer in self.reg_convs:
             reg_feat = reg_layer(reg_feat)
+
+        if self.ctr_on_reg:
+            centerness = self.fcos_centerness(reg_feat)
+        else:
+            centerness = self.fcos_centerness(cls_feat)
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
-        bbox_pred = scale(self.fcos_reg(reg_feat)).float().exp()
+        if self.reg_norm:
+            bbox_pred = F.relu(scale(self.fcos_reg(reg_feat)).float()) * stride
+        else:
+            bbox_pred = scale(self.fcos_reg(reg_feat)).float().exp()
         return cls_score, bbox_pred, centerness
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
