@@ -2,8 +2,6 @@ import warnings
 
 import matplotlib.pyplot as plt
 import mmcv
-import numpy as np
-import pycocotools.mask as maskUtils
 import torch
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
@@ -130,76 +128,8 @@ async def async_inference_detector(model, img):
     return result
 
 
-# TODO: merge this method with the one in BaseDetector
-def show_result(img,
-                result,
-                class_names,
-                score_thr=0.3,
-                wait_time=0,
-                show=True,
-                out_file=None):
-    """Visualize the detection results on the image.
-
-    Args:
-        img (str or np.ndarray): Image filename or loaded image.
-        result (tuple[list] or list): The detection result, can be either
-            (bbox, segm) or just bbox.
-        class_names (list[str] or tuple[str]): A list of class names.
-        score_thr (float): The threshold to visualize the bboxes and masks.
-        wait_time (int): Value of waitKey param.
-        show (bool, optional): Whether to show the image with opencv or not.
-        out_file (str, optional): If specified, the visualization result will
-            be written to the out file instead of shown in a window.
-
-    Returns:
-        np.ndarray or None: If neither `show` nor `out_file` is specified, the
-            visualized image is returned, otherwise None is returned.
-    """
-    assert isinstance(class_names, (tuple, list))
-    img = mmcv.imread(img)
-    img = img.copy()
-    if isinstance(result, tuple):
-        bbox_result, segm_result = result
-    else:
-        bbox_result, segm_result = result, None
-    bboxes = np.vstack(bbox_result)
-    labels = [
-        np.full(bbox.shape[0], i, dtype=np.int32)
-        for i, bbox in enumerate(bbox_result)
-    ]
-    labels = np.concatenate(labels)
-    # draw segmentation masks
-    if segm_result is not None:
-        segms = mmcv.concat_list(segm_result)
-        inds = np.where(bboxes[:, -1] > score_thr)[0]
-        np.random.seed(42)
-        color_masks = [
-            np.random.randint(0, 256, (1, 3), dtype=np.uint8)
-            for _ in range(max(labels))
-        ]
-        for i in inds:
-            i = int(i)
-            color_mask = color_masks[labels[i]]
-            mask = maskUtils.decode(segms[i]).astype(np.bool)
-            img[mask] = img[mask] * 0.5 + color_mask * 0.5
-    # if out_file specified, do not show image in window
-    if out_file is not None:
-        show = False
-    # draw bounding boxes
-    mmcv.imshow_det_bboxes(
-        img,
-        bboxes,
-        labels,
-        class_names=class_names,
-        score_thr=score_thr,
-        show=show,
-        wait_time=wait_time,
-        out_file=out_file)
-    if not (show or out_file):
-        return img
-
-
-def show_result_pyplot(img,
+def show_result_pyplot(model,
+                       img,
                        result,
                        class_names,
                        score_thr=0.3,
@@ -207,16 +137,16 @@ def show_result_pyplot(img,
     """Visualize the detection results on the image.
 
     Args:
+        model (nn.Module): The loaded detector.
         img (str or np.ndarray): Image filename or loaded image.
         result (tuple[list] or list): The detection result, can be either
             (bbox, segm) or just bbox.
         class_names (list[str] or tuple[str]): A list of class names.
         score_thr (float): The threshold to visualize the bboxes and masks.
         fig_size (tuple): Figure size of the pyplot figure.
-        out_file (str, optional): If specified, the visualization result will
-            be written to the out file instead of shown in a window.
     """
-    img = show_result(
-        img, result, class_names, score_thr=score_thr, show=False)
+    if hasattr(model, 'module'):
+        model = model.module
+    img = model.show_result(img, result, score_thr=score_thr, show=False)
     plt.figure(figsize=fig_size)
     plt.imshow(mmcv.bgr2rgb(img))
