@@ -12,26 +12,47 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-''' This scrip visualizes bounding boxes from COCO annotation. '''
+""" This scrip visualizes bounding boxes from COCO annotation. """
 
 import argparse
 import json
 import os
-import random
 from collections import defaultdict
+import colorsys
 from math import floor
+import random
 
 import cv2
 import numpy as np
 import pycocotools.mask as mask_utils
-from tqdm import tqdm
 from sty import bg
-import seaborn as sns
+from tqdm import tqdm
 
 
-def colors(n):
-    palette = sns.color_palette(None, n)
-    palette = [(int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)) for x in palette]
+def generate_distinct_colors(n):
+    def dist(c1, c2):
+        dh = min(abs(c1[0] - c2[0]), 1 - abs(c1[0] - c2[0])) * 2
+        ds = abs(c1[1] - c2[1])
+        dv = abs(c1[2] - c2[2])
+        return dh * dh + ds * ds + dv * dv
+
+    def min_distance(colors_set, color_candidate):
+        distances = [dist(o, color_candidate) for o in colors_set]
+        return np.min(distances)
+
+    def hsv2rgb(h, s, v):
+        return tuple(round(c * 255) for c in colorsys.hsv_to_rgb(h, s, v))
+
+    candidates_num = 100
+    hsv_colors = [(1.0, 1.0, 1.0)]
+    for i in range(1, n):
+        colors_candidates = [(random.random(), random.uniform(0.8, 1.0), random.uniform(0.5, 1.0)) 
+                             for _ in range(candidates_num)]
+        min_distances = [min_distance(hsv_colors, c) for c in colors_candidates]
+        arg_max = np.argmax(min_distances)
+        hsv_colors.append(colors_candidates[arg_max])
+
+    palette = [hsv2rgb(*hsv) for hsv in hsv_colors]
     return palette
 
 
@@ -97,6 +118,7 @@ def overlay_mask(image, masks, mask_colors):
 
 
 def main():
+    random.seed(0)
     args = parse_args()
 
     with open(args.annotation) as f:
@@ -113,7 +135,7 @@ def main():
 
     cat_id_to_color_id = {cat['id']: i for i, cat in enumerate(content['categories'])}
 
-    palette = colors(len(categories))
+    palette = generate_distinct_colors(len(categories))
 
     print_stat(content, palette, cat_id_to_color_id)
 
