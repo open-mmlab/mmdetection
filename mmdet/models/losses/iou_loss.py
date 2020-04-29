@@ -206,7 +206,7 @@ class GIoULoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
         # TODO: remove this in the future
-        # reduce the weight to (n,) to match the shape of iou_loss
+        # reduce the weight to (n,) to match the shape of giou_loss
         if weight is not None and weight.dim() > 1:
             weight = weight.view(pred.shape[0], -1).mean(-1)
         loss = self.loss_weight * giou_loss(
