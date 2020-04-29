@@ -124,3 +124,94 @@ There are two ways to work with custom datasets.
   You can convert the annotation format to the expected format above and save it to
   a pickle or json file, like [pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/pascal_voc.py).
   Then you can simply use `CustomDataset`.
+
+## Customize datasets by mixing dataset
+
+MMDetection also supports to mix dataset for training.
+Currently it supports to concat and repeat datasets.
+
+### Repeat dataset
+
+We use `RepeatDataset` as warpper to repeat the dataset. For example, suppose the original dataset is `Dataset_A`, to repeat it, the config looks like the following
+```python
+dataset_A_train = dict(
+        type='RepeatDataset',
+        times=N,
+        dataset=dict(  # This is the original config of Dataset_A
+            type='Dataset_A',
+            ...
+            pipeline=train_pipeline
+        )
+    )
+```
+
+### Concatemate dataset
+There two ways to concaenate the dataset.
+1. If the datasets you want to concatenate are in the same type with different annotation files, you can concatenate the dataset configs like the following.
+    ```python
+    dataset_A_train = dict(
+        type='Dataset_A',
+        ann_file = ['anno_file_1', 'anno_file_2'],
+        pipeline=train_pipeline
+    )
+    ```
+
+2. In case the dataset you want to concatenate is different, you can concatenate the dataset configs like the following.
+    ```python
+    dataset_A_train = dict()
+    dataset_B_train = dict()
+
+    data = dict(
+        imgs_per_gpu=2,
+        workers_per_gpu=2,
+        train = [
+            dataset_A_train,
+            dataset_B_train
+        ],
+        val = dataset_A_val,
+        test = dataset_A_test
+        )
+    ```
+
+
+A more complex example that repeats `Dataset_A` and `Dataset_B` by N and M times, respectively, and then concatenates the repeated datasets is as the following.
+
+```python
+dataset_A_train = dict(
+        type='RepeatDataset',
+        times=N,
+        dataset=dict(
+            type='Dataset_A',
+            ...
+            pipeline=train_pipeline
+        )
+    )
+dataset_A_val = dict(
+        ...
+        pipeline=test_pipeline
+    )
+dataset_A_test = dict(
+        ...
+        pipeline=test_pipeline
+    )
+dataset_B_train = dict(
+        type='RepeatDataset',
+        times=M,
+        dataset=dict(
+            type='Dataset_B',
+            ...
+            pipeline=train_pipeline
+        )
+    )
+data = dict(
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
+    train = [
+        dataset_A_train,
+        dataset_B_train
+    ],
+    val = dataset_A_val,
+    test = dataset_A_test
+    )
+
+```
