@@ -5,8 +5,8 @@ from mmcv.cnn import xavier_init
 
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, multi_apply)
+from ..builder import HEADS
 from ..losses import smooth_l1_loss
-from ..registry import HEADS
 from .anchor_head import AnchorHead
 
 

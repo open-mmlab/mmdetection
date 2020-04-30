@@ -1,6 +1,6 @@
 import torch
 
-from ..registry import BBOX_SAMPLERS
+from ..builder import BBOX_SAMPLERS
 from ..transforms import bbox2roi
 from .base_sampler import BaseSampler
 

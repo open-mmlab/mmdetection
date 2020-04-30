@@ -6,8 +6,7 @@ from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
                         force_fp32, images_to_levels, multi_apply,
                         multiclass_nms, unmap)
-from ..builder import build_loss
-from ..registry import HEADS
+from ..builder import HEADS, build_loss
 
 
 @HEADS.register_module
@@ -68,7 +67,7 @@ class AnchorHead(nn.Module):
             self.cls_out_channels = num_classes + 1
 
         if self.cls_out_channels <= 0:
-            raise ValueError('num_classes={} is too small'.format(num_classes))
+            raise ValueError(f'num_classes={num_classes} is too small')
         self.reg_decoded_bbox = reg_decoded_bbox
 
         self.background_label = (
@@ -190,7 +189,7 @@ class AnchorHead(nn.Module):
         if not inside_flags.any():
             return (None, ) * 6
         # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags.type(torch.bool), :]
+        anchors = flat_anchors[inside_flags, :]
 
         assign_result = self.assigner.assign(
             anchors, gt_bboxes, gt_bboxes_ignore,
@@ -232,7 +231,9 @@ class AnchorHead(nn.Module):
         # map up to original set of anchors
         if unmap_outputs:
             num_total_anchors = flat_anchors.size(0)
-            labels = unmap(labels, num_total_anchors, inside_flags)
+            labels = unmap(
+                labels, num_total_anchors, inside_flags,
+                fill=self.num_classes)  # fill bg label
             label_weights = unmap(label_weights, num_total_anchors,
                                   inside_flags)
             bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)

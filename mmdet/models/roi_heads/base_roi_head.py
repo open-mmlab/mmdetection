@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 import torch.nn as nn
 
-from .. import builder
+from ..builder import build_shared_head
 
 
 class BaseRoIHead(nn.Module, metaclass=ABCMeta):
@@ -20,7 +20,7 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         if shared_head is not None:
-            self.shared_head = builder.build_shared_head(shared_head)
+            self.shared_head = build_shared_head(shared_head)
 
         if bbox_head is not None:
             self.init_bbox_head(bbox_roi_extractor, bbox_head)

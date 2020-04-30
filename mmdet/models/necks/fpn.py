@@ -4,7 +4,7 @@ from mmcv.cnn import xavier_init
 
 from mmdet.core import auto_fp16
 from mmdet.ops import ConvModule
-from ..registry import NECKS
+from ..builder import NECKS
 
 
 @NECKS.register_module
@@ -45,7 +45,7 @@ class FPN(nn.Module):
         >>> self = FPN(in_channels, 11, len(in_channels)).eval()
         >>> outputs = self.forward(inputs)
         >>> for i in range(len(outputs)):
-        ...     print('outputs[{}].shape = {!r}'.format(i, outputs[i].shape))
+        ...     print(f'outputs[{i}].shape = {outputs[i].shape}')
         outputs[0].shape = torch.Size([1, 11, 340, 340])
         outputs[1].shape = torch.Size([1, 11, 170, 170])
         outputs[2].shape = torch.Size([1, 11, 84, 84])

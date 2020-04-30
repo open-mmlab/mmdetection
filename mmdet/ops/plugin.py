@@ -29,7 +29,7 @@ def build_plugin_layer(cfg, postfix='', **kwargs):
 
     layer_type = cfg_.pop('type')
     if layer_type not in plugin_cfg:
-        raise KeyError('Unrecognized plugin type {}'.format(layer_type))
+        raise KeyError(f'Unrecognized plugin type {layer_type}')
     else:
         abbr, plugin_layer = plugin_cfg[layer_type]
 

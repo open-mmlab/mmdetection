@@ -1,5 +1,6 @@
-from mmdet.utils import build_from_cfg
-from .registry import IOU_CALCULATORS
+from mmcv.utils import Registry, build_from_cfg
+
+IOU_CALCULATORS = Registry('IoU calculator')
 
 
 def build_iou_calculator(cfg, default_args=None):

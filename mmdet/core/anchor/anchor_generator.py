@@ -2,7 +2,7 @@ import mmcv
 import numpy as np
 import torch
 
-from .registry import ANCHOR_GENERATORS
+from .builder import ANCHOR_GENERATORS
 
 
 @ANCHOR_GENERATORS.register_module
@@ -64,21 +64,21 @@ class AnchorGenerator(object):
         # check center and center_offset
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
-                '!=0, {} is given.'.format(centers)
+                f'!=0, {centers} is given.'
         if not (0 <= center_offset <= 1):
-            raise ValueError('center_offset should be in range [0, 1], {} is'
-                             ' given.'.format(center_offset))
+            raise ValueError('center_offset should be in range [0, 1], '
+                             f'{center_offset} is given.')
         if centers is not None:
             assert len(centers) == len(strides), \
                 'The number of strides should be the same as centers, got ' \
-                '{} and {}'.format(strides, centers)
+                f'{strides} and {centers}'
 
         # calculate base sizes of anchors
         self.strides = strides
         self.base_sizes = list(strides) if base_sizes is None else base_sizes
         assert len(self.base_sizes) == len(self.strides), \
             'The number of strides should be the same as base sizes, got ' \
-            '{} and {}'.format(self.strides, self.base_sizes)
+            f'{self.strides} and {self.base_sizes}'
 
         # calculate scales of anchors
         assert ((octave_base_scale is not None
@@ -248,8 +248,8 @@ class AnchorGenerator(object):
         feat_h, feat_w = featmap_size
         valid_h, valid_w = valid_size
         assert valid_h <= feat_h and valid_w <= feat_w
-        valid_x = torch.zeros(feat_w, dtype=torch.uint8, device=device)
-        valid_y = torch.zeros(feat_h, dtype=torch.uint8, device=device)
+        valid_x = torch.zeros(feat_w, dtype=torch.bool, device=device)
+        valid_y = torch.zeros(feat_h, dtype=torch.bool, device=device)
         valid_x[:valid_w] = 1
         valid_y[:valid_h] = 1
         valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
@@ -261,19 +261,18 @@ class AnchorGenerator(object):
     def __repr__(self):
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
-        repr_str += '{}strides={},\n'.format(indent_str, self.strides)
-        repr_str += '{}ratios={},\n'.format(indent_str, self.ratios)
-        repr_str += '{}scales={},\n'.format(indent_str, self.scales)
-        repr_str += '{}base_sizes={},\n'.format(indent_str, self.base_sizes)
-        repr_str += '{}scale_major={},\n'.format(indent_str, self.scale_major)
-        repr_str += '{}octave_base_scale={},\n'.format(indent_str,
-                                                       self.octave_base_scale)
-        repr_str += '{}scales_per_octave={},\n'.format(indent_str,
-                                                       self.scales_per_octave)
-        repr_str += '{}num_levels={}\n'.format(indent_str, self.num_levels)
-        repr_str += '{}centers={},\n'.format(indent_str, self.centers)
-        repr_str += '{}center_offset={})'.format(indent_str,
-                                                 self.center_offset)
+        repr_str += f'{indent_str}strides={self.strides},\n'
+        repr_str += f'{indent_str}ratios={self.ratios},\n'
+        repr_str += f'{indent_str}scales={self.scales},\n'
+        repr_str += f'{indent_str}base_sizes={self.base_sizes},\n'
+        repr_str += f'{indent_str}scale_major={self.scale_major},\n'
+        repr_str += f'{indent_str}octave_base_scale='
+        repr_str += f'{self.octave_base_scale},\n'
+        repr_str += f'{indent_str}scales_per_octave='
+        repr_str += f'{self.scales_per_octave},\n'
+        repr_str += f'{indent_str}num_levels={self.num_levels}\n'
+        repr_str += f'{indent_str}centers={self.centers},\n'
+        repr_str += f'{indent_str}center_offset={self.center_offset})'
         return repr_str
 
 
@@ -326,8 +325,8 @@ class SSDAnchorGenerator(AnchorGenerator):
             else:
                 raise ValueError(
                     'basesize_ratio_range[0] should be either 0.15'
-                    'or 0.2 when input_size is 300, got {}.'.format(
-                        basesize_ratio_range[0]))
+                    'or 0.2 when input_size is 300, got '
+                    f'{basesize_ratio_range[0]}.')
         elif input_size == 512:
             if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
                 min_sizes.insert(0, int(input_size * 4 / 100))
@@ -336,13 +335,12 @@ class SSDAnchorGenerator(AnchorGenerator):
                 min_sizes.insert(0, int(input_size * 7 / 100))
                 max_sizes.insert(0, int(input_size * 15 / 100))
             else:
-                raise ValueError(
-                    'basesize_ratio_range[0] should be either 0.1'
-                    'or 0.15 when input_size is 512, got {}.'.format(
-                        basesize_ratio_range[0]))
+                raise ValueError('basesize_ratio_range[0] should be either 0.1'
+                                 'or 0.15 when input_size is 512, got'
+                                 ' {basesize_ratio_range[0]}.')
         else:
             raise ValueError('Only support 300 or 512 in SSDAnchorGenerator'
-                             ', got {}.'.format(input_size))
+                             f', got {input_size}.')
 
         anchor_ratios = []
         anchor_scales = []
@@ -379,16 +377,16 @@ class SSDAnchorGenerator(AnchorGenerator):
     def __repr__(self):
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
-        repr_str += '{}strides={},\n'.format(indent_str, self.strides)
-        repr_str += '{}scales={},\n'.format(indent_str, self.scales)
-        repr_str += '{}scale_major={},\n'.format(indent_str, self.scale_major)
-        repr_str += '{}input_size={},\n'.format(indent_str, self.input_size)
-        repr_str += '{}scales={},\n'.format(indent_str, self.scales)
-        repr_str += '{}ratios={},\n'.format(indent_str, self.ratios)
-        repr_str += '{}num_levels={}\n'.format(indent_str, self.num_levels)
-        repr_str += '{}base_sizes={},\n'.format(indent_str, self.base_sizes)
-        repr_str += '{}basesize_ratio_range={})'.format(
-            indent_str, self.basesize_ratio_range)
+        repr_str += f'{indent_str}strides={self.strides},\n'
+        repr_str += f'{indent_str}scales={self.scales},\n'
+        repr_str += f'{indent_str}scale_major={self.scale_major},\n'
+        repr_str += f'{indent_str}input_size={self.input_size},\n'
+        repr_str += f'{indent_str}scales={self.scales},\n'
+        repr_str += f'{indent_str}ratios={self.ratios},\n'
+        repr_str += f'{indent_str}num_levels={self.num_levels},\n'
+        repr_str += f'{indent_str}base_sizes={self.base_sizes},\n'
+        repr_str += f'{indent_str}basesize_ratio_range='
+        repr_str += f'{self.basesize_ratio_range})'
         return repr_str
 
 
@@ -449,9 +447,9 @@ class LegacyAnchorGenerator(AnchorGenerator):
             x_center = self.center_offset * (w - 1)
             y_center = self.center_offset * (h - 1)
         else:
-            x_center, y_center = self.center
+            x_center, y_center = center
 
-        h_ratios = torch.sqrt(self.ratios)
+        h_ratios = torch.sqrt(ratios)
         w_ratios = 1 / h_ratios
         if self.scale_major:
             ws = (w * w_ratios[:, None] * scales[None, :]).view(-1)
@@ -472,9 +470,22 @@ class LegacyAnchorGenerator(AnchorGenerator):
 
 
 @ANCHOR_GENERATORS.register_module
-class LegacySSDAnchorGenerator(LegacyAnchorGenerator, SSDAnchorGenerator):
+class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x
 
     The difference between `LegacySSDAnchorGenerator` and `SSDAnchorGenerator`
     can be found in `LegacyAnchorGenerator`.
     """
+
+    def __init__(self,
+                 strides,
+                 ratios,
+                 basesize_ratio_range,
+                 input_size=300,
+                 scale_major=True):
+        super(LegacySSDAnchorGenerator,
+              self).__init__(strides, ratios, basesize_ratio_range, input_size,
+                             scale_major)
+        self.centers = [((stride - 1) / 2., (stride - 1) / 2.)
+                        for stride in strides]
+        self.base_anchors = self.gen_base_anchors()
