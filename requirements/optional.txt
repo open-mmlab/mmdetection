@@ -5,4 +5,3 @@ ninja
 tensorboard
 imagesize==1.2.0
 PyYAML==5.3.1
-pycocotools @ git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
