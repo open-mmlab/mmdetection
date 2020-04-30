@@ -223,9 +223,8 @@ class FoveaHead(nn.Module):
                 pos_bbox_targets,
                 pos_weights,
                 avg_factor=num_pos)
-            loss_bbox = loss_bbox.unsqueeze(0)
         else:
-            loss_bbox = torch.tensor([0],
+            loss_bbox = torch.tensor(0,
                                      dtype=flatten_bbox_preds.dtype,
                                      device=flatten_bbox_preds.device)
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
