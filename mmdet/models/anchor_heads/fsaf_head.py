@@ -97,7 +97,7 @@ class FSAFHead(RetinaHead):
             else:
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
             bbox_targets[pos_inds, :] = pos_bbox_targets
-            bbox_weights[pos_inds, :] = 1. / 4.  # avg in tblr dims
+            bbox_weights[pos_inds, :] = 1.0
             # The assigned gt_index for each anchor. (0-based)
             pos_gt_inds[pos_inds] = sampling_result.pos_assigned_gt_inds
             if gt_labels is None:
