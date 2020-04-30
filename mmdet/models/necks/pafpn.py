@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import ConvModule
 
 from mmdet.core import auto_fp16
-from mmdet.ops import ConvModule
 from ..builder import NECKS
 from .fpn import FPN
 

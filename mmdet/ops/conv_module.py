@@ -1,11 +1,8 @@
 import warnings
 
 import torch.nn as nn
-from mmcv.cnn import constant_init, kaiming_init
-
-from .activation import build_activation_layer
-from .conv import build_conv_layer
-from .norm import build_norm_layer
+from mmcv.cnn import (build_activation_layer, build_conv_layer,
+                      build_norm_layer, constant_init, kaiming_init)
 
 
 class ConvModule(nn.Module):
