@@ -3,8 +3,6 @@ imagecorruptions
 scikit-learn
 ninja
 tensorboard
-tensorboardX==1.8
 imagesize==1.2.0
 PyYAML==5.3.1
-opencv-python==4.1.0.25
 pycocotools @ git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
