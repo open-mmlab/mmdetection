@@ -280,6 +280,7 @@ class DeformConvPack(DeformConv):
             kernel_size=self.kernel_size,
             stride=_pair(self.stride),
             padding=_pair(self.padding),
+            dilation=_pair(self.dilation),
             bias=True)
         self.init_offset()
 
@@ -398,6 +399,7 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
             kernel_size=self.kernel_size,
             stride=_pair(self.stride),
             padding=_pair(self.padding),
+            dilation=_pair(self.dilation),
             bias=True)
         self.init_offset()
 
