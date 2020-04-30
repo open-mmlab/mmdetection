@@ -21,7 +21,7 @@ except ImportError:
     Compose = None
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Resize(object):
     """Resize images & bbox & mask.
 
@@ -184,7 +184,7 @@ class Resize(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class RandomFlip(object):
     """Flip the image & bbox & mask.
 
@@ -253,7 +253,7 @@ class RandomFlip(object):
         return self.__class__.__name__ + f'(flip_ratio={self.flip_ratio})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Pad(object):
     """Pad the image & mask.
 
@@ -309,7 +309,7 @@ class Pad(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Normalize(object):
     """Normalize the image.
 
@@ -338,7 +338,7 @@ class Normalize(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class RandomCrop(object):
     """Random crop the image & bboxes & masks.
 
@@ -399,7 +399,7 @@ class RandomCrop(object):
         return self.__class__.__name__ + f'(crop_size={self.crop_size})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class SegRescale(object):
     """Rescale semantic segmentation maps.
 
@@ -421,7 +421,7 @@ class SegRescale(object):
         return self.__class__.__name__ + f'(scale_factor={self.scale_factor})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class PhotoMetricDistortion(object):
     """Apply photometric distortion to image sequentially, every transformation
     is applied with a probability of 0.5. The position of random contrast is in
@@ -515,7 +515,7 @@ class PhotoMetricDistortion(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Expand(object):
     """Random expand the image & bboxes.
 
@@ -585,7 +585,7 @@ class Expand(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class MinIoURandomCrop(object):
     """Random crop the image & bboxes, the cropped patches have minimum IoU
     requirement with original image & bboxes, the IoU threshold is randomly
@@ -676,7 +676,7 @@ class MinIoURandomCrop(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Corrupt(object):
 
     def __init__(self, corruption, severity=1):
@@ -699,7 +699,7 @@ class Corrupt(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Albu(object):
 
     def __init__(self,

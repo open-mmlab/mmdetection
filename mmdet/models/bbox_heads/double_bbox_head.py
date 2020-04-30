@@ -69,7 +69,7 @@ class BasicResBlock(nn.Module):
         return out
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class DoubleConvFCBBoxHead(BBoxHead):
     r"""Bbox head used in Double-Head R-CNN
 

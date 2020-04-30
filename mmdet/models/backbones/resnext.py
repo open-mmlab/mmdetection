@@ -81,7 +81,7 @@ class Bottleneck(_Bottleneck):
         self.add_module(self.norm3_name, norm3)
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class ResNeXt(ResNet):
     """ResNeXt backbone.
 

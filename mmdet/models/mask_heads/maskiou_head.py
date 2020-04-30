@@ -9,7 +9,7 @@ from mmdet.ops import Conv2d, Linear, MaxPool2d
 from ..builder import HEADS, build_loss
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class MaskIoUHead(nn.Module):
     """Mask IoU Head.
 

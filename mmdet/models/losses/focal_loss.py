@@ -42,7 +42,7 @@ def sigmoid_focal_loss(pred,
     return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class FocalLoss(nn.Module):
 
     def __init__(self,

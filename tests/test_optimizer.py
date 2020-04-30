@@ -384,7 +384,7 @@ def test_build_optimizer_constructor():
     from mmdet.core import OPTIMIZERS
     from mmcv.utils import build_from_cfg
 
-    @OPTIMIZER_BUILDERS.register_module
+    @OPTIMIZER_BUILDERS.register_module()
     class MyOptimizerConstructor(DefaultOptimizerConstructor):
 
         def __call__(self, model):

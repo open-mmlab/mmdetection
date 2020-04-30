@@ -9,7 +9,7 @@ from mmdet.ops import ConvModule, DeformConv
 from ..builder import HEADS, build_loss
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class RepPointsHead(nn.Module):
     """RepPoint head.
 

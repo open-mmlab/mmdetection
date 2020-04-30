@@ -3,7 +3,7 @@ import torch
 from .builder import ANCHOR_GENERATORS
 
 
-@ANCHOR_GENERATORS.register_module
+@ANCHOR_GENERATORS.register_module()
 class PointGenerator(object):
 
     def _meshgrid(self, x, y, row_major=True):

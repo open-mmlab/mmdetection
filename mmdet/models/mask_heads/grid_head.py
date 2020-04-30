@@ -8,7 +8,7 @@ from mmdet.ops import ConvModule
 from ..builder import HEADS, build_loss
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class GridHead(nn.Module):
 
     def __init__(self,

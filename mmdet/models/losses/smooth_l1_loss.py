@@ -22,7 +22,7 @@ def l1_loss(pred, target):
     return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class SmoothL1Loss(nn.Module):
 
     def __init__(self, beta=1.0, reduction='mean', loss_weight=1.0):
@@ -52,7 +52,7 @@ class SmoothL1Loss(nn.Module):
         return loss_bbox
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class L1Loss(nn.Module):
 
     def __init__(self, reduction='mean', loss_weight=1.0):
