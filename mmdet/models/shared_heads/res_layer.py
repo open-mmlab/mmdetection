@@ -9,7 +9,7 @@ from ..builder import SHARED_HEADS
 from ..utils import ResLayer as _ResLayer
 
 
-@SHARED_HEADS.register_module
+@SHARED_HEADS.register_module()
 class ResLayer(nn.Module):
 
     def __init__(self,

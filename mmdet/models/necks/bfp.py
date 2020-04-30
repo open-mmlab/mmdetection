@@ -6,7 +6,7 @@ from mmdet.ops import ConvModule, NonLocal2D
 from ..builder import NECKS
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class BFP(nn.Module):
     """BFP (Balanced Feature Pyrmamids)
 

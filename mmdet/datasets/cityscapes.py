@@ -15,7 +15,7 @@ from .builder import DATASETS
 from .coco import CocoDataset
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class CityscapesDataset(CocoDataset):
 
     CLASSES = ('person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',

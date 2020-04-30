@@ -9,7 +9,7 @@ from ..builder import HEADS, build_loss
 INF = 1e8
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class FCOSHead(nn.Module):
     """
     Fully Convolutional One-Stage Object Detection head from [1]_.

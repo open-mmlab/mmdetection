@@ -7,7 +7,7 @@ from ..builder import HEADS, build_head, build_roi_extractor
 from .cascade_roi_head import CascadeRoIHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class HybridTaskCascadeRoIHead(CascadeRoIHead):
     """Hybrid task cascade roi head including one bbox head and one mask head.
 

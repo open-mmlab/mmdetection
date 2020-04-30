@@ -19,7 +19,7 @@ def reduce_mean(tensor):
     return tensor
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class ATSSHead(AnchorHead):
     """
     Bridging the Gap Between Anchor-based and Anchor-free Detection via

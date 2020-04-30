@@ -6,7 +6,7 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class RPN(BaseDetector, RPNTestMixin):
 
     def __init__(self,

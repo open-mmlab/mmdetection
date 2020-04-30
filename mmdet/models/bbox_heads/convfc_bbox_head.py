@@ -5,7 +5,7 @@ from ..builder import HEADS
 from .bbox_head import BBoxHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class ConvFCBBoxHead(BBoxHead):
     r"""More general bbox head, with shared conv and fc layers and two optional
     separated branches.
@@ -171,7 +171,7 @@ class ConvFCBBoxHead(BBoxHead):
         return cls_score, bbox_pred
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class Shared2FCBBoxHead(ConvFCBBoxHead):
 
     def __init__(self, fc_out_channels=1024, *args, **kwargs):
@@ -187,7 +187,7 @@ class Shared2FCBBoxHead(ConvFCBBoxHead):
             **kwargs)
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class Shared4Conv1FCBBoxHead(ConvFCBBoxHead):
 
     def __init__(self, fc_out_channels=1024, *args, **kwargs):

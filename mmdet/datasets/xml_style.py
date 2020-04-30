@@ -9,7 +9,7 @@ from .builder import DATASETS
 from .custom import CustomDataset
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class XMLDataset(CustomDataset):
 
     def __init__(self, min_size=None, **kwargs):

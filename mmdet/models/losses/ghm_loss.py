@@ -16,7 +16,7 @@ def _expand_onehot_labels(labels, label_weights, label_channels):
 
 
 # TODO: code refactoring to make it consistent with other losses
-@LOSSES.register_module
+@LOSSES.register_module()
 class GHMC(nn.Module):
     """GHM Classification Loss.
 
@@ -94,7 +94,7 @@ class GHMC(nn.Module):
 
 
 # TODO: code refactoring to make it consistent with other losses
-@LOSSES.register_module
+@LOSSES.register_module()
 class GHMR(nn.Module):
     """GHM Regression Loss.
 

@@ -6,7 +6,7 @@ from ..builder import HEADS
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class RetinaSepBNHead(AnchorHead):
     """"RetinaHead with separate BN.
 

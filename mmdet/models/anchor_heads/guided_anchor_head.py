@@ -52,7 +52,7 @@ class FeatureAdaption(nn.Module):
         return x
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class GuidedAnchorHead(AnchorHead):
     """Guided-Anchor-based head (GA-RPN, GA-RetinaNet, etc.).
 
