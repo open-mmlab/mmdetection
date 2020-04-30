@@ -8,7 +8,7 @@ from ..builder import HEADS
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class RPNHead(AnchorHead):
 
     def __init__(self, in_channels, **kwargs):

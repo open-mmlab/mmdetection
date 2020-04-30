@@ -3,7 +3,7 @@ from ..builder import HEADS
 from .fcn_mask_head import FCNMaskHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class HTCMaskHead(FCNMaskHead):
 
     def __init__(self, with_conv_res=True, *args, **kwargs):

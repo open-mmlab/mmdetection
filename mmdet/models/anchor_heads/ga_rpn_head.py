@@ -8,7 +8,7 @@ from ..builder import HEADS
 from .guided_anchor_head import GuidedAnchorHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class GARPNHead(GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""
 

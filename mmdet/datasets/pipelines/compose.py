@@ -5,7 +5,7 @@ from mmcv.utils import build_from_cfg
 from ..builder import PIPELINES
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Compose(object):
 
     def __init__(self, transforms):

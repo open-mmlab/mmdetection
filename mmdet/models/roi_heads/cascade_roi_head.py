@@ -9,7 +9,7 @@ from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Cascade roi head including one bbox head and one mask head.
 

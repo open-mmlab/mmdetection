@@ -9,7 +9,7 @@ from mmdet.core import (anchor_inside_flags, build_anchor_generator,
 from ..builder import HEADS, build_loss
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class AnchorHead(nn.Module):
     """Anchor-based head (RPN, RetinaNet, SSD, etc.).
 

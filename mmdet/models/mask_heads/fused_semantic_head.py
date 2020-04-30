@@ -7,7 +7,7 @@ from mmdet.ops import ConvModule
 from ..builder import HEADS
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class FusedSemanticHead(nn.Module):
     r"""Multi-level fused semantic segmentation head.
 

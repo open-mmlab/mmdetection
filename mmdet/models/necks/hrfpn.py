@@ -8,7 +8,7 @@ from mmdet.ops import ConvModule
 from ..builder import NECKS
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class HRFPN(nn.Module):
     """HRFPN (High Resolution Feature Pyrmamids)
 
