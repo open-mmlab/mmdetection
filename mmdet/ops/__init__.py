@@ -11,7 +11,6 @@ from .non_local import NonLocal2D
 from .plugin import build_plugin_layer
 from .roi_align import RoIAlign, roi_align
 from .roi_pool import RoIPool, roi_pool
-from .scale import Scale
 from .sigmoid_focal_loss import SigmoidFocalLoss, sigmoid_focal_loss
 from .utils import get_compiler_version, get_compiling_cuda_version
 from .wrappers import Conv2d, ConvTranspose2d, Linear, MaxPool2d
@@ -24,6 +23,6 @@ __all__ = [
     'deform_roi_pooling', 'SigmoidFocalLoss', 'sigmoid_focal_loss',
     'MaskedConv2d', 'ContextBlock', 'GeneralizedAttention', 'NonLocal2D',
     'get_compiler_version', 'get_compiling_cuda_version', 'ConvWS2d',
-    'conv_ws_2d', 'Scale', 'build_plugin_layer', 'batched_nms', 'Conv2d',
+    'conv_ws_2d', 'build_plugin_layer', 'batched_nms', 'Conv2d',
     'ConvTranspose2d', 'MaxPool2d', 'Linear'
 ]
