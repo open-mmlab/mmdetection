@@ -35,11 +35,12 @@ class GHMC(nn.Module):
         super(GHMC, self).__init__()
         self.bins = bins
         self.momentum = momentum
-        edges = torch.arange(bins + 1).float() / bins
+        edges = torch.arange(bins + 1).float() / bins #区间个数，tensor([0.0000, 0.1000, 0.2000, 0.3000, 0.4000, 0.5000, 0.6000, 0.7000, 0.8000,
+                                                      #0.9000, 1.0000])
         self.register_buffer('edges', edges)
         self.edges[-1] += 1e-6
         if momentum > 0:
-            acc_sum = torch.zeros(bins)
+            acc_sum = torch.zeros(bins) #每个区间都要进行累加统计个数，先全部设置为0
             self.register_buffer('acc_sum', acc_sum)
         self.use_sigmoid = use_sigmoid
         if not self.use_sigmoid:
@@ -68,28 +69,28 @@ class GHMC(nn.Module):
         mmt = self.momentum
         weights = torch.zeros_like(pred)
 
-        # gradient length
+        # gradient length 先计算梯度
         g = torch.abs(pred.sigmoid().detach() - target)
 
         valid = label_weight > 0
-        tot = max(valid.float().sum().item(), 1.0)
+        tot = max(valid.float().sum().item(), 1.0)#统计所有样本个数
         n = 0  # n valid bins
         for i in range(self.bins):
-            inds = (g >= edges[i]) & (g < edges[i + 1]) & valid
-            num_in_bin = inds.sum().item()
+            inds = (g >= edges[i]) & (g < edges[i + 1]) & valid #找出梯度属于哪个区间
+            num_in_bin = inds.sum().item() #区间内样本个数
             if num_in_bin > 0:
                 if mmt > 0:
                     self.acc_sum[i] = mmt * self.acc_sum[i] \
-                        + (1 - mmt) * num_in_bin
-                    weights[inds] = tot / self.acc_sum[i]
+                        + (1 - mmt) * num_in_bin  #加入了平滑处理，累加每个区间内的样本个数
+                    weights[inds] = tot / self.acc_sum[i] #那么该区间内的所有样本权重都是N/acc_sum
                 else:
                     weights[inds] = tot / num_in_bin
                 n += 1
         if n > 0:
-            weights = weights / n
+            weights = weights / n 
 
         loss = F.binary_cross_entropy_with_logits(
-            pred, target, weights, reduction='sum') / tot
+            pred, target, weights, reduction='sum') / tot  #直接利用计算出的样本权重进行损失计算
         return loss * self.loss_weight
 
 
