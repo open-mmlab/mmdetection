@@ -6,13 +6,13 @@ from ..registry import LOSSES
 from .utils import weight_reduce_loss
 
 
-def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
+def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):#这个是常规多类交叉殇损失
     # element-wise losses
     loss = F.cross_entropy(pred, label, reduction='none')
 
     # apply weights and do the reduction
     if weight is not None:
-        weight = weight.float()
+        weight = weight.float()#这里保证weight是个float格式？除了这个，等价于cross_entropy=weighted_reduce_loss(F.cross_entropy)
     loss = weight_reduce_loss(
         loss, weight=weight, reduction=reduction, avg_factor=avg_factor)
 
@@ -21,7 +21,7 @@ def cross_entropy(pred, label, weight=None, reduction='mean', avg_factor=None):
 
 def _expand_binary_labels(labels, label_weights, label_channels):
     bin_labels = labels.new_full((labels.size(0), label_channels), 0)
-    inds = torch.nonzero(labels >= 1).squeeze()
+    inds = torch.nonzero(labels >= 1).squeeze()#转换labels为标准的标签，是某个类，该类对应索引位置是1，同时保证样本权重也和label一样大
     if inds.numel() > 0:
         bin_labels[inds, labels[inds] - 1] = 1
     if label_weights is None:
@@ -37,14 +37,14 @@ def binary_cross_entropy(pred,
                          weight=None,
                          reduction='mean',
                          avg_factor=None):
-    if pred.dim() != label.dim():
+    if pred.dim() != label.dim():#用上面的函数，保证预测值和GT的形状是一致的，不然没法进行损失计算
         label, weight = _expand_binary_labels(label, weight, pred.size(-1))
 
     # weighted element-wise losses
     if weight is not None:
         weight = weight.float()
     loss = F.binary_cross_entropy_with_logits(
-        pred, label.float(), weight, reduction='none')
+        pred, label.float(), weight, reduction='none')#这里是二元多类交叉商损失
     # do the reduction for the weighted loss
     loss = weight_reduce_loss(loss, reduction=reduction, avg_factor=avg_factor)
 
