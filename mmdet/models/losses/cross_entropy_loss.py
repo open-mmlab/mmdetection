@@ -53,10 +53,10 @@ def binary_cross_entropy(pred,
 
 def mask_cross_entropy(pred, target, label, reduction='mean', avg_factor=None):
     # TODO: handle these two reserved arguments
-    assert reduction == 'mean' and avg_factor is None
-    num_rois = pred.size()[0]
-    inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
-    pred_slice = pred[inds, label].squeeze(1)
+    assert reduction == 'mean' and avg_factor is None  #mask只能计算mean
+    num_rois = pred.size()[0]#一张图有多少个rois
+    inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device#要对pre进行采样
+    pred_slice = pred[inds, label].squeeze(1)#每个pred是一个张量，但是实际用于计算的只有一个通道label，所以要进行切片采样[inds,label]
     return F.binary_cross_entropy_with_logits(
         pred_slice, target, reduction='mean')[None]
 
