@@ -223,7 +223,9 @@ The training speed is measure with s/iter. The lower, the better.
 
 ### Inference Speed
 
-The inference speed is measured with fps (img/s) on a single GPU. The higher, the better.
+The inference speed is measured with fps (img/s) on a single GPU, the higher, the better.
+To be consistent with Detectron2, we report the pure inference speed (without the time of data loading).
+For Mask R-CNN, we exclude the time of RLE encoding in post-processing.
 The speed in the brackets of detectron2 is tested using our own server, which is slightly slower than the official speed.
 
 <table>
