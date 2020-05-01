@@ -207,17 +207,17 @@ The training speed is measure with s/iter. The lower, the better.
   </tr>
   <tr>
     <td>Faster R-CNN</td>
-    <td>0.210 (0.210)</td>
+    <td>0.210</td>
     <td>0.216</td>
   </tr>
   <tr>
     <td>Mask R-CNN</td>
-    <td>0.261 (0.257)</td>
+    <td>0.261</td>
     <td>0.265</td>
   </tr>
   <tr>
     <td>Retinanet</td>
-    <td>0.200 (0.210)</td>
+    <td>0.200</td>
     <td>0.205</td>
   </tr>
 </table>
@@ -226,6 +226,7 @@ The training speed is measure with s/iter. The lower, the better.
 ### Inference Speed
 
 The inference speed is measured with fps (img/s) on a single GPU. The higher, the better.
+The speed in the parameter of detectron2 is tested using our own server, which is slightly slower than the official speed.
 
 <table>
   <tr>
