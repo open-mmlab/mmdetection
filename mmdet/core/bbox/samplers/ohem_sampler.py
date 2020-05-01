@@ -5,7 +5,7 @@ from ..transforms import bbox2roi
 from .base_sampler import BaseSampler
 
 
-@BBOX_SAMPLERS.register_module
+@BBOX_SAMPLERS.register_module()
 class OHEMSampler(BaseSampler):
     """
     Online Hard Example Mining Sampler described in [1]_.

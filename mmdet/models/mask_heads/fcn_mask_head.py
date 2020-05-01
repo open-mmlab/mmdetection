@@ -16,7 +16,7 @@ BYTES_PER_FLOAT = 4
 GPU_MEM_LIMIT = 1024**3  # 1 GB memory limit
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class FCNMaskHead(nn.Module):
 
     def __init__(self,

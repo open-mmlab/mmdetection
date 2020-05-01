@@ -10,7 +10,7 @@ def mse_loss(pred, target):
     return F.mse_loss(pred, target, reduction='none')
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class MSELoss(nn.Module):
 
     def __init__(self, reduction='mean', loss_weight=1.0):

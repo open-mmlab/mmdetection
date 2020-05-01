@@ -2,7 +2,7 @@ from ..builder import BBOX_CODERS
 from .base_bbox_coder import BaseBBoxCoder
 
 
-@BBOX_CODERS.register_module
+@BBOX_CODERS.register_module()
 class PseudoBBoxCoder(BaseBBoxCoder):
 
     def __init__(self, **kwargs):

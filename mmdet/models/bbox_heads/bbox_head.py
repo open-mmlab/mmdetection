@@ -9,7 +9,7 @@ from ..builder import HEADS, build_loss
 from ..losses import accuracy
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class BBoxHead(nn.Module):
     """Simplest RoI head, with only two fc layers for classification and
     regression respectively"""

@@ -5,7 +5,7 @@ from ..builder import BBOX_CODERS
 from .base_bbox_coder import BaseBBoxCoder
 
 
-@BBOX_CODERS.register_module
+@BBOX_CODERS.register_module()
 class DeltaXYWHBBoxCoder(BaseBBoxCoder):
     """Delta XYWH BBox coder
 

@@ -38,7 +38,7 @@ class FeatureAlign(nn.Module):
         return x
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class FoveaHead(nn.Module):
     """FoveaBox: Beyond Anchor-based Object Detector
     https://arxiv.org/abs/1904.03797

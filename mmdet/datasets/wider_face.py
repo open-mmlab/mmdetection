@@ -7,7 +7,7 @@ from .builder import DATASETS
 from .xml_style import XMLDataset
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class WIDERFaceDataset(XMLDataset):
     """
     Reader for the WIDER Face dataset in PASCAL VOC format.
