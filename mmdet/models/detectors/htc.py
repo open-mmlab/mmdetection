@@ -2,7 +2,7 @@ from ..builder import DETECTORS
 from .cascade_rcnn import CascadeRCNN
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class HybridTaskCascade(CascadeRCNN):
 
     def __init__(self, **kwargs):

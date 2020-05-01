@@ -1,7 +1,8 @@
 import argparse
-import mmcv
 import os
 import os.path as osp
+
+import mmcv
 
 
 def parse_args():

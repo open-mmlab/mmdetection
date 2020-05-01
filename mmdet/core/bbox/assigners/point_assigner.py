@@ -5,7 +5,7 @@ from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
-@BBOX_ASSIGNERS.register_module
+@BBOX_ASSIGNERS.register_module()
 class PointAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each point.
 

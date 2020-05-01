@@ -6,7 +6,7 @@ from mmdet.ops.carafe import CARAFEPack
 from ..builder import NECKS
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class FPN_CARAFE(nn.Module):
     """FPN_CARAFE is a more flexible implementation of FPN.
     It allows more choice for upsample methods during the top-down pathway.

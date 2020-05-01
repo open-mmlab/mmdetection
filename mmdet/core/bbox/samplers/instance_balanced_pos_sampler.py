@@ -5,7 +5,7 @@ from ..builder import BBOX_SAMPLERS
 from .random_sampler import RandomSampler
 
 
-@BBOX_SAMPLERS.register_module
+@BBOX_SAMPLERS.register_module()
 class InstanceBalancedPosSampler(RandomSampler):
 
     def _sample_pos(self, assign_result, num_expected, **kwargs):
