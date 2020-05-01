@@ -386,4 +386,4 @@ python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --out ${ONNX_FILE
 
 ## Tutorials
 
-Currently, we provide three tutorials for users to [finetune models](tutorials/finetune.md), [add new dataset](tutorials/new_datasets.md), and [add new modules](tutorials/new_modules.md)
+Currently, we provide three tutorials for users to [finetune models](tutorials/finetune.md), [add new dataset](tutorials/new_dataset.md), and [add new modules](tutorials/new_modules.md)
