@@ -1,4 +1,4 @@
-_base_ = './reppoints_moment_r50_fpn_gn-neck+head_mstrain_480-960_2x_coco.py'
+_base_ = './cascade_mask_rcnn_r50_fpn_20e_coco.py'
 model = dict(
     pretrained='open-mmlab://resnext101_32x4d',
     backbone=dict(
@@ -10,6 +10,4 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
-        style='pytorch',
-        dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True)))
+        style='pytorch'))
