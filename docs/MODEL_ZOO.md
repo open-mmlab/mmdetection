@@ -1,20 +1,5 @@
 # Benchmark and Model Zoo
 
-## Environment
-
-### Hardware
-
-- 8 NVIDIA Tesla V100 GPUs
-- Intel Xeon 4114 CPU @ 2.20GHz
-
-### Software environment
-
-- Python 3.6 / 3.7
-- PyTorch 1.4
-- CUDA 10.1
-- CUDNN 7.6.03
-- NCCL 2.4.08
-
 ## Mirror sites
 
 We use AWS as the main site to host our model zoo, and maintain a mirror on aliyun.
@@ -151,6 +136,19 @@ We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmd
 We compare mmdetection with [Detectron2](https://github.com/facebookresearch/detectron2.git).
 The backbone used is R-50-FPN.
 
+### Hardware
+
+- 8 NVIDIA Tesla V100 GPUs
+- Intel Xeon 4114 CPU @ 2.20GHz
+
+### Software environment
+
+- Python 3.7
+- PyTorch 1.4
+- CUDA 10.1
+- CUDNN 7.6.03
+- NCCL 2.4.08
+
 ### Performance
 
 <table>
@@ -226,7 +224,7 @@ The training speed is measure with s/iter. The lower, the better.
 ### Inference Speed
 
 The inference speed is measured with fps (img/s) on a single GPU. The higher, the better.
-The speed in the parameter of detectron2 is tested using our own server, which is slightly slower than the official speed.
+The speed in the brackets of detectron2 is tested using our own server, which is slightly slower than the official speed.
 
 <table>
   <tr>
