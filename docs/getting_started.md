@@ -1,7 +1,7 @@
 # Getting Started
 
 This page provides basic tutorials about the usage of MMDetection.
-For installation instructions, please see [INSTALL.md](INSTALL.md).
+For installation instructions, please see [install.md](install.md).
 
 ## Inference with pretrained models
 
@@ -372,7 +372,7 @@ The final output filename will be `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth
 
 ### Test the robustness of detectors
 
-Please refer to [ROBUSTNESS_BENCHMARKING.md](ROBUSTNESS_BENCHMARKING.md).
+Please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
 
 ### Convert to ONNX (experimental)
 
@@ -384,156 +384,6 @@ python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --out ${ONNX_FILE
 
 **Note**: This tool is still experimental. Customized operators are not supported for now. We set `use_torchvision=True` on-the-fly for `RoIPool` and `RoIAlign`.
 
-## How-to
+## Tutorials
 
-### Use my own datasets
-
-The simplest way is to convert your dataset to existing dataset formats (COCO or PASCAL VOC).
-
-Here we show an example of using a custom dataset of 5 classes, assuming it is also in COCO format.
-
-In `configs/my_custom_config.py`:
-
-```python
-...
-# dataset settings
-dataset_type = 'CocoDataset'
-classes = ('a', 'b', 'c', 'd', 'e')
-...
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(
-        type=dataset_type,
-        classes=classes,
-        ...),
-    val=dict(
-        type=dataset_type,
-        classes=classes,
-        ...),
-    test=dict(
-        type=dataset_type,
-        classes=classes,
-        ...))
-...
-```
-
-It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
-Actually, we define a simple annotation format and all existing datasets are
-processed to be compatible with it, either online or offline.
-
-The annotation of a dataset is a list of dict, each dict corresponds to an image.
-There are 3 field `filename` (relative path), `width`, `height` for testing,
-and an additional field `ann` for training. `ann` is also a dict containing at least 2 fields:
-`bboxes` and `labels`, both of which are numpy arrays. Some datasets may provide
-annotations like crowd/difficult/ignored bboxes, we use `bboxes_ignore` and `labels_ignore`
-to cover them.
-
-Here is an example.
-```
-[
-    {
-        'filename': 'a.jpg',
-        'width': 1280,
-        'height': 720,
-        'ann': {
-            'bboxes': <np.ndarray, float32> (n, 4),
-            'labels': <np.ndarray, int64> (n, ),
-            'bboxes_ignore': <np.ndarray, float32> (k, 4),
-            'labels_ignore': <np.ndarray, int64> (k, ) (optional field)
-        }
-    },
-    ...
-]
-```
-
-There are two ways to work with custom datasets.
-
-- online conversion
-
-  You can write a new Dataset class inherited from `CustomDataset`, and overwrite two methods
-  `load_annotations(self, ann_file)` and `get_ann_info(self, idx)`,
-  like [CocoDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/coco.py) and [VOCDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/voc.py).
-
-- offline conversion
-
-  You can convert the annotation format to the expected format above and save it to
-  a pickle or json file, like [pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/pascal_voc.py).
-  Then you can simply use `CustomDataset`.
-
-### Customize optimizer
-
-An example of customized optimizer `CopyOfSGD` is defined in `mmdet/core/optimizer/copy_of_sgd.py`.
-More generally, a customized optimizer could be defined as following.
-
-In `mmdet/core/optimizer/my_optimizer.py`:
-
-```python
-from .registry import OPTIMIZERS
-from torch.optim import Optimizer
-
-
-@OPTIMIZERS.register_module()
-class MyOptimizer(Optimizer):
-
-```
-
-In `mmdet/core/optimizer/__init__.py`:
-
-```python
-from .my_optimizer import MyOptimizer
-```
-
-Then you can use `MyOptimizer` in `optimizer` field of config files.
-
-### Develop new components
-
-We basically categorize model components into 4 types.
-
-- backbone: usually an FCN network to extract feature maps, e.g., ResNet, MobileNet.
-- neck: the component between backbones and heads, e.g., FPN, PAFPN.
-- head: the component for specific tasks, e.g., bbox prediction and mask prediction.
-- roi extractor: the part for extracting RoI features from feature maps, e.g., RoI Align.
-
-Here we show how to develop new components with an example of MobileNet.
-
-1. Create a new file `mmdet/models/backbones/mobilenet.py`.
-
-```python
-import torch.nn as nn
-
-from ..registry import BACKBONES
-
-
-@BACKBONES.register_module()
-class MobileNet(nn.Module):
-
-    def __init__(self, arg1, arg2):
-        pass
-
-    def forward(self, x):  # should return a tuple
-        pass
-
-    def init_weights(self, pretrained=None):
-        pass
-```
-
-2. Import the module in `mmdet/models/backbones/__init__.py`.
-
-```python
-from .mobilenet import MobileNet
-```
-
-3. Use it in your config file.
-
-```python
-model = dict(
-    ...
-    backbone=dict(
-        type='MobileNet',
-        arg1=xxx,
-        arg2=xxx),
-    ...
-```
-
-For more information on how it works, you can refer to [TECHNICAL_DETAILS.md](TECHNICAL_DETAILS.md) (TODO).
+Currently, we provide three tutorials for users to [finetune models](tutorials/finetune.md), [add new dataset](tutorials/new_datasets.md), and [add new modules](tutorials/new_modules.md)
