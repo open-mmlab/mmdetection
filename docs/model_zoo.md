@@ -310,7 +310,7 @@ In general, mmdetection has 3 advantages over Detectron.
 
 Detectron and maskrcnn-benchmark use caffe-style ResNet as the backbone.
 We report results using both caffe-style (weights converted from
-[here](https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md#imagenet-pretrained-models))
+[here](https://github.com/facebookresearch/Detectron/blob/master/model_zoo.md#imagenet-pretrained-models))
 and pytorch-style (weights from the official model zoo) ResNet backbone,
 indicated as *pytorch-style results* / *caffe-style results*.
 
