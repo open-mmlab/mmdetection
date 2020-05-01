@@ -10,10 +10,10 @@
 ### Software environment
 
 - Python 3.6 / 3.7
-- PyTorch 1.1
-- CUDA 9.0.176
-- CUDNN 7.0.4
-- NCCL 2.1.15
+- PyTorch 1.4
+- CUDA 10.1
+- CUDNN 7.6.03
+- NCCL 2.4.08
 
 ## Mirror sites
 
@@ -146,101 +146,52 @@ Please refer to [ATSS](https://github.com/open-mmlab/mmdetection/blob/master/con
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
 
 
-## Comparison with Detectron and maskrcnn-benchmark
+## Comparison with Detectron2
 
-We compare mmdetection with [Detectron](https://github.com/facebookresearch/Detectron)
-and [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark). The backbone used is R-50-FPN.
-
-In general, mmdetection has 3 advantages over Detectron.
-
-- **Higher performance** (especially in terms of mask AP)
-- **Faster training speed**
-- **Memory efficient**
+We compare mmdetection with [Detectron2](https://github.com/facebookresearch/detectron2.git).
+The backbone used is R-50-FPN.
 
 ### Performance
-
-Detectron and maskrcnn-benchmark use caffe-style ResNet as the backbone.
-We report results using both caffe-style (weights converted from
-[here](https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md#imagenet-pretrained-models))
-and pytorch-style (weights from the official model zoo) ResNet backbone,
-indicated as *pytorch-style results* / *caffe-style results*.
-
-We find that pytorch-style ResNet usually converges slower than caffe-style ResNet,
-thus leading to slightly lower results in 1x schedule, but the final results
-of 2x schedule is higher.
 
 <table>
   <tr>
     <th>Type</th>
     <th>Lr schd</th>
-    <th>Detectron</th>
-    <th>maskrcnn-benchmark</th>
+    <th>Detectron2</th>
     <th>mmdetection</th>
-  </tr>
-  <tr>
-    <td rowspan="2">RPN</td>
-    <td>1x</td>
-    <td>57.2</td>
-    <td>-</td>
-    <td>57.1 / 58.2</td>
-  </tr>
-  <tr>
-    <td>2x</td>
-    <td>-</td>
-    <td>-</td>
-    <td>57.6 / -</td>
   </tr>
   <tr>
     <td rowspan="2">Faster R-CNN</td>
     <td>1x</td>
-    <td>36.7</td>
-    <td>36.8</td>
-    <td>36.4 / 36.6</td>
+    <td>37.9</td>
+    <td>38.0</td>
   </tr>
   <tr>
-    <td>2x</td>
-    <td>37.9</td>
+    <td>3x</td>
+    <td>40.2</td>
     <td>-</td>
-    <td>37.7 / -</td>
   </tr>
   <tr>
     <td rowspan="2">Mask R-CNN</td>
     <td>1x</td>
-    <td>37.7 &amp; 33.9</td>
-    <td>37.8 &amp; 34.2</td>
-    <td>37.3 &amp; 34.2 / 37.4 &amp; 34.3</td>
+    <td>38.6 &amp; 35.2</td>
+    <td>38.8 &amp; 35.4</td>
   </tr>
   <tr>
-    <td>2x</td>
-    <td>38.6 &amp; 34.5</td>
+    <td>3x</td>
+    <td>41.0 &amp; 37.2 </td>
     <td>-</td>
-    <td>38.5 &amp; 35.1 / -</td>
   </tr>
   <tr>
-    <td rowspan="2">Fast R-CNN</td>
+    <td rowspan="2">Retinanet</td>
     <td>1x</td>
-    <td>36.4</td>
-    <td>-</td>
-    <td>35.8 / 36.6</td>
+    <td>36.5</td>
+    <td>37.0</td>
   </tr>
   <tr>
-    <td>2x</td>
-    <td>36.8</td>
+    <td>3x</td>
+    <td>37.9</td>
     <td>-</td>
-    <td>37.1 / -</td>
-  </tr>
-  <tr>
-    <td rowspan="2">Fast R-CNN (w/mask)</td>
-    <td>1x</td>
-    <td>37.3 &amp; 33.7</td>
-    <td>-</td>
-    <td>36.8 &amp; 34.1 / 37.3 &amp; 34.5</td>
-  </tr>
-  <tr>
-    <td>2x</td>
-    <td>37.7 &amp; 34.0</td>
-    <td>-</td>
-    <td>37.9 &amp; 34.8 / -</td>
   </tr>
 </table>
 
@@ -251,45 +202,25 @@ The training speed is measure with s/iter. The lower, the better.
 <table>
   <tr>
     <th>Type</th>
-    <th>Detectron (P100<sup>1</sup>)</th>
-    <th>maskrcnn-benchmark (V100)</th>
-    <th>mmdetection (V100<sup>2</sup>)</th>
-  </tr>
-  <tr>
-    <td>RPN</td>
-    <td>0.416</td>
-    <td>-</td>
-    <td>0.253</td>
+    <th>Detectron2 (V100)</th>
+    <th>mmdetection (V100)</th>
   </tr>
   <tr>
     <td>Faster R-CNN</td>
-    <td>0.544</td>
-    <td>0.353</td>
-    <td>0.333</td>
+    <td>0.210 (0.210)</td>
+    <td>0.216</td>
   </tr>
   <tr>
     <td>Mask R-CNN</td>
-    <td>0.889</td>
-    <td>0.454</td>
-    <td>0.430</td>
+    <td>0.261 (0.257)</td>
+    <td>0.265</td>
   </tr>
   <tr>
-    <td>Fast R-CNN</td>
-    <td>0.285</td>
-    <td>-</td>
-    <td>0.242</td>
-  </tr>
-  <tr>
-    <td>Fast R-CNN (w/mask)</td>
-    <td>0.377</td>
-    <td>-</td>
-    <td>0.328</td>
+    <td>Retinanet</td>
+    <td>0.200 (0.210)</td>
+    <td>0.205</td>
   </tr>
 </table>
-
-\*1. Facebook's Big Basin servers (P100/V100) is slightly faster than the servers we use. mmdetection can also run slightly faster on FB's servers.
-
-\*2. For fair comparison, we list the caffe-style results here.
 
 
 ### Inference Speed
@@ -299,39 +230,23 @@ The inference speed is measured with fps (img/s) on a single GPU. The higher, th
 <table>
   <tr>
     <th>Type</th>
-    <th>Detectron (P100)</th>
-    <th>maskrcnn-benchmark (V100)</th>
+    <th>Detectron2 (V100)</th>
     <th>mmdetection (V100)</th>
   </tr>
   <tr>
-    <td>RPN</td>
-    <td>12.5</td>
-    <td>-</td>
-    <td>16.9</td>
-  </tr>
-  <tr>
     <td>Faster R-CNN</td>
-    <td>10.3</td>
-    <td>7.9</td>
-    <td>13.5</td>
+    <td>26.3 (25.6)</td>
+    <td>22.2</td>
   </tr>
   <tr>
     <td>Mask R-CNN</td>
-    <td>8.5</td>
-    <td>7.7</td>
-    <td>10.2</td>
+    <td>23.3 (22.5)</td>
+    <td>19.6</td>
   </tr>
   <tr>
-    <td>Fast R-CNN</td>
-    <td>12.5</td>
-    <td>-</td>
-    <td>18.4</td>
-  </tr>
-  <tr>
-    <td>Fast R-CNN (w/mask)</td>
-    <td>9.9</td>
-    <td>-</td>
-    <td>12.8</td>
+    <td>Retinanet</td>
+    <td>18.2 (17.8)</td>
+    <td>20.6</td>
   </tr>
 </table>
 
@@ -340,44 +255,22 @@ The inference speed is measured with fps (img/s) on a single GPU. The higher, th
 <table>
   <tr>
     <th>Type</th>
-    <th>Detectron</th>
-    <th>maskrcnn-benchmark</th>
+    <th>Detectron2</th>
     <th>mmdetection</th>
   </tr>
   <tr>
-    <td>RPN</td>
-    <td>6.4</td>
-    <td>-</td>
-    <td>3.3</td>
-  </tr>
-  <tr>
     <td>Faster R-CNN</td>
-    <td>7.2</td>
-    <td>4.4</td>
-    <td>3.6</td>
-  </tr>
-  <tr>
-    <td>Mask R-CNN</td>
-    <td>8.6</td>
-    <td>5.2</td>
+    <td>3.0</td>
     <td>3.8</td>
   </tr>
   <tr>
-    <td>Fast R-CNN</td>
-    <td>6.0</td>
-    <td>-</td>
-    <td>3.3</td>
+    <td>Mask R-CNN</td>
+    <td>3.4</td>
+    <td>3.9</td>
   </tr>
   <tr>
-    <td>Fast R-CNN (w/mask)</td>
-    <td>7.9</td>
-    <td>-</td>
+    <td>Retinanet</td>
+    <td>3.9</td>
     <td>3.4</td>
   </tr>
 </table>
-
-There is no doubt that maskrcnn-benchmark and mmdetection is more memory efficient than Detectron,
-and the main advantage is PyTorch itself. We also perform some memory optimizations to push it forward.
-
-Note that Caffe2 and PyTorch have different apis to obtain memory usage with different implementations.
-For all codebases, `nvidia-smi` shows a larger memory usage than the reported number in the above table.
