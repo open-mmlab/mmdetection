@@ -15,7 +15,7 @@ from .builder import DATASETS
 from .custom import CustomDataset
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class CocoDataset(CustomDataset):
 
     CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',

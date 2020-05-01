@@ -64,7 +64,7 @@ class GPCell(MergingCell):
         return x2 + x2_att * x1
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class NASFPN(nn.Module):
     """NAS-FPN.
 

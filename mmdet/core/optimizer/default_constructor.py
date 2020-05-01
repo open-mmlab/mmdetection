@@ -9,7 +9,7 @@ from torch.nn.modules.instancenorm import _InstanceNorm
 from .builder import OPTIMIZER_BUILDERS, OPTIMIZERS
 
 
-@OPTIMIZER_BUILDERS.register_module
+@OPTIMIZER_BUILDERS.register_module()
 class DefaultOptimizerConstructor(object):
     """Default constructor for optimizers.
 

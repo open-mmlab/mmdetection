@@ -60,7 +60,7 @@ you can install it before installing MMCV.
 
 4. Some dependencies are optional. Simply running `pip install -v -e .` will only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
-## Install with CPU only
+### Install with CPU only
 The code can be built for CPU only environment (where CUDA isn't available).
 
 In CPU mode you can run the demo/webcam_demo.py for example.

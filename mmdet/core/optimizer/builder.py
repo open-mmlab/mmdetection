@@ -16,7 +16,7 @@ def register_torch_optimizers():
         _optim = getattr(torch.optim, module_name)
         if inspect.isclass(_optim) and issubclass(_optim,
                                                   torch.optim.Optimizer):
-            OPTIMIZERS.register_module(_optim)
+            OPTIMIZERS.register_module()(_optim)
             torch_optimizers.append(module_name)
     return torch_optimizers
 

@@ -7,7 +7,7 @@ from mmdet.ops import ConvModule
 from ..builder import NECKS
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class FPN(nn.Module):
     """
     Feature Pyramid Network.

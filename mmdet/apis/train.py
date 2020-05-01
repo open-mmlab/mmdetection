@@ -133,14 +133,15 @@ def train_detector(model,
     if fp16_cfg is not None:
         optimizer_config = Fp16OptimizerHook(
             **cfg.optimizer_config, **fp16_cfg, distributed=distributed)
-    elif distributed:
+    elif distributed and 'type' not in cfg.optimizer_config:
         optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
     else:
         optimizer_config = cfg.optimizer_config
 
     # register hooks
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
-                                   cfg.checkpoint_config, cfg.log_config)
+                                   cfg.checkpoint_config, cfg.log_config,
+                                   cfg.get('momentum_config', None))
     if distributed:
         runner.register_hook(DistSamplerSeedHook())
 

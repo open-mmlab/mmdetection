@@ -6,7 +6,7 @@ from ..builder import HEADS
 from .retina_head import RetinaHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class FreeAnchorRetinaHead(RetinaHead):
 
     def __init__(self,
