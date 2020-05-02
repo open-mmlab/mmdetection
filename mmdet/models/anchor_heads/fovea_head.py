@@ -191,12 +191,12 @@ class FoveaHead(nn.Module):
              img_metas,
              cfg,
              gt_bboxes_ignore=None):
-        assert len(cls_scores) == len(bbox_preds)
+        assert len(cls_scores) == len(bbox_preds)#个数相同
 
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]#预测结果大小
         points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                 bbox_preds[0].device)
-        num_imgs = cls_scores[0].size(0)
+                                 bbox_preds[0].device)#点坐标
+        num_imgs = cls_scores[0].size(0)#多少图
         flatten_cls_scores = [
             cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)
             for cls_score in cls_scores
