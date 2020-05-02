@@ -2,9 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import kaiming_init, normal_init
+from mmcv.cnn import ConvModule, kaiming_init, normal_init
 
-from mmdet.ops import ConvModule
 from ..builder import HEADS, build_loss
 
 

@@ -1,7 +1,6 @@
 import torch.nn as nn
-from mmcv.cnn import bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 
-from mmdet.ops import ConvModule
 from ..builder import HEADS
 from .anchor_head import AnchorHead
 
