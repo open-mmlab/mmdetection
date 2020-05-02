@@ -83,7 +83,7 @@ benchmark_pool = [
     'configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc0712.py',
     'configs/pascal_voc/ssd300_voc0712.py',
     'configs/nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco.py',
-    'configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_1x_coco.py',
+    'configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
     'configs/gn+ws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py'
 ]
 
