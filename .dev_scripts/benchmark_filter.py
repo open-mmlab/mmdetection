@@ -108,7 +108,8 @@ def main():
         configs = os.scandir(cfg_dir)
         for cfg in configs:
             config_path = osp.join(cfg_dir, cfg.name)
-            if config_path in benchmark_pool:
+            if (config_path in benchmark_pool
+                    and config_path not in benchmark_configs):
                 benchmark_configs.append(config_path)
 
     print(f'Totally found {len(benchmark_configs)} configs to benchmark')
