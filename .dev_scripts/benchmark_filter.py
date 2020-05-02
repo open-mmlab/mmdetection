@@ -29,12 +29,14 @@ def parse_args():
 basic_arch_root = [
     'cascade_rcnn', 'double_heads', 'fcos', 'foveabox', 'free_anchor',
     'grid_rcnn', 'guided_anchoring', 'htc', 'libra_rcnn', 'atss', 'mask_rcnn',
-    'ms_rcnn', 'nas_fpn', 'reppoints', 'retinanet', 'ssd', 'gn', 'ghm'
+    'ms_rcnn', 'nas_fpn', 'reppoints', 'retinanet', 'ssd', 'gn', 'ghm', 'fsaf'
 ]
 
 datasets_root = ['wider_face', 'pascal_voc', 'cityscapes', 'mask_rcnn']
 
-data_pipeline_root = ['albu_example', 'instaboost']
+data_pipeline_root = [
+    'albu_example', 'instaboost', 'ssd', 'mask_rcnn', 'nas_fpn'
+]
 
 nn_module_root = [
     'carafe', 'dcn', 'empirical_attention', 'gcnet', 'gn+ws', 'hrnet', 'pafpn',
@@ -64,6 +66,7 @@ benchmark_pool = [
     'configs/reppoints/reppoints_moment_r50_fpn_gn-neck+head_1x_coco.py',
     'configs/guided_anchoring/ga_faster_r50_caffe_fpn_1x_coco.py',
     'configs/free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
+    'configs/fsaf/fsaf_r50_fpn_1x_coco.py',
     'configs/scratch/mask_rcnn_r50_fpn_gn-all_scratch_6x_coco.py',
     'configs/pafpn/faster_rcnn_r50_pafpn_1x_coco.py',
     'configs/fp16/retinanet_r50_fpn_fp16_1x_coco.py',
@@ -80,7 +83,7 @@ benchmark_pool = [
     'configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc0712.py',
     'configs/pascal_voc/ssd300_voc0712.py',
     'configs/nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco.py',
-    'configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_1x_coco.py',
+    'configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
     'configs/gn+ws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py'
 ]
 
@@ -105,7 +108,8 @@ def main():
         configs = os.scandir(cfg_dir)
         for cfg in configs:
             config_path = osp.join(cfg_dir, cfg.name)
-            if config_path in benchmark_pool:
+            if (config_path in benchmark_pool
+                    and config_path not in benchmark_configs):
                 benchmark_configs.append(config_path)
 
     print(f'Totally found {len(benchmark_configs)} configs to benchmark')
