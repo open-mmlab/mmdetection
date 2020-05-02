@@ -9,7 +9,7 @@ from ..losses.utils import weight_reduce_loss
 from .retina_head import RetinaHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class FSAFHead(RetinaHead):
     """FSAF anchor-free head used in [1].
 
