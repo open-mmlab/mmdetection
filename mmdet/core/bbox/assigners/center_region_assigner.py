@@ -68,7 +68,7 @@ def bboxes_area(bboxes):
     return areas
 
 
-@BBOX_ASSIGNERS.register_module
+@BBOX_ASSIGNERS.register_module()
 class CenterRegionAssigner(BaseAssigner):
     """Assign pixels at the center region of a bbox as positive.
 
