@@ -81,10 +81,10 @@ class FoveaHead(nn.Module):
         self._init_layers()
 
     def _init_layers(self):
-        self.cls_convs = nn.ModuleList()
-        self.reg_convs = nn.ModuleList()
+        self.cls_convs = nn.ModuleList()#分类头
+        self.reg_convs = nn.ModuleList()#回归头
         # box branch
-        for i in range(self.stacked_convs):
+        for i in range(self.stacked_convs):   #根据要求，每个分支需要执行几次卷积才进行预测
             chn = self.in_channels if i == 0 else self.feat_channels
             self.reg_convs.append(
                 ConvModule(
@@ -95,10 +95,10 @@ class FoveaHead(nn.Module):
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
-        self.fovea_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
+                    bias=self.norm_cfg is None))#使用3*3卷积处理，卷积放入列表
+        self.fovea_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)#预测头是一个4个通道的张量结果
         # cls branch
-        if not self.with_deform:
+        if not self.with_deform: #是否使用DCN，这个是利用了repoint方法
             for i in range(self.stacked_convs):
                 chn = self.in_channels if i == 0 else self.feat_channels
                 self.cls_convs.append(
@@ -140,7 +140,7 @@ class FoveaHead(nn.Module):
                 int(self.feat_channels * 4),
                 self.cls_out_channels,
                 3,
-                padding=1)
+                padding=1)#分类的预测头
 
     def init_weights(self):
         for m in self.cls_convs:
@@ -170,7 +170,7 @@ class FoveaHead(nn.Module):
         return cls_score, bbox_pred
 
     def get_points(self, featmap_sizes, dtype, device, flatten=False):
-        points = []
+        points = []#生成一个特征图上所有点的坐标[[y,x],[y,x]]
         for featmap_size in featmap_sizes:
             x_range = torch.arange(
                 featmap_size[1], dtype=dtype, device=device) + 0.5
@@ -258,30 +258,35 @@ class FoveaHead(nn.Module):
                             point_list=None):
 
         gt_areas = torch.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0]) *
-                              (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
+                              (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))#先计算所有BOX的大小
         label_list = []
         bbox_target_list = []
         # for each pyramid, find the cls and box target
+        #self.base_edge_list=(16, 32, 64, 128, 256)
+        #self.scale_ranges=((8, 32), (16, 64), (32, 128), (64, 256), (128,512)),
+        #self.strides=(4, 8, 16, 32, 64)
+        #featmap_size_list=[featmap.size()[-2:] for featmap in cls_scores]这个是每个结果的大小
+        # point_list= self.get_points(featmap_sizes, bbox_preds[0].dtype,bbox_preds[0].device)#每个特征图上点坐标
         for base_len, (lower_bound, upper_bound), stride, featmap_size, \
             (y, x) in zip(self.base_edge_list, self.scale_ranges,
                           self.strides, featmap_size_list, point_list):
-            labels = gt_labels_raw.new_zeros(featmap_size)
+            labels = gt_labels_raw.new_zeros(featmap_size)#label是和结果特征图一样大的，先全部设置成0
             bbox_targets = gt_bboxes_raw.new(featmap_size[0], featmap_size[1],
-                                             4) + 1
+                                             4) + 1  #BOX是4个通道
             # scale assignment
             hit_indices = ((gt_areas >= lower_bound) &
-                           (gt_areas <= upper_bound)).nonzero().flatten()
-            if len(hit_indices) == 0:
+                           (gt_areas <= upper_bound)).nonzero().flatten()#所有在一个小区间，或一层预测上的GT索引
+            if len(hit_indices) == 0: #如果没有，那么该层结果直接返回全是0
                 label_list.append(labels)
                 bbox_target_list.append(torch.log(bbox_targets))
                 continue
-            _, hit_index_order = torch.sort(-gt_areas[hit_indices])
-            hit_indices = hit_indices[hit_index_order]
-            gt_bboxes = gt_bboxes_raw[hit_indices, :] / stride
-            gt_labels = gt_labels_raw[hit_indices]
-            half_w = 0.5 * (gt_bboxes[:, 2] - gt_bboxes[:, 0])
+            _, hit_index_order = torch.sort(-gt_areas[hit_indices])#对GT大小进行排序
+            hit_indices = hit_indices[hit_index_order]#返回的索引顺序按照GT的大小
+            gt_bboxes = gt_bboxes_raw[hit_indices, :] / stride   #GT在对应层上的大小
+            gt_labels = gt_labels_raw[hit_indices]             #GT在对应层上的标签
+            half_w = 0.5 * (gt_bboxes[:, 2] - gt_bboxes[:, 0])   
             half_h = 0.5 * (gt_bboxes[:, 3] - gt_bboxes[:, 1])
-            # valid fovea area: left, right, top, down
+            # valid fovea area: left, right, top, down 这里就是对在某层上的GT进行收缩，保证收缩后依然没有超出边界，收缩四个值
             pos_left = torch.ceil(
                 gt_bboxes[:, 0] + (1 - self.sigma) * half_w - 0.5).long().\
                 clamp(0, featmap_size[1] - 1)
@@ -297,7 +302,8 @@ class FoveaHead(nn.Module):
             for px1, py1, px2, py2, label, (gt_x1, gt_y1, gt_x2, gt_y2) in \
                     zip(pos_left, pos_top, pos_right, pos_down, gt_labels,
                         gt_bboxes_raw[hit_indices, :]):
-                labels[py1:py2 + 1, px1:px2 + 1] = label
+                labels[py1:py2 + 1, px1:px2 + 1] = label  #这里生成的是一个矩阵，在收缩区域矩形中，是label
+                #下面生成的是回归GT，要分四层来计算，编码是用原文的计算方法实现的
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 0] = \
                     (stride * x[py1:py2 + 1, px1:px2 + 1] - gt_x1) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 1] = \
@@ -306,20 +312,20 @@ class FoveaHead(nn.Module):
                     (gt_x2 - stride * x[py1:py2 + 1, px1:px2 + 1]) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 3] = \
                     (gt_y2 - stride * y[py1:py2 + 1, px1:px2 + 1]) / base_len
-            bbox_targets = bbox_targets.clamp(min=1. / 16, max=16.)
-            label_list.append(labels)
-            bbox_target_list.append(torch.log(bbox_targets))
+            bbox_targets = bbox_targets.clamp(min=1. / 16, max=16.)#对值进行裁剪
+            label_list.append(labels)#将该层计算出的结果放入到列表中
+            bbox_target_list.append(torch.log(bbox_targets))#对回归进行log处理完后，就是论文中公式
         return label_list, bbox_target_list
 
     def get_bboxes(self, cls_scores, bbox_preds, img_metas, cfg, rescale=None):
-        assert len(cls_scores) == len(bbox_preds)
-        num_levels = len(cls_scores)
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
+        assert len(cls_scores) == len(bbox_preds)#所有预测结果
+        num_levels = len(cls_scores)#共有多少个
+        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]#每个预测结果的大小
         points = self.get_points(
             featmap_sizes,
             bbox_preds[0].dtype,
             bbox_preds[0].device,
-            flatten=True)
+            flatten=True)#生成所有预测结果的每个点坐标
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -352,9 +358,9 @@ class FoveaHead(nn.Module):
         for cls_score, bbox_pred, featmap_size, stride, base_len, (y, x) \
                 in zip(cls_scores, bbox_preds, featmap_sizes, self.strides,
                        self.base_edge_list, point_list):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]#两者大小一样
             scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
+                -1, self.cls_out_channels).sigmoid()#
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).exp()
             nms_pre = cfg.get('nms_pre', -1)
             if (nms_pre > 0) and (scores.shape[0] > nms_pre):
