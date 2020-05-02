@@ -34,7 +34,9 @@ basic_arch_root = [
 
 datasets_root = ['wider_face', 'pascal_voc', 'cityscapes', 'mask_rcnn']
 
-data_pipeline_root = ['albu_example', 'instaboost']
+data_pipeline_root = [
+    'albu_example', 'instaboost', 'ssd', 'mask_rcnn', 'nas_fpn'
+]
 
 nn_module_root = [
     'carafe', 'dcn', 'empirical_attention', 'gcnet', 'gn+ws', 'hrnet', 'pafpn',

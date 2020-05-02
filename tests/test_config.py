@@ -97,8 +97,10 @@ def test_config_data_pipeline():
         'pascal_voc/ssd512_voc0712.py',
         # 'albu_example/mask_rcnn_r50_fpn_1x.py',
         'foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py',
-        'mask_rcnn/mask_rcnn_r50_fpn_poly_1x_coco.py',
+        'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
+        'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain_1x_coco.py',
         'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
+        'nas_fpn/retinanet_r50_fpn_crop640_50e_coco.py',
     ]
 
     def dummy_masks(h, w, num_obj=3, mode='bitmap'):
