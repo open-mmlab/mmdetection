@@ -45,7 +45,7 @@ class BBoxHead(nn.Module):
         self.reg_class_agnostic = reg_class_agnostic
         self.fp16_enabled = False
 
-        self.loss_cls = build_loss(loss_cls)
+        self.loss_cls = build_loss(loss_cls)#两个损失计算
         self.loss_bbox = build_loss(loss_bbox)
 
         in_channels = self.in_channels
