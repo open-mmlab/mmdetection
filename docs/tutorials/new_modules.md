@@ -1,4 +1,4 @@
-# Tutorials 1: Adding New Modules
+# Tutorial 4: Adding New Modules
 
 ## Customize optimizer
 

@@ -1,9 +1,6 @@
-# Technical Details
+# Tutorial 3: Custom Data Pipelines
 
-In this section, we will introduce the main units of training a detector:
-data pipeline, model and iteration pipeline.
-
-## Data pipeline
+## Design of Data pipelines
 
 Following typical conventions, we use `Dataset` and `DataLoader` for data loading
 with multiple workers. `Dataset` returns a dict of data items corresponding
@@ -18,7 +15,7 @@ defines how to process the annotations and a data pipeline defines all the steps
 A pipeline consists of a sequence of operations. Each operation takes a dict as input and also output a dict for the next transform.
 
 We present a classical pipeline in the following figure. The blue blocks are pipeline operations. With the pipeline going on, each operator can add new keys (marked as green) to the result dict or update the existing keys (marked as orange).
-![pipeline figure](../demo/data_pipeline.png)
+![pipeline figure](../../demo/data_pipeline.png)
 
 The operations are categorized into data loading, pre-processing, formatting and test-time augmentation.
 
@@ -127,100 +124,41 @@ For each operation, we list the related dict fields that are added/updated/remov
 
 `MultiScaleFlipAug`
 
-## Model
+## Extend and use custom pipelines
 
-In MMDetection, model components are basically categorized as 4 types.
-
-- backbone: usually a FCN network to extract feature maps, e.g., ResNet.
-- neck: the part between backbones and heads, e.g., FPN, ASPP.
-- head: the part for specific tasks, e.g., bbox prediction and mask prediction.
-- roi extractor: the part for extracting features from feature maps, e.g., RoI Align.
-
-We also write implement some general detection pipelines with the above components,
-such as `SingleStageDetector` and `TwoStageDetector`.
-
-### Build a model with basic components
-
-Following some basic pipelines (e.g., two-stage detectors), the model structure
-can be customized through config files with no pains.
-
-If we want to implement some new components, e.g, the path aggregation
-FPN structure in [Path Aggregation Network for Instance Segmentation](https://arxiv.org/abs/1803.01534), there are two things to do.
-
-1. create a new file in `mmdet/models/necks/pafpn.py`.
+1. Write a new pipeline in any file, e.g., `my_pipeline.py`. It takes a dict as input and return a dict.
 
     ```python
-    from ..registry import NECKS
+    from mmdet.datasets import PIPELINES
 
-    @NECKS.register
-    class PAFPN(nn.Module):
+    @PIPELINES.register_module()
+    class MyTransform:
 
-        def __init__(self,
-                    in_channels,
-                    out_channels,
-                    num_outs,
-                    start_level=0,
-                    end_level=-1,
-                    add_extra_convs=False):
-            pass
-
-        def forward(self, inputs):
-            # implementation is ignored
-            pass
+        def __call__(self, results):
+            results['dummy'] = True
+            return results
     ```
 
-2. Import the module in `mmdet/models/necks/__init__.py`.
+2. Import the new class.
 
     ```python
-    from .pafpn import PAFPN
+    from .my_pipeline import MyTransform
     ```
 
-2. modify the config file from
+3. Use it in config files.
 
     ```python
-    neck=dict(
-        type='FPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
-        num_outs=5)
+    img_norm_cfg = dict(
+        mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    train_pipeline = [
+        dict(type='LoadImageFromFile'),
+        dict(type='LoadAnnotations', with_bbox=True),
+        dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+        dict(type='RandomFlip', flip_ratio=0.5),
+        dict(type='Normalize', **img_norm_cfg),
+        dict(type='Pad', size_divisor=32),
+        dict(type='MyTransform'),
+        dict(type='DefaultFormatBundle'),
+        dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    ]
     ```
-
-    to
-
-    ```python
-    neck=dict(
-        type='PAFPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
-        num_outs=5)
-    ```
-
-We will release more components (backbones, necks, heads) for research purpose.
-
-### Write a new model
-
-To write a new detection pipeline, you need to inherit from `BaseDetector`,
-which defines the following abstract methods.
-
-- `extract_feat()`: given an image batch of shape (n, c, h, w), extract the feature map(s).
-- `forward_train()`: forward method of the training mode
-- `simple_test()`: single scale testing without augmentation
-- `aug_test()`: testing with augmentation (multi-scale, flip, etc.)
-
-[TwoStageDetector](https://github.com/hellock/mmdetection/blob/master/mmdet/models/detectors/two_stage.py)
-is a good example which shows how to do that.
-
-## Iteration pipeline
-
-We adopt distributed training for both single machine and multiple machines.
-Supposing that the server has 8 GPUs, 8 processes will be started and each process runs on a single GPU.
-
-Each process keeps an isolated model, data loader, and optimizer.
-Model parameters are only synchronized once at the beginning.
-After a forward and backward pass, gradients will be allreduced among all GPUs,
-and the optimizer will update model parameters.
-Since the gradients are allreduced, the model parameter stays the same for all processes after the iteration.
-
-## Other information
-
-For more information, please refer to our [technical report](https://arxiv.org/abs/1906.07155).
