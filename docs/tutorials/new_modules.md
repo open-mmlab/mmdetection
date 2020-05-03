@@ -1,4 +1,4 @@
-# Tutorials 1: Adding New Modules
+# Tutorial 4: Adding New Modules
 
 ## Customize optimizer
 
@@ -120,6 +120,48 @@ model = dict(
         arg2=xxx),
     ...
 ```
+
+### Add new necks
+
+Here we take PAFPN as an example.
+
+1. Create a new file in `mmdet/models/necks/pafpn.py`.
+
+    ```python
+    from ..registry import NECKS
+
+    @NECKS.register
+    class PAFPN(nn.Module):
+
+        def __init__(self,
+                    in_channels,
+                    out_channels,
+                    num_outs,
+                    start_level=0,
+                    end_level=-1,
+                    add_extra_convs=False):
+            pass
+
+        def forward(self, inputs):
+            # implementation is ignored
+            pass
+    ```
+
+2. Import the module in `mmdet/models/necks/__init__.py`.
+
+    ```python
+    from .pafpn import PAFPN
+    ```
+
+3. Modify the config file.
+
+    ```python
+    neck=dict(
+        type='PAFPN',
+        in_channels=[256, 512, 1024, 2048],
+        out_channels=256,
+        num_outs=5)
+    ```
 
 ### Add new heads
 

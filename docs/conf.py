@@ -18,7 +18,7 @@
 
 project = 'MMDetection'
 copyright = '2018-2020, OpenMMLab'
-author = 'OpenMMLab'
+author = 'MMDetection Authors'
 
 # The full version, including alpha/beta/rc tags
 release = '1.0.0'
@@ -36,7 +36,7 @@ extensions = [
     'sphinx_markdown_tables',
 ]
 
-autodoc_mock_imports = ['torch', 'torchvision', 'mmcv']
+autodoc_mock_imports = ['torch', 'torchvision', 'mmcv', 'numpy', 'pycocotools']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
