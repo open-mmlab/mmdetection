@@ -3,6 +3,48 @@
 This page provides basic tutorials about the usage of MMDetection.
 For installation instructions, please see [install.md](install.md).
 
+## Prepare datasets
+
+It is recommended to symlink the dataset root to `$MMDETECTION/data`.
+If your folder structure is different, you may need to change the corresponding paths in config files.
+
+```
+mmdetection
+├── mmdet
+├── tools
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
+│   ├── cityscapes
+│   │   ├── annotations
+│   │   ├── leftImg8bit
+│   │   │   ├── train
+│   │   │   ├── val
+│   │   ├── gtFine
+│   │   │   ├── train
+│   │   │   ├── val
+│   ├── VOCdevkit
+│   │   ├── VOC2007
+│   │   ├── VOC2012
+
+```
+
+The cityscapes annotations have to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
+
+```shell
+pip install cityscapesscripts
+python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out_dir ./data/cityscapes/annotations
+```
+
+Currently the config files in `cityscapes` use COCO pre-trained weights to initialize.
+You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
+
+For using custom datasets, please refer to [Tutorials 2: Adding New Dataset](tutorials/new_dataset.md).
+
 ## Inference with pretrained models
 
 We provide testing scripts to evaluate a whole dataset (COCO, PASCAL VOC, Cityscapes, etc.),
@@ -10,9 +52,9 @@ and also some high-level apis for easier integration to other projects.
 
 ### Test a dataset
 
-- [x] single GPU testing
-- [x] multiple GPU testing
-- [x] visualize detection results
+- single GPU
+- single node multiple GPU
+- multiple node
 
 You can use the following commands to test a dataset.
 
