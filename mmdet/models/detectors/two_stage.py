@@ -45,6 +45,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.iter = 0
 
         self.init_weights(pretrained=pretrained)
 
@@ -156,6 +157,10 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
                                                  gt_bboxes, gt_labels,
                                                  gt_bboxes_ignore, gt_masks,
                                                  **kwargs)
+        print(roi_losses)
+        self.iter += 1
+        if self.iter == 2:
+            exit()
         losses.update(roi_losses)
 
         return losses

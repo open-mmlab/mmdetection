@@ -73,7 +73,6 @@ class ScoreHLRSampler(BaseSampler):
             neg_inds = neg_inds.squeeze(1)
         with torch.no_grad():
             bboxes = bboxes[neg_inds]
-            labels = assign_result.labels[neg_inds]
             rois = bbox2roi([bboxes])
             bbox_feats = self.bbox_roi_extractor(
                 feats[:self.bbox_roi_extractor.num_inputs], rois)
@@ -85,7 +84,8 @@ class ScoreHLRSampler(BaseSampler):
                 cls_score=cls_score,
                 bbox_pred=None,
                 rois=None,
-                labels=labels + self.bbox_head.num_classes,
+                labels=neg_inds.new_full((num_neg, ),
+                                         self.bbox_head.num_classes),
                 label_weights=cls_score.new_ones(num_neg),
                 bbox_targets=None,
                 bbox_weights=None,

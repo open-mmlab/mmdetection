@@ -102,7 +102,7 @@ def carl_loss(cls_score,
     # multiply pos_cls_score with the corresponding bbox weight
     # and remain gradient
     if sigmoid:
-        pos_cls_score = cls_score.sigmoid()[pos_label_inds, pos_labels - 1]
+        pos_cls_score = cls_score.sigmoid()[pos_label_inds, pos_labels]
     else:
         pos_cls_score = cls_score.softmax(-1)[pos_label_inds, pos_labels]
     carl_loss_weights = (bias + (1 - bias) * pos_cls_score).pow(k)
