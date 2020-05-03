@@ -224,9 +224,10 @@ class FoveaHead(nn.Module):
                 pos_weights,
                 avg_factor=num_pos)
         else:
-            loss_bbox = torch.tensor([0],
-                                     dtype=flatten_bbox_preds.dtype,
-                                     device=flatten_bbox_preds.device)
+            loss_bbox = torch.tensor(
+                0,
+                dtype=flatten_bbox_preds.dtype,
+                device=flatten_bbox_preds.device)
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
     def fovea_target(self, gt_bbox_list, gt_label_list, featmap_sizes, points):
