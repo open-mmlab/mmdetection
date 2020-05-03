@@ -230,3 +230,21 @@ data = dict(
     val=dict(classes=classes),
     test=dict(classes=classes))
 ```
+
+MMDetection V2.0 also supports to read the classes from a file, which is common in real applications.
+For example, assume the `classes.txt` contains the name of classes as the following.
+
+```
+person
+bicycle
+car
+```
+
+Users can set the classes as a file path, the dataset will load it and convert it to a list automatically.
+```python
+classes = 'path/to/classes.txt'
+data = dict(
+    train=dict(classes=classes),
+    val=dict(classes=classes),
+    test=dict(classes=classes))
+```
