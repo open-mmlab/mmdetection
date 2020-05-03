@@ -125,6 +125,70 @@ There are two ways to work with custom datasets.
   a pickle or json file, like [pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/convert_datasets/pascal_voc.py).
   Then you can simply use `CustomDataset`.
 
+### An example of customized dataset
+
+Assume the annotation is in a new format in text files.
+The bounding boxes of image `xxx.jpg` are stored in text file `xxx.txt` as the following
+
+```
+filename 000001.jpg
+width 1280
+height 720
+bboxes 10 20 40 60 20 40 50 60
+labels 1 2
+```
+
+The image list is also in text file `image_list.txt` as the following
+
+```
+000001.jpg
+000002.jpg
+...
+233333.jpg
+```
+
+We can create a new dataset in `mmdet/datasets/my_dataset.py` to load the data.
+
+```python
+import os.path as osp
+import tempfile
+
+import mmcv
+import numpy as np
+
+from mmdet.core import eval_recalls
+from mmdet.utils import print_log
+from .builder import DATASETS
+from .custom import CustomDataset
+
+
+@DATASETS.register_module()
+class MyDataset(CustomDataset):
+
+    CLASSES = ('person', 'bicycle', 'car', 'motorcycle')
+
+    def load_annotations(self, ann_file):
+        self.image_list = mmcv.list_from_file(ann_file)
+        data_infos = [
+            mmcv.dict_from_file(f'{filename.rstrip('.jpg')}.txt')
+            for filename in self.image_list
+        ]
+        return data_infos
+
+    def get_ann_info(self, idx):
+        return self.data_infos[idx]['ann']
+```
+
+Then in the config, to use `MyDataset` you can modify the config as the following
+
+```python
+dataset_A_train = dict(
+    type='MyDataset',
+    ann_file = 'image_list.txt',
+    pipeline=train_pipeline
+)
+```
+
 ## Customize datasets by mixing dataset
 
 MMDetection also supports to mix dataset for training.
