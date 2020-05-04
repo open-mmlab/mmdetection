@@ -149,14 +149,9 @@ The bounding boxes annotations are stored in text file `annotation.txt` as the f
 We can create a new dataset in `mmdet/datasets/my_dataset.py` to load the data.
 
 ```python
-import os.path as osp
-import tempfile
-
 import mmcv
 import numpy as np
 
-from mmdet.core import eval_recalls
-from mmdet.utils import print_log
 from .builder import DATASETS
 from .custom import CustomDataset
 
@@ -169,49 +164,38 @@ class MyDataset(CustomDataset):
     def load_annotations(self, ann_file):
         ann_list = mmcv.list_from_file(ann_file)
 
-        data_infos = dict()
-        bboxes = None
-        labels = None
-        filename = None
-        width = None
-        height = None
-        bboxes_number = 0
-        for ann_line in ann_list:
-            if ann_line == '#' and bboxes is not None:
-                assert bboxes_number == len(bboxes) == len(labels)
-                data_info = dict(
-                    filename=filename,
-                    width=width,
-                    height=height,
-                    ann=dict(
-                        bboxes=np.array(bboxes).astype(np.float32),
-                        labels=np.array(labels).astype(np.int64)
-                    ),
-                )
-                bboxes = []
-                labels = []
-            elif ann_line == '#':
-                bboxes = []
-                labels = []
-            elif (ann_line.endswidth('.jpg') or ann_line.endswidth('.png')):
-                filename = ann_line
-            elif len(ann_line.split(' ')) == 2:
-                img_shape = ann_line.split(' ')
-                width = int(img_shape[0])
-                height = int(img_shape[1])
-            elif len(ann_line.split(' ')) == 1:
-                bboxes_number = int(ann_line)
-            elif len(ann_line.split(' ')) == 5:
-                anns = ann_line.split(' ')
+        data_infos = []
+        for i, ann_line in enumerate(ann_list):
+            if ann_line != '#':
+                continue
+
+            img_shape = ann_list[i+2].split(' ')
+            width = int(img_shape[0])
+            height = int(img_shape[1])
+            bbox_number = int(ann_list[i + 3])
+
+            anns = ann_line.split(' ')
+            bboxes = []
+            labels = []
+            for anns in ann_list[i+4:i+4+bbox_number]:
                 bboxes.append([float(ann) for ann in anns[:4]])
-                labelss.append(int(anns[4]))
-            else:
-                raise ValueError(f'Unknown string {ann_line}')
+                labels.append(int(anns[4]))
+
+            data_infos.append(dict(
+                filename=ann_list[i+1],
+                width=width,
+                height=height,
+                ann=dict(
+                    bboxes=np.array(bboxes).astype(np.float32),
+                    labels=np.array(labels).astype(np.int64)
+                ),
+            ))
 
         return data_infos
 
     def get_ann_info(self, idx):
         return self.data_infos[idx]['ann']
+
 ```
 
 Then in the config, to use `MyDataset` you can modify the config as the following
