@@ -9,7 +9,7 @@ from .random_sampler import RandomSampler
 class InstanceBalancedPosSampler(RandomSampler):
 
     def _sample_pos(self, assign_result, num_expected, **kwargs):
-        pos_inds = torch.nonzero(assign_result.gt_inds > 0)
+        pos_inds = torch.nonzero(assign_result.gt_inds > 0, as_tuple=False)
         if pos_inds.numel() != 0:
             pos_inds = pos_inds.squeeze(1)
         if pos_inds.numel() <= num_expected:
@@ -20,7 +20,8 @@ class InstanceBalancedPosSampler(RandomSampler):
             num_per_gt = int(round(num_expected / float(num_gts)) + 1)
             sampled_inds = []
             for i in unique_gt_inds:
-                inds = torch.nonzero(assign_result.gt_inds == i.item())
+                inds = torch.nonzero(
+                    assign_result.gt_inds == i.item(), as_tuple=False)
                 if inds.numel() != 0:
                     inds = inds.squeeze(1)
                 else:
