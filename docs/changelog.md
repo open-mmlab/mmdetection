@@ -3,9 +3,9 @@
 ### v2.0.0 (4/5/2020)
 In this release, we made lots of major refactoring and modifications.
 
-1. **Faster speed**. We optimize the training and inference, and achieve 30% speedup for training and xx% for inference. Please refer to [model zoo](model_zoo.md#comparison-with-detectron2) for details.
+1. **Faster speed**. We optimize the training and inference speed for common models, achieving up to 30% speedup for training and 25% for inference. Please refer to [model zoo](model_zoo.md#comparison-with-detectron2) for details.
 
-2. **Higher performance**. We change some default hyperparameters with no additional cost, which leads to a gain of performance for most models. Please refer to [compatibility doc](compatibility.md) for details.
+2. **Higher performance**. We change some default hyperparameters with no additional cost, which leads to a gain of performance for most models. Please refer to [compatibility](compatibility.md#training-hyperparameters) for details.
 
 3. **Support PyTorch 1.5**. The support for 1.1 and 1.2 is dropped, and we switch to some new APIs.
 
