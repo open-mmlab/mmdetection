@@ -16,8 +16,8 @@ class ScoreHLRSampler(BaseSampler):
                  context,
                  neg_pos_ub=-1,
                  add_gt_as_proposals=True,
-                 k=1,
-                 bias=1,
+                 k=0.5,
+                 bias=0,
                  score_thr=0.05,
                  **kwargs):
         super(ScoreHLRSampler, self).__init__(num, pos_fraction, neg_pos_ub,
