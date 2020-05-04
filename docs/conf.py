@@ -36,7 +36,12 @@ extensions = [
     'sphinx_markdown_tables',
 ]
 
-autodoc_mock_imports = ['torch', 'torchvision', 'mmcv', 'numpy', 'pycocotools']
+autodoc_mock_imports = [
+    'torch', 'torchvision', 'mmcv', 'pycocotools', 'deform_conv_ext',
+    'mmdet.ops.dcn', 'mmdet.ops.dcn', 'mmdet.ops.masked_conv', 'mmdet.ops.nms',
+    'mmdet.ops.roi_align', 'mmdet.ops.roi_pool',
+    'mmdet.ops.sigmoid_focal_loss', 'mmdet.ops.carafe', 'mmdet.ops.utils'
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
