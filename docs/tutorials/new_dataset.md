@@ -128,22 +128,22 @@ There are two ways to work with custom datasets.
 ### An example of customized dataset
 
 Assume the annotation is in a new format in text files.
-The bounding boxes of image `xxx.jpg` are stored in text file `xxx.txt` as the following
+The bounding boxes annotations are stored in text file `annotation.txt` as the following
 
 ```
+#
 000001.jpg
 1280 720
+2
 10 20 40 60 1
 20 40 50 60 2
-```
-
-The image list is also in text file `image_list.txt` as the following
-
-```
-000001.jpg
+#
 000002.jpg
-...
-233333.jpg
+1280 720
+3
+50 20 40 60 2
+20 40 30 45 2
+30 40 50 60 3
 ```
 
 We can create a new dataset in `mmdet/datasets/my_dataset.py` to load the data.
@@ -167,28 +167,46 @@ class MyDataset(CustomDataset):
     CLASSES = ('person', 'bicycle', 'car', 'motorcycle')
 
     def load_annotations(self, ann_file):
-        self.image_list = mmcv.list_from_file(ann_file)
+        ann_list = mmcv.list_from_file(ann_file)
 
         data_infos = dict()
-        for filename in self.image_list:
-            data_annos = mmcv.list_from_file(f'{filename.rstrip('.jpg')}.txt')
-            assert isinstance(data_info[0], str)
-            bboxes = []
-            labels = []
-            for data_ann in data_annos[3:]:
-                bboxes.append(
-                    [float(x) for x in data_ann.split(' ')[:4]]
+        bboxes = None
+        labels = None
+        filename = None
+        width = None
+        height = None
+        bboxes_number = 0
+        for ann_line in ann_list:
+            if ann_line == '#' and bboxes is not None:
+                assert bboxes_number == len(bboxes) == len(labels)
+                data_info = dict(
+                    filename=filename,
+                    width=width,
+                    height=height,
+                    ann=dict(
+                        bboxes=np.array(bboxes).astype(np.float32),
+                        labels=np.array(labels).astype(np.int64)
+                    ),
                 )
-                labels.append(int(data_ann.split(' ')[4]))
-            data_info = dict(
-                filename=data_info[0],
-                width=data_info[1],
-                hgiths=data_info[2],
-                ann=dict(
-                    bboxes=np.array(bboxes).astype(np.float32),
-                    labels=np.array(labels).astype(np.int64)
-                ),
-            )
+                bboxes = []
+                labels = []
+            elif ann_line == '#':
+                bboxes = []
+                labels = []
+            elif (ann_line.endswidth('.jpg') or ann_line.endswidth('.png')):
+                filename = ann_line
+            elif len(ann_line.split(' ')) == 2:
+                img_shape = ann_line.split(' ')
+                width = int(img_shape[0])
+                height = int(img_shape[1])
+            elif len(ann_line.split(' ')) == 1:
+                bboxes_number = int(ann_line)
+            elif len(ann_line.split(' ')) == 5:
+                anns = ann_line.split(' ')
+                bboxes.append([float(ann) for ann in anns[:4]])
+                labelss.append(int(anns[4]))
+            else:
+                raise ValueError(f'Unknown string {ann_line}')
 
         return data_infos
 
