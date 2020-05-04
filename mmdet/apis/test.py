@@ -15,7 +15,7 @@ def single_gpu_test(model,
                     data_loader,
                     show=False,
                     out_dir=None,
-                    score_thr=0.3):
+                    show_score_thr=0.3):
     model.eval()
     results = []
     dataset = data_loader.dataset
@@ -48,7 +48,7 @@ def single_gpu_test(model,
                     result,
                     show=show,
                     out_file=out_file,
-                    score_thr=score_thr)
+                    score_thr=show_score_thr)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):

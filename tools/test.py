@@ -41,7 +41,7 @@ def parse_args():
     parser.add_argument(
         '--show-dir', help='directory where painted images will be saved')
     parser.add_argument(
-        '--score-thr',
+        '--show-score-thr',
         type=float,
         default=0.3,
         help='score threshold (default: 0.3)')
@@ -124,7 +124,7 @@ def main():
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
         outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
-                                  args.score_thr)
+                                  args.show_score_thr)
     else:
         model = MMDistributedDataParallel(
             model.cuda(),
