@@ -131,11 +131,10 @@ Assume the annotation is in a new format in text files.
 The bounding boxes of image `xxx.jpg` are stored in text file `xxx.txt` as the following
 
 ```
-filename 000001.jpg
-width 1280
-height 720
-bboxes 10 20 40 60 20 40 50 60
-labels 1 2
+000001.jpg
+1280 720
+10 20 40 60 1
+20 40 50 60 2
 ```
 
 The image list is also in text file `image_list.txt` as the following
@@ -169,10 +168,28 @@ class MyDataset(CustomDataset):
 
     def load_annotations(self, ann_file):
         self.image_list = mmcv.list_from_file(ann_file)
-        data_infos = [
-            mmcv.dict_from_file(f'{filename.rstrip('.jpg')}.txt')
-            for filename in self.image_list
-        ]
+
+        data_infos = dict()
+        for filename in self.image_list:
+            data_annos = mmcv.list_from_file(f'{filename.rstrip('.jpg')}.txt')
+            assert isinstance(data_info[0], str)
+            bboxes = []
+            labels = []
+            for data_ann in data_annos[3:]:
+                bboxes.append(
+                    [float(x) for x in data_ann.split(' ')[:4]]
+                )
+                labels.append(int(data_ann.split(' ')[4]))
+            data_info = dict(
+                filename=data_info[0],
+                width=data_info[1],
+                hgiths=data_info[2],
+                ann=dict(
+                    bboxes=np.array(bboxes).astype(np.float32),
+                    labels=np.array(labels).astype(np.int64)
+                ),
+            )
+
         return data_infos
 
     def get_ann_info(self, idx):
