@@ -38,7 +38,8 @@ def main():
         if ch == 27 or ch == ord('q') or ch == ord('Q'):
             break
 
-        model.show_result(img, result, score_thr=args.score_thr, wait_time=1)
+        model.show_result(
+            img, result, score_thr=args.score_thr, wait_time=1, show=True)
 
 
 if __name__ == '__main__':
