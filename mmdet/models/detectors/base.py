@@ -5,9 +5,9 @@ import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch.nn as nn
+from mmcv.utils import print_log
 
 from mmdet.core import auto_fp16
-from mmdet.utils import print_log
 
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
