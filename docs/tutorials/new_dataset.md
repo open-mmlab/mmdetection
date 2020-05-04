@@ -1,4 +1,4 @@
-# Tutorials 2: Adding New Dataset
+# Tutorial 2: Adding New Dataset
 
 ## Customize datasets by reorganizing data
 
@@ -146,8 +146,11 @@ dataset_A_train = dict(
 ```
 
 ### Concatemate dataset
-There two ways to concaenate the dataset.
+
+There two ways to concatenate the dataset.
+
 1. If the datasets you want to concatenate are in the same type with different annotation files, you can concatenate the dataset configs like the following.
+
     ```python
     dataset_A_train = dict(
         type='Dataset_A',
@@ -157,6 +160,7 @@ There two ways to concaenate the dataset.
     ```
 
 2. In case the dataset you want to concatenate is different, you can concatenate the dataset configs like the following.
+
     ```python
     dataset_A_train = dict()
     dataset_B_train = dict()

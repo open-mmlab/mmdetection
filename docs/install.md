@@ -3,19 +3,12 @@
 ### Requirements
 
 - Linux (Windows is not officially supported)
-- Python 3.5+
-- PyTorch 1.1 or higher
-- CUDA 9.0 or higher
-- NCCL 2
-- GCC 4.9 or higher
+- Python 3.6+
+- PyTorch 1.3+
+- CUDA 9.2+ (If you build PyTorch from source, CUDA 9.0 is also compatible)
+- GCC 4.9+
 - [mmcv](https://github.com/open-mmlab/mmcv)
 
-We have tested the following versions of OS and softwares:
-
-- OS: Ubuntu 16.04/18.04 and CentOS 7.2
-- CUDA: 9.0/9.2/10.0/10.1
-- NCCL: 2.1.15/2.2.13/2.3.7/2.4.2
-- GCC(G++): 4.9/5.3/5.4/7.3
 
 ### Install mmdetection
 
@@ -31,6 +24,26 @@ b. Install PyTorch and torchvision following the [official instructions](https:/
 ```shell
 conda install pytorch torchvision -c pytorch
 ```
+
+Note: Make sure that your compilation CUDA version and runtime CUDA version match.
+You can check the supported CUDA version for precompiled packages on the [PyTorch website](https://pytorch.org/).
+
+`E.g.1` If you have CUDA 10.1 installed under `/usr/local/cuda` and would like to install
+PyTorch 1.5, you need to install the prebuilt PyTorch with CUDA 10.1.
+
+```python
+conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
+```
+
+`E.g. 2` If you have CUDA 9.2 installed under `/usr/local/cuda` and would like to install
+PyTorch 1.3.1., you need to install the prebuilt PyTorch with CUDA 9.2.
+
+```python
+conda install pytorch=1.3.1 cudatoolkit=10.1 torchvision=0.4.2 -c pytorch
+```
+
+If you build PyTorch from source instead of installing the prebuilt pacakge,
+you can use more CUDA versions such as 9.0.
 
 c. Clone the mmdetection repository.
 
@@ -82,60 +95,21 @@ We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/
 docker build -t mmdetection docker/
 ```
 
-### Prepare datasets
-
-It is recommended to symlink the dataset root to `$MMDETECTION/data`.
-If your folder structure is different, you may need to change the corresponding paths in config files.
-
-```
-mmdetection
-├── mmdet
-├── tools
-├── configs
-├── data
-│   ├── coco
-│   │   ├── annotations
-│   │   ├── train2017
-│   │   ├── val2017
-│   │   ├── test2017
-│   ├── cityscapes
-│   │   ├── annotations
-│   │   ├── leftImg8bit
-│   │   │   ├── train
-│   │   │   ├── val
-│   │   ├── gtFine
-│   │   │   ├── train
-│   │   │   ├── val
-│   ├── VOCdevkit
-│   │   ├── VOC2007
-│   │   ├── VOC2012
-
-```
-The cityscapes annotations have to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
-```shell
-pip install cityscapesscripts
-python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out_dir ./data/cityscapes/annotations
-```
-Current the config files in `cityscapes` use COCO pre-trained weights to initialize.
-You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
-
 ### A from-scratch setup script
 
-Here is a full script for setting up mmdetection with conda and link the dataset path (supposing that your COCO dataset path is $COCO_ROOT).
+Here is a full script for setting up mmdetection with conda.
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
 conda activate open-mmlab
 
+# install latest pytorch prebuilt with the default prebuilt CUDA version (usually the latest)
 conda install -c pytorch pytorch torchvision -y
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
 pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 pip install -v -e .
-
-mkdir data
-ln -s $COCO_ROOT data
 ```
 
 ### Using multiple MMDetection versions

@@ -50,7 +50,7 @@ thus MMDetection 2.0 do not allow low quality matching by default in R-CNN train
   ```
   [model]_(model setting)_[backbone]_[neck]_(norm setting)_(misc)_(gpu x batch)_[schedule]_[dataset].py,
   ```
-  where the (misc) includes DCN and GCBlock, etc. More details are illustrated in the [documentation for config](CONFIG.md)
+  where the (misc) includes DCN and GCBlock, etc. More details are illustrated in the [documentation for config](config.md)
 
 - MMDetection V2.0 uses new ResNet Caffe backbones to reduce warnings when loading pre-trained models. Most of the new backbones' weights are the same as the former ones but do not have `conv.bias`, except that they use a different `img_norm_cfg`. Thus, the new backbone will not cause warning of unexpected keys.
 

@@ -88,8 +88,10 @@ def inference_detector(model, img):
         # Use torchvision ops for CPU mode instead
         for m in model.modules():
             if isinstance(m, (RoIPool, RoIAlign)):
-                # set use_torchvision on-the-fly
-                m.use_torchvision = True
+                if not m.aligned:
+                    # aligned=False is not implemented on CPU
+                    # set use_torchvision on-the-fly
+                    m.use_torchvision = True
         warnings.warn('We set use_torchvision=True in CPU mode.')
         # just get the actual data from DataContainer
         data['img_metas'] = data['img_metas'][0].data

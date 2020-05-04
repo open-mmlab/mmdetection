@@ -42,7 +42,7 @@ Git clone mmdetection.
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
-Setup CARAFE in our project.
+Setup CARAFE in your own project.
 ```shell
 cp -r ./mmdet/ops/carafe $Your_Project_Path$
 cd $Your_Project_Path$/carafe

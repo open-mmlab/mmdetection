@@ -18,9 +18,9 @@ You can replace `https://s3.ap-northeast-2.amazonaws.com/open-mmlab` with `https
 
 ## Baselines
 
-More models with different backbones will be added to the model zoo.
-
 ### RPN
+
+Please refer to [RPN](https://github.com/open-mmlab/mmdetection/blob/master/configs/rpn) for details.
 
 ### Faster R-CNN
 
@@ -38,13 +38,9 @@ Please refer to [Fast R-CNN](https://github.com/open-mmlab/mmdetection/blob/mast
 
 Please refer to [RetinaNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet) for details.
 
-### Cascade R-CNN
+### Cascade R-CNN and Cascade Mask R-CNN
 
 Please refer to [Cascade R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/cascade_rcnn) for details.
-
-### Cascade Mask R-CNN
-
-Please refer to [Cascade Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/cascade_rcnn) for details.
 
 ### Hybrid Task Cascade (HTC)
 
@@ -133,13 +129,14 @@ We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmd
 
 ## Comparison with Detectron2
 
-We compare mmdetection with [Detectron2](https://github.com/facebookresearch/detectron2.git).
-The backbone used is R-50-FPN.
+We compare mmdetection with [Detectron2](https://github.com/facebookresearch/detectron2.git) in terms of speed and performance.
+We use the commit id [185c27e](https://github.com/facebookresearch/detectron2/tree/185c27e4b4d2d4c68b5627b3765420c6d7f5a659)(30/4/2020) of detectron.
+For fair comparison, we install and run both frameworks on the same machine.
 
 ### Hardware
 
-- 8 NVIDIA Tesla V100 GPUs
-- Intel Xeon 4114 CPU @ 2.20GHz
+- 8 NVIDIA Tesla V100 (32G) GPUs
+- Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz
 
 ### Software environment
 
@@ -151,7 +148,7 @@ The backbone used is R-50-FPN.
 
 ### Performance
 
-<table>
+<table border="1">
   <tr>
     <th>Type</th>
     <th>Lr schd</th>
@@ -197,11 +194,11 @@ The backbone used is R-50-FPN.
 
 The training speed is measure with s/iter. The lower, the better.
 
-<table>
+<table border="1">
   <tr>
     <th>Type</th>
-    <th>Detectron2 (V100)</th>
-    <th>mmdetection (V100)</th>
+    <th>Detectron2</th>
+    <th>mmdetection</th>
   </tr>
   <tr>
     <td>Faster R-CNN</td>
@@ -226,34 +223,35 @@ The training speed is measure with s/iter. The lower, the better.
 The inference speed is measured with fps (img/s) on a single GPU, the higher, the better.
 To be consistent with Detectron2, we report the pure inference speed (without the time of data loading).
 For Mask R-CNN, we exclude the time of RLE encoding in post-processing.
-The speed in the brackets of detectron2 is tested using our own server, which is slightly slower than the official speed.
+We also include the officially reported speed in the parentheses, which is slightly higher
+than the results tested on our server due to differences of hardwards.
 
-<table>
+<table border="1">
   <tr>
     <th>Type</th>
-    <th>Detectron2 (V100)</th>
-    <th>mmdetection (V100)</th>
+    <th>Detectron2</th>
+    <th>mmdetection</th>
   </tr>
   <tr>
     <td>Faster R-CNN</td>
-    <td>26.3 (25.6)</td>
+    <td>25.6 (26.3)</td>
     <td>22.2</td>
   </tr>
   <tr>
     <td>Mask R-CNN</td>
-    <td>23.3 (22.5)</td>
+    <td>22.5 (23.3)</td>
     <td>19.6</td>
   </tr>
   <tr>
     <td>Retinanet</td>
-    <td>18.2 (17.8)</td>
+    <td>17.8 (18.2)</td>
     <td>20.6</td>
   </tr>
 </table>
 
 ### Training memory
 
-<table>
+<table border="1">
   <tr>
     <th>Type</th>
     <th>Detectron2</th>

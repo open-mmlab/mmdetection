@@ -3,10 +3,11 @@ import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import ConvModule, build_upsample_layer
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import auto_fp16, force_fp32, mask_target
-from mmdet.ops import Conv2d, ConvModule, build_upsample_layer
+from mmdet.ops import Conv2d
 from mmdet.ops.carafe import CARAFEPack
 from ..builder import HEADS, build_loss
 
