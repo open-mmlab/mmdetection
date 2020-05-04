@@ -612,7 +612,8 @@ class GuidedAnchorHead(AnchorHead):
         bbox_deltas = bbox_anchors.new_full(bbox_anchors.size(), 0)
         bbox_deltas[:, 2:] += shape_pred
         # filter out negative samples to speed-up weighted_bounded_iou_loss
-        inds = torch.nonzero(anchor_weights[:, 0] > 0).squeeze(1)
+        inds = torch.nonzero(
+            anchor_weights[:, 0] > 0, as_tuple=False).squeeze(1)
         bbox_deltas_ = bbox_deltas[inds]
         bbox_anchors_ = bbox_anchors[inds]
         bbox_gts_ = bbox_gts[inds]

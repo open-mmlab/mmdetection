@@ -105,8 +105,10 @@ class RPNHead(AnchorHead):
         if cfg.min_bbox_size > 0:
             w = proposals[:, 2] - proposals[:, 0]
             h = proposals[:, 3] - proposals[:, 1]
-            valid_inds = torch.nonzero((w >= cfg.min_bbox_size)
-                                       & (h >= cfg.min_bbox_size)).squeeze()
+            valid_inds = torch.nonzero(
+                (w >= cfg.min_bbox_size)
+                & (h >= cfg.min_bbox_size),
+                as_tuple=False).squeeze()
             if valid_inds.sum().item() != len(proposals):
                 proposals = proposals[valid_inds, :]
                 scores = scores[valid_inds]

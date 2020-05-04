@@ -331,7 +331,7 @@ class FSAFHead(RetinaHead):
         loc_weight = torch.ones_like(reg_loss)
         cls_weight = torch.ones_like(cls_loss)
         pos_flags = assigned_gt_inds >= 0  # positive pixel flag
-        pos_indices = torch.nonzero(pos_flags).flatten()
+        pos_indices = torch.nonzero(pos_flags, as_tuple=False).flatten()
 
         if pos_flags.any():  # pos pixels exist
             pos_assigned_gt_inds = assigned_gt_inds[pos_flags]

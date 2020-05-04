@@ -56,7 +56,7 @@ class OHEMSampler(BaseSampler):
                     feats=None,
                     **kwargs):
         # Sample some hard positive samples
-        pos_inds = torch.nonzero(assign_result.gt_inds > 0)
+        pos_inds = torch.nonzero(assign_result.gt_inds > 0, as_tuple=False)
         if pos_inds.numel() != 0:
             pos_inds = pos_inds.squeeze(1)
         if pos_inds.numel() <= num_expected:
@@ -72,7 +72,7 @@ class OHEMSampler(BaseSampler):
                     feats=None,
                     **kwargs):
         # Sample some hard negative samples
-        neg_inds = torch.nonzero(assign_result.gt_inds == 0)
+        neg_inds = torch.nonzero(assign_result.gt_inds == 0, as_tuple=False)
         if neg_inds.numel() != 0:
             neg_inds = neg_inds.squeeze(1)
         if len(neg_inds) <= num_expected:

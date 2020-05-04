@@ -218,7 +218,8 @@ class CenterRegionAssigner(BaseAssigner):
         if gt_labels is not None:
             # Default assigned label is the background (-1)
             assigned_labels = assigned_gt_ids.new_full((num_bboxes, ), -1)
-            pos_inds = torch.nonzero(assigned_gt_ids > 0).squeeze()
+            pos_inds = torch.nonzero(
+                assigned_gt_ids > 0, as_tuple=False).squeeze()
             if pos_inds.numel() > 0:
                 assigned_labels[pos_inds] = gt_labels[assigned_gt_ids[pos_inds]
                                                       - 1]
@@ -282,7 +283,7 @@ class CenterRegionAssigner(BaseAssigner):
         # Shadowed bboxes are assigned to be background. But the corresponding
         #   label is ignored during loss calculation, which is done through
         #   shadowed_gt_inds
-        shadowed_gt_inds = torch.nonzero(is_bbox_in_gt_shadow)
+        shadowed_gt_inds = torch.nonzero(is_bbox_in_gt_shadow, as_tuple=False)
         if is_bbox_in_gt_core.sum() == 0:  # No gt match
             shadowed_gt_inds[:, 1] += 1  # 1-based. For consistency issue
             return assigned_gt_inds, shadowed_gt_inds
@@ -300,7 +301,8 @@ class CenterRegionAssigner(BaseAssigner):
         inds_of_match = torch.any(is_bbox_in_gt_core, dim=1)
         # The matched gt index of each positive bbox. Length >= num_pos_anchor
         #   , since one bbox could match multiple gts
-        matched_bbox_gt_inds = torch.nonzero(is_bbox_in_gt_core)[:, 1]
+        matched_bbox_gt_inds = torch.nonzero(
+            is_bbox_in_gt_core, as_tuple=False)[:, 1]
         # Assign priority to each bbox-gt pair.
         pair_priority[is_bbox_in_gt_core] = gt_priority[matched_bbox_gt_inds]
         _, argmax_priority = pair_priority[inds_of_match].max(dim=1)
@@ -310,7 +312,9 @@ class CenterRegionAssigner(BaseAssigner):
         # Concat the shadowed indices due to overlapping with that out side of
         #   effective scale. shape: (total_num_ignore, 2)
         shadowed_gt_inds = torch.cat(
-            (shadowed_gt_inds, torch.nonzero(is_bbox_in_gt_core)), dim=0)
+            (shadowed_gt_inds, torch.nonzero(
+                is_bbox_in_gt_core, as_tuple=False)),
+            dim=0)
         # `is_bbox_in_gt_core` should be changed back to keep arguments intact.
         is_bbox_in_gt_core[inds_of_match, argmax_priority] = 1
         # 1-based shadowed gt indices, to be consistent with `assigned_gt_inds`
