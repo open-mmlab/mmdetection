@@ -1,3 +1,4 @@
+import warnings
 from abc import ABCMeta, abstractmethod
 
 import mmcv
@@ -232,4 +233,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             out_file=out_file)
 
         if not (show or out_file):
+            warnings.warn('show==False and out_file is not specified, only '
+                          'result image will be returned')
             return img
