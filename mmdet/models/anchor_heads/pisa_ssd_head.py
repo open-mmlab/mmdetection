@@ -112,4 +112,4 @@ class PISASSDHead(SSDHead):
         loss_dict = dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
         if carl_loss_cfg is not None:
             loss_dict.update(loss_carl)
-        return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
+        return loss_dict

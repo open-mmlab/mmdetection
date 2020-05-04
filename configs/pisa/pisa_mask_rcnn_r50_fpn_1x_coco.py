@@ -21,5 +21,5 @@ train_cfg = dict(
             pos_fraction=0.25,
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
-        label_weights=dict(k=2, bias=0),
-        carl_loss=dict(k=1, bias=0.2)))
+        isr=dict(k=2, bias=0),
+        carl=dict(k=1, bias=0.2)))

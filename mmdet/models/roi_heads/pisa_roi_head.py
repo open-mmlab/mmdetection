@@ -126,19 +126,19 @@ class PISARoIHead(StandardRoIHead):
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
 
-        lable_weight_cfg = self.train_cfg.get('label_weights', None)
-        if lable_weight_cfg is not None:
+        isr_cfg = self.train_cfg.get('isr', None)
+        if isr_cfg is not None:
             bbox_targets = isr_p(cls_score, bbox_pred, bbox_targets, rois,
                                  sampling_results, self.bbox_head.loss_cls,
-                                 self.bbox_head.bbox_coder, **lable_weight_cfg)
+                                 self.bbox_head.bbox_coder, **isr_cfg)
         loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, rois,
                                         *bbox_targets)
 
-        carl_loss_cfg = self.train_cfg.get('carl_loss', None)
-        if carl_loss_cfg is not None:
+        carl_cfg = self.train_cfg.get('carl', None)
+        if carl_cfg is not None:
             loss_carl = carl_loss(cls_score, bbox_targets[0], bbox_pred,
                                   bbox_targets[2], self.bbox_head.loss_bbox,
-                                  **carl_loss_cfg)
+                                  **carl_cfg)
             loss_bbox.update(loss_carl)
 
         bbox_results.update(loss_bbox=loss_bbox)
