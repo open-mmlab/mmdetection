@@ -227,7 +227,10 @@ class FSAFHead(RetinaHead):
             # Shape: (fpn_levels, num_gts). Loss of each gt at each fpn level
             loss_levels = torch.stack(loss_levels, dim=0)
             # Locate the best fpn level for loss back-propagation
-            loss, argmin = loss_levels.min(dim=0)
+            if loss_levels.numel() == 0:  # zero gt
+                argmin = loss_levels.new_empty((num_gts, ), dtype=torch.long)
+            else:
+                _, argmin = loss_levels.min(dim=0)
 
         # Reweight the loss of each (anchor, label) pair, so that only those
         #  at the best gt level are back-propagated.
