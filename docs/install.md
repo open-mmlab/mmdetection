@@ -2,7 +2,7 @@
 
 ### Requirements
 
-- Linux (Windows is not officially supported)
+- Linux or macOS (Windows is not currently officially supported)
 - Python 3.6+
 - PyTorch 1.3+
 - CUDA 9.2+ (If you build PyTorch from source, CUDA 9.0 is also compatible)
@@ -39,7 +39,7 @@ conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
 PyTorch 1.3.1., you need to install the prebuilt PyTorch with CUDA 9.2.
 
 ```python
-conda install pytorch=1.3.1 cudatoolkit=10.1 torchvision=0.4.2 -c pytorch
+conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
 ```
 
 If you build PyTorch from source instead of installing the prebuilt pacakge,
@@ -59,6 +59,12 @@ d. Install build requirements and then install mmdetection.
 pip install -r requirements/build.txt
 pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 pip install -v -e .  # or "python setup.py develop"
+```
+
+If you build mmdetection on macOS, replace the last command with
+
+```
+CC=clang CXX=clang++ CFLAGS='-stdlib=libc++' pip install -e .
 ```
 
 Note:
