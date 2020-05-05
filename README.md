@@ -46,7 +46,7 @@ Please refer to [changelog.md](docs/changelog.md) for details and release histor
 ## Benchmark and model zoo
 
 Supported methods and backbones are shown in the below table.
-Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
+Results and models are available in the [model zoo](docs/MODEL_ZOO.md).
 
 |                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet |
 |--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|
@@ -71,6 +71,8 @@ Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 | FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     |
 | NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     |
 | ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     |
+| FSAF               | ✓        | ✓        | ☐        | ✗        | ✓     |
+| PAFPN              | ✓        | ✓        | ☐        | ✗        | ✓     |
 
 Other features
 - [x] [CARAFE](configs/carafe/README.md)
@@ -83,6 +85,8 @@ Other features
 - [x] [GCNet](configs/gcnet/README.md)
 - [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
 - [x] [InstaBoost](configs/instaboost/README.md)
+- [x] [FSAF](configs/fsaf/README.md)
+- [x] [PAFPN](configs/pafpn/README.md)
 
 
 ## Installation
