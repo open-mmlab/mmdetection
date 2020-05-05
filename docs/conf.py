@@ -39,9 +39,9 @@ extensions = [
 ]
 
 autodoc_mock_imports = [
-    'cv2', 'mmcv', 'matplotlib', 'pycocotools', 'terminaltables',
-    'mmdet.version', 'mmdet.ops.dcn', 'mmdet.ops.dcn', 'mmdet.ops.masked_conv',
-    'mmdet.ops.nms', 'mmdet.ops.roi_align', 'mmdet.ops.roi_pool',
+    'matplotlib', 'pycocotools', 'terminaltables', 'mmdet.version',
+    'mmdet.ops.dcn', 'mmdet.ops.masked_conv', 'mmdet.ops.nms',
+    'mmdet.ops.roi_align', 'mmdet.ops.roi_pool',
     'mmdet.ops.sigmoid_focal_loss', 'mmdet.ops.carafe', 'mmdet.ops.utils'
 ]
 
