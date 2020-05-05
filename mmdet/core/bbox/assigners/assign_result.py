@@ -102,10 +102,9 @@ class AssignResult(util_mixins.NiceRepr):
 
     @classmethod
     def random(cls, **kwargs):
-        """
-        Create random AssignResult for tests or debugging.
+        """Create random AssignResult for tests or debugging.
 
-        Kwargs:
+        Args:
             num_preds: number of predicted boxes
             num_gts: number of true boxes
             p_ignore (float): probability of a predicted box assinged to an
@@ -116,7 +115,7 @@ class AssignResult(util_mixins.NiceRepr):
             rng (None | int | numpy.random.RandomState): seed or state
 
         Returns:
-            AssignResult :
+            :obj:`AssignResult`: Randomly generated assign results.
 
         Example:
             >>> from mmdet.core.bbox.assigners.assign_result import *  # NOQA
