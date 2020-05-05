@@ -183,8 +183,8 @@ class RepPointsHead(nn.Module):
         normal_init(self.reppoints_pts_refine_out, std=0.01)
 
     def points2bbox(self, pts, y_first=True):
-        """
-        Converting the points set into bounding box.
+        """Converting the points set into bounding box.
+
         :param pts: the input points sets (fields), each points
             set (fields) is represented as 2n scalar.
         :param y_first: if y_fisrt=True, the point set is represented as
@@ -234,9 +234,9 @@ class RepPointsHead(nn.Module):
         return bbox
 
     def gen_grid_from_reg(self, reg, previous_boxes):
-        """
-        Base on the previous bboxes and regression values, we compute the
-            regressed bboxes and generate the grids on the bboxes.
+        """Base on the previous bboxes and regression values, we compute the
+        regressed bboxes and generate the grids on the bboxes.
+
         :param reg: the regression value to previous bboxes.
         :param previous_boxes: previous bboxes.
         :return: generate grids on the regressed bboxes.
@@ -470,7 +470,7 @@ class RepPointsHead(nn.Module):
                     label_channels=1,
                     unmap_outputs=True):
         """Compute corresponding GT box and classification targets for
-            proposals.
+        proposals.
 
         Args:
             proposals_list (list[list]): Multi level points/bboxes of each
@@ -489,16 +489,14 @@ class RepPointsHead(nn.Module):
                 set of anchors.
 
         Returns:
-            tuple
-                labels_list (list[Tensor]): Labels of each level
-                label_weights_list (list[Tensor]): Label weights of each level
-                bbox_gt_list (list[Tensor]): Ground truth bbox of each level
-                proposal_list (list[Tensor]): Proposals(points/bboxes) of each
-                    level
-                proposal_weights_list (list[Tensor]): Proposal weights of each
-                    level
-                num_total_pos (int): Number of positive samples in all images
-                num_total_neg (int): Number of negative samples in all images
+            tuple:
+                - labels_list (list[Tensor]): Labels of each level.
+                - label_weights_list (list[Tensor]): Label weights of each level.  # noqa: E501
+                - bbox_gt_list (list[Tensor]): Ground truth bbox of each level.
+                - proposal_list (list[Tensor]): Proposals(points/bboxes) of each level.  # noqa: E501
+                - proposal_weights_list (list[Tensor]): Proposal weights of each level.  # noqa: E501
+                - num_total_pos (int): Number of positive samples in all images.  # noqa: E501
+                - num_total_neg (int): Number of negative samples in all images.  # noqa: E501
         """
         assert stage in ['init', 'refine']
         num_imgs = len(img_metas)

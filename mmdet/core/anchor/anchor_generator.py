@@ -395,6 +395,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x
 
     Difference to the V2.0 anchor generator:
+
     1. The center offset of V1.x anchors are set to be 0.5 rather than 0.
     2. The width/height are minused by 1 when calculating the anchors' centers
        and corners to meet the V1.x coordinate system.
