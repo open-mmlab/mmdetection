@@ -14,15 +14,6 @@ def readme():
     return content
 
 
-MAJOR = 1
-MINOR = 1
-PATCH = 0
-SUFFIX = ''
-if PATCH != '':
-    SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
-else:
-    SHORT_VERSION = '{}.{}{}'.format(MAJOR, MINOR, SUFFIX)
-
 version_file = 'mmdet/version.py'
 
 
@@ -73,12 +64,18 @@ def write_version_py():
 
 __version__ = '{}'
 short_version = '{}'
+version_info = ({})
 """
     sha = get_hash()
+    with open('mmdet/VERSION', 'r') as f:
+        SHORT_VERSION = f.read().strip()
+    VERSION_INFO = ', '.join(SHORT_VERSION.split('.'))
     VERSION = SHORT_VERSION + '+' + sha
 
+    version_file_str = content.format(time.asctime(), VERSION, SHORT_VERSION,
+                                      VERSION_INFO)
     with open(version_file, 'w') as f:
-        f.write(content.format(time.asctime(), VERSION, SHORT_VERSION))
+        f.write(version_file_str)
 
 
 def get_version():
