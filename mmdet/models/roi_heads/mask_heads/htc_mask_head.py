@@ -1,6 +1,6 @@
 from mmcv.cnn import ConvModule
 
-from ..builder import HEADS
+from ...builder import HEADS
 from .fcn_mask_head import FCNMaskHead
 
 
