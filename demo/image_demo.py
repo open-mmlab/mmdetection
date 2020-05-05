@@ -10,6 +10,8 @@ def main():
     parser.add_argument('checkpoint', help='Checkpoint file')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
+    parser.add_argument(
+        '--score-thr', type=float, default=0.3, help='bbox score threshold')
     args = parser.parse_args()
 
     # build the model from a config file and a checkpoint file
@@ -17,7 +19,7 @@ def main():
     # test a single image
     result = inference_detector(model, args.img)
     # show the results
-    show_result_pyplot(model, args.img, result)
+    show_result_pyplot(model, args.img, result, score_thr=args.score_thr)
 
 
 if __name__ == '__main__':
