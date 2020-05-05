@@ -80,7 +80,7 @@ Other features
 - [x] [Group Normalization](configs/gn/README.md)
 - [x] [Weight Standardization](configs/gn+ws/README.md)
 - [x] [OHEM](configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py)
-- [x] Soft-NMS
+- [x] [Soft-NMS](configs/faster_rcnn/faster_rcnn_r50_fpn_soft_nms_1x_coco.py)
 - [x] [Generalized Attention](configs/empirical_attention/README.md)
 - [x] [GCNet](configs/gcnet/README.md)
 - [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
