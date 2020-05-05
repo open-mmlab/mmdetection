@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, kaiming_init
 
 from mmdet.core import auto_fp16, force_fp32
-from ..builder import HEADS
+from mmdet.models.builder import HEADS
 
 
 @HEADS.register_module()
