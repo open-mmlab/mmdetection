@@ -10,9 +10,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
@@ -37,9 +38,9 @@ extensions = [
 ]
 
 autodoc_mock_imports = [
-    'torch', 'torchvision', 'mmcv', 'pycocotools', 'deform_conv_ext',
-    'mmdet.ops.dcn', 'mmdet.ops.dcn', 'mmdet.ops.masked_conv', 'mmdet.ops.nms',
-    'mmdet.ops.roi_align', 'mmdet.ops.roi_pool',
+    'cv2', 'mmcv', 'matplotlib', 'pycocotools', 'terminaltables',
+    'mmdet.version', 'mmdet.ops.dcn', 'mmdet.ops.dcn', 'mmdet.ops.masked_conv',
+    'mmdet.ops.nms', 'mmdet.ops.roi_align', 'mmdet.ops.roi_pool',
     'mmdet.ops.sigmoid_focal_loss', 'mmdet.ops.carafe', 'mmdet.ops.utils'
 ]
 

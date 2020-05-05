@@ -1,0 +1,5 @@
+# GENERATED VERSION FILE
+# TIME: Tue May  5 01:23:20 2020
+
+__version__ = '2.0.0+7ee9b8e'
+short_version = '2.0.0'
