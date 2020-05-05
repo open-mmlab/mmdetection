@@ -31,6 +31,9 @@ def isr_p(cls_score,
     gts = torch.cat(gts)
     assert len(gts) == num_pos
 
+    cls_score = cls_score.detach()
+    bbox_pred = bbox_pred.detach()
+
     if rois.size(-1) == 5:
         pos_rois = rois[pos_label_inds][:, 1:]
     else:
