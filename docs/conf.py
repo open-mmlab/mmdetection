@@ -22,7 +22,8 @@ copyright = '2018-2020, OpenMMLab'
 author = 'MMDetection Authors'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0.0'
+with open('../mmdet/VERSION', 'r') as f:
+    release = f.read().strip()
 
 # -- General configuration ---------------------------------------------------
 
