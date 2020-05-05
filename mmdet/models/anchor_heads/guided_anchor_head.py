@@ -59,10 +59,11 @@ class GuidedAnchorHead(AnchorHead):
     This GuidedAnchorHead will predict high-quality feature guided
     anchors and locations where anchors will be kept in inference.
     There are mainly 3 categories of bounding-boxes.
-    - Sampled (9) pairs for target assignment. (approxes)
-    - The square boxes where the predicted anchors are based on.
-        (squares)
+
+    - Sampled 9 pairs for target assignment. (approxes)
+    - The square boxes where the predicted anchors are based on. (squares)
     - Guided anchors.
+
     Please refer to https://arxiv.org/abs/1901.03278 for more details.
 
     Args:

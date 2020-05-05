@@ -279,10 +279,11 @@ def eval_map(det_results,
             per-class detected bboxes.
         annotations (list[dict]): Ground truth annotations where each item of
             the list indicates an image. Keys of annotations are:
-                - "bboxes": numpy array of shape (n, 4)
-                - "labels": numpy array of shape (n, )
-                - "bboxes_ignore" (optional): numpy array of shape (k, 4)
-                - "labels_ignore" (optional): numpy array of shape (k, )
+
+            - `bboxes`: numpy array of shape (n, 4)
+            - `labels`: numpy array of shape (n, )
+            - `bboxes_ignore` (optional): numpy array of shape (k, 4)
+            - `labels_ignore` (optional): numpy array of shape (k, )
         scale_ranges (list[tuple] | None): Range of scales to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. A range of
             (32, 64) means the area range between (32**2, 64**2).

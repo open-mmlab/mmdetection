@@ -13,23 +13,25 @@ from .pipelines import Compose
 class CustomDataset(Dataset):
     """Custom dataset for detection.
 
-    Annotation format:
-    [
-        {
-            'filename': 'a.jpg',
-            'width': 1280,
-            'height': 720,
-            'ann': {
-                'bboxes': <np.ndarray> (n, 4),
-                'labels': <np.ndarray> (n, ),
-                'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
-                'labels_ignore': <np.ndarray> (k, 4) (optional field)
-            }
-        },
-        ...
-    ]
+    The annotation format is shown as follows. The `ann` field is optional for
+    testing.
 
-    The `ann` field is optional for testing.
+    .. code-block::
+
+        [
+            {
+                'filename': 'a.jpg',
+                'width': 1280,
+                'height': 720,
+                'ann': {
+                    'bboxes': <np.ndarray> (n, 4),
+                    'labels': <np.ndarray> (n, ),
+                    'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
+                    'labels_ignore': <np.ndarray> (k, 4) (optional field)
+                }
+            },
+            ...
+        ]
     """
 
     CLASSES = None
