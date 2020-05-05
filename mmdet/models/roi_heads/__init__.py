@@ -6,6 +6,7 @@ from .grid_roi_head import GridRoIHead
 from .htc_roi_head import HybridTaskCascadeRoIHead
 from .mask_heads import *  # noqa: F401,F403
 from .mask_scoring_roi_head import MaskScoringRoIHead
+from .roi_extractors import *  # noqa: F401,F403
 from .shared_heads import *  # noqa: F401,F403
 
 __all__ = [
