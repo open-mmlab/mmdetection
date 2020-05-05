@@ -7,13 +7,15 @@ In this release, we made lots of major refactoring and modifications.
 
 2. **Higher performance**. We change some default hyperparameters with no additional cost, which leads to a gain of performance for most models. Please refer to [compatibility](compatibility.md#training-hyperparameters) for details.
 
-3. **Support PyTorch 1.5**. The support for 1.1 and 1.2 is dropped, and we switch to some new APIs.
+3. **More documentation and tutorials**. We add a bunch of documentation and tutorials to help users get started more smoothly. Read it [here](https://mmdetection.readthedocs.io/en/latest/).
 
-4. **Better configuration system**. Inheritance is supported to reduce the redundancy of configs.
+4. **Support PyTorch 1.5**. The support for 1.1 and 1.2 is dropped, and we switch to some new APIs.
 
-5. **Better modular desing**. Towards the goal of simplicity and flexibility, we simplify some encapsulation while add more other configurable modules like BBoxCoder, IoUCalculator, OptimizerConstructor, RoIHead. Target computation is also included in heads and the call hierarchy is simpler.
+5. **Better configuration system**. Inheritance is supported to reduce the redundancy of configs.
 
-6. Support new methods: [FSAF](https://arxiv.org/abs/1903.00621) and PAFPN (part of [PAFPN](https://arxiv.org/abs/1803.01534)).
+6. **Better modular desing**. Towards the goal of simplicity and flexibility, we simplify some encapsulation while add more other configurable modules like BBoxCoder, IoUCalculator, OptimizerConstructor, RoIHead. Target computation is also included in heads and the call hierarchy is simpler.
+
+7. Support new methods: [FSAF](https://arxiv.org/abs/1903.00621) and PAFPN (part of [PAFPN](https://arxiv.org/abs/1803.01534)).
 
 **Breaking Changes**
 Models training with mmdetection 1.x are not fully compatible with 2.0, please refer to the [compatibility doc](compatibility.md) for the details and how to migrate to the new version.
@@ -59,6 +61,7 @@ Models training with mmdetection 1.x are not fully compatible with 2.0, please r
 - Support class wise mean AP (was removed in the last version). (#2459)
 - Add option to save the testing result images. (#2414)
 - Support MomentumUpdaterHook. (#2571)
+- Add a demo to inference a single image. (#2605)
 
 ### v1.1.0 (24/2/2020)
 
