@@ -3,8 +3,8 @@ import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
 from mmdet.models.anchor_heads import AnchorHead, FSAFHead, GuidedAnchorHead
-from mmdet.models.bbox_heads import BBoxHead
-from mmdet.models.mask_heads import FCNMaskHead, MaskIoUHead
+from mmdet.models.roi_heads.bbox_heads import BBoxHead
+from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
 
 
 def test_anchor_head_loss():

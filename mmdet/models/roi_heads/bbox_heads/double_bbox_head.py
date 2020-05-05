@@ -1,8 +1,8 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init, xavier_init
 
-from ..backbones.resnet import Bottleneck
-from ..builder import HEADS
+from mmdet.models.backbones.resnet import Bottleneck
+from mmdet.models.builder import HEADS
 from .bbox_head import BBoxHead
 
 
