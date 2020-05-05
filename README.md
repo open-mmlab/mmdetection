@@ -77,11 +77,11 @@ Other features
 - [x] [DCNv2](configs/dcn/README.md)
 - [x] [Group Normalization](configs/gn/README.md)
 - [x] [Weight Standardization](configs/gn+ws/README.md)
-- [x] [OHEM](configs/faster_rcnn_ohem_r50_fpn_1x_coco.py)
+- [x] [OHEM](configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py)
 - [x] Soft-NMS
 - [x] [Generalized Attention](configs/empirical_attention/README.md)
 - [x] [GCNet](configs/gcnet/README.md)
-- [x] [Mixed Precision (FP16) Training](configs/fp16)
+- [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
 - [x] [InstaBoost](configs/instaboost/README.md)
 
 

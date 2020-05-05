@@ -127,6 +127,58 @@ Please refer to [ATSS](https://github.com/open-mmlab/mmdetection/blob/master/con
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
 
 
+## Comparison with Popular Frameworks
+We compare the training speed of Mask R-CNN with some other popular frameworks (The data is copied from [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md)).
+
+### Main Results
+
+```eval_rst
++-------------------------------+--------------------+
+| Implementation                | Throughput (img/s) |
++===============================+====================+
+| |D2| |PT|                     | 61                 |
++-------------------------------+--------------------+
+| mmdetection_  |PT|            | 60                 |
++-------------------------------+--------------------+
+| maskrcnn-benchmark_  |PT|     | 51                 |
++-------------------------------+--------------------+
+| tensorpack_ |TF|              | 50                 |
++-------------------------------+--------------------+
+| simpledet_ |mxnet|            | 39                 |
++-------------------------------+--------------------+
+| Detectron_  |C2|              | 19                 |
++-------------------------------+--------------------+
+| `matterport/Mask_RCNN`__ |TF| | 14                 |
++-------------------------------+--------------------+
+
+.. _maskrcnn-benchmark: https://github.com/facebookresearch/maskrcnn-benchmark/
+.. _tensorpack: https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN
+.. _mmdetection: https://github.com/open-mmlab/mmdetection/
+.. _simpledet: https://github.com/TuSimple/simpledet/
+.. _Detectron: https://github.com/facebookresearch/Detectron
+__ https://github.com/matterport/Mask_RCNN/
+
+.. |D2| image:: https://github.com/facebookresearch/detectron2/raw/master/.github/Detectron2-Logo-Horz.svg?sanitize=true
+   :height: 15pt
+   :target: https://github.com/facebookresearch/detectron2/
+.. |PT| image:: https://pytorch.org/assets/images/logo-icon.svg
+   :width: 15pt
+   :height: 15pt
+   :target: https://pytorch.org
+.. |TF| image:: https://static.nvidiagrid.net/ngc/containers/tensorflow.png
+   :width: 15pt
+   :height: 15pt
+   :target: https://tensorflow.org
+.. |mxnet| image:: https://github.com/dmlc/web-data/raw/master/mxnet/image/mxnet_favicon.png
+   :width: 15pt
+   :height: 15pt
+   :target: https://mxnet.apache.org/
+.. |C2| image:: https://caffe2.ai/static/logo.svg
+   :width: 15pt
+   :height: 15pt
+   :target: https://caffe2.ai
+```
+
 ## Comparison with Detectron2
 
 We compare mmdetection with [Detectron2](https://github.com/facebookresearch/detectron2.git) in terms of speed and performance.
