@@ -308,11 +308,12 @@ class ResNet(nn.Module):
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
         plugins (list[dict]): List of plugins for stages, each dict contains:
-            cfg (dict, required): Cfg dict to build plugin.
-            position (str, required): Position inside block to insert plugin,
-                options: 'after_conv1', 'after_conv2', 'after_conv3'.
-            stages (tuple[bool], optional): Stages to apply plugin, length
-                should be same as 'num_stages'
+
+            - cfg (dict, required): Cfg dict to build plugin.
+            - position (str, required): Position inside block to insert
+              plugin, options are 'after_conv1', 'after_conv2', 'after_conv3'.
+            - stages (tuple[bool], optional): Stages to apply plugin, length
+              should be same as 'num_stages'.
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
         zero_init_residual (bool): Whether to use zero init for last norm layer
@@ -434,34 +435,38 @@ class ResNet(nn.Module):
         'empirical_attention_block', 'nonlocal_block' into the backbone like
         ResNet/ResNeXt. They could be inserted after conv1/conv2/conv3 of
         Bottleneck.
-        An example of plugins format could be :
-            >>> plugins=[
-            ...     dict(cfg=dict(type='xxx', arg1='xxx'),
-            ...          stages=(False, True, True, True),
-            ...          position='after_conv2'),
-            ...     dict(cfg=dict(type='yyy'),
-            ...          stages=(True, True, True, True),
-            ...          position='after_conv3'),
-            ...     dict(cfg=dict(type='zzz', postfix='1'),
-            ...          stages=(True, True, True, True),
-            ...          position='after_conv3'),
-            ...     dict(cfg=dict(type='zzz', postfix='2'),
-            ...          stages=(True, True, True, True),
-            ...          position='after_conv3')
-            ... ]
-            >>> self = ResNet(depth=18)
-            >>> stage_plugins = self.make_stage_plugins(plugins, 0)
-            >>> assert len(stage_plugins) == 3
+        An example of plugins format could be:
+
+        >>> plugins=[
+        ...     dict(cfg=dict(type='xxx', arg1='xxx'),
+        ...          stages=(False, True, True, True),
+        ...          position='after_conv2'),
+        ...     dict(cfg=dict(type='yyy'),
+        ...          stages=(True, True, True, True),
+        ...          position='after_conv3'),
+        ...     dict(cfg=dict(type='zzz', postfix='1'),
+        ...          stages=(True, True, True, True),
+        ...          position='after_conv3'),
+        ...     dict(cfg=dict(type='zzz', postfix='2'),
+        ...          stages=(True, True, True, True),
+        ...          position='after_conv3')
+        ... ]
+        >>> self = ResNet(depth=18)
+        >>> stage_plugins = self.make_stage_plugins(plugins, 0)
+        >>> assert len(stage_plugins) == 3
+
         Suppose 'stage_idx=0', the structure of blocks in the stage would be:
 
-        .. code-block::
+        .. code-block:: none
 
             conv1-> conv2->conv3->yyy->zzz1->zzz2
+
         Suppose 'stage_idx=1', the structure of blocks in the stage would be:
 
-        .. code-block::
+        .. code-block:: none
 
             conv1-> conv2->xxx->conv3->yyy->zzz1->zzz2
+
         If stages is missing, the plugin would be applied to all stages.
 
         Args:
@@ -471,7 +476,6 @@ class ResNet(nn.Module):
 
         Returns:
             list[dict]: Plugins for current stage
-
         """
         stage_plugins = []
         for plugin in plugins:
@@ -611,15 +615,13 @@ class ResNet(nn.Module):
 
 @BACKBONES.register_module()
 class ResNetV1d(ResNet):
-    """ResNetV1d variant described in [1]_.
+    """ResNetV1d variant described in
+    `Bag of Tricks <https://arxiv.org/pdf/1812.01187.pdf>`_.
 
     Compared with default ResNet(ResNetV1b), ResNetV1d replaces the 7x7 conv
     in the input stem with three 3x3 convs. And in the downsampling block,
     a 2x2 avg_pool with stride 2 is added before conv, whose stride is
     changed to 1.
-
-    References:
-        .. [1] https://arxiv.org/pdf/1812.01187.pdf
     """
 
     def __init__(self, **kwargs):

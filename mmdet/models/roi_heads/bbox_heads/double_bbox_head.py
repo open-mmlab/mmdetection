@@ -72,7 +72,7 @@ class BasicResBlock(nn.Module):
 class DoubleConvFCBBoxHead(BBoxHead):
     r"""Bbox head used in Double-Head R-CNN
 
-    .. code-block::
+    .. code-block:: none
 
                                           /-> cls
                       /-> shared convs ->

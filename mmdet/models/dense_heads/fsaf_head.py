@@ -11,14 +11,11 @@ from .retina_head import RetinaHead
 
 @HEADS.register_module()
 class FSAFHead(RetinaHead):
-    """FSAF anchor-free head used in [1].
+    """Anchor-free head used in `FSAF <https://arxiv.org/abs/1903.00621>`_.
 
     The head contains two subnetworks. The first classifies anchor boxes and
     the second regresses deltas for the anchors (num_anchors is 1 for anchor-
     free methods)
-
-    References:
-        .. [1]  https://arxiv.org/pdf/1903.00621.pdf
 
     Example:
         >>> import torch
@@ -326,10 +323,11 @@ class FSAFHead(RetinaHead):
               Shape: (num_gts, ),
 
         Returns:
-            cls_loss: Reduced corrected classification loss. Scalar.
-            reg_loss: Reduced corrected regression loss. Scalar.
-            pos_flags (Tensor): Corrected bool tensor indicating the final
-              postive anchors. Shape: (num_anchors, ).
+            tuple:
+                - cls_loss: Reduced corrected classification loss. Scalar.
+                - reg_loss: Reduced corrected regression loss. Scalar.
+                - pos_flags (Tensor): Corrected bool tensor indicating the
+                  final postive anchors. Shape: (num_anchors, ).
         """
         loc_weight = torch.ones_like(reg_loss)
         cls_weight = torch.ones_like(cls_loss)
