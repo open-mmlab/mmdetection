@@ -2,6 +2,7 @@
 
 PYTHON=${PYTHON:-"python"}
 
+PYTHONPATH="$(dirname "$0")/..":$PYTHONPATH
 CONFIG=$1
 CHECKPOINT=$2
 GPUS=$3

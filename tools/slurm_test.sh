@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 set -x
-export PYTHONPATH=`pwd`:$PYTHONPATH
+
+PYTHONPATH="$(dirname "$0")/..":$PYTHONPATH
 PARTITION=$1
 JOB_NAME=$2
 CONFIG=$3
