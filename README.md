@@ -46,7 +46,7 @@ Please refer to [changelog.md](docs/changelog.md) for details and release histor
 ## Benchmark and model zoo
 
 Supported methods and backbones are shown in the below table.
-Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
+Results and models are available in the [model zoo](docs/MODEL_ZOO.md).
 
 |                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet |
 |--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|
@@ -71,18 +71,22 @@ Results and models are available in the [Model zoo](docs/MODEL_ZOO.md).
 | FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     |
 | NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     |
 | ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     |
+| FSAF               | ✓        | ✓        | ☐        | ✗        | ✓     |
+| PAFPN              | ✓        | ✓        | ☐        | ✗        | ✓     |
 
 Other features
 - [x] [CARAFE](configs/carafe/README.md)
 - [x] [DCNv2](configs/dcn/README.md)
 - [x] [Group Normalization](configs/gn/README.md)
 - [x] [Weight Standardization](configs/gn+ws/README.md)
-- [x] [OHEM](configs/faster_rcnn_ohem_r50_fpn_1x_coco.py)
-- [x] Soft-NMS
+- [x] [OHEM](configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py)
+- [x] [Soft-NMS](configs/faster_rcnn/faster_rcnn_r50_fpn_soft_nms_1x_coco.py)
 - [x] [Generalized Attention](configs/empirical_attention/README.md)
 - [x] [GCNet](configs/gcnet/README.md)
-- [x] [Mixed Precision (FP16) Training](configs/fp16)
+- [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
 - [x] [InstaBoost](configs/instaboost/README.md)
+- [x] [FSAF](configs/fsaf/README.md)
+- [x] [PAFPN](configs/pafpn/README.md)
 
 
 ## Installation
