@@ -1,4 +1,4 @@
-ARG PYTORCH="1.3"
+ARG PYTORCH="1.4"
 ARG CUDA="10.1"
 ARG CUDNN="7"
 
@@ -14,6 +14,37 @@ RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender-dev libx
 
 # Install mmdetection
 RUN conda install cython -y && conda clean --all
-RUN git clone https://github.com/open-mmlab/mmdetection.git /mmdetection
+RUN git clone --recursive --branch ote https://github.com/opencv/mmdetection.git /mmdetection
 WORKDIR /mmdetection
-RUN pip install --no-cache-dir -e .
+ENV FORCE_CUDA="1"
+RUN pip install --ignore-installed --no-cache-dir -e .['all']
+
+# Install OpenVINO
+RUN apt update && \
+    apt install -y \
+        libgtk-3-dev \
+        cpio \
+        unzip \
+        wget \
+        curl
+
+ARG OPENVINO_LINK=http://registrationcenter-download.intel.com/akdlm/irc_nas/16612/l_openvino_toolkit_p_2020.2.120.tgz
+RUN mkdir -p /tmp/openvino_installer && cd /tmp/openvino_installer && \
+    wget --no-verbose $OPENVINO_LINK && \
+    tar xf l_openvino_toolkit*.tgz && \
+    rm l_openvino_toolkit*.tgz && \
+    cd l_openvino_toolkit* && \
+    bash ./install.sh -s silent.cfg --accept_eula && \
+    cd /opt/intel/openvino/install_dependencies/ && \
+    dpkg -i intel-*.deb && \
+    ldconfig && \
+    rm -rf /tmp/openvino_installer && \
+    pip install -r /opt/intel/openvino/deployment_tools/model_optimizer/requirements_onnx.txt && \
+    echo "source /opt/intel/openvino/bin/setupvars.sh" >> /etc/profile
+
+# Prepare workspace to use for any user
+ENV BASH_ENV "/etc/profile"
+ENV USER docker
+RUN chmod -R 777 /workspace
+ENV HOME /workspace
+WORKDIR /workspace
