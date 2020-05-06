@@ -80,11 +80,6 @@ dense_heads
 .. automodule:: mmdet.models.dense_heads
     :members:
 
-roi_extractors
-^^^^^^^^^^^^^^
-.. automodule:: mmdet.models.roi_extractors
-    :members:
-
 roi_heads
 ^^^^^^^^^^
 .. automodule:: mmdet.models.roi_heads
