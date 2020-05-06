@@ -237,7 +237,7 @@ The inference speed is measured with fps (img/s) on a single GPU, the higher, th
 To be consistent with Detectron2, we report the pure inference speed (without the time of data loading).
 For Mask R-CNN, we exclude the time of RLE encoding in post-processing.
 We also include the officially reported speed in the parentheses, which is slightly higher
-than the results tested on our server due to differences of hardwards.
+than the results tested on our server due to differences of hardwares.
 
 <table border="1">
   <tr>
