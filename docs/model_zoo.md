@@ -134,8 +134,8 @@ We compare the training speed of Mask R-CNN with some other popular frameworks (
 
 | Implementation       | Throughput (img/s) |
 |----------------------|--------------------|
-| [Detectron2](https://github.com/facebookresearch/detectron2) |         61         |
-| MMDetection          |         60         |
+| [Detectron2](https://github.com/facebookresearch/detectron2) | 61 |
+| [MMDetection](https://github.com/open-mmlab/mmdetection) | 60 |
 | [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/)   | 51 |
 | [tensorpack](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN) | 50 |
 | [simpledet](https://github.com/TuSimple/simpledet/) | 39 |
