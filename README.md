@@ -40,7 +40,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.0.0 was released in 5/5/2020.
+v2.0.0 was released in 6/5/2020.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
 ## Benchmark and model zoo
