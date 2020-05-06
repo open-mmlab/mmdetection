@@ -12,7 +12,7 @@ def isr_p(cls_score,
           bbox_coder,
           k=2,
           bias=0):
-    """Importance-based Sample Reweighting, positive part.
+    """Importance-based Sample Reweighting (ISR_P), positive part.
 
     Args:
         cls_score (Tensor): Predicted classification scores.
@@ -23,7 +23,7 @@ def isr_p(cls_score,
         loss_cls (func): Classification loss func of the head.
         bbox_coder (obj): BBox coder of the head.
         k (float): Power of the non-linear mapping.
-        bias (float): shift of the non-linear mapping.
+        bias (float): Shift of the non-linear mapping.
 
     Return:
         tuple([Tensor]): labels, imp_based_label_weights, bbox_targets,
@@ -117,6 +117,23 @@ def carl_loss(cls_score,
               bias=0.2,
               avg_factor=None,
               sigmoid=False):
+    """Classification-Aware Regression Loss (CARL).
+
+    Args:
+        cls_score (Tensor): Predicted classification scores.
+        labels (Tensor): Targets of classification.
+        bbox_pred (Tensor): Predicted bbox deltas.
+        bbox_targets (Tensor): Target of bbox regression.
+        loss_bbox (func): Regression loss func of the head.
+        bbox_coder (obj): BBox coder of the head.
+        k (float): Power of the non-linear mapping.
+        bias (float): Shift of the non-linear mapping.
+        avg_factor (int): Average factor used in regression loss.
+        sigmoid (bool): Activation of the classification score.
+
+    Return:
+        dict: CARL loss dict.
+    """
     pos_label_inds = ((labels >= 0) & (labels < 80)).nonzero().reshape(-1)
     pos_labels = labels[pos_label_inds]
 

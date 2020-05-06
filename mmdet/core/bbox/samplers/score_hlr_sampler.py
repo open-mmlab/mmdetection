@@ -9,6 +9,20 @@ from .sampling_result import SamplingResult
 
 @BBOX_SAMPLERS.register_module
 class ScoreHLRSampler(BaseSampler):
+    """Importance-based Sample Reweighting (ISR_N), negative part.
+
+    Args:
+        num (int): Sample total num.
+        pos_fraction (float): Fraction of positive.
+        context (obj): RoI head that the sampler belongs to.
+        neg_pos_ub (int): Upper bound of the ratio of num negative to num
+            positive.
+        add_gt_as_proposals (bool): Whether to add ground truth as proposals.
+        k (float): Power of the non-linear mapping.
+        bias (float): Shift of the non-linear mapping.
+        score_thr (float): Minimum score that a negative sample is to be
+            considered as valid bbox.
+    """
 
     def __init__(self,
                  num,
