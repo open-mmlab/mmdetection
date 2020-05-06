@@ -127,6 +127,19 @@ Please refer to [ATSS](https://github.com/open-mmlab/mmdetection/blob/master/con
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
 
 
+## Speed benchmark
+We compare the training speed of Mask R-CNN with some other popular frameworks (The data is copied from [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md)).
+
+| Implementation       | Throughput (img/s) |
+|----------------------|--------------------|
+| [Detectron2](https://github.com/facebookresearch/detectron2) | 61 |
+| [MMDetection](https://github.com/open-mmlab/mmdetection) | 60 |
+| [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/)   | 51 |
+| [tensorpack](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN) | 50 |
+| [simpledet](https://github.com/TuSimple/simpledet/) | 39 |
+| [Detectron](https://github.com/facebookresearch/Detectron) | 19 |
+| [matterport/Mask_RCNN](https://github.com/matterport/Mask_RCNN/) | 14 |
+
 ## Comparison with Detectron2
 
 We compare mmdetection with [Detectron2](https://github.com/facebookresearch/detectron2.git) in terms of speed and performance.
