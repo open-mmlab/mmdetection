@@ -434,31 +434,34 @@ class ResNet(nn.Module):
         'empirical_attention_block', 'nonlocal_block' into the backbone like
         ResNet/ResNeXt. They could be inserted after conv1/conv2/conv3 of
         Bottleneck.
-
         An example of plugins format could be :
-        >>> plugins=[
-        ...     dict(cfg=dict(type='xxx', arg1='xxx'),
-        ...          stages=(False, True, True, True),
-        ...          position='after_conv2'),
-        ...     dict(cfg=dict(type='yyy'),
-        ...          stages=(True, True, True, True),
-        ...          position='after_conv3'),
-        ...     dict(cfg=dict(type='zzz', postfix='1'),
-        ...          stages=(True, True, True, True),
-        ...          position='after_conv3'),
-        ...     dict(cfg=dict(type='zzz', postfix='2'),
-        ...          stages=(True, True, True, True),
-        ...          position='after_conv3')
-        ... ]
-        >>> self = ResNet(depth=18)
-        >>> stage_plugins = self.make_stage_plugins(plugins, 0)
-        >>> assert len(stage_plugins) == 3
-
+            >>> plugins=[
+            ...     dict(cfg=dict(type='xxx', arg1='xxx'),
+            ...          stages=(False, True, True, True),
+            ...          position='after_conv2'),
+            ...     dict(cfg=dict(type='yyy'),
+            ...          stages=(True, True, True, True),
+            ...          position='after_conv3'),
+            ...     dict(cfg=dict(type='zzz', postfix='1'),
+            ...          stages=(True, True, True, True),
+            ...          position='after_conv3'),
+            ...     dict(cfg=dict(type='zzz', postfix='2'),
+            ...          stages=(True, True, True, True),
+            ...          position='after_conv3')
+            ... ]
+            >>> self = ResNet(depth=18)
+            >>> stage_plugins = self.make_stage_plugins(plugins, 0)
+            >>> assert len(stage_plugins) == 3
         Suppose 'stage_idx=0', the structure of blocks in the stage would be:
+
+        .. code-block::
+
             conv1-> conv2->conv3->yyy->zzz1->zzz2
         Suppose 'stage_idx=1', the structure of blocks in the stage would be:
-            conv1-> conv2->xxx->conv3->yyy->zzz1->zzz2
 
+        .. code-block::
+
+            conv1-> conv2->xxx->conv3->yyy->zzz1->zzz2
         If stages is missing, the plugin would be applied to all stages.
 
         Args:

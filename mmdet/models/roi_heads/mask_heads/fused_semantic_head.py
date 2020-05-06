@@ -10,15 +10,17 @@ from mmdet.models.builder import HEADS
 class FusedSemanticHead(nn.Module):
     r"""Multi-level fused semantic segmentation head.
 
-    in_1 -> 1x1 conv ---
-                        |
-    in_2 -> 1x1 conv -- |
-                       ||
-    in_3 -> 1x1 conv - ||
-                      |||                  /-> 1x1 conv (mask prediction)
-    in_4 -> 1x1 conv -----> 3x3 convs (*4)
-                        |                  \-> 1x1 conv (feature)
-    in_5 -> 1x1 conv ---
+    .. code-block::
+
+        in_1 -> 1x1 conv ---
+                            |
+        in_2 -> 1x1 conv -- |
+                           ||
+        in_3 -> 1x1 conv - ||
+                          |||                  /-> 1x1 conv (mask prediction)
+        in_4 -> 1x1 conv -----> 3x3 convs (*4)
+                            |                  \-> 1x1 conv (feature)
+        in_5 -> 1x1 conv ---
     """  # noqa: W605
 
     def __init__(self,
