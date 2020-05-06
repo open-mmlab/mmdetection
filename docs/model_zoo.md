@@ -130,8 +130,6 @@ We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmd
 ## Speed benchmark
 We compare the training speed of Mask R-CNN with some other popular frameworks (The data is copied from [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md)).
 
-### Main Results
-
 | Implementation       | Throughput (img/s) |
 |----------------------|--------------------|
 | [Detectron2](https://github.com/facebookresearch/detectron2) | 61 |
