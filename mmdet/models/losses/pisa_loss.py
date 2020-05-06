@@ -12,6 +12,24 @@ def isr_p(cls_score,
           bbox_coder,
           k=2,
           bias=0):
+    """Importance-based Sample Reweighting, positive part.
+
+    Args:
+        cls_score (Tensor): Predicted classification scores.
+        bbox_pred (Tensor): Predicted bbox deltas.
+        rois (Tensor): Anchors (single_stage) in shape (n, 4) or RoIs
+            (two_stage) in shape (n, 5).
+        sampling_results (obj): Sampling results.
+        loss_cls (func): Classification loss func of the head.
+        bbox_coder (obj): BBox coder of the head.
+        k (float): Power of the non-linear mapping.
+        bias (float): shift of the non-linear mapping.
+
+    Return:
+        tuple([Tensor]): labels, imp_based_label_weights, bbox_targets,
+            bbox_target_weights
+    """
+
     labels, label_weights, bbox_targets, bbox_weights = bbox_targets
     pos_label_inds = ((labels >= 0) & (labels < 80)).nonzero().reshape(-1)
     pos_labels = labels[pos_label_inds]

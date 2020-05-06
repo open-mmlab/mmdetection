@@ -90,6 +90,9 @@ class PISARetinaHead(RetinaHead):
             (flatten_labels, flatten_label_weights, flatten_bbox_targets,
              flatten_bbox_weights) = all_targets
 
+        # For convenience we compute loss once instead separating by fpn level,
+        # so that we don't need to separate the weights by level again.
+        # The result should be the same
         losses_cls = self.loss_cls(
             flatten_cls_scores,
             flatten_labels,

@@ -58,6 +58,7 @@ class PISARoIHead(StandardRoIHead):
                     gt_bboxes[i],
                     gt_labels[i],
                     feats=[lvl_feat[i][None] for lvl_feat in x])
+                # neg label weight is obtained by sampling when using ISR-N
                 neg_label_weight = None
                 if isinstance(sampling_result, tuple):
                     sampling_result, neg_label_weight = sampling_result
@@ -113,6 +114,8 @@ class PISARoIHead(StandardRoIHead):
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
                                                   gt_labels, self.train_cfg)
 
+        # neg_label_weights obtained by sampler is image-wise, mapping back to
+        # the corresponding location in label weights
         if neg_label_weights[0] is not None:
             label_weights = bbox_targets[1]
             cur_num_rois = 0
