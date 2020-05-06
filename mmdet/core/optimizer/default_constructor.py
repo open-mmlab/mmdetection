@@ -9,7 +9,7 @@ from torch.nn.modules.instancenorm import _InstanceNorm
 from .builder import OPTIMIZER_BUILDERS, OPTIMIZERS
 
 
-@OPTIMIZER_BUILDERS.register_module
+@OPTIMIZER_BUILDERS.register_module()
 class DefaultOptimizerConstructor(object):
     """Default constructor for optimizers.
 
@@ -20,9 +20,10 @@ class DefaultOptimizerConstructor(object):
                 - type: class name of the optimizer.
             Optional fields are:
                 - any arguments of the corresponding optimizer type, e.g.,
-                  lr, weight_decay, momentum, etc.
-        paramwise_cfg (dict, optional): Parameter-wise options. Accepted fields
-            are:
+                    lr, weight_decay, momentum, etc.
+        paramwise_cfg (dict, optional): Parameter-wise options.
+            Accepted fields are
+
             - bias_lr_mult (float): It will be multiplied to the learning
                 rate for all bias parameters (except for those in normalization
                 layers).

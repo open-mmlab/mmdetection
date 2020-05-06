@@ -39,8 +39,12 @@ def parse_args():
         ' "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument(
-        '--show-dir',
-        help='(Optional) directory where painted images will be saved')
+        '--show-dir', help='directory where painted images will be saved')
+    parser.add_argument(
+        '--show-score-thr',
+        type=float,
+        default=0.3,
+        help='score threshold (default: 0.3)')
     parser.add_argument(
         '--gpu-collect',
         action='store_true',
@@ -119,7 +123,8 @@ def main():
 
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
-        outputs = single_gpu_test(model, data_loader, args.show, args.show_dir)
+        outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
+                                  args.show_score_thr)
     else:
         model = MMDistributedDataParallel(
             model.cuda(),

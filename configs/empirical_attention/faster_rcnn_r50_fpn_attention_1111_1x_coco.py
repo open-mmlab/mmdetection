@@ -8,6 +8,6 @@ model = dict(
                 num_heads=8,
                 attention_type='1111',
                 kv_stride=2),
-            stages=(False, True, True, True),
+            stages=(False, False, True, True),
             position='after_conv2')
     ]))
