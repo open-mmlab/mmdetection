@@ -1,5 +1,6 @@
 # Config System
 We incorporate modular and inheritance design into our config system, which is convenient to conduct various experiments.
+If you wish to inspect the config file, you may run `python tools/print_config.py /PATH/TO/CONFIG` to see the complete config.
 
 ## Config File Structure
 
