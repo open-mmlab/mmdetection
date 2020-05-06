@@ -2,7 +2,7 @@ import mmcv
 import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
-from mmdet.models.anchor_heads import AnchorHead, FSAFHead, GuidedAnchorHead
+from mmdet.models.dense_heads import AnchorHead, FSAFHead, GuidedAnchorHead
 from mmdet.models.roi_heads.bbox_heads import BBoxHead
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
 

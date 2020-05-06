@@ -75,34 +75,14 @@ backbones
 .. automodule:: mmdet.models.backbones
     :members:
 
-anchor_heads
+dense_heads
 ^^^^^^^^^^^^
-.. automodule:: mmdet.models.anchor_heads
-    :members:
-
-roi_extractors
-^^^^^^^^^^^^^^
-.. automodule:: mmdet.models.roi_extractors
+.. automodule:: mmdet.models.dense_heads
     :members:
 
 roi_heads
 ^^^^^^^^^^
 .. automodule:: mmdet.models.roi_heads
-    :members:
-
-bbox_heads
-^^^^^^^^^^
-.. automodule:: mmdet.models.bbox_heads
-    :members:
-
-mask_heads
-^^^^^^^^^^
-.. automodule:: mmdet.models.mask_heads
-    :members:
-
-shared_heads
-^^^^^^^^^^^^
-.. automodule:: mmdet.models.shared_heads
     :members:
 
 losses

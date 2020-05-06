@@ -72,13 +72,15 @@ class BasicResBlock(nn.Module):
 class DoubleConvFCBBoxHead(BBoxHead):
     r"""Bbox head used in Double-Head R-CNN
 
-                                      /-> cls
-                  /-> shared convs ->
-                                      \-> reg
-    roi features
-                                      /-> cls
-                  \-> shared fc    ->
-                                      \-> reg
+    .. code-block::
+
+                                          /-> cls
+                      /-> shared convs ->
+                                          \-> reg
+        roi features
+                                          /-> cls
+                      \-> shared fc    ->
+                                          \-> reg
     """  # noqa: W605
 
     def __init__(self,
