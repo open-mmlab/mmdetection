@@ -15,37 +15,25 @@
 
 Faster R-CNN
 
-| Backbone  | Style   | Normalization | Lr schd | box AP | mask AP | Download |
-|:---------:|:-------:|:-------------:|:-------:|:------:|:-------:|:--------:|
-| R-50-FPN  | pytorch | GN            | 1x      | 37.8   | -       | - |
-| R-50-FPN  | pytorch | GN+WS         | 1x      | 38.9   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/faster_rcnn_r50_fpn_gn_ws_1x_20190418-935d00b6.pth) |
-| R-101-FPN | pytorch | GN            | 1x      | 39.8   | -       | - |
-| R-101-FPN | pytorch | GN+WS         | 1x      | 41.4   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/faster_rcnn_r101_fpn_gn_ws_1x_20190419-728705ec.pth) |
-| X-50-32x4d-FPN | pytorch | GN       | 1x      | 36.5   | -       | - |
-| X-50-32x4d-FPN | pytorch | GN+WS    | 1x      | 39.9   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/faster_rcnn_x50_32x4d_fpn_gn_ws_1x_20190419-4e61072b.pth) |
-| X-101-32x4d-FPN | pytorch | GN      | 1x      | 33.2   | -       | - |
-| X-101-32x4d-FPN | pytorch | GN+WS   | 1x      | 41.8   | -       | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/faster_rcnn_x101_32x4d_fpn_gn_ws_1x_20190419-c78e5583.pth) |
+| Backbone  | Style   | Normalization | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
+|:---------:|:-------:|:-------------:|:-------:|:--------:|:--------------:|:------:|:-------:|:--------:|
+| R-50-FPN  | pytorch | GN+WS         | 1x      | 5.9      | 11.7           | 39.7   | -       | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_r50_fpn_gn_ws-all_1x_coco/faster_rcnn_r50_fpn_gn_ws-all_1x_coco_20200130-613d9fe2.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_r50_fpn_gn_ws-all_1x_coco/faster_rcnn_r50_fpn_gn_ws-all_1x_coco_20200130_210936.log.json) |
+| R-101-FPN | pytorch | GN+WS         | 1x      | 8.9      | 9.0            | 41.7   | -       | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_r101_fpn_gn_ws-all_1x_coco/faster_rcnn_r101_fpn_gn_ws-all_1x_coco_20200205-a93b0d75.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_r101_fpn_gn_ws-all_1x_coco/faster_rcnn_r101_fpn_gn_ws-all_1x_coco_20200205_232146.log.json) |
+| X-50-32x4d-FPN | pytorch | GN+WS    | 1x      | 7.0      | 10.3           | 40.7   | -       | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_x50_32x4d_fpn_gn_ws-all_1x_coco/faster_rcnn_x50_32x4d_fpn_gn_ws-all_1x_coco_20200203-839c5d9d.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_x50_32x4d_fpn_gn_ws-all_1x_coco/faster_rcnn_x50_32x4d_fpn_gn_ws-all_1x_coco_20200203_220113.log.json) |
+| X-101-32x4d-FPN | pytorch | GN+WS   | 1x      | 10.8     | 7.6            | 42.1   | -       | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_x101_32x4d_fpn_gn_ws-all_1x_coco/faster_rcnn_x101_32x4d_fpn_gn_ws-all_1x_coco_20200212-27da1bc2.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_x101_32x4d_fpn_gn_ws-all_1x_coco/faster_rcnn_x101_32x4d_fpn_gn_ws-all_1x_coco_20200212_195302.log.json) |
 
 Mask R-CNN
 
-| Backbone  | Style   | Normalization | Lr schd | box AP | mask AP | Download |
-|:---------:|:-------:|:-------------:|:-------:|:------:|:-------:|:--------:|
-| R-50-FPN  | pytorch | GN            | 2x      | 39.9   | 36.0    | - |
-| R-50-FPN  | pytorch | GN+WS         | 2x      | 40.3   | 36.2    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/mask_rcnn_r50_fpn_gn_ws_2x_20190419-9ec97bbb.pth) |
-| R-101-FPN | pytorch | GN            | 2x      | 41.6   | 37.3    | - |
-| R-101-FPN | pytorch | GN+WS         | 2x      | 42.0   | 37.3    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/mask_rcnn_r101_fpn_gn_ws_2x_20190419-bc7399a6.pth) |
-| X-50-32x4d-FPN | pytorch | GN       | 2x      | 39.2   | 35.5    | - |
-| X-50-32x4d-FPN | pytorch | GN+WS    | 2x      | 40.7   | 36.7    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/mask_rcnn_x50_32x4d_fpn_gn_ws_2x_20190419-2110205e.pth) |
-| X-101-32x4d-FPN | pytorch | GN      | 2x      | 36.4   | 33.1    | - |
-| X-101-32x4d-FPN | pytorch | GN+WS   | 2x      | 42.1   | 37.7    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/mask_rcnn_x101_32x4d_fpn_gn_ws_2x_20190419-7777b15f.pth) |
-| R-50-FPN  | pytorch | GN            | 20-23-24e | 40.6   | 36.6    | - |
-| R-50-FPN  | pytorch | GN+WS         | 20-23-24e | 41.1   | 37.0    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/mask_rcnn_r50_fpn_gn_ws_20_23_24e_20190425-1d9e499e.pth) |
-| R-101-FPN | pytorch | GN            | 20-23-24e | 42.3   | 38.1    | - |
-| R-101-FPN | pytorch | GN+WS         | 20-23-24e | 43.0   | 38.4    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/mask_rcnn_r101_fpn_gn_ws_20_23_24e_20190425-66cb3792.pth) |
-| X-50-32x4d-FPN | pytorch | GN       | 20-23-24e | 39.6   | 35.9    | - |
-| X-50-32x4d-FPN | pytorch | GN+WS    | 20-23-24e | 41.9   | 37.7    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/mask_rcnn_x50_32x4d_fpn_gn_ws_20_23_24e_20190425-d01e2200.pth) |
-| X-101-32x4d-FPN | pytorch | GN      | 20-23-24e | 36.6   | 33.4    | - |
-| X-101-32x4d-FPN | pytorch | GN+WS   | 20-23-24e | 43.4   | 38.7    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/ws/mask_rcnn_x101_32x4d_fpn_gn_ws_20_23_24e_20190425-1ff3e5b2.pth) |
+| Backbone  | Style   | Normalization | Lr schd   | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
+|:---------:|:-------:|:-------------:|:---------:|:--------:|:--------------:|:------:|:-------:|:--------:|
+| R-50-FPN  | pytorch | GN+WS         | 2x        | 7.3      | 9.3       | 40.6        | 36.6    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco/mask_rcnn_r50_fpn_gn_ws-all_2x_coco_20200226-16acb762.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco/mask_rcnn_r50_fpn_gn_ws-all_2x_coco_20200226_062128.log.json) |
+| R-101-FPN | pytorch | GN+WS         | 2x        | 10.3     | 8.0       | 42.0        | 37.7    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r101_fpn_gn_ws-all_2x_coco/mask_rcnn_r101_fpn_gn_ws-all_2x_coco_20200212-ea357cd9.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r101_fpn_gn_ws-all_2x_coco/mask_rcnn_r101_fpn_gn_ws-all_2x_coco_20200212_213627.log.json) |
+| X-50-32x4d-FPN | pytorch | GN+WS    | 2x        | 8.4      | 8.5       | 41.1        | 37.0    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x50_32x4d_fpn_gn_ws-all_2x_coco/mask_rcnn_x50_32x4d_fpn_gn_ws-all_2x_coco_20200216-649fdb6f.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x50_32x4d_fpn_gn_ws-all_2x_coco/mask_rcnn_x50_32x4d_fpn_gn_ws-all_2x_coco_20200216_201500.log.json) |
+| X-101-32x4d-FPN | pytorch | GN+WS   | 2x        | 12.2     | 6.7       | 42.1        | 37.9    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x101_32x4d_fpn_gn_ws-all_2x_coco/mask_rcnn_x101_32x4d_fpn_gn_ws-all_2x_coco_20200319-33fb95b5.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x101_32x4d_fpn_gn_ws-all_2x_coco/mask_rcnn_x101_32x4d_fpn_gn_ws-all_2x_coco_20200319_104101.log.json) |
+| R-50-FPN  | pytorch | GN+WS         | 20-23-24e | 7.3      | 9.3       | 41.1        | 37.1    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_r50_fpn_gn_ws-all_20_23_24e_coco_20200213-487d1283.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_r50_fpn_gn_ws-all_20_23_24e_coco_20200213_035123.log.json) |
+| R-101-FPN | pytorch | GN+WS         | 20-23-24e | 10.3     | 7.7       | 43.1        | 38.6    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r101_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_r101_fpn_gn_ws-all_20_23_24e_coco_20200213-57b5a50f.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r101_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_r101_fpn_gn_ws-all_20_23_24e_coco_20200213_130142.log.json) |
+| X-50-32x4d-FPN | pytorch | GN+WS    | 20-23-24e | 8.4      | 8.3       | 42.1        | 38.0    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x50_32x4d_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_x50_32x4d_fpn_gn_ws-all_20_23_24e_coco_20200226-969bcb2c.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x50_32x4d_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_x50_32x4d_fpn_gn_ws-all_20_23_24e_coco_20200226_093732.log.json) |
+| X-101-32x4d-FPN | pytorch | GN+WS   | 20-23-24e | 12.2     | 6.6       | 42.7        | 38.5    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x101_32x4d_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_x101_32x4d_fpn_gn_ws-all_20_23_24e_coco_20200316-e6cd35ef.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x101_32x4d_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_x101_32x4d_fpn_gn_ws-all_20_23_24e_coco_20200316_013741.log.json) |
 
 Note:
 

@@ -3,7 +3,7 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
-from . import roi_align_cuda
+from . import roi_align_ext
 
 
 class RoIAlignFunction(Function):
@@ -24,20 +24,18 @@ class RoIAlignFunction(Function):
         ctx.feature_size = features.size()
         ctx.aligned = aligned
 
-        if features.is_cuda:
-            if not aligned:
-                (batch_size, num_channels, data_height,
-                 data_width) = features.size()
-                num_rois = rois.size(0)
+        if aligned:
+            output = roi_align_ext.forward_v2(features, rois, spatial_scale,
+                                              out_h, out_w, sample_num,
+                                              aligned)
+        elif features.is_cuda:
+            (batch_size, num_channels, data_height,
+             data_width) = features.size()
+            num_rois = rois.size(0)
 
-                output = features.new_zeros(num_rois, num_channels, out_h,
-                                            out_w)
-                roi_align_cuda.forward_v1(features, rois, out_h, out_w,
-                                          spatial_scale, sample_num, output)
-            else:
-                output = roi_align_cuda.forward_v2(features, rois,
-                                                   spatial_scale, out_h, out_w,
-                                                   sample_num, aligned)
+            output = features.new_zeros(num_rois, num_channels, out_h, out_w)
+            roi_align_ext.forward_v1(features, rois, out_h, out_w,
+                                     spatial_scale, sample_num, output)
         else:
             raise NotImplementedError
 
@@ -51,7 +49,7 @@ class RoIAlignFunction(Function):
         sample_num = ctx.sample_num
         rois = ctx.saved_tensors[0]
         aligned = ctx.aligned
-        assert (feature_size is not None and grad_output.is_cuda)
+        assert feature_size is not None
 
         batch_size, num_channels, data_height, data_width = feature_size
         out_w = grad_output.size(3)
@@ -62,13 +60,15 @@ class RoIAlignFunction(Function):
             if ctx.needs_input_grad[0]:
                 grad_input = rois.new_zeros(batch_size, num_channels,
                                             data_height, data_width)
-                roi_align_cuda.backward_v1(grad_output.contiguous(), rois,
-                                           out_h, out_w, spatial_scale,
-                                           sample_num, grad_input)
+                roi_align_ext.backward_v1(grad_output.contiguous(), rois,
+                                          out_h, out_w, spatial_scale,
+                                          sample_num, grad_input)
         else:
-            grad_input = roi_align_cuda.backward_v2(
-                grad_output, rois, spatial_scale, out_h, out_w, batch_size,
-                num_channels, data_height, data_width, sample_num, aligned)
+            grad_input = roi_align_ext.backward_v2(grad_output, rois,
+                                                   spatial_scale, out_h, out_w,
+                                                   batch_size, num_channels,
+                                                   data_height, data_width,
+                                                   sample_num, aligned)
 
         return grad_input, grad_rois, None, None, None, None
 
@@ -83,7 +83,7 @@ class RoIAlign(nn.Module):
                  spatial_scale,
                  sample_num=0,
                  use_torchvision=False,
-                 aligned=False):
+                 aligned=True):
         """
         Args:
             out_size (tuple): h, w
@@ -144,9 +144,11 @@ class RoIAlign(nn.Module):
                              self.sample_num, self.aligned)
 
     def __repr__(self):
+        indent_str = '\n    '
         format_str = self.__class__.__name__
-        format_str += '(out_size={}, spatial_scale={}, sample_num={}'.format(
-            self.out_size, self.spatial_scale, self.sample_num)
-        format_str += ', use_torchvision={}, aligned={})'.format(
-            self.use_torchvision, self.aligned)
+        format_str += f'({indent_str}out_size={self.out_size},'
+        format_str += f'{indent_str}spatial_scale={self.spatial_scale},'
+        format_str += f'{indent_str}sample_num={self.sample_num},'
+        format_str += f'{indent_str}use_torchvision={self.use_torchvision},'
+        format_str += f'{indent_str}aligned={self.aligned})'
         return format_str

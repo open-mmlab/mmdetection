@@ -2,21 +2,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..registry import LOSSES
+from ..builder import LOSSES
 
 
-def _expand_binary_labels(labels, label_weights, label_channels):
+def _expand_onehot_labels(labels, label_weights, label_channels):
     bin_labels = labels.new_full((labels.size(0), label_channels), 0)
-    inds = torch.nonzero(labels >= 1).squeeze()
+    inds = torch.nonzero(
+        (labels >= 0) & (labels < label_channels), as_tuple=False).squeeze()
     if inds.numel() > 0:
-        bin_labels[inds, labels[inds] - 1] = 1
+        bin_labels[inds, labels[inds]] = 1
     bin_label_weights = label_weights.view(-1, 1).expand(
         label_weights.size(0), label_channels)
     return bin_labels, bin_label_weights
 
 
 # TODO: code refactoring to make it consistent with other losses
-@LOSSES.register_module
+@LOSSES.register_module()
 class GHMC(nn.Module):
     """GHM Classification Loss.
 
@@ -61,7 +62,7 @@ class GHMC(nn.Module):
         """
         # the target should be binary class label
         if pred.dim() != target.dim():
-            target, label_weight = _expand_binary_labels(
+            target, label_weight = _expand_onehot_labels(
                 target, label_weight, pred.size(-1))
         target, label_weight = target.float(), label_weight.float()
         edges = self.edges
@@ -94,7 +95,7 @@ class GHMC(nn.Module):
 
 
 # TODO: code refactoring to make it consistent with other losses
-@LOSSES.register_module
+@LOSSES.register_module()
 class GHMR(nn.Module):
     """GHM Regression Loss.
 

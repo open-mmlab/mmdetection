@@ -1,18 +1,19 @@
 import torch
 
-from ..geometry import bbox_overlaps
+from ..builder import BBOX_ASSIGNERS
+from ..iou_calculators import build_iou_calculator
 from .max_iou_assigner import MaxIoUAssigner
 
 
+@BBOX_ASSIGNERS.register_module()
 class ApproxMaxIoUAssigner(MaxIoUAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
-    Each proposals will be assigned with `-1`, `0`, or a positive integer
-    indicating the ground truth index.
+    Each proposals will be assigned with an integer indicating the ground truth
+     index. (semi-positive index: gt label (0-based), -1: background)
 
-    - -1: don't care
-    - 0: negative sample, no assigned gt
-    - positive integer: positive sample, index (1-based) of assigned gt
+    - -1: negative sample, no assigned gt
+    - semi-positive integer: positive sample, index (0-based) of assigned gt
 
     Args:
         pos_iou_thr (float): IoU threshold for positive bboxes.
@@ -27,6 +28,9 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
             ignoring any bboxes.
         ignore_wrt_candidates (bool): Whether to compute the iof between
             `bboxes` and `gt_bboxes_ignore`, or the contrary.
+        match_low_quality (bool): Whether to allow quality matches. This is
+            usually allowed for RPN and single stage detectors, but not allowed
+            in the second stage.
         gpu_assign_thr (int): The upper bound of the number of GT for GPU
             assign. When the number of gt is above this threshold, will assign
             on CPU device. Negative values mean not assign on CPU.
@@ -39,7 +43,9 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                  gt_max_assign_all=True,
                  ignore_iof_thr=-1,
                  ignore_wrt_candidates=True,
-                 gpu_assign_thr=-1):
+                 match_low_quality=True,
+                 gpu_assign_thr=-1,
+                 iou_calculator=dict(type='BboxOverlaps2D')):
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
@@ -47,6 +53,8 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         self.ignore_iof_thr = ignore_iof_thr
         self.ignore_wrt_candidates = ignore_wrt_candidates
         self.gpu_assign_thr = gpu_assign_thr
+        self.match_low_quality = match_low_quality
+        self.iou_calculator = build_iou_calculator(iou_calculator)
 
     def assign(self,
                approxs,
@@ -59,14 +67,14 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
 
         This method assign a gt bbox to each group of approxs (bboxes),
         each group of approxs is represent by a base approx (bbox) and
-        will be assigned with -1, 0, or a positive number.
-        -1 means don't care, 0 means negative sample,
-        positive number is the index (1-based) of assigned gt.
+        will be assigned with -1, or a semi-positive number.
+        background_label (-1) means negative sample,
+        semi-positive number is the index (0-based) of assigned gt.
         The assignment is done in following steps, the order matters.
 
-        1. assign every bbox to -1
+        1. assign every bbox to background_label (-1)
         2. use the max IoU of each group of approxs to assign
-        2. assign proposals whose iou with all gts < neg_iou_thr to 0
+        2. assign proposals whose iou with all gts < neg_iou_thr to background
         3. for each bbox, if the iou with its nearest gt >= pos_iou_thr,
            assign it to that bbox
         4. for each gt bbox, assign its nearest proposals (may be more than
@@ -110,23 +118,21 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                 gt_bboxes_ignore = gt_bboxes_ignore.cpu()
             if gt_labels is not None:
                 gt_labels = gt_labels.cpu()
-        all_overlaps = bbox_overlaps(approxs, gt_bboxes)
+        all_overlaps = self.iou_calculator(approxs, gt_bboxes)
 
         overlaps, _ = all_overlaps.view(approxs_per_octave, num_squares,
                                         num_gts).max(dim=0)
         overlaps = torch.transpose(overlaps, 0, 1)
 
-        bboxes = squares[:, :4]
-
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
-                and gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
+                and gt_bboxes_ignore.numel() > 0 and squares.numel() > 0):
             if self.ignore_wrt_candidates:
-                ignore_overlaps = bbox_overlaps(
-                    bboxes, gt_bboxes_ignore, mode='iof')
+                ignore_overlaps = self.iou_calculator(
+                    squares, gt_bboxes_ignore, mode='iof')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=1)
             else:
-                ignore_overlaps = bbox_overlaps(
-                    gt_bboxes_ignore, bboxes, mode='iof')
+                ignore_overlaps = self.iou_calculator(
+                    gt_bboxes_ignore, squares, mode='iof')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=0)
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 

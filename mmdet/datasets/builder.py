@@ -6,11 +6,9 @@ from functools import partial
 import numpy as np
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
+from mmcv.utils import Registry, build_from_cfg
 from torch.utils.data import DataLoader
 
-from mmdet.utils import build_from_cfg
-from .dataset_wrappers import ConcatDataset, RepeatDataset
-from .registry import DATASETS
 from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
 
 if platform.system() != 'Windows':
@@ -21,8 +19,12 @@ if platform.system() != 'Windows':
     soft_limit = min(4096, hard_limit)
     resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
 
+DATASETS = Registry('dataset')
+PIPELINES = Registry('pipeline')
+
 
 def _concat_dataset(cfg, default_args=None):
+    from .dataset_wrappers import ConcatDataset
     ann_files = cfg['ann_file']
     img_prefixes = cfg.get('img_prefix', None)
     seg_prefixes = cfg.get('seg_prefix', None)
@@ -45,6 +47,7 @@ def _concat_dataset(cfg, default_args=None):
 
 
 def build_dataset(cfg, default_args=None):
+    from .dataset_wrappers import ConcatDataset, RepeatDataset
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'RepeatDataset':
@@ -59,7 +62,7 @@ def build_dataset(cfg, default_args=None):
 
 
 def build_dataloader(dataset,
-                     imgs_per_gpu,
+                     samples_per_gpu,
                      workers_per_gpu,
                      num_gpus=1,
                      dist=True,
@@ -73,8 +76,8 @@ def build_dataloader(dataset,
 
     Args:
         dataset (Dataset): A PyTorch dataset.
-        imgs_per_gpu (int): Number of images on each GPU, i.e., batch size of
-            each GPU.
+        samples_per_gpu (int): Number of training samples on each GPU, i.e.,
+            batch size of each GPU.
         workers_per_gpu (int): How many subprocesses to use for data loading
             for each GPU.
         num_gpus (int): Number of GPUs. Only used in non-distributed training.
@@ -91,16 +94,16 @@ def build_dataloader(dataset,
         # DistributedGroupSampler will definitely shuffle the data to satisfy
         # that images on each GPU are in the same group
         if shuffle:
-            sampler = DistributedGroupSampler(dataset, imgs_per_gpu,
+            sampler = DistributedGroupSampler(dataset, samples_per_gpu,
                                               world_size, rank)
         else:
             sampler = DistributedSampler(
                 dataset, world_size, rank, shuffle=False)
-        batch_size = imgs_per_gpu
+        batch_size = samples_per_gpu
         num_workers = workers_per_gpu
     else:
-        sampler = GroupSampler(dataset, imgs_per_gpu) if shuffle else None
-        batch_size = num_gpus * imgs_per_gpu
+        sampler = GroupSampler(dataset, samples_per_gpu) if shuffle else None
+        batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
     init_fn = partial(
@@ -112,7 +115,7 @@ def build_dataloader(dataset,
         batch_size=batch_size,
         sampler=sampler,
         num_workers=num_workers,
-        collate_fn=partial(collate, samples_per_gpu=imgs_per_gpu),
+        collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
         pin_memory=False,
         worker_init_fn=init_fn,
         **kwargs)

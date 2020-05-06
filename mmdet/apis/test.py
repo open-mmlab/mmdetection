@@ -8,19 +8,47 @@ import torch
 import torch.distributed as dist
 from mmcv.runner import get_dist_info
 
+from mmdet.core import tensor2imgs
 
-def single_gpu_test(model, data_loader, show=False):
+
+def single_gpu_test(model,
+                    data_loader,
+                    show=False,
+                    out_dir=None,
+                    show_score_thr=0.3):
     model.eval()
     results = []
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(return_loss=False, rescale=not show, **data)
+            result = model(return_loss=False, rescale=True, **data)
         results.append(result)
 
-        if show:
-            model.module.show_result(data, result)
+        if show or out_dir:
+            img_tensor = data['img'][0]
+            img_metas = data['img_metas'][0].data[0]
+            imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
+            assert len(imgs) == len(img_metas)
+
+            for img, img_meta in zip(imgs, img_metas):
+                h, w, _ = img_meta['img_shape']
+                img_show = img[:h, :w, :]
+
+                ori_h, ori_w = img_meta['ori_shape'][:-1]
+                img_show = mmcv.imresize(img_show, (ori_w, ori_h))
+
+                if out_dir:
+                    out_file = osp.join(out_dir, img_meta['filename'])
+                else:
+                    out_file = None
+
+                model.module.show_result(
+                    img_show,
+                    result,
+                    show=show,
+                    out_file=out_file,
+                    score_thr=show_score_thr)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -59,7 +87,9 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
         results.append(result)
 
         if rank == 0:
-            batch_size = data['img'][0].size(0)
+            batch_size = (
+                len(data['img_meta']._data)
+                if 'img_meta' in data else data['img'][0].size(0))
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 
@@ -91,7 +121,7 @@ def collect_results_cpu(result_part, size, tmpdir=None):
     else:
         mmcv.mkdir_or_exist(tmpdir)
     # dump the part result to the dir
-    mmcv.dump(result_part, osp.join(tmpdir, 'part_{}.pkl'.format(rank)))
+    mmcv.dump(result_part, osp.join(tmpdir, f'part_{rank}.pkl'))
     dist.barrier()
     # collect all parts
     if rank != 0:
@@ -100,7 +130,7 @@ def collect_results_cpu(result_part, size, tmpdir=None):
         # load results of all parts from tmp dir
         part_list = []
         for i in range(world_size):
-            part_file = osp.join(tmpdir, 'part_{}.pkl'.format(i))
+            part_file = osp.join(tmpdir, f'part_{i}.pkl')
             part_list.append(mmcv.load(part_file))
         # sort the results
         ordered_results = []

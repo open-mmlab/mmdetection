@@ -3,12 +3,13 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import CONV_LAYERS
+from mmcv.utils import print_log
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair, _single
 
-from mmdet.utils import print_log
-from . import deform_conv_cuda
+from . import deform_conv_ext
 
 
 class DeformConvFunction(Function):
@@ -25,9 +26,8 @@ class DeformConvFunction(Function):
                 deformable_groups=1,
                 im2col_step=64):
         if input is not None and input.dim() != 4:
-            raise ValueError(
-                'Expected 4D tensor as input, got {}D tensor instead.'.format(
-                    input.dim()))
+            raise ValueError(f'Expected 4D tensor as input, got {input.dim()}'
+                             'D tensor instead.')
         ctx.stride = _pair(stride)
         ctx.padding = _pair(padding)
         ctx.dilation = _pair(dilation)
@@ -49,7 +49,7 @@ class DeformConvFunction(Function):
             cur_im2col_step = min(ctx.im2col_step, input.shape[0])
             assert (input.shape[0] %
                     cur_im2col_step) == 0, 'im2col step must divide batchsize'
-            deform_conv_cuda.deform_conv_forward_cuda(
+            deform_conv_ext.deform_conv_forward(
                 input, weight, offset, output, ctx.bufs_[0], ctx.bufs_[1],
                 weight.size(3), weight.size(2), ctx.stride[1], ctx.stride[0],
                 ctx.padding[1], ctx.padding[0], ctx.dilation[1],
@@ -74,7 +74,7 @@ class DeformConvFunction(Function):
             if ctx.needs_input_grad[0] or ctx.needs_input_grad[1]:
                 grad_input = torch.zeros_like(input)
                 grad_offset = torch.zeros_like(offset)
-                deform_conv_cuda.deform_conv_backward_input_cuda(
+                deform_conv_ext.deform_conv_backward_input(
                     input, offset, grad_output, grad_input,
                     grad_offset, weight, ctx.bufs_[0], weight.size(3),
                     weight.size(2), ctx.stride[1], ctx.stride[0],
@@ -84,7 +84,7 @@ class DeformConvFunction(Function):
 
             if ctx.needs_input_grad[2]:
                 grad_weight = torch.zeros_like(weight)
-                deform_conv_cuda.deform_conv_backward_parameters_cuda(
+                deform_conv_ext.deform_conv_backward_parameters(
                     input, offset, grad_output,
                     grad_weight, ctx.bufs_[0], ctx.bufs_[1], weight.size(3),
                     weight.size(2), ctx.stride[1], ctx.stride[0],
@@ -106,9 +106,8 @@ class DeformConvFunction(Function):
             stride_ = stride[d]
             output_size += ((in_size + (2 * pad) - kernel) // stride_ + 1, )
         if not all(map(lambda s: s > 0, output_size)):
-            raise ValueError(
-                'convolution input is too small (output would be {})'.format(
-                    'x'.join(map(str, output_size))))
+            raise ValueError('convolution input is too small (output would be '
+                             f'{"x".join(map(str, output_size))})')
         return output_size
 
 
@@ -142,7 +141,7 @@ class ModulatedDeformConvFunction(Function):
         output = input.new_empty(
             ModulatedDeformConvFunction._infer_shape(ctx, input, weight))
         ctx._bufs = [input.new_empty(0), input.new_empty(0)]
-        deform_conv_cuda.modulated_deform_conv_cuda_forward(
+        deform_conv_ext.modulated_deform_conv_forward(
             input, weight, bias, ctx._bufs[0], offset, mask, output,
             ctx._bufs[1], weight.shape[2], weight.shape[3], ctx.stride,
             ctx.stride, ctx.padding, ctx.padding, ctx.dilation, ctx.dilation,
@@ -160,7 +159,7 @@ class ModulatedDeformConvFunction(Function):
         grad_mask = torch.zeros_like(mask)
         grad_weight = torch.zeros_like(weight)
         grad_bias = torch.zeros_like(bias)
-        deform_conv_cuda.modulated_deform_conv_cuda_backward(
+        deform_conv_ext.modulated_deform_conv_backward(
             input, weight, bias, ctx._bufs[0], offset, mask, ctx._bufs[1],
             grad_input, grad_weight, grad_bias, grad_offset, grad_mask,
             grad_output, weight.shape[2], weight.shape[3], ctx.stride,
@@ -205,11 +204,10 @@ class DeformConv(nn.Module):
 
         assert not bias
         assert in_channels % groups == 0, \
-            'in_channels {} cannot be divisible by groups {}'.format(
-                in_channels, groups)
+            f'in_channels {in_channels} is not divisible by groups {groups}'
         assert out_channels % groups == 0, \
-            'out_channels {} cannot be divisible by groups {}'.format(
-                out_channels, groups)
+            f'out_channels {out_channels} is not divisible ' \
+            f'by groups {groups}'
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -255,6 +253,7 @@ class DeformConv(nn.Module):
         return out
 
 
+@CONV_LAYERS.register_module('DCN')
 class DeformConvPack(DeformConv):
     """A Deformable Conv Encapsulation that acts as normal Conv layers.
 
@@ -315,8 +314,8 @@ class DeformConvPack(DeformConv):
 
         if version is not None and version > 1:
             print_log(
-                'DeformConvPack {} is upgraded to version 2.'.format(
-                    prefix.rstrip('.')),
+                f'DeformConvPack {prefix.rstrip(".")} is upgraded to '
+                'version 2.',
                 logger='root')
 
         super()._load_from_state_dict(state_dict, prefix, local_metadata,
@@ -374,6 +373,7 @@ class ModulatedDeformConv(nn.Module):
                                      self.groups, self.deformable_groups)
 
 
+@CONV_LAYERS.register_module('DCNv2')
 class ModulatedDeformConvPack(ModulatedDeformConv):
     """A ModulatedDeformable Conv Encapsulation that acts as normal Conv layers.
 
@@ -439,8 +439,8 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
 
         if version is not None and version > 1:
             print_log(
-                'ModulatedDeformConvPack {} is upgraded to version 2.'.format(
-                    prefix.rstrip('.')),
+                f'ModulatedDeformConvPack {prefix.rstrip(".")} is upgraded to '
+                'version 2.',
                 logger='root')
 
         super()._load_from_state_dict(state_dict, prefix, local_metadata,
