@@ -1,12 +1,11 @@
 import torch.nn as nn
 
 from mmdet.core import bbox2result
-from .. import builder
-from ..registry import DETECTORS
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class SingleStageDetector(BaseDetector):
     """Base class for single-stage detectors.
 
@@ -22,10 +21,12 @@ class SingleStageDetector(BaseDetector):
                  test_cfg=None,
                  pretrained=None):
         super(SingleStageDetector, self).__init__()
-        self.backbone = builder.build_backbone(backbone)
+        self.backbone = build_backbone(backbone)
         if neck is not None:
-            self.neck = builder.build_neck(neck)
-        self.bbox_head = builder.build_head(bbox_head)
+            self.neck = build_neck(neck)
+        bbox_head.update(train_cfg=train_cfg)
+        bbox_head.update(test_cfg=test_cfg)
+        self.bbox_head = build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.init_weights(pretrained=pretrained)
@@ -66,7 +67,7 @@ class SingleStageDetector(BaseDetector):
                       gt_bboxes_ignore=None):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
-        loss_inputs = outs + (gt_bboxes, gt_labels, img_metas, self.train_cfg)
+        loss_inputs = outs + (gt_bboxes, gt_labels, img_metas)
         losses = self.bbox_head.loss(
             *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
@@ -74,8 +75,8 @@ class SingleStageDetector(BaseDetector):
     def simple_test(self, img, img_metas, rescale=False):
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
-        bbox_inputs = outs + (img_metas, self.test_cfg, rescale)
-        bbox_list = self.bbox_head.get_bboxes(*bbox_inputs)
+        bbox_list = self.bbox_head.get_bboxes(
+            *outs, img_metas, rescale=rescale)
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list

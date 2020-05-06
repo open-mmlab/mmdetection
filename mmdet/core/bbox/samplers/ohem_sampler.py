@@ -1,9 +1,11 @@
 import torch
 
+from ..builder import BBOX_SAMPLERS
 from ..transforms import bbox2roi
 from .base_sampler import BaseSampler
 
 
+@BBOX_SAMPLERS.register_module()
 class OHEMSampler(BaseSampler):
     """
     Online Hard Example Mining Sampler described in [1]_.
@@ -38,6 +40,7 @@ class OHEMSampler(BaseSampler):
             loss = self.bbox_head.loss(
                 cls_score=cls_score,
                 bbox_pred=None,
+                rois=rois,
                 labels=labels,
                 label_weights=cls_score.new_ones(cls_score.size(0)),
                 bbox_targets=None,
@@ -53,7 +56,7 @@ class OHEMSampler(BaseSampler):
                     feats=None,
                     **kwargs):
         # Sample some hard positive samples
-        pos_inds = torch.nonzero(assign_result.gt_inds > 0)
+        pos_inds = torch.nonzero(assign_result.gt_inds > 0, as_tuple=False)
         if pos_inds.numel() != 0:
             pos_inds = pos_inds.squeeze(1)
         if pos_inds.numel() <= num_expected:
@@ -69,11 +72,13 @@ class OHEMSampler(BaseSampler):
                     feats=None,
                     **kwargs):
         # Sample some hard negative samples
-        neg_inds = torch.nonzero(assign_result.gt_inds == 0)
+        neg_inds = torch.nonzero(assign_result.gt_inds == 0, as_tuple=False)
         if neg_inds.numel() != 0:
             neg_inds = neg_inds.squeeze(1)
         if len(neg_inds) <= num_expected:
             return neg_inds
         else:
+            neg_labels = assign_result.labels.new_empty(
+                neg_inds.size(0)).fill_(self.bbox_head.num_classes)
             return self.hard_mining(neg_inds, num_expected, bboxes[neg_inds],
-                                    assign_result.labels[neg_inds], feats)
+                                    neg_labels, feats)

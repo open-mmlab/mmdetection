@@ -1,12 +1,11 @@
 import torch.nn as nn
-from mmcv.cnn import xavier_init
+from mmcv.cnn import ConvModule, build_upsample_layer, xavier_init
 
-from mmdet.ops import ConvModule, build_upsample_layer
 from mmdet.ops.carafe import CARAFEPack
-from ..registry import NECKS
+from ..builder import NECKS
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class FPN_CARAFE(nn.Module):
     """FPN_CARAFE is a more flexible implementation of FPN.
     It allows more choice for upsample methods during the top-down pathway.

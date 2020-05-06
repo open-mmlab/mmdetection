@@ -3,6 +3,7 @@ import os
 
 import mmcv
 import torch
+from mmcv import Config, DictAction
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from tools.fuse_conv_bn import fuse_module
@@ -13,37 +14,6 @@ from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
 
-class MultipleKVAction(argparse.Action):
-    """
-    argparse action to split an argument into KEY=VALUE form
-    on the first = and append to a dictionary. List options should
-    be passed as comma separated values, i.e KEY=V1,V2,V3
-    """
-
-    def _parse_int_float_bool(self, val):
-        try:
-            return int(val)
-        except ValueError:
-            pass
-        try:
-            return float(val)
-        except ValueError:
-            pass
-        if val.lower() in ['true', 'false']:
-            return True if val.lower() == 'true' else False
-        return val
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        options = {}
-        for kv in values:
-            key, val = kv.split('=', maxsplit=1)
-            val = [self._parse_int_float_bool(v) for v in val.split(',')]
-            if len(val) == 1:
-                val = val[0]
-            options[key] = val
-        setattr(namespace, self.dest, options)
-
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description='MMDet test (and eval) a model')
@@ -51,12 +21,12 @@ def parse_args():
     parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('--out', help='output result file in pickle format')
     parser.add_argument(
-        '--fuse_conv_bn',
+        '--fuse-conv-bn',
         action='store_true',
         help='Whether to fuse conv and bn, this will slightly increase'
         'the inference speed')
     parser.add_argument(
-        '--format_only',
+        '--format-only',
         action='store_true',
         help='Format the output results without perform evaluation. It is'
         'useful when you want to format the result to a specific format and '
@@ -69,15 +39,22 @@ def parse_args():
         ' "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument(
-        '--gpu_collect',
+        '--show-dir', help='directory where painted images will be saved')
+    parser.add_argument(
+        '--show-score-thr',
+        type=float,
+        default=0.3,
+        help='score threshold (default: 0.3)')
+    parser.add_argument(
+        '--gpu-collect',
         action='store_true',
         help='whether to use gpu to collect results.')
     parser.add_argument(
         '--tmpdir',
         help='tmp directory used for collecting results from multiple '
-        'workers, available when gpu_collect is not specified')
+        'workers, available when gpu-collect is not specified')
     parser.add_argument(
-        '--options', nargs='+', action=MultipleKVAction, help='custom options')
+        '--options', nargs='+', action=DictAction, help='arguments in dict')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
@@ -93,10 +70,11 @@ def parse_args():
 def main():
     args = parse_args()
 
-    assert args.out or args.eval or args.format_only or args.show, \
+    assert args.out or args.eval or args.format_only or args.show \
+        or args.show_dir, \
         ('Please specify at least one operation (save/eval/format/show the '
-         'results) with the argument "--out", "--eval", "--format_only" '
-         'or "--show"')
+         'results / save the results) with the argument "--out", "--eval"'
+         ', "--format-only", "--show" or "--show-dir"')
 
     if args.eval and args.format_only:
         raise ValueError('--eval and --format_only cannot be both specified')
@@ -104,7 +82,7 @@ def main():
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
 
-    cfg = mmcv.Config.fromfile(args.config)
+    cfg = Config.fromfile(args.config)
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -123,7 +101,7 @@ def main():
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
         dataset,
-        imgs_per_gpu=1,
+        samples_per_gpu=1,
         workers_per_gpu=cfg.data.workers_per_gpu,
         dist=distributed,
         shuffle=False)
@@ -145,7 +123,8 @@ def main():
 
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
-        outputs = single_gpu_test(model, data_loader, args.show)
+        outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
+                                  args.show_score_thr)
     else:
         model = MMDistributedDataParallel(
             model.cuda(),
@@ -157,7 +136,7 @@ def main():
     rank, _ = get_dist_info()
     if rank == 0:
         if args.out:
-            print('\nwriting results to {}'.format(args.out))
+            print(f'\nwriting results to {args.out}')
             mmcv.dump(outputs, args.out)
         kwargs = {} if args.options is None else args.options
         if args.format_only:
