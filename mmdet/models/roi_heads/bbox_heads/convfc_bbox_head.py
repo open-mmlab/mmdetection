@@ -10,7 +10,7 @@ class ConvFCBBoxHead(BBoxHead):
     r"""More general bbox head, with shared conv and fc layers and two optional
     separated branches.
 
-    .. code-block::
+    .. code-block:: none
 
                                     /-> cls convs -> cls fcs -> cls
         shared convs -> shared fcs

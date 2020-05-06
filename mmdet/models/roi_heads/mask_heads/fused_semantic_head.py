@@ -10,7 +10,7 @@ from mmdet.models.builder import HEADS
 class FusedSemanticHead(nn.Module):
     r"""Multi-level fused semantic segmentation head.
 
-    .. code-block::
+    .. code-block:: none
 
         in_1 -> 1x1 conv ---
                             |
