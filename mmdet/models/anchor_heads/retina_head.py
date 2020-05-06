@@ -1,12 +1,11 @@
 import torch.nn as nn
-from mmcv.cnn import bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 
-from mmdet.ops import ConvModule
 from ..builder import HEADS
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class RetinaHead(AnchorHead):
     """
     An anchor-based head used in [1]_.

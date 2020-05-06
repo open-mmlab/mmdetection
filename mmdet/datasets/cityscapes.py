@@ -9,13 +9,13 @@ import tempfile
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
+from mmcv.utils import print_log
 
-from mmdet.utils import print_log
 from .builder import DATASETS
 from .coco import CocoDataset
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class CityscapesDataset(CocoDataset):
 
     CLASSES = ('person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
@@ -220,9 +220,13 @@ class CityscapesDataset(CocoDataset):
         if len(metrics) > 0:
             # create CocoDataset with CityscapesDataset annotation
             self_coco = CocoDataset(self.ann_file, self.pipeline.transforms,
-                                    self.data_root, self.img_prefix,
+                                    None, self.data_root, self.img_prefix,
                                     self.seg_prefix, self.proposal_file,
                                     self.test_mode, self.filter_empty_gt)
+            # TODO: remove this in the future
+            # reload annotations of correct class
+            self_coco.CLASSES = self.CLASSES
+            self_coco.data_infos = self_coco.load_annotations(self.ann_file)
             eval_results.update(
                 self_coco.evaluate(results, metrics, logger, outfile_prefix,
                                    classwise, proposal_nums, iou_thrs))

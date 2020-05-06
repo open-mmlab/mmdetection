@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 
 from mmdet.core import multi_apply, multiclass_nms
-from mmdet.ops import ConvModule, DeformConv
+from mmdet.ops import DeformConv
 from ..builder import HEADS, build_loss
 
 INF = 1e8
@@ -38,7 +38,7 @@ class FeatureAlign(nn.Module):
         return x
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class FoveaHead(nn.Module):
     """FoveaBox: Beyond Anchor-based Object Detector
     https://arxiv.org/abs/1904.03797
@@ -236,9 +236,10 @@ class FoveaHead(nn.Module):
                 pos_weights,
                 avg_factor=num_pos)
         else:
-            loss_bbox = torch.tensor([0],
-                                     dtype=flatten_bbox_preds.dtype,
-                                     device=flatten_bbox_preds.device)
+            loss_bbox = torch.tensor(
+                0,
+                dtype=flatten_bbox_preds.dtype,
+                device=flatten_bbox_preds.device)
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
     def get_targets(self, gt_bbox_list, gt_label_list, featmap_sizes, points):

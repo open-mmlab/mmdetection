@@ -45,6 +45,8 @@ class AssignResult(util_mixins.NiceRepr):
         self.gt_inds = gt_inds
         self.max_overlaps = max_overlaps
         self.labels = labels
+        # Interface for possible user-defined properties
+        self._extra_properties = {}
 
     @property
     def num_preds(self):
@@ -53,18 +55,29 @@ class AssignResult(util_mixins.NiceRepr):
         """
         return len(self.gt_inds)
 
+    def set_extra_property(self, key, value):
+        """Set user-defined new property"""
+        assert key not in self.info
+        self._extra_properties[key] = value
+
+    def get_extra_property(self, key):
+        """Get user-defined property"""
+        return self._extra_properties.get(key, None)
+
     @property
     def info(self):
         """
         Returns a dictionary of info about the object
         """
-        return {
+        basic_info = {
             'num_gts': self.num_gts,
             'num_preds': self.num_preds,
             'gt_inds': self.gt_inds,
             'max_overlaps': self.max_overlaps,
             'labels': self.labels,
         }
+        basic_info.update(self._extra_properties)
+        return basic_info
 
     def __nice__(self):
         """
@@ -89,10 +102,9 @@ class AssignResult(util_mixins.NiceRepr):
 
     @classmethod
     def random(cls, **kwargs):
-        """
-        Create random AssignResult for tests or debugging.
+        """Create random AssignResult for tests or debugging.
 
-        Kwargs:
+        Args:
             num_preds: number of predicted boxes
             num_gts: number of true boxes
             p_ignore (float): probability of a predicted box assinged to an
@@ -103,7 +115,7 @@ class AssignResult(util_mixins.NiceRepr):
             rng (None | int | numpy.random.RandomState): seed or state
 
         Returns:
-            AssignResult :
+            :obj:`AssignResult`: Randomly generated assign results.
 
         Example:
             >>> from mmdet.core.bbox.assigners.assign_result import *  # NOQA

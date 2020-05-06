@@ -9,7 +9,7 @@ from mmdet.core import (anchor_inside_flags, build_anchor_generator,
 from ..builder import HEADS, build_loss
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class AnchorHead(nn.Module):
     """Anchor-based head (RPN, RetinaNet, SSD, etc.).
 
@@ -231,8 +231,9 @@ class AnchorHead(nn.Module):
         # map up to original set of anchors
         if unmap_outputs:
             num_total_anchors = flat_anchors.size(0)
-            labels = unmap(labels, num_total_anchors, inside_flags,
-                           self.num_classes)
+            labels = unmap(
+                labels, num_total_anchors, inside_flags,
+                fill=self.num_classes)  # fill bg label
             label_weights = unmap(label_weights, num_total_anchors,
                                   inside_flags)
             bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
@@ -280,6 +281,11 @@ class AnchorHead(nn.Module):
                 bbox_weights_list (list[Tensor]): BBox weights of each level
                 num_total_pos (int): Number of positive samples in all images
                 num_total_neg (int): Number of negative samples in all images
+            additional_returns: This function enables user-defined returns from
+                `self._get_targets_single`. These returns are currently refined
+                to properties at each feature map (i.e. having HxW dimension).
+                The results will be concatenated after the end
+
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
@@ -299,17 +305,19 @@ class AnchorHead(nn.Module):
             gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
         if gt_labels_list is None:
             gt_labels_list = [None for _ in range(num_imgs)]
+        results = multi_apply(
+            self._get_targets_single,
+            concat_anchor_list,
+            concat_valid_flag_list,
+            gt_bboxes_list,
+            gt_bboxes_ignore_list,
+            gt_labels_list,
+            img_metas,
+            label_channels=label_channels,
+            unmap_outputs=unmap_outputs)
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
-         pos_inds_list, neg_inds_list, sampling_results_list) = multi_apply(
-             self._get_targets_single,
-             concat_anchor_list,
-             concat_valid_flag_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             gt_labels_list,
-             img_metas,
-             label_channels=label_channels,
-             unmap_outputs=unmap_outputs)
+         pos_inds_list, neg_inds_list, sampling_results_list) = results[:7]
+        rest_results = list(results[7:])  # user-added return values
         # no valid anchors
         if any([labels is None for labels in all_labels]):
             return None
@@ -328,7 +336,12 @@ class AnchorHead(nn.Module):
                bbox_weights_list, num_total_pos, num_total_neg)
         if return_sampling_results:
             res = res + (sampling_results_list, )
-        return res
+        for i, r in enumerate(rest_results):  # user-added return values
+            rest_results[i] = images_to_levels(r, num_level_anchors)
+
+        return (labels_list, label_weights_list, bbox_targets_list,
+                bbox_weights_list, num_total_pos, num_total_neg) \
+            + tuple(rest_results)
 
     def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):

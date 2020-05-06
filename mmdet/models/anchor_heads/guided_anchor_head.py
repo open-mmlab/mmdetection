@@ -52,17 +52,18 @@ class FeatureAdaption(nn.Module):
         return x
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class GuidedAnchorHead(AnchorHead):
     """Guided-Anchor-based head (GA-RPN, GA-RetinaNet, etc.).
 
     This GuidedAnchorHead will predict high-quality feature guided
     anchors and locations where anchors will be kept in inference.
     There are mainly 3 categories of bounding-boxes.
-    - Sampled (9) pairs for target assignment. (approxes)
-    - The square boxes where the predicted anchors are based on.
-        (squares)
+
+    - Sampled 9 pairs for target assignment. (approxes)
+    - The square boxes where the predicted anchors are based on. (squares)
     - Guided anchors.
+
     Please refer to https://arxiv.org/abs/1901.03278 for more details.
 
     Args:
@@ -612,7 +613,8 @@ class GuidedAnchorHead(AnchorHead):
         bbox_deltas = bbox_anchors.new_full(bbox_anchors.size(), 0)
         bbox_deltas[:, 2:] += shape_pred
         # filter out negative samples to speed-up weighted_bounded_iou_loss
-        inds = torch.nonzero(anchor_weights[:, 0] > 0).squeeze(1)
+        inds = torch.nonzero(
+            anchor_weights[:, 0] > 0, as_tuple=False).squeeze(1)
         bbox_deltas_ = bbox_deltas[inds]
         bbox_anchors_ = bbox_anchors[inds]
         bbox_gts_ = bbox_gts[inds]

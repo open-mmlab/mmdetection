@@ -1,12 +1,11 @@
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-from mmcv.cnn import bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
                         force_fp32, images_to_levels, multi_apply,
                         multiclass_nms, unmap)
-from mmdet.ops import ConvModule, Scale
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -15,11 +14,11 @@ def reduce_mean(tensor):
     if not (dist.is_available() and dist.is_initialized()):
         return tensor
     tensor = tensor.clone()
-    dist.all_reduce(tensor.div_(dist.get_world_size()), op=dist.reduce_op.SUM)
+    dist.all_reduce(tensor.div_(dist.get_world_size()), op=dist.ReduceOp.SUM)
     return tensor
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class ATSSHead(AnchorHead):
     """
     Bridging the Gap Between Anchor-based and Anchor-free Detection via

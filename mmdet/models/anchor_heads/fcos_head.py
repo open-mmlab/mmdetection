@@ -1,15 +1,14 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
-from mmdet.ops import ConvModule, Scale
 from ..builder import HEADS, build_loss
 
 INF = 1e8
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class FCOSHead(nn.Module):
     """
     Fully Convolutional One-Stage Object Detection head from [1]_.
