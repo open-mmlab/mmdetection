@@ -128,16 +128,10 @@ pip install -v -e .
 
 ### Using multiple MMDetection versions
 
-If there are more than one mmdetection on your machine, and you want to use them alternatively, the recommended way is to create multiple conda environments and use different environments for different versions.
+The train and test scripts already modify the `PYTHONPATH` to ensure the script use the MMDetection in the current directory.
 
-Another way is to insert the following code to the main scripts (`train.py`, `test.py` or any other scripts you run)
-```python
-import os.path as osp
-import sys
-sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-```
+To use the default MMDetection installed in the environment rather than that you are working with, you can remove the following line in those scripts
 
-Or run the following command in the terminal of corresponding folder to temporally use the current one.
 ```shell
-export PYTHONPATH=`pwd`:$PYTHONPATH
+PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
 ```

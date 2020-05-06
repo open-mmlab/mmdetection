@@ -1,6 +1,6 @@
 ## Changelog
 
-### v2.0.0 (4/5/2020)
+### v2.0.0 (6/5/2020)
 In this release, we made lots of major refactoring and modifications.
 
 1. **Faster speed**. We optimize the training and inference speed for common models, achieving up to 30% speedup for training and 25% for inference. Please refer to [model zoo](model_zoo.md#comparison-with-detectron2) for details.
