@@ -1,6 +1,7 @@
 import math
 
-from mmdet.ops import build_conv_layer, build_norm_layer
+from mmcv.cnn import build_conv_layer, build_norm_layer
+
 from ..builder import BACKBONES
 from ..utils import ResLayer
 from .resnet import Bottleneck as _Bottleneck
@@ -81,7 +82,7 @@ class Bottleneck(_Bottleneck):
         self.add_module(self.norm3_name, norm3)
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class ResNeXt(ResNet):
     """ResNeXt backbone.
 

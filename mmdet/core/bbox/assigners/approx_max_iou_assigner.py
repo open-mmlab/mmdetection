@@ -5,16 +5,15 @@ from ..iou_calculators import build_iou_calculator
 from .max_iou_assigner import MaxIoUAssigner
 
 
-@BBOX_ASSIGNERS.register_module
+@BBOX_ASSIGNERS.register_module()
 class ApproxMaxIoUAssigner(MaxIoUAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
-    Each proposals will be assigned with `-1`, `0`, or a positive integer
-    indicating the ground truth index.
+    Each proposals will be assigned with an integer indicating the ground truth
+     index. (semi-positive index: gt label (0-based), -1: background)
 
-    - -1: don't care
-    - 0: negative sample, no assigned gt
-    - positive integer: positive sample, index (1-based) of assigned gt
+    - -1: negative sample, no assigned gt
+    - semi-positive integer: positive sample, index (0-based) of assigned gt
 
     Args:
         pos_iou_thr (float): IoU threshold for positive bboxes.
@@ -68,14 +67,14 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
 
         This method assign a gt bbox to each group of approxs (bboxes),
         each group of approxs is represent by a base approx (bbox) and
-        will be assigned with -1, 0, or a positive number.
-        -1 means don't care, 0 means negative sample,
-        positive number is the index (1-based) of assigned gt.
+        will be assigned with -1, or a semi-positive number.
+        background_label (-1) means negative sample,
+        semi-positive number is the index (0-based) of assigned gt.
         The assignment is done in following steps, the order matters.
 
-        1. assign every bbox to -1
+        1. assign every bbox to background_label (-1)
         2. use the max IoU of each group of approxs to assign
-        2. assign proposals whose iou with all gts < neg_iou_thr to 0
+        2. assign proposals whose iou with all gts < neg_iou_thr to background
         3. for each bbox, if the iou with its nearest gt >= pos_iou_thr,
            assign it to that bbox
         4. for each gt bbox, assign its nearest proposals (may be more than
@@ -125,17 +124,15 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
                                         num_gts).max(dim=0)
         overlaps = torch.transpose(overlaps, 0, 1)
 
-        bboxes = squares[:, :4]
-
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
-                and gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
+                and gt_bboxes_ignore.numel() > 0 and squares.numel() > 0):
             if self.ignore_wrt_candidates:
                 ignore_overlaps = self.iou_calculator(
-                    bboxes, gt_bboxes_ignore, mode='iof')
+                    squares, gt_bboxes_ignore, mode='iof')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=1)
             else:
                 ignore_overlaps = self.iou_calculator(
-                    gt_bboxes_ignore, bboxes, mode='iof')
+                    gt_bboxes_ignore, squares, mode='iof')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=0)
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 

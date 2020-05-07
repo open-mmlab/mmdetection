@@ -15,3 +15,5 @@ model = dict(
             bins=10,
             momentum=0.7,
             loss_weight=10.0)))
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

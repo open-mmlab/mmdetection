@@ -5,17 +5,17 @@ import tempfile
 
 import mmcv
 import numpy as np
+from mmcv.utils import print_log
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from terminaltables import AsciiTable
 
 from mmdet.core import eval_recalls
-from mmdet.utils import print_log
 from .builder import DATASETS
 from .custom import CustomDataset
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class CocoDataset(CustomDataset):
 
     CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',

@@ -7,7 +7,8 @@ from ..builder import LOSSES
 
 def _expand_onehot_labels(labels, label_weights, label_channels):
     bin_labels = labels.new_full((labels.size(0), label_channels), 0)
-    inds = torch.nonzero((labels >= 0) & (labels < label_channels)).squeeze()
+    inds = torch.nonzero(
+        (labels >= 0) & (labels < label_channels), as_tuple=False).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds]] = 1
     bin_label_weights = label_weights.view(-1, 1).expand(
@@ -16,7 +17,7 @@ def _expand_onehot_labels(labels, label_weights, label_channels):
 
 
 # TODO: code refactoring to make it consistent with other losses
-@LOSSES.register_module
+@LOSSES.register_module()
 class GHMC(nn.Module):
     """GHM Classification Loss.
 
@@ -94,7 +95,7 @@ class GHMC(nn.Module):
 
 
 # TODO: code refactoring to make it consistent with other losses
-@LOSSES.register_module
+@LOSSES.register_module()
 class GHMR(nn.Module):
     """GHM Regression Loss.
 
