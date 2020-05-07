@@ -116,7 +116,7 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
             np.int64)
 
 
-def batched_nms(bboxes, scores, inds, nms_cfg):
+def batched_nms(bboxes, scores, inds, nms_cfg, class_agnostic=False):
     """Performs non-maximum suppression in a batched fashion.
 
     Modified from https://github.com/pytorch/vision/blob
@@ -131,13 +131,17 @@ def batched_nms(bboxes, scores, inds, nms_cfg):
         inds (torch.Tensor): each index value correspond to a bbox cluster,
             and NMS will not be applied between elements of different inds,
             shape (N, ).
-        nms_cfg (dict): specify nms type and other parameters like iou_thr.
+        nms_cfg (dict): specify nms type and class_agnostic as well as other
+            parameters like iou_thr.
+        class_agnostic (bool): if true, nms is class agnostic,
+            i.e. IoU thresholding happens over all bboxes,
+            regardless of the predicted class
 
     Returns:
         tuple: kept bboxes and indice.
     """
     nms_cfg_ = nms_cfg.copy()
-    class_agnostic = nms_cfg_.pop('class_agnostic', False)
+    class_agnostic = nms_cfg_.pop('class_agnostic', class_agnostic)
     if class_agnostic:
         inds = inds.clamp(max=1)
     max_coordinate = bboxes.max()
