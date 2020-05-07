@@ -19,6 +19,27 @@ def test_standard_anchor_generator():
     assert anchor_generator is not None
 
 
+def test_strides():
+    from mmdet.core import AnchorGenerator
+    # Square strides
+    self = AnchorGenerator([10], [1.], [1.], [10])
+    anchors = self.grid_anchors([(2, 2)], device='cpu')
+
+    expected_anchors = torch.tensor([[-5., -5., 5., 5.], [5., -5., 15., 5.],
+                                     [-5., 5., 5., 15.], [5., 5., 15., 15.]])
+
+    assert torch.all(torch.eq(anchors[0], expected_anchors))
+
+    # Different strides in x and y direction
+    self = AnchorGenerator([(10, 20)], [1.], [1.], [10])
+    anchors = self.grid_anchors([(2, 2)], device='cpu')
+
+    expected_anchors = torch.tensor([[-5., -5., 5., 5.], [5., -5., 15., 5.],
+                                     [-5., 15., 5., 25.], [5., 15., 15., 25.]])
+
+    assert torch.all(torch.eq(anchors[0], expected_anchors))
+
+
 def test_ssd_anchor_generator():
     from mmdet.core.anchor import build_anchor_generator
     if torch.cuda.is_available():
