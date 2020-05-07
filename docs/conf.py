@@ -16,9 +16,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'MMDetection'
-copyright = '2018-2019, OpenMMLab'
-author = 'OpenMMLab'
+project = 'Object Detection OpenVINO Training Extensions'
+copyright = '2018-2019, OpenMMLab; 2019-2020, Intel'
+author = 'OpenMMLab, Intel'
 
 # The full version, including alpha/beta/rc tags
 release = '1.0rc1'
