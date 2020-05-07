@@ -122,6 +122,9 @@ Please refer to [NAS-FPN](https://github.com/open-mmlab/mmdetection/blob/master/
 ### ATSS
 Please refer to [ATSS](https://github.com/open-mmlab/mmdetection/blob/master/configs/atss) for details.
 
+### FSAF
+Please refer to [FSAF](https://github.com/open-mmlab/mmdetection/blob/master/configs/fsaf) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).

@@ -46,7 +46,7 @@ Please refer to [changelog.md](docs/changelog.md) for details and release histor
 ## Benchmark and model zoo
 
 Supported methods and backbones are shown in the below table.
-Results and models are available in the [model zoo](docs/MODEL_ZOO.md).
+Results and models are available in the [model zoo](docs/model_zoo.md).
 
 |                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet |
 |--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|
