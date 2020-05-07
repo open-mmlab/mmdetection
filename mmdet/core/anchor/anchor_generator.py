@@ -78,7 +78,7 @@ class AnchorGenerator(object):
 
         # calculate base sizes of anchors
         self.strides = [_pair(stride) for stride in strides]
-        self.base_sizes = [min(stride) for stride in strides
+        self.base_sizes = [min(stride) for stride in self.strides
                            ] if base_sizes is None else base_sizes
         assert len(self.base_sizes) == len(self.strides), \
             'The number of strides should be the same as base sizes, got ' \
@@ -308,8 +308,9 @@ class SSDAnchorGenerator(AnchorGenerator):
 
         self.strides = [_pair(stride) for stride in strides]
         self.input_size = _pair(input_size)
-        min_input_size = min(input_size)
-        self.centers = [(stride[0] / 2., stride[1] / 2.) for stride in strides]
+        min_input_size = min(self.input_size)
+        self.centers = [(stride[0] / 2., stride[1] / 2.)
+                        for stride in self.strides]
         self.basesize_ratio_range = basesize_ratio_range
 
         # calculate anchor ratios and sizes
@@ -322,7 +323,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         for ratio in range(int(min_ratio), int(max_ratio) + 1, step):
             min_sizes.append(int(min_input_size * ratio / 100))
             max_sizes.append(int(min_input_size * (ratio + step) / 100))
-        if self.input_size == 300:
+        if self.input_size == (300, 300):
             if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
                 min_sizes.insert(0, int(min_input_size * 7 / 100))
                 max_sizes.insert(0, int(min_input_size * 15 / 100))
@@ -334,7 +335,7 @@ class SSDAnchorGenerator(AnchorGenerator):
                     'basesize_ratio_range[0] should be either 0.15'
                     'or 0.2 when input_size is 300, got '
                     f'{basesize_ratio_range[0]}.')
-        elif self.input_size == 512:
+        elif self.input_size == (512, 512):
             if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
                 min_sizes.insert(0, int(min_input_size * 4 / 100))
                 max_sizes.insert(0, int(min_input_size * 10 / 100))
