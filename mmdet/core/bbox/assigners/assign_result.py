@@ -45,6 +45,8 @@ class AssignResult(util_mixins.NiceRepr):
         self.gt_inds = gt_inds
         self.max_overlaps = max_overlaps
         self.labels = labels
+        # Interface for possible user-defined properties
+        self._extra_properties = {}
 
     @property
     def num_preds(self):
@@ -53,47 +55,56 @@ class AssignResult(util_mixins.NiceRepr):
         """
         return len(self.gt_inds)
 
+    def set_extra_property(self, key, value):
+        """Set user-defined new property"""
+        assert key not in self.info
+        self._extra_properties[key] = value
+
+    def get_extra_property(self, key):
+        """Get user-defined property"""
+        return self._extra_properties.get(key, None)
+
     @property
     def info(self):
         """
         Returns a dictionary of info about the object
         """
-        return {
+        basic_info = {
             'num_gts': self.num_gts,
             'num_preds': self.num_preds,
             'gt_inds': self.gt_inds,
             'max_overlaps': self.max_overlaps,
             'labels': self.labels,
         }
+        basic_info.update(self._extra_properties)
+        return basic_info
 
     def __nice__(self):
         """
         Create a "nice" summary string describing this assign result
         """
         parts = []
-        parts.append('num_gts={!r}'.format(self.num_gts))
+        parts.append(f'num_gts={self.num_gts!r}')
         if self.gt_inds is None:
-            parts.append('gt_inds={!r}'.format(self.gt_inds))
+            parts.append(f'gt_inds={self.gt_inds!r}')
         else:
-            parts.append('gt_inds.shape={!r}'.format(
-                tuple(self.gt_inds.shape)))
+            parts.append(f'gt_inds.shape={tuple(self.gt_inds.shape)!r}')
         if self.max_overlaps is None:
-            parts.append('max_overlaps={!r}'.format(self.max_overlaps))
+            parts.append(f'max_overlaps={self.max_overlaps!r}')
         else:
-            parts.append('max_overlaps.shape={!r}'.format(
-                tuple(self.max_overlaps.shape)))
+            parts.append('max_overlaps.shape='
+                         f'{tuple(self.max_overlaps.shape)!r}')
         if self.labels is None:
-            parts.append('labels={!r}'.format(self.labels))
+            parts.append(f'labels={self.labels!r}')
         else:
-            parts.append('labels.shape={!r}'.format(tuple(self.labels.shape)))
+            parts.append(f'labels.shape={tuple(self.labels.shape)!r}')
         return ', '.join(parts)
 
     @classmethod
     def random(cls, **kwargs):
-        """
-        Create random AssignResult for tests or debugging.
+        """Create random AssignResult for tests or debugging.
 
-        Kwargs:
+        Args:
             num_preds: number of predicted boxes
             num_gts: number of true boxes
             p_ignore (float): probability of a predicted box assinged to an
@@ -104,7 +115,7 @@ class AssignResult(util_mixins.NiceRepr):
             rng (None | int | numpy.random.RandomState): seed or state
 
         Returns:
-            AssignResult :
+            :obj:`AssignResult`: Randomly generated assign results.
 
         Example:
             >>> from mmdet.core.bbox.assigners.assign_result import *  # NOQA
@@ -172,7 +183,10 @@ class AssignResult(util_mixins.NiceRepr):
                     labels = torch.zeros(num_preds, dtype=torch.int64)
                 else:
                     labels = torch.from_numpy(
-                        rng.randint(1, num_classes + 1, size=num_preds))
+                        # remind that we set FG labels to [0, num_class-1]
+                        # since mmdet v2.0
+                        # BG cat_id: num_class
+                        rng.randint(0, num_classes, size=num_preds))
                     labels[~is_assigned] = 0
             else:
                 labels = None

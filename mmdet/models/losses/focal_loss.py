@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from mmdet.ops import sigmoid_focal_loss as _sigmoid_focal_loss
-from ..registry import LOSSES
+from ..builder import LOSSES
 from .utils import weight_reduce_loss
 
 
@@ -35,14 +35,25 @@ def sigmoid_focal_loss(pred,
     # Function.apply does not accept keyword arguments, so the decorator
     # "weighted_loss" is not applicable
     loss = _sigmoid_focal_loss(pred, target, gamma, alpha)
-    # TODO: find a proper way to handle the shape of weight
     if weight is not None:
-        weight = weight.view(-1, 1)
+        if weight.shape != loss.shape:
+            if weight.size(0) == loss.size(0):
+                # For most cases, weight is of shape (num_priors, ),
+                #  which means it does not have the second axis num_class
+                weight = weight.view(-1, 1)
+            else:
+                # Sometimes, weight per anchor per class is also needed. e.g.
+                #  in FSAF. But it may be flattened of shape
+                #  (num_priors x num_class, ), while loss is still of shape
+                #  (num_priors, num_class).
+                assert weight.numel() == loss.numel()
+                weight = weight.view(loss.size(0), -1)
+        assert weight.ndim == loss.ndim
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class FocalLoss(nn.Module):
 
     def __init__(self,
