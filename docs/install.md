@@ -83,12 +83,14 @@ you can install it before installing MMCV.
 The code can be built for CPU only environment (where CUDA isn't available).
 
 In CPU mode you can run the demo/webcam_demo.py for example.
-However some functionality is gone in this mode :
-* Deformable Convolution
-* Deformable ROI pooling
-* CARAFE: Content-Aware ReAssembly of FEatures
-* nms_cuda
-* sigmoid_focal_loss_cuda
+However some functionality is gone in this mode:
+
+- Deformable Convolution
+- Deformable ROI pooling
+- CARAFE: Content-Aware ReAssembly of FEatures
+- nms_cuda
+- sigmoid_focal_loss_cuda
+
 So if you try to run inference with a model containing deformable convolution you will get an error.
 Note: We set `use_torchvision=True` on-the-fly in CPU mode for `RoIPool` and `RoIAlign`
 
@@ -97,8 +99,14 @@ Note: We set `use_torchvision=True` on-the-fly in CPU mode for `RoIPool` and `Ro
 We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image.
 
 ```shell
-# build an image with PyTorch 1.1, CUDA 10.0 and CUDNN 7.5
+# build an image with PyTorch 1.5, CUDA 10.1
 docker build -t mmdetection docker/
+```
+
+Run it with
+
+```shell
+docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetection
 ```
 
 ### A from-scratch setup script
