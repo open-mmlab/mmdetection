@@ -142,7 +142,7 @@ def test_anchor_generator_with_tuples():
     anchors_tuples = anchor_generator_tuples.grid_anchors(
         featmap_sizes, device)
     for anchor, anchor_tuples in zip(anchors, anchors_tuples):
-        assert torch.all(torch.eq(anchor, anchor_tuples))
+        assert torch.equal(anchor, anchor_tuples)
 
 
 def test_retina_anchor():
