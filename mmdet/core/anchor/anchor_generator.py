@@ -12,15 +12,16 @@ class AnchorGenerator(object):
 
     Args:
         strides (list[int] | list[tuple[int, int]]): Strides of anchors
-            in multiple feture levels.
+            in multiple feature levels.
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
         scales (list[int] | None): Anchor scales for anchors in a single level.
             It cannot be set at the same time if `octave_base_scale` and
             `scales_per_octave` are set.
-        base_sizes (list[int] | list[tuple[int, int]] | None): The basic sizes
+        base_sizes (list[int] | None): The basic sizes
             of anchors in multiple levels.
             If None is given, strides will be used as base_sizes.
+            (If strides are non square, the shortest stride is taken.)
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. By default it is True in V2.0
@@ -286,11 +287,11 @@ class SSDAnchorGenerator(AnchorGenerator):
 
     Args:
         strides (list[int]  | list[tuple[int, int]]): Strides of anchors
-            in multiple feture levels.
+            in multiple feature levels.
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
         basesize_ratio_range (tuple(float)): Ratio range of anchors.
-        input_size (int| tuple[int]): Size of feature map, 300 for SSD300,
+        input_size (int): Size of feature map, 300 for SSD300,
             512 for SSD512.
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
@@ -301,14 +302,13 @@ class SSDAnchorGenerator(AnchorGenerator):
                  strides,
                  ratios,
                  basesize_ratio_range,
-                 input_size=(300, 300),
+                 input_size=300,
                  scale_major=True):
         assert len(strides) == len(ratios)
         assert mmcv.is_tuple_of(basesize_ratio_range, float)
 
         self.strides = [_pair(stride) for stride in strides]
-        self.input_size = _pair(input_size)
-        min_input_size = min(self.input_size)
+        self.input_size = input_size
         self.centers = [(stride[0] / 2., stride[1] / 2.)
                         for stride in self.strides]
         self.basesize_ratio_range = basesize_ratio_range
@@ -321,15 +321,15 @@ class SSDAnchorGenerator(AnchorGenerator):
         min_sizes = []
         max_sizes = []
         for ratio in range(int(min_ratio), int(max_ratio) + 1, step):
-            min_sizes.append(int(min_input_size * ratio / 100))
-            max_sizes.append(int(min_input_size * (ratio + step) / 100))
+            min_sizes.append(int(self.input_size * ratio / 100))
+            max_sizes.append(int(self.input_size * (ratio + step) / 100))
         if self.input_size == (300, 300):
             if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
-                min_sizes.insert(0, int(min_input_size * 7 / 100))
-                max_sizes.insert(0, int(min_input_size * 15 / 100))
+                min_sizes.insert(0, int(self.input_size * 7 / 100))
+                max_sizes.insert(0, int(self.input_size * 15 / 100))
             elif basesize_ratio_range[0] == 0.2:  # SSD300 VOC
-                min_sizes.insert(0, int(min_input_size * 10 / 100))
-                max_sizes.insert(0, int(min_input_size * 20 / 100))
+                min_sizes.insert(0, int(self.input_size * 10 / 100))
+                max_sizes.insert(0, int(self.input_size * 20 / 100))
             else:
                 raise ValueError(
                     'basesize_ratio_range[0] should be either 0.15'
@@ -337,11 +337,11 @@ class SSDAnchorGenerator(AnchorGenerator):
                     f'{basesize_ratio_range[0]}.')
         elif self.input_size == (512, 512):
             if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
-                min_sizes.insert(0, int(min_input_size * 4 / 100))
-                max_sizes.insert(0, int(min_input_size * 10 / 100))
+                min_sizes.insert(0, int(self.input_size * 4 / 100))
+                max_sizes.insert(0, int(self.input_size * 10 / 100))
             elif basesize_ratio_range[0] == 0.15:  # SSD512 VOC
-                min_sizes.insert(0, int(min_input_size * 7 / 100))
-                max_sizes.insert(0, int(min_input_size * 15 / 100))
+                min_sizes.insert(0, int(self.input_size * 7 / 100))
+                max_sizes.insert(0, int(self.input_size * 15 / 100))
             else:
                 raise ValueError('basesize_ratio_range[0] should be either 0.1'
                                  'or 0.15 when input_size is 512, got'
