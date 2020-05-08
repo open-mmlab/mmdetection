@@ -323,7 +323,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         for ratio in range(int(min_ratio), int(max_ratio) + 1, step):
             min_sizes.append(int(self.input_size * ratio / 100))
             max_sizes.append(int(self.input_size * (ratio + step) / 100))
-        if self.input_size == (300, 300):
+        if self.input_size == 300:
             if basesize_ratio_range[0] == 0.15:  # SSD300 COCO
                 min_sizes.insert(0, int(self.input_size * 7 / 100))
                 max_sizes.insert(0, int(self.input_size * 15 / 100))
@@ -335,7 +335,7 @@ class SSDAnchorGenerator(AnchorGenerator):
                     'basesize_ratio_range[0] should be either 0.15'
                     'or 0.2 when input_size is 300, got '
                     f'{basesize_ratio_range[0]}.')
-        elif self.input_size == (512, 512):
+        elif self.input_size == 512:
             if basesize_ratio_range[0] == 0.1:  # SSD512 COCO
                 min_sizes.insert(0, int(self.input_size * 4 / 100))
                 max_sizes.insert(0, int(self.input_size * 10 / 100))

@@ -132,7 +132,7 @@ def test_anchor_generator_with_tuples():
     anchor_generator_cfg_tuples = dict(
         type='SSDAnchorGenerator',
         scale_major=False,
-        input_size=(300, 300),
+        input_size=300,
         basesize_ratio_range=(0.15, 0.9),
         strides=[(8, 8), (16, 16), (32, 32), (64, 64), (100, 100), (300, 300)],
         ratios=[[2], [2, 3], [2, 3], [2, 3], [2], [2]])
