@@ -275,7 +275,7 @@ If you want to specify the working directory in the command, you can add an argu
 
 Optional arguments are:
 
-- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training.
+- `--no-validate` (**not suggested**): By default, the codebase will perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training. To disable this behavior, use `--no-validate`.
 - `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
 
