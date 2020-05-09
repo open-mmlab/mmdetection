@@ -19,6 +19,27 @@ def test_standard_anchor_generator():
     assert anchor_generator is not None
 
 
+def test_strides():
+    from mmdet.core import AnchorGenerator
+    # Square strides
+    self = AnchorGenerator([10], [1.], [1.], [10])
+    anchors = self.grid_anchors([(2, 2)], device='cpu')
+
+    expected_anchors = torch.tensor([[-5., -5., 5., 5.], [5., -5., 15., 5.],
+                                     [-5., 5., 5., 15.], [5., 5., 15., 15.]])
+
+    assert torch.all(torch.eq(anchors[0], expected_anchors))
+
+    # Different strides in x and y direction
+    self = AnchorGenerator([(10, 20)], [1.], [1.], [10])
+    anchors = self.grid_anchors([(2, 2)], device='cpu')
+
+    expected_anchors = torch.tensor([[-5., -5., 5., 5.], [5., -5., 15., 5.],
+                                     [-5., 15., 5., 25.], [5., 15., 15., 25.]])
+
+    assert torch.all(torch.eq(anchors[0], expected_anchors))
+
+
 def test_ssd_anchor_generator():
     from mmdet.core.anchor import build_anchor_generator
     if torch.cuda.is_available():
@@ -87,6 +108,41 @@ def test_ssd_anchor_generator():
     # check anchor generation
     anchors = anchor_generator.grid_anchors(featmap_sizes, device)
     assert len(anchors) == 6
+
+
+def test_anchor_generator_with_tuples():
+    from mmdet.core.anchor import build_anchor_generator
+    if torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
+    anchor_generator_cfg = dict(
+        type='SSDAnchorGenerator',
+        scale_major=False,
+        input_size=300,
+        basesize_ratio_range=(0.15, 0.9),
+        strides=[8, 16, 32, 64, 100, 300],
+        ratios=[[2], [2, 3], [2, 3], [2, 3], [2], [2]])
+
+    featmap_sizes = [(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)]
+    anchor_generator = build_anchor_generator(anchor_generator_cfg)
+    anchors = anchor_generator.grid_anchors(featmap_sizes, device)
+
+    anchor_generator_cfg_tuples = dict(
+        type='SSDAnchorGenerator',
+        scale_major=False,
+        input_size=300,
+        basesize_ratio_range=(0.15, 0.9),
+        strides=[(8, 8), (16, 16), (32, 32), (64, 64), (100, 100), (300, 300)],
+        ratios=[[2], [2, 3], [2, 3], [2, 3], [2], [2]])
+
+    anchor_generator_tuples = build_anchor_generator(
+        anchor_generator_cfg_tuples)
+    anchors_tuples = anchor_generator_tuples.grid_anchors(
+        featmap_sizes, device)
+    for anchor, anchor_tuples in zip(anchors, anchors_tuples):
+        assert torch.equal(anchor, anchor_tuples)
 
 
 def test_retina_anchor():

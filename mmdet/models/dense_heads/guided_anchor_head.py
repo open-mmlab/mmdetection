@@ -396,6 +396,11 @@ class GuidedAnchorHead(AnchorHead):
         """
         anchor_scale = self.approx_anchor_generator.octave_base_scale
         anchor_strides = self.approx_anchor_generator.strides
+        # Currently only supports same stride in x and y direction.
+        for stride in anchor_strides:
+            assert (stride[0] == stride[1])
+        anchor_strides = [stride[0] for stride in anchor_strides]
+
         center_ratio = self.train_cfg.center_ratio
         ignore_ratio = self.train_cfg.ignore_ratio
         img_per_gpu = len(gt_bboxes_list)
