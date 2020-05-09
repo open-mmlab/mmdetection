@@ -25,3 +25,12 @@ train_cfg = dict(
             bias=0.),
         isr=dict(k=2, bias=0),
         carl=dict(k=1, bias=0.2)))
+
+test_cfg = dict(
+    rpn=dict(
+        nms_across_levels=False,
+        nms_pre=2000,
+        nms_post=2000,
+        max_num=2000,
+        nms_thr=0.7,
+        min_bbox_size=0))
