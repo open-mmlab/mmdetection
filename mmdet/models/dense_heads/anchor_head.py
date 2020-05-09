@@ -450,7 +450,7 @@ class AnchorHead(nn.Module):
             >>>         type='AnchorGenerator',
             >>>         scales=[8],
             >>>         ratios=[0.5, 1.0, 2.0],
-            >>>         strides=[4]))
+            >>>         strides=[4,]))
             >>> img_metas = [{'img_shape': (32, 32, 3), 'scale_factor': 1}]
             >>> cfg = mmcv.Config(dict(
             >>>     score_thr=0.00,
