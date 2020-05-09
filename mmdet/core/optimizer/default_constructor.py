@@ -13,31 +13,37 @@ from .builder import OPTIMIZER_BUILDERS, OPTIMIZERS
 class DefaultOptimizerConstructor(object):
     """Default constructor for optimizers.
 
-    Attributes:
+    By default each parameter share the same optimizer settings, and we
+    provide an argument ``paramwise_cfg`` to specify parameter-wise settings.
+    It is a dict and may contain the following fields:
+
+    - ``bias_lr_mult`` (float): It will be multiplied to the learning
+      rate for all bias parameters (except for those in normalization
+      layers).
+    - ``bias_decay_mult`` (float): It will be multiplied to the weight
+      decay for all bias parameters (except for those in
+      normalization layers and depthwise conv layers).
+    - ``norm_decay_mult`` (float): It will be multiplied to the weight
+      decay for all weight and bias parameters of normalization
+      layers.
+    - ``dwconv_decay_mult`` (float): It will be multiplied to the weight
+      decay for all weight and bias parameters of depthwise conv
+      layers.
+    - ``bypass_duplicate`` (bool): If true, the duplicate parameters
+      would not be added into optimizer. Default: False
+
+    Args:
         model (:obj:`nn.Module`): The model with parameters to be optimized.
         optimizer_cfg (dict): The config dict of the optimizer.
-            Positional fields are:
-                - type: class name of the optimizer.
-            Optional fields are:
-                - any arguments of the corresponding optimizer type, e.g.,
-                    lr, weight_decay, momentum, etc.
-        paramwise_cfg (dict, optional): Parameter-wise options.
-            Accepted fields are
+            Positional fields are
 
-            - bias_lr_mult (float): It will be multiplied to the learning
-                rate for all bias parameters (except for those in normalization
-                layers).
-            - bias_decay_mult (float): It will be multiplied to the weight
-                decay for all bias parameters (except for those in
-                normalization layers and depthwise conv layers).
-            - norm_decay_mult (float): It will be multiplied to the weight
-                decay for all weight and bias parameters of normalization
-                layers.
-            - dwconv_decay_mult (float): It will be multiplied to the weight
-                decay for all weight and bias parameters of depthwise conv
-                layers.
-            - bypass_duplicate (bool): If true, the duplicate parameters
-                would not be added into optimizer. Default: False
+                - `type`: class name of the optimizer.
+
+            Optional fields are
+
+                - any arguments of the corresponding optimizer type, e.g.,
+                  lr, weight_decay, momentum, etc.
+        paramwise_cfg (dict, optional): Parameter-wise options.
 
     Example:
         >>> model = torch.nn.modules.Conv1d(1, 1, 1)

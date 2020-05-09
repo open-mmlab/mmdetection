@@ -10,15 +10,11 @@ INF = 1e8
 
 @HEADS.register_module()
 class FCOSHead(nn.Module):
-    """
-    Fully Convolutional One-Stage Object Detection head from [1]_.
+    """Anchor-free head used in `FCOS <https://arxiv.org/abs/1904.01355>`_.
 
     The FCOS head does not use anchor boxes. Instead bounding boxes are
     predicted at each pixel and a centerness measure is used to supress
     low-quality predictions.
-
-    References:
-        .. [1] https://arxiv.org/abs/1904.01355
 
     Example:
         >>> self = FCOSHead(11, 7)

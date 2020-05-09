@@ -16,7 +16,7 @@ class CustomDataset(Dataset):
     The annotation format is shown as follows. The `ann` field is optional for
     testing.
 
-    .. code-block::
+    .. code-block:: none
 
         [
             {

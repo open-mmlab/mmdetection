@@ -9,12 +9,9 @@ from .base_bbox_coder import BaseBBoxCoder
 class DeltaXYWHBBoxCoder(BaseBBoxCoder):
     """Delta XYWH BBox coder
 
-    Following the practice in R-CNN [1]_, this coder encodes bbox (x1, y1, x2,
-    y2) into delta (dx, dy, dw, dh) and decodes delta (dx, dy, dw, dh)
-    back to original bbox (x1, y1, x2, y2).
-
-    References:
-        .. [1] https://arxiv.org/abs/1311.2524
+    Following the practice in `R-CNN <https://arxiv.org/abs/1311.2524>`_,
+    this coder encodes bbox (x1, y1, x2, y2) into delta (dx, dy, dw, dh) and
+    decodes delta (dx, dy, dw, dh) back to original bbox (x1, y1, x2, y2).
 
     Args:
         target_means (Sequence[float]): denormalizing means of target for
