@@ -55,7 +55,7 @@ def single_gpu_test(model,
 
         torch.cuda.synchronize()
         elapsed = time.perf_counter() - start_time
-        batch_size = len(data['img_meta']._data)
+        batch_size = data['img'][0].size(0)
         prog_bar.update(completed=batch_size, elapsed_time=elapsed)
 
         # encode mask results
@@ -129,7 +129,9 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
         if rank == 0:
             torch.cuda.synchronize()
             elapsed = time.perf_counter() - start_time
-            batch_size = len(data['img_meta']._data)
+            batch_size = len(
+                data['img_meta']._data
+            ) if 'img_meta' in data else data['img'][0].size(0)
             prog_bar.update(
                 completed=batch_size * world_size, elapsed_time=elapsed)
 
