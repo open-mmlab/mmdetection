@@ -365,6 +365,7 @@ def eval_map(det_results,
             'precision': precisions,
             'ap': ap
         })
+    pool.close()
     if scale_ranges is not None:
         # shape (num_classes, num_scales)
         all_ap = np.vstack([cls_result['ap'] for cls_result in eval_results])
