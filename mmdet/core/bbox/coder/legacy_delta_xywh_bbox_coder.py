@@ -169,8 +169,8 @@ def legacy_delta2bbox(rois,
     gw = pw * dw.exp()
     gh = ph * dh.exp()
     # Use network energy to shift the center of each roi
-    gx = torch.addcmul(px, 1, pw, dx)  # gx = px + pw * dx
-    gy = torch.addcmul(py, 1, ph, dy)  # gy = py + ph * dy
+    gx = px + pw * dx
+    gy = py + ph * dy
     # Convert center-xy/width/height to top-left, bottom-right
 
     # The true legacy box coder should +- 0.5 here.
