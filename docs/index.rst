@@ -14,7 +14,7 @@ Welcome to MMDetection's documentation!
    tutorials/new_modules.md
    compatibility.md
    changelog.md
-
+   api.rst
 
 
 Indices and tables

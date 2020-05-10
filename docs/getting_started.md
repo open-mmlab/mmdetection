@@ -70,7 +70,7 @@ Optional arguments:
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
 - `EVAL_METRICS`: Items to be evaluated on the results. Allowed values depend on the dataset, e.g., `proposal_fast`, `proposal`, `bbox`, `segm` are available for COCO, `mAP`, `recall` for PASCAL VOC. Cityscapes could be evaluated by `cityscapes` as well as all COCO metrics.
 - `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment, otherwise you may encounter the error like `cannot connect to X server`.
-- `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You **don't** need a GUI available in your environment for using this option.
+- `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
 - `--show-score-thr`: If specified, detections with score below this threshold will be removed.
 
 
@@ -138,12 +138,27 @@ You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcn
 
 The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
+### Image demo
+
+We provide a demo script to test a single image.
+
+```shell
+python demo/image_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${SCORE_THR}]
+```
+
+Examples:
+
+```shell
+python demo/image_demo.py demo/demo.jpg configs/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth --device cpu
+```
+
 ### Webcam demo
 
 We provide a webcam demo to illustrate the results.
 
 ```shell
-python demo/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${SCORE_THR}]
+python demo/webcam_demo.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--score-thr ${SCORE_THR}]
 ```
 
 Examples:
@@ -260,7 +275,7 @@ If you want to specify the working directory in the command, you can add an argu
 
 Optional arguments are:
 
-- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training.
+- `--no-validate` (**not suggested**): By default, the codebase will perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training. To disable this behavior, use `--no-validate`.
 - `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
 
@@ -273,13 +288,13 @@ Difference between `resume-from` and `load-from`:
 If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`. (This script also supports single machine training.)
 
 ```shell
-./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR} [${GPUS}]
+[GPUS=${GPUS}] ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
 ```
 
 Here is an example of using 16 GPUs to train Mask R-CNN on the dev partition.
 
 ```shell
-./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x 16
+GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
 You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
@@ -315,8 +330,8 @@ dist_params = dict(backend='nccl', port=29501)
 Then you can launch two jobs with `config1.py` ang `config2.py`.
 
 ```shell
-CUDA_VISIBLE_DEVICES=0,1,2,3 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} 4
-CUDA_VISIBLE_DEVICES=4,5,6,7 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} 4
+CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR}
+CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR}
 ```
 
 ## Useful tools

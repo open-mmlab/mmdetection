@@ -122,10 +122,26 @@ Please refer to [NAS-FPN](https://github.com/open-mmlab/mmdetection/blob/master/
 ### ATSS
 Please refer to [ATSS](https://github.com/open-mmlab/mmdetection/blob/master/configs/atss) for details.
 
+### FSAF
+Please refer to [FSAF](https://github.com/open-mmlab/mmdetection/blob/master/configs/fsaf) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
 
+
+## Speed benchmark
+We compare the training speed of Mask R-CNN with some other popular frameworks (The data is copied from [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md)).
+
+| Implementation       | Throughput (img/s) |
+|----------------------|--------------------|
+| [Detectron2](https://github.com/facebookresearch/detectron2) | 61 |
+| [MMDetection](https://github.com/open-mmlab/mmdetection) | 60 |
+| [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/)   | 51 |
+| [tensorpack](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN) | 50 |
+| [simpledet](https://github.com/TuSimple/simpledet/) | 39 |
+| [Detectron](https://github.com/facebookresearch/Detectron) | 19 |
+| [matterport/Mask_RCNN](https://github.com/matterport/Mask_RCNN/) | 14 |
 
 ## Comparison with Detectron2
 
@@ -224,7 +240,7 @@ The inference speed is measured with fps (img/s) on a single GPU, the higher, th
 To be consistent with Detectron2, we report the pure inference speed (without the time of data loading).
 For Mask R-CNN, we exclude the time of RLE encoding in post-processing.
 We also include the officially reported speed in the parentheses, which is slightly higher
-than the results tested on our server due to differences of hardwards.
+than the results tested on our server due to differences of hardwares.
 
 <table border="1">
   <tr>

@@ -3,22 +3,24 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, kaiming_init
 
 from mmdet.core import auto_fp16, force_fp32
-from ..builder import HEADS
+from mmdet.models.builder import HEADS
 
 
 @HEADS.register_module()
 class FusedSemanticHead(nn.Module):
     r"""Multi-level fused semantic segmentation head.
 
-    in_1 -> 1x1 conv ---
-                        |
-    in_2 -> 1x1 conv -- |
-                       ||
-    in_3 -> 1x1 conv - ||
-                      |||                  /-> 1x1 conv (mask prediction)
-    in_4 -> 1x1 conv -----> 3x3 convs (*4)
-                        |                  \-> 1x1 conv (feature)
-    in_5 -> 1x1 conv ---
+    .. code-block:: none
+
+        in_1 -> 1x1 conv ---
+                            |
+        in_2 -> 1x1 conv -- |
+                           ||
+        in_3 -> 1x1 conv - ||
+                          |||                  /-> 1x1 conv (mask prediction)
+        in_4 -> 1x1 conv -----> 3x3 convs (*4)
+                            |                  \-> 1x1 conv (feature)
+        in_5 -> 1x1 conv ---
     """  # noqa: W605
 
     def __init__(self,

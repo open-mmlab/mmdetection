@@ -8,10 +8,9 @@ from .base_bbox_coder import BaseBBoxCoder
 class TBLRBBoxCoder(BaseBBoxCoder):
     """TBLR BBox coder
 
-    Following the practice in FSAF [1]_, this coder encodes gt bboxes (x1, y1,
-    x2, y2) into (top, bottom, left, right) and decode it back to the original.
-    References:
-        .. [1] https://arxiv.org/abs/1903.00621
+    Following the practice in `FSAF <https://arxiv.org/abs/1903.00621>`_,
+    this coder encodes gt bboxes (x1, y1, x2, y2) into (top, bottom, left,
+    right) and decode it back to the original.
 
     Args:
         normalizer (list | float): Normalization factor to be

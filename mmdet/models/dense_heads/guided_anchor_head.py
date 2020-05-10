@@ -59,10 +59,11 @@ class GuidedAnchorHead(AnchorHead):
     This GuidedAnchorHead will predict high-quality feature guided
     anchors and locations where anchors will be kept in inference.
     There are mainly 3 categories of bounding-boxes.
-    - Sampled (9) pairs for target assignment. (approxes)
-    - The square boxes where the predicted anchors are based on.
-        (squares)
+
+    - Sampled 9 pairs for target assignment. (approxes)
+    - The square boxes where the predicted anchors are based on. (squares)
     - Guided anchors.
+
     Please refer to https://arxiv.org/abs/1901.03278 for more details.
 
     Args:
@@ -395,6 +396,11 @@ class GuidedAnchorHead(AnchorHead):
         """
         anchor_scale = self.approx_anchor_generator.octave_base_scale
         anchor_strides = self.approx_anchor_generator.strides
+        # Currently only supports same stride in x and y direction.
+        for stride in anchor_strides:
+            assert (stride[0] == stride[1])
+        anchor_strides = [stride[0] for stride in anchor_strides]
+
         center_ratio = self.train_cfg.center_ratio
         ignore_ratio = self.train_cfg.ignore_ratio
         img_per_gpu = len(gt_bboxes_list)

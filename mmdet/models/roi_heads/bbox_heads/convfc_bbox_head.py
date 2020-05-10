@@ -1,7 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 
-from ..builder import HEADS
+from mmdet.models.builder import HEADS
 from .bbox_head import BBoxHead
 
 
@@ -10,9 +10,11 @@ class ConvFCBBoxHead(BBoxHead):
     r"""More general bbox head, with shared conv and fc layers and two optional
     separated branches.
 
-                                /-> cls convs -> cls fcs -> cls
-    shared convs -> shared fcs
-                                \-> reg convs -> reg fcs -> reg
+    .. code-block:: none
+
+                                    /-> cls convs -> cls fcs -> cls
+        shared convs -> shared fcs
+                                    \-> reg convs -> reg fcs -> reg
     """  # noqa: W605
 
     def __init__(self,

@@ -2,7 +2,7 @@
 
 ### Requirements
 
-- Linux (Windows is not officially supported)
+- Linux or macOS (Windows is not currently officially supported)
 - Python 3.6+
 - PyTorch 1.3+
 - CUDA 9.2+ (If you build PyTorch from source, CUDA 9.0 is also compatible)
@@ -39,7 +39,7 @@ conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
 PyTorch 1.3.1., you need to install the prebuilt PyTorch with CUDA 9.2.
 
 ```python
-conda install pytorch=1.3.1 cudatoolkit=10.1 torchvision=0.4.2 -c pytorch
+conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
 ```
 
 If you build PyTorch from source instead of installing the prebuilt pacakge,
@@ -61,6 +61,12 @@ pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonA
 pip install -v -e .  # or "python setup.py develop"
 ```
 
+If you build mmdetection on macOS, replace the last command with
+
+```
+CC=clang CXX=clang++ CFLAGS='-stdlib=libc++' pip install -e .
+```
+
 Note:
 
 1. The git commit id will be written to the version number with step d, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
@@ -77,12 +83,14 @@ you can install it before installing MMCV.
 The code can be built for CPU only environment (where CUDA isn't available).
 
 In CPU mode you can run the demo/webcam_demo.py for example.
-However some functionality is gone in this mode :
-* Deformable Convolution
-* Deformable ROI pooling
-* CARAFE: Content-Aware ReAssembly of FEatures
-* nms_cuda
-* sigmoid_focal_loss_cuda
+However some functionality is gone in this mode:
+
+- Deformable Convolution
+- Deformable ROI pooling
+- CARAFE: Content-Aware ReAssembly of FEatures
+- nms_cuda
+- sigmoid_focal_loss_cuda
+
 So if you try to run inference with a model containing deformable convolution you will get an error.
 Note: We set `use_torchvision=True` on-the-fly in CPU mode for `RoIPool` and `RoIAlign`
 
@@ -91,8 +99,14 @@ Note: We set `use_torchvision=True` on-the-fly in CPU mode for `RoIPool` and `Ro
 We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image.
 
 ```shell
-# build an image with PyTorch 1.1, CUDA 10.0 and CUDNN 7.5
+# build an image with PyTorch 1.5, CUDA 10.1
 docker build -t mmdetection docker/
+```
+
+Run it with
+
+```shell
+docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetection
 ```
 
 ### A from-scratch setup script
@@ -114,16 +128,10 @@ pip install -v -e .
 
 ### Using multiple MMDetection versions
 
-If there are more than one mmdetection on your machine, and you want to use them alternatively, the recommended way is to create multiple conda environments and use different environments for different versions.
+The train and test scripts already modify the `PYTHONPATH` to ensure the script use the MMDetection in the current directory.
 
-Another way is to insert the following code to the main scripts (`train.py`, `test.py` or any other scripts you run)
-```python
-import os.path as osp
-import sys
-sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
-```
+To use the default MMDetection installed in the environment rather than that you are working with, you can remove the following line in those scripts
 
-Or run the following command in the terminal of corresponding folder to temporally use the current one.
 ```shell
-export PYTHONPATH=`pwd`:$PYTHONPATH
+PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
 ```

@@ -1,8 +1,8 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init, xavier_init
 
-from ..backbones.resnet import Bottleneck
-from ..builder import HEADS
+from mmdet.models.backbones.resnet import Bottleneck
+from mmdet.models.builder import HEADS
 from .bbox_head import BBoxHead
 
 
@@ -72,13 +72,15 @@ class BasicResBlock(nn.Module):
 class DoubleConvFCBBoxHead(BBoxHead):
     r"""Bbox head used in Double-Head R-CNN
 
-                                      /-> cls
-                  /-> shared convs ->
-                                      \-> reg
-    roi features
-                                      /-> cls
-                  \-> shared fc    ->
-                                      \-> reg
+    .. code-block:: none
+
+                                          /-> cls
+                      /-> shared convs ->
+                                          \-> reg
+        roi features
+                                          /-> cls
+                      \-> shared fc    ->
+                                          \-> reg
     """  # noqa: W605
 
     def __init__(self,

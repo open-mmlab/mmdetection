@@ -3,10 +3,10 @@ from mmcv.cnn import constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import auto_fp16
+from mmdet.models.backbones import ResNet
+from mmdet.models.builder import SHARED_HEADS
+from mmdet.models.utils import ResLayer as _ResLayer
 from mmdet.utils import get_root_logger
-from ..backbones import ResNet
-from ..builder import SHARED_HEADS
-from ..utils import ResLayer as _ResLayer
 
 
 @SHARED_HEADS.register_module()

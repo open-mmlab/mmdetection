@@ -7,9 +7,9 @@ from mmcv.cnn import ConvModule, build_upsample_layer
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import auto_fp16, force_fp32, mask_target
+from mmdet.models.builder import HEADS, build_loss
 from mmdet.ops import Conv2d
 from mmdet.ops.carafe import CARAFEPack
-from ..builder import HEADS, build_loss
 
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
