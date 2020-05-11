@@ -10,8 +10,9 @@ CommandLine:
 """
 import torch
 
-from mmdet.core import MaxIoUAssigner
-from mmdet.core.bbox.assigners import ApproxMaxIoUAssigner, PointAssigner
+from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
+                                       CenterRegionAssigner, MaxIoUAssigner,
+                                       PointAssigner)
 
 
 def test_max_iou_assigner():
@@ -49,7 +50,7 @@ def test_max_iou_assigner_with_ignore():
         [0, 0, 10, 10],
         [10, 10, 20, 20],
         [5, 5, 15, 15],
-        [32, 32, 38, 42],
+        [30, 32, 40, 42],
     ])
     gt_bboxes = torch.FloatTensor([
         [0, 0, 10, 9],
@@ -311,3 +312,91 @@ def test_random_assign_result():
     AssignResult.random(num_gts=7, num_preds=7)
     AssignResult.random(num_gts=7, num_preds=64)
     AssignResult.random(num_gts=24, num_preds=3)
+
+
+def test_center_region_assigner():
+    self = CenterRegionAssigner(pos_scale=0.3, neg_scale=1)
+    bboxes = torch.FloatTensor([[0, 0, 10, 10], [10, 10, 20, 20], [8, 8, 9,
+                                                                   9]])
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 11, 11],  # match bboxes[0]
+        [10, 10, 20, 20],  # match bboxes[1]
+        [4.5, 4.5, 5.5, 5.5],  # match bboxes[0] but area is too small
+        [0, 0, 10, 10],  # match bboxes[1] and has a smaller area than gt[0]
+    ])
+    gt_labels = torch.LongTensor([2, 3, 4, 5])
+    assign_result = self.assign(bboxes, gt_bboxes, gt_labels=gt_labels)
+    assert len(assign_result.gt_inds) == 3
+    assert len(assign_result.labels) == 3
+    expected_gt_inds = torch.LongTensor([4, 2, 0])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
+    shadowed_labels = assign_result.get_extra_property('shadowed_labels')
+    # [8, 8, 9, 9] in the shadowed region of [0, 0, 11, 11] (label: 2)
+    assert torch.any(shadowed_labels == torch.LongTensor([[2, 2]]))
+    # [8, 8, 9, 9] in the shadowed region of [0, 0, 10, 10] (label: 5)
+    assert torch.any(shadowed_labels == torch.LongTensor([[2, 5]]))
+    # [0, 0, 10, 10] is already assigned to [4.5, 4.5, 5.5, 5.5].
+    #   Therefore, [0, 0, 11, 11] (label: 2) is shadowed
+    assert torch.any(shadowed_labels == torch.LongTensor([[0, 2]]))
+
+
+def test_center_region_assigner_with_ignore():
+    self = CenterRegionAssigner(
+        pos_scale=0.5,
+        neg_scale=1,
+    )
+    bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+    ])
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],  # match bboxes[0]
+        [10, 10, 20, 20],  # match bboxes[1]
+    ])
+    gt_bboxes_ignore = torch.FloatTensor([
+        [0, 0, 10, 10],  # match bboxes[0]
+    ])
+    gt_labels = torch.LongTensor([1, 2])
+    assign_result = self.assign(
+        bboxes,
+        gt_bboxes,
+        gt_bboxes_ignore=gt_bboxes_ignore,
+        gt_labels=gt_labels)
+    assert len(assign_result.gt_inds) == 2
+    assert len(assign_result.labels) == 2
+
+    expected_gt_inds = torch.LongTensor([-1, 2])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
+
+
+def test_center_region_assigner_with_empty_bboxes():
+    self = CenterRegionAssigner(
+        pos_scale=0.5,
+        neg_scale=1,
+    )
+    bboxes = torch.empty((0, 4)).float()
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],  # match bboxes[0]
+        [10, 10, 20, 20],  # match bboxes[1]
+    ])
+    gt_labels = torch.LongTensor([1, 2])
+    assign_result = self.assign(bboxes, gt_bboxes, gt_labels=gt_labels)
+    assert assign_result.gt_inds is None or assign_result.gt_inds.numel() == 0
+    assert assign_result.labels is None or assign_result.labels.numel() == 0
+
+
+def test_center_region_assigner_with_empty_gts():
+    self = CenterRegionAssigner(
+        pos_scale=0.5,
+        neg_scale=1,
+    )
+    bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+    ])
+    gt_bboxes = torch.empty((0, 4)).float()
+    gt_labels = torch.empty((0, )).long()
+    assign_result = self.assign(bboxes, gt_bboxes, gt_labels=gt_labels)
+    assert len(assign_result.gt_inds) == 2
+    expected_gt_inds = torch.LongTensor([0, 0])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)

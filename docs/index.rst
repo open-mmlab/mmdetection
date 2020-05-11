@@ -4,12 +4,17 @@ Welcome to MMDetection's documentation!
 .. toctree::
    :maxdepth: 2
 
-   INSTALL.md
-   GETTING_STARTED.md
-   MODEL_ZOO.md
-   TECHNICAL_DETAILS.md
-   CHANGELOG.md
-
+   install.md
+   getting_started.md
+   config.md
+   model_zoo.md
+   tutorials/finetune.md
+   tutorials/new_dataset.md
+   tutorials/data_pipeline.md
+   tutorials/new_modules.md
+   compatibility.md
+   changelog.md
+   api.rst
 
 
 Indices and tables

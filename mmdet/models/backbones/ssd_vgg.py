@@ -5,10 +5,10 @@ from mmcv.cnn import VGG, constant_init, kaiming_init, normal_init, xavier_init
 from mmcv.runner import load_checkpoint
 
 from mmdet.utils import get_root_logger
-from ..registry import BACKBONES
+from ..builder import BACKBONES
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class SSDVGG(VGG):
     """VGG Backbone network for single-shot-detection
 

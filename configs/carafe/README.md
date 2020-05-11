@@ -18,12 +18,12 @@ We provide config files to reproduce the object detection & instance segmentatio
 
 The results on COCO 2017 val is shown in the below table.
 
-| Method |    Backbone     |  Style  | Lr schd | Test Proposal Num| Box AP |   Mask AP |                                                                 Download                                                                    |
-| :--------------------: | :-------------: | :-----: | :-----: | :--------------: | :----: | :--------: |:----------------------------------------------------------------------------------------------------: |
-| Faster R-CNN w/ CARAFE |    R-50-FPN  |  pytorch  |   1x    | 1000 |  37.8  | -  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/carafe/faster_rcnn_r50_fpn_carafe_1x-2ca2d094.pth)  |
-| - |    -  |  -  |   -    | 2000 |  37.9  | -  | -  |
-| Mask R-CNN w/ CARAFE |    R-50-FPN  |  pytorch  |   1x   | 1000 |  38.6   | 35.6| [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/carafe/mask_rcnn_r50_fpn_carafe_1x-2cc4b9fe.pth) |
-| - |   -  |  -  |   -   | 2000 |  38.6   | 35.7| - |
+| Method                 | Backbone | Style   | Lr schd | Test Proposal Num| Box AP | Mask AP | Download |
+| :--------------------: | :------: | :-----: |:-------:| :--------------: | :----: | :--------: |:-------: |
+| Faster R-CNN w/ CARAFE | R-50-FPN | pytorch | 1x      | 1000 |           |        |  |
+| -                      |    -     |  -      | -       | 2000 |           |        |  |
+| Mask R-CNN w/ CARAFE   | R-50-FPN | pytorch | 1x      | 1000 |           |        |  |
+| -                      |   -      |  -      |   -     | 2000 |           |        |  |
 
 ## Implementation
 
@@ -42,7 +42,7 @@ Git clone mmdetection.
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
-Setup CARAFE in our project.
+Setup CARAFE in your own project.
 ```shell
 cp -r ./mmdet/ops/carafe $Your_Project_Path$
 cd $Your_Project_Path$/carafe

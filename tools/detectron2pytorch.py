@@ -48,27 +48,21 @@ def convert(src, dst, depth):
     for i in range(1, len(block_nums) + 1):
         for j in range(block_nums[i - 1]):
             if j == 0:
-                convert_conv_fc(blobs, state_dict,
-                                'res{}_{}_branch1'.format(i + 1, j),
-                                'layer{}.{}.downsample.0'.format(i, j),
-                                converted_names)
-                convert_bn(blobs, state_dict,
-                           'res{}_{}_branch1_bn'.format(i + 1, j),
-                           'layer{}.{}.downsample.1'.format(i, j),
-                           converted_names)
+                convert_conv_fc(blobs, state_dict, f'res{i + 1}_{j}_branch1',
+                                f'layer{i}.{j}.downsample.0', converted_names)
+                convert_bn(blobs, state_dict, f'res{i + 1}_{j}_branch1_bn',
+                           f'layer{i}.{j}.downsample.1', converted_names)
             for k, letter in enumerate(['a', 'b', 'c']):
                 convert_conv_fc(blobs, state_dict,
-                                'res{}_{}_branch2{}'.format(i + 1, j, letter),
-                                'layer{}.{}.conv{}'.format(i, j, k + 1),
-                                converted_names)
+                                f'res{i + 1}_{j}_branch2{letter}',
+                                f'layer{i}.{j}.conv{k+1}', converted_names)
                 convert_bn(blobs, state_dict,
-                           'res{}_{}_branch2{}_bn'.format(i + 1, j, letter),
-                           'layer{}.{}.bn{}'.format(i, j,
-                                                    k + 1), converted_names)
+                           f'res{i + 1}_{j}_branch2{letter}_bn',
+                           f'layer{i}.{j}.bn{k + 1}', converted_names)
     # check if all layers are converted
     for key in blobs:
         if key not in converted_names:
-            print('Not Convert: {}'.format(key))
+            print(f'Not Convert: {key}')
     # save checkpoint
     checkpoint = dict()
     checkpoint['state_dict'] = state_dict

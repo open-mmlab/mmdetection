@@ -1,9 +1,9 @@
 from mmdet.core import eval_map, eval_recalls
-from .registry import DATASETS
+from .builder import DATASETS
 from .xml_style import XMLDataset
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class VOCDataset(XMLDataset):
 
     CLASSES = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car',
@@ -32,7 +32,7 @@ class VOCDataset(XMLDataset):
             metric = metric[0]
         allowed_metrics = ['mAP', 'recall']
         if metric not in allowed_metrics:
-            raise KeyError('metric {} is not supported'.format(metric))
+            raise KeyError(f'metric {metric} is not supported')
         annotations = [self.get_ann_info(i) for i in range(len(self))]
         eval_results = {}
         if metric == 'mAP':
@@ -57,10 +57,9 @@ class VOCDataset(XMLDataset):
                 gt_bboxes, results, proposal_nums, iou_thr, logger=logger)
             for i, num in enumerate(proposal_nums):
                 for j, iou in enumerate(iou_thr):
-                    eval_results['recall@{}@{}'.format(num, iou)] = recalls[i,
-                                                                            j]
+                    eval_results[f'recall@{num}@{iou}'] = recalls[i, j]
             if recalls.shape[1] > 1:
                 ar = recalls.mean(axis=1)
                 for i, num in enumerate(proposal_nums):
-                    eval_results['AR@{}'.format(num)] = ar[i]
+                    eval_results[f'AR@{num}'] = ar[i]
         return eval_results

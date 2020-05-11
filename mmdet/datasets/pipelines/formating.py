@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from mmcv.parallel import DataContainer as DC
 
-from ..registry import PIPELINES
+from ..builder import PIPELINES
 
 
 def to_tensor(data):
@@ -25,11 +25,10 @@ def to_tensor(data):
     elif isinstance(data, float):
         return torch.FloatTensor([data])
     else:
-        raise TypeError('type {} cannot be converted to tensor.'.format(
-            type(data)))
+        raise TypeError(f'type {type(data)} cannot be converted to tensor.')
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class ToTensor(object):
 
     def __init__(self, keys):
@@ -41,10 +40,10 @@ class ToTensor(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(keys={})'.format(self.keys)
+        return self.__class__.__name__ + f'(keys={self.keys})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class ImageToTensor(object):
 
     def __init__(self, keys):
@@ -59,10 +58,10 @@ class ImageToTensor(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(keys={})'.format(self.keys)
+        return self.__class__.__name__ + f'(keys={self.keys})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Transpose(object):
 
     def __init__(self, keys, order):
@@ -75,11 +74,11 @@ class Transpose(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(keys={}, order={})'.format(
-            self.keys, self.order)
+        return self.__class__.__name__ + \
+            f'(keys={self.keys}, order={self.order})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class ToDataContainer(object):
 
     def __init__(self,
@@ -95,10 +94,10 @@ class ToDataContainer(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + '(fields={})'.format(self.fields)
+        return self.__class__.__name__ + f'(fields={self.fields})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class DefaultFormatBundle(object):
     """Default formatting bundle.
 
@@ -138,7 +137,7 @@ class DefaultFormatBundle(object):
         return self.__class__.__name__
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Collect(object):
     """
     Collect data from the loader relevant to the specific task.
@@ -182,11 +181,43 @@ class Collect(object):
         img_meta = {}
         for key in self.meta_keys:
             img_meta[key] = results[key]
-        data['img_meta'] = DC(img_meta, cpu_only=True)
+        data['img_metas'] = DC(img_meta, cpu_only=True)
         for key in self.keys:
             data[key] = results[key]
         return data
 
     def __repr__(self):
-        return self.__class__.__name__ + '(keys={}, meta_keys={})'.format(
-            self.keys, self.meta_keys)
+        return self.__class__.__name__ + \
+            f'(keys={self.keys}, meta_keys={self.meta_keys})'
+
+
+@PIPELINES.register_module()
+class WrapFieldsToLists(object):
+    """
+    Wrap fields of the data dictionary into lists for evaluation.
+
+    This class can be used as a last step of a test or validation
+    pipeline for single image evaluation or inference.
+
+    Example:
+        >>> test_pipeline = [
+        >>>    dict(type='LoadImageFromFile'),
+        >>>    dict(type='Normalize',
+                    mean=[123.675, 116.28, 103.53],
+                    std=[58.395, 57.12, 57.375],
+                    to_rgb=True),
+        >>>    dict(type='Pad', size_divisor=32),
+        >>>    dict(type='ImageToTensor', keys=['img']),
+        >>>    dict(type='Collect', keys=['img']),
+        >>>    dict(type='WrapIntoLists')
+        >>> ]
+    """
+
+    def __call__(self, results):
+        # Wrap dict fields into lists
+        for key, val in results.items():
+            results[key] = [val]
+        return results
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}()'
