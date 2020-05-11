@@ -241,11 +241,12 @@ class FSAFHead(RetinaHead):
             min_levels=argmin)
         num_pos = torch.cat(pos_inds, 0).sum().float()
         acc = self.calculate_accuracy(cls_scores, labels_list, pos_inds)
+
+        if num_pos == 0:  # No gt
+            avg_factor = num_pos + float(num_total_neg)
+        else:
+            avg_factor = num_pos
         for i in range(len(losses_cls)):
-            if num_pos == 0:
-                avg_factor = num_pos + float(num_total_neg)
-            else:
-                avg_factor = num_pos
             losses_cls[i] /= avg_factor
             losses_bbox[i] /= avg_factor
         return dict(
