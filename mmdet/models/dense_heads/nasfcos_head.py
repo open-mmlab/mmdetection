@@ -17,8 +17,17 @@ class NASFCOSHead(FCOSHead):
     of classification branch and bbox regression branch, where a structure
     of "dconv3x3, conv3x3, dconv3x3, conv1x1"  is utilized instead.
 
+     Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        arch (list): A list composed of dicts, where each dict defines
+            a convolution layer correspondingly, includes type, kernel,
+            padding, etc.
+
     Example:
-        >>> self = NASFCOSHead(11, 7, ["dconv3x3", "skip", "conv3x3", "skip", "dconv3x3", "conv1x1"])
+        >>> arch = [dict(type='Conv', kernel_size=1)]
+        >>> self = NASFCOSHead(11, 7, arch)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
         >>> cls_score, bbox_pred, centerness = self.forward(feats)
         >>> assert len(cls_score) == len(self.scales)
@@ -29,6 +38,7 @@ class NASFCOSHead(FCOSHead):
                  in_channels,
                  arch,
                  **kwargs):
+        assert isinstance(arch, list) and len(arch) > 0
         self.arch = arch
         super(NASFCOSHead, self).__init__(num_classes,
                                           in_channels,
@@ -39,18 +49,15 @@ class NASFCOSHead(FCOSHead):
         self.reg_convs = nn.ModuleList()
         for i, op in enumerate(self.arch):
             chn = self.in_channels if i == 0 else self.feat_channels
-            if op == "skip" : continue
-            elif op=="dconv3x3" or op=="conv3x3" or "conv1x1":
-                ccfg = self.conv_cfg if op[0]=="d" else dict(type='Conv')
-                ksize = 3 if "3" in op else 1
-                use_bias = op=="dconv3x3"
-                padding = 1 if op!="conv1x1" else 0
-                module = ConvModule(chn, self.feat_channels, ksize,
-                                    stride=1, padding=padding,
-                                    norm_cfg=self.norm_cfg,
-                                    bias=use_bias, conv_cfg=ccfg)
-            else:
-                raise NotImplementedError
+            assert isinstance(op, dict)
+            use_bias = op.pop("use_bias", False)
+            padding = op.pop("padding", 0)
+            kernel_size = op.pop("kernel_size")
+            module = ConvModule(chn, self.feat_channels,
+                                kernel_size,
+                                stride=1, padding=padding,
+                                norm_cfg=self.norm_cfg,
+                                bias=use_bias, conv_cfg=op)
 
             self.cls_convs.append(copy.deepcopy(module))
             self.reg_convs.append(copy.deepcopy(module))
@@ -79,7 +86,6 @@ class NASFCOSHead(FCOSHead):
                     if hasattr(k, "reset_parameters"):
                         k.reset_parameters()
                 if hasattr(m, "conv") and \
-                    isinstance(m.conv, ModulatedDeformConvPack):
+                        isinstance(m.conv, ModulatedDeformConvPack):
                     m.conv.init_offset()
                     m.conv.reset_parameters()
-

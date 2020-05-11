@@ -3,9 +3,22 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
+dconv_head_3x3 = dict(type='DCNv2',
+                      kernel_size=3,
+                      deformable_groups=2,
+                      use_bias=True,
+                      padding=1)
+
+conv_head_3x3 = dict(type='Conv',
+                     kernel_size=3,
+                     padding=1)
+
+conv_head_1x1 = dict(type='Conv',
+                     kernel_size=1)
+
 model = dict(
     type='NASFCOS',
-    pretrained = 'open-mmlab://resnet50_caffe',
+    pretrained='open-mmlab://resnet50_caffe',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -21,8 +34,8 @@ model = dict(
         start_level=1,
         add_extra_convs=True,
         num_outs=5,
-        norm_cfg = dict(type='BN'),
-        conv_cfg = dict(type='DCNv2', deformable_groups=2)
+        norm_cfg=dict(type='BN'),
+        conv_cfg=dict(type='DCNv2', deformable_groups=2)
     ),
 
     bbox_head=dict(
@@ -31,8 +44,7 @@ model = dict(
         in_channels=256,
         feat_channels=256,
         strides=[8, 16, 32, 64, 128],
-        arch = ["dconv3x3", "skip", "conv3x3",
-                "skip", "dconv3x3", "conv1x1"],
+        arch=[dconv_head_3x3, conv_head_3x3, dconv_head_3x3, conv_head_1x1],
         norm_cfg=dict(type='GN', num_groups=32),
         conv_cfg=dict(type='DCNv2', deformable_groups=2),
         loss_cls=dict(
@@ -44,7 +56,6 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)))
-
 
 train_cfg = dict(
     assigner=dict(

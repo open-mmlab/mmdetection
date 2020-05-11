@@ -19,24 +19,24 @@ class MergingCell(nn.Module):
 
         if out_conv:
             self.out_conv = \
-                ConvModule(channels*2, channels, 1,
-                            padding=0, bias=False,
-                            groups=channels,
-                            norm_cfg = dict(type='BN', affine=True),
-                            act_cfg = dict(type='ReLU', inplace = False),
-                            order=('norm', 'act', 'conv'))
+                ConvModule(channels * 2, channels, 1,
+                           padding=0, bias=False,
+                           groups=channels,
+                           norm_cfg=dict(type='BN', affine=True),
+                           act_cfg=dict(type='ReLU', inplace=False),
+                           order=('norm', 'act', 'conv'))
 
     def _binary_op(self, x1, x2):
         raise NotImplementedError
 
     def _build_op_block(self, op, c, conv_cfg, norm_cfg):
-        if op=="conv":
+        if op == "conv":
             return ConvModule(c, c, 3, padding=1,
                               conv_cfg=conv_cfg,
                               norm_cfg=norm_cfg,
                               bias=True)
 
-        elif op=="skip":
+        elif op == "skip":
             return nn.Sequential()
         else:
             raise NotImplementedError
@@ -62,6 +62,7 @@ class MergingCell(nn.Module):
 
         return out
 
+
 class SumCell(MergingCell):
     def __init__(self, x1_op, x2_op,
                  channels=None, conv_cfg=None, norm_cfg=None):
@@ -71,6 +72,7 @@ class SumCell(MergingCell):
 
     def _binary_op(self, x1, x2):
         return x1 + x2
+
 
 class ConcatCell(MergingCell):
     def __init__(self, x1_op, x2_op,
@@ -99,8 +101,8 @@ class NASFCOS_FPN(nn.Module):
                  start_level=1,
                  end_level=-1,
                  add_extra_convs=False,
-                 conv_cfg = None,
-                 norm_cfg = None):
+                 conv_cfg=None,
+                 norm_cfg=None):
         super(NASFCOS_FPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -134,13 +136,13 @@ class NASFCOS_FPN(nn.Module):
 
         # Donate c3=f0, c4=f1, c5=f2 for convince
         self.fpn = nn.ModuleDict()
-        self.fpn["c22_1"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg) # f3
-        self.fpn["c22_2"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg) # f4
+        self.fpn["c22_1"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f3
+        self.fpn["c22_2"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f4
         self.fpn["c32"] = ConcatCell("conv", "skip", out_channels, conv_cfg, norm_cfg)  # f5
-        self.fpn["c02"] = ConcatCell("conv", "skip", out_channels, conv_cfg, norm_cfg)   # f6
+        self.fpn["c02"] = ConcatCell("conv", "skip", out_channels, conv_cfg, norm_cfg)  # f6
         self.fpn["c42"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f7
-        self.fpn["c36"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)   # f8
-        self.fpn["c61"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)   # f9
+        self.fpn["c36"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f8
+        self.fpn["c61"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f9
         self.extra_downsamples = nn.ModuleList()
         for i in range(extra_levels):
             extra_act_cfg = None if i == 0 else dict(type='ReLU', inplace=False)
@@ -162,7 +164,7 @@ class NASFCOS_FPN(nn.Module):
             feats.append(res)
 
         ret = []
-        for (idx, input_idx) in zip([9, 8, 7], [1, 2, 3]): # add P3, P4, P5
+        for (idx, input_idx) in zip([9, 8, 7], [1, 2, 3]):  # add P3, P4, P5
             feats1, feats2 = feats[idx], feats[5]
             feats2_resize = F.interpolate(feats2, size=feats1.size()[2:],
                                           mode='bilinear',
@@ -181,8 +183,8 @@ class NASFCOS_FPN(nn.Module):
     def init_weights(self):
         for m in self.adapt_convs.modules():
             if isinstance(m, nn.Conv2d) \
-                or isinstance(m, nn.BatchNorm2d):
-                    m.reset_parameters()
+                    or isinstance(m, nn.BatchNorm2d):
+                m.reset_parameters()
 
         for m in self.extra_downsamples.modules():
             if isinstance(m, nn.Conv2d):
@@ -198,5 +200,3 @@ class NASFCOS_FPN(nn.Module):
             if hasattr(m, "out_conv"):
                 m.out_conv.conv.reset_parameters()
                 m.out_conv.bn.reset_parameters()
-
-

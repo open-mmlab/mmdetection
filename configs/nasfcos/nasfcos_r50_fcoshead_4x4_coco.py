@@ -5,7 +5,7 @@ _base_ = [
 
 model = dict(
     type='NASFCOS',
-    pretrained = 'open-mmlab://resnet50_caffe',
+    pretrained='open-mmlab://resnet50_caffe',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -21,8 +21,8 @@ model = dict(
         start_level=1,
         add_extra_convs=True,
         num_outs=5,
-        norm_cfg = dict(type='BN'),
-        conv_cfg = dict(type='DCNv2', deformable_groups=2)
+        norm_cfg=dict(type='BN'),
+        conv_cfg=dict(type='DCNv2', deformable_groups=2)
     ),
 
     bbox_head=dict(
@@ -32,7 +32,7 @@ model = dict(
         stacked_convs=4,
         feat_channels=256,
         strides=[8, 16, 32, 64, 128],
-        norm_cfg = dict(type='GN', num_groups=32),
+        norm_cfg=dict(type='GN', num_groups=32),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -42,7 +42,6 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)))
-
 
 train_cfg = dict(
     assigner=dict(
