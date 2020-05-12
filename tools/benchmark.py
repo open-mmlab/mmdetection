@@ -52,23 +52,16 @@ def main():
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
         wrap_fp16_model(model)
-    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
+    load_checkpoint(model, args.checkpoint, map_location='cpu')
     if args.fuse_conv_bn:
         model = fuse_module(model)
-    # old versions did not save class info in checkpoints, this walkaround is
-    # for backward compatibility
-    if 'CLASSES' in checkpoint['meta']:
-        model.CLASSES = checkpoint['meta']['CLASSES']
-    else:
-        model.CLASSES = dataset.CLASSES
 
     model = MMDataParallel(model, device_ids=[0])
 
     model.eval()
-    dataset = data_loader.dataset
 
     # the first several iterations may be very slow so skip them
-    num_warmup = min(5, len(dataset) - 1)
+    num_warmup = 5
     pure_inf_time = 0
 
     # benchmark with 200 image and take the average
