@@ -90,23 +90,20 @@ def train_detector(model,
     logger = get_root_logger(cfg.log_level)
 
     # prepare data loaders
-    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
-    if 'imgs_per_gpu' in cfg.data and 'samples_per_gpu' in cfg.data:
+    dataset = dataset if isinstance(dataset, (list, tuple)) else[dataset]
+    if 'imgs_per_gpu' in cfg.data:
         logger.warning(
             '"imgs_per_gpu" is deprecated in MMDet V2.0. '
             'Please use "samples_per_gpu" instead')
-        logger.warning(
-            f'Got "imgs_per_gpu"={cfg.data.imgs_per_gpu} and "samples_per_gpu"'
-            f'={cfg.data.samples_per_gpu}, "imgs_per_gpu"='
-            f'{cfg.data.imgs_per_gpu} is used in this experiments')
-        cfg.data.samples_per_gpu = cfg.data.imgs_per_gpu
-    elif 'imgs_per_gpu' in cfg.data and 'samples_per_gpu' not in cfg.data:
-        logger.warning(
-            '"imgs_per_gpu" is deprecated in MMDet V2.0. '
-            'Please use "samples_per_gpu" instead')
-        logger.warning(
-            'Automatically set "samples_per_gpu"="imgs_per_gpu"='
-            f'{cfg.data.imgs_per_gpu} in this experiments')
+        if 'samples_per_gpu' in cfg.data:
+            logger.warning(
+                f'Got "imgs_per_gpu"={cfg.data.imgs_per_gpu} and '
+                f'"samples_per_gpu"={cfg.data.samples_per_gpu}, "imgs_per_gpu"'
+                f'={cfg.data.imgs_per_gpu} is used in this experiments')
+        else:
+            logger.warning(
+                'Automatically set "samples_per_gpu"="imgs_per_gpu"='
+                f'{cfg.data.imgs_per_gpu} in this experiments')
         cfg.data.samples_per_gpu = cfg.data.imgs_per_gpu
 
     data_loaders = [
