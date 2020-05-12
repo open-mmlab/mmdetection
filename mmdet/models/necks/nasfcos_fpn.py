@@ -86,7 +86,8 @@ class NASFCOS_FPN(nn.Module):
         self.fpn["c61"] = build_concat_cell(True, True)  # f9
         self.extra_downsamples = nn.ModuleList()
         for i in range(extra_levels):
-            extra_act_cfg = None if i == 0 else dict(type='ReLU', inplace=False)
+            extra_act_cfg = None if i == 0 \
+                else dict(type='ReLU', inplace=False)
             self.extra_downsamples.append(
                 ConvModule(out_channels, out_channels, 3,
                            stride=2, padding=1, norm_cfg=None,

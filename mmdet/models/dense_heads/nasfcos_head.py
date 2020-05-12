@@ -11,7 +11,7 @@ from ..builder import HEADS
 
 @HEADS.register_module()
 class NASFCOSHead(FCOSHead):
-    """Anchor-free head used in `NASFCOS <https://arxiv.org/abs/1906.04423>`_.
+    """Anchor-free head used in `NASFCOS <https://arxiv.org/abs/1906.04423>
 
     It is quite similar with FCOS head, except for the searched structure
     of classification branch and bbox regression branch, where a structure
@@ -73,10 +73,10 @@ class NASFCOSHead(FCOSHead):
         # retinanet_bias_init
         bias_cls = bias_init_with_prob(0.01)
         for modules in [self.fcos_cls, self.fcos_reg, self.fcos_centerness]:
-            for l in modules.modules():
-                if isinstance(l, nn.Conv2d):
-                    torch.nn.init.normal_(l.weight, std=0.01)
-                    torch.nn.init.constant_(l.bias, 0)
+            for layer in modules.modules():
+                if isinstance(layer, nn.Conv2d):
+                    torch.nn.init.normal_(layer.weight, std=0.01)
+                    torch.nn.init.constant_(layer.bias, 0)
 
         torch.nn.init.constant_(self.fcos_cls.bias, bias_cls)
 

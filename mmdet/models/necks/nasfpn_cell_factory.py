@@ -38,9 +38,11 @@ class MergingCell(nn.Module):
                 norm_cfg=norm_cfg,
                 order=order)
 
-        self.op1 = self.build_input_conv(channels, input_conv_cfg, input_norm_cfg) \
+        self.op1 = self.build_input_conv(\
+            channels, input_conv_cfg, input_norm_cfg) \
             if with_input_conv_x else nn.Sequential()
-        self.op2 = self.build_input_conv(channels, input_conv_cfg, input_norm_cfg) \
+        self.op2 = self.build_input_conv(\
+            channels, input_conv_cfg, input_norm_cfg) \
             if with_input_conv_y else nn.Sequential()
 
     def build_input_conv(self, channel, conv_cfg, norm_cfg):
