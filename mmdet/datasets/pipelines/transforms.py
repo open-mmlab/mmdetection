@@ -508,9 +508,9 @@ class PhotoMetricDistortion(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(\nbrightness_delta={self.brightness_delta},\n'
-        repr_str += f'contrast_range='
+        repr_str += 'contrast_range='
         repr_str += f'{(self.contrast_lower, self.contrast_upper)},\n'
-        repr_str += f'saturation_range='
+        repr_str += 'saturation_range='
         repr_str += f'{(self.saturation_lower, self.saturation_upper)},\n'
         repr_str += f'hue_delta={self.hue_delta})'
         return repr_str
