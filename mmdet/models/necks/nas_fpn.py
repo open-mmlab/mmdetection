@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import ConvModule, caffe2_xavier_init
 
 from .nasfpn_cell_factory import SumCell, GPCell

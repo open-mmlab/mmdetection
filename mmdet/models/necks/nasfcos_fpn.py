@@ -1,7 +1,5 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
 
 from .nasfpn_cell_factory import ConcatCell
 from ..builder import NECKS

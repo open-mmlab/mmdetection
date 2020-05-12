@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, Scale
 
-from mmdet.models.dense_heads.fcos_head import FCOSHead, INF
+from mmdet.models.dense_heads.fcos_head import FCOSHead
 from mmdet.ops import ModulatedDeformConvPack
 from ..builder import HEADS
 
