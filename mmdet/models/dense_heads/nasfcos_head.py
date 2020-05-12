@@ -2,7 +2,7 @@ import copy
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, Scale
+from mmcv.cnn import ConvModule, Scale, bias_init_with_prob
 
 from mmdet.models.dense_heads.fcos_head import FCOSHead
 from mmdet.ops import ModulatedDeformConvPack
@@ -33,16 +33,10 @@ class NASFCOSHead(FCOSHead):
         >>> assert len(cls_score) == len(self.scales)
     """
 
-    def __init__(self,
-                 num_classes,
-                 in_channels,
-                 arch,
-                 **kwargs):
+    def __init__(self, num_classes, in_channels, arch, **kwargs):
         assert isinstance(arch, list) and len(arch) > 0
         self.arch = arch
-        super(NASFCOSHead, self).__init__(num_classes,
-                                          in_channels,
-                                          **kwargs)
+        super(NASFCOSHead, self).__init__(num_classes, in_channels, **kwargs)
 
     def _init_layers(self):
         self.cls_convs = nn.ModuleList()
@@ -50,14 +44,18 @@ class NASFCOSHead(FCOSHead):
         for i, op in enumerate(self.arch):
             chn = self.in_channels if i == 0 else self.feat_channels
             assert isinstance(op, dict)
-            use_bias = op.pop("use_bias", False)
-            padding = op.pop("padding", 0)
-            kernel_size = op.pop("kernel_size")
-            module = ConvModule(chn, self.feat_channels,
-                                kernel_size,
-                                stride=1, padding=padding,
-                                norm_cfg=self.norm_cfg,
-                                bias=use_bias, conv_cfg=op)
+            use_bias = op.pop('use_bias', False)
+            padding = op.pop('padding', 0)
+            kernel_size = op.pop('kernel_size')
+            module = ConvModule(
+                chn,
+                self.feat_channels,
+                kernel_size,
+                stride=1,
+                padding=padding,
+                norm_cfg=self.norm_cfg,
+                bias=use_bias,
+                conv_cfg=op)
 
             self.cls_convs.append(copy.deepcopy(module))
             self.reg_convs.append(copy.deepcopy(module))
@@ -83,9 +81,9 @@ class NASFCOSHead(FCOSHead):
         for branch in [self.cls_convs, self.reg_convs]:
             for m in branch:
                 for k in m.modules():
-                    if hasattr(k, "reset_parameters"):
+                    if hasattr(k, 'reset_parameters'):
                         k.reset_parameters()
-                if hasattr(m, "conv") and \
+                if hasattr(m, 'conv') and \
                         isinstance(m.conv, ModulatedDeformConvPack):
                     m.conv.init_offset()
                     m.conv.reset_parameters()

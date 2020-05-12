@@ -22,9 +22,7 @@ model = dict(
         add_extra_convs=True,
         num_outs=5,
         norm_cfg=dict(type='BN'),
-        conv_cfg=dict(type='DCNv2', deformable_groups=2)
-    ),
-
+        conv_cfg=dict(type='DCNv2', deformable_groups=2)),
     bbox_head=dict(
         type='FCOSHead',
         num_classes=81,

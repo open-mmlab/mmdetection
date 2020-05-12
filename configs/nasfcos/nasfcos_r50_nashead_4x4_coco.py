@@ -3,18 +3,12 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-dconv_head_3x3 = dict(type='DCNv2',
-                      kernel_size=3,
-                      deformable_groups=2,
-                      use_bias=True,
-                      padding=1)
+dconv_head_3x3 = dict(
+    type='DCNv2', kernel_size=3, deformable_groups=2, use_bias=True, padding=1)
 
-conv_head_3x3 = dict(type='Conv',
-                     kernel_size=3,
-                     padding=1)
+conv_head_3x3 = dict(type='Conv', kernel_size=3, padding=1)
 
-conv_head_1x1 = dict(type='Conv',
-                     kernel_size=1)
+conv_head_1x1 = dict(type='Conv', kernel_size=1)
 
 model = dict(
     type='NASFCOS',
@@ -35,9 +29,7 @@ model = dict(
         add_extra_convs=True,
         num_outs=5,
         norm_cfg=dict(type='BN'),
-        conv_cfg=dict(type='DCNv2', deformable_groups=2)
-    ),
-
+        conv_cfg=dict(type='DCNv2', deformable_groups=2)),
     bbox_head=dict(
         type='NASFCOSHead',
         num_classes=81,

@@ -1,14 +1,14 @@
 import torch
-from mmcv.cnn import ConvModule
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import ConvModule
 
 
 class MergingCell(nn.Module):
 
     def __init__(self,
                  channels=256,
-                 binary_op_type="sum",
+                 binary_op_type='sum',
                  with_conv=True,
                  conv_cfg=None,
                  norm_cfg=None,
@@ -17,7 +17,7 @@ class MergingCell(nn.Module):
                  with_input_conv_y=False,
                  input_conv_cfg=None,
                  input_norm_cfg=None,
-                 resize_methods="interpolate"):
+                 resize_methods='interpolate'):
         super(MergingCell, self).__init__()
         self.with_conv = with_conv
         self.with_x_conv = with_input_conv_x
@@ -25,12 +25,12 @@ class MergingCell(nn.Module):
         self.resize_methods = resize_methods
 
         if self.with_conv:
-            groups = conv_cfg.pop("groups", 1)
-            kernel_size = conv_cfg.pop("kernel_size", 3)
-            padding = conv_cfg.pop("kernel_size", 1)
-            bias = conv_cfg.pop("bias", True)
+            groups = conv_cfg.pop('groups', 1)
+            kernel_size = conv_cfg.pop('kernel_size', 3)
+            padding = conv_cfg.pop('kernel_size', 1)
+            bias = conv_cfg.pop('bias', True)
             in_channels = channels \
-                if binary_op_type == "sum" \
+                if binary_op_type == 'sum' \
                 else channels * 2
             self.conv_out = ConvModule(
                 in_channels,
@@ -66,9 +66,9 @@ class MergingCell(nn.Module):
         if x.shape[-2:] == size:
             return x
         elif x.shape[-2:] < size:
-            if self.resize_methods == "interpolate":
+            if self.resize_methods == 'interpolate':
                 return F.interpolate(x, size=size, mode='nearest')
-            elif self.resize_methods == "upsample":
+            elif self.resize_methods == 'upsample':
                 return nn.Upsample(size=size, mode='bilinear')(x)
             else:
                 raise NotImplementedError

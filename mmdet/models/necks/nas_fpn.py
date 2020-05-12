@@ -1,8 +1,8 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, caffe2_xavier_init
 
-from .nasfpn_cell_factory import SumCell, GPCell
 from ..builder import NECKS
+from .nasfpn_cell_factory import GPCell, SumCell
 
 
 @NECKS.register_module()
