@@ -10,7 +10,7 @@ class MergingCell(nn.Module):
                  channels=256,
                  binary_op_type='sum',
                  with_conv=True,
-                 conv_cfg=None,
+                 conv_cfg=dict(),
                  norm_cfg=None,
                  order=('act', 'conv', 'norm'),
                  with_input_conv_x=False,
