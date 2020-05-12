@@ -264,7 +264,8 @@ class FSAFHead(RetinaHead):
                 for cls, pos in zip(cls_scores, pos_inds)
             ]
             labels = [
-                l.reshape(-1)[pos] for l, pos in zip(labels_list, pos_inds)
+                label.reshape(-1)[pos]
+                for label, pos in zip(labels_list, pos_inds)
             ]
 
             def argmax(x):
