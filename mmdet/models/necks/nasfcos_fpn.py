@@ -3,87 +3,90 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import xavier_init
 
+from .nasfpn_cell_factory import ConcatCell
 from ..builder import NECKS
 
 from mmdet.ops import ModulatedDeformConvPack
 from mmcv.cnn import ConvModule
 
 
-class MergingCell(nn.Module):
-    def __init__(self, x1_op, x2_op, out_conv,
-                 channels, conv_cfg=None, norm_cfg=None):
-        super(MergingCell, self).__init__()
-
-        self.op1 = self._build_op_block(x1_op, channels, conv_cfg, norm_cfg)
-        self.op2 = self._build_op_block(x2_op, channels, conv_cfg, norm_cfg)
-
-        if out_conv:
-            self.out_conv = \
-                ConvModule(channels * 2, channels, 1,
-                           padding=0, bias=False,
-                           groups=channels,
-                           norm_cfg=dict(type='BN', affine=True),
-                           act_cfg=dict(type='ReLU', inplace=False),
-                           order=('norm', 'act', 'conv'))
-
-    def _binary_op(self, x1, x2):
-        raise NotImplementedError
-
-    def _build_op_block(self, op, c, conv_cfg, norm_cfg):
-        if op == "conv":
-            return ConvModule(c, c, 3, padding=1,
-                              conv_cfg=conv_cfg,
-                              norm_cfg=norm_cfg,
-                              bias=True)
-
-        elif op == "skip":
-            return nn.Sequential()
-        else:
-            raise NotImplementedError
-
-    def _resize_largest(self, x1, x2):
-        # resize both x and y to max_size(x, y)
-        if x1.size()[2:] > x2.size()[2:]:
-            x2 = nn.Upsample(size=x1.size()[2:],
-                             mode='bilinear')(x2)
-        elif x1.size()[2:] < x2.size()[2:]:
-            x1 = nn.Upsample(size=x2.size()[2:],
-                             mode='bilinear')(x1)
-        return x1, x2
-
-    def forward(self, x1, x2):
-        out1 = self.op1(x1)
-        out2 = self.op2(x2)
-        out1, out2 = self._resize_largest(out1, out2)
-        out_op = self._binary_op(out1, out2)
-
-        if hasattr(self, "out_conv"):
-            out = self.out_conv(out_op)
-
-        return out
-
-
-class SumCell(MergingCell):
-    def __init__(self, x1_op, x2_op,
-                 channels=None, conv_cfg=None, norm_cfg=None):
-        super(SumCell, self).__init__(x1_op, x2_op,
-                                      False, channels,
-                                      conv_cfg, norm_cfg)
-
-    def _binary_op(self, x1, x2):
-        return x1 + x2
-
-
-class ConcatCell(MergingCell):
-    def __init__(self, x1_op, x2_op,
-                 channels, conv_cfg=None, norm_cfg=None):
-        super(ConcatCell, self).__init__(x1_op, x2_op,
-                                         True, channels,
-                                         conv_cfg, norm_cfg)
-
-    def _binary_op(self, x1, x2):
-        ret = torch.cat([x1, x2], dim=1)
-        return ret
+# class MergingCell(nn.Module):
+#     def __init__(self, x1_op, x2_op, out_conv,
+#                  channels, conv_cfg=None, norm_cfg=None):
+#         super(MergingCell, self).__init__()
+#
+#         self.op1 = self._build_op_block(x1_op, channels, conv_cfg, norm_cfg)
+#         self.op2 = self._build_op_block(x2_op, channels, conv_cfg, norm_cfg)
+#
+#         if out_conv:
+#             self.out_conv = \
+#                 ConvModule(channels * 2, channels, 1,
+#                            padding=0, bias=False,
+#                            groups=channels,
+#                            norm_cfg=dict(type='BN', affine=True),
+#                            act_cfg=dict(type='ReLU', inplace=False),
+#                            order=('norm', 'act', 'conv'))
+#
+#
+#
+#     def _binary_op(self, x1, x2):
+#         raise NotImplementedError
+#
+#     def _build_op_block(self, op, c, conv_cfg, norm_cfg):
+#         if op == "conv":
+#             return ConvModule(c, c, 3, padding=1,
+#                               conv_cfg=conv_cfg,
+#                               norm_cfg=norm_cfg,
+#                               bias=True)
+#
+#         elif op == "skip":
+#             return nn.Sequential()
+#         else:
+#             raise NotImplementedError
+#
+#     def _resize_largest(self, x1, x2):
+#         # resize both x and y to max_size(x, y)
+#         if x1.size()[2:] > x2.size()[2:]:
+#             x2 = nn.Upsample(size=x1.size()[2:],
+#                              mode='bilinear')(x2)
+#         elif x1.size()[2:] < x2.size()[2:]:
+#             x1 = nn.Upsample(size=x2.size()[2:],
+#                              mode='bilinear')(x1)
+#         return x1, x2
+#
+#     def forward(self, x1, x2):
+#         out1 = self.op1(x1)
+#         out2 = self.op2(x2)
+#         out1, out2 = self._resize_largest(out1, out2)
+#         out_op = self._binary_op(out1, out2)
+#
+#         if hasattr(self, "out_conv"):
+#             out = self.out_conv(out_op)
+#
+#         return out
+#
+#
+# class SumCell(MergingCell):
+#     def __init__(self, x1_op, x2_op,
+#                  channels=None, conv_cfg=None, norm_cfg=None):
+#         super(SumCell, self).__init__(x1_op, x2_op,
+#                                       False, channels,
+#                                       conv_cfg, norm_cfg)
+#
+#     def _binary_op(self, x1, x2):
+#         return x1 + x2
+#
+#
+# class ConcatCell(MergingCell):
+#     def __init__(self, x1_op, x2_op,
+#                  channels, conv_cfg=None, norm_cfg=None):
+#         super(ConcatCell, self).__init__(x1_op, x2_op,
+#                                          True, channels,
+#                                          conv_cfg, norm_cfg)
+#
+#     def _binary_op(self, x1, x2):
+#         ret = torch.cat([x1, x2], dim=1)
+#         return ret
 
 
 @NECKS.register_module
@@ -134,15 +137,34 @@ class NASFCOS_FPN(nn.Module):
         # C2 is omitted according to the paper
         extra_levels = num_outs - self.backbone_end_level + self.start_level
 
+        def build_concat_cell(with_x_conv, with_y_conv):
+            cell_conv_cfg = dict(
+                kernel_size=1,
+                padding=0,
+                bias=False,
+                groups=out_channels
+            )
+            return ConcatCell(out_channels,
+                              "concat",
+                              True,
+                              cell_conv_cfg,
+                              dict(type='BN'),
+                              order=('norm', 'act', 'conv'),
+                              with_input_conv_x=with_x_conv,
+                              with_input_conv_y=with_y_conv,
+                              input_conv_cfg=conv_cfg,
+                              input_norm_cfg=norm_cfg,
+                              resize_methods="upsample")
+
         # Donate c3=f0, c4=f1, c5=f2 for convince
         self.fpn = nn.ModuleDict()
-        self.fpn["c22_1"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f3
-        self.fpn["c22_2"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f4
-        self.fpn["c32"] = ConcatCell("conv", "skip", out_channels, conv_cfg, norm_cfg)  # f5
-        self.fpn["c02"] = ConcatCell("conv", "skip", out_channels, conv_cfg, norm_cfg)  # f6
-        self.fpn["c42"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f7
-        self.fpn["c36"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f8
-        self.fpn["c61"] = ConcatCell("conv", "conv", out_channels, conv_cfg, norm_cfg)  # f9
+        self.fpn["c22_1"] = build_concat_cell(True, True)
+        self.fpn["c22_2"] = build_concat_cell(True, True)
+        self.fpn["c32"] = build_concat_cell(True, False)
+        self.fpn["c02"] = build_concat_cell(True, False)
+        self.fpn["c42"] = build_concat_cell(True, True)
+        self.fpn["c36"] = build_concat_cell(True, True)
+        self.fpn["c61"] = build_concat_cell(True, True)  # f9
         self.extra_downsamples = nn.ModuleList()
         for i in range(extra_levels):
             extra_act_cfg = None if i == 0 else dict(type='ReLU', inplace=False)

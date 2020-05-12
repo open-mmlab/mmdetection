@@ -2,65 +2,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, caffe2_xavier_init
 
+from .nasfpn_cell_factory import SumCell, GPCell
 from ..builder import NECKS
-
-
-class MergingCell(nn.Module):
-
-    def __init__(self, channels=256, with_conv=True, norm_cfg=None):
-        super(MergingCell, self).__init__()
-        self.with_conv = with_conv
-        if self.with_conv:
-            self.conv_out = ConvModule(
-                channels,
-                channels,
-                3,
-                padding=1,
-                norm_cfg=norm_cfg,
-                order=('act', 'conv', 'norm'))
-
-    def _binary_op(self, x1, x2):
-        raise NotImplementedError
-
-    def _resize(self, x, size):
-        if x.shape[-2:] == size:
-            return x
-        elif x.shape[-2:] < size:
-            return F.interpolate(x, size=size, mode='nearest')
-        else:
-            assert x.shape[-2] % size[-2] == 0 and x.shape[-1] % size[-1] == 0
-            kernel_size = x.shape[-1] // size[-1]
-            x = F.max_pool2d(x, kernel_size=kernel_size, stride=kernel_size)
-            return x
-
-    def forward(self, x1, x2, out_size):
-        assert x1.shape[:2] == x2.shape[:2]
-        assert len(out_size) == 2
-
-        x1 = self._resize(x1, out_size)
-        x2 = self._resize(x2, out_size)
-
-        x = self._binary_op(x1, x2)
-        if self.with_conv:
-            x = self.conv_out(x)
-        return x
-
-
-class SumCell(MergingCell):
-
-    def _binary_op(self, x1, x2):
-        return x1 + x2
-
-
-class GPCell(MergingCell):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
-
-    def _binary_op(self, x1, x2):
-        x2_att = self.global_pool(x2).sigmoid()
-        return x2 + x2_att * x1
 
 
 @NECKS.register_module()
