@@ -6,8 +6,12 @@ import torch.nn.functional as F
 
 class MergingCell(nn.Module):
 
-    def __init__(self, channels=256, binary_op_type="sum",
-                 with_conv=True, conv_cfg=None, norm_cfg=None,
+    def __init__(self,
+                 channels=256,
+                 binary_op_type="sum",
+                 with_conv=True,
+                 conv_cfg=None,
+                 norm_cfg=None,
                  order=('act', 'conv', 'norm'),
                  with_input_conv_x=False,
                  with_input_conv_y=False,
@@ -38,18 +42,22 @@ class MergingCell(nn.Module):
                 norm_cfg=norm_cfg,
                 order=order)
 
-        self.op1 = self.build_input_conv(\
-            channels, input_conv_cfg, input_norm_cfg) \
-            if with_input_conv_x else nn.Sequential()
-        self.op2 = self.build_input_conv(\
-            channels, input_conv_cfg, input_norm_cfg) \
-            if with_input_conv_y else nn.Sequential()
+        self.op1 = self.build_input_conv(
+            channels, input_conv_cfg,
+            input_norm_cfg) if with_input_conv_x else nn.Sequential()
+        self.op2 = self.build_input_conv(
+            channels, input_conv_cfg,
+            input_norm_cfg) if with_input_conv_y else nn.Sequential()
 
     def build_input_conv(self, channel, conv_cfg, norm_cfg):
-        return ConvModule(channel, channel, 3, padding=1,
-                          conv_cfg=conv_cfg,
-                          norm_cfg=norm_cfg,
-                          bias=True)
+        return ConvModule(
+            channel,
+            channel,
+            3,
+            padding=1,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            bias=True)
 
     def _binary_op(self, x1, x2):
         raise NotImplementedError
