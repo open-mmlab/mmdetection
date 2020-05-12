@@ -1,9 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import caffe2_xavier_init
+from mmcv.cnn import ConvModule, caffe2_xavier_init
 
-from mmdet.ops import ConvModule
-from ..registry import NECKS
+from ..builder import NECKS
 
 
 class MergingCell(nn.Module):
@@ -64,7 +63,7 @@ class GPCell(MergingCell):
         return x2 + x2_att * x1
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class NASFPN(nn.Module):
     """NAS-FPN.
 
