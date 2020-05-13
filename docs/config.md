@@ -139,14 +139,14 @@ model = dict(
 train_cfg = dict(  # Config of training hyperparameters for rpn and rcnn
     rpn=dict(  # Training config of rpn
         assigner=dict(  # Config of assigner
-            type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for many common detectors.
+            type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for many common detectors. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/assigners/max_iou_assigner.py#L10 for more details.
             pos_iou_thr=0.7,  # IoU >= threshold 0.7 will be taken as positive samples
             neg_iou_thr=0.3,  # IoU < threshold 0.3 will be taken as negative samples
             min_pos_iou=0.3,  # The minimal IoU threshold to take boxes as positive samples
             match_low_quality=True,  # Whether to match the boxes under low quality (see API doc for more details).
             ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes
         sampler=dict(  # Config of positive/negative sampler
-            type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported.
+            type='RandomSampler',  # Type of sampler, PseudoSampler and other samplers are also supported. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/samplers/random_sampler.py#L8 for implementation details.
             num=256,  # Number of samples
             pos_fraction=0.5,  # The ratio of positive samples in the total samples.
             neg_pos_ub=-1,  # The upper bound of negative samples based on the number of positive samples.
