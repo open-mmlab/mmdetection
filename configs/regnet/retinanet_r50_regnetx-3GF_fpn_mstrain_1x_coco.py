@@ -1,4 +1,4 @@
-_base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+_base_ = '../retinanet/retinanet_r50_fpn_1x_coco.py'
 model = dict(
     pretrained='./regnet_pretrain/RegNetX-3.2GF.pth',
     backbone=dict(

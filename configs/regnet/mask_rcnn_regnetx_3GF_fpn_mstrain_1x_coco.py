@@ -4,12 +4,7 @@ model = dict(
     backbone=dict(
         type='RegNet',
         depth=25,
-        arch_parameter=dict(
-            w0=88,
-            wa=26.31,
-            wm=2.25,
-            group_w=48,
-            bot_mul=1.0),
+        arch_parameter=dict(w0=88, wa=26.31, wm=2.25, group_w=48, bot_mul=1.0),
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
@@ -20,10 +15,11 @@ model = dict(
         in_channels=[96, 192, 432, 1008],
         out_channels=256,
         num_outs=5))
-# use caffe img_norm
 img_norm_cfg = dict(
     # The mean and std is used in PyCls when training RegNets
-    mean=[103.53, 116.28, 123.675], std=[57.375, 57.12, 58.395], to_rgb=False)
+    mean=[103.53, 116.28, 123.675],
+    std=[57.375, 57.12, 58.395],
+    to_rgb=False)
 train_pipeline = [
     # RegNet convert images to float32 directly after loading in PyCls
     dict(type='LoadImageFromFile', to_float32=True),
