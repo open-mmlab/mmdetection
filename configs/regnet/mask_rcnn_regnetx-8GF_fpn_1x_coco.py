@@ -1,6 +1,6 @@
 _base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
 model = dict(
-    pretrained='./regnet_pretrain/RegNetX-6.4GF.pth',
+    pretrained='./regnet_pretrain/RegNetX-8.0GF.pth',
     backbone=dict(
         type='RegNet',
         depth=23,
