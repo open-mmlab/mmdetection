@@ -8,13 +8,10 @@ from .resnet import ResNet
 
 
 class Bottleneck(_Bottleneck):
+    """Bottleneck block for RegNets."""
     expansion = 1
 
     def __init__(self, inplanes, planes, group_width=8, **kwargs):
-        """Bottleneck block for RegNetX.
-        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
-        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
-        """
         super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
         width = int(round(planes * self.expansion))
         groups = width // group_width
@@ -71,9 +68,18 @@ class Bottleneck(_Bottleneck):
 class RegNet(ResNet):
     """RegNet backbone.
 
+    More details can be find in `paper <https://arxiv.org/abs/2003.13678>`_ .
+
     Args:
-        arch_parameter (dict):
+        depth (int): Depth of the backbone
+        arch_parameter (dict): The parameter of RegNets.
+            - w0 (int): initial width
+            - wa (float): slope of width
+            - wm (float): quantization parameter to quantize the width
+            - group_w (int): width of group
+            - bot_mul (float): bottleneck ratio, i.e. expansion of bottlneck.
         strides (Sequence[int]): Strides of the first block of each stage.
+        base_channels (int): Base channels after stem layer.
         in_channels (int): Number of input image channels. Normally 3.
         dilations (Sequence[int]): Dilation of each stage.
         out_indices (Sequence[int]): Output from which stages.
@@ -92,7 +98,7 @@ class RegNet(ResNet):
             in resblocks to let them behave as identity.
 
     Example:
-        >>> from mmdet.models import ResNeXt
+        >>> from mmdet.models import RegNet
         >>> import torch
         >>> self = ResNeXt(depth=50)
         >>> self.eval()
@@ -119,8 +125,7 @@ class RegNet(ResNet):
             depth,
         )
         # Convert to per stage format
-        stage_widths, stage_depths = self.get_stages_from_blocks(
-            widths, widths)
+        stage_widths, stage_depths = self.get_stages_from_blocks(widths)
         # Generate group widths and bot muls
         group_widths = [arch_parameter['group_w'] for _ in range(num_stages)]
         self.bottleneck_ratio = [
@@ -200,8 +205,19 @@ class RegNet(ResNet):
                         width_parameter,
                         depth,
                         divisor=8):
-        """Generates per block width from RegNet parameters."""
+        """Generates per block width from RegNet parameters.
 
+        Args:
+            initial_width ([int]): Initial width of the backbone
+            width_slope ([float]): Slope of the quantized linear function
+            width_parameter ([int]): Parameter used to quantize the width.
+            depth ([int]): Depth of the backbone.
+            divisor (int, optional): The divisor of channels. Defaults to 8.
+
+        Returns:
+            list, int: return a list of widths of each stage and the number of
+                stages
+        """
         assert width_slope >= 0
         assert initial_width > 0
         assert width_parameter > 1
@@ -217,26 +233,62 @@ class RegNet(ResNet):
 
     @staticmethod
     def quantize_float(number, divisor):
-        """Converts a float to closest non-zero int divisible by q."""
+        """Converts a float to closest non-zero int divisible by divior.
+
+        Args:
+            number (int): Original number to be quantized.
+            divisor (int): Divisor used to quantize the number.
+
+        Returns:
+            int: quantized number that is divisible by devisor.
+        """
         return int(round(number / divisor) * divisor)
 
     def adjust_width_group(self, widths, bottleneck_ratio, groups):
-        """Adjusts the compatibility of widths and groups."""
-        ws_bot = [int(w * b) for w, b in zip(widths, bottleneck_ratio)]
-        groups = [min(g, w_bot) for g, w_bot in zip(groups, ws_bot)]
-        ws_bot = [
-            self.quantize_float(w_bot, g) for w_bot, g in zip(ws_bot, groups)
+        """Adjusts the compatibility of widths and groups.
+
+        Args:
+            widths (list[int]): Width of each stage.
+            bottleneck_ratio (float): Bottleneck ratio.
+            groups (int): number of groups in each stage
+
+        Returns:
+            tuple(list): The adjusted widths and groups of each stage.
+        """
+        bottleneck_width = [
+            int(w * b) for w, b in zip(widths, bottleneck_ratio)
         ]
-        widths = [int(w_bot / b) for w_bot, b in zip(ws_bot, bottleneck_ratio)]
+        groups = [min(g, w_bot) for g, w_bot in zip(groups, bottleneck_width)]
+        bottleneck_width = [
+            self.quantize_float(w_bot, g)
+            for w_bot, g in zip(bottleneck_width, groups)
+        ]
+        widths = [
+            int(w_bot / b)
+            for w_bot, b in zip(bottleneck_width, bottleneck_ratio)
+        ]
         return widths, groups
 
-    def get_stages_from_blocks(self, widths, rs):
-        """Gets widths/stage_depths of network at each stage"""
-        ts_temp = zip(widths + [0], [0] + widths, rs + [0], [0] + rs)
-        ts = [w != wp or r != rp for w, wp, r, rp in ts_temp]
-        stage_widths = [w for w, t in zip(widths, ts[:-1]) if t]
-        stage_depths = np.diff([d for d, t in zip(range(len(ts)), ts)
-                                if t]).tolist()
+    def get_stages_from_blocks(self, widths):
+        """Gets widths/stage_depths of network at each stage
+
+        Args:
+            widths (list[int]): Width in each stage.
+
+        Returns:
+            tuple(list): width and depth of each stage
+        """
+        width_diff = [
+            width != width_prev
+            for width, width_prev in zip(widths + [0], [0] + widths)
+        ]
+        stage_widths = [
+            width for width, diff in zip(widths, width_diff[:-1]) if diff
+        ]
+        stage_depths = np.diff([
+            depth for depth, diff in zip(range(len(width_diff)), width_diff)
+            if diff
+        ]).tolist()
         return stage_widths, stage_depths
 
     def forward(self, x):
