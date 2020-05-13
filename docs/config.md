@@ -50,21 +50,21 @@ we makea brief comments on the config of Mask R-CNN using ResNet50 and FPN as th
 For more detailed usage and the corresponding alternative for each modules, please refer to the API documentation.
 
 ```python
-model=dict(
+model = dict(
     type='MaskRCNN',  # The name of detector
-    pretrained='torchvision://resnet50',    # The ImageNet pretrained backbone to be loaded
+    pretrained=
+    'torchvision://resnet50',  # The ImageNet pretrained backbone to be loaded
     backbone=dict(  # The config of backbone
-        type='ResNet',    # The type of the backbone, refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/backbones/resnet.py#L288 for more details.
+        type='ResNet',  # The type of the backbone, refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/backbones/resnet.py#L288 for more details.
         depth=50,  # The depth of backbone, usually it is 50 or 101 for ResNet and ResNext backbones.
         num_stages=4,  # Number of stages of the backbone.
         out_indices=(0, 1, 2, 3),  # The index of output feature maps produced in each stages
         frozen_stages=1,  # The weights in the first 1 stage are fronzen
         norm_cfg=dict(  # The config of normalization layers.
             type='BN',  # Type of norm layer, usually it is BN or GN
-            requires_grad=True),   # Whether to train the gamma and beta in BN
+            requires_grad=True),  # Whether to train the gamma and beta in BN
         norm_eval=True,  # Whether to freeze the statistics in BN
-        style='pytorch'),  # The style of backbone, 'pytorch' means that stride 2 layers are in 3x3 conv,
-                           # 'caffe' means stride 2 layers are in 1x1 convs.
+        style='pytorch'),  # The style of backbone, 'pytorch' means that stride 2 layers are in 3x3 conv, 'caffe' means stride 2 layers are in 1x1 convs.
     neck=dict(
         type='FPN',  # The neck of detector is FPN. We also support 'NASFPN', 'PAFPN', etc. Refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/necks/fpn.py#L10 for more details.
         in_channels=[256, 512, 1024, 2048],  # The input channels, this is consistent with the output channels of backbone
@@ -136,12 +136,12 @@ model=dict(
                 type='CrossEntropyLoss',  # Type of loss used for segmentation
                 use_mask=True,  # Whether to only train the mask in the correct class.
                 loss_weight=1.0))))  # Loss weight of mask branch.
-train_cfg=dict(  # Config of training hyperparameters for rpn and rcnn
+train_cfg = dict(  # Config of training hyperparameters for rpn and rcnn
     rpn=dict(  # Training config of rpn
         assigner=dict(  # Config of assigner
             type='MaxIoUAssigner',  # Type of assigner, MaxIoUAssigner is used for many common detectors.
             pos_iou_thr=0.7,  # IoU >= threshold 0.7 will be taken as positive samples
-            neg_iou_thr=0.3,   # IoU < threshold 0.3 will be taken as negative samples
+            neg_iou_thr=0.3,  # IoU < threshold 0.3 will be taken as negative samples
             min_pos_iou=0.3,  # The minimal IoU threshold to take boxes as positive samples
             match_low_quality=True,  # Whether to match the boxes under low quality (see API doc for more details).
             ignore_iof_thr=-1),  # IoF threshold for ignoring bboxes
@@ -174,11 +174,12 @@ train_cfg=dict(  # Config of training hyperparameters for rpn and rcnn
             num=512,  # Number of samples
             pos_fraction=0.25,  # The ratio of positive samples in the total samples.
             neg_pos_ub=-1,  # The upper bound of negative samples based on the number of positive samples.
-            add_gt_as_proposals=True),  # Whether add GT as proposals after sampling.
+            add_gt_as_proposals=True
+        ),  # Whether add GT as proposals after sampling.
         mask_size=28,  # Size of mask
         pos_weight=-1,  # The weight of positive samples during training.
         debug=False))  # Whether to set the debug mode
-test_cfg=dict(  # Config for testing hyperparameters for rpn and rcnn
+test_cfg = dict(  # Config for testing hyperparameters for rpn and rcnn
     rpn=dict(  # The config to generate proposals during testing
         nms_across_levels=False,  # Whether to do NMS for boxes across levels
         nms_pre=1000,  # The number of boxes before NMS
@@ -193,52 +194,68 @@ test_cfg=dict(  # Config for testing hyperparameters for rpn and rcnn
             iou_thr=0.5),  # NMS threshold
         max_per_img=100,  # Max number of detections of each image
         mask_thr_binary=0.5))  # Threshold of mask prediction
-dataset_type='CocoDataset'  # Dataset type, this will be used to define the dataset
-data_root='data/coco/'  # Root path of data
-img_norm_cfg=dict(  # Image normalization config to normalize the input images
+dataset_type = 'CocoDataset'  # Dataset type, this will be used to define the dataset
+data_root = 'data/coco/'  # Root path of data
+img_norm_cfg = dict(  # Image normalization config to normalize the input images
     mean=[123.675, 116.28, 103.53],  # Mean values used to pre-training the pre-trained backbone models
     std=[58.395, 57.12, 57.375],  # Standard variance used to pre-training the pre-trained backbone models
-    to_rgb=True)  # The channel orders of image used to pre-training the pre-trained backbone models
-train_pipeline=[  # Training pipeline
+    to_rgb=True
+)  # The channel orders of image used to pre-training the pre-trained backbone models
+train_pipeline = [  # Training pipeline
     dict(type='LoadImageFromFile'),  # First pipeline to load images from file path
-    dict(type='LoadAnnotations',  # Second pipeline to load annotations for current image
+    dict(
+        type='LoadAnnotations',  # Second pipeline to load annotations for current image
         with_bbox=True,  # Whether to use bounding box, True for detection
         with_mask=True,  # Whether to use instance mask, True for instance segmentation
         poly2mask=False),  # Whether to convert the polygon mask to instance mask, set False for acceleration and to save memory
-    dict(type='Resize',  # Augmentation pipeline that resize the images and their annotations
+    dict(
+        type='Resize',  # Augmentation pipeline that resize the images and their annotations
         img_scale=(1333, 800),  # The largest scale of image
-        keep_ratio=True),  # whether to keep the ratio between height and width.
-    dict(type='RandomFlip',  # Augmentation pipeline that flip the images and their annotations
+        keep_ratio=True
+    ),  # whether to keep the ratio between height and width.
+    dict(
+        type='RandomFlip',  # Augmentation pipeline that flip the images and their annotations
         flip_ratio=0.5),  # The ratio or probability to flip
-    dict(type='Normalize',  # Augmentation pipeline that normalize the input images
+    dict(
+        type='Normalize',  # Augmentation pipeline that normalize the input images
         mean=[123.675, 116.28, 103.53],  # These keys are the same of img_norm_cfg since the
         std=[58.395, 57.12, 57.375],  # keys of img_norm_cfg are used here as arguments
         to_rgb=True),
-    dict(type='Pad',  # Padding config
+    dict(
+        type='Pad',  # Padding config
         size_divisor=32),  # The number the padded images should be divisible
     dict(type='DefaultFormatBundle'),  # Default format bundle to gather data in the pipeline
-    dict(type='Collect',  # Pipeline that decides which keys in the data should be passed to the detector
-        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'])]
-test_pipeline=[
+    dict(
+        type='Collect',  # Pipeline that decides which keys in the data should be passed to the detector
+        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'])
+]
+test_pipeline = [
     dict(type='LoadImageFromFile'),  # First pipeline to load images from file path
-    dict(type='MultiScaleFlipAug',  # An encapsulation that encapsulates the testing augmentations
+    dict(
+        type='MultiScaleFlipAug',  # An encapsulation that encapsulates the testing augmentations
         img_scale=(1333, 800),  # Decides the largest scale for testing, used for the Resize pipeline
         flip=False,  # Whether to flip images during testing
         transforms=[
             dict(type='Resize',  # Use resize augmentation
-                keep_ratio=True),  # Whether to keep the ratio between height and width, the img_scale set here will be supressed by the img_scale set above.
+                 keep_ratio=True),  # Whether to keep the ratio between height and width, the img_scale set here will be supressed by the img_scale set above.
             dict(type='RandomFlip'),  # Thought RandomFlip is added in pipeline, it is not used because flip=False
-            dict(type='Normalize',  # Normalization config, the values are from img_norm_cfg
+            dict(
+                type='Normalize',  # Normalization config, the values are from img_norm_cfg
                 mean=[123.675, 116.28, 103.53],
                 std=[58.395, 57.12, 57.375],
                 to_rgb=True),
-            dict(type='Pad',  # Padding config to pad images divisable by 32.
+            dict(
+                type='Pad',  # Padding config to pad images divisable by 32.
                 size_divisor=32),
-            dict(type='ImageToTensor',  # convert image to tensor
+            dict(
+                type='ImageToTensor',  # convert image to tensor
                 keys=['img']),
-            dict(type='Collect',  # Collect pipeline that collect necessary keys for testing.
-                keys=['img'])])]
-data=dict(
+            dict(
+                type='Collect',  # Collect pipeline that collect necessary keys for testing.
+                keys=['img'])
+        ])
+]
+data = dict(
     samples_per_gpu=2,  # Batch size of a single GPU
     workers_per_gpu=2,  # Worker to pre-fetch data for each single GPU
     train=dict(  # Train dataset config
@@ -247,100 +264,103 @@ data=dict(
         img_prefix='data/coco/train2017/',  # Prefix of image path
         pipeline=[  # pipeline, this is passed by the train_pipeline created before.
             dict(type='LoadImageFromFile'),
-            dict(type='LoadAnnotations',
+            dict(
+                type='LoadAnnotations',
                 with_bbox=True,
                 with_mask=True,
                 poly2mask=False),
-            dict(type='Resize',
-                img_scale=(1333, 800),
-                keep_ratio=True),
-            dict(type='RandomFlip',
-                flip_ratio=0.5),
-            dict(type='Normalize',
+            dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+            dict(type='RandomFlip', flip_ratio=0.5),
+            dict(
+                type='Normalize',
                 mean=[123.675, 116.28, 103.53],
                 std=[58.395, 57.12, 57.375],
                 to_rgb=True),
-            dict(type='Pad',
-                size_divisor=32),
+            dict(type='Pad', size_divisor=32),
             dict(type='DefaultFormatBundle'),
-            dict(type='Collect',
-                keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'])]),
+            dict(
+                type='Collect',
+                keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'])
+        ]),
     val=dict(  # Validation dataset config
         type='CocoDataset',
         ann_file='data/coco/annotations/instances_val2017.json',
         img_prefix='data/coco/val2017/',
         pipeline=[  # Pipeline is passed by test_pipeline created before
             dict(type='LoadImageFromFile'),
-            dict(type='MultiScaleFlipAug',
+            dict(
+                type='MultiScaleFlipAug',
                 img_scale=(1333, 800),
                 flip=False,
                 transforms=[
-                    dict(type='Resize',
-                        keep_ratio=True),
+                    dict(type='Resize', keep_ratio=True),
                     dict(type='RandomFlip'),
-                    dict(type='Normalize',
+                    dict(
+                        type='Normalize',
                         mean=[123.675, 116.28, 103.53],
                         std=[58.395, 57.12, 57.375],
                         to_rgb=True),
-                    dict(type='Pad',
-                        size_divisor=32),
-                    dict(type='ImageToTensor',
-                        keys=['img']),
-                    dict(type='Collect',
-                        keys=['img'])])]),
+                    dict(type='Pad', size_divisor=32),
+                    dict(type='ImageToTensor', keys=['img']),
+                    dict(type='Collect', keys=['img'])
+                ])
+        ]),
     test=dict(  # Test dataset config, modify the ann_file for test-dev/test submission
         type='CocoDataset',
         ann_file='data/coco/annotations/instances_val2017.json',
         img_prefix='data/coco/val2017/',
         pipeline=[  # Pipeline is passed by test_pipeline created before
             dict(type='LoadImageFromFile'),
-            dict(type='MultiScaleFlipAug',
+            dict(
+                type='MultiScaleFlipAug',
                 img_scale=(1333, 800),
                 flip=False,
                 transforms=[
-                    dict(type='Resize',
-                        keep_ratio=True),
+                    dict(type='Resize', keep_ratio=True),
                     dict(type='RandomFlip'),
-                    dict(type='Normalize',
+                    dict(
+                        type='Normalize',
                         mean=[123.675, 116.28, 103.53],
                         std=[58.395, 57.12, 57.375],
                         to_rgb=True),
-                    dict(type='Pad',
-                        size_divisor=32),
-                    dict(type='ImageToTensor',
-                        keys=['img']),
-                    dict(type='Collect',
-                        keys=['img'])])]))
-evaluation=dict(  # The config to build the evaluation hook, refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/evaluation/eval_hooks.py#L7 for more details.
+                    dict(type='Pad', size_divisor=32),
+                    dict(type='ImageToTensor', keys=['img']),
+                    dict(type='Collect', keys=['img'])
+                ])
+        ]))
+evaluation = dict(  # The config to build the evaluation hook, refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/evaluation/eval_hooks.py#L7 for more details.
     interval=1,  # Evaluation interval
     metric=['bbox', 'segm'])  # Metrics used during evaluation
-optimizer=dict(  # Config used to build optimizer, support all the optimizers in PyTorch whose arguments are also the same as those in PyTorch
+optimizer = dict(  # Config used to build optimizer, support all the optimizers in PyTorch whose arguments are also the same as those in PyTorch
     type='SGD',  # Type of optimizers, refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/optimizer/default_constructor.py#L13 for more details
     lr=0.02,  # Learning rate of optimizers, see detail usages of the parameters in the documentaion of PyTorch
     momentum=0.9,  # Momentum
     weight_decay=0.0001)  # Weight decay of SGD
-optimizer_config=dict(  # Config used to build the optimizer hook, refer to https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/optimizer.py#L8 for implementation details.
+optimizer_config = dict(  # Config used to build the optimizer hook, refer to https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/optimizer.py#L8 for implementation details.
     grad_clip=None)  # Most of the methods do not use gradient clip
-lr_config=dict(  # Learning rate scheduler config used to register LrUpdater hook
+lr_config = dict(  # Learning rate scheduler config used to register LrUpdater hook
     policy='step',  # The policy of scheduler, also support CosineAnealing, Cyclic, etc. Refer to details of supported LrUpdater from https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/lr_updater.py#L9.
     warmup='linear',  # The warmup policy, also support `exp` and `constant`.
     warmup_iters=500,  # The number of iterations for warmup
-    warmup_ratio=0.001,  # The ratio of the starting learning rate used for warmup
+    warmup_ratio=
+    0.001,  # The ratio of the starting learning rate used for warmup
     step=[8, 11])  # Steps to decay the learning rate
-total_epochs=12  # Total epochs to train the model
-checkpoint_config=dict(  # Config to set the checkpoint hook, Refer to https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/checkpoint.py for implementation.
+total_epochs = 12  # Total epochs to train the model
+checkpoint_config = dict(  # Config to set the checkpoint hook, Refer to https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/checkpoint.py for implementation.
     interval=1)  # The save interval is 1
-log_config=dict(  # config to register logger hook
+log_config = dict(  # config to register logger hook
     interval=50,  # Interval to print the log
     hooks=[
         # dict(type='TensorboardLoggerHook')  # The Tensorboard logger is also supported
-        dict(type='TextLoggerHook')])  # The logger used to record the training process.
-dist_params=dict(backend='nccl')  # Parameters to setup distributed training, the port can also be set.
-log_level='INFO'  # The level of logging.
-load_from=None  # load models as a pre-trained model from a given path. This will not resume training.
-resume_from=None  # Resume checkpoints from a given path, the training will be resumed from the epoch when the checkpoint's is saved.
-workflow=[('train', 1)]  # Workflow for runner. [('train', 1)] means there is only one workflow and the workflow named 'train' is executed once. The workflow trains the model by 12 epochs according to the total_epochs.
-work_dir='work_dir'  # Directory to save the model checkpoints and logs for the current experiments.
+        dict(type='TextLoggerHook')
+    ])  # The logger used to record the training process.
+dist_params = dict(backend='nccl')  # Parameters to setup distributed training, the port can also be set.
+log_level = 'INFO'  # The level of logging.
+load_from = None  # load models as a pre-trained model from a given path. This will not resume training.
+resume_from = None  # Resume checkpoints from a given path, the training will be resumed from the epoch when the checkpoint's is saved.
+workflow = [('train', 1)]  # Workflow for runner. [('train', 1)] means there is only one workflow and the workflow named 'train' is executed once. The workflow trains the model by 12 epochs according to the total_epochs.
+work_dir = 'work_dir'  # Directory to save the model checkpoints and logs for the current experiments.
+
 ```
 
 ## FAQ
