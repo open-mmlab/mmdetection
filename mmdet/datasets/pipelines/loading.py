@@ -11,17 +11,27 @@ from ..builder import PIPELINES
 @PIPELINES.register_module()
 class LoadImageFromFile(object):
 
-    def __init__(self, to_float32=False, color_type='color'):
+    def __init__(self,
+                 to_float32=False,
+                 color_type='color',
+                 file_client_cfg=dict(io_backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
+        self.file_client_cfg = file_client_cfg.copy()
+        self.file_client = None
 
     def __call__(self, results):
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_cfg)
+
         if results['img_prefix'] is not None:
             filename = osp.join(results['img_prefix'],
                                 results['img_info']['filename'])
         else:
             filename = results['img_info']['filename']
-        img = mmcv.imread(filename, self.color_type)
+
+        img_bytes = self.file_client.get(filename)
+        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
         if self.to_float32:
             img = img.astype(np.float32)
         results['filename'] = filename
@@ -49,11 +59,19 @@ class LoadMultiChannelImageFromFiles(object):
     Expects results['filename'] to be a list of filenames
     """
 
-    def __init__(self, to_float32=False, color_type='unchanged'):
+    def __init__(self,
+                 to_float32=False,
+                 color_type='unchanged',
+                 file_client_cfg=dict(io_backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
+        self.file_client_cfg = file_client_cfg.copy()
+        self.file_client = None
 
     def __call__(self, results):
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_cfg)
+
         if results['img_prefix'] is not None:
             filename = [
                 osp.join(results['img_prefix'], fname)
@@ -61,10 +79,15 @@ class LoadMultiChannelImageFromFiles(object):
             ]
         else:
             filename = results['img_info']['filename']
-        img = np.stack(
-            [mmcv.imread(name, self.color_type) for name in filename], axis=-1)
+
+        img = []
+        for name in filename:
+            img_bytes = self.file_client.get(filename)
+            img.append(mmcv.imfrombytes(img_bytes, flag=self.color_type))
+        img = np.stack(img, axis=-1)
         if self.to_float32:
             img = img.astype(np.float32)
+
         results['filename'] = filename
         results['img'] = img
         results['img_shape'] = img.shape
@@ -92,12 +115,15 @@ class LoadAnnotations(object):
                  with_label=True,
                  with_mask=False,
                  with_seg=False,
-                 poly2mask=True):
+                 poly2mask=True,
+                 file_client_cfg=dict(io_backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
+        self.file_client_cfg = file_client_cfg.copy()
+        self.file_client = None
 
     def _load_bboxes(self, results):
         ann_info = results['ann_info']
@@ -160,9 +186,14 @@ class LoadAnnotations(object):
         return results
 
     def _load_semantic_seg(self, results):
-        results['gt_semantic_seg'] = mmcv.imread(
-            osp.join(results['seg_prefix'], results['ann_info']['seg_map']),
-            flag='unchanged').squeeze()
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_cfg)
+
+        filename = osp.join(results['seg_prefix'],
+                            results['ann_info']['seg_map'])
+        img_bytes = self.file_client.get(filename)
+        results['gt_semantic_seg'] = mmcv.imfrombytes(
+            img_bytes, flag='unchanged').squeeze()
         results['seg_fields'].append('gt_semantic_seg')
         return results
 
