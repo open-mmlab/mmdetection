@@ -44,48 +44,8 @@ class Bottle2neck(_Bottleneck):
             norm_cfg=norm_cfg,
             dcn=dcn,
             plugins=plugins)
-        assert style in ['pytorch', 'caffe']
-        assert dcn is None or isinstance(dcn, dict)
-        assert plugins is None or isinstance(plugins, list)
-        if plugins is not None:
-            allowed_position = ['after_conv1', 'after_conv2', 'after_conv3']
-            assert all(p['position'] in allowed_position for p in plugins)
 
         width = int(math.floor(planes * (base_width / 64.0)))
-        self.inplanes = inplanes
-        self.planes = planes
-        self.stride = stride
-        self.dilation = dilation
-        self.style = style
-        self.with_cp = with_cp
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.dcn = dcn
-        self.with_dcn = dcn is not None
-        self.plugins = plugins
-        self.with_plugins = plugins is not None
-
-        if self.with_plugins:
-            # collect plugins for conv1/conv2/conv3
-            self.after_conv1_plugins = [
-                plugin['cfg'] for plugin in plugins
-                if plugin['position'] == 'after_conv1'
-            ]
-            self.after_conv2_plugins = [
-                plugin['cfg'] for plugin in plugins
-                if plugin['position'] == 'after_conv2'
-            ]
-            self.after_conv3_plugins = [
-                plugin['cfg'] for plugin in plugins
-                if plugin['position'] == 'after_conv3'
-            ]
-
-        if self.style == 'pytorch':
-            self.conv1_stride = 1
-            self.conv2_stride = stride
-        else:
-            self.conv1_stride = stride
-            self.conv2_stride = 1
 
         self.norm1_name, norm1 = build_norm_layer(
             norm_cfg, width * scale, postfix=1)
@@ -153,20 +113,11 @@ class Bottle2neck(_Bottleneck):
             bias=False)
         self.add_module(self.norm3_name, norm3)
 
-        self.relu = nn.ReLU(inplace=True)
-        self.downsample = downsample
         self.stype = stype
         self.scale = scale
         self.width = width
         delattr(self, 'conv2')
         delattr(self, self.norm2_name)
-        if self.with_plugins:
-            self.after_conv1_plugin_names = self.make_block_plugins(
-                width * scale, self.after_conv1_plugins)
-            self.after_conv2_plugin_names = self.make_block_plugins(
-                width * scale, self.after_conv2_plugins)
-            self.after_conv3_plugin_names = self.make_block_plugins(
-                planes * self.expansion, self.after_conv3_plugins)
 
     def forward(self, x):
 
@@ -239,6 +190,8 @@ class ResLayer(nn.Sequential):
             Default: None
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: dict(type='BN')
+        scale (int): Scales used in Res2Net. Default: 4
+        base_width (int): Basic width of each scale. Default: 26
     """
 
     def __init__(self,
@@ -306,8 +259,8 @@ class Res2Net(ResNet):
     """Res2Net backbone.
 
     Args:
-        scale (int): Scales used in Res2Net, normally 4.
-        base_width (int): basic width of each scale, normally 26.
+        scale (int): Scales used in Res2Net. Default: 4
+        base_width (int): Basic width of each scale. Default: 26
         depth (int): Depth of res2net, from {50, 101, 152}.
         in_channels (int): Number of input image channels. Normally 3.
         num_stages (int): Res2net stages, normally 4.
