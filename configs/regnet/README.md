@@ -54,7 +54,31 @@ The users can modify the config's `depth` of backbone, corresponding keys in `ar
 For self-implemented models, the users are responsible to check these parameters by themselves.
 
 ## Results
+
+### Mask R-CNN
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |
-|    R-50-FPN     |  caffe  |   1x    |          |                | 38.7   | 35.4    |   |
-|    [RegNetX-3.2GF-FPN](./mask_rcnn_regnetx_3GF_fpn_mstrain_1x_coco.py)     | pytorch |   1x    | |||   |
+|    R-50-FPN*     |  caffe  |   1x    |          |                | 38.8   | 35.4    |   |
+|[RegNetX-3.2GF-FPN*](./mask_rcnn_regnetx_3GF_fpn_mstrain_1x_coco.py)| pytorch |   1x    | ||39.5|35.9|   |
+|    R-50-FPN     | pytorch |   1x    |          |                | 38.8   | 35.4    |   |
+|[RegNetX-3.2GF-FPN](./mask_rcnn_regnetx_3GF_fpn_1x_coco.py)| pytorch |   1x    | ||||   |
+|[RegNetX-4.0GF-FPN](./mask_rcnn_regnetx_4GF_fpn_1x_coco.py)| pytorch |   1x    | ||||   |
+|    R-101-FPN    | pytorch |   1x    | 6.4      | 10.3           | 40.0   | 36.1    |  [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r101_fpn_1x_coco/mask_rcnn_r101_fpn_1x_coco_20200204-1efe0ed5.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r101_fpn_1x_coco/mask_rcnn_r101_fpn_1x_coco_20200204_144809.log.json) |
+|[RegNetX-6.4GF-FPN](./mask_rcnn_regnetx_6GF_fpn_1x_coco.py)| pytorch |   1x    | ||||   |
+| X-101-64x4d-FPN | pytorch |   1x    | 10.7     | 6.9            | 42.8   | 38.4    |  [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_64x4d_fpn_1x_coco/mask_rcnn_x101_64x4d_fpn_1x_coco_20200201-9352eb0d.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_64x4d_fpn_1x_coco/mask_rcnn_x101_64x4d_fpn_1x_coco_20200201_124310.log.json) |
+|[RegNetX-8.0GF-FPN](./mask_rcnn_regnetx_8GF_fpn_1x_coco.py)| pytorch |   1x    | ||||   |
+
+### Faster R-CNN
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
+|    R-50-FPN*     |  caffe  |   1x    |          |                | 38.8   |   |
+|[RegNetX-3.2GF-FPN*](./faster_rcnn_regnetx_3GF_fpn_mstrain_1x_coco.py)| pytorch |   1x    | ||39.5|   |
+
+### RetinaNet
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
+|    R-50-FPN*     |  caffe  |   1x    |          |                | 38.8   |   |
+|[RegNetX-3.2GF-FPN*](./retinanet_regnetx_3GF_fpn_mstrain_1x_coco.py)| pytorch |   1x    | ||38|   |
+
+**Note**
+1. Model marked with * behind it means this model is trained with multi-scale training.
