@@ -3,17 +3,14 @@ import math
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-import torch.utils.model_zoo as model_zoo
-from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
-                      kaiming_init)
-from torch.nn.modules.batchnorm import _BatchNorm
+from mmcv.cnn import build_conv_layer, build_norm_layer
 
-from mmdet.ops import build_plugin_layer
 from ..builder import BACKBONES
+from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
 
 
-class Bottle2neck(nn.Module):
+class Bottle2neck(_Bottleneck):
     expansion = 4
 
     def __init__(self,
@@ -29,13 +26,24 @@ class Bottle2neck(nn.Module):
                  dcn=None,
                  plugins=None,
                  scale=4,
-                 baseWidth=26,
+                 base_width=26,
                  stype='normal'):
         """Bottle2neck block for Res2Net.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
-        super(Bottle2neck, self).__init__()
+        super(Bottle2neck, self).__init__(
+            inplanes,
+            planes,
+            stride=stride,
+            dilation=stride,
+            downsample=downsample,
+            style=style,
+            with_cp=with_cp,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            dcn=dcn,
+            plugins=plugins)
         assert style in ['pytorch', 'caffe']
         assert dcn is None or isinstance(dcn, dict)
         assert plugins is None or isinstance(plugins, list)
@@ -43,7 +51,7 @@ class Bottle2neck(nn.Module):
             allowed_position = ['after_conv1', 'after_conv2', 'after_conv3']
             assert all(p['position'] in allowed_position for p in plugins)
 
-        width = int(math.floor(planes * (baseWidth / 64.0)))
+        width = int(math.floor(planes * (base_width / 64.0)))
         self.inplanes = inplanes
         self.planes = planes
         self.stride = stride
@@ -150,7 +158,8 @@ class Bottle2neck(nn.Module):
         self.stype = stype
         self.scale = scale
         self.width = width
-
+        delattr(self, 'conv2')
+        delattr(self, self.norm2_name)
         if self.with_plugins:
             self.after_conv1_plugin_names = self.make_block_plugins(
                 width * scale, self.after_conv1_plugins)
@@ -158,44 +167,6 @@ class Bottle2neck(nn.Module):
                 width * scale, self.after_conv2_plugins)
             self.after_conv3_plugin_names = self.make_block_plugins(
                 planes * self.expansion, self.after_conv3_plugins)
-
-    def make_block_plugins(self, in_channels, plugins):
-        """ make plugins for block
-
-        Args:
-            in_channels (int): Input channels of plugin.
-            plugins (list[dict]): List of plugins cfg to build.
-
-        Returns:
-            list[str]: List of the names of plugin.
-
-        """
-        assert isinstance(plugins, list)
-        plugin_names = []
-        for plugin in plugins:
-            plugin = plugin.copy()
-            name, layer = build_plugin_layer(
-                plugin,
-                in_channels=in_channels,
-                postfix=plugin.pop('postfix', ''))
-            assert not hasattr(self, name), f'duplicate plugin {name}'
-            self.add_module(name, layer)
-            plugin_names.append(name)
-        return plugin_names
-
-    def forward_plugin(self, x, plugin_names):
-        out = x
-        for name in plugin_names:
-            out = getattr(self, name)(x)
-        return out
-
-    @property
-    def norm1(self):
-        return getattr(self, self.norm1_name)
-
-    @property
-    def norm3(self):
-        return getattr(self, self.norm3_name)
 
     def forward(self, x):
 
@@ -280,7 +251,7 @@ class ResLayer(nn.Sequential):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  scale=4,
-                 baseWidth=26,
+                 base_width=26,
                  **kwargs):
         self.block = block
 
@@ -312,7 +283,7 @@ class ResLayer(nn.Sequential):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 scale=scale,
-                baseWidth=baseWidth,
+                base_width=base_width,
                 stype='stage',
                 **kwargs))
         inplanes = planes * block.expansion
@@ -325,7 +296,7 @@ class ResLayer(nn.Sequential):
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     scale=scale,
-                    baseWidth=baseWidth,
+                    base_width=base_width,
                     **kwargs))
         super(ResLayer, self).__init__(*layers)
 
@@ -335,9 +306,9 @@ class Res2Net(ResNet):
     """Res2Net backbone.
 
     Args:
-        depth (int): Depth of res2net, from {50, 101, 152}.
         scale (int): Scales used in Res2Net, normally 4.
-        baseWidth (int): basic width of each scale, normally 26.
+        base_width (int): basic width of each scale, normally 26.
+        depth (int): Depth of res2net, from {50, 101, 152}.
         in_channels (int): Number of input image channels. Normally 3.
         num_stages (int): Res2net stages, normally 4.
         strides (Sequence[int]): Strides of the first block of each stage.
@@ -370,7 +341,7 @@ class Res2Net(ResNet):
     Example:
         >>> from mmdet.models import Res2Net
         >>> import torch
-        >>> self = Res2Net(depth=50)
+        >>> self = Res2Net(depth=50, scale=4, base_width=26)
         >>> self.eval()
         >>> inputs = torch.rand(1, 3, 32, 32)
         >>> level_outputs = self.forward(inputs)
@@ -388,116 +359,13 @@ class Res2Net(ResNet):
         152: (Bottle2neck, (3, 8, 36, 3))
     }
 
-    def __init__(self, scale=4, baseWidth=26, **kwargs):
+    def __init__(self, scale=4, base_width=26, **kwargs):
         self.scale = scale
-        self.baseWidth = baseWidth
+        self.base_width = base_width
         kwargs['style'] = 'pytorch'
         kwargs['deep_stem'] = True
         kwargs['avg_down'] = True
         super(Res2Net, self).__init__(**kwargs)
 
     def make_res_layer(self, **kwargs):
-        return ResLayer(scale=self.scale, baseWidth=self.baseWidth, **kwargs)
-
-    def _make_stem_layer(self, in_channels, base_channels):
-        if self.deep_stem:
-            self.conv1 = nn.Sequential(
-                build_conv_layer(
-                    self.conv_cfg,
-                    in_channels,
-                    base_channels // 2,
-                    kernel_size=3,
-                    stride=2,
-                    padding=1,
-                    bias=False),
-                build_norm_layer(self.norm_cfg, base_channels // 2)[1],
-                nn.ReLU(inplace=True),
-                build_conv_layer(
-                    self.conv_cfg,
-                    base_channels // 2,
-                    base_channels // 2,
-                    kernel_size=3,
-                    stride=1,
-                    padding=1,
-                    bias=False),
-                build_norm_layer(self.norm_cfg, base_channels // 2)[1],
-                nn.ReLU(inplace=True),
-                build_conv_layer(
-                    self.conv_cfg,
-                    base_channels // 2,
-                    base_channels,
-                    kernel_size=3,
-                    stride=1,
-                    padding=1,
-                    bias=False),
-            )
-        else:
-            self.conv1 = build_conv_layer(
-                self.conv_cfg,
-                in_channels,
-                base_channels,
-                kernel_size=7,
-                stride=2,
-                padding=3,
-                bias=False)
-        self.norm1_name, norm1 = build_norm_layer(
-            self.norm_cfg, base_channels, postfix=1)
-        self.add_module(self.norm1_name, norm1)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-
-    def _freeze_stages(self):
-        if self.frozen_stages >= 0:
-            if self.deep_stem:
-                self.conv1.eval()
-                for param in self.conv1.parameters():
-                    param.requires_grad = False
-            else:
-                self.norm1.eval()
-                for m in [self.conv1, self.norm1]:
-                    for param in m.parameters():
-                        param.requires_grad = False
-
-        for i in range(1, self.frozen_stages + 1):
-            m = getattr(self, f'layer{i}')
-            m.eval()
-            for param in m.parameters():
-                param.requires_grad = False
-
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str):
-            checkpoint = model_zoo.load_url(
-                pretrained, map_location=lambda storage, loc: storage)
-            self.load_state_dict(checkpoint, strict=False)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-
-            if self.dcn is not None:
-                for m in self.modules():
-                    if isinstance(m, Bottle2neck) and hasattr(
-                            m.conv2, 'conv_offset'):
-                        constant_init(m.conv2.conv_offset, 0)
-
-            if self.zero_init_residual:
-                for m in self.modules():
-                    if isinstance(m, Bottle2neck):
-                        constant_init(m.norm3, 0)
-        else:
-            raise TypeError('pretrained must be a str or None')
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.norm1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-        outs = []
-        for i, layer_name in enumerate(self.res_layers):
-            res_layer = getattr(self, layer_name)
-            x = res_layer(x)
-            if i in self.out_indices:
-                outs.append(x)
-        return tuple(outs)
+        return ResLayer(scale=self.scale, base_width=self.base_width, **kwargs)
