@@ -16,45 +16,27 @@ class Bottle2neck(_Bottleneck):
     def __init__(self,
                  inplanes,
                  planes,
-                 stride=1,
-                 dilation=1,
-                 downsample=None,
-                 style='pytorch',
-                 with_cp=False,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN'),
-                 dcn=None,
-                 plugins=None,
                  scale=4,
                  base_width=26,
-                 stype='normal'):
+                 base_channels=64,
+                 stage_type='normal',
+                 **kwargs):
         """Bottle2neck block for Res2Net.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
-        super(Bottle2neck, self).__init__(
-            inplanes,
-            planes,
-            stride=stride,
-            dilation=stride,
-            downsample=downsample,
-            style=style,
-            with_cp=with_cp,
-            conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg,
-            dcn=dcn,
-            plugins=plugins)
+        super(Bottle2neck, self).__init__(inplanes, planes, **kwargs)
 
-        width = int(math.floor(planes * (base_width / 64.0)))
+        width = int(math.floor(self.planes * (base_width / base_channels)))
 
         self.norm1_name, norm1 = build_norm_layer(
-            norm_cfg, width * scale, postfix=1)
+            self.norm_cfg, width * scale, postfix=1)
         self.norm3_name, norm3 = build_norm_layer(
-            norm_cfg, planes * self.expansion, postfix=3)
+            self.norm_cfg, self.planes * self.expansion, postfix=3)
 
         self.conv1 = build_conv_layer(
-            conv_cfg,
-            inplanes,
+            self.conv_cfg,
+            self.inplanes,
             width * scale,
             kernel_size=1,
             stride=self.conv1_stride,
@@ -65,27 +47,29 @@ class Bottle2neck(_Bottleneck):
             self.nums = 1
         else:
             self.nums = scale - 1
-        if stype == 'stage' and self.conv2_stride != 1:
-            self.pool = nn.AvgPool2d(kernel_size=3, stride=stride, padding=1)
+        if stage_type == 'stage' and self.conv2_stride != 1:
+            self.pool = nn.AvgPool2d(
+                kernel_size=3, stride=self.conv2_stride, padding=1)
         convs = []
         bns = []
 
         fallback_on_stride = False
         if self.with_dcn:
-            fallback_on_stride = dcn.pop('fallback_on_stride', False)
+            fallback_on_stride = self.dcn.pop('fallback_on_stride', False)
         if not self.with_dcn or fallback_on_stride:
             for i in range(self.nums):
                 convs.append(
                     build_conv_layer(
-                        conv_cfg,
+                        self.conv_cfg,
                         width,
                         width,
                         kernel_size=3,
                         stride=self.conv2_stride,
-                        padding=dilation,
-                        dilation=dilation,
+                        padding=self.dilation,
+                        dilation=self.dilation,
                         bias=False))
-                bns.append(build_norm_layer(norm_cfg, width, postfix=i + 1)[1])
+                bns.append(
+                    build_norm_layer(self.norm_cfg, width, postfix=i + 1)[1])
             self.convs = nn.ModuleList(convs)
             self.bns = nn.ModuleList(bns)
         else:
@@ -93,27 +77,28 @@ class Bottle2neck(_Bottleneck):
             for i in range(self.nums):
                 convs.append(
                     build_conv_layer(
-                        dcn,
+                        self.dcn,
                         width,
                         width,
                         kernel_size=3,
                         stride=self.conv2_stride,
-                        padding=dilation,
-                        dilation=dilation,
+                        padding=self.dilation,
+                        dilation=self.dilation,
                         bias=False))
-                bns.append(build_norm_layer(norm_cfg, width, postfix=i + 1)[1])
+                bns.append(
+                    build_norm_layer(self.norm_cfg, width, postfix=i + 1)[1])
             self.convs = nn.ModuleList(convs)
             self.bns = nn.ModuleList(bns)
 
         self.conv3 = build_conv_layer(
-            conv_cfg,
+            self.conv_cfg,
             width * scale,
-            planes * self.expansion,
+            self.planes * self.expansion,
             kernel_size=1,
             bias=False)
         self.add_module(self.norm3_name, norm3)
 
-        self.stype = stype
+        self.stage_type = stage_type
         self.scale = scale
         self.width = width
         delattr(self, 'conv2')
@@ -132,22 +117,24 @@ class Bottle2neck(_Bottleneck):
                 out = self.forward_plugin(out, self.after_conv1_plugin_names)
 
             spx = torch.split(out, self.width, 1)
-            for i in range(self.nums):
-                if i == 0 or self.stype == 'stage':
+            sp = self.convs[0](spx[0])
+            sp = self.relu(self.bns[0](sp))
+            out = sp
+            for i in range(1, self.nums):
+                if self.stage_type == 'stage':
                     sp = spx[i]
                 else:
                     sp = sp + spx[i]
                 sp = self.convs[i](sp)
                 sp = self.relu(self.bns[i](sp))
-                if i == 0:
-                    out = sp
-                else:
-                    out = torch.cat((out, sp), 1)
-            if (self.scale != 1 and self.stype == 'normal') \
-                    or self.conv2_stride == 1:
-                out = torch.cat((out, spx[self.nums]), 1)
-            elif self.scale != 1 and self.stype == 'stage':
-                out = torch.cat((out, self.pool(spx[self.nums])), 1)
+                out = torch.cat((out, sp), 1)
+
+            if self.scale != 1:
+                if self.stage_type == 'normal' \
+                        or self.conv2_stride == 1:
+                    out = torch.cat((out, spx[self.nums]), 1)
+                elif self.stage_type == 'stage':
+                    out = torch.cat((out, self.pool(spx[self.nums])), 1)
 
             if self.with_plugins:
                 out = self.forward_plugin(out, self.after_conv2_plugin_names)
@@ -237,7 +224,7 @@ class ResLayer(nn.Sequential):
                 norm_cfg=norm_cfg,
                 scale=scale,
                 base_width=base_width,
-                stype='stage',
+                stage_type='stage',
                 **kwargs))
         inplanes = planes * block.expansion
         for i in range(1, num_blocks):
@@ -321,4 +308,8 @@ class Res2Net(ResNet):
         super(Res2Net, self).__init__(**kwargs)
 
     def make_res_layer(self, **kwargs):
-        return ResLayer(scale=self.scale, base_width=self.base_width, **kwargs)
+        return ResLayer(
+            scale=self.scale,
+            base_width=self.base_width,
+            base_channels=self.base_channels,
+            **kwargs)
