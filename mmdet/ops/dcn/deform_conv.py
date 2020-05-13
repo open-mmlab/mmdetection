@@ -356,9 +356,9 @@ class ModulatedDeformConv(nn.Module):
             self.bias = nn.Parameter(torch.Tensor(out_channels))
         else:
             self.register_parameter('bias', None)
-        self.reset_parameters()
+        self.init_weights()
 
-    def reset_parameters(self):
+    def init_weights(self):
         n = self.in_channels
         for k in self.kernel_size:
             n *= k
@@ -404,11 +404,13 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
             padding=_pair(self.padding),
             dilation=_pair(self.dilation),
             bias=True)
-        self.init_offset()
+        self.init_weights()
 
-    def init_offset(self):
-        self.conv_offset.weight.data.zero_()
-        self.conv_offset.bias.data.zero_()
+    def init_weights(self):
+        super(ModulatedDeformConvPack, self).init_weights()
+        if hasattr(self, 'conv_offset'):
+            self.conv_offset.weight.data.zero_()
+            self.conv_offset.bias.data.zero_()
 
     def forward(self, x):
         out = self.conv_offset(x)

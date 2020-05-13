@@ -1,8 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule
+from mmcv.cnn import ConvModule, caffe2_xavier_init
 
-from mmdet.ops import ModulatedDeformConvPack
 from mmdet.ops.merge_cells import ConcatCell
 from ..builder import NECKS
 
@@ -134,22 +133,15 @@ class NASFCOS_FPN(nn.Module):
         return tuple(ret)
 
     def init_weights(self):
-        for m in self.adapt_convs.modules():
-            if isinstance(m, nn.Conv2d) \
-                    or isinstance(m, nn.BatchNorm2d):
-                m.reset_parameters()
-
-        for m in self.extra_downsamples.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_uniform_(m.weight, a=1)
-                nn.init.constant_(m.bias, 0)
-
         for k, m in self.fpn.items():
-            for op in [m.op1, m.op2]:
-                if isinstance(op, ConvModule):
-                    if isinstance(op.conv, ModulatedDeformConvPack):
-                        op.conv.reset_parameters()
-                    op.bn.reset_parameters()
-            if hasattr(m, 'out_conv'):
-                m.out_conv.conv.reset_parameters()
-                m.out_conv.bn.reset_parameters()
+            if hasattr(m, 'conv_out'):
+                m.conv_out.conv.reset_parameters()
+                m.conv_out.bn.reset_parameters()
+
+        for modules in [
+                self.adapt_convs.modules(),
+                self.extra_downsamples.modules()
+        ]:
+            for module in modules:
+                if isinstance(module, nn.Conv2d):
+                    caffe2_xavier_init(module)

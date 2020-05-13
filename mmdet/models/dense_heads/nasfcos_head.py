@@ -1,17 +1,16 @@
 import copy
 
-import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, Scale, bias_init_with_prob
+from mmcv.cnn import (ConvModule, Scale, bias_init_with_prob,
+                      caffe2_xavier_init, normal_init)
 
 from mmdet.models.dense_heads.fcos_head import FCOSHead
-from mmdet.ops import ModulatedDeformConvPack
 from ..builder import HEADS
 
 
 @HEADS.register_module()
 class NASFCOSHead(FCOSHead):
-    """Anchor-free head used in `NASFCOS <https://arxiv.org/abs/1906.04423>
+    """Anchor-free head used in NASFCOS <https://arxiv.org/abs/1906.04423>
 
     It is quite similar with FCOS head, except for the searched structure
     of classification branch and bbox regression branch, where a structure
@@ -70,20 +69,13 @@ class NASFCOSHead(FCOSHead):
     def init_weights(self):
         # retinanet_bias_init
         bias_cls = bias_init_with_prob(0.01)
-        for modules in [self.fcos_cls, self.fcos_reg, self.fcos_centerness]:
-            for layer in modules.modules():
-                if isinstance(layer, nn.Conv2d):
-                    torch.nn.init.normal_(layer.weight, std=0.01)
-                    torch.nn.init.constant_(layer.bias, 0)
-
-        torch.nn.init.constant_(self.fcos_cls.bias, bias_cls)
+        normal_init(self.fcos_reg, std=0.01)
+        normal_init(self.fcos_centerness, std=0.01)
+        normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
 
         for branch in [self.cls_convs, self.reg_convs]:
-            for m in branch:
-                for k in m.modules():
-                    if hasattr(k, 'reset_parameters'):
-                        k.reset_parameters()
-                if hasattr(m, 'conv') and \
-                        isinstance(m.conv, ModulatedDeformConvPack):
-                    m.conv.init_offset()
-                    m.conv.reset_parameters()
+            for modules in branch:
+                for module in modules.modules():
+                    if isinstance(module, ConvModule) \
+                            and isinstance(module.conv, nn.Conv2d):
+                        caffe2_xavier_init(module.conv)
