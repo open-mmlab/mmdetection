@@ -348,6 +348,7 @@ class RandomCrop(object):
     """
 
     def __init__(self, crop_size):
+        assert crop_size[0] > 0 and crop_size[1] > 0
         self.crop_size = crop_size
 
     def __call__(self, results):
@@ -629,6 +630,9 @@ class MinIoURandomCrop(object):
 
                 patch = np.array(
                     (int(left), int(top), int(left + new_w), int(top + new_h)))
+                # Line or point crop is not allowed
+                if patch[2] == patch[0] or patch[3] == patch[1]:
+                    continue
                 overlaps = bbox_overlaps(
                     patch.reshape(-1, 4), boxes.reshape(-1, 4)).reshape(-1)
                 if len(overlaps) > 0 and overlaps.min() < min_iou:
