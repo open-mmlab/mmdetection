@@ -14,7 +14,7 @@ class LoadImageFromFile(object):
     def __init__(self,
                  to_float32=False,
                  color_type='color',
-                 file_client_cfg=dict(io_backend='disk')):
+                 file_client_cfg=dict(backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
         self.file_client_cfg = file_client_cfg.copy()
@@ -62,7 +62,7 @@ class LoadMultiChannelImageFromFiles(object):
     def __init__(self,
                  to_float32=False,
                  color_type='unchanged',
-                 file_client_cfg=dict(io_backend='disk')):
+                 file_client_cfg=dict(backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
         self.file_client_cfg = file_client_cfg.copy()
@@ -116,7 +116,7 @@ class LoadAnnotations(object):
                  with_mask=False,
                  with_seg=False,
                  poly2mask=True,
-                 file_client_cfg=dict(io_backend='disk')):
+                 file_client_cfg=dict(backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
