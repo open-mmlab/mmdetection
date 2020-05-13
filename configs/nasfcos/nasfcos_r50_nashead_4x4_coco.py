@@ -3,13 +3,6 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-dconv_head_3x3 = dict(
-    type='DCNv2', kernel_size=3, deformable_groups=2, use_bias=True, padding=1)
-
-conv_head_3x3 = dict(type='Conv', kernel_size=3, padding=1)
-
-conv_head_1x1 = dict(type='Conv', kernel_size=1)
-
 model = dict(
     type='NASFCOS',
     pretrained='open-mmlab://resnet50_caffe',
@@ -36,7 +29,22 @@ model = dict(
         in_channels=256,
         feat_channels=256,
         strides=[8, 16, 32, 64, 128],
-        arch=[dconv_head_3x3, conv_head_3x3, dconv_head_3x3, conv_head_1x1],
+        arch=[
+            dict(
+                type='DCNv2',
+                kernel_size=3,
+                use_bias=True,
+                deformable_groups=2,
+                padding=1),
+            dict(type='Conv', kernel_size=3, padding=1),
+            dict(
+                type='DCNv2',
+                kernel_size=3,
+                use_bias=True,
+                deformable_groups=2,
+                padding=1),
+            dict(type='Conv', kernel_size=1)
+        ],
         norm_cfg=dict(type='GN', num_groups=32),
         conv_cfg=dict(type='DCNv2', deformable_groups=2),
         loss_cls=dict(

@@ -1,10 +1,12 @@
+from abc import abstractmethod
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
 
-class MergingCell(nn.Module):
+class BaseMergeCell(nn.Module):
 
     def __init__(self,
                  channels=256,
@@ -18,7 +20,7 @@ class MergingCell(nn.Module):
                  input_conv_cfg=None,
                  input_norm_cfg=None,
                  resize_methods='interpolate'):
-        super(MergingCell, self).__init__()
+        super(BaseMergeCell, self).__init__()
         self.with_conv = with_conv
         self.with_x_conv = with_input_conv_x
         self.with_y_conv = with_input_conv_y
@@ -59,6 +61,7 @@ class MergingCell(nn.Module):
             norm_cfg=norm_cfg,
             bias=True)
 
+    @abstractmethod
     def _binary_op(self, x1, x2):
         raise NotImplementedError
 
@@ -96,20 +99,20 @@ class MergingCell(nn.Module):
         return x
 
 
-class SumCell(MergingCell):
+class SumCell(BaseMergeCell):
 
     def _binary_op(self, x1, x2):
         return x1 + x2
 
 
-class ConcatCell(MergingCell):
+class ConcatCell(BaseMergeCell):
 
     def _binary_op(self, x1, x2):
         ret = torch.cat([x1, x2], dim=1)
         return ret
 
 
-class GPCell(MergingCell):
+class GlobalPoolingCell(BaseMergeCell):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

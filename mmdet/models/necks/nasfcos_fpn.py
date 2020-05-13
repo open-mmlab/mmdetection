@@ -3,8 +3,8 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
 from mmdet.ops import ModulatedDeformConvPack
+from mmdet.ops.merge_cells import ConcatCell
 from ..builder import NECKS
-from .nasfpn_cell_factory import ConcatCell
 
 
 @NECKS.register_module
