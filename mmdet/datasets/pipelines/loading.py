@@ -14,15 +14,15 @@ class LoadImageFromFile(object):
     def __init__(self,
                  to_float32=False,
                  color_type='color',
-                 file_client_cfg=dict(backend='disk')):
+                 file_client_args=dict(backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
-        self.file_client_cfg = file_client_cfg.copy()
+        self.file_client_args = file_client_args.copy()
         self.file_client = None
 
     def __call__(self, results):
         if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_cfg)
+            self.file_client = mmcv.FileClient(**self.file_client_args)
 
         if results['img_prefix'] is not None:
             filename = osp.join(results['img_prefix'],
@@ -34,6 +34,7 @@ class LoadImageFromFile(object):
         img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
         if self.to_float32:
             img = img.astype(np.float32)
+
         results['filename'] = filename
         results['img'] = img
         results['img_shape'] = img.shape
@@ -62,15 +63,15 @@ class LoadMultiChannelImageFromFiles(object):
     def __init__(self,
                  to_float32=False,
                  color_type='unchanged',
-                 file_client_cfg=dict(backend='disk')):
+                 file_client_args=dict(backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
-        self.file_client_cfg = file_client_cfg.copy()
+        self.file_client_args = file_client_args.copy()
         self.file_client = None
 
     def __call__(self, results):
         if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_cfg)
+            self.file_client = mmcv.FileClient(**self.file_client_args)
 
         if results['img_prefix'] is not None:
             filename = [
@@ -82,7 +83,7 @@ class LoadMultiChannelImageFromFiles(object):
 
         img = []
         for name in filename:
-            img_bytes = self.file_client.get(filename)
+            img_bytes = self.file_client.get(name)
             img.append(mmcv.imfrombytes(img_bytes, flag=self.color_type))
         img = np.stack(img, axis=-1)
         if self.to_float32:
@@ -116,13 +117,13 @@ class LoadAnnotations(object):
                  with_mask=False,
                  with_seg=False,
                  poly2mask=True,
-                 file_client_cfg=dict(backend='disk')):
+                 file_client_args=dict(backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
-        self.file_client_cfg = file_client_cfg.copy()
+        self.file_client_args = file_client_args.copy()
         self.file_client = None
 
     def _load_bboxes(self, results):
@@ -187,7 +188,7 @@ class LoadAnnotations(object):
 
     def _load_semantic_seg(self, results):
         if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_cfg)
+            self.file_client = mmcv.FileClient(**self.file_client_args)
 
         filename = osp.join(results['seg_prefix'],
                             results['ann_info']['seg_map'])
