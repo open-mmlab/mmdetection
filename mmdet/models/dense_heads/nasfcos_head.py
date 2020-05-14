@@ -18,7 +18,7 @@ class NASFCOSHead(FCOSHead):
     of classification branch and bbox regression branch, where a structure
     of "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
 
-     Args:
+    Args:
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
