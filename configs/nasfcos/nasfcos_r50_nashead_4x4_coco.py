@@ -29,24 +29,7 @@ model = dict(
         in_channels=256,
         feat_channels=256,
         strides=[8, 16, 32, 64, 128],
-        arch=[
-            dict(
-                type='DCNv2',
-                kernel_size=3,
-                use_bias=True,
-                deformable_groups=2,
-                padding=1),
-            dict(type='Conv', kernel_size=3, padding=1),
-            dict(
-                type='DCNv2',
-                kernel_size=3,
-                use_bias=True,
-                deformable_groups=2,
-                padding=1),
-            dict(type='Conv', kernel_size=1)
-        ],
         norm_cfg=dict(type='GN', num_groups=32),
-        conv_cfg=dict(type='DCNv2', deformable_groups=2),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,

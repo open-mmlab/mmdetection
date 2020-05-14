@@ -13,7 +13,7 @@ class NASFCOSHead(FCOSHead):
 
     It is quite similar with FCOS head, except for the searched structure
     of classification branch and bbox regression branch, where a structure
-    of "dconv3x3, conv3x3, dconv3x3, conv1x1"  is utilized instead.
+    of "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
 
      Args:
         num_classes (int): Number of categories excluding the background
@@ -32,15 +32,27 @@ class NASFCOSHead(FCOSHead):
         >>> assert len(cls_score) == len(self.scales)
     """
 
-    def __init__(self, num_classes, in_channels, arch, **kwargs):
-        assert isinstance(arch, list) and len(arch) > 0
-        self.arch = arch
+    def __init__(self, num_classes, in_channels, **kwargs):
+        dconv3x3_config = dict(
+            type='DCNv2',
+            kernel_size=3,
+            use_bias=True,
+            deformable_groups=2,
+            padding=1)
+        conv3x3_config = dict(type='Conv', kernel_size=3, padding=1)
+        conv1x1_config = dict(type='Conv', kernel_size=1)
+
+        self.arch_config = [
+            dconv3x3_config, conv3x3_config, dconv3x3_config, conv1x1_config
+        ]
+
         super(NASFCOSHead, self).__init__(num_classes, in_channels, **kwargs)
 
     def _init_layers(self):
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
-        for i, op in enumerate(self.arch):
+        for i, op_ in enumerate(self.arch_config):
+            op = copy.deepcopy(op_)
             chn = self.in_channels if i == 0 else self.feat_channels
             assert isinstance(op, dict)
             use_bias = op.pop('use_bias', False)
