@@ -138,12 +138,13 @@ You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcn
 
 The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
+
 ### Image demo
 
 We provide a demo script to test a single image.
 
 ```shell
-python demo/image_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${SCORE_THR}]
+python demo/image_demo.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--score-thr ${SCORE_THR}]
 ```
 
 Examples:
@@ -158,7 +159,7 @@ python demo/image_demo.py demo/demo.jpg configs/faster_rcnn_r50_fpn_1x_coco.py \
 We provide a webcam demo to illustrate the results.
 
 ```shell
-python demo/webcam_demo.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--score-thr ${SCORE_THR}]
+python demo/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${SCORE_THR}]
 ```
 
 Examples:
@@ -167,6 +168,7 @@ Examples:
 python demo/webcam_demo.py configs/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth
 ```
+
 
 ### High-level APIs for testing images
 
