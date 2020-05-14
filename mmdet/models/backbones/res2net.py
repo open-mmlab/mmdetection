@@ -299,13 +299,17 @@ class Res2Net(ResNet):
         152: (Bottle2neck, (3, 8, 36, 3))
     }
 
-    def __init__(self, scale=4, base_width=26, **kwargs):
+    def __init__(self,
+                 scale=4,
+                 base_width=26,
+                 style='pytorch',
+                 deep_stem=True,
+                 avg_down=True,
+                 **kwargs):
         self.scale = scale
         self.base_width = base_width
-        kwargs['style'] = 'pytorch'
-        kwargs['deep_stem'] = True
-        kwargs['avg_down'] = True
-        super(Res2Net, self).__init__(**kwargs)
+        super(Res2Net, self).__init__(
+            style='pytorch', deep_stem=True, avg_down=True, **kwargs)
 
     def make_res_layer(self, **kwargs):
         return ResLayer(
