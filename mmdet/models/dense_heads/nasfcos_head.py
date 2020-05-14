@@ -24,6 +24,7 @@ class NASFCOSHead(FCOSHead):
             padding, etc.
 
     Example:
+        >>> import torch
         >>> arch = [dict(type='Conv', kernel_size=1)]
         >>> self = NASFCOSHead(11, 7, arch)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
