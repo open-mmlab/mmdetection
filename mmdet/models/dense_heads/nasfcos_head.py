@@ -19,9 +19,6 @@ class NASFCOSHead(FCOSHead):
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
-        arch (list): A list composed of dicts, where each dict defines
-            a convolution layer correspondingly, includes type, kernel,
-            padding, etc.
 
     Example:
         >>> import torch
