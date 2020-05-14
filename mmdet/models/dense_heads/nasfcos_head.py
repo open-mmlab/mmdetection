@@ -25,8 +25,7 @@ class NASFCOSHead(FCOSHead):
 
     Example:
         >>> import torch
-        >>> arch = [dict(type='Conv', kernel_size=1)]
-        >>> self = NASFCOSHead(11, 7, arch)
+        >>> self = NASFCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
         >>> cls_score, bbox_pred, centerness = self.forward(feats)
         >>> assert len(cls_score) == len(self.scales)
