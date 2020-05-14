@@ -75,7 +75,7 @@ class NASFCOS_FPN(nn.Module):
                 input_norm_cfg=norm_cfg,
                 resize_methods='upsample')
 
-        # Donate c3=f0, c4=f1, c5=f2 for convince
+        # Denote c3=f0, c4=f1, c5=f2 for convince
         self.fpn = nn.ModuleDict()
         self.fpn['c22_1'] = build_concat_cell(True, True)
         self.fpn['c22_2'] = build_concat_cell(True, True)
@@ -133,7 +133,7 @@ class NASFCOS_FPN(nn.Module):
         return tuple(ret)
 
     def init_weights(self):
-        for k, module in self.fpn.items():
+        for module in self.fpn.values():
             if hasattr(module, 'conv_out'):
                 xavier_init(module.conv_out.conv, distribution='uniform')
 

@@ -5,7 +5,7 @@ _base_ = [
 
 model = dict(
     type='NASFCOS',
-    pretrained='open-mmlab://resnet50_caffe',
+    pretrained='open-mmlab://resnet50_caffe_bgr',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -25,7 +25,7 @@ model = dict(
         conv_cfg=dict(type='DCNv2', deformable_groups=2)),
     bbox_head=dict(
         type='NASFCOSHead',
-        num_classes=81,
+        num_classes=80,
         in_channels=256,
         feat_channels=256,
         strides=[8, 16, 32, 64, 128],
@@ -58,7 +58,7 @@ test_cfg = dict(
     max_per_img=100)
 
 img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
