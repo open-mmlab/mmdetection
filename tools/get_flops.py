@@ -53,8 +53,9 @@ def main():
 
     if args.out:
         out = list()
-        out.append({'key': 'size', 'displayName': 'Size (Mp)', 'value': float(params.split(' ')[0])})
-        out.append({'key': 'complexity', 'displayName': 'Complexity (GFLOPs)', 'value': 2 * float(flops.split(' ')[0])})
+        out.append({'key': 'size', 'displayName': 'Size', 'value': float(params.split(' ')[0]), 'unit': 'Mp'})
+        out.append({'key': 'complexity', 'displayName': 'Complexity', 'value': 2 * float(flops.split(' ')[0]),
+                    'unit': 'GFLOPs'})
         with open(args.out, 'w') as write_file:
             json.dump(out, write_file, indent=4)
 
