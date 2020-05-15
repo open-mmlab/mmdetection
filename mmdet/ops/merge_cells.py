@@ -72,7 +72,9 @@ class BaseMergeCell(nn.Module):
             if self.resize_methods == 'interpolate':
                 return F.interpolate(x, size=size, mode='nearest')
             elif self.resize_methods == 'upsample':
-                return nn.Upsample(size=size, mode='bilinear')(x)
+                return nn.Upsample(
+                    size=size, mode='bilinear', align_corners=False)(
+                        x)
             else:
                 raise NotImplementedError
         else:
