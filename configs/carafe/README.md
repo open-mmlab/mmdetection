@@ -18,12 +18,12 @@ We provide config files to reproduce the object detection & instance segmentatio
 
 The results on COCO 2017 val is shown in the below table.
 
-| Method                 | Backbone | Style   | Lr schd | Test Proposal Num| Box AP | Mask AP | Download |
-| :--------------------: | :------: | :-----: |:-------:| :--------------: | :----: | :--------: |:-------: |
-| Faster R-CNN w/ CARAFE | R-50-FPN | pytorch | 1x      | 1000 |           |        |  |
-| -                      |    -     |  -      | -       | 2000 |           |        |  |
-| Mask R-CNN w/ CARAFE   | R-50-FPN | pytorch | 1x      | 1000 |           |        |  |
-| -                      |   -      |  -      |   -     | 2000 |           |        |  |
+| Method               | Backbone | Style   | Lr schd | Test Proposal Num | Inf time (fps) | Box AP | Mask AP | Download |
+|:--------------------:|:--------:|:-------:|:-------:|:-----------------:|:--------------:|:------:|:-------:|:-------:|
+| Faster R-CNN w/ CARAFE | R-50-FPN | pytorch | 1x      | 1000 | 16.5 | 38.6   |            |  |
+| -                      |    -     |  -      | -       | 2000 |      |        |            |  |
+| Mask R-CNN w/ CARAFE   | R-50-FPN | pytorch | 1x      | 1000 | 14.0 | 39.3   |            |  |
+| -                      |   -      |  -      |   -     | 2000 |      |        |            |  |
 
 ## Implementation
 

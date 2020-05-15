@@ -21,21 +21,20 @@ The results on COCO 2017 val is shown in the below table. (results on test-dev a
 |:------:|:---------------:|:-------:|:-------:|:--------:|:--------------:|:-------:|:----------------------------------------------------------------------------------------------------------------------------------------------:|
 | GA-RPN |    R-50-FPN     |  caffe  |   1x    |          |                |         |    |
 | GA-RPN |    R-101-FPN    |  caffe  |   1x    |          |                |         |    |
-| GA-RPN | X-101-32x4d-FPN | pytorch |   1x    | 8.5      | 9.5            | 70.6    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_rpn_x101_32x4d_fpn_1x_coco/ga_rpn_x101_32x4d_fpn_1x_coco_20200220-c28d1b18.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_rpn_x101_32x4d_fpn_1x_coco/ga_rpn_x101_32x4d_fpn_1x_coco_20200220_221326.log.json) |
-| GA-RPN | X-101-64x4d-FPN | pytorch |   1x    | 7.1      | 7.2            | 71.2    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_rpn_x101_64x4d_fpn_1x_coco/ga_rpn_x101_64x4d_fpn_1x_coco_20200225-3c6e1aa2.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_rpn_x101_64x4d_fpn_1x_coco/ga_rpn_x101_64x4d_fpn_1x_coco_20200225_152704.log.json) |
+| GA-RPN | X-101-32x4d-FPN | pytorch |   1x    | 8.5      | 10.0           | 70.6    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_rpn_x101_32x4d_fpn_1x_coco/ga_rpn_x101_32x4d_fpn_1x_coco_20200220-c28d1b18.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_rpn_x101_32x4d_fpn_1x_coco/ga_rpn_x101_32x4d_fpn_1x_coco_20200220_221326.log.json) |
+| GA-RPN | X-101-64x4d-FPN | pytorch |   1x    | 7.1      | 7.5            | 71.2    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_rpn_x101_64x4d_fpn_1x_coco/ga_rpn_x101_64x4d_fpn_1x_coco_20200225-3c6e1aa2.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_rpn_x101_64x4d_fpn_1x_coco/ga_rpn_x101_64x4d_fpn_1x_coco_20200225_152704.log.json) |
 
 
 |     Method     |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
 |:--------------:|:---------------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------------:|
-|  GA-Fast RCNN  |    R-50-FPN     |  caffe  |   1x    |          |                |        | |
 | GA-Faster RCNN |    R-50-FPN     |  caffe  |   1x    |          |                |        | |
-| GA-Faster RCNN |    R-101-FPN    |  caffe  |   1x    |          |                |        | |
-| GA-Faster RCNN | X-101-32x4d-FPN | pytorch |   1x    |          |                |        | |
-| GA-Faster RCNN | X-101-64x4d-FPN | pytorch |   1x    |          |                |        | |
+| GA-Faster RCNN |    R-101-FPN    |  caffe  |   1x    |  7.5     |                | 41.5   | |
+| GA-Faster RCNN | X-101-32x4d-FPN | pytorch |   1x    |          |     9.7        |        | |
+| GA-Faster RCNN | X-101-64x4d-FPN | pytorch |   1x    |          |     7.3        |        | |
 |  GA-RetinaNet  | R-50-FPN        |  caffe  |   1x    |          |                |        | |
 |  GA-RetinaNet  | R-101-FPN       |  caffe  |   1x    |          |                |        | |
-|  GA-RetinaNet  | X-101-32x4d-FPN | pytorch |   1x    |   6.9    |      9.5       |  40.5  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219-40c56caa.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219_223025.log.json) |
-|  GA-RetinaNet  | X-101-64x4d-FPN | pytorch |   1x    |   9.9    |      7.2       |  41.3  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226-ef9f7f1f.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226_221123.log.json) |
+|  GA-RetinaNet  | X-101-32x4d-FPN | pytorch |   1x    |  6.9     |     10.6       |  40.5  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219-40c56caa.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219_223025.log.json) |
+|  GA-RetinaNet  | X-101-64x4d-FPN | pytorch |   1x    |   9.9    |      7.7       |  41.3  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226-ef9f7f1f.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226_221123.log.json) |
 
 
 

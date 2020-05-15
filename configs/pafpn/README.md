@@ -16,3 +16,9 @@
 ```
 
 ## Results and Models
+
+## Results and Models
+
+| Backbone      | style      | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
+|:-------------:|:----------:|:-------:|:--------:|:--------------:|:------:|:-------:|:--------:|
+| R-50-FPN      | pytorch    | 1x      | 4.0      | 17.2           | 37.5   |         |  |
