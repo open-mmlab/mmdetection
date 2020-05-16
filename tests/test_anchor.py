@@ -28,7 +28,7 @@ def test_strides():
     expected_anchors = torch.tensor([[-5., -5., 5., 5.], [5., -5., 15., 5.],
                                      [-5., 5., 5., 15.], [5., 5., 15., 15.]])
 
-    assert torch.all(torch.eq(anchors[0], expected_anchors))
+    assert torch.equal(anchors[0], expected_anchors)
 
     # Different strides in x and y direction
     self = AnchorGenerator([(10, 20)], [1.], [1.], [10])
@@ -37,7 +37,7 @@ def test_strides():
     expected_anchors = torch.tensor([[-5., -5., 5., 5.], [5., -5., 15., 5.],
                                      [-5., 15., 5., 25.], [5., 15., 15., 25.]])
 
-    assert torch.all(torch.eq(anchors[0], expected_anchors))
+    assert torch.equal(anchors[0], expected_anchors)
 
 
 def test_ssd_anchor_generator():
