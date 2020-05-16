@@ -69,7 +69,7 @@ class RepeatDataset(object):
         return self.dataset[idx % self._ori_len]
 
     def get_cat_ids(self, idx):
-        self.dataset.get_cat_ids(idx % self._ori_len)
+        return self.dataset.get_cat_ids(idx % self._ori_len)
 
     def __len__(self):
         return self.times * self._ori_len
@@ -81,12 +81,14 @@ class RepeatFactorDataset(object):
     """A wrapper of repeated dataset with repeat factor.
 
     Suitable for training on class imbalanced datasets like LVIS. Following
-    the sampling stragety in [1], in each epoch, an image may appear multiple
+    the sampling strategy in [1], in each epoch, an image may appear multiple
     times based on its "repeat factor".
     The repeat factor for an image is a function of the frequency the rarest
     category labeled in that image. The "frequency of category c" in [0, 1]
     is defined by the fraction of images in the training set (without repeats)
     in which category c appears.
+    The dataset needs to instantiate :func:`self.get_cat_ids(idx)` to support
+    RepeatFactorDataset.
 
     References:
         .. [1]  https://arxiv.org/pdf/1903.00621v2.pdf
