@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, xavier_init
+from mmcv.cnn import ConvModule, caffe2_xavier_init
 
 from mmdet.ops.merge_cells import ConcatCell
 from ..builder import NECKS
@@ -135,7 +135,7 @@ class NASFCOS_FPN(nn.Module):
     def init_weights(self):
         for module in self.fpn.values():
             if hasattr(module, 'conv_out'):
-                xavier_init(module.conv_out.conv, distribution='uniform')
+                caffe2_xavier_init(module)
 
         for modules in [
                 self.adapt_convs.modules(),
@@ -143,4 +143,4 @@ class NASFCOS_FPN(nn.Module):
         ]:
             for module in modules:
                 if isinstance(module, nn.Conv2d):
-                    xavier_init(module, distribution='uniform')
+                    caffe2_xavier_init(module)

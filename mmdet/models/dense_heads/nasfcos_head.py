@@ -1,13 +1,11 @@
 import copy
 
 import torch.nn as nn
-from mmcv.cnn import (ConvModule, Scale, bias_init_with_prob, normal_init,
-                      xavier_init)
+from mmcv.cnn import (ConvModule, Scale, bias_init_with_prob,
+                      caffe2_xavier_init, normal_init)
 
 from mmdet.models.dense_heads.fcos_head import FCOSHead
 from ..builder import HEADS
-
-xavier_init
 
 
 @HEADS.register_module()
@@ -89,4 +87,4 @@ class NASFCOSHead(FCOSHead):
                 for module in modules.modules():
                     if isinstance(module, ConvModule) \
                             and isinstance(module.conv, nn.Conv2d):
-                        xavier_init(module.conv, distribution='uniform')
+                        caffe2_xavier_init(module.conv)
