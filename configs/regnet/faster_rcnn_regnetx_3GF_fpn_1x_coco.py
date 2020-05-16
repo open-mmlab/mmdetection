@@ -1,4 +1,8 @@
-_base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = [
+    '../_base_/models/faster_rcnn_r50_fpn.py',
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+]
 model = dict(
     pretrained='./regnet_pretrain/RegNetX-3.2GF.pth',
     backbone=dict(
@@ -7,7 +11,7 @@ model = dict(
         arch_parameter=dict(w0=88, wa=26.31, wm=2.25, group_w=48, bot_mul=1.0),
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch'),
     neck=dict(
@@ -21,20 +25,14 @@ img_norm_cfg = dict(
     std=[57.375, 57.12, 58.395],
     to_rgb=False)
 train_pipeline = [
-    # RegNet convert images to float32 directly after loading in PyCls
     dict(type='LoadImageFromFile', to_float32=True),
-    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
-    dict(
-        type='Resize',
-        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                   (1333, 768), (1333, 800)],
-        multiscale_mode='value',
-        keep_ratio=True),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -55,3 +53,4 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005)

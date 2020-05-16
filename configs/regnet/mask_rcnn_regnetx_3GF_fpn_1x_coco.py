@@ -1,4 +1,8 @@
-_base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = [
+    '../_base_/models/mask_rcnn_r50_fpn.py',
+    '../_base_/datasets/coco_instance.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+]
 model = dict(
     pretrained='./regnet_pretrain/RegNetX-3.2GF.pth',
     backbone=dict(
@@ -50,3 +54,4 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005)
