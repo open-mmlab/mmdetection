@@ -21,12 +21,6 @@ class NASFCOSHead(FCOSHead):
             category.
         in_channels (int): Number of channels in the input feature map.
 
-    Example:
-        >>> import torch
-        >>> self = NASFCOSHead(11, 7)
-        >>> feats = [torch.rand(1, 7, s, s).cuda() for s in [4, 8, 16, 32, 64]]
-        >>> cls_score, bbox_pred, centerness = self.forward(feats)
-        >>> assert len(cls_score) == len(self.scales)
     """
 
     def __init__(self, num_classes, in_channels, **kwargs):
