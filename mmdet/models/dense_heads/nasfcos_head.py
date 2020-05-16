@@ -20,7 +20,6 @@ class NASFCOSHead(FCOSHead):
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
-
     """
 
     def __init__(self, num_classes, in_channels, **kwargs):
