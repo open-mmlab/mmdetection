@@ -149,8 +149,21 @@ def batched_nms(bboxes, scores, inds, nms_cfg):
     return torch.cat([bboxes, scores[:, None]], -1), keep
 
 
-def nms_match(dets, thresh, device_id=None):
-    """Dispatch to either CPU or GPU NMS implementations."""
+def nms_match(dets, thresh):
+    """Matched dets into different groups by NMS.
+
+    NMS match is Similar to NMS but when a bbox is suppressed, nms match will
+    record the indice of supporessed bbox and form a group with the indice of
+    kept bbox. In each group, indice is sorted as score order.
+
+    Arguments:
+        dets (torch.Tensor or np.ndarray): bboxes with scores.
+        iou_thr (float): IoU threshold for NMS.
+
+    Returns:
+        List[Tensor]: The outer list corresponds different matched group, the
+            inner Tensor corresponds the indices for a group in score order.
+    """
     if dets.shape[0] == 0:
         matched = []
     else:
