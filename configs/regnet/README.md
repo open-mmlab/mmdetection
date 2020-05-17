@@ -25,7 +25,7 @@ To use a regnet model, there are two steps to do:
 
 ### Convert model
 
-We already convert most of the models compatible with ResNet-50/101 or ResNeXt-50/101 in our model zoo.
+We already prepare models of FLOPs from 800M to 12G in our model zoo.
 
 For more general usage, we also provide script `regnet2mmdet.py` in this directory to convert the key of models pretrained by [pycls](https://github.com/facebookresearch/pycls/) to
 ResNet-style checkpoints used in MMDetection.
@@ -69,9 +69,11 @@ For other pre-trained models or self-implemented regnet models, the users are re
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
 |    [R-50-FPN](../retinanet/retinanet_r50_fpn_1x_coco.py)     | pytorch |   1x    |   3.8    |      16.6      |  36.5  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130_002941.log.json) |
+|    [R-50-FPN](../retinanet/retinanet_r50_fpn_1x_coco.py)     | pytorch |   1x    |   3.8    |      16.6      |||
 |[RegNetX-800MF-FPN](./retinanet_regnetx-800MF_fpn_mstrain_1x_coco.py)| pytorch |   1x    |2.5||35.8|   |
 |[RegNetX-3.2GF-FPN](./retinanet_regnetx-1GF_fpn_mstrain_1x_coco.py)| pytorch |   1x    |3.3||37.1|   |
 |[RegNetX-3.2GF-FPN](./retinanet_regnetx-3GF_fpn_mstrain_1x_coco.py)| pytorch |   1x    |4.2 ||39.0|   |
 
 **Note**
 1. The models are trained using a different weight decay, i.e., `weight_decay=5e-5` according to the paper. This brings improvement of at least 0.7 AP absolute but does not improve the model using ResNet-50.
+2. The models of RetinaNet are trained with learning rate 0.02 with gradient clip. We find that using learning rate 0.02 could improve the results by at least 0.7 AP absolute and gradient clip is necessary to stabilize the training.

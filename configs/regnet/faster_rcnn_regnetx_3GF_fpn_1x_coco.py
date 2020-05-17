@@ -4,7 +4,7 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 model = dict(
-    pretrained='./regnet_pretrain/RegNetX-3.2GF.pth',
+    pretrained='open-mmlab://regnetx_3.2gf',
     backbone=dict(
         type='RegNet',
         depth=25,

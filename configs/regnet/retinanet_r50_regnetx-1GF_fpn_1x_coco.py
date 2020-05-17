@@ -1,6 +1,6 @@
 _base_ = './retinanet_r50_regnetx-3GF_fpn_1x_coco.py'
 model = dict(
-    pretrained='./regnet_pretrain/RegNetX-1.6GF.pth',
+    pretrained='open-mmlab://regnetx_1.6gf',
     backbone=dict(
         type='RegNet',
         depth=18,
