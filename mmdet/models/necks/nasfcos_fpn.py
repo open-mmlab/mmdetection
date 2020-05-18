@@ -59,21 +59,21 @@ class NASFCOS_FPN(nn.Module):
         # C2 is omitted according to the paper
         extra_levels = num_outs - self.backbone_end_level + self.start_level
 
-        def build_concat_cell(with_x_conv, with_y_conv):
+        def build_concat_cell(with_input1_conv, with_input2_conv):
             cell_conv_cfg = dict(
                 kernel_size=1, padding=0, bias=False, groups=out_channels)
             return ConcatCell(
+                out_channels * 2,
                 out_channels,
-                'concat',
                 True,
                 cell_conv_cfg,
                 dict(type='BN'),
                 order=('norm', 'act', 'conv'),
-                with_input_conv_x=with_x_conv,
-                with_input_conv_y=with_y_conv,
+                with_input1_conv=with_input1_conv,
+                with_input2_conv=with_input2_conv,
                 input_conv_cfg=conv_cfg,
                 input_norm_cfg=norm_cfg,
-                resize_methods='upsample')
+                upsample_mode='nearest')
 
         # Denote c3=f0, c4=f1, c5=f2 for convince
         self.fpn = nn.ModuleDict()
@@ -95,7 +95,6 @@ class NASFCOS_FPN(nn.Module):
                     3,
                     stride=2,
                     padding=1,
-                    norm_cfg=None,
                     act_cfg=extra_act_cfg,
                     order=('act', 'norm', 'conv')))
 
@@ -135,7 +134,7 @@ class NASFCOS_FPN(nn.Module):
     def init_weights(self):
         for module in self.fpn.values():
             if hasattr(module, 'conv_out'):
-                caffe2_xavier_init(module)
+                caffe2_xavier_init(module.conv_out.conv)
 
         for modules in [
                 self.adapt_convs.modules(),

@@ -16,13 +16,9 @@ class NASFCOSHead(FCOSHead):
     of classification branch and bbox regression branch, where a structure
     of "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
 
-    Args:
-        num_classes (int): Number of categories excluding the background
-            category.
-        in_channels (int): Number of channels in the input feature map.
     """
 
-    def __init__(self, num_classes, in_channels, **kwargs):
+    def _init_layers(self):
         dconv3x3_config = dict(
             type='DCNv2',
             kernel_size=3,
@@ -35,10 +31,6 @@ class NASFCOSHead(FCOSHead):
         self.arch_config = [
             dconv3x3_config, conv3x3_config, dconv3x3_config, conv1x1_config
         ]
-
-        super(NASFCOSHead, self).__init__(num_classes, in_channels, **kwargs)
-
-    def _init_layers(self):
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
         for i, op_ in enumerate(self.arch_config):
@@ -76,8 +68,7 @@ class NASFCOSHead(FCOSHead):
         normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
 
         for branch in [self.cls_convs, self.reg_convs]:
-            for modules in branch:
-                for module in modules.modules():
-                    if isinstance(module, ConvModule) \
-                            and isinstance(module.conv, nn.Conv2d):
-                        caffe2_xavier_init(module.conv)
+            for module in branch.modules():
+                if isinstance(module, ConvModule) \
+                        and isinstance(module.conv, nn.Conv2d):
+                    caffe2_xavier_init(module.conv)
