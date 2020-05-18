@@ -21,7 +21,7 @@ def auto_fp16(apply_to=None, out_fp32=False):
 
     Example:
 
-        >>> class MyModule1(nn.Module)
+        >>> class MyModule1(nn.Module):
         >>>
         >>>     # Convert x and y to fp16
         >>>     @auto_fp16()
@@ -99,7 +99,7 @@ def force_fp32(apply_to=None, out_fp16=False):
 
     Example:
 
-        >>> class MyModule1(nn.Module)
+        >>> class MyModule1(nn.Module):
         >>>
         >>>     # Convert x and y to fp32
         >>>     @force_fp32()
