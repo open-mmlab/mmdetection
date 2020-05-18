@@ -17,6 +17,8 @@ def isr_p(cls_score,
     Args:
         cls_score (Tensor): Predicted classification scores.
         bbox_pred (Tensor): Predicted bbox deltas.
+        bbox_targets (tuple[Tensor]): A tuple of bbox targets, the are
+            labels, label_weights, bbox_targets, bbox_weights, respectively.
         rois (Tensor): Anchors (single_stage) in shape (n, 4) or RoIs
             (two_stage) in shape (n, 5).
         sampling_results (obj): Sampling results.
@@ -52,6 +54,8 @@ def isr_p(cls_score,
     cls_score = cls_score.detach()
     bbox_pred = bbox_pred.detach()
 
+    # For single stage detectors, rois here indicate anchors, in shape (N, 4)
+    # For two stage detectors, rois are in shape (N, 5)
     if rois.size(-1) == 5:
         pos_rois = rois[pos_label_inds][:, 1:]
     else:
@@ -73,8 +77,8 @@ def isr_p(cls_score,
     # Two steps to compute IoU-HLR. Samples are first sorted by IoU locally,
     # then sorted again within the same-rank group
     max_l_num = pos_labels.bincount().max()
-    for l in pos_labels.unique():
-        l_inds = (pos_labels == l).nonzero().view(-1)
+    for label in pos_labels.unique():
+        l_inds = (pos_labels == label).nonzero().view(-1)
         l_gts = gts[l_inds]
         for t in l_gts.unique():
             t_inds = l_inds[l_gts == t]
@@ -152,6 +156,8 @@ def carl_loss(cls_score,
 
     if avg_factor is None:
         avg_factor = bbox_targets.size(0)
+    # if is class agnostic, bbox pred is in shape (N, 4)
+    # otherwise, bbox pred is in shape (N, #classes, 4)
     if bbox_pred.size(-1) > 4:
         bbox_pred = bbox_pred.view(bbox_pred.size(0), -1, 4)
         pos_bbox_preds = bbox_pred[pos_label_inds, pos_labels]

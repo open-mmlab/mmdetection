@@ -11,9 +11,9 @@ from .sampling_result import SamplingResult
 class ScoreHLRSampler(BaseSampler):
     """Importance-based Sample Reweighting (ISR_N), negative part.
 
-    ScoreHLRSampler differents with RandomSampler in negative part.
-    It firstly computes Score-HLR in a two-step way, then linearly maps score
-    hlr to the loss weights.
+    Score hierarchical local rank (HLR) differents with RandomSampler in
+    negative part. It firstly computes Score-HLR in a two-step way,
+    then linearly maps score hlr to the loss weights.
 
     Args:
         num (int): Sample total num.
@@ -57,7 +57,7 @@ class ScoreHLRSampler(BaseSampler):
 
     @staticmethod
     def random_choice(gallery, num):
-        """Random select some elements from the gallery.
+        """Randomly select some elements from the gallery.
 
         If `gallery` is a Tensor, the returned indices will be a Tensor;
         If `gallery` is a ndarray or list, the returned indices will be a
@@ -101,8 +101,8 @@ class ScoreHLRSampler(BaseSampler):
 
         Score-HLR sampler is done in the following steps:
         1. Take the maximum positive score prediction of each negative samples
-            as s_i
-        2. Filter negative samples whose s_i <= score_thr, the left samples
+            as s_i.
+        2. Filter out negative samples whose s_i <= score_thr, the left samples
             are called valid samples.
         3. Use NMS-Match to divide valid samples into different groups,
             samples in the same group will greatly overlap with each other

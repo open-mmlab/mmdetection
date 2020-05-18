@@ -6,8 +6,16 @@ from ..losses import carl_loss, isr_p
 from .retina_head import RetinaHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class PISARetinaHead(RetinaHead):
+    """PISA Retinanet Head.
+
+    The head owns the same structure with Retinanet Head, but differs in two
+        aspects:
+        1. Importance-based Sample Reweighting Positive (ISR-P) is applied to
+            change the positive loss weights.
+        2. Classification-aware regression loss is adopted as a third loss.
+    """
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
@@ -73,6 +81,7 @@ class PISARetinaHead(RetinaHead):
         flatten_bbox_weights = torch.cat(
             bbox_weights_list, dim=1).reshape(-1, 4)
 
+        # Apply ISR-P
         isr_cfg = self.train_cfg.get('isr', None)
         if isr_cfg is not None:
             all_targets = (flatten_labels, flatten_label_weights,
@@ -105,6 +114,7 @@ class PISARetinaHead(RetinaHead):
             avg_factor=num_total_samples)
         loss_dict = dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
+        # CARL Loss
         carl_cfg = self.train_cfg.get('carl', None)
         if carl_cfg is not None:
             loss_carl = carl_loss(

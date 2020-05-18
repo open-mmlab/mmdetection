@@ -7,7 +7,7 @@ from .ssd_head import SSDHead
 
 
 # TODO: add loss evaluator for SSD
-@HEADS.register_module
+@HEADS.register_module()
 class PISASSDHead(SSDHead):
 
     def loss(self,
@@ -65,6 +65,7 @@ class PISASSDHead(SSDHead):
         all_targets = (all_labels.view(-1), all_label_weights.view(-1),
                        all_bbox_targets.view(-1,
                                              4), all_bbox_weights.view(-1, 4))
+        # apply ISR-P
         if isr_cfg is not None:
             all_targets = isr_p(
                 all_cls_scores.view(-1, all_cls_scores.size(-1)),
@@ -82,6 +83,7 @@ class PISASSDHead(SSDHead):
             all_bbox_targets = new_bbox_targets.view(all_bbox_targets.shape)
             all_bbox_weights = new_bbox_weights.view(all_bbox_weights.shape)
 
+        # add CARL loss
         carl_loss_cfg = self.train_cfg.get('carl', None)
         if carl_loss_cfg is not None:
             loss_carl = carl_loss(

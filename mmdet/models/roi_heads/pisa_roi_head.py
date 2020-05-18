@@ -4,7 +4,7 @@ from ..losses.pisa_loss import carl_loss, isr_p
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class PISARoIHead(StandardRoIHead):
 
     def forward_train(self,
@@ -129,6 +129,7 @@ class PISARoIHead(StandardRoIHead):
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
 
+        # Apply ISR-P
         isr_cfg = self.train_cfg.get('isr', None)
         if isr_cfg is not None:
             bbox_targets = isr_p(cls_score, bbox_pred, bbox_targets, rois,
@@ -137,6 +138,7 @@ class PISARoIHead(StandardRoIHead):
         loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, rois,
                                         *bbox_targets)
 
+        # Add CARL Loss
         carl_cfg = self.train_cfg.get('carl', None)
         if carl_cfg is not None:
             loss_carl = carl_loss(cls_score, bbox_targets[0], bbox_pred,
