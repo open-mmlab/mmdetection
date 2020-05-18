@@ -63,12 +63,12 @@ class NASFCOS_FPN(nn.Module):
             cell_conv_cfg = dict(
                 kernel_size=1, padding=0, bias=False, groups=out_channels)
             return ConcatCell(
-                out_channels * 2,
-                out_channels,
-                True,
-                cell_conv_cfg,
-                dict(type='BN'),
-                order=('norm', 'act', 'conv'),
+                in_channels=out_channels,
+                out_channels=out_channels,
+                with_out_conv=True,
+                out_conv_cfg=cell_conv_cfg,
+                out_norm_cfg=dict(type='BN'),
+                out_conv_order=('norm', 'act', 'conv'),
                 with_input1_conv=with_input1_conv,
                 with_input2_conv=with_input2_conv,
                 input_conv_cfg=conv_cfg,
@@ -134,7 +134,7 @@ class NASFCOS_FPN(nn.Module):
     def init_weights(self):
         for module in self.fpn.values():
             if hasattr(module, 'conv_out'):
-                caffe2_xavier_init(module.conv_out.conv)
+                caffe2_xavier_init(module.out_conv.conv)
 
         for modules in [
                 self.adapt_convs.modules(),
