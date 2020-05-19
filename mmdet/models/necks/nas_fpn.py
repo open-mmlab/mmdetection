@@ -71,39 +71,39 @@ class NASFPN(nn.Module):
             stage['gp_64_4'] = GlobalPoolingCell(
                 in_channels=out_channels,
                 out_channels=out_channels,
-                norm_cfg=norm_cfg)
+                out_norm_cfg=norm_cfg)
             # sum(p4_1, p4) -> p4_2
             stage['sum_44_4'] = SumCell(
                 in_channels=out_channels,
                 out_channels=out_channels,
-                norm_cfg=norm_cfg)
+                out_norm_cfg=norm_cfg)
             # sum(p4_2, p3) -> p3_out
             stage['sum_43_3'] = SumCell(
                 in_channels=out_channels,
                 out_channels=out_channels,
-                norm_cfg=norm_cfg)
+                out_norm_cfg=norm_cfg)
             # sum(p3_out, p4_2) -> p4_out
             stage['sum_34_4'] = SumCell(
                 in_channels=out_channels,
                 out_channels=out_channels,
-                norm_cfg=norm_cfg)
+                out_norm_cfg=norm_cfg)
             # sum(p5, gp(p4_out, p3_out)) -> p5_out
             stage['gp_43_5'] = GlobalPoolingCell(with_out_conv=False)
             stage['sum_55_5'] = SumCell(
                 in_channels=out_channels,
                 out_channels=out_channels,
-                norm_cfg=norm_cfg)
+                out_norm_cfg=norm_cfg)
             # sum(p7, gp(p5_out, p4_2)) -> p7_out
             stage['gp_54_7'] = GlobalPoolingCell(with_out_conv=False)
             stage['sum_77_7'] = SumCell(
                 in_channels=out_channels,
                 out_channels=out_channels,
-                norm_cfg=norm_cfg)
+                out_norm_cfg=norm_cfg)
             # gp(p7_out, p5_out) -> p6_out
             stage['gp_75_6'] = GlobalPoolingCell(
                 in_channels=out_channels,
                 out_channels=out_channels,
-                norm_cfg=norm_cfg)
+                out_norm_cfg=norm_cfg)
             self.fpn_stages.append(stage)
 
     def init_weights(self):

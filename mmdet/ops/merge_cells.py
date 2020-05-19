@@ -144,8 +144,8 @@ class ConcatCell(BaseMergeCell):
 
 class GlobalPoolingCell(BaseMergeCell):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, in_channels=None, out_channels=None, **kwargs):
+        super().__init__(in_channels, out_channels, **kwargs)
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
 
     def _binary_op(self, x1, x2):
