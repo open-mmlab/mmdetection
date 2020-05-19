@@ -87,7 +87,8 @@ def train_detector(model,
                    distributed=False,
                    validate=False,
                    timestamp=None,
-                   meta=None):
+                   meta=None,
+                   batch_processor=None):
     logger = get_root_logger(cfg.log_level)
 
     # prepare data loaders
@@ -119,6 +120,7 @@ def train_detector(model,
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
+    assert callable(batch_processor), 'batch_processor should callable, but it is {}.'.format(batch_processor)
     runner = Runner(
         model,
         batch_processor,

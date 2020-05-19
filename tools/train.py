@@ -1,6 +1,7 @@
 from __future__ import division
 import argparse
 import copy
+import importlib
 import os
 import os.path as osp
 import time
@@ -54,6 +55,11 @@ def parse_args():
         '--autoscale-lr',
         action='store_true',
         help='automatically scale lr with the number of gpus')
+    parser.add_argument(
+        '--batch-processor', '-bp',
+        default='mmdet.apis.train.batch_processor',
+        help='path of self-defined batch process function'
+    )
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -137,6 +143,7 @@ def main():
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
+    batch_processor = importlib.import_module(args.batch_processor)
     train_detector(
         model,
         datasets,
@@ -144,7 +151,8 @@ def main():
         distributed=distributed,
         validate=args.validate,
         timestamp=timestamp,
-        meta=meta)
+        meta=meta,
+        batch_processor=batch_processor)
 
 
 if __name__ == '__main__':
