@@ -57,7 +57,6 @@ def test_nms_device_and_dtypes_gpu():
         pytest.skip('test requires GPU and torch+cuda')
 
     iou_thr = 0.6
-
     base_dets = np.array([[49.1, 32.4, 51.0, 35.9, 0.1],
                           [49.3, 32.9, 51.0, 35.3, 0.05],
                           [35.3, 11.5, 39.9, 14.5, 0.9],

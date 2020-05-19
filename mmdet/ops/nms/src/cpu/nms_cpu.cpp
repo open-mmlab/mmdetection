@@ -39,8 +39,7 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
 
   for (int64_t _i = 0; _i < ndets; _i++) {
     auto i = order[_i];
-    if (suppressed[i] == 1)
-      continue;
+    if (suppressed[i] == 1) continue;
     keep[num_to_keep++] = i;
     auto ix1 = x1[i];
     auto iy1 = y1[i];
@@ -50,8 +49,7 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
 
     for (int64_t _j = _i + 1; _j < ndets; _j++) {
       auto j = order[_j];
-      if (suppressed[j] == 1)
-        continue;
+      if (suppressed[j] == 1) continue;
       auto xx1 = std::max(ix1, x1[j]);
       auto yy1 = std::max(iy1, y1[j]);
       auto xx2 = std::min(ix2, x2[j]);
@@ -61,8 +59,7 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
       auto h = std::max(static_cast<scalar_t>(0), yy2 - yy1);
       auto inter = w * h;
       auto ovr = inter / (iarea + areas[j] - inter);
-      if (ovr > threshold)
-        suppressed[j] = 1;
+      if (ovr > threshold) suppressed[j] = 1;
     }
   }
   return keep_t.narrow(/*dim=*/0, /*start=*/0, /*length=*/num_to_keep);
