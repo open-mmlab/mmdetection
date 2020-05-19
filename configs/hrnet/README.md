@@ -60,7 +60,7 @@
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
 | :-------------: | :-----: | :-----: | :------: | :-------------:|:------:| :------:|:--------:|
 |   HRNetV2p-W18  | pytorch |   20e   |          |                |        |         |  |
-|   HRNetV2p-W32  | pytorch |   20e   |          |                |        |         |  |
+|   HRNetV2p-W32  | pytorch |   20e   | 1.1      |                |44.3    |38.6      |  |
 |   HRNetV2p-W48  | pytorch |   20e   |          |                |        |         |  |
 
 

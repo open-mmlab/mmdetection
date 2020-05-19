@@ -29,8 +29,8 @@
 |    R-101-FPN    | pytorch |   20e   |          |                |        | |
 | X-101-32x4d-FPN | pytorch |   1x    |   7.6    |      10.2      |  43.7  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_1x_coco/cascade_rcnn_x101_32x4d_fpn_1x_coco_20200316-95c2deb6.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_1x_coco/cascade_rcnn_x101_32x4d_fpn_1x_coco_20200316_055608.log.json) |
 | X-101-32x4d-FPN | pytorch |   20e   |          |                |        | |
-| X-101-64x4d-FPN | pytorch |   1x    |          |                |        | |
-| X-101-64x4d-FPN | pytorch |   20e   |          |                |        | |
+| X-101-64x4d-FPN | pytorch |   1x    |  10.7    |                | 44.7   | |
+| X-101-64x4d-FPN | pytorch |   20e   |  10.7    |                | 44.5   | |
 
 
 ### Cascade Mask R-CNN
