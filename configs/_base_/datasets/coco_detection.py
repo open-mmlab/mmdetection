@@ -37,12 +37,12 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'val_10_mmdetection.pkl,
+        ann_file=data_root + 'val_10_mmdetection.pkl',
         img_prefix=data_root + 'train/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'test_10_mmdetection.pkl,
+        ann_file=data_root + 'test_10_mmdetection.pkl',
         img_prefix=data_root + 'train/',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')
