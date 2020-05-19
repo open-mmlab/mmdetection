@@ -1,5 +1,4 @@
 _base_ = '../mask_rcnn/mask_rcnn_r50_fpn_2x_coco.py'
 model = dict(
-    pretrained=  # NOQA
-    'https://shanghuagao.oss-cn-beijing.aliyuncs.com/res2net/res2net101_v1b_26w_4s_mmdetv2-f0a600f9.pth',  # NOQA
+    pretrained='open-mmlab://res2net101_v1d_26w_4s',
     backbone=dict(type='Res2Net', depth=101, scale=4, base_width=26))
