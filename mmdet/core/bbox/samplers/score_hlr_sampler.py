@@ -9,16 +9,20 @@ from .sampling_result import SamplingResult
 
 @BBOX_SAMPLERS.register_module()
 class ScoreHLRSampler(BaseSampler):
-    """Importance-based Sample Reweighting (ISR_N), negative part.
+    """Importance-based Sample Reweighting (ISR_N), negative part,
+        described in `PISA <https://arxiv.org/abs/1904.04821>`_.
+
+    References:
+        .. [1] https://arxiv.org/pdf/1604.03540.pdf
 
     Score hierarchical local rank (HLR) differents with RandomSampler in
     negative part. It firstly computes Score-HLR in a two-step way,
     then linearly maps score hlr to the loss weights.
 
     Args:
-        num (int): Sample total num.
-        pos_fraction (float): Fraction of positive.
-        context (:obj: BaseRoIHead): RoI head that the sampler belongs to.
+        num (int): Totol number of sampled RoIs.
+        pos_fraction (float): Fraction of positive samples.
+        context (:obj:`BaseRoIHead`): RoI head that the sampler belongs to.
         neg_pos_ub (int): Upper bound of the ratio of num negative to num
             positive, -1 means no upper bound.
         add_gt_as_proposals (bool): Whether to add ground truth as proposals.
