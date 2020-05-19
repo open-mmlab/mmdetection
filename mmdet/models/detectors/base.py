@@ -188,6 +188,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         img = img.copy()
         if isinstance(result, tuple):
             bbox_result, segm_result = result
+            if isinstance(segm_result, tuple):
+                segm_result = segm_result[0]  # ms rcnn
         else:
             bbox_result, segm_result = result, None
         bboxes = np.vstack(bbox_result)
