@@ -89,6 +89,7 @@ Other features
 - [x] [FSAF](configs/fsaf/README.md)
 - [x] [PAFPN](configs/pafpn/README.md)
 
+Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
 ## Installation
 
