@@ -361,7 +361,7 @@ python tools/analyze_logs.py plot_curve log.json --keys loss_cls --legend loss_c
 - Plot the classification and regression loss of some run, and save the figure to a pdf.
 
 ```shell
-python tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_reg --out losses.pdf
+python tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_bbox --out losses.pdf
 ```
 
 - Compare the bbox mAP of two runs in the same figure.
@@ -373,7 +373,7 @@ python tools/analyze_logs.py plot_curve log1.json log2.json --keys bbox_mAP --le
 You can also compute the average training speed.
 
 ```shell
-python tools/analyze_logs.py cal_train_time ${CONFIG_FILE} [--include-outliers]
+python tools/analyze_logs.py cal_train_time log.json [--include-outliers]
 ```
 
 The output is expected to be like the following.
