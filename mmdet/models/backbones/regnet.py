@@ -100,16 +100,23 @@ class RegNet(ResNet):
     Example:
         >>> from mmdet.models import RegNet
         >>> import torch
-        >>> self = ResNeXt(depth=50)
+        >>> self = RegNet(
+                depth=25,
+                arch_parameter=dict(
+                    w0=88,
+                    wa=26.31,
+                    wm=2.25,
+                    group_w=48,
+                    bot_mul=1.0))
         >>> self.eval()
         >>> inputs = torch.rand(1, 3, 32, 32)
         >>> level_outputs = self.forward(inputs)
         >>> for level_out in level_outputs:
         ...     print(tuple(level_out.shape))
-        (1, 256, 8, 8)
-        (1, 512, 4, 4)
-        (1, 1024, 2, 2)
-        (1, 2048, 1, 1)
+        (1, 96, 8, 8)
+        (1, 192, 4, 4)
+        (1, 432, 2, 2)
+        (1, 1008, 1, 1)
     """
 
     def __init__(self,

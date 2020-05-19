@@ -32,7 +32,7 @@ def test_config_build_detector():
     print(f'Found config_dpath = {config_dpath}')
 
     import glob
-    config_fpaths = list(glob.glob(join(config_dpath, '**', '*.py')))
+    config_fpaths = list(glob.glob(join(config_dpath, 'regnet', '*.py')))
     config_fpaths = [p for p in config_fpaths if p.find('_base_') == -1]
     config_names = [relpath(p, config_dpath) for p in config_fpaths]
 
@@ -42,19 +42,19 @@ def test_config_build_detector():
         config_fpath = join(config_dpath, config_fname)
         config_mod = Config.fromfile(config_fpath)
 
-        config_mod.model
-        config_mod.train_cfg
-        config_mod.test_cfg
+        # config_mod.model
+        # config_mod.train_cfg
+        # config_mod.test_cfg
         print(f'Building detector, config_fpath = {config_fpath}')
 
         # Remove pretrained keys to allow for testing in an offline environment
-        if 'pretrained' in config_mod.model:
-            config_mod.model['pretrained'] = None
+        if 'pretrained' in config_mod['model']:
+            config_mod['model']['pretrained'] = None
 
         detector = build_detector(
-            config_mod.model,
-            train_cfg=config_mod.train_cfg,
-            test_cfg=config_mod.test_cfg)
+            config_mod['model'],
+            train_cfg=config_mod['train_cfg'],
+            test_cfg=config_mod['test_cfg'])
         assert detector is not None
 
         optimizer = build_optimizer(detector, config_mod.optimizer)
