@@ -24,3 +24,23 @@
 | X-101-32x4d-FPN | pytorch |   2x    |    -     |       -        |  40.1  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_x101_32x4d_fpn_2x_coco/retinanet_x101_32x4d_fpn_2x_coco_20200131-237fc5e1.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_x101_32x4d_fpn_2x_coco/retinanet_x101_32x4d_fpn_2x_coco_20200131_114812.log.json) |
 | X-101-64x4d-FPN | pytorch |   1x    |   10.0   |      8.3       |  41.0  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_1x_coco/retinanet_x101_64x4d_fpn_1x_coco_20200130-366f5af1.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_1x_coco/retinanet_x101_64x4d_fpn_1x_coco_20200130_003008.log.json) |
 | X-101-64x4d-FPN | pytorch |   2x    |    -     |       -        |  40.8  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_2x_coco/retinanet_x101_64x4d_fpn_2x_coco_20200131-bca068ab.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_2x_coco/retinanet_x101_64x4d_fpn_2x_coco_20200131_114833.log.json) |
+
+### Some tricks
+
+We also support exponential momentum average (EMA) over the number of positive samples as loss normalizer to improve the performance. This trick is introduced in [Detectron2](https://github.com/facebookresearch/detectron2/blob/master/detectron2/modeling/meta_arch/retinanet.py#L103) to stabilize the training by reducing the variance of foreground number. Adding the following two lines in the head config could enable this option.
+
+```python
+loss_normalizer=100,
+loss_normalizer_momentum=0.9,
+```
+
+To enable a fair comparison when benchmarking with Detectron2, we use it in the benchmark configs. However, we do not recommend it as a default option since so many methods have proposed based on the original baseline. We compare the performance of models before/after adding EMA loss normalizer in the following table.
+
+|    Backbone     |  Style  |Multi-scale Training|EMA Normalizer |Lr schd | Mem (GB) | Inf time (fps) | box AP | Download  |
+| :-------------: | :-----: |Multi-scale Training|:-----:  |:-----: | :------: | :------------: | :----: | :-------: |
+|    R-50-FPN     | pytorch | ✗       |✗       |  1x    |   3.8    |      16.6      |  36.5  |  |
+|    R-50-FPN     | pytorch | ✗       |✓       |  1x    |   3.8    |      16.6      |  37.1  |  |
+|    R-50-FPN     | pytorch |✓        |✗       |  1x    |  |      16.6      |  37.0  |  |
+|    R-50-FPN     | pytorch |✓        |✓       |  1x    |  |      16.6      |  37.9  |  |
+|    R-50-FPN     | pytorch |✓        |✗       |  3x    |  |      16.6      |        |  |
+|    R-50-FPN     | pytorch |✓        |✓       |  3x    |  |      16.6      |        |  |
