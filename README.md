@@ -7,13 +7,13 @@
 ![](https://img.shields.io/badge/onnxruntime-1.1.2-yellow)
 
 
-This is an Object Detection and Instance Segmentation toolbox, that is a part of [OpenVINO Training Extensions](https://github.com/opencv/openvino_training_extensions).
+This is an Object Detection and Instance Segmentation toolbox, that is a part of [OpenVINO Training Extensions](https://github.com/opencv/openvino_training_extensions). 
 
 Project is based on open-mmlab's [MMDetection](https://github.com/open-mmlab/mmdetection).
 
 ## Installation
 
-Please refer to [install.md](docs/install.md) for installation and dataset preparation.
+Please refer to [INSTALL.md](docs/INSTALL.md) for installation and dataset preparation.
 
 ## Get Started
 
