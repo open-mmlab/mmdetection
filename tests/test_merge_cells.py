@@ -36,7 +36,10 @@ def test_concat_cell():
 def test_global_pool_cell():
     inputs_x = torch.randn([2, 256, 32, 32])
     inputs_y = torch.randn([2, 256, 32, 32])
-    gp_cell = GlobalPoolingCell()
+    gp_cell = GlobalPoolingCell(with_out_conv=False)
+    gp_cell_out = gp_cell(inputs_x, inputs_y, out_size=inputs_x.shape[-2:])
+    assert (gp_cell_out.size() == inputs_x.size())
+    gp_cell = GlobalPoolingCell(256, 256)
     gp_cell_out = gp_cell(inputs_x, inputs_y, out_size=inputs_x.shape[-2:])
     assert (gp_cell_out.size() == inputs_x.size())
 
