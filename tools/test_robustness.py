@@ -16,7 +16,7 @@ from robustness_eval import get_results
 
 from mmdet import datasets
 from mmdet.apis import set_random_seed
-from mmdet.core import eval_map, wrap_fp16_model
+from mmdet.core import encode_mask_results, eval_map, wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
@@ -98,6 +98,10 @@ def single_gpu_test(model, data_loader, show=False):
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
+            if isinstance(result, tuple):
+                bbox_results, mask_results = result
+                encoded_mask_results = encode_mask_results(mask_results)
+                result = bbox_results, encoded_mask_results
         results.append(result)
 
         if show:
@@ -119,6 +123,10 @@ def multi_gpu_test(model, data_loader, tmpdir=None):
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
+            if isinstance(result, tuple):
+                bbox_results, mask_results = result
+                encoded_mask_results = encode_mask_results(mask_results)
+                result = bbox_results, encoded_mask_results
         results.append(result)
 
         if rank == 0:

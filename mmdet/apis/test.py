@@ -4,36 +4,14 @@ import shutil
 import tempfile
 
 import mmcv
-import numpy as np
-import pycocotools.mask as mask_util
 import torch
 import torch.distributed as dist
 from mmcv.runner import get_dist_info
 
-from mmdet.core import tensor2imgs
+from mmdet.core import encode_mask_results, tensor2imgs
 
 
 # TODO: move this function to more proper place
-def encode_mask_results(mask_results):
-    if isinstance(mask_results, tuple):  # mask scoring
-        cls_segms, cls_mask_scores = mask_results
-    else:
-        cls_segms = mask_results
-    num_classes = len(cls_segms)
-    encoded_mask_results = [[] for _ in range(num_classes)]
-    for i in range(len(cls_segms)):
-        for cls_segm in cls_segms[i]:
-            encoded_mask_results[i].append(
-                mask_util.encode(
-                    np.array(
-                        cls_segm[:, :, np.newaxis], order='F',
-                        dtype='uint8'))[0])  # encoded with RLE
-    if isinstance(mask_results, tuple):
-        return encoded_mask_results, cls_mask_scores
-    else:
-        return encoded_mask_results
-
-
 def single_gpu_test(model,
                     data_loader,
                     show=False,

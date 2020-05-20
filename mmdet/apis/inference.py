@@ -6,7 +6,7 @@ import torch
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
-from mmdet.core import get_classes
+from mmdet.core import encode_mask_results, get_classes
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
 from mmdet.ops import RoIAlign, RoIPool
@@ -99,6 +99,10 @@ def inference_detector(model, img):
     # forward the model
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
+        if isinstance(result, tuple):
+            bbox_results, mask_results = result
+            encoded_mask_results = encode_mask_results(mask_results)
+            result = bbox_results, encoded_mask_results
     return result
 
 
