@@ -3,72 +3,15 @@ import torch.nn as nn
 from mmcv.cnn import build_conv_layer, build_norm_layer
 
 from ..builder import BACKBONES
-from .resnet import Bottleneck as _Bottleneck
+from .resnext import Bottleneck
 from .resnet import ResNet
-
-
-class Bottleneck(_Bottleneck):
-    """Bottleneck block for RegNets."""
-    expansion = 1
-
-    def __init__(self, inplanes, planes, group_width=8, **kwargs):
-        super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
-        width = int(round(planes * self.expansion))
-        groups = width // group_width
-        self.norm1_name, norm1 = build_norm_layer(
-            self.norm_cfg, width, postfix=1)
-        self.norm2_name, norm2 = build_norm_layer(
-            self.norm_cfg, width, postfix=2)
-        self.norm3_name, norm3 = build_norm_layer(
-            self.norm_cfg, self.planes, postfix=3)
-
-        self.conv1 = build_conv_layer(
-            self.conv_cfg,
-            self.inplanes,
-            width,
-            kernel_size=1,
-            stride=self.conv1_stride,
-            bias=False)
-        self.add_module(self.norm1_name, norm1)
-        fallback_on_stride = False
-        self.with_modulated_dcn = False
-        if self.with_dcn:
-            fallback_on_stride = self.dcn.pop('fallback_on_stride', False)
-        if not self.with_dcn or fallback_on_stride:
-            self.conv2 = build_conv_layer(
-                self.conv_cfg,
-                width,
-                width,
-                kernel_size=3,
-                stride=self.conv2_stride,
-                padding=self.dilation,
-                dilation=self.dilation,
-                groups=groups,
-                bias=False)
-        else:
-            assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
-            self.conv2 = build_conv_layer(
-                self.dcn,
-                width,
-                width,
-                kernel_size=3,
-                stride=self.conv2_stride,
-                padding=self.dilation,
-                dilation=self.dilation,
-                groups=groups,
-                bias=False)
-
-        self.add_module(self.norm2_name, norm2)
-        self.conv3 = build_conv_layer(
-            self.conv_cfg, width, self.planes, kernel_size=1, bias=False)
-        self.add_module(self.norm3_name, norm3)
 
 
 @BACKBONES.register_module()
 class RegNet(ResNet):
     """RegNet backbone.
 
-    More details can be find in `paper <https://arxiv.org/abs/2003.13678>`_ .
+    More details can be found in `paper <https://arxiv.org/abs/2003.13678>`_ .
 
     Args:
         depth (int): Depth of the backbone
@@ -101,12 +44,12 @@ class RegNet(ResNet):
         >>> from mmdet.models import RegNet
         >>> import torch
         >>> self = RegNet(
-                depth=25,
                 arch_parameter=dict(
                     w0=88,
                     wa=26.31,
                     wm=2.25,
                     group_w=48,
+                    depth=25,
                     bot_mul=1.0))
         >>> self.eval()
         >>> inputs = torch.rand(1, 3, 32, 32)
@@ -118,18 +61,42 @@ class RegNet(ResNet):
         (1, 432, 2, 2)
         (1, 1008, 1, 1)
     """
+    arch_parameters = {
+        'regnetx_800mf':
+        dict(w0=56, wa=35.73, wm=2.28, group_w=16, depth=16, bot_mul=1.0),
+        'regnetx_1.6gf':
+        dict(w0=80, wa=34.01, wm=2.25, group_w=24, depth=18, bot_mul=1.0),
+        'regnetx_3.2gf':
+        dict(w0=88, wa=26.31, wm=2.25, group_w=48, depth=25, bot_mul=1.0),
+        'regnetx_4.0gf':
+        dict(w0=96, wa=38.65, wm=2.43, group_w=40, depth=23, bot_mul=1.0),
+        'regnetx_6.4gf':
+        dict(w0=184, wa=60.83, wm=2.07, group_w=56, depth=17, bot_mul=1.0),
+        'regnetx_8.0gf':
+        dict(w0=80, wa=49.56, wm=2.88, group_w=120, depth=23, bot_mul=1.0),
+        'regnetx_12gf':
+        dict(w0=168, wa=73.36, wm=2.37, group_w=112, depth=19, bot_mul=1.0),
+    }
 
     def __init__(self,
-                 depth,
                  arch_parameter,
                  strides=(2, 2, 2, 2),
                  base_channels=32,
                  **kwargs):
+        if isinstance(arch_parameter, str):
+            assert arch_parameter in self.arch_parameters, \
+                f'"arch_parameter": "{arch_parameter}" is not one of the' \
+                ' arch_parameters'
+            arch_parameter = self.arch_parameters[arch_parameter]
+        elif not isinstance(arch_parameter, dict):
+            raise ValueError('Expect "arch_parameter" to be either a string '
+                             f'or a dict, got {type(arch_parameter)}')
+
         widths, num_stages = self.generate_regnet(
             arch_parameter['w0'],
             arch_parameter['wa'],
             arch_parameter['wm'],
-            depth,
+            arch_parameter['depth'],
         )
         # Convert to per stage format
         stage_widths, stage_depths = self.get_stages_from_blocks(widths)
@@ -151,17 +118,22 @@ class RegNet(ResNet):
         }
 
         super(RegNet, self).__init__(
-            depth=depth,
+            arch_parameter['depth'],
             strides=strides,
             base_channels=base_channels,
             **kwargs)
 
+        self.block.expansion = 1
         self.inplanes = base_channels
         self.res_layers = []
+
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = self.strides[i]
             dilation = self.dilations[i]
-            self.block.expansion = int(self.bottleneck_ratio[i])
+            group_width = self.group_widths[i]
+            width = int(round(self.stage_widths[i] * self.bottleneck_ratio[i]))
+            stage_groups = width // group_width
+
             dcn = self.dcn if self.stage_with_dcn[i] else None
             if self.plugins is not None:
                 stage_plugins = self.make_stage_plugins(self.plugins, i)
@@ -182,7 +154,9 @@ class RegNet(ResNet):
                 norm_cfg=self.norm_cfg,
                 dcn=dcn,
                 plugins=stage_plugins,
-                group_width=self.group_widths[i])
+                groups=stage_groups,
+                base_width=group_width,
+                base_channels=self.stage_widths[i])
             self.inplanes = self.stage_widths[i]
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, res_layer)

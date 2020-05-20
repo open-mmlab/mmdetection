@@ -2,10 +2,9 @@ _base_ = './mask_rcnn_regnetx-3GF_fpn_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://regnetx_8.0gf',
     backbone=dict(
+        _delete_=True,
         type='RegNet',
-        depth=23,
-        arch_parameter=dict(
-            w0=80, wa=49.56, wm=2.88, group_w=120, bot_mul=1.0),
+        arch_parameter='regnetx_8.0gf',
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),

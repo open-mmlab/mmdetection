@@ -6,9 +6,9 @@ _base_ = [
 model = dict(
     pretrained='open-mmlab://regnetx_3.2gf',
     backbone=dict(
+        _delete_=True,
         type='RegNet',
-        depth=25,
-        arch_parameter=dict(w0=88, wa=26.31, wm=2.25, group_w=48, bot_mul=1.0),
+        arch_parameter='regnetx_3.2gf',
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
