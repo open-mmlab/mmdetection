@@ -3,7 +3,7 @@ import torch
 from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.backbones import ResNet, ResNetV1d, ResNeXt, RegNet
+from mmdet.models.backbones import RegNet, ResNet, ResNetV1d, ResNeXt
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.backbones.resnext import Bottleneck as BottleneckX
 from mmdet.models.utils import ResLayer
@@ -649,8 +649,8 @@ regnet_test_data = [
 ]
 
 
-@pytest.mark.parametrize(
-    'arch_name,arch_parameter,out_channels', regnet_test_data)
+@pytest.mark.parametrize('arch_name,arch_parameter,out_channels',
+                         regnet_test_data)
 def test_regnet_backbone(arch_name, arch_parameter, out_channels):
     with pytest.raises(AssertionError):
         # ResNeXt depth should be in [50, 101, 152]

@@ -3,8 +3,8 @@ import torch.nn as nn
 from mmcv.cnn import build_conv_layer, build_norm_layer
 
 from ..builder import BACKBONES
-from .resnext import Bottleneck
 from .resnet import ResNet
+from .resnext import Bottleneck
 
 
 @BACKBONES.register_module()
