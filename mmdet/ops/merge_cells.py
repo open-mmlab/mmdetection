@@ -65,10 +65,7 @@ class BaseMergeCell(nn.Module):
             self.out_conv = ConvModule(
                 fused_channels,
                 out_channels,
-                kernel_size=out_conv_cfg['kernel_size'],
-                groups=out_conv_cfg['groups'],
-                bias=out_conv_cfg['bias'],
-                padding=out_conv_cfg['padding'],
+                **out_conv_cfg,
                 norm_cfg=out_norm_cfg,
                 order=out_conv_order)
 
