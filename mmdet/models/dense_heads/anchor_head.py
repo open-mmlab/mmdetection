@@ -52,6 +52,8 @@ class AnchorHead(nn.Module):
                      loss_weight=1.0),
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
+                 loss_normalizer=-1,
+                 loss_normalizer_momentum=0.9,
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
@@ -90,6 +92,8 @@ class AnchorHead(nn.Module):
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
+        self.register_buffer('loss_normalizer', torch.tensor(loss_normalizer))
+        self.loss_normalizer_momentum = loss_normalizer_momentum
 
         self.anchor_generator = build_anchor_generator(anchor_generator)
         # usually the numbers of anchors for each level are the same
@@ -339,14 +343,14 @@ class AnchorHead(nn.Module):
             + tuple(rest_results)
 
     def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples):
+                    bbox_targets, bbox_weights, avg_factor):
         # classification loss
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
         loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=num_total_samples)
+            cls_score, labels, label_weights, avg_factor=avg_factor)
         # regression loss
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
@@ -355,10 +359,7 @@ class AnchorHead(nn.Module):
             anchors = anchors.reshape(-1, 4)
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
         loss_bbox = self.loss_bbox(
-            bbox_pred,
-            bbox_targets,
-            bbox_weights,
-            avg_factor=num_total_samples)
+            bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor)
         return loss_cls, loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
@@ -400,6 +401,12 @@ class AnchorHead(nn.Module):
             concat_anchor_list.append(torch.cat(anchor_list[i]))
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
+        if self.loss_normalizer != -1:
+            avg_factor = (
+                self.loss_normalizer_momentum * self.loss_normalizer +
+                (1 - self.loss_normalizer_momentum) * num_total_samples)
+        else:
+            avg_factor = num_total_samples
 
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
@@ -410,7 +417,7 @@ class AnchorHead(nn.Module):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples)
+            avg_factor=max(1, avg_factor))
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
