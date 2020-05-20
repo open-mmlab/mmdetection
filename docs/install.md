@@ -9,10 +9,7 @@ Make sure that all of the listed below system-level requirements are installed:
 - CUDA 9.0 or higher
 - NCCL 2
 - GCC 4.9 or higher
-- [Intel® Distribution of OpenVINO™ Toolkit](https://software.intel.com/en-us/openvino-toolkit) 2020.1
-=======
 - [Intel® Distribution of OpenVINO™ Toolkit](https://software.intel.com/en-us/openvino-toolkit) 2020.2
->>>>>>> ote:docs/INSTALL.md
 
 ### Install OTEDetection
 
