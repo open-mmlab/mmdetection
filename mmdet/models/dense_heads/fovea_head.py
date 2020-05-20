@@ -218,9 +218,13 @@ class FoveaHead(nn.Module):
             gt_bbox_list, gt_label_list, featmap_sizes, points)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        pos_inds = (
-            (flatten_labels >= 0)
-            & (flatten_labels < self.background_label)).nonzero().view(-1)
+        if self.background_label == self.num_classes:
+            pos_inds = (
+                    (flatten_labels >= 0)
+                    & (flatten_labels < self.background_label)).nonzero().view(-1)
+        # FG cat_id: [1, num_classes], BG cat_id: 0
+        else:
+            pos_inds = (flatten_labels > 0).nonzero().view(-1)
         num_pos = len(pos_inds)
 
         loss_cls = self.loss_cls(

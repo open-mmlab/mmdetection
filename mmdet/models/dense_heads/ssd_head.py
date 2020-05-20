@@ -98,9 +98,14 @@ class SSDHead(AnchorHead):
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-        pos_inds = ((labels >= 0) &
-                    (labels < self.background_label)).nonzero().reshape(-1)
-        neg_inds = (labels == self.background_label).nonzero().view(-1)
+        if self.background_label == self.num_classes:
+            pos_inds = ((labels >= 0) &
+                        (labels < self.background_label)).nonzero().reshape(-1)
+            neg_inds = (labels == self.background_label).nonzero().view(-1)
+        # FG cat_id: [1, num_classes], BG cat_id: 0
+        else:
+            pos_inds = (labels > 0).nonzero().reshape(-1)
+            neg_inds = (labels == self.background_label).nonzero().view(-1)
 
         num_pos_samples = pos_inds.size(0)
         num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples
