@@ -162,24 +162,16 @@ For fair comparison, we install and run both frameworks on the same machine.
 - CUDNN 7.6.03
 - NCCL 2.4.08
 
-### Configs, checkpoints, logs
-
-| Type         | Configs | Download |
-|--------------|---------|----------|
-| Faster R-CNN | [faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py) | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-5324cff8.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco_20200429_234554.log.json) |
-| Mask R-CNN   | [mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py) | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json)         |
-| Retinanet    | [retinanet_r50_caffe_fpn_mstrain_1x_coco.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py) | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json) |
-
 ### Performance
 
-| Type         | Lr schd | Detectron2  | mmdetection |
-|--------------|---------|-------------|-------------|
-| Faster R-CNN | 1x      | 37.9        | 38.0        |
-| Faster R-CNN | 3x      | 40.2        | -           |
-| Mask R-CNN   | 1x      | 38.6 & 35.2 | 38.8 & 35.4 |
-| Mask R-CNN   | 3x      | 41.0 & 37.2 | -           |
-| Retinanet    | 1x      | 36.5        | 37.0        |
-| Retinanet    | 3x      | 37.9        | -           |
+| Type         | Lr schd | Detectron2  | mmdetection | Download |
+|--------------|---------|-------------|-------------|-------------|
+| [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py) | 1x      | 37.9        | 38.0        | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-5324cff8.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco_20200429_234554.log.json) |
+| Faster R-CNN | 3x      | 40.2        | -           | - |
+| [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py)   | 1x      | 38.6 & 35.2 | 38.8 & 35.4 | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json) |
+| Mask R-CNN   | 3x      | 41.0 & 37.2 | -           | - |
+| [Retinanet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py)    | 1x      | 36.5        | 37.0        | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json) |
+| Retinanet    | 3x      | 37.9        | -           | - |
 
 ### Training Speed
 
