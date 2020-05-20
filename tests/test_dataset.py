@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-from mmdet.datasets import (DATASETS, ConcatDataset, CustomDataset,
-                            RepeatDataset, RepeatFactorDataset)
+from mmdet.datasets import (DATASETS, ClassBalancedDataset, ConcatDataset,
+                            CustomDataset, RepeatDataset)
 
 
 @pytest.mark.parametrize('dataset',
@@ -150,7 +150,7 @@ def test_dataset_wrapper():
         repeat_factor = max({category_repeat[cat_id] for cat_id in cat_ids})
         repeat_factors.append(math.ceil(repeat_factor))
     repeat_factors_cumsum = np.cumsum(repeat_factors)
-    repeat_factor_dataset = RepeatFactorDataset(dataset_a, repeat_thr)
+    repeat_factor_dataset = ClassBalancedDataset(dataset_a, repeat_thr)
     assert len(repeat_factor_dataset) == repeat_factors_cumsum[-1]
     for idx in np.random.randint(0, len(repeat_factor_dataset), 3):
         assert repeat_factor_dataset[idx] == bisect.bisect_right(

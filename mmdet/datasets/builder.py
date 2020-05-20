@@ -48,15 +48,15 @@ def _concat_dataset(cfg, default_args=None):
 
 def build_dataset(cfg, default_args=None):
     from .dataset_wrappers import (ConcatDataset, RepeatDataset,
-                                   RepeatFactorDataset)
+                                   ClassBalancedDataset)
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'RepeatDataset':
         dataset = RepeatDataset(
             build_dataset(cfg['dataset'], default_args), cfg['times'])
-    elif cfg['type'] == 'RepeatFactorDataset':
-        dataset = RepeatFactorDataset(
-            build_dataset(cfg['dataset'], default_args), cfg['repeat_thr'])
+    elif cfg['type'] == 'ClassBalancedDataset':
+        dataset = ClassBalancedDataset(
+            build_dataset(cfg['dataset'], default_args), cfg['oversample_thr'])
     elif isinstance(cfg.get('ann_file'), (list, tuple)):
         dataset = _concat_dataset(cfg, default_args)
     else:

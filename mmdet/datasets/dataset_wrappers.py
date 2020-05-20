@@ -77,7 +77,7 @@ class RepeatDataset(object):
 
 # Modified from https://github.com/facebookresearch/detectron2/blob/41d475b75a230221e21d9cac5d69655e3415e3a4/detectron2/data/samplers/distributed_sampler.py#L57 # noqa
 @DATASETS.register_module()
-class RepeatFactorDataset(object):
+class ClassBalancedDataset(object):
     """A wrapper of repeated dataset with repeat factor.
 
     Suitable for training on class imbalanced datasets like LVIS. Following
@@ -88,22 +88,33 @@ class RepeatFactorDataset(object):
     is defined by the fraction of images in the training set (without repeats)
     in which category c appears.
     The dataset needs to instantiate :func:`self.get_cat_ids(idx)` to support
-    RepeatFactorDataset.
+    ClassBalancedDataset.
+    The repeat factor is computed as followed.
+    1. For each category c, compute the fraction # of images
+        that contain it: f(c)
+    2. For each category c, compute the category-level repeat factor:
+        r(c) = max(1, sqrt(t/f(c)))
+    3. For each image I, compute the image-level repeat factor:
+        r(I) = max_{c in I} r(c)
 
     References:
         .. [1]  https://arxiv.org/pdf/1903.00621v2.pdf
 
     Args:
         dataset (:obj:`CustomDataset`): The dataset to be repeated.
-        repeat_thr (float): frequency threshold below which data is repeated.
+        oversample_thr (float): frequency threshold below which data is
+            repeated. For categories with `f_c` >= `oversample_thr`, there is
+            no oversampling. For categories with `f_c` < `oversample_thr`, the
+            degree of oversampling following the square-root inverse frequency
+            heuristic above.
     """
 
-    def __init__(self, dataset, repeat_thr):
+    def __init__(self, dataset, oversample_thr):
         self.dataset = dataset
-        self.repeat_thr = repeat_thr
+        self.oversample_thr = oversample_thr
         self.CLASSES = dataset.CLASSES
 
-        repeat_factors = self._get_repeat_factors(dataset, repeat_thr)
+        repeat_factors = self._get_repeat_factors(dataset, oversample_thr)
         repeat_indices = []
         for dataset_index, repeat_factor in enumerate(repeat_factors):
             repeat_indices.extend([dataset_index] * math.ceil(repeat_factor))
@@ -118,7 +129,7 @@ class RepeatFactorDataset(object):
 
     def _get_repeat_factors(self, dataset, repeat_thr):
         # 1. For each category c, compute the fraction # of images
-        # that contain it: f(c)
+        #   that contain it: f(c)
         category_freq = defaultdict(int)
         num_images = len(dataset)
         for idx in range(num_images):

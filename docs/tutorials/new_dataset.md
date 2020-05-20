@@ -230,13 +230,13 @@ dataset_A_train = dict(
 
 ### Repeat factor dataset
 
-We use `RepeatFactorDataset` as wrapper to repeat the dataset based on category
+We use `ClassBalancedDataset` as wrapper to repeat the dataset based on category
 frequency. The dataset to repeat needs to instantiate function `self.get_cat_ids(idx)`
-to support `RepeatFactorDataset`.
+to support `ClassBalancedDataset`.
 For example, to repeat `Dataset_A` with `repeat_thr=1e-3`, the config looks like the following
 ```python
 dataset_A_train = dict(
-        type='RepeatFactorDataset',
+        type='ClassBalancedDataset',
         repeat_thr=1e-3,
         dataset=dict(  # This is the original config of Dataset_A
             type='Dataset_A',
