@@ -16,7 +16,7 @@ class Bottle2neck(_Bottleneck):
     def __init__(self,
                  inplanes,
                  planes,
-                 scale=4,
+                 scales=4,
                  base_width=26,
                  base_channels=64,
                  stage_type='normal',
@@ -26,27 +26,23 @@ class Bottle2neck(_Bottleneck):
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottle2neck, self).__init__(inplanes, planes, **kwargs)
-
+        assert scales > 1, 'Res2Net degenerates to ResNet when scales = 1.'
         width = int(math.floor(self.planes * (base_width / base_channels)))
 
         self.norm1_name, norm1 = build_norm_layer(
-            self.norm_cfg, width * scale, postfix=1)
+            self.norm_cfg, width * scales, postfix=1)
         self.norm3_name, norm3 = build_norm_layer(
             self.norm_cfg, self.planes * self.expansion, postfix=3)
 
         self.conv1 = build_conv_layer(
             self.conv_cfg,
             self.inplanes,
-            width * scale,
+            width * scales,
             kernel_size=1,
             stride=self.conv1_stride,
             bias=False)
         self.add_module(self.norm1_name, norm1)
 
-        if scale == 1:
-            self.nums = 1
-        else:
-            self.nums = scale - 1
         if stage_type == 'stage' and self.conv2_stride != 1:
             self.pool = nn.AvgPool2d(
                 kernel_size=3, stride=self.conv2_stride, padding=1)
@@ -57,7 +53,7 @@ class Bottle2neck(_Bottleneck):
         if self.with_dcn:
             fallback_on_stride = self.dcn.pop('fallback_on_stride', False)
         if not self.with_dcn or fallback_on_stride:
-            for i in range(self.nums):
+            for i in range(scales - 1):
                 convs.append(
                     build_conv_layer(
                         self.conv_cfg,
@@ -74,7 +70,7 @@ class Bottle2neck(_Bottleneck):
             self.bns = nn.ModuleList(bns)
         else:
             assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
-            for i in range(self.nums):
+            for i in range(scales - 1):
                 convs.append(
                     build_conv_layer(
                         self.dcn,
@@ -92,14 +88,14 @@ class Bottle2neck(_Bottleneck):
 
         self.conv3 = build_conv_layer(
             self.conv_cfg,
-            width * scale,
+            width * scales,
             self.planes * self.expansion,
             kernel_size=1,
             bias=False)
         self.add_module(self.norm3_name, norm3)
 
         self.stage_type = stage_type
-        self.scale = scale
+        self.scales = scales
         self.width = width
         delattr(self, 'conv2')
         delattr(self, self.norm2_name)
@@ -120,7 +116,7 @@ class Bottle2neck(_Bottleneck):
             sp = self.convs[0](spx[0])
             sp = self.relu(self.bns[0](sp))
             out = sp
-            for i in range(1, self.nums):
+            for i in range(1, self.scales - 1):
                 if self.stage_type == 'stage':
                     sp = spx[i]
                 else:
@@ -129,12 +125,10 @@ class Bottle2neck(_Bottleneck):
                 sp = self.relu(self.bns[i](sp))
                 out = torch.cat((out, sp), 1)
 
-            if self.scale != 1:
-                if self.stage_type == 'normal' \
-                        or self.conv2_stride == 1:
-                    out = torch.cat((out, spx[self.nums]), 1)
-                elif self.stage_type == 'stage':
-                    out = torch.cat((out, self.pool(spx[self.nums])), 1)
+            if self.stage_type == 'normal' or self.conv2_stride == 1:
+                out = torch.cat((out, spx[self.scales - 1]), 1)
+            elif self.stage_type == 'stage':
+                out = torch.cat((out, self.pool(spx[self.scales - 1])), 1)
 
             if self.with_plugins:
                 out = self.forward_plugin(out, self.after_conv2_plugin_names)
@@ -162,8 +156,8 @@ class Bottle2neck(_Bottleneck):
         return out
 
 
-class ResLayer(nn.Sequential):
-    """ResLayer to build Res2Net style backbone.
+class Res2Layer(nn.Sequential):
+    """Res2Layer to build Res2Net style backbone.
 
     Args:
         block (nn.Module): block used to build ResLayer.
@@ -177,7 +171,7 @@ class ResLayer(nn.Sequential):
             Default: None
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: dict(type='BN')
-        scale (int): Scales used in Res2Net. Default: 4
+        scales (int): Scales used in Res2Net. Default: 4
         base_width (int): Basic width of each scale. Default: 26
     """
 
@@ -190,7 +184,7 @@ class ResLayer(nn.Sequential):
                  avg_down=True,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
-                 scale=4,
+                 scales=4,
                  base_width=26,
                  **kwargs):
         self.block = block
@@ -222,7 +216,7 @@ class ResLayer(nn.Sequential):
                 downsample=downsample,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
-                scale=scale,
+                scales=scales,
                 base_width=base_width,
                 stage_type='stage',
                 **kwargs))
@@ -235,10 +229,10 @@ class ResLayer(nn.Sequential):
                     stride=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
-                    scale=scale,
+                    scales=scales,
                     base_width=base_width,
                     **kwargs))
-        super(ResLayer, self).__init__(*layers)
+        super(Res2Layer, self).__init__(*layers)
 
 
 @BACKBONES.register_module()
@@ -246,7 +240,7 @@ class Res2Net(ResNet):
     """Res2Net backbone.
 
     Args:
-        scale (int): Scales used in Res2Net. Default: 4
+        scales (int): Scales used in Res2Net. Default: 4
         base_width (int): Basic width of each scale. Default: 26
         depth (int): Depth of res2net, from {50, 101, 152}.
         in_channels (int): Number of input image channels. Normally 3.
@@ -281,7 +275,7 @@ class Res2Net(ResNet):
     Example:
         >>> from mmdet.models import Res2Net
         >>> import torch
-        >>> self = Res2Net(depth=50, scale=4, base_width=26)
+        >>> self = Res2Net(depth=50, scales=4, base_width=26)
         >>> self.eval()
         >>> inputs = torch.rand(1, 3, 32, 32)
         >>> level_outputs = self.forward(inputs)
@@ -300,20 +294,20 @@ class Res2Net(ResNet):
     }
 
     def __init__(self,
-                 scale=4,
+                 scales=4,
                  base_width=26,
                  style='pytorch',
                  deep_stem=True,
                  avg_down=True,
                  **kwargs):
-        self.scale = scale
+        self.scales = scales
         self.base_width = base_width
         super(Res2Net, self).__init__(
             style='pytorch', deep_stem=True, avg_down=True, **kwargs)
 
     def make_res_layer(self, **kwargs):
-        return ResLayer(
-            scale=self.scale,
+        return Res2Layer(
+            scales=self.scales,
             base_width=self.base_width,
             base_channels=self.base_channels,
             **kwargs)
