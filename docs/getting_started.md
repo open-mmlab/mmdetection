@@ -1,60 +1,53 @@
 # Getting Started
 
-This page provides basic tutorials about the usage of MMDetection.
-For installation instructions, please see [install.md](install.md).
+This page provides basic tutorials about the usage of OTEDetection.
+For installation instructions, please see [INSTALL.md](INSTALL.md).
 
-## Prepare datasets
+## Export pretrained model
 
-It is recommended to symlink the dataset root to `$MMDETECTION/data`.
-If your folder structure is different, you may need to change the corresponding paths in config files.
+We provide you a way to export pretrained models to OpenVINO IR and ONNX.
 
-```
-mmdetection
-├── mmdet
-├── tools
-├── configs
-├── data
-│   ├── coco
-│   │   ├── annotations
-│   │   ├── train2017
-│   │   ├── val2017
-│   │   ├── test2017
-│   ├── cityscapes
-│   │   ├── annotations
-│   │   ├── leftImg8bit
-│   │   │   ├── train
-│   │   │   ├── val
-│   │   ├── gtFine
-│   │   │   ├── train
-│   │   │   ├── val
-│   ├── VOCdevkit
-│   │   ├── VOC2007
-│   │   ├── VOC2012
+### Export to ONNX and OpenVINO IR
 
-```
-
-The cityscapes annotations have to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
+To export pretrained model to ONNX format run the script:
 
 ```shell
-pip install cityscapesscripts
-python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out_dir ./data/cityscapes/annotations
+python tools/export.py config.py checkpoint.pth ${DEPLOY_DIR} onnx
 ```
 
-Currently the config files in `cityscapes` use COCO pre-trained weights to initialize.
-You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
+To export pretrained model to OpenVINO IR format run the script:
 
-For using custom datasets, please refer to [Tutorials 2: Adding New Dataset](tutorials/new_dataset.md).
+```shell
+python tools/export.py config.py checkpoint.pth ${DEPLOY_DIR} openvino
+```
+
+OpenVINO exports models with a fixed input resolution. The script tries to derive it
+from data preprocessing pipeline config, though some of preprocessing steps may be data-dependent
+making it hard to come up with a right resolution.
+In this case, or if you simply want to use resolution different from the one used in test config,
+specify target resolution explicitly via `--input_shape` option.
+
+For SSD networks there's an alternative model representation that contains higher level custom operations,
+which make it easier to analyse the model and enable heavier optimizations,
+but this may come at a cost of a small accuracy drop.
+To opt for this model representation use `--alt_ssd_export` option.
+
+**KNOWN ISSUES**:
+
+* Not all models are currently exportable.
+
+* Before running the script make sure that all OpenVINO-related environment variables are set properly. To do this run the following command:
+
+  ```shell
+  source /opt/intel/openvino/bin/setupvars.sh
+  ```
 
 ## Inference with pretrained models
 
 We provide testing scripts to evaluate a whole dataset (COCO, PASCAL VOC, Cityscapes, etc.),
 and also some high-level apis for easier integration to other projects.
 
-### Test a dataset
-
-- single GPU
-- single node multiple GPU
-- multiple node
+### Test using PyTorch
 
 You can use the following commands to test a dataset.
 
@@ -110,47 +103,16 @@ python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
     8 --out results.pkl --eval bbox segm
 ```
 
-5. Test Mask R-CNN with 8 GPUs, and evaluate the **classwise** bbox and mask AP.
+### Test using OpenVINO or ONNXRuntime
+
+You can test the model being exported via the `tools/export.py` script by simply switching the `tools/test.py` script with a `tools/test_exported.py`.
 
 ```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --out results.pkl --eval bbox segm --options "classwise=True"
-```
+# test with OpenVINO
+python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}] [--show]
 
-6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
-
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
-```
-
-You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
-
-7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate the txt and png files to be submit to the official evaluation server.
-
-```shell
-./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
-    8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
-```
-
-The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
-
-### Image demo
-
-We provide a demo script to test a single image.
-
-```shell
-python demo/image_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--camera-id ${CAMERA-ID}] [--score-thr ${SCORE_THR}]
-```
-
-Examples:
-
-```shell
-python demo/image_demo.py demo/demo.jpg configs/faster_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth --device cpu
+# test with ONNXRuntime
+python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.onnx [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}] [--show]
 ```
 
 ### Webcam demo
@@ -168,133 +130,10 @@ python demo/webcam_demo.py configs/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth
 ```
 
-### High-level APIs for testing images
-
-#### Synchronous interface
-Here is an example of building the model and test given images.
-
-```python
-from mmdet.apis import init_detector, inference_detector
-import mmcv
-
-config_file = 'configs/faster_rcnn_r50_fpn_1x_coco.py'
-checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
-
-# build the model from a config file and a checkpoint file
-model = init_detector(config_file, checkpoint_file, device='cuda:0')
-
-# test a single image and show the results
-img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
-result = inference_detector(model, img)
-# visualize the results in a new window
-model.show_result(img, result)
-# or save the visualization results to image files
-model.show_result(img, result, out_file='result.jpg')
-
-# test a video and show the results
-video = mmcv.VideoReader('video.mp4')
-for frame in video:
-    result = inference_detector(model, frame)
-    model.show_result(frame, result, wait_time=1)
-```
-
-A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb).
-
-#### Asynchronous interface - supported for Python 3.7+
-
-Async interface allows not to block CPU on GPU bound inference code and enables better CPU/GPU utilization for single threaded application. Inference can be done concurrently either between different input data samples or between different models of some inference pipeline.
-
-See `tests/async_benchmark.py` to compare the speed of synchronous and asynchronous interfaces.
-
-```python
-import asyncio
-import torch
-from mmdet.apis import init_detector, async_inference_detector
-from mmdet.utils.contextmanagers import concurrent
-
-async def main():
-    config_file = 'configs/faster_rcnn_r50_fpn_1x_coco.py'
-    checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
-    device = 'cuda:0'
-    model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
-
-    # queue is used for concurrent inference of multiple images
-    streamqueue = asyncio.Queue()
-    # queue size defines concurrency level
-    streamqueue_size = 3
-
-    for _ in range(streamqueue_size):
-        streamqueue.put_nowait(torch.cuda.Stream(device=device))
-
-    # test a single image and show the results
-    img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
-
-    async with concurrent(streamqueue):
-        result = await async_inference_detector(model, img)
-
-    # visualize the results in a new window
-    model.show_result(img, result)
-    # or save the visualization results to image files
-    model.show_result(img, result, out_file='result.jpg')
-
-
-asyncio.run(main())
-
-```
-
-
-## Export pretrained model
-
-We provide you a way to export pretrained models to OpenVINO IR and ONNX as an intermediate representation.
-
-### Export to ONNX and OpenVINO IR
-
-To export pretrained model to ONNX format run the script:
-
-```shell
-# python tools/export.py config.py checkpoint.pth ${DEPLOY_DIR} onnx
-```
-
-To export pretrained model to OpenVINO IR format run the script:
-
-```shell
-# python tools/export.py config.py checkpoint.pth ${DEPLOY_DIR} openvino
-```
-
-OpenVINO exports models with a fixed input resolution, the script tries to derive it
-from data pre-processing pipeline config, though sometimes it's hard to get resolution right.
-In this case, or if you simply want to use resolution different from the one used in test config,
-specify target resolution via `--input_shape` option.
-
-For SSD networks there's an alternative model representation that contains higher level custom operations,
-which make it easier to analyse the model and enable heavier optimizations,
-but this may come at a cost of a small accuracy drop.
-To opt for this model representation use `--alt_ssd_export` option.
-
-**KNOWN ISSUES**:
-
-* Not all models are currently exportable.
-
-* Before running the script make sure that all OpenVINO-related environment variables are set properly. To do this run the following command:
-
-  ```shell
-  # source /opt/intel/openvino/bin/setupvars.sh
-  ```
-
-### Test exported model
-
-In order to test the model being exported via a `tools/export.py` script run the following command:
-
-```shell
-# python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml --out /tmp/out.pkl
-``` 
-
-To get quality metrics on test dataset either add `--eval bbox` argument to the call of the `tools/test_exported.py` script for COCO-style dataset, or run `tools/voc_eval.py` script passing dumped detection results (`test_results.pkl`) to it for a VOC-style dataset. 
-
 ## Train a model
 
-MMDetection implements distributed training and non-distributed training,
-which uses `MMDistributedDataParallel` and `MMDataParallel` respectively.
+Both distributed training and non-distributed training modes are available,
+which use `MMDistributedDataParallel` and `MMDataParallel` respectively.
 
 All outputs (log files and checkpoints) will be saved to the working directory,
 which is specified by `work_dir` in the config file.
@@ -323,9 +162,15 @@ If you want to specify the working directory in the command, you can add an argu
 
 Optional arguments are:
 
+<<<<<<< HEAD:docs/getting_started.md
 - `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training.
 - `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
+=======
+- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](../configs/mask_rcnn_r50_fpn_1x.py#L174)) epochs during the training.
+- `--work_dir ${WORK_DIR}`: Override the working directory specified in the config file.
+- `--resume_from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
+>>>>>>> ote:docs/GETTING_STARTED.md
 
 Difference between `resume-from` and `load-from`:
 `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
@@ -333,7 +178,11 @@ Difference between `resume-from` and `load-from`:
 
 ### Train with multiple machines
 
+<<<<<<< HEAD:docs/getting_started.md
 If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`. (This script also supports single machine training.)
+=======
+If you run OTEDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`.
+>>>>>>> ote:docs/GETTING_STARTED.md
 
 ```shell
 [GPUS=${GPUS}] ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
@@ -345,7 +194,7 @@ Here is an example of using 16 GPUs to train Mask R-CNN on the dev partition.
 GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
-You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
+You can check [slurm_train.sh](../tools/slurm_train.sh) for full arguments and environment variables.
 
 If you have just multiple machines connected with ethernet, you can refer to
 pytorch [launch utility](https://pytorch.org/docs/stable/distributed_deprecated.html#launch-utility).
@@ -455,7 +304,7 @@ Params: 37.74 M
 
 (1) FLOPs are related to the input shape while parameters are not. The default input shape is (1, 3, 1280, 800).
 (2) Some operators are not counted into FLOPs like GN and custom operators.
-You can add support for new operators by modifying [`mmdet/utils/flops_counter.py`](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/utils/flops_counter.py).
+You can add support for new operators by modifying [`mmdet/utils/flops_counter.py`](../mmdet/utils/flops_counter.py).
 (3) The FLOPs of two-stage detectors is dependent on the number of proposals.
 
 ### Publish a model
@@ -478,14 +327,101 @@ The final output filename will be `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth
 
 ### Test the robustness of detectors
 
-Please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
+Please refer to [ROBUSTNESS_BENCHMARKING.md](ROBUSTNESS_BENCHMARKING.md).
 
-### Convert to ONNX (experimental)
 
-We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. The converted model could be visualized by tools like [Netron](https://github.com/lutzroeder/netron).
+## How-to
 
-```shell
-python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --out ${ONNX_FILE} [--shape ${INPUT_SHAPE}]
+### Use my own datasets
+
+The simplest way is to convert your dataset to COCO format and use `CustomCocoDataset` listing the names of classes in config file:
+
+```python
+dataset=dict(
+    type='CustomCocoDataset',
+    classes=('a', 'b', 'c', 'd', 'e'),
+    ...)
+```
+
+It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
+Actually, we define a simple annotation format and all existing datasets are
+processed to be compatible with it, either online or offline.
+
+The annotation of a dataset is a list of dict, each dict corresponds to an image.
+There are 3 field `filename` (relative path), `width`, `height` for testing,
+and an additional field `ann` for training. `ann` is also a dict containing at least 2 fields:
+`bboxes` and `labels`, both of which are numpy arrays. Some datasets may provide
+annotations like crowd/difficult/ignored bboxes, we use `bboxes_ignore` and `labels_ignore`
+to cover them.
+
+Here is an example.
+```
+[
+    {
+        'filename': 'a.jpg',
+        'width': 1280,
+        'height': 720,
+        'ann': {
+            'bboxes': <np.ndarray, float32> (n, 4),
+            'labels': <np.ndarray, int64> (n, ),
+            'bboxes_ignore': <np.ndarray, float32> (k, 4),
+            'labels_ignore': <np.ndarray, int64> (k, ) (optional field)
+        }
+    },
+    ...
+]
+```
+
+There are two ways to work with custom datasets.
+
+- online conversion
+
+  You can write a new Dataset class inherited from `CustomDataset`, and overwrite two methods
+  `load_annotations(self, ann_file)` and `get_ann_info(self, idx)`,
+  like [CocoDataset](../mmdet/datasets/coco.py) and [VOCDataset](../mmdet/datasets/voc.py).
+
+- offline conversion
+
+  You can convert the annotation format to the expected format above and save it to
+  a pickle or json file, like [pascal_voc.py](../tools/convert_datasets/pascal_voc.py).
+  Then you can simply use `CustomDataset`.
+
+### Develop new components
+
+We basically categorize model components into 4 types.
+
+- backbone: usually an FCN network to extract feature maps, e.g., ResNet, MobileNet.
+- neck: the component between backbones and heads, e.g., FPN, PAFPN.
+- head: the component for specific tasks, e.g., bbox prediction and mask prediction.
+- roi extractor: the part for extracting RoI features from feature maps, e.g., RoI Align.
+
+Here we show how to develop new components with an example of MobileNet.
+
+1. Create a new file `mmdet/models/backbones/mobilenet.py`.
+
+```python
+import torch.nn as nn
+
+from ..registry import BACKBONES
+
+
+@BACKBONES.register_module
+class MobileNet(nn.Module):
+
+    def __init__(self, arg1, arg2):
+        pass
+
+    def forward(self, x):  # should return a tuple
+        pass
+
+    def init_weights(self, pretrained=None):
+        pass
+```
+
+2. Import the module in `mmdet/models/backbones/__init__.py`.
+
+```python
+from .mobilenet import MobileNet
 ```
 
 **Note**: This tool is still experimental. Customized operators are not supported for now. We set `use_torchvision=True` on-the-fly for `RoIPool` and `RoIAlign`.

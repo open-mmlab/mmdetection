@@ -17,9 +17,9 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'MMDetection'
-copyright = '2018-2020, OpenMMLab'
-author = 'MMDetection Authors'
+project = 'Object Detection OpenVINO Training Extensions'
+copyright = '2018-2019, OpenMMLab; 2019-2020, Intel'
+author = 'OpenMMLab, Intel'
 
 # The full version, including alpha/beta/rc tags
 with open('../mmdet/VERSION', 'r') as f:

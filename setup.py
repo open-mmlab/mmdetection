@@ -195,12 +195,12 @@ if __name__ == '__main__':
     setup(
         name='mmdet',
         version=get_version(),
-        description='Open MMLab Detection Toolbox and Benchmark',
+        description='OpenVINO Training Extensions Object Detection toolbox',
         long_description=readme(),
-        author='OpenMMLab',
+        author='OpenMMLab, Intel',
         author_email='chenkaidev@gmail.com',
-        keywords='computer vision, object detection',
-        url='https://github.com/open-mmlab/mmdetection',
+        keywords='computer vision, object detection, OpenVINO, OpenVINO training extensions, ONNX',
+        url='https://github.com/opencv/mmdetection',
         packages=find_packages(exclude=('configs', 'tools', 'demo')),
         package_data={'mmdet.ops': ['*/*.so']},
         classifiers=[
