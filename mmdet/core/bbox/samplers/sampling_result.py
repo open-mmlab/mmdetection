@@ -4,12 +4,13 @@ from mmdet.utils import util_mixins
 
 
 class SamplingResult(util_mixins.NiceRepr):
-    """
+    """Bbox sampling result.
+
     Example:
         >>> # xdoctest: +IGNORE_WANT
         >>> from mmdet.core.bbox.samplers.sampling_result import *  # NOQA
         >>> self = SamplingResult.random(rng=10)
-        >>> print('self = {}'.format(self))
+        >>> print(f'self = {self}')
         self = <SamplingResult({
             'neg_bboxes': torch.Size([12, 4]),
             'neg_inds': tensor([ 0,  1,  2,  4,  5,  6,  7,  8,  9, 10, 11, 12]),
@@ -52,14 +53,13 @@ class SamplingResult(util_mixins.NiceRepr):
         return torch.cat([self.pos_bboxes, self.neg_bboxes])
 
     def to(self, device):
-        """
-        Change the device of the data inplace.
+        """Change the device of the data inplace.
 
         Example:
             >>> self = SamplingResult.random()
-            >>> print('self = {}'.format(self.to(None)))
+            >>> print(f'self = {self.to(None)}')
             >>> # xdoctest: +REQUIRES(--gpu)
-            >>> print('self = {}'.format(self.to(0)))
+            >>> print(f'self = {self.to(0)}')
         """
         _dict = self.__dict__
         for key, value in _dict.items():
@@ -71,15 +71,13 @@ class SamplingResult(util_mixins.NiceRepr):
         data = self.info.copy()
         data['pos_bboxes'] = data.pop('pos_bboxes').shape
         data['neg_bboxes'] = data.pop('neg_bboxes').shape
-        parts = ['\'{}\': {!r}'.format(k, v) for k, v in sorted(data.items())]
+        parts = [f"'{k}': {v!r}" for k, v in sorted(data.items())]
         body = '    ' + ',\n    '.join(parts)
         return '{\n' + body + '\n}'
 
     @property
     def info(self):
-        """
-        Returns a dictionary of info about the object
-        """
+        """Returns a dictionary of info about the object."""
         return {
             'pos_inds': self.pos_inds,
             'neg_inds': self.neg_inds,
@@ -94,19 +92,18 @@ class SamplingResult(util_mixins.NiceRepr):
     def random(cls, rng=None, **kwargs):
         """
         Args:
-            rng (None | int | numpy.random.RandomState): seed or state
-
-        Kwargs:
-            num_preds: number of predicted boxes
-            num_gts: number of true boxes
-            p_ignore (float): probability of a predicted box assinged to an
-                ignored truth
-            p_assigned (float): probability of a predicted box not being
-                assigned
-            p_use_label (float | bool): with labels or not
+            rng (None | int | numpy.random.RandomState): seed or state.
+            kwargs (keyword arguments):
+                - num_preds: number of predicted boxes
+                - num_gts: number of true boxes
+                - p_ignore (float): probability of a predicted box assinged to
+                    an ignored truth.
+                - p_assigned (float): probability of a predicted box not being
+                    assigned.
+                - p_use_label (float | bool): with labels or not.
 
         Returns:
-            AssignResult :
+            :obj:`SamplingResult`: Randomly generated sampling result.
 
         Example:
             >>> from mmdet.core.bbox.samplers.sampling_result import *  # NOQA

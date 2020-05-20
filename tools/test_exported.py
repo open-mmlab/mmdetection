@@ -19,18 +19,18 @@ import cv2
 import mmcv
 import numpy as np
 
-from mmdet.core import coco_eval, results2json
+# from mmdet.core import coco_eval, results2json
 from mmdet.core.bbox.transforms import bbox2result
 from mmdet.core.mask.transforms import mask2result
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
-
+from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from mmcv.parallel import collate
 from mmdet.datasets.pipelines import Compose
 from mmdet.apis.inference import LoadImage
 
 
-def postprocess(result, img_meta, num_classes=81, rescale=True):
+def postprocess(result, img_meta, num_classes=80, rescale=True):
     det_bboxes = result['boxes']
     det_labels = result['labels']
     det_masks = result.get('masks', None)
@@ -64,9 +64,9 @@ def empty_result(num_classes=81, with_mask=False):
     bbox_results = [
         np.zeros((0, 5), dtype=np.float32) for _ in range(num_classes - 1)
     ]
-    if with_mask:
-        segm_results = [[] for _ in range(num_classes - 1)]
-        return bbox_results, segm_results
+    # if with_mask:
+    #     segm_results = [[] for _ in range(num_classes - 1)]
+    #     return bbox_results, segm_results
     return bbox_results
 
 
@@ -127,7 +127,7 @@ def main(args):
         dataset = build_dataset(cfg.data.test)
         data_loader = build_dataloader(
             dataset,
-            imgs_per_gpu=1,
+            samples_per_gpu=1,
             workers_per_gpu=cfg.data.workers_per_gpu,
             dist=False,
             shuffle=False)
@@ -151,19 +151,19 @@ def main(args):
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
         im_data = data['img'][0].cpu().numpy()
-        try:
-            result = model(im_data)
-            result = postprocess(
+        # try:
+        result = model(im_data)
+        result = postprocess(
                 result,
-                data['img_meta'][0].data[0],
+                data['img_metas'][0].data[0],
                 num_classes=classes_num,
                 rescale=not args.show)
-        except Exception as ex:
-            print('\nException raised while processing item {}:'.format(i))
-            print(ex)
-            result = empty_result(
-                num_classes=classes_num,
-                with_mask=model.pt_model.with_mask)
+        # except Exception as ex:
+        #     print('\nException raised while processing item {}:'.format(i))
+        #     print(ex)
+        #     result = empty_result(
+        #         num_classes=classes_num,
+        #         with_mask=model.pt_model.with_mask)
         results.append(result)
 
         if args.show:
@@ -177,34 +177,50 @@ def main(args):
     print('Writing results to {}'.format(args.out))
     mmcv.dump(results, args.out)
 
-    eval_types = args.eval
-    if eval_types:
-        print('Starting evaluate {}'.format(' and '.join(eval_types)))
-        if eval_types == ['proposal_fast']:
-            result_file = args.out
-            coco_eval(result_file, eval_types, dataset.coco)
-        else:
-            if not isinstance(results[0], dict):
-                result_files = results2json(dataset, results, args.out)
-                coco_eval(result_files, eval_types, dataset.coco)
-            else:
-                for name in results[0]:
-                    print('\nEvaluating {}'.format(name))
-                    outputs_ = [out[name] for out in results]
-                    result_file = args.out + '.{}'.format(name)
-                    result_files = results2json(dataset, outputs_,
-                                                result_file)
-                    coco_eval(result_files, eval_types, dataset.coco)
+    outputs = results
 
-    # Save predictions in the COCO json format
-    if args.json_out:
-        if not isinstance(results[0], dict):
-            results2json(dataset, results, args.json_out)
-        else:
-            for name in results[0]:
-                outputs_ = [out[name] for out in results]
-                result_file = args.json_out + '.{}'.format(name)
-                results2json(dataset, outputs_, result_file)
+    rank, _ = get_dist_info()
+    if rank == 0:
+        if args.out:
+            print(f'\nwriting results to {args.out}')
+            mmcv.dump(outputs, args.out)
+            kwargs = {}
+        # kwargs = {} if args.options is None else args.options
+        # if args.format_only:
+        #     dataset.format_results(outputs, **kwargs)
+        # if args.eval:
+            dataset.evaluate(outputs, args.eval, **kwargs)
+
+    # eval_types = args.eval
+    # if eval_types:
+    #     print('Starting evaluate {}'.format(' and '.join(eval_types)))
+    #     if eval_types == ['proposal_fast']:
+    #         result_file = args.out
+    #         #coco_eval(result_file, eval_types, dataset.coco)
+    #     else:
+    #         if not isinstance(results[0], dict):
+    #             result_files = results2json(dataset, results, args.out)
+    #             #coco_eval(result_files, eval_types, dataset.coco)
+    #         else:
+    #             for name in results[0]:
+    #                 print('\nEvaluating {}'.format(name))
+    #                 outputs_ = [out[name] for out in results]
+    #                 result_file = args.out + '.{}'.format(name)
+    #                 # result_files = results2json(dataset, outputs_,
+    #                 #                             result_file)
+    #                 #coco_eval(result_files, eval_types, dataset.coco)
+
+
+
+    # # Save predictions in the COCO json format
+    # if args.json_out:
+    #     if not isinstance(results[0], dict):
+    #         results2json(dataset, results, args.json_out)
+    #     else:
+    #         for name in results[0]:
+    #             outputs_ = [out[name] for out in results]
+    #             result_file = args.json_out + '.{}'.format(name)
+    #             results2json(dataset, outputs_, result_file)
 
 
 def parse_args():

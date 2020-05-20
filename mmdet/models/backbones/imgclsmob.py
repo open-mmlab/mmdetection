@@ -20,7 +20,7 @@ import torch.nn as nn
 from pytorchcv.model_provider import _models
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from ..registry import BACKBONES
+from ..builder import BACKBONES
 
 from mmcv.runner import get_dist_info
 

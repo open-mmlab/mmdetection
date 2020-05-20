@@ -13,9 +13,10 @@
 # and limitations under the License.
 
 import numpy as np
+from mmcv.utils import Registry
 
 from .coco import CocoDataset
-from .registry import DATASETS
+DATASETS = Registry('dataset')
 
 
 @DATASETS.register_module
@@ -83,4 +84,3 @@ class CustomCocoDataset(CocoDataset):
             seg_map=seg_map)
 
         return ann
-

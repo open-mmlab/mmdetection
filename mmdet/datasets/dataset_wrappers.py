@@ -1,10 +1,10 @@
 import numpy as np
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
-from .registry import DATASETS
+from .builder import DATASETS
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class ConcatDataset(_ConcatDataset):
     """A wrapper of concatenated dataset.
 
@@ -25,7 +25,7 @@ class ConcatDataset(_ConcatDataset):
             self.flag = np.concatenate(flags)
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class RepeatDataset(object):
     """A wrapper of repeated dataset.
 

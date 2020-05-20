@@ -1,12 +1,8 @@
-import torch
-
-from mmdet.core import bbox2roi, build_assigner, build_sampler
-from .. import builder
-from ..registry import DETECTORS
+from ..builder import DETECTORS
 from .two_stage import TwoStageDetector
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class MaskScoringRCNN(TwoStageDetector):
     """Mask Scoring RCNN.
 
@@ -16,25 +12,16 @@ class MaskScoringRCNN(TwoStageDetector):
     def __init__(self,
                  backbone,
                  rpn_head,
-                 bbox_roi_extractor,
-                 bbox_head,
-                 mask_roi_extractor,
-                 mask_head,
+                 roi_head,
                  train_cfg,
                  test_cfg,
                  neck=None,
-                 shared_head=None,
-                 mask_iou_head=None,
                  pretrained=None):
         super(MaskScoringRCNN, self).__init__(
             backbone=backbone,
             neck=neck,
-            shared_head=shared_head,
             rpn_head=rpn_head,
-            bbox_roi_extractor=bbox_roi_extractor,
-            bbox_head=bbox_head,
-            mask_roi_extractor=mask_roi_extractor,
-            mask_head=mask_head,
+            roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
             pretrained=pretrained)

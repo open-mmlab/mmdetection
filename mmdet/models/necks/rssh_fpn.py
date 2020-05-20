@@ -17,8 +17,8 @@ import torch.nn as nn
 from mmdet.core import auto_fp16
 
 from .fpn import FPN
-from ..registry import NECKS
-from ..utils import ConvModule
+from ..builder import NECKS
+from mmcv.cnn import ConvModule
 
 
 class RSSH(nn.Module):

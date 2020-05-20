@@ -128,9 +128,6 @@ class ModelOpenVINO(object):
                 framework_name = framework.get('name')
                 ir_name = ir.get('name')
                 mapping[framework_name] = ir_name
-                if framework_name != ir_name:
-                    # FIXME. This may not be correct for all operations.
-                    mapping[framework_name] += '.0'
         return mapping
 
     def try_add_extra_outputs(self, extra_outputs):
@@ -142,7 +139,8 @@ class ModelOpenVINO(object):
             ir_name = self.orig_ir_mapping[extra_output]
             try:
                 self.net.add_outputs(ir_name)
-            except RuntimeError:
+                print('added', extra_output, ir_name)
+            except RuntimeError as e:
                 pass
 
     def configure_inputs(self, required):
@@ -167,6 +165,14 @@ class ModelOpenVINO(object):
                 raise ValueError(f'Failed to identify data blob with name "{x}"')
 
     def rename_outputs(self, outputs):
+        new_items = []
+        for k, v in self.net_outputs_mapping.items():
+            if k not in outputs:
+                new_items.append([k + '.0', v])
+        if new_items:
+            for k, v in new_items:
+                self.net_outputs_mapping[k] = v
+
         return {self.net_outputs_mapping[k]: v for k, v in outputs.items() if k in self.net_outputs_mapping}
 
     def unify_inputs(self, inputs):
@@ -207,9 +213,15 @@ class DetectorOpenVINO(ModelOpenVINO):
         assert self.n == 1, 'Only batch 1 is supported.'
 
     def configure_outputs(self, required):
-        self.try_add_extra_outputs(['boxes', 'labels', 'masks', 'detection_out'])
+        extra_outputs = ['boxes', 'labels', 'masks', 'detection_out']
+
+        for output in extra_outputs:
+            if output not in self.orig_ir_mapping and output in self.net.outputs:
+                self.orig_ir_mapping[output] = output
+
+        self.try_add_extra_outputs(extra_outputs)
         outputs = []
-        
+
         try:
             self.check_required(self.orig_ir_mapping.keys(), ['detection_out'])
             self.with_detection_output = True

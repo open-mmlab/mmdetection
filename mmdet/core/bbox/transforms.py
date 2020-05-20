@@ -156,8 +156,8 @@ def bbox_flip(bboxes, img_shape):
     if isinstance(bboxes, torch.Tensor):
         assert bboxes.shape[-1] % 4 == 0
         flipped = bboxes.clone()
-        flipped[:, 0::4] = img_shape[1] - bboxes[:, 2::4] - 1
-        flipped[:, 2::4] = img_shape[1] - bboxes[:, 0::4] - 1
+        flipped[:, 0::4] = img_shape[1] - bboxes[:, 2::4]
+        flipped[:, 2::4] = img_shape[1] - bboxes[:, 0::4]
         return flipped
     elif isinstance(bboxes, np.ndarray):
         return mmcv.bbox_flip(bboxes, img_shape)
@@ -165,7 +165,7 @@ def bbox_flip(bboxes, img_shape):
 
 def bbox_mapping(bboxes, img_shape, scale_factor, flip):
     """Map bboxes from the original image scale to testing scale"""
-    new_bboxes = bboxes * scale_factor
+    new_bboxes = bboxes * bboxes.new_tensor(scale_factor)
     if flip:
         new_bboxes = bbox_flip(new_bboxes, img_shape)
     return new_bboxes
@@ -174,7 +174,7 @@ def bbox_mapping(bboxes, img_shape, scale_factor, flip):
 def bbox_mapping_back(bboxes, img_shape, scale_factor, flip):
     """Map bboxes from testing scale to original image scale"""
     new_bboxes = bbox_flip(bboxes, img_shape) if flip else bboxes
-    new_bboxes = new_bboxes / scale_factor
+    new_bboxes = new_bboxes / new_bboxes.new_tensor(scale_factor)
     return new_bboxes
 
 
@@ -222,13 +222,11 @@ def bbox2result(bboxes, labels, num_classes):
         list(ndarray): bbox results of each class
     """
     if bboxes.shape[0] == 0:
-        return [
-            np.zeros((0, 5), dtype=np.float32) for i in range(num_classes - 1)
-        ]
+        return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
     else:
         bboxes = to_numpy(bboxes)
         labels = to_numpy(labels)
-        return [bboxes[labels == i, :] for i in range(num_classes - 1)]
+        return [bboxes[labels == i, :] for i in range(num_classes)]
 
 
 def distance2bbox(points, distance, max_shape=None):
@@ -248,8 +246,8 @@ def distance2bbox(points, distance, max_shape=None):
     x2 = points[:, 0] + distance[:, 2]
     y2 = points[:, 1] + distance[:, 3]
     if max_shape is not None:
-        x1 = clamp(x1, min=0, max=max_shape[1] - 1)
-        y1 = clamp(y1, min=0, max=max_shape[0] - 1)
-        x2 = clamp(x2, min=0, max=max_shape[1] - 1)
-        y2 = clamp(y2, min=0, max=max_shape[0] - 1)
-    return torch.stack([x1, y1, x2, y2], dim=1)
+        x1 = x1.clamp(min=0, max=max_shape[1])
+        y1 = y1.clamp(min=0, max=max_shape[0])
+        x2 = x2.clamp(min=0, max=max_shape[1])
+        y2 = y2.clamp(min=0, max=max_shape[0])
+    return torch.stack([x1, y1, x2, y2], -1)

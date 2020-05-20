@@ -21,8 +21,8 @@ from common import replace_text_in_file, collect_ap
 
 
 class PublicModelsTestCase(unittest.TestCase):
-    coco_dir = '/tmp/coco'
-    snapshots_dir = '/tmp/snapshots'
+    coco_dir = '/home/ikrylov/data/coco'
+    snapshots_dir = '/home/ikrylov/snapshots'
 
     @staticmethod
     def shorten_annotation(path, num_images):
@@ -52,21 +52,32 @@ class PublicModelsTestCase(unittest.TestCase):
                 f'wget --no-verbose http://images.cocodataset.org/annotations/annotations_trainval2017.zip -P {cls.coco_dir}')
         if not os.path.exists(os.path.join(cls.coco_dir, 'annotations/instances_val2017.json')):
             os.system(
-                f'unzip {os.path.join(cls.coco_dir, "annotations_trainval2017.zip")} -d {cls.coco_dir}')
+                    f'unzip -o {os.path.join(cls.coco_dir, "annotations_trainval2017.zip")} -d {cls.coco_dir}')
 
-        cls.shorten_annotation(os.path.join(cls.coco_dir, 'annotations/instances_val2017.json'), 10)
+        cls.shorten_to = 10
 
-    def run_test(self, config_path, snapshot, metrics=('bbox', )):
+        cls.shorten_annotation(os.path.join(cls.coco_dir, 'annotations/instances_val2017.json'), cls.shorten_to)
+
+    def run_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.01):
         print('\n\ntesting ' + config_path, file=sys.stderr)
         name = config_path.replace('configs', '')[:-3]
+        print('expected ouputs', f'tests/expected_outputs/public/{name}-{self.shorten_to}.json')
         test_dir = f'/tmp/{name}'
         log_file = os.path.join(test_dir, 'log.txt')
         os.makedirs(test_dir, exist_ok=True)
-        target_config_path = os.path.join(test_dir, 'config.py')
-        os.system(f'cp {config_path} {target_config_path}')
-        assert replace_text_in_file('configs/_base_/datasets/coco_detection.py', "data_root = 'data/coco/'",
+        os.system(f'cp -r configs {test_dir}')
+        target_config_path = os.path.join(test_dir, config_path)
+        assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
+                                    "data_root = 'data/coco/'",
                                     f"data_root = '{self.coco_dir}/'")
-        replace_text_in_file(target_config_path, "keep_ratio=True", "keep_ratio=False")
+        assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
+                                    "keep_ratio=True", "keep_ratio=False")
+
+        replace_text_in_file(f'{target_config_path}',
+                             "data_root = 'data/coco/'",
+                             f"data_root = '{self.coco_dir}/'")
+        replace_text_in_file(f'{target_config_path}',
+                             "keep_ratio=True", "keep_ratio=False")
         metrics = ' '.join(metrics)
 
         os.system(f'python tools/test.py '
@@ -76,24 +87,37 @@ class PublicModelsTestCase(unittest.TestCase):
 
         ap = collect_ap(log_file)
 
-        with open(f'tests/expected_outputs/public/{name}.json') as read_file:
+        with open(f'tests/expected_outputs/public/{name}-{self.shorten_to}.json') as read_file:
             content = json.load(read_file)
         reference_ap = content['map']
 
-        self.assertListEqual(reference_ap, ap)
+        print(f'expected {reference_ap} vs actual {ap}')
 
-    def run_export_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.025):
+        for expected, actual, m in zip(reference_ap, ap, metrics.split(' ')):
+            if expected - thr > actual:
+                raise AssertionError(f'{m}: {expected} (expected) - {thr} (threshold) > {actual}')
+
+    def run_export_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.02):
         print('\n\ntesting export ' + config_path, file=sys.stderr)
         name = config_path.replace('configs/', '')[:-3]
+        print('expected ouputs', f'tests/expected_outputs/public/{name}-{self.shorten_to}.json')
         test_dir = f'/tmp/{name}'
         export_dir = os.path.join(test_dir, "export")
         log_file = os.path.join(export_dir, 'test_export.log')
         os.makedirs(export_dir, exist_ok=True)
-        target_config_path = os.path.join(export_dir, os.path.basename(config_path))
-        os.system(f'cp {config_path} {target_config_path}')
-        assert replace_text_in_file('_base_/datasets/coco_detection.py', "data_root = 'data/coco/'",
+        os.system(f'cp -r configs {test_dir}')
+        target_config_path = os.path.join(test_dir, config_path)
+        assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
+                                    "data_root = 'data/coco/'",
                                     f"data_root = '{self.coco_dir}/'")
-        replace_text_in_file(target_config_path, "keep_ratio=True", "keep_ratio=False")
+        assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
+                                    "keep_ratio=True", "keep_ratio=False")
+
+        replace_text_in_file(f'{target_config_path}',
+                             "data_root = 'data/coco/'",
+                             f"data_root = '{self.coco_dir}/'")
+        replace_text_in_file(f'{target_config_path}',
+                             "keep_ratio=True", "keep_ratio=False")
 
         metrics = ' '.join(metrics)
 
@@ -111,12 +135,15 @@ class PublicModelsTestCase(unittest.TestCase):
 
         ap = collect_ap(log_file)
 
-        with open(f'tests/expected_outputs/public/{name}.json') as read_file:
+        with open(f'tests/expected_outputs/public/{name}-{self.shorten_to}.json') as read_file:
             content = json.load(read_file)
         reference_ap = content['map']
 
-        for expected, actual in zip(reference_ap, ap):
-            self.assertLessEqual(expected - thr, actual)
+        print(f'expected {reference_ap} vs actual {ap}')
+
+        for expected, actual, m in zip(reference_ap, ap, metrics.split(' ')):
+            if expected - thr > actual:
+                raise AssertionError(f'{m}: {expected} (expected) - {thr} (threshold) > {actual}')
 
     def download_if_not_yet(self, url):
         os.makedirs(self.snapshots_dir, exist_ok=True)
@@ -125,175 +152,177 @@ class PublicModelsTestCase(unittest.TestCase):
             os.system(f'wget {url} -P {self.snapshots_dir}')
         return path
 
-    def test_atss__atss_r50_fpn_1x(self):
+    def test_atss__atss_r50_fpn_1x_coco(self):
         origin_config = 'configs/atss/atss_r50_fpn_1x_coco.py'
         url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/' \
-              'models/atss/atss_r50_fpn_1x_20200113-a7aa251e.pth'
+              'v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209-985f7bd0.pth'
         self.run_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_dcn_faster_rcnn_dconv_c3_c5_r50_fpn_1x(self):
-    #     origin_config = 'configs/dcn/faster_rcnn_dconv_c3-c5_r50_fpn_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'dcn/faster_rcnn_dconv_c3-c5_r50_fpn_1x_20190125-e41688c9.pth'
+
+    def test_dcn__faster_rcnn_r50_fpn_dconv_c3_5_1x_coco(self):
+        origin_config = 'configs/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco_20200130-d68aed1e.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url))
+
+    def test_gn__mask_rcnn_r50_fpn_gn_all_2x_coco(self):
+        origin_config = 'configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'gn/mask_rcnn_r50_fpn_gn-all_2x_coco/mask_rcnn_r50_fpn_gn-all_2x_coco_20200206-8eee02a6.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
+
+    def test_gn_ws__faster_rcnn_r50_fpn_gn_ws_all_1x_coco(self):
+        origin_config = 'configs/gn+ws/faster_rcnn_r50_fpn_gn_ws-all_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'gn%2Bws/faster_rcnn_r50_fpn_gn_ws-all_1x_coco/faster_rcnn_r50_fpn_gn_ws-all_1x_coco_20200130-613d9fe2.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url))
+
+    def test_fcos__fcos_x101_64x4d_fpn_gn_head_mstrain_640_800_4x2_2x_coco(self):
+        origin_config = 'configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco/' \
+              'fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco_20200229-11f8c079.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url))
+
+    def test_foveabox__fovea_r50_fpn_4x4_1x_coco(self):
+        origin_config = 'configs/foveabox/fovea_r50_fpn_4x4_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'foveabox/fovea_r50_fpn_4x4_1x_coco/fovea_r50_fpn_4x4_1x_coco_20200219-ee4d5303.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url))
+
+    # def test_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
+    #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py'
+    #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ms-rcnn/' \
+    #           'ms_rcnn_r50_caffe_fpn_1x_20190624-619934b5.pth'
     #     self.run_test(origin_config, self.download_if_not_yet(url))
     #
-    # def test_gn__mask_rcnn_r50_fpn_gn_2x(self):
-    #     origin_config = 'configs/gn/mask_rcnn_r50_fpn_gn_2x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'gn/mask_rcnn_r50_fpn_gn_2x_20180113-86832cf2.pth'
-    #     self.run_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
-    #
-    # def test_gn_ws__faster_rcnn_r50_fpn_gn_ws_1x(self):
-    #     origin_config = 'configs/gn+ws/faster_rcnn_r50_fpn_gn_ws_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'ws/faster_rcnn_r50_fpn_gn_ws_1x_20190418-935d00b6.pth'
-    #     self.run_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_fcos__fcos_r50_caffe_fpn_gn_1x_4gpu(self):
-    #     origin_config = 'configs/fcos/fcos_r50_caffe_fpn_gn_1x_4gpu.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'fcos/fcos_r50_caffe_fpn_gn_1x_4gpu_20190516-9f253a93.pth'
-    #     self.run_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_foveabox__fovea_r50_fpn_4gpu_1x(self):
-    #     origin_config = 'configs/foveabox/fovea_r50_fpn_4gpu_1x.py'
-    #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/' \
-    #           'foveabox/fovea_r50_fpn_4gpu_1x_20190905-3b185a5d.pth'
-    #     self.run_test(origin_config, self.download_if_not_yet(url))
-    #
-    # # def test_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
-    # #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py'
-    # #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ms-rcnn/' \
-    # #           'ms_rcnn_r50_caffe_fpn_1x_20190624-619934b5.pth'
-    # #     self.run_test(origin_config, self.download_if_not_yet(url))
-    # #
-    # # def test_htc__htc_r50_fpn_1x(self):
-    # #     origin_config = 'configs/htc/htc_r50_fpn_1x.py'
-    # #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/' \
-    # #           'htc_r50_fpn_1x_20190408-878c1712.pth'
-    # #     self.run_test(origin_config, self.download_if_not_yet(url))
-    # #
-    # def test_cascade_mask_rcnn_r50_fpn_1x(self):
-    #     origin_config = 'configs/cascade_mask_rcnn_r50_fpn_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'cascade_mask_rcnn_r50_fpn_1x_20181123-88b170c9.pth'
-    #     self.run_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
-    #
-    # def test_cascade_rcnn_r50_caffe_c4_1x(self):
-    #     origin_config = 'configs/cascade_rcnn_r50_caffe_c4_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'cascade_rcnn_r50_caffe_c4_1x-7c85c62b.pth'
-    #     self.run_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_faster_rcnn_r50_caffe_c4_1x(self):
-    #     origin_config = 'configs/faster_rcnn_r50_caffe_c4_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'faster_rcnn_r50_caffe_c4_1x-75ecfdfa.pth'
-    #     self.run_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_mask_rcnn_r50_caffe_c4_1x(self):
-    #     origin_config = 'configs/mask_rcnn_r50_caffe_c4_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'mask_rcnn_r50_caffe_c4_1x-02a4ad3b.pth'
-    #     self.run_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
-    #
-    # def test_retinanet_r50_fpn_1x(self):
-    #     origin_config = 'configs/retinanet_r50_fpn_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'retinanet_r50_fpn_1x_20181125-7b0c2548.pth'
+    # def test_htc__htc_r50_fpn_1x(self):
+    #     origin_config = 'configs/htc/htc_r50_fpn_1x.py'
+    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/' \
+    #           'htc_r50_fpn_1x_20190408-878c1712.pth'
     #     self.run_test(origin_config, self.download_if_not_yet(url))
 
-    # def test_ssd300_coco(self):
-    #     origin_config = 'configs/ssd/ssd300_coco.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'ssd300_coco_vgg16_caffe_120e_20181221-84d7110b.pth'
-    #     self.run_test(origin_config, self.download_if_not_yet(url))
+    def test_cascade_rcnn__cascade_mask_rcnn_r50_fpn_1x_coco(self):
+        origin_config = 'configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco/cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
+
+    def test_cascade_rcnn__cascade_rcnn_r50_fpn_1x_coco(self):
+        origin_config = 'configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco/cascade_rcnn_r50_fpn_1x_coco_20200316-3dc56deb.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url))
+
+    def test_faster_rcnn__faster_rcnn_r50_fpn_1x_coco(self):
+        origin_config = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url))
+
+    def test_mask_rcnn__mask_rcnn_r50_fpn_1x_coco(self):
+        origin_config = 'configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
+
+    def test_retinanet_r50_fpn_1x(self):
+        origin_config = 'configs/retinanet/retinanet_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url))
+
+    def test_ssd300_coco(self):
+        origin_config = 'configs/ssd/ssd300_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'
+        self.run_test(origin_config, self.download_if_not_yet(url))
 
     # Export
 
-    # def test_export_atss__atss_r50_fpn_1x(self):
-    #     origin_config = 'configs/atss/atss_r50_fpn_1x.py'
-    #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/' \
-    #           'models/atss/atss_r50_fpn_1x_20200113-a7aa251e.pth'
+    def test_export_atss__atss_r50_fpn_1x_coco(self):
+        origin_config = 'configs/atss/atss_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/' \
+              'v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209-985f7bd0.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_export_dcn__faster_rcnn_r50_fpn_dconv_c3_5_1x_coco(self):
+        origin_config = 'configs/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco_20200130-d68aed1e.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_export_gn__mask_rcnn_r50_fpn_gn_all_2x_coco(self):
+        origin_config = 'configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'gn/mask_rcnn_r50_fpn_gn-all_2x_coco/mask_rcnn_r50_fpn_gn-all_2x_coco_20200206-8eee02a6.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
+
+    def test_export_gn_ws__faster_rcnn_r50_fpn_gn_ws_all_1x_coco(self):
+        origin_config = 'configs/gn+ws/faster_rcnn_r50_fpn_gn_ws-all_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'gn%2Bws/faster_rcnn_r50_fpn_gn_ws-all_1x_coco/faster_rcnn_r50_fpn_gn_ws-all_1x_coco_20200130-613d9fe2.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_export_fcos__fcos_x101_64x4d_fpn_gn_head_mstrain_640_800_4x2_2x_coco(self):
+        origin_config = 'configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco/' \
+              'fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_4x2_2x_coco_20200229-11f8c079.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_export_foveabox__fovea_r50_fpn_4x4_1x_coco(self):
+        origin_config = 'configs/foveabox/fovea_r50_fpn_4x4_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'foveabox/fovea_r50_fpn_4x4_1x_coco/fovea_r50_fpn_4x4_1x_coco_20200219-ee4d5303.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    # def test_export_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
+    #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py'
+    #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ms-rcnn/' \
+    #           'ms_rcnn_r50_caffe_fpn_1x_20190624-619934b5.pth'
     #     self.run_export_test(origin_config, self.download_if_not_yet(url))
     #
-    # def test_export_dcn_faster_rcnn_dconv_c3_c5_r50_fpn_1x(self):
-    #     origin_config = 'configs/dcn/faster_rcnn_dconv_c3-c5_r50_fpn_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'dcn/faster_rcnn_dconv_c3-c5_r50_fpn_1x_20190125-e41688c9.pth'
+    # def test_export_htc__htc_r50_fpn_1x(self):
+    #     origin_config = 'configs/htc/htc_r50_fpn_1x.py'
+    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/' \
+    #           'htc_r50_fpn_1x_20190408-878c1712.pth'
     #     self.run_export_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_export_gn__mask_rcnn_r50_fpn_gn_2x(self):
-    #     origin_config = 'configs/gn/mask_rcnn_r50_fpn_gn_2x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'gn/mask_rcnn_r50_fpn_gn_2x_20180113-86832cf2.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
-    #
-    # def test_export_gn_ws__faster_rcnn_r50_fpn_gn_ws_1x(self):
-    #     origin_config = 'configs/gn+ws/faster_rcnn_r50_fpn_gn_ws_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'ws/faster_rcnn_r50_fpn_gn_ws_1x_20190418-935d00b6.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_export_fcos__fcos_r50_caffe_fpn_gn_1x_4gpu(self):
-    #     origin_config = 'configs/fcos/fcos_r50_caffe_fpn_gn_1x_4gpu.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'fcos/fcos_r50_caffe_fpn_gn_1x_4gpu_20190516-9f253a93.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_export_foveabox__fovea_r50_fpn_4gpu_1x(self):
-    #     origin_config = 'configs/foveabox/fovea_r50_fpn_4gpu_1x.py'
-    #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/' \
-    #           'foveabox/fovea_r50_fpn_4gpu_1x_20190905-3b185a5d.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url))
-    #
-    # # def test_export_ms_rcnn__ms_rcnn_r50_caffe_fpn_1x(self):
-    # #     origin_config = 'configs/ms_rcnn/ms_rcnn_r50_caffe_fpn_1x.py'
-    # #     url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/ms-rcnn/' \
-    # #           'ms_rcnn_r50_caffe_fpn_1x_20190624-619934b5.pth'
-    # #     self.run_export_test(origin_config, self.download_if_not_yet(url))
-    # #
-    # # def test_export_htc__htc_r50_fpn_1x(self):
-    # #     origin_config = 'configs/htc/htc_r50_fpn_1x.py'
-    # #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/htc/' \
-    # #           'htc_r50_fpn_1x_20190408-878c1712.pth'
-    # #     self.run_export_test(origin_config, self.download_if_not_yet(url))
-    # #
-    # def test_export_cascade_mask_rcnn_r50_fpn_1x(self):
-    #     origin_config = 'configs/cascade_mask_rcnn_r50_fpn_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'cascade_mask_rcnn_r50_fpn_1x_20181123-88b170c9.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
-    #
-    # def test_export_cascade_rcnn_r50_caffe_c4_1x(self):
-    #     origin_config = 'configs/cascade_rcnn_r50_caffe_c4_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'cascade_rcnn_r50_caffe_c4_1x-7c85c62b.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_export_faster_rcnn_r50_caffe_c4_1x(self):
-    #     origin_config = 'configs/faster_rcnn_r50_caffe_c4_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'faster_rcnn_r50_caffe_c4_1x-75ecfdfa.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_export_mask_rcnn_r50_caffe_c4_1x(self):
-    #     origin_config = 'configs/mask_rcnn_r50_caffe_c4_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'mask_rcnn_r50_caffe_c4_1x-02a4ad3b.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
-    #
-    # def test_export_retinanet_r50_fpn_1x(self):
-    #     origin_config = 'configs/retinanet_r50_fpn_1x.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'retinanet_r50_fpn_1x_20181125-7b0c2548.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url))
-    #
-    # def test_export_ssd300_coco(self):
-    #     origin_config = 'configs/ssd300_coco.py'
-    #     url = 'https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/' \
-    #           'ssd300_coco_vgg16_caffe_120e_20181221-84d7110b.pth'
-    #     self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_export_cascade_rcnn__cascade_mask_rcnn_r50_fpn_1x_coco(self):
+        origin_config = 'configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco/cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
+
+    def test_export_cascade_rcnn__cascade_rcnn_r50_fpn_1x_coco(self):
+        origin_config = 'configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco/cascade_rcnn_r50_fpn_1x_coco_20200316-3dc56deb.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_export_faster_rcnn__faster_rcnn_r50_fpn_1x_coco(self):
+        origin_config = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_export_mask_rcnn__mask_rcnn_r50_fpn_1x_coco(self):
+        origin_config = 'configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url), ('bbox', 'segm'))
+
+    def test_export_retinanet_r50_fpn_1x(self):
+        origin_config = 'configs/retinanet/retinanet_r50_fpn_1x_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_export_sd300_coco(self):
+        origin_config = 'configs/ssd/ssd300_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url))
 
 
 if __name__ == '__main__':
