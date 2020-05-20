@@ -54,8 +54,6 @@ class BaseMergeCell(nn.Module):
                  upsample_mode='nearest'):
         super(BaseMergeCell, self).__init__()
         assert upsample_mode in ['nearest', 'bilinear']
-        assert set(out_conv_cfg.keys()) == set(
-            ['groups', 'kernel_size', 'padding', 'bias'])
         self.with_out_conv = with_out_conv
         self.with_input1_conv = with_input1_conv
         self.with_input2_conv = with_input2_conv
