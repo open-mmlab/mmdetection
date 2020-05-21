@@ -170,7 +170,10 @@ def nms_match(dets, thresh):
     else:
         assert dets.shape[-1] == 5, 'inputs dets.shape should be (N, 5), ' \
                                     f'but get {dets.shape}'
-        dets_t = dets.detach().cpu()
+        if isinstance(dets, torch.Tensor):
+            dets_t = dets.detach().cpu()
+        else:
+            dets_t = torch.from_numpy(dets)
         matched = nms_ext.nms_match(dets_t, thresh)
 
     if isinstance(dets, torch.Tensor):

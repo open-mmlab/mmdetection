@@ -128,7 +128,7 @@ class ScoreHLRSampler(BaseSampler):
         neg_inds = torch.nonzero(assign_result.gt_inds == 0).flatten()
         num_neg = neg_inds.size(0)
         if num_neg == 0:
-            return neg_inds
+            return neg_inds, None
         with torch.no_grad():
             neg_bboxes = bboxes[neg_inds]
             neg_rois = bbox2roi([neg_bboxes])
