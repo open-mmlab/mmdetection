@@ -27,6 +27,8 @@ class AnchorHead(nn.Module):
             num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
+        loss_normalizer_momentum (float): momentum that used for EMA of
+            loss normalizer
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
     """  # noqa: W605
@@ -52,7 +54,6 @@ class AnchorHead(nn.Module):
                      loss_weight=1.0),
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
-                 loss_normalizer=-1,
                  loss_normalizer_momentum=0.9,
                  train_cfg=None,
                  test_cfg=None):
@@ -92,8 +93,12 @@ class AnchorHead(nn.Module):
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
-        self.register_buffer('loss_normalizer', torch.tensor(loss_normalizer))
+
+        assert 0 <= loss_normalizer_momentum <= 1, \
+            '"loss_normalizer_momentum" should be in range [0, 1], ' \
+            f'got {loss_normalizer_momentum}'
         self.loss_normalizer_momentum = loss_normalizer_momentum
+        self.register_buffer('loss_normalizer', torch.tensor(100))
 
         self.anchor_generator = build_anchor_generator(anchor_generator)
         # usually the numbers of anchors for each level are the same
@@ -401,12 +406,10 @@ class AnchorHead(nn.Module):
             concat_anchor_list.append(torch.cat(anchor_list[i]))
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
-        if self.loss_normalizer != -1:
-            avg_factor = (
-                self.loss_normalizer_momentum * self.loss_normalizer +
-                (1 - self.loss_normalizer_momentum) * num_total_samples)
-        else:
-            avg_factor = num_total_samples
+
+        self.loss_normalizer = (
+            self.loss_normalizer_momentum * self.loss_normalizer +
+            (1 - self.loss_normalizer_momentum) * num_total_samples)
 
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
@@ -417,7 +420,7 @@ class AnchorHead(nn.Module):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            avg_factor=max(1, avg_factor))
+            avg_factor=max(1, self.loss_normalizer))
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))

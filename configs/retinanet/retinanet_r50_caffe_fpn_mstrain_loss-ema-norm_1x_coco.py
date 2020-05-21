@@ -19,7 +19,6 @@ model = dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]),
-        loss_normalizer=100,
         loss_normalizer_momentum=0.9,
         loss_cls=dict(
             type='FocalLoss',
