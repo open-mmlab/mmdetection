@@ -28,7 +28,12 @@ class AnchorHead(nn.Module):
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
         loss_normalizer_momentum (float): momentum that used for EMA of
-            loss normalizer
+            loss normalizer. The loss normalizer normalizes the loss
+            according to the number of positive samples when using FocalLoss
+            or GHM without sampleing. This is found to be stablize the
+            training and improve performance by Detectron2.
+            By default it is set as 0 for other sample based methods or
+            the vanilla RetinaNet.
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
     """  # noqa: W605
@@ -54,7 +59,7 @@ class AnchorHead(nn.Module):
                      loss_weight=1.0),
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
-                 loss_normalizer_momentum=0.9,
+                 loss_normalizer_momentum=0,
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
@@ -94,6 +99,11 @@ class AnchorHead(nn.Module):
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
 
+        # The loss normalizer normalizes the training loss according to the
+        # number of positive samples. Using EMA could reduce the variance
+        # of the normalizer thus improves the performance.
+        # The hardcode 100 is not important as long as it is reasonable
+        # and not too small according to Detectron2.
         assert 0 <= loss_normalizer_momentum <= 1, \
             '"loss_normalizer_momentum" should be in range [0, 1], ' \
             f'got {loss_normalizer_momentum}'
