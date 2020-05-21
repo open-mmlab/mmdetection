@@ -10,6 +10,23 @@ from ..builder import PIPELINES
 
 @PIPELINES.register_module()
 class LoadImageFromFile(object):
+    """Load an image from file.
+
+    Required keys are "img_prefix" and "img_info" (a dict that must contain the
+    key "filename"). Added or updated keys are "filename", "img", "img_shape",
+    "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
+    "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
+
+    Args:
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+            Defaults to 'color'.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+    """
 
     def __init__(self,
                  to_float32=False,
@@ -50,14 +67,32 @@ class LoadImageFromFile(object):
         return results
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(to_float32={self.to_float32}, ' \
-            f"color_type='{self.color_type}')"
+        repr_str = (f'{self.__class__.__name__}('
+                    f'to_float32={self.to_float32}, '
+                    f"color_type='{self.color_type}', "
+                    f'file_client_args={self.file_client_args})')
+        return repr_str
 
 
 @PIPELINES.register_module()
 class LoadMultiChannelImageFromFiles(object):
-    """ Load multi channel images from a list of separate channel files.
-    Expects results['filename'] to be a list of filenames
+    """Load multi-channel images from a list of separate channel files.
+
+    Required keys are "img_prefix" and "img_info" (a dict that must contain the
+    key "filename", which is expected to be a list of filenames).
+    Added or updated keys are "filename", "img", "img_shape",
+    "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
+    "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
+
+    Args:
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+            Defaults to 'color'.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
     """
 
     def __init__(self,
@@ -104,12 +139,32 @@ class LoadMultiChannelImageFromFiles(object):
         return results
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(to_float32={self.to_float32}, ' \
-            f"color_type='{self.color_type}')"
+        repr_str = (f'{self.__class__.__name__}('
+                    f'to_float32={self.to_float32}, '
+                    f"color_type='{self.color_type}', "
+                    f'file_client_args={self.file_client_args})')
+        return repr_str
 
 
 @PIPELINES.register_module()
 class LoadAnnotations(object):
+    """Load annotations.
+
+    Args:
+        with_bbox (bool): Whether to parse and load the bbox annotation.
+             Default: True.
+        with_label (bool): Whether to parse and load the label annotation.
+            Default: True.
+        with_mask (bool): Whether to parse and load the mask annotation.
+             Default: False.
+        with_seg (bool): Whether to parse and load the semantic segmentation
+            annotation. Default: False.
+        poly2mask (bool): Whether to convert the instance masks from polygons
+            to bitmaps. Default: True.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+    """
 
     def __init__(self,
                  with_bbox=True,
@@ -157,7 +212,7 @@ class LoadAnnotations(object):
         return mask
 
     def process_polygons(self, polygons):
-        """ Convert polygons to list of ndarray and filter invalid polygons.
+        """Convert polygons to list of ndarray and filter invalid polygons.
 
         Args:
             polygons (list[list]): polygons of one instance.
@@ -217,6 +272,8 @@ class LoadAnnotations(object):
         repr_str += f'with_label={self.with_label}, '
         repr_str += f'with_mask={self.with_mask}, '
         repr_str += f'with_seg={self.with_seg})'
+        repr_str += f'poly2mask={self.poly2mask})'
+        repr_str += f'poly2mask={self.file_client_args})'
         return repr_str
 
 
