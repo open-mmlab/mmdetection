@@ -34,6 +34,8 @@ class FPN(nn.Module):
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         act_cfg (str): Config dict for activation layer in ConvModule.
             Default: None.
+        upsample_cfg (dict): Config dict for interpolate layer.
+            Default: `dict(mode='nearest')`
 
     Example:
         >>> import torch
@@ -63,7 +65,8 @@ class FPN(nn.Module):
                  no_norm_on_lateral=False,
                  conv_cfg=None,
                  norm_cfg=None,
-                 act_cfg=None):
+                 act_cfg=None,
+                 upsample_cfg=dict(mode='nearest')):
         super(FPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -73,6 +76,7 @@ class FPN(nn.Module):
         self.relu_before_extra_convs = relu_before_extra_convs
         self.no_norm_on_lateral = no_norm_on_lateral
         self.fp16_enabled = False
+        self.upsample_cfg = upsample_cfg
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -151,9 +155,15 @@ class FPN(nn.Module):
         # build top-down path
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
-            prev_shape = laterals[i - 1].shape[2:]
-            laterals[i - 1] += F.interpolate(
-                laterals[i], size=prev_shape, mode='nearest')
+            # In some cases, fixing `scale factor` (e.g. 2) is preferred, but
+            #  it cannot co-exist with `size` in `F.interpolate`.
+            if self.upsample_cfg.get('scale_factor'):
+                laterals[i - 1] += F.interpolate(laterals[i],
+                                                 **self.upsample_cfg)
+            else:
+                prev_shape = laterals[i - 1].shape[2:]
+                laterals[i - 1] += F.interpolate(
+                    laterals[i], size=prev_shape, **self.upsample_cfg)
 
         # build outputs
         # part 1: from original levels
