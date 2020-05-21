@@ -14,11 +14,11 @@ class RegNet(ResNet):
     More details can be found in `paper <https://arxiv.org/abs/2003.13678>`_ .
 
     Args:
-        depth (int): Depth of the backbone
         arch_parameter (dict): The parameter of RegNets.
             - w0 (int): initial width
             - wa (float): slope of width
             - wm (float): quantization parameter to quantize the width
+            - depth (int): depth of the backbone
             - group_w (int): width of group
             - bot_mul (float): bottleneck ratio, i.e. expansion of bottlneck.
         strides (Sequence[int]): Strides of the first block of each stage.
@@ -80,9 +80,26 @@ class RegNet(ResNet):
 
     def __init__(self,
                  arch_parameter,
+                 in_channels=3,
+                 base_channels=64,
                  strides=(2, 2, 2, 2),
-                 base_channels=32,
-                 **kwargs):
+                 dilations=(1, 1, 1, 1),
+                 out_indices=(0, 1, 2, 3),
+                 style='pytorch',
+                 deep_stem=False,
+                 avg_down=False,
+                 frozen_stages=-1,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 norm_eval=True,
+                 dcn=None,
+                 stage_with_dcn=(False, False, False, False),
+                 plugins=None,
+                 with_cp=False,
+                 zero_init_residual=True):
+        super(ResNet, self).__init__()
+
+        # Generate RegNet parameters first
         if isinstance(arch_parameter, str):
             assert arch_parameter in self.arch_parameters, \
                 f'"arch_parameter": "{arch_parameter}" is not one of the' \
@@ -99,7 +116,7 @@ class RegNet(ResNet):
             arch_parameter['depth'],
         )
         # Convert to per stage format
-        stage_widths, stage_depths = self.get_stages_from_blocks(widths)
+        stage_widths, stage_blocks = self.get_stages_from_blocks(widths)
         # Generate group widths and bot muls
         group_widths = [arch_parameter['group_w'] for _ in range(num_stages)]
         self.bottleneck_ratio = [
@@ -108,25 +125,42 @@ class RegNet(ResNet):
         # Adjust the compatibility of stage_widths and group_widths
         stage_widths, group_widths = self.adjust_width_group(
             stage_widths, self.bottleneck_ratio, group_widths)
-        # Use the same stride for each stage
 
         # Group params by stage
         self.stage_widths = stage_widths
         self.group_widths = group_widths
-        self.arch_settings = {
-            sum(stage_depths): (Bottleneck, tuple(stage_depths))
-        }
-
-        super(RegNet, self).__init__(
-            arch_parameter['depth'],
-            strides=strides,
-            base_channels=base_channels,
-            **kwargs)
-
+        self.depth = sum(stage_blocks)
+        self.base_channels = base_channels
+        self.num_stages = num_stages
+        assert num_stages >= 1 and num_stages <= 4
+        self.strides = strides
+        self.dilations = dilations
+        assert len(strides) == len(dilations) == num_stages
+        self.out_indices = out_indices
+        assert max(out_indices) < num_stages
+        self.style = style
+        self.deep_stem = deep_stem
+        self.avg_down = avg_down
+        self.frozen_stages = frozen_stages
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.with_cp = with_cp
+        self.norm_eval = norm_eval
+        self.dcn = dcn
+        self.stage_with_dcn = stage_with_dcn
+        if dcn is not None:
+            assert len(stage_with_dcn) == num_stages
+        self.plugins = plugins
+        self.zero_init_residual = zero_init_residual
+        self.block = Bottleneck
         self.block.expansion = 1
+        self.stage_blocks = stage_blocks[:num_stages]
+        self.inplanes = base_channels
+
+        self._make_stem_layer(in_channels, base_channels)
+
         self.inplanes = base_channels
         self.res_layers = []
-
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = self.strides[i]
             dilation = self.dilations[i]
@@ -251,7 +285,7 @@ class RegNet(ResNet):
         return widths, groups
 
     def get_stages_from_blocks(self, widths):
-        """Gets widths/stage_depths of network at each stage
+        """Gets widths/stage_blocks of network at each stage
 
         Args:
             widths (list[int]): Width in each stage.
@@ -266,11 +300,11 @@ class RegNet(ResNet):
         stage_widths = [
             width for width, diff in zip(widths, width_diff[:-1]) if diff
         ]
-        stage_depths = np.diff([
+        stage_blocks = np.diff([
             depth for depth, diff in zip(range(len(width_diff)), width_diff)
             if diff
         ]).tolist()
-        return stage_widths, stage_depths
+        return stage_widths, stage_blocks
 
     def forward(self, x):
         x = self.conv1(x)
