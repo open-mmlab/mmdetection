@@ -188,6 +188,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         img = img.copy()
         if isinstance(result, tuple):
             bbox_result, segm_result = result
+            if isinstance(segm_result, tuple):
+                segm_result = segm_result[0]  # ms rcnn
         else:
             bbox_result, segm_result = result, None
         bboxes = np.vstack(bbox_result)
@@ -197,7 +199,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         ]
         labels = np.concatenate(labels)
         # draw segmentation masks
-        if segm_result is not None:
+        if segm_result is not None and len(labels) > 0:  # non empty
             segms = mmcv.concat_list(segm_result)
             inds = np.where(bboxes[:, -1] > score_thr)[0]
             np.random.seed(42)
