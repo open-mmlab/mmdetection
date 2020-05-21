@@ -99,11 +99,11 @@ class FPN(nn.Module):
         self.add_extra_convs = add_extra_convs
 
         # extra_convs_source can only choose from 'inputs', 'laterals', 'outs'
-        if extra_convs_on_inputs:
-            assert extra_convs_source is None, '`extra_convs_on_inputs` and\
-`extra_convs_source` cannot be specified together!'
-
-            self.extra_convs_source = 'inputs'
+        if extra_convs_source is None:
+            if extra_convs_on_inputs:
+                self.extra_convs_source = 'inputs'
+            else:
+                self.extra_convs_source = 'outs'
         else:
             assert extra_convs_source in ('inputs', 'laterals', 'outs')
             self.extra_convs_source = extra_convs_source
