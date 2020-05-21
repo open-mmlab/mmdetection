@@ -3,7 +3,7 @@ import torch
 from .builder import IOU_CALCULATORS
 
 
-@IOU_CALCULATORS.register_module
+@IOU_CALCULATORS.register_module()
 class BboxOverlaps2D(object):
     """2D IoU Calculator"""
 

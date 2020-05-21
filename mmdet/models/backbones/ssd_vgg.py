@@ -8,7 +8,7 @@ from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class SSDVGG(VGG):
     """VGG Backbone network for single-shot-detection
 

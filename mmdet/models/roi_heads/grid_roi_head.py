@@ -5,7 +5,7 @@ from ..builder import HEADS, build_head, build_roi_extractor
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class GridRoIHead(StandardRoIHead):
     """Grid roi head for Grid R-CNN.
 

@@ -8,7 +8,7 @@ from mmdet.core import BitmapMasks, PolygonMasks
 from ..builder import PIPELINES
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class LoadImageFromFile(object):
 
     def __init__(self, to_float32=False, color_type='color'):
@@ -44,7 +44,7 @@ class LoadImageFromFile(object):
             f"color_type='{self.color_type}')"
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class LoadMultiChannelImageFromFiles(object):
     """ Load multi channel images from a list of separate channel files.
     Expects results['filename'] to be a list of filenames
@@ -86,7 +86,7 @@ class LoadMultiChannelImageFromFiles(object):
             f"color_type='{self.color_type}')"
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class LoadAnnotations(object):
 
     def __init__(self,
@@ -190,7 +190,7 @@ class LoadAnnotations(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class LoadProposals(object):
 
     def __init__(self, num_max_proposals=None):

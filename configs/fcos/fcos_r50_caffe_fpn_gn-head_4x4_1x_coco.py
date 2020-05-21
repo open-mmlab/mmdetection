@@ -93,7 +93,8 @@ data = dict(
 # optimizer
 optimizer = dict(
     lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
-optimizer_config = dict(_delete_=True, grad_clip=None)
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(warmup='constant')
 total_epochs = 12

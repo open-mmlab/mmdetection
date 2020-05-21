@@ -1,12 +1,13 @@
+import warnings
 from abc import ABCMeta, abstractmethod
 
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch.nn as nn
+from mmcv.utils import print_log
 
 from mmdet.core import auto_fp16
-from mmdet.utils import print_log
 
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
@@ -52,17 +53,14 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
     def forward_train(self, imgs, img_metas, **kwargs):
         """
         Args:
-            img (list[Tensor]): list of tensors of shape (1, C, H, W).
+            img (list[Tensor]): List of tensors of shape (1, C, H, W).
                 Typically these should be mean centered and std scaled.
-
-            img_metas (list[dict]): list of image info dict where each dict
-                has:
-                'img_shape', 'scale_factor', 'flip', and my also contain
+            img_metas (list[dict]): List of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and my also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                `mmdet/datasets/pipelines/formatting.py:Collect`.
-
-             **kwargs: specific to concrete implementation
+                For details on the values of these keys, see
+                :class:`mmdet.datasets.pipelines.Collect`.
+            kwargs (keyword arguments): Specific to concrete implementation.
         """
         pass
 
@@ -190,6 +188,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         img = img.copy()
         if isinstance(result, tuple):
             bbox_result, segm_result = result
+            if isinstance(segm_result, tuple):
+                segm_result = segm_result[0]  # ms rcnn
         else:
             bbox_result, segm_result = result, None
         bboxes = np.vstack(bbox_result)
@@ -199,7 +199,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         ]
         labels = np.concatenate(labels)
         # draw segmentation masks
-        if segm_result is not None:
+        if segm_result is not None and len(labels) > 0:  # non empty
             segms = mmcv.concat_list(segm_result)
             inds = np.where(bboxes[:, -1] > score_thr)[0]
             np.random.seed(42)
@@ -232,4 +232,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             out_file=out_file)
 
         if not (show or out_file):
+            warnings.warn('show==False and out_file is not specified, only '
+                          'result image will be returned')
             return img

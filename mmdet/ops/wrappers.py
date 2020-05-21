@@ -9,6 +9,7 @@ import math
 
 import torch
 import torch.nn as nn
+from mmcv.cnn import CONV_LAYERS
 from torch.nn.modules.utils import _pair
 
 
@@ -25,6 +26,7 @@ class NewEmptyTensorOp(torch.autograd.Function):
         return NewEmptyTensorOp.apply(grad, shape), None
 
 
+@CONV_LAYERS.register_module('Conv', force=True)
 class Conv2d(nn.Conv2d):
 
     def forward(self, x):

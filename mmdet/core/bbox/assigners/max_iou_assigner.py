@@ -6,7 +6,7 @@ from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
-@BBOX_ASSIGNERS.register_module
+@BBOX_ASSIGNERS.register_module()
 class MaxIoUAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
@@ -200,7 +200,8 @@ class MaxIoUAssigner(BaseAssigner):
 
         if gt_labels is not None:
             assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
-            pos_inds = torch.nonzero(assigned_gt_inds > 0).squeeze()
+            pos_inds = torch.nonzero(
+                assigned_gt_inds > 0, as_tuple=False).squeeze()
             if pos_inds.numel() > 0:
                 assigned_labels[pos_inds] = gt_labels[
                     assigned_gt_inds[pos_inds] - 1]

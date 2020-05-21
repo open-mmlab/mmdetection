@@ -30,10 +30,12 @@ before_install:
   - CUDA_HOME=/usr/local/cuda-${CUDA_SHORT}
   - LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${CUDA_HOME}/include:${LD_LIBRARY_PATH}
   - PATH=${CUDA_HOME}/bin:${PATH}
+  - sudo apt-get install -y ninja-build
 
 install:
   - pip install Pillow==6.2.2  # remove this line when torchvision>=0.5
   - pip install torch==${TORCH} torchvision==${TORCHVISION}
+  - pip install mmcv-nightly
   - pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
   - pip install -r requirements.txt
 

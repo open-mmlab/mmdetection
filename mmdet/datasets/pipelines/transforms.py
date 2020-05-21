@@ -21,7 +21,7 @@ except ImportError:
     Compose = None
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Resize(object):
     """Resize images & bbox & mask.
 
@@ -32,12 +32,13 @@ class Resize(object):
 
     `img_scale` can either be a tuple (single-scale) or a list of tuple
     (multi-scale). There are 3 multiscale modes:
-    - `ratio_range` is not None: randomly sample a ratio from the ratio range
-        and multiply it with the image scale.
-    - `ratio_range` is None and `multiscale_mode` == "range": randomly sample a
-        scale from the a range.
-    - `ratio_range` is None and `multiscale_mode` == "value": randomly sample a
-        scale from multiple scales.
+
+    - ``ratio_range is not None``: randomly sample a ratio from the ratio range
+      and multiply it with the image scale.
+    - ``ratio_range is None`` and ``multiscale_mode == "range"``: randomly
+      sample a scale from the a range.
+    - ``ratio_range is None`` and ``multiscale_mode == "value"``: randomly
+      sample a scale from multiple scales.
 
     Args:
         img_scale (tuple or list[tuple]): Images scales for resizing.
@@ -184,7 +185,7 @@ class Resize(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class RandomFlip(object):
     """Flip the image & bbox & mask.
 
@@ -253,7 +254,7 @@ class RandomFlip(object):
         return self.__class__.__name__ + f'(flip_ratio={self.flip_ratio})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Pad(object):
     """Pad the image & mask.
 
@@ -309,7 +310,7 @@ class Pad(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Normalize(object):
     """Normalize the image.
 
@@ -338,7 +339,7 @@ class Normalize(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class RandomCrop(object):
     """Random crop the image & bboxes & masks.
 
@@ -347,6 +348,7 @@ class RandomCrop(object):
     """
 
     def __init__(self, crop_size):
+        assert crop_size[0] > 0 and crop_size[1] > 0
         self.crop_size = crop_size
 
     def __call__(self, results):
@@ -399,7 +401,7 @@ class RandomCrop(object):
         return self.__class__.__name__ + f'(crop_size={self.crop_size})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class SegRescale(object):
     """Rescale semantic segmentation maps.
 
@@ -421,7 +423,7 @@ class SegRescale(object):
         return self.__class__.__name__ + f'(scale_factor={self.scale_factor})'
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class PhotoMetricDistortion(object):
     """Apply photometric distortion to image sequentially, every transformation
     is applied with a probability of 0.5. The position of random contrast is in
@@ -507,15 +509,15 @@ class PhotoMetricDistortion(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(\nbrightness_delta={self.brightness_delta},\n'
-        repr_str += f'contrast_range='
+        repr_str += 'contrast_range='
         repr_str += f'{(self.contrast_lower, self.contrast_upper)},\n'
-        repr_str += f'saturation_range='
+        repr_str += 'saturation_range='
         repr_str += f'{(self.saturation_lower, self.saturation_upper)},\n'
         repr_str += f'hue_delta={self.hue_delta})'
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Expand(object):
     """Random expand the image & bboxes.
 
@@ -585,7 +587,7 @@ class Expand(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class MinIoURandomCrop(object):
     """Random crop the image & bboxes, the cropped patches have minimum IoU
     requirement with original image & bboxes, the IoU threshold is randomly
@@ -628,6 +630,9 @@ class MinIoURandomCrop(object):
 
                 patch = np.array(
                     (int(left), int(top), int(left + new_w), int(top + new_h)))
+                # Line or point crop is not allowed
+                if patch[2] == patch[0] or patch[3] == patch[1]:
+                    continue
                 overlaps = bbox_overlaps(
                     patch.reshape(-1, 4), boxes.reshape(-1, 4)).reshape(-1)
                 if len(overlaps) > 0 and overlaps.min() < min_iou:
@@ -676,7 +681,7 @@ class MinIoURandomCrop(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Corrupt(object):
 
     def __init__(self, corruption, severity=1):
@@ -699,7 +704,7 @@ class Corrupt(object):
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class Albu(object):
 
     def __init__(self,

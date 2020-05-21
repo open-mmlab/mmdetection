@@ -32,26 +32,16 @@ Another feature of this repo is the demonstration of an `anchor-free detector`, 
 
 The results on COCO 2017val are shown in the table below.
 
-| Method | Backbone | GN | Anchor | convert func | Lr schd | box AP | Download |
-| :----: | :------: | :-------: | :-------: | :------: | :-----: | :----: | :------: |
-| BBox | R-50-FPN | Y | single | -    | 1x      | 36.3|[model](https://drive.google.com/open?id=1TaVAFGZP2i7RwtlQjy3LBH1WI-YRH774) |
-| BBox | R-50-FPN | Y | none     | -    | 1x      | 37.3| [model](https://drive.google.com/open?id=1hpfu-I7gtZnIb0NU2WvUvaZz_dm-THuZ) |
-| RepPoints | R-50-FPN | Y | none     | partial MinMax | 1x      | 38.1| [model](https://drive.google.com/open?id=11zFtdKH-QGz_zH7vlcIih6FQAjV84CWc) |
-| RepPoints | R-50-FPN | Y | none     | MinMax | 1x      | 38.2| [model](https://drive.google.com/open?id=1Cg9818dpkL-9qjmYdkhrY_BRiQFjV4xu)  |
-| RepPoints | R-50-FPN | Y | none     | moment | 1x      | 38.2| [model](https://drive.google.com/open?id=1rQg-lE-5nuqO1bt6okeYkti4Q-EaBsu_) |
-| RepPoints | R-50-FPN | N | none     | moment | 1x      | 36.8| [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/reppoints/reppoints_moment_r50_no_gn_fpn_1x-66db098e.pth) |
-| RepPoints | R-50-FPN | Y | none     | moment | 2x      | 38.6| [model](https://drive.google.com/open?id=1TfR-5geVviKhRoXL9JP6cG3fkN2itbBU) |
-| RepPoints | R-50-FPN | Y | none     | moment | 2x (ms train)   | 40.8| [model](https://drive.google.com/open?id=1oaHTIaP51oB5HJ6GWV3WYK19lMm9iJO6) |
-| RepPoints | R-50-FPN | Y | none     | moment | 2x (ms train&ms test)   | 42.2|          |
-| RepPoints | R-101-FPN | Y | none   | moment | 2x   | 40.3| [model](https://drive.google.com/open?id=1BAmGeUQ_zVQi2u7rgOuPQem2EjXDLgWm) |
-| RepPoints | R-101-FPN | Y | none   | moment | 2x (ms train)   | 42.3| [model](https://drive.google.com/open?id=14Lf0p4fXElXaxFu8stk3hek3bY8tNENX) |
-| RepPoints | R-101-FPN | Y | none   | moment | 2x (ms train&ms test)   | 44.1|          |
-| RepPoints | R-101-FPN-DCN | Y | none   | moment | 2x   | 43.0| [model](https://drive.google.com/open?id=1hpptxpb4QtNuB-HnV5wHbDltPHhlYq4z) |
-| RepPoints | R-101-FPN-DCN | Y | none   | moment | 2x (ms train)   | 44.8| [model](https://drive.google.com/open?id=1fsTckK99HYjOURwcFeHfy5JRRtsCajfX) |
-| RepPoints | R-101-FPN-DCN | Y | none   | moment | 2x (ms train&ms test)   | 46.4|          |
-| RepPoints | X-101-FPN-DCN | Y | none   | moment | 2x   | 44.5| [model](https://drive.google.com/open?id=1Y8vqaqU88-FEqqwl6Zb9exD5O246yrMR) |
-| RepPoints | X-101-FPN-DCN | Y | none   | moment | 2x (ms train)   | 45.6| [model](https://drive.google.com/open?id=1nr9gcVWxzeakbfPC6ON9yvKOuLzj_RrJ) |
-| RepPoints | X-101-FPN-DCN | Y | none   | moment | 2x (ms train&ms test)   | 46.8|          |
+| Method    | Backbone      | GN  | Anchor | convert func | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+|:---------:|:-------------:|:---:|:------:|:------------:|:-------:|:--------:|:--------------:|:------:|:--------:|
+| BBox      | R-50-FPN      | Y   | single | -            | 1x      | 3.9      | 15.9           | 36.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/bbox_r50_grid_fpn_gn-neck%2Bhead_1x_coco/bbox_r50_grid_fpn_gn-neck%2Bhead_1x_coco_20200329-c98bfa96.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/bbox_r50_grid_fpn_gn-neck%2Bhead_1x_coco/bbox_r50_grid_fpn_gn-neck%2Bhead_1x_coco_20200329_145916.log.json) |
+| BBox      | R-50-FPN      | Y   | none   | -            | 1x      | 3.9      | 15.4           | 37.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/bbox_r50_grid_center_fpn_gn-neck%2Bhead_1x_coco/bbox_r50_grid_center_fpn_gn-neck%2Bhead_1x_coco_20200330-00f73d58.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/bbox_r50_grid_center_fpn_gn-neck%2Bhead_1x_coco/bbox_r50_grid_center_fpn_gn-neck%2Bhead_1x_coco_20200330_233609.log.json) |
+| RepPoints | R-50-FPN      | N   | none   | moment       | 1x      | 3.3      | 18.5           | 37.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_1x_coco/reppoints_moment_r50_fpn_1x_coco_20200330-b73db8d1.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_1x_coco/reppoints_moment_r50_fpn_1x_coco_20200330_233609.log.json) |
+| RepPoints | R-50-FPN      | Y   | none   | moment       | 1x      | 3.9      | 17.5           | 38.1   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco/reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco_20200329-4b38409a.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco/reppoints_moment_r50_fpn_gn-neck%2Bhead_1x_coco_20200329_145952.log.json) |
+| RepPoints | R-50-FPN      | Y   | none   | moment       | 2x      | 3.9      | -              | 38.6   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_gn-neck%2Bhead_2x_coco/reppoints_moment_r50_fpn_gn-neck%2Bhead_2x_coco_20200329-91babaa2.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r50_fpn_gn-neck%2Bhead_2x_coco/reppoints_moment_r50_fpn_gn-neck%2Bhead_2x_coco_20200329_150020.log.json) |
+| RepPoints | R-101-FPN     | Y   | none   | moment       | 2x      | 5.8      | 13.7           | 40.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r101_fpn_gn-neck%2Bhead_2x_coco/reppoints_moment_r101_fpn_gn-neck%2Bhead_2x_coco_20200329-4fbc7310.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r101_fpn_gn-neck%2Bhead_2x_coco/reppoints_moment_r101_fpn_gn-neck%2Bhead_2x_coco_20200329_132205.log.json) |
+| RepPoints | R-101-FPN-DCN | Y   | none   | moment       | 2x      | 5.9      | 12.1           | 42.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco/reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco_20200329-3309fbf2.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco/reppoints_moment_r101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco_20200329_132134.log.json) |
+| RepPoints | X-101-FPN-DCN | Y   | none   | moment       | 2x      | 7.1      | 9.3            | 44.2   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco/reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco_20200329-f87da1ea.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/reppoints/reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco/reppoints_moment_x101_fpn_dconv_c3-c5_gn-neck%2Bhead_2x_coco_20200329_132201.log.json) |
 
 **Notes:**
 
@@ -59,5 +49,4 @@ The results on COCO 2017val are shown in the table below.
 - `DCN` denotes replacing 3x3 conv with the 3x3 deformable convolution in `c3-c5` stages of backbone.
 - `none` in the `anchor` column means 2-d `center point` (x,y) is used to represent the initial object hypothesis. `single` denotes one 4-d anchor box (x,y,w,h) with IoU based label assign criterion is adopted.
 - `moment`, `partial MinMax`, `MinMax` in the `convert func` column are three functions to convert a point set to a pseudo box.
-- `ms` denotes multi-scale training or multi-scale test.
 - Note the results here are slightly different from those reported in the paper, due to framework change. While the original paper uses an [MXNet](https://mxnet.apache.org/) implementation, we re-implement the method in [PyTorch](https://pytorch.org/) based on mmdetection.

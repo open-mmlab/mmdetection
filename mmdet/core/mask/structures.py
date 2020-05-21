@@ -440,8 +440,8 @@ class PolygonMasks(BaseInstanceMasks):
             x1, y1, x2, y2 = bbox
             w = np.maximum(x2 - x1, 1)
             h = np.maximum(y2 - y1, 1)
-            h_scale = out_h / h
-            w_scale = out_w / w
+            h_scale = out_h / max(h, 0.1)  # avoid too large scale
+            w_scale = out_w / max(w, 0.1)
 
             resized_mask = []
             for p in mask:

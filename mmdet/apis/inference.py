@@ -88,8 +88,10 @@ def inference_detector(model, img):
         # Use torchvision ops for CPU mode instead
         for m in model.modules():
             if isinstance(m, (RoIPool, RoIAlign)):
-                # set use_torchvision on-the-fly
-                m.use_torchvision = True
+                if not m.aligned:
+                    # aligned=False is not implemented on CPU
+                    # set use_torchvision on-the-fly
+                    m.use_torchvision = True
         warnings.warn('We set use_torchvision=True in CPU mode.')
         # just get the actual data from DataContainer
         data['img_metas'] = data['img_metas'][0].data
@@ -128,12 +130,7 @@ async def async_inference_detector(model, img):
     return result
 
 
-def show_result_pyplot(model,
-                       img,
-                       result,
-                       class_names,
-                       score_thr=0.3,
-                       fig_size=(15, 10)):
+def show_result_pyplot(model, img, result, score_thr=0.3, fig_size=(15, 10)):
     """Visualize the detection results on the image.
 
     Args:
@@ -141,7 +138,6 @@ def show_result_pyplot(model,
         img (str or np.ndarray): Image filename or loaded image.
         result (tuple[list] or list): The detection result, can be either
             (bbox, segm) or just bbox.
-        class_names (list[str] or tuple[str]): A list of class names.
         score_thr (float): The threshold to visualize the bboxes and masks.
         fig_size (tuple): Figure size of the pyplot figure.
     """
@@ -150,3 +146,4 @@ def show_result_pyplot(model,
     img = model.show_result(img, result, score_thr=score_thr, show=False)
     plt.figure(figsize=fig_size)
     plt.imshow(mmcv.bgr2rgb(img))
+    plt.show()

@@ -1,6 +1,6 @@
 _base_ = '../fast_rcnn/fast_rcnn_r50_fpn_1x_coco.py'
 model = dict(
-    pretrained='open-mmlab://resnet50_caffe',
+    pretrained='open-mmlab://resnet50_caffe_bgr',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -21,7 +21,7 @@ test_cfg = dict(rcnn=dict(score_thr=1e-3))
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadProposals', num_max_proposals=300),
@@ -59,3 +59,5 @@ data = dict(
     test=dict(
         proposal_file=data_root + 'proposals/ga_rpn_r50_fpn_1x_val2017.pkl',
         pipeline=test_pipeline))
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

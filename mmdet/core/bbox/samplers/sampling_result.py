@@ -4,7 +4,8 @@ from mmdet.utils import util_mixins
 
 
 class SamplingResult(util_mixins.NiceRepr):
-    """
+    """Bbox sampling result.
+
     Example:
         >>> # xdoctest: +IGNORE_WANT
         >>> from mmdet.core.bbox.samplers.sampling_result import *  # NOQA
@@ -52,8 +53,7 @@ class SamplingResult(util_mixins.NiceRepr):
         return torch.cat([self.pos_bboxes, self.neg_bboxes])
 
     def to(self, device):
-        """
-        Change the device of the data inplace.
+        """Change the device of the data inplace.
 
         Example:
             >>> self = SamplingResult.random()
@@ -77,9 +77,7 @@ class SamplingResult(util_mixins.NiceRepr):
 
     @property
     def info(self):
-        """
-        Returns a dictionary of info about the object
-        """
+        """Returns a dictionary of info about the object."""
         return {
             'pos_inds': self.pos_inds,
             'neg_inds': self.neg_inds,
@@ -94,19 +92,18 @@ class SamplingResult(util_mixins.NiceRepr):
     def random(cls, rng=None, **kwargs):
         """
         Args:
-            rng (None | int | numpy.random.RandomState): seed or state
-
-        Kwargs:
-            num_preds: number of predicted boxes
-            num_gts: number of true boxes
-            p_ignore (float): probability of a predicted box assinged to an
-                ignored truth
-            p_assigned (float): probability of a predicted box not being
-                assigned
-            p_use_label (float | bool): with labels or not
+            rng (None | int | numpy.random.RandomState): seed or state.
+            kwargs (keyword arguments):
+                - num_preds: number of predicted boxes
+                - num_gts: number of true boxes
+                - p_ignore (float): probability of a predicted box assinged to
+                    an ignored truth.
+                - p_assigned (float): probability of a predicted box not being
+                    assigned.
+                - p_use_label (float | bool): with labels or not.
 
         Returns:
-            AssignResult :
+            :obj:`SamplingResult`: Randomly generated sampling result.
 
         Example:
             >>> from mmdet.core.bbox.samplers.sampling_result import *  # NOQA

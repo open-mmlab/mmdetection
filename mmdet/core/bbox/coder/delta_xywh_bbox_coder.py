@@ -5,16 +5,13 @@ from ..builder import BBOX_CODERS
 from .base_bbox_coder import BaseBBoxCoder
 
 
-@BBOX_CODERS.register_module
+@BBOX_CODERS.register_module()
 class DeltaXYWHBBoxCoder(BaseBBoxCoder):
     """Delta XYWH BBox coder
 
-    Following the practice in R-CNN [1]_, this coder encodes bbox (x1, y1, x2,
-    y2) into delta (dx, dy, dw, dh) and decodes delta (dx, dy, dw, dh)
-    back to original bbox (x1, y1, x2, y2).
-
-    References:
-        .. [1] https://arxiv.org/abs/1311.2524
+    Following the practice in `R-CNN <https://arxiv.org/abs/1311.2524>`_,
+    this coder encodes bbox (x1, y1, x2, y2) into delta (dx, dy, dw, dh) and
+    decodes delta (dx, dy, dw, dh) back to original bbox (x1, y1, x2, y2).
 
     Args:
         target_means (Sequence[float]): denormalizing means of target for
@@ -159,8 +156,8 @@ def delta2bbox(rois,
     gw = pw * dw.exp()
     gh = ph * dh.exp()
     # Use network energy to shift the center of each roi
-    gx = torch.addcmul(px, 1, pw, dx)  # gx = px + pw * dx
-    gy = torch.addcmul(py, 1, ph, dy)  # gy = py + ph * dy
+    gx = px + pw * dx
+    gy = py + ph * dy
     # Convert center-xy/width/height to top-left, bottom-right
     x1 = gx - gw * 0.5
     y1 = gy - gh * 0.5

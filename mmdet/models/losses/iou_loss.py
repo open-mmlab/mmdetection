@@ -114,7 +114,7 @@ def giou_loss(pred, target, eps=1e-7):
     return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class IoULoss(nn.Module):
 
     def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
@@ -152,7 +152,7 @@ class IoULoss(nn.Module):
         return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class BoundedIoULoss(nn.Module):
 
     def __init__(self, beta=0.2, eps=1e-3, reduction='mean', loss_weight=1.0):
@@ -186,7 +186,7 @@ class BoundedIoULoss(nn.Module):
         return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class GIoULoss(nn.Module):
 
     def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):

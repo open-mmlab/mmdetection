@@ -9,27 +9,29 @@ from .builder import DATASETS
 from .pipelines import Compose
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class CustomDataset(Dataset):
     """Custom dataset for detection.
 
-    Annotation format:
-    [
-        {
-            'filename': 'a.jpg',
-            'width': 1280,
-            'height': 720,
-            'ann': {
-                'bboxes': <np.ndarray> (n, 4),
-                'labels': <np.ndarray> (n, ),
-                'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
-                'labels_ignore': <np.ndarray> (k, 4) (optional field)
-            }
-        },
-        ...
-    ]
+    The annotation format is shown as follows. The `ann` field is optional for
+    testing.
 
-    The `ann` field is optional for testing.
+    .. code-block:: none
+
+        [
+            {
+                'filename': 'a.jpg',
+                'width': 1280,
+                'height': 720,
+                'ann': {
+                    'bboxes': <np.ndarray> (n, 4),
+                    'labels': <np.ndarray> (n, ),
+                    'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
+                    'labels_ignore': <np.ndarray> (k, 4) (optional field)
+                }
+            },
+            ...
+        ]
     """
 
     CLASSES = None
@@ -98,6 +100,9 @@ class CustomDataset(Dataset):
 
     def get_ann_info(self, idx):
         return self.data_infos[idx]['ann']
+
+    def get_cat_ids(self, idx):
+        return self.data_infos[idx]['ann']['labels'].astype(np.int).tolist()
 
     def pre_pipeline(self, results):
         results['img_prefix'] = self.img_prefix

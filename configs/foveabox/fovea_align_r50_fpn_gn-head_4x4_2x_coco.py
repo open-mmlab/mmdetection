@@ -6,3 +6,5 @@ model = dict(
 # learning policy
 lr_config = dict(step=[16, 22])
 total_epochs = 24
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
