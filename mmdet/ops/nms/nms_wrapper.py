@@ -157,16 +157,19 @@ def nms_match(dets, thresh):
     kept bbox. In each group, indice is sorted as score order.
 
     Arguments:
-        dets (torch.Tensor or np.ndarray): bboxes with scores.
-        iou_thr (float): IoU threshold for NMS.
+        dets (torch.Tensor | np.ndarray): Det bboxes with scores, shape (N, 5).
+        iou_thr (float): IoU thresh for NMS.
 
     Returns:
-        List[Tensor]: The outer list corresponds different matched group, the
-            inner Tensor corresponds the indices for a group in score order.
+        List[Tensor | ndarray]: The outer list corresponds different matched
+            group, the inner Tensor corresponds the indices for a group in
+            score order.
     """
     if dets.shape[0] == 0:
         matched = []
     else:
+        assert dets.shape[-1] == 5, 'inputs dets.shape should be (N, 5), ' \
+                                    f'but get {dets.shape}'
         dets_t = dets.detach().cpu()
         matched = nms_ext.nms_match(dets_t, thresh)
 

@@ -41,11 +41,13 @@ class ScoreHLRSampler(BaseSampler):
                  k=0.5,
                  bias=0,
                  score_thr=0.05,
+                 iou_thr=0.5,
                  **kwargs):
         super().__init__(num, pos_fraction, neg_pos_ub, add_gt_as_proposals)
         self.k = k
         self.bias = bias
         self.score_thr = score_thr
+        self.iou_thr = iou_thr
         self.context = context
         # context of cascade detectors is a list, so distinguish them here.
         if not hasattr(context, 'num_stages'):
@@ -117,7 +119,7 @@ class ScoreHLRSampler(BaseSampler):
         5. Linearly map Score-HLR to the final label weights.
 
         Args:
-            assign_result (:obj: AssignResult): result of assigner.
+            assign_result (:obj:`AssignResult`): result of assigner.
             num_expected (int): Expected number of samples.
             bboxes (Tensor): bbox to be sampled.
             feats (Tensor): Features come from FPN.
@@ -170,7 +172,7 @@ class ScoreHLRSampler(BaseSampler):
                     valid_rois[:, 1:], selected_bbox_pred)
                 pred_bboxes_with_score = torch.cat(
                     [pred_bboxes, valid_max_score[:, None]], -1)
-                group = nms_match(pred_bboxes_with_score, 0.5)
+                group = nms_match(pred_bboxes_with_score, self.iou_thr)
 
                 # imp: importance
                 imp = cls_score.new_zeros(num_valid)
@@ -229,7 +231,8 @@ class ScoreHLRSampler(BaseSampler):
             gt_labels (Tensor, optional): Class labels of ground truth bboxes.
 
         Returns:
-            :obj:`SamplingResult`: Sampling result.
+            tuple[:obj:`SamplingResult`, Tensor]: Sampling result and negetive
+                label weights.
         """
         bboxes = bboxes[:, :4]
 

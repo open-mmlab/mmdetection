@@ -17,25 +17,19 @@ class PISARoIHead(StandardRoIHead):
                       gt_masks=None):
         """
         Args:
-            x (list[Tensor]): list of multi-level img features.
-
-            img_metas (list[dict]): list of image info dict where each dict
+            x (list[Tensor]): List of multi-level img features.
+            img_metas (list[dict]): List of image info dict where each dict
                 has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-
-            proposals (list[Tensors]): list of region proposals.
-
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+            proposals (list[Tensors]): List of region proposals.
+            gt_bboxes (list[Tensor]): Each item are the truth boxes for each
                 image in [tl_x, tl_y, br_x, br_y] format.
-
-            gt_labels (list[Tensor]): class indices corresponding to each box
-
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+            gt_labels (list[Tensor]): Class indices corresponding to each box
+            gt_bboxes_ignore (list[Tensor], optional): Specify which bounding
                 boxes can be ignored when computing the loss.
-
-            gt_masks (None | Tensor) : true segmentation masks for each box
+            gt_masks (None | Tensor) : True segmentation masks for each box
                 used if the architecture supports a segmentation task.
 
         Returns:

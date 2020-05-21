@@ -11,7 +11,8 @@ def isr_p(cls_score,
           loss_cls,
           bbox_coder,
           k=2,
-          bias=0):
+          bias=0,
+          num_class=80):
     """Importance-based Sample Reweighting (ISR_P), positive part.
 
     Args:
@@ -26,6 +27,7 @@ def isr_p(cls_score,
         bbox_coder (obj): BBox coder of the head.
         k (float): Power of the non-linear mapping.
         bias (float): Shift of the non-linear mapping.
+        num_class (int): Number of classes, default: 80.
 
     Return:
         tuple([Tensor]): labels, imp_based_label_weights, bbox_targets,
@@ -33,7 +35,8 @@ def isr_p(cls_score,
     """
 
     labels, label_weights, bbox_targets, bbox_weights = bbox_targets
-    pos_label_inds = ((labels >= 0) & (labels < 80)).nonzero().reshape(-1)
+    pos_label_inds = ((labels >= 0) &
+                      (labels < num_class)).nonzero().reshape(-1)
     pos_labels = labels[pos_label_inds]
 
     # if no positive samples, return the original targets
@@ -120,7 +123,8 @@ def carl_loss(cls_score,
               k=1,
               bias=0.2,
               avg_factor=None,
-              sigmoid=False):
+              sigmoid=False,
+              num_class=80):
     """Classification-Aware Regression Loss (CARL).
 
     Args:
@@ -134,11 +138,13 @@ def carl_loss(cls_score,
         bias (float): Shift of the non-linear mapping.
         avg_factor (int): Average factor used in regression loss.
         sigmoid (bool): Activation of the classification score.
+        num_class (int): Number of classes, default: 80.
 
     Return:
         dict: CARL loss dict.
     """
-    pos_label_inds = ((labels >= 0) & (labels < 80)).nonzero().reshape(-1)
+    pos_label_inds = ((labels >= 0) &
+                      (labels < num_class)).nonzero().reshape(-1)
     pos_labels = labels[pos_label_inds]
 
     # multiply pos_cls_score with the corresponding bbox weight
@@ -167,6 +173,5 @@ def carl_loss(cls_score,
         pos_bbox_preds,
         bbox_targets[pos_label_inds],
         reduction_override='none') / avg_factor
-    carl_loss_weights = carl_loss_weights[:, None].expand(-1, 4)
-    loss_carl = (ori_loss_reg * carl_loss_weights).sum()
+    loss_carl = (ori_loss_reg * carl_loss_weights[:, None]).sum()
     return dict(loss_carl=loss_carl[None])
