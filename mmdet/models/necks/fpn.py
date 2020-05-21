@@ -76,7 +76,7 @@ class FPN(nn.Module):
         self.relu_before_extra_convs = relu_before_extra_convs
         self.no_norm_on_lateral = no_norm_on_lateral
         self.fp16_enabled = False
-        self.upsample_cfg = upsample_cfg
+        self.upsample_cfg = upsample_cfg.copy()
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -157,7 +157,7 @@ class FPN(nn.Module):
         for i in range(used_backbone_levels - 1, 0, -1):
             # In some cases, fixing `scale factor` (e.g. 2) is preferred, but
             #  it cannot co-exist with `size` in `F.interpolate`.
-            if self.upsample_cfg.get('scale_factor'):
+            if 'scale_factor' in self.upsample_cfg:
                 laterals[i - 1] += F.interpolate(laterals[i],
                                                  **self.upsample_cfg)
             else:
