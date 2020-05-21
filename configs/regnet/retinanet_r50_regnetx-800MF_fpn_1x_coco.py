@@ -2,7 +2,6 @@ _base_ = './retinanet_r50_regnetx-3GF_fpn_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://regnetx_800mf',
     backbone=dict(
-        _delete_=True,
         type='RegNet',
         arch='regnetx_800mf',
         out_indices=(0, 1, 2, 3),

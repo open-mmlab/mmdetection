@@ -2,7 +2,6 @@ _base_ = './mask_rcnn_regnetx-3GF_fpn_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://regnetx_6.4gf',
     backbone=dict(
-        _delete_=True,
         type='RegNet',
         arch='regnetx_6.4gf',
         out_indices=(0, 1, 2, 3),

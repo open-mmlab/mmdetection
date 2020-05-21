@@ -49,31 +49,31 @@ A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](
 Supported methods and backbones are shown in the below table.
 Results and models are available in the [model zoo](docs/model_zoo.md).
 
-|                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet |
-|--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|
-| RPN                | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Faster R-CNN       | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Mask R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
-| SSD                | ✗        | ✗        | ✗        | ✓        | ✗     |
-| RetinaNet          | ✓        | ✓        | ☐        | ✗        | ✓     |
-| GHM                | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Double-Head R-CNN  | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Grid R-CNN (Plus)  | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     |
-| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     |
-| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     |
-| RepPoints          | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     |
-| FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     |
-| NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     |
-| ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     |
-| FSAF               | ✓        | ✓        | ☐        | ✗        | ✓     |
-| PAFPN              | ✓        | ✓        | ☐        | ✗        | ✓     |
+|                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet | RegNetX | Res2Net |
+|--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|:--------:|:-----:|
+| RPN                | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |     
+| Faster R-CNN       | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
+| Mask R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
+| Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
+| Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
+| SSD                | ✗        | ✗        | ✗        | ✓        | ✗     | ✗        | ✗     |
+| RetinaNet          | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ☐     |
+| GHM                | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Double-Head R-CNN  | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Grid R-CNN (Plus)  | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
+| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| RepPoints          | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| FSAF               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| PAFPN              | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 
 Other features
 - [x] [CARAFE](configs/carafe/README.md)
