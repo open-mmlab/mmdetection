@@ -112,7 +112,7 @@ class ResNeXt(ResNet):
     Example:
         >>> from mmdet.models import ResNeXt
         >>> import torch
-        >>> self = ResNeXt(depth=50)
+        >>> self = ResNeXt(depth=50, groups=32)
         >>> self.eval()
         >>> inputs = torch.rand(1, 3, 32, 32)
         >>> level_outputs = self.forward(inputs)
