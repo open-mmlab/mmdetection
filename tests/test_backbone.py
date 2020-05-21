@@ -625,7 +625,6 @@ def test_resnext_backbone():
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
 
 
-<<<<<<< HEAD
 regnet_test_data = [
     ('regnetx_800mf',
      dict(w0=56, wa=35.73, wm=2.28, group_w=16, depth=16,
@@ -673,7 +672,6 @@ def test_regnet_backbone(arch_name, arch_parameter, out_channels):
 
     # Test RegNet with arch_parameter
     model = RegNet(arch_parameter)
-=======
 def test_res2net_bottle2neck():
     with pytest.raises(AssertionError):
         # Style must be in ['pytorch', 'caffe']
@@ -718,7 +716,6 @@ def test_res2net_backbone():
     for m in model.modules():
         if is_block(m):
             assert m.scales == 4
->>>>>>> 6730084972938f374dcb535c34765b47c54a8c06
     model.init_weights()
     model.train()
 
