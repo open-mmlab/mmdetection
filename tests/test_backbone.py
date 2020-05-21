@@ -672,6 +672,12 @@ def test_regnet_backbone(arch_name, arch_parameter, out_channels):
 
     # Test RegNet with arch_parameter
     model = RegNet(arch_parameter)
+    assert feat[0].shape == torch.Size([1, out_channels[0], 56, 56])
+    assert feat[1].shape == torch.Size([1, out_channels[1], 28, 28])
+    assert feat[2].shape == torch.Size([1, out_channels[2], 14, 14])
+    assert feat[3].shape == torch.Size([1, out_channels[3], 7, 7])
+
+
 def test_res2net_bottle2neck():
     with pytest.raises(AssertionError):
         # Style must be in ['pytorch', 'caffe']
@@ -722,14 +728,7 @@ def test_res2net_backbone():
     imgs = torch.randn(1, 3, 224, 224)
     feat = model(imgs)
     assert len(feat) == 4
-<<<<<<< HEAD
-    assert feat[0].shape == torch.Size([1, out_channels[0], 56, 56])
-    assert feat[1].shape == torch.Size([1, out_channels[1], 28, 28])
-    assert feat[2].shape == torch.Size([1, out_channels[2], 14, 14])
-    assert feat[3].shape == torch.Size([1, out_channels[3], 7, 7])
-=======
     assert feat[0].shape == torch.Size([1, 256, 56, 56])
     assert feat[1].shape == torch.Size([1, 512, 28, 28])
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
->>>>>>> 6730084972938f374dcb535c34765b47c54a8c06
