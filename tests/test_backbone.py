@@ -650,9 +650,8 @@ regnet_test_data = [
 ]
 
 
-@pytest.mark.parametrize('arch_name,arch_parameter,out_channels',
-                         regnet_test_data)
-def test_regnet_backbone(arch_name, arch_parameter, out_channels):
+@pytest.mark.parametrize('arch_name,arch,out_channels', regnet_test_data)
+def test_regnet_backbone(arch_name, arch, out_channels):
     with pytest.raises(AssertionError):
         # ResNeXt depth should be in [50, 101, 152]
         RegNet(arch_name + '233')
@@ -670,8 +669,8 @@ def test_regnet_backbone(arch_name, arch_parameter, out_channels):
     assert feat[2].shape == torch.Size([1, out_channels[2], 14, 14])
     assert feat[3].shape == torch.Size([1, out_channels[3], 7, 7])
 
-    # Test RegNet with arch_parameter
-    model = RegNet(arch_parameter)
+    # Test RegNet with arch
+    model = RegNet(arch)
     assert feat[0].shape == torch.Size([1, out_channels[0], 56, 56])
     assert feat[1].shape == torch.Size([1, out_channels[1], 28, 28])
     assert feat[2].shape == torch.Size([1, out_channels[2], 14, 14])

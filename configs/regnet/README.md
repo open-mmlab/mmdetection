@@ -38,12 +38,12 @@ This script convert model from `PRETRAIN_PATH` and store the converted model in 
 
 ### Modify config
 
-The users can modify the config's `depth` of backbone and corresponding keys in `arch_parameter` according to the configs in the [pycls model zoo](https://github.com/facebookresearch/pycls/blob/master/MODEL_ZOO.md).
+The users can modify the config's `depth` of backbone and corresponding keys in `arch` according to the configs in the [pycls model zoo](https://github.com/facebookresearch/pycls/blob/master/MODEL_ZOO.md).
 The parameter `in_channels` in FPN can be found in the Figure 15 & 16 of the paper (`wi` in the legend).
 This directory already provides some configs with their performance, using RegNetX from 800MF to 12GF level.
 For other pre-trained models or self-implemented regnet models, the users are responsible to check these parameters by themselves.
 
-**Note**: Although Fig. 15 & 16 also provide `w0`, `wa`, `wm`, `group_w`, and `bot_mul` for `arch_parameter`, they are quantized thus inaccurate, using them sometimes produces different backbone that does not match the key in the pre-trained model.
+**Note**: Although Fig. 15 & 16 also provide `w0`, `wa`, `wm`, `group_w`, and `bot_mul` for `arch`, they are quantized thus inaccurate, using them sometimes produces different backbone that does not match the key in the pre-trained model.
 
 ## Results
 

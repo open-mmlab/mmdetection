@@ -14,7 +14,7 @@ class RegNet(ResNet):
     More details can be found in `paper <https://arxiv.org/abs/2003.13678>`_ .
 
     Args:
-        arch_parameter (dict): The parameter of RegNets.
+        arch (dict): The parameter of RegNets.
             - w0 (int): initial width
             - wa (float): slope of width
             - wm (float): quantization parameter to quantize the width
@@ -44,7 +44,7 @@ class RegNet(ResNet):
         >>> from mmdet.models import RegNet
         >>> import torch
         >>> self = RegNet(
-                arch_parameter=dict(
+                arch=dict(
                     w0=88,
                     wa=26.31,
                     wm=2.25,
@@ -61,7 +61,7 @@ class RegNet(ResNet):
         (1, 432, 2, 2)
         (1, 1008, 1, 1)
     """
-    arch_parameters = {
+    arch_settings = {
         'regnetx_800mf':
         dict(w0=56, wa=35.73, wm=2.28, group_w=16, depth=16, bot_mul=1.0),
         'regnetx_1.6gf':
@@ -79,7 +79,7 @@ class RegNet(ResNet):
     }
 
     def __init__(self,
-                 arch_parameter,
+                 arch,
                  in_channels=3,
                  base_channels=64,
                  strides=(2, 2, 2, 2),
@@ -100,28 +100,26 @@ class RegNet(ResNet):
         super(ResNet, self).__init__()
 
         # Generate RegNet parameters first
-        if isinstance(arch_parameter, str):
-            assert arch_parameter in self.arch_parameters, \
-                f'"arch_parameter": "{arch_parameter}" is not one of the' \
-                ' arch_parameters'
-            arch_parameter = self.arch_parameters[arch_parameter]
-        elif not isinstance(arch_parameter, dict):
-            raise ValueError('Expect "arch_parameter" to be either a string '
-                             f'or a dict, got {type(arch_parameter)}')
+        if isinstance(arch, str):
+            assert arch in self.arch_settings, \
+                f'"arch": "{arch}" is not one of the' \
+                ' arch_settings'
+            arch = self.arch_settings[arch]
+        elif not isinstance(arch, dict):
+            raise ValueError('Expect "arch" to be either a string '
+                             f'or a dict, got {type(arch)}')
 
         widths, num_stages = self.generate_regnet(
-            arch_parameter['w0'],
-            arch_parameter['wa'],
-            arch_parameter['wm'],
-            arch_parameter['depth'],
+            arch['w0'],
+            arch['wa'],
+            arch['wm'],
+            arch['depth'],
         )
         # Convert to per stage format
         stage_widths, stage_blocks = self.get_stages_from_blocks(widths)
         # Generate group widths and bot muls
-        group_widths = [arch_parameter['group_w'] for _ in range(num_stages)]
-        self.bottleneck_ratio = [
-            arch_parameter['bot_mul'] for _ in range(num_stages)
-        ]
+        group_widths = [arch['group_w'] for _ in range(num_stages)]
+        self.bottleneck_ratio = [arch['bot_mul'] for _ in range(num_stages)]
         # Adjust the compatibility of stage_widths and group_widths
         stage_widths, group_widths = self.adjust_width_group(
             stage_widths, self.bottleneck_ratio, group_widths)

@@ -70,7 +70,7 @@ def convert(src, dst):
     # check if all layers are converted
     for key in blobs:
         if key not in converted_names:
-            print(f'Not Convert: {key}')
+            print(f'not converted: {key}')
     # save checkpoint
     checkpoint = dict()
     checkpoint['state_dict'] = state_dict

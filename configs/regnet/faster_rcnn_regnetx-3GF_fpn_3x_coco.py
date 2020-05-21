@@ -54,3 +54,5 @@ data = dict(
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005)
+lr_config = dict(step=[28, 34])
+total_epochs = 36
