@@ -67,7 +67,8 @@ class PointRendRoIHead(StandardRoIHead):
         fine_grained_feats = []
         for idx in range(self.mask_roi_extractor.num_inputs):
             feats = x[idx]
-            spatial_scale = float(self.mask_roi_extractor.featmap_strides[idx])
+            spatial_scale = 1. / float(
+                self.mask_roi_extractor.featmap_strides[idx])
             point_feats = []
             for batch_ind in range(num_imgs):
                 # unravel batch dim

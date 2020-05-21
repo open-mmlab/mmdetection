@@ -9,7 +9,8 @@ from .masked_conv import MaskedConv2d
 from .nms import batched_nms, nms, soft_nms
 from .non_local import NonLocal2D
 from .plugin import build_plugin_layer
-from .point_sample import point_sample, rel_roi_point2rel_img_point
+from .point_sample import (SimpleRoIAlign, point_sample,
+                           rel_roi_point2rel_img_point)
 from .roi_align import RoIAlign, roi_align
 from .roi_pool import RoIPool, roi_pool
 from .sigmoid_focal_loss import SigmoidFocalLoss, sigmoid_focal_loss
@@ -26,5 +27,5 @@ __all__ = [
     'get_compiler_version', 'get_compiling_cuda_version', 'ConvWS2d',
     'conv_ws_2d', 'build_plugin_layer', 'batched_nms', 'Conv2d',
     'ConvTranspose2d', 'MaxPool2d', 'Linear', 'point_sample',
-    'rel_roi_point2rel_img_point'
+    'rel_roi_point2rel_img_point', 'SimpleRoIAlign'
 ]

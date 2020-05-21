@@ -1,5 +1,7 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.modules.utils import _pair
 
 
 def normalize(grid):
@@ -66,7 +68,7 @@ def rel_roi_point2abs_img_point(rois, rel_roi_points):
     return abs_img_points
 
 
-def abs_img_point2rel_img_point(abs_img_points, img_shape, spatial_scale=1):
+def abs_img_point2rel_img_point(abs_img_points, img_shape, spatial_scale=1.):
     """ Convert image based absolute point coordinates to image based relative
         coordinates for sampling.
 
@@ -74,8 +76,7 @@ def abs_img_point2rel_img_point(abs_img_points, img_shape, spatial_scale=1):
         abs_img_points (Tensor): Image based absolute point coordinates,
             shape (N, P, 2)
         img_shape (tuple): (height, width) of image or feature map.
-        spatial_scale (int): Scale factor of input w.r.t. original image.
-            Default: 1
+        spatial_scale (float): Scale points by this factor. Default: 1.
 
     Returns:
         Tensor: Image based relative point coordinates for sampling,
@@ -85,9 +86,9 @@ def abs_img_point2rel_img_point(abs_img_points, img_shape, spatial_scale=1):
     h, w = img_shape
     scale = torch.tensor([w, h],
                          dtype=torch.float,
-                         device=abs_img_points.device) * spatial_scale
+                         device=abs_img_points.device)
     scale = scale.view(1, 1, 2)
-    rel_img_points = abs_img_points / scale
+    rel_img_points = abs_img_points / scale * spatial_scale
 
     return rel_img_points
 
@@ -95,7 +96,7 @@ def abs_img_point2rel_img_point(abs_img_points, img_shape, spatial_scale=1):
 def rel_roi_point2rel_img_point(rois,
                                 rel_roi_points,
                                 img_shape,
-                                spatial_scale=1):
+                                spatial_scale=1.):
     """ Convert roi based relative point coordinates to image based absolute
         point coordinates.
 
@@ -104,8 +105,7 @@ def rel_roi_point2rel_img_point(rois,
         rel_roi_points (Tensor): Point coordinates inside RoI, relative to
             RoI, location, range (0, 1), shape (N, P, 2)
         img_shape (tuple): (height, width) of image or feature map.
-        spatial_scale (int): Scale factor of input w.r.t. original image.
-            Default: 1
+        spatial_scale (float): Scale points by this factor. Default: 1.
 
     Returns:
         Tensor: Image based relative point coordinates for sampling,
@@ -143,3 +143,56 @@ def point_sample(input, points, align_corners=False, **kwargs):
     if add_dim:
         output = output.squeeze(3)
     return output
+
+
+class SimpleRoIAlign(nn.Module):
+
+    def __init__(self, out_size, spatial_scale, aligned=True):
+        """
+        Args:
+            out_size (tuple): h, w
+            spatial_scale (float): scale the input boxes by this number
+            aligned (bool): if False, use the legacy implementation in
+                MMDetection, align_corners=True will be used in F.grid_sample.
+                If True, align the results more perfectly.
+        """
+
+        super(SimpleRoIAlign, self).__init__()
+        self.out_size = _pair(out_size)
+        self.spatial_scale = float(spatial_scale)
+        # to be consistent with other RoI ops
+        self.use_torchvision = False
+        self.aligned = aligned
+
+    def forward(self, features, rois):
+
+        num_imgs = features.size(0)
+        num_rois = rois.size(0)
+        rel_roi_points = generate_grid(
+            num_rois, self.out_size, device=rois.device)
+
+        point_feats = []
+        for batch_ind in range(num_imgs):
+            # unravel batch dim
+            feat = features[batch_ind].unsqueeze(0)
+            inds = (rois[:, 0].long() == batch_ind)
+            if inds.any():
+                rel_img_points = rel_roi_point2rel_img_point(
+                    rois[inds], rel_roi_points[inds], feat.shape[2:],
+                    self.spatial_scale).unsqueeze(0)
+                point_feat = point_sample(
+                    feat, rel_img_points, align_corners=not self.aligned)
+                point_feat = point_feat.squeeze(0).transpose(0, 1)
+                point_feats.append(point_feat)
+
+        channels = features.size(1)
+        roi_feats = torch.cat(point_feats, dim=0)
+        roi_feats = roi_feats.reshape(num_rois, channels, *self.out_size)
+
+        return roi_feats
+
+    def __repr__(self):
+        format_str = self.__class__.__name__
+        format_str += '(out_size={}, spatial_scale={}'.format(
+            self.out_size, self.spatial_scale)
+        return format_str

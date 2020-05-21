@@ -54,13 +54,13 @@ class CoarseMaskHead(FCNMaskHead):
             self.fcs.append(nn.Linear(fc_in_channels, self.fc_out_channels))
         last_layer_dim = self.fc_out_channels
         output_channels = self.num_classes * self.output_area
-        self.fc_logit = nn.Linear(last_layer_dim, output_channels)
+        self.fc_logits = nn.Linear(last_layer_dim, output_channels)
 
     def init_weights(self):
         for m in self.fcs.modules():
             if isinstance(m, nn.Linear):
                 xavier_init(m)
-        constant_init(self.fc_logit, 0.001)
+        constant_init(self.fc_logits, 0.001)
 
     @auto_fp16()
     def forward(self, x):
@@ -73,6 +73,6 @@ class CoarseMaskHead(FCNMaskHead):
         x = x.flatten(1)
         for fc in self.fcs:
             x = self.relu(fc(x))
-        mask_pred = self.fc_logit(x).view(
+        mask_pred = self.fc_logits(x).view(
             x.size(0), self.num_classes, *self.output_size)
         return mask_pred
