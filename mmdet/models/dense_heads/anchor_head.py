@@ -27,13 +27,9 @@ class AnchorHead(nn.Module):
             num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
-        loss_normalizer_momentum (float): momentum that used for EMA of
-            loss normalizer. The loss normalizer normalizes the loss
-            according to the number of positive samples when using FocalLoss
-            or GHM without sampleing. This is found to be stablize the
-            training and improve performance by Detectron2.
-            By default it is set as 0 for other sample based methods or
-            the vanilla RetinaNet.
+        loss_normalizer_momentum (float): The momentum factor (from 0-1) used
+            for exponential moving average (EMA) loss normalizer.
+            Default: 0, no EMA
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
     """  # noqa: W605
