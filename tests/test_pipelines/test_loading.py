@@ -76,5 +76,5 @@ class TestLoading(object):
         assert results['pad_shape'] == (288, 512, 3, 2)
         assert results['scale_factor'] == 1.0
         assert repr(transform) == transform.__class__.__name__ + \
-            "(to_float32=False, color_type='unchanged')" + \
+            "(to_float32=False, color_type='unchanged', " + \
             "file_client_args={'backend': 'disk'})"
