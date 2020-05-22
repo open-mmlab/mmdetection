@@ -6,9 +6,7 @@ from mmdet.models.necks import FPN
 
 
 def test_fpn():
-    """
-    Tests anchor head loss when truth is empty and non-empty
-    """
+    """Tests fpn """
 
     in_channels = [8, 16, 32, 64]
     feat_sizes = [64, 32, 16, 8]
