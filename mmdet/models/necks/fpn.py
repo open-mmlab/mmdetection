@@ -98,14 +98,14 @@ class FPN(nn.Module):
         self.end_level = end_level
         self.add_extra_convs = add_extra_convs
 
-        # extra_convs_source can only choose from 'inputs', 'laterals', 'outs'
+        # Extra_convs_source choices: 'inputs', 'laterals', 'outputs'
         if extra_convs_source is None:
             if extra_convs_on_inputs:
                 self.extra_convs_source = 'inputs'
             else:
-                self.extra_convs_source = 'outs'
+                self.extra_convs_source = 'outputs'
         else:
-            assert extra_convs_source in ('inputs', 'laterals', 'outs')
+            assert extra_convs_source in ('inputs', 'laterals', 'outputs')
             self.extra_convs_source = extra_convs_source
 
         self.lateral_convs = nn.ModuleList()
@@ -200,7 +200,7 @@ class FPN(nn.Module):
                     extra_source = inputs[self.backbone_end_level - 1]
                 elif self.extra_convs_source == 'laterals':
                     extra_source = laterals[-1]
-                elif self.extra_convs_source == 'outs':
+                elif self.extra_convs_source == 'outputs':
                     extra_source = outs[-1]
                 else:
                     raise NotImplementedError
