@@ -5,6 +5,7 @@ from . import center_pool_ext
 
 
 class TopPoolFunction(Function):
+
     @staticmethod
     def forward(ctx, input):
         output = center_pool_ext.top_forward(input)[0]
@@ -19,6 +20,7 @@ class TopPoolFunction(Function):
 
 
 class BottomPoolFunction(Function):
+
     @staticmethod
     def forward(ctx, input):
         output = center_pool_ext.bottom_forward(input)[0]
@@ -33,6 +35,7 @@ class BottomPoolFunction(Function):
 
 
 class LeftPoolFunction(Function):
+
     @staticmethod
     def forward(ctx, input):
         output = center_pool_ext.left_forward(input)[0]
@@ -47,6 +50,7 @@ class LeftPoolFunction(Function):
 
 
 class RightPoolFunction(Function):
+
     @staticmethod
     def forward(ctx, input):
         output = center_pool_ext.right_forward(input)[0]
@@ -61,20 +65,24 @@ class RightPoolFunction(Function):
 
 
 class TopPool(nn.Module):
+
     def forward(self, x):
         return TopPoolFunction.apply(x)
 
 
 class BottomPool(nn.Module):
+
     def forward(self, x):
         return BottomPoolFunction.apply(x)
 
 
 class LeftPool(nn.Module):
+
     def forward(self, x):
         return LeftPoolFunction.apply(x)
 
 
 class RightPool(nn.Module):
+
     def forward(self, x):
         return RightPoolFunction.apply(x)
