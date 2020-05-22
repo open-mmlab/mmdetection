@@ -9,6 +9,7 @@ from .resnet import ResNet
 
 
 class Bottleneck(_Bottleneck):
+    expansion = 4
 
     def __init__(self,
                  inplanes,
