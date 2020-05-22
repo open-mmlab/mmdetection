@@ -114,6 +114,7 @@ class ResNeXt(ResNet):
         >>> import torch
         >>> self = ResNeXt(depth=50, groups=32)
         >>> self.eval()
+        >>> print(self)
         >>> inputs = torch.rand(1, 3, 32, 32)
         >>> level_outputs = self.forward(inputs)
         >>> for level_out in level_outputs:
