@@ -34,6 +34,14 @@ def test_fpn():
             end_level=3,
             num_outs=1)
 
+    # Invalid `add_extra_convs` option
+    with pytest.raises(AssertionError):
+        FPN(in_channels=in_channels,
+            out_channels=out_channels,
+            start_level=1,
+            add_extra_convs='on_xxx',
+            num_outs=5)
+
     fpn_model = FPN(
         in_channels=in_channels,
         out_channels=out_channels,
@@ -47,6 +55,7 @@ def test_fpn():
         for i in range(len(in_channels))
     ]
     outs = fpn_model(feats)
+    assert fpn_model.add_extra_convs == 'on_input'
     assert len(outs) == fpn_model.num_outs
     for i in range(fpn_model.num_outs):
         outs[i].shape[1] == out_channels
@@ -61,6 +70,7 @@ def test_fpn():
         num_outs=5)
     outs = fpn_model(feats)
     assert len(outs) == fpn_model.num_outs
+    assert not fpn_model.add_extra_convs
     for i in range(fpn_model.num_outs):
         outs[i].shape[1] == out_channels
         outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
@@ -76,6 +86,7 @@ def test_fpn():
         num_outs=5)
     outs = fpn_model(feats)
     assert len(outs) == fpn_model.num_outs
+    assert fpn_model.add_extra_convs == 'on_input'
     for i in range(fpn_model.num_outs):
         outs[i].shape[1] == out_channels
         outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
@@ -96,6 +107,7 @@ def test_fpn():
     fpn_model(feats)
     outs = fpn_model(feats)
     assert len(outs) == fpn_model.num_outs
+    assert fpn_model.add_extra_convs == 'on_input'
     for i in range(fpn_model.num_outs):
         outs[i].shape[1] == out_channels
         outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
@@ -118,10 +130,10 @@ def test_fpn():
     fpn_model = FPN(
         in_channels=in_channels,
         out_channels=out_channels,
+        add_extra_convs='on_input',
         start_level=1,
-        num_outs=5,
-        extra_convs_source='inputs')
-    assert fpn_model.extra_convs_source == 'inputs'
+        num_outs=5)
+    assert fpn_model.add_extra_convs == 'on_input'
     outs = fpn_model(feats)
     assert len(outs) == fpn_model.num_outs
     for i in range(fpn_model.num_outs):
@@ -132,10 +144,10 @@ def test_fpn():
     fpn_model = FPN(
         in_channels=in_channels,
         out_channels=out_channels,
+        add_extra_convs='on_lateral',
         start_level=1,
-        num_outs=5,
-        extra_convs_source='laterals')
-    assert fpn_model.extra_convs_source == 'laterals'
+        num_outs=5)
+    assert fpn_model.add_extra_convs == 'on_lateral'
     outs = fpn_model(feats)
     assert len(outs) == fpn_model.num_outs
     for i in range(fpn_model.num_outs):
@@ -146,25 +158,42 @@ def test_fpn():
     fpn_model = FPN(
         in_channels=in_channels,
         out_channels=out_channels,
+        add_extra_convs='on_output',
         start_level=1,
-        num_outs=5,
-        extra_convs_source='outputs')
-    assert fpn_model.extra_convs_source == 'outputs'
+        num_outs=5)
+    assert fpn_model.add_extra_convs == 'on_output'
     outs = fpn_model(feats)
     assert len(outs) == fpn_model.num_outs
     for i in range(fpn_model.num_outs):
         outs[i].shape[1] == out_channels
         outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
 
-    # extra_convs_on_inputs=False is equal to `extra convs source` is 'outputs'
+    # extra_convs_on_inputs=False is equal to extra convs source is 'on_output'
     fpn_model = FPN(
         in_channels=in_channels,
         out_channels=out_channels,
+        add_extra_convs=True,
         extra_convs_on_inputs=False,
         start_level=1,
         num_outs=5,
     )
-    assert fpn_model.extra_convs_source == 'outputs'
+    assert fpn_model.add_extra_convs == 'on_output'
+    outs = fpn_model(feats)
+    assert len(outs) == fpn_model.num_outs
+    for i in range(fpn_model.num_outs):
+        outs[i].shape[1] == out_channels
+        outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
+
+    # extra_convs_on_inputs=True is equal to extra convs source is 'on_input'
+    fpn_model = FPN(
+        in_channels=in_channels,
+        out_channels=out_channels,
+        add_extra_convs=True,
+        extra_convs_on_inputs=True,
+        start_level=1,
+        num_outs=5,
+    )
+    assert fpn_model.add_extra_convs == 'on_input'
     outs = fpn_model(feats)
     assert len(outs) == fpn_model.num_outs
     for i in range(fpn_model.num_outs):

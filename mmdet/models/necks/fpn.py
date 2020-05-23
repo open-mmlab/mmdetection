@@ -22,11 +22,18 @@ class FPN(nn.Module):
             build the feature pyramid. Default: 0.
         end_level (int): Index of the end input backbone level (exclusive) to
             build the feature pyramid. Default: -1, which means the last level.
-        add_extra_convs (bool): Whether to add conv layers on top of the
-            original feature maps. Default: False.
-        extra_convs_on_inputs (bool): Whether to apply extra convs
-            on the original feature from the backbone. Default: True. If True,
-            it is equivalent to `extra_convs_source='inputs'`.
+        add_extra_convs (bool | str): If bool, it decides whether to add conv
+            layers on top of the original feature maps. Default to False.
+            If True, its actual mode is specified by `extra_convs_on_inputs`.
+            If str, it specifies the source feature map of the extra convs.
+            Only the following options are allowed
+             'on_input': Last feat map of neck inputs (i.e. backbone feature).
+             'on_lateral':  Last feature map after lateral convs.
+             'on_output': The last output feature map after fpn convs.
+        extra_convs_on_inputs (bool, deprecated): Whether to apply extra convs
+            on the original feature from the backbone. If True,
+            it is equivalent to `add_extra_convs='on_input'`. If False, it is
+            equivalent to set `add_extra_convs='on_output'`. Default to True.
         relu_before_extra_convs (bool): Whether to apply relu before the extra
             conv. Default: False.
         no_norm_on_lateral (bool): Whether to apply norm on lateral.
@@ -37,12 +44,6 @@ class FPN(nn.Module):
             Default: None.
         upsample_cfg (dict): Config dict for interpolate layer.
             Default: `dict(mode='nearest')`
-        extra_convs_source (str, optional): The source feature map of the extra
-            convs. `None` means it is specified by `extra_convs_on_inputs`.
-            Otherwise, only the following modes are allowed
-             'inputs': Last feature map of neck inputs (i.e. backbone feature).
-             'laterals':  Last feature map after lateral convs
-             'outputs': The last output feature map after fpn convs
 
     Example:
         >>> import torch
@@ -73,8 +74,7 @@ class FPN(nn.Module):
                  conv_cfg=None,
                  norm_cfg=None,
                  act_cfg=None,
-                 upsample_cfg=dict(mode='nearest'),
-                 extra_convs_source=None):
+                 upsample_cfg=dict(mode='nearest')):
         super(FPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
@@ -97,16 +97,17 @@ class FPN(nn.Module):
         self.start_level = start_level
         self.end_level = end_level
         self.add_extra_convs = add_extra_convs
-
-        # Extra_convs_source choices: 'inputs', 'laterals', 'outputs'
-        if extra_convs_source is None:
+        assert isinstance(add_extra_convs, (str, bool))
+        if isinstance(add_extra_convs, str):
+            # Extra_convs_source choices: 'on_input', 'on_lateral', 'on_output'
+            assert add_extra_convs in ('on_input', 'on_lateral', 'on_output')
+        elif add_extra_convs:  # True
             if extra_convs_on_inputs:
-                self.extra_convs_source = 'inputs'
+                # For compatibility with previous release
+                # TODO: deprecate `extra_convs_on_inputs`
+                self.add_extra_convs = 'on_input'
             else:
-                self.extra_convs_source = 'outputs'
-        else:
-            assert extra_convs_source in ('inputs', 'laterals', 'outputs')
-            self.extra_convs_source = extra_convs_source
+                self.add_extra_convs = 'on_output'
 
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
@@ -135,9 +136,9 @@ class FPN(nn.Module):
 
         # add extra conv layers (e.g., RetinaNet)
         extra_levels = num_outs - self.backbone_end_level + self.start_level
-        if add_extra_convs and extra_levels >= 1:
+        if self.add_extra_convs and extra_levels >= 1:
             for i in range(extra_levels):
-                if i == 0 and self.extra_convs_source == 'inputs':
+                if i == 0 and self.add_extra_convs == 'on_input':
                     in_channels = self.in_channels[self.backbone_end_level - 1]
                 else:
                     in_channels = out_channels
@@ -196,11 +197,11 @@ class FPN(nn.Module):
                     outs.append(F.max_pool2d(outs[-1], 1, stride=2))
             # add conv layers on top of original feature maps (RetinaNet)
             else:
-                if self.extra_convs_source == 'inputs':
+                if self.add_extra_convs == 'on_input':
                     extra_source = inputs[self.backbone_end_level - 1]
-                elif self.extra_convs_source == 'laterals':
+                elif self.add_extra_convs == 'on_lateral':
                     extra_source = laterals[-1]
-                elif self.extra_convs_source == 'outputs':
+                elif self.add_extra_convs == 'on_output':
                     extra_source = outs[-1]
                 else:
                     raise NotImplementedError
