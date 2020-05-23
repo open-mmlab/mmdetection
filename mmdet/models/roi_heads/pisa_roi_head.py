@@ -15,7 +15,9 @@ class PISARoIHead(StandardRoIHead):
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None):
-        """
+        """ StandardRoIHead with PrIme Sample Attention (PISA),
+        described in `PISA <https://arxiv.org/abs/1904.04821>`_.
+
         Args:
             x (list[Tensor]): List of multi-level img features.
             img_metas (list[dict]): List of image info dict where each dict
