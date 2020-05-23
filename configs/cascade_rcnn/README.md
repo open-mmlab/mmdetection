@@ -47,7 +47,7 @@
 | X-101-32x4d-FPN | pytorch |   1x    |  9.2     |  6.8           | 44.3   | 38.3    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco_20200201-0f411b1f.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco_20200201_052416.log.json) |
 | X-101-32x4d-FPN | pytorch |   20e   |          |                |        |         | |
 | X-101-64x4d-FPN | pytorch |   1x    |  12.2    |  5.7           | 45.3   | 39.2    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco_20200203-9a2db89d.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco_20200203_044059.log.json) |
-| X-101-64x4d-FPN | pytorch |   20e   |          |                |        |         | |
+| X-101-64x4d-FPN | pytorch |   20e   |  12.2   |                 | 45.6     |39.5   | |
 
 **Notes:**
 

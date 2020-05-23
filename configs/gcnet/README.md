@@ -44,9 +44,9 @@ The results on COCO 2017val are shown in the below table.
 | X-101-FPN | Cascade Mask     |      -         |   1x    | 9.2      | 7.1            | 44.7   | 38.6    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco_20200310-d5ad2a5e.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_1x_coco_20200310_115217.log.json) |
 | X-101-FPN | Cascade Mask     | GC(c3-c5, r16) |   1x    | 10.3     | 6.5            | 46.2   | 39.7    | [modle](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200211-10bf2463.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/gcnet/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_syncbn-backbone_r16_gcb_c3-c5_1x_coco_20200211_184154.log.json) |
 | X-101-FPN | Cascade Mask     | GC(c3-c5, r4)  |   1x    |          |                |        |         |  |
-| X-101-FPN | DCN Cascade Mask |      -         |   1x    |          |                |        |         |  |
-| X-101-FPN | DCN Cascade Mask | GC(c3-c5, r16) |   1x    |          |                |        |         |  |
-| X-101-FPN | DCN Cascade Mask | GC(c3-c5, r4)  |   1x    |          |                |        |         |  |
+| X-101-FPN | DCN Cascade Mask |      -         |   1x    |          |                | 44.9   |   38.9  |  |
+| X-101-FPN | DCN Cascade Mask | GC(c3-c5, r16) |   1x    |          |                | 44.6   |         |  |
+| X-101-FPN | DCN Cascade Mask | GC(c3-c5, r4)  |   1x    |          |                | 45.7   |  39.5   |  |
 
 
 **Notes:**
