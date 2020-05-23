@@ -37,6 +37,7 @@ class LoadImageFromFile(object):
             mean=np.zeros(num_channels, dtype=np.float32),
             std=np.ones(num_channels, dtype=np.float32),
             to_rgb=False)
+        results['img_fields'] = ['img']
         return results
 
     def __repr__(self):
