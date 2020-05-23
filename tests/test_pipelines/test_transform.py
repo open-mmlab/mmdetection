@@ -10,10 +10,12 @@ from mmdet.datasets.builder import PIPELINES
 
 
 def test_resize():
+    # test assertion if img_scale is a list
     with pytest.raises(AssertionError):
         transform = dict(type='Resize', img_scale=[1333, 800], keep_ratio=True)
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion if len(img_scale) while ratio_range is not None
     with pytest.raises(AssertionError):
         transform = dict(
             type='Resize',
@@ -22,6 +24,7 @@ def test_resize():
             keep_ratio=True)
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion for invalid multiscale_mode
     with pytest.raises(AssertionError):
         transform = dict(
             type='Resize',
@@ -61,10 +64,12 @@ def test_resize():
 
 
 def test_flip():
+    # test assertion for invalid flip_ratio
     with pytest.raises(AssertionError):
         transform = dict(type='RandomFlip', flip_ratio=1.5)
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion for invalid direction
     with pytest.raises(AssertionError):
         transform = dict(
             type='RandomFlip', flip_ratio=1, direction='horizonta')
@@ -96,6 +101,7 @@ def test_flip():
 
 
 def test_pad():
+    # test assertion if both size_divisor and size is None
     with pytest.raises(AssertionError):
         transform = dict(type='Pad')
         build_from_cfg(transform, PIPELINES)
