@@ -52,7 +52,7 @@ Results and models are available in the [model zoo](docs/model_zoo.md).
 |                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet | RegNetX | Res2Net |
 |--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|:--------:|:-----:|
 | RPN                | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |     
+| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 | Faster R-CNN       | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
 | Mask R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
 | Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
