@@ -75,7 +75,8 @@ class PISASSDHead(SSDHead):
                 sampling_results_list,
                 loss_cls=CrossEntropyLoss(),
                 bbox_coder=self.bbox_coder,
-                **self.train_cfg.isr)
+                **self.train_cfg.isr,
+                num_class=self.num_classes)
             (new_labels, new_label_weights, new_bbox_targets,
              new_bbox_weights) = all_targets
             all_labels = new_labels.view(all_labels.shape)
@@ -93,7 +94,8 @@ class PISASSDHead(SSDHead):
                 all_targets[2],
                 SmoothL1Loss(beta=1.),
                 **self.train_cfg.carl,
-                avg_factor=num_total_pos)
+                avg_factor=num_total_pos,
+                num_class=self.num_classes)
 
         # check NaN and Inf
         assert torch.isfinite(all_cls_scores).all().item(), \

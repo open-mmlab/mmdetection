@@ -95,6 +95,7 @@ class PISARetinaHead(RetinaHead):
                     sampling_results_list,
                     bbox_coder=self.bbox_coder,
                     loss_cls=self.loss_cls,
+                    num_class=self.num_classes,
                     **self.train_cfg.isr)
             (flatten_labels, flatten_label_weights, flatten_bbox_targets,
              flatten_bbox_weights) = all_targets
@@ -112,7 +113,8 @@ class PISARetinaHead(RetinaHead):
             flatten_bbox_targets,
             flatten_bbox_weights,
             avg_factor=num_total_samples)
-        loss_dict = dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
+        loss_dict = dict(
+            loss_cls=losses_cls.view(-1), loss_bbox=losses_bbox.view(-1))
 
         # CARL Loss
         carl_cfg = self.train_cfg.get('carl', None)
@@ -125,7 +127,8 @@ class PISARetinaHead(RetinaHead):
                 self.loss_bbox,
                 **self.train_cfg.carl,
                 avg_factor=num_total_pos,
-                sigmoid=True)
+                sigmoid=True,
+                num_class=self.num_classes)
             loss_dict.update(loss_carl)
 
         return loss_dict

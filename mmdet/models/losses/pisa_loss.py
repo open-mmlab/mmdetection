@@ -42,7 +42,7 @@ def isr_p(cls_score,
     # if no positive samples, return the original targets
     num_pos = float(pos_label_inds.size(0))
     if num_pos == 0:
-        return bbox_targets
+        return labels, label_weights, bbox_targets, bbox_weights
 
     # merge pos_assigned_gt_inds of per image to a single tensor
     gts = list()
@@ -145,6 +145,8 @@ def carl_loss(cls_score,
     """
     pos_label_inds = ((labels >= 0) &
                       (labels < num_class)).nonzero().reshape(-1)
+    if pos_label_inds.numel() == 0:
+        return dict(loss_carl=cls_score.sum()[None] * 0.)
     pos_labels = labels[pos_label_inds]
 
     # multiply pos_cls_score with the corresponding bbox weight
