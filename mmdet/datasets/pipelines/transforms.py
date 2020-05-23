@@ -348,6 +348,7 @@ class RandomCrop(object):
     """
 
     def __init__(self, crop_size):
+        assert crop_size[0] > 0 and crop_size[1] > 0
         self.crop_size = crop_size
 
     def __call__(self, results):
@@ -508,9 +509,9 @@ class PhotoMetricDistortion(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(\nbrightness_delta={self.brightness_delta},\n'
-        repr_str += f'contrast_range='
+        repr_str += 'contrast_range='
         repr_str += f'{(self.contrast_lower, self.contrast_upper)},\n'
-        repr_str += f'saturation_range='
+        repr_str += 'saturation_range='
         repr_str += f'{(self.saturation_lower, self.saturation_upper)},\n'
         repr_str += f'hue_delta={self.hue_delta})'
         return repr_str
@@ -629,6 +630,9 @@ class MinIoURandomCrop(object):
 
                 patch = np.array(
                     (int(left), int(top), int(left + new_w), int(top + new_h)))
+                # Line or point crop is not allowed
+                if patch[2] == patch[0] or patch[3] == patch[1]:
+                    continue
                 overlaps = bbox_overlaps(
                     patch.reshape(-1, 4), boxes.reshape(-1, 4)).reshape(-1)
                 if len(overlaps) > 0 and overlaps.min() < min_iou:

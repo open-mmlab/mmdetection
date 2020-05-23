@@ -51,6 +51,12 @@ class CocoDataset(CustomDataset):
         ann_info = self.coco.loadAnns(ann_ids)
         return self._parse_ann_info(self.data_infos[idx], ann_info)
 
+    def get_cat_ids(self, idx):
+        img_id = self.data_infos[idx]['id']
+        ann_ids = self.coco.getAnnIds(imgIds=[img_id])
+        ann_info = self.coco.loadAnns(ann_ids)
+        return [ann['category_id'] for ann in ann_info]
+
     def _filter_imgs(self, min_size=32):
         """Filter images too small or without ground truths."""
         valid_inds = []

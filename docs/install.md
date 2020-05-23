@@ -72,6 +72,13 @@ Note:
 1. The git commit id will be written to the version number with step d, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
 It is recommended that you run step d each time you pull some updates from github. If C++/CUDA codes are modified, then this step is compulsory.
 
+    > Important: Be sure to remove the `./build` folder if you reinstall mmdet with a different CUDA/PyTorch version.
+
+    ```
+    pip uninstall mmdet
+    rm -rf ./build
+    ```
+
 2. Following the above instructions, mmdetection is installed on `dev` mode, any local modifications made to the code will take effect without the need to reinstall it (unless you submit some commits and want to update the version number).
 
 3. If you would like to use `opencv-python-headless` instead of `opencv-python`,
