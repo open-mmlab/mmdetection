@@ -52,7 +52,7 @@ Results and models are available in the [model zoo](docs/model_zoo.md).
 |                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet | RegNetX | Res2Net |
 |--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|:--------:|:-----:|
 | RPN                | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |     
+| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 | Faster R-CNN       | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
 | Mask R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
 | Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
@@ -74,6 +74,7 @@ Results and models are available in the [model zoo](docs/model_zoo.md).
 | ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 | FSAF               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 | PAFPN              | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| PISA               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 
 Other features
 - [x] [CARAFE](configs/carafe/README.md)
@@ -86,8 +87,6 @@ Other features
 - [x] [GCNet](configs/gcnet/README.md)
 - [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
 - [x] [InstaBoost](configs/instaboost/README.md)
-- [x] [FSAF](configs/fsaf/README.md)
-- [x] [PAFPN](configs/pafpn/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 

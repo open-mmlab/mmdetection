@@ -128,18 +128,30 @@ class PISARoIHead(StandardRoIHead):
         # Apply ISR-P
         isr_cfg = self.train_cfg.get('isr', None)
         if isr_cfg is not None:
-            bbox_targets = isr_p(cls_score, bbox_pred, bbox_targets, rois,
-                                 sampling_results, self.bbox_head.loss_cls,
-                                 self.bbox_head.bbox_coder, **isr_cfg)
+            bbox_targets = isr_p(
+                cls_score,
+                bbox_pred,
+                bbox_targets,
+                rois,
+                sampling_results,
+                self.bbox_head.loss_cls,
+                self.bbox_head.bbox_coder,
+                **isr_cfg,
+                num_class=self.bbox_head.num_classes)
         loss_bbox = self.bbox_head.loss(cls_score, bbox_pred, rois,
                                         *bbox_targets)
 
         # Add CARL Loss
         carl_cfg = self.train_cfg.get('carl', None)
         if carl_cfg is not None:
-            loss_carl = carl_loss(cls_score, bbox_targets[0], bbox_pred,
-                                  bbox_targets[2], self.bbox_head.loss_bbox,
-                                  **carl_cfg)
+            loss_carl = carl_loss(
+                cls_score,
+                bbox_targets[0],
+                bbox_pred,
+                bbox_targets[2],
+                self.bbox_head.loss_bbox,
+                **carl_cfg,
+                num_class=self.bbox_head.num_classes)
             loss_bbox.update(loss_carl)
 
         bbox_results.update(loss_bbox=loss_bbox)
