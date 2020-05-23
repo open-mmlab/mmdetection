@@ -27,17 +27,6 @@ The results on COCO 2017 val is shown in the below table. (results on test-dev a
 
 |     Method     |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
 |:--------------:|:---------------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------------:|
-<<<<<<< HEAD
-|  GA-Fast RCNN  |    R-50-FPN     |  caffe  |   1x    |          |                |        | |
-| GA-Faster RCNN |    R-50-FPN     |  caffe  |   1x    |          |                |        | |
-| GA-Faster RCNN |    R-101-FPN    |  caffe  |   1x    |          |                |        | |
-| GA-Faster RCNN | X-101-32x4d-FPN | pytorch |   1x    |  8.9     |                | 42.4   | |
-| GA-Faster RCNN | X-101-64x4d-FPN | pytorch |   1x    |  12.0    |                | 43.7   | |
-|  GA-RetinaNet  | R-50-FPN        |  caffe  |   1x    |          |                |        | |
-|  GA-RetinaNet  | R-101-FPN       |  caffe  |   1x    |          |                |        | |
-|  GA-RetinaNet  | X-101-32x4d-FPN | pytorch |   1x    |   6.9    |      9.5       |  40.5  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219-40c56caa.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219_223025.log.json) |
-|  GA-RetinaNet  | X-101-64x4d-FPN | pytorch |   1x    |   9.9    |      7.2       |  41.3  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226-ef9f7f1f.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226_221123.log.json) |
-=======
 | GA-Faster RCNN |    R-50-FPN     |  caffe  |   1x    |          |                |        | [model]() &#124; [log]() |
 | GA-Faster RCNN |    R-101-FPN    |  caffe  |   1x    |  7.5     |                | 41.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_faster_r101_caffe_fpn_1x_coco/ga_faster_r101_caffe_fpn_1x_coco_bbox_mAP-0.415_20200505_115528-fb82e499.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_faster_r101_caffe_fpn_1x_coco/ga_faster_r101_caffe_fpn_1x_coco_20200505_115528.log.json) |
 | GA-Faster RCNN | X-101-32x4d-FPN | pytorch |   1x    |  8.7     |     9.7        | 43.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_faster_x101_32x4d_fpn_1x_coco/ga_faster_x101_32x4d_fpn_1x_coco_20200215-1ded9da3.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_faster_x101_32x4d_fpn_1x_coco/ga_faster_x101_32x4d_fpn_1x_coco_20200215_184547.log.json)|
@@ -46,7 +35,6 @@ The results on COCO 2017 val is shown in the below table. (results on test-dev a
 |  GA-RetinaNet  | R-101-FPN       |  caffe  |   1x    |          |                |        | [model]() &#124; [log]()|
 |  GA-RetinaNet  | X-101-32x4d-FPN | pytorch |   1x    |  6.9     |     10.6       |  40.5  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219-40c56caa.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_32x4d_fpn_1x_coco/ga_retinanet_x101_32x4d_fpn_1x_coco_20200219_223025.log.json) |
 |  GA-RetinaNet  | X-101-64x4d-FPN | pytorch |   1x    |   9.9    |      7.7       |  41.3  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226-ef9f7f1f.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/guided_anchoring/ga_retinanet_x101_64x4d_fpn_1x_coco/ga_retinanet_x101_64x4d_fpn_1x_coco_20200226_221123.log.json) |
->>>>>>> 0367dd9ca4456dc701ee79498a5cf733fe8203bf
 
 
 
