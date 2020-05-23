@@ -115,3 +115,18 @@ class XMLDataset(CustomDataset):
             bboxes_ignore=bboxes_ignore.astype(np.float32),
             labels_ignore=labels_ignore.astype(np.int64))
         return ann
+
+    def get_cat_ids(self, idx):
+        cat_ids = []
+        img_id = self.data_infos[idx]['id']
+        xml_path = osp.join(self.img_prefix, 'Annotations', f'{img_id}.xml')
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        for obj in root.findall('object'):
+            name = obj.find('name').text
+            if name not in self.CLASSES:
+                continue
+            label = self.cat2label[name]
+            cat_ids.append(label)
+
+        return cat_ids

@@ -25,6 +25,7 @@ class LoadImageFromFile(object):
         if self.to_float32:
             img = img.astype(np.float32)
         results['filename'] = filename
+        results['ori_filename'] = results['img_info']['filename']
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
@@ -36,6 +37,7 @@ class LoadImageFromFile(object):
             mean=np.zeros(num_channels, dtype=np.float32),
             std=np.ones(num_channels, dtype=np.float32),
             to_rgb=False)
+        results['img_fields'] = ['img']
         return results
 
     def __repr__(self):
@@ -66,6 +68,7 @@ class LoadMultiChannelImageFromFiles(object):
         if self.to_float32:
             img = img.astype(np.float32)
         results['filename'] = filename
+        results['ori_filename'] = results['img_info']['filename']
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
