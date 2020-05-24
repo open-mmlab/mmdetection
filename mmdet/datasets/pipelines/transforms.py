@@ -400,7 +400,7 @@ class RandomCrop(object):
 
             # filter and crop the masks
             if 'gt_masks' in results:
-                results['gt_masks'] = results['gt_masks'].crop(
+                results['gt_masks'] = results['gt_masks'][valid_inds].crop(
                     np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
         return results
 
