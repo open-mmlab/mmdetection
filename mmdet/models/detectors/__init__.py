@@ -10,6 +10,7 @@ from .grid_rcnn import GridRCNN
 from .htc import HybridTaskCascade
 from .mask_rcnn import MaskRCNN
 from .mask_scoring_rcnn import MaskScoringRCNN
+from .nasfcos import NASFCOS
 from .reppoints_detector import RepPointsDetector
 from .retinanet import RetinaNet
 from .rpn import RPN
@@ -20,5 +21,5 @@ __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',
     'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector',
-    'FOVEA', 'FSAF'
+    'FOVEA', 'FSAF', 'NASFCOS'
 ]
