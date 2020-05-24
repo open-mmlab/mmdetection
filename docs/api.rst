@@ -75,14 +75,14 @@ backbones
 .. automodule:: mmdet.models.backbones
     :members:
 
-dense_heads
-^^^^^^^^^^^^
-.. automodule:: mmdet.models.dense_heads
-    :members:
-
 necks
 ^^^^^^^^^^^^
 .. automodule:: mmdet.models.necks
+    :members:
+
+dense_heads
+^^^^^^^^^^^^
+.. automodule:: mmdet.models.dense_heads
     :members:
 
 roi_heads
