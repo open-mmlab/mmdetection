@@ -616,7 +616,6 @@ class MinIoURandomCrop(object):
         while True:
             mode = random.choice(self.sample_mode)
             if mode == 1:
-                print(mode)
                 return results
 
             min_iou = mode
@@ -674,7 +673,6 @@ class MinIoURandomCrop(object):
                         if mask_key in results:
                             results[key] = results[key][mask.nonzero()
                                                         [0]].crop(patch)
-                print(mode)
                 # adjust the img no matter whether the gt is empty before crop
                 img = img[patch[1]:patch[3], patch[0]:patch[2]]
                 results['img'] = img
