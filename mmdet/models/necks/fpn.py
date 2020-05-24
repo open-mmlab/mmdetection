@@ -27,9 +27,12 @@ class FPN(nn.Module):
             If True, its actual mode is specified by `extra_convs_on_inputs`.
             If str, it specifies the source feature map of the extra convs.
             Only the following options are allowed
-             'on_input': Last feat map of neck inputs (i.e. backbone feature).
-             'on_lateral':  Last feature map after lateral convs.
-             'on_output': The last output feature map after fpn convs.
+            - 'on_input': Last feat map of neck inputs (i.e. backbone feature).
+
+            - 'on_lateral':  Last feature map after lateral convs.
+
+            - 'on_output': The last output feature map after fpn convs.
+
         extra_convs_on_inputs (bool, deprecated): Whether to apply extra convs
             on the original feature from the backbone. If True,
             it is equivalent to `add_extra_convs='on_input'`. If False, it is

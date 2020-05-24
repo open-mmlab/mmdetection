@@ -80,6 +80,11 @@ dense_heads
 .. automodule:: mmdet.models.dense_heads
     :members:
 
+necks
+^^^^^^^^^^^^
+.. automodule:: mmdet.models.necks
+    :members:
+
 roi_heads
 ^^^^^^^^^^
 .. automodule:: mmdet.models.roi_heads
