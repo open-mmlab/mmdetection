@@ -3,10 +3,10 @@
 ## Introduction
 
 ```
-@article{cao2019prime,
+@inproceedings{cao2019prime,
   title={Prime sample attention in object detection},
   author={Cao, Yuhang and Chen, Kai and Loy, Chen Change and Lin, Dahua},
-  journal={arXiv preprint arXiv:1904.04821},
+  booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
   year={2019}
 }
 ```
@@ -34,5 +34,5 @@
 | √    | SSD300       | VGG16          | 1x      | 31.8   |         | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/pisa/pisa_ssd512_coco/pisa_ssd512_coco-247addee.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/pisa/pisa_ssd512_coco/pisa_ssd512_coco_20200508_131030.log.json)  |
 
 **Notes:**
-- To be consistent with the original paper, we use the [legacy_1.x baseline models](configs/legacy_1.x).
-- It is noted PISA only modify the training pipeline so the inference time remain the same with the baseline.
+- In the original paper, all models are trained and tested on mmdet v1.x, thus results may not be exactly the same with this release on v2.0.
+- It is noted PISA only modifies the training pipeline so the inference time remains the same with the baseline.
