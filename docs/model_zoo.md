@@ -123,6 +123,12 @@ Please refer to [ATSS](https://github.com/open-mmlab/mmdetection/blob/master/con
 ### FSAF
 Please refer to [FSAF](https://github.com/open-mmlab/mmdetection/blob/master/configs/fsaf) for details.
 
+### RegNetX
+Please refer to [RegNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet) for details.
+
+### Res2Net
+Please refer to [Res2Net](https://github.com/open-mmlab/mmdetection/blob/master/configs/res2net) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
