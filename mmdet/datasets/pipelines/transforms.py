@@ -551,7 +551,7 @@ class Expand(object):
         if random.uniform(0, 1) > self.prob:
             return results
 
-        img, boxes = [results[k] for k in ('img', 'gt_bboxes')]
+        img = results['img']
 
         h, w, c = img.shape
         ratio = random.uniform(self.min_ratio, self.max_ratio)
@@ -560,23 +560,24 @@ class Expand(object):
         left = int(random.uniform(0, w * ratio - w))
         top = int(random.uniform(0, h * ratio - h))
         expand_img[top:top + h, left:left + w] = img
-        boxes = boxes + np.tile((left, top), 2).astype(boxes.dtype)
 
         results['img'] = expand_img
-        results['gt_bboxes'] = boxes
+        # expand bboxes
+        for key in results.get('bbox_fields', []):
+            results[key] += np.tile((left, top), 2).astype(results[key].dtype)
 
-        if 'gt_masks' in results:
-            results['gt_masks'] = results['gt_masks'].expand(
+        # expand masks
+        for key in results.get('mask_fields', []):
+            results[key] = results[key].expand(
                 int(h * ratio), int(w * ratio), top, left)
 
-        # not tested
-        if 'gt_semantic_seg' in results:
-            assert self.seg_ignore_label is not None
-            gt_seg = results['gt_semantic_seg']
+        # expand segs
+        for key in results.get('seg_fields', []):
+            gt_seg = results[key]
             expand_gt_seg = np.full((int(h * ratio), int(w * ratio)),
                                     self.seg_ignore_label).astype(gt_seg.dtype)
             expand_gt_seg[top:top + h, left:left + w] = gt_seg
-            results['gt_semantic_seg'] = expand_gt_seg
+            results[key] = expand_gt_seg
         return results
 
     def __repr__(self):
@@ -607,13 +608,15 @@ class MinIoURandomCrop(object):
         self.min_crop_size = min_crop_size
 
     def __call__(self, results):
-        img, boxes, labels = [
-            results[k] for k in ('img', 'gt_bboxes', 'gt_labels')
-        ]
+        img = results['img']
+        assert 'bbox_fields' in results
+        boxes = [results[key] for key in results['bbox_fields']]
+        boxes = np.concatenate(boxes, 0)
         h, w, c = img.shape
         while True:
             mode = random.choice(self.sample_mode)
             if mode == 1:
+                print(mode)
                 return results
 
             min_iou = mode
@@ -642,36 +645,44 @@ class MinIoURandomCrop(object):
                 # only adjust boxes and instance masks when the gt is not empty
                 if len(overlaps) > 0:
                     # adjust boxes
-                    center = (boxes[:, :2] + boxes[:, 2:]) / 2
-                    mask = ((center[:, 0] > patch[0]) *
-                            (center[:, 1] > patch[1]) *
-                            (center[:, 0] < patch[2]) *
-                            (center[:, 1] < patch[3]))
+                    def is_center_of_bboxes_in_patch(boxes, patch):
+                        center = (boxes[:, :2] + boxes[:, 2:]) / 2
+                        mask = ((center[:, 0] > patch[0]) *
+                                (center[:, 1] > patch[1]) *
+                                (center[:, 0] < patch[2]) *
+                                (center[:, 1] < patch[3]))
+                        return mask
+
+                    mask = is_center_of_bboxes_in_patch(boxes, patch)
                     if not mask.any():
                         continue
+                    for key in results.get('bbox_fields', []):
+                        boxes = results[key]
+                        mask = is_center_of_bboxes_in_patch(boxes, patch)
+                        boxes = boxes[mask]
+                        boxes[:, 2:] = boxes[:, 2:].clip(max=patch[2:])
+                        boxes[:, :2] = boxes[:, :2].clip(min=patch[:2])
+                        boxes -= np.tile(patch[:2], 2)
+                        results[key] = boxes
+                        # labels
+                        label_key = key.replace('bboxes', 'labels')
+                        if label_key in results:
+                            results[label_key] = results[label_key][mask]
 
-                    boxes = boxes[mask]
-                    labels = labels[mask]
-
-                    boxes[:, 2:] = boxes[:, 2:].clip(max=patch[2:])
-                    boxes[:, :2] = boxes[:, :2].clip(min=patch[:2])
-                    boxes -= np.tile(patch[:2], 2)
-
-                    results['gt_bboxes'] = boxes
-                    results['gt_labels'] = labels
-
-                    if 'gt_masks' in results:
-                        results['gt_masks'] = results['gt_masks'][
-                            mask.nonzero()[0]].crop(patch)
-
+                        # mask fields
+                        mask_key = key.replace('bboxes', 'masks')
+                        if mask_key in results:
+                            results[key] = results[key][mask.nonzero()
+                                                        [0]].crop(patch)
+                print(mode)
                 # adjust the img no matter whether the gt is empty before crop
                 img = img[patch[1]:patch[3], patch[0]:patch[2]]
                 results['img'] = img
 
-                # not tested
-                if 'gt_semantic_seg' in results:
-                    results['gt_semantic_seg'] = results['gt_semantic_seg'][
-                        patch[1]:patch[3], patch[0]:patch[2]]
+                # seg fields
+                for key in results.get('seg_fields', []):
+                    results[key] = results[key][patch[1]:patch[3],
+                                                patch[0]:patch[2]]
                 return results
 
     def __repr__(self):
