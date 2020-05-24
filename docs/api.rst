@@ -75,6 +75,11 @@ backbones
 .. automodule:: mmdet.models.backbones
     :members:
 
+necks
+^^^^^^^^^^^^
+.. automodule:: mmdet.models.necks
+    :members:
+
 dense_heads
 ^^^^^^^^^^^^
 .. automodule:: mmdet.models.dense_heads
