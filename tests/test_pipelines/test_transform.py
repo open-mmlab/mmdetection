@@ -132,16 +132,20 @@ def test_random_crop():
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
-    transform = dict(type='RandomCrop', crop_size=(h - 10, w - 10))
+    transform = dict(type='RandomCrop', crop_size=(h - 20, w - 20))
     crop_module = build_from_cfg(transform, PIPELINES)
     results = crop_module(results)
-    assert results['img'].shape[:2] == (h - 10, w - 10)
+    assert results['img'].shape[:2] == (h - 20, w - 20)
     # All bboxes should be reserved after crop
-    assert results['img_shape'][:2] == (h - 10, w - 10)
+    assert results['img_shape'][:2] == (h - 20, w - 20)
     assert results['gt_bboxes'].shape[0] == 8
     assert results['gt_bboxes_ignore'].shape[0] == 2
-    assert np.not_equal(results['gt_bboxes'], gt_bboxes).any()
-    assert np.not_equal(results['gt_bboxes_ignore'], gt_bboxes_ignore).any()
+
+    def area(bboxes):
+        return np.prod(bboxes[:, 2:4] - bboxes[:, 0:2], axis=1)
+
+    assert (area(results['gt_bboxes']) <= area(gt_bboxes)).all()
+    assert (area(results['gt_bboxes_ignore']) <= area(gt_bboxes_ignore)).all()
 
 
 def test_min_iou_random_crop():
@@ -166,8 +170,8 @@ def test_min_iou_random_crop():
         return bboxes
 
     h, w, _ = img.shape
-    gt_bboxes = create_random_bboxes(8, w, h)
-    gt_bboxes_ignore = create_random_bboxes(2, w, h)
+    gt_bboxes = create_random_bboxes(1, w, h)
+    gt_bboxes_ignore = create_random_bboxes(1, w, h)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='MinIoURandomCrop')

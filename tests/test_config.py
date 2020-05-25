@@ -100,6 +100,7 @@ def test_config_data_pipeline():
         'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
         'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain_1x_coco.py',
         'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
+        'nas_fpn/retinanet_r50_fpn_crop640_50e_coco.py'
     ]
 
     def dummy_masks(h, w, num_obj=3, mode='bitmap'):
