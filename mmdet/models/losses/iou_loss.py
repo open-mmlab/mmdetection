@@ -23,7 +23,7 @@ def iou_loss(pred, target, eps=1e-6):
         Tensor: Loss tensor.
     """
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
-    loss = -ious.log().unsqueeze(dim=1)
+    loss = -ious.log()
     return loss
 
 
@@ -114,7 +114,7 @@ def giou_loss(pred, target, eps=1e-7):
     return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class IoULoss(nn.Module):
 
     def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
@@ -135,6 +135,12 @@ class IoULoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
+        if weight is not None and weight.dim() > 1:
+            # TODO: remove this in the future
+            # reduce the weight of shape (n, 4) to (n,) to match the
+            # iou_loss of shape (n,)
+            assert weight.shape == pred.shape
+            weight = weight.mean(-1)
         loss = self.loss_weight * iou_loss(
             pred,
             target,
@@ -146,7 +152,7 @@ class IoULoss(nn.Module):
         return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class BoundedIoULoss(nn.Module):
 
     def __init__(self, beta=0.2, eps=1e-3, reduction='mean', loss_weight=1.0):
@@ -180,7 +186,7 @@ class BoundedIoULoss(nn.Module):
         return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class GIoULoss(nn.Module):
 
     def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
@@ -201,6 +207,12 @@ class GIoULoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
+        if weight is not None and weight.dim() > 1:
+            # TODO: remove this in the future
+            # reduce the weight of shape (n, 4) to (n,) to match the
+            # giou_loss of shape (n,)
+            assert weight.shape == pred.shape
+            weight = weight.mean(-1)
         loss = self.loss_weight * giou_loss(
             pred,
             target,

@@ -53,3 +53,5 @@ train_cfg = dict(
         allowed_border=-1,
         center_ratio=0.2,
         ignore_ratio=0.5))
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

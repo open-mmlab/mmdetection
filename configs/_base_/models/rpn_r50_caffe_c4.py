@@ -1,7 +1,7 @@
 # model settings
 model = dict(
     type='RPN',
-    pretrained='open-mmlab://resnet50_caffe',
+    pretrained='open-mmlab://resnet50_caffe_bgr',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -29,7 +29,7 @@ model = dict(
             target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)))
+        loss_bbox=dict(type='L1Loss', loss_weight=1.0)))
 # model training and testing settings
 train_cfg = dict(
     rpn=dict(

@@ -3,12 +3,13 @@ import xml.etree.ElementTree as ET
 
 import mmcv
 import numpy as np
+from PIL import Image
 
 from .builder import DATASETS
 from .custom import CustomDataset
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class XMLDataset(CustomDataset):
 
     def __init__(self, min_size=None, **kwargs):
@@ -26,8 +27,16 @@ class XMLDataset(CustomDataset):
             tree = ET.parse(xml_path)
             root = tree.getroot()
             size = root.find('size')
-            width = int(size.find('width').text)
-            height = int(size.find('height').text)
+            width = 0
+            height = 0
+            if size is not None:
+                width = int(size.find('width').text)
+                height = int(size.find('height').text)
+            else:
+                img_path = osp.join(self.img_prefix, 'JPEGImages',
+                                    '{}.jpg'.format(img_id))
+                img = Image.open(img_path)
+                width, height = img.size
             data_infos.append(
                 dict(id=img_id, filename=filename, width=width, height=height))
 
@@ -106,3 +115,18 @@ class XMLDataset(CustomDataset):
             bboxes_ignore=bboxes_ignore.astype(np.float32),
             labels_ignore=labels_ignore.astype(np.int64))
         return ann
+
+    def get_cat_ids(self, idx):
+        cat_ids = []
+        img_id = self.data_infos[idx]['id']
+        xml_path = osp.join(self.img_prefix, 'Annotations', f'{img_id}.xml')
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        for obj in root.findall('object'):
+            name = obj.find('name').text
+            if name not in self.CLASSES:
+                continue
+            label = self.cat2label[name]
+            cat_ids.append(label)
+
+        return cat_ids

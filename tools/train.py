@@ -6,7 +6,7 @@ import time
 
 import mmcv
 import torch
-from mmcv import Config
+from mmcv import Config, DictAction
 from mmcv.runner import init_dist
 
 from mmdet import __version__
@@ -23,9 +23,9 @@ def parse_args():
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument(
-        '--validate',
+        '--no-validate',
         action='store_true',
-        help='whether to evaluate the checkpoint during training')
+        help='whether not to evaluate the checkpoint during training')
     group_gpus = parser.add_mutually_exclusive_group()
     group_gpus.add_argument(
         '--gpus',
@@ -43,6 +43,8 @@ def parse_args():
         '--deterministic',
         action='store_true',
         help='whether to set deterministic options for CUDNN backend.')
+    parser.add_argument(
+        '--options', nargs='+', action=DictAction, help='arguments in dict')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
@@ -64,6 +66,8 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    if args.options is not None:
+        cfg.merge_from_dict(args.options)
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -96,6 +100,8 @@ def main():
 
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
+    # dump config
+    cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
     # init the logger before other steps
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
     log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
@@ -114,7 +120,7 @@ def main():
 
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
-    logger.info(f'Config:\n{cfg.text}')
+    logger.info(f'Config:\n{cfg.pretty_text}')
 
     # set random seeds
     if args.seed is not None:
@@ -137,7 +143,7 @@ def main():
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
             mmdet_version=__version__,
-            config=cfg.text,
+            config=cfg.pretty_text,
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
@@ -146,7 +152,7 @@ def main():
         datasets,
         cfg,
         distributed=distributed,
-        validate=args.validate,
+        validate=(not args.no_validate),
         timestamp=timestamp,
         meta=meta)
 

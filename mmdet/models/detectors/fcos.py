@@ -2,7 +2,7 @@ from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class FCOS(SingleStageDetector):
 
     def __init__(self,

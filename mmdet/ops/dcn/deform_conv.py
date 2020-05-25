@@ -3,11 +3,12 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import CONV_LAYERS
+from mmcv.utils import print_log
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair, _single
 
-from mmdet.utils import print_log
 from . import deform_conv_ext
 
 
@@ -252,6 +253,7 @@ class DeformConv(nn.Module):
         return out
 
 
+@CONV_LAYERS.register_module('DCN')
 class DeformConvPack(DeformConv):
     """A Deformable Conv Encapsulation that acts as normal Conv layers.
 
@@ -280,6 +282,7 @@ class DeformConvPack(DeformConv):
             kernel_size=self.kernel_size,
             stride=_pair(self.stride),
             padding=_pair(self.padding),
+            dilation=_pair(self.dilation),
             bias=True)
         self.init_offset()
 
@@ -353,9 +356,9 @@ class ModulatedDeformConv(nn.Module):
             self.bias = nn.Parameter(torch.Tensor(out_channels))
         else:
             self.register_parameter('bias', None)
-        self.reset_parameters()
+        self.init_weights()
 
-    def reset_parameters(self):
+    def init_weights(self):
         n = self.in_channels
         for k in self.kernel_size:
             n *= k
@@ -370,6 +373,7 @@ class ModulatedDeformConv(nn.Module):
                                      self.groups, self.deformable_groups)
 
 
+@CONV_LAYERS.register_module('DCNv2')
 class ModulatedDeformConvPack(ModulatedDeformConv):
     """A ModulatedDeformable Conv Encapsulation that acts as normal Conv layers.
 
@@ -398,12 +402,15 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
             kernel_size=self.kernel_size,
             stride=_pair(self.stride),
             padding=_pair(self.padding),
+            dilation=_pair(self.dilation),
             bias=True)
-        self.init_offset()
+        self.init_weights()
 
-    def init_offset(self):
-        self.conv_offset.weight.data.zero_()
-        self.conv_offset.bias.data.zero_()
+    def init_weights(self):
+        super(ModulatedDeformConvPack, self).init_weights()
+        if hasattr(self, 'conv_offset'):
+            self.conv_offset.weight.data.zero_()
+            self.conv_offset.bias.data.zero_()
 
     def forward(self, x):
         out = self.conv_offset(x)

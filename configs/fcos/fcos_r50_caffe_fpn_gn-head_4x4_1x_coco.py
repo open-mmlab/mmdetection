@@ -20,8 +20,7 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         start_level=1,
-        add_extra_convs=True,
-        extra_convs_on_inputs=False,  # use P5
+        add_extra_convs='on_output',  # use P5
         num_outs=5,
         relu_before_extra_convs=True),
     bbox_head=dict(
@@ -93,7 +92,8 @@ data = dict(
 # optimizer
 optimizer = dict(
     lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
-optimizer_config = dict(_delete_=True, grad_clip=None)
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(warmup='constant')
 total_epochs = 12

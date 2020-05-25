@@ -9,7 +9,7 @@ model = dict(
                     num_heads=8,
                     attention_type='0010',
                     kv_stride=2),
-                stages=(False, True, True, True),
+                stages=(False, False, True, True),
                 position='after_conv2')
         ],
         dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),

@@ -7,7 +7,7 @@ model = dict(
             in_channels=[256, 512, 1024, 2048],
             out_channels=256,
             start_level=1,
-            add_extra_convs=True,
+            add_extra_convs='on_input',
             num_outs=5),
         dict(
             type='BFP',

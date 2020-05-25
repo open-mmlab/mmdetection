@@ -7,7 +7,7 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class TwoStageDetector(BaseDetector, RPNTestMixin):
     """Base class for two-stage detectors.
 

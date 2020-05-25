@@ -2,7 +2,7 @@ from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class DoubleHeadRoIHead(StandardRoIHead):
     """RoI head for Double Head RCNN
 

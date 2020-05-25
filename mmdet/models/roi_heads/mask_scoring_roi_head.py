@@ -5,7 +5,7 @@ from ..builder import HEADS, build_head
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class MaskScoringRoIHead(StandardRoIHead):
     """Mask Scoring RoIHead for Mask Scoring RCNN.
 

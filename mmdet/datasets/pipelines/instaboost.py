@@ -3,7 +3,7 @@ import numpy as np
 from ..builder import PIPELINES
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class InstaBoost(object):
     """
     Data augmentation method in paper "InstaBoost: Boosting Instance
