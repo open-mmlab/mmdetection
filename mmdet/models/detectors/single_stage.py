@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 from mmdet.core import bbox2result
@@ -77,6 +78,11 @@ class SingleStageDetector(BaseDetector):
         outs = self.bbox_head(x)
         bbox_list = self.bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
+        tracing_state = torch._C._get_tracing_state()
+        # return in advance when export to ONNX
+        if tracing_state:
+            return bbox_list
+
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list

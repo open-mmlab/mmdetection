@@ -1,42 +1,8 @@
+import warnings
+
 import torch
-from torch.autograd import Function
 
 from mmdet.ops.nms import batched_nms
-
-
-class MultiClassNMSFunction(Function):
-
-    @staticmethod
-    def forward(self,
-                multi_bboxes,
-                multi_scores,
-                score_thr,
-                iou_thr,
-                max_num=-1,
-                score_factors=None):
-        if max_num > 0:
-            multi_bboxes = multi_bboxes[:max_num]
-            multi_scores = multi_scores[:max_num]
-        return multi_bboxes, multi_scores
-
-    @staticmethod
-    def symbolic(g,
-                 multi_bboxes,
-                 multi_scores,
-                 score_thr,
-                 iou_thr,
-                 max_num,
-                 score_factors=None):
-        num_detections, nmsed_boxes, nmsed_scores, nmsed_classes = g.op(
-            'MultiClassNMS',
-            multi_bboxes,
-            multi_scores,
-            score_threshold_f=score_thr,
-            iou_threshold_f=iou_thr,
-            top_k_i=2621,
-            keepTopk_i=max_num,
-            outputs=4)
-        return nmsed_boxes, nmsed_classes
 
 
 def multiclass_nms(multi_bboxes,
@@ -63,16 +29,6 @@ def multiclass_nms(multi_bboxes,
         tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
             are 0-based.
     """
-    if max_num == -1:
-        max_num = multi_bboxes.shape[0]
-    # expand class dim to fit the size of TensorRT
-    multi_bboxes = multi_bboxes.unsqueeze(1)
-    multi_bboxes = multi_bboxes.expand(-1, multi_scores.shape[1], -1)
-    # add batch dim
-    multi_bboxes = multi_bboxes.unsqueeze(0)
-    multi_scores = multi_scores.unsqueeze(0)
-    return MultiClassNMSFunction.apply(multi_bboxes, multi_scores, score_thr,
-                                       nms_cfg['iou_thr'], max_num)
     num_classes = multi_scores.size(1) - 1
     # exclude background category
     if multi_bboxes.shape[1] > 4:
@@ -92,6 +48,12 @@ def multiclass_nms(multi_bboxes,
     if bboxes.numel() == 0:
         bboxes = multi_bboxes.new_zeros((0, 5))
         labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
+
+        # onnx export
+        tracing_state = torch._C._get_tracing_state()
+        if tracing_state:
+            warnings.warn('[ONNX warning] Can not record NMS in ONNX '
+                          'as it is not be executed this time')
         return bboxes, labels
 
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
