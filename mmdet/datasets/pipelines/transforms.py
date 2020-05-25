@@ -382,12 +382,11 @@ class RandomCrop(object):
             bboxes = results[key] - bbox_offset
             bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
-            gt_bboxes = bboxes
-            valid_inds = (gt_bboxes[:, 2] > gt_bboxes[:, 0]) & (
-                gt_bboxes[:, 3] > gt_bboxes[:, 1])
+            valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
+                bboxes[:, 3] > bboxes[:, 1])
             if valid_inds.any():
                 valid_flag = True
-            results[key] = gt_bboxes[valid_inds, :]
+            results[key] = bboxes[valid_inds, :]
             # label fields. e.g. gt_labels and gt_labels_ignore
             label_key = key.replace('bboxes', 'labels')
             if label_key in results:
