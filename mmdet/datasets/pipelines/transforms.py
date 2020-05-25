@@ -120,7 +120,7 @@ class Resize(object):
         results['scale_idx'] = scale_idx
 
     def _resize_img(self, results):
-        for key in results.get('img_fields', []):
+        for key in results.get('img_fields', ['img']):
             if self.keep_ratio:
                 img, scale_factor = mmcv.imrescale(
                     results[key], results['scale'], return_scale=True)
@@ -236,7 +236,7 @@ class RandomFlip(object):
             results['flip_direction'] = self.direction
         if results['flip']:
             # flip image
-            for key in results.get('img_fields', []):
+            for key in results.get('img_fields', ['img']):
                 results[key] = mmcv.imflip(
                     results[key], direction=results['flip_direction'])
             # flip bboxes
@@ -280,7 +280,7 @@ class Pad(object):
         assert size is None or size_divisor is None
 
     def _pad_img(self, results):
-        for key in results.get('img_fields', []):
+        for key in results.get('img_fields', ['img']):
             if self.size is not None:
                 padded_img = mmcv.impad(results[key], self.size, self.pad_val)
             elif self.size_divisor is not None:
@@ -332,7 +332,7 @@ class Normalize(object):
         self.to_rgb = to_rgb
 
     def __call__(self, results):
-        for key in results.get('img_fields', []):
+        for key in results.get('img_fields', ['img']):
             results[key] = mmcv.imnormalize(results[key], self.mean, self.std,
                                             self.to_rgb)
         results['img_norm_cfg'] = dict(
@@ -358,7 +358,7 @@ class RandomCrop(object):
         self.crop_size = crop_size
 
     def __call__(self, results):
-        for key in results.get('img_fields', []):
+        for key in results.get('img_fields', ['img']):
             img = results[key]
             margin_h = max(img.shape[0] - self.crop_size[0], 0)
             margin_w = max(img.shape[1] - self.crop_size[1], 0)
