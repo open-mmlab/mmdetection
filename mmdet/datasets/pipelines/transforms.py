@@ -395,7 +395,7 @@ class RandomCrop(object):
             # mask fields, e.g. gt_masks and gt_masks_ignore
             mask_key = key.replace('bboxes', 'masks')
             if mask_key in results:
-                results[mask_key] = results[mask_key].crop(
+                results[mask_key] = results[mask_key][valid_inds].crop(
                     np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
 
         # if no gt bbox remains after cropping, just skip this image
