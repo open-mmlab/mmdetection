@@ -329,14 +329,6 @@ class ATSSHead(AnchorHead):
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
 
         mlvl_scores = torch.cat(mlvl_scores)
-#<<<<<<< HEAD:mmdet/models/anchor_heads/atss_head.py
-#=======
-        # Add a dummy background class to the backend when using sigmoid
-        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-        # BG cat_id: num_class
-        # padding = mlvl_scores.new@zeros(mlvl_scores.shape[0], 1)
-        # mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-#>>>>>>> v2.0.0:mmdet/models/dense_heads/atss_head.py
         mlvl_centerness = torch.cat(mlvl_centerness)
 
         det_bboxes, det_labels = multiclass_nms(
@@ -445,7 +437,7 @@ class ATSSHead(AnchorHead):
         labels = anchors.new_full((num_valid_anchors, ),
                                   self.background_label,
                                   dtype=torch.long)
-        label_weights = anchors.new@zeros(num_valid_anchors, dtype=torch.float)
+        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds

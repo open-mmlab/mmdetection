@@ -129,36 +129,8 @@ def test_single_stage_forward_gpu(cfg_file):
                                       return_loss=False)
             batch_results.append(result)
 
-<<<<<<< HEAD
-    if torch.cuda.is_available():
-        detector = detector.cuda()
-        imgs = imgs.cuda()
-        # Test forward train
-        gt_bboxes = [b.cuda() for b in mm_inputs['gt_bboxes']]
-        gt_labels = [g.cuda() for g in mm_inputs['gt_labels']]
-        losses = detector.forward(
-            imgs,
-            img_metas,
-            gt_bboxes=gt_bboxes,
-            gt_labels=gt_labels,
-            return_loss=True)
-        assert isinstance(losses, dict)
-
-        # Test forward test
-        with torch.no_grad():
-            img_list = [g[None, :] for g in imgs]
-            batch_results = []
-            for one_img, one_meta in zip(img_list, img_metas):
-                result = detector.forward([one_img], [[one_meta]],
-                                          return_loss=False)
-                batch_results.append(result)
-
-
-def test_cascade_forward():
-=======
 
 def test_faster_rcnn_ohem_forward():
->>>>>>> v2.0.0
     model, train_cfg, test_cfg = _get_detector_cfg(
         'faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py')
     model['pretrained'] = None
@@ -203,10 +175,6 @@ def test_faster_rcnn_ohem_forward():
     assert total_loss > 0
 
 
-<<<<<<< HEAD
-def test_faster_rcnn_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg('faster_rcnn_r50_fpn_1x.py')
-=======
 # HTC is not ready yet
 @pytest.mark.parametrize('cfg_file', [
     'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
@@ -216,7 +184,6 @@ def test_faster_rcnn_forward():
 ])
 def test_two_stage_forward(cfg_file):
     model, train_cfg, test_cfg = _get_detector_cfg(cfg_file)
->>>>>>> v2.0.0
     model['pretrained'] = None
 
     from mmdet.models import build_detector
@@ -273,17 +240,11 @@ def test_two_stage_forward(cfg_file):
                                       return_loss=False)
             batch_results.append(result)
 
-<<<<<<< HEAD
-def test_faster_rcnn_ohem_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg(
-        'faster_rcnn_ohem_r50_fpn_1x.py')
-=======
 
 @pytest.mark.parametrize(
     'cfg_file', ['ghm/retinanet_ghm_r50_fpn_1x_coco.py', 'ssd/ssd300_coco.py'])
 def test_single_stage_forward_cpu(cfg_file):
     model, train_cfg, test_cfg = _get_detector_cfg(cfg_file)
->>>>>>> v2.0.0
     model['pretrained'] = None
 
     from mmdet.models import build_detector

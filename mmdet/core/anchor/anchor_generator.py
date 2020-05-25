@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 from .builder import ANCHOR_GENERATORS
+from mmdet.core.utils.misc import meshgrid
 
 
 @ANCHOR_GENERATORS.register_module()

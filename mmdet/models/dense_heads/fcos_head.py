@@ -285,13 +285,6 @@ class FCOSHead(nn.Module):
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
-# #<<<<<<< HEAD:mmdet/models/anchor_heads/fcos_head.py
-# #=======
-#         padding = mlvl_scores.new@zeros(mlvl_scores.shape[0], 1)
-#         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-#         # BG cat_id: num_class
-#         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-# #>>>>>>> v2.0.0:mmdet/models/dense_heads/fcos_head.py
         mlvl_centerness = torch.cat(mlvl_centerness)
         det_bboxes, det_labels = multiclass_nms(
             mlvl_bboxes,
@@ -387,7 +380,7 @@ class FCOSHead(nn.Module):
         num_gts = gt_labels.size(0)
         if num_gts == 0:
             return gt_labels.new_full((num_points, ), self.background_label), \
-                   gt_bboxes.new@zeros((num_points, 4))
+                   gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
             gt_bboxes[:, 3] - gt_bboxes[:, 1])
@@ -413,7 +406,7 @@ class FCOSHead(nn.Module):
             center_xs = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) / 2
             center_ys = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) / 2
             center_gts = torch.zeros_like(gt_bboxes)
-            stride = center_xs.new@zeros(center_xs.shape)
+            stride = center_xs.new_zeros(center_xs.shape)
 
             # project the points on current lvl back to the `original` sizes
             lvl_begin = 0

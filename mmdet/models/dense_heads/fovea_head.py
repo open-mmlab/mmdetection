@@ -225,7 +225,7 @@ class FoveaHead(nn.Module):
         if num_pos > 0:
             pos_bbox_preds = flatten_bbox_preds[pos_inds]
             pos_bbox_targets = flatten_bbox_targets[pos_inds]
-            pos_weights = pos_bbox_targets.new@zeros(
+            pos_weights = pos_bbox_targets.new_zeros(
                 pos_bbox_targets.size()) + 1.0
             loss_bbox = self.loss_bbox(
                 pos_bbox_preds,
@@ -276,7 +276,7 @@ class FoveaHead(nn.Module):
             (y, x) in zip(self.base_edge_list, self.scale_ranges,
                           self.strides, featmap_size_list, point_list):
             # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-            labels = gt_labels_raw.new@zeros(featmap_size) + self.num_classes
+            labels = gt_labels_raw.new_zeros(featmap_size) + self.num_classes
             bbox_targets = gt_bboxes_raw.new(featmap_size[0], featmap_size[1],
                                              4) + 1
             # scale assignment
@@ -392,13 +392,6 @@ class FoveaHead(nn.Module):
         if rescale:
             det_bboxes /= det_bboxes.new_tensor(scale_factor)
         det_scores = torch.cat(det_scores)
-# #<<<<<<< HEAD:mmdet/models/anchor_heads/fovea_head.py
-# #=======
-#         padding = det_scores.new@zeros(det_scores.shape[0], 1)
-#         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-#         # BG cat_id: num_class
-#         det_scores = torch.cat([det_scores, padding], dim=1)
-# #>>>>>>> v2.0.0:mmdet/models/dense_heads/fovea_head.py
         det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

@@ -47,7 +47,7 @@ def nms(dets, iou_thr, device_id=None):
 
     # execute cpu or cuda nms
     if dets_th.shape[0] == 0:
-        inds = dets_th.new@zeros(0, dtype=torch.long)
+        inds = dets_th.new_zeros(0, dtype=torch.long)
     else:
         if dets_th.is_cuda:
             inds = nms_ext.nms(dets_th, iou_thr)

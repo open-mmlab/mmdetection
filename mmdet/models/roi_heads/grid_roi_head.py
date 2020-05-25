@@ -121,7 +121,8 @@ class GridRoIHead(StandardRoIHead):
                     proposal_list,
                     img_metas,
                     proposals=None,
-                    rescale=False):
+                    rescale=False,
+                    postprocess=True):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
 
