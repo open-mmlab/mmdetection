@@ -857,8 +857,6 @@ class Albu(object):
         # back to the original format
         results = self.mapper(results, self.keymap_back)
 
-        results['img'] = results['img'].copy()
-
         # update final shape
         if self.update_pad_shape:
             results['pad_shape'] = results['img'].shape
