@@ -120,7 +120,7 @@ class Resize(object):
         results['scale_idx'] = scale_idx
 
     def _resize_img(self, results):
-        for key in results.get('img_fields', []):
+        for key in results.get('img_fields', ['img']):
             if self.keep_ratio:
                 img, scale_factor = mmcv.imrescale(
                     results[key], results['scale'], return_scale=True)
@@ -236,7 +236,7 @@ class RandomFlip(object):
             results['flip_direction'] = self.direction
         if results['flip']:
             # flip image
-            for key in results.get('img_fields', []):
+            for key in results.get('img_fields', ['img']):
                 results[key] = mmcv.imflip(
                     results[key], direction=results['flip_direction'])
             # flip bboxes
@@ -280,7 +280,7 @@ class Pad(object):
         assert size is None or size_divisor is None
 
     def _pad_img(self, results):
-        for key in results.get('img_fields', []):
+        for key in results.get('img_fields', ['img']):
             if self.size is not None:
                 padded_img = mmcv.impad(results[key], self.size, self.pad_val)
             elif self.size_divisor is not None:
@@ -332,7 +332,7 @@ class Normalize(object):
         self.to_rgb = to_rgb
 
     def __call__(self, results):
-        for key in results.get('img_fields', []):
+        for key in results.get('img_fields', ['img']):
             results[key] = mmcv.imnormalize(results[key], self.mean, self.std,
                                             self.to_rgb)
         results['img_norm_cfg'] = dict(
@@ -358,7 +358,7 @@ class RandomCrop(object):
         self.crop_size = crop_size
 
     def __call__(self, results):
-        for key in results.get('img_fields', []):
+        for key in results.get('img_fields', ['img']):
             img = results[key]
             margin_h = max(img.shape[0] - self.crop_size[0], 0)
             margin_w = max(img.shape[1] - self.crop_size[1], 0)
@@ -373,35 +373,40 @@ class RandomCrop(object):
             results[key] = img
         results['img_shape'] = img_shape
 
+        valid_flag = False
         # crop bboxes accordingly and clip to the image boundary
         for key in results.get('bbox_fields', []):
+            # e.g. gt_bboxes and gt_bboxes_ignore
             bbox_offset = np.array([offset_w, offset_h, offset_w, offset_h],
                                    dtype=np.float32)
             bboxes = results[key] - bbox_offset
             bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
-            results[key] = bboxes
+            gt_bboxes = bboxes
+            valid_inds = (gt_bboxes[:, 2] > gt_bboxes[:, 0]) & (
+                gt_bboxes[:, 3] > gt_bboxes[:, 1])
+            if valid_inds.any():
+                valid_flag = True
+            results[key] = gt_bboxes[valid_inds, :]
+            # label fields. e.g. gt_labels and gt_labels_ignore
+            label_key = key.replace('bboxes', 'labels')
+            if label_key in results:
+                results[label_key] = results[label_key][valid_inds]
+
+            # mask fields, e.g. gt_masks and gt_masks_ignore
+            mask_key = key.replace('bboxes', 'masks')
+            if mask_key in results:
+                results[mask_key] = results[mask_key].crop(
+                    np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
+
+        # if no gt bbox remains after cropping, just skip this image
+        if 'bbox_fields' in results and not valid_flag:
+            return None
 
         # crop semantic seg
         for key in results.get('seg_fields', []):
             results[key] = results[key][crop_y1:crop_y2, crop_x1:crop_x2]
 
-        # filter out the gt bboxes that are completely cropped
-        if 'gt_bboxes' in results:
-            gt_bboxes = results['gt_bboxes']
-            valid_inds = (gt_bboxes[:, 2] > gt_bboxes[:, 0]) & (
-                gt_bboxes[:, 3] > gt_bboxes[:, 1])
-            # if no gt bbox remains after cropping, just skip this image
-            if not np.any(valid_inds):
-                return None
-            results['gt_bboxes'] = gt_bboxes[valid_inds, :]
-            if 'gt_labels' in results:
-                results['gt_labels'] = results['gt_labels'][valid_inds]
-
-            # filter and crop the masks
-            if 'gt_masks' in results:
-                results['gt_masks'] = results['gt_masks'].crop(
-                    np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
         return results
 
     def __repr__(self):
@@ -622,6 +627,7 @@ class MinIoURandomCrop(object):
         h, w, c = img.shape
         while True:
             mode = random.choice(self.sample_mode)
+            self.mode = mode
             if mode == 1:
                 return results
 
@@ -669,6 +675,7 @@ class MinIoURandomCrop(object):
                         boxes[:, 2:] = boxes[:, 2:].clip(max=patch[2:])
                         boxes[:, :2] = boxes[:, :2].clip(min=patch[:2])
                         boxes -= np.tile(patch[:2], 2)
+
                         results[key] = boxes
                         # labels
                         label_key = key.replace('bboxes', 'labels')
@@ -678,11 +685,12 @@ class MinIoURandomCrop(object):
                         # mask fields
                         mask_key = key.replace('bboxes', 'masks')
                         if mask_key in results:
-                            results[key] = results[key][mask.nonzero()
-                                                        [0]].crop(patch)
+                            results[mask_key] = results[mask_key][
+                                mask.nonzero()[0]].crop(patch)
                 # adjust the img no matter whether the gt is empty before crop
                 img = img[patch[1]:patch[3], patch[0]:patch[2]]
                 results['img'] = img
+                results['img_shape'] = img.shape
 
                 # seg fields
                 for key in results.get('seg_fields', []):
