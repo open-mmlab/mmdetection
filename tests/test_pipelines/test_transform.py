@@ -167,3 +167,27 @@ def test_normalize():
     std = np.array(img_norm_cfg['std'])
     converted_img = (original_img[..., ::-1] - mean) / std
     assert np.allclose(results['img'], converted_img)
+
+
+def test_albu_transform():
+    results = dict(
+        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_info=dict(filename='color.jpg'))
+
+    # Define simple pipeline
+    load = dict(type='LoadImageFromFile')
+    load = build_from_cfg(load, PIPELINES)
+
+    albu_transform = dict(
+        type='Albu', transforms=[dict(type='ChannelShuffle', p=1)])
+    albu_transform = build_from_cfg(albu_transform, PIPELINES)
+
+    normalize = dict(type='Normalize', mean=[0] * 3, std=[0] * 3, to_rgb=True)
+    normalize = build_from_cfg(normalize, PIPELINES)
+
+    # Execute transforms
+    results = load(results)
+    results = albu_transform(results)
+    results = normalize(results)
+
+    assert results['img'].dtype == np.float32
