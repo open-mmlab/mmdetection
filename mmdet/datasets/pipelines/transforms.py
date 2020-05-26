@@ -402,6 +402,7 @@ class RandomCrop(object):
                         np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
 
         # if no gt bbox remains after cropping, just skip this image
+        # TODO: check whether we can keep the image regardless of the crop.
         if 'bbox_fields' in results and not valid_flag:
             return None
 
@@ -570,7 +571,8 @@ class Expand(object):
         h, w, c = img.shape
         ratio = random.uniform(self.min_ratio, self.max_ratio)
         expand_img = np.full((int(h * ratio), int(w * ratio), c),
-                             self.mean).astype(img.dtype)
+                             self.mean,
+                             dtype=img.dtype)
         left = int(random.uniform(0, w * ratio - w))
         top = int(random.uniform(0, h * ratio - h))
         expand_img[top:top + h, left:left + w] = img
@@ -589,7 +591,8 @@ class Expand(object):
         for key in results.get('seg_fields', []):
             gt_seg = results[key]
             expand_gt_seg = np.full((int(h * ratio), int(w * ratio)),
-                                    self.seg_ignore_label).astype(gt_seg.dtype)
+                                    self.seg_ignore_label,
+                                    dtype=gt_seg.dtype)
             expand_gt_seg[top:top + h, left:left + w] = gt_seg
             results[key] = expand_gt_seg
         return results
