@@ -1,7 +1,7 @@
 # Projects
 
 There are many projects built upon MMDetection.
-Some of them are published in top-tier conferences (CVPR, ICCV, and ECCV), the others are also highly influencial.
+Some of them are published in top-tier conferences (CVPR, ICCV, and ECCV), the others are also highly influential.
 We list some of them as examples of how to extend MMDetection for your own projects.
 Pull requests are also welcomed.
 
