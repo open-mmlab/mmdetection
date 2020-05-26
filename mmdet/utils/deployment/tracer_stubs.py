@@ -243,7 +243,8 @@ class ROIFeatureExtractorStub(TracerStub):
             sampling_ratio_i=self.inner.roi_layers[0].sample_num,
             image_id_i=0,
             distribute_rois_between_levels_i=1,
-            preserve_rois_order_i=1,
+            preserve_rois_order_i=0,
+            aligned_i=1,
             outputs=2
             )
         return roi_feats
