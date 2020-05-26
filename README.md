@@ -42,37 +42,40 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 v2.0.0 was released in 6/5/2020.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
+A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
 ## Benchmark and model zoo
 
 Supported methods and backbones are shown in the below table.
 Results and models are available in the [model zoo](docs/model_zoo.md).
 
-|                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet |
-|--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|
-| RPN                | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Faster R-CNN       | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Mask R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
-| SSD                | ✗        | ✗        | ✗        | ✓        | ✗     |
-| RetinaNet          | ✓        | ✓        | ☐        | ✗        | ✓     |
-| GHM                | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Double-Head R-CNN  | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Grid R-CNN (Plus)  | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     |
-| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     |
-| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     |
-| RepPoints          | ✓        | ✓        | ☐        | ✗        | ✓     |
-| Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     |
-| FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     |
-| NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     |
-| ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     |
-| FSAF               | ✓        | ✓        | ☐        | ✗        | ✓     |
-| PAFPN              | ✓        | ✓        | ☐        | ✗        | ✓     |
+|                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet | RegNetX | Res2Net |
+|--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|:--------:|:-----:|
+| RPN                | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Faster R-CNN       | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
+| Mask R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
+| Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
+| Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
+| SSD                | ✗        | ✗        | ✗        | ✓        | ✗     | ✗        | ✗     |
+| RetinaNet          | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ☐     |
+| GHM                | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Double-Head R-CNN  | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Grid R-CNN (Plus)  | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
+| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| RepPoints          | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| FSAF               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| PAFPN              | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| NAS-FCOS           | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| PISA               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 
 Other features
 - [x] [CARAFE](configs/carafe/README.md)
@@ -85,9 +88,8 @@ Other features
 - [x] [GCNet](configs/gcnet/README.md)
 - [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
 - [x] [InstaBoost](configs/instaboost/README.md)
-- [x] [FSAF](configs/fsaf/README.md)
-- [x] [PAFPN](configs/pafpn/README.md)
 
+Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
 ## Installation
 

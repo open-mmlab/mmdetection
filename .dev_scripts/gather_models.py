@@ -46,17 +46,21 @@ def get_final_epoch(config):
 
 
 def get_final_results(log_json_path, epoch):
+    result_dict = dict()
     with open(log_json_path, 'r') as f:
         for line in f.readlines():
             log_line = json.loads(line)
             if 'mode' not in log_line.keys():
                 continue
 
+            if log_line['mode'] == 'train' and log_line['epoch'] == epoch:
+                result_dict['memory'] = log_line['memory']
+
             if log_line['mode'] == 'val' and log_line['epoch'] == epoch:
-                result_dict = {
+                result_dict.update({
                     key: log_line[key]
                     for key in RESULTS_LUT if key in log_line
-                }
+                })
                 return result_dict
 
 
@@ -77,6 +81,7 @@ def main():
     args = parse_args()
     models_root = args.root
     models_out = args.out
+    mmcv.mkdir_or_exist(models_out)
 
     # find all models in the root directory to be gathered
     raw_configs = list(mmcv.scandir('./configs', '.py', recursive=True))
@@ -127,6 +132,8 @@ def main():
 
         model_name = osp.split(model['config'])[-1].split('.')[0]
         for k, v in model['results'].items():
+            if k == 'memory':
+                continue
             model_name += '_{}-{}_'.format(k, v)
         model_name += model['model_time']
         publish_model_path = osp.join(model_publish_dir, model_name)
