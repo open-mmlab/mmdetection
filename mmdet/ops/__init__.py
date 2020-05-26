@@ -1,3 +1,4 @@
+from .center_pool import TopPool, BottomPool, LeftPool, RightPool
 from .context_block import ContextBlock
 from .conv_ws import ConvWS2d, conv_ws_2d
 from .dcn import (DeformConv, DeformConvPack, DeformRoIPooling,
@@ -24,5 +25,6 @@ __all__ = [
     'MaskedConv2d', 'ContextBlock', 'GeneralizedAttention', 'NonLocal2D',
     'get_compiler_version', 'get_compiling_cuda_version', 'ConvWS2d',
     'conv_ws_2d', 'build_plugin_layer', 'batched_nms', 'Conv2d',
-    'ConvTranspose2d', 'MaxPool2d', 'Linear'
+    'ConvTranspose2d', 'MaxPool2d', 'Linear',
+    'TopPool', 'BottomPool', 'LeftPool', 'RightPool',
 ]
