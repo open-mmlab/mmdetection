@@ -77,7 +77,6 @@ class AsyncInferenceTestCase(AsyncTestCase):
             img_path = os.path.join(root_dir, 'demo/demo.jpg')
             bboxes, _ = await detector.apredict(img_path)
             self.assertTrue(bboxes)
-            torch.set_grad_enabled(ori_grad_enabled)
             # asy inference detector will hack grad_enabled,
             # so restore here to avoid it to influence other tests
             torch.set_grad_enabled(ori_grad_enabled)
