@@ -35,10 +35,12 @@ def split_combined_polys(polys, poly_lens, polys_per_mask):
 # TODO: move this function to more proper place
 def encode_mask_results(mask_results):
     """Encode bitmap mask to RLE code.
+
     Args:
         mask_results (list | tuple[list]): bitmap mask results.
             In mask scoring rcnn, mask_results is a tuple of (segm_results,
             segm_cls_score).
+
     Returns:
         list | tuple: RLE encoded mask.
     """
