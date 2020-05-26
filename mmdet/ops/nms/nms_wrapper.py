@@ -155,3 +155,36 @@ def batched_nms(bboxes, scores, inds, nms_cfg, class_agnostic=False):
     bboxes = bboxes[keep]
     scores = dets[:, -1]
     return torch.cat([bboxes, scores[:, None]], -1), keep
+
+
+def nms_match(dets, thresh):
+    """Matched dets into different groups by NMS.
+
+    NMS match is Similar to NMS but when a bbox is suppressed, nms match will
+    record the indice of supporessed bbox and form a group with the indice of
+    kept bbox. In each group, indice is sorted as score order.
+
+    Arguments:
+        dets (torch.Tensor | np.ndarray): Det bboxes with scores, shape (N, 5).
+        iou_thr (float): IoU thresh for NMS.
+
+    Returns:
+        List[Tensor | ndarray]: The outer list corresponds different matched
+            group, the inner Tensor corresponds the indices for a group in
+            score order.
+    """
+    if dets.shape[0] == 0:
+        matched = []
+    else:
+        assert dets.shape[-1] == 5, 'inputs dets.shape should be (N, 5), ' \
+                                    f'but get {dets.shape}'
+        if isinstance(dets, torch.Tensor):
+            dets_t = dets.detach().cpu()
+        else:
+            dets_t = torch.from_numpy(dets)
+        matched = nms_ext.nms_match(dets_t, thresh)
+
+    if isinstance(dets, torch.Tensor):
+        return [dets.new_tensor(m, dtype=torch.long) for m in matched]
+    else:
+        return [np.array(m, dtype=np.int) for m in matched]

@@ -8,6 +8,7 @@ from .htc_roi_head import HybridTaskCascadeRoIHead
 from .mask_heads import (FCNMaskHead, FusedSemanticHead, GridHead, HTCMaskHead,
                          MaskIoUHead)
 from .mask_scoring_roi_head import MaskScoringRoIHead
+from .pisa_roi_head import PISARoIHead
 from .roi_extractors import SingleRoIExtractor
 from .shared_heads import ResLayer
 
@@ -16,5 +17,5 @@ __all__ = [
     'HybridTaskCascadeRoIHead', 'GridRoIHead', 'ResLayer', 'BBoxHead',
     'ConvFCBBoxHead', 'Shared2FCBBoxHead', 'Shared4Conv1FCBBoxHead',
     'DoubleConvFCBBoxHead', 'FCNMaskHead', 'HTCMaskHead', 'FusedSemanticHead',
-    'GridHead', 'MaskIoUHead', 'SingleRoIExtractor'
+    'GridHead', 'MaskIoUHead', 'SingleRoIExtractor', 'PISARoIHead'
 ]

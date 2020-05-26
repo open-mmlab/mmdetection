@@ -64,7 +64,7 @@ def main():
     num_warmup = 5
     pure_inf_time = 0
 
-    # benchmark with 200 image and take the average
+    # benchmark with 2000 image and take the average
     for i, data in enumerate(data_loader):
 
         torch.cuda.synchronize()
@@ -80,9 +80,9 @@ def main():
             pure_inf_time += elapsed
             if (i + 1) % args.log_interval == 0:
                 fps = (i + 1 - num_warmup) / pure_inf_time
-                print(f'Done image [{i + 1:<3}/ 200], fps: {fps:.1f} img / s')
+                print(f'Done image [{i + 1:<3}/ 2000], fps: {fps:.1f} img / s')
 
-        if (i + 1) == 200:
+        if (i + 1) == 2000:
             pure_inf_time += elapsed
             fps = (i + 1 - num_warmup) / pure_inf_time
             print(f'Overall fps: {fps:.1f} img / s')
