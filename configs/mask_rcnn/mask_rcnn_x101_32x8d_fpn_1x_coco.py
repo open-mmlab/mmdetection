@@ -1,6 +1,6 @@
 _base_ = './mask_rcnn_r101_fpn_1x_coco.py'
 model = dict(
-    pretrained='open-mmlab://detectron/resnext_101_32x8d',
+    pretrained='open-mmlab://detectron2/resnext101_32x8d',
     backbone=dict(
         type='ResNeXt',
         depth=101,
