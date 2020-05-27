@@ -4,7 +4,7 @@ CommandLine:
 """
 import torch
 
-from mmdet.ops import TopPool, BottomPool, LeftPool, RightPool
+from mmdet.ops import BottomPool, LeftPool, RightPool, TopPool
 
 
 def test_center_pool_device_and_dtypes_cpu():
