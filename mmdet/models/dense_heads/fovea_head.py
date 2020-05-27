@@ -381,10 +381,10 @@ class FoveaHead(nn.Module):
                 scores = scores[topk_inds]
                 y = y[topk_inds]
                 x = x[topk_inds]
-            x1 = clamp(stride * x - base_len * bbox_pred[:, 0], 0, img_shape[1])
-            y1 = clamp(stride * y - base_len * bbox_pred[:, 1], 0, img_shape[0])
-            x2 = clamp(stride * x + base_len * bbox_pred[:, 2], 0, img_shape[1])
-            y2 = clamp(stride * y + base_len * bbox_pred[:, 3], 0, img_shape[0])
+            x1 = clamp(stride * x - base_len * bbox_pred[:, 0], 0, img_shape[1] - 1)
+            y1 = clamp(stride * y - base_len * bbox_pred[:, 1], 0, img_shape[0] - 1)
+            x2 = clamp(stride * x + base_len * bbox_pred[:, 2], 0, img_shape[1] - 1)
+            y2 = clamp(stride * y + base_len * bbox_pred[:, 3], 0, img_shape[0] - 1)
             bboxes = torch.stack([x1, y1, x2, y2], 1)
             det_bboxes.append(bboxes)
             det_scores.append(scores)

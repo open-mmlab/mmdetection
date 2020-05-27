@@ -1,17 +1,17 @@
-import torch
-import torch.nn as nn
-
 import numpy as np
 
-from mmdet.core.mask.transforms import mask2result
+import torch
+import torch.nn as nn
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, build_assigner,
                         build_sampler, merge_aug_bboxes, merge_aug_masks,
                         multiclass_nms)
+from mmdet.core.mask.transforms import mask2result
 from mmdet.core.utils.misc import dummy_pad
 from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
+
 
 @HEADS.register_module()
 class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
@@ -308,46 +308,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         ms_bbox_result['ensemble'] = (det_bboxes, det_labels)
 
-        # if self.with_mask:
-        #     if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
-        #         # If there are no detection there is nothing to do for a mask head.
-        #         # But during ONNX export we should run mask head
-        #         # for it to appear in the graph.
-        #         # So add one zero / dummy ROI that will be mapped
-        #         # to an Identity op in the graph.
-        #         det_bboxes = dummy_pad(det_bboxes, (0, 0, 0, 1))
-        #         det_labels = dummy_pad(det_labels, (0, 1))
-        #
-        #     if det_bboxes.shape[0] == 0:
-        #         segm_result = torch.empty([0, 0, 0],
-        #                                   dtype=det_bboxes.dtype,
-        #                                   device=det_bboxes.device)
-        #     else:
-        #         _bboxes = (
-        #             det_bboxes[:, :4] * det_bboxes.new_tensor(scale_factor)
-        #             if rescale else det_bboxes)
-        #
-        #         mask_rois = bbox2roi([_bboxes])
-        #         aug_masks = []
-        #         for i in range(self.num_stages):
-        #             mask_results = self._mask_forward(i, x, mask_rois)
-        #             aug_masks.append(
-        #                 mask_results['mask_pred'].sigmoid())
-        #         merged_masks = merge_aug_masks(aug_masks,
-        #                                        [img_metas] * self.num_stages,
-        #                                        self.test_cfg)
-        #         segm_result = self.mask_head[-1].get_seg_masks(
-        #             merged_masks, _bboxes, det_labels, rcnn_test_cfg,
-        #             ori_shape, scale_factor, rescale)
-        #     ms_segm_result['ensemble'] = segm_result
-        #
-        # if self.with_mask:
-        #     results = (ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
-        # else:
-        #     results = ms_bbox_result['ensemble']
-        #
-        # return results
-
         if self.with_mask:
             if torch.onnx.is_in_onnx_export() and det_bboxes.shape[0] == 0:
                 # If there are no detection there is nothing to do for a mask head.
@@ -389,10 +349,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 results = (*ms_bbox_result['ensemble'], ms_segm_result['ensemble'])
             else:
                 results = ms_bbox_result['ensemble']
-        # print(type(results))
-        # for r in results:
-        #     print(type(r))
-        # exit()
         return results
 
     def postprocess(self,

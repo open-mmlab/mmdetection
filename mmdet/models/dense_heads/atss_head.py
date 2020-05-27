@@ -252,7 +252,6 @@ class ATSSHead(AnchorHead):
                    img_metas,
                    cfg=None,
                    rescale=False):
-
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
@@ -265,7 +264,8 @@ class ATSSHead(AnchorHead):
             #        passing scores tensor itself instead of its spatial size.
             featmap_sizes = cls_scores
 
-        mlvl_anchors = self.anchor_generator.grid_anchors(featmap_sizes, device=device)
+        mlvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, device=device)
 
         result_list = []
         for img_id in range(len(img_metas)):

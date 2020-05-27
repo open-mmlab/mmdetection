@@ -313,13 +313,6 @@ class FCOSHead(nn.Module):
                                         dtype, device))
         return mlvl_points
 
-# <<<<<<< HEAD:mmdet/models/anchor_heads/fcos_head.py
-#     def get_points_single(self, featmap_size, stride, dtype, device):
-#         x_range = arange(0, end=featmap_size[1], dtype=dtype, device=device) * stride
-#         y_range = arange(0, end=featmap_size[0], dtype=dtype, device=device) * stride
-#         x, y = meshgrid(x_range, y_range, flatten=True)
-#         points = torch.stack((x, y), dim=-1) + stride // 2
-# =======
     def _get_points_single(self, featmap_size, stride, dtype, device):
         h, w = featmap_size
         x_range = torch.arange(
@@ -329,7 +322,6 @@ class FCOSHead(nn.Module):
         y, x = torch.meshgrid(y_range, x_range)
         points = torch.stack(
             (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
-# >>>>>>> v2.0.0:mmdet/models/dense_heads/fcos_head.py
         return points
 
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):

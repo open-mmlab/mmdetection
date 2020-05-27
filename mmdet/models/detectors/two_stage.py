@@ -8,8 +8,6 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 
 
-
-
 @DETECTORS.register_module()
 class TwoStageDetector(BaseDetector, RPNTestMixin):
     """Base class for two-stage detectors.
@@ -179,18 +177,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
         return await self.roi_head.async_simple_test(
             x, proposal_list, img_meta, rescale=rescale)
-
-        if not self.with_mask:
-            return bbox_results
-        else:
-            segm_results = await self.async_test_mask(
-                x,
-                img_meta,
-                det_bboxes,
-                det_labels,
-                rescale=rescale,
-                mask_test_cfg=self.test_cfg.get('mask'))
-            return bbox_results, segm_results
 
     def simple_test(self,
                     img,

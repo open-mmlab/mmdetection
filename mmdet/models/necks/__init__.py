@@ -6,4 +6,4 @@ from .nas_fpn import NASFPN
 from .rssh_fpn import RSSH_FPN
 from .pafpn import PAFPN
 
-__all__ = ['FPN', 'BFP', 'HRFPN', 'NASFPN', 'FPN_CARAFE', 'PAFPN']
+__all__ = ['FPN', 'BFP', 'HRFPN', 'NASFPN', 'FPN_CARAFE', 'PAFPN', 'RSSH_FPN']

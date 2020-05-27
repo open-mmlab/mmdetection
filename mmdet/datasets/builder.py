@@ -110,7 +110,7 @@ def build_dataloader(dataset,
         workers_per_gpu (int): How many subprocesses to use for data loading
             for each GPU.
         num_gpus (int): Number of GPUs. Only used in non-distributed training.
-        dist (bool): Distributed training/tesmmdet.datasets.registryt or not. Default: True.
+        dist (bool): Distributed training/test or not. Default: True.
         shuffle (bool): Whether to shuffle the data at every epoch.
             Default: True.
         kwargs: any keyword argument to be used to initialize DataLoader

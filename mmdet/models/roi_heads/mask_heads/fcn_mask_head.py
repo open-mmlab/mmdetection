@@ -166,94 +166,10 @@ class FCNMaskHead(nn.Module):
         Returns:
             list[list]: encoded masks
         """
+        segm_result = mask_pred[arange(end=det_labels.shape[0], device=mask_pred.device),
+                                det_labels].sigmoid()
 
-        if 1:
-            segm_result = mask_pred[arange(
-                end=det_labels.shape[0], device=mask_pred.device
-            ), det_labels].sigmoid()
-
-            return segm_result
-
-        else:
-
-            if isinstance(mask_pred, torch.Tensor):
-                mask_pred = mask_pred.sigmoid()
-            else:
-                mask_pred = det_bboxes.new_tensor(mask_pred)
-
-            device = mask_pred.device
-            cls_segms = [[] for _ in range(self.num_classes)
-                         ]  # BG is not included in num_classes
-            bboxes = det_bboxes[:, :4]
-            labels = det_labels
-
-            if rescale:
-                img_h, img_w = ori_shape[:2]
-            else:
-                img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
-                img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
-                scale_factor = 1.0
-
-            if not isinstance(scale_factor, (float, torch.Tensor)):
-                scale_factor = bboxes.new_tensor(scale_factor)
-            bboxes = bboxes / scale_factor
-
-            N = len(mask_pred)
-            # The actual implementation split the input into chunks,
-            # and paste them chunk by chunk.
-            if device.type == 'cpu':
-                # CPU is most efficient when they are pasted one by one with
-                # skip_empty=True, so that it performs minimal number of
-                # operations.
-                num_chunks = N
-            else:
-                # GPU benefits from parallelism for larger chunks,
-                # but may have memory issue
-                num_chunks = int(
-                    np.ceil(N * img_h * img_w * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
-                assert (num_chunks <=
-                        N), 'Default GPU_MEM_LIMIT is too small; try increasing it'
-            chunks = torch.chunk(torch.arange(N, device=device), num_chunks)
-
-            threshold = rcnn_test_cfg.mask_thr_binary
-            im_mask = torch.zeros(
-                N,
-                img_h,
-                img_w,
-                device=device,
-                dtype=torch.bool if threshold >= 0 else torch.uint8)
-
-            if not self.class_agnostic:
-                mask_pred = mask_pred[range(N), labels][:, None]
-
-            for inds in chunks:
-                masks_chunk, spatial_inds = _do_paste_mask(
-                    mask_pred[inds],
-                    bboxes[inds],
-                    img_h,
-                    img_w,
-                    skip_empty=device.type == 'cpu')
-
-                if threshold >= 0:
-                    masks_chunk = (masks_chunk >= threshold).to(dtype=torch.bool)
-                else:
-                    # for visualization and debugging
-                    masks_chunk = (masks_chunk * 255).to(dtype=torch.uint8)
-
-                im_mask[(inds,) + spatial_inds] = masks_chunk
-
-            for i in range(N):
-                print(im_mask[i].sum(), im_mask[i].shape)
-                rle = mask_util.encode(
-                    np.array(
-                        im_mask[i][:, :, None].cpu().numpy(),
-                        order='F',
-                        dtype='uint8'))[0]
-                cls_segms[labels[i]].append(rle)
-            exit()
-            return cls_segms
-
-
+        return segm_result
 
 
 def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
@@ -320,9 +236,6 @@ def _do_paste_mask(masks, boxes, img_h, img_w, skip_empty=True):
 
     img_masks = F.grid_sample(
         masks.to(dtype=torch.float32), grid, align_corners=False)
-
-    print(masks.shape)
-    print(img_masks.shape)
 
     if skip_empty:
         return img_masks[:, 0], (slice(y0_int, y1_int), slice(x0_int, x1_int))

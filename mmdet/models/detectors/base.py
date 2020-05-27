@@ -179,6 +179,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                     wait_time=0,
                     out_file=None):
         """Draw `result` over `img`.
+
         Args:
             img (str or Tensor): The image to be displayed.
             result (Tensor or tuple): The results to draw over `img`
