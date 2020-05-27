@@ -35,26 +35,26 @@ class CocoDataset(CustomDataset):
 
     def load_annotations(self, ann_file):
         self.coco = COCO(ann_file)
-        self.cat_ids = self.coco.getCatIds(catNms=self.CLASSES)
+        self.cat_ids = self.coco.get_cat_ids(cat_names=self.CLASSES)
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
-        self.img_ids = self.coco.getImgIds()
+        self.img_ids = self.coco.get_img_ids()
         data_infos = []
         for i in self.img_ids:
-            info = self.coco.loadImgs([i])[0]
+            info = self.coco.load_imgs([i])[0]
             info['filename'] = info['file_name']
             data_infos.append(info)
         return data_infos
 
     def get_ann_info(self, idx):
         img_id = self.data_infos[idx]['id']
-        ann_ids = self.coco.getAnnIds(imgIds=[img_id])
-        ann_info = self.coco.loadAnns(ann_ids)
+        ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
+        ann_info = self.coco.load_anns(ann_ids)
         return self._parse_ann_info(self.data_infos[idx], ann_info)
 
     def get_cat_ids(self, idx):
         img_id = self.data_infos[idx]['id']
-        ann_ids = self.coco.getAnnIds(imgIds=[img_id])
-        ann_info = self.coco.loadAnns(ann_ids)
+        ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
+        ann_info = self.coco.load_anns(ann_ids)
         return [ann['category_id'] for ann in ann_info]
 
     def _filter_imgs(self, min_size=32):
@@ -83,12 +83,12 @@ class CocoDataset(CustomDataset):
 
         ids = set()
         for i, class_id in enumerate(self.cat_ids):
-            ids |= set(self.coco.catToImgs[class_id])
+            ids |= set(self.coco.cat_img_map[class_id])
         self.img_ids = list(ids)
 
         data_infos = []
         for i in self.img_ids:
-            info = self.coco.loadImgs([i])[0]
+            info = self.coco.load_imgs([i])[0]
             info['filename'] = info['file_name']
             data_infos.append(info)
         return data_infos
@@ -268,8 +268,8 @@ class CocoDataset(CustomDataset):
     def fast_eval_recall(self, results, proposal_nums, iou_thrs, logger=None):
         gt_bboxes = []
         for i in range(len(self.img_ids)):
-            ann_ids = self.coco.getAnnIds(imgIds=self.img_ids[i])
-            ann_info = self.coco.loadAnns(ann_ids)
+            ann_ids = self.coco.get_ann_ids(img_ids=self.img_ids[i])
+            ann_info = self.coco.load_anns(ann_ids)
             if len(ann_info) == 0:
                 gt_bboxes.append(np.zeros((0, 4)))
                 continue

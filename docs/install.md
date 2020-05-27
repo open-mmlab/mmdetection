@@ -129,7 +129,7 @@ conda install -c pytorch pytorch torchvision -y
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
-pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
+pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=PythonAPI"
 pip install -v -e .
 ```
 
