@@ -1,4 +1,4 @@
-from .center_pool import TopPool, BottomPool, LeftPool, RightPool
+from .center_pool import BottomPool, LeftPool, RightPool, TopPool
 from .context_block import ContextBlock
 from .conv_ws import ConvWS2d, conv_ws_2d
 from .dcn import (DeformConv, DeformConvPack, DeformRoIPooling,
