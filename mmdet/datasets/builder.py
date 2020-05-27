@@ -6,6 +6,29 @@ from mmdet.utils import build_from_cfg
 
 from .dataset_wrappers import ConcatDataset, RepeatDataset
 from .registry import DATASETS
+from .coco import CocoDataset, ConcatenatedCocoDataset
+
+
+def get_image_prefixes_auto(cfg, ann_files):
+    del cfg['img_prefix_auto']
+    assert cfg.get('img_prefix', None) is None
+    if cfg['type'] == 'CustomCocoDataset':
+        # assuming following dataset structure:
+        # dataset_root
+        # ├── annotations
+        # │   ├── instances_train.json
+        # │   ├── ...
+        # ├── images
+        #     ├── image_name1
+        #     ├── image_name2
+        #     ├── ...
+        # and file_name inside instances_train.json is relative to <dataset_root>/images
+        img_prefixes = \
+            [os.path.join(os.path.dirname(ann_file), '..', 'images') for ann_file in ann_files]
+    else:
+        raise NotImplementedError
+
+    return img_prefixes
 
 
 def _concat_dataset(cfg, default_args=None):
@@ -15,23 +38,7 @@ def _concat_dataset(cfg, default_args=None):
     proposal_files = cfg.get('proposal_file', None)
 
     if cfg.get('img_prefix_auto', False):
-        del cfg['img_prefix_auto']
-        assert img_prefixes is None
-        if cfg['type'] == 'CustomCocoDataset':
-            # assuming following dataset structure:
-            # dataset_root
-            # ├── annotations
-            # │   ├── instances_train.json
-            # │   ├── ...
-            # ├── images
-            #     ├── image_name1
-            #     ├── image_name2
-            #     ├── ...
-            # and file_name inside instances_train.json is relative to <dataset_root>/images
-            img_prefixes = \
-                [os.path.join(os.path.dirname(ann_file), '..', 'images') for ann_file in ann_files]
-        else:
-            raise NotImplementedError
+        img_prefixes = get_image_prefixes_auto(cfg, ann_files)
 
     datasets = []
     num_dset = len(ann_files)
@@ -46,7 +53,10 @@ def _concat_dataset(cfg, default_args=None):
             data_cfg['proposal_file'] = proposal_files[i]
         datasets.append(build_dataset(data_cfg, default_args))
 
-    return ConcatDataset(datasets)
+    concatenated_dataset = ConcatDataset(datasets)
+    if all(isinstance(dataset, CocoDataset) for dataset in concatenated_dataset.datasets):
+        concatenated_dataset = ConcatenatedCocoDataset(concatenated_dataset)
+    return concatenated_dataset
 
 
 def build_dataset(cfg, default_args=None):
@@ -64,6 +74,8 @@ def build_dataset(cfg, default_args=None):
                                f'{cfg["ann_file"]}')
         cfg['ann_file'] = matches
         if len(cfg['ann_file']) == 1:
+            if cfg.get('img_prefix_auto', False):
+                cfg['img_prefix'] = get_image_prefixes_auto(cfg, cfg['ann_file'])[0]
             cfg['ann_file'] = cfg['ann_file'][0]
             dataset = build_from_cfg(cfg, DATASETS, default_args)
         else:
