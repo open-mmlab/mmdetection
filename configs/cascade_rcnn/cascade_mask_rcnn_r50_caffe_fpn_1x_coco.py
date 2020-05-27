@@ -1,7 +1,7 @@
 _base_ = ['./cascade_mask_rcnn_r50_fpn_1x_coco.py']
 
 model = dict(
-    pretrained='open-mmlab://resnet50_caffe_bgr',
+    pretrained='open-mmlab://detectron2/resnet50_caffe',
     backbone=dict(
         norm_cfg=dict(requires_grad=False), norm_eval=True, style='caffe'))
 
