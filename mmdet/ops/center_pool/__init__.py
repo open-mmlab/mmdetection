@@ -64,25 +64,19 @@ class RightPoolFunction(Function):
         return output
 
 
-class TopPool(nn.Module):
+class CenterPool(nn.Module):
+
+    mode_functions = {
+        'bottom': BottomPoolFunction,
+        'left': LeftPoolFunction,
+        'right': RightPoolFunction,
+        'top': TopPoolFunction,
+    }
+
+    def __init__(self, mode):
+        super(CenterPool, self).__init__()
+        assert mode in self.mode_functions
+        self.center_pool = self.mode_functions[mode]
 
     def forward(self, x):
-        return TopPoolFunction.apply(x)
-
-
-class BottomPool(nn.Module):
-
-    def forward(self, x):
-        return BottomPoolFunction.apply(x)
-
-
-class LeftPool(nn.Module):
-
-    def forward(self, x):
-        return LeftPoolFunction.apply(x)
-
-
-class RightPool(nn.Module):
-
-    def forward(self, x):
-        return RightPoolFunction.apply(x)
+        return self.center_pool.apply(x)
