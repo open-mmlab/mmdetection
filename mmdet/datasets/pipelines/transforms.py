@@ -526,8 +526,8 @@ class PhotoMetricDistortion(object):
         repr_str = self.__class__.__name__
         repr_str += ('(brightness_delta={}, contrast_range={}, '
                      'saturation_range={}, hue_delta={})').format(
-                         self.brightness_delta, self.contrast_range,
-                         self.saturation_range, self.hue_delta)
+                         self.brightness_delta, (self.contrast_lower, self.contrast_upper),
+                         (self.saturation_lower, self.saturation_upper), self.hue_delta)
         return repr_str
 
 
@@ -691,8 +691,8 @@ class MinIoURandomCrop(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += '(min_ious={}, min_crop_size={})'.format(
-            self.min_ious, self.min_crop_size)
+        repr_str += '(sample_mode={}, min_crop_size={})'.format(
+            self.sample_mode, self.min_crop_size)
         return repr_str
 
 
