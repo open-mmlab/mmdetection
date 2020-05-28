@@ -15,12 +15,12 @@ std::vector<at::Tensor> bottom_pool_forward(
 
     for (int64_t ind = 1; ind < height; ind <<= 1) {
         at::Tensor max_temp = at::slice(output, 2, ind, height);
-        at::Tensor cur_temp = at::slice(output, 2, ind, height);
-        at::Tensor next_temp = at::slice(output, 2, 0, height-ind);
+        at::Tensor cur_temp = at::slice(output, 2, ind, height).clone();
+        at::Tensor next_temp = at::slice(output, 2, 0, height-ind).clone();
         at::max_out(max_temp, cur_temp, next_temp);
     }
 
-    return { 
+    return {
         output
     };
 }
@@ -80,13 +80,13 @@ std::vector<at::Tensor> left_pool_forward(
     output.copy_(input);
 
     for (int64_t ind = 1; ind < width; ind <<= 1) {
-        at::Tensor max_temp = at::slice(output, 3, 0, width-ind); 
-        at::Tensor cur_temp = at::slice(output, 3, 0, width-ind);        
-        at::Tensor next_temp = at::slice(output, 3, ind, width);
+        at::Tensor max_temp = at::slice(output, 3, 0, width-ind);
+        at::Tensor cur_temp = at::slice(output, 3, 0, width-ind).clone();
+        at::Tensor next_temp = at::slice(output, 3, ind, width).clone();
         at::max_out(max_temp, cur_temp, next_temp);
     }
 
-    return { 
+    return {
         output
     };
 }
@@ -146,13 +146,13 @@ std::vector<at::Tensor> right_pool_forward(
     output.copy_(input);
 
     for (int64_t ind = 1; ind < width; ind <<= 1) {
-        at::Tensor max_temp = at::slice(output, 3, ind, width); 
-        at::Tensor cur_temp = at::slice(output, 3, ind, width);        
-        at::Tensor next_temp = at::slice(output, 3, 0, width-ind);
+        at::Tensor max_temp = at::slice(output, 3, ind, width);
+        at::Tensor cur_temp = at::slice(output, 3, ind, width).clone();
+        at::Tensor next_temp = at::slice(output, 3, 0, width-ind).clone();
         at::max_out(max_temp, cur_temp, next_temp);
     }
 
-    return { 
+    return {
         output
     };
 }
@@ -213,12 +213,12 @@ std::vector<at::Tensor> top_pool_forward(
 
     for (int64_t ind = 1; ind < height; ind <<= 1) {
         at::Tensor max_temp = at::slice(output, 2, 0, height-ind);
-        at::Tensor cur_temp = at::slice(output, 2, 0, height-ind);
-        at::Tensor next_temp = at::slice(output, 2, ind, height);
+        at::Tensor cur_temp = at::slice(output, 2, 0, height-ind).clone();
+        at::Tensor next_temp = at::slice(output, 2, ind, height).clone();
         at::max_out(max_temp, cur_temp, next_temp);
     }
 
-    return { 
+    return {
         output
     };
 }
@@ -276,11 +276,11 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
         py::call_guard<py::gil_scoped_release>()
     );
     m.def(
-        "left_forward", &left_pool_forward, "Left Pool Forward", 
+        "left_forward", &left_pool_forward, "Left Pool Forward",
         py::call_guard<py::gil_scoped_release>()
     );
     m.def(
-        "left_backward", &left_pool_backward, "Left Pool Backward", 
+        "left_backward", &left_pool_backward, "Left Pool Backward",
         py::call_guard<py::gil_scoped_release>()
     );
     m.def(
@@ -289,7 +289,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     );
     m.def(
         "right_backward", &right_pool_backward, "Right Pool Backward",
-        py::call_guard<py::gil_scoped_release>()     
+        py::call_guard<py::gil_scoped_release>()
     );
     m.def(
         "top_forward", &top_pool_forward, "Top Pool Forward",
