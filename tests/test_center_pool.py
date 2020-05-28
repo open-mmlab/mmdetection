@@ -2,6 +2,7 @@
 CommandLine:
     pytest tests/test_center_pool.py
 """
+import pytest
 import torch
 
 from mmdet.ops import CenterPool
@@ -13,6 +14,10 @@ def test_center_pool_device_and_dtypes_cpu():
         xdoctest -m tests/test_center_pool.py \
             test_center_pool_device_and_dtypes_cpu
     """
+    with pytest.raises(AssertionError):
+        # pool mode must in ['bottom', 'left', 'right', 'top']
+        pool = CenterPool('center')
+
     lr_tensor = torch.tensor([[[[0, 0, 0, 0, 0], [2, 1, 3, 0, 2],
                                 [5, 4, 1, 1, 6], [0, 0, 0, 0, 0],
                                 [0, 0, 0, 0, 0]]]])
