@@ -471,6 +471,9 @@ class PhotoMetricDistortion(object):
         self.hue_delta = hue_delta
 
     def __call__(self, results):
+        if 'img_fields' in results:
+            assert results['img_fields'] == ['img'], \
+                'Only single img_fields is allowed'
         img = results['img']
         assert img.dtype == np.float32, \
             'PhotoMetricDistortion needs the input image of dtype np.float32,'\
@@ -566,6 +569,9 @@ class Expand(object):
         if random.uniform(0, 1) > self.prob:
             return results
 
+        if 'img_fields' in results:
+            assert results['img_fields'] == ['img'], \
+                'Only single img_fields is allowed'
         img = results['img']
 
         h, w, c = img.shape
@@ -625,6 +631,9 @@ class MinIoURandomCrop(object):
         self.min_crop_size = min_crop_size
 
     def __call__(self, results):
+        if 'img_fields' in results:
+            assert results['img_fields'] == ['img'], \
+                'Only single img_fields is allowed'
         img = results['img']
         assert 'bbox_fields' in results
         boxes = [results[key] for key in results['bbox_fields']]
@@ -720,6 +729,9 @@ class Corrupt(object):
     def __call__(self, results):
         if corrupt is None:
             raise RuntimeError('imagecorruptions is not installed')
+        if 'img_fields' in results:
+            assert results['img_fields'] == ['img'], \
+                'Only single img_fields is allowed'
         results['img'] = corrupt(
             results['img'].astype(np.uint8),
             corruption_name=self.corruption,
@@ -836,7 +848,7 @@ class Albu(object):
     def __call__(self, results):
         # dict to albumentations format
         results = self.mapper(results, self.keymap_to_albu)
-
+        # TODO: add bbox_fields
         if 'bboxes' in results:
             # to list of boxes
             if isinstance(results['bboxes'], np.ndarray):

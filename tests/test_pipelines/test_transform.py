@@ -114,6 +114,7 @@ def test_random_crop():
 
     results['img_shape'] = img.shape
     results['ori_shape'] = img.shape
+    # TODO: add img_fields test
     results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
     # Set initial values for default meta_keys
     results['pad_shape'] = img.shape
@@ -149,6 +150,15 @@ def test_random_crop():
 
 
 def test_min_iou_random_crop():
+
+    def create_random_bboxes(num_bboxes, img_w, img_h):
+        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
+        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
+        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
+        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
+            np.int)
+        return bboxes
+
     results = dict()
     img = mmcv.imread(
         osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
@@ -160,15 +170,6 @@ def test_min_iou_random_crop():
     # Set initial values for default meta_keys
     results['pad_shape'] = img.shape
     results['scale_factor'] = 1.0
-
-    def create_random_bboxes(num_bboxes, img_w, img_h):
-        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
-        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
-        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
-        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
-            np.int)
-        return bboxes
-
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(1, w, h)
     gt_bboxes_ignore = create_random_bboxes(1, w, h)
@@ -176,6 +177,13 @@ def test_min_iou_random_crop():
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='MinIoURandomCrop')
     crop_module = build_from_cfg(transform, PIPELINES)
+
+    # Test for img_fields
+    results_test = copy.deepcopy(results)
+    results_test['img1'] = results_test['img']
+    results_test['img_fields'] = ['img', 'img1']
+    with pytest.raises(AssertionError):
+        crop_module(results_test)
     results = crop_module(results)
     patch = np.array([0, 0, results['img_shape'][1], results['img_shape'][0]])
     ious = bbox_overlaps(patch.reshape(-1, 4),
