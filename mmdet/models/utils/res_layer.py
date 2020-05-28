@@ -28,6 +28,7 @@ class ResLayer(nn.Sequential):
                  avg_down=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
+                 reverse=False,
                  **kwargs):
         self.block = block
 
@@ -56,22 +57,43 @@ class ResLayer(nn.Sequential):
             downsample = nn.Sequential(*downsample)
 
         layers = []
-        layers.append(
-            block(
-                inplanes=inplanes,
-                planes=planes,
-                stride=stride,
-                downsample=downsample,
-                conv_cfg=conv_cfg,
-                norm_cfg=norm_cfg,
-                **kwargs))
-        inplanes = planes * block.expansion
-        for i in range(1, num_blocks):
+        if not reverse:
             layers.append(
                 block(
                     inplanes=inplanes,
                     planes=planes,
-                    stride=1,
+                    stride=stride,
+                    downsample=downsample,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    **kwargs))
+            inplanes = planes * block.expansion
+            for i in range(1, num_blocks):
+                layers.append(
+                    block(
+                        inplanes=inplanes,
+                        planes=planes,
+                        stride=1,
+                        conv_cfg=conv_cfg,
+                        norm_cfg=norm_cfg,
+                        **kwargs))
+
+        else:  # reverse is for Hourglass
+            for i in range(1, num_blocks):
+                layers.append(
+                    block(
+                        inplanes=inplanes,
+                        planes=inplanes,
+                        stride=1,
+                        conv_cfg=conv_cfg,
+                        norm_cfg=norm_cfg,
+                        **kwargs))
+            layers.append(
+                block(
+                    inplanes=inplanes,
+                    planes=planes,
+                    stride=stride,
+                    downsample=downsample,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     **kwargs))

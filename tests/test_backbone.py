@@ -4,6 +4,7 @@ from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.backbones import ResNet, ResNetV1d, ResNeXt
+from mmdet.models.backbones.hourglass import Hourglass
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.backbones.resnext import Bottleneck as BottleneckX
 from mmdet.models.utils import ResLayer
@@ -622,3 +623,20 @@ def test_resnext_backbone():
     assert feat[1].shape == torch.Size([1, 512, 28, 28])
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
+
+
+def test_hourglass_backbone():
+    with pytest.raises(AssertionError):
+        # Hourglass num_stacks should larget than 0
+        Hourglass(num_stacks=0)
+
+    # Test Hourglass with default setting 
+    model = Hourglass()
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 511, 511)
+    feat = model(imgs)
+    assert len(feat) == 2
+    assert feat[0].shape == torch.Size([1, 256, 128, 128])
+    assert feat[1].shape == torch.Size([1, 256, 128, 128])
