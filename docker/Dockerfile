@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-ARG PYTORCH="1.4"
-=======
 ARG PYTORCH="1.5"
->>>>>>> v2.0.0
 ARG CUDA="10.1"
 ARG CUDNN="7"
 
@@ -17,7 +13,6 @@ RUN apt-get update && apt-get install -y git ninja-build libglib2.0-0 libsm6 lib
     && rm -rf /var/lib/apt/lists/*
 
 # Install mmdetection
-<<<<<<< HEAD
 RUN conda install cython -y && conda clean --all
 RUN git clone --recursive --branch ote https://github.com/opencv/mmdetection.git /mmdetection
 WORKDIR /mmdetection
@@ -53,11 +48,4 @@ ENV USER docker
 RUN chmod -R 777 /workspace
 ENV HOME /workspace
 WORKDIR /workspace
-=======
-RUN conda clean --all
-RUN git clone https://github.com/open-mmlab/mmdetection.git /mmdetection
-WORKDIR /mmdetection
-ENV FORCE_CUDA="1"
-RUN pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
-RUN pip install --no-cache-dir -e .
->>>>>>> v2.0.0
+

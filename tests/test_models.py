@@ -42,6 +42,8 @@ class PublicModelsTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.test_on_full = False
+
         os.makedirs(cls.coco_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cls.coco_dir, 'val2017.zip')):
             os.system(f'wget --no-verbose http://images.cocodataset.org/zips/val2017.zip -P {cls.coco_dir}')
@@ -50,15 +52,18 @@ class PublicModelsTestCase(unittest.TestCase):
         if not os.path.exists(os.path.join(cls.coco_dir, "annotations_trainval2017.zip")):
             os.system(
                 f'wget --no-verbose http://images.cocodataset.org/annotations/annotations_trainval2017.zip -P {cls.coco_dir}')
-        if not os.path.exists(os.path.join(cls.coco_dir, 'annotations/instances_val2017.json')):
+        if cls.test_on_full or not os.path.exists(os.path.join(cls.coco_dir, 'annotations/instances_val2017.json')):
             os.system(
                     f'unzip -o {os.path.join(cls.coco_dir, "annotations_trainval2017.zip")} -d {cls.coco_dir}')
 
-        cls.shorten_to = 10
+        if cls.test_on_full:
+            cls.shorten_to = 5000
+        else:
+            cls.shorten_to = 10
 
         cls.shorten_annotation(os.path.join(cls.coco_dir, 'annotations/instances_val2017.json'), cls.shorten_to)
 
-    def run_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.01):
+    def run_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.0):
         print('\n\ntesting ' + config_path, file=sys.stderr)
         name = config_path.replace('configs', '')[:-3]
         print('expected ouputs', f'tests/expected_outputs/public/{name}-{self.shorten_to}.json')
@@ -70,14 +75,16 @@ class PublicModelsTestCase(unittest.TestCase):
         assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
                                     "data_root = 'data/coco/'",
                                     f"data_root = '{self.coco_dir}/'")
-        assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
-                                    "keep_ratio=True", "keep_ratio=False")
 
         replace_text_in_file(f'{target_config_path}',
                              "data_root = 'data/coco/'",
                              f"data_root = '{self.coco_dir}/'")
-        replace_text_in_file(f'{target_config_path}',
-                             "keep_ratio=True", "keep_ratio=False")
+
+        if not self.test_on_full:
+            assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
+                                        "keep_ratio=True", "keep_ratio=False")
+            replace_text_in_file(f'{target_config_path}',
+                                 "keep_ratio=True", "keep_ratio=False")
         metrics = ' '.join(metrics)
 
         os.system(f'python tools/test.py '
@@ -110,14 +117,15 @@ class PublicModelsTestCase(unittest.TestCase):
         assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
                                     "data_root = 'data/coco/'",
                                     f"data_root = '{self.coco_dir}/'")
-        assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
-                                    "keep_ratio=True", "keep_ratio=False")
-
         replace_text_in_file(f'{target_config_path}',
                              "data_root = 'data/coco/'",
                              f"data_root = '{self.coco_dir}/'")
-        replace_text_in_file(f'{target_config_path}',
-                             "keep_ratio=True", "keep_ratio=False")
+
+        if not self.test_on_full:
+            assert replace_text_in_file(f'{test_dir}/configs/_base_/datasets/coco_detection.py',
+                                        "keep_ratio=True", "keep_ratio=False")
+            replace_text_in_file(f'{target_config_path}',
+                                 "keep_ratio=True", "keep_ratio=False")
 
         metrics = ' '.join(metrics)
 

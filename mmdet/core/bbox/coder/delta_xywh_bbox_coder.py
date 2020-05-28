@@ -4,6 +4,8 @@ import torch
 from ..builder import BBOX_CODERS
 from .base_bbox_coder import BaseBBoxCoder
 
+from mmdet.core.bbox.transforms import clamp
+
 
 @BBOX_CODERS.register_module()
 class DeltaXYWHBBoxCoder(BaseBBoxCoder):
@@ -136,8 +138,8 @@ def delta2bbox(rois,
                 [0.0000, 0.3161, 4.1945, 0.6839],
                 [5.0000, 5.0000, 5.0000, 5.0000]])
     """
-    means = deltas.new_tensor(means).repeat(1, deltas.size(1) // 4)
-    stds = deltas.new_tensor(stds).repeat(1, deltas.size(1) // 4)
+    means = deltas.new_tensor(means).view(1, -1).repeat(1, deltas.size(1) // 4)
+    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(1) // 4)
     denorm_deltas = deltas * stds + means
     dx = denorm_deltas[:, 0::4]
     dy = denorm_deltas[:, 1::4]
@@ -156,17 +158,17 @@ def delta2bbox(rois,
     gw = pw * dw.exp()
     gh = ph * dh.exp()
     # Use network energy to shift the center of each roi
-    gx = torch.addcmul(px, 1, pw, dx)  # gx = px + pw * dx
-    gy = torch.addcmul(py, 1, ph, dy)  # gy = py + ph * dy
+    gx = torch.addcmul(px, 1.0, pw, dx)  # gx = px + pw * dx
+    gy = torch.addcmul(py, 1.0, ph, dy)  # gy = py + ph * dy
     # Convert center-xy/width/height to top-left, bottom-right
     x1 = gx - gw * 0.5
     y1 = gy - gh * 0.5
     x2 = gx + gw * 0.5
     y2 = gy + gh * 0.5
     if max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1])
-        y1 = y1.clamp(min=0, max=max_shape[0])
-        x2 = x2.clamp(min=0, max=max_shape[1])
-        y2 = y2.clamp(min=0, max=max_shape[0])
-    bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view_as(deltas)
+        x1 = clamp(x1, min=0, max=max_shape[1])
+        y1 = clamp(y1, min=0, max=max_shape[0])
+        x2 = clamp(x2, min=0, max=max_shape[1])
+        y2 = clamp(y2, min=0, max=max_shape[0])
+    bboxes = torch.stack([x1, y1, x2, y2], dim=2).view_as(deltas)
     return bboxes
