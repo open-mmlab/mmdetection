@@ -51,10 +51,13 @@ class LoadImage(object):
     def __call__(self, results):
         if isinstance(results['img'], str):
             results['filename'] = results['img']
+            results['ori_filename'] = results['img']
         else:
             results['filename'] = None
+            results['ori_filename'] = None
         img = mmcv.imread(results['img'])
         results['img'] = img
+        results['img_fields'] = ['img']
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
         return results
