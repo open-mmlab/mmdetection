@@ -332,7 +332,7 @@ class LvisDataset(CocoDataset):
 
         eval_results = {}
         # get original api
-        lvis_gt = self.api.api
+        lvis_gt = self.coco
         for metric in metrics:
             msg = 'Evaluating {}...'.format(metric)
             if logger is None:
