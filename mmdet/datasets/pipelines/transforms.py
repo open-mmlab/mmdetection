@@ -351,6 +351,17 @@ class RandomCrop(object):
 
     Args:
         crop_size (tuple): Expected size after cropping, (h, w).
+
+    Notes:
+        - The returned patch is the intersection of the original image and the
+          cropping area. Therefore, the returned image could be smaller than
+          `crop_size`.
+        - The keys for bboxes, labels and masks must be aligned. That is,
+          `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
+          `gt_bboxes_ignore` corresponds to `gt_labels_ignore` and
+           `gt_masks_ignore`.
+        - If there are gt bboxes in an image and the cropping area does not
+          have intersection with any gt bbox, this image is skipped.
     """
 
     def __init__(self, crop_size):
@@ -622,6 +633,11 @@ class MinIoURandomCrop(object):
         bounding boxes
         min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
         where a >= min_crop_size).
+
+    Notes:
+        The keys for bboxes, labels and masks should be paired. That is,
+        `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
+        `gt_bboxes_ignore` to `gt_labels_ignore` and `gt_masks_ignore`.
     """
 
     def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3):
