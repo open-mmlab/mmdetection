@@ -353,13 +353,11 @@ class RandomCrop(object):
         crop_size (tuple): Expected size after cropping, (h, w).
 
     Notes:
-        - The returned patch is the intersection of the original image and the
-          cropping area. Therefore, the returned image could be smaller than
-          `crop_size`.
+        - If the image is smaller than the crop size, return the original image
         - The keys for bboxes, labels and masks must be aligned. That is,
           `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
           `gt_bboxes_ignore` corresponds to `gt_labels_ignore` and
-           `gt_masks_ignore`.
+          `gt_masks_ignore`.
         - If there are gt bboxes in an image and the cropping area does not
           have intersection with any gt bbox, this image is skipped.
     """
