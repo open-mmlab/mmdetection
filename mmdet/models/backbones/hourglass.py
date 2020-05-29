@@ -2,15 +2,19 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 
 from ..builder import BACKBONES
-from .resnet import BasicBlock
 from ..utils import ResLayer
+from .resnet import BasicBlock
 
 
 class HGModule(nn.Module):
     """ HourGlass Module for Hourglass backbone.
         Generate module recursively and use BasicBlock as the base unit.
     """
-    def __init__(self, hg_depth, stage_channels, stage_blocks,
+
+    def __init__(self,
+                 hg_depth,
+                 stage_channels,
+                 stage_blocks,
                  norm_cfg=dict(type='BN', requires_grad=True)):
         super(HGModule, self).__init__()
 
@@ -23,11 +27,7 @@ class HGModule(nn.Module):
         next_dim = stage_channels[1]
 
         self.up1 = ResLayer(
-            BasicBlock,
-            curr_dim,
-            curr_dim,
-            curr_block,
-            norm_cfg=norm_cfg)
+            BasicBlock, curr_dim, curr_dim, curr_block, norm_cfg=norm_cfg)
 
         self.low1 = ResLayer(
             BasicBlock,
@@ -38,13 +38,9 @@ class HGModule(nn.Module):
             norm_cfg=norm_cfg)
 
         self.low2 = HGModule(
-            hg_depth - 1, stage_channels[1:], stage_blocks[1:]) if (
-            self.hg_depth > 1) else ResLayer(
-                BasicBlock,
-                next_dim,
-                next_dim,
-                next_block,
-                norm_cfg=norm_cfg)
+            hg_depth - 1, stage_channels[1:],
+            stage_blocks[1:]) if (self.hg_depth > 1) else ResLayer(
+                BasicBlock, next_dim, next_dim, next_block, norm_cfg=norm_cfg)
 
         self.low3 = ResLayer(
             BasicBlock,
@@ -113,8 +109,9 @@ class Hourglass(nn.Module):
             ConvModule(3, 128, 7, padding=3, stride=2, norm_cfg=norm_cfg),
             ResLayer(BasicBlock, 128, 256, 1, stride=2, norm_cfg=norm_cfg))
 
-        self.hg_modules = nn.ModuleList([HGModule(
-            hg_depth, stage_channels, stage_blocks) for _ in range(num_stacks)
+        self.hg_modules = nn.ModuleList([
+            HGModule(hg_depth, stage_channels, stage_blocks)
+            for _ in range(num_stacks)
         ])
 
         self.inters = ResLayer(
@@ -122,16 +119,20 @@ class Hourglass(nn.Module):
 
         self.inters_ = nn.ModuleList([
             ConvModule(curr_dim, curr_dim, 1, norm_cfg=norm_cfg, act_cfg=None)
-            for _ in range(num_stacks - 1)])
+            for _ in range(num_stacks - 1)
+        ])
 
         self.cnvs = nn.ModuleList([
-            ConvModule(curr_dim, feat_channel, 3, padding=1, norm_cfg=norm_cfg)
-            for _ in range(num_stacks)])
+            ConvModule(
+                curr_dim, feat_channel, 3, padding=1, norm_cfg=norm_cfg)
+            for _ in range(num_stacks)
+        ])
 
         self.cnvs_ = nn.ModuleList([
             ConvModule(
                 feat_channel, curr_dim, 1, norm_cfg=norm_cfg, act_cfg=None)
-            for _ in range(num_stacks - 1)])
+            for _ in range(num_stacks - 1)
+        ])
 
         self.relu = nn.ReLU(inplace=True)
 

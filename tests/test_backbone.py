@@ -739,7 +739,7 @@ def test_hourglass_backbone():
         # Hourglass num_stacks should larget than 0
         Hourglass(num_stacks=0)
 
-    # Test Hourglass with default setting 
+    # Test Hourglass with default setting
     model = Hourglass()
     model.init_weights()
     model.train()
