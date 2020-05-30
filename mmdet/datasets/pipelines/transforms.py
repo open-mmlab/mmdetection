@@ -365,6 +365,15 @@ class RandomCrop(object):
     def __init__(self, crop_size):
         assert crop_size[0] > 0 and crop_size[1] > 0
         self.crop_size = crop_size
+        # The key correspondence from bboxes to labels and masks.
+        self.bbox2label = {
+            'gt_bboxes': 'gt_labels',
+            'gt_bboxes_ignore': 'gt_labels_ignore'
+        }
+        self.bbox2mask = {
+            'gt_bboxes': 'gt_masks',
+            'gt_bboxes_ignore': 'gt_masks_ignore'
+        }
 
     def __call__(self, results):
         for key in results.get('img_fields', ['img']):
@@ -399,12 +408,12 @@ class RandomCrop(object):
                 valid_flag = True
             results[key] = bboxes[valid_inds, :]
             # label fields. e.g. gt_labels and gt_labels_ignore
-            label_key = key.replace('bboxes', 'labels')
+            label_key = self.bbox2label.get(key)
             if label_key in results:
                 results[label_key] = results[label_key][valid_inds]
 
             # mask fields, e.g. gt_masks and gt_masks_ignore
-            mask_key = key.replace('bboxes', 'masks')
+            mask_key = self.bbox2mask.get(key)
             if mask_key in results:
                 results[mask_key] = results[mask_key][
                     valid_inds.nonzero()[0]].crop(
@@ -643,6 +652,14 @@ class MinIoURandomCrop(object):
         self.min_ious = min_ious
         self.sample_mode = (1, *min_ious, 0)
         self.min_crop_size = min_crop_size
+        self.bbox2label = {
+            'gt_bboxes': 'gt_labels',
+            'gt_bboxes_ignore': 'gt_labels_ignore'
+        }
+        self.bbox2mask = {
+            'gt_bboxes': 'gt_masks',
+            'gt_bboxes_ignore': 'gt_masks_ignore'
+        }
 
     def __call__(self, results):
         if 'img_fields' in results:
@@ -706,12 +723,12 @@ class MinIoURandomCrop(object):
 
                         results[key] = boxes
                         # labels
-                        label_key = key.replace('bboxes', 'labels')
+                        label_key = self.bbox2label.get(key)
                         if label_key in results:
                             results[label_key] = results[label_key][mask]
 
                         # mask fields
-                        mask_key = key.replace('bboxes', 'masks')
+                        mask_key = self.bbox2mask.get(key)
                         if mask_key in results:
                             results[mask_key] = results[mask_key][
                                 mask.nonzero()[0]].crop(patch)
