@@ -45,8 +45,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     def extract_feats(self, imgs):
         assert isinstance(imgs, list)
-        for img in imgs:
-            yield self.extract_feat(img)
+        return [self.extract_feat(img) for img in imgs]
 
     @abstractmethod
     def forward_train(self, imgs, img_metas, **kwargs):
