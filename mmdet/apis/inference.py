@@ -57,6 +57,7 @@ class LoadImage(object):
             results['ori_filename'] = None
         img = mmcv.imread(results['img'])
         results['img'] = img
+        results['img_fields'] = ['img']
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
         return results

@@ -230,7 +230,7 @@ def test_ga_anchor_head_loss():
         gt_bboxes = [
             torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]).cuda(),
         ]
-        gt_labels = [torch.LongTensor([2])]
+        gt_labels = [torch.LongTensor([2]).cuda()]
         one_gt_losses = head.loss(cls_scores, bbox_preds, shape_preds,
                                   loc_preds, gt_bboxes, gt_labels, img_metas,
                                   gt_bboxes_ignore)

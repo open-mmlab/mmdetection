@@ -3,7 +3,6 @@ from abc import ABCMeta, abstractmethod
 
 import mmcv
 import numpy as np
-import pycocotools.mask as maskUtils
 import torch.nn as nn
 from mmcv.utils import print_log
 
@@ -210,7 +209,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             for i in inds:
                 i = int(i)
                 color_mask = color_masks[labels[i]]
-                mask = maskUtils.decode(segms[i]).astype(np.bool)
+                mask = segms[i]
                 img[mask] = img[mask] * 0.5 + color_mask * 0.5
         # if out_file specified, do not show image in window
         if out_file is not None:
