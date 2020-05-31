@@ -34,8 +34,8 @@ def bbox_mapping(bboxes, img_shape, scale_factor, flip):
 def bbox_mapping_back(bboxes, img_shape, scale_factor, flip):
     """Map bboxes from testing scale to original image scale"""
     new_bboxes = bbox_flip(bboxes, img_shape) if flip else bboxes
-    new_bboxes = new_bboxes / new_bboxes.new_tensor(scale_factor)
-    return new_bboxes
+    new_bboxes = new_bboxes.view(-1, 4) / new_bboxes.new_tensor(scale_factor)
+    return new_bboxes.view(bboxes.shape)
 
 
 def bbox2roi(bbox_list):
