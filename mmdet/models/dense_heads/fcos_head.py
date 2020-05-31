@@ -1,15 +1,16 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
+from mmcv.cnn import Scale, normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
 from ..builder import HEADS, build_loss
+from .anchor_free_head import AnchorFreeHead
 
 INF = 1e8
 
 
 @HEADS.register_module()
-class FCOSHead(nn.Module):
+class FCOSHead(AnchorFreeHead):
     """Anchor-free head used in `FCOS <https://arxiv.org/abs/1904.01355>`_.
 
     The FCOS head does not use anchor boxes. Instead bounding boxes are
@@ -26,14 +27,10 @@ class FCOSHead(nn.Module):
     def __init__(self,
                  num_classes,
                  in_channels,
-                 feat_channels=256,
-                 stacked_convs=4,
-                 strides=(4, 8, 16, 32, 64),
                  regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 512),
                                  (512, INF)),
                  center_sampling=False,
                  center_sample_radius=1.5,
-                 background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -45,77 +42,26 @@ class FCOSHead(nn.Module):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 train_cfg=None,
-                 test_cfg=None):
-        super(FCOSHead, self).__init__()
-        self.num_classes = num_classes
-        self.cls_out_channels = num_classes
-        self.in_channels = in_channels
-        self.feat_channels = feat_channels
-        self.stacked_convs = stacked_convs
-        self.strides = strides
+                 **kwargs):
         self.regress_ranges = regress_ranges
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox = build_loss(loss_bbox)
-        self.loss_centerness = build_loss(loss_centerness)
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.fp16_enabled = False
         self.center_sampling = center_sampling
         self.center_sample_radius = center_sample_radius
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
-
-        self._init_layers()
+        super().__init__(
+            num_classes,
+            in_channels,
+            loss_cls=loss_cls,
+            loss_bbox=loss_bbox,
+            **kwargs)
+        self.loss_centerness = build_loss(loss_centerness)
 
     def _init_layers(self):
-        self.cls_convs = nn.ModuleList()
-        self.reg_convs = nn.ModuleList()
-        for i in range(self.stacked_convs):
-            chn = self.in_channels if i == 0 else self.feat_channels
-            self.cls_convs.append(
-                ConvModule(
-                    chn,
-                    self.feat_channels,
-                    3,
-                    stride=1,
-                    padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
-            self.reg_convs.append(
-                ConvModule(
-                    chn,
-                    self.feat_channels,
-                    3,
-                    stride=1,
-                    padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
-        self.fcos_cls = nn.Conv2d(
-            self.feat_channels, self.cls_out_channels, 3, padding=1)
-        self.fcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
-        self.fcos_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
-
+        super()._init_layers()
+        self.conv_centerness = nn.Conv2d(self.feat_channels, 1, 3, padding=1)
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
 
     def init_weights(self):
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
-        normal_init(self.fcos_reg, std=0.01)
-        normal_init(self.fcos_centerness, std=0.01)
+        super().init_weights()
+        normal_init(self.conv_centerness, std=0.01)
 
     def forward(self, feats):
         return multi_apply(self.forward_single, feats, self.scales)
@@ -126,14 +72,14 @@ class FCOSHead(nn.Module):
 
         for cls_layer in self.cls_convs:
             cls_feat = cls_layer(cls_feat)
-        cls_score = self.fcos_cls(cls_feat)
-        centerness = self.fcos_centerness(cls_feat)
+        cls_score = self.conv_cls(cls_feat)
+        centerness = self.conv_centerness(cls_feat)
 
         for reg_layer in self.reg_convs:
             reg_feat = reg_layer(reg_feat)
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
-        bbox_pred = scale(self.fcos_reg(reg_feat)).float().exp()
+        bbox_pred = scale(self.conv_reg(reg_feat)).float().exp()
         return cls_score, bbox_pred, centerness
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
@@ -298,33 +244,15 @@ class FCOSHead(nn.Module):
             score_factors=mlvl_centerness)
         return det_bboxes, det_labels
 
-    def get_points(self, featmap_sizes, dtype, device):
-        """Get points according to feature map sizes.
-
-        Args:
-            featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            dtype (torch.dtype): Type of points.
-            device (torch.device): Device of points.
-
-        Returns:
-            tuple: points of each image.
-        """
-        mlvl_points = []
-        for i in range(len(featmap_sizes)):
-            mlvl_points.append(
-                self._get_points_single(featmap_sizes[i], self.strides[i],
-                                        dtype, device))
-        return mlvl_points
-
-    def _get_points_single(self, featmap_size, stride, dtype, device):
-        h, w = featmap_size
-        x_range = torch.arange(
-            0, w * stride, stride, dtype=dtype, device=device)
-        y_range = torch.arange(
-            0, h * stride, stride, dtype=dtype, device=device)
-        y, x = torch.meshgrid(y_range, x_range)
-        points = torch.stack(
-            (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
+    def _get_points_single(self,
+                           featmap_size,
+                           stride,
+                           dtype,
+                           device,
+                           flatten=False):
+        y, x = super()._get_points_single(featmap_size, stride, dtype, device)
+        points = torch.stack((x.reshape(-1) * stride, y.reshape(-1) * stride),
+                             dim=-1) + stride // 2
         return points
 
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
