@@ -1,4 +1,16 @@
-_base_ = './mask_rcnn_r50_fpn_2x_lvis.py'
+_base_ = [
+    '../_base_/models/mask_rcnn_r50_fpn.py',
+    '../_base_/datasets/lvis_instance.py',
+    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
+]
+model = dict(
+    roi_head=dict(
+        bbox_head=dict(num_classes=1230), mask_head=dict(num_classes=1230)))
+test_cfg = dict(
+    rcnn=dict(
+        score_thr=0.0001,
+        # LVIS allows up to 300
+        max_per_img=300))
 dataset_type = 'LvisDataset'
 data_root = 'data/lvis/'
 img_norm_cfg = dict(
