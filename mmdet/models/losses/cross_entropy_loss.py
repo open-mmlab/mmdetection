@@ -11,9 +11,9 @@ def cross_entropy(pred,
                   weight=None,
                   reduction='mean',
                   avg_factor=None,
-                  cls_weight=None):
+                  class_weight=None):
     # element-wise losses
-    loss = F.cross_entropy(pred, label, weight=cls_weight, reduction='none')
+    loss = F.cross_entropy(pred, label, weight=class_weight, reduction='none')
 
     # apply weights and do the reduction
     if weight is not None:
@@ -45,7 +45,7 @@ def binary_cross_entropy(pred,
                          weight=None,
                          reduction='mean',
                          avg_factor=None,
-                         cls_weight=None):
+                         class_weight=None):
     if pred.dim() != label.dim():
         label, weight = _expand_binary_labels(label, weight, pred.size(-1))
 
@@ -53,7 +53,7 @@ def binary_cross_entropy(pred,
     if weight is not None:
         weight = weight.float()
     loss = F.binary_cross_entropy_with_logits(
-        pred, label.float(), weight=cls_weight, reduction='none')
+        pred, label.float(), weight=class_weight, reduction='none')
     # do the reduction for the weighted loss
     loss = weight_reduce_loss(
         loss, weight, reduction=reduction, avg_factor=avg_factor)
@@ -66,14 +66,14 @@ def mask_cross_entropy(pred,
                        label,
                        reduction='mean',
                        avg_factor=None,
-                       cls_weight=None):
+                       class_weight=None):
     # TODO: handle these two reserved arguments
     assert reduction == 'mean' and avg_factor is None
     num_rois = pred.size()[0]
     inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
     pred_slice = pred[inds, label].squeeze(1)
     return F.binary_cross_entropy_with_logits(
-        pred_slice, target, weight=cls_weight, reduction='mean')[None]
+        pred_slice, target, weight=class_weight, reduction='mean')[None]
 
 
 @LOSSES.register_module()
@@ -83,7 +83,7 @@ class CrossEntropyLoss(nn.Module):
                  use_sigmoid=False,
                  use_mask=False,
                  reduction='mean',
-                 cls_weight=None,
+                 class_weight=None,
                  loss_weight=1.0):
         super(CrossEntropyLoss, self).__init__()
         assert (use_sigmoid is False) or (use_mask is False)
@@ -91,7 +91,7 @@ class CrossEntropyLoss(nn.Module):
         self.use_mask = use_mask
         self.reduction = reduction
         self.loss_weight = loss_weight
-        self.cls_weight = cls_weight
+        self.class_weight = class_weight
 
         if self.use_sigmoid:
             self.cls_criterion = binary_cross_entropy
@@ -110,15 +110,15 @@ class CrossEntropyLoss(nn.Module):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
-        if self.cls_weight is not None:
-            cls_weight = cls_score.new_tensor(self.cls_weight)
+        if self.class_weight is not None:
+            class_weight = cls_score.new_tensor(self.class_weight)
         else:
-            cls_weight = None
+            class_weight = None
         loss_cls = self.loss_weight * self.cls_criterion(
             cls_score,
             label,
             weight,
-            cls_weight=cls_weight,
+            class_weight=class_weight,
             reduction=reduction,
             avg_factor=avg_factor,
             **kwargs)
