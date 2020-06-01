@@ -86,7 +86,7 @@ class Hourglass(nn.Module):
         >>> inputs = torch.rand(1, 3, 511, 511)
         >>> level_outputs = self.forward(inputs)
         >>> for level_output in level_outputs:
-        ...     print(tuple(level_out.shape))
+        ...     print(tuple(level_output.shape))
         (1, 256, 128, 128)
         (1, 256, 128, 128)
     """
