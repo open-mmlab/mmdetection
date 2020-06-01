@@ -73,6 +73,7 @@ class FoveaHead(AnchorFreeHead):
             self.conv_cls = nn.Conv2d(
                 self.feat_channels, self.cls_out_channels, 3, padding=1)
         else:
+            self.cls_convs = nn.ModuleList()
             self.cls_convs.append(
                 ConvModule(
                     self.feat_channels, (self.feat_channels * 4),
