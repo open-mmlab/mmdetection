@@ -239,7 +239,7 @@ def parse_args():
                         help='Enables flip as one of test-time augmentations.')
     parser.add_argument('--update_config', nargs='+',
                         help='It can be used to override configuration file parameters. '
-                             'Usage: --update_config total_epochs=75, data.val.ann_file=my_annotation.json')
+                             'Usage: --update_config total_epochs=75 data.val.ann_file=my_annotation.json')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
