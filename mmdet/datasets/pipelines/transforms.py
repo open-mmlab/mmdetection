@@ -36,7 +36,7 @@ class Resize(object):
     - ``ratio_range is not None``: randomly sample a ratio from the ratio range
       and multiply it with the image scale.
     - ``ratio_range is None`` and ``multiscale_mode == "range"``: randomly
-      sample a scale from the a range.
+      sample a scale from the multiscale range.
     - ``ratio_range is None`` and ``multiscale_mode == "value"``: randomly
       sample a scale from multiple scales.
 
