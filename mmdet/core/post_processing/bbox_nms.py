@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 
 from mmdet.ops.nms import batched_nms
@@ -46,6 +48,12 @@ def multiclass_nms(multi_bboxes,
     if bboxes.numel() == 0:
         bboxes = multi_bboxes.new_zeros((0, 5))
         labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
+
+        # onnx export
+        tracing_state = torch._C._get_tracing_state()
+        if tracing_state:
+            warnings.warn('[ONNX warning] Can not record NMS in ONNX '
+                          'as it is not be executed this time')
         return bboxes, labels
 
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)

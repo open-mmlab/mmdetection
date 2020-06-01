@@ -1,7 +1,28 @@
+import warnings
+
 import numpy as np
 import torch
+from torch.autograd import Function
 
 from . import nms_ext
+
+
+class NMS(Function):
+
+    @staticmethod
+    def forward(ctx, dets_th, iou_thr):
+        inds = nms_ext.nms(dets_th, iou_thr)
+        return inds
+
+    @staticmethod
+    def backward(ctx, grad_inds):
+        return None
+
+    @staticmethod
+    def symbolic(g, dets_th, iou_thr):
+        batch_dets_th = g.op('Unsqueeze', dets_th, axes_i=[0])
+        full_ind = g.op('Nms', batch_dets_th, iou_thr_f=iou_thr)
+        return full_ind
 
 
 def nms(dets, iou_thr, device_id=None):
@@ -33,6 +54,11 @@ def nms(dets, iou_thr, device_id=None):
         >>> suppressed, inds = nms(dets, iou_thr)
         >>> assert len(inds) == len(suppressed) == 3
     """
+    # onnx export
+    tracing_state = torch._C._get_tracing_state()
+    if tracing_state:
+        warnings.warn('[ONNX warning] NMS has not been supported yet')
+
     # convert dets (tensor or numpy array) to tensor
     if isinstance(dets, torch.Tensor):
         is_numpy = False
@@ -49,10 +75,7 @@ def nms(dets, iou_thr, device_id=None):
     if dets_th.shape[0] == 0:
         inds = dets_th.new_zeros(0, dtype=torch.long)
     else:
-        if dets_th.is_cuda:
-            inds = nms_ext.nms(dets_th, iou_thr)
-        else:
-            inds = nms_ext.nms(dets_th, iou_thr)
+        inds = NMS.apply(dets_th, iou_thr)
 
     if is_numpy:
         inds = inds.cpu().numpy()
