@@ -8,6 +8,25 @@ from ..builder import HEADS, build_loss
 
 @HEADS.register_module()
 class AnchorFreeHead(nn.Module):
+    """Anchor-free head (FCOS, Fovea, RepPoints, etc.).
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        feat_channels (int): Number of hidden channels. Used in child classes.
+        stacked_convs (int): Number of stacking convs of the head.
+        strides (tuple): Downsample factor of each feature map.
+        background_label (int | None): Label ID of background, set as 0 for
+            RPN and num_classes for other heads. It will automatically set as
+            num_classes if None is given.
+        loss_cls (dict): Config of classification loss.
+        loss_bbox (dict): Config of localization loss.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
+        norm_cfg (dict): Config dict for normalization layer. Default: None.
+        train_cfg (dict): Training config of anchor head.
+        test_cfg (dict): Testing config of anchor head.
+    """  # noqa: W605
 
     def __init__(self,
                  num_classes,
