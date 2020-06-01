@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import torch
 
@@ -33,6 +35,11 @@ def nms(dets, iou_thr, device_id=None):
         >>> suppressed, inds = nms(dets, iou_thr)
         >>> assert len(inds) == len(suppressed) == 3
     """
+    # onnx export
+    tracing_state = torch._C._get_tracing_state()
+    if tracing_state:
+        warnings.warn('[ONNX warning] NMS has not been supported yet')
+
     # convert dets (tensor or numpy array) to tensor
     if isinstance(dets, torch.Tensor):
         is_numpy = False
@@ -49,10 +56,7 @@ def nms(dets, iou_thr, device_id=None):
     if dets_th.shape[0] == 0:
         inds = dets_th.new_zeros(0, dtype=torch.long)
     else:
-        if dets_th.is_cuda:
-            inds = nms_ext.nms(dets_th, iou_thr)
-        else:
-            inds = nms_ext.nms(dets_th, iou_thr)
+        inds = nms_ext.nms(dets_th, iou_thr)
 
     if is_numpy:
         inds = inds.cpu().numpy()
