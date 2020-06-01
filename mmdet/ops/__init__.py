@@ -1,6 +1,6 @@
-from .center_pool import CenterPool
 from .context_block import ContextBlock
 from .conv_ws import ConvWS2d, conv_ws_2d
+from .corner_pool import CornerPool
 from .dcn import (DeformConv, DeformConvPack, DeformRoIPooling,
                   DeformRoIPoolingPack, ModulatedDeformConv,
                   ModulatedDeformConvPack, ModulatedDeformRoIPoolingPack,
@@ -50,5 +50,5 @@ __all__ = [
     'MaxPool2d',
     'Linear',
     'nms_match',
-    'CenterPool',
+    'CornerPool',
 ]
