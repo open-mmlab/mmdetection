@@ -237,6 +237,9 @@ def parse_args():
                         help='Enables multi-scale testing: h1 w1 h2 w2 ...')
     parser.add_argument('--tta_flip', action='store_true',
                         help='Enables flip as one of test-time augmentations.')
+    parser.add_argument('--update_config', nargs='+',
+                        help='It can be used to override configuration file parameters. '
+                             'Usage: --update_config total_epochs=75 data.val.ann_file=my_annotation.json')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -257,6 +260,23 @@ def main():
         args.json_out = args.json_out[:-5]
 
     cfg = mmcv.Config.fromfile(args.config)
+
+    if args.update_config:
+        config_updates = [kv.split('=') for kv in args.update_config]
+        config_updates = [(k.split('.'), v) for (k, v) in config_updates]
+        for k, v in config_updates:
+            cfg_el = cfg
+            stack = []
+            for ki in k:
+                stack.append(cfg_el)
+                cfg_el = cfg_el[ki]
+            cfg_el = v
+            for ki in k[::-1]:
+                a = stack.pop()
+                a[ki] = cfg_el
+                cfg_el = a
+            cfg = cfg_el
+
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
