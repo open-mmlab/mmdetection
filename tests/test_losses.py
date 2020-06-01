@@ -18,7 +18,7 @@ def test_ce_loss():
     loss_cls_cfg = dict(
         type='CrossEntropyLoss',
         use_sigmoid=False,
-        cls_weight=[0.8, 0.2],
+        class_weight=[0.8, 0.2],
         loss_weight=1.0)
     loss_cls = build_loss(loss_cls_cfg)
     fake_pred = torch.Tensor([[100, -100]])
