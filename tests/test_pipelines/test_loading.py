@@ -4,7 +4,8 @@ import os.path as osp
 import numpy as np
 
 from mmdet.datasets.pipelines import (LoadImageFromFile,
-                                      LoadMultiChannelImageFromFiles)
+                                      LoadMultiChannelImageFromFiles,
+                                      LoadMultiImagesFromMultiFiles)
 
 
 class TestLoading(object):
@@ -60,6 +61,36 @@ class TestLoading(object):
         assert results['img'].dtype == np.uint8
         np.testing.assert_equal(results['img_norm_cfg']['mean'],
                                 np.zeros(1, dtype=np.float32))
+
+    def test_load_multi_imgs(self):
+        results = dict(
+            img_prefix=self.data_prefix,
+            img_info=dict(filename='color.jpg'),
+            ref_img_info=dict(filename=['color.jpg', 'color.jpg']))
+        transform = LoadMultiImagesFromMultiFiles()
+        results = transform(copy.deepcopy(results))
+        assert results['filename_0'] == osp.join(self.data_prefix, 'color.jpg')
+        assert results['ref_filename_0'] == osp.join(self.data_prefix,
+                                                     'color.jpg')
+        assert results['ref_filename_1'] == osp.join(self.data_prefix,
+                                                     'color.jpg')
+        assert results['ori_filename_0'] == 'color.jpg'
+        assert results['ref_ori_filename_0'] == 'color.jpg'
+        assert results['ref_ori_filename_1'] == 'color.jpg'
+        assert results['img_0'].shape == (288, 512, 3)
+        assert results['img_0'].dtype == np.uint8
+        assert results['ref_img_0'].shape == (288, 512, 3)
+        assert results['ref_img_0'].dtype == np.uint8
+        assert results['ref_img_1'].shape == (288, 512, 3)
+        assert results['ref_img_1'].dtype == np.uint8
+        assert results['img_shape'] == (288, 512, 3)
+        assert results['ori_shape'] == (288, 512, 3)
+        assert results['pad_shape'] == (288, 512, 3)
+        assert results['scale_factor'] == 1.0
+        assert repr(transform) == transform.__class__.__name__ + \
+            "(img_info_keys=['img_info', 'ref_img_info'], " + \
+            "to_float32=False, color_type='unchanged', " + \
+            "file_client_args={'backend': 'disk'})"
 
     def test_load_multi_channel_img(self):
         results = dict(
