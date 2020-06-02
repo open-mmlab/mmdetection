@@ -29,7 +29,7 @@
 
 
 ## Pre-trained Models
-We also train some models with longer epochs with multi-scale training, the users could use them as a strong pre-trained models for downstream tasks
+We also train some models with longer schedules and multi-scale training. The users could finetune them for downstream tasks.
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |

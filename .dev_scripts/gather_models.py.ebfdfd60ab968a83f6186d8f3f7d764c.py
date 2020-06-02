@@ -131,10 +131,7 @@ def main():
         mmcv.mkdir_or_exist(model_publish_dir)
 
         model_name = osp.split(model['config'])[-1].split('.')[0]
-        # for k, v in model['results'].items():
-        #     if k == 'memory':
-        #         continue
-        #     model_name += '_{}-{}_'.format(k, v)
+
         model_name += '_' + model['model_time']
         publish_model_path = osp.join(model_publish_dir, model_name)
         trained_model_path = osp.join(models_root, model['config'],

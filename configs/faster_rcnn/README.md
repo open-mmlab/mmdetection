@@ -38,7 +38,7 @@ We trained with R-50-FPN pytorch style backbone for 1x schedule.
 |    R-50-FPN     |  BoundedIoULoss |          |                | 37.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_bounded_iou_1x_coco-98ad993b.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_bounded_iou_1x_coco_20200505_160738.log.json)  |
 
 ## Pre-trained Models
-We also train some models with longer epochs with multi-scale training, the users could use them as a strong pre-trained models for downstream tasks
+We also train some models with longer schedules and multi-scale training. The users could finetune them for downstream tasks.
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
