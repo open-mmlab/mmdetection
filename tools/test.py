@@ -61,10 +61,6 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
-    parser.add_argument('--tta_ms', nargs='+',
-                        help='Enables multi-scale testing: h1 w1 h2 w2 ...')
-    parser.add_argument('--tta_flip', action='store_true',
-                        help='Enables flip as one of test-time augmentations.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)

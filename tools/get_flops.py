@@ -1,10 +1,10 @@
 import argparse
+import json
 
 from mmcv import Config
 
 from mmdet.models import build_detector
 from mmdet.utils import get_model_complexity_info
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -15,6 +15,7 @@ def parse_args():
         nargs='+',
         default=[1280, 800],
         help='input image size')
+    parser.add_argument('--out')
     args = parser.parse_args()
     return args
 
@@ -49,6 +50,14 @@ def main():
     print('!!!Please be cautious if you use the results in papers. '
           'You may need to check if all ops are supported and verify that the '
           'flops computation is correct.')
+
+    if args.out:
+        out = list()
+        out.append({'key': 'size', 'display_name': 'Size', 'value': float(params.split(' ')[0]), 'unit': 'Mp'})
+        out.append({'key': 'complexity', 'display_name': 'Complexity', 'value': 2 * float(flops.split(' ')[0]),
+                    'unit': 'GFLOPs'})
+        with open(args.out, 'w') as write_file:
+            json.dump(out, write_file, indent=4)
 
 
 if __name__ == '__main__':

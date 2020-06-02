@@ -6,6 +6,7 @@ import tempfile
 import mmcv
 import numpy as np
 from mmcv.utils import print_log
+import os
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from terminaltables import AsciiTable
@@ -447,3 +448,73 @@ class CocoDataset(CustomDataset):
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
+
+@DATASETS.register_module
+class ConcatenatedCocoDataset(CocoDataset):
+    def __init__(self, concatenated_dataset):
+        for dataset in concatenated_dataset.datasets:
+            assert isinstance(dataset, CocoDataset), type(dataset)
+            assert dataset.cat_ids == concatenated_dataset.datasets[0].cat_ids
+            assert dataset.cat2label == concatenated_dataset.datasets[0].cat2label
+            assert str(dataset.pipeline) == str(concatenated_dataset.datasets[0].pipeline), f'{dataset.pipeline}'
+            assert dataset.proposals == concatenated_dataset.datasets[0].proposals
+
+        self.CLASSES = concatenated_dataset.datasets[0].CLASSES
+        self.test_mode = concatenated_dataset.datasets[0].test_mode
+        self.filter_empty_gt = concatenated_dataset.datasets[0].filter_empty_gt
+        self.cat_ids = concatenated_dataset.datasets[0].cat_ids
+        self.cat2label = concatenated_dataset.datasets[0].cat2label
+        self.pipeline = concatenated_dataset.datasets[0].pipeline
+        self.proposals = concatenated_dataset.datasets[0].proposals
+        self.img_ids = []
+        self.img_infos = []
+        self.flag = None
+        self.ann_infos = []
+        self.img_prefix = None
+        self.seg_prefix = None
+        self.proposal_file = None
+        self.coco = None
+
+        for dataset in concatenated_dataset.datasets:
+            img_shift = 0 if not self.img_ids else max(self.img_ids) + 1
+
+            for img_id in dataset.img_ids:
+                self.img_ids.append(img_id + img_shift)
+
+            for im_info in dataset.img_infos:
+                im_info = im_info
+                im_info['id'] += img_shift
+                im_info['filename'] = os.path.join(dataset.img_prefix, im_info['filename'])
+                self.img_infos.append(im_info)
+
+            if self.coco is None:
+                self.coco = dataset.coco
+                self.coco.dataset = {'images': dataset.coco.dataset['images'],
+                                     'categories': dataset.coco.dataset['categories']}
+            else:
+                for cat in dataset.coco.catToImgs:
+                    self.coco.catToImgs[cat].extend([img_id + img_shift for img_id in dataset.coco.catToImgs[cat]])
+
+                ann_shift = max(self.coco.anns) + 1
+                for k, v in dataset.coco.anns.items():
+                    v['image_id'] += img_shift
+                    v['id'] += ann_shift
+                    self.coco.anns[k + ann_shift] = v
+
+                for k, v in dataset.coco.imgs.items():
+                    v['id'] += img_shift
+                    self.coco.imgs[k + img_shift] = v
+
+                for k, v in dataset.coco.imgToAnns.items():
+                    # indices in annotations have been changed above
+                    self.coco.imgToAnns[k + img_shift] = v
+
+                for v in dataset.coco.dataset['images']:
+                    v['id'] += img_shift
+                    self.coco.dataset['images'].append(v)
+
+            if hasattr(dataset, 'flag'):
+                if self.flag is None:
+                    self.flag = dataset.flag
+                else:
+                    self.flag = np.concatenate(dataset.flag, axis=0)
