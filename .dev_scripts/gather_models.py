@@ -131,11 +131,8 @@ def main():
         mmcv.mkdir_or_exist(model_publish_dir)
 
         model_name = osp.split(model['config'])[-1].split('.')[0]
-        for k, v in model['results'].items():
-            if k == 'memory':
-                continue
-            model_name += '_{}-{}_'.format(k, v)
-        model_name += model['model_time']
+
+        model_name += '_' + model['model_time']
         publish_model_path = osp.join(model_publish_dir, model_name)
         trained_model_path = osp.join(models_root, model['config'],
                                       'epoch_{}.pth'.format(model['epochs']))
@@ -147,12 +144,11 @@ def main():
         # copy log
         shutil.copy(
             osp.join(models_root, model['config'], model['log_json_path']),
-            osp.join(model_publish_dir, model['log_json_path']))
+            osp.join(model_publish_dir, f'{model_name}.log.json'))
         shutil.copy(
             osp.join(models_root, model['config'],
                      model['log_json_path'].rstrip('.json')),
-            osp.join(model_publish_dir,
-                     model['log_json_path'].rstrip('.json')))
+            osp.join(model_publish_dir, f'{model_name}.log'))
 
         # copy config to guarantee reproducibility
         config_path = model['config']
