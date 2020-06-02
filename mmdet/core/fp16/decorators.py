@@ -19,21 +19,23 @@ def auto_fp16(apply_to=None, out_fp32=False):
             `None` indicates all arguments.
         out_fp32 (bool): Whether to convert the output back to fp32.
 
-    :Example:
+    Example:
 
-        class MyModule1(nn.Module)
+        >>> import torch.nn as nn
+        >>> class MyModule1(nn.Module):
+        >>>
+        >>>     # Convert x and y to fp16
+        >>>     @auto_fp16()
+        >>>     def forward(self, x, y):
+        >>>         pass
 
-            # Convert x and y to fp16
-            @auto_fp16()
-            def forward(self, x, y):
-                pass
-
-        class MyModule2(nn.Module):
-
-            # convert pred to fp16
-            @auto_fp16(apply_to=('pred', ))
-            def do_something(self, pred, others):
-                pass
+        >>> import torch.nn as nn
+        >>> class MyModule2(nn.Module):
+        >>>
+        >>>     # convert pred to fp16
+        >>>     @auto_fp16(apply_to=('pred', ))
+        >>>     def do_something(self, pred, others):
+        >>>         pass
     """
 
     def auto_fp16_wrapper(old_func):
@@ -97,21 +99,23 @@ def force_fp32(apply_to=None, out_fp16=False):
             `None` indicates all arguments.
         out_fp16 (bool): Whether to convert the output back to fp16.
 
-    :Example:
+    Example:
 
-        class MyModule1(nn.Module)
+        >>> import torch.nn as nn
+        >>> class MyModule1(nn.Module):
+        >>>
+        >>>     # Convert x and y to fp32
+        >>>     @force_fp32()
+        >>>     def loss(self, x, y):
+        >>>         pass
 
-            # Convert x and y to fp32
-            @force_fp32()
-            def loss(self, x, y):
-                pass
-
-        class MyModule2(nn.Module):
-
-            # convert pred to fp32
-            @force_fp32(apply_to=('pred', ))
-            def post_process(self, pred, others):
-                pass
+        >>> import torch.nn as nn
+        >>> class MyModule2(nn.Module):
+        >>>
+        >>>     # convert pred to fp32
+        >>>     @force_fp32(apply_to=('pred', ))
+        >>>     def post_process(self, pred, others):
+        >>>         pass
     """
 
     def force_fp32_wrapper(old_func):

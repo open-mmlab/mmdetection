@@ -1,11 +1,11 @@
 import torch
 
 from mmdet.core import bbox2result, bbox_mapping_back, multiclass_nms
-from ..registry import DETECTORS
+from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class RepPointsDetector(SingleStageDetector):
     """RepPoints: Point Set Representation for Object Detection.
 
@@ -75,7 +75,8 @@ class RepPointsDetector(SingleStageDetector):
             _det_bboxes = det_bboxes
         else:
             _det_bboxes = det_bboxes.clone()
-            _det_bboxes[:, :4] *= img_metas[0][0]['scale_factor']
+            _det_bboxes[:, :4] *= det_bboxes.new_tensor(
+                img_metas[0][0]['scale_factor'])
         bbox_results = bbox2result(_det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
         return bbox_results

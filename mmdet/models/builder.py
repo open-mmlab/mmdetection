@@ -1,8 +1,13 @@
+from mmcv.utils import Registry, build_from_cfg
 from torch import nn
 
-from mmdet.utils import build_from_cfg
-from .registry import (BACKBONES, DETECTORS, HEADS, LOSSES, NECKS,
-                       ROI_EXTRACTORS, SHARED_HEADS)
+BACKBONES = Registry('backbone')
+NECKS = Registry('neck')
+ROI_EXTRACTORS = Registry('roi_extractor')
+SHARED_HEADS = Registry('shared_head')
+HEADS = Registry('head')
+LOSSES = Registry('loss')
+DETECTORS = Registry('detector')
 
 
 def build(cfg, registry, default_args=None):
