@@ -1,12 +1,46 @@
+import sys
 import warnings
 
 import numpy as np
 import torch
+from torch.autograd import Function
+from torch.onnx.symbolic_opset9 import select, squeeze, unsqueeze
 
 from . import nms_ext
 
 
-def nms(dets, iou_thr, device_id=None):
+class NMSop(Function):
+
+    @staticmethod
+    def forward(ctx, bboxes, scores, iou_threshold):
+        # execute cpu or cuda nms
+        if bboxes.shape[0] == 0:
+            inds = bboxes.new_zeros(0, dtype=torch.long)
+        else:
+            inds = nms_ext.nms(
+                torch.cat([bboxes, scores[:, None]], -1), iou_threshold)
+        return inds
+
+    @staticmethod
+    def symbolic(g, bboxes, scores, iou_threshold):
+        boxes = unsqueeze(g, bboxes, 0)
+        scores = unsqueeze(g, unsqueeze(g, scores, 0), 0)
+        max_output_per_class = g.op(
+            'Constant', value_t=torch.tensor([sys.maxsize], dtype=torch.long))
+        iou_threshold = g.op(
+            'Constant',
+            value_t=torch.tensor([iou_threshold], dtype=torch.float))
+        nms_out = g.op('NonMaxSuppression', boxes, scores,
+                       max_output_per_class, iou_threshold)
+        return squeeze(
+            g,
+            select(
+                g, nms_out, 1,
+                g.op('Constant', value_t=torch.tensor([2], dtype=torch.long))),
+            1)
+
+
+def nms(bboxes, scores, iou_thr, device_id=None):
     """Dispatch to either CPU or GPU NMS implementations.
 
     The input can be either a torch tensor or numpy array. GPU NMS will be used
@@ -14,7 +48,8 @@ def nms(dets, iou_thr, device_id=None):
     will be used. The returned type will always be the same as inputs.
 
     Arguments:
-        dets (torch.Tensor or np.ndarray): bboxes with scores.
+        bboxes (torch.Tensor): bboxes in shape (N, 4).
+        scores (torch.Tensor): scores in shape (N, ).
         iou_thr (float): IoU threshold for NMS.
         device_id (int, optional): when `dets` is a numpy array, if `device_id`
             is None, then cpu nms is used, otherwise gpu_nms will be used.
@@ -41,25 +76,26 @@ def nms(dets, iou_thr, device_id=None):
         warnings.warn('[ONNX warning] NMS has not been supported yet')
 
     # convert dets (tensor or numpy array) to tensor
-    if isinstance(dets, torch.Tensor):
+    if isinstance(bboxes, torch.Tensor):
         is_numpy = False
-        dets_th = dets
-    elif isinstance(dets, np.ndarray):
+        bboxes_th = bboxes
+        scores_th = scores
+    elif isinstance(bboxes, np.ndarray):
         is_numpy = True
         device = 'cpu' if device_id is None else f'cuda:{device_id}'
-        dets_th = torch.from_numpy(dets).to(device)
+        bboxes_th = torch.from_numpy(bboxes).to(device)
+        scores_th = torch.from_numpy(scores).to(device)
     else:
-        raise TypeError('dets must be either a Tensor or numpy array, '
-                        f'but got {type(dets)}')
+        raise TypeError('bboxes must be either a Tensor or numpy array, '
+                        f'but got {type(bboxes)}')
 
-    # execute cpu or cuda nms
-    if dets_th.shape[0] == 0:
-        inds = dets_th.new_zeros(0, dtype=torch.long)
-    else:
-        inds = nms_ext.nms(dets_th, iou_thr)
+    inds = NMSop.apply(bboxes_th, scores_th, iou_thr)
+
+    dets = torch.cat([bboxes_th, scores_th[:, None]], -1)
 
     if is_numpy:
         inds = inds.cpu().numpy()
+        dets = dets.cpu().numpy()
     return dets[inds, :], inds
 
 
@@ -154,8 +190,9 @@ def batched_nms(bboxes, scores, inds, nms_cfg, class_agnostic=False):
         bboxes_for_nms = bboxes + offsets[:, None]
     nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = eval(nms_type)
-    dets, keep = nms_op(
-        torch.cat([bboxes_for_nms, scores[:, None]], -1), **nms_cfg_)
+    dets, keep = nms_op(bboxes_for_nms, scores, **nms_cfg_)
+    # dets, keep = nms_op(
+    #    torch.cat([bboxes_for_nms, scores[:, None]], -1), **nms_cfg_)
     bboxes = bboxes[keep]
     scores = dets[:, -1]
     return torch.cat([bboxes, scores[:, None]], -1), keep
