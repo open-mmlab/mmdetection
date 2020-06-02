@@ -41,55 +41,83 @@ class LoadImageFromFile(object):
             self.__class__.__name__, self.to_float32, self.color_type)
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class LoadMultiImagesFromMultiFiles(object):
 
-    def __init__(self, key_prefix='ref', to_float32=False, color_type='color'):
+    def __init__(self,
+                 img_info_keys=['img_info', 'ref_img_info'],
+                 to_float32=False,
+                 color_type='color',
+                 file_client_args=dict(backend='disk')):
+        self.img_info_keys = img_info_keys
         self.to_float32 = to_float32
         self.color_type = color_type
-        self.key_prefix = key_prefix
+        self.file_client_args = file_client_args.copy()
+        self.file_client = None
+
+    def load_img_core(self, results, fname_id, fname, ori_fname, img_info_key):
+        img_bytes = self.file_client.get(fname)
+        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
+        if self.to_float32:
+            img = img.astype(np.float32)
+
+        # e.g. img_postfix = '' or 'ref_'
+        img_prefix = img_info_key[-12:-8]
+        results[f'{img_prefix}filename_{str(fname_id)}'] = fname
+        results[f'{img_prefix}ori_filename_{str(fname_id)}'] = ori_fname
+        results[f'{img_prefix}img_{str(fname_id)}'] = img
+        results['img_fields'].append(f'{img_prefix}img_{str(fname_id)}')
+
+        results['img_shape'] = img.shape
+        results['ori_shape'] = img.shape
+        # Set initial values for default meta_keys
+        results['pad_shape'] = img.shape
+        results['scale_factor'] = 1.0
+        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
+        results['img_norm_cfg'] = dict(
+            mean=np.zeros(num_channels, dtype=np.float32),
+            std=np.ones(num_channels, dtype=np.float32),
+            to_rgb=False)
+        return results
 
     def __call__(self, results):
-        imgs_info_key = '{}_imgs_info'.format(self.key_prefix)
-        if imgs_info_key not in results.keys():
-            return results
-        assert type(results[imgs_info_key]
-                    ['filenames']) is list, 'The type must be a list!'
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
 
-        if results['img_prefix'] is not None:
-            filenames = [
-                osp.join(results['img_prefix'], fname)
-                for fname in results[imgs_info_key]['filenames']
-            ]
-        else:
-            filenames = results[imgs_info_key]['filenames']
+        for img_info_key in self.img_info_keys:
+            ori_filenames = results[img_info_key]['filename']
+            if type(ori_filenames) is str:
+                if results['img_prefix'] is not None:
+                    filenames = [
+                        osp.join(results['img_prefix'], ori_filenames)
+                    ]
+                else:
+                    filenames = [ori_filenames]
+            elif type(ori_filenames) is list:
+                if results['img_prefix'] is not None:
+                    filenames = [
+                        osp.join(results['img_prefix'], fname)
+                        for fname in ori_filenames
+                    ]
+                else:
+                    filenames = ori_filenames
+            else:
+                raise TypeError('the type of filename must be a str or list')
 
-        imgs = [mmcv.imread(name, self.color_type) for name in filenames]
-        if self.to_float32:
-            for i in range(len(imgs)):
-                imgs[i] = imgs[i].astype(np.float32)
+            for fname_id, fname in enumerate(filenames):
+                ori_fname = ori_filenames[fname_id]
+                results = self.load_img_core(results, fname_id, fname,
+                                             ori_fname, img_info_key)
 
-        filenames_key = '{}_filenames'.format(self.key_prefix)
-        results[filenames_key] = filenames
-        imgs_key = '{}_imgs'.format(self.key_prefix)
-        results[imgs_key] = imgs
-        results['img_fields'].append(imgs_key)
-
-        if 'img' not in results['img_fields']:
-            results['img_shape'] = imgs[0].shape
-            results['ori_shape'] = imgs[0].shape
-            # Set initial values for default meta_keys
-            results['pad_shape'] = imgs[0].shape
-            results['flip'] = False
-            results['scale_factor'] = 1.0
-            num_channels = 1 if len(imgs[0].shape) < 3 else imgs[0].shape[2]
-            results['img_norm_cfg'] = [[0.0] * num_channels,
-                                       [1.0] * num_channels, False]
         return results
 
     def __repr__(self):
-        return '{} (to_float32={}, color_type={})'.format(
-            self.__class__.__name__, self.to_float32, self.color_type)
+        repr_str = (f'{self.__class__.__name__}('
+                    f'img_info_keys={self.img_info_keys}, '
+                    f'to_float32={self.to_float32}, '
+                    f"color_type='{self.color_type}', "
+                    f'file_client_args={self.file_client_args})')
+        return repr_str
 
 
 @PIPELINES.register_module
