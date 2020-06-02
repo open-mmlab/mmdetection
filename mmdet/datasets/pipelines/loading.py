@@ -43,6 +43,25 @@ class LoadImageFromFile(object):
 
 @PIPELINES.register_module()
 class LoadMultiImagesFromMultiFiles(object):
+    """Load multi images from multi files.
+    Required keys are "img_prefix" and img_info_keys (dicts that must contain
+    the key "filename"). Added or updated keys are "*filename*",
+    "*ori_filename*", "*img*", "img_shape", "ori_shape" (same as `img_shape`),
+    "pad_shape" (same as `img_shape`), "scale_factor" (1.0) and "img_norm_cfg"
+    (means=0 and stds=1).
+
+    Args:
+        img_info_keys (list): the keys about img info.
+            Defaults: ['img_info', 'ref_img_info']
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+            Defaults to 'color'.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+    """
 
     def __init__(self,
                  img_info_keys=['img_info', 'ref_img_info'],
