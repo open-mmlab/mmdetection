@@ -135,7 +135,7 @@ We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmd
 
 ### Pre-trained Models
 
-We also train some basic models ([Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn), [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn)) with multi-scale training and longer schedules. These models serve as strong pre-trained models for downstream tasks for convenience.
+We also train [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn) and [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn) using ResNet-50 and [RegNetX-3.2G](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet) with multi-scale training and longer schedules. These models serve as strong pre-trained models for downstream tasks for convenience.
 
 ## Speed benchmark
 We compare the training speed of Mask R-CNN with some other popular frameworks (The data is copied from [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md)).

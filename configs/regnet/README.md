@@ -48,8 +48,8 @@ For other pre-trained models or self-implemented regnet models, the users are re
 ## Results
 
 ### Mask R-CNN
-|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |
+|   Backbone   |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
+| :---------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |
 |    [R-50-FPN](../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py)| pytorch |   1x    | 4.4      | 12.0           | 38.2   | 34.7    |  [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205_050542.log.json) |
 |[RegNetX-3.2GF-FPN](./mask_rcnn_regnetx-3GF_fpn_1x_coco.py)| pytorch |   1x    |5.0 ||40.3|36.6|[model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3GF_fpn_1x_coco/mask_rcnn_regnetx-3GF_fpn_1x_coco_20200520_163141-2a9d1814.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3GF_fpn_1x_coco/mask_rcnn_regnetx-3GF_fpn_1x_coco_20200520_163141.log.json)   |
 |[RegNetX-4.0GF-FPN](./mask_rcnn_regnetx-4GF_fpn_1x_coco.py)| pytorch |   1x    |5.5||41.5|37.4|[model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-4GF_fpn_1x_coco/mask_rcnn_regnetx-4GF_fpn_1x_coco_20200517_180217-32e9c92d.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-4GF_fpn_1x_coco/mask_rcnn_regnetx-4GF_fpn_1x_coco_20200517_180217.log.json)   |
@@ -61,15 +61,15 @@ For other pre-trained models or self-implemented regnet models, the users are re
 |[RegNetX-3.2GF-FPN-DCN-C3-C5](./mask_rcnn_regnetx-3GF_fpn_1x_coco.py)| pytorch |   1x    |5.0 ||40.3|36.6|[model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3GF_fpn_mdconv_c3-c5_1x_coco/mask_rcnn_regnetx-3GF_fpn_mdconv_c3-c5_1x_coco_20200520_172726-75f40794.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3GF_fpn_mdconv_c3-c5_1x_coco/mask_rcnn_regnetx-3GF_fpn_mdconv_c3-c5_1x_coco_20200520_172726.log.json)   |
 
 ### Faster R-CNN
-|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
+|   Backbone  |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+| :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
 |    [R-50-FPN](../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py)| pytorch |   1x    | 4.0      | 18.2           | 37.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130_204655.log.json) |
 |[RegNetX-3.2GF-FPN](./faster_rcnn_regnetx-3GF_fpn_mstrain_1x_coco.py)| pytorch |   1x    | 4.5||39.9|[model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3GF_fpn_1x_coco/faster_rcnn_regnetx-3GF_fpn_1x_coco_20200517_175927-126fd9bf.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3GF_fpn_1x_coco/faster_rcnn_regnetx-3GF_fpn_1x_coco_20200517_175927.log.json)   |
 |[RegNetX-3.2GF-FPN](./faster_rcnn_regnetx-3GF_fpn_mstrain_2x_coco.py)| pytorch |   2x    | 4.5||41.1|[model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3GF_fpn_2x_coco/faster_rcnn_regnetx-3GF_fpn_2x_coco_20200520_223955-e2081918.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3GF_fpn_2x_coco/faster_rcnn_regnetx-3GF_fpn_2x_coco_20200520_223955.log.json)   |
 
 ### RetinaNet
-|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
-| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
+|  Backbone   |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+| :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
 |    [R-50-FPN](../retinanet/retinanet_r50_fpn_1x_coco.py)     | pytorch |   1x    |   3.8    |      16.6      |  36.5  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130_002941.log.json) |
 |[RegNetX-800MF-FPN](./retinanet_regnetx-800MF_fpn_mstrain_1x_coco.py)| pytorch |   1x    |2.5||35.6|[model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/retinanet_r50_regnetx-800MF_fpn_1x_coco/retinanet_r50_regnetx-800MF_fpn_1x_coco_20200517_191403-f6f91d10.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/retinanet_r50_regnetx-800MF_fpn_1x_coco/retinanet_r50_regnetx-800MF_fpn_1x_coco_20200517_191403.log.json)   |
 |[RegNetX-1.6GF-FPN](./retinanet_regnetx-1GF_fpn_mstrain_1x_coco.py)| pytorch |   1x    |3.3||37.3|[model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/retinanet_r50_regnetx-1GF_fpn_1x_coco/retinanet_r50_regnetx-1GF_fpn_1x_coco_20200517_191403-37009a9d.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/regnet/retinanet_r50_regnetx-1GF_fpn_1x_coco/retinanet_r50_regnetx-1GF_fpn_1x_coco_20200517_191403.log.json)   |
