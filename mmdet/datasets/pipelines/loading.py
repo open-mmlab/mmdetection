@@ -138,6 +138,7 @@ class LoadMultiImagesFromMultiFiles(object):
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
+        results['img_fields'] = []
         for img_info_key in self.img_info_keys:
             ori_filenames = results[img_info_key]['filename']
             if type(ori_filenames) is str:
