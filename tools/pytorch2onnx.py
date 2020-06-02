@@ -4,9 +4,15 @@ import io
 import mmcv
 import onnx
 import torch
+import torch._C
+import torch.serialization
 from mmcv.runner import load_checkpoint
-from onnx import optimizer
+from torch.jit import (_create_interpreter_name_lookup_fn, _flatten,
+                       _unique_state_dict)
 from torch.onnx import OperatorExportTypes
+from torch.onnx.symbolic_helper import (_set_operator_export_type,
+                                        _set_opset_version)
+from torch.onnx.utils import _optimize_graph
 
 from mmdet.models import build_detector
 from mmdet.ops import RoIAlign, RoIPool
@@ -93,6 +99,7 @@ def main():
 
     # build the model and load checkpoint
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+<<<<<<< HEAD
     load_checkpoint(model, args.checkpoint, map_location='cpu')
     # Only support CPU mode for now
     model.cpu().eval()
@@ -123,3 +130,19 @@ def main():
 
 if __name__ == '__main__':
     main()
+=======
+    if args.checkpoint:
+        checkpoint = load_checkpoint(
+            model, args.checkpoint, map_location='cpu')
+        # old versions did not save class info in checkpoints,
+        # this walkaround is for backward compatibility
+        if 'CLASSES' in checkpoint['meta']:
+            model.CLASSES = checkpoint['meta']['CLASSES']
+
+    # conver model to onnx file
+    pytorch2onnx(
+        model,
+        opset_version=args.opset_version,
+        show=args.show,
+        output_file=args.output_file)
+>>>>>>> b06faa1... fix code style
