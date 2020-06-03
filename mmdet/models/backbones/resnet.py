@@ -77,13 +77,15 @@ class BasicBlock(nn.Module):
                 identity = self.downsample(x)
 
             out += identity
+            
+            return out
 
-            if self.with_cp and x.requires_grad:
-                out = cp.checkpoint(_inner_forward, x)
-            else:
-                out = _inner_forward(x)
+        if self.with_cp and x.requires_grad:
+            out = cp.checkpoint(_inner_forward, x)
+        else:
+            out = _inner_forward(x)
 
-            out = self.relu(out)
+        out = self.relu(out)
 
         return out
 
