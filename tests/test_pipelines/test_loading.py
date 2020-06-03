@@ -2,6 +2,7 @@ import copy
 import os.path as osp
 
 import numpy as np
+import pytest
 
 from mmdet.datasets.pipelines import (LoadImageFromFile,
                                       LoadMultiChannelImageFromFiles,
@@ -91,6 +92,15 @@ class TestLoading(object):
             "(img_info_keys=['img_info', 'ref_img_info'], " + \
             "to_float32=False, color_type='color', " + \
             "file_client_args={'backend': 'disk'})"
+
+        # img_info_keys not exists
+        results = dict(
+            img_prefix=self.data_prefix,
+            support_img_info=dict(filename='color.jpg'),
+            reference_img_info=dict(filename=['color.jpg', 'color.jpg']))
+        transform = LoadMultiImagesFromMultiFiles()
+        with pytest.raises(KeyError):
+            transform(copy.deepcopy(results))
 
     def test_load_multi_channel_img(self):
         results = dict(
