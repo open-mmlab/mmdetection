@@ -34,15 +34,19 @@ def multiclass_nms(multi_bboxes,
     if multi_bboxes.shape[1] > 4:
         bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)
     else:
-        bboxes = multi_bboxes[:, None].expand(-1, num_classes, 4)
+        bboxes = multi_bboxes[:, None].expand(
+            multi_scores.size(0), num_classes, 4)
     scores = multi_scores[:, :-1]
 
     # filter out boxes with low scores
     valid_mask = scores > score_thr
-    bboxes = bboxes[valid_mask]
+
+    # (TODO): as ONNX does not support repeat now, we have to use this ugly code
+    bboxes = torch.masked_select(bboxes, torch.stack(
+        (valid_mask, valid_mask, valid_mask, valid_mask), -1)).view(-1, 4)
     if score_factors is not None:
         scores = scores * score_factors[:, None]
-    scores = scores[valid_mask]
+    scores = torch.masked_select(scores, valid_mask)
     labels = valid_mask.nonzero()[:, 1]
 
     if bboxes.numel() == 0:

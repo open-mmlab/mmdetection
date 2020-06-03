@@ -72,11 +72,6 @@ def nms(bboxes, scores, iou_thr, device_id=None):
         >>> suppressed, inds = nms(bboxes, scores, iou_thr)
         >>> assert len(inds) == len(suppressed) == 3
     """
-    # onnx export
-    tracing_state = torch._C._get_tracing_state()
-    if tracing_state:
-        warnings.warn('[ONNX warning] NMS has not been supported yet')
-
     # convert dets (tensor or numpy array) to tensor
     if isinstance(bboxes, torch.Tensor):
         is_numpy = False
