@@ -449,6 +449,7 @@ class CocoDataset(CustomDataset):
             tmp_dir.cleanup()
         return eval_results
 
+
 @DATASETS.register_module
 class ConcatenatedCocoDataset(CocoDataset):
     def __init__(self, concatenated_dataset):

@@ -13,10 +13,9 @@
 # and limitations under the License.
 
 import numpy as np
-from mmcv.utils import Registry
 
+from .builder import DATASETS
 from .coco import CocoDataset
-DATASETS = Registry('dataset')
 
 
 @DATASETS.register_module
