@@ -12,15 +12,22 @@ setup(
     name='carafe',
     ext_modules=[
         CUDAExtension(
-            'carafe_cuda',
-            ['src/carafe_cuda.cpp', 'src/carafe_cuda_kernel.cu'],
+            'carafe_ext', [
+                'src/cuda/carafe_cuda.cpp', 'src/cuda/carafe_cuda_kernel.cu',
+                'src/carafe_ext.cpp'
+            ],
+            define_macros=[('WITH_CUDA', None)],
             extra_compile_args={
                 'cxx': [],
                 'nvcc': NVCC_ARGS
             }),
         CUDAExtension(
-            'carafe_naive_cuda',
-            ['src/carafe_naive_cuda.cpp', 'src/carafe_naive_cuda_kernel.cu'],
+            'carafe_naive_ext', [
+                'src/cuda/carafe_naive_cuda.cpp',
+                'src/cuda/carafe_naive_cuda_kernel.cu',
+                'src/carafe_naive_ext.cpp'
+            ],
+            define_macros=[('WITH_CUDA', None)],
             extra_compile_args={
                 'cxx': [],
                 'nvcc': NVCC_ARGS
