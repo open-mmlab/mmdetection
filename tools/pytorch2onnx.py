@@ -5,13 +5,13 @@ import numpy as np
 import torch
 import torch._C
 import torch.serialization
+from mmcv.runner import load_checkpoint
 from torch.jit import (_create_interpreter_name_lookup_fn, _flatten,
                        _unique_state_dict)
 from torch.onnx import OperatorExportTypes
 from torch.onnx.symbolic_helper import (_set_operator_export_type,
                                         _set_opset_version)
 from torch.onnx.utils import _optimize_graph
-from mmcv.runner import load_checkpoint
 
 from mmdet.models import build_detector
 
@@ -102,12 +102,10 @@ if __name__ == '__main__':
     if args.checkpoint:
         checkpoint = load_checkpoint(
             model, args.checkpoint, map_location='cpu')
-        # old versions did not save class info in checkpoints, this walkaround is
-        # for backward compatibility
+        # old versions did not save class info in checkpoints,
+        # this walkaround is for backward compatibility
         if 'CLASSES' in checkpoint['meta']:
             model.CLASSES = checkpoint['meta']['CLASSES']
-        else:
-            model.CLASSES = dataset.CLASSES
 
     # conver model to onnx file
     pytorch2onnx(
