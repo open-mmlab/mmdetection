@@ -64,26 +64,26 @@ class BasicBlock(nn.Module):
     def forward(self, x):
 
         def _inner_forward(x):
-          identity = x
-          
-          out = self.conv1(x)
-          out = self.norm1(out)
-          out = self.relu(out)
+            identity = x
 
-          out = self.conv2(out)
-          out = self.norm2(out)
+            out = self.conv1(x)
+            out = self.norm1(out)
+            out = self.relu(out)
 
-          if self.downsample is not None:
-              identity = self.downsample(x)
+            out = self.conv2(out)
+            out = self.norm2(out)
 
-          out += identity
+            if self.downsample is not None:
+                identity = self.downsample(x)
 
-          if self.with_cp and x.requires_grad:
-              out = cp.checkpoint(_inner_forward, x)
-          else:
-              out = _inner_forward(x)
+            out += identity
 
-          out = self.relu(out)
+            if self.with_cp and x.requires_grad:
+                out = cp.checkpoint(_inner_forward, x)
+            else:
+                out = _inner_forward(x)
+
+            out = self.relu(out)
 
         return out
 
