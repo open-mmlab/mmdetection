@@ -148,6 +148,7 @@ class LoadMultiImagesFromMultiFiles(object):
                     ]
                 else:
                     filenames = [ori_filenames]
+                ori_filenames = [ori_filenames]
             elif type(ori_filenames) is list:
                 if results['img_prefix'] is not None:
                     filenames = [

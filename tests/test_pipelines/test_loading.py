@@ -89,7 +89,7 @@ class TestLoading(object):
         assert results['scale_factor'] == 1.0
         assert repr(transform) == transform.__class__.__name__ + \
             "(img_info_keys=['img_info', 'ref_img_info'], " + \
-            "to_float32=False, color_type='unchanged', " + \
+            "to_float32=False, color_type='color', " + \
             "file_client_args={'backend': 'disk'})"
 
     def test_load_multi_channel_img(self):
