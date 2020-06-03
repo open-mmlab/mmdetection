@@ -12,7 +12,7 @@ from .coco import CocoDataset
 
 
 @DATASETS.register_module()
-class LvisDataset(CocoDataset):
+class LVISDataset(CocoDataset):
 
     CLASSES = (
         'acorn', 'aerosol_can', 'air_conditioner', 'airplane', 'alarm_clock',
@@ -424,6 +424,6 @@ class LvisDataset(CocoDataset):
                 ])
                 eval_results['{}_mAP_copypaste'.format(metric)] = ap_summary
             lvis_eval.print_results()
-        if tmp_dir is None:
+        if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
