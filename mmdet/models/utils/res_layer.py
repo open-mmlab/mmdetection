@@ -17,6 +17,8 @@ class ResLayer(nn.Sequential):
             Default: None
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: dict(type='BN')
+        reverse (bool): Reverse the order of planes in layer sequence.
+            False for ResNet, True for Houglass. Default: False
     """
 
     def __init__(self,

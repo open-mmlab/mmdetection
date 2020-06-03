@@ -8,17 +8,26 @@ from .resnet import BasicBlock
 
 class HGModule(nn.Module):
     """ HourGlass Module for Hourglass backbone.
-        Generate module recursively and use BasicBlock as the base unit.
+
+    Generate module recursively and use BasicBlock as the base unit.
+
+    Args:
+        depth (int): Depth of current HGModule.
+        stage_channels (list[int]): Feature channel of sub-modules in current
+            and follow-up HGModule.
+        stage_blocks (list[int]): Number of sub-module stacked in current and
+            follow-up HGModule.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
     """
 
     def __init__(self,
-                 hg_depth,
+                 depth,
                  stage_channels,
                  stage_blocks,
                  norm_cfg=dict(type='BN', requires_grad=True)):
         super(HGModule, self).__init__()
 
-        self.hg_depth = hg_depth
+        self.depth = depth
 
         curr_block = stage_blocks[0]
         next_block = stage_blocks[1]
@@ -38,8 +47,8 @@ class HGModule(nn.Module):
             norm_cfg=norm_cfg)
 
         self.low2 = HGModule(
-            hg_depth - 1, stage_channels[1:],
-            stage_blocks[1:]) if (self.hg_depth > 1) else ResLayer(
+            depth - 1, stage_channels[1:],
+            stage_blocks[1:]) if (self.depth > 1) else ResLayer(
                 BasicBlock, next_dim, next_dim, next_block, norm_cfg=norm_cfg)
 
         self.low3 = ResLayer(
@@ -69,7 +78,7 @@ class Hourglass(nn.Module):
     arXiv: https://arxiv.org/abs/1603.06937
 
     Args:
-        hg_depth (int): Depth (also regard as downsample times) in a HGModule.
+        downsample_times (int): Downsample times in a HGModule.
         num_stacks (int): Number of HGModule stacked, 1 for Hourglass-52,
             2 for Hourglass-104.
         stage_channels (list[int]): Feature channel of each sub-module in a
@@ -92,7 +101,7 @@ class Hourglass(nn.Module):
     """
 
     def __init__(self,
-                 hg_depth=5,
+                 downsample_times=5,
                  num_stacks=2,
                  stage_channels=[256, 256, 384, 384, 384, 512],
                  stage_blocks=[2, 2, 2, 2, 2, 4],
@@ -105,30 +114,30 @@ class Hourglass(nn.Module):
 
         curr_dim = stage_channels[0]
 
-        self.pre = nn.Sequential(
+        self.stem = nn.Sequential(
             ConvModule(3, 128, 7, padding=3, stride=2, norm_cfg=norm_cfg),
             ResLayer(BasicBlock, 128, 256, 1, stride=2, norm_cfg=norm_cfg))
 
         self.hg_modules = nn.ModuleList([
-            HGModule(hg_depth, stage_channels, stage_blocks)
+            HGModule(downsample_times, stage_channels, stage_blocks)
             for _ in range(num_stacks)
         ])
 
         self.inters = ResLayer(
             BasicBlock, curr_dim, curr_dim, num_stacks - 1, norm_cfg=norm_cfg)
 
-        self.inters_ = nn.ModuleList([
+        self.conv1x1s = nn.ModuleList([
             ConvModule(curr_dim, curr_dim, 1, norm_cfg=norm_cfg, act_cfg=None)
             for _ in range(num_stacks - 1)
         ])
 
-        self.cnvs = nn.ModuleList([
+        self.out_convs = nn.ModuleList([
             ConvModule(
                 curr_dim, feat_channel, 3, padding=1, norm_cfg=norm_cfg)
             for _ in range(num_stacks)
         ])
 
-        self.cnvs_ = nn.ModuleList([
+        self.remap_convs = nn.ModuleList([
             ConvModule(
                 feat_channel, curr_dim, 1, norm_cfg=norm_cfg, act_cfg=None)
             for _ in range(num_stacks - 1)
@@ -140,18 +149,18 @@ class Hourglass(nn.Module):
         pass
 
     def forward(self, x):
-        inter = self.pre(x)
+        inter = self.stem(x)
         outs = []
 
-        for ind, layer in enumerate(zip(self.hg_modules, self.cnvs)):
-            hg_, cnv_ = layer
+        for ind, layer in enumerate(zip(self.hg_modules, self.out_convs)):
+            single_hg, out_conv = layer
 
-            hg = hg_(inter)
-            cnv = cnv_(hg)
-            outs.append(cnv)
+            hg = single_hg(inter)
+            conv = out_conv(hg)
+            outs.append(conv)
 
             if ind < self.num_stacks - 1:
-                inter = self.inters_[ind](inter) + self.cnvs_[ind](cnv)
+                inter = self.conv1x1s[ind](inter) + self.remap_convs[ind](conv)
                 inter = self.relu(inter)
                 inter = self.inters[ind](inter)
 
