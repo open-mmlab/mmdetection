@@ -1,5 +1,5 @@
 _base_ = 'coco_instance.py'
-dataset_type = 'LvisDataset'
+dataset_type = 'LVISDataset'
 data_root = 'data/lvis/'
 data = dict(
     samples_per_gpu=2,
