@@ -45,17 +45,16 @@ def ae_loss_per_image(tl_preds, br_preds, match):
 @LOSSES.register_module()
 class AELoss(nn.Module):
     """ Associative Embedding Loss.
-        
+
     Please refer to https://arxiv.org/abs/1611.05424 for more details.
     Code is modified from https://github.com/princeton-vl/CornerNet.
-    
+
     Args:
         pull_weight (float): Loss weight for corners from same object.
         push_weight (float): Loss weight for corners from different object.
     """
-    def __init__(self,
-                 pull_weight=0.25,
-                 push_weight=0.25):
+
+    def __init__(self, pull_weight=0.25, push_weight=0.25):
         super(AELoss, self).__init__()
         self.pull_weight = pull_weight
         self.push_weight = push_weight

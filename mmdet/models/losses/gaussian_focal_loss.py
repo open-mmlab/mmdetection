@@ -47,10 +47,7 @@ class GaussianFocalLoss(nn.Module):
         self.reduction = reduction
         self.loss_weight = loss_weight
 
-    def forward(self,
-                pred,
-                target,
-                weight=None):
+    def forward(self, pred, target, weight=None):
         loss_reg = self.loss_weight * gaussian_focal_loss(
             pred, target, weight, alpha=self.alpha, gamma=self.gamma)
         return loss_reg
