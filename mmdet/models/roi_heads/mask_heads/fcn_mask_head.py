@@ -1,5 +1,4 @@
 import numpy as np
-import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -232,12 +231,7 @@ class FCNMaskHead(nn.Module):
             im_mask[(inds, ) + spatial_inds] = masks_chunk
 
         for i in range(N):
-            rle = mask_util.encode(
-                np.array(
-                    im_mask[i][:, :, None].cpu().numpy(),
-                    order='F',
-                    dtype='uint8'))[0]
-            cls_segms[labels[i]].append(rle)
+            cls_segms[labels[i]].append(im_mask[i].cpu().numpy())
         return cls_segms
 
 

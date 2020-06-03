@@ -142,7 +142,7 @@ class FSAFHead(RetinaHead):
                 pos_gt_inds, num_total_anchors, inside_flags, fill=-1)
 
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
-                neg_inds, pos_gt_inds)
+                neg_inds, sampling_result, pos_gt_inds)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
@@ -264,7 +264,8 @@ class FSAFHead(RetinaHead):
                 for cls, pos in zip(cls_scores, pos_inds)
             ]
             labels = [
-                l.reshape(-1)[pos] for l, pos in zip(labels_list, pos_inds)
+                label.reshape(-1)[pos]
+                for label, pos in zip(labels_list, pos_inds)
             ]
 
             def argmax(x):

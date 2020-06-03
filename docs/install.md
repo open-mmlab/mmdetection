@@ -6,7 +6,7 @@
 - Python 3.6+
 - PyTorch 1.3+
 - CUDA 9.2+ (If you build PyTorch from source, CUDA 9.0 is also compatible)
-- GCC 4.9+
+- GCC 5+
 - [mmcv](https://github.com/open-mmlab/mmcv)
 
 
@@ -71,6 +71,14 @@ Note:
 
 1. The git commit id will be written to the version number with step d, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
 It is recommended that you run step d each time you pull some updates from github. If C++/CUDA codes are modified, then this step is compulsory.
+
+    > Important: Be sure to remove the `./build` folder if you reinstall mmdet with a different CUDA/PyTorch version.
+
+    ```
+    pip uninstall mmdet
+    rm -rf ./build
+    find . -name "*.so" | xargs rm
+    ```
 
 2. Following the above instructions, mmdetection is installed on `dev` mode, any local modifications made to the code will take effect without the need to reinstall it (unless you submit some commits and want to update the version number).
 

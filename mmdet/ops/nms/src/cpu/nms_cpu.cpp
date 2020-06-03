@@ -23,10 +23,11 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
   auto order_t = std::get<1>(scores.sort(0, /* descending=*/true));
 
   auto ndets = dets.size(0);
-  at::Tensor suppressed_t =
-      at::zeros({ndets}, dets.options().dtype(at::kByte).device(at::kCPU));
+  at::Tensor suppressed_t = at::zeros({ndets}, dets.options().dtype(at::kByte));
+  at::Tensor keep_t = at::zeros({ndets}, dets.options().dtype(at::kLong));
 
   auto suppressed = suppressed_t.data_ptr<uint8_t>();
+  auto keep = keep_t.data_ptr<int64_t>();
   auto order = order_t.data_ptr<int64_t>();
   auto x1 = x1_t.data_ptr<scalar_t>();
   auto y1 = y1_t.data_ptr<scalar_t>();
@@ -34,9 +35,12 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
   auto y2 = y2_t.data_ptr<scalar_t>();
   auto areas = areas_t.data_ptr<scalar_t>();
 
+  int64_t num_to_keep = 0;
+
   for (int64_t _i = 0; _i < ndets; _i++) {
     auto i = order[_i];
     if (suppressed[i] == 1) continue;
+    keep[num_to_keep++] = i;
     auto ix1 = x1[i];
     auto iy1 = y1[i];
     auto ix2 = x2[i];
@@ -55,10 +59,10 @@ at::Tensor nms_cpu_kernel(const at::Tensor& dets, const float threshold) {
       auto h = std::max(static_cast<scalar_t>(0), yy2 - yy1);
       auto inter = w * h;
       auto ovr = inter / (iarea + areas[j] - inter);
-      if (ovr >= threshold) suppressed[j] = 1;
+      if (ovr > threshold) suppressed[j] = 1;
     }
   }
-  return at::nonzero(suppressed_t == 0).squeeze(1);
+  return keep_t.narrow(/*dim=*/0, /*start=*/0, /*length=*/num_to_keep);
 }
 
 at::Tensor nms_cpu(const at::Tensor& dets, const float threshold) {
@@ -208,6 +212,82 @@ at::Tensor soft_nms_cpu(const at::Tensor& dets, const float threshold,
   AT_DISPATCH_FLOATING_TYPES(dets.scalar_type(), "soft_nms", [&] {
     result = soft_nms_cpu_kernel<scalar_t>(dets, threshold, method, sigma,
                                            min_score);
+  });
+  return result;
+}
+
+
+template <typename scalar_t>
+std::vector<std::vector<int> > nms_match_cpu_kernel(const at::Tensor& dets,
+                                                    const float threshold) {
+  AT_ASSERTM(!dets.type().is_cuda(), "dets must be a CPU tensor");
+
+  auto x1_t = dets.select(1, 0).contiguous();
+  auto y1_t = dets.select(1, 1).contiguous();
+  auto x2_t = dets.select(1, 2).contiguous();
+  auto y2_t = dets.select(1, 3).contiguous();
+  auto scores = dets.select(1, 4).contiguous();
+
+  at::Tensor areas_t = (x2_t - x1_t) * (y2_t - y1_t);
+
+  auto order_t = std::get<1>(scores.sort(0, /* descending=*/true));
+
+  auto ndets = dets.size(0);
+  at::Tensor suppressed_t =
+      at::zeros({ndets}, dets.options().dtype(at::kByte).device(at::kCPU));
+
+  auto suppressed = suppressed_t.data_ptr<uint8_t>();
+  auto order = order_t.data_ptr<int64_t>();
+  auto x1 = x1_t.data_ptr<scalar_t>();
+  auto y1 = y1_t.data_ptr<scalar_t>();
+  auto x2 = x2_t.data_ptr<scalar_t>();
+  auto y2 = y2_t.data_ptr<scalar_t>();
+  auto areas = areas_t.data_ptr<scalar_t>();
+
+  std::vector<int> keep;
+  std::vector<std::vector<int> > matched;
+
+  for (int64_t _i = 0; _i < ndets; _i++) {
+    auto i = order[_i];
+    if (suppressed[i] == 1) continue;
+    keep.push_back(i);
+    std::vector<int> v_i;
+    auto ix1 = x1[i];
+    auto iy1 = y1[i];
+    auto ix2 = x2[i];
+    auto iy2 = y2[i];
+    auto iarea = areas[i];
+
+    for (int64_t _j = _i + 1; _j < ndets; _j++) {
+      auto j = order[_j];
+      if (suppressed[j] == 1) continue;
+      auto xx1 = std::max(ix1, x1[j]);
+      auto yy1 = std::max(iy1, y1[j]);
+      auto xx2 = std::min(ix2, x2[j]);
+      auto yy2 = std::min(iy2, y2[j]);
+
+      auto w = std::max(static_cast<scalar_t>(0), xx2 - xx1);
+      auto h = std::max(static_cast<scalar_t>(0), yy2 - yy1);
+      auto inter = w * h;
+      auto ovr = inter / (iarea + areas[j] - inter);
+      if (ovr >= threshold) {
+        suppressed[j] = 1;
+        v_i.push_back(j);
+      }
+    }
+    matched.push_back(v_i);
+  }
+  for (size_t i = 0; i < keep.size(); i++)
+    matched[i].insert(matched[i].begin(), keep[i]);
+  return matched;
+}
+
+std::vector<std::vector<int> > nms_match_cpu(const at::Tensor& dets,
+                                             const float threshold) {
+  std::vector<std::vector<int> > result;
+  // result = nms_match_cpu_kernel<scalar_t>(dets, threshold);
+  AT_DISPATCH_FLOATING_TYPES(dets.scalar_type(), "nms_match", [&] {
+    result = nms_match_cpu_kernel<scalar_t>(dets, threshold);
   });
   return result;
 }
