@@ -4,6 +4,7 @@ import os.path as osp
 import tempfile
 
 import numpy as np
+from lvis import LVIS, LVISEval, LVISResults
 from mmcv.utils import print_log
 from terminaltables import AsciiTable
 
@@ -265,11 +266,6 @@ class LVISDataset(CocoDataset):
         'yoke_(animal_equipment)', 'zebra', 'zucchini')
 
     def load_annotations(self, ann_file):
-        try:
-            from lvis import LVIS
-        except ImportError:
-            raise ImportError('Please run "pip install lvis" to '
-                              'install lvis first.')
         self.coco = LVIS(ann_file)
         assert not self.custom_classes, 'LVIS custom classes is not supported'
         self.cat_ids = self.coco.get_cat_ids()
@@ -307,11 +303,6 @@ class LVISDataset(CocoDataset):
         Returns:
             dict[str: float]
         """
-        try:
-            from lvis import LVISResults, LVISEval
-        except ImportError:
-            raise ImportError('Please run "pip install lvis" to '
-                              'install lvis first.')
         assert isinstance(results, list), 'results must be a list'
         assert len(results) == len(self), (
             'The length of results is not equal to the dataset len: {} != {}'.
