@@ -428,6 +428,7 @@ int deform_conv_backward_parameters_cuda(
   gradOutputBuffer =
       gradOutputBuffer.view({batchSize / im2col_step, nOutputPlane, im2col_step,
                              outputHeight, outputWidth});
+  gradOutputBuffer = gradOutputBuffer.contiguous();
   gradOutputBuffer.copy_(gradOutput);
   gradOutputBuffer =
       gradOutputBuffer.view({batchSize / im2col_step, nOutputPlane,

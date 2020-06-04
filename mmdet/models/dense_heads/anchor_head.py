@@ -240,7 +240,7 @@ class AnchorHead(nn.Module):
             bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
-                neg_inds)
+                neg_inds, sampling_result)
 
     def get_targets(self,
                     anchor_list,
@@ -250,7 +250,8 @@ class AnchorHead(nn.Module):
                     gt_bboxes_ignore_list=None,
                     gt_labels_list=None,
                     label_channels=1,
-                    unmap_outputs=True):
+                    unmap_outputs=True,
+                    return_sampling_results=False):
         """Compute regression and classification targets for anchors in
             multiple images.
 
@@ -315,8 +316,8 @@ class AnchorHead(nn.Module):
             label_channels=label_channels,
             unmap_outputs=unmap_outputs)
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
-         pos_inds_list, neg_inds_list) = results[:6]
-        rest_results = list(results[6:])  # user-added return values
+         pos_inds_list, neg_inds_list, sampling_results_list) = results[:7]
+        rest_results = list(results[7:])  # user-added return values
         # no valid anchors
         if any([labels is None for labels in all_labels]):
             return None
@@ -331,12 +332,14 @@ class AnchorHead(nn.Module):
                                              num_level_anchors)
         bbox_weights_list = images_to_levels(all_bbox_weights,
                                              num_level_anchors)
+        res = (labels_list, label_weights_list, bbox_targets_list,
+               bbox_weights_list, num_total_pos, num_total_neg)
+        if return_sampling_results:
+            res = res + (sampling_results_list, )
         for i, r in enumerate(rest_results):  # user-added return values
             rest_results[i] = images_to_levels(r, num_level_anchors)
 
-        return (labels_list, label_weights_list, bbox_targets_list,
-                bbox_weights_list, num_total_pos, num_total_neg) \
-            + tuple(rest_results)
+        return res + tuple(rest_results)
 
     def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):

@@ -139,7 +139,7 @@ def train_detector(model,
         cfg.work_dir,
         logger=logger,
         meta=meta)
-    # an ugly walkaround to make the .log and .log.json filenames the same
+    # an ugly workaround to make .log and .log.json filenames the same
     runner.timestamp = timestamp
 
     # fp16 setting
