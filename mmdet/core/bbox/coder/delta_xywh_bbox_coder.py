@@ -1,6 +1,4 @@
 import numpy as np
-
-
 import torch
 
 from ..builder import BBOX_CODERS
@@ -138,8 +136,8 @@ def delta2bbox(rois,
                 [0.0000, 0.3161, 4.1945, 0.6839],
                 [5.0000, 5.0000, 5.0000, 5.0000]])
     """
-    means = deltas.new_tensor(means).view(1,-1).repeat(1, deltas.size(1) // 4)
-    stds = deltas.new_tensor(stds).view(1,-1).repeat(1, deltas.size(1) // 4)
+    means = deltas.new_tensor(means).view(1, -1).repeat(1, deltas.size(1) // 4)
+    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(1) // 4)
     denorm_deltas = deltas * stds + means
     dx = denorm_deltas[:, 0::4]
     dy = denorm_deltas[:, 1::4]
