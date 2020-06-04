@@ -31,6 +31,9 @@ class SSDHead(AnchorHead):
                      target_stds=[1.0, 1.0, 1.0, 1.0],
                  ),
                  reg_decoded_bbox=False,
+                 depthwise_heads=False,
+                 depthwise_heads_activations='relu6',
+                 loss_balancing=False,
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
@@ -43,18 +46,39 @@ class SSDHead(AnchorHead):
         reg_convs = []
         cls_convs = []
         for i in range(len(in_channels)):
-            reg_convs.append(
-                nn.Conv2d(
-                    in_channels[i],
-                    num_anchors[i] * 4,
-                    kernel_size=3,
-                    padding=1))
-            cls_convs.append(
-                nn.Conv2d(
-                    in_channels[i],
-                    num_anchors[i] * (num_classes + 1),
-                    kernel_size=3,
-                    padding=1))
+            if depthwise_heads:
+                activation_class = {
+                    'relu': nn.ReLU,
+                    'relu6': nn.ReLU6,
+                }[depthwise_heads_activations]
+
+                reg_convs.append(nn.Sequential(
+                    nn.Conv2d(in_channels[i], in_channels[i],
+                              kernel_size=3, padding=1, groups=in_channels[i]),
+                    nn.BatchNorm2d(in_channels[i]),
+                    activation_class(inplace=True),
+                    nn.Conv2d(in_channels[i], num_anchors[i] * 4,
+                              kernel_size=1, padding=0)))
+                cls_convs.append(nn.Sequential(
+                    nn.Conv2d(in_channels[i], in_channels[i],
+                              kernel_size=3, padding=1, groups=in_channels[i]),
+                    nn.BatchNorm2d(in_channels[i]),
+                    activation_class(inplace=True),
+                    nn.Conv2d(in_channels[i], num_anchors[i] * (num_classes + 1),
+                              kernel_size=1, padding=0)))
+            else:
+                reg_convs.append(
+                    nn.Conv2d(
+                        in_channels[i],
+                        num_anchors[i] * 4,
+                        kernel_size=3,
+                        padding=1))
+                cls_convs.append(
+                    nn.Conv2d(
+                        in_channels[i],
+                        num_anchors[i] * (num_classes + 1),
+                        kernel_size=3,
+                        padding=1))
         self.reg_convs = nn.ModuleList(reg_convs)
         self.cls_convs = nn.ModuleList(cls_convs)
 
@@ -78,6 +102,11 @@ class SSDHead(AnchorHead):
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
+        self.loss_balancing = loss_balancing
+        if self.loss_balancing:
+            self.loss_weights = torch.nn.Parameter(torch.FloatTensor(2))
+            for i in range(2):
+                self.loss_weights.data[i] = 0.
 
     def init_weights(self):
         for m in self.modules():
@@ -188,4 +217,20 @@ class SSDHead(AnchorHead):
             all_bbox_targets,
             all_bbox_weights,
             num_total_samples=num_total_pos)
+
+        if self.loss_balancing:
+            losses_cls, losses_reg = self._balance_losses(losses_cls,
+                                                          losses_bbox)
+
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
+
+    def _balance_losses(self, losses_cls, losses_reg):
+        loss_cls = sum(_loss.mean() for _loss in losses_cls)
+        loss_cls = torch.exp(-self.loss_weights[0])*loss_cls + \
+            0.5*self.loss_weights[0]
+
+        loss_reg = sum(_loss.mean() for _loss in losses_reg)
+        loss_reg = torch.exp(-self.loss_weights[1])*loss_reg + \
+            0.5*self.loss_weights[1]
+
+        return (loss_cls, loss_reg)
