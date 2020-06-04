@@ -74,17 +74,19 @@ def test_nms_device_and_dtypes_gpu():
     for device_id in range(torch.cuda.device_count()):
         print(f'Run NMS on device_id = {device_id!r}')
         # GPU can handle float32 but not float64
-        dets = base_dets.astype(np.float32)
+        bboxes = base_bboxes.astype(np.float32)
+        scores = base_scores.astype(np.float32)
         expected_suppressed = base_expected_suppressed.astype(np.float32)
-        suppressed, inds = nms(base_bboxes, base_scores, iou_thr, device_id)
-        assert dets.dtype == suppressed.dtype
+        suppressed, inds = nms(bboxes, scores, iou_thr, device_id)
+        assert bboxes.dtype == suppressed.dtype
         assert np.array_equal(suppressed, expected_suppressed)
 
-        dets = torch.FloatTensor(base_dets).to(device_id)
+        bboxes = torch.FloatTensor(base_bboxes).to(device_id)
+        scores = torch.FloatTensor(base_scores).to(device_id)
         expected_suppressed = torch.FloatTensor(base_expected_suppressed).to(
             device_id)
-        suppressed, inds = nms(dets, iou_thr)
-        assert dets.dtype == suppressed.dtype
+        suppressed, inds = nms(bboxes, scores, iou_thr)
+        assert bboxes.dtype == suppressed.dtype
         assert torch.equal(suppressed, expected_suppressed)
 
 
