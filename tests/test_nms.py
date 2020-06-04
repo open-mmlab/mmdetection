@@ -66,7 +66,6 @@ def test_nms_device_and_dtypes_gpu():
                             [35.3, 11.5, 39.9, 14.5], [35.2, 11.7, 39.7,
                                                        15.7]])
     base_scores = np.array([0.1, 0.05, 0.9, 0.3])
-    base_dets = np.concatenate((base_bboxes, base_scores[:, None]), axis=-1)
 
     base_expected_suppressed = np.array([[35.3, 11.5, 39.9, 14.5, 0.9],
                                          [49.1, 32.4, 51.0, 35.9, 0.1]])
