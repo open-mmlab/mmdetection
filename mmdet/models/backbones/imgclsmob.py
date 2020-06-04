@@ -89,6 +89,11 @@ def generate_backbones():
                         model.forward = types.MethodType(multioutput_forward, model)
                         model.init_weights = types.MethodType(init_weights, model)
                         model.train = types.MethodType(train, model)
+
+                        model.output = None
+                        for i, _ in enumerate(model.features):
+                            if i > max(out_indices):
+                                model.features[i] = None
                     else:
                         raise ValueError('Failed to automatically wrap backbone network. '
                                          'Object of type {} has no valid attribute called '
