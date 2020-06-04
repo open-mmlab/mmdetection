@@ -1,8 +1,7 @@
 import argparse
-import io
 
 import mmcv
-import onnx
+import numpy as np
 import torch
 import torch._C
 import torch.serialization
@@ -15,122 +14,91 @@ from torch.onnx.symbolic_helper import (_set_operator_export_type,
 from torch.onnx.utils import _optimize_graph
 
 from mmdet.models import build_detector
-from mmdet.ops import RoIAlign, RoIPool
 
 
-def export_onnx_model(model, inputs, passes):
-    """
-    Trace and export a model to onnx format.
-    Modified from https://github.com/facebookresearch/detectron2/
+def pytorch2onnx(model,
+                 input_shape=(1, 3, 224, 224),
+                 opset_version=10,
+                 show=False,
+                 output_file='tmp.onnx'):
+    model.cpu().eval()
 
-    Args:
-        model (nn.Module):
-        inputs (tuple[args]): the model will be called by `model(*inputs)`
-        passes (None or list[str]): the optimization passed for ONNX model
+    _set_opset_version(opset_version)
+    _set_operator_export_type(OperatorExportTypes.ONNX)
 
-    Returns:
-        an onnx model
-    """
-    assert isinstance(model, torch.nn.Module)
+    # use dummy input to execute model for tracing
+    rng = np.random.RandomState(0)
+    imgs = rng.rand(*input_shape)
+    one_img = torch.FloatTensor(imgs)
+    (_, C, H, W) = input_shape
+    one_meta = {
+        'img_shape': (H, W, C),
+        'ori_shape': (H, W, C),
+        'pad_shape': (H, W, C),
+        'filename': '<demo>.png',
+        'scale_factor': 1.0,
+        'flip': False
+    }
 
-    # make sure all modules are in eval mode, onnx may change the training
-    # state of the module if the states are not consistent
-    def _check_eval(module):
-        assert not module.training
-
-    model.apply(_check_eval)
-
-    # Export the model to ONNX
     with torch.no_grad():
-        with io.BytesIO() as f:
-            torch.onnx.export(
-                model,
-                inputs,
-                f,
-                operator_export_type=OperatorExportTypes.ONNX_ATEN_FALLBACK,
-                # verbose=True,  # NOTE: uncomment this for debugging
-                # export_params=True,
-            )
-            onnx_model = onnx.load_from_string(f.getvalue())
+        in_vars, _ = _flatten(one_img)
+        module_state = list(_unique_state_dict(model, keep_vars=True).values())
+        # record the inputs of the graph
+        trace, _ = torch._C._tracer_enter(*(in_vars + module_state))
+        torch._C._tracer_set_force_outplace(True)
+        torch._C._tracer_set_get_unique_name_fn(
+            _create_interpreter_name_lookup_fn())
+        try:
+            # run model for tracing
+            tensor_out = model.forward([one_img], [[one_meta]],
+                                       return_loss=False)
+            out_vars, _ = _flatten(tensor_out)
+            # record the outputs of the graph
+            torch._C._tracer_exit(tuple(out_vars))
+        except Exception:
+            torch._C._tracer_abandon()
+            raise
+        graph = trace.graph()
+        params = list(_unique_state_dict(model).values())
+        graph = _optimize_graph(graph, OperatorExportTypes.ONNX)
+        output_tensors, _ = torch._C._jit_flatten(tensor_out)
+        for output, tensor in zip(graph.outputs(), output_tensors):
+            output.inferTypeFrom(tensor)
+        input_and_param_names = [val.debugName() for val in graph.inputs()]
+        param_names = input_and_param_names[len(input_and_param_names) -
+                                            len(params):]
+        params_dict = dict(zip(param_names, params))
+        proto, export_map = graph._export_onnx(params_dict, opset_version, {},
+                                               False)
+        assert (len(export_map) == 0)
+        torch.serialization._with_file_like(output_file, 'wb',
+                                            lambda f: f.write(proto))
+        if show:
+            print(graph)
 
-    # Apply ONNX's Optimization
-    if passes is not None:
-        all_passes = optimizer.get_available_passes()
-        assert all(p in all_passes for p in passes), \
-            f'Only {all_passes} are supported'
-    onnx_model = optimizer.optimize(onnx_model, passes)
-    return onnx_model
+        return
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description='MMDet pytorch model conversion to ONNX')
+    parser = argparse.ArgumentParser(description='Convert MMDet to ONNX')
     parser.add_argument('config', help='test config file path')
-    parser.add_argument('checkpoint', help='checkpoint file')
-    parser.add_argument(
-        '--out', type=str, required=True, help='output ONNX filename')
-    parser.add_argument(
-        '--shape',
-        type=int,
-        nargs='+',
-        default=[1280, 800],
-        help='input image size')
-    parser.add_argument(
-        '--passes', type=str, nargs='+', help='ONNX optimization passes')
+    parser.add_argument('--checkpoint', help='checkpoint file', default=None)
+    parser.add_argument('--show', action='store_true', help='show onnx graph')
+    parser.add_argument('--output_file', type=str, default='tmp.onnx')
+    parser.add_argument('--opset_version', type=int, default=10)
     args = parser.parse_args()
     return args
 
 
-def main():
+if __name__ == '__main__':
     args = parse_args()
-
-    if not args.out.endswith('.onnx'):
-        raise ValueError('The output file must be a onnx file.')
-
-    if len(args.shape) == 1:
-        input_shape = (3, args.shape[0], args.shape[0])
-    elif len(args.shape) == 2:
-        input_shape = (3, ) + tuple(args.shape)
-    else:
-        raise ValueError('invalid input shape')
 
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
+    cfg.data.test.test_mode = True
 
-    # build the model and load checkpoint
+    # build the model
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-<<<<<<< HEAD
-    load_checkpoint(model, args.checkpoint, map_location='cpu')
-    # Only support CPU mode for now
-    model.cpu().eval()
-    # Customized ops are not supported, use torchvision ops instead.
-    for m in model.modules():
-        if isinstance(m, (RoIPool, RoIAlign)):
-            # set use_torchvision on-the-fly
-            m.use_torchvision = True
-
-    # TODO: a better way to override forward function
-    if hasattr(model, 'forward_dummy'):
-        model.forward = model.forward_dummy
-    else:
-        raise NotImplementedError(
-            'ONNX conversion is currently not currently supported with '
-            f'{model.__class__.__name__}')
-
-    input_data = torch.empty((1, *input_shape),
-                             dtype=next(model.parameters()).dtype,
-                             device=next(model.parameters()).device)
-
-    onnx_model = export_onnx_model(model, (input_data, ), args.passes)
-    # Print a human readable representation of the graph
-    onnx.helper.printable_graph(onnx_model.graph)
-    print(f'saving model in {args.out}')
-    onnx.save(onnx_model, args.out)
-
-
-if __name__ == '__main__':
-    main()
-=======
     if args.checkpoint:
         checkpoint = load_checkpoint(
             model, args.checkpoint, map_location='cpu')
@@ -145,4 +113,3 @@ if __name__ == '__main__':
         opset_version=args.opset_version,
         show=args.show,
         output_file=args.output_file)
->>>>>>> b06faa1... fix code style
