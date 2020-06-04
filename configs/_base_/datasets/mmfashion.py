@@ -28,7 +28,6 @@ test_pipeline = [
             dict(type='Collect', keys=['img']),
         ])
 ]
-
 data = dict(
         imgs_per_gpu=2,
         workers_per_gpu=1,

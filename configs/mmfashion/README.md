@@ -27,7 +27,8 @@ In-shop
 
 ```
 
-After that you can train the Mask-rcnn-r50 on DeepFashion-In-shop dataset by launching training with the `mask_rcnn_r50_fpn_1x.py` config.
+After that you can train the Mask-rcnn-r50 on DeepFashion-In-shop dataset by launching training with the `mask_rcnn_r50_fpn_1x.py` config 
+or creating your own config file.
 
 ## Model Zoo
 |   Backbone  |  Model type  |       Dataset       |  bbox detection Average Precision  | segmentation Average Precision |      Download (Google)      |
