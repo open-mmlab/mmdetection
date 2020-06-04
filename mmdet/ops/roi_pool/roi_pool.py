@@ -4,7 +4,7 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
-from . import roi_pool_cuda
+from . import roi_pool_ext
 
 
 class RoIPoolFunction(Function):
@@ -20,8 +20,8 @@ class RoIPoolFunction(Function):
         out_size = (num_rois, num_channels, out_h, out_w)
         output = features.new_zeros(out_size)
         argmax = features.new_zeros(out_size, dtype=torch.int)
-        roi_pool_cuda.forward(features, rois, out_h, out_w, spatial_scale,
-                              output, argmax)
+        roi_pool_ext.forward(features, rois, out_h, out_w, spatial_scale,
+                             output, argmax)
         ctx.spatial_scale = spatial_scale
         ctx.feature_size = features.size()
         ctx.argmax = argmax
@@ -41,8 +41,8 @@ class RoIPoolFunction(Function):
         grad_input = grad_rois = None
         if ctx.needs_input_grad[0]:
             grad_input = grad_output.new_zeros(feature_size)
-            roi_pool_cuda.backward(grad_output.contiguous(), rois, argmax,
-                                   spatial_scale, grad_input)
+            roi_pool_ext.backward(grad_output.contiguous(), rois, argmax,
+                                  spatial_scale, grad_input)
 
         return grad_input, grad_rois, None, None
 
@@ -69,7 +69,7 @@ class RoIPool(nn.Module):
 
     def __repr__(self):
         format_str = self.__class__.__name__
-        format_str += '(out_size={}, spatial_scale={}'.format(
-            self.out_size, self.spatial_scale)
-        format_str += ', use_torchvision={})'.format(self.use_torchvision)
+        format_str += f'(out_size={self.out_size}, '
+        format_str += f'spatial_scale={self.spatial_scale}, '
+        format_str += f'use_torchvision={self.use_torchvision})'
         return format_str

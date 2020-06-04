@@ -16,10 +16,10 @@
 
 We benchmark the new training schedule (crop training, large batch, unfrozen BN, 50 epochs) introduced in NAS-FPN. RetinaNet is used in the paper.
 
-| Backbone    | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
-|:-----------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
-| R-50-FPN    | 50e     | 12.8     | 0.513               | 15.3           | 37.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/nas_fpn/retinanet_crop640_r50_fpn_50e_190824-4d75bfa0.pth) |
-| R-50-NASFPN | 50e     | 14.8     | 0.662               | 13.1           | 39.8   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/nas_fpn/retinanet_crop640_r50_nasfpn_50e_20191225-b82d3a86.pth) |
+| Backbone    | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+|:-----------:|:-------:|:--------:|:--------------:|:------:|:--------:|
+| R-50-FPN    | 50e     | 12.9     | 22.9           | 37.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/nas_fpn/retinanet_r50_fpn_crop640_50e_coco/retinanet_r50_fpn_crop640_50e_coco_20200130-ad569db4.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/nas_fpn/retinanet_r50_fpn_crop640_50e_coco/retinanet_r50_fpn_crop640_50e_coco_20200130_140229.log.json) |
+| R-50-NASFPN | 50e     | 13.2     | 23.0           | 40.1   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco/retinanet_r50_nasfpn_crop640_50e_coco_20200131-895d67cb.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco/retinanet_r50_nasfpn_crop640_50e_coco_20200131_113434.log.json) |
 
 
 **Note**: We find that it is unstable to train NAS-FPN and there is a small chance that results can be 3% mAP lower.

@@ -6,7 +6,6 @@ import shutil
 import tempfile
 
 import mmcv
-import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
@@ -17,8 +16,7 @@ from robustness_eval import get_results
 
 from mmdet import datasets
 from mmdet.apis import set_random_seed
-from mmdet.core import (eval_map, fast_eval_recall, results2json,
-                        wrap_fp16_model)
+from mmdet.core import encode_mask_results, eval_map, wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
@@ -28,19 +26,11 @@ def coco_eval_with_return(result_files,
                           coco,
                           max_dets=(100, 300, 1000)):
     for res_type in result_types:
-        assert res_type in [
-            'proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'
-        ]
+        assert res_type in ['proposal', 'bbox', 'segm', 'keypoints']
 
     if mmcv.is_str(coco):
         coco = COCO(coco)
     assert isinstance(coco, COCO)
-
-    if result_types == ['proposal_fast']:
-        ar = fast_eval_recall(result_files, coco, np.array(max_dets))
-        for i, num in enumerate(max_dets):
-            print('AR@{}\t= {:.4f}'.format(num, ar[i]))
-        return
 
     eval_results = {}
     for res_type in result_types:
@@ -76,41 +66,21 @@ def coco_eval_with_return(result_files,
 def voc_eval_with_return(result_file,
                          dataset,
                          iou_thr=0.5,
-                         print_summary=True,
+                         logger='print',
                          only_ap=True):
     det_results = mmcv.load(result_file)
-    gt_bboxes = []
-    gt_labels = []
-    gt_ignore = []
-    for i in range(len(dataset)):
-        ann = dataset.get_ann_info(i)
-        bboxes = ann['bboxes']
-        labels = ann['labels']
-        if 'bboxes_ignore' in ann:
-            ignore = np.concatenate([
-                np.zeros(bboxes.shape[0], dtype=np.bool),
-                np.ones(ann['bboxes_ignore'].shape[0], dtype=np.bool)
-            ])
-            gt_ignore.append(ignore)
-            bboxes = np.vstack([bboxes, ann['bboxes_ignore']])
-            labels = np.concatenate([labels, ann['labels_ignore']])
-        gt_bboxes.append(bboxes)
-        gt_labels.append(labels)
-    if not gt_ignore:
-        gt_ignore = gt_ignore
+    annotations = [dataset.get_ann_info(i) for i in range(len(dataset))]
     if hasattr(dataset, 'year') and dataset.year == 2007:
         dataset_name = 'voc07'
     else:
         dataset_name = dataset.CLASSES
     mean_ap, eval_results = eval_map(
         det_results,
-        gt_bboxes,
-        gt_labels,
-        gt_ignore=gt_ignore,
+        annotations,
         scale_ranges=None,
         iou_thr=iou_thr,
         dataset=dataset_name,
-        print_summary=print_summary)
+        logger=logger)
 
     if only_ap:
         eval_results = [{
@@ -128,10 +98,16 @@ def single_gpu_test(model, data_loader, show=False):
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=not show, **data)
-        results.append(result)
 
         if show:
             model.module.show_result(data, result, dataset.img_norm_cfg)
+
+        # encode mask results
+        if isinstance(result, tuple):
+            bbox_results, mask_results = result
+            encoded_mask_results = encode_mask_results(mask_results)
+            result = bbox_results, encoded_mask_results
+        results.append(result)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -149,6 +125,13 @@ def multi_gpu_test(model, data_loader, tmpdir=None):
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
+            # encode mask results
+            if isinstance(result, tuple):
+                bbox_results, mask_results = result
+                encoded_mask_results = encode_mask_results(mask_results)
+                result = bbox_results, encoded_mask_results
+        results.append(result)
+
         results.append(result)
 
         if rank == 0:
@@ -182,7 +165,7 @@ def collect_results(result_part, size, tmpdir=None):
     else:
         mmcv.mkdir_or_exist(tmpdir)
     # dump the part result to the dir
-    mmcv.dump(result_part, osp.join(tmpdir, 'part_{}.pkl'.format(rank)))
+    mmcv.dump(result_part, osp.join(tmpdir, f'part_{rank}.pkl'))
     dist.barrier()
     # collect all parts
     if rank != 0:
@@ -191,7 +174,7 @@ def collect_results(result_part, size, tmpdir=None):
         # load results of all parts from tmp dir
         part_list = []
         for i in range(world_size):
-            part_file = osp.join(tmpdir, 'part_{}.pkl'.format(i))
+            part_file = osp.join(tmpdir, f'part_{i}.pkl')
             part_list.append(mmcv.load(part_file))
         # sort the results
         ordered_results = []
@@ -340,6 +323,7 @@ def main():
     else:
         corruptions = args.corruptions
 
+    rank, _ = get_dist_info()
     aggregated_results = {}
     for corr_i, corruption in enumerate(corruptions):
         aggregated_results[corruption] = {}
@@ -362,8 +346,7 @@ def main():
                 test_data_cfg['pipeline'].insert(1, corruption_trans)
 
             # print info
-            print('\nTesting {} at severity {}'.format(corruption,
-                                                       corruption_severity))
+            print(f'\nTesting {corruption} at severity {corruption_severity}')
 
             # build the dataloader
             # TODO: support multiple images per gpu
@@ -371,7 +354,7 @@ def main():
             dataset = build_dataset(test_data_cfg)
             data_loader = build_dataloader(
                 dataset,
-                imgs_per_gpu=1,
+                samples_per_gpu=1,
                 workers_per_gpu=args.workers,
                 dist=distributed,
                 shuffle=False)
@@ -395,10 +378,12 @@ def main():
                 model = MMDataParallel(model, device_ids=[0])
                 outputs = single_gpu_test(model, data_loader, args.show)
             else:
-                model = MMDistributedDataParallel(model.cuda())
+                model = MMDistributedDataParallel(
+                    model.cuda(),
+                    device_ids=[torch.cuda.current_device()],
+                    broadcast_buffers=False)
                 outputs = multi_gpu_test(model, data_loader, args.tmpdir)
 
-            rank, _ = get_dist_info()
             if args.out and rank == 0:
                 eval_results_filename = (
                     osp.splitext(args.out)[0] + '_results' +
@@ -411,10 +396,11 @@ def main():
                             if eval_type == 'bbox':
                                 test_dataset = mmcv.runner.obj_from_dict(
                                     cfg.data.test, datasets)
+                                logger = 'print' if args.summaries else None
                                 mean_ap, eval_results = \
                                     voc_eval_with_return(
                                         args.out, test_dataset,
-                                        args.iou_thr, args.summaries)
+                                        args.iou_thr, logger)
                                 aggregated_results[corruption][
                                     corruption_severity] = eval_results
                             else:
@@ -422,22 +408,21 @@ def main():
                                 is supported for pascal voc')
                 else:
                     if eval_types:
-                        print('Starting evaluate {}'.format(
-                            ' and '.join(eval_types)))
+                        print(f'Starting evaluate {" and ".join(eval_types)}')
                         if eval_types == ['proposal_fast']:
                             result_file = args.out
                         else:
                             if not isinstance(outputs[0], dict):
-                                result_files = results2json(
-                                    dataset, outputs, args.out)
+                                result_files = dataset.results2json(
+                                    outputs, args.out)
                             else:
                                 for name in outputs[0]:
-                                    print('\nEvaluating {}'.format(name))
+                                    print(f'\nEvaluating {name}')
                                     outputs_ = [out[name] for out in outputs]
                                     result_file = args.out
-                                    + '.{}'.format(name)
-                                    result_files = results2json(
-                                        dataset, outputs_, result_file)
+                                    + f'.{name}'
+                                    result_files = dataset.results2json(
+                                        outputs_, result_file)
                         eval_results = coco_eval_with_return(
                             result_files, eval_types, dataset.coco)
                         aggregated_results[corruption][
@@ -446,26 +431,27 @@ def main():
                         print('\nNo task was selected for evaluation;'
                               '\nUse --eval to select a task')
 
-            # save results after each evaluation
-            mmcv.dump(aggregated_results, eval_results_filename)
+                # save results after each evaluation
+                mmcv.dump(aggregated_results, eval_results_filename)
 
-    # print filan results
-    print('\nAggregated results:')
-    prints = args.final_prints
-    aggregate = args.final_prints_aggregate
+    if rank == 0:
+        # print filan results
+        print('\nAggregated results:')
+        prints = args.final_prints
+        aggregate = args.final_prints_aggregate
 
-    if cfg.dataset_type == 'VOCDataset':
-        get_results(
-            eval_results_filename,
-            dataset='voc',
-            prints=prints,
-            aggregate=aggregate)
-    else:
-        get_results(
-            eval_results_filename,
-            dataset='coco',
-            prints=prints,
-            aggregate=aggregate)
+        if cfg.dataset_type == 'VOCDataset':
+            get_results(
+                eval_results_filename,
+                dataset='voc',
+                prints=prints,
+                aggregate=aggregate)
+        else:
+            get_results(
+                eval_results_filename,
+                dataset='coco',
+                prints=prints,
+                aggregate=aggregate)
 
 
 if __name__ == '__main__':

@@ -4,31 +4,34 @@ import mmcv
 import numpy as np
 from torch.utils.data import Dataset
 
+from mmdet.core import eval_map, eval_recalls
+from .builder import DATASETS
 from .pipelines import Compose
-from .registry import DATASETS
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class CustomDataset(Dataset):
     """Custom dataset for detection.
 
-    Annotation format:
-    [
-        {
-            'filename': 'a.jpg',
-            'width': 1280,
-            'height': 720,
-            'ann': {
-                'bboxes': <np.ndarray> (n, 4),
-                'labels': <np.ndarray> (n, ),
-                'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
-                'labels_ignore': <np.ndarray> (k, 4) (optional field)
-            }
-        },
-        ...
-    ]
+    The annotation format is shown as follows. The `ann` field is optional for
+    testing.
 
-    The `ann` field is optional for testing.
+    .. code-block:: none
+
+        [
+            {
+                'filename': 'a.jpg',
+                'width': 1280,
+                'height': 720,
+                'ann': {
+                    'bboxes': <np.ndarray> (n, 4),
+                    'labels': <np.ndarray> (n, ),
+                    'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
+                    'labels_ignore': <np.ndarray> (k, 4) (optional field)
+                }
+            },
+            ...
+        ]
     """
 
     CLASSES = None
@@ -36,6 +39,7 @@ class CustomDataset(Dataset):
     def __init__(self,
                  ann_file,
                  pipeline,
+                 classes=None,
                  data_root=None,
                  img_prefix='',
                  seg_prefix=None,
@@ -49,6 +53,7 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
+        self.CLASSES = self.get_classes(classes)
 
         # join paths if data_root is specified
         if self.data_root is not None:
@@ -63,7 +68,11 @@ class CustomDataset(Dataset):
                 self.proposal_file = osp.join(self.data_root,
                                               self.proposal_file)
         # load annotations (and proposals)
-        self.img_infos = self.load_annotations(self.ann_file)
+        self.data_infos = self.load_annotations(self.ann_file)
+        # filter data infos if classes are customized
+        if self.custom_classes:
+            self.data_infos = self.get_subset_by_classes()
+
         if self.proposal_file is not None:
             self.proposals = self.load_proposals(self.proposal_file)
         else:
@@ -71,7 +80,7 @@ class CustomDataset(Dataset):
         # filter images too small
         if not test_mode:
             valid_inds = self._filter_imgs()
-            self.img_infos = [self.img_infos[i] for i in valid_inds]
+            self.data_infos = [self.data_infos[i] for i in valid_inds]
             if self.proposals is not None:
                 self.proposals = [self.proposals[i] for i in valid_inds]
         # set group flag for the sampler
@@ -81,7 +90,7 @@ class CustomDataset(Dataset):
         self.pipeline = Compose(pipeline)
 
     def __len__(self):
-        return len(self.img_infos)
+        return len(self.data_infos)
 
     def load_annotations(self, ann_file):
         return mmcv.load(ann_file)
@@ -90,7 +99,10 @@ class CustomDataset(Dataset):
         return mmcv.load(proposal_file)
 
     def get_ann_info(self, idx):
-        return self.img_infos[idx]['ann']
+        return self.data_infos[idx]['ann']
+
+    def get_cat_ids(self, idx):
+        return self.data_infos[idx]['ann']['labels'].astype(np.int).tolist()
 
     def pre_pipeline(self, results):
         results['img_prefix'] = self.img_prefix
@@ -103,7 +115,7 @@ class CustomDataset(Dataset):
     def _filter_imgs(self, min_size=32):
         """Filter images too small."""
         valid_inds = []
-        for i, img_info in enumerate(self.img_infos):
+        for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
         return valid_inds
@@ -116,7 +128,7 @@ class CustomDataset(Dataset):
         """
         self.flag = np.zeros(len(self), dtype=np.uint8)
         for i in range(len(self)):
-            img_info = self.img_infos[i]
+            img_info = self.data_infos[i]
             if img_info['width'] / img_info['height'] > 1:
                 self.flag[i] = 1
 
@@ -135,7 +147,7 @@ class CustomDataset(Dataset):
             return data
 
     def prepare_train_img(self, idx):
-        img_info = self.img_infos[idx]
+        img_info = self.data_infos[idx]
         ann_info = self.get_ann_info(idx)
         results = dict(img_info=img_info, ann_info=ann_info)
         if self.proposals is not None:
@@ -144,9 +156,98 @@ class CustomDataset(Dataset):
         return self.pipeline(results)
 
     def prepare_test_img(self, idx):
-        img_info = self.img_infos[idx]
+        img_info = self.data_infos[idx]
         results = dict(img_info=img_info)
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
         return self.pipeline(results)
+
+    @classmethod
+    def get_classes(cls, classes=None):
+        """Get class names of current dataset
+
+        Args:
+            classes (Sequence[str] | str | None): If classes is None, use
+                default CLASSES defined by builtin dataset. If classes is a
+                string, take it as a file name. The file contains the name of
+                classes where each line contains one class name. If classes is
+                a tuple or list, override the CLASSES defined by the dataset.
+
+        """
+        if classes is None:
+            cls.custom_classes = False
+            return cls.CLASSES
+
+        cls.custom_classes = True
+        if isinstance(classes, str):
+            # take it as a file path
+            class_names = mmcv.list_from_file(classes)
+        elif isinstance(classes, (tuple, list)):
+            class_names = classes
+        else:
+            raise ValueError(f'Unsupported type {type(classes)} of classes.')
+
+        return class_names
+
+    def get_subset_by_classes(self):
+        return self.data_infos
+
+    def format_results(self, results, **kwargs):
+        pass
+
+    def evaluate(self,
+                 results,
+                 metric='mAP',
+                 logger=None,
+                 proposal_nums=(100, 300, 1000),
+                 iou_thr=0.5,
+                 scale_ranges=None):
+        """Evaluate the dataset.
+
+        Args:
+            results (list): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated.
+            logger (logging.Logger | None | str): Logger used for printing
+                related information during evaluation. Default: None.
+            proposal_nums (Sequence[int]): Proposal number used for evaluating
+                recalls, such as recall@100, recall@1000.
+                Default: (100, 300, 1000).
+            iou_thr (float | list[float]): IoU threshold. It must be a float
+                when evaluating mAP, and can be a list when evaluating recall.
+                Default: 0.5.
+            scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
+                Default: None.
+        """
+        if not isinstance(metric, str):
+            assert len(metric) == 1
+            metric = metric[0]
+        allowed_metrics = ['mAP', 'recall']
+        if metric not in allowed_metrics:
+            raise KeyError(f'metric {metric} is not supported')
+        annotations = [self.get_ann_info(i) for i in range(len(self))]
+        eval_results = {}
+        if metric == 'mAP':
+            assert isinstance(iou_thr, float)
+            mean_ap, _ = eval_map(
+                results,
+                annotations,
+                scale_ranges=scale_ranges,
+                iou_thr=iou_thr,
+                dataset=self.CLASSES,
+                logger=logger)
+            eval_results['mAP'] = mean_ap
+        elif metric == 'recall':
+            gt_bboxes = [ann['bboxes'] for ann in annotations]
+            if isinstance(iou_thr, float):
+                iou_thr = [iou_thr]
+            recalls = eval_recalls(
+                gt_bboxes, results, proposal_nums, iou_thr, logger=logger)
+            for i, num in enumerate(proposal_nums):
+                for j, iou in enumerate(iou_thr):
+                    eval_results[f'recall@{num}@{iou}'] = recalls[i, j]
+            if recalls.shape[1] > 1:
+                ar = recalls.mean(axis=1)
+                for i, num in enumerate(proposal_nums):
+                    eval_results[f'AR@{num}'] = ar[i]
+        return eval_results

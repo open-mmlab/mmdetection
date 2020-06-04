@@ -1,13 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
+from mmcv.cnn import ConvModule, xavier_init
 
-from ..plugins import NonLocal2D
-from ..registry import NECKS
-from ..utils import ConvModule
+from mmdet.ops import NonLocal2D
+from ..builder import NECKS
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class BFP(nn.Module):
     """BFP (Balanced Feature Pyrmamids)
 

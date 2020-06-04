@@ -1,6 +1,9 @@
 import torch
 
+from .builder import ANCHOR_GENERATORS
 
+
+@ANCHOR_GENERATORS.register_module()
 class PointGenerator(object):
 
     def _meshgrid(self, x, y, row_major=True):
@@ -25,8 +28,8 @@ class PointGenerator(object):
         feat_h, feat_w = featmap_size
         valid_h, valid_w = valid_size
         assert valid_h <= feat_h and valid_w <= feat_w
-        valid_x = torch.zeros(feat_w, dtype=torch.uint8, device=device)
-        valid_y = torch.zeros(feat_h, dtype=torch.uint8, device=device)
+        valid_x = torch.zeros(feat_w, dtype=torch.bool, device=device)
+        valid_y = torch.zeros(feat_h, dtype=torch.bool, device=device)
         valid_x[:valid_w] = 1
         valid_y[:valid_h] = 1
         valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
