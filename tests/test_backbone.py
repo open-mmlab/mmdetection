@@ -275,6 +275,16 @@ def test_resnet_res_layer():
     x_out = layer(x)
     assert x_out.shape == torch.Size([1, 256, 28, 28])
 
+    # Test ResLayer of 3 BasicBlock with stride=2 and reverse=True
+    layer = ResLayer(BasicBlock, 64, 64, 3, stride=2, reverse=True)
+    assert layer[2].downsample[0].out_channels == 64
+    assert layer[2].downsample[0].stride == (2, 2)
+    for i in range(len(layer) - 1):
+        assert layer[i].downsample is None
+    x = torch.randn(1, 64, 56, 56)
+    x_out = layer(x)
+    assert x_out.shape == torch.Size([1, 64, 28, 28])
+
 
 def test_resnet_backbone():
     """Test resnet backbone"""
