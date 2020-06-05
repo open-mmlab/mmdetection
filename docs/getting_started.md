@@ -162,15 +162,9 @@ If you want to specify the working directory in the command, you can add an argu
 
 Optional arguments are:
 
-<<<<<<< HEAD:docs/getting_started.md
 - `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training.
 - `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
-=======
-- `--validate` (**strongly recommended**): Perform evaluation at every k (default value is 1, which can be modified like [this](../configs/mask_rcnn_r50_fpn_1x.py#L174)) epochs during the training.
-- `--work_dir ${WORK_DIR}`: Override the working directory specified in the config file.
-- `--resume_from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
->>>>>>> ote:docs/GETTING_STARTED.md
 
 Difference between `resume-from` and `load-from`:
 `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
@@ -178,11 +172,7 @@ Difference between `resume-from` and `load-from`:
 
 ### Train with multiple machines
 
-<<<<<<< HEAD:docs/getting_started.md
-If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`. (This script also supports single machine training.)
-=======
 If you run OTEDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`.
->>>>>>> ote:docs/GETTING_STARTED.md
 
 ```shell
 [GPUS=${GPUS}] ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
