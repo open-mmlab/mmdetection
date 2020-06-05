@@ -77,14 +77,14 @@ class PriorBox(torch.autograd.Function):
     """
 
     @staticmethod
-    def symbolic(g, anchor_generator, anchor_stride, feat, img_tensor,
-                 target_stds):
-        min_size = anchor_generator.base_size
+    def symbolic(g, single_level_grid_anchors, base_anchors, base_size, scales, ratios,
+                 anchor_stride, feat, img_tensor, target_stds):
+        min_size = base_size
         max_sizes = []
         ars = []
-        for scale in anchor_generator.scales.tolist()[1:]:
+        for scale in scales[1:]:
             max_sizes.append(scale * scale * min_size)
-        for ar in anchor_generator.ratios.tolist():
+        for ar in ratios:
             if ar > 1:
                 ars.append(ar)
         return g.op("PriorBox", feat, img_tensor, min_size_f=[min_size],
@@ -94,11 +94,9 @@ class PriorBox(torch.autograd.Function):
                     step_w_f=0, img_size_i=0, img_h_i=0, img_w_i=0)
 
     @staticmethod
-    def forward(ctx, anchor_generator, anchor_stride, feat, img_tensor,
-                target_stds):
-
-        mlvl_anchor = anchor_generator.grid_anchors(feat.size()[-2:],
-                                                    anchor_stride)
+    def forward(ctx, single_level_grid_anchors, base_anchors, base_size, scales, ratios,
+                anchor_stride, feat, img_tensor, target_stds):
+        mlvl_anchor = single_level_grid_anchors(base_anchors, feat.size()[-2:], anchor_stride)
         mlvl_anchor = mlvl_anchor.view(1, -1).unsqueeze(0)
         return mlvl_anchor
 
@@ -210,10 +208,15 @@ def export_forward_ssd_head(self, cls_scores, bbox_preds, cfg, rescale,
                 self.anchor_generator.strides[i],
                 feats[i], img_tensor, self.bbox_coder.stds))
         else:
-            anchors.append(PriorBox.apply(self.anchor_generator.base_anchors[i],
-                                          self.anchor_generator.strides[i],
-                                          feats[i],
-                                          img_tensor, self.bbox_coder.stds))
+            anchors.append(PriorBox.apply(
+                self.anchor_generator.single_level_grid_anchors,
+                self.anchor_generator.base_anchors[i],
+                self.anchor_generator.base_sizes[i],
+                self.anchor_generator.scales[i].tolist(),
+                self.anchor_generator.ratios[i].tolist(),
+                self.anchor_generator.strides[i],
+                feats[i],
+                img_tensor, self.bbox_coder.stds))
     anchors = torch.cat(anchors, 2)
     cls_scores, bbox_preds = self._prepare_cls_scores_bbox_preds(cls_scores, bbox_preds)
 

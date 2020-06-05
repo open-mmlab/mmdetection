@@ -104,12 +104,12 @@ class PublicModelsTestCase(unittest.TestCase):
             if expected - thr > actual:
                 raise AssertionError(f'{m}: {expected} (expected) - {thr} (threshold) > {actual}')
 
-    def run_export_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.02):
-        print('\n\ntesting export ' + config_path, file=sys.stderr)
+    def run_export_test(self, config_path, snapshot, metrics=('bbox', ), thr=0.02, alt_ssd_export=False):
+        print('\n\ntesting export ' + '(--alt_ssd_export)' if alt_ssd_export else '' + config_path, file=sys.stderr)
         name = config_path.replace('configs/', '')[:-3]
         print('expected ouputs', f'tests/expected_outputs/public/{name}-{self.shorten_to}.json')
         test_dir = f'/tmp/{name}'
-        export_dir = os.path.join(test_dir, "export")
+        export_dir = os.path.join(test_dir, 'alt_ssd_export' if alt_ssd_export else 'export')
         log_file = os.path.join(export_dir, 'test_export.log')
         os.makedirs(export_dir, exist_ok=True)
         os.system(f'cp -r configs {test_dir}')
@@ -135,7 +135,7 @@ class PublicModelsTestCase(unittest.TestCase):
             f'{target_config_path} '
             f'{snapshot} '
             f'{export_dir} '
-            f'openvino ;'
+            f'openvino {"--alt_ssd_export" if alt_ssd_export else ""};'
             f'python tools/test_exported.py '
             f'{target_config_path} '
             f'{os.path.join(export_dir, os.path.basename(name) + ".xml")} '
@@ -331,6 +331,12 @@ class PublicModelsTestCase(unittest.TestCase):
         url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
               'ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'
         self.run_export_test(origin_config, self.download_if_not_yet(url))
+
+    def test_alt_ssd_export_sd300_coco(self):
+        origin_config = 'configs/ssd/ssd300_coco.py'
+        url = 'https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/' \
+              'ssd/ssd300_coco/ssd300_coco_20200307-a92d2092.pth'
+        self.run_export_test(origin_config, self.download_if_not_yet(url), alt_ssd_export=True)
 
 
 if __name__ == '__main__':
