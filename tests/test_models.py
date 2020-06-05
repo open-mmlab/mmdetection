@@ -21,8 +21,8 @@ from common import replace_text_in_file, collect_ap
 
 
 class PublicModelsTestCase(unittest.TestCase):
-    coco_dir = '/home/ikrylov/data/coco'
-    snapshots_dir = '/home/ikrylov/snapshots'
+    coco_dir = '/tmp/data/coco'
+    snapshots_dir = '/tmp/snapshots'
 
     @staticmethod
     def shorten_annotation(path, num_images):
