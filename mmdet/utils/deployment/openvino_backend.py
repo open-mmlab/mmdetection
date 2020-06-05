@@ -63,8 +63,6 @@ class ModelOpenVINO(object):
                  cfg=None,
                  classes=None):
 
-        from openvino.inference_engine import IENetwork
-
         ie = IECore()
         logging.info('Reading network from IR...')
         if bin_file_path is None:
@@ -72,7 +70,7 @@ class ModelOpenVINO(object):
         if mapping_file_path is None:
             mapping_file_path = osp.splitext(xml_file_path)[0] + '.mapping'
 
-        self.net = IENetwork(model=xml_file_path, weights=bin_file_path)
+        self.net = ie.read_network(model=xml_file_path, weights=bin_file_path)
 
         self.orig_ir_mapping = self.get_mapping(mapping_file_path)
         self.ir_orig_mapping = {v: k for k, v in self.orig_ir_mapping.items()}
@@ -139,8 +137,9 @@ class ModelOpenVINO(object):
             ir_name = self.orig_ir_mapping[extra_output]
             try:
                 self.net.add_outputs(ir_name)
-                print('added', extra_output, ir_name)
+                logging.warning(f'Added "{extra_output}" output with "{ir_name}" name in IR')
             except RuntimeError as e:
+                logging.warning(f'Failed to add "{extra_output}" output with "{ir_name}" name in IR')
                 pass
 
     def configure_inputs(self, required):
