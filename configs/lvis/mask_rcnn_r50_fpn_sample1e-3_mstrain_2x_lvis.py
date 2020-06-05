@@ -11,8 +11,6 @@ test_cfg = dict(
         score_thr=0.0001,
         # LVIS allows up to 300
         max_per_img=300))
-dataset_type = 'LVISDataset'
-data_root = 'data/lvis/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
@@ -30,13 +28,4 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
 ]
-data = dict(
-    train=dict(
-        _delete_=True,
-        type='ClassBalancedDataset',
-        oversample_thr=1e-3,
-        dataset=dict(
-            type=dataset_type,
-            ann_file=data_root + 'annotations/lvis_v0.5_train.json',
-            img_prefix=data_root + 'train2017/',
-            pipeline=train_pipeline)))
+data = dict(train=dict(dataset=dict(pipeline=train_pipeline)))
