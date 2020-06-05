@@ -15,8 +15,8 @@
 
 | Model        | Backbone  | Style   | Lr schd | box AP | mask AP | Download |
 |:------------:|:---------:|:-------:|:-------:|:------:|:-------:|:--------:|
-| Faster R-CNN | R-50-FPN  | pytorch | 6x      | 40.1   | -       | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/scratch/scratch_faster_rcnn_r50_fpn_gn_6x_20190515-ff554978.pth) |
-| Mask R-CNN   | R-50-FPN  | pytorch | 6x      | 41.0   | 37.4    | [model](https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection/models/scratch/scratch_mask_rcnn_r50_fpn_gn_6x_20190515-96743f5e.pth) |
+| Faster R-CNN | R-50-FPN  | pytorch | 6x      |        |         |          |
+| Mask R-CNN   | R-50-FPN  | pytorch | 6x      |        |         |          |
 
 Note:
 - The above models are trained with 16 GPUs.
