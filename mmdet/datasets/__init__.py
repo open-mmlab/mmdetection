@@ -2,7 +2,6 @@ from .builder import DATASETS, PIPELINES, build_dataloader, build_dataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
 from .custom import CustomDataset
-from .custom_coco import CustomCocoDataset
 from .dataset_wrappers import ConcatDataset, RepeatDataset
 from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
 from .voc import VOCDataset
@@ -13,6 +12,5 @@ __all__ = [
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset',
     'CityscapesDataset', 'GroupSampler', 'DistributedGroupSampler',
     'DistributedSampler', 'build_dataloader', 'ConcatDataset', 'RepeatDataset',
-    'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset',
-    'CustomCocoDataset'
+    'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset'
 ]
