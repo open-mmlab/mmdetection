@@ -228,7 +228,7 @@ dataset_A_train = dict(
     )
 ```
 
-### Repeat factor dataset
+### Class balanced dataset
 
 We use `ClassBalancedDataset` as wrapper to repeat the dataset based on category
 frequency. The dataset to repeat needs to instantiate function `self.get_cat_ids(idx)`
