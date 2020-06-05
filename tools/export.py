@@ -31,7 +31,7 @@ from mmdet.models import detectors
 from mmdet.models.dense_heads.anchor_head import AnchorHead
 from mmdet.models.roi_heads import SingleRoIExtractor
 from mmdet.utils.deployment import register_extra_symbolics
-#from mmdet.utils.deployment.ssd_export_helpers import *
+from mmdet.utils.deployment.ssd_export_helpers import *
 from mmdet.utils.deployment.tracer_stubs import AnchorsGridGeneratorStub, ROIFeatureExtractorStub
 
 
@@ -47,21 +47,21 @@ def export_to_onnx(model,
     if alt_ssd_export:
         assert isinstance(model, detectors.SingleStageDetector)
         
-        # model.onnx_export = onnx_export.__get__(model)
-        # model.forward = forward.__get__(model)
-        # model.forward_export = forward_export_detector.__get__(model)
-        # model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
-        # model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
-        # model.bbox_head.get_bboxes = get_bboxes_ssd_head.__get__(model.bbox_head)
-        # model.onnx_export(img=data['img'][0],
-        #                   img_meta=data['img_meta'][0],
-        #                   export_name=export_name,
-        #                   verbose=verbose,
-        #                   opset_version=opset,
-        #                   strip_doc_string=strip_doc_string,
-        #                   operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
-        #                   input_names=['image'],
-        #                   output_names=['detection_out'])
+        model.onnx_export = onnx_export.__get__(model)
+        model.forward = forward.__get__(model)
+        model.forward_export = forward_export_detector.__get__(model)
+        model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
+        model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
+        #model.bbox_head.get_bboxes = get_bboxes_ssd_head.__get__(model.bbox_head)
+        model.onnx_export(img=data['img'][0],
+                          img_metas=data['img_metas'][0],
+                          export_name=export_name,
+                          verbose=verbose,
+                          opset_version=opset,
+                          strip_doc_string=strip_doc_string,
+                          operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
+                          input_names=['image'],
+                          output_names=['detection_out'])
     else:
         output_names = ['boxes', 'labels']
         dynamic_axes = {

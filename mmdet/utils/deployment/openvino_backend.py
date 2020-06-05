@@ -197,7 +197,7 @@ class ModelOpenVINO(object):
     def show(self, data, result, dataset=None, score_thr=0.3, wait_time=0):
         if self.pt_model is not None:
             self.pt_model.show_result(
-                data, result, dataset=dataset, score_thr=score_thr, wait_time=wait_time)
+                data, result, show=True, score_thr=score_thr, wait_time=wait_time)
 
 
 class DetectorOpenVINO(ModelOpenVINO):
@@ -249,7 +249,7 @@ class DetectorOpenVINO(ModelOpenVINO):
         output = super().__call__(inputs)
         if self.with_detection_output:
             detection_out = output['detection_out']
-            output['labels'] = detection_out[0, 0, :, 1].astype(np.int32) - 1
+            output['labels'] = detection_out[0, 0, :, 1].astype(np.int32)
             output['boxes'] = detection_out[0, 0, :, 3:] * np.tile(inputs['image'].shape[2:][::-1], 2)
             output['boxes'] = np.concatenate((output['boxes'], detection_out[0, 0, :, 2:3]), axis=1)
             del output['detection_out']

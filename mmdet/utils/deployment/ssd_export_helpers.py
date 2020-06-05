@@ -16,7 +16,9 @@
 
 import torch
 
-from ...core import delta2bbox, multiclass_nms
+from ...core import multiclass_nms
+from ...core.bbox.coder.delta_xywh_bbox_coder import delta2bbox
+from ...core.anchor.anchor_generator import SSDAnchorGeneratorClustered
 
 
 def get_proposals(img_metas, cls_scores, bbox_preds, priors,
@@ -52,7 +54,7 @@ def get_bboxes_single(cls_scores, bbox_preds, priors, img_shape, scale_factor,
         if use_sigmoid_cls:
             max_scores, _ = cls_scores.max(dim=1)
         else:
-            max_scores, _ = cls_scores[:, 1:].max(dim=1)
+            max_scores, _ = cls_scores[:, :-1].max(dim=1)
         _, topk_inds = max_scores.topk(nms_pre)
         priors = priors[topk_inds, :]
         bbox_preds = bbox_preds[topk_inds, :]
@@ -107,23 +109,18 @@ class PriorBoxClustered(torch.autograd.Function):
     """
 
     @staticmethod
-    def symbolic(g, anchor_generator, anchor_stride, feat,
-                 img_tensor, target_stds):
-        heights = anchor_generator.heights.tolist()
-        widths = anchor_generator.widths.tolist()
-
+    def symbolic(g, single_level_grid_anchors, base_anchors, anchors_heights, anchors_widths,
+                 anchor_stride, feat, img_tensor, target_stds):
         return g.op("PriorBoxClustered", feat, img_tensor,
-                    height_f=heights, width_f=widths,
+                    height_f=anchors_heights, width_f=anchors_widths,
                     flip_i=0, clip_i=0, variance_f=list(target_stds),
                     step_f=anchor_stride, offset_f=0.5, step_h_f=0,
                     step_w_f=0, img_size_i=0, img_h_i=0, img_w_i=0)
 
     @staticmethod
-    def forward(ctx, anchor_generator, anchor_stride,
-                feat, img_tensor, target_stds):
-
-        mlvl_anchor = anchor_generator.grid_anchors(feat.size()[-2:],
-                                                    anchor_stride)
+    def forward(ctx, single_level_grid_anchors, base_anchors, anchors_heights, anchors_widths,
+                anchor_stride, feat, img_tensor, target_stds):
+        mlvl_anchor = single_level_grid_anchors(base_anchors, feat.size()[-2:], anchor_stride)
         mlvl_anchor = mlvl_anchor.view(1, -1).unsqueeze(0)
         return mlvl_anchor
 
@@ -139,9 +136,8 @@ class DetectionOutput(torch.autograd.Function):
     def symbolic(g, cls_scores, bbox_preds, img_metas, cfg,
                  rescale, priors, cls_out_channels, use_sigmoid_cls,
                  target_means, target_stds):
-
         return g.op("DetectionOutput", bbox_preds, cls_scores, priors,
-                    num_classes_i=cls_out_channels, background_label_id_i=0,
+                    num_classes_i=cls_out_channels, background_label_id_i=cls_out_channels - 1,
                     top_k_i=cfg['max_per_img'],
                     keep_top_k_i=cfg['max_per_img'],
                     confidence_threshold_f=cfg['score_thr'],
@@ -153,7 +149,6 @@ class DetectionOutput(torch.autograd.Function):
     def forward(ctx, cls_scores, bbox_preds, img_metas, cfg,
                 rescale, priors, cls_out_channels, use_sigmoid_cls,
                 target_means, target_stds):
-
         proposals = get_proposals(img_metas, cls_scores, bbox_preds, priors,
                                   cfg, rescale, cls_out_channels,
                                   use_sigmoid_cls, target_means, target_stds)
@@ -175,13 +170,15 @@ class DetectionOutput(torch.autograd.Function):
 
         return output
 
-def onnx_export(self, img, img_meta, export_name='', **kwargs):
+
+def onnx_export(self, img, img_metas, export_name='', **kwargs):
     self._export_mode = True
-    self.img_metas = img_meta
+    self.img_metas = img_metas
     torch.onnx.export(self, img, export_name, **kwargs)
 
 
-def forward(self, img, img_meta=[None], return_loss=True, **kwargs): #passing None here is a hack to fool the jit engine
+def forward(self, img, img_meta=[None], return_loss=True,
+            **kwargs):  # passing None here is a hack to fool the jit engine
     if self._export_mode:
         return self.forward_export(img)
     if return_loss:
@@ -204,22 +201,26 @@ def export_forward_ssd_head(self, cls_scores, bbox_preds, cfg, rescale,
 
     anchors = []
     for i in range(num_levels):
-        if self.anchor_generators[i].clustered:
+        if isinstance(self.anchor_generator, SSDAnchorGeneratorClustered):
             anchors.append(PriorBoxClustered.apply(
-                self.anchor_generators[i], self.anchor_strides[i],
-                feats[i], img_tensor, self.target_stds))
+                self.anchor_generator.single_level_grid_anchors,
+                self.anchor_generator.base_anchors[i],
+                self.anchor_generator.heights[i],
+                self.anchor_generator.widths[i],
+                self.anchor_generator.strides[i],
+                feats[i], img_tensor, self.bbox_coder.stds))
         else:
-            anchors.append(PriorBox.apply(self.anchor_generators[i],
-                                          self.anchor_strides[i],
+            anchors.append(PriorBox.apply(self.anchor_generator.base_anchors[i],
+                                          self.anchor_generator.strides[i],
                                           feats[i],
-                                          img_tensor, self.target_stds))
+                                          img_tensor, self.bbox_coder.stds))
     anchors = torch.cat(anchors, 2)
     cls_scores, bbox_preds = self._prepare_cls_scores_bbox_preds(cls_scores, bbox_preds)
 
     return DetectionOutput.apply(cls_scores, bbox_preds, img_metas, cfg,
                                  rescale, anchors, self.cls_out_channels,
-                                 self.use_sigmoid_cls, self.target_means,
-                                 self.target_stds)
+                                 self.use_sigmoid_cls, self.bbox_coder.means,
+                                 self.bbox_coder.stds)
 
 
 def prepare_cls_scores_bbox_preds_ssd_head(self, cls_scores, bbox_preds):
@@ -228,7 +229,7 @@ def prepare_cls_scores_bbox_preds_ssd_head(self, cls_scores, bbox_preds):
         score = o.permute(0, 2, 3, 1).contiguous().view(o.size(0), -1)
         scores_list.append(score)
     cls_scores = torch.cat(scores_list, 1)
-    cls_scores = cls_scores.view(cls_scores.size(0), -1, self.num_classes)
+    cls_scores = cls_scores.view(cls_scores.size(0), -1, self.cls_out_channels)
     if self.use_sigmoid_cls:
         cls_scores = cls_scores.sigmoid()
     else:
@@ -240,21 +241,3 @@ def prepare_cls_scores_bbox_preds_ssd_head(self, cls_scores, bbox_preds):
         bbox_list.append(boxes)
     bbox_preds = torch.cat(bbox_list, 1)
     return cls_scores, bbox_preds
-
-
-def get_bboxes_ssd_head(self, cls_scores, bbox_preds, img_metas, cfg, rescale=False):
-    assert len(cls_scores) == len(bbox_preds)
-    num_levels = len(cls_scores)
-    mlvl_anchors = [
-        self.anchor_generators[i].grid_anchors(cls_scores[i].size()[-2:],
-                                               self.anchor_strides[i])
-        for i in range(num_levels)
-    ]
-    mlvl_anchors = torch.cat(mlvl_anchors, 0)
-    cls_scores, bbox_preds = self._prepare_cls_scores_bbox_preds(
-        cls_scores, bbox_preds)
-    bboxes_list = get_proposals(img_metas, cls_scores, bbox_preds,
-                                mlvl_anchors, cfg, rescale,
-                                self.cls_out_channels,
-                                self.use_sigmoid_cls, self.target_means,
-                                self.target_stds)
