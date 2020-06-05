@@ -34,7 +34,7 @@ class CocoDataset(CustomDataset):
                'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock',
                'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
 
-    def __init__(self, classes, min_size=None, *args, **kwargs):
+    def __init__(self, min_size=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.min_size = min_size
 
