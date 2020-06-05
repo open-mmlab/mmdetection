@@ -113,6 +113,7 @@ def train_detector(model,
             # cfg.gpus will be ignored if distributed
             len(cfg.gpu_ids),
             dist=distributed,
+            shuffle=cfg.data.get('shuffle', True),
             seed=cfg.seed) for ds in dataset
     ]
 
