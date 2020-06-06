@@ -78,9 +78,10 @@ class BBoxTestMixin(object):
             img_shape = img_meta[0]['img_shape']
             scale_factor = img_meta[0]['scale_factor']
             flip = img_meta[0]['flip']
+            flip_direction = img_meta[0]['flip_direction']
             # TODO more flexible
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
-                                     scale_factor, flip)
+                                     scale_factor, flip, flip_direction)
             rois = bbox2roi([proposals])
             # recompute feature maps to save GPU memory
             bbox_results = self._bbox_forward(x, rois)
@@ -180,8 +181,9 @@ class MaskTestMixin(object):
                 img_shape = img_meta[0]['img_shape']
                 scale_factor = img_meta[0]['scale_factor']
                 flip = img_meta[0]['flip']
+                flip_direction = img_meta[0]['flip_direction']
                 _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
-                                       scale_factor, flip)
+                                       scale_factor, flip, flip_direction)
                 mask_rois = bbox2roi([_bboxes])
                 mask_results = self._mask_forward(x, mask_rois)
                 # convert to numpy array to save memory
