@@ -43,3 +43,13 @@
 - The dcn ops are modified from https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch, which should be more memory efficient and slightly faster.
 - (*) For R-50-FPN (dg=4), dg is short for deformable_group. This model is trained and tested on Amazon EC2 p3dn.24xlarge instance.
 - **Memory, Train/Inf time is outdated.**
+- Order of offset:
+
+  The offset tensor is like `[y0, x0, y1, x1, y2, x2, ..., y8, x8]`.
+
+  The spatial arrangement is like:
+  ```
+  (x0, y0) (x1, y1) (x2, y2)
+  (x3, y3) (x4, y4) (x5, y5)
+  (x6, y6) (x7, y7) (x8, y8)
+  ```
