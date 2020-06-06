@@ -1,7 +1,7 @@
 # Projects
 
 There are many projects built upon MMDetection.
-Some of them are published in top-tier conferences (CVPR, ICCV, and ECCV), the others are also highly influencial.
+Some of them are published in top-tier conferences (CVPR, ICCV, and ECCV), the others are also highly influential.
 We list some of them as examples of how to extend MMDetection for your own projects.
 Pull requests are also welcomed.
 
@@ -26,3 +26,4 @@ Methods already supported and maintained by MMDetection are not listed.
 - Dense Peppoints: Representing Visual Objects with Dense Point Sets. [[paper]](https://arxiv.org/abs/1912.11473)[[github]](https://github.com/justimyhxu/Dense-RepPoints)
 - IterDet: Iterative Scheme for Object Detection in Crowded Environments. [[paper]](https://arxiv.org/abs/2005.05708)[[github]](https://github.com/saic-vul/iterdet)
 - Cross-Iteration Batch Normalization. [[paper]](https://arxiv.org/abs/2002.05712)[[github]](https://github.com/Howal/Cross-iterationBatchNorm)
+-  DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution. [[paper]](https://arxiv.org/abs/2006.02334)[[github]](https://github.com/joe-siyuan-qiao/DetectoRS)

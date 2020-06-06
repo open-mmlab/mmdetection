@@ -46,7 +46,7 @@ For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th e
 ## An Example of Mask R-CNN
 
 To help the users have a basic idea of a complete config and the modules in a modern detection system,
-we makea brief comments on the config of Mask R-CNN using ResNet50 and FPN as the following.
+we make brief comments on the config of Mask R-CNN using ResNet50 and FPN as the following.
 For more detailed usage and the corresponding alternative for each modules, please refer to the API documentation.
 
 ```python

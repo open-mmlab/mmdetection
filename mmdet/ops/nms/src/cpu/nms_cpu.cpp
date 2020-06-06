@@ -236,13 +236,13 @@ std::vector<std::vector<int> > nms_match_cpu_kernel(const at::Tensor& dets,
   at::Tensor suppressed_t =
       at::zeros({ndets}, dets.options().dtype(at::kByte).device(at::kCPU));
 
-  auto suppressed = suppressed_t.data<uint8_t>();
-  auto order = order_t.data<int64_t>();
-  auto x1 = x1_t.data<scalar_t>();
-  auto y1 = y1_t.data<scalar_t>();
-  auto x2 = x2_t.data<scalar_t>();
-  auto y2 = y2_t.data<scalar_t>();
-  auto areas = areas_t.data<scalar_t>();
+  auto suppressed = suppressed_t.data_ptr<uint8_t>();
+  auto order = order_t.data_ptr<int64_t>();
+  auto x1 = x1_t.data_ptr<scalar_t>();
+  auto y1 = y1_t.data_ptr<scalar_t>();
+  auto x2 = x2_t.data_ptr<scalar_t>();
+  auto y2 = y2_t.data_ptr<scalar_t>();
+  auto areas = areas_t.data_ptr<scalar_t>();
 
   std::vector<int> keep;
   std::vector<std::vector<int> > matched;
@@ -277,7 +277,7 @@ std::vector<std::vector<int> > nms_match_cpu_kernel(const at::Tensor& dets,
     }
     matched.push_back(v_i);
   }
-  for (int i = 0; i < keep.size(); i++)
+  for (size_t i = 0; i < keep.size(); i++)
     matched[i].insert(matched[i].begin(), keep[i]);
   return matched;
 }
