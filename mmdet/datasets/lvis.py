@@ -268,8 +268,8 @@ class LVISDataset(CocoDataset):
         try:
             from lvis import LVIS
         except ImportError:
-            raise ImportError('Please follow install.md to '
-                              'install open-mmlab forked cocoapi first.')
+            raise ImportError('Please follow config/lvis/README.md to '
+                              'install open-mmlab forked lvis first.')
         self.coco = LVIS(ann_file)
         assert not self.custom_classes, 'LVIS custom classes is not supported'
         self.cat_ids = self.coco.get_cat_ids()
@@ -310,8 +310,8 @@ class LVISDataset(CocoDataset):
         try:
             from lvis import LVISResults, LVISEval
         except ImportError:
-            raise ImportError('Please follow install.md to '
-                              'install open-mmlab forked cocoapi first.')
+            raise ImportError('Please follow config/lvis/README.md to '
+                              'install open-mmlab forked lvis first.')
         assert isinstance(results, list), 'results must be a list'
         assert len(results) == len(self), (
             'The length of results is not equal to the dataset len: {} != {}'.
