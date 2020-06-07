@@ -401,9 +401,10 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             img_shape = img_meta[0]['img_shape']
             scale_factor = img_meta[0]['scale_factor']
             flip = img_meta[0]['flip']
+            flip_direction = img_meta[0]['flip_direction']
 
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
-                                     scale_factor, flip)
+                                     scale_factor, flip, flip_direction)
             # "ms" in variable names means multi-stage
             ms_scores = []
 
@@ -456,8 +457,9 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     img_shape = img_meta[0]['img_shape']
                     scale_factor = img_meta[0]['scale_factor']
                     flip = img_meta[0]['flip']
+                    flip_direction = img_meta[0]['flip_direction']
                     _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
-                                           scale_factor, flip)
+                                           scale_factor, flip, flip_direction)
                     mask_rois = bbox2roi([_bboxes])
                     mask_feats = self.mask_roi_extractor[-1](
                         x[:len(self.mask_roi_extractor[-1].featmap_strides)],
