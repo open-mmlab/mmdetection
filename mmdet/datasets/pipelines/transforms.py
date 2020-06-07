@@ -295,7 +295,7 @@ class Pad(object):
         pad_shape = results['pad_shape'][:2]
         for key in results.get('mask_fields', []):
             results[key] = results[key].pad(
-                pad_shape[:2], pad_val=self.pad_val)
+                pad_shape, pad_val=self.pad_val)
 
     def _pad_seg(self, results):
         for key in results.get('seg_fields', []):
