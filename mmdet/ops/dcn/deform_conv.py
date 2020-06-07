@@ -257,6 +257,14 @@ class DeformConv(nn.Module):
 class DeformConvPack(DeformConv):
     """A Deformable Conv Encapsulation that acts as normal Conv layers.
 
+    The offset tensor is like `[y0, x0, y1, x1, y2, x2, ..., y8, x8]`.
+    The spatial arrangement is like:
+    ```
+    (x0, y0) (x1, y1) (x2, y2)
+    (x3, y3) (x4, y4) (x5, y5)
+    (x6, y6) (x7, y7) (x8, y8)
+    ```
+
     Args:
         in_channels (int): Same as nn.Conv2d.
         out_channels (int): Same as nn.Conv2d.
