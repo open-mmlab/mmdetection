@@ -9,15 +9,16 @@ from .transforms import RandomFlip
 
 @PIPELINES.register_module()
 class MultiScaleFlipAug(object):
-    """Multiple scale flip test time augmentation
+    """Test-time augmentation with multiple scales and flipping
 
     Args:
         transforms (list[dict]): Transforms to apply in each augmentation.
         img_scale (tuple | list[tuple]: Images scales for resizing.
         flip (bool): Whether apply flip augmentation. Default: False.
         flip_direction (str | list[str]): Flip augmentation directions,
-            options are "horizontal" and "vertical".
-            It has not effect when flip == False. Default: "horizontal".
+            options are "horizontal" and "vertical". If flip_direction is list,
+            multiple flip augmentations will be applied.
+            It has no effect when flip == False. Default: "horizontal".
     """
 
     def __init__(self,
@@ -38,7 +39,8 @@ class MultiScaleFlipAug(object):
                 'flip_direction has no effect when flip is set to False')
         if (self.flip and
                 not any([isinstance(_, RandomFlip) for _ in self.transforms])):
-            warnings.warn('flip has no effect when RandFlip not in transforms')
+            warnings.warn(
+                'flip has no effect when RandFlip is not in transforms')
 
     def __call__(self, results):
         aug_data = []
@@ -63,4 +65,5 @@ class MultiScaleFlipAug(object):
         repr_str = self.__class__.__name__
         repr_str += f'(transforms={self.transforms}, '
         repr_str += f'img_scale={self.img_scale}, flip={self.flip})'
+        repr_str += f'flip_direction={self.flip_direction}'
         return repr_str
