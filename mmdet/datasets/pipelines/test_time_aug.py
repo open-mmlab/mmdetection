@@ -4,10 +4,21 @@ import mmcv
 
 from ..builder import PIPELINES
 from .compose import Compose
+from .transforms import RandomFlip
 
 
 @PIPELINES.register_module()
 class MultiScaleFlipAug(object):
+    """Multiple scale flip test time augmentation
+
+    Args:
+        transforms (list[dict]): Transforms to apply in each augmentation.
+        img_scale (tuple | list[tuple]: Images scales for resizing.
+        flip (bool): Whether apply flip augmentation. Default: False.
+        flip_direction (str | list[str]): Flip augmentation directions,
+            options are "horizontal" and "vertical".
+            It has not effect when flip == False. Default: "horizontal".
+    """
 
     def __init__(self,
                  transforms,
@@ -22,9 +33,12 @@ class MultiScaleFlipAug(object):
         self.flip_direction = flip_direction if isinstance(
             flip_direction, list) else [flip_direction]
         assert mmcv.is_list_of(self.flip_direction, str)
-        if not self.flip and len(self.flip_direction) > 1:
+        if not self.flip and self.flip_direction != ['horizontal']:
             warnings.warn(
-                'flip_direction have no effect when flip is set to False')
+                'flip_direction has no effect when flip is set to False')
+        if (self.flip and
+                not any([isinstance(_, RandomFlip) for _ in self.transforms])):
+            warnings.warn('flip has no effect when RandFlip not in transforms')
 
     def __call__(self, results):
         aug_data = []

@@ -8,8 +8,8 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
     Args:
         bboxes (Tensor): Shape (..., 4*k)
         img_shape (tuple): Image shape.
-        direction (str): Flip direction, options are horizontal and vertical.
-            Default: horizontal
+        direction (str): Flip direction, options are "horizontal" and
+            "vertical". Default: "horizontal"
 
 
     Returns:
