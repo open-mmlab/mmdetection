@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
@@ -14,7 +15,11 @@ class FCOSHead(nn.Module):
 
     The FCOS head does not use anchor boxes. Instead bounding boxes are
     predicted at each pixel and a centerness measure is used to supress
-    low-quality predictions.
+    low-quality predictions. 
+    Here norm_on_bbox, centerness_on_reg, dcn_on_last_conv are training
+    tricks used in official repo, which will bring remarkable mAP gains
+    of up to 4.9. Please see https://github.com/tianzhi0549/FCOS for
+    more detail.
 
     Example:
         >>> self = FCOSHead(11, 7)
@@ -33,6 +38,9 @@ class FCOSHead(nn.Module):
                                  (512, INF)),
                  center_sampling=False,
                  center_sample_radius=1.5,
+                 norm_on_bbox=False,
+                 centerness_on_reg=False,
+                 dcn_on_last_conv=False,
                  background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
@@ -67,6 +75,9 @@ class FCOSHead(nn.Module):
         self.fp16_enabled = False
         self.center_sampling = center_sampling
         self.center_sample_radius = center_sample_radius
+        self.norm_on_bbox = norm_on_bbox
+        self.centerness_on_reg = centerness_on_reg
+        self.dcn_on_last_conv = dcn_on_last_conv
         self.background_label = (
             num_classes if background_label is None else background_label)
         # background_label should be either 0 or num_classes
@@ -80,6 +91,11 @@ class FCOSHead(nn.Module):
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
+            if self.dcn_on_last_conv and \
+                    i == self.stacked_convs - 1:
+                conv_cfg = dict(type='DCNv2')
+            else:
+                conv_cfg = self.conv_cfg
             self.cls_convs.append(
                 ConvModule(
                     chn,
@@ -87,9 +103,9 @@ class FCOSHead(nn.Module):
                     3,
                     stride=1,
                     padding=1,
-                    conv_cfg=self.conv_cfg,
+                    conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                    bias=True))
             self.reg_convs.append(
                 ConvModule(
                     chn,
@@ -97,9 +113,9 @@ class FCOSHead(nn.Module):
                     3,
                     stride=1,
                     padding=1,
-                    conv_cfg=self.conv_cfg,
+                    conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                    bias=True))
         self.fcos_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.fcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
@@ -109,32 +125,44 @@ class FCOSHead(nn.Module):
 
     def init_weights(self):
         for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
+            if isinstance(m.conv, nn.Conv2d):
+                normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
+            if isinstance(m.conv, nn.Conv2d):
+                normal_init(m.conv, std=0.01)
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.fcos_cls, std=0.01, bias=bias_cls)
         normal_init(self.fcos_reg, std=0.01)
         normal_init(self.fcos_centerness, std=0.01)
 
     def forward(self, feats):
-        return multi_apply(self.forward_single, feats, self.scales)
+        cls_scores = []
+        bbox_preds = []
+        centernesses = []
+        for i, x in enumerate(feats):
+            cls_feat = feats[i]
+            reg_feat = feats[i]
+            for cls_conv in self.cls_convs:
+                cls_feat = cls_conv(cls_feat)
+            for reg_conv in self.reg_convs:
+                reg_feat = reg_conv(reg_feat)
+            cls_score = self.fcos_cls(cls_feat)
+            if self.centerness_on_reg:
+                centerness = self.fcos_centerness(reg_feat)
+            else:
+                centerness = self.fcos_centerness(cls_feat)
+            bbox_pred = self.scales[i](self.fcos_reg(reg_feat)).float()
+            if self.norm_on_bbox:
+                bbox_pred = F.relu(bbox_pred)
+                if not self.training:
+                    bbox_pred *= self.strides[i]
+            else:
+                bbox_pred = bbox_pred.exp()
 
-    def forward_single(self, x, scale):
-        cls_feat = x
-        reg_feat = x
-
-        for cls_layer in self.cls_convs:
-            cls_feat = cls_layer(cls_feat)
-        cls_score = self.fcos_cls(cls_feat)
-        centerness = self.fcos_centerness(cls_feat)
-
-        for reg_layer in self.reg_convs:
-            reg_feat = reg_layer(reg_feat)
-        # scale the bbox_pred of different level
-        # float to avoid overflow when enabling FP16
-        bbox_pred = scale(self.fcos_reg(reg_feat)).float().exp()
-        return cls_score, bbox_pred, centerness
+            cls_scores.append(cls_score)
+            bbox_preds.append(bbox_pred)
+            centernesses.append(centerness)
+        return cls_scores, bbox_preds, centernesses
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
     def loss(self,
@@ -364,9 +392,11 @@ class FCOSHead(nn.Module):
         for i in range(num_levels):
             concat_lvl_labels.append(
                 torch.cat([labels[i] for labels in labels_list]))
-            concat_lvl_bbox_targets.append(
-                torch.cat(
-                    [bbox_targets[i] for bbox_targets in bbox_targets_list]))
+            bbox_targets = torch.cat(
+                [bbox_targets[i] for bbox_targets in bbox_targets_list])
+            if self.norm_on_bbox:
+                bbox_targets = bbox_targets / self.strides[i]
+            concat_lvl_bbox_targets.append(bbox_targets)
         return concat_lvl_labels, concat_lvl_bbox_targets
 
     def _get_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
@@ -374,11 +404,11 @@ class FCOSHead(nn.Module):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
-            return gt_labels.new_full((num_points, ), self.background_label), \
+            return gt_labels.new_full((num_points,), self.background_label), \
                    gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-            gt_bboxes[:, 3] - gt_bboxes[:, 1])
+                gt_bboxes[:, 3] - gt_bboxes[:, 1])
         # TODO: figure out why these two are different
         # areas = areas[None].expand(num_points, num_gts)
         areas = areas[None].repeat(num_points, 1)
@@ -437,8 +467,8 @@ class FCOSHead(nn.Module):
         # condition2: limit the regression range for each location
         max_regress_distance = bbox_targets.max(-1)[0]
         inside_regress_range = (
-            max_regress_distance >= regress_ranges[..., 0]) & (
-                max_regress_distance <= regress_ranges[..., 1])
+                                       max_regress_distance >= regress_ranges[..., 0]) & (
+                                       max_regress_distance <= regress_ranges[..., 1])
 
         # if there are still more than one objects for a location,
         # we choose the one with minimal area
@@ -457,6 +487,6 @@ class FCOSHead(nn.Module):
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
         centerness_targets = (
-            left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
-                top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
+                                     left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
+                                     top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
         return torch.sqrt(centerness_targets)
