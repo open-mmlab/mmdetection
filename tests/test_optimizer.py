@@ -3,10 +3,9 @@ import warnings
 import pytest
 import torch
 import torch.nn as nn
-
-from mmdet.core import OPTIMIZER_BUILDERS, DefaultOptimizerConstructor
-from mmdet.core.optimizer import build_optimizer, build_optimizer_constructor
-from mmdet.core.optimizer.builder import TORCH_OPTIMIZERS
+from mmcv.runner import (OPTIMIZER_BUILDERS, DefaultOptimizerConstructor,
+                         build_optimizer, build_optimizer_constructor)
+from mmcv.runner.optimizer.builder import TORCH_OPTIMIZERS
 
 
 class SubModel(nn.Module):
@@ -381,7 +380,7 @@ def test_build_optimizer_constructor():
     optimizer = optim_constructor(model)
     check_optimizer(optimizer, model, **paramwise_cfg)
 
-    from mmdet.core import OPTIMIZERS
+    from mmcv.runner import OPTIMIZERS
     from mmcv.utils import build_from_cfg
 
     @OPTIMIZER_BUILDERS.register_module()
