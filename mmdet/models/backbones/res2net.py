@@ -243,8 +243,8 @@ class Res2Net(ResNet):
         scales (int): Scales used in Res2Net. Default: 4
         base_width (int): Basic width of each scale. Default: 26
         depth (int): Depth of res2net, from {50, 101, 152}.
-        in_channels (int): Number of input image channels. Normally 3.
-        num_stages (int): Res2net stages, normally 4.
+        in_channels (int): Number of input image channels. Default: 3.
+        num_stages (int): Res2net stages. Default: 4.
         strides (Sequence[int]): Strides of the first block of each stage.
         dilations (Sequence[int]): Dilation of each stage.
         out_indices (Sequence[int]): Output from which stages.
