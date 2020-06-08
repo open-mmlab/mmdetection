@@ -1,3 +1,5 @@
+// Modified from
+// https://github.com/princeton-vl/CornerNet-Lite/tree/master/core/models/py_utils/_cpools/src
 #include <torch/torch.h>
 
 #include <vector>
