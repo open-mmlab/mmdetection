@@ -46,7 +46,6 @@ class DistOptimizerHook(OptimizerHook):
     """Deprecated optimizer hook for distributed training"""
 
     def __init__(self, *args, **kwargs):
-        warnings.warn(
-            '"DistOptimizerHook" is deprecated, please switch to'
-            '"mmcv.runner.OptimizerHook".', DeprecationWarning)
+        warnings.warn('"DistOptimizerHook" is deprecated, please switch to'
+                      '"mmcv.runner.OptimizerHook".')
         super().__init__(*args, **kwargs)
