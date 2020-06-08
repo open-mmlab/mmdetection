@@ -21,6 +21,12 @@ class FCOSHead(nn.Module):
     of up to 4.9. Please see https://github.com/tianzhi0549/FCOS for
     more detail.
 
+    Args:
+        norm_on_bbox (bool): If true, normalize the regression targets with FPN strides.
+        centerness_on_reg (bool): If true, position centerness on the regress branch.
+            Please refer to https://github.com/tianzhi0549/FCOS/issues/89#issuecomment-516877042.
+        dcn_on_last_conv (bool): If true, use dcn in the last layer of towers.
+
     Example:
         >>> self = FCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
