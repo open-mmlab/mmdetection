@@ -115,7 +115,7 @@ class LoadMultiImagesFromMultiFiles(object):
         if self.to_float32:
             img = img.astype(np.float32)
 
-        # e.g. img_postfix = '' or 'ref_'
+        # e.g. img_prefix = '' or 'ref_'
         img_prefix = img_info_key[-12:-8]
         results[f'{img_prefix}filename_{str(fname_id)}'] = fname
         results[f'{img_prefix}ori_filename_{str(fname_id)}'] = ori_fname
