@@ -290,3 +290,69 @@ def test_albu_transform():
     results = normalize(results)
 
     assert results['img'].dtype == np.float32
+
+
+def test_random_center_crop_pad():
+    # test assertion for invalid random center crop pad
+    with pytest.raises(AssertionError):
+        transform = dict(type='RandomCenterCropPad', crop_size=(-1, 0))
+        build_from_cfg(transform, PIPELINES)
+
+    with pytest.raises(AssertionError):
+        transform = dict(type='RandomCenterCropPad', ratios=(1.0))
+        build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+    results['img'] = img
+
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
+    # Set initial values for default meta_keys
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    test_results = copy.deepcopy(results)
+
+    def create_random_bboxes(num_bboxes, img_w, img_h):
+        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
+        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
+        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
+        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
+            np.int)
+        return bboxes
+
+    h, w, _ = img.shape
+    gt_bboxes = create_random_bboxes(8, w, h)
+    gt_bboxes_ignore = create_random_bboxes(2, w, h)
+    results['gt_bboxes'] = gt_bboxes
+    results['gt_bboxes_ignore'] = gt_bboxes_ignore
+    train_transform = dict(
+        type='RandomCenterCropPad',
+        crop_size=(h - 20, w - 20),
+        ratios=(1.0, ),
+        border=128,
+        mean=[123.675, 116.28, 103.53],
+        to_rgb=True)
+    crop_module = build_from_cfg(train_transform, PIPELINES)
+    train_results = crop_module(results)
+    assert train_results['img'].shape[:2] == (h - 20, w - 20)
+    # All bboxes should be reserved after crop
+    assert train_results['pad_shape'][:2] == (h - 20, w - 20)
+    assert train_results['gt_bboxes'].shape[0] == 8
+    assert train_results['gt_bboxes_ignore'].shape[0] == 2
+
+    test_transform = dict(
+        type='RandomCenterCropPad',
+        crop_size=None,
+        mean=[123.675, 116.28, 103.53],
+        to_rgb=True,
+        test_mode=True,
+        pad_mode=('logical-or', 127))
+    crop_module = build_from_cfg(test_transform, PIPELINES)
+
+    test_results = crop_module(test_results)
+    assert test_results['img'].shape[:2] == (h | 127, w | 127)
+    assert test_results['pad_shape'][:2] == (h | 127, w | 127)
+    assert 'border' in test_results

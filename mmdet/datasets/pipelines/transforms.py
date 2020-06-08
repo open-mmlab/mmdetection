@@ -938,3 +938,188 @@ class Albu(object):
     def __repr__(self):
         repr_str = self.__class__.__name__ + f'(transforms={self.transforms})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class RandomCenterCropPad(object):
+    """Random center crop and random around padding for CornerNet.
+
+    Args:
+        crop_size (tuple | None): expected size after crop, final size will
+            computed according to ratio. Requires (h, w) in train mode, and
+            None in test mode.
+        ratios (tuple): random select a ratio from tuple and crop image to
+            (crop_size[0] * ratio) * (crop_size[1] * ratio).
+            Only available in train mode.
+        border (int): max distance from center select area to image border.
+            Only available in train mode.
+        mean (tuple): mean value of dataset.
+        to_rgb (bool): if need to convert the order of mean to align with RGB.
+        test_mode (bool): whether involve random variables in transform.
+            In train mode, crop_size is fixed, center coords and ratio is
+            random selected from predefined lists. In test mode, crop_size
+            is image's original shape, center coords and ratio is fixed.
+        pad_mode (tuple): padding method and padding value in test mode,
+            only available in test mode. Default is using 'logical-or' with
+            a padding value 127.
+    """
+
+    def __init__(self,
+                 crop_size=None,
+                 ratios=(0.9, 1.0, 1.1),
+                 border=128,
+                 mean=(0, 0, 0),
+                 to_rgb=False,
+                 test_mode=False,
+                 pad_mode=('logical-or', 127)):
+        assert crop_size is None or (crop_size[0] > 0 and crop_size[1] > 0)
+        self.crop_size = crop_size
+        assert isinstance(ratios, (list, tuple))
+        self.ratios = ratios
+        self.border = border
+        self.to_rgb = to_rgb
+        if to_rgb:
+            self.mean = mean[::-1]
+        else:
+            self.mean = mean
+        self.test_mode = test_mode
+        self.pad_mode = pad_mode
+
+    def _get_border(self, border, size):
+        i = 1
+        while size - border // i <= border // i:
+            i *= 2
+        return border // i
+
+    def _filter_boxes(self, patch, boxes):
+        center = (boxes[:, :2] + boxes[:, 2:]) / 2
+        mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
+            center[:, 0] < patch[2]) * (
+                center[:, 1] < patch[3])
+        return mask
+
+    def _crop_image(self, image, center, size):
+        cty, ctx = center
+        target_h, target_w = size
+        img_h, img_w, img_c = image.shape
+
+        x0, x1 = max(0, ctx - target_w // 2), min(ctx + target_w // 2, img_w)
+        y0, y1 = max(0, cty - target_h // 2), min(cty + target_h // 2, img_h)
+        patch = np.array((int(x0), int(y0), int(x1), int(y1)))
+
+        left, right = ctx - x0, x1 - ctx
+        top, bottom = cty - y0, y1 - cty
+
+        cropped_cty, cropped_ctx = target_h // 2, target_w // 2
+        if image.dtype == np.uint8:
+            image = image.astype(np.float32)
+        cropped_img = np.zeros((target_h, target_w, img_c), dtype=image.dtype)
+        for i in range(img_c):
+            cropped_img[:, :, i] += self.mean[i]
+        y_slice = slice(cropped_cty - top, cropped_cty + bottom)
+        x_slice = slice(cropped_ctx - left, cropped_ctx + right)
+        cropped_img[y_slice, x_slice, :] = image[y0:y1, x0:x1, :]
+
+        border = np.array([
+            cropped_cty - top, cropped_cty + bottom, cropped_ctx - left,
+            cropped_ctx + right
+        ],
+                          dtype=np.float32)
+
+        return cropped_img, border, patch
+
+    def __call__(self, results):
+        img = results['img']
+        h, w, c = img.shape
+        assert c == len(self.mean)
+        if not self.test_mode:
+            boxes = results['gt_bboxes']
+            while True:
+                scale = random.choice(self.ratios)
+                new_h = int(self.crop_size[0] * scale)
+                new_w = int(self.crop_size[1] * scale)
+                h_border = self._get_border(self.border, h)
+                w_border = self._get_border(self.border, w)
+
+                for i in range(50):
+                    ctx = random.randint(low=w_border, high=w - w_border)
+                    cty = random.randint(low=h_border, high=h - h_border)
+
+                    cropped_img, border, patch = self._crop_image(
+                        img, [cty, ctx], [new_h, new_w])
+
+                    mask = self._filter_boxes(patch, boxes)
+                    if not mask.any():
+                        continue
+
+                    results['img'] = cropped_img
+                    results['img_shape'] = cropped_img.shape
+                    results['pad_shape'] = cropped_img.shape
+
+                    x0, y0, x1, y1 = patch
+
+                    left_w, top_h = ctx - x0, cty - y0
+
+                    cropped_ctx, cropped_cty = new_w // 2, new_h // 2
+
+                    # crop bboxes accordingly and clip to the image boundary
+                    for key in results.get('bbox_fields', []):
+                        mask = self._filter_boxes(patch, results[key])
+                        bboxes = results[key][mask]
+                        bboxes[:, 0:4:2] += cropped_ctx - left_w - x0
+                        bboxes[:, 1:4:2] += cropped_cty - top_h - y0
+                        bboxes[:, 0:4:2] = np.clip(bboxes[:, 0:4:2], 0,
+                                                   new_w - 1)
+                        bboxes[:, 1:4:2] = np.clip(bboxes[:, 1:4:2], 0,
+                                                   new_h - 1)
+                        keep = (bboxes[:, 2] > bboxes[:, 0]) & (
+                            bboxes[:, 3] > bboxes[:, 1])
+                        bboxes = bboxes[keep]
+                        results[key] = bboxes
+                        if key in ['gt_bboxes']:
+                            if 'gt_labels' in results:
+                                labels = results['gt_labels'][mask]
+                                labels = labels[keep]
+                                results['gt_labels'] = labels
+                            if 'gt_masks' in results:
+                                raise NotImplementedError
+
+                    # crop semantic seg
+                    for key in results.get('seg_fields', []):
+                        raise NotImplementedError('segment not implemented')
+                    return results
+        else:  # test mode
+            if 'scale_factor' in results:
+                scale_factor = results['scale_factor']
+                img = mmcv.imresize(
+                    img, (int(w * scale_factor), int(h * scale_factor)),
+                    return_scale=False)
+                h, w, c = img.shape
+            results['img_shape'] = img.shape
+
+            if self.pad_mode[0] in ['logical-or']:
+                inp_h = h | self.pad_mode[1]
+                inp_w = w | self.pad_mode[1]
+            elif self.pad_mode[0] in ['size_divisor']:
+                divisor = self.pad_mode[1]
+                inp_h = int(np.ceil(h / divisor)) * divisor
+                inp_w = int(np.ceil(w / divisor)) * divisor
+            else:
+                raise NotImplementedError(
+                    f'Not Implemented for mode: {self.pad_mode[0]}')
+
+            cropped_img, border, _ = self._crop_image(img, [h // 2, w // 2],
+                                                      [inp_h, inp_w])
+            results['img'] = cropped_img
+            results['pad_shape'] = cropped_img.shape
+            results['border'] = border
+            return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(crop_size={self.crop_size})'
+        repr_str += f'(ratios={self.ratios})'
+        repr_str += f'(border={self.border})'
+        repr_str += f'(mean={self.mean}, to_rgb=self.to_rgb)'
+        repr_str += f'(test_mode={self.test_mode}'
+        return repr_str

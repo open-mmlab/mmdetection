@@ -23,13 +23,21 @@ class MultiScaleFlipAug(object):
 
     def __init__(self,
                  transforms,
-                 img_scale,
+                 img_scale=None,
+                 ratio=None,
                  flip=False,
                  flip_direction='horizontal'):
         self.transforms = Compose(transforms)
-        self.img_scale = img_scale if isinstance(img_scale,
-                                                 list) else [img_scale]
-        assert mmcv.is_list_of(self.img_scale, tuple)
+        assert img_scale or ratio
+        if img_scale is not None:
+            self.img_scale = img_scale if isinstance(img_scale,
+                                                     list) else [img_scale]
+            self.scale_key = 'scale'
+            assert mmcv.is_list_of(self.img_scale, tuple)
+        else:
+            self.img_scale = ratio if isinstance(ratio, list) else [ratio]
+            self.scale_key = 'scale_factor'
+
         self.flip = flip
         self.flip_direction = flip_direction if isinstance(
             flip_direction, list) else [flip_direction]
@@ -49,7 +57,7 @@ class MultiScaleFlipAug(object):
             for flip in flip_aug:
                 for direction in self.flip_direction:
                     _results = results.copy()
-                    _results['scale'] = scale
+                    _results[self.scale_key] = scale
                     _results['flip'] = flip
                     _results['flip_direction'] = direction
                     data = self.transforms(_results)
