@@ -7,7 +7,7 @@ from .resnet import BasicBlock
 
 
 class HGModule(nn.Module):
-    """ HourGlass Module for Hourglass backbone.
+    """ Hourglass Module for HourglassNet backbone.
 
     Generate module recursively and use BasicBlock as the base unit.
 
@@ -29,35 +29,39 @@ class HGModule(nn.Module):
 
         self.depth = depth
 
-        curr_block = stage_blocks[0]
+        cur_block = stage_blocks[0]
         next_block = stage_blocks[1]
 
-        curr_dim = stage_channels[0]
-        next_dim = stage_channels[1]
+        cur_channel = stage_channels[0]
+        next_channel = stage_channels[1]
 
         self.up1 = ResLayer(
-            BasicBlock, curr_dim, curr_dim, curr_block, norm_cfg=norm_cfg)
+            BasicBlock, cur_channel, cur_channel, cur_block, norm_cfg=norm_cfg)
 
         self.low1 = ResLayer(
             BasicBlock,
-            curr_dim,
-            next_dim,
-            curr_block,
+            cur_channel,
+            next_channel,
+            cur_block,
             stride=2,
             norm_cfg=norm_cfg)
 
-        self.low2 = HGModule(
-            depth - 1, stage_channels[1:],
-            stage_blocks[1:]) if (self.depth > 1) else ResLayer(
-                BasicBlock, next_dim, next_dim, next_block, norm_cfg=norm_cfg)
+        self.low2 = HGModule(depth -
+                             1, stage_channels[1:], stage_blocks[1:]) if (
+                                 self.depth > 1) else ResLayer(
+                                     BasicBlock,
+                                     next_channel,
+                                     next_channel,
+                                     next_block,
+                                     norm_cfg=norm_cfg)
 
         self.low3 = ResLayer(
             BasicBlock,
-            next_dim,
-            curr_dim,
-            curr_block,
+            next_channel,
+            cur_channel,
+            cur_block,
             norm_cfg=norm_cfg,
-            reverse=True)
+            downsample_first=False)
 
         self.up2 = nn.Upsample(scale_factor=2)
 
@@ -71,8 +75,8 @@ class HGModule(nn.Module):
 
 
 @BACKBONES.register_module()
-class Hourglass(nn.Module):
-    """ Hourglass backbone.
+class HourglassNet(nn.Module):
+    """ HourglassNet backbone.
 
     Stacked Hourglass Networks for Human Pose Estimation.
     arXiv: https://arxiv.org/abs/1603.06937
@@ -88,9 +92,9 @@ class Hourglass(nn.Module):
         norm_cfg (dict): Dictionary to construct and config norm layer.
 
     Example:
-        >>> from mmdet.models import Hourglass
+        >>> from mmdet.models import HourglassNet
         >>> import torch
-        >>> self = Hourglass()
+        >>> self = HourglassNet()
         >>> self.eval()
         >>> inputs = torch.rand(1, 3, 511, 511)
         >>> level_outputs = self.forward(inputs)
@@ -107,12 +111,12 @@ class Hourglass(nn.Module):
                  stage_blocks=[2, 2, 2, 2, 2, 4],
                  feat_channel=256,
                  norm_cfg=dict(type='BN', requires_grad=True)):
-        super(Hourglass, self).__init__()
+        super(HourglassNet, self).__init__()
 
         self.num_stacks = num_stacks
         assert self.num_stacks >= 1
 
-        curr_dim = stage_channels[0]
+        cur_channel = stage_channels[0]
 
         self.stem = nn.Sequential(
             ConvModule(3, 128, 7, padding=3, stride=2, norm_cfg=norm_cfg),
@@ -124,22 +128,27 @@ class Hourglass(nn.Module):
         ])
 
         self.inters = ResLayer(
-            BasicBlock, curr_dim, curr_dim, num_stacks - 1, norm_cfg=norm_cfg)
+            BasicBlock,
+            cur_channel,
+            cur_channel,
+            num_stacks - 1,
+            norm_cfg=norm_cfg)
 
         self.conv1x1s = nn.ModuleList([
-            ConvModule(curr_dim, curr_dim, 1, norm_cfg=norm_cfg, act_cfg=None)
+            ConvModule(
+                cur_channel, cur_channel, 1, norm_cfg=norm_cfg, act_cfg=None)
             for _ in range(num_stacks - 1)
         ])
 
         self.out_convs = nn.ModuleList([
             ConvModule(
-                curr_dim, feat_channel, 3, padding=1, norm_cfg=norm_cfg)
+                cur_channel, feat_channel, 3, padding=1, norm_cfg=norm_cfg)
             for _ in range(num_stacks)
         ])
 
         self.remap_convs = nn.ModuleList([
             ConvModule(
-                feat_channel, curr_dim, 1, norm_cfg=norm_cfg, act_cfg=None)
+                feat_channel, cur_channel, 1, norm_cfg=norm_cfg, act_cfg=None)
             for _ in range(num_stacks - 1)
         ])
 

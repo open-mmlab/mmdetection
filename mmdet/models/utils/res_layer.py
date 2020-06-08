@@ -17,8 +17,8 @@ class ResLayer(nn.Sequential):
             Default: None
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: dict(type='BN')
-        reverse (bool): Reverse the order of planes in layer sequence.
-            False for ResNet, True for Houglass. Default: False
+        downsample_first (bool): Downsample at the first block or latest block.
+            False for Hourglass, True for ResNet. Default: True
     """
 
     def __init__(self,
@@ -30,7 +30,7 @@ class ResLayer(nn.Sequential):
                  avg_down=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
-                 reverse=False,
+                 downsample_first=True,
                  **kwargs):
         self.block = block
 
@@ -59,7 +59,7 @@ class ResLayer(nn.Sequential):
             downsample = nn.Sequential(*downsample)
 
         layers = []
-        if not reverse:
+        if downsample_first:
             layers.append(
                 block(
                     inplanes=inplanes,

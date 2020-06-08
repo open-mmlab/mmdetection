@@ -4,7 +4,7 @@ from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.backbones import RegNet, Res2Net, ResNet, ResNetV1d, ResNeXt
-from mmdet.models.backbones.hourglass import Hourglass
+from mmdet.models.backbones.hourglass import HourglassNet
 from mmdet.models.backbones.res2net import Bottle2neck
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.backbones.resnext import Bottleneck as BottleneckX
@@ -275,8 +275,8 @@ def test_resnet_res_layer():
     x_out = layer(x)
     assert x_out.shape == torch.Size([1, 256, 28, 28])
 
-    # Test ResLayer of 3 BasicBlock with stride=2 and reverse=True
-    layer = ResLayer(BasicBlock, 64, 64, 3, stride=2, reverse=True)
+    # Test ResLayer of 3 BasicBlock with stride=2 and downsample_first=False
+    layer = ResLayer(BasicBlock, 64, 64, 3, stride=2, downsample_first=False)
     assert layer[2].downsample[0].out_channels == 64
     assert layer[2].downsample[0].stride == (2, 2)
     for i in range(len(layer) - 1):
@@ -746,11 +746,11 @@ def test_res2net_backbone():
 
 def test_hourglass_backbone():
     with pytest.raises(AssertionError):
-        # Hourglass num_stacks should larget than 0
-        Hourglass(num_stacks=0)
+        # HourglassNet's num_stacks should larget than 0
+        HourglassNet(num_stacks=0)
 
-    # Test Hourglass with default setting
-    model = Hourglass()
+    # Test HourglassNet with default setting
+    model = HourglassNet()
     model.init_weights()
     model.train()
 
