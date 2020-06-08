@@ -376,7 +376,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         return results
 
-    def aug_test(self, img_feats, img_metas, proposals=None, rescale=False):
+    def aug_test(self, img_feats, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
 
         If rescale is False, then returned bboxes and masks will fit the scale
@@ -388,10 +388,6 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             ]
         else:
             semantic_feats = [None] * len(img_metas)
-
-        # recompute feats to save memory
-        proposal_list = self.aug_test_rpn(img_feats, img_metas,
-                                          self.test_cfg.rpn)
 
         rcnn_test_cfg = self.test_cfg
         aug_bboxes = []
