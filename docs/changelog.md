@@ -55,6 +55,7 @@
 - Added sleep(2) in test.py to reduce hanging problem (#2847)
 - Support `c10::half` in CARAFE (#2890)
 - Improve documentations (#2918, #2714)
+- Use optimizer constructor in mmcv and clean the original implementation in `mmdet.core.optimizer` (#2947)
 
 
 ### v2.0.0 (6/5/2020)
