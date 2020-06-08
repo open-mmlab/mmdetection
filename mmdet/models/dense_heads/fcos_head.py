@@ -15,7 +15,7 @@ class FCOSHead(nn.Module):
 
     The FCOS head does not use anchor boxes. Instead bounding boxes are
     predicted at each pixel and a centerness measure is used to supress
-    low-quality predictions. 
+    low-quality predictions.
     Here norm_on_bbox, centerness_on_reg, dcn_on_last_conv are training
     tricks used in official repo, which will bring remarkable mAP gains
     of up to 4.9. Please see https://github.com/tianzhi0549/FCOS for
