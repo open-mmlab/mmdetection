@@ -5,7 +5,7 @@ from .instaboost import InstaBoost
 from .loading import (LoadAnnotations, LoadImageFromFile,
                       LoadMultiChannelImageFromFiles,
                       LoadMultiImagesFromMultiFiles, LoadProposals)
-from .test_aug import MultiScaleFlipAug
+from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Albu, Expand, MinIoURandomCrop, Normalize, Pad,
                          PhotoMetricDistortion, RandomCrop, RandomFlip, Resize,
                          SegRescale)

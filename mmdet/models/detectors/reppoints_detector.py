@@ -40,7 +40,9 @@ class RepPointsDetector(SingleStageDetector):
             img_shape = img_info[0]['img_shape']
             scale_factor = img_info[0]['scale_factor']
             flip = img_info[0]['flip']
-            bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip)
+            flip_direction = img_info[0]['flip_direction']
+            bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip,
+                                       flip_direction)
             recovered_bboxes.append(bboxes)
         bboxes = torch.cat(recovered_bboxes, dim=0)
         if aug_scores is None:
