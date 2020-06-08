@@ -3,10 +3,9 @@
 ### v2.1.0 (8/6/2020)
 
 **Highlights**
-- Release about 40 models and finally release 250 checkpoints in the model zoo.
-- Support new backbones: [RegNetX](), [Res2Net]()
-- Support new methods: [NASFCOS](), [PISA]()
-- Support new dataset: [LVIS]()
+- Support new backbones: [RegNetX](https://arxiv.org/abs/2003.13678), [Res2Net](https://arxiv.org/abs/1904.01169)
+- Support new methods: [NASFCOS](https://arxiv.org/abs/1906.04423), [PISA](https://arxiv.org/abs/1904.04821)
+- Support new dataset: [LVIS](https://arxiv.org/abs/1908.03195)
 
 **Bug Fixes**
 - Fix docstring styles (#2634)
@@ -17,15 +16,15 @@
 - Fix bug when using f-string format (#2681)
 - Add missing cython to docker file (#2713)
 - Fix bug in nms cpu implementation (#2754)
-- Fix mask show (#2763)
+- Fix bug when showing mask results (#2763)
 - Fixed incontiguous gradients in dcn (#2775)
 - Fix bug for coco person subset (#2793)
 - Fix gcc requirement (#2806)
 - Fix the jupyter notebook demo (#2814)
 - Fix async test (#2820)
-- Fix show bug (#2824)
+- Fix mask encoding-decoding bugs in test API (#2824)
 - Fixed nms build warning (#2846)
-- Fix bug in test time augmentation (#2858, #2921)
+- Fix bug in test time augmentation (#2858, #2921, #2944)
 - Fix a typo in comment of apis/train (#2877)
 - Fixed bugs in transform.py (#2810)
 - Fix base_channels of regnet (#2917)
@@ -64,12 +63,9 @@
 - Add `['img']` as default `img_fields` for back compatibility (#2809)
 - Add unit test for albumentation (#2788)
 - Update model_zoo url (#2832)
-- Added sleep(2) in test.py (#2847)
-- Add procedure to remove compiled shared objects (#2860)
+- Added sleep(2) in test.py to reduce hanging (#2847)
 - Support `c10::half` in CARAFE (#2890)
 - Add dcn offset doc (#2918)
-- Update API install docs (#2929)
-- Change Normally to Default in the docstring of backbones (#2937)
 
 
 ### v2.0.0 (6/5/2020)
