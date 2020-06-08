@@ -1,7 +1,7 @@
 # model settings
 model = dict(
     type='RetinaNet',
-    pretrained='open-mmlab://resnet101_caffe_bgr',
+    pretrained='open-mmlab://detectron2/resnet101_caffe',
     backbone=dict(
         type='ResNet',
         depth=101,
@@ -16,7 +16,7 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         start_level=1,
-        add_extra_convs='on_input',
+        add_extra_convs=True,
         num_outs=5),
     bbox_head=dict(
         type='GARetinaHead',

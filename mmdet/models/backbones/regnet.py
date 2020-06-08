@@ -81,7 +81,7 @@ class RegNet(ResNet):
     def __init__(self,
                  arch,
                  in_channels=3,
-                 base_channels=64,
+                 base_channels=32,
                  strides=(2, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
                  out_indices=(0, 1, 2, 3),
