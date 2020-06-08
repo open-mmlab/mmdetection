@@ -30,7 +30,7 @@ def anchor_inside_flags(flat_anchors,
             (flat_anchors[:, 3] < img_h + allowed_border)
     else:
         inside_flags = valid_flags
-    return inside_flags
+    return inside_flags.to(torch.bool)
 
 
 def calc_region(bbox, ratio, featmap_size=None):
