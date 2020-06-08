@@ -7,6 +7,7 @@ import torch.nn as nn
 from mmcv.utils import print_log
 
 from mmdet.core import auto_fp16
+from mmdet.utils import get_root_logger
 
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
@@ -75,7 +76,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     def init_weights(self, pretrained=None):
         if pretrained is not None:
-            print_log(f'load model from: {pretrained}', logger='root')
+            logger = get_root_logger()
+            print_log(f'load model from: {pretrained}', logger=logger)
 
     async def aforward_test(self, *, img, img_metas, **kwargs):
         for var, name in [(img, 'img'), (img_metas, 'img_metas')]:
