@@ -1,4 +1,5 @@
 import torch
+import torch.distributed as dist
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 
@@ -6,6 +7,14 @@ from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
 from ..builder import HEADS, build_loss
 
 INF = 1e8
+
+
+def reduce_mean(tensor):
+    if not (dist.is_available() and dist.is_initialized()):
+        return tensor
+    tensor = tensor.clone()
+    dist.all_reduce(tensor.div_(dist.get_world_size()), op=dist.ReduceOp.SUM)
+    return tensor
 
 
 @HEADS.register_module()
@@ -180,9 +189,15 @@ class FCOSHead(nn.Module):
         pos_inds = ((flatten_labels >= 0)
                     & (flatten_labels < bg_class_ind)).nonzero().reshape(-1)
         num_pos = len(pos_inds)
+
+        # sync num_pos across all gpus
+        num_pos_avg_per_gpu = reduce_mean(
+            pos_inds.new_tensor([pos_inds.numel()])).item()
+        num_pos_avg_per_gpu = max(num_pos_avg_per_gpu, 1.0)
+
         loss_cls = self.loss_cls(
             flatten_cls_scores, flatten_labels,
-            avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
+            avg_factor=num_pos_avg_per_gpu)
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_centerness = flatten_centerness[pos_inds]
@@ -194,16 +209,24 @@ class FCOSHead(nn.Module):
             pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
             pos_decoded_target_preds = distance2bbox(pos_points,
                                                      pos_bbox_targets)
+            # average pos_centerness_targets from all gpus,
+            # which is used to normalize centerness-weighed reg loss
+            pos_centerness_targets_avg_per_gpu = \
+                reduce_mean(pos_centerness_targets.sum()).item()
+
             # centerness weighted iou loss
             loss_bbox = self.loss_bbox(
                 pos_decoded_bbox_preds,
                 pos_decoded_target_preds,
                 weight=pos_centerness_targets,
-                avg_factor=pos_centerness_targets.sum())
-            loss_centerness = self.loss_centerness(pos_centerness,
-                                                   pos_centerness_targets)
+                avg_factor=pos_centerness_targets_avg_per_gpu)
+            loss_centerness = self.loss_centerness(
+                pos_centerness,
+                pos_centerness_targets,
+                avg_factor=num_pos_avg_per_gpu)
         else:
             loss_bbox = pos_bbox_preds.sum()
+            reduce_mean(pos_centerness.new_tensor([0.0]))
             loss_centerness = pos_centerness.sum()
 
         return dict(
