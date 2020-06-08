@@ -1,3 +1,4 @@
+import warnings
 from collections import OrderedDict
 
 import torch.distributed as dist
@@ -43,4 +44,9 @@ def allreduce_grads(params, coalesce=True, bucket_size_mb=-1):
 
 class DistOptimizerHook(OptimizerHook):
     """Deprecated optimizer hook for distributed training"""
-    pass
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            '"DistOptimizerHook" is deprecated, please switch to'
+            '"mmcv.runner.OptimizerHook".', DeprecationWarning)
+        super().__init__(*args, **kwargs)
