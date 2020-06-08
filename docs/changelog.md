@@ -1,5 +1,77 @@
 ## Changelog
 
+### v2.1.0 (8/6/2020)
+
+**Highlights**
+- Release about 40 models and finally release 250 checkpoints in the model zoo.
+- Support new backbones: [RegNetX](), [Res2Net]()
+- Support new methods: [NASFCOS](), [PISA]()
+- Support new dataset: [LVIS]()
+
+**Bug Fixes**
+- Fix docstring styles (#2634)
+- Fix the bug of model zoo url in README.md (#2641)
+- Fix validate default (#2651)
+- Close multiprocessing Pool (#2671)
+- Fix warnings in pytorch 1.5 (#2673)
+- Fix bug when using f-string format (#2681)
+- Add missing cython to docker file (#2713)
+- Fix bug in nms cpu implementation (#2754)
+- Fix mask show (#2763)
+- Fixed incontiguous gradients in dcn (#2775)
+- Fix bug for coco person subset (#2793)
+- Fix gcc requirement (#2806)
+- Fix the jupyter notebook demo (#2814)
+- Fix async test (#2820)
+- Fix show bug (#2824)
+- Fixed nms build warning (#2846)
+- Fix bug in test time augmentation (#2858, #2921)
+- Fix a typo in comment of apis/train (#2877)
+- Fixed bugs in transform.py (#2810)
+- Fix base_channels of regnet (#2917)
+- Fix a bug of logger in base detector (#2936)
+
+**New Features**
+- Add IoU models (#2666)
+- Add colab demo for inference
+- Support class agnostic nms (#2553)
+- Add benchmark gathering scripts (#2676)
+- Add mmdet-based project links (#2736, #2767, #2895)
+- Add config dump in training (#2779)
+- Add ClassBalancedDataset (#2721)
+- Add res2net backbone (#2237)
+- Support RegNetX models (#2710)
+- Use `mmcv.FileClient` to support different storage backends (#2712)
+- Add ClassBalancedDataset (#2721)
+- Code Release: Prime Sample Attention in Object Detection (CVPR 2020) (#2626)
+- Implement NASFCOS (#2682)
+- Add class weight in CrossEntropyLoss (#2797)
+- Support LVIS dataset (#2088)
+
+**Improvements**
+- Allow different x and y strides in anchor heads. (#2629)
+- Make FSAF loss more robust to no gt (#2680)
+- Compute pure inference time instead (#2657) and update inference speed (#2730)
+- Avoided the possibility that a patch with 0 area is cropped. (#2704)
+- Add warnings about imgs_per_gpu (#2700)
+- Add a mask rcnn example for config (#2645)
+- Add note to remove build folder when rebuilding (#2714)
+- Change to use mmcv-nightly (#2742)
+- Update model zoo (#2762, #2866, #2876, #2879, #2831)
+- Add `ori_filename` to img_metas and use it in test show-dir (#2612)
+- Support Img fields during transform (#2800)
+- Add upsample_cfg support in FPN (#2787)
+- Add `['img']` as default `img_fields` for back compatibility (#2809)
+- Add unit test for albumentation (#2788)
+- Update model_zoo url (#2832)
+- Added sleep(2) in test.py (#2847)
+- Add procedure to remove compiled shared objects (#2860)
+- Support `c10::half` in CARAFE (#2890)
+- Add dcn offset doc (#2918)
+- Update API install docs (#2929)
+- Change Normally to Default in the docstring of backbones (#2937)
+
+
 ### v2.0.0 (6/5/2020)
 In this release, we made lots of major refactoring and modifications.
 
