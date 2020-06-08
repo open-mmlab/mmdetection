@@ -466,8 +466,9 @@ class FCOSHead(nn.Module):
 
         # condition2: limit the regression range for each location
         max_regress_distance = bbox_targets.max(-1)[0]
-        inside_regress_range = (max_regress_distance >= regress_ranges[..., 0]) \
-                               & (max_regress_distance <= regress_ranges[..., 1])
+        inside_regress_range = \
+            (max_regress_distance >= regress_ranges[..., 0]) \
+            & (max_regress_distance <= regress_ranges[..., 1])
 
         # if there are still more than one objects for a location,
         # we choose the one with minimal area
@@ -485,6 +486,7 @@ class FCOSHead(nn.Module):
         # only calculate pos centerness targets, otherwise there may be nan
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
-        centerness_targets = (left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) \
-                             * (top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
+        centerness_targets = \
+            (left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) \
+            * (top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
         return torch.sqrt(centerness_targets)
