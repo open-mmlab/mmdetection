@@ -6,17 +6,17 @@ from ..utils import ResLayer
 from .resnet import BasicBlock
 
 
-class HGModule(nn.Module):
+class HourglassModule(nn.Module):
     """ Hourglass Module for HourglassNet backbone.
 
     Generate module recursively and use BasicBlock as the base unit.
 
     Args:
-        depth (int): Depth of current HGModule.
+        depth (int): Depth of current HourglassModule.
         stage_channels (list[int]): Feature channel of sub-modules in current
-            and follow-up HGModule.
+            and follow-up HourglassModule.
         stage_blocks (list[int]): Number of sub-module stacked in current and
-            follow-up HGModule.
+            follow-up HourglassModule.
         norm_cfg (dict): Dictionary to construct and config norm layer.
     """
 
@@ -25,7 +25,7 @@ class HGModule(nn.Module):
                  stage_channels,
                  stage_blocks,
                  norm_cfg=dict(type='BN', requires_grad=True)):
-        super(HGModule, self).__init__()
+        super(HourglassModule, self).__init__()
 
         self.depth = depth
 
@@ -46,14 +46,16 @@ class HGModule(nn.Module):
             stride=2,
             norm_cfg=norm_cfg)
 
-        self.low2 = HGModule(depth -
-                             1, stage_channels[1:], stage_blocks[1:]) if (
-                                 self.depth > 1) else ResLayer(
-                                     BasicBlock,
-                                     next_channel,
-                                     next_channel,
-                                     next_block,
-                                     norm_cfg=norm_cfg)
+        if self.depth > 1:
+            self.low2 = HourglassModule(depth - 1, stage_channels[1:],
+                                        stage_blocks[1:])
+        else:
+            self.low2 = ResLayer(
+                BasicBlock,
+                next_channel,
+                next_channel,
+                next_block,
+                norm_cfg=norm_cfg)
 
         self.low3 = ResLayer(
             BasicBlock,
@@ -82,13 +84,14 @@ class HourglassNet(nn.Module):
     arXiv: https://arxiv.org/abs/1603.06937
 
     Args:
-        downsample_times (int): Downsample times in a HGModule.
-        num_stacks (int): Number of HGModule stacked, 1 for Hourglass-52,
-            2 for Hourglass-104.
+        downsample_times (int): Downsample times in a HourglassModule.
+        num_stacks (int): Number of HourglassModule stacked,
+            1 for Hourglass-52, 2 for Hourglass-104.
         stage_channels (list[int]): Feature channel of each sub-module in a
-            HGModule.
-        stage_blocks (list[int]): Number of sub-module stacked in a HGModule.
-        feat_channel (int): Feature channel of conv after a HGModule.
+            HourglassModule.
+        stage_blocks (list[int]): Number of sub-module stacked in a
+            HourglassModule.
+        feat_channel (int): Feature channel of conv after a HourglassModule.
         norm_cfg (dict): Dictionary to construct and config norm layer.
 
     Example:
@@ -115,6 +118,8 @@ class HourglassNet(nn.Module):
 
         self.num_stacks = num_stacks
         assert self.num_stacks >= 1
+        assert len(stage_channels) == len(stage_blocks)
+        assert len(stage_channels) > downsample_times
 
         cur_channel = stage_channels[0]
 
@@ -122,8 +127,8 @@ class HourglassNet(nn.Module):
             ConvModule(3, 128, 7, padding=3, stride=2, norm_cfg=norm_cfg),
             ResLayer(BasicBlock, 128, 256, 1, stride=2, norm_cfg=norm_cfg))
 
-        self.hg_modules = nn.ModuleList([
-            HGModule(downsample_times, stage_channels, stage_blocks)
+        self.hourglass_modules = nn.ModuleList([
+            HourglassModule(downsample_times, stage_channels, stage_blocks)
             for _ in range(num_stacks)
         ])
 
@@ -161,11 +166,12 @@ class HourglassNet(nn.Module):
         inter = self.stem(x)
         outs = []
 
-        for ind, layer in enumerate(zip(self.hg_modules, self.out_convs)):
-            single_hg, out_conv = layer
+        for ind, layer in enumerate(
+                zip(self.hourglass_modules, self.out_convs)):
+            single_hourglass, out_conv = layer
 
-            hg = single_hg(inter)
-            conv = out_conv(hg)
+            hourglass = single_hourglass(inter)
+            conv = out_conv(hourglass)
             outs.append(conv)
 
             if ind < self.num_stacks - 1:

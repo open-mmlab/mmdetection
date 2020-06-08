@@ -746,8 +746,21 @@ def test_res2net_backbone():
 
 def test_hourglass_backbone():
     with pytest.raises(AssertionError):
-        # HourglassNet's num_stacks should larget than 0
+        # HourglassNet's num_stacks should larger than 0
         HourglassNet(num_stacks=0)
+
+    with pytest.raises(AssertionError):
+        # len(stage_channels) should equal len(stage_blocks)
+        HourglassNet(
+            stage_channels=[256, 256, 384, 384, 384],
+            stage_blocks=[2, 2, 2, 2, 2, 4])
+
+    with pytest.raises(AssertionError):
+        # len(stage_channels) should lagrer than downsample_times
+        HourglassNet(
+            downsample_times=5,
+            stage_channels=[256, 256, 384, 384, 384],
+            stage_blocks=[2, 2, 2, 2, 2])
 
     # Test HourglassNet with default setting
     model = HourglassNet()
