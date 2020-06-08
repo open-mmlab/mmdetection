@@ -89,9 +89,10 @@ class TestLoading(object):
         assert results['pad_shape'] == (288, 512, 3)
         assert results['scale_factor'] == 1.0
         assert repr(transform) == transform.__class__.__name__ + \
-            "(img_info_keys=['img_info', 'ref_img_info'], " + \
-            "to_float32=False, color_type='color', " + \
-            "file_client_args={'backend': 'disk'})"
+            "(\nimg_info_keys=['img_info', 'ref_img_info'],\n" + \
+            'to_float32=False,\n' + \
+            "color_type='color',\n" + \
+            "file_client_args={'backend': 'disk'})\n"
 
         # img_info_keys not exists
         results = dict(

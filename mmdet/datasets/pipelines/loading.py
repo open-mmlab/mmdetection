@@ -78,7 +78,7 @@ class LoadImageFromFile(object):
 
 @PIPELINES.register_module()
 class LoadMultiImagesFromMultiFiles(object):
-    """Load multi images from multi files.
+    """Load multiple images from multiple files.
     Required keys are "img_prefix" and img_info_keys (dicts that must contain
     the key "filename"). Added or updated keys are "*filename*",
     "*ori_filename*", "*img*", "img_shape", "ori_shape" (same as `img_shape`),
@@ -143,8 +143,8 @@ class LoadMultiImagesFromMultiFiles(object):
             if img_info_key in results:
                 error_flag = 0
         if error_flag:
-            raise KeyError(f'At least one key in {self.img_info_keys}'
-                           'should be in {results.keys()}')
+            raise KeyError(f'"results" should contain at least one key in '
+                           f'{self.img_info_keys}, obtain {results.keys()}')
 
         results['img_fields'] = []
         for img_info_key in self.img_info_keys:
@@ -178,11 +178,11 @@ class LoadMultiImagesFromMultiFiles(object):
         return results
 
     def __repr__(self):
-        repr_str = (f'{self.__class__.__name__}('
-                    f'img_info_keys={self.img_info_keys}, '
-                    f'to_float32={self.to_float32}, '
-                    f"color_type='{self.color_type}', "
-                    f'file_client_args={self.file_client_args})')
+        repr_str = self.__class__.__name__
+        repr_str += f'(\nimg_info_keys={self.img_info_keys},\n'
+        repr_str += f'to_float32={self.to_float32},\n'
+        repr_str += f"color_type='{self.color_type}',\n"
+        repr_str += f'file_client_args={self.file_client_args})\n'
         return repr_str
 
 
