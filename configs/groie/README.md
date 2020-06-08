@@ -31,16 +31,16 @@ the trained models.
 
 | Backbone  | Model            | Lr schd | box AP | mask AP | Config file                                                                                 |
 | :-------: | :--------------: | :-----: | :----: | :-----: | :-----------------------------------------------------------------:                         |
-| R-50-FPN  | Faster Original  |   1x    |  36.5  |         | [config file](../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py)                                |
-| R-50-FPN  | + GRoIE          |   1x    |  37.5  |         | [config file](./faster_rcnn_r50_fpn_groie_1x_coco.py)                                       |
+| R-50-FPN  | Faster Original  |   1x    |  37.4  |         | [config file](../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py)                                |
+| R-50-FPN  | + GRoIE          |   1x    |  38.3  |         | [config file](./faster_rcnn_r50_fpn_groie_1x_coco.py)                                       |
 | R-50-FPN  | Grid R-CNN       |   1x    |  39.1  |         | [config file](../grid_rcnn/grid_rcnn_r50_fpn_gn-head_1x_coco.py)                            |
-| R-50-FPN  | + GRoIE          |   1x    |  39.8  |         | [config file](./grid_rcnn_r50_fpn_gn-head_groie_1x_coco.py)                                 |
-| R-50-FPN  | Mask R-CNN       |   1x    |  37.3  |  34.1   | [config file](../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py)                                    |
-| R-50-FPN  | + GRoIE          |   1x    |  38.4  |  35.8   | [config file](./mask_rcnn_r50_fpn_groie_1x_coco.py)                                         |
-| R-50-FPN  | GC-Net           |   1x    |  39.5  |  35.9   | [config file](../gcnet/mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco.py)           |
-| R-50-FPN  | + GRoIE          |   1x    |  40.3  |  37.2   | [config file](./mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_groie_1x_coco.py)            |
-| R-101-FPN | GC-Net           |   1x    |  41.4  |  37.4   | [config file](../configs/gcnet/mask_rcnn_r101_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco.py)  |
-| R-101-FPN | + GRoIE          |   1x    |  42.2  |  38.5   | [config file](./mask_rcnn_r101_fpn_syncbn-backbone_r4_gcb_c3-c5_groie_1x_coco.py)           |
+| R-50-FPN  | + GRoIE          |   1x    |    |         | [config file](./grid_rcnn_r50_fpn_gn-head_groie_1x_coco.py)                                 |
+| R-50-FPN  | Mask R-CNN       |   1x    |  38.2  |  34.7   | [config file](../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py)                                    |
+| R-50-FPN  | + GRoIE          |   1x    |  39.0  |  36.0   | [config file](./mask_rcnn_r50_fpn_groie_1x_coco.py)                                         |
+| R-50-FPN  | GC-Net           |   1x    |  40.7  |  36.5   | [config file](../gcnet/mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco.py)           |
+| R-50-FPN  | + GRoIE          |   1x    |  41.0  |  37.8   | [config file](./mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_groie_1x_coco.py)            |
+| R-101-FPN | GC-Net           |   1x    |  42.2  |  37.8   | [config file](../configs/gcnet/mask_rcnn_r101_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco.py)  |
+| R-101-FPN | + GRoIE          |   1x    |   |    | [config file](./mask_rcnn_r101_fpn_syncbn-backbone_r4_gcb_c3-c5_groie_1x_coco.py)           |
 
 
 

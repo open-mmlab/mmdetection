@@ -42,6 +42,10 @@ class SumGenericRoiExtractor(SingleRoIExtractor):
         roi_feats = feats[0].new_zeros(
             rois.size(0), self.out_channels, *out_size)
 
+        # some times rois is an empty tensor
+        if roi_feats.shape[0] == 0:
+            return roi_feats
+
         if roi_scale_factor is not None:
             rois = self.roi_rescale(rois, roi_scale_factor)
 
