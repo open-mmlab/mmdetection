@@ -22,17 +22,19 @@ class FCOSHead(nn.Module):
     more detail.
 
     Args:
-        norm_on_bbox (bool): If true, normalize the regression targets with FPN strides.
-        centerness_on_reg (bool): If true, position centerness on the regress branch.
-            Please refer to https://github.com/tianzhi0549/FCOS/issues/89#issuecomment-516877042.
-        dcn_on_last_conv (bool): If true, use dcn in the last layer of towers.
+        norm_on_bbox (bool): If true, normalize the regression targets 
+            with FPN strides.
+        centerness_on_reg (bool): If true, position centerness on the 
+            regress branch. Please refer to https://github.com/tianzhi0549/FCOS/issues/89#issuecomment-516877042.
+        dcn_on_last_conv (bool): If true, use dcn in the last layer of 
+            towers.
 
     Example:
         >>> self = FCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
         >>> cls_score, bbox_pred, centerness = self.forward(feats)
         >>> assert len(cls_score) == len(self.scales)
-    """
+    """ # noqa: E501
 
     def __init__(self,
                  num_classes,
