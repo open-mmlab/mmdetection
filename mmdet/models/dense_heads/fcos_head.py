@@ -146,6 +146,14 @@ class FCOSHead(nn.Module):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats, self.scales,
                            self.strides)
+    """
+    Args:
+        x (torch.Tensor): FPN feature maps of the specified stride
+        scale (mmcv.cnn.Scale): Factor to resize the bbox prediction.
+        stride (int): The corresponding stride for feature maps, only 
+            used to normalize the bbox prediction when self.norm_on_bbox 
+            is True.
+    """
 
     def forward_single(self, x, scale, stride):
         cls_feat = x
@@ -474,8 +482,8 @@ class FCOSHead(nn.Module):
         # condition2: limit the regression range for each location
         max_regress_distance = bbox_targets.max(-1)[0]
         inside_regress_range = (
-            max_regress_distance >= regress_ranges[..., 0]) & (
-                max_regress_distance <= regress_ranges[..., 1])
+            (max_regress_distance >= regress_ranges[..., 0])
+            & (max_regress_distance <= regress_ranges[..., 1]))
 
         # if there are still more than one objects for a location,
         # we choose the one with minimal area
