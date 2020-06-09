@@ -4,7 +4,7 @@
 
 #include <vector>
 
-std::vector<at::Tensor> bottom_pool_forward(at::Tensor input) {
+at::Tensor bottom_pool_forward(at::Tensor input) {
   // Initialize output
   at::Tensor output = at::zeros_like(input);
 
@@ -20,11 +20,10 @@ std::vector<at::Tensor> bottom_pool_forward(at::Tensor input) {
     at::max_out(max_temp, cur_temp, next_temp);
   }
 
-  return {output};
+  return output;
 }
 
-std::vector<at::Tensor> bottom_pool_backward(at::Tensor input,
-                                             at::Tensor grad_output) {
+at::Tensor bottom_pool_backward(at::Tensor input, at::Tensor grad_output) {
   auto output = at::zeros_like(input);
 
   int32_t batch = input.size(0);
@@ -63,10 +62,10 @@ std::vector<at::Tensor> bottom_pool_backward(at::Tensor input,
     output.scatter_add_(2, un_max_ind, grad_output_temp);
   }
 
-  return {output};
+  return output;
 }
 
-std::vector<at::Tensor> left_pool_forward(at::Tensor input) {
+at::Tensor left_pool_forward(at::Tensor input) {
   // Initialize output
   at::Tensor output = at::zeros_like(input);
 
@@ -82,11 +81,10 @@ std::vector<at::Tensor> left_pool_forward(at::Tensor input) {
     at::max_out(max_temp, cur_temp, next_temp);
   }
 
-  return {output};
+  return output;
 }
 
-std::vector<at::Tensor> left_pool_backward(at::Tensor input,
-                                           at::Tensor grad_output) {
+at::Tensor left_pool_backward(at::Tensor input, at::Tensor grad_output) {
   auto output = at::zeros_like(input);
 
   int32_t batch = input.size(0);
@@ -125,10 +123,10 @@ std::vector<at::Tensor> left_pool_backward(at::Tensor input,
     output.scatter_add_(3, un_max_ind, grad_output_temp);
   }
 
-  return {output};
+  return output;
 }
 
-std::vector<at::Tensor> right_pool_forward(at::Tensor input) {
+at::Tensor right_pool_forward(at::Tensor input) {
   // Initialize output
   at::Tensor output = at::zeros_like(input);
 
@@ -144,11 +142,10 @@ std::vector<at::Tensor> right_pool_forward(at::Tensor input) {
     at::max_out(max_temp, cur_temp, next_temp);
   }
 
-  return {output};
+  return output;
 }
 
-std::vector<at::Tensor> right_pool_backward(at::Tensor input,
-                                            at::Tensor grad_output) {
+at::Tensor right_pool_backward(at::Tensor input, at::Tensor grad_output) {
   at::Tensor output = at::zeros_like(input);
 
   int32_t batch = input.size(0);
@@ -187,10 +184,10 @@ std::vector<at::Tensor> right_pool_backward(at::Tensor input,
     output.scatter_add_(3, un_max_ind, grad_output_temp);
   }
 
-  return {output};
+  return output;
 }
 
-std::vector<at::Tensor> top_pool_forward(at::Tensor input) {
+at::Tensor top_pool_forward(at::Tensor input) {
   // Initialize output
   at::Tensor output = at::zeros_like(input);
 
@@ -206,11 +203,10 @@ std::vector<at::Tensor> top_pool_forward(at::Tensor input) {
     at::max_out(max_temp, cur_temp, next_temp);
   }
 
-  return {output};
+  return output;
 }
 
-std::vector<at::Tensor> top_pool_backward(at::Tensor input,
-                                          at::Tensor grad_output) {
+at::Tensor top_pool_backward(at::Tensor input, at::Tensor grad_output) {
   auto output = at::zeros_like(input);
 
   int32_t batch = input.size(0);
@@ -249,24 +245,24 @@ std::vector<at::Tensor> top_pool_backward(at::Tensor input,
     output.scatter_add_(2, un_max_ind, grad_output_temp);
   }
 
-  return {output};
+  return output;
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("bottom_forward", &bottom_pool_forward, "Bottom Pool Forward",
+  m.def("bottom_pool_forward", &bottom_pool_forward, "Bottom Pool Forward",
         py::call_guard<py::gil_scoped_release>());
-  m.def("bottom_backward", &bottom_pool_backward, "Bottom Pool Backward",
+  m.def("bottom_pool_backward", &bottom_pool_backward, "Bottom Pool Backward",
         py::call_guard<py::gil_scoped_release>());
-  m.def("left_forward", &left_pool_forward, "Left Pool Forward",
+  m.def("left_pool_forward", &left_pool_forward, "Left Pool Forward",
         py::call_guard<py::gil_scoped_release>());
-  m.def("left_backward", &left_pool_backward, "Left Pool Backward",
+  m.def("left_pool_backward", &left_pool_backward, "Left Pool Backward",
         py::call_guard<py::gil_scoped_release>());
-  m.def("right_forward", &right_pool_forward, "Right Pool Forward",
+  m.def("right_pool_forward", &right_pool_forward, "Right Pool Forward",
         py::call_guard<py::gil_scoped_release>());
-  m.def("right_backward", &right_pool_backward, "Right Pool Backward",
+  m.def("right_pool_backward", &right_pool_backward, "Right Pool Backward",
         py::call_guard<py::gil_scoped_release>());
-  m.def("top_forward", &top_pool_forward, "Top Pool Forward",
+  m.def("top_pool_forward", &top_pool_forward, "Top Pool Forward",
         py::call_guard<py::gil_scoped_release>());
-  m.def("top_backward", &top_pool_backward, "Top Pool Backward",
+  m.def("top_pool_backward", &top_pool_backward, "Top Pool Backward",
         py::call_guard<py::gil_scoped_release>());
 }
