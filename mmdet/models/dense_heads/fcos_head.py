@@ -147,16 +147,20 @@ class FCOSHead(nn.Module):
         return multi_apply(self.forward_single, feats, self.scales,
                            self.strides)
 
-    """
-    Args:
-        x (torch.Tensor): FPN feature maps of the specified stride.
-        scale (mmcv.cnn.Scale): Factor to resize the bbox prediction.
-        stride (int): The corresponding stride for feature maps, only
-            used to normalize the bbox prediction when self.norm_on_bbox
-            is True.
-    """
-
     def forward_single(self, x, scale, stride):
+        """
+        Args:
+            x (Tensor): FPN feature maps of the specified stride.
+            scale (:obj: `mmcv.cnn.Scale`): Learnable scale module to resize
+                the bbox prediction.
+            stride (int): The corresponding stride for feature maps, only
+                used to normalize the bbox prediction when self.norm_on_bbox
+                is True.
+
+        Returns:
+            tuple: scores for each class, bbox predictions and centerness
+                predictions of input feature maps.
+        """
         cls_feat = x
         reg_feat = x
         for cls_layer in self.cls_convs:
