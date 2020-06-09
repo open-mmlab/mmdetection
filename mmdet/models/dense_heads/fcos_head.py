@@ -416,7 +416,7 @@ class FCOSHead(nn.Module):
                    gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-                gt_bboxes[:, 3] - gt_bboxes[:, 1])
+            gt_bboxes[:, 3] - gt_bboxes[:, 1])
         # TODO: figure out why these two are different
         # areas = areas[None].expand(num_points, num_gts)
         areas = areas[None].repeat(num_points, 1)
