@@ -103,6 +103,7 @@ at::Tensor SigmoidFocalLoss_forward_cuda(const at::Tensor &logits,
   AT_ASSERTM(logits.device().is_cuda(), "logits must be a CUDA tensor");
   AT_ASSERTM(targets.device().is_cuda(), "targets must be a CUDA tensor");
   AT_ASSERTM(logits.dim() == 2, "logits should be NxClass");
+  AT_ASSERTM(targets.max().item<long>() <= (long)num_classes, "target label should smaller or equal than num classes");
 
   const int num_samples = logits.size(0);
 
