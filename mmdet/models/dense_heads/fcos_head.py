@@ -144,33 +144,32 @@ class FCOSHead(nn.Module):
         normal_init(self.fcos_centerness, std=0.01)
 
     def forward(self, feats):
-        cls_scores = []
-        bbox_preds = []
-        centernesses = []
-        for i, x in enumerate(feats):
-            cls_feat = feats[i]
-            reg_feat = feats[i]
-            for cls_conv in self.cls_convs:
-                cls_feat = cls_conv(cls_feat)
-            for reg_conv in self.reg_convs:
-                reg_feat = reg_conv(reg_feat)
-            cls_score = self.fcos_cls(cls_feat)
-            if self.centerness_on_reg:
-                centerness = self.fcos_centerness(reg_feat)
-            else:
-                centerness = self.fcos_centerness(cls_feat)
-            bbox_pred = self.scales[i](self.fcos_reg(reg_feat)).float()
-            if self.norm_on_bbox:
-                bbox_pred = F.relu(bbox_pred)
-                if not self.training:
-                    bbox_pred *= self.strides[i]
-            else:
-                bbox_pred = bbox_pred.exp()
+        return multi_apply(self.forward_single, feats, self.scales,
+                           self.strides)
 
-            cls_scores.append(cls_score)
-            bbox_preds.append(bbox_pred)
-            centernesses.append(centerness)
-        return cls_scores, bbox_preds, centernesses
+    def forward_single(self, x, scale, stride):
+        cls_feat = x
+        reg_feat = x
+        for cls_layer in self.cls_convs:
+            cls_feat = cls_layer(cls_feat)
+        cls_score = self.fcos_cls(cls_feat)
+        for reg_layer in self.reg_convs:
+            reg_feat = reg_layer(reg_feat)
+        if self.centerness_on_reg:
+            centerness = self.fcos_centerness(reg_feat)
+        else:
+            centerness = self.fcos_centerness(cls_feat)
+        # scale the bbox_pred of different level
+        # float to avoid overflow when enabling FP16
+        bbox_pred = scale(self.fcos_reg(reg_feat)).float()
+        if self.norm_on_bbox:
+            bbox_pred = F.relu(bbox_pred)
+            if not self.training:
+                bbox_pred *= stride
+        else:
+            bbox_pred = bbox_pred.exp()
+
+        return cls_score, bbox_pred, centerness
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
     def loss(self,
@@ -474,9 +473,9 @@ class FCOSHead(nn.Module):
 
         # condition2: limit the regression range for each location
         max_regress_distance = bbox_targets.max(-1)[0]
-        inside_regress_range = \
-            (max_regress_distance >= regress_ranges[..., 0]) \
-            & (max_regress_distance <= regress_ranges[..., 1])
+        inside_regress_range = (
+            max_regress_distance >= regress_ranges[..., 0]) & (
+                max_regress_distance <= regress_ranges[..., 1])
 
         # if there are still more than one objects for a location,
         # we choose the one with minimal area
@@ -494,7 +493,7 @@ class FCOSHead(nn.Module):
         # only calculate pos centerness targets, otherwise there may be nan
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
-        centerness_targets = \
-            (left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) \
-            * (top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
+        centerness_targets = (
+            left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
+                top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
         return torch.sqrt(centerness_targets)
