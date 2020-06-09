@@ -146,9 +146,10 @@ class FCOSHead(nn.Module):
     def forward(self, feats):
         return multi_apply(self.forward_single, feats, self.scales,
                            self.strides)
+
     """
     Args:
-        x (torch.Tensor): FPN feature maps of the specified stride
+        x (torch.Tensor): FPN feature maps of the specified stride.
         scale (mmcv.cnn.Scale): Factor to resize the bbox prediction.
         stride (int): The corresponding stride for feature maps, only
             used to normalize the bbox prediction when self.norm_on_bbox
