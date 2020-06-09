@@ -51,6 +51,10 @@ def build_dataset(cfg, default_args=None):
                                    ClassBalancedDataset)
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
+    elif cfg['type'] == 'ConcatDataset':
+        dataset = ConcatDataset(
+            [build_dataset(c, default_args) for c in cfg['datasets']],
+            cfg.get('separate_eval', True))
     elif cfg['type'] == 'RepeatDataset':
         dataset = RepeatDataset(
             build_dataset(cfg['dataset'], default_args), cfg['times'])

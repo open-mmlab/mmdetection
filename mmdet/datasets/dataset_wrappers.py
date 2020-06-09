@@ -6,6 +6,7 @@ import numpy as np
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
 from .builder import DATASETS
+from .coco import CocoDataset
 
 
 @DATASETS.register_module()
@@ -19,9 +20,10 @@ class ConcatDataset(_ConcatDataset):
         datasets (list[:obj:`Dataset`]): A list of datasets.
     """
 
-    def __init__(self, datasets):
+    def __init__(self, datasets, separate_eval=True):
         super(ConcatDataset, self).__init__(datasets)
         self.CLASSES = datasets[0].CLASSES
+        self.separate_eval = separate_eval
         if hasattr(datasets[0], 'flag'):
             flags = []
             for i in range(0, len(datasets)):
@@ -40,6 +42,33 @@ class ConcatDataset(_ConcatDataset):
         else:
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
+
+    def evaluate(self, results, metric, **kwargs):
+        import pdb
+        pdb.set_trace()
+        if self.separate_eval:
+            start_idx = 0
+            for dataset in self.datasets:
+                dataset.evaluate(results[start_idx:start_idx + len(dataset)],
+                                 metric, **kwargs)
+                start_idx += len(dataset)
+        else:
+            assert all([
+                not isinstance(dataset, CocoDataset)
+                for dataset in self.datasets
+            ]), 'Evaluating concatenated CocoDataset is not supported'
+
+            assert all([
+                not isinstance(dataset, type(self.datasets[0]))
+                for dataset in self.datasets
+            ]), f'All the datasets should be {type(self.datasets[0])}'
+
+            original_data_infos = self.datasets[0].data_infos
+            self.dataset[0].data_infos = [
+                dataset.data_infos for dataset in self.datasets
+            ]
+            self.dataset[0].evaluate(results, metric, **kwargs)
+            self.dataset[0].data_infos = original_data_infos
 
 
 @DATASETS.register_module()
