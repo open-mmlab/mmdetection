@@ -93,11 +93,13 @@ class CenterRegionAssigner(BaseAssigner):
                  neg_scale,
                  min_pos_iof=1e-2,
                  ignore_gt_scale=0.5,
+                 foreground_dominate=True,
                  iou_calculator=dict(type='BboxOverlaps2D')):
         self.pos_scale = pos_scale
         self.neg_scale = neg_scale
         self.min_pos_iof = min_pos_iof
         self.ignore_gt_scale = ignore_gt_scale
+        self.foreground_dominate = foreground_dominate
         self.iou_calculator = build_iou_calculator(iou_calculator)
 
     def get_gt_priorities(self, gt_bboxes):
@@ -231,11 +233,16 @@ class CenterRegionAssigner(BaseAssigner):
                 assert (assigned_gt_ids[pixel_idx] != gt_idx).all(), \
                     'Some pixels are dually assigned to ignore and gt!'
                 shadowed_pixel_labels[:, 1] = gt_labels[gt_idx - 1]
-                # When a pixel is both positive and shadowed, set it as shadow.
                 override = (
                     assigned_labels[pixel_idx] == shadowed_pixel_labels[:, 1])
-                assigned_labels[pixel_idx[override]] = -1
-                assigned_gt_ids[pixel_idx[override]] = 0
+                if self.foreground_dominate:
+                    # When a pixel is both positive and shadowed, set it as pos
+                    shadowed_pixel_labels = shadowed_pixel_labels[~override]
+                else:
+                    # When a pixel is both pos and shadowed, set it as shadowed
+                    assigned_labels[pixel_idx[override]] = -1
+                    assigned_gt_ids[pixel_idx[override]] = 0
+                shadowed_pixel_labels = shadowed_pixel_labels.unique(dim=0)
 
         assign_result = AssignResult(
             num_gts, assigned_gt_ids, None, labels=assigned_labels)
