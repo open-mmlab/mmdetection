@@ -79,6 +79,7 @@ class LoadImageFromFile(object):
 @PIPELINES.register_module()
 class LoadMultiImagesFromMultiFiles(object):
     """Load multiple images from multiple files.
+
     Required keys are "img_prefix" and img_info_keys (dicts that must contain
     the key "filename"). Added or updated keys are "*filename*",
     "*ori_filename*", "*img*", "img_shape", "ori_shape" (same as `img_shape`),
