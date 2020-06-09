@@ -88,7 +88,7 @@ class LoadMultiImagesFromMultiFiles(object):
 
     Args:
         img_info_keys (list): the keys about img info.
-            Defaults: ['img_info', 'ref_img_info']
+            Default: ['img_info', 'ref_img_info']
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
             Defaults to False.
