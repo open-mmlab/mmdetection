@@ -44,8 +44,6 @@ class ConcatDataset(_ConcatDataset):
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
 
     def evaluate(self, results, metric, **kwargs):
-        import pdb
-        pdb.set_trace()
         if self.separate_eval:
             start_idx = 0
             for dataset in self.datasets:
