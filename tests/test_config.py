@@ -1,9 +1,9 @@
 from os.path import dirname, exists, join, relpath
 
 import torch
+from mmcv.runner import build_optimizer
 
 from mmdet.core import BitmapMasks, PolygonMasks
-from mmdet.core.optimizer import build_optimizer
 
 
 def _get_config_directory():
@@ -99,7 +99,7 @@ def test_config_data_pipeline():
         'foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py',
         'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
         'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain_1x_coco.py',
-        'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
+        'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py'
     ]
 
     def dummy_masks(h, w, num_obj=3, mode='bitmap'):
