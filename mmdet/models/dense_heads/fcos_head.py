@@ -150,8 +150,8 @@ class FCOSHead(nn.Module):
     Args:
         x (torch.Tensor): FPN feature maps of the specified stride
         scale (mmcv.cnn.Scale): Factor to resize the bbox prediction.
-        stride (int): The corresponding stride for feature maps, only 
-            used to normalize the bbox prediction when self.norm_on_bbox 
+        stride (int): The corresponding stride for feature maps, only
+            used to normalize the bbox prediction when self.norm_on_bbox
             is True.
     """
 
