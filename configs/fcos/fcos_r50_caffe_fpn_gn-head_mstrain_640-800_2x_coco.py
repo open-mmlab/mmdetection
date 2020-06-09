@@ -1,4 +1,4 @@
-_base_ = './fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
+_base_ = './fcos_r50_caffe_fpn_gn-head_1x_coco.py'
 img_norm_cfg = dict(
     mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [

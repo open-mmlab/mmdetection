@@ -196,8 +196,7 @@ class FCOSHead(nn.Module):
         num_pos_avg_per_gpu = max(num_pos_avg_per_gpu, 1.0)
 
         loss_cls = self.loss_cls(
-            flatten_cls_scores, flatten_labels,
-            avg_factor=num_pos_avg_per_gpu)
+            flatten_cls_scores, flatten_labels, avg_factor=num_pos_avg_per_gpu)
 
         pos_bbox_preds = flatten_bbox_preds[pos_inds]
         pos_centerness = flatten_centerness[pos_inds]
