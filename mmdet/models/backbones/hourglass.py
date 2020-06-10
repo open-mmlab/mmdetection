@@ -7,15 +7,15 @@ from .resnet import BasicBlock
 
 
 class HourglassModule(nn.Module):
-    """ Hourglass Module for HourglassNet backbone.
+    """Hourglass Module for HourglassNet backbone.
 
     Generate module recursively and use BasicBlock as the base unit.
 
     Args:
         depth (int): Depth of current HourglassModule.
-        stage_channels (list[int]): Feature channel of sub-modules in current
+        stage_channels (list[int]): Feature channels of sub-modules in current
             and follow-up HourglassModule.
-        stage_blocks (list[int]): Number of sub-module stacked in current and
+        stage_blocks (list[int]): Number of sub-modules stacked in current and
             follow-up HourglassModule.
         norm_cfg (dict): Dictionary to construct and config norm layer.
     """
@@ -78,18 +78,18 @@ class HourglassModule(nn.Module):
 
 @BACKBONES.register_module()
 class HourglassNet(nn.Module):
-    """ HourglassNet backbone.
+    """HourglassNet backbone.
 
     Stacked Hourglass Networks for Human Pose Estimation.
-    arXiv: https://arxiv.org/abs/1603.06937
+    More details can be found in `paper <https://arxiv.org/abs/1603.06937>`_ .
 
     Args:
         downsample_times (int): Downsample times in a HourglassModule.
-        num_stacks (int): Number of HourglassModule stacked,
+        num_stacks (int): Number of HourglassModule modules stacked,
             1 for Hourglass-52, 2 for Hourglass-104.
         stage_channels (list[int]): Feature channel of each sub-module in a
             HourglassModule.
-        stage_blocks (list[int]): Number of sub-module stacked in a
+        stage_blocks (list[int]): Number of sub-modules stacked in a
             HourglassModule.
         feat_channel (int): Feature channel of conv after a HourglassModule.
         norm_cfg (dict): Dictionary to construct and config norm layer.
@@ -160,23 +160,31 @@ class HourglassNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
     def init_weights(self, pretrained=None):
+        """
+        We do nothing in this function because all modules we used (ConvModule,
+        BasicBlock and etc.) have default initialization, and currently
+        we don't provide pretrained model of HourglassNet.
+        Detector's __init__() will call backbone's init_weights() with
+        pretrained as input, so we keep this function.
+        """
         pass
 
     def forward(self, x):
-        inter = self.stem(x)
-        outs = []
+        inter_feat = self.stem(x)
+        out_feats = []
 
         for ind, layer in enumerate(
                 zip(self.hourglass_modules, self.out_convs)):
             single_hourglass, out_conv = layer
 
-            hourglass = single_hourglass(inter)
-            conv = out_conv(hourglass)
-            outs.append(conv)
+            hourglass_feat = single_hourglass(inter_feat)
+            out_feat = out_conv(hourglass_feat)
+            out_feats.append(out_feat)
 
             if ind < self.num_stacks - 1:
-                inter = self.conv1x1s[ind](inter) + self.remap_convs[ind](conv)
-                inter = self.relu(inter)
-                inter = self.inters[ind](inter)
+                inter_feat = self.conv1x1s[ind](
+                    inter_feat) + self.remap_convs[ind](
+                        out_feat)
+                inter_feat = self.inters[ind](self.relu(inter_feat))
 
-        return outs
+        return out_feats
