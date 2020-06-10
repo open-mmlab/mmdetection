@@ -119,7 +119,8 @@ class PointHead(nn.Module):
         return loss
 
     def _get_uncertainty(self, mask_pred, labels):
-        """
+        """Estimate uncertainty based on pred logits
+
         We estimate uncertainty as L1 distance between 0.0 and the logit
         prediction in 'mask_pred' for the foreground class in `classes`.
 
@@ -129,7 +130,7 @@ class PointHead(nn.Module):
                 and C is the number of foreground classes.
 
             labels (list[Tensor]): A list of length R that contains either
-                predicted of ground truth class for each predicted mask.
+                predicted or ground truth class for each predicted mask.
 
         Returns:
             scores (Tensor): Uncertainty scores with the most uncertain
@@ -213,10 +214,11 @@ class PointHead(nn.Module):
         num_points = cfg.subdivision_num_points
         uncertainty_map = self._get_uncertainty(mask_pred, pred_label)
         num_rois, _, mask_height, mask_width = uncertainty_map.shape
-        h_step = 1.0 / float(mask_height)
-        w_step = 1.0 / float(mask_width)
+        h_step = 1.0 / mask_height
+        w_step = 1.0 / mask_width
 
-        uncertainty_map = uncertainty_map.view(num_rois, -1)
+        uncertainty_map = uncertainty_map.view(num_rois,
+                                               mask_height * mask_width)
         num_points = min(mask_height * mask_width, num_points)
         point_indices = uncertainty_map.topk(num_points, dim=1)[1]
         point_coords = torch.zeros(

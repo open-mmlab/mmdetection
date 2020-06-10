@@ -99,7 +99,8 @@ class PointRendRoIHead(StandardRoIHead):
             num_rois, channels, mask_height, mask_width = \
                 refined_mask_pred.shape
             if (self.test_cfg.subdivision_num_points >=
-                    4 * mask_height * mask_width and
+                    self.test_cfg.scale_factor**2 * mask_height * mask_width
+                    and
                     subdivision_step < self.test_cfg.subdivision_steps - 1):
                 continue
             point_indices, rel_roi_points = \
@@ -119,7 +120,7 @@ class PointRendRoIHead(StandardRoIHead):
             refined_mask_pred = refined_mask_pred.view(num_rois, channels,
                                                        mask_height, mask_width)
 
-            return refined_mask_pred
+        return refined_mask_pred
 
     def simple_test_mask(self,
                          x,
