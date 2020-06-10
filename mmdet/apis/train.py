@@ -5,10 +5,10 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import DistSamplerSeedHook, Runner
+from mmcv.runner import (DistSamplerSeedHook, OptimizerHook, Runner,
+                         build_optimizer)
 
-from mmdet.core import (DistEvalHook, DistOptimizerHook, EvalHook,
-                        Fp16OptimizerHook, build_optimizer)
+from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.utils import get_root_logger
 
@@ -139,7 +139,7 @@ def train_detector(model,
         cfg.work_dir,
         logger=logger,
         meta=meta)
-    # an ugly walkaround to make the .log and .log.json filenames the same
+    # an ugly workaround to make .log and .log.json filenames the same
     runner.timestamp = timestamp
 
     # fp16 setting
@@ -148,7 +148,7 @@ def train_detector(model,
         optimizer_config = Fp16OptimizerHook(
             **cfg.optimizer_config, **fp16_cfg, distributed=distributed)
     elif distributed and 'type' not in cfg.optimizer_config:
-        optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
+        optimizer_config = OptimizerHook(**cfg.optimizer_config)
     else:
         optimizer_config = cfg.optimizer_config
 

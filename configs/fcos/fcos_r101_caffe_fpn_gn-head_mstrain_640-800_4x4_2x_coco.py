@@ -1,8 +1,9 @@
 _base_ = './fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
 model = dict(
-    pretrained='open-mmlab://resnet101_caffe_bgr', backbone=dict(depth=101))
+    pretrained='open-mmlab://detectron/resnet101_caffe',
+    backbone=dict(depth=101))
 img_norm_cfg = dict(
-    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),

@@ -3,11 +3,11 @@ from abc import ABCMeta, abstractmethod
 
 import mmcv
 import numpy as np
-import pycocotools.mask as maskUtils
 import torch.nn as nn
 from mmcv.utils import print_log
 
 from mmdet.core import auto_fp16
+from mmdet.utils import get_root_logger
 
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
@@ -46,8 +46,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     def extract_feats(self, imgs):
         assert isinstance(imgs, list)
-        for img in imgs:
-            yield self.extract_feat(img)
+        return [self.extract_feat(img) for img in imgs]
 
     @abstractmethod
     def forward_train(self, imgs, img_metas, **kwargs):
@@ -77,7 +76,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     def init_weights(self, pretrained=None):
         if pretrained is not None:
-            print_log(f'load model from: {pretrained}', logger='root')
+            logger = get_root_logger()
+            print_log(f'load model from: {pretrained}', logger=logger)
 
     async def aforward_test(self, *, img, img_metas, **kwargs):
         for var, name in [(img, 'img'), (img_metas, 'img_metas')]:
@@ -188,6 +188,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         img = img.copy()
         if isinstance(result, tuple):
             bbox_result, segm_result = result
+            if isinstance(segm_result, tuple):
+                segm_result = segm_result[0]  # ms rcnn
         else:
             bbox_result, segm_result = result, None
         bboxes = np.vstack(bbox_result)
@@ -197,7 +199,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         ]
         labels = np.concatenate(labels)
         # draw segmentation masks
-        if segm_result is not None:
+        if segm_result is not None and len(labels) > 0:  # non empty
             segms = mmcv.concat_list(segm_result)
             inds = np.where(bboxes[:, -1] > score_thr)[0]
             np.random.seed(42)
@@ -208,7 +210,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             for i in inds:
                 i = int(i)
                 color_mask = color_masks[labels[i]]
-                mask = maskUtils.decode(segms[i]).astype(np.bool)
+                mask = segms[i]
                 img[mask] = img[mask] * 0.5 + color_mask * 0.5
         # if out_file specified, do not show image in window
         if out_file is not None:

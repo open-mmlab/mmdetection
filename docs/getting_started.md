@@ -302,8 +302,8 @@ GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco
 You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
 
 If you have just multiple machines connected with ethernet, you can refer to
-pytorch [launch utility](https://pytorch.org/docs/stable/distributed_deprecated.html#launch-utility).
-Usually it is slow if you do not have high speed networking like infiniband.
+PyTorch [launch utility](https://pytorch.org/docs/stable/distributed_deprecated.html#launch-utility).
+Usually it is slow if you do not have high speed networking like InfiniBand.
 
 ### Launch multiple jobs on a single machine
 
@@ -317,7 +317,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
 CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
-If you use launch training jobs with slurm, you need to modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
+If you use launch training jobs with Slurm, you need to modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
 
 In `config1.py`,
 ```python
@@ -361,7 +361,7 @@ python tools/analyze_logs.py plot_curve log.json --keys loss_cls --legend loss_c
 - Plot the classification and regression loss of some run, and save the figure to a pdf.
 
 ```shell
-python tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_reg --out losses.pdf
+python tools/analyze_logs.py plot_curve log.json --keys loss_cls loss_bbox --out losses.pdf
 ```
 
 - Compare the bbox mAP of two runs in the same figure.
@@ -373,7 +373,7 @@ python tools/analyze_logs.py plot_curve log1.json log2.json --keys bbox_mAP --le
 You can also compute the average training speed.
 
 ```shell
-python tools/analyze_logs.py cal_train_time ${CONFIG_FILE} [--include-outliers]
+python tools/analyze_logs.py cal_train_time log.json [--include-outliers]
 ```
 
 The output is expected to be like the following.
