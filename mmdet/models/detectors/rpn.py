@@ -96,8 +96,10 @@ class RPN(BaseDetector, RPNTestMixin):
                 img_shape = img_meta['img_shape']
                 scale_factor = img_meta['scale_factor']
                 flip = img_meta['flip']
+                flip_direction = img_meta['flip_direction']
                 proposals[:, :4] = bbox_mapping(proposals[:, :4], img_shape,
-                                                scale_factor, flip)
+                                                scale_factor, flip,
+                                                flip_direction)
         # TODO: remove this restriction
         return proposal_list[0].cpu().numpy()
 

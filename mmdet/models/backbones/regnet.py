@@ -23,7 +23,7 @@ class RegNet(ResNet):
             - bot_mul (float): bottleneck ratio, i.e. expansion of bottlneck.
         strides (Sequence[int]): Strides of the first block of each stage.
         base_channels (int): Base channels after stem layer.
-        in_channels (int): Number of input image channels. Normally 3.
+        in_channels (int): Number of input image channels. Default: 3.
         dilations (Sequence[int]): Dilation of each stage.
         out_indices (Sequence[int]): Output from which stages.
         style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
@@ -81,7 +81,7 @@ class RegNet(ResNet):
     def __init__(self,
                  arch,
                  in_channels=3,
-                 base_channels=64,
+                 base_channels=32,
                  strides=(2, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
                  out_indices=(0, 1, 2, 3),
