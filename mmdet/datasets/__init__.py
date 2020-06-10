@@ -5,10 +5,10 @@ from .custom import CustomDataset
 from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset,
                                RepeatDataset)
 from .lvis import LVISDataset
+from .mmfashion import mmfashionDataset
 from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
-from .mmfashion import mmfashionDataset
 from .xml_style import XMLDataset
 
 __all__ = [
