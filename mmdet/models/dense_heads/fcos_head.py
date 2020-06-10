@@ -42,6 +42,7 @@ class FCOSHead(AnchorFreeHead):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
+                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  **kwargs):
         self.regress_ranges = regress_ranges
         self.center_sampling = center_sampling
@@ -51,6 +52,7 @@ class FCOSHead(AnchorFreeHead):
             in_channels,
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
+            norm_cfg=norm_cfg,
             **kwargs)
         self.loss_centerness = build_loss(loss_centerness)
 

@@ -1,3 +1,5 @@
+from abc import ABCMeta, abstractmethod
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
@@ -7,7 +9,7 @@ from ..builder import HEADS, build_loss
 
 
 @HEADS.register_module()
-class AnchorFreeHead(nn.Module):
+class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
     """Anchor-free head (FCOS, Fovea, RepPoints, etc.).
 
     Args:
@@ -71,7 +73,7 @@ class AnchorFreeHead(nn.Module):
     def _init_layers(self):
         self._init_cls_convs()
         self._init_reg_convs()
-        self._init_conv_predictor()
+        self._init_predictor()
 
     def _init_cls_convs(self):
         self.cls_convs = nn.ModuleList()
@@ -103,7 +105,7 @@ class AnchorFreeHead(nn.Module):
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
 
-    def _init_conv_predictor(self):
+    def _init_predictor(self):
         self.conv_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.conv_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
@@ -116,6 +118,44 @@ class AnchorFreeHead(nn.Module):
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.conv_cls, std=0.01, bias=bias_cls)
         normal_init(self.conv_reg, std=0.01)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        version = local_metadata.get('version', None)
+
+        if version is None or version < 2.2:
+            # the key is different in early versions
+            # for example, 'fcos_cls' become 'conv_cls' now
+            bbox_head_keys = [
+                k for k in state_dict.keys() if k.startswith(prefix)
+            ]
+            ori_predictor_keys = []
+            new_predictor_keys = []
+            # e.g. 'fcos_cls' or 'fcos_reg'
+            for k in bbox_head_keys:
+                ori_predictor_keys.append(k)
+                k = k.split('.')
+                p = None
+                if k[1].endswith('cls'):
+                    p = 'conv_cls'
+                elif k[1].endswith('reg'):
+                    p = 'conv_reg'
+                elif k[1].endswith('centerness'):
+                    p = 'conv_centerness'
+                else:
+                    assert NotImplementedError
+                if p is not None:
+                    k[1] = p
+                    new_predictor_keys.append('.'.join(k))
+                else:
+                    ori_predictor_keys.pop(-1)
+            for i in range(len(new_predictor_keys)):
+                state_dict[new_predictor_keys[i]] = state_dict.pop(
+                    ori_predictor_keys[i])
+
+        super()._load_from_state_dict(state_dict, prefix, local_metadata,
+                                      strict, missing_keys, unexpected_keys,
+                                      error_msgs)
 
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
@@ -133,6 +173,7 @@ class AnchorFreeHead(nn.Module):
         bbox_pred = self.conv_reg(reg_feat)
         return cls_score, bbox_pred
 
+    @abstractmethod
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
     def loss(self,
              cls_scores,
@@ -144,6 +185,7 @@ class AnchorFreeHead(nn.Module):
              gt_bboxes_ignore=None):
         raise NotImplementedError
 
+    @abstractmethod
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
     def get_bboxes(self,
                    cls_scores,
@@ -154,6 +196,7 @@ class AnchorFreeHead(nn.Module):
                    rescale=None):
         raise NotImplementedError
 
+    @abstractmethod
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
         raise NotImplementedError
 
