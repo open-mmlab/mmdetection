@@ -596,8 +596,10 @@ class Expand(object):
         expand_img = np.full((int(h * ratio), int(w * ratio), c),
                              self.mean,
                              dtype=img.dtype)
-        left = int(random.uniform(0, w * ratio - w))
-        top = int(random.uniform(0, h * ratio - h))
+        # left = int(random.uniform(0, w * ratio - w))
+        # top = int(random.uniform(0, h * ratio - h))
+        left = int((w * ratio - w) / 2)
+        top = int((h * ratio - h) / 2)
         expand_img[top:top + h, left:left + w] = img
 
         results['img'] = expand_img
