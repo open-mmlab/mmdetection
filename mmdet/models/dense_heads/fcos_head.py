@@ -49,6 +49,7 @@ class FCOSHead(nn.Module):
                  norm_on_bbox=False,
                  centerness_on_reg=False,
                  dcn_on_last_conv=False,
+                 conv_bias=False,
                  background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
@@ -78,6 +79,7 @@ class FCOSHead(nn.Module):
         self.loss_centerness = build_loss(loss_centerness)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.conv_bias = conv_bias
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.fp16_enabled = False
@@ -113,7 +115,7 @@ class FCOSHead(nn.Module):
                     padding=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    bias=True))
+                    bias=self.conv_bias or self.norm_cfg is None))
             self.reg_convs.append(
                 ConvModule(
                     chn,
@@ -123,7 +125,7 @@ class FCOSHead(nn.Module):
                     padding=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    bias=True))
+                    bias=self.conv_bias or self.norm_cfg is None))
         self.fcos_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.fcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
