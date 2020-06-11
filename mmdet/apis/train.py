@@ -109,7 +109,7 @@ def train_detector(model,
         build_dataloader(
             ds,
             cfg.data.samples_per_gpu,
-            cfg.data.workers_per_gpu,
+            0,  # save memory and time
             # cfg.gpus will be ignored if distributed
             len(cfg.gpu_ids),
             dist=distributed,
@@ -170,6 +170,8 @@ def train_detector(model,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
         eval_hook = DistEvalHook if distributed else EvalHook
+        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+
         precise_bn_cfg = cfg.get('precise_bn', None)
         if precise_bn_cfg is not None:
             # build a dataloader for precise bn
@@ -177,15 +179,15 @@ def train_detector(model,
             precise_bn_dataloader = build_dataloader(
                 precise_bn_dataset,
                 cfg.data.samples_per_gpu,
-                cfg.data.workers_per_gpu,
+                0,  # save memory and time
                 # cfg.gpus will be ignored if distributed
                 len(cfg.gpu_ids),
                 dist=distributed,
                 seed=cfg.seed)
             # Precise BN on the first loader only
             runner.register_hook(
-                PreciseBNHook(precise_bn_dataloader, **precise_bn_cfg))
-        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+                PreciseBNHook(precise_bn_dataloader, **precise_bn_cfg),
+                priority='HIGH')
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)

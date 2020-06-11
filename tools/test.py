@@ -139,7 +139,7 @@ def main():
             precise_bn_dataloader = build_dataloader(
                 precise_bn_dataset,
                 cfg.data.samples_per_gpu,
-                cfg.data.workers_per_gpu,
+                0,  # save memory and time
                 1,
                 dist=distributed,
                 seed=None)

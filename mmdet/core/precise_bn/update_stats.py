@@ -1,16 +1,17 @@
 # Modified from https://github.com/facebookresearch/fvcore/blob/master/fvcore/nn/precise_bn.py  # noqa
 
-import warnings
+import logging
 
 import torch
 from mmcv.parallel import is_parallel_module
+from mmcv.utils import print_log
 from torch.nn import GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 from torch.nn.modules.instancenorm import _InstanceNorm
 
 
 @torch.no_grad()
-def update_bn_stats(model, data_loader, num_iters=200):
+def update_bn_stats(model, data_loader, num_iters=200, logger=None):
     """
     Recompute and update the batch norm stats to make them more precise. During
     training both BN stats and the weight are changing after every iteration,
@@ -43,13 +44,16 @@ def update_bn_stats(model, data_loader, num_iters=200):
     ]
 
     if len(bn_layers) == 0:
-        warnings.warn('No BN found in model')
+        print_log('No BN found in model', logger=logger, level=logging.WARNING)
         return
 
     # Finds all the other norm layers with training=True.
     for m in model.modules():
         if m.training and isinstance(m, (_InstanceNorm, GroupNorm)):
-            warnings.warn('IN/GN stats will be updated like training.')
+            print_log(
+                'IN/GN stats will be updated like training.',
+                logger=logger,
+                level=logging.WARNING)
 
     # In order to make the running stats only reflect the current batch, the
     # momentum is disabled.
@@ -69,8 +73,8 @@ def update_bn_stats(model, data_loader, num_iters=200):
             parallel_module(**data)
         for i, bn in enumerate(bn_layers):
             # Accumulates the bn stats.
-            running_mean[i] += (bn.running_mean - running_mean[i]) / (i + 1)
-            running_var[i] += (bn.running_var - running_var[i]) / (i + 1)
+            running_mean[i] += (bn.running_mean - running_mean[i]) / (ind + 1)
+            running_var[i] += (bn.running_var - running_var[i]) / (ind + 1)
             # We compute the "average of variance" across iterations.
         if ind >= num_iters:
             break

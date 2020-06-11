@@ -1,3 +1,5 @@
+import time
+
 from mmcv.runner import Hook
 from mmcv.utils import print_log
 from torch.utils.data import DataLoader
@@ -22,8 +24,15 @@ class PreciseBNHook(Hook):
         self.num_iters = num_iters
 
     def after_train_epoch(self, runner):
-        if not self.every_n_epochs(runner, self.interval):
-            return
-        print_log(f'Running Precise BN for {self.num_iters} iterations')
-        update_bn_stats(runner.model, self.dataloader, self.num_iters)
-        print_log('BN stats updated')
+        if self.every_n_epochs(runner,
+                               self.interval) or self.end_of_epoch(runner):
+            print_log(
+                f'Running Precise BN for {self.num_iters} iterations',
+                logger=runner.logger)
+            update_bn_stats(
+                runner.model,
+                self.dataloader,
+                self.num_iters,
+                logger=runner.logger)
+            print_log('BN stats updated', logger=runner.logger)
+            time.sleep(2.)
