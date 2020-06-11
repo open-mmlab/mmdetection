@@ -3,7 +3,7 @@ from .coco import CocoDataset
 
 
 @DATASETS.register_module()
-class mmfashionDataset(CocoDataset):
+class DeepFashionDataset(CocoDataset):
 
     CLASSES=('top', 'skirt', 'leggings', 'dress', 'outer', 
              'pants', 'bag', 'neckwear', 'headwear', 'eyeglass',

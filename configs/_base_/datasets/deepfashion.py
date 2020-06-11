@@ -1,6 +1,6 @@
 # dataset settings
-dataset_type = 'mmfashionDataset'
-data_root = '/data/dataset/DeepFashion/In-shop/'
+dataset_type = 'DeepFashionDataset'
+data_root = 'data/DeepFashion/In-shop/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
