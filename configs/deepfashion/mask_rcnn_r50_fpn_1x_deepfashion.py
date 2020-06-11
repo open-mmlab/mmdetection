@@ -5,7 +5,8 @@ _base_ = [
 ]
 model = dict(
     roi_head=dict(
-        bbox_head=dict(num_classes=15), mask_head=dict(num_classes=15)))
+        bbox_head=dict(num_classes=15),
+        mask_head=dict(num_classes=15)))
 # runtime settings
 total_epochs = 12
 dist_params = dict(backend='nccl')
