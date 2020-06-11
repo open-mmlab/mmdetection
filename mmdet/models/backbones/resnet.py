@@ -77,7 +77,7 @@ class BasicBlock(nn.Module):
                 identity = self.downsample(x)
 
             out += identity
-            
+
             return out
 
         if self.with_cp and x.requires_grad:
