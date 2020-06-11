@@ -8,7 +8,7 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (DistSamplerSeedHook, OptimizerHook, Runner,
                          build_optimizer)
 
-from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook
+from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook, PreciseBNHook
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.utils import get_root_logger
 
@@ -170,6 +170,21 @@ def train_detector(model,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
         eval_hook = DistEvalHook if distributed else EvalHook
+        precise_bn_cfg = cfg.get('precise_bn', None)
+        if precise_bn_cfg is not None:
+            # build a dataloader for precise bn
+            precise_bn_dataset = build_dataset(cfg.data.train)
+            precise_bn_dataloader = build_dataloader(
+                precise_bn_dataset,
+                cfg.data.samples_per_gpu,
+                cfg.data.workers_per_gpu,
+                # cfg.gpus will be ignored if distributed
+                len(cfg.gpu_ids),
+                dist=distributed,
+                seed=cfg.seed)
+            # Precise BN on the first loader only
+            runner.register_hook(
+                PreciseBNHook(precise_bn_dataloader, **precise_bn_cfg))
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
     if cfg.resume_from:
