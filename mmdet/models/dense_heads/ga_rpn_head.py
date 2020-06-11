@@ -5,12 +5,12 @@ from mmcv.cnn import normal_init
 
 from mmdet.ops import nms
 from ..builder import HEADS
-from .base_rpn_head import BaseRPNHead
 from .guided_anchor_head import GuidedAnchorHead
+from .rpn_test_mixin import RPNTestMixin
 
 
 @HEADS.register_module()
-class GARPNHead(BaseRPNHead, GuidedAnchorHead):
+class GARPNHead(RPNTestMixin, GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""
 
     def __init__(self, in_channels, **kwargs):

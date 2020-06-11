@@ -6,11 +6,11 @@ from mmcv.cnn import normal_init
 from mmdet.ops import batched_nms
 from ..builder import HEADS
 from .anchor_head import AnchorHead
-from .base_rpn_head import BaseRPNHead
+from .rpn_test_mixin import RPNTestMixin
 
 
 @HEADS.register_module()
-class RPNHead(BaseRPNHead, AnchorHead):
+class RPNHead(RPNTestMixin, AnchorHead):
 
     def __init__(self, in_channels, **kwargs):
         super(RPNHead, self).__init__(

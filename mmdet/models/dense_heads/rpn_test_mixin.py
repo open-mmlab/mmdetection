@@ -1,30 +1,36 @@
+import sys
+
 from mmdet.core import merge_aug_proposals
-from .base_dense_head import BaseDenseHead
+
+if sys.version_info >= (3, 7):
+    from mmdet.utils.contextmanagers import completed
 
 
-class BaseRPNHead(BaseDenseHead):
-    """Base class for rpn heads"""
+class RPNTestMixin(object):
 
-    def forward_train(self,
-                      x,
-                      img_metas,
-                      gt_bboxes,
-                      gt_bboxes_ignore=None,
-                      proposal_cfg=None):
-        outs = self.__call__(x)
-        loss_inputs = outs + (gt_bboxes, img_metas)
-        losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-        if proposal_cfg is None:
-            return losses
-        else:
-            proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
-            return losses, proposal_list
+    if sys.version_info >= (3, 7):
 
-    def aug_test(self, feats, img_metas):
+        async def async_simple_test_rpn(self, x, img_metas):
+            sleep_interval = self.rpn_head.test_cfg.pop(
+                'async_sleep_interval', 0.025)
+            async with completed(
+                    __name__, 'rpn_head_forward',
+                    sleep_interval=sleep_interval):
+                rpn_outs = self.__call__(x)
+
+            proposal_list = self.get_bboxes(*rpn_outs, img_metas)
+            return proposal_list
+
+    def simple_test_rpn(self, x, img_metas):
+        rpn_outs = self.__call__(x)
+        proposal_list = self.get_bboxes(*rpn_outs, img_metas)
+        return proposal_list
+
+    def aug_test_rpn(self, feats, img_metas):
         samples_per_gpu = len(img_metas[0])
         aug_proposals = [[] for _ in range(samples_per_gpu)]
         for x, img_meta in zip(feats, img_metas):
-            proposal_list = self.simple_test(x, img_meta)
+            proposal_list = self.simple_test_rpn(x, img_meta)
             for i, proposals in enumerate(proposal_list):
                 aug_proposals[i].append(proposals)
         # reorganize the order of 'img_metas' to match the dimensions

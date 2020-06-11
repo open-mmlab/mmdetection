@@ -141,7 +141,7 @@ class TwoStageDetector(BaseDetector):
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
             rpn_losses, proposal_list = self.rpn_head.forward_train(
-                x, img_metas, gt_bboxes, gt_bboxes_ignore, proposal_cfg)
+                x, img_metas, gt_bboxes, None, gt_bboxes_ignore, proposal_cfg)
             losses.update(rpn_losses)
         else:
             proposal_list = proposals
@@ -164,7 +164,8 @@ class TwoStageDetector(BaseDetector):
         x = self.extract_feat(img)
 
         if proposals is None:
-            proposal_list = await self.rpn_head.async_simple_test(x, img_meta)
+            proposal_list = await self.rpn_head.async_simple_test_rpn(
+                x, img_meta)
         else:
             proposal_list = proposals
 
@@ -178,7 +179,7 @@ class TwoStageDetector(BaseDetector):
         x = self.extract_feat(img)
 
         if proposals is None:
-            proposal_list = self.rpn_head.simple_test(x, img_metas)
+            proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         else:
             proposal_list = proposals
 
@@ -193,6 +194,6 @@ class TwoStageDetector(BaseDetector):
         """
         # recompute feats to save memory
         x = self.extract_feats(imgs)
-        proposal_list = self.rpn_head.aug_test(x, img_metas)
+        proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)

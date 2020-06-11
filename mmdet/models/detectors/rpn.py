@@ -70,13 +70,13 @@ class RPN(BaseDetector):
             self.rpn_head.debug_imgs = tensor2imgs(img)
 
         x = self.extract_feat(img)
-        losses = self.rpn_head.forward_train(x, img_metas, gt_bboxes,
+        losses = self.rpn_head.forward_train(x, img_metas, gt_bboxes, None,
                                              gt_bboxes_ignore)
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
         x = self.extract_feat(img)
-        proposal_list = self.rpn_head.simple_test(x, img_metas)
+        proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         if rescale:
             for proposals, meta in zip(proposal_list, img_metas):
                 proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])
@@ -85,7 +85,7 @@ class RPN(BaseDetector):
         return proposal_list[0].cpu().numpy()
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        proposal_list = self.rpn_head.aug_test(
+        proposal_list = self.rpn_head.aug_test_rpn(
             self.extract_feats(imgs), img_metas)
         if not rescale:
             for proposals, img_meta in zip(proposal_list, img_metas[0]):
