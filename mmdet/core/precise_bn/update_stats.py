@@ -26,6 +26,8 @@ def update_bn_stats(model, data_loader, num_iters=200):
         num_iters (int): number of iterations to compute the stats.
     """
 
+    model.train()
+
     assert len(data_loader) >= num_iters, (
         f'length of dataloader {len(data_loader)} must be greater than '
         f'iteration number {num_iters}')
@@ -70,7 +72,6 @@ def update_bn_stats(model, data_loader, num_iters=200):
             running_mean[i] += (bn.running_mean - running_mean[i]) / (i + 1)
             running_var[i] += (bn.running_var - running_var[i]) / (i + 1)
             # We compute the "average of variance" across iterations.
-        print(ind)
         if ind >= num_iters:
             break
 
