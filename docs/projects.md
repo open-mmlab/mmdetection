@@ -8,6 +8,9 @@ Pull requests are also welcomed.
 To make this list also a reference for the community to develop and compare new object detection algorithms, we list them following the time order of top-tier conferences.
 Methods already supported and maintained by MMDetection are not listed.
 
+- D2Det: Towards High Quality Object Detection and Instance Segmentation, CVPR2020. [[paper]](http://openaccess.thecvf.com/content_CVPR_2020/html/Cao_D2Det_Towards_High_Quality_Object_Detection_and_Instance_Segmentation_CVPR_2020_paper.html)[[github]](https://github.com/JialeCao001/D2Det)
+- CentripetalNet: Pursuing High-quality Keypoint Pairs for Object Detection, CVPR2020. [[paper]](https://arxiv.org/abs/2003.09119)[[github]](https://github.com/KiveeDong/CentripetalNet)
+- Learning a Unified Sample Weighting Network for Object Detection, CVPR 2020. [[paper]](http://openaccess.thecvf.com/content_CVPR_2020/html/Cai_Learning_a_Unified_Sample_Weighting_Network_for_Object_Detection_CVPR_2020_paper.html)[[github]](https://github.com/caiqi/sample-weighting-network)
 - Scale-equalizing Pyramid Convolution for Object Detection, CVPR2020. [[paper]](https://arxiv.org/abs/2005.03101) [[github]](https://github.com/jshilong/SEPC)
 - Revisiting the Sibling Head in Object Detector, CVPR2020. [[paper]](https://arxiv.org/abs/2003.07540)[[github]](https://github.com/Sense-X/TSD)
 - PolarMask: Single Shot Instance Segmentation with Polar Representation, CVPR2020. [[paper]](https://arxiv.org/abs/1909.13226)[[github]](https://github.com/xieenze/PolarMask)
