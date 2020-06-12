@@ -9,38 +9,27 @@ from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
-from ..utils import Swish
-
-
-def drop_connect(x, drop_ratio):
-    """Drop connect (adapted from DARTS)."""
-    keep_ratio = 1.0 - drop_ratio
-    mask = torch.empty([x.shape[0], 1, 1, 1], dtype=x.dtype, device=x.device)
-    mask.bernoulli_(keep_ratio)
-    x.div_(keep_ratio)
-    x.mul_(mask)
-    return x
-
-
-class SE(nn.Module):
-    """Squeeze-and-Excitation (SE) block w/ Swish: AvgPool, FC, Swish, FC, Sigmoid."""
-
-    def __init__(self, w_in, w_se):
-        super(SE, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.f_ex = nn.Sequential(
-            nn.Conv2d(w_in, w_se, 1, bias=True),
-            Swish(),
-            nn.Conv2d(w_se, w_in, 1, bias=True),
-            nn.Sigmoid(),
-        )
-
-    def forward(self, x):
-        return x * self.f_ex(self.avg_pool(x))
+from ..utils.se_block import SE
+from ..utils.activations import MemoryEfficientSwish as Swish
 
 
 class MBConv(nn.Module):
-    """Mobile inverted bottleneck block w/ SE (MBConv)."""
+    """Mobile inverted Bottleneck block with Squeeze-and-Excitation (SE).
+
+    Args:
+        input_width (int): Number of input filters.
+        output_width (int): Number of output filters.
+        stride (int): stride of the first block.
+        exp_ratio (Sequence[int]): Expansion ratio..
+        kernel (Sequence[int]): Kernel size of the dwise conv.
+        se_ratio (float): Ratio of the Squeeze-and-Excitation (SE).
+            Default: 0.25
+        conv_cfg (dict): dictionary to construct and config conv layer.
+            Default: None
+        norm_cfg (dict): dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)  
+
+    """
 
     def __init__(self, 
         input_width, 
@@ -48,14 +37,11 @@ class MBConv(nn.Module):
         stride,
         exp_ratio, 
         kernel,
-        se_ratio,
-        dc_ratio=0.0,
+        se_ratio=0.25,
         conv_cfg=None,
-        norm_cfg=dict(type='BN')):
-        # expansion, 3x3 dwise, BN, Swish, SE, 1x1, BN, skip_connection
+        norm_cfg=dict(type='BN', requires_grad=True)):
         super().__init__()
         self.exp = None
-        self.dc_ratio = dc_ratio
         exp_width = int(input_width * exp_ratio)
         if exp_width != input_width:
             self.exp = build_conv_layer(conv_cfg, input_width, exp_width, 1, stride=1, padding=0, bias=False)
@@ -94,41 +80,100 @@ class MBConv(nn.Module):
         f_x = self.se(f_x)
         f_x = self.lin_proj_bn(self.lin_proj(f_x))
         if self.has_skip:
-            if self.training and self.dc_ratio > 0.0:
-                f_x = drop_connect(f_x, self.dc_ratio)
             f_x = x + f_x
         return f_x
 
 
 class EfficientLayer(nn.Sequential):
-        def __init__(
-            self, 
-            input_width, 
-            output_width,
-            stride,
-            exp_ratio, 
-            kernel,  
-            se_ratio, 
-            depth):
+    """EfficientLayer to build EfficientNet style backbone.
 
-            layers = []
-            for d in range(depth):
-                block_stride = stride if d == 0 else 1
-                block_width = input_width if d == 0 else output_width
-                layers.append(
-                    MBConv(
-                        input_width=block_width, 
-                        output_width=output_width,
-                        stride=block_stride,
-                        exp_ratio=exp_ratio, 
-                        kernel=kernel,
-                        se_ratio=se_ratio))
+    Args:
+        input_width (int): Number of input filters.
+        output_width (int): Number of output filters.
+        depth (int): Number of Mobile inverted Bottleneck blocks.
+        stride (int): stride of the first block.
+        exp_ratios (Sequence[int]): Expansion ratios of the Mobile inverted Bottleneck blocks.
+        kernels (Sequence[int]): Kernel size of the dwise conv of the Mobile inverted Bottleneck blocks.
+        se_ratio (float): Ratio of the Squeeze-and-Excitation (SE) blocks.
+            Default: 0.25
+        conv_cfg (dict): dictionary to construct and config conv layer.
+            Default: None
+        norm_cfg (dict): dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+    """
+    def __init__(
+        self, 
+        input_width, 
+        output_width,
+        depth,
+        stride,
+        exp_ratio, 
+        kernel,  
+        se_ratio=0.25,
+        conv_cfg=None,
+        norm_cfg=dict(type='BN', requires_grad=True)):
+        layers = []
+        for d in range(depth):
+            block_stride = stride if d == 0 else 1
+            block_width = input_width if d == 0 else output_width
+            layers.append(
+                MBConv(
+                    input_width=block_width, 
+                    output_width=output_width,
+                    stride=block_stride,
+                    exp_ratio=exp_ratio, 
+                    kernel=kernel,
+                    se_ratio=se_ratio))
             super().__init__(*layers)
 
 
 @BACKBONES.register_module()
 class EfficientNet(nn.Module):
-    """EfficientNet model."""
+    """EfficientNet backbone.
+
+    More details can be found in `paper <https://arxiv.org/abs/1905.11946>`_ .
+
+    Args:
+        scale (int): Compund scale of EfficientNet, from {0, 1, 2, 3, 4, 5, 6, 7}.
+        in_channels (int): Number of input image channels. 
+            Default: 3.
+        base_channels (int): Number of channels of the stem layer. 
+            Default: 32
+        strides (Sequence[int]): Strides of the first block of each EfficientLayer.
+            Default: (1, 2, 2, 2, 1, 2, 1)
+        exp_ratios (Sequence[int]): Expansion ratios of the Mobile inverted Bottleneck blocks.
+            Default: (1, 6, 6, 6, 6, 6, 6)
+        kernels (Sequence[int]): Kernel size for the dwise conv of the Mobile inverted Bottleneck blocks.
+            Default: (3, 3, 5, 3, 5, 5, 3)
+        se_ratio (float): Ratio of the Squeeze-and-Excitation (SE) blocks.
+            Default: 0.25
+        out_indices (Sequence[int]): Output from which stages.
+            Default: (2, 4, 6)
+        frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
+            -1 means not freezing any parameters.
+            Default: -1
+       conv_cfg (dict): dictionary to construct and config conv layer.
+            Default: None
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+        norm_eval (bool): Whether to set norm layers to eval mode, namely,
+            freeze running stats (mean and var). Note: Effect on Batch Norm
+            and its variants only.
+            Default: True
+
+    Example:
+        >>> from mmdet.models import EfficientNet
+        >>> import torch
+        >>> self = EfficientNet(scale=0)
+        >>> self.eval()
+        >>> inputs = torch.rand(1, 3, 32, 32)
+        >>> level_outputs = self.forward(inputs)
+        >>> for level_out in level_outputs:
+        ...     print(tuple(level_out.shape))
+        (1, 40, 4, 4)
+        (1, 112, 2, 2)
+        (1, 320, 1, 1)
+    """
     arch_settings = {
         0: ([1, 2, 2, 3, 3, 4, 1], [16, 24, 40, 80, 112, 192, 320]),
         1: ([2, 3, 3, 4, 4, 5, 2], [16, 24, 40, 80, 112, 192, 320]),
@@ -139,7 +184,7 @@ class EfficientNet(nn.Module):
     }
 
     def __init__(self,
-                 depth,
+                 scale,
                  in_channels=3,
                  base_channels=32,
                  strides=(1, 2, 2, 2, 1, 2, 1),
@@ -150,15 +195,13 @@ class EfficientNet(nn.Module):
                  frozen_stages=-1,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 norm_eval=True,
-                 with_cp=False,
-                 zero_init_residual=True):
+                 norm_eval=True):
         super().__init__()
         self.out_indices = out_indices
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
 
-        self.stage_depths, self.stage_widths = self.arch_settings[depth]
+        self.stage_depths, self.stage_widths = self.arch_settings[scale]
 
         self._make_stem_layer(3, base_channels)
         
@@ -168,11 +211,13 @@ class EfficientNet(nn.Module):
             efficient_layer = self.make_efficient_layer(
                 input_width=previous_width,
                 output_width=w,
+                depth=d,
                 stride=strides[i],
                 exp_ratio=exp_ratios[i],
                 kernel=kernels[i],
                 se_ratio=se_ratio,
-                depth=d
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg
             )
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, efficient_layer)
