@@ -8,11 +8,10 @@
 // cyfu@cs.unc.edu
 #include <ATen/ATen.h>
 #include <ATen/cuda/CUDAContext.h>
-
 #include <THC/THC.h>
+
 #include <THC/THCAtomics.cuh>
 #include <THC/THCDeviceUtils.cuh>
-
 #include <cfloat>
 
 // TODO make it in a common file
@@ -103,7 +102,8 @@ at::Tensor SigmoidFocalLoss_forward_cuda(const at::Tensor &logits,
   AT_ASSERTM(logits.device().is_cuda(), "logits must be a CUDA tensor");
   AT_ASSERTM(targets.device().is_cuda(), "targets must be a CUDA tensor");
   AT_ASSERTM(logits.dim() == 2, "logits should be NxClass");
-  AT_ASSERTM(targets.max().item<long>() <= (long)num_classes, "target label should smaller or equal than num classes");
+  AT_ASSERTM(targets.max().item<long>() <= (long)num_classes,
+             "target label should smaller or equal than num classes");
 
   const int num_samples = logits.size(0);
 
@@ -121,10 +121,11 @@ at::Tensor SigmoidFocalLoss_forward_cuda(const at::Tensor &logits,
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       logits.scalar_type(), "SigmoidFocalLoss_forward", [&] {
-        SigmoidFocalLossForward<scalar_t><<<grid, block, 0, at::cuda::getCurrentCUDAStream()>>>(
-            losses_size, logits.contiguous().data_ptr<scalar_t>(),
-            targets.contiguous().data_ptr<int64_t>(), num_classes, gamma, alpha,
-            num_samples, losses.data_ptr<scalar_t>());
+        SigmoidFocalLossForward<scalar_t>
+            <<<grid, block, 0, at::cuda::getCurrentCUDAStream()>>>(
+                losses_size, logits.contiguous().data_ptr<scalar_t>(),
+                targets.contiguous().data_ptr<int64_t>(), num_classes, gamma,
+                alpha, num_samples, losses.data_ptr<scalar_t>());
       });
   THCudaCheck(cudaGetLastError());
   return losses;
@@ -160,11 +161,12 @@ at::Tensor SigmoidFocalLoss_backward_cuda(const at::Tensor &logits,
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       logits.scalar_type(), "SigmoidFocalLoss_backward", [&] {
-        SigmoidFocalLossBackward<scalar_t><<<grid, block, 0, at::cuda::getCurrentCUDAStream()>>>(
-            d_logits_size, logits.contiguous().data_ptr<scalar_t>(),
-            targets.contiguous().data_ptr<int64_t>(),
-            d_losses.contiguous().data_ptr<scalar_t>(), num_classes, gamma, alpha,
-            num_samples, d_logits.data_ptr<scalar_t>());
+        SigmoidFocalLossBackward<scalar_t>
+            <<<grid, block, 0, at::cuda::getCurrentCUDAStream()>>>(
+                d_logits_size, logits.contiguous().data_ptr<scalar_t>(),
+                targets.contiguous().data_ptr<int64_t>(),
+                d_losses.contiguous().data_ptr<scalar_t>(), num_classes, gamma,
+                alpha, num_samples, d_logits.data_ptr<scalar_t>());
       });
 
   THCudaCheck(cudaGetLastError());
