@@ -41,7 +41,6 @@ def test_fcos_head_loss():
         for feat_size in [4, 8, 16, 32, 64]
     ]
     cls_scores, bbox_preds, centerness = self.forward(feat)
-    # print(len(cls_scores), len(bbox_preds), len(centerness))
     # Test that empty ground truth encourages the network to predict background
     gt_bboxes = [torch.empty((0, 4))]
     gt_labels = [torch.LongTensor([])]
