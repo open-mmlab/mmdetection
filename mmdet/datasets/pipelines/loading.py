@@ -80,15 +80,15 @@ class LoadImageFromFile(object):
 class LoadMultiImagesFromMultiFiles(object):
     """Load multiple images from multiple files.
 
-    Required keys are "img_prefix" and img_info_keys (dicts that must contain
-    the key "filename"). Added or updated keys are "*filename*",
-    "*ori_filename*", "*img*", "img_shape", "ori_shape" (same as `img_shape`),
+    Required keys are "img_prefix" and self.img_info_keys (dicts that must
+    contain the key "filename"). Added or updated keys are "*filenames",
+    "*ori_filenames", "*img*", "img_shape", "ori_shape" (same as `img_shape`),
     "pad_shape" (same as `img_shape`), "scale_factor" (1.0) and "img_norm_cfg"
     (means=0 and stds=1).
 
     Args:
-        img_info_keys (list): the keys about img info.
-            Defaults to ['img_info', 'ref_img_info'].
+        img_info_prefix_keys (list): the prefix keys of img info.
+            Defaults to ['target', 'ref'].
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
             Defaults to False.
@@ -100,11 +100,15 @@ class LoadMultiImagesFromMultiFiles(object):
     """
 
     def __init__(self,
-                 img_info_keys=['img_info', 'ref_img_info'],
+                 img_info_prefix_keys=['target', 'ref'],
                  to_float32=False,
                  color_type='color',
                  file_client_args=dict(backend='disk')):
-        self.img_info_keys = img_info_keys
+        self.img_info_prefix_keys = img_info_prefix_keys.copy()
+        self.img_info_keys = [
+            img_info_prefix_key + '_imgs_info'
+            for img_info_prefix_key in self.img_info_prefix_keys
+        ]
         self.to_float32 = to_float32
         self.color_type = color_type
         self.file_client_args = file_client_args.copy()
@@ -116,12 +120,18 @@ class LoadMultiImagesFromMultiFiles(object):
         if self.to_float32:
             img = img.astype(np.float32)
 
-        # e.g. img_prefix = '' or 'ref_'
-        img_prefix = img_info_key[-12:-8]
-        results[f'{img_prefix}filename_{str(fname_id)}'] = fname
-        results[f'{img_prefix}ori_filename_{str(fname_id)}'] = ori_fname
-        results[f'{img_prefix}img_{str(fname_id)}'] = img
-        results['img_fields'].append(f'{img_prefix}img_{str(fname_id)}')
+        # e.g. img_prefix = 'target' or 'ref'
+        img_prefix = img_info_key[:-10]
+        if f'{img_prefix}_filenames' not in results:
+            results[f'{img_prefix}_filenames'] = [fname]
+        else:
+            results[f'{img_prefix}_filenames'].append(fname)
+        if f'{img_prefix}_ori_filenames' not in results:
+            results[f'{img_prefix}_ori_filenames'] = [ori_fname]
+        else:
+            results[f'{img_prefix}_ori_filenames'].append(ori_fname)
+        results[f'{img_prefix}_img_{str(fname_id)}'] = img
+        results['img_fields'].append(f'{img_prefix}_img_{str(fname_id)}')
 
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
@@ -180,10 +190,10 @@ class LoadMultiImagesFromMultiFiles(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'(\nimg_info_keys={self.img_info_keys},\n'
-        repr_str += f'to_float32={self.to_float32},\n'
-        repr_str += f"color_type='{self.color_type}',\n"
-        repr_str += f'file_client_args={self.file_client_args})\n'
+        repr_str += f'(\n\timg_info_prefix_keys={self.img_info_prefix_keys},\n'
+        repr_str += f'\tto_float32={self.to_float32},\n'
+        repr_str += f"\tcolor_type='{self.color_type}',\n"
+        repr_str += f'\tfile_client_args={self.file_client_args})\n'
         return repr_str
 
 

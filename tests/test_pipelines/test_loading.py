@@ -66,20 +66,21 @@ class TestLoading(object):
     def test_load_multi_imgs(self):
         results = dict(
             img_prefix=self.data_prefix,
-            img_info=dict(filename='color.jpg'),
-            ref_img_info=dict(filename=['color.jpg', 'color.jpg']))
+            target_imgs_info=dict(filename='color.jpg'),
+            ref_imgs_info=dict(filename=['color.jpg', 'color.jpg']))
         transform = LoadMultiImagesFromMultiFiles()
         results = transform(copy.deepcopy(results))
-        assert results['filename_0'] == osp.join(self.data_prefix, 'color.jpg')
-        assert results['ref_filename_0'] == osp.join(self.data_prefix,
-                                                     'color.jpg')
-        assert results['ref_filename_1'] == osp.join(self.data_prefix,
-                                                     'color.jpg')
-        assert results['ori_filename_0'] == 'color.jpg'
-        assert results['ref_ori_filename_0'] == 'color.jpg'
-        assert results['ref_ori_filename_1'] == 'color.jpg'
-        assert results['img_0'].shape == (288, 512, 3)
-        assert results['img_0'].dtype == np.uint8
+        assert results['target_filenames'] == [
+            osp.join(self.data_prefix, 'color.jpg')
+        ]
+        assert results['ref_filenames'] == [
+            osp.join(self.data_prefix, 'color.jpg'),
+            osp.join(self.data_prefix, 'color.jpg')
+        ]
+        assert results['target_ori_filenames'] == ['color.jpg']
+        assert results['ref_ori_filenames'] == ['color.jpg', 'color.jpg']
+        assert results['target_img_0'].shape == (288, 512, 3)
+        assert results['target_img_0'].dtype == np.uint8
         assert results['ref_img_0'].shape == (288, 512, 3)
         assert results['ref_img_0'].dtype == np.uint8
         assert results['ref_img_1'].shape == (288, 512, 3)
@@ -89,10 +90,10 @@ class TestLoading(object):
         assert results['pad_shape'] == (288, 512, 3)
         assert results['scale_factor'] == 1.0
         assert repr(transform) == transform.__class__.__name__ + \
-            "(\nimg_info_keys=['img_info', 'ref_img_info'],\n" + \
-            'to_float32=False,\n' + \
-            "color_type='color',\n" + \
-            "file_client_args={'backend': 'disk'})\n"
+            "(\n\timg_info_prefix_keys=['target', 'ref'],\n" + \
+            '\tto_float32=False,\n' + \
+            "\tcolor_type='color',\n" + \
+            "\tfile_client_args={'backend': 'disk'})\n"
 
         # img_info_keys not exists
         results = dict(
