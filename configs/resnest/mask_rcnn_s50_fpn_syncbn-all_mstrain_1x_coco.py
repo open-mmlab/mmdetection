@@ -64,4 +64,4 @@ data = dict(
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 precise_bn = dict(interval=12, num_iters=200)
-evaluation = dict(interval=12, metric='bbox')
+evaluation = dict(interval=12)
