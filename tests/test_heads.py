@@ -2,7 +2,8 @@ import mmcv
 import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
-from mmdet.models.dense_heads import AnchorHead, FSAFHead, GuidedAnchorHead, FCOSHead
+from mmdet.models.dense_heads import (AnchorHead, FSAFHead,
+                                      GuidedAnchorHead, FCOSHead)
 from mmdet.models.roi_heads.bbox_heads import BBoxHead
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
 
@@ -45,8 +46,10 @@ def test_fcos_head_loss():
     gt_bboxes = [torch.empty((0, 4))]
     gt_labels = [torch.LongTensor([])]
     gt_bboxes_ignore = None
-    empty_gt_losses = self.loss(cls_scores, bbox_preds, centerness,
-                                gt_bboxes, gt_labels, img_metas, gt_bboxes_ignore)
+    empty_gt_losses = self.loss(cls_scores, bbox_preds,
+                                centerness, gt_bboxes,
+                                gt_labels, img_metas,
+                                gt_bboxes_ignore)
     # When there is no truth, the cls loss should be nonzero but there should
     # be no box loss.
     empty_cls_loss = empty_gt_losses['loss_cls']
@@ -61,8 +64,10 @@ def test_fcos_head_loss():
         torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
     ]
     gt_labels = [torch.LongTensor([2])]
-    one_gt_losses = self.loss(cls_scores, bbox_preds, centerness,
-                              gt_bboxes, gt_labels, img_metas, gt_bboxes_ignore)
+    one_gt_losses = self.loss(cls_scores, bbox_preds,
+                              centerness, gt_bboxes,
+                              gt_labels, img_metas,
+                              gt_bboxes_ignore)
     onegt_cls_loss = one_gt_losses['loss_cls']
     onegt_box_loss = one_gt_losses['loss_bbox']
     assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'

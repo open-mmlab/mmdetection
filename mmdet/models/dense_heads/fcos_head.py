@@ -29,7 +29,7 @@ class FCOSHead(nn.Module):
         dcn_on_last_conv (bool): If true, use dcn in the last layer of
             towers.
         conv_bias (bool | str): If specified as `auto`, it will be decided by the
-            norm_cfg. Bias of conv in reg/cls tower will be set as True if `norm_cfg` 
+            norm_cfg. Bias of conv in reg/cls tower will be set as True if `norm_cfg`
             is None, otherwise False. Default: "auto".
 
     Example:
@@ -69,6 +69,7 @@ class FCOSHead(nn.Module):
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  train_cfg=None,
                  test_cfg=None):
+
         assert conv_bias=='auto' or isinstance(conv_bias, bool)
         super(FCOSHead, self).__init__()
         self.num_classes = num_classes
@@ -110,7 +111,7 @@ class FCOSHead(nn.Module):
                 conv_cfg = dict(type='DCNv2')
             else:
                 conv_cfg = self.conv_cfg
-            if bias == 'auto':
+            if self.conv_bias == 'auto':
                 bias = False if self.norm_cfg is None else True
             else:
                 bias = self.conv_bias
