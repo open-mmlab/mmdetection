@@ -299,7 +299,28 @@ def test_random_center_crop_pad():
         build_from_cfg(transform, PIPELINES)
 
     with pytest.raises(AssertionError):
-        transform = dict(type='RandomCenterCropPad', ratios=(1.0))
+        transform = dict(
+            type='RandomCenterCropPad', crop_size=(511, 511), ratios=(1.0))
+        build_from_cfg(transform, PIPELINES)
+
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=(511, 511),
+            mean=None,
+            std=None,
+            to_rgb=None)
+        build_from_cfg(transform, PIPELINES)
+
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=(511, 511),
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=True,
+            pad_mode=('do_nothing', 100))
         build_from_cfg(transform, PIPELINES)
 
     results = dict()
@@ -334,6 +355,7 @@ def test_random_center_crop_pad():
         ratios=(1.0, ),
         border=128,
         mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
         to_rgb=True)
     crop_module = build_from_cfg(train_transform, PIPELINES)
     train_results = crop_module(results)
@@ -347,9 +369,10 @@ def test_random_center_crop_pad():
         type='RandomCenterCropPad',
         crop_size=None,
         mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
         to_rgb=True,
         test_mode=True,
-        pad_mode=('logical-or', 127))
+        pad_mode=('logical_or', 127))
     crop_module = build_from_cfg(test_transform, PIPELINES)
 
     test_results = crop_module(test_results)
