@@ -22,6 +22,17 @@ class FCOSHead(nn.Module):
     more detail.
 
     Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        feat_channels (int): Number of hidden channels. Used in child classes.
+        stacked_convs (int): Number of conv layers in cls and reg tower.
+        strides (list[int] | list[tuple[int, int]]): Strides of points
+            in multiple feature levels.
+        regress_ranges (tuple[tuple[int, int]]): Regress range of multiple 
+            level points.
+        center_sampling (bool): If true, use center sampling.
+        center_sample_radius (float): Radius of center sampling.
         norm_on_bbox (bool): If true, normalize the regression targets
             with FPN strides.
         centerness_on_reg (bool): If true, position centerness on the
@@ -29,9 +40,19 @@ class FCOSHead(nn.Module):
         dcn_on_last_conv (bool): If true, use dcn in the last layer of
             towers.
         conv_bias (bool | str): If specified as `auto`, it will be decided by the
-            norm_cfg. Bias of conv in reg/cls tower will be set as True if `norm_cfg`
-            is None, otherwise False. Default: "auto".
-
+            norm_cfg. Bias of conv will be set as True if `norm_cfg` is None, otherwise 
+            False. Default: "auto".
+        background_label (int | None): Label ID of background, set as 0 for
+            RPN and num_classes for other heads. It will automatically set as
+            num_classes if None is given.
+        loss_cls (dict): Config of classification loss.
+        loss_bbox (dict): Config of localization loss.
+        loss_centerness (dict): Config of centerness loss.
+        conv_cfg (dict): dictionary to construct and config conv layer.
+        norm_cfg (dict): dictionary to construct and config norm layer.
+        train_cfg (dict): Training config of FCOS head.
+        test_cfg (dict): Testing config of FCOS head.
+        
     Example:
         >>> self = FCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
