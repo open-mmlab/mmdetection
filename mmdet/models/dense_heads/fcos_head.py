@@ -28,6 +28,9 @@ class FCOSHead(nn.Module):
             regress branch. Please refer to https://github.com/tianzhi0549/FCOS/issues/89#issuecomment-516877042.
         dcn_on_last_conv (bool): If true, use dcn in the last layer of
             towers.
+        conv_bias (bool | str): If specified as `auto`, it will be decided by the
+            norm_cfg. Bias of conv in reg/cls tower will be set as True if `norm_cfg` 
+            is None, otherwise False. Default: "auto".
 
     Example:
         >>> self = FCOSHead(11, 7)
@@ -49,7 +52,7 @@ class FCOSHead(nn.Module):
                  norm_on_bbox=False,
                  centerness_on_reg=False,
                  dcn_on_last_conv=False,
-                 conv_bias=False,
+                 conv_bias='auto',
                  background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
@@ -66,6 +69,7 @@ class FCOSHead(nn.Module):
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  train_cfg=None,
                  test_cfg=None):
+        assert conv_bias=='auto' or isinstance(conv_bias, bool)
         super(FCOSHead, self).__init__()
         self.num_classes = num_classes
         self.cls_out_channels = num_classes
@@ -106,6 +110,10 @@ class FCOSHead(nn.Module):
                 conv_cfg = dict(type='DCNv2')
             else:
                 conv_cfg = self.conv_cfg
+            if bias == 'auto':
+                bias = False if self.norm_cfg is None else True
+            else:
+                bias = self.conv_bias
             self.cls_convs.append(
                 ConvModule(
                     chn,
@@ -115,7 +123,7 @@ class FCOSHead(nn.Module):
                     padding=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    bias=self.conv_bias or self.norm_cfg is None))
+                    bias=bias))
             self.reg_convs.append(
                 ConvModule(
                     chn,
@@ -125,7 +133,7 @@ class FCOSHead(nn.Module):
                     padding=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    bias=self.conv_bias or self.norm_cfg is None))
+                    bias=bias))
         self.fcos_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.fcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
