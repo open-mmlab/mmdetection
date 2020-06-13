@@ -389,9 +389,9 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
         in_channels (int): Same as nn.Conv2d.
         out_channels (int): Same as nn.Conv2d.
         kernel_size (int or tuple[int]): Same as nn.Conv2d.
-        stride (int or tuple[int]): Same as nn.Conv2d.
-        padding (int or tuple[int]): Same as nn.Conv2d.
-        dilation (int or tuple[int]): Same as nn.Conv2d.
+        stride (int): Same as nn.Conv2d, while tuple is not supported.
+        padding (int): Same as nn.Conv2d, while tuple is not supported.
+        dilation (int): Same as nn.Conv2d, while tuple is not supported.
         groups (int): Same as nn.Conv2d.
         bias (bool or str): If specified as `auto`, it will be decided by the
             norm_cfg. Bias will be set as True if norm_cfg is None, otherwise
@@ -408,9 +408,9 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
             self.deformable_groups * 3 * self.kernel_size[0] *
             self.kernel_size[1],
             kernel_size=self.kernel_size,
-            stride=_pair(self.stride),
-            padding=_pair(self.padding),
-            dilation=_pair(self.dilation),
+            stride=self.stride,
+            padding=self.padding,
+            dilation=self.dilation,
             bias=True)
         self.init_weights()
 
