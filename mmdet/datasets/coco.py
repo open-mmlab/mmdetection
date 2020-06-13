@@ -109,11 +109,18 @@ class CocoDataset(CustomDataset):
         gt_labels = []
         gt_bboxes_ignore = []
         gt_masks_ann = []
-
+        
+        is_out_of_frame = lambda x, y: (
+            x < 0 or x >= img_info['width'] or 
+            y < 0 or y >= img_info['height']
+        )
         for i, ann in enumerate(ann_info):
             if ann.get('ignore', False):
                 continue
             x1, y1, w, h = ann['bbox']
+            
+            if is_out_of_frame(x1, y1) and is_out_of_frame(x1+w, y1+h):
+                continue 
             if ann['area'] <= 0 or w < 1 or h < 1:
                 continue
             if ann['category_id'] not in self.cat_ids:
