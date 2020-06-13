@@ -115,10 +115,10 @@ class CocoDataset(CustomDataset):
             x1, y1, w, h = ann['bbox']
             x2 = x1 + w
             y2 = y1 + h
-            if ((x1 < 0 or x1 >= img_info['width'] or
-                 y1 < 0 or y1 >= img_info['height']) and
-                (x2 < 0 or x2 >= img_info['width'] or
-                 y2 < 0 or y2 >= img_info['height'])):
+            if ((x1 < 0 or x1 >= img_info['width'] or y1 < 0
+                 or y1 >= img_info['height'])
+                    and (x2 < 0 or x2 >= img_info['width'] or y2 < 0
+                         or y2 >= img_info['height'])):
                 continue
             if ann['area'] <= 0 or w < 1 or h < 1:
                 continue
