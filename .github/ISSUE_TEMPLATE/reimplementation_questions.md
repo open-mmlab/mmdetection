@@ -13,7 +13,7 @@ There are several common situations in the reimplementation issues as below
 1. Reimplement a model in the model zoo using the provided configs
 2. Reimplement a model in the model zoo on other dataset (e.g., custom datasets)
 3. Reimplement a custom model but all the components are implemented in MMDetection
-4. Reimplement a model not in the model zoo with new modules implemented by yourself
+4. Reimplement a custom model with new modules implemented by yourself
 
 There are several things to do for different cases as below.
 - For case 1 & 3, please follow the steps in the following sections thus we could help to quick identify the issue.
