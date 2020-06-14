@@ -1,8 +1,10 @@
+import io
 import os.path as osp
 
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
+from PIL import Image
 
 from mmdet.core import BitmapMasks, PolygonMasks
 from ..builder import PIPELINES
@@ -48,7 +50,19 @@ class LoadImageFromFile(object):
             filename = results['img_info']['filename']
 
         img_bytes = self.file_client.get(filename)
-        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
+        buff = io.BytesIO(img_bytes)
+        img = Image.open(buff)
+        if img.mode.endswith('A'):
+            if img.mode != 'RGBA':  # LA converts to RGBA
+                img = img.convert('RGBA')
+            bg = Image.new('RGB', img.size, (124, 117, 104))
+            # fill in the background with the avg color in augmentation
+            bg.paste(img, mask=img.split()[3])  # 3 is alpha channel
+            img = bg
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        img = np.array(img)[:, :, ::-1]  # RGB to BGR
+
         if self.to_float32:
             img = img.astype(np.float32)
 
@@ -186,17 +200,17 @@ class LoadAnnotations(object):
 
     def _load_bboxes(self, results):
         ann_info = results['ann_info']
-        results['gt_bboxes'] = ann_info['bboxes']
+        results['gt_bboxes'] = ann_info['bboxes'].copy()
 
         gt_bboxes_ignore = ann_info.get('bboxes_ignore', None)
         if gt_bboxes_ignore is not None:
-            results['gt_bboxes_ignore'] = gt_bboxes_ignore
+            results['gt_bboxes_ignore'] = gt_bboxes_ignore.copy()
             results['bbox_fields'].append('gt_bboxes_ignore')
         results['bbox_fields'].append('gt_bboxes')
         return results
 
     def _load_labels(self, results):
-        results['gt_labels'] = results['ann_info']['labels']
+        results['gt_labels'] = results['ann_info']['labels'].copy()
         return results
 
     def _poly2mask(self, mask_ann, img_h, img_w):
