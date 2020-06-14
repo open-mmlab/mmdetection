@@ -91,7 +91,7 @@ class FCOSHead(nn.Module):
                  train_cfg=None,
                  test_cfg=None):
 
-        assert conv_bias=='auto' or isinstance(conv_bias, bool)
+        assert conv_bias == 'auto' or isinstance(conv_bias, bool)
         super(FCOSHead, self).__init__()
         self.num_classes = num_classes
         self.cls_out_channels = num_classes
