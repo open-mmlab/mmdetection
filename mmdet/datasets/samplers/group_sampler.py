@@ -36,7 +36,8 @@ class GroupSampler(Sampler):
         indices = np.concatenate(indices)
         indices = [
             indices[i * self.samples_per_gpu:(i + 1) * self.samples_per_gpu]
-            for i in range(len(indices) // self.samples_per_gpu)
+            for i in np.random.permutation(
+                range(len(indices) // self.samples_per_gpu))
         ]
         indices = np.concatenate(indices)
         indices = indices.astype(np.int64).tolist()

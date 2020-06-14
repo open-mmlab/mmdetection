@@ -229,7 +229,6 @@ class RandomFlip(object):
         return flipped
 
     def __call__(self, results):
-        random.seed(results['index'])
         if 'flip' not in results:
             flip = True if np.random.rand() < self.flip_ratio else False
             results['flip'] = flip
@@ -584,7 +583,6 @@ class Expand(object):
         self.prob = prob
 
     def __call__(self, results):
-        random.seed(results['index'])
         if random.uniform(0, 1) > self.prob:
             return results
 
@@ -592,6 +590,7 @@ class Expand(object):
             assert results['img_fields'] == ['img'], \
                 'Only single img_fields is allowed'
         img = results['img']
+
         h, w, c = img.shape
         ratio = random.uniform(self.min_ratio, self.max_ratio)
         expand_img = np.full((int(h * ratio), int(w * ratio), c),
@@ -651,7 +650,7 @@ class MinIoURandomCrop(object):
     def __init__(self, min_ious=(0.1, 0.3, 0.5, 0.7, 0.9), min_crop_size=0.3):
         # 1: return ori img
         self.min_ious = min_ious
-        self.sample_mode = (1, 0, *min_ious)
+        self.sample_mode = (1, *min_ious, 0)
         self.min_crop_size = min_crop_size
         self.bbox2label = {
             'gt_bboxes': 'gt_labels',

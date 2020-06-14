@@ -134,11 +134,6 @@ class ConvFCBBoxHead(BBoxHead):
 
     def forward(self, x):
         # shared part
-        # fc: x.dim() = 2, conv: x.dim() = 4.
-        # But, sometimes an additional axis is also added at the 0-th dim,
-        #  forming a 3-d and 5-d tensor for fc and conv, respectively.
-        assert x.dim() in (2, 3, 4, 5), \
-            f'Input shape {x.shape} is not supported'
         if self.num_shared_convs > 0:
             for conv in self.shared_convs:
                 x = conv(x)
@@ -147,7 +142,7 @@ class ConvFCBBoxHead(BBoxHead):
             if self.with_avg_pool:
                 x = self.avg_pool(x)
 
-            x = x.flatten(-3)
+            x = x.flatten(1)
 
             for fc in self.shared_fcs:
                 x = self.relu(fc(x))
@@ -157,19 +152,19 @@ class ConvFCBBoxHead(BBoxHead):
 
         for conv in self.cls_convs:
             x_cls = conv(x_cls)
-        if x_cls.dim() >= 4:
+        if x_cls.dim() > 2:
             if self.with_avg_pool:
                 x_cls = self.avg_pool(x_cls)
-            x_cls = x_cls.flatten(-3)
+            x_cls = x_cls.flatten(1)
         for fc in self.cls_fcs:
             x_cls = self.relu(fc(x_cls))
 
         for conv in self.reg_convs:
             x_reg = conv(x_reg)
-        if x_reg.dim() >= 4:
+        if x_reg.dim() > 2:
             if self.with_avg_pool:
                 x_reg = self.avg_pool(x_reg)
-            x_reg = x_reg.flatten(-3)
+            x_reg = x_reg.flatten(1)
         for fc in self.reg_fcs:
             x_reg = self.relu(fc(x_reg))
 
