@@ -1,8 +1,10 @@
+import io
 import os.path as osp
 
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
+from PIL import Image
 
 from mmdet.core import BitmapMasks, PolygonMasks
 from ..builder import PIPELINES
@@ -48,7 +50,19 @@ class LoadImageFromFile(object):
             filename = results['img_info']['filename']
 
         img_bytes = self.file_client.get(filename)
-        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
+        buff = io.BytesIO(img_bytes)
+        img = Image.open(buff)
+        if img.mode.endswith('A'):
+            if img.mode != 'RGBA':  # LA converts to RGBA
+                img = img.convert('RGBA')
+            bg = Image.new('RGB', img.size, (124, 117, 104))
+            # fill in the background with the avg color in augmentation
+            bg.paste(img, mask=img.split()[3])  # 3 is alpha channel
+            img = bg
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        img = np.array(img)[:, :, ::-1]  # RGB to BGR
+
         if self.to_float32:
             img = img.astype(np.float32)
 
