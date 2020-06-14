@@ -3,10 +3,14 @@ import torch.nn as nn
 from ..builder import LOSSES
 
 
-def gaussian_focal_loss(pred, target, weight=None, alpha=2.0, gamma=4.0):
+def gaussian_focal_loss(pred,
+                        gaussian_target,
+                        weight=None,
+                        alpha=2.0,
+                        gamma=4.0):
     eps = 1e-12
-    pos_weights = target.eq(1)
-    neg_weights = (1 - target).pow(gamma)
+    pos_weights = gaussian_target.eq(1)
+    neg_weights = (1 - gaussian_target).pow(gamma)
     pos_loss = -(pred + eps).log() * (1 - pred).pow(alpha) * pos_weights
     neg_loss = -(1 - pred + eps).log() * pred.pow(alpha) * neg_weights
 
@@ -15,6 +19,7 @@ def gaussian_focal_loss(pred, target, weight=None, alpha=2.0, gamma=4.0):
         neg_loss *= weight
 
     pos_num = pos_weights.sum()
+    # according to the paper, we use number of objects to normalize loss
     if pos_num < 1:
         loss = neg_loss.sum()
     else:
@@ -26,8 +31,8 @@ def gaussian_focal_loss(pred, target, weight=None, alpha=2.0, gamma=4.0):
 class GaussianFocalLoss(nn.Module):
     """ GaussianFocalLoss is a variant of focal loss.
 
-    Please refer to https://arxiv.org/abs/1808.01244 for more details.
-    Code is modified from https://github.com/princeton-vl/CornerNet.
+    More details can be found in `paper <https://arxiv.org/abs/1808.01244>`_
+    Code is modified from `kp_utils.py <https://github.com/princeton-vl/CornerNet/blob/master/models/py_utils/kp_utils.py#L152>`_  # noqa: E501
 
     Args:
         alpha (float): Power of prediction.
@@ -48,6 +53,7 @@ class GaussianFocalLoss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self, pred, target, weight=None):
+        # notice the target is gaussian heatmap, not 0/1 binary target.
         loss_reg = self.loss_weight * gaussian_focal_loss(
             pred, target, weight, alpha=self.alpha, gamma=self.gamma)
         return loss_reg
