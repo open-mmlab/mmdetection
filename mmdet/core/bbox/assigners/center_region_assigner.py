@@ -93,7 +93,7 @@ class CenterRegionAssigner(BaseAssigner):
                  neg_scale,
                  min_pos_iof=1e-2,
                  ignore_gt_scale=0.5,
-                 foreground_dominate=True,
+                 foreground_dominate=False,
                  iou_calculator=dict(type='BboxOverlaps2D')):
         self.pos_scale = pos_scale
         self.neg_scale = neg_scale
