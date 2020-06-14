@@ -2,8 +2,8 @@ import mmcv
 import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
-from mmdet.models.dense_heads import (AnchorHead, FSAFHead,
-                                      GuidedAnchorHead, FCOSHead)
+from mmdet.models.dense_heads import (AnchorHead, FCOSHead, FSAFHead,
+                                      GuidedAnchorHead)
 from mmdet.models.roi_heads.bbox_heads import BBoxHead
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
 
@@ -30,13 +30,12 @@ def test_fcos_head_loss():
             pos_weight=-1,
             debug=False))
     # since Focal Loss is not supported on CPU
-    self = FCOSHead(num_classes=4, in_channels=1,
-                    train_cfg=train_cfg,
-                    loss_cls=dict(
-                        type='CrossEntropyLoss',
-                        use_sigmoid=True,
-                        loss_weight=1.0)
-                    )
+    self = FCOSHead(
+        num_classes=4,
+        in_channels=1,
+        train_cfg=train_cfg,
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0))
     feat = [
         torch.rand(1, 1, s // feat_size, s // feat_size)
         for feat_size in [4, 8, 16, 32, 64]
@@ -46,10 +45,8 @@ def test_fcos_head_loss():
     gt_bboxes = [torch.empty((0, 4))]
     gt_labels = [torch.LongTensor([])]
     gt_bboxes_ignore = None
-    empty_gt_losses = self.loss(cls_scores, bbox_preds,
-                                centerness, gt_bboxes,
-                                gt_labels, img_metas,
-                                gt_bboxes_ignore)
+    empty_gt_losses = self.loss(cls_scores, bbox_preds, centerness, gt_bboxes,
+                                gt_labels, img_metas, gt_bboxes_ignore)
     # When there is no truth, the cls loss should be nonzero but there should
     # be no box loss.
     empty_cls_loss = empty_gt_losses['loss_cls']
@@ -64,10 +61,8 @@ def test_fcos_head_loss():
         torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
     ]
     gt_labels = [torch.LongTensor([2])]
-    one_gt_losses = self.loss(cls_scores, bbox_preds,
-                              centerness, gt_bboxes,
-                              gt_labels, img_metas,
-                              gt_bboxes_ignore)
+    one_gt_losses = self.loss(cls_scores, bbox_preds, centerness, gt_bboxes,
+                              gt_labels, img_metas, gt_bboxes_ignore)
     onegt_cls_loss = one_gt_losses['loss_cls']
     onegt_box_loss = one_gt_losses['loss_bbox']
     assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
@@ -107,7 +102,7 @@ def test_anchor_head_loss():
 
     # Anchor head expects a multiple levels of features per image
     feat = [
-        torch.rand(1, 1, s // (2 ** (i + 2)), s // (2 ** (i + 2)))
+        torch.rand(1, 1, s // (2**(i + 2)), s // (2**(i + 2)))
         for i in range(len(self.anchor_generator.strides))
     ]
     cls_scores, bbox_preds = self.forward(feat)
@@ -185,7 +180,7 @@ def test_fsaf_head_loss():
         head.cuda()
         # FSAF head expects a multiple levels of features per image
         feat = [
-            torch.rand(1, 1, s // (2 ** (i + 2)), s // (2 ** (i + 2))).cuda()
+            torch.rand(1, 1, s // (2**(i + 2)), s // (2**(i + 2))).cuda()
             for i in range(len(head.anchor_generator.strides))
         ]
         cls_scores, bbox_preds = head.forward(feat)
@@ -268,7 +263,7 @@ def test_ga_anchor_head_loss():
     if torch.cuda.is_available():
         head.cuda()
         feat = [
-            torch.rand(1, 4, s // (2 ** (i + 2)), s // (2 ** (i + 2))).cuda()
+            torch.rand(1, 4, s // (2**(i + 2)), s // (2**(i + 2))).cuda()
             for i in range(len(head.approx_anchor_generator.base_anchors))
         ]
         cls_scores, bbox_preds, shape_preds, loc_preds = head.forward(feat)
@@ -512,14 +507,14 @@ def _demodata_refine_boxes(n_roi, n_img, rng=0):
     roi_boxes = random_boxes(n_roi, scale=scale, rng=rng)
     if n_img == 0:
         assert n_roi == 0, 'cannot have any rois if there are no images'
-        img_ids = torch.empty((0,), dtype=torch.long)
+        img_ids = torch.empty((0, ), dtype=torch.long)
         roi_boxes = torch.empty((0, 4), dtype=torch.float32)
     else:
-        img_ids = rng.randint(0, n_img, (n_roi,))
+        img_ids = rng.randint(0, n_img, (n_roi, ))
         img_ids = torch.from_numpy(img_ids)
     rois = torch.cat([img_ids[:, None].float(), roi_boxes], dim=1)
     # Create other args
-    labels = rng.randint(0, 2, (n_roi,))
+    labels = rng.randint(0, 2, (n_roi, ))
     labels = torch.from_numpy(labels).long()
     bbox_preds = random_boxes(n_roi, scale=scale, rng=rng)
     # For each image, pretend random positive boxes are gts
@@ -528,7 +523,7 @@ def _demodata_refine_boxes(n_roi, n_img, rng=0):
     pos_per_img = [sum(lbl_per_img.get(gid, [])) for gid in range(n_img)]
     # randomly generate with numpy then sort with torch
     _pos_is_gts = [
-        rng.randint(0, 2, (npos,)).astype(np.uint8) for npos in pos_per_img
+        rng.randint(0, 2, (npos, )).astype(np.uint8) for npos in pos_per_img
     ]
     pos_is_gts = [
         torch.from_numpy(p).sort(descending=True)[0] for p in _pos_is_gts
