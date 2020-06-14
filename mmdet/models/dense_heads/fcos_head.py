@@ -144,7 +144,7 @@ class FCOSHead(nn.Module):
                     padding=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    bias=bias))
+                    bias=self.conv_bias))
             self.reg_convs.append(
                 ConvModule(
                     chn,
@@ -154,7 +154,7 @@ class FCOSHead(nn.Module):
                     padding=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    bias=bias))
+                    bias=self.conv_bias))
         self.fcos_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.fcos_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
