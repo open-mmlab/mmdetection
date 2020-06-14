@@ -50,7 +50,8 @@ def isr_p(cls_score,
     for i in range(len(sampling_results)):
         gt_i = sampling_results[i].pos_assigned_gt_inds
         gts.append(gt_i + last_max_gt)
-        last_max_gt = gt_i.max() + 1
+        if len(gt_i) != 0:
+            last_max_gt = gt_i.max() + 1
     gts = torch.cat(gts)
     assert len(gts) == num_pos
 
