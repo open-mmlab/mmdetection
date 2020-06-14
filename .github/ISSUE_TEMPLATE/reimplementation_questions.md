@@ -25,6 +25,7 @@ There are several things to do for different cases as below.
 2. The issue has not been fixed in the latest version.
 
 **Describe the issue**
+
 A clear and concise description of what the problem you meet and what have you done.
 
 **Reproduction**
@@ -47,10 +48,12 @@ A placeholder for the config.
     - Other environment variables that may be related (such as `$PATH`, `$LD_LIBRARY_PATH`, `$PYTHONPATH`, etc.)
 
 **Results**
+
 If applicable, paste the related results here, e.g., what you expect and what you get.
 ```
 A placeholder for results comparison
 ```
 
 **Issue fix**
+
 If you have already identified the reason, you can provide the information here. If you are willing to create a PR to fix it, please also leave a comment here and that would be much appreciated!
