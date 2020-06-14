@@ -131,10 +131,6 @@ class FCOSHead(nn.Module):
                 conv_cfg = dict(type='DCNv2')
             else:
                 conv_cfg = self.conv_cfg
-            if self.conv_bias == 'auto':
-                bias = False if self.norm_cfg is None else True
-            else:
-                bias = self.conv_bias
             self.cls_convs.append(
                 ConvModule(
                     chn,
