@@ -29,7 +29,7 @@ class FCOSHead(nn.Module):
         stacked_convs (int): Number of conv layers in cls and reg tower.
         strides (list[int] | list[tuple[int, int]]): Strides of points
             in multiple feature levels.
-        regress_ranges (tuple[tuple[int, int]]): Regress range of multiple 
+        regress_ranges (tuple[tuple[int, int]]): Regress range of multiple
             level points.
         center_sampling (bool): If true, use center sampling.
         center_sample_radius (float): Radius of center sampling.
@@ -40,7 +40,7 @@ class FCOSHead(nn.Module):
         dcn_on_last_conv (bool): If true, use dcn in the last layer of
             towers.
         conv_bias (bool | str): If specified as `auto`, it will be decided by the
-            norm_cfg. Bias of conv will be set as True if `norm_cfg` is None, otherwise 
+            norm_cfg. Bias of conv will be set as True if `norm_cfg` is None, otherwise
             False. Default: "auto".
         background_label (int | None): Label ID of background, set as 0 for
             RPN and num_classes for other heads. It will automatically set as
@@ -51,8 +51,7 @@ class FCOSHead(nn.Module):
         conv_cfg (dict): dictionary to construct and config conv layer.
         norm_cfg (dict): dictionary to construct and config norm layer.
         train_cfg (dict): Training config of FCOS head.
-        test_cfg (dict): Testing config of FCOS head.
-        
+        test_cfg (dict): Testing config of FCOS head.        
     Example:
         >>> self = FCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
