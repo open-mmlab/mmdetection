@@ -51,7 +51,8 @@ class FCOSHead(nn.Module):
         conv_cfg (dict): dictionary to construct and config conv layer.
         norm_cfg (dict): dictionary to construct and config norm layer.
         train_cfg (dict): Training config of FCOS head.
-        test_cfg (dict): Testing config of FCOS head.        
+        test_cfg (dict): Testing config of FCOS head.
+        
     Example:
         >>> self = FCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
