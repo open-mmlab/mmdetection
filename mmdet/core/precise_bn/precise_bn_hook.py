@@ -24,8 +24,7 @@ class PreciseBNHook(Hook):
         self.num_iters = num_iters
 
     def after_train_epoch(self, runner):
-        if self.every_n_epochs(runner,
-                               self.interval) or self.end_of_epoch(runner):
+        if self.every_n_epochs(runner, self.interval):
             print_log(
                 f'Running Precise BN for {self.num_iters} iterations',
                 logger=runner.logger)
