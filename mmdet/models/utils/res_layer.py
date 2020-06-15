@@ -70,7 +70,7 @@ class ResLayer(nn.Sequential):
                     norm_cfg=norm_cfg,
                     **kwargs))
             inplanes = planes * block.expansion
-            for _ in range(num_blocks - 1):
+            for _ in range(1, num_blocks):
                 layers.append(
                     block(
                         inplanes=inplanes,
@@ -80,7 +80,7 @@ class ResLayer(nn.Sequential):
                         norm_cfg=norm_cfg,
                         **kwargs))
 
-        else:  # reverse is for Hourglass
+        else:  # downsample_first=False is for HourglassModule
             for _ in range(num_blocks - 1):
                 layers.append(
                     block(

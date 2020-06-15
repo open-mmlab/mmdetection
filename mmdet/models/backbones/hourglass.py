@@ -81,9 +81,8 @@ class HourglassNet(nn.Module):
     """HourglassNet backbone.
 
     Stacked Hourglass Networks for Human Pose Estimation.
-    More details can be found in the `paper `_ .
-
-    .. _paper: https://arxiv.org/abs/1603.06937
+    More details can be found in the `paper
+    <https://arxiv.org/abs/1603.06937>`_ .
 
     Args:
         downsample_times (int): Downsample times in a HourglassModule.
