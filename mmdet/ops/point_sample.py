@@ -1,3 +1,5 @@
+# Modified from https://github.com/facebookresearch/detectron2/tree/master/projects/PointRend  # noqa
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -150,7 +152,7 @@ class SimpleRoIAlign(nn.Module):
     def __init__(self, out_size, spatial_scale, aligned=True):
         """
         Args:
-            out_size (tuple): h, w
+            out_size (tuple[int]): h, w
             spatial_scale (float): scale the input boxes by this number
             aligned (bool): if False, use the legacy implementation in
                 MMDetection, align_corners=True will be used in F.grid_sample.
