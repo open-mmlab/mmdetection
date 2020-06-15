@@ -46,13 +46,13 @@ def test_resize():
     results['ori_shape'] = img.shape
     # Set initial values for default meta_keys
     results['pad_shape'] = img.shape
-    results['scale_factor'] = 1.0
     results['img_fields'] = ['img', 'img2']
 
     results = resize_module(results)
     assert np.equal(results['img'], results['img2']).all()
 
     results.pop('scale')
+    results.pop('scale_factor')
     transform = dict(
         type='Resize',
         img_scale=(1280, 800),

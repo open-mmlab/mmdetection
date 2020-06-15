@@ -178,7 +178,8 @@ class Resize(object):
                 img_shape = results['img'].shape[:2]
                 scale_factor = results['scale_factor']
                 assert isinstance(scale_factor, float)
-                results['scale'] = [int(x * scale_factor) for x in img_shape]
+                results['scale'] = tuple(
+                    [int(x * scale_factor) for x in img_shape])
             else:
                 self._random_scale(results)
         self._resize_img(results)
@@ -1163,7 +1164,6 @@ class RandomCenterCropPad(object):
                     return results
         else:  # test mode
             results['img_shape'] = img.shape
-
             if self.pad_mode[0] in ['logical_or']:
                 target_h = h | self.pad_mode[1]
                 target_w = w | self.pad_mode[1]
