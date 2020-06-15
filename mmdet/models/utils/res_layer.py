@@ -17,7 +17,7 @@ class ResLayer(nn.Sequential):
             Default: None
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: dict(type='BN')
-        downsample_first (bool): Downsample at the first block or latest block.
+        downsample_first (bool): Downsample at the first block or last block.
             False for Hourglass, True for ResNet. Default: True
     """
 
@@ -70,7 +70,7 @@ class ResLayer(nn.Sequential):
                     norm_cfg=norm_cfg,
                     **kwargs))
             inplanes = planes * block.expansion
-            for i in range(1, num_blocks):
+            for _ in range(num_blocks - 1):
                 layers.append(
                     block(
                         inplanes=inplanes,
@@ -81,7 +81,7 @@ class ResLayer(nn.Sequential):
                         **kwargs))
 
         else:  # reverse is for Hourglass
-            for i in range(1, num_blocks):
+            for _ in range(num_blocks - 1):
                 layers.append(
                     block(
                         inplanes=inplanes,

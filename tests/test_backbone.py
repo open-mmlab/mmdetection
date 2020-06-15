@@ -762,8 +762,18 @@ def test_hourglass_backbone():
             stage_channels=[256, 256, 384, 384, 384],
             stage_blocks=[2, 2, 2, 2, 2])
 
-    # Test HourglassNet with default setting
-    model = HourglassNet()
+    # Test HourglassNet-52
+    model = HourglassNet(num_stacks=1)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 511, 511)
+    feat = model(imgs)
+    assert len(feat) == 1
+    assert feat[0].shape == torch.Size([1, 256, 128, 128])
+
+    # Test HourglassNet-104
+    model = HourglassNet(num_stacks=2)
     model.init_weights()
     model.train()
 

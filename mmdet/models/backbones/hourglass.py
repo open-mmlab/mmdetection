@@ -81,7 +81,9 @@ class HourglassNet(nn.Module):
     """HourglassNet backbone.
 
     Stacked Hourglass Networks for Human Pose Estimation.
-    More details can be found in `paper <https://arxiv.org/abs/1603.06937>`_ .
+    More details can be found in the `paper `_ .
+
+    .. _paper: https://arxiv.org/abs/1603.06937
 
     Args:
         downsample_times (int): Downsample times in a HourglassModule.
@@ -110,8 +112,8 @@ class HourglassNet(nn.Module):
     def __init__(self,
                  downsample_times=5,
                  num_stacks=2,
-                 stage_channels=[256, 256, 384, 384, 384, 512],
-                 stage_blocks=[2, 2, 2, 2, 2, 4],
+                 stage_channels=(256, 256, 384, 384, 384, 512),
+                 stage_blocks=(2, 2, 2, 2, 2, 4),
                  feat_channel=256,
                  norm_cfg=dict(type='BN', requires_grad=True)):
         super(HourglassNet, self).__init__()
@@ -173,9 +175,9 @@ class HourglassNet(nn.Module):
         inter_feat = self.stem(x)
         out_feats = []
 
-        for ind, layer in enumerate(
-                zip(self.hourglass_modules, self.out_convs)):
-            single_hourglass, out_conv = layer
+        for ind in range(self.num_stacks):
+            single_hourglass = self.hourglass_modules[ind]
+            out_conv = self.out_convs[ind]
 
             hourglass_feat = single_hourglass(inter_feat)
             out_feat = out_conv(hourglass_feat)
