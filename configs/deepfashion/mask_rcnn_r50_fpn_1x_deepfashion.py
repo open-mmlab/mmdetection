@@ -7,5 +7,4 @@ model = dict(
     roi_head=dict(
         bbox_head=dict(num_classes=15), mask_head=dict(num_classes=15)))
 # runtime settings
-total_epochs = 12
-workflow = [('train', 5)]
+total_epochs = 15
