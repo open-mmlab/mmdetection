@@ -13,7 +13,8 @@ class MultiScaleFlipAug(object):
 
     Args:
         transforms (list[dict]): Transforms to apply in each augmentation.
-        img_scale (tuple | list[tuple]: Images scales for resizing.
+        img_scale (tuple | list[tuple] | None): Images scales for resizing.
+        scale_factor (float | list[float] | None): Scale factors for resizing.
         flip (bool): Whether apply flip augmentation. Default: False.
         flip_direction (str | list[str]): Flip augmentation directions,
             options are "horizontal" and "vertical". If flip_direction is list,
@@ -24,18 +25,20 @@ class MultiScaleFlipAug(object):
     def __init__(self,
                  transforms,
                  img_scale=None,
-                 ratio=None,
+                 scale_factor=None,
                  flip=False,
                  flip_direction='horizontal'):
         self.transforms = Compose(transforms)
-        assert img_scale or ratio
+        assert img_scale or scale_factor
+        assert None in [img_scale, scale_factor]
         if img_scale is not None:
             self.img_scale = img_scale if isinstance(img_scale,
                                                      list) else [img_scale]
             self.scale_key = 'scale'
             assert mmcv.is_list_of(self.img_scale, tuple)
         else:
-            self.img_scale = ratio if isinstance(ratio, list) else [ratio]
+            self.img_scale = scale_factor if isinstance(
+                scale_factor, list) else [scale_factor]
             self.scale_key = 'scale_factor'
 
         self.flip = flip

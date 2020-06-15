@@ -28,7 +28,9 @@ class Resize(object):
     This transform resizes the input image to some scale. Bboxes and masks are
     then resized with the same scale factor. If the input dict contains the key
     "scale", then the scale in the input dict is used, otherwise the specified
-    scale in the init method is used.
+    scale in the init method is used. If the input dict contains the key
+    "scale_factor" (if MultiScaleFlipAug not given img_scale but given ratio),
+    the actual scale we used will computed by image shape and scale_factor.
 
     `img_scale` can either be a tuple (single-scale) or a list of tuple
     (multi-scale). There are 3 multiscale modes:
@@ -172,7 +174,13 @@ class Resize(object):
 
     def __call__(self, results):
         if 'scale' not in results:
-            self._random_scale(results)
+            if 'scale_factor' in results:
+                img_shape = results['img'].shape[:2]
+                scale_factor = results['scale_factor']
+                assert isinstance(scale_factor, float)
+                results['scale'] = [int(x * scale_factor) for x in img_shape]
+            else:
+                self._random_scale(results)
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
@@ -952,6 +960,8 @@ class RandomCenterCropPad(object):
     instead of right-bottom padding.
 
     The relation between output image (padding image) and original image:
+
+    :code-block:
                     output image
            +----------------------------+
            |          padded area       |
@@ -988,12 +998,11 @@ class RandomCenterCropPad(object):
         6. Refine annotations.
 
     Test pipeline:
-        1. Resize the original image for multi-scale testing (if necessary).
-        2. Compute output shape according to `pad_mode`.
-        3. Generate padding image with center matches the original image
+        1. Compute output shape according to `pad_mode`.
+        2. Generate padding image with center matches the original image
             center.
-        4. Initialize the padding image with pixel value equals to `mean`.
-        5. Copy the `cropped area` to padding image.
+        3. Initialize the padding image with pixel value equals to `mean`.
+        4. Copy the `cropped area` to padding image.
 
     Args:
         crop_size (tuple | None): expected size after crop, final size will
@@ -1153,12 +1162,6 @@ class RandomCenterCropPad(object):
                             'RandomCenterCropPad only supports bbox.')
                     return results
         else:  # test mode
-            if 'scale_factor' in results:
-                scale_factor = results['scale_factor']
-                img = mmcv.imresize(
-                    img, (int(w * scale_factor), int(h * scale_factor)),
-                    return_scale=False)
-                h, w, c = img.shape
             results['img_shape'] = img.shape
 
             if self.pad_mode[0] in ['logical_or']:
