@@ -16,13 +16,13 @@ class RPNTestMixin(object):
             async with completed(
                     __name__, 'rpn_head_forward',
                     sleep_interval=sleep_interval):
-                rpn_outs = self.__call__(x)
+                rpn_outs = self(x)
 
             proposal_list = self.get_bboxes(*rpn_outs, img_metas)
             return proposal_list
 
     def simple_test_rpn(self, x, img_metas):
-        rpn_outs = self.__call__(x)
+        rpn_outs = self(x)
         proposal_list = self.get_bboxes(*rpn_outs, img_metas)
         return proposal_list
 

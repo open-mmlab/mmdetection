@@ -25,7 +25,7 @@ class BaseDenseHead(nn.Module, metaclass=ABCMeta):
                       gt_bboxes_ignore=None,
                       proposal_cfg=None,
                       **kwargs):
-        outs = self.__call__(x)
+        outs = self(x)
         if gt_labels is None:
             loss_inputs = outs + (gt_bboxes, img_metas)
         else:
