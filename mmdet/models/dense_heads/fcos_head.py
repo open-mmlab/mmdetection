@@ -4,12 +4,13 @@ from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
 from ..builder import HEADS, build_loss
+from .base_dense_head import BaseDenseHead
 
 INF = 1e8
 
 
 @HEADS.register_module()
-class FCOSHead(nn.Module):
+class FCOSHead(BaseDenseHead):
     """Anchor-free head used in `FCOS <https://arxiv.org/abs/1904.01355>`_.
 
     The FCOS head does not use anchor boxes. Instead bounding boxes are

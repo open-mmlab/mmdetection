@@ -7,10 +7,11 @@ from mmdet.core import (PointGenerator, build_assigner, build_sampler,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
 from mmdet.ops import DeformConv
 from ..builder import HEADS, build_loss
+from .base_dense_head import BaseDenseHead
 
 
 @HEADS.register_module()
-class RepPointsHead(nn.Module):
+class RepPointsHead(BaseDenseHead):
     """RepPoint head.
 
     Args:
