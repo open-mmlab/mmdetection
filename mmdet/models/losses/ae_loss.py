@@ -23,9 +23,9 @@ def ae_loss_per_image(tl_preds, br_preds, match):
             compute the push loss.
 
     Args:
-        tl_preds (tensor): embedding feature map of left-top corner.
-        br_preds (tensor): embedding feature map of bottim-right corner.
-        match (list): downsampled coordinates pair of each ground truth box.
+        tl_preds (tensor): Embedding feature map of left-top corner.
+        br_preds (tensor): Embedding feature map of bottim-right corner.
+        match (list): Downsampled coordinates pair of each ground truth box.
     """
 
     tl_list, br_list, me_list = [], [], []
