@@ -1,7 +1,4 @@
-_base_ = [
-    '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
-]
+_base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
 # model settings
 model = dict(
     type='FasterRCNN',
@@ -43,9 +40,6 @@ model = dict(
             roi_layer=dict(type='RoIAlign', out_size=7, sample_num=0),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
-        k_i=75,
-        k_e=10,
-        iteration_count=100,
         bbox_head=dict(
             type='Shared2FCBBoxHead',
             in_channels=256,
@@ -101,7 +95,8 @@ train_cfg = dict(
             neg_pos_ub=-1,
             add_gt_as_proposals=True),
         pos_weight=-1,
-        debug=False))
+        debug=False,
+        dynamic_rcnn=dict(k_i=75, k_e=10, iteration_count=100)))
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,

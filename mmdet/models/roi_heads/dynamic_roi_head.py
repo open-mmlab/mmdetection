@@ -8,16 +8,13 @@ from .standard_roi_head import StandardRoIHead
 
 @HEADS.register_module()
 class DynamicRoIHead(StandardRoIHead):
-    """RoI head for Dynamic R-CNN
+    """RoI head for `Dynamic R-CNN <https://arxiv.org/abs/2004.06002>`_."""
 
-    https://arxiv.org/abs/2004.06002
-    """
-
-    def __init__(self, k_i=75, k_e=10, iteration_count=100, **kwargs):
+    def __init__(self, **kwargs):
         super(DynamicRoIHead, self).__init__(**kwargs)
-        self.k_i = k_i
-        self.k_e = k_e
-        self.iteration_count = iteration_count
+        self.k_i = self.train_cfg.dynamic_rcnn.k_i
+        self.k_e = self.train_cfg.dynamic_rcnn.k_e
+        self.iteration_count = self.train_cfg.dynamic_rcnn.iteration_count
         self.initial_iou = 0.4
         self.initial_beta = 1.0
         self.cur_iou = []
