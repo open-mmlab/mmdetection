@@ -67,7 +67,7 @@ def ae_loss_per_image(tl_preds, br_preds, match):
 
 
 @LOSSES.register_module()
-class AELoss(nn.Module):
+class AssociativeEmbeddingLoss(nn.Module):
     """Associative Embedding Loss.
 
     More details can be found in
@@ -81,7 +81,7 @@ class AELoss(nn.Module):
     """
 
     def __init__(self, pull_weight=0.25, push_weight=0.25):
-        super(AELoss, self).__init__()
+        super(AssociativeEmbeddingLoss, self).__init__()
         self.pull_weight = pull_weight
         self.push_weight = push_weight
 

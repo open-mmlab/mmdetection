@@ -22,6 +22,8 @@ class GaussianFocalLoss(nn.Module):
     <https://arxiv.org/abs/1808.01244>`_
     Code is modified from `kp_utils.py
     <https://github.com/princeton-vl/CornerNet/blob/master/models/py_utils/kp_utils.py#L152>`_  # noqa: E501
+    Please notice that the target in GaussianFocalLoss is a gaussian heatmap,
+    not 0/1 binary target.
 
     Args:
         alpha (float): Power of prediction.
@@ -44,7 +46,7 @@ class GaussianFocalLoss(nn.Module):
     def forward(
             self,
             pred,
-            target,  # target is gaussian heatmap, not 0/1 binary target.
+            target,
             weight=None,
             avg_factor=None,
             reduction_override=None):
