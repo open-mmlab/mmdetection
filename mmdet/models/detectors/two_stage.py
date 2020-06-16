@@ -141,7 +141,12 @@ class TwoStageDetector(BaseDetector):
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
             rpn_losses, proposal_list = self.rpn_head.forward_train(
-                x, img_metas, gt_bboxes, None, gt_bboxes_ignore, proposal_cfg)
+                x,
+                img_metas,
+                gt_bboxes,
+                gt_labels=None,
+                gt_bboxes_ignore=gt_bboxes_ignore,
+                proposal_cfg=proposal_cfg)
             losses.update(rpn_losses)
         else:
             proposal_list = proposals
