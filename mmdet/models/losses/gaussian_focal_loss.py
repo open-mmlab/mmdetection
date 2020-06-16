@@ -43,13 +43,12 @@ class GaussianFocalLoss(nn.Module):
         self.reduction = reduction
         self.loss_weight = loss_weight
 
-    def forward(
-            self,
-            pred,
-            target,
-            weight=None,
-            avg_factor=None,
-            reduction_override=None):
+    def forward(self,
+                pred,
+                target,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None):
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)
