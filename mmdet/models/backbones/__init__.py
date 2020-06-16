@@ -1,4 +1,5 @@
 from .efficientnet import EfficientNet
+from .hourglass import HourglassNet
 from .hrnet import HRNet
 from .regnet import RegNet
 from .res2net import Res2Net
@@ -8,4 +9,5 @@ from .ssd_vgg import SSDVGG
 
 __all__ = [
     'EfficientNet', 'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet', 'Res2Net'
+    'HourglassNet'
 ]
