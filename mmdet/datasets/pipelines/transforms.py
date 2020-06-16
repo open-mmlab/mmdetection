@@ -180,7 +180,7 @@ class Resize(object):
                 scale_factor = results['scale_factor']
                 assert isinstance(scale_factor, float)
                 results['scale'] = tuple(
-                    [int(x * scale_factor) for x in img_shape])
+                    [int(x * scale_factor) for x in img_shape][::-1])
             else:
                 self._random_scale(results)
         self._resize_img(results)

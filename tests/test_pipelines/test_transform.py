@@ -379,3 +379,77 @@ def test_random_center_crop_pad():
     assert test_results['img'].shape[:2] == (h | 127, w | 127)
     assert test_results['pad_shape'][:2] == (h | 127, w | 127)
     assert 'border' in test_results
+
+
+def test_multi_scale_flip_aug():
+    # test assertion if give both scale_factor and img_scale
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='MultiScaleFlipAug',
+            scale_factor=1.0,
+            img_scale=[(1333, 800)],
+            transforms=[dict(type='Resize')])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion if both scale_factor and img_scale are None
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='MultiScaleFlipAug',
+            scale_factor=None,
+            img_scale=None,
+            transforms=[dict(type='Resize')])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion if img_scale is not tuple or list of tuple
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='MultiScaleFlipAug',
+            img_scale=[1333, 800],
+            transforms=[dict(type='Resize')])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion if flip_direction is not str or list of str
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='MultiScaleFlipAug',
+            img_scale=[(1333, 800)],
+            flip_direction=1,
+            transforms=[dict(type='Resize')])
+        build_from_cfg(transform, PIPELINES)
+
+    scale_transform = dict(
+        type='MultiScaleFlipAug',
+        img_scale=[(1333, 800), (1333, 640)],
+        transforms=[dict(type='Resize', keep_ratio=True)])
+    transform = build_from_cfg(scale_transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+    results['img'] = img
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    # Set initial values for default meta_keys
+    results['pad_shape'] = img.shape
+    results['img_fields'] = ['img']
+
+    scale_results = transform(copy.deepcopy(results))
+    assert len(scale_results['img']) == 2
+    assert scale_results['img'][0].shape == (750, 1333, 3)
+    assert scale_results['img_shape'][0] == (750, 1333, 3)
+    assert scale_results['img'][1].shape == (640, 1138, 3)
+    assert scale_results['img_shape'][1] == (640, 1138, 3)
+
+    scale_factor_transform = dict(
+        type='MultiScaleFlipAug',
+        scale_factor=[0.8, 1.0, 1.2],
+        transforms=[dict(type='Resize', keep_ratio=False)])
+    transform = build_from_cfg(scale_factor_transform, PIPELINES)
+    scale_factor_results = transform(copy.deepcopy(results))
+    assert len(scale_factor_results['img']) == 3
+    assert scale_factor_results['img'][0].shape == (230, 409, 3)
+    assert scale_factor_results['img_shape'][0] == (230, 409, 3)
+    assert scale_factor_results['img'][1].shape == (288, 512, 3)
+    assert scale_factor_results['img_shape'][1] == (288, 512, 3)
+    assert scale_factor_results['img'][2].shape == (345, 614, 3)
+    assert scale_factor_results['img_shape'][2] == (345, 614, 3)
