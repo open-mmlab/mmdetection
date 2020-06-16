@@ -365,20 +365,22 @@ class CornerHead(nn.Module):
         gt_tl_hmp, gt_br_hmp, gt_tl_off, gt_br_off, match = targets
 
         # Detection loss
-        tl_det_loss = self.loss_hmp(
-            tl_hmp.sigmoid(),
-            gt_tl_hmp,
-            avg_factor=max(1,
-                           gt_tl_hmp.eq(1).sum()))
-        br_det_loss = self.loss_hmp(
-            br_hmp.sigmoid(),
-            gt_br_hmp,
-            avg_factor=max(1,
-                           gt_br_hmp.eq(1).sum()))
-        det_loss = (tl_det_loss + br_det_loss) / 2.0
+        det_loss = None
+        if self.loss_hmp is not None:
+            tl_det_loss = self.loss_hmp(
+                tl_hmp.sigmoid(),
+                gt_tl_hmp,
+                avg_factor=max(1,
+                               gt_tl_hmp.eq(1).sum()))
+            br_det_loss = self.loss_hmp(
+                br_hmp.sigmoid(),
+                gt_br_hmp,
+                avg_factor=max(1,
+                               gt_br_hmp.eq(1).sum()))
+            det_loss = (tl_det_loss + br_det_loss) / 2.0
 
         # AE loss
-        if self.with_corner_emb:
+        if self.with_corner_emb and self.loss_emb is not None:
             pull_loss, push_loss = self.loss_emb(tl_emb, br_emb, match)
         else:
             pull_loss, push_loss = None, None
@@ -389,9 +391,9 @@ class CornerHead(nn.Module):
         br_off_mask = gt_br_hmp.eq(1).sum(1).gt(0).unsqueeze(1).type_as(
             gt_br_hmp)
         tl_off_loss = self.loss_off(
-            tl_off, gt_tl_off, tl_off_mask, avg_factor=tl_off_mask.sum())
+            tl_off, gt_tl_off, tl_off_mask, avg_factor=max(1, tl_off_mask.sum()))
         br_off_loss = self.loss_off(
-            br_off, gt_br_off, br_off_mask, avg_factor=br_off_mask.sum())
+            br_off, gt_br_off, br_off_mask, avg_factor=max(1, br_off_mask.sum()))
 
         off_loss = (tl_off_loss + br_off_loss) / 2.0
 
