@@ -26,32 +26,37 @@ class FCOSHead(nn.Module):
             category.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of hidden channels. Used in child classes.
+            Default: 256.
         stacked_convs (int): Number of conv layers in cls and reg tower.
+            Default: 4.
         strides (list[int] | list[tuple[int, int]]): Strides of points
-            in multiple feature levels.
+            in multiple feature levels. Default: (4, 8, 16, 32, 64).
         regress_ranges (tuple[tuple[int, int]]): Regress range of multiple
             level points.
-        center_sampling (bool): If true, use center sampling.
-        center_sample_radius (float): Radius of center sampling.
+        center_sampling (bool): If true, use center sampling. Default: False.
+        center_sample_radius (float): Radius of center sampling. Default: 1.5.
         norm_on_bbox (bool): If true, normalize the regression targets
-            with FPN strides.
+            with FPN strides. Default: False.
         centerness_on_reg (bool): If true, position centerness on the
             regress branch. Please refer to https://github.com/tianzhi0549/FCOS/issues/89#issuecomment-516877042.
+            Default: False.
         dcn_on_last_conv (bool): If true, use dcn in the last layer of
-            towers.
+            towers. Default: False.
         conv_bias (bool | str): If specified as `auto`, it will be decided by the
             norm_cfg. Bias of conv will be set as True if `norm_cfg` is None, otherwise
             False. Default: "auto".
         background_label (int | None): Label ID of background, set as 0 for
             RPN and num_classes for other heads. It will automatically set as
-            num_classes if None is given.
+            num_classes if None is given. Default: None.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
         loss_centerness (dict): Config of centerness loss.
         conv_cfg (dict): dictionary to construct and config conv layer.
+            Default: None.
         norm_cfg (dict): dictionary to construct and config norm layer.
-        train_cfg (dict): Training config of FCOS head.
-        test_cfg (dict): Testing config of FCOS head.
+            Default: norm_cfg=dict(type='GN', num_groups=32, requires_grad=True).
+        train_cfg (dict): Training config of FCOS head. Default: None.
+        test_cfg (dict): Testing config of FCOS head. Default: None.
     Example:
         >>> self = FCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
@@ -126,8 +131,7 @@ class FCOSHead(nn.Module):
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
-            if self.dcn_on_last_conv and \
-                    i == self.stacked_convs - 1:
+            if (self.dcn_on_last_conv and i == self.stacked_convs - 1):
                 conv_cfg = dict(type='DCNv2')
             else:
                 conv_cfg = self.conv_cfg
