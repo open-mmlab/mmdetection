@@ -600,15 +600,15 @@ def test_corner_head_loss():
     empty_gt_losses = self.loss(tl_heats, br_heats, tl_embs, br_embs, tl_offs,
                                 br_offs, gt_bboxes, gt_labels, img_metas,
                                 gt_bboxes_ignore)
-    #empty_det_loss = sum(empty_gt_losses['det_loss'])
-    #empty_push_loss = sum(empty_gt_losses['push_loss'])
-    #empty_pull_loss = sum(empty_gt_losses['pull_loss'])
+    # empty_det_loss = sum(empty_gt_losses['det_loss'])
+    # empty_push_loss = sum(empty_gt_losses['push_loss'])
+    # empty_pull_loss = sum(empty_gt_losses['pull_loss'])
     empty_off_loss = sum(empty_gt_losses['off_loss'])
-    #assert empty_det_loss.item() > 0, 'det loss should be non-zero'
-    #assert empty_push_loss.item() == 0, (
-    #    'there should be no push loss when there are no true boxes')
-    #assert empty_push_loss.item() == 0, (
-    #    'there should be no pull loss when there are no true boxes')
+    # assert empty_det_loss.item() > 0, 'det loss should be non-zero'
+    # assert empty_push_loss.item() == 0, (
+    #     'there should be no push loss when there are no true boxes')
+    # assert empty_push_loss.item() == 0, (
+    #     'there should be no pull loss when there are no true boxes')
     assert empty_off_loss.item() == 0, (
         'there should be no box loss when there are no true boxes')
 
@@ -621,11 +621,11 @@ def test_corner_head_loss():
     one_gt_losses = self.loss(tl_heats, br_heats, tl_embs, br_embs, tl_offs,
                               br_offs, gt_bboxes, gt_labels, img_metas,
                               gt_bboxes_ignore)
-    #onegt_det_loss = sum(one_gt_losses['det_loss'])
-    #onegt_push_loss = sum(one_gt_losses['push_loss'])
-    #onegt_pull_loss = sum(one_gt_losses['pull_loss'])
+    # onegt_det_loss = sum(one_gt_losses['det_loss'])
+    # onegt_push_loss = sum(one_gt_losses['push_loss'])
+    # onegt_pull_loss = sum(one_gt_losses['pull_loss'])
     onegt_off_loss = sum(one_gt_losses['off_loss'])
-    #assert onegt_det_loss.item() > 0, 'det loss should be non-zero'
-    #assert onegt_push_loss.item() > 0, 'push loss should be non-zero'
-    #assert onegt_pull_loss.item() > 0, 'pull loss should be non-zero'
+    # assert onegt_det_loss.item() > 0, 'det loss should be non-zero'
+    # assert onegt_push_loss.item() > 0, 'push loss should be non-zero'
+    # assert onegt_pull_loss.item() > 0, 'pull loss should be non-zero'
     assert onegt_off_loss.item() > 0, 'off loss should be non-zero'

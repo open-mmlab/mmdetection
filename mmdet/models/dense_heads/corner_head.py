@@ -391,9 +391,15 @@ class CornerHead(nn.Module):
         br_off_mask = gt_br_hmp.eq(1).sum(1).gt(0).unsqueeze(1).type_as(
             gt_br_hmp)
         tl_off_loss = self.loss_off(
-            tl_off, gt_tl_off, tl_off_mask, avg_factor=max(1, tl_off_mask.sum()))
+            tl_off,
+            gt_tl_off,
+            tl_off_mask,
+            avg_factor=max(1, tl_off_mask.sum()))
         br_off_loss = self.loss_off(
-            br_off, gt_br_off, br_off_mask, avg_factor=max(1, br_off_mask.sum()))
+            br_off,
+            gt_br_off,
+            br_off_mask,
+            avg_factor=max(1, br_off_mask.sum()))
 
         off_loss = (tl_off_loss + br_off_loss) / 2.0
 
