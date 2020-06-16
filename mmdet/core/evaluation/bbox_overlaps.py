@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def bbox_overlaps(bboxes1, bboxes2, mode='iou'):
+def bbox_overlaps(bboxes1, bboxes2, mode='iou', eps=1e-6):
     """Calculate the ious between each bbox of bboxes1 and bboxes2.
 
     Args:
@@ -41,6 +41,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou'):
             union = area1[i] + area2 - overlap
         else:
             union = area1[i] if not exchange else area2
+        union = np.maximum(union, eps)
         ious[i, :] = overlap / union
     if exchange:
         ious = ious.T

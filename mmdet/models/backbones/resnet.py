@@ -51,7 +51,7 @@ class BasicBlock(nn.Module):
         self.downsample = downsample
         self.stride = stride
         self.dilation = dilation
-        assert not with_cp
+        self.with_cp = with_cp
 
     @property
     def norm1(self):
@@ -62,19 +62,29 @@ class BasicBlock(nn.Module):
         return getattr(self, self.norm2_name)
 
     def forward(self, x):
-        identity = x
 
-        out = self.conv1(x)
-        out = self.norm1(out)
-        out = self.relu(out)
+        def _inner_forward(x):
+            identity = x
 
-        out = self.conv2(out)
-        out = self.norm2(out)
+            out = self.conv1(x)
+            out = self.norm1(out)
+            out = self.relu(out)
 
-        if self.downsample is not None:
-            identity = self.downsample(x)
+            out = self.conv2(out)
+            out = self.norm2(out)
 
-        out += identity
+            if self.downsample is not None:
+                identity = self.downsample(x)
+
+            out += identity
+
+            return out
+
+        if self.with_cp and x.requires_grad:
+            out = cp.checkpoint(_inner_forward, x)
+        else:
+            out = _inner_forward(x)
+
         out = self.relu(out)
 
         return out
