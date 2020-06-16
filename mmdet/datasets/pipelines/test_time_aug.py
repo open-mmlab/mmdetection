@@ -29,8 +29,7 @@ class MultiScaleFlipAug(object):
                  flip=False,
                  flip_direction='horizontal'):
         self.transforms = Compose(transforms)
-        assert img_scale or scale_factor
-        assert None in [img_scale, scale_factor]
+        assert (img_scale is None) ^ (scale_factor is None)
         if img_scale is not None:
             self.img_scale = img_scale if isinstance(img_scale,
                                                      list) else [img_scale]

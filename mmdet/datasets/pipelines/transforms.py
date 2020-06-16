@@ -29,8 +29,9 @@ class Resize(object):
     then resized with the same scale factor. If the input dict contains the key
     "scale", then the scale in the input dict is used, otherwise the specified
     scale in the init method is used. If the input dict contains the key
-    "scale_factor" (if MultiScaleFlipAug not given img_scale but given ratio),
-    the actual scale we used will computed by image shape and scale_factor.
+    "scale_factor" (if MultiScaleFlipAug does not give img_scale but
+    scale_factor), the actual scale will be computed by image shape and
+    scale_factor.
 
     `img_scale` can either be a tuple (single-scale) or a list of tuple
     (multi-scale). There are 3 multiscale modes:
