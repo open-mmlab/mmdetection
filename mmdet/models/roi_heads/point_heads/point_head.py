@@ -36,11 +36,11 @@ class PointHead(nn.Module):
         self.norm_cfg = norm_cfg
         self.loss_point = build_loss(loss_point)
 
-        fc_channels_in = in_channels + num_classes
+        fc_in_channels = in_channels + num_classes
         self.fcs = nn.ModuleList()
         for k in range(num_fcs):
             fc = ConvModule(
-                fc_channels_in,
+                fc_in_channels,
                 fc_channels,
                 kernel_size=1,
                 stride=1,
@@ -48,12 +48,12 @@ class PointHead(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg)
             self.fcs.append(fc)
-            fc_channels_in = fc_channels
-            fc_channels_in += num_classes if self.coarse_pred_each_layer else 0
+            fc_in_channels = fc_channels
+            fc_in_channels += num_classes if self.coarse_pred_each_layer else 0
 
         out_channels = 1 if self.class_agnostic else self.num_classes
         self.fc_logits = nn.Conv1d(
-            fc_channels_in, out_channels, kernel_size=1, stride=1, padding=0)
+            fc_in_channels, out_channels, kernel_size=1, stride=1, padding=0)
         self.relu = nn.ReLU()
 
     def init_weights(self):
