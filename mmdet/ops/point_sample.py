@@ -165,7 +165,7 @@ def point_sample(input, points, align_corners=False, **kwargs):
 class SimpleRoIAlign(nn.Module):
 
     def __init__(self, out_size, spatial_scale, aligned=True):
-        """Simple RoI align in PointRend
+        """Simple RoI align in PointRend, faster than standard RoIAlign.
 
         Args:
             out_size (tuple[int]): h, w
