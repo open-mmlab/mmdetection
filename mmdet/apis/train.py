@@ -8,7 +8,7 @@ import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (DistSamplerSeedHook, Runner, get_dist_info,
-                         obj_from_dict)
+                         obj_from_dict, LoggerHook)
 
 from mmdet import datasets
 from mmdet.core import (CocoDistEvalmAPHook, CocoDistEvalRecallHook,
@@ -213,6 +213,17 @@ def build_optimizer(model, optimizer_cfg):
         return optimizer_cls(params, **optimizer_cfg)
 
 
+def add_logging_on_first_and_last_iter(runner):
+    def every_n_inner_iters(self, runner, n):
+        if runner.inner_iter == 0 or runner.inner_iter == runner.max_iters - 1:
+            return True
+        return (runner.inner_iter + 1) % n == 0 if n > 0 else False
+
+    for hook in runner.hooks:
+        if isinstance(hook, LoggerHook):
+            hook.every_n_inner_iters = every_n_inner_iters.__get__(hook)
+
+
 def _dist_train(model,
                 dataset,
                 cfg,
@@ -248,6 +259,9 @@ def _dist_train(model,
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
     runner.register_hook(DistSamplerSeedHook())
+
+    add_logging_on_first_and_last_iter(runner)
+
     # register eval hooks
     if validate:
         val_dataset_cfg = cfg.data.val
@@ -311,6 +325,8 @@ def _non_dist_train(model,
         optimizer_config = cfg.optimizer_config
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
+
+    add_logging_on_first_and_last_iter(runner)
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
