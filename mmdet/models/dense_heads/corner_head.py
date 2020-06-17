@@ -79,7 +79,7 @@ class CornerHead(nn.Module):
         loss_hmp (dict | None): Config of corner heatmap loss. Default:
             GaussianFocalLoss.
         loss_emb (dict | None): Config of corner embedding loss. Default:
-            AELoss.
+            AssociativeEmbeddingLoss.
         loss_off (dict | None): Config of corner offset loss. Default:
             SmoothL1Loss.
     """
@@ -97,7 +97,9 @@ class CornerHead(nn.Module):
                      gamma=4.0,
                      loss_weight=1),
                  loss_emb=dict(
-                     type='AELoss', pull_weight=0.25, push_weight=0.25),
+                     type='AssociativeEmbeddingLoss',
+                     pull_weight=0.25,
+                     push_weight=0.25),
                  loss_off=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1)):
         super(CornerHead, self).__init__()
         self.num_classes = num_classes
@@ -365,21 +367,19 @@ class CornerHead(nn.Module):
         gt_tl_hmp, gt_br_hmp, gt_tl_off, gt_br_off, match = targets
 
         # Detection loss
-        det_loss = None
-        if self.loss_hmp is not None:
-            tl_det_loss = self.loss_hmp(
-                tl_hmp.sigmoid(),
-                gt_tl_hmp,
-                avg_factor=max(1,
-                               gt_tl_hmp.eq(1).sum()))
-            br_det_loss = self.loss_hmp(
-                br_hmp.sigmoid(),
-                gt_br_hmp,
-                avg_factor=max(1,
-                               gt_br_hmp.eq(1).sum()))
-            det_loss = (tl_det_loss + br_det_loss) / 2.0
+        tl_det_loss = self.loss_hmp(
+            tl_hmp.sigmoid(),
+            gt_tl_hmp,
+            avg_factor=max(1,
+                           gt_tl_hmp.eq(1).sum()))
+        br_det_loss = self.loss_hmp(
+            br_hmp.sigmoid(),
+            gt_br_hmp,
+            avg_factor=max(1,
+                           gt_br_hmp.eq(1).sum()))
+        det_loss = (tl_det_loss + br_det_loss) / 2.0
 
-        # AE loss
+        # AssociativeEmbedding loss
         if self.with_corner_emb and self.loss_emb is not None:
             pull_loss, push_loss = self.loss_emb(tl_emb, br_emb, match)
         else:
