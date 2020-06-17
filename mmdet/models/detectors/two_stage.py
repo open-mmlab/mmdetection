@@ -4,11 +4,10 @@ import torch.nn as nn
 # from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
-from .test_mixins import RPNTestMixin
 
 
 @DETECTORS.register_module()
-class TwoStageDetector(BaseDetector, RPNTestMixin):
+class TwoStageDetector(BaseDetector):
     """Base class for two-stage detectors.
 
     Two-stage detectors typically consisting of a region proposal network and a
@@ -139,16 +138,16 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
 
         # RPN forward and loss
         if self.with_rpn:
-            rpn_outs = self.rpn_head(x)
-            rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas)
-            rpn_losses = self.rpn_head.loss(
-                *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-            losses.update(rpn_losses)
-
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
-            proposal_list = self.rpn_head.get_bboxes(
-                *rpn_outs, img_metas, cfg=proposal_cfg)
+            rpn_losses, proposal_list = self.rpn_head.forward_train(
+                x,
+                img_metas,
+                gt_bboxes,
+                gt_labels=None,
+                gt_bboxes_ignore=gt_bboxes_ignore,
+                proposal_cfg=proposal_cfg)
+            losses.update(rpn_losses)
         else:
             proposal_list = proposals
 
@@ -170,7 +169,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
 
         if proposals is None:
-            proposal_list = await self.async_test_rpn(x, img_meta)
+            proposal_list = await self.rpn_head.async_simple_test_rpn(
+                x, img_meta)
         else:
             proposal_list = proposals
 
@@ -184,7 +184,7 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         x = self.extract_feat(img)
 
         if proposals is None:
-            proposal_list = self.simple_test_rpn(x, img_metas)
+            proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         else:
             proposal_list = proposals
 
@@ -199,6 +199,6 @@ class TwoStageDetector(BaseDetector, RPNTestMixin):
         """
         # recompute feats to save memory
         x = self.extract_feats(imgs)
-        proposal_list = self.aug_test_rpn(x, img_metas)
+        proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)
