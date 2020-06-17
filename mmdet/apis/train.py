@@ -215,13 +215,13 @@ def build_optimizer(model, optimizer_cfg):
 
 def add_logging_on_first_and_last_iter(runner):
     def every_n_inner_iters(self, runner, n):
-        if runner.inner_iter == 0 or runner.inner_iter == runner._max_iters - 1:
+        if runner.inner_iter == 0 or runner.inner_iter == runner.max_iters - 1:
             return True
         return (runner.inner_iter + 1) % n == 0 if n > 0 else False
 
-    for i, _ in enumerate(runner.hooks):
-        if isinstance(runner.hooks[i], LoggerHook):
-            runner.hooks[i].every_n_inner_iters = every_n_inner_iters.__get__(runner.hooks[i])
+    for hook in runner.hooks:
+        if isinstance(hook, LoggerHook):
+            hook.every_n_inner_iters = every_n_inner_iters.__get__(hook)
 
 
 def _dist_train(model,
