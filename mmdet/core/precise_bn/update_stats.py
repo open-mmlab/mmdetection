@@ -46,6 +46,7 @@ def update_bn_stats(model, data_loader, num_iters=200, logger=None):
     if len(bn_layers) == 0:
         print_log('No BN found in model', logger=logger, level=logging.WARNING)
         return
+    print_log(f'{len(bn_layers)} BN found', logger=logger)
 
     # Finds all the other norm layers with training=True.
     for m in model.modules():
@@ -68,16 +69,20 @@ def update_bn_stats(model, data_loader, num_iters=200, logger=None):
     running_mean = [torch.zeros_like(bn.running_mean) for bn in bn_layers]
     running_var = [torch.zeros_like(bn.running_var) for bn in bn_layers]
 
+    finish_before_loader = False
     for ind, data in enumerate(data_loader):
         with torch.no_grad():
-            parallel_module(**data)
+            parallel_module(**data, return_loss=False)
         for i, bn in enumerate(bn_layers):
             # Accumulates the bn stats.
             running_mean[i] += (bn.running_mean - running_mean[i]) / (ind + 1)
             running_var[i] += (bn.running_var - running_var[i]) / (ind + 1)
             # We compute the "average of variance" across iterations.
         if ind >= num_iters:
+            finish_before_loader = True
             break
+    assert finish_before_loader, 'Dataloader stopped before ' \
+                                 f'iteration {num_iters}'
 
     for i, bn in enumerate(bn_layers):
         # Sets the precise bn stats.
