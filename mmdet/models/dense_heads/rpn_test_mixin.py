@@ -1,9 +1,6 @@
-import logging
 import sys
 
 from mmdet.core import merge_aug_proposals
-
-logger = logging.getLogger(__name__)
 
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
@@ -13,20 +10,20 @@ class RPNTestMixin(object):
 
     if sys.version_info >= (3, 7):
 
-        async def async_test_rpn(self, x, img_metas):
+        async def async_simple_test_rpn(self, x, img_metas):
             sleep_interval = self.rpn_head.test_cfg.pop(
                 'async_sleep_interval', 0.025)
             async with completed(
                     __name__, 'rpn_head_forward',
                     sleep_interval=sleep_interval):
-                rpn_outs = self.rpn_head(x)
+                rpn_outs = self(x)
 
-            proposal_list = self.rpn_head.get_bboxes(*rpn_outs, img_metas)
+            proposal_list = self.get_bboxes(*rpn_outs, img_metas)
             return proposal_list
 
     def simple_test_rpn(self, x, img_metas):
-        rpn_outs = self.rpn_head(x)
-        proposal_list = self.rpn_head.get_bboxes(*rpn_outs, img_metas)
+        rpn_outs = self(x)
+        proposal_list = self.get_bboxes(*rpn_outs, img_metas)
         return proposal_list
 
     def aug_test_rpn(self, feats, img_metas):
@@ -46,8 +43,7 @@ class RPNTestMixin(object):
             aug_img_metas.append(aug_img_meta)
         # after merging, proposals will be rescaled to the original image size
         merged_proposals = [
-            merge_aug_proposals(proposals, aug_img_meta,
-                                self.rpn_head.test_cfg)
+            merge_aug_proposals(proposals, aug_img_meta, self.test_cfg)
             for proposals, aug_img_meta in zip(aug_proposals, aug_img_metas)
         ]
         return merged_proposals

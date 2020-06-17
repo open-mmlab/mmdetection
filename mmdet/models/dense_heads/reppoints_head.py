@@ -244,6 +244,9 @@ class RepPointsHead(AnchorFreeHead):
         ], 1)
         return grid_yx, regressed_bbox
 
+    def forward(self, feats):
+        return multi_apply(self.forward_single, feats)
+
     def forward_single(self, x):
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.

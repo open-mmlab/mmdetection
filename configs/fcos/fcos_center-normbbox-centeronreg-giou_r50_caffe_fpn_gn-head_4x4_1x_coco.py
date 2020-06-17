@@ -1,31 +1,22 @@
-_base_ = [
-    '../_base_/models/faster_rcnn_r50_fpn.py',
-    '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
-]
+_base_ = 'fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
+
 model = dict(
-    pretrained='open-mmlab://regnetx_3.2gf',
-    backbone=dict(
-        _delete_=True,
-        type='RegNet',
-        arch='regnetx_3.2gf',
-        out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
-        norm_eval=True,
-        style='pytorch'),
-    neck=dict(
-        type='FPN',
-        in_channels=[96, 192, 432, 1008],
-        out_channels=256,
-        num_outs=5))
+    pretrained='open-mmlab://detectron2/resnet50_caffe',
+    bbox_head=dict(
+        norm_on_bbox=True,
+        centerness_on_reg=True,
+        dcn_on_last_conv=False,
+        center_sampling=True,
+        conv_bias=True,
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0)))
+# training and testing settings
+test_cfg = dict(nms=dict(type='nms', iou_thr=0.6))
+
+# dataset settings
 img_norm_cfg = dict(
-    # The mean and std is used in PyCls when training RegNets
-    mean=[103.53, 116.28, 123.675],
-    std=[57.375, 57.12, 58.395],
-    to_rgb=False)
+    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
@@ -50,9 +41,11 @@ test_pipeline = [
         ])
 ]
 data = dict(
+    samples_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005)
-lr_config = dict(step=[28, 34])
-total_epochs = 36
+optimizer_config = dict(_delete_=True, grad_clip=None)
+
+lr_config = dict(warmup='linear')

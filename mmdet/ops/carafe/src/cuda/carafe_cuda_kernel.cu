@@ -42,9 +42,23 @@ __device__ inline scalar_t max(scalar_t a, scalar_t b) {
 }
 
 template <typename scalar_t>
+__device__ __forceinline__ scalar_t WARP_SHFL_DOWN(scalar_t val, int offset)
+{
+    return __shfl_down_sync(FULL_MASK, val, offset);
+}
+
+template<>
+__device__ __forceinline__ c10::Half WARP_SHFL_DOWN<c10::Half>(c10::Half val, int offset)
+{
+  return c10::Half(WARP_SHFL_DOWN<unsigned short>(val.x, offset), c10::Half::from_bits_t{});
+}
+
+
+template <typename scalar_t>
 __device__ __forceinline__ scalar_t warpReduceSum(scalar_t val) {
   for (int offset = 16; offset > 0; offset /= 2)
-    val += __shfl_down_sync(FULL_MASK, val, offset);
+    // val += __shfl_down_sync(FULL_MASK, val, offset);
+    val += WARP_SHFL_DOWN(val, offset);
   return val;
 }
 
@@ -439,7 +453,7 @@ int CARAFEBackwardLaucher(const at::Tensor top_grad, const at::Tensor rfeatures,
                 bottom_data, top_data);
       }));
 
-  AT_DISPATCH_FLOATING_TYPES(
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       top_grad.scalar_type(), "CARAFELaucherBackward_Mask", ([&] {
         const int num_kernels = batch_size * output_height * output_width *
                                 mask_channels * WARP_SIZE;

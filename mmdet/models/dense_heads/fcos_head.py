@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.cnn import Scale, normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
@@ -16,13 +17,40 @@ class FCOSHead(AnchorFreeHead):
     The FCOS head does not use anchor boxes. Instead bounding boxes are
     predicted at each pixel and a centerness measure is used to supress
     low-quality predictions.
+    Here norm_on_bbox, centerness_on_reg, dcn_on_last_conv are training
+    tricks used in official repo, which will bring remarkable mAP gains
+    of up to 4.9. Please see https://github.com/tianzhi0549/FCOS for
+    more detail.
 
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        strides (list[int] | list[tuple[int, int]]): Strides of points
+            in multiple feature levels. Default: (4, 8, 16, 32, 64).
+        regress_ranges (tuple[tuple[int, int]]): Regress range of multiple
+            level points.
+        center_sampling (bool): If true, use center sampling. Default: False.
+        center_sample_radius (float): Radius of center sampling. Default: 1.5.
+        norm_on_bbox (bool): If true, normalize the regression targets
+            with FPN strides. Default: False.
+        centerness_on_reg (bool): If true, position centerness on the
+            regress branch. Please refer to https://github.com/tianzhi0549/FCOS/issues/89#issuecomment-516877042.
+            Default: False.
+        conv_bias (bool | str): If specified as `auto`, it will be decided by the
+            norm_cfg. Bias of conv will be set as True if `norm_cfg` is None, otherwise
+            False. Default: "auto".
+        loss_cls (dict): Config of classification loss.
+        loss_bbox (dict): Config of localization loss.
+        loss_centerness (dict): Config of centerness loss.
+        norm_cfg (dict): dictionary to construct and config norm layer.
+            Default: norm_cfg=dict(type='GN', num_groups=32, requires_grad=True).
     Example:
         >>> self = FCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
         >>> cls_score, bbox_pred, centerness = self.forward(feats)
         >>> assert len(cls_score) == len(self.scales)
-    """
+    """  # noqa: E501
 
     def __init__(self,
                  num_classes,
@@ -31,6 +59,9 @@ class FCOSHead(AnchorFreeHead):
                                  (512, INF)),
                  center_sampling=False,
                  center_sample_radius=1.5,
+                 norm_on_bbox=False,
+                 centerness_on_reg=False,
+                 conv_bias='auto',
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -47,6 +78,10 @@ class FCOSHead(AnchorFreeHead):
         self.regress_ranges = regress_ranges
         self.center_sampling = center_sampling
         self.center_sample_radius = center_sample_radius
+        self.norm_on_bbox = norm_on_bbox
+        self.centerness_on_reg = centerness_on_reg
+        assert conv_bias == 'auto' or isinstance(conv_bias, bool)
+        self.conv_bias = conv_bias
         super().__init__(
             num_classes,
             in_channels,
@@ -66,22 +101,37 @@ class FCOSHead(AnchorFreeHead):
         normal_init(self.conv_centerness, std=0.01)
 
     def forward(self, feats):
-        return multi_apply(self.forward_single, feats, self.scales)
+        return multi_apply(self.forward_single, feats, self.scales,
+                           self.strides)
 
-    def forward_single(self, x, scale):
-        cls_feat = x
-        reg_feat = x
+    def forward_single(self, x, scale, stride):
+        """
+        Args:
+            x (Tensor): FPN feature maps of the specified stride.
+            scale (:obj: `mmcv.cnn.Scale`): Learnable scale module to resize
+                the bbox prediction.
+            stride (int): The corresponding stride for feature maps, only
+                used to normalize the bbox prediction when self.norm_on_bbox
+                is True.
 
-        for cls_layer in self.cls_convs:
-            cls_feat = cls_layer(cls_feat)
-        cls_score = self.conv_cls(cls_feat)
-        centerness = self.conv_centerness(cls_feat)
-
-        for reg_layer in self.reg_convs:
-            reg_feat = reg_layer(reg_feat)
+        Returns:
+            tuple: scores for each class, bbox predictions and centerness
+                predictions of input feature maps.
+        """
+        cls_score, bbox_pred, cls_feat, reg_feat = super().forward_single(x)
+        if self.centerness_on_reg:
+            centerness = self.conv_centerness(reg_feat)
+        else:
+            centerness = self.conv_centerness(cls_feat)
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
-        bbox_pred = scale(self.conv_reg(reg_feat)).float().exp()
+        bbox_pred = scale(bbox_pred).float()
+        if self.norm_on_bbox:
+            bbox_pred = F.relu(bbox_pred)
+            if not self.training:
+                bbox_pred *= stride
+        else:
+            bbox_pred = bbox_pred.exp()
         return cls_score, bbox_pred, centerness
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
@@ -294,9 +344,11 @@ class FCOSHead(AnchorFreeHead):
         for i in range(num_levels):
             concat_lvl_labels.append(
                 torch.cat([labels[i] for labels in labels_list]))
-            concat_lvl_bbox_targets.append(
-                torch.cat(
-                    [bbox_targets[i] for bbox_targets in bbox_targets_list]))
+            bbox_targets = torch.cat(
+                [bbox_targets[i] for bbox_targets in bbox_targets_list])
+            if self.norm_on_bbox:
+                bbox_targets = bbox_targets / self.strides[i]
+            concat_lvl_bbox_targets.append(bbox_targets)
         return concat_lvl_labels, concat_lvl_bbox_targets
 
     def _get_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
@@ -304,7 +356,7 @@ class FCOSHead(AnchorFreeHead):
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
-            return gt_labels.new_full((num_points, ), self.background_label), \
+            return gt_labels.new_full((num_points,), self.background_label), \
                    gt_bboxes.new_zeros((num_points, 4))
 
         areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
@@ -367,8 +419,8 @@ class FCOSHead(AnchorFreeHead):
         # condition2: limit the regression range for each location
         max_regress_distance = bbox_targets.max(-1)[0]
         inside_regress_range = (
-            max_regress_distance >= regress_ranges[..., 0]) & (
-                max_regress_distance <= regress_ranges[..., 1])
+            (max_regress_distance >= regress_ranges[..., 0])
+            & (max_regress_distance <= regress_ranges[..., 1]))
 
         # if there are still more than one objects for a location,
         # we choose the one with minimal area

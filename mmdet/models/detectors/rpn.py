@@ -3,11 +3,10 @@ import mmcv
 from mmdet.core import bbox_mapping, tensor2imgs
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
-from .test_mixins import RPNTestMixin
 
 
 @DETECTORS.register_module()
-class RPN(BaseDetector, RPNTestMixin):
+class RPN(BaseDetector):
 
     def __init__(self,
                  backbone,
@@ -71,16 +70,13 @@ class RPN(BaseDetector, RPNTestMixin):
             self.rpn_head.debug_imgs = tensor2imgs(img)
 
         x = self.extract_feat(img)
-        rpn_outs = self.rpn_head(x)
-
-        rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas)
-        losses = self.rpn_head.loss(
-            *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        losses = self.rpn_head.forward_train(x, img_metas, gt_bboxes, None,
+                                             gt_bboxes_ignore)
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
         x = self.extract_feat(img)
-        proposal_list = self.simple_test_rpn(x, img_metas)
+        proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         if rescale:
             for proposals, meta in zip(proposal_list, img_metas):
                 proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])
@@ -89,15 +85,17 @@ class RPN(BaseDetector, RPNTestMixin):
         return proposal_list[0].cpu().numpy()
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        proposal_list = self.aug_test_rpn(
-            self.extract_feats(imgs), img_metas, self.test_cfg.rpn)
+        proposal_list = self.rpn_head.aug_test_rpn(
+            self.extract_feats(imgs), img_metas)
         if not rescale:
             for proposals, img_meta in zip(proposal_list, img_metas[0]):
                 img_shape = img_meta['img_shape']
                 scale_factor = img_meta['scale_factor']
                 flip = img_meta['flip']
+                flip_direction = img_meta['flip_direction']
                 proposals[:, :4] = bbox_mapping(proposals[:, :4], img_shape,
-                                                scale_factor, flip)
+                                                scale_factor, flip,
+                                                flip_direction)
         # TODO: remove this restriction
         return proposal_list[0].cpu().numpy()
 

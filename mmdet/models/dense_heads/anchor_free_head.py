@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 import torch
 import torch.nn as nn
@@ -6,10 +6,11 @@ from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 
 from mmdet.core import force_fp32, multi_apply
 from ..builder import HEADS, build_loss
+from .base_dense_head import BaseDenseHead
 
 
 @HEADS.register_module()
-class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
+class AnchorFreeHead(BaseDenseHead):
     """Anchor-free head (FCOS, Fovea, RepPoints, etc.).
 
     Args:
@@ -19,6 +20,8 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
         feat_channels (int): Number of hidden channels. Used in child classes.
         stacked_convs (int): Number of stacking convs of the head.
         strides (tuple): Downsample factor of each feature map.
+        dcn_on_last_conv (bool): If true, use dcn in the last layer of
+            towers. Default: False.
         background_label (int | None): Label ID of background, set as 0 for
             RPN and num_classes for other heads. It will automatically set as
             num_classes if None is given.
@@ -36,6 +39,7 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
                  feat_channels=256,
                  stacked_convs=4,
                  strides=(4, 8, 16, 32, 64),
+                 dcn_on_last_conv=False,
                  background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
@@ -55,6 +59,7 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
         self.strides = strides
+        self.dcn_on_last_conv = dcn_on_last_conv
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.train_cfg = train_cfg
@@ -79,6 +84,10 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
         self.cls_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
+            if self.dcn_on_last_conv and i == self.stacked_convs - 1:
+                conv_cfg = dict(type='DCNv2')
+            else:
+                conv_cfg = self.conv_cfg
             self.cls_convs.append(
                 ConvModule(
                     chn,
@@ -86,7 +95,7 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
                     3,
                     stride=1,
                     padding=1,
-                    conv_cfg=self.conv_cfg,
+                    conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
 
@@ -94,6 +103,10 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
             chn = self.in_channels if i == 0 else self.feat_channels
+            if self.dcn_on_last_conv and i == self.stacked_convs - 1:
+                conv_cfg = dict(type='DCNv2')
+            else:
+                conv_cfg = self.conv_cfg
             self.reg_convs.append(
                 ConvModule(
                     chn,
@@ -101,7 +114,7 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
                     3,
                     stride=1,
                     padding=1,
-                    conv_cfg=self.conv_cfg,
+                    conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
 
@@ -112,9 +125,11 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
 
     def init_weights(self):
         for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
+            if isinstance(m.conv, nn.Conv2d):
+                normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
+            if isinstance(m.conv, nn.Conv2d):
+                normal_init(m.conv, std=0.01)
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.conv_cls, std=0.01, bias=bias_cls)
         normal_init(self.conv_reg, std=0.01)
@@ -122,7 +137,6 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
         version = local_metadata.get('version', None)
-
         if version is None or version < 2.2:
             # the key is different in early versions
             # for example, 'fcos_cls' become 'conv_cls' now
@@ -152,13 +166,12 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
             for i in range(len(new_predictor_keys)):
                 state_dict[new_predictor_keys[i]] = state_dict.pop(
                     ori_predictor_keys[i])
-
         super()._load_from_state_dict(state_dict, prefix, local_metadata,
                                       strict, missing_keys, unexpected_keys,
                                       error_msgs)
 
     def forward(self, feats):
-        return multi_apply(self.forward_single, feats)
+        return multi_apply(self.forward_single, feats)[:2]
 
     def forward_single(self, x):
         cls_feat = x
@@ -171,14 +184,13 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
         for reg_layer in self.reg_convs:
             reg_feat = reg_layer(reg_feat)
         bbox_pred = self.conv_reg(reg_feat)
-        return cls_score, bbox_pred
+        return cls_score, bbox_pred, cls_feat, reg_feat
 
     @abstractmethod
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
              cls_scores,
              bbox_preds,
-             centernesses,
              gt_bboxes,
              gt_labels,
              img_metas,
@@ -186,11 +198,10 @@ class AnchorFreeHead(nn.Module, metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def get_bboxes(self,
                    cls_scores,
                    bbox_preds,
-                   centernesses,
                    img_metas,
                    cfg=None,
                    rescale=None):
