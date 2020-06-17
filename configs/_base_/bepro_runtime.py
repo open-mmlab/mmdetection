@@ -9,6 +9,7 @@ log_config = dict(
 # yapf:enable
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-load_from = '/home/dmitriy.khvan/mmdetection/checkpoints/coco_bepro_ckpt.pth'
+# load_from = '/home/dmitriy.khvan/mmdetection/checkpoints/coco_bepro_ckpt.pth'
+load_from = None
 resume_from = None
 workflow = [('train', 1)]
