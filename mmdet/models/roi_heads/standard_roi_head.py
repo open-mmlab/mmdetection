@@ -246,40 +246,22 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         """Test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
 
-        if 0:
+        det_bboxes, det_labels = self.simple_test_bboxes(
+            x, img_metas, proposal_list, self.test_cfg, rescale=False)
 
-            det_bboxes, det_labels = self.simple_test_bboxes(
-                x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
+        det_masks = None
+        if self.with_mask:
+            det_masks = self.simple_test_mask(
+                x, img_metas, det_bboxes, det_labels, rescale=False)
 
-            bbox_results = bbox2result(det_bboxes, det_labels,
-                                       self.bbox_head.num_classes)
-
-            if not self.with_mask:
-                return bbox_results
-            else:
-                segm_results = self.simple_test_mask(
-                    x, img_metas, det_bboxes, det_labels, rescale=rescale)
-                return bbox_results, segm_results
-
+        if postprocess:
+            return self.postprocess(
+                det_bboxes, det_labels, det_masks, img_metas, rescale=rescale)
         else:
-
-
-            det_bboxes, det_labels = self.simple_test_bboxes(
-                x, img_metas, proposal_list, self.test_cfg, rescale=False)
-
-            det_masks = None
-            if self.with_mask:
-                det_masks = self.simple_test_mask(
-                    x, img_metas, det_bboxes, det_labels, rescale=False)
-
-            if postprocess:
-                return self.postprocess(
-                    det_bboxes, det_labels, det_masks, img_metas, rescale=rescale)
+            if det_masks is None:
+                return det_bboxes, det_labels
             else:
-                if det_masks is None:
-                    return det_bboxes, det_labels
-                else:
-                    return det_bboxes, det_labels, det_masks
+                return det_bboxes, det_labels, det_masks
 
     def postprocess(self,
                     det_bboxes,
