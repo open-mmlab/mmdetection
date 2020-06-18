@@ -171,6 +171,8 @@ def train_detector(model,
         eval_hook = DistEvalHook if distributed else EvalHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
+    add_logging_on_first_and_last_iter(runner)
+
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
