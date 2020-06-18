@@ -4,6 +4,7 @@ from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.backbones import RegNet, Res2Net, ResNet, ResNetV1d, ResNeXt
+from mmdet.models.backbones.hourglass import HourglassNet
 from mmdet.models.backbones.res2net import Bottle2neck
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.backbones.resnext import Bottleneck as BottleneckX
@@ -276,6 +277,16 @@ def test_resnet_res_layer():
     x = torch.randn(1, 64, 56, 56)
     x_out = layer(x)
     assert x_out.shape == torch.Size([1, 256, 28, 28])
+
+    # Test ResLayer of 3 BasicBlock with stride=2 and downsample_first=False
+    layer = ResLayer(BasicBlock, 64, 64, 3, stride=2, downsample_first=False)
+    assert layer[2].downsample[0].out_channels == 64
+    assert layer[2].downsample[0].stride == (2, 2)
+    for i in range(len(layer) - 1):
+        assert layer[i].downsample is None
+    x = torch.randn(1, 64, 56, 56)
+    x_out = layer(x)
+    assert x_out.shape == torch.Size([1, 64, 28, 28])
 
 
 def test_resnet_backbone():
@@ -768,3 +779,43 @@ def test_res2net_backbone():
     assert feat[1].shape == torch.Size([1, 512, 28, 28])
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
+
+
+def test_hourglass_backbone():
+    with pytest.raises(AssertionError):
+        # HourglassNet's num_stacks should larger than 0
+        HourglassNet(num_stacks=0)
+
+    with pytest.raises(AssertionError):
+        # len(stage_channels) should equal len(stage_blocks)
+        HourglassNet(
+            stage_channels=[256, 256, 384, 384, 384],
+            stage_blocks=[2, 2, 2, 2, 2, 4])
+
+    with pytest.raises(AssertionError):
+        # len(stage_channels) should lagrer than downsample_times
+        HourglassNet(
+            downsample_times=5,
+            stage_channels=[256, 256, 384, 384, 384],
+            stage_blocks=[2, 2, 2, 2, 2])
+
+    # Test HourglassNet-52
+    model = HourglassNet(num_stacks=1)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 511, 511)
+    feat = model(imgs)
+    assert len(feat) == 1
+    assert feat[0].shape == torch.Size([1, 256, 128, 128])
+
+    # Test HourglassNet-104
+    model = HourglassNet(num_stacks=2)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 511, 511)
+    feat = model(imgs)
+    assert len(feat) == 2
+    assert feat[0].shape == torch.Size([1, 256, 128, 128])
+    assert feat[1].shape == torch.Size([1, 256, 128, 128])

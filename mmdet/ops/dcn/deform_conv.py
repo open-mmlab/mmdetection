@@ -177,6 +177,7 @@ class ModulatedDeformConvFunction(Function):
         channels_out = weight.size(0)
         height, width = input.shape[2:4]
         kernel_h, kernel_w = weight.shape[2:4]
+        # TODO: support different padding/stride/dilation in height and width
         height_out = (height + 2 * ctx.padding -
                       (ctx.dilation * (kernel_h - 1) + 1)) // ctx.stride + 1
         width_out = (width + 2 * ctx.padding -
@@ -389,9 +390,9 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
         in_channels (int): Same as nn.Conv2d.
         out_channels (int): Same as nn.Conv2d.
         kernel_size (int or tuple[int]): Same as nn.Conv2d.
-        stride (int or tuple[int]): Same as nn.Conv2d.
-        padding (int or tuple[int]): Same as nn.Conv2d.
-        dilation (int or tuple[int]): Same as nn.Conv2d.
+        stride (int): Same as nn.Conv2d, while tuple is not supported.
+        padding (int): Same as nn.Conv2d, while tuple is not supported.
+        dilation (int): Same as nn.Conv2d, while tuple is not supported.
         groups (int): Same as nn.Conv2d.
         bias (bool or str): If specified as `auto`, it will be decided by the
             norm_cfg. Bias will be set as True if norm_cfg is None, otherwise
