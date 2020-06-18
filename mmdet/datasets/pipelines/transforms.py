@@ -668,6 +668,22 @@ class MinIoURandomCrop(object):
                 if 'gt_semantic_seg' in results:
                     results['gt_semantic_seg'] = results['gt_semantic_seg'][
                         patch[1]:patch[3], patch[0]:patch[2]]
+
+                # filter out the gt bboxes that are completely cropped
+                if 'gt_bboxes' in results:
+                    gt_bboxes = results['gt_bboxes']
+                    valid_inds = (gt_bboxes[:, 2] > gt_bboxes[:, 0]) & (
+                            gt_bboxes[:, 3] > gt_bboxes[:, 1])
+                    # if no gt bbox remains after cropping, just skip this image
+                    if not np.any(valid_inds):
+                        return None
+                    results['gt_bboxes'] = gt_bboxes[valid_inds, :]
+                    if 'gt_labels' in results:
+                        results['gt_labels'] = results['gt_labels'][valid_inds]
+
+                    if 'gt_masks' in results:
+                        results['gt_masks'] = results['gt_masks'][valid_inds]
+                        
                 return results
 
     def __repr__(self):
