@@ -1,5 +1,5 @@
 _base_ = '../cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
-norm_cfg = dict(type='SyncBN', requires_grad=True)
+norm_cfg = dict(type='NaiveSyncBN', requires_grad=True)
 model = dict(
     pretrained='pretrain_model/resnest50-67b6df46.pth',
     backbone=dict(

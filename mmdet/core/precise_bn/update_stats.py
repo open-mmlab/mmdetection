@@ -72,7 +72,7 @@ def update_bn_stats(model, data_loader, num_iters=200, logger=None):
     finish_before_loader = False
     for ind, data in enumerate(data_loader):
         with torch.no_grad():
-            parallel_module(**data, return_loss=False)
+            parallel_module(**data)
         for i, bn in enumerate(bn_layers):
             # Accumulates the bn stats.
             running_mean[i] += (bn.running_mean - running_mean[i]) / (ind + 1)
