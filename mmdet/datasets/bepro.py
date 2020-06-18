@@ -4,7 +4,6 @@
 # import mmcv
 # import numpy as np
 
-# from .custom import CustomDataset
 # from .registry import DATASETS
 
 import os.path as osp
@@ -17,6 +16,7 @@ from mmdet.core import eval_map, eval_recalls
 from .builder import DATASETS
 from .pipelines import Compose
 
+from .custom import CustomDataset
 import xml.etree.ElementTree as ET
 import glob
 import os
