@@ -12,6 +12,7 @@ from .non_local import NonLocal2D
 from .plugin import build_plugin_layer
 from .roi_align import RoIAlign, roi_align
 from .roi_pool import RoIPool, roi_pool
+from .saconv import SAConv2d
 from .sigmoid_focal_loss import SigmoidFocalLoss, sigmoid_focal_loss
 from .utils import get_compiler_version, get_compiling_cuda_version
 from .wrappers import Conv2d, ConvTranspose2d, Linear, MaxPool2d
@@ -51,4 +52,5 @@ __all__ = [
     'Linear',
     'nms_match',
     'CornerPool',
+    'SAConv2d',
 ]

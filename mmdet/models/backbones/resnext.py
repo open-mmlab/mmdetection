@@ -49,7 +49,18 @@ class Bottleneck(_Bottleneck):
         self.with_modulated_dcn = False
         if self.with_dcn:
             fallback_on_stride = self.dcn.pop('fallback_on_stride', False)
-        if not self.with_dcn or fallback_on_stride:
+        if self.with_sac:
+            self.conv2 = build_conv_layer(
+                self.sac,
+                width,
+                width,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=self.dilation,
+                dilation=self.dilation,
+                groups=groups,
+                bias=False)
+        elif not self.with_dcn or fallback_on_stride:
             self.conv2 = build_conv_layer(
                 self.conv_cfg,
                 width,
