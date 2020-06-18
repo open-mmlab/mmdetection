@@ -80,14 +80,16 @@ class LoadImageFromFile(object):
 class LoadMultiImagesFromMultiFiles(object):
     """Load multiple images from multiple files.
 
-    Required keys are "img_prefix" and self.img_info_keys (dicts that must
-    contain the key "filename"). Added or updated keys are "*filenames",
+    Required keys are "img_prefix" and img_info_keys (dicts that must
+    contain the key "filename").
+    (`img_info_keys = [prefix + '_imgs_info' for prefix in prefixs]`)
+    Added or updated keys are "*filenames",
     "*ori_filenames", "*img*", "img_shape", "ori_shape" (same as `img_shape`),
     "pad_shape" (same as `img_shape`), "scale_factor" (1.0) and "img_norm_cfg"
     (means=0 and stds=1).
 
     Args:
-        img_info_prefix_keys (list): the prefix keys of img info.
+        prefixs (list): the prefix keys of img info.
             Defaults to ['target', 'ref'].
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
@@ -100,28 +102,23 @@ class LoadMultiImagesFromMultiFiles(object):
     """
 
     def __init__(self,
-                 img_info_prefix_keys=['target', 'ref'],
+                 prefixs=['target', 'ref'],
                  to_float32=False,
                  color_type='color',
                  file_client_args=dict(backend='disk')):
-        self.img_info_prefix_keys = img_info_prefix_keys.copy()
-        self.img_info_keys = [
-            img_info_prefix_key + '_imgs_info'
-            for img_info_prefix_key in self.img_info_prefix_keys
-        ]
+        self.prefixs = prefixs.copy()
         self.to_float32 = to_float32
         self.color_type = color_type
         self.file_client_args = file_client_args.copy()
         self.file_client = None
 
-    def load_img_core(self, results, fname_id, fname, ori_fname, img_info_key):
+    def load_img_core(self, results, fname_id, fname, ori_fname, img_prefix):
         img_bytes = self.file_client.get(fname)
         img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
         if self.to_float32:
             img = img.astype(np.float32)
 
         # e.g. img_prefix = 'target' or 'ref'
-        img_prefix = img_info_key[:-10]
         if f'{img_prefix}_filenames' not in results:
             results[f'{img_prefix}_filenames'] = [fname]
         else:
@@ -149,16 +146,17 @@ class LoadMultiImagesFromMultiFiles(object):
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
+        img_info_keys = [prefix + '_imgs_info' for prefix in self.prefixs]
         error_flag = 1
-        for img_info_key in self.img_info_keys:
+        for img_info_key in img_info_keys:
             if img_info_key in results:
                 error_flag = 0
         if error_flag:
             raise KeyError(f'"results" should contain at least one key in '
-                           f'{self.img_info_keys}, obtain {results.keys()}')
+                           f'{img_info_keys}, obtain {results.keys()}')
 
         results['img_fields'] = []
-        for img_info_key in self.img_info_keys:
+        for img_info_id, img_info_key in enumerate(img_info_keys):
             if img_info_key not in results:
                 continue
             ori_filenames = results[img_info_key]['filename']
@@ -181,16 +179,17 @@ class LoadMultiImagesFromMultiFiles(object):
             else:
                 raise TypeError('the type of filename must be a str or list')
 
+            prefix = self.prefixs[img_info_id]
             for fname_id, fname in enumerate(filenames):
                 ori_fname = ori_filenames[fname_id]
                 results = self.load_img_core(results, fname_id, fname,
-                                             ori_fname, img_info_key)
+                                             ori_fname, prefix)
 
         return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'(\n\timg_info_prefix_keys={self.img_info_prefix_keys},\n'
+        repr_str += f'(\n\tprefixs={self.prefixs},\n'
         repr_str += f'\tto_float32={self.to_float32},\n'
         repr_str += f"\tcolor_type='{self.color_type}',\n"
         repr_str += f'\tfile_client_args={self.file_client_args})\n'

@@ -90,7 +90,7 @@ class TestLoading(object):
         assert results['pad_shape'] == (288, 512, 3)
         assert results['scale_factor'] == 1.0
         assert repr(transform) == transform.__class__.__name__ + \
-            "(\n\timg_info_prefix_keys=['target', 'ref'],\n" + \
+            "(\n\tprefixs=['target', 'ref'],\n" + \
             '\tto_float32=False,\n' + \
             "\tcolor_type='color',\n" + \
             "\tfile_client_args={'backend': 'disk'})\n"
