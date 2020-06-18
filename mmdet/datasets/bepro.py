@@ -59,8 +59,12 @@ class BeproDataset(CustomDataset):
         return img_infos
 
     def get_ann_info(self, idx):
-        img_id = self.img_infos[idx]['id']
-        img_path = self.img_infos[idx]['filename']
+        # img_id = self.img_infos[idx]['id']
+        # img_path = self.img_infos[idx]['filename']
+
+        img_id = self.data_infos[idx]['id']
+        img_path = self.data_infos[idx]['filename']
+
         img_path_lst = img_path.split('/')
         img_path_lst = img_path_lst[:len(img_path_lst)-2]
         dir_path = '/'.join(img_path_lst)
