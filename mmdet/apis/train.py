@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import DistSamplerSeedHook, Runner
+from mmcv.runner import DistSamplerSeedHook, Runner, LoggerHook
 
 from mmdet.core import (DistEvalHook, DistOptimizerHook, EvalHook,
                         Fp16OptimizerHook, build_optimizer)
@@ -80,6 +80,17 @@ def batch_processor(model, data, train_mode):
     return outputs
 
 
+def add_logging_on_first_and_last_iter(runner):
+    def every_n_inner_iters(self, runner, n):
+        if runner.inner_iter == 0 or runner.inner_iter == runner.max_iters - 1:
+            return True
+        return (runner.inner_iter + 1) % n == 0 if n > 0 else False
+
+    for hook in runner.hooks:
+        if isinstance(hook, LoggerHook):
+            hook.every_n_inner_iters = every_n_inner_iters.__get__(hook)
+
+
 def train_detector(model,
                    dataset,
                    cfg,
@@ -144,6 +155,8 @@ def train_detector(model,
                                    cfg.get('momentum_config', None))
     if distributed:
         runner.register_hook(DistSamplerSeedHook())
+
+    add_logging_on_first_and_last_iter(runner)
 
     # register eval hooks
     if validate:
