@@ -15,21 +15,21 @@
 import argparse
 import os.path as osp
 import sys
-from copy import copy
 from subprocess import call, check_call, CalledProcessError, DEVNULL
 
 import mmcv
 import numpy as np
 import onnx
-import torch
 from mmcv.parallel import collate, scatter
+
+import torch
 
 from mmdet.apis import init_detector
 from mmdet.apis.inference import LoadImage
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import detectors
-from mmdet.models.anchor_heads.anchor_head import AnchorHead
-from mmdet.models.roi_extractors import SingleRoIExtractor
+from mmdet.models.dense_heads.anchor_head import AnchorHead
+from mmdet.models.roi_heads import SingleRoIExtractor
 from mmdet.utils.deployment import register_extra_symbolics
 from mmdet.utils.deployment.ssd_export_helpers import *
 from mmdet.utils.deployment.tracer_stubs import AnchorsGridGeneratorStub, ROIFeatureExtractorStub
@@ -52,9 +52,9 @@ def export_to_onnx(model,
         model.forward_export = forward_export_detector.__get__(model)
         model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
         model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
-        model.bbox_head.get_bboxes = get_bboxes_ssd_head.__get__(model.bbox_head)
+        #model.bbox_head.get_bboxes = get_bboxes_ssd_head.__get__(model.bbox_head)
         model.onnx_export(img=data['img'][0],
-                          img_meta=data['img_meta'][0],
+                          img_metas=data['img_metas'][0],
                           export_name=export_name,
                           verbose=verbose,
                           opset_version=opset,
@@ -69,9 +69,10 @@ def export_to_onnx(model,
             'boxes': {0: 'objects_num'},
             'labels': {0: 'objects_num'}
         }
-        if model.with_mask:
-            output_names.append('masks')
-            dynamic_axes['masks'] = {0: 'objects_num'}
+        if hasattr(model, 'roi_head'):
+            if model.roi_head.with_mask:
+                output_names.append('masks')
+                dynamic_axes['masks'] = {0: 'objects_num'}
 
         with torch.no_grad():
             model.export(
@@ -117,7 +118,7 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
 
     mean_values = normalize['mean']
     scale_values = normalize['std']
-    command_line = f'mo.py --input_model="{onnx_model_path}" ' \
+    command_line = f'/opt/intel/openvino/deployment_tools/model_optimizer/mo.py --input_model="{onnx_model_path}" ' \
                    f'--mean_values="{mean_values}" ' \
                    f'--scale_values="{scale_values}" ' \
                    f'--output_dir="{output_dir_path}" ' \
@@ -128,7 +129,7 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
         command_line += ' --reverse_input_channels'
 
     try:
-        check_call('mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True)
+        check_call('/opt/intel/openvino/deployment_tools/model_optimizer/mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True)
     except CalledProcessError as ex:
         print('OpenVINO Model Optimizer not found, please source '
               'openvino/bin/setupvars.sh before running this script.')
@@ -141,13 +142,32 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
 def stub_anchor_generator(model, anchor_head_name):
     anchor_head = getattr(model, anchor_head_name, None)
     if anchor_head is not None and isinstance(anchor_head, AnchorHead):
-        anchor_generators = anchor_head.anchor_generators
-        for i in range(len(anchor_generators)):
-            anchor_generators[i].grid_anchors = AnchorsGridGeneratorStub(
-                anchor_generators[i].grid_anchors)
+        anchor_generator = anchor_head.anchor_generator
+        num_levels = anchor_generator.num_levels
+        strides = anchor_generator.strides
+
+        single_level_grid_anchors_generators = []
+        for i in range(num_levels):
+            single_level_grid_anchors_generator = AnchorsGridGeneratorStub(anchor_generator.single_level_grid_anchors)
             # Save base anchors as operation parameter. It's used at ONNX export time during symbolic call.
-            anchor_generators[i].grid_anchors.params['base_anchors'] = anchor_generators[
-                i].base_anchors.cpu().numpy()
+            single_level_grid_anchors_generator.params['base_anchors'] = anchor_generator.base_anchors[i].cpu().numpy()
+            single_level_grid_anchors_generators.append(single_level_grid_anchors_generator)
+
+        def grid_anchors(self, featmap_sizes, device='cuda'):
+
+            assert num_levels == len(featmap_sizes)
+            multi_level_anchors = []
+            for i in range(num_levels):
+                anchors = single_level_grid_anchors_generators[i](
+                    anchor_generator.base_anchors[i].to(device),
+                    #torch.zeros([1, 1, featmap_sizes[i][0], featmap_sizes[i][1]], dtype=torch.float32, device=device),
+                    featmap_sizes[i],
+                    stride=strides[i],
+                    device=device)
+                multi_level_anchors.append(anchors)
+            return multi_level_anchors
+
+        anchor_generator.grid_anchors = grid_anchors.__get__(anchor_generator)
 
 
 def stub_roi_feature_extractor(model, extractor_name):
@@ -159,6 +179,9 @@ def stub_roi_feature_extractor(model, extractor_name):
             for i in range(len(extractor)):
                 if isinstance(extractor[i], SingleRoIExtractor):
                     extractor[i] = ROIFeatureExtractorStub(extractor[i])
+        print('!!!!!!!!!!! ye ', extractor_name)
+    else:
+        print('!!!!!!!!!!! no ', extractor_name)
 
 
 def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
@@ -182,8 +205,9 @@ def main(args):
     if args.target == 'openvino' and not args.alt_ssd_export:
         stub_anchor_generator(model, 'rpn_head')
         stub_anchor_generator(model, 'bbox_head')
-        stub_roi_feature_extractor(model, 'bbox_roi_extractor')
-        stub_roi_feature_extractor(model, 'mask_roi_extractor')
+        if hasattr(model, 'roi_head'):
+            stub_roi_feature_extractor(model.roi_head, 'bbox_roi_extractor')
+            stub_roi_feature_extractor(model.roi_head, 'mask_roi_extractor')
 
     mmcv.mkdir_or_exist(osp.abspath(args.output_dir))
     onnx_model_path = osp.join(args.output_dir,

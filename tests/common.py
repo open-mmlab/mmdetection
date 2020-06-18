@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import os
+
+
 def replace_text_in_file(path, replace_what, replace_by):
     with open(path) as read_file:
         content = '\n'.join([line.rstrip() for line in read_file.readlines()])
@@ -31,4 +34,5 @@ def collect_ap(path):
         for line in content:
             if line.startswith(beginning):
                 ap.append(float(line.replace(beginning, '')))
+    assert ap, 'could not parse metrics file'
     return ap

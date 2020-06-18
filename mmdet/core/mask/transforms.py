@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import mmcv
 import numpy as np
 import pycocotools.mask as mask_util
 
 from ..utils.misc import to_numpy
+
+import torch
+import torch.nn.functional as F
 
 
 def mask2result(det_bboxes,
@@ -27,29 +29,51 @@ def mask2result(det_bboxes,
                 rle=True,
                 full_size=True,
                 img_size=None):
+    masks = det_masks
+    bboxes = det_bboxes[:, :4]
+    labels = det_labels
 
-    masks = to_numpy(det_masks)
-    bboxes = to_numpy(det_bboxes, np.int32)[:, :4]
-    labels = to_numpy(det_labels, np.int32)
+    if isinstance(masks, np.ndarray):
+        masks = torch.tensor(masks)
+        bboxes = torch.tensor(bboxes)
+        labels = torch.tensor(labels)
 
-    cls_masks = [[] for _ in range(num_classes - 1)]
+    cls_masks = [[] for _ in range(num_classes)]
 
     for bbox, label, mask in zip(bboxes, labels, masks):
-        w = max(bbox[2] - bbox[0] + 1, 1)
-        h = max(bbox[3] - bbox[1] + 1, 1)
 
-        mask = mmcv.imresize(mask, (w, h))
-        mask = (mask > mask_thr_binary).astype(np.uint8)
+        mask = mask[None, :, :]
+        x0_int, y0_int = 0, 0
+        x1_int, y1_int = img_size[::-1]
 
-        if full_size:
-            assert img_size is not None
-            im_mask = np.zeros(img_size[:2], dtype=np.uint8)
-            im_mask[bbox[1]:bbox[1] + h, bbox[0]:bbox[0] + w] = mask
-            mask = im_mask
+        img_y = torch.arange(
+            y0_int, y1_int, device=mask.device, dtype=torch.float32) + 0.5
+        img_x = torch.arange(
+            x0_int, x1_int, device=mask.device, dtype=torch.float32) + 0.5
+        x0, y0, x1, y1 = bbox
+
+        img_y = (img_y - y0) / (y1 - y0) * 2 - 1
+        img_x = (img_x - x0) / (x1 - x0) * 2 - 1
+        if torch.isinf(img_x).any():
+            inds = torch.where(torch.isinf(img_x))
+            img_x[inds] = 0
+        if torch.isinf(img_y).any():
+            inds = torch.where(torch.isinf(img_y))
+            img_y[inds] = 0
+
+        gx = img_x[None, :].expand(img_y.size(0), img_x.size(0))
+        gy = img_y[:, None].expand(img_y.size(0), img_x.size(0))
+        grid = torch.stack([gx, gy], dim=2)
+
+        img_masks = F.grid_sample(
+            mask.to(dtype=torch.float32)[None, :, :, :], grid[None, :, :, :], align_corners=False)
+
+        mask = img_masks[0, 0, :, :]
+        mask = (mask >= mask_thr_binary).to(dtype=torch.uint8)
 
         if rle:
             mask = mask_util.encode(
-                np.array(mask[:, :, np.newaxis], order='F'))[0]
+                np.array(to_numpy(mask)[:, :, np.newaxis], order='F', dtype=np.uint8))[0]
 
         cls_masks[label].append(mask)
 

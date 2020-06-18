@@ -13,15 +13,15 @@ Project is based on open-mmlab's [MMDetection](https://github.com/open-mmlab/mmd
 
 ## Installation
 
-Please refer to [INSTALL.md](docs/INSTALL.md) for installation and dataset preparation.
+Please refer to [INSTALL.md](docs/install.md) for installation and dataset preparation.
 
 ## Get Started
 
-Please see [GETTING_STARTED.md](docs/GETTING_STARTED.md) for the basic usage.
+Please see [GETTING_STARTED.md](docs/getting_started.md) for the basic usage.
 
 ## Model Zoo
 
-Please see [MODEL_ZOO.md](docs/MODEL_ZOO.md) for the list of pre-trained models.
+Please see [MODEL_ZOO.md](docs/model_zoo.md) for the list of pre-trained models.
 
 ## Contributing
 

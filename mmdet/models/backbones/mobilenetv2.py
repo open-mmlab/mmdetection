@@ -15,7 +15,7 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import (constant_init, kaiming_init, normal_init)
-from ..registry import BACKBONES
+from ..builder import BACKBONES
 
 
 def conv_bn(inp, oup, stride, groups=1, act_fn=nn.ReLU):

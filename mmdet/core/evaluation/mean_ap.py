@@ -1,8 +1,8 @@
-import logging
 from multiprocessing import Pool
 
 import mmcv
 import numpy as np
+from mmcv.utils import print_log
 from terminaltables import AsciiTable
 
 from .bbox_overlaps import bbox_overlaps
@@ -98,14 +98,14 @@ def tpfp_imagenet(det_bboxes,
         if area_ranges == [(None, None)]:
             fp[...] = 1
         else:
-            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0] + 1) * (
-                det_bboxes[:, 3] - det_bboxes[:, 1] + 1)
+            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0]) * (
+                det_bboxes[:, 3] - det_bboxes[:, 1])
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
         return tp, fp
     ious = bbox_overlaps(det_bboxes, gt_bboxes - 1)
-    gt_w = gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1
-    gt_h = gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1
+    gt_w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+    gt_h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
     iou_thrs = np.minimum((gt_w * gt_h) / ((gt_w + 10.0) * (gt_h + 10.0)),
                           default_iou_thr)
     # sort all detections by scores in descending order
@@ -144,7 +144,7 @@ def tpfp_imagenet(det_bboxes,
                 fp[k, i] = 1
             else:
                 bbox = det_bboxes[i, :4]
-                area = (bbox[2] - bbox[0] + 1) * (bbox[3] - bbox[1] + 1)
+                area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
                 if area >= min_area and area < max_area:
                     fp[k, i] = 1
     return tp, fp
@@ -194,8 +194,8 @@ def tpfp_default(det_bboxes,
         if area_ranges == [(None, None)]:
             fp[...] = 1
         else:
-            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0] + 1) * (
-                det_bboxes[:, 3] - det_bboxes[:, 1] + 1)
+            det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0]) * (
+                det_bboxes[:, 3] - det_bboxes[:, 1])
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
         return tp, fp
@@ -213,8 +213,8 @@ def tpfp_default(det_bboxes,
         if min_area is None:
             gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
         else:
-            gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) * (
-                gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1)
+            gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
+                gt_bboxes[:, 3] - gt_bboxes[:, 1])
             gt_area_ignore = (gt_areas < min_area) | (gt_areas >= max_area)
         for i in sort_inds:
             if ious_max[i] >= iou_thr:
@@ -231,7 +231,7 @@ def tpfp_default(det_bboxes,
                 fp[k, i] = 1
             else:
                 bbox = det_bboxes[i, :4]
-                area = (bbox[2] - bbox[0] + 1) * (bbox[3] - bbox[1] + 1)
+                area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
                 if area >= min_area and area < max_area:
                     fp[k, i] = 1
     return tp, fp
@@ -243,6 +243,7 @@ def get_cls_results(det_results, annotations, class_id):
     Args:
         det_results (list[list]): Same as `eval_map()`.
         annotations (list[dict]): Same as `eval_map()`.
+        class_id (int): ID of a specific class.
 
     Returns:
         tuple[list[np.ndarray]]: detected bboxes, gt bboxes, ignored gt bboxes
@@ -251,11 +252,11 @@ def get_cls_results(det_results, annotations, class_id):
     cls_gts = []
     cls_gts_ignore = []
     for ann in annotations:
-        gt_inds = ann['labels'] == (class_id + 1)
+        gt_inds = ann['labels'] == class_id
         cls_gts.append(ann['bboxes'][gt_inds, :])
 
         if ann.get('labels_ignore', None) is not None:
-            ignore_inds = ann['labels_ignore'] == (class_id + 1)
+            ignore_inds = ann['labels_ignore'] == class_id
             cls_gts_ignore.append(ann['bboxes_ignore'][ignore_inds, :])
         else:
             cls_gts_ignore.append(np.empty((0, 4), dtype=np.float32))
@@ -268,7 +269,7 @@ def eval_map(det_results,
              scale_ranges=None,
              iou_thr=0.5,
              dataset=None,
-             logger='default',
+             logger=None,
              nproc=4):
     """Evaluate mAP of a dataset.
 
@@ -278,10 +279,11 @@ def eval_map(det_results,
             per-class detected bboxes.
         annotations (list[dict]): Ground truth annotations where each item of
             the list indicates an image. Keys of annotations are:
-                - "bboxes": numpy array of shape (n, 4)
-                - "labels": numpy array of shape (n, )
-                - "bboxes_ignore" (optional): numpy array of shape (k, 4)
-                - "labels_ignore" (optional): numpy array of shape (k, )
+
+            - `bboxes`: numpy array of shape (n, 4)
+            - `labels`: numpy array of shape (n, )
+            - `bboxes_ignore` (optional): numpy array of shape (k, 4)
+            - `labels_ignore` (optional): numpy array of shape (k, )
         scale_ranges (list[tuple] | None): Range of scales to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. A range of
             (32, 64) means the area range between (32**2, 64**2).
@@ -291,11 +293,8 @@ def eval_map(det_results,
         dataset (list[str] | str | None): Dataset name or dataset classes,
             there are minor differences in metrics for different datsets, e.g.
             "voc07", "imagenet_det", etc. Default: None.
-        logger (logging.Logger | 'print' | None): The way to print the mAP
-            summary. If a Logger is specified, then the summary will be logged
-            with `logger.info()`; if set to "print", then it will be simply
-            printed to stdout; if set to None, then no information will be
-            printed. Default: 'print'.
+        logger (logging.Logger | str | None): The way to print the mAP
+            summary. See `mmdet.utils.print_log()` for details. Default: None.
         nproc (int): Processes used for computing TP and FP.
             Default: 4.
 
@@ -335,8 +334,8 @@ def eval_map(det_results,
             if area_ranges is None:
                 num_gts[0] += bbox.shape[0]
             else:
-                gt_areas = (bbox[:, 2] - bbox[:, 0] + 1) * (
-                    bbox[:, 3] - bbox[:, 1] + 1)
+                gt_areas = (bbox[:, 2] - bbox[:, 0]) * (
+                    bbox[:, 3] - bbox[:, 1])
                 for k, (min_area, max_area) in enumerate(area_ranges):
                     num_gts[k] += np.sum((gt_areas >= min_area)
                                          & (gt_areas < max_area))
@@ -383,9 +382,9 @@ def eval_map(det_results,
             if cls_result['num_gts'] > 0:
                 aps.append(cls_result['ap'])
         mean_ap = np.array(aps).mean().item() if aps else 0.0
-    if logger is not None:
-        print_map_summary(
-            mean_ap, eval_results, dataset, area_ranges, logger=logger)
+
+    print_map_summary(
+        mean_ap, eval_results, dataset, area_ranges, logger=logger)
 
     return mean_ap, eval_results
 
@@ -405,18 +404,12 @@ def print_map_summary(mean_ap,
         results (list[dict]): Calculated from `eval_map()`.
         dataset (list[str] | str | None): Dataset name or dataset classes.
         scale_ranges (list[tuple] | None): Range of scales to be evaluated.
-        logger (logging.Logger | 'print' | None): The way to print the mAP
-            summary. If a Logger is specified, then the summary will be logged
-            with `logger.info()`; if set to "print", then it will be simply
-            printed to stdout; if set to None, then no information will be
-            printed. Default: 'print'.
+        logger (logging.Logger | str | None): The way to print the mAP
+            summary. See `mmdet.utils.print_log()` for details. Default: None.
     """
 
-    def _print(content):
-        if logger == 'print':
-            print(content)
-        elif isinstance(logger, logging.Logger):
-            logger.info(content)
+    if logger == 'silent':
+        return
 
     if isinstance(results[0]['ap'], np.ndarray):
         num_scales = len(results[0]['ap'])
@@ -425,9 +418,6 @@ def print_map_summary(mean_ap,
 
     if scale_ranges is not None:
         assert len(scale_ranges) == num_scales
-
-    assert logger is None or logger == 'print' or isinstance(
-        logger, logging.Logger)
 
     num_classes = len(results)
 
@@ -441,7 +431,7 @@ def print_map_summary(mean_ap,
         num_gts[:, i] = cls_result['num_gts']
 
     if dataset is None:
-        label_names = [str(i) for i in range(1, num_classes + 1)]
+        label_names = [str(i) for i in range(num_classes)]
     elif mmcv.is_str(dataset):
         label_names = get_classes(dataset)
     else:
@@ -453,15 +443,15 @@ def print_map_summary(mean_ap,
     header = ['class', 'gts', 'dets', 'recall', 'ap']
     for i in range(num_scales):
         if scale_ranges is not None:
-            _print('Scale range ', scale_ranges[i])
+            print_log(f'Scale range {scale_ranges[i]}', logger=logger)
         table_data = [header]
         for j in range(num_classes):
             row_data = [
                 label_names[j], num_gts[i, j], results[j]['num_dets'],
-                '{:.3f}'.format(recalls[i, j]), '{:.3f}'.format(aps[i, j])
+                f'{recalls[i, j]:.3f}', f'{aps[i, j]:.3f}'
             ]
             table_data.append(row_data)
-        table_data.append(['mAP', '', '', '', '{:.3f}'.format(mean_ap[i])])
+        table_data.append(['mAP', '', '', '', f'{mean_ap[i]:.3f}'])
         table = AsciiTable(table_data)
         table.inner_footing_row_border = True
-        _print('\n' + table.table)
+        print_log('\n' + table.table, logger=logger)

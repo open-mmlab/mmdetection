@@ -63,8 +63,6 @@ class ModelOpenVINO(object):
                  cfg=None,
                  classes=None):
 
-        from openvino.inference_engine import IENetwork
-
         ie = IECore()
         logging.info('Reading network from IR...')
         if bin_file_path is None:
@@ -72,7 +70,7 @@ class ModelOpenVINO(object):
         if mapping_file_path is None:
             mapping_file_path = osp.splitext(xml_file_path)[0] + '.mapping'
 
-        self.net = IENetwork(model=xml_file_path, weights=bin_file_path)
+        self.net = ie.read_network(model=xml_file_path, weights=bin_file_path)
 
         self.orig_ir_mapping = self.get_mapping(mapping_file_path)
         self.ir_orig_mapping = {v: k for k, v in self.orig_ir_mapping.items()}
@@ -128,9 +126,6 @@ class ModelOpenVINO(object):
                 framework_name = framework.get('name')
                 ir_name = ir.get('name')
                 mapping[framework_name] = ir_name
-                if framework_name != ir_name:
-                    # FIXME. This may not be correct for all operations.
-                    mapping[framework_name] += '.0'
         return mapping
 
     def try_add_extra_outputs(self, extra_outputs):
@@ -142,7 +137,9 @@ class ModelOpenVINO(object):
             ir_name = self.orig_ir_mapping[extra_output]
             try:
                 self.net.add_outputs(ir_name)
-            except RuntimeError:
+                logging.warning(f'Added "{extra_output}" output with "{ir_name}" name in IR')
+            except RuntimeError as e:
+                logging.warning(f'Failed to add "{extra_output}" output with "{ir_name}" name in IR')
                 pass
 
     def configure_inputs(self, required):
@@ -167,6 +164,14 @@ class ModelOpenVINO(object):
                 raise ValueError(f'Failed to identify data blob with name "{x}"')
 
     def rename_outputs(self, outputs):
+        new_items = []
+        for k, v in self.net_outputs_mapping.items():
+            if k not in outputs:
+                new_items.append([k + '.0', v])
+        if new_items:
+            for k, v in new_items:
+                self.net_outputs_mapping[k] = v
+
         return {self.net_outputs_mapping[k]: v for k, v in outputs.items() if k in self.net_outputs_mapping}
 
     def unify_inputs(self, inputs):
@@ -192,7 +197,7 @@ class ModelOpenVINO(object):
     def show(self, data, result, dataset=None, score_thr=0.3, wait_time=0):
         if self.pt_model is not None:
             self.pt_model.show_result(
-                data, result, dataset=dataset, score_thr=score_thr, wait_time=wait_time)
+                data, result, show=True, score_thr=score_thr, wait_time=wait_time)
 
 
 class DetectorOpenVINO(ModelOpenVINO):
@@ -207,9 +212,15 @@ class DetectorOpenVINO(ModelOpenVINO):
         assert self.n == 1, 'Only batch 1 is supported.'
 
     def configure_outputs(self, required):
-        self.try_add_extra_outputs(['boxes', 'labels', 'masks', 'detection_out'])
+        extra_outputs = ['boxes', 'labels', 'masks', 'detection_out']
+
+        for output in extra_outputs:
+            if output not in self.orig_ir_mapping and output in self.net.outputs:
+                self.orig_ir_mapping[output] = output
+
+        self.try_add_extra_outputs(extra_outputs)
         outputs = []
-        
+
         try:
             self.check_required(self.orig_ir_mapping.keys(), ['detection_out'])
             self.with_detection_output = True
@@ -238,7 +249,7 @@ class DetectorOpenVINO(ModelOpenVINO):
         output = super().__call__(inputs)
         if self.with_detection_output:
             detection_out = output['detection_out']
-            output['labels'] = detection_out[0, 0, :, 1].astype(np.int32) - 1
+            output['labels'] = detection_out[0, 0, :, 1].astype(np.int32)
             output['boxes'] = detection_out[0, 0, :, 3:] * np.tile(inputs['image'].shape[2:][::-1], 2)
             output['boxes'] = np.concatenate((output['boxes'], detection_out[0, 0, :, 2:3]), axis=1)
             del output['detection_out']
