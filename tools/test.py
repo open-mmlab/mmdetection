@@ -87,6 +87,9 @@ def main():
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
     cfg.model.pretrained = None
+    if cfg.model.get('neck', False):
+        if cfg.model.neck.get('rfp_pretrained', False):
+            cfg.model.neck.rfp_pretrained = None
     cfg.data.test.test_mode = True
 
     # init distributed env first, since logger depends on the dist info.

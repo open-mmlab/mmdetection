@@ -25,9 +25,13 @@ class BasicBlock(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
+                 rfp_inp=None,
+                 sac=None,
                  plugins=None):
         super(BasicBlock, self).__init__()
         assert dcn is None, 'Not implemented yet.'
+        assert rfp_inp is None, 'Not implemented yet.'
+        assert sac is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
 
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
