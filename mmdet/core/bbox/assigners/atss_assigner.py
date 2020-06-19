@@ -101,8 +101,9 @@ class ATSSAssigner(BaseAssigner):
 
         distances = (bboxes_points[:, None, :] -
                      gt_points[None, :, :]).pow(2).sum(-1).sqrt()
-        if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None and 
-            gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
+
+        if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None and
+                gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
             ignore_overlaps = self.iou_calculator(bboxes, gt_bboxes_ignore,
                                                   mode='iof')
             ignore_max_overlaps, _ = ignore_overlaps.max(dim=1)
