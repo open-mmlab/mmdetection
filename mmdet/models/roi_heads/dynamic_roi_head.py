@@ -12,8 +12,8 @@ class DynamicRoIHead(StandardRoIHead):
 
     def __init__(self, **kwargs):
         super(DynamicRoIHead, self).__init__(**kwargs)
-        self.k_i = self.train_cfg.dynamic_rcnn.k_i
-        self.k_e = self.train_cfg.dynamic_rcnn.k_e
+        self.iou_topk = self.train_cfg.dynamic_rcnn.iou_topk
+        self.beta_topk = self.train_cfg.dynamic_rcnn.beta_topk
         self.iteration_count = self.train_cfg.dynamic_rcnn.iteration_count
         self.initial_iou = 0.4
         self.initial_beta = 1.0
@@ -72,9 +72,10 @@ class DynamicRoIHead(StandardRoIHead):
                     gt_labels[i],
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 cur_iou.append(
-                    torch.topk(assign_result.max_overlaps,
-                               min(self.k_i, len(
-                                   assign_result.max_overlaps)))[0][-1].item())
+                    torch.topk(
+                        assign_result.max_overlaps,
+                        min(self.iou_topk,
+                            len(assign_result.max_overlaps)))[0][-1].item())
                 sampling_results.append(sampling_result)
             cur_iou = sum(cur_iou) / num_imgs
             self.cur_iou.append(cur_iou)
@@ -114,7 +115,7 @@ class DynamicRoIHead(StandardRoIHead):
         num_pos = len(pos_inds)
         cur_target = bbox_targets[2][pos_inds, :2].abs().mean(dim=1)
         cur_target = torch.kthvalue(cur_target.cpu(),
-                                    min(self.k_e * num_imgs,
+                                    min(self.beta_topk * num_imgs,
                                         num_pos))[0].item()
         self.cur_beta.append(cur_target)
         loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],
