@@ -109,17 +109,12 @@ class BeproDataset(CustomDataset):
             bboxes = np.zeros((0, 4))
             labels = np.zeros((0, ))
         else:
-            # bboxes = np.array(bboxes, ndmin=2) - 1
             bboxes = np.array(bboxes, ndmin=2)
             labels = np.array(labels)
 
         # if not bboxes_ignore:
         bboxes_ignore = np.zeros((0, 4))
         labels_ignore = np.zeros((0, ))
-        # else:
-        #     # bboxes_ignore = np.array(bboxes_ignore, ndmin=2) - 1
-        #     bboxes_ignore = np.array(bboxes_ignore, ndmin=2)
-        #     labels_ignore = np.array(labels_ignore)
 
         if len(bboxes) >= 35:
             print('[DEBUG] too many boxes, xml ignored! ' + img_path)
