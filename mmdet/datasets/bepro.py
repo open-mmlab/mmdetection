@@ -125,10 +125,10 @@ class BeproDataset(CustomDataset):
             labels = np.array([], dtype=np.int64)
 
         ann = dict(
-            bboxes=gt_bboxes,
-            labels=gt_labels,
-            bboxes_ignore=gt_bboxes_ignore,
-            masks=gt_masks_ann,
-            seg_map=seg_map)
+            bboxes=bboxes,
+            labels=labels,
+            bboxes_ignore=bboxes_ignore,
+            labels_ignore=labels_ignore
+        )
 
         return ann
