@@ -56,8 +56,7 @@ def multiclass_nms(multi_bboxes,
         labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
 
         # onnx export
-        tracing_state = torch._C._get_tracing_state()
-        if tracing_state:
+        if torch.onnx.is_in_onnx_export():
             warnings.warn('[ONNX warning] Can not record NMS in ONNX '
                           'as it is not be executed this time')
         return bboxes, labels
