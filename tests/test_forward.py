@@ -153,9 +153,8 @@ def test_faster_rcnn_ohem_forward():
         gt_labels=gt_labels,
         return_loss=True)
     assert isinstance(losses, dict)
-    from mmdet.apis.train import parse_losses
-    total_loss = float(parse_losses(losses)[0].item())
-    assert total_loss > 0
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
 
     # Test forward train with an empty truth batch
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
@@ -170,9 +169,8 @@ def test_faster_rcnn_ohem_forward():
         gt_labels=gt_labels,
         return_loss=True)
     assert isinstance(losses, dict)
-    from mmdet.apis.train import parse_losses
-    total_loss = float(parse_losses(losses)[0].item())
-    assert total_loss > 0
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
 
 
 # HTC is not ready yet
@@ -206,10 +204,10 @@ def test_two_stage_forward(cfg_file):
         gt_masks=gt_masks,
         return_loss=True)
     assert isinstance(losses, dict)
-    from mmdet.apis.train import parse_losses
-    total_loss = parse_losses(losses)[0].requires_grad_(True)
-    assert float(total_loss.item()) > 0
-    total_loss.backward()
+    loss, _ = detector._parse_losses(losses)
+    loss.requires_grad_(True)
+    assert float(loss.item()) > 0
+    loss.backward()
 
     # Test forward train with an empty truth batch
     mm_inputs = _demo_mm_inputs(input_shape, num_items=[0])
@@ -226,10 +224,10 @@ def test_two_stage_forward(cfg_file):
         gt_masks=gt_masks,
         return_loss=True)
     assert isinstance(losses, dict)
-    from mmdet.apis.train import parse_losses
-    total_loss = parse_losses(losses)[0].requires_grad_(True)
-    assert float(total_loss.item()) > 0
-    total_loss.backward()
+    loss, _ = detector._parse_losses(losses)
+    loss.requires_grad_(True)
+    assert float(loss.item()) > 0
+    loss.backward()
 
     # Test forward test
     with torch.no_grad():
