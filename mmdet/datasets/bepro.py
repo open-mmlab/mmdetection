@@ -76,14 +76,9 @@ class BeproDataset(CustomDataset):
         bboxes_ignore = []
         labels_ignore = []
         for obj in root.findall('object'):
-            name = obj.find('name').text
-            
-            if name not in self.cat2label:
-                print('[DEBUG] invalid label: ' + xml_path + name)
-                continue
-
             label = self.cat2label[name]
-            # difficult = int(obj.find('difficult').text)
+            difficult = int(obj.find('difficult').text)
+            
             bnd_box = obj.find('bndbox')
             bbox = [
                 int(bnd_box.find('xmin').text),
@@ -91,42 +86,48 @@ class BeproDataset(CustomDataset):
                 int(bnd_box.find('xmax').text),
                 int(bnd_box.find('ymax').text)
             ]
-            ignore = False
-            if self.min_size:
-                assert not self.test_mode
-                w = bbox[2] - bbox[0]
-                h = bbox[3] - bbox[1]
-                if w < self.min_size or h < self.min_size:
-                    ignore = True
-            # if difficult or ignore:
-            if ignore:
-                bboxes_ignore.append(bbox)
-                labels_ignore.append(label)
-            else:
-                bboxes.append(bbox)
-                labels.append(label)
-        if not bboxes:
-            bboxes = np.zeros((0, 4))
-            labels = np.zeros((0, ))
-        else:
-            bboxes = np.array(bboxes, ndmin=2) - 1
-            labels = np.array(labels)
-        if not bboxes_ignore:
-            bboxes_ignore = np.zeros((0, 4))
-            labels_ignore = np.zeros((0, ))
-        else:
-            bboxes_ignore = np.array(bboxes_ignore, ndmin=2) - 1
-            labels_ignore = np.array(labels_ignore)
+            
+            x1 = bbox[0]
+            y1 = bbox[1]
+            bw = bbox[2] - bbox[0]
+            bh = bbox[3] - bbox[1]
 
-        #print(len(bboxes), img_path)
-        if len(bboxes) >= 37:
+            inter_w = max(0, min(x1 + bw, self.data_infos[idx]['width']) - max(x1, 0))
+            inter_h = max(0, min(y1 + bh, self.data_infos[idx]['height']) - max(y1, 0))
+
+            if inter_w * inter_h == 0:
+                continue
+
+            if obj.find('name').text not in self.cat2label:
+                continue
+
+            bboxes.append(bbox)
+            labels.append(label)
+
+        if not bboxes:
+            bboxes = np.zeros((0, 4), dtype=np.float32)
+            labels = np.array([], dtype=np.int64)
+        else:
+            bboxes = np.array(bboxes, dtype=np.float32)
+            labels = np.array(labels, dtype=np.int64)
+
+        if not bboxes_ignore:
+            bboxes = np.zeros((0, 4), dtype=np.float32)
+            labels = np.array([], dtype=np.int64)
+        else:
+            bboxes_ignore = np.array(bboxes_ignore, dtype=np.float32)
+            labels_ignore = np.array(labels_ignore, dtype=np.int64)
+
+        if len(bboxes) >= 35:
             print('[DEBUG] too many boxes, xml ignored! ' + img_path)
-            bboxes = np.zeros((0, 4))
-            labels = np.zeros((0, ))
+            bboxes = np.zeros((0, 4), dtype=np.float32)
+            labels = np.array([], dtype=np.int64)
 
         ann = dict(
-            bboxes=bboxes.astype(np.float32),
-            labels=labels.astype(np.int64),
-            bboxes_ignore=bboxes_ignore.astype(np.float32),
-            labels_ignore=labels_ignore.astype(np.int64))
+            bboxes=gt_bboxes,
+            labels=gt_labels,
+            bboxes_ignore=gt_bboxes_ignore,
+            masks=gt_masks_ann,
+            seg_map=seg_map)
+
         return ann
