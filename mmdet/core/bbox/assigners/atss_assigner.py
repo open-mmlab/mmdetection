@@ -20,9 +20,9 @@ class ATSSAssigner(BaseAssigner):
         topk (float): number of bbox selected in each level
     """
 
-    def __init__(self, 
-                 topk, 
-                 iou_calculator=dict(type='BboxOverlaps2D'), 
+    def __init__(self,
+                 topk,
+                 iou_calculator=dict(type='BboxOverlaps2D'),
                  ignore_iof_thr=-1):
         self.topk = topk
         self.iou_calculator = build_iou_calculator(iou_calculator)
@@ -104,7 +104,8 @@ class ATSSAssigner(BaseAssigner):
         
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None and
                 gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
-            ignore_overlaps = self.iou_calculator(bboxes, gt_bboxes_ignore, mode='iof')
+            ignore_overlaps = self.iou_calculator(bboxes, gt_bboxes_ignore,
+                                                  mode='iof')
             ignore_max_overlaps, _ = ignore_overlaps.max(dim=1)
             ignore_idxs = ignore_max_overlaps > self.ignore_iof_thr
             distances[ignore_idxs, :] = INF
