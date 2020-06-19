@@ -12,4 +12,4 @@ tqdm
 onnx==1.6.0
 onnxruntime==1.1.2
 lxml
-pycocotools @ git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
+pycocotools @ git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools
