@@ -217,7 +217,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         loss, log_vars = self._parse_losses(losses)
 
         outputs = dict(
-            loss=loss, log_vars=log_vars, num_samples=len(data['img'].data))
+            loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
 
         return outputs
 
@@ -232,7 +232,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         loss, log_vars = self._parse_losses(losses)
 
         outputs = dict(
-            loss=loss, log_vars=log_vars, num_samples=len(data['img'].data))
+            loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
 
         return outputs
 

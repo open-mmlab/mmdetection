@@ -70,8 +70,8 @@ class CustomDataset(Dataset):
         # load annotations (and proposals)
         self.data_infos = self.load_annotations(self.ann_file)
         # filter data infos if classes are customized
-        if self.custom_classes:
-            self.data_infos = self.get_subset_by_classes()
+        # if self.custom_classes:
+        #     self.data_infos = self.get_subset_by_classes()
 
         if self.proposal_file is not None:
             self.proposals = self.load_proposals(self.proposal_file)
