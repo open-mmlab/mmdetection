@@ -6,10 +6,11 @@ from mmcv.cnn import normal_init
 from mmdet.ops import batched_nms
 from ..builder import HEADS
 from .anchor_head import AnchorHead
+from .rpn_test_mixin import RPNTestMixin
 
 
 @HEADS.register_module()
-class RPNHead(AnchorHead):
+class RPNHead(RPNTestMixin, AnchorHead):
 
     def __init__(self, in_channels, **kwargs):
         super(RPNHead, self).__init__(
@@ -75,10 +76,10 @@ class RPNHead(AnchorHead):
                 scores = rpn_cls_score.sigmoid()
             else:
                 rpn_cls_score = rpn_cls_score.reshape(-1, 2)
-                # remind that we set FG labels to [0, num_class-1]
-                # since mmdet v2.0
-                # BG cat_id: num_class
-                scores = rpn_cls_score.softmax(dim=1)[:, :-1]
+                # we set FG labels to [0, num_class-1] and BG label to
+                # num_class in other heads since mmdet v2.0, However we
+                # keep BG label as 0 and FG label as 1 in rpn head
+                scores = rpn_cls_score.softmax(dim=1)[:, 1]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
             if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:

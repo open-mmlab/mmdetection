@@ -35,8 +35,8 @@ before_install:
 install:
   - pip install Pillow==6.2.2  # remove this line when torchvision>=0.5
   - pip install torch==${TORCH} torchvision==${TORCHVISION}
-  - pip install mmcv-nightly
-  - pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
+  - pip install mmcv
+  - pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
   - pip install -r requirements.txt
 
 before_script:

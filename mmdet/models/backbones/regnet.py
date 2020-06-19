@@ -23,7 +23,7 @@ class RegNet(ResNet):
             - bot_mul (float): bottleneck ratio, i.e. expansion of bottlneck.
         strides (Sequence[int]): Strides of the first block of each stage.
         base_channels (int): Base channels after stem layer.
-        in_channels (int): Number of input image channels. Normally 3.
+        in_channels (int): Number of input image channels. Default: 3.
         dilations (Sequence[int]): Dilation of each stage.
         out_indices (Sequence[int]): Output from which stages.
         style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
@@ -81,7 +81,8 @@ class RegNet(ResNet):
     def __init__(self,
                  arch,
                  in_channels=3,
-                 base_channels=64,
+                 stem_channels=32,
+                 base_channels=32,
                  strides=(2, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
                  out_indices=(0, 1, 2, 3),
@@ -128,6 +129,7 @@ class RegNet(ResNet):
         self.stage_widths = stage_widths
         self.group_widths = group_widths
         self.depth = sum(stage_blocks)
+        self.stem_channels = stem_channels
         self.base_channels = base_channels
         self.num_stages = num_stages
         assert num_stages >= 1 and num_stages <= 4
@@ -153,11 +155,10 @@ class RegNet(ResNet):
         self.block = Bottleneck
         self.block.expansion = 1
         self.stage_blocks = stage_blocks[:num_stages]
-        self.inplanes = base_channels
 
-        self._make_stem_layer(in_channels, base_channels)
+        self._make_stem_layer(in_channels, stem_channels)
 
-        self.inplanes = base_channels
+        self.inplanes = stem_channels
         self.res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = self.strides[i]

@@ -57,7 +57,7 @@ def single_gpu_test(model,
             result = bbox_results, encoded_mask_results
         results.append(result)
 
-        batch_size = data['img'][0].size(0)
+        batch_size = len(data['img_metas'][0].data)
         for _ in range(batch_size):
             prog_bar.update()
     return results
@@ -100,9 +100,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
         results.append(result)
 
         if rank == 0:
-            batch_size = (
-                len(data['img_meta']._data)
-                if 'img_meta' in data else data['img'][0].size(0))
+            batch_size = len(data['img_metas'][0].data)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 
