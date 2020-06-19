@@ -95,7 +95,7 @@ class TestLoading(object):
             "\tcolor_type='color',\n" + \
             "\tfile_client_args={'backend': 'disk'})\n"
 
-        # img_info_keys not exists
+        # results not contain any element in img_info_keys
         results = dict(
             img_prefix=self.data_prefix,
             support_img_info=dict(filename='color.jpg'),
