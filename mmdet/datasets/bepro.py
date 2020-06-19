@@ -27,7 +27,6 @@ class BeproDataset(CustomDataset):
     def __init__(self, min_size=None, **kwargs):
         super(BeproDataset, self).__init__(**kwargs)
         self.cat2label = {'person': 1, 'ball': 2}
-#        self.cat2label = {cat: i + 1 for i, cat in enumerate(self.CLASSES)}
         self.min_size = min_size
 
     def load_annotations(self, ann_file):
@@ -59,9 +58,6 @@ class BeproDataset(CustomDataset):
         return img_infos
 
     def get_ann_info(self, idx):
-        # img_id = self.img_infos[idx]['id']
-        # img_path = self.img_infos[idx]['filename']
-
         img_id = self.data_infos[idx]['id']
         img_path = self.data_infos[idx]['filename']
 
@@ -71,10 +67,12 @@ class BeproDataset(CustomDataset):
         xml_path = osp.join(dir_path, 'xml', '{}.xml'.format(img_id))
         tree = ET.parse(xml_path)
         root = tree.getroot()
+        
         bboxes = []
         labels = []
         bboxes_ignore = []
         labels_ignore = []
+
         for obj in root.findall('object'):
             label = self.cat2label[name]
             difficult = int(obj.find('difficult').text)
