@@ -376,7 +376,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         return results
 
-    def aug_test(self, img_feats, img_metas, proposals=None, rescale=False):
+    def aug_test(self, img_feats, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
 
         If rescale is False, then returned bboxes and masks will fit the scale
@@ -389,10 +389,6 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         else:
             semantic_feats = [None] * len(img_metas)
 
-        # recompute feats to save memory
-        proposal_list = self.aug_test_rpn(img_feats, img_metas,
-                                          self.test_cfg.rpn)
-
         rcnn_test_cfg = self.test_cfg
         aug_bboxes = []
         aug_scores = []
@@ -401,9 +397,10 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             img_shape = img_meta[0]['img_shape']
             scale_factor = img_meta[0]['scale_factor']
             flip = img_meta[0]['flip']
+            flip_direction = img_meta[0]['flip_direction']
 
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
-                                     scale_factor, flip)
+                                     scale_factor, flip, flip_direction)
             # "ms" in variable names means multi-stage
             ms_scores = []
 
@@ -456,8 +453,9 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     img_shape = img_meta[0]['img_shape']
                     scale_factor = img_meta[0]['scale_factor']
                     flip = img_meta[0]['flip']
+                    flip_direction = img_meta[0]['flip_direction']
                     _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
-                                           scale_factor, flip)
+                                           scale_factor, flip, flip_direction)
                     mask_rois = bbox2roi([_bboxes])
                     mask_feats = self.mask_roi_extractor[-1](
                         x[:len(self.mask_roi_extractor[-1].featmap_strides)],

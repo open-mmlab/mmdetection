@@ -1,5 +1,4 @@
 import numpy as np
-import pycocotools.mask as mask_util
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

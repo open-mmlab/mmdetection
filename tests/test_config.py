@@ -1,9 +1,9 @@
 from os.path import dirname, exists, join, relpath
 
 import torch
+from mmcv.runner import build_optimizer
 
 from mmdet.core import BitmapMasks, PolygonMasks
-from mmdet.core.optimizer import build_optimizer
 
 
 def _get_config_directory():
@@ -99,7 +99,7 @@ def test_config_data_pipeline():
         'foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py',
         'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
         'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain_1x_coco.py',
-        'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
+        'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py'
     ]
 
     def dummy_masks(h, w, num_obj=3, mode='bitmap'):
@@ -142,6 +142,7 @@ def test_config_data_pipeline():
                                                     True) else 'polygon'
         results = dict(
             filename='test_img.png',
+            ori_filename='test_img.png',
             img=img,
             img_shape=img.shape,
             ori_shape=img.shape,
@@ -149,6 +150,7 @@ def test_config_data_pipeline():
             gt_labels=np.array([1], dtype=np.int64),
             gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
         )
+        results['img_fields'] = ['img']
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
         output_results = train_pipeline(results)
@@ -157,6 +159,7 @@ def test_config_data_pipeline():
         print(f'Test testing data pipeline: \n{test_pipeline!r}')
         results = dict(
             filename='test_img.png',
+            ori_filename='test_img.png',
             img=img,
             img_shape=img.shape,
             ori_shape=img.shape,
@@ -164,6 +167,7 @@ def test_config_data_pipeline():
             gt_labels=np.array([1], dtype=np.int64),
             gt_masks=dummy_masks(img.shape[0], img.shape[1], mode=mode),
         )
+        results['img_fields'] = ['img']
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
         output_results = test_pipeline(results)
@@ -174,6 +178,7 @@ def test_config_data_pipeline():
               f'\n{train_pipeline!r}')
         results = dict(
             filename='test_img.png',
+            ori_filename='test_img.png',
             img=img,
             img_shape=img.shape,
             ori_shape=img.shape,
@@ -182,6 +187,7 @@ def test_config_data_pipeline():
             gt_masks=dummy_masks(
                 img.shape[0], img.shape[1], num_obj=0, mode=mode),
         )
+        results['img_fields'] = ['img']
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
         output_results = train_pipeline(results)
@@ -190,6 +196,7 @@ def test_config_data_pipeline():
         print(f'Test empty GT with testing data pipeline: \n{test_pipeline!r}')
         results = dict(
             filename='test_img.png',
+            ori_filename='test_img.png',
             img=img,
             img_shape=img.shape,
             ori_shape=img.shape,
@@ -198,6 +205,7 @@ def test_config_data_pipeline():
             gt_masks=dummy_masks(
                 img.shape[0], img.shape[1], num_obj=0, mode=mode),
         )
+        results['img_fields'] = ['img']
         results['bbox_fields'] = ['gt_bboxes']
         results['mask_fields'] = ['gt_masks']
         output_results = test_pipeline(results)

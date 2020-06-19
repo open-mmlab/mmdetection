@@ -4,11 +4,12 @@
 
 Make sure that all of the listed below system-level requirements are installed:
 
-- Linux (Windows is not officially supported)
+- Linux or macOS (Windows is not currently officially supported)
 - Python 3.6+
-- CUDA 9.0 or higher
-- NCCL 2
-- GCC 4.9 or higher
+- PyTorch 1.3+
+- CUDA 9.2+ (If you build PyTorch from source, CUDA 9.0 is also compatible)
+- GCC 5+
+- [mmcv](https://github.com/open-mmlab/mmcv)
 - [Intel® Distribution of OpenVINO™ Toolkit](https://software.intel.com/en-us/openvino-toolkit) 2020.2
 
 ### Install OTEDetection
@@ -33,10 +34,13 @@ git clone https://github.com/opencv/mmdetection.git
 cd mmdetection
 ```
 
-d. Install build requirements and then install OTEDetection.
+d. Install build requirements and then install mmdetection.
+(We install our forked version of pycocotools via the github repo instead of pypi
+for better compatibility with our repo.)
 
 ```shell
 pip install -r requirements/build.txt
+pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .  # or "python setup.py develop"
 ```
 
@@ -50,6 +54,14 @@ Note:
 
 1. The git commit id will be written to the version number with step d, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
 It is recommended that you run step d each time you pull some updates from github. If C++/CUDA codes are modified, then this step is compulsory.
+
+    > Important: Be sure to remove the `./build` folder if you reinstall mmdet with a different CUDA/PyTorch version.
+
+    ```
+    pip uninstall mmdet
+    rm -rf ./build
+    find . -name "*.so" | xargs rm
+    ```
 
 2. Following the above instructions, OTEDetection is installed in `dev` mode, any local modifications made to the code will take effect without the need to reinstall it (unless you submit some commits and want to update the version number).
 
@@ -127,6 +139,7 @@ conda install cython -y
 git clone https://github.com/opencv/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
+pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=PythonAPI"
 pip install -v -e .
 ```
 

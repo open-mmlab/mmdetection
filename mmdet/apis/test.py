@@ -2,13 +2,14 @@ import os.path as osp
 import pickle
 import shutil
 import tempfile
+import time
 
 import mmcv
 import torch
 import torch.distributed as dist
 from mmcv.runner import get_dist_info
 
-from mmdet.core import tensor2imgs
+from mmdet.core import encode_mask_results, tensor2imgs
 
 
 def single_gpu_test(model,
@@ -23,7 +24,6 @@ def single_gpu_test(model,
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
-        results.append(result)
 
         if show or out_dir:
             img_tensor = data['img'][0]
@@ -39,7 +39,7 @@ def single_gpu_test(model,
                 img_show = mmcv.imresize(img_show, (ori_w, ori_h))
 
                 if out_dir:
-                    out_file = osp.join(out_dir, img_meta['filename'])
+                    out_file = osp.join(out_dir, img_meta['ori_filename'])
                 else:
                     out_file = None
 
@@ -49,6 +49,13 @@ def single_gpu_test(model,
                     show=show,
                     out_file=out_file,
                     score_thr=show_score_thr)
+
+        # encode mask results
+        if isinstance(result, tuple):
+            bbox_results, mask_results = result
+            encoded_mask_results = encode_mask_results(mask_results)
+            result = bbox_results, encoded_mask_results
+        results.append(result)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
@@ -81,9 +88,15 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     rank, world_size = get_dist_info()
     if rank == 0:
         prog_bar = mmcv.ProgressBar(len(dataset))
+    time.sleep(2)  # This line can prevent deadlock problem in some cases.
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
+            # encode mask results
+            if isinstance(result, tuple):
+                bbox_results, mask_results = result
+                encoded_mask_results = encode_mask_results(mask_results)
+                result = bbox_results, encoded_mask_results
         results.append(result)
 
         if rank == 0:

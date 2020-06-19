@@ -142,7 +142,7 @@ class FSAFHead(RetinaHead):
                 pos_gt_inds, num_total_anchors, inside_flags, fill=-1)
 
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
-                neg_inds, pos_gt_inds)
+                neg_inds, sampling_result, pos_gt_inds)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
@@ -239,12 +239,16 @@ class FSAFHead(RetinaHead):
             labels_list,
             list(range(len(losses_cls))),
             min_levels=argmin)
-        # Clamp num_pos to 1e-3 to prevent 0/0
-        num_pos = torch.cat(pos_inds, 0).sum().float().clamp(min=1e-3)
+        num_pos = torch.cat(pos_inds, 0).sum().float()
         acc = self.calculate_accuracy(cls_scores, labels_list, pos_inds)
+
+        if num_pos == 0:  # No gt
+            avg_factor = num_pos + float(num_total_neg)
+        else:
+            avg_factor = num_pos
         for i in range(len(losses_cls)):
-            losses_cls[i] /= num_pos
-            losses_bbox[i] /= num_pos
+            losses_cls[i] /= avg_factor
+            losses_bbox[i] /= avg_factor
         return dict(
             loss_cls=losses_cls,
             loss_bbox=losses_bbox,
@@ -260,7 +264,8 @@ class FSAFHead(RetinaHead):
                 for cls, pos in zip(cls_scores, pos_inds)
             ]
             labels = [
-                l.reshape(-1)[pos] for l, pos in zip(labels_list, pos_inds)
+                label.reshape(-1)[pos]
+                for label, pos in zip(labels_list, pos_inds)
             ]
 
             def argmax(x):
