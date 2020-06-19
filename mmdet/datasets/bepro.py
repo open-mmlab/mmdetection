@@ -74,6 +74,12 @@ class BeproDataset(CustomDataset):
         labels_ignore = []
 
         for obj in root.findall('object'):
+            name = obj.find('name').text
+            
+            if name not in self.cat2label:
+                print('[DEBUG] invalid label: ' + xml_path + name)
+                continue
+
             label = self.cat2label[name]
             difficult = int(obj.find('difficult').text)
             
@@ -94,9 +100,6 @@ class BeproDataset(CustomDataset):
             inter_h = max(0, min(y1 + bh, self.data_infos[idx]['height']) - max(y1, 0))
 
             if inter_w * inter_h == 0:
-                continue
-
-            if obj.find('name').text not in self.cat2label:
                 continue
 
             bboxes.append(bbox)
