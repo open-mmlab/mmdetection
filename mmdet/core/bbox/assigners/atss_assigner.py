@@ -20,7 +20,10 @@ class ATSSAssigner(BaseAssigner):
         topk (float): number of bbox selected in each level
     """
 
-    def __init__(self, topk, iou_calculator=dict(type='BboxOverlaps2D'), ignore_iof_thr=-1):
+    def __init__(self, 
+                 topk, 
+                 iou_calculator=dict(type='BboxOverlaps2D'), 
+                 ignore_iof_thr=-1):
         self.topk = topk
         self.iou_calculator = build_iou_calculator(iou_calculator)
         self.ignore_iof_thr = ignore_iof_thr
