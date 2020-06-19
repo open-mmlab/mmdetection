@@ -18,12 +18,11 @@ import sys
 import cv2
 import numpy as np
 
-# from mmdet.core import coco_eval, results2json
+import mmcv
+from mmdet.core import encode_mask_results
 from mmdet.core.bbox.transforms import bbox2result
 from mmdet.core.mask.transforms import mask2result
 from mmdet.datasets import build_dataloader, build_dataset
-from mmdet.models import build_detector
-import mmcv
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from mmcv.parallel import collate
 from mmdet.datasets.pipelines import Compose
@@ -53,9 +52,8 @@ def postprocess(result, img_meta, num_classes=80, rescale=True):
             det_masks,
             num_classes,
             mask_thr_binary=0.5,
-            rle=True,
-            full_size=True,
             img_size=(img_h, img_w))
+        segm_results = encode_mask_results(segm_results)
         return bbox_results, segm_results
     return bbox_results
 
