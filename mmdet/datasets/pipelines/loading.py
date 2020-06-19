@@ -156,7 +156,7 @@ class LoadMultiImagesFromMultiFiles(object):
                            f'{img_info_keys}, obtain {results.keys()}')
 
         results['img_fields'] = []
-        for img_info_id, img_info_key in enumerate(img_info_keys):
+        for prefix, img_info_key in zip(self.prefixs, img_info_keys):
             if img_info_key not in results:
                 continue
             ori_filenames = results[img_info_key]['filename']
@@ -179,7 +179,6 @@ class LoadMultiImagesFromMultiFiles(object):
             else:
                 raise TypeError('the type of filename must be a str or list')
 
-            prefix = self.prefixs[img_info_id]
             for fname_id, fname in enumerate(filenames):
                 ori_fname = ori_filenames[fname_id]
                 results = self.load_img_core(results, fname_id, fname,
