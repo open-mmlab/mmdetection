@@ -90,12 +90,13 @@ class PriorBox(torch.autograd.Function):
         return g.op("PriorBox", feat, img_tensor, min_size_f=[min_size],
                     max_size_f=max_sizes, aspect_ratio_f=ars, flip_i=1,
                     clip_i=0, variance_f=list(target_stds),
-                    step_f=anchor_stride, offset_f=0.5, step_h_f=0,
+                    step_f=anchor_stride[0], offset_f=0.5, step_h_f=0,
                     step_w_f=0, img_size_i=0, img_h_i=0, img_w_i=0)
 
     @staticmethod
     def forward(ctx, single_level_grid_anchors, base_anchors, base_size, scales, ratios,
                 anchor_stride, feat, img_tensor, target_stds):
+        assert anchor_stride[0] == anchor_stride[1]
         mlvl_anchor = single_level_grid_anchors(base_anchors, feat.size()[-2:], anchor_stride)
         mlvl_anchor = mlvl_anchor.view(1, -1).unsqueeze(0)
         return mlvl_anchor
@@ -112,12 +113,13 @@ class PriorBoxClustered(torch.autograd.Function):
         return g.op("PriorBoxClustered", feat, img_tensor,
                     height_f=anchors_heights, width_f=anchors_widths,
                     flip_i=0, clip_i=0, variance_f=list(target_stds),
-                    step_f=anchor_stride, offset_f=0.5, step_h_f=0,
+                    step_f=anchor_stride[0], offset_f=0.5, step_h_f=0,
                     step_w_f=0, img_size_i=0, img_h_i=0, img_w_i=0)
 
     @staticmethod
     def forward(ctx, single_level_grid_anchors, base_anchors, anchors_heights, anchors_widths,
                 anchor_stride, feat, img_tensor, target_stds):
+        assert anchor_stride[0] == anchor_stride[1]
         mlvl_anchor = single_level_grid_anchors(base_anchors, feat.size()[-2:], anchor_stride)
         mlvl_anchor = mlvl_anchor.view(1, -1).unsqueeze(0)
         return mlvl_anchor
