@@ -106,29 +106,30 @@ class BeproDataset(CustomDataset):
             labels.append(label)
 
         if not bboxes:
-            bboxes = np.zeros((0, 4), dtype=np.float32)
-            labels = np.array([], dtype=np.int64)
+            bboxes = np.zeros((0, 4))
+            labels = np.zeros((0, ))
         else:
-            bboxes = np.array(bboxes, dtype=np.float32)
-            labels = np.array(labels, dtype=np.int64)
+            # bboxes = np.array(bboxes, ndmin=2) - 1
+            bboxes = np.array(bboxes, ndmin=2)
+            labels = np.array(labels)
 
-        if not bboxes_ignore:
-            bboxes = np.zeros((0, 4), dtype=np.float32)
-            labels = np.array([], dtype=np.int64)
-        else:
-            bboxes_ignore = np.array(bboxes_ignore, dtype=np.float32)
-            labels_ignore = np.array(labels_ignore, dtype=np.int64)
+        # if not bboxes_ignore:
+        bboxes_ignore = np.zeros((0, 4))
+        labels_ignore = np.zeros((0, ))
+        # else:
+        #     # bboxes_ignore = np.array(bboxes_ignore, ndmin=2) - 1
+        #     bboxes_ignore = np.array(bboxes_ignore, ndmin=2)
+        #     labels_ignore = np.array(labels_ignore)
 
         if len(bboxes) >= 35:
             print('[DEBUG] too many boxes, xml ignored! ' + img_path)
-            bboxes = np.zeros((0, 4), dtype=np.float32)
-            labels = np.array([], dtype=np.int64)
+            bboxes = np.zeros((0, 4))
+            labels = np.zeros((0, ))
 
         ann = dict(
-            bboxes=bboxes,
-            labels=labels,
-            bboxes_ignore=bboxes_ignore,
-            labels_ignore=labels_ignore
-        )
+            bboxes=bboxes.astype(np.float32),
+            labels=labels.astype(np.int64),
+            bboxes_ignore=bboxes_ignore.astype(np.float32),
+            labels_ignore=labels_ignore.astype(np.int64))
 
         return ann
