@@ -101,6 +101,7 @@ class TestLoading(object):
             support_img_info=dict(filename='color.jpg'),
             reference_img_info=dict(filename=['color.jpg', 'color.jpg']))
         transform = LoadMultiImagesFromMultiFiles()
+        # test assertion if results not contain any element in img_info_keys
         with pytest.raises(KeyError):
             transform(copy.deepcopy(results))
 
