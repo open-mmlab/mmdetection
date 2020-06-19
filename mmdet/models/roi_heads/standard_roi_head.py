@@ -295,8 +295,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 det_masks,
                 num_classes,
                 mask_thr_binary=self.test_cfg.mask_thr_binary,
-                rle=True,
-                full_size=True,
                 img_size=(img_h, img_w))
             return bbox_results, segm_results
 

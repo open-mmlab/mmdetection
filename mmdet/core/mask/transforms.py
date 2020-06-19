@@ -26,8 +26,6 @@ def mask2result(det_bboxes,
                 det_masks,
                 num_classes,
                 mask_thr_binary=0.5,
-                rle=True,
-                full_size=True,
                 img_size=None):
     masks = det_masks
     bboxes = det_bboxes[:, :4]
@@ -71,10 +69,6 @@ def mask2result(det_bboxes,
         mask = img_masks[0, 0, :, :]
         mask = (mask >= mask_thr_binary).to(dtype=torch.uint8)
 
-        if rle:
-            mask = mask_util.encode(
-                np.array(to_numpy(mask)[:, :, np.newaxis], order='F', dtype=np.uint8))[0]
-
-        cls_masks[label].append(mask)
+        cls_masks[label].append(to_numpy(mask))
 
     return cls_masks
