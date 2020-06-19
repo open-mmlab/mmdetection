@@ -139,7 +139,7 @@ conda install cython -y
 git clone https://github.com/opencv/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
-pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=PythonAPI"
+pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .
 ```
 

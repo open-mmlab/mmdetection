@@ -8,10 +8,11 @@ from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         multiclass_nms, unmap)
 from mmdet.core.utils.misc import topk
 from ..builder import HEADS, build_loss
+from .base_dense_head import BaseDenseHead
 
 
 @HEADS.register_module()
-class AnchorHead(nn.Module):
+class AnchorHead(BaseDenseHead):
     """Anchor-based head (RPN, RetinaNet, SSD, etc.).
 
     Args:
@@ -233,8 +234,10 @@ class AnchorHead(nn.Module):
         if unmap_outputs:
             num_total_anchors = flat_anchors.size(0)
             labels = unmap(
-                labels, num_total_anchors, inside_flags,
-                fill=self.num_classes)  # fill bg label
+                labels,
+                num_total_anchors,
+                inside_flags,
+                fill=self.background_label)  # fill bg label
             label_weights = unmap(label_weights, num_total_anchors,
                                   inside_flags)
             bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
