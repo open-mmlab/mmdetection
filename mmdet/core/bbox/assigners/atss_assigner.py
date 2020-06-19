@@ -109,6 +109,7 @@ class ATSSAssigner(BaseAssigner):
             ignore_max_overlaps, _ = ignore_overlaps.max(dim=1)
             ignore_idxs = ignore_max_overlaps > self.ignore_iof_thr
             distances[ignore_idxs, :] = INF
+            
             overlaps[ignore_idxs, :] = -1
             assigned_gt_inds[ignore_idxs] = -1
 
