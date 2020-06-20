@@ -1,7 +1,13 @@
+from .hourglass import HourglassNet
 from .hrnet import HRNet
-from .resnet import ResNet, make_res_layer
+from .regnet import RegNet
+from .res2net import Res2Net
+from .resnet import ResNet, ResNetV1d
 from .resnext import ResNeXt
 from .ssd_vgg import SSDVGG
 from .darknet import DarkNet53
 
-__all__ = ['ResNet', 'make_res_layer', 'ResNeXt', 'SSDVGG', 'HRNet', 'DarkNet53']
+__all__ = [
+    'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet', 'Res2Net',
+    'HourglassNet', 'DarkNet53'
+]

@@ -1,7 +1,8 @@
 import torch
 
-from mmdet.core import MaxIoUAssigner
-from mmdet.core.bbox.samplers import OHEMSampler, RandomSampler
+from mmdet.core.bbox.assigners import MaxIoUAssigner
+from mmdet.core.bbox.samplers import (OHEMSampler, RandomSampler,
+                                      ScoreHLRSampler)
 
 
 def test_random_sampler():
@@ -100,12 +101,12 @@ def _context_for_ohem():
         sys.path.insert(0, dirname(__file__))
         from test_forward import _get_detector_cfg
     model, train_cfg, test_cfg = _get_detector_cfg(
-        'faster_rcnn_ohem_r50_fpn_1x.py')
+        'faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py')
     model['pretrained'] = None
-    # torchvision roi align supports CPU
-    model['bbox_roi_extractor']['roi_layer']['use_torchvision'] = True
+
     from mmdet.models import build_detector
-    context = build_detector(model, train_cfg=train_cfg, test_cfg=test_cfg)
+    context = build_detector(
+        model, train_cfg=train_cfg, test_cfg=test_cfg).roi_head
     return context
 
 
@@ -247,3 +248,85 @@ def test_random_sample_result():
 
     for i in range(3):
         SamplingResult.random(rng=i)
+
+
+def test_score_hlr_sampler_empty_pred():
+    assigner = MaxIoUAssigner(
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+        ignore_iof_thr=0.5,
+        ignore_wrt_candidates=False,
+    )
+    context = _context_for_ohem()
+    sampler = ScoreHLRSampler(
+        num=10,
+        pos_fraction=0.5,
+        context=context,
+        neg_pos_ub=-1,
+        add_gt_as_proposals=True)
+    gt_bboxes_ignore = torch.Tensor([])
+    feats = [torch.rand(1, 256, int(2**i), int(2**i)) for i in [6, 5, 4, 3, 2]]
+
+    # empty bbox
+    bboxes = torch.empty(0, 4)
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_labels = torch.LongTensor([1, 2, 2, 3])
+    assign_result = assigner.assign(
+        bboxes,
+        gt_bboxes,
+        gt_bboxes_ignore=gt_bboxes_ignore,
+        gt_labels=gt_labels)
+    sample_result, _ = sampler.sample(
+        assign_result, bboxes, gt_bboxes, gt_labels, feats=feats)
+    assert len(sample_result.neg_inds) == 0
+    assert len(sample_result.pos_bboxes) == len(sample_result.pos_inds)
+    assert len(sample_result.neg_bboxes) == len(sample_result.neg_inds)
+
+    # empty gt
+    bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_bboxes = torch.empty(0, 4)
+    gt_labels = torch.LongTensor([])
+    assign_result = assigner.assign(
+        bboxes,
+        gt_bboxes,
+        gt_bboxes_ignore=gt_bboxes_ignore,
+        gt_labels=gt_labels)
+    sample_result, _ = sampler.sample(
+        assign_result, bboxes, gt_bboxes, gt_labels, feats=feats)
+    assert len(sample_result.pos_inds) == 0
+    assert len(sample_result.pos_bboxes) == len(sample_result.pos_inds)
+    assert len(sample_result.neg_bboxes) == len(sample_result.neg_inds)
+
+    # non-empty input
+    bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_labels = torch.LongTensor([1, 2, 2, 3])
+    assign_result = assigner.assign(
+        bboxes,
+        gt_bboxes,
+        gt_bboxes_ignore=gt_bboxes_ignore,
+        gt_labels=gt_labels)
+    sample_result, _ = sampler.sample(
+        assign_result, bboxes, gt_bboxes, gt_labels, feats=feats)
+    assert len(sample_result.pos_bboxes) == len(sample_result.pos_inds)
+    assert len(sample_result.neg_bboxes) == len(sample_result.neg_inds)

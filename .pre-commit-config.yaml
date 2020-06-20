@@ -1,6 +1,6 @@
 repos:
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.7.9
+  - repo: https://gitlab.com/pycqa/flake8.git
+    rev: 3.8.0
     hooks:
       - id: flake8
   - repo: https://github.com/asottile/seed-isort-config
@@ -10,7 +10,7 @@ repos:
   - repo: https://github.com/timothycrosley/isort
     rev: 4.3.21
     hooks:
-        - id: isort
+      - id: isort
   - repo: https://github.com/pre-commit/mirrors-yapf
     rev: v0.29.0
     hooks:
@@ -23,5 +23,6 @@ repos:
       - id: end-of-file-fixer
       - id: requirements-txt-fixer
       - id: double-quote-string-fixer
+      - id: check-merge-conflict
       - id: fix-encoding-pragma
         args: ["--remove"]

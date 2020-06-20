@@ -2,6 +2,7 @@ from functools import partial
 
 import mmcv
 import numpy as np
+import torch
 from six.moves import map, zip
 
 
@@ -29,9 +30,9 @@ def unmap(data, count, inds, fill=0):
     size count) """
     if data.dim() == 1:
         ret = data.new_full((count, ), fill)
-        ret[inds] = data
+        ret[inds.type(torch.bool)] = data
     else:
         new_size = (count, ) + data.size()[1:]
         ret = data.new_full(new_size, fill)
-        ret[inds, :] = data
+        ret[inds.type(torch.bool), :] = data
     return ret

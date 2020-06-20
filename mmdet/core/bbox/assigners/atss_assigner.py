@@ -1,10 +1,12 @@
 import torch
 
-from ..geometry import bbox_overlaps
+from ..builder import BBOX_ASSIGNERS
+from ..iou_calculators import build_iou_calculator
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
+@BBOX_ASSIGNERS.register_module()
 class ATSSAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
@@ -18,8 +20,9 @@ class ATSSAssigner(BaseAssigner):
         topk (float): number of bbox selected in each level
     """
 
-    def __init__(self, topk):
+    def __init__(self, topk, iou_calculator=dict(type='BboxOverlaps2D')):
         self.topk = topk
+        self.iou_calculator = build_iou_calculator(iou_calculator)
 
     # https://github.com/sfzhang15/ATSS/blob/master/atss_core/modeling/rpn/atss/loss.py
 
@@ -61,7 +64,7 @@ class ATSSAssigner(BaseAssigner):
         num_gt, num_bboxes = gt_bboxes.size(0), bboxes.size(0)
 
         # compute iou between all bbox and gt
-        overlaps = bbox_overlaps(bboxes, gt_bboxes)
+        overlaps = self.iou_calculator(bboxes, gt_bboxes)
 
         # assign 0 by default
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),
@@ -77,8 +80,9 @@ class ATSSAssigner(BaseAssigner):
             if gt_labels is None:
                 assigned_labels = None
             else:
-                assigned_labels = overlaps.new_zeros((num_bboxes, ),
-                                                     dtype=torch.long)
+                assigned_labels = overlaps.new_full((num_bboxes, ),
+                                                    -1,
+                                                    dtype=torch.long)
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
@@ -148,8 +152,9 @@ class ATSSAssigner(BaseAssigner):
             max_overlaps != -INF] = argmax_overlaps[max_overlaps != -INF] + 1
 
         if gt_labels is not None:
-            assigned_labels = assigned_gt_inds.new_zeros((num_bboxes, ))
-            pos_inds = torch.nonzero(assigned_gt_inds > 0).squeeze()
+            assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
+            pos_inds = torch.nonzero(
+                assigned_gt_inds > 0, as_tuple=False).squeeze()
             if pos_inds.numel() > 0:
                 assigned_labels[pos_inds] = gt_labels[
                     assigned_gt_inds[pos_inds] - 1]

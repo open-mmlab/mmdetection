@@ -20,12 +20,12 @@
 
 ## Results and Models
 
-| Backbone    | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
-|:-----------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
-| R-50        | 2x      | 4.8      | 1.172               | 10.9           | 40.3   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/grid_rcnn/grid_rcnn_gn_head_r50_fpn_2x_20190619-5b29cf9d.pth) |
-| R-101       | 2x      | 6.7      | 1.214               | 10.0           | 41.7   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/grid_rcnn/grid_rcnn_gn_head_r101_fpn_2x_20190619-a4b61645.pth) |
-| X-101-32x4d | 2x      | 8.0      | 1.335               | 8.5            | 43.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/grid_rcnn/grid_rcnn_gn_head_x101_32x4d_fpn_2x_20190619-0bbfd87a.pth) |
-| X-101-64x4d | 2x      | 10.9     | 1.753               | 6.4            | 43.1   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/grid_rcnn/grid_rcnn_gn_head_x101_64x4d_fpn_2x_20190619-8f4e20bb.pth) |
+| Backbone    | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+|:-----------:|:-------:|:--------:|:--------------:|:------:|:--------:|
+| R-50        | 2x      | 5.1      | 15.0           | 40.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco/grid_rcnn_r50_fpn_gn-head_2x_coco_20200130-6cca8223.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco/grid_rcnn_r50_fpn_gn-head_2x_coco_20200130_221140.log.json) |
+| R-101       | 2x      | 7.0      | 12.6           | 41.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r101_fpn_gn-head_2x_coco/grid_rcnn_r101_fpn_gn-head_2x_coco_20200309-d6eca030.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r101_fpn_gn-head_2x_coco/grid_rcnn_r101_fpn_gn-head_2x_coco_20200309_164224.log.json) |
+| X-101-32x4d | 2x      | 8.3      | 10.8           | 42.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco_20200130-d8f0e3ff.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco_20200130_215413.log.json) |
+| X-101-64x4d | 2x      | 11.3     | 7.7            | 43.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco_20200204-ec76a754.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco_20200204_080641.log.json) |
 
 **Notes:**
 - All models are trained with 8 GPUs instead of 32 GPUs in the original paper.

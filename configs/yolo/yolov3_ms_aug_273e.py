@@ -3,7 +3,7 @@
 # model settings
 model = dict(
     type='YoloNet',
-    pretrained='checkpoints/darknet_state_dict_only.pth',
+    pretrained='./work_dirs/pretrained/darknet_state_dict_only.pth',
     backbone=dict(
         type='DarkNet53',),
     neck=dict(
@@ -109,7 +109,7 @@ total_epochs = 273
 device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/retinanet_r50_fpn_1x'
+work_dir = './work_dirs/yolo_pretrained'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
