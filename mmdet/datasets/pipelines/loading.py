@@ -109,6 +109,7 @@ class LoadImageFromFile:
 
 
 @PIPELINES.register_module()
+<<<<<<< HEAD
 class LoadImageFromWebcam(LoadImageFromFile):
     """Load an image from webcam.
 
@@ -142,6 +143,9 @@ class LoadImageFromWebcam(LoadImageFromFile):
 
 @PIPELINES.register_module()
 class LoadMultiChannelImageFromFiles:
+=======
+class LoadMultiChannelImageFromFiles(LoadImageFromFile):
+>>>>>>> Update loading.py
     """Load multi-channel images from a list of separate channel files.
 
     Required keys are "img_prefix" and "img_info" (a dict that must contain the
