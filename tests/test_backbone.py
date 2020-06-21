@@ -1,5 +1,6 @@
 import pytest
 import torch
+from mmcv.op import DeformConvPack
 from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
@@ -9,7 +10,6 @@ from mmdet.models.backbones.res2net import Bottle2neck
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.backbones.resnext import Bottleneck as BottleneckX
 from mmdet.models.utils import ResLayer
-from mmdet.ops import DeformConvPack
 
 
 def is_block(modules):

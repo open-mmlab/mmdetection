@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
+from mmcv.op import nms
 
-from mmdet.ops import nms
 from ..builder import HEADS
 from .guided_anchor_head import GuidedAnchorHead
 from .rpn_test_mixin import RPNTestMixin

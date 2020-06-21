@@ -5,8 +5,7 @@ CommandLine:
 import numpy as np
 import pytest
 import torch
-
-from mmdet.ops.nms.nms_wrapper import nms, nms_match
+from mmcv.op.nms.nms_wrapper import nms, nms_match
 
 
 def test_nms_device_and_dtypes_cpu():

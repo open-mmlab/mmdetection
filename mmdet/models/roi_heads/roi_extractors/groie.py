@@ -3,11 +3,11 @@
 A novel Region of Interest Extraction Layer for Instance Segmentation.
 """
 
+from mmcv.op.plugin import build_plugin_layer
 from torch import nn
 
 from mmdet.core import force_fp32
 from mmdet.models.builder import ROI_EXTRACTORS
-from mmdet.ops.plugin import build_plugin_layer
 from .single_level import SingleRoIExtractor
 
 

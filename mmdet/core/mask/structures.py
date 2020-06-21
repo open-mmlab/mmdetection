@@ -4,8 +4,7 @@ import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
-
-from mmdet.ops.roi_align import roi_align
+from mmcv.op.roi_align import roi_align
 
 
 class BaseInstanceMasks(metaclass=ABCMeta):

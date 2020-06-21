@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
+from mmcv.op import NonLocal2D
 
-from mmdet.ops import NonLocal2D
 from ..builder import NECKS
 
 

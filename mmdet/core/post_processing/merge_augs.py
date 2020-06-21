@@ -1,7 +1,7 @@
 import numpy as np
 import torch
+from mmcv.op import nms
 
-from mmdet.ops import nms
 from ..bbox import bbox_mapping_back
 
 

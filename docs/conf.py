@@ -40,9 +40,7 @@ extensions = [
 
 autodoc_mock_imports = [
     'matplotlib', 'pycocotools', 'terminaltables', 'mmdet.version',
-    'mmdet.ops.corner_pool', 'mmdet.ops.dcn', 'mmdet.ops.masked_conv',
-    'mmdet.ops.nms', 'mmdet.ops.roi_align', 'mmdet.ops.roi_pool',
-    'mmdet.ops.sigmoid_focal_loss', 'mmdet.ops.carafe', 'mmdet.ops.utils'
+    'mmdet.ops.utils'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

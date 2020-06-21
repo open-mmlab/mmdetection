@@ -4,8 +4,7 @@ CommandLine:
 """
 import pytest
 import torch
-
-from mmdet.ops import CornerPool
+from mmcv.op import CornerPool
 
 
 def test_corner_pool_device_and_dtypes_cpu():
