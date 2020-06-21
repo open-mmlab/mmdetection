@@ -51,7 +51,7 @@ def export_onnx_model(model, inputs, passes):
     if passes is not None:
         all_passes = optimizer.get_available_passes()
         assert all(p in all_passes for p in passes), \
-            'Only {} are supported'.format(all_passes)
+            f'Only {all_passes} are supported'
     onnx_model = optimizer.optimize(onnx_model, passes)
     return onnx_model
 
@@ -108,7 +108,7 @@ def main():
     else:
         raise NotImplementedError(
             'ONNX conversion is currently not currently supported with '
-            '{}'.format(model.__class__.__name__))
+            f'{model.__class__.__name__}')
 
     input_data = torch.empty((1, *input_shape),
                              dtype=next(model.parameters()).dtype,
@@ -117,7 +117,7 @@ def main():
     onnx_model = export_onnx_model(model, (input_data, ), args.passes)
     # Print a human readable representation of the graph
     onnx.helper.printable_graph(onnx_model.graph)
-    print('saving model in {}'.format(args.out))
+    print(f'saving model in {args.out}')
     onnx.save(onnx_model, args.out)
 
 

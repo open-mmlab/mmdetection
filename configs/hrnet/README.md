@@ -25,67 +25,64 @@
 
 ### Faster R-CNN
 
-|    Backbone     |  Style  | Lr schd | box AP |       Download      |
-| :-------------: | :-----: | :-----: | :----: | :-----------------: |
-|   HRNetV2p-W18   | pytorch |   1x    |  36.1  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w18_1x_20190522-e368c387.pth) |
-|   HRNetV2p-W18   | pytorch |   2x    |  38.3  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w18_2x_20190810-9c8615d5.pth) |
-|   HRNetV2p-W32   | pytorch |   1x    |  39.5  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w32_1x_20190522-d22f1fef.pth) |
-|   HRNetV2p-W32   | pytorch |   2x    |  40.6  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w32_2x_20190810-24e8912a.pth) |
-|   HRNetV2p-W48   | pytorch |   1x    |  40.9  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w48_1x_20190820-5c6d0903.pth)    |
-|   HRNetV2p-W48   | pytorch |   2x    |  41.5  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/faster_rcnn_hrnetv2p_w48_2x_20190820-79fb8bfc.pth) |
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :-------------:|:------:| :-------:|
+|   HRNetV2p-W18  | pytorch |   1x    | 6.6      | 13.4           | 36.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w18_1x_coco/faster_rcnn_hrnetv2p_w18_1x_coco_20200130-56651a6d.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w18_1x_coco/faster_rcnn_hrnetv2p_w18_1x_coco_20200130_211246.log.json) |
+|   HRNetV2p-W18  | pytorch |   2x    |          |                |        | |
+|   HRNetV2p-W32  | pytorch |   1x    | 9.0      | 12.4           | 40.2   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w32_1x_coco/faster_rcnn_hrnetv2p_w32_1x_coco_20200130-6e286425.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w32_1x_coco/faster_rcnn_hrnetv2p_w32_1x_coco_20200130_204442.log.json) |
+|   HRNetV2p-W32  | pytorch |   2x    |          |                |        |  |
+|   HRNetV2p-W48  | pytorch |   1x    | 10.4     | 10.5           | 41.2   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w40_1x_coco/faster_rcnn_hrnetv2p_w40_1x_coco_20200210-95c1f5ce.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w40_1x_coco/faster_rcnn_hrnetv2p_w40_1x_coco_20200210_125315.log.json) |
+|   HRNetV2p-W40  | pytorch |   2x    | 10.4     |                |  42.1  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w40_2x_coco/faster_rcnn_hrnetv2p_w40_2x_coco_20200512_161033-0f236ef4.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w40_2x_coco/faster_rcnn_hrnetv2p_w40_2x_coco_20200512_161033.log.json)  |
 
 ### Mask R-CNN
 
-|    Backbone     |  Style  | Lr schd | box AP | mask AP |       Download      |
-| :-------------: | :-----: | :-----: | :----: | :----:  | :-----------------: |
-|   HRNetV2p-W18   | pytorch |   1x    |  37.3  |  34.2   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w18_1x_20190522-c8ad459f.pth) |
-|   HRNetV2p-W18   | pytorch |   2x    |  39.2  |  35.7   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w18_2x_20190810-1e4747eb.pth) |
-|   HRNetV2p-W32   | pytorch |   1x    |  40.7  |  36.8   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w32_1x_20190522-374aaa00.pth) |
-|   HRNetV2p-W32   | pytorch |   2x    |  41.7  |  37.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w32_2x_20190810-773eca75.pth) |
-|   HRNetV2p-W48   | pytorch |   1x    |  42.4  |  38.1   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w48_1x_20190820-0923d1ad.pth) |
-|   HRNetV2p-W48   | pytorch |   2x    |  42.9  |  38.3   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/mask_rcnn_hrnetv2p_w48_2x_20190820-70df51b2.pth) |
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :-------------:|:------:| :------:|:--------:|
+|   HRNetV2p-W18  | pytorch |   1x    | 7.0      | 11.7           | 37.7   | 34.2    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w18_1x_coco/mask_rcnn_hrnetv2p_w18_1x_coco_20200205-1c3d78ed.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w18_1x_coco/mask_rcnn_hrnetv2p_w18_1x_coco_20200205_232523.log.json) |
+|   HRNetV2p-W18  | pytorch |   2x    | 7.0      | -              | 39.8   | 36.0    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w18_2x_coco/mask_rcnn_hrnetv2p_w18_2x_coco_20200212-b3c825b1.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w18_2x_coco/mask_rcnn_hrnetv2p_w18_2x_coco_20200212_134222.log.json) |
+|   HRNetV2p-W32  | pytorch |   1x    | 9.4      | 11.3           | 41.2   | 37.1    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w32_1x_coco/mask_rcnn_hrnetv2p_w32_1x_coco_20200207-b29f616e.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w32_1x_coco/mask_rcnn_hrnetv2p_w32_1x_coco_20200207_055017.log.json) |
+|   HRNetV2p-W32  | pytorch |   2x    | 9.4      | -              | 42.5   | 37.8    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w32_2x_coco/mask_rcnn_hrnetv2p_w32_2x_coco_20200213-45b75b4d.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w32_2x_coco/mask_rcnn_hrnetv2p_w32_2x_coco_20200213_150518.log.json) |
+|   HRNetV2p-W40  | pytorch |   1x    |  10.9    |                | 42.1   |  37.5   |  [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_1x_coco/mask_rcnn_hrnetv2p_w40_1x_coco_20200511_015646-66738b35.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_1x_coco/mask_rcnn_hrnetv2p_w40_1x_coco_20200511_015646.log.json)  |
+|   HRNetV2p-W40  | pytorch |   2x    |   10.9   |                | 42.8   |  38.2   |  [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_2x_coco/mask_rcnn_hrnetv2p_w40_2x_coco_20200512_163732-aed5e4ab.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_2x_coco/mask_rcnn_hrnetv2p_w40_2x_coco_20200512_163732.log.json)  |
 
 
 ### Cascade R-CNN
 
-|    Backbone     |  Style  | Lr schd | box AP |       Download      |
-| :-------------: | :-----: | :-----: | :----: | :-----------------: |
-|   HRNetV2p-W18   | pytorch |   20e   |  41.2  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w18_20e_20190810-132012d0.pth)|
-|   HRNetV2p-W32   | pytorch |   20e   |  43.7  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w32_20e_20190522-55bec4ee.pth)|
-|   HRNetV2p-W48   | pytorch |   20e   |  44.6  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_rcnn_hrnetv2p_w48_20e_20190810-f40ed8e1.pth)|
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :-------------:|:------:| :-------:|
+|   HRNetV2p-W18  | pytorch |   20e   |  7.0     | 11.0           | 41.2   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w18_20e_coco/cascade_rcnn_hrnetv2p_w18_20e_coco_20200210-434be9d7.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w18_20e_coco/cascade_rcnn_hrnetv2p_w18_20e_coco_20200210_105632.log.json)  |
+|   HRNetV2p-W32  | pytorch |   20e   |  9.4     | 11.0           | 43.3   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w32_20e_coco/cascade_rcnn_hrnetv2p_w32_20e_coco_20200208-928455a4.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w32_20e_coco/cascade_rcnn_hrnetv2p_w32_20e_coco_20200208_160511.log.json)  |
+|   HRNetV2p-W40  | pytorch |   20e   |  10.8    |                | 43.8   |  [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w40_20e_coco/cascade_rcnn_hrnetv2p_w40_20e_coco_20200512_161112-75e47b04.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w40_20e_coco/cascade_rcnn_hrnetv2p_w40_20e_coco_20200512_161112.log.json)  |
 
 
 ### Cascade Mask R-CNN
 
-|    Backbone     |  Style  | Lr schd | box AP | mask AP |       Download      |
-| :-------------: | :-----: | :-----: | :----: | :----:  | :-----------------: |
-|   HRNetV2p-W18   | pytorch |   20e   |  41.9  |  36.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_mask_rcnn_hrnetv2p_w18_20e_20190810-054fb7bf.pth) |
-|   HRNetV2p-W32   | pytorch |   20e   |  44.5  |  38.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_20190810-76f61cd0.pth) |
-|   HRNetV2p-W48   | pytorch |   20e   |  46.0  |  39.5   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/cascade_mask_rcnn_hrnetv2p_w48_20e_20190810-d04a1415.pth) |
-
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :-------------:|:------:| :------:|:--------:|
+|   HRNetV2p-W18  | pytorch |   20e   |          | 8.5            |        |         |  |
+|   HRNetV2p-W32  | pytorch |   20e   |          | 8.3            |44.3    |38.6     |  [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_coco/cascade_mask_rcnn_hrnetv2p_w32_20e_coco_20200512_154043-39d9cf7b.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_coco/cascade_mask_rcnn_hrnetv2p_w32_20e_coco_20200512_154043.log.json)  |
+|   HRNetV2p-W40  | pytorch |   20e   |          |                |        |         |  |
 
 ### Hybrid Task Cascade (HTC)
 
-|    Backbone     |  Style  | Lr schd | box AP | mask AP |       Download      |
-| :-------------: | :-----: | :-----: | :----: | :----:  | :-----------------: |
-|   HRNetV2p-W18   | pytorch |   20e   |  43.1  |  37.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w18_20e_20190810-d70072af.pth) |
-|   HRNetV2p-W32   | pytorch |   20e   |  45.3  |  39.6   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w32_20e_20190810-82f9ef5a.pth) |
-|   HRNetV2p-W48   | pytorch |   20e   |  46.8  |  40.7   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w48_20e_20190810-f6d2c3fd.pth) |
-|   HRNetV2p-W48   | pytorch |   28e   |  47.0  |  41.0   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_hrnetv2p_w48_28e_20190810-a4274b38.pth) |
-| X-101-64x4d-FPN | pytorch |   28e   |  46.8  |  40.7   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/htc_x101_64x4d_28e_20190810-d7c19dc0.pth) |
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :-------------:|:------:| :------:|:--------:|
+|   HRNetV2p-W18  | pytorch |   20e   | 10.8     | 4.7            | 42.8   | 37.9    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w18_20e_coco/htc_hrnetv2p_w18_20e_coco_20200210-b266988c.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w18_20e_coco/htc_hrnetv2p_w18_20e_coco_20200210_182735.log.json) |
+|   HRNetV2p-W32  | pytorch |   20e   | 13.1     | 4.9            | 45.4   | 39.9    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w32_20e_coco/htc_hrnetv2p_w32_20e_coco_20200207-7639fa12.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w32_20e_coco/htc_hrnetv2p_w32_20e_coco_20200207_193153.log.json) |
+|   HRNetV2p-W48  | pytorch |   20e   |          |                |        |         |  |
 
 
 ### FCOS
 
-| Backbone  | Style   |  GN     | MS train | Lr schd | box AP | Download |
-|:---------:|:-------:|:-------:|:--------:|:-------:|:------:|:--------:|
-|HRNetV2p-W18| pytorch | Y       | N       | 1x       | 35.2   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/fcos_hrnetv2p_w18_1x_20190810-87a17998.pth) |
-|HRNetV2p-W18| pytorch | Y       | N       | 2x       | 38.2   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/fcos_hrnetv2p_w18_2x_20190810-dfd60a7b.pth) |
-|HRNetV2p-W32| pytorch | Y       | N       | 1x       | 37.7   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/fcos_hrnetv2p_w32_1x_20190810-62014622.pth) |
-|HRNetV2p-W32| pytorch | Y       | N       | 2x       | 40.3   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/fcos_hrnetv2p_w32_2x_20190810-8e987ec1.pth) |
-|HRNetV2p-W18| pytorch | Y       | Y       | 2x       | 38.1   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/fcos_hrnetv2p_w18_mstrain_2x_20190810-eb846b2c.pth) |
-|HRNetV2p-W32| pytorch | Y       | Y       | 2x       | 41.4   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/fcos_hrnetv2p_w32_mstrain_2x_20190810-96127bf8.pth) |
-|HRNetV2p-W48| pytorch | Y       | Y       | 2x       | 42.9   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/hrnet/fcos_hrnetv2p_w48_mstrain_2x_20190810-f7dc8801.pth) |
+| Backbone  | Style   |  GN     | MS train | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+|:---------:|:-------:|:-------:|:--------:|:-------:|:------:|:------:|:------:|:--------:|
+|HRNetV2p-W18| pytorch | Y       | N       | 1x       | 13.0 | 12.9 | 35.1   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_1x_coco/fcos_hrnetv2p_w18_gn-head_4x4_1x_coco_20200316-c24bac34.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_1x_coco/fcos_hrnetv2p_w18_gn-head_4x4_1x_coco_20200316_103815.log.json) |
+|HRNetV2p-W18| pytorch | Y       | N       | 2x       | 13.0 | -    | 37.7   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_2x_coco/fcos_hrnetv2p_w18_gn-head_4x4_2x_coco_20200316-15348c5b.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_2x_coco/fcos_hrnetv2p_w18_gn-head_4x4_2x_coco_20200316_103815.log.json) |
+|HRNetV2p-W32| pytorch | Y       | N       | 1x       | 17.5 | 12.9 | 39.2   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_1x_coco/fcos_hrnetv2p_w32_gn-head_4x4_1x_coco_20200314-59a7807f.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_1x_coco/fcos_hrnetv2p_w32_gn-head_4x4_1x_coco_20200314_150555.log.json) |
+|HRNetV2p-W32| pytorch | Y       | N       | 2x       | 17.5 | -    | 40.3   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_2x_coco/fcos_hrnetv2p_w32_gn-head_4x4_2x_coco_20200314-faf8f0b8.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_2x_coco/fcos_hrnetv2p_w32_gn-head_4x4_2x_coco_20200314_145136.log.json) |
+|HRNetV2p-W18| pytorch | Y       | Y       | 2x       | 13.0 | 12.9 | 38.1   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco_20200316-a668468b.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco_20200316_104027.log.json) |
+|HRNetV2p-W32| pytorch | Y       | Y       | 2x       | 17.5 | 12.4 | 41.8   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco_20200314-065d37a6.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco_20200314_145356.log.json) |
+|HRNetV2p-W48| pytorch | Y       | Y       | 2x       | 20.3 | 10.8 | 42.8   | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco_20200314-e201886d.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco_20200314_150607.log.json) |
 
 
 
