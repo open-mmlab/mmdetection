@@ -78,7 +78,7 @@ class LoadImageFromFile(object):
 
 
 @PIPELINES.register_module()
-class LoadMultiChannelImageFromFiles(object):
+class LoadMultiChannelImageFromFiles(LoadImageFromFile):
     """Load multi-channel images from a list of separate channel files.
 
     Required keys are "img_prefix" and "img_info" (a dict that must contain the
