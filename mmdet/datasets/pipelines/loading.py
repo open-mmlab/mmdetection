@@ -38,8 +38,6 @@ class LoadImageFromFile(object):
         self.file_client = None
 
     def _load_image(self, results):
-        if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_args)
         if results['img_prefix'] is not None:
             filename = osp.join(results['img_prefix'],
                                 results['img_info']['filename'])
@@ -52,6 +50,8 @@ class LoadImageFromFile(object):
         return img, filename
 
     def __call__(self, results):
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
         img, filename = self._load_image(results)
         results['filename'] = filename
         results['ori_filename'] = results['img_info']['filename']
@@ -102,10 +102,8 @@ class LoadMultiChannelImageFromFiles(LoadImageFromFile):
                  to_float32=False,
                  color_type='unchanged',
                  file_client_args=dict(backend='disk')):
-        self.to_float32 = to_float32
-        self.color_type = color_type
-        self.file_client_args = file_client_args.copy()
-        self.file_client = None
+        super(LoadMultiChannelImageFromFiles, 
+              self).__init__(to_float32, color_type, file_client_args)
 
     def _load_image(self, results):
         if results['img_prefix'] is not None:
