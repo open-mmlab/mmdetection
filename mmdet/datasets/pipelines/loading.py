@@ -182,7 +182,7 @@ class LoadMultiChannelImageFromFiles(LoadImageFromFile):
                  to_float32=False,
                  color_type='unchanged',
                  file_client_args=dict(backend='disk')):
-        super(LoadMultiChannelImageFromFiles, 
+        super(LoadMultiChannelImageFromFiles,
               self).__init__(to_float32, color_type, file_client_args)
 
 <<<<<<< HEAD
