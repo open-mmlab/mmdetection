@@ -46,6 +46,7 @@ class LoadImageFromFile:
         self.file_client = None
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     def __call__(self, results):
         """Call functions to load image and get image meta information.
 
@@ -62,6 +63,9 @@ class LoadImageFromFile:
 =======
     def _load_image(self, results):
 >>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
+=======
+    def _load_image(self, results):
+>>>>>>> Update loading.py
         if results['img_prefix'] is not None:
             filename = osp.join(results['img_prefix'],
                                 results['img_info']['filename'])
@@ -78,6 +82,8 @@ class LoadImageFromFile:
         return img, filename
 
     def __call__(self, results):
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
         img, filename = self._load_image(results)
 >>>>>>> Set default values for meta keys in LoadMultiChannelImageFromFile
         results['filename'] = filename
@@ -176,10 +182,8 @@ class LoadMultiChannelImageFromFiles(LoadImageFromFile):
                  to_float32=False,
                  color_type='unchanged',
                  file_client_args=dict(backend='disk')):
-        self.to_float32 = to_float32
-        self.color_type = color_type
-        self.file_client_args = file_client_args.copy()
-        self.file_client = None
+        super(LoadMultiChannelImageFromFiles, 
+              self).__init__(to_float32, color_type, file_client_args)
 
 <<<<<<< HEAD
     def __call__(self, results):
