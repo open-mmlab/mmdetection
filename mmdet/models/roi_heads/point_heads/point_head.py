@@ -10,8 +10,28 @@ from mmdet.ops import point_sample, rel_roi_point2rel_img_point
 
 @HEADS.register_module
 class PointHead(nn.Module):
-    """A mask point head with shared multi-layer perceptron (equivalent to
-    nn.Conv1d)
+    """A mask point head use in PointRend.
+
+    ``PointHead`` use shared multi-layer perceptron (equivalent to
+    nn.Conv1d) to predict the logit of input points. The fine-grained feature
+    and coarse feature will be concatenate together for predication.
+
+    Args:
+        num_fc (int): Number of fc layers in the head. Default: 3.
+        in_channels (int): Number of input channels. Default: 256.
+        fc_channels (int): Number of fc channels. Default: 256.
+        num_classes (int): Number of classes for logits. Default: 80.
+        class_agnostic (bool): Whether use class agnostic classification.
+            If so, the output channels of logits will be 1. Default: False.
+        coarse_pred_each_layer (bool): Whether concatenate coarse feature with
+            the output of each fc layer. Default: True.
+        conv_cfg (dict|None): Dictionary to construct and config conv layer.
+            Default: dict(type='Conv1d'))
+        norm_cfg (dict|None): Dictionary to construct and config norm layer.
+            Default: None.
+        loss_point (dict): Dictionary to construct and config loss layer of
+            point head. Default: dict(type='CrossEntropyLoss', use_mask=True,
+            loss_weight=1.0).
     """
 
     def __init__(self,

@@ -8,6 +8,19 @@ from .fcn_mask_head import FCNMaskHead
 
 @HEADS.register_module
 class CoarseMaskHead(FCNMaskHead):
+    """Coarse mask head used in PointRend.
+
+    Compared with standard ``FCNMaskHead``, ``CoarseMaskHead`` will downsample
+    the input feature map instead of upsample it.
+
+    Args:
+        num_convs (int): Number of conv layers in the head. Default: 0.
+        num_fcs (int): Number of fc layers in the head. Default: 2.
+        fc_out_channels (int): Number of output channels of fc layer.
+            Default: 1024.
+        downsample_factor (int): The factor that feature map is downsampled by.
+            Default: 2.
+    """
 
     def __init__(self,
                  num_convs=0,
