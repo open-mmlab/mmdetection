@@ -67,7 +67,6 @@ class LoadImageFromFile:
                                 results['img_info']['filename'])
         else:
             filename = results['img_info']['filename']
-
         img_bytes = self.file_client.get(filename)
         img = mmcv.imfrombytes(
             img_bytes, flag=self.color_type, channel_order=self.channel_order)
@@ -203,7 +202,6 @@ class LoadMultiChannelImageFromFiles(LoadImageFromFile):
             ]
         else:
             filename = results['img_info']['filename']
-
         img = []
         for name in filename:
             img_bytes = self.file_client.get(name)
