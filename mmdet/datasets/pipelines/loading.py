@@ -119,14 +119,8 @@ class LoadMultiImagesFromMultiFiles(object):
             img = img.astype(np.float32)
 
         # e.g. img_prefix = 'target' or 'ref'
-        if f'{img_prefix}_filenames' not in results:
-            results[f'{img_prefix}_filenames'] = [fname]
-        else:
-            results[f'{img_prefix}_filenames'].append(fname)
-        if f'{img_prefix}_ori_filenames' not in results:
-            results[f'{img_prefix}_ori_filenames'] = [ori_fname]
-        else:
-            results[f'{img_prefix}_ori_filenames'].append(ori_fname)
+        results[f'{img_prefix}_filenames'].append(fname)
+        results[f'{img_prefix}_ori_filenames'].append(ori_fname)
         results[f'{img_prefix}_img_{str(fname_id)}'] = img
         results['img_fields'].append(f'{img_prefix}_img_{str(fname_id)}')
 
@@ -179,6 +173,8 @@ class LoadMultiImagesFromMultiFiles(object):
             else:
                 raise TypeError('the type of filename must be a str or list')
 
+            results[f'{prefix}_filenames'] = []
+            results[f'{prefix}_ori_filenames'] = []
             for fname_id, fname in enumerate(filenames):
                 ori_fname = ori_filenames[fname_id]
                 results = self.load_img_core(results, fname_id, fname,
