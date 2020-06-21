@@ -2,18 +2,18 @@
 
 ## Customize optimizer
 
-An example of customized optimizer `CopyOfSGD` is defined in `mmdet/core/optimizer/copy_of_sgd.py`.
-More generally, a customized optimizer could be defined as following.
+A customized optimizer could be defined as following.
 
 Assume you want to add a optimizer named as `MyOptimizer`, which has arguments `a`, `b`, and `c`.
-You need to first implement the new optimizer in a file, e.g., in `mmdet/core/optimizer/my_optimizer.py`:
+You need to create a new directory named `mmdet/core/optimizer`.
+And then implement the new optimizer in a file, e.g., in `mmdet/core/optimizer/my_optimizer.py`:
 
 ```python
 from .registry import OPTIMIZERS
 from torch.optim import Optimizer
 
 
-@OPTIMIZERS.register_module
+@OPTIMIZERS.register_module()
 class MyOptimizer(Optimizer):
 
     def __init__(self, a, b, c)
@@ -49,16 +49,16 @@ The users can directly set arguments following the [API doc](https://pytorch.org
 Some models may have some parameter-specific settings for optimization, e.g. weight decay for BatchNoarm layers.
 The users can do those fine-grained parameter tuning through customizing optimizer constructor.
 
-```
+```python
 from mmcv.utils import build_from_cfg
 
-from mmdet.core.optimizer import OPTIMIZER_BUILDERS, OPTIMIZERS
+from mmcv.runner.optimizer import OPTIMIZER_BUILDERS, OPTIMIZERS
 from mmdet.utils import get_root_logger
-from .cocktail_optimizer import CocktailOptimizer
+from .my_optimizer import MyOptimizer
 
 
-@OPTIMIZER_BUILDERS.register_module
-class CocktailOptimizerConstructor(object):
+@OPTIMIZER_BUILDERS.register_module()
+class MyOptimizerConstructor(object):
 
     def __init__(self, optimizer_cfg, paramwise_cfg=None):
 
@@ -90,7 +90,7 @@ import torch.nn as nn
 from ..registry import BACKBONES
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class MobileNet(nn.Module):
 
     def __init__(self, arg1, arg2):
@@ -172,7 +172,7 @@ Double Head R-CNN implements a new bbox head for object detection.
 To implement a bbox head, basically we need to implement three functions of the new module as the following.
 
 ```python
-@HEADS.register_module
+@HEADS.register_module()
 class DoubleConvFCBBoxHead(BBoxHead):
     r"""Bbox head used in Double-Head R-CNN
 
@@ -214,7 +214,7 @@ from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Simplest base roi head including one bbox head and one mask head.
     """
@@ -268,7 +268,7 @@ from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class DoubleHeadRoIHead(StandardRoIHead):
     """RoI head for Double Head RCNN
 
@@ -353,7 +353,7 @@ def my_loss(pred, target):
     loss = torch.abs(pred - target)
     return loss
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class MyLoss(nn.Module):
 
     def __init__(self, reduction='mean', loss_weight=1.0):

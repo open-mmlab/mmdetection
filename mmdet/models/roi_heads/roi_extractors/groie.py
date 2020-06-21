@@ -11,7 +11,7 @@ from mmdet.ops.plugin import build_plugin_layer
 from .single_level import SingleRoIExtractor
 
 
-@ROI_EXTRACTORS.register_module
+@ROI_EXTRACTORS.register_module()
 class SumGenericRoiExtractor(SingleRoIExtractor):
     """Extract RoI features from all summed feature maps levels.
 
