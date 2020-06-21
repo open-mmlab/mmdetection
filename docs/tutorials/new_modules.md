@@ -2,11 +2,11 @@
 
 ## Customize optimizer
 
-An example of customized optimizer `CopyOfSGD` is defined in `mmdet/core/optimizer/copy_of_sgd.py`.
-More generally, a customized optimizer could be defined as following.
+A customized optimizer could be defined as following.
 
 Assume you want to add a optimizer named as `MyOptimizer`, which has arguments `a`, `b`, and `c`.
-You need to first implement the new optimizer in a file, e.g., in `mmdet/core/optimizer/my_optimizer.py`:
+You need to create a new directory named `mmdet/core/optimizer`.
+And then implement the new optimizer in a file, e.g., in `mmdet/core/optimizer/my_optimizer.py`:
 
 ```python
 from .registry import OPTIMIZERS
@@ -52,7 +52,7 @@ The users can do those fine-grained parameter tuning through customizing optimiz
 ```python
 from mmcv.utils import build_from_cfg
 
-from mmdet.core.optimizer import OPTIMIZER_BUILDERS, OPTIMIZERS
+from mmcv.runner.optimizer import OPTIMIZER_BUILDERS, OPTIMIZERS
 from mmdet.utils import get_root_logger
 from .my_optimizer import MyOptimizer
 
