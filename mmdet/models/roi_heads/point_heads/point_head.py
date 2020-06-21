@@ -168,7 +168,7 @@ class PointHead(nn.Module):
         """
         Sample points in [0, 1] x [0, 1] coordinate space based on their
         uncertainty. The uncertainties are calculated for each point using
-        'uncertainty_func' function that takes point's logit prediction as
+        '_get_uncertainty()' function that takes point's logit prediction as
         input.
 
         Args:
@@ -176,6 +176,7 @@ class PointHead(nn.Module):
                 mask_width) for class-specific or class-agnostic prediction.
             labels (list): A list of length R that contains either predicted
                 of ground truth class for each predicted mask.
+
         Returns:
             point_coords (Tensor): A tensor of shape (N, P, 2) that contains
                 the coordinates of P sampled points.
@@ -241,12 +242,7 @@ class PointHead(nn.Module):
                                                mask_height * mask_width)
         num_points = min(mask_height * mask_width, num_points)
         point_indices = uncertainty_map.topk(num_points, dim=1)[1]
-        point_coords = torch.zeros(
-            num_rois,
-            num_points,
-            2,
-            dtype=torch.float,
-            device=mask_pred.device)
+        point_coords = uncertainty_map.new_zeros(num_rois, num_points, 2)
         point_coords[:, :, 0] = w_step / 2.0 + (point_indices %
                                                 mask_width).float() * w_step
         point_coords[:, :, 1] = h_step / 2.0 + (point_indices //

@@ -137,8 +137,7 @@ class PointRendRoIHead(StandardRoIHead):
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
             if rescale and not isinstance(scale_factor, float):
-                scale_factor = torch.from_numpy(scale_factor).to(
-                    det_bboxes.device)
+                scale_factor = det_bboxes.new_tensor(scale_factor)
             _bboxes = (
                 det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
             mask_rois = bbox2roi([_bboxes])
