@@ -114,7 +114,7 @@ class DynamicRoIHead(StandardRoIHead):
         pos_inds = bbox_targets[3][:, 0].nonzero().squeeze(1)
         num_pos = len(pos_inds)
         cur_target = bbox_targets[2][pos_inds, :2].abs().mean(dim=1)
-        cur_target = torch.kthvalue(cur_target.cpu(),
+        cur_target = torch.kthvalue(cur_target,
                                     min(self.beta_topk * num_imgs,
                                         num_pos))[0].item()
         self.cur_beta.append(cur_target)
