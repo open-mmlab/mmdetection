@@ -6,11 +6,11 @@
 We provide config files to reproduce the object detection results in the paper [Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection](https://arxiv.org/abs/2006.04388)
 
 ```
-@article{GFocaL,
-  title   = {Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection},
-  author  = {Xiang Li, Wenhai Wang, Lijun Wu, Shuo Chen, Xiaolin Hu, Jun Li, Jinhui Tang, Jian Yang},
-  journal = {arXiv preprint arXiv:2006.04388},
-  year    = {2020}
+@article{li2020generalized,
+  title={Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection},
+  author={Li, Xiang and Wang, Wenhai and Wu, Lijun and Chen, Shuo and Hu, Xiaolin and Li, Jun and Tang, Jinhui and Yang, Jian},
+  journal={arXiv preprint arXiv:2006.04388},
+  year={2020}
 }
 ```
 
@@ -25,8 +25,6 @@ We provide config files to reproduce the object detection results in the paper [
 | R-101-dcnv2       | pytorch | 2x      | Yes                 | 12.9           | 47.1   | [model](https://drive.google.com/file/d/1Fp-nLJYPBsohI5JPWOEw9383oxbbxXXe/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/13aiU_gFevQQaDapo8bg7rxi3qU-e4YLl/view?usp=sharing) |
 | X-101-32x4d       | pytorch | 2x      | Yes                 | 12.1           | 45.9   | [model](https://drive.google.com/file/d/1LTVw8GSMbCGB6wDjqkou934Yl32pVGac/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/10FsArE_cJHFhUtn7Og0Z-ZwzKZdwyeh_/view?usp=sharing) |
 | X-101-32x4d-dcnv2 | pytorch | 2x      | Yes                 | 10.7           | 48.2   | [model](https://drive.google.com/file/d/1ULjoJ8H71phrkFOKH4uCzqn9WZnGHAsd/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/12JysUE3pBuIXSaprupFfRlE9_fQY6Mez/view?usp=sharing) |
-| X-101-64x4d       | pytorch | 2x      | Yes                 |            |    | [model]() &#124; [log]() |
-| X-101-64x4d-dcnv2 | pytorch | 2x      | Yes                 |            |    | [model]() &#124; [log]() |
 
 [1] *1x and 2x mean the model is trained for 90K and 180K iterations, respectively.* \
 [2] *All results are obtained with a single model and without any test time data augmentation such as multi-scale, flipping and etc..* \
