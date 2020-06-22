@@ -147,13 +147,13 @@ def bbox2distance(points, bbox, max_dis=None, eps=0.1):
     Returns:
         Tensor: Decoded distances.
     """
-    L = points[:, 0] - bbox[:, 0]
-    T = points[:, 1] - bbox[:, 1]
-    R = bbox[:, 2] - points[:, 0]
-    B = bbox[:, 3] - points[:, 1]
+    left = points[:, 0] - bbox[:, 0]
+    top = points[:, 1] - bbox[:, 1]
+    right = bbox[:, 2] - points[:, 0]
+    bottom = bbox[:, 3] - points[:, 1]
     if max_dis is not None:
-        L = L.clamp(min=0, max=max_dis - eps)
-        T = T.clamp(min=0, max=max_dis - eps)
-        R = R.clamp(min=0, max=max_dis - eps)
-        B = B.clamp(min=0, max=max_dis - eps)
-    return torch.stack([L, T, R, B], -1)
+        left = left.clamp(min=0, max=max_dis - eps)
+        top = top.clamp(min=0, max=max_dis - eps)
+        right = right.clamp(min=0, max=max_dis - eps)
+        bottom = bottom.clamp(min=0, max=max_dis - eps)
+    return torch.stack([left, top, right, bottom], -1)
