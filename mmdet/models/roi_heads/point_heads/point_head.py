@@ -17,7 +17,7 @@ class PointHead(nn.Module):
     and coarse feature will be concatenate together for predication.
 
     Args:
-        num_fc (int): Number of fc layers in the head. Default: 3.
+        num_fcs (int): Number of fc layers in the head. Default: 3.
         in_channels (int): Number of input channels. Default: 256.
         fc_channels (int): Number of fc channels. Default: 256.
         num_classes (int): Number of classes for logits. Default: 80.
