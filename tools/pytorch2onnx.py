@@ -63,12 +63,14 @@ def pytorch2onnx(model,
         net_feed_input = list(set(input_all) - set(input_initializer))
         assert (len(net_feed_input) == 1)
         sess = rt.InferenceSession(output_file)
+        from mmdet.core import bbox2result
         det_bboxes, det_labels = sess.run(
             None, {net_feed_input[0]: one_img.detach().numpy()})
         # only compare a part of result
-        onnx_res = det_bboxes[det_labels == 0, :]
+        bbox_results = bbox2result(det_bboxes, det_labels, 1)
+        onnx_results = bbox_results[0]
         assert (np.abs(
-            (pytorch_result[0] - onnx_res) / pytorch_result[0]) > 0.01).sum(
+            (pytorch_result[0][:, 4] - onnx_results[:, 4])) > 0.01).sum(
             ) == 0, 'The outputs are different between Pytorch and ONNX'
         print('The numerical values are same between Pytorch and ONNX')
 

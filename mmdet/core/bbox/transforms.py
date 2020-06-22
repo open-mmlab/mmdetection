@@ -106,8 +106,9 @@ def bbox2result(bboxes, labels, num_classes):
     if bboxes.shape[0] == 0:
         return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
     else:
-        bboxes = bboxes.cpu().numpy()
-        labels = labels.cpu().numpy()
+        if isinstance(bboxes, torch.Tensor):
+            bboxes = bboxes.cpu().numpy()
+            labels = labels.cpu().numpy()
         return [bboxes[labels == i, :] for i in range(num_classes)]
 
 
