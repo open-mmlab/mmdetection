@@ -3,7 +3,7 @@ _base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
 model = dict(
     roi_head=dict(
         bbox_roi_extractor=dict(
-            type='GenericRoiExtractor',
+            type='GenericRoIExtractor',
             roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32],
@@ -23,7 +23,7 @@ model = dict(
                 attention_type='0100',
                 kv_stride=2)),
         mask_roi_extractor=dict(
-            type='GenericRoiExtractor',
+            type='GenericRoIExtractor',
             roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32],

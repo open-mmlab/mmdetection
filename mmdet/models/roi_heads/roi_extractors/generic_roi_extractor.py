@@ -8,11 +8,11 @@ from torch import nn
 from mmdet.core import force_fp32
 from mmdet.models.builder import ROI_EXTRACTORS
 from mmdet.ops.plugin import build_plugin_layer
-from .single_level import SingleRoIExtractor
+from .base_roi_extractor import BaseRoIExtractor
 
 
 @ROI_EXTRACTORS.register_module()
-class GenericRoiExtractor(SingleRoIExtractor):
+class GenericRoIExtractor(BaseRoIExtractor):
     """Extract RoI features from all summed feature maps levels.
 
     https://arxiv.org/abs/2004.13665
@@ -31,7 +31,7 @@ class GenericRoiExtractor(SingleRoIExtractor):
                  pre_cfg=None,
                  post_cfg=None,
                  **kwargs):
-        super(GenericRoiExtractor, self).__init__(**kwargs)
+        super(GenericRoIExtractor, self).__init__(**kwargs)
 
         assert aggregate_type in ['sum', 'concat']
 

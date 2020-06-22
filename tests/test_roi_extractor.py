@@ -2,7 +2,7 @@ import mmcv
 import pytest
 import torch
 
-from mmdet.models.roi_heads.roi_extractors import GenericRoiExtractor
+from mmdet.models.roi_heads.roi_extractors import GenericRoIExtractor
 
 
 def test_groie():
@@ -28,7 +28,7 @@ def test_groie():
                 padding=2,
                 inplace=False)))
 
-    groie = GenericRoiExtractor(**cfg)
+    groie = GenericRoIExtractor(**cfg)
 
     feats = (
         torch.rand((1, 256, 200, 336)),
@@ -49,7 +49,7 @@ def test_groie():
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]))
 
-    groie = GenericRoiExtractor(**cfg)
+    groie = GenericRoIExtractor(**cfg)
 
     feats = (
         torch.rand((1, 256, 200, 336)),
@@ -71,7 +71,7 @@ def test_groie():
             out_channels=256 * 4,
             featmap_strides=[4, 8, 16, 32]))
 
-    groie = GenericRoiExtractor(**cfg)
+    groie = GenericRoIExtractor(**cfg)
 
     feats = (
         torch.rand((1, 256, 200, 336)),
@@ -93,7 +93,7 @@ def test_groie():
                 roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
                 out_channels=1024,
                 featmap_strides=[4, 8, 16, 32]))
-        _ = GenericRoiExtractor(**cfg)
+        _ = GenericRoIExtractor(**cfg)
 
     # test concat channels number
     cfg = mmcv.Config(
@@ -103,7 +103,7 @@ def test_groie():
             out_channels=256 * 5,  # 256*5 != 256*4
             featmap_strides=[4, 8, 16, 32]))
 
-    groie = GenericRoiExtractor(**cfg)
+    groie = GenericRoIExtractor(**cfg)
 
     feats = (
         torch.rand((1, 256, 200, 336)),
