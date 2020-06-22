@@ -17,7 +17,7 @@ def quality_focal_loss(pred,
     scale_factor = pred_sigmoid
     zerolabel = scale_factor.new_zeros(pred.shape)
     loss = F.binary_cross_entropy_with_logits(
-        pred, zerolabel, reduction='none') * scale_factor.pow(beta) 
+        pred, zerolabel, reduction='none') * scale_factor.pow(beta)
     # find positive positions and quality labels
     label = label - 1
     pos = (label >= 0).nonzero().squeeze(1)
@@ -25,8 +25,7 @@ def quality_focal_loss(pred,
     # positive goes to bbox quality, e.g., IoU target
     scale_factor = score[pos] - pred_sigmoid[pos, pos_label]
     loss[pos, pos_label] = F.binary_cross_entropy_with_logits(
-        pred[pos, pos_label], 
-        score[pos], 
+        pred[pos, pos_label], score[pos],
         reduction='none') * scale_factor.abs().pow(beta)
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
