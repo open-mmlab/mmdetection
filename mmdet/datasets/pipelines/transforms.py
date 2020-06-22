@@ -1059,9 +1059,7 @@ class RandomCenterCropPad(object):
         self.pad_mode = pad_mode
 
     def _get_border(self, border, size):
-        i = 1
-        while size - border // i <= border // i:
-            i *= 2
+        i = pow(2, np.ceil(np.log2(np.ceil(2 * border / size))))
         return border // i
 
     def _filter_boxes(self, patch, boxes):
