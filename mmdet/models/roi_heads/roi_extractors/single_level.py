@@ -10,7 +10,7 @@ from mmdet.models.builder import ROI_EXTRACTORS
 class SingleRoIExtractor(nn.Module):
     """Extract RoI features from a single level feature map.
 
-    If there are mulitple input feature levels, each RoI is mapped to a level
+    If there are multiple input feature levels, each RoI is mapped to a level
     according to its scale.
 
     Args:

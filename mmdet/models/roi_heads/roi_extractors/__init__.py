@@ -1,7 +1,7 @@
-from .groie import SumGenericRoiExtractor
+from .groie import GenericRoiExtractor
 from .single_level import SingleRoIExtractor
 
 __all__ = [
     'SingleRoIExtractor',
-    'SumGenericRoiExtractor',
+    'GenericRoiExtractor',
 ]
