@@ -14,19 +14,20 @@ def quality_focal_loss(pred,
                        avg_factor=None):
     # all goes to 0
     pred_sigmoid = pred.sigmoid()
-    pt = pred_sigmoid
-    zerolabel = pt.new_zeros(pred.shape)
+    scale_factor = pred_sigmoid
+    zerolabel = scale_factor.new_zeros(pred.shape)
     loss = F.binary_cross_entropy_with_logits(
-        pred, zerolabel, reduction='none') * pt.pow(beta)  # pt = pt.abs()
+        pred, zerolabel, reduction='none') * scale_factor.pow(beta) 
     # find positive positions and quality labels
     label = label - 1
     pos = (label >= 0).nonzero().squeeze(1)
-    a = pos
-    b = label[pos].long()
+    pos_label = label[pos].long()
     # positive goes to bbox quality, e.g., IoU target
-    pt = score[a] - pred_sigmoid[a, b]
-    loss[a, b] = F.binary_cross_entropy_with_logits(
-        pred[a, b], score[a], reduction='none') * pt.abs().pow(beta)
+    scale_factor = score[pos] - pred_sigmoid[pos, pos_label]
+    loss[pos, pos_label] = F.binary_cross_entropy_with_logits(
+        pred[pos, pos_label], 
+        score[pos], 
+        reduction='none') * scale_factor.abs().pow(beta)
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
 
@@ -36,12 +37,12 @@ def distribution_focal_loss(pred,
                             weight=None,
                             reduction='mean',
                             avg_factor=None):
-    disl = label.long()
-    disr = disl + 1
-    wl = disr.float() - label
-    wr = label - disl.float()
-    loss = F.cross_entropy(pred, disl, reduction='none') * wl \
-        + F.cross_entropy(pred, disr, reduction='none') * wr
+    dis_left = label.long()
+    dis_right = dis_left + 1
+    weight_left = dis_right.float() - label
+    weight_right = label - dis_left.float()
+    loss = F.cross_entropy(pred, dis_left, reduction='none') * weight_left \
+        + F.cross_entropy(pred, dis_right, reduction='none') * weight_right
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
     return loss
 
