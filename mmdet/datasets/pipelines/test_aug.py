@@ -36,3 +36,14 @@ class MultiScaleFlipAug(object):
         repr_str += f'(transforms={self.transforms}, '
         repr_str += f'img_scale={self.img_scale}, flip={self.flip})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class TestTravis(object):
+
+    def __init__(self):
+        pass
+
+    def __call__(self, results):
+        pass
+        return results
