@@ -64,7 +64,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=8,
+    samples_per_gpu=8,
     workers_per_gpu=8,
     train=dict(
         type=dataset_type,
@@ -113,3 +113,4 @@ work_dir = './work_dirs/yolo_no_pretrain'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
+evaluation = dict(interval=1, metric=['bbox'])

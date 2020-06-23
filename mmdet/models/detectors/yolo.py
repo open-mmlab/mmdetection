@@ -1,7 +1,7 @@
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
 
 from .single_stage import SingleStageDetector
-from ..registry import DETECTORS
+from ..builder import DETECTORS
 
 
 @DETECTORS.register_module
