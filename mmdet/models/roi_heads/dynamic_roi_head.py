@@ -71,11 +71,9 @@ class DynamicRoIHead(StandardRoIHead):
                     gt_bboxes[i],
                     gt_labels[i],
                     feats=[lvl_feat[i][None] for lvl_feat in x])
-                cur_iou.append(
-                    torch.topk(
-                        assign_result.max_overlaps,
-                        min(self.iou_topk,
-                            len(assign_result.max_overlaps)))[0][-1].item())
+                iou_topk = min(self.iou_topk, len(assign_result.max_overlaps))
+                ious, _ = torch.topk(assign_result.max_overlaps, iou_topk)
+                cur_iou.append(ious[-1].item())
                 sampling_results.append(sampling_result)
             cur_iou = sum(cur_iou) / num_imgs
             self.cur_iou.append(cur_iou)
@@ -114,9 +112,8 @@ class DynamicRoIHead(StandardRoIHead):
         pos_inds = bbox_targets[3][:, 0].nonzero().squeeze(1)
         num_pos = len(pos_inds)
         cur_target = bbox_targets[2][pos_inds, :2].abs().mean(dim=1)
-        cur_target = torch.kthvalue(cur_target,
-                                    min(self.beta_topk * num_imgs,
-                                        num_pos))[0].item()
+        beta_topk = min(self.beta_topk * num_imgs, num_pos)
+        cur_target = torch.kthvalue(cur_target, beta_topk)[0].item()
         self.cur_beta.append(cur_target)
         loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],
                                         bbox_results['bbox_pred'], rois,
