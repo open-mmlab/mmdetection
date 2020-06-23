@@ -11,15 +11,17 @@ def convert(src, dst):
     # convert to pytorch style
     new_model_state = OrderedDict()
     pycls_to_mmdet = {
-        **{f"b{i}": f"{i - 1}" for i in range(20)},
-        **{f"s{i}": f"layer{i}" for i in range(20)},
-        "stem.conv": "conv1",
-        "stem.bn": "bn1",
-        "dwise_bn": "bndwise",
-        "lin_proj_bn": "bnlin_proj",
-        "exp_bn": "bnexp",
+        **{f'b{i}': f'{i - 1}'
+           for i in range(20)},
+        **{f's{i}': f'layer{i}'
+           for i in range(20)},
+        'stem.conv': 'conv1',
+        'stem.bn': 'bn1',
+        'dwise_bn': 'bndwise',
+        'lin_proj_bn': 'bnlin_proj',
+        'exp_bn': 'bnexp',
     }
-    for k, v in efficientnet_model["model_state"].items():
+    for k, v in efficientnet_model['model_state'].items():
         old_k = k
         migrated = False
         for pycls_name, mmdet_name in pycls_to_mmdet.items():
@@ -27,11 +29,11 @@ def convert(src, dst):
                 migrated = True
                 k = k.replace(pycls_name, mmdet_name)
         if migrated:
-            print("Old:", old_k)
-            print("New:", k)
+            print('Old:', old_k)
+            print('New:', k)
             new_model_state[k] = v
         else:
-            print("Not migrated:", old_k)
+            print('Not migrated:', old_k)
 
     # save checkpoint
     checkpoint = dict()
