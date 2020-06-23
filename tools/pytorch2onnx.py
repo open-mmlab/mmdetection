@@ -2,6 +2,9 @@ import argparse
 from functools import partial
 
 import mmcv
+import numpy as np
+import onnx
+import onnxruntime as rt
 import torch
 from mmcv.ops import RoIAlign, RoIPool
 from mmcv.runner import load_checkpoint
@@ -44,9 +47,6 @@ def pytorch2onnx(model,
     model.forward = origin_forward
     print(f'Successfully exported ONNX model: {output_file}')
     if verify:
-        import numpy as np
-        import onnx
-        import onnxruntime as rt
         # check by onnx
         onnx_model = onnx.load(output_file)
         onnx.checker.check_model(onnx_model)
