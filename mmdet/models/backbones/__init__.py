@@ -8,6 +8,6 @@ from .resnext import ResNeXt
 from .ssd_vgg import SSDVGG
 
 __all__ = [
-    'EfficientNet', 'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet', 'Res2Net'
-    'HourglassNet'
+    'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet', 'Res2Net',
+    'HourglassNet', 'EfficientNet'
 ]

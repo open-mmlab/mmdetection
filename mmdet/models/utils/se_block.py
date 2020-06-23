@@ -4,7 +4,7 @@ from .activations import MemoryEfficientSwish as Swish
 
 
 class SE(nn.Module):
-    """Squeeze-and-Excitation (SE) block w/ Swish: AvgPool, FC, Swish, FC, Sigmoid."""
+    """Squeeze-and-Excitation (SE) block w/ Swish"""
 
     def __init__(self, w_in, w_se):
         super(SE, self).__init__()
