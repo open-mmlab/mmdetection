@@ -1,4 +1,5 @@
 import argparse
+import os.path as osp
 from functools import partial
 
 import mmcv
@@ -13,6 +14,7 @@ from onnx_util.symbolic import register_extra_symbolics
 from mmdet.models import build_detector
 
 def pytorch2onnx(model,
+                 input_img,
                  input_shape,
                  opset_version=11,
                  show=False,
@@ -20,7 +22,10 @@ def pytorch2onnx(model,
                  verify=False):
     model.cpu().eval()
     # use dummy input to execute model for tracing
-    one_img = torch.randn(input_shape)
+    one_img = mmcv.imread(input_img, 'color')
+    one_img = mmcv.imresize(one_img, input_shape[2:]).transpose(2, 0, 1)
+    # normalize the input images
+    one_img = torch.from_numpy((one_img - 128) / 256).unsqueeze(0).float()
     (_, C, H, W) = input_shape
     one_meta = {
         'img_shape': (H, W, C),
@@ -78,6 +83,7 @@ def pytorch2onnx(model,
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert MMDet to ONNX')
     parser.add_argument('config', help='test config file path')
+    parser.add_argument('--input_img', type=str, help='Images for input')
     parser.add_argument('--checkpoint', help='checkpoint file', default=None)
     parser.add_argument('--show', action='store_true', help='show onnx graph')
     parser.add_argument('--output_file', type=str, default='tmp.onnx')
@@ -88,7 +94,7 @@ def parse_args():
         '--shape',
         type=int,
         nargs='+',
-        default=[224, 224],
+        default=[800, 1216],
         help='input image size')
     args = parser.parse_args()
     return args
@@ -98,6 +104,10 @@ if __name__ == '__main__':
     args = parse_args()
 
     assert args.opset_version == 11, 'MMDet only support opset 11 now'
+
+    if not args.input_img:
+        args.input_img = osp.join(
+            osp.dirname(__file__), '../tests/data/color.jpg')
 
     if len(args.shape) == 1:
         input_shape = (1, 3, args.shape[0], args.shape[0])
@@ -126,6 +136,7 @@ if __name__ == '__main__':
     # conver model to onnx file
     pytorch2onnx(
         model,
+        args.input_img,
         input_shape,
         opset_version=args.opset_version,
         show=args.show,
