@@ -4,7 +4,7 @@ from .single_stage import SingleStageDetector
 from ..builder import DETECTORS
 
 
-@DETECTORS.register_module
+@DETECTORS.register_module()
 class YoloNet(SingleStageDetector):
 
     def __init__(self,

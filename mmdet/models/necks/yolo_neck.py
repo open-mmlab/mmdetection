@@ -45,7 +45,7 @@ class DetectionNeck(nn.Module):
         return out
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class YoloNeck(nn.Module):
 
     """The tail side of the YoloNet.
