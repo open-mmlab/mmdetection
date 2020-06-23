@@ -101,6 +101,9 @@ class CustomDataset(Dataset):
     def get_ann_info(self, idx):
         return self.data_infos[idx]['ann']
 
+    def get_cat_ids(self, idx):
+        return self.data_infos[idx]['ann']['labels'].astype(np.int).tolist()
+
     def pre_pipeline(self, results):
         results['img_prefix'] = self.img_prefix
         results['seg_prefix'] = self.seg_prefix

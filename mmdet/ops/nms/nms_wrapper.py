@@ -116,7 +116,7 @@ def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
             np.int64)
 
 
-def batched_nms(bboxes, scores, inds, nms_cfg):
+def batched_nms(bboxes, scores, inds, nms_cfg, class_agnostic=False):
     """Performs non-maximum suppression in a batched fashion.
 
     Modified from https://github.com/pytorch/vision/blob
@@ -131,15 +131,23 @@ def batched_nms(bboxes, scores, inds, nms_cfg):
         inds (torch.Tensor): each index value correspond to a bbox cluster,
             and NMS will not be applied between elements of different inds,
             shape (N, ).
-        nms_cfg (dict): specify nms type and other parameters like iou_thr.
+        nms_cfg (dict): specify nms type and class_agnostic as well as other
+            parameters like iou_thr.
+        class_agnostic (bool): if true, nms is class agnostic,
+            i.e. IoU thresholding happens over all bboxes,
+            regardless of the predicted class
 
     Returns:
         tuple: kept bboxes and indice.
     """
-    max_coordinate = bboxes.max()
-    offsets = inds.to(bboxes) * (max_coordinate + 1)
-    bboxes_for_nms = bboxes + offsets[:, None]
     nms_cfg_ = nms_cfg.copy()
+    class_agnostic = nms_cfg_.pop('class_agnostic', class_agnostic)
+    if class_agnostic:
+        bboxes_for_nms = bboxes
+    else:
+        max_coordinate = bboxes.max()
+        offsets = inds.to(bboxes) * (max_coordinate + 1)
+        bboxes_for_nms = bboxes + offsets[:, None]
     nms_type = nms_cfg_.pop('type', 'nms')
     nms_op = eval(nms_type)
     dets, keep = nms_op(
@@ -147,3 +155,36 @@ def batched_nms(bboxes, scores, inds, nms_cfg):
     bboxes = bboxes[keep]
     scores = dets[:, -1]
     return torch.cat([bboxes, scores[:, None]], -1), keep
+
+
+def nms_match(dets, thresh):
+    """Matched dets into different groups by NMS.
+
+    NMS match is Similar to NMS but when a bbox is suppressed, nms match will
+    record the indice of supporessed bbox and form a group with the indice of
+    kept bbox. In each group, indice is sorted as score order.
+
+    Arguments:
+        dets (torch.Tensor | np.ndarray): Det bboxes with scores, shape (N, 5).
+        iou_thr (float): IoU thresh for NMS.
+
+    Returns:
+        List[Tensor | ndarray]: The outer list corresponds different matched
+            group, the inner Tensor corresponds the indices for a group in
+            score order.
+    """
+    if dets.shape[0] == 0:
+        matched = []
+    else:
+        assert dets.shape[-1] == 5, 'inputs dets.shape should be (N, 5), ' \
+                                    f'but get {dets.shape}'
+        if isinstance(dets, torch.Tensor):
+            dets_t = dets.detach().cpu()
+        else:
+            dets_t = torch.from_numpy(dets)
+        matched = nms_ext.nms_match(dets_t, thresh)
+
+    if isinstance(dets, torch.Tensor):
+        return [dets.new_tensor(m, dtype=torch.long) for m in matched]
+    else:
+        return [np.array(m, dtype=np.int) for m in matched]

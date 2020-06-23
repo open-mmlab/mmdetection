@@ -14,6 +14,7 @@ Welcome to OTEDetection's documentation!
    tutorials/new_modules.md
    compatibility.md
    changelog.md
+   projects.md
    api.rst
 
 

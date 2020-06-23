@@ -174,12 +174,13 @@ class AnchorsGridGeneratorStub(TracerStub):
         super().__init__(inner, namespace=namespace, name=name, **kwargs)
         self.inner = lambda x, y, **kw: inner(x, y.shape[2:4], **kw)
 
-    def forward(self, base_anchors, featmap, stride=16, device='cpu'):
+    def forward(self, base_anchors, featmap, stride=(16, 16), device='cpu'):
+        assert stride[0] == stride[1]
         # Force `stride` and `device` to be passed in as kwargs.
         return super().forward(base_anchors, featmap, stride=stride, device=device)
 
     def symbolic(self, g, base_anchors, featmap):
-        stride = float(self.params['stride'])
+        stride = float(self.params['stride'][0])
         shift = torch.full(self.params['base_anchors'].shape, - 0.5 * stride, dtype=torch.float32)
         prior_boxes = g.op('Constant', value_t=torch.tensor(self.params['base_anchors'], dtype=torch.float32) + shift)
         # TODO. im_data is not needed actually.

@@ -383,8 +383,6 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 det_masks,
                 num_classes,
                 mask_thr_binary=self.test_cfg.mask_thr_binary,
-                rle=True,
-                full_size=True,
                 img_size=(img_h, img_w))
             return bbox_results, segm_results
 
@@ -404,9 +402,10 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             img_shape = img_meta[0]['img_shape']
             scale_factor = img_meta[0]['scale_factor']
             flip = img_meta[0]['flip']
+            flip_direction = img_meta[0]['flip_direction']
 
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
-                                     scale_factor, flip)
+                                     scale_factor, flip, flip_direction)
             # "ms" in variable names means multi-stage
             ms_scores = []
 
@@ -447,8 +446,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
                 segm_result = [[]
-                               for _ in range(self.mask_head[-1].num_classes -
-                                              1)]
+                               for _ in range(self.mask_head[-1].num_classes)]
             else:
                 aug_masks = []
                 aug_img_metas = []
@@ -456,8 +454,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     img_shape = img_meta[0]['img_shape']
                     scale_factor = img_meta[0]['scale_factor']
                     flip = img_meta[0]['flip']
+                    flip_direction = img_meta[0]['flip_direction']
                     _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
-                                           scale_factor, flip)
+                                           scale_factor, flip, flip_direction)
                     mask_rois = bbox2roi([_bboxes])
                     for i in range(self.num_stages):
                         mask_results = self._mask_forward(i, x, mask_rois)

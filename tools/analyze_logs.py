@@ -150,8 +150,8 @@ def load_json_logs(json_logs):
     log_dicts = [dict() for _ in json_logs]
     for json_log, log_dict in zip(json_logs, log_dicts):
         with open(json_log, 'r') as log_file:
-            for l in log_file:
-                log = json.loads(l.strip())
+            for line in log_file:
+                log = json.loads(line.strip())
                 # skip lines without `epoch` field
                 if 'epoch' not in log:
                     continue

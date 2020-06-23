@@ -10,21 +10,50 @@ from ..builder import PIPELINES
 
 @PIPELINES.register_module()
 class LoadImageFromFile(object):
+    """Load an image from file.
 
-    def __init__(self, to_float32=False, color_type='color'):
+    Required keys are "img_prefix" and "img_info" (a dict that must contain the
+    key "filename"). Added or updated keys are "filename", "img", "img_shape",
+    "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
+    "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
+
+    Args:
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+            Defaults to 'color'.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+    """
+
+    def __init__(self,
+                 to_float32=False,
+                 color_type='color',
+                 file_client_args=dict(backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
+        self.file_client_args = file_client_args.copy()
+        self.file_client = None
 
     def __call__(self, results):
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
+
         if results['img_prefix'] is not None:
             filename = osp.join(results['img_prefix'],
                                 results['img_info']['filename'])
         else:
             filename = results['img_info']['filename']
-        img = mmcv.imread(filename, self.color_type)
+
+        img_bytes = self.file_client.get(filename)
+        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
         if self.to_float32:
             img = img.astype(np.float32)
+
         results['filename'] = filename
+        results['ori_filename'] = results['img_info']['filename']
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
@@ -36,24 +65,51 @@ class LoadImageFromFile(object):
             mean=np.zeros(num_channels, dtype=np.float32),
             std=np.ones(num_channels, dtype=np.float32),
             to_rgb=False)
+        results['img_fields'] = ['img']
         return results
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(to_float32={self.to_float32}, ' \
-            f"color_type='{self.color_type}')"
+        repr_str = (f'{self.__class__.__name__}('
+                    f'to_float32={self.to_float32}, '
+                    f"color_type='{self.color_type}', "
+                    f'file_client_args={self.file_client_args})')
+        return repr_str
 
 
 @PIPELINES.register_module()
 class LoadMultiChannelImageFromFiles(object):
-    """ Load multi channel images from a list of separate channel files.
-    Expects results['filename'] to be a list of filenames
+    """Load multi-channel images from a list of separate channel files.
+
+    Required keys are "img_prefix" and "img_info" (a dict that must contain the
+    key "filename", which is expected to be a list of filenames).
+    Added or updated keys are "filename", "img", "img_shape",
+    "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
+    "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
+
+    Args:
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+            Defaults to 'color'.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
     """
 
-    def __init__(self, to_float32=False, color_type='unchanged'):
+    def __init__(self,
+                 to_float32=False,
+                 color_type='unchanged',
+                 file_client_args=dict(backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
+        self.file_client_args = file_client_args.copy()
+        self.file_client = None
 
     def __call__(self, results):
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
+
         if results['img_prefix'] is not None:
             filename = [
                 osp.join(results['img_prefix'], fname)
@@ -61,11 +117,17 @@ class LoadMultiChannelImageFromFiles(object):
             ]
         else:
             filename = results['img_info']['filename']
-        img = np.stack(
-            [mmcv.imread(name, self.color_type) for name in filename], axis=-1)
+
+        img = []
+        for name in filename:
+            img_bytes = self.file_client.get(name)
+            img.append(mmcv.imfrombytes(img_bytes, flag=self.color_type))
+        img = np.stack(img, axis=-1)
         if self.to_float32:
             img = img.astype(np.float32)
+
         results['filename'] = filename
+        results['ori_filename'] = results['img_info']['filename']
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
@@ -80,38 +142,61 @@ class LoadMultiChannelImageFromFiles(object):
         return results
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(to_float32={self.to_float32}, ' \
-            f"color_type='{self.color_type}')"
+        repr_str = (f'{self.__class__.__name__}('
+                    f'to_float32={self.to_float32}, '
+                    f"color_type='{self.color_type}', "
+                    f'file_client_args={self.file_client_args})')
+        return repr_str
 
 
 @PIPELINES.register_module()
 class LoadAnnotations(object):
+    """Load annotations.
+
+    Args:
+        with_bbox (bool): Whether to parse and load the bbox annotation.
+             Default: True.
+        with_label (bool): Whether to parse and load the label annotation.
+            Default: True.
+        with_mask (bool): Whether to parse and load the mask annotation.
+             Default: False.
+        with_seg (bool): Whether to parse and load the semantic segmentation
+            annotation. Default: False.
+        poly2mask (bool): Whether to convert the instance masks from polygons
+            to bitmaps. Default: True.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+    """
 
     def __init__(self,
                  with_bbox=True,
                  with_label=True,
                  with_mask=False,
                  with_seg=False,
-                 poly2mask=True):
+                 poly2mask=True,
+                 file_client_args=dict(backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
+        self.file_client_args = file_client_args.copy()
+        self.file_client = None
 
     def _load_bboxes(self, results):
         ann_info = results['ann_info']
-        results['gt_bboxes'] = ann_info['bboxes']
+        results['gt_bboxes'] = ann_info['bboxes'].copy()
 
         gt_bboxes_ignore = ann_info.get('bboxes_ignore', None)
         if gt_bboxes_ignore is not None:
-            results['gt_bboxes_ignore'] = gt_bboxes_ignore
+            results['gt_bboxes_ignore'] = gt_bboxes_ignore.copy()
             results['bbox_fields'].append('gt_bboxes_ignore')
         results['bbox_fields'].append('gt_bboxes')
         return results
 
     def _load_labels(self, results):
-        results['gt_labels'] = results['ann_info']['labels']
+        results['gt_labels'] = results['ann_info']['labels'].copy()
         return results
 
     def _poly2mask(self, mask_ann, img_h, img_w):
@@ -130,7 +215,7 @@ class LoadAnnotations(object):
         return mask
 
     def process_polygons(self, polygons):
-        """ Convert polygons to list of ndarray and filter invalid polygons.
+        """Convert polygons to list of ndarray and filter invalid polygons.
 
         Args:
             polygons (list[list]): polygons of one instance.
@@ -160,9 +245,14 @@ class LoadAnnotations(object):
         return results
 
     def _load_semantic_seg(self, results):
-        results['gt_semantic_seg'] = mmcv.imread(
-            osp.join(results['seg_prefix'], results['ann_info']['seg_map']),
-            flag='unchanged').squeeze()
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
+
+        filename = osp.join(results['seg_prefix'],
+                            results['ann_info']['seg_map'])
+        img_bytes = self.file_client.get(filename)
+        results['gt_semantic_seg'] = mmcv.imfrombytes(
+            img_bytes, flag='unchanged').squeeze()
         results['seg_fields'].append('gt_semantic_seg')
         return results
 
@@ -185,6 +275,8 @@ class LoadAnnotations(object):
         repr_str += f'with_label={self.with_label}, '
         repr_str += f'with_mask={self.with_mask}, '
         repr_str += f'with_seg={self.with_seg})'
+        repr_str += f'poly2mask={self.poly2mask})'
+        repr_str += f'poly2mask={self.file_client_args})'
         return repr_str
 
 

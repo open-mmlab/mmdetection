@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender-dev libx
 
 # Install mmdetection
 RUN conda install cython -y && conda clean --all
+RUN pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotoolsI"
 RUN git clone --recursive --branch ote https://github.com/opencv/mmdetection.git /mmdetection
 WORKDIR /mmdetection
 ENV FORCE_CUDA="1"

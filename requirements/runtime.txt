@@ -1,6 +1,6 @@
 matplotlib
-mmcv>=0.5.1
-numpy==1.17.5
+mmcv>=0.6.0
+numpy
 # need older pillow until torchvision is fixed
 Pillow<=6.2.2
 six
@@ -12,4 +12,4 @@ tqdm
 onnx==1.6.0
 onnxruntime==1.1.2
 lxml
-pycocotools @ git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
+pycocotools @ git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools

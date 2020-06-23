@@ -7,6 +7,7 @@ from mmdet.core.utils.misc import arange, meshgrid, topk
 from mmdet.core.bbox.transforms import clamp
 from mmdet.ops import DeformConv
 from ..builder import HEADS, build_loss
+from .base_dense_head import BaseDenseHead
 
 INF = 1e8
 
@@ -41,7 +42,7 @@ class FeatureAlign(nn.Module):
 
 
 @HEADS.register_module()
-class FoveaHead(nn.Module):
+class FoveaHead(BaseDenseHead):
     """FoveaBox: Beyond Anchor-based Object Detector
     https://arxiv.org/abs/1904.03797
     """

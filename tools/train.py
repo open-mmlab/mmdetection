@@ -23,9 +23,9 @@ def parse_args():
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument(
-        '--validate',
+        '--no-validate',
         action='store_true',
-        help='whether to evaluate the checkpoint during training')
+        help='whether not to evaluate the checkpoint during training')
     group_gpus = parser.add_mutually_exclusive_group()
     group_gpus.add_argument(
         '--gpus',
@@ -100,6 +100,8 @@ def main():
 
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
+    # dump config
+    cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
     # init the logger before other steps
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
     log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
@@ -150,7 +152,7 @@ def main():
         datasets,
         cfg,
         distributed=distributed,
-        validate=args.validate,
+        validate=(not args.no_validate),
         timestamp=timestamp,
         meta=meta)
 

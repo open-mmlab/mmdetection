@@ -215,7 +215,7 @@ Currently it supports to concat and repeat datasets.
 
 ### Repeat dataset
 
-We use `RepeatDataset` as warpper to repeat the dataset. For example, suppose the original dataset is `Dataset_A`, to repeat it, the config looks like the following
+We use `RepeatDataset` as wrapper to repeat the dataset. For example, suppose the original dataset is `Dataset_A`, to repeat it, the config looks like the following
 ```python
 dataset_A_train = dict(
         type='RepeatDataset',
@@ -228,7 +228,26 @@ dataset_A_train = dict(
     )
 ```
 
-### Concatemate dataset
+### Class balanced dataset
+
+We use `ClassBalancedDataset` as wrapper to repeat the dataset based on category
+frequency. The dataset to repeat needs to instantiate function `self.get_cat_ids(idx)`
+to support `ClassBalancedDataset`.
+For example, to repeat `Dataset_A` with `oversample_thr=1e-3`, the config looks like the following
+```python
+dataset_A_train = dict(
+        type='ClassBalancedDataset',
+        oversample_thr=1e-3,
+        dataset=dict(  # This is the original config of Dataset_A
+            type='Dataset_A',
+            ...
+            pipeline=train_pipeline
+        )
+    )
+```
+You may refer to [source code](../../mmdet/datasets/dataset_wrappers.py) for details.
+
+### Concatenate dataset
 
 There two ways to concatenate the dataset.
 

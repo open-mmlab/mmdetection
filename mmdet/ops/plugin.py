@@ -1,3 +1,5 @@
+from mmcv.cnn import ConvModule
+
 from .context_block import ContextBlock
 from .generalized_attention import GeneralizedAttention
 from .non_local import NonLocal2D
@@ -6,7 +8,8 @@ plugin_cfg = {
     # format: layer_type: (abbreviation, module)
     'ContextBlock': ('context_block', ContextBlock),
     'GeneralizedAttention': ('gen_attention_block', GeneralizedAttention),
-    'NonLocal2D': ('nonlocal_block', NonLocal2D)
+    'NonLocal2D': ('nonlocal_block', NonLocal2D),
+    'ConvModule': ('conv_block', ConvModule),
 }
 
 

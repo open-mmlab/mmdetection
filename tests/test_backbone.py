@@ -3,7 +3,9 @@ import torch
 from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.backbones import ResNet, ResNetV1d, ResNeXt
+from mmdet.models.backbones import RegNet, Res2Net, ResNet, ResNetV1d, ResNeXt
+from mmdet.models.backbones.hourglass import HourglassNet
+from mmdet.models.backbones.res2net import Bottle2neck
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.backbones.resnext import Bottleneck as BottleneckX
 from mmdet.models.utils import ResLayer
@@ -12,7 +14,7 @@ from mmdet.ops import DeformConvPack
 
 def is_block(modules):
     """Check if is ResNet building block."""
-    if isinstance(modules, (BasicBlock, Bottleneck, BottleneckX)):
+    if isinstance(modules, (BasicBlock, Bottleneck, BottleneckX, Bottle2neck)):
         return True
     return False
 
@@ -50,10 +52,6 @@ def test_resnet_basic_block():
 
     with pytest.raises(AssertionError):
         # Not implemented yet.
-        BasicBlock(64, 64, with_cp=True)
-
-    with pytest.raises(AssertionError):
-        # Not implemented yet.
         dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
         BasicBlock(64, 64, dcn=dcn)
 
@@ -88,6 +86,13 @@ def test_resnet_basic_block():
     assert block.conv2.in_channels == 64
     assert block.conv2.out_channels == 64
     assert block.conv2.kernel_size == (3, 3)
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
+    # Test BasicBlock with checkpoint forward
+    block = BasicBlock(64, 64, with_cp=True)
+    assert block.with_cp
     x = torch.randn(1, 64, 56, 56)
     x_out = block(x)
     assert x_out.shape == torch.Size([1, 64, 56, 56])
@@ -273,6 +278,16 @@ def test_resnet_res_layer():
     x_out = layer(x)
     assert x_out.shape == torch.Size([1, 256, 28, 28])
 
+    # Test ResLayer of 3 BasicBlock with stride=2 and downsample_first=False
+    layer = ResLayer(BasicBlock, 64, 64, 3, stride=2, downsample_first=False)
+    assert layer[2].downsample[0].out_channels == 64
+    assert layer[2].downsample[0].stride == (2, 2)
+    for i in range(len(layer) - 1):
+        assert layer[i].downsample is None
+    x = torch.randn(1, 64, 56, 56)
+    x_out = layer(x)
+    assert x_out.shape == torch.Size([1, 64, 28, 28])
+
 
 def test_resnet_backbone():
     """Test resnet backbone"""
@@ -283,10 +298,6 @@ def test_resnet_backbone():
     with pytest.raises(AssertionError):
         # In ResNet: 1 <= num_stages <= 4
         ResNet(50, num_stages=0)
-
-    with pytest.raises(AssertionError):
-        # with checkpoint is not implemented in BasicBlock of ResNet18
-        ResNet(18, with_cp=True)
 
     with pytest.raises(AssertionError):
         # len(stage_with_dcn) == num_stages
@@ -377,6 +388,12 @@ def test_resnet_backbone():
     assert feat[1].shape == torch.Size([1, 128, 28, 28])
     assert feat[2].shape == torch.Size([1, 256, 14, 14])
     assert feat[3].shape == torch.Size([1, 512, 7, 7])
+
+    # Test ResNet18 with checkpoint forward
+    model = ResNet(18, with_cp=True)
+    for m in model.modules():
+        if is_block(m):
+            assert m.with_cp
 
     # Test ResNet50 with BatchNorm forward
     model = ResNet(50)
@@ -569,6 +586,38 @@ def test_resnet_backbone():
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
 
+    # Test ResNet50 stem_channels
+    model = ResNet(depth=50, stem_channels=128)
+    model.init_weights()
+    model.train()
+    assert model.conv1.out_channels == 128
+    assert model.layer1[0].conv1.in_channels == 128
+
+    imgs = torch.randn(1, 3, 224, 224)
+    feat = model(imgs)
+    assert len(feat) == 4
+    assert feat[0].shape == torch.Size([1, 256, 56, 56])
+    assert feat[1].shape == torch.Size([1, 512, 28, 28])
+    assert feat[2].shape == torch.Size([1, 1024, 14, 14])
+    assert feat[3].shape == torch.Size([1, 2048, 7, 7])
+
+    # Test ResNet50V1d stem_channels
+    model = ResNetV1d(depth=50, stem_channels=128)
+    model.init_weights()
+    model.train()
+    assert model.stem[0].out_channels == 64
+    assert model.stem[3].out_channels == 64
+    assert model.stem[6].out_channels == 128
+    assert model.layer1[0].conv1.in_channels == 128
+
+    imgs = torch.randn(1, 3, 224, 224)
+    feat = model(imgs)
+    assert len(feat) == 4
+    assert feat[0].shape == torch.Size([1, 256, 56, 56])
+    assert feat[1].shape == torch.Size([1, 512, 28, 28])
+    assert feat[2].shape == torch.Size([1, 1024, 14, 14])
+    assert feat[3].shape == torch.Size([1, 2048, 7, 7])
+
 
 def test_renext_bottleneck():
     with pytest.raises(AssertionError):
@@ -622,3 +671,151 @@ def test_resnext_backbone():
     assert feat[1].shape == torch.Size([1, 512, 28, 28])
     assert feat[2].shape == torch.Size([1, 1024, 14, 14])
     assert feat[3].shape == torch.Size([1, 2048, 7, 7])
+
+
+regnet_test_data = [
+    ('regnetx_800mf',
+     dict(w0=56, wa=35.73, wm=2.28, group_w=16, depth=16,
+          bot_mul=1.0), [64, 128, 288, 672]),
+    ('regnetx_1.6gf',
+     dict(w0=80, wa=34.01, wm=2.25, group_w=24, depth=18,
+          bot_mul=1.0), [72, 168, 408, 912]),
+    ('regnetx_3.2gf',
+     dict(w0=88, wa=26.31, wm=2.25, group_w=48, depth=25,
+          bot_mul=1.0), [96, 192, 432, 1008]),
+    ('regnetx_4.0gf',
+     dict(w0=96, wa=38.65, wm=2.43, group_w=40, depth=23,
+          bot_mul=1.0), [80, 240, 560, 1360]),
+    ('regnetx_6.4gf',
+     dict(w0=184, wa=60.83, wm=2.07, group_w=56, depth=17,
+          bot_mul=1.0), [168, 392, 784, 1624]),
+    ('regnetx_8.0gf',
+     dict(w0=80, wa=49.56, wm=2.88, group_w=120, depth=23,
+          bot_mul=1.0), [80, 240, 720, 1920]),
+    ('regnetx_12gf',
+     dict(w0=168, wa=73.36, wm=2.37, group_w=112, depth=19,
+          bot_mul=1.0), [224, 448, 896, 2240]),
+]
+
+
+@pytest.mark.parametrize('arch_name,arch,out_channels', regnet_test_data)
+def test_regnet_backbone(arch_name, arch, out_channels):
+    with pytest.raises(AssertionError):
+        # ResNeXt depth should be in [50, 101, 152]
+        RegNet(arch_name + '233')
+
+    # Test RegNet with arch_name
+    model = RegNet(arch_name)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 224, 224)
+    feat = model(imgs)
+    assert len(feat) == 4
+    assert feat[0].shape == torch.Size([1, out_channels[0], 56, 56])
+    assert feat[1].shape == torch.Size([1, out_channels[1], 28, 28])
+    assert feat[2].shape == torch.Size([1, out_channels[2], 14, 14])
+    assert feat[3].shape == torch.Size([1, out_channels[3], 7, 7])
+
+    # Test RegNet with arch
+    model = RegNet(arch)
+    assert feat[0].shape == torch.Size([1, out_channels[0], 56, 56])
+    assert feat[1].shape == torch.Size([1, out_channels[1], 28, 28])
+    assert feat[2].shape == torch.Size([1, out_channels[2], 14, 14])
+    assert feat[3].shape == torch.Size([1, out_channels[3], 7, 7])
+
+
+def test_res2net_bottle2neck():
+    with pytest.raises(AssertionError):
+        # Style must be in ['pytorch', 'caffe']
+        Bottle2neck(64, 64, base_width=26, scales=4, style='tensorflow')
+
+    with pytest.raises(AssertionError):
+        # Scale must be larger than 1
+        Bottle2neck(64, 64, base_width=26, scales=1, style='pytorch')
+
+    # Test Res2Net Bottle2neck structure
+    block = Bottle2neck(
+        64, 64, base_width=26, stride=2, scales=4, style='pytorch')
+    assert block.scales == 4
+
+    # Test Res2Net Bottle2neck with DCN
+    dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
+    with pytest.raises(AssertionError):
+        # conv_cfg must be None if dcn is not None
+        Bottle2neck(
+            64,
+            64,
+            base_width=26,
+            scales=4,
+            dcn=dcn,
+            conv_cfg=dict(type='Conv'))
+    Bottle2neck(64, 64, dcn=dcn)
+
+    # Test Res2Net Bottle2neck forward
+    block = Bottle2neck(64, 16, base_width=26, scales=4)
+    x = torch.randn(1, 64, 56, 56)
+    x_out = block(x)
+    assert x_out.shape == torch.Size([1, 64, 56, 56])
+
+
+def test_res2net_backbone():
+    with pytest.raises(KeyError):
+        # Res2Net depth should be in [50, 101, 152]
+        Res2Net(depth=18)
+
+    # Test Res2Net with scales 4, base_width 26
+    model = Res2Net(depth=50, scales=4, base_width=26)
+    for m in model.modules():
+        if is_block(m):
+            assert m.scales == 4
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 224, 224)
+    feat = model(imgs)
+    assert len(feat) == 4
+    assert feat[0].shape == torch.Size([1, 256, 56, 56])
+    assert feat[1].shape == torch.Size([1, 512, 28, 28])
+    assert feat[2].shape == torch.Size([1, 1024, 14, 14])
+    assert feat[3].shape == torch.Size([1, 2048, 7, 7])
+
+
+def test_hourglass_backbone():
+    with pytest.raises(AssertionError):
+        # HourglassNet's num_stacks should larger than 0
+        HourglassNet(num_stacks=0)
+
+    with pytest.raises(AssertionError):
+        # len(stage_channels) should equal len(stage_blocks)
+        HourglassNet(
+            stage_channels=[256, 256, 384, 384, 384],
+            stage_blocks=[2, 2, 2, 2, 2, 4])
+
+    with pytest.raises(AssertionError):
+        # len(stage_channels) should lagrer than downsample_times
+        HourglassNet(
+            downsample_times=5,
+            stage_channels=[256, 256, 384, 384, 384],
+            stage_blocks=[2, 2, 2, 2, 2])
+
+    # Test HourglassNet-52
+    model = HourglassNet(num_stacks=1)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 511, 511)
+    feat = model(imgs)
+    assert len(feat) == 1
+    assert feat[0].shape == torch.Size([1, 256, 128, 128])
+
+    # Test HourglassNet-104
+    model = HourglassNet(num_stacks=2)
+    model.init_weights()
+    model.train()
+
+    imgs = torch.randn(1, 3, 511, 511)
+    feat = model(imgs)
+    assert len(feat) == 2
+    assert feat[0].shape == torch.Size([1, 256, 128, 128])
+    assert feat[1].shape == torch.Size([1, 256, 128, 128])
