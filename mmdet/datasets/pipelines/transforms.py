@@ -1205,7 +1205,7 @@ class RandomCenterCropPad(object):
         repr_str += f'border={self.border}, '
         repr_str += f'mean={self.input_mean}, '
         repr_str += f'std={self.input_std}, '
-        repr_str += f'to_rgb=self.to_rgb, '
+        repr_str += f'to_rgb={self.to_rgb}, '
         repr_str += f'test_mode={self.test_mode}, '
         repr_str += f'test_pad_mode={self.test_pad_mode})'
         return repr_str
