@@ -8,16 +8,17 @@ ENV TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
 ENV TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 ENV CMAKE_PREFIX_PATH="$(dirname $(which conda))/../"
 
-RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender-dev libxext6 \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install mmdetection
-RUN conda install cython -y && conda clean --all
-RUN pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotoolsI"
+RUN conda clean --all
 RUN git clone --recursive --branch ote https://github.com/opencv/mmdetection.git /mmdetection
 WORKDIR /mmdetection
 ENV FORCE_CUDA="1"
+RUN pip install cython --no-cache-dir
+RUN pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 RUN pip install --ignore-installed --no-cache-dir -e .['all']
 
 # Install OpenVINO
@@ -29,7 +30,7 @@ RUN apt update && \
         wget \
         curl
 
-ARG OPENVINO_LINK=http://registrationcenter-download.intel.com/akdlm/irc_nas/16612/l_openvino_toolkit_p_2020.2.120.tgz
+ARG OPENVINO_LINK=http://registrationcenter-download.intel.com/akdlm/irc_nas/16670/l_openvino_toolkit_p_2020.3.194.tgz
 RUN mkdir -p /tmp/openvino_installer && cd /tmp/openvino_installer && \
     wget --no-verbose $OPENVINO_LINK && \
     tar xf l_openvino_toolkit*.tgz && \

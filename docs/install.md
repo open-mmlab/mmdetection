@@ -10,7 +10,7 @@ Make sure that all of the listed below system-level requirements are installed:
 - CUDA 9.2+ (If you build PyTorch from source, CUDA 9.0 is also compatible)
 - GCC 5+
 - [mmcv](https://github.com/open-mmlab/mmcv)
-- [Intel® Distribution of OpenVINO™ Toolkit](https://software.intel.com/en-us/openvino-toolkit) 2020.2
+- [Intel® Distribution of OpenVINO™ Toolkit](https://software.intel.com/en-us/openvino-toolkit) 2020.4
 
 ### Install OTEDetection
 
@@ -26,6 +26,26 @@ b. Install PyTorch and torchvision following the [official instructions](https:/
 ```shell
 conda install pytorch torchvision -c pytorch
 ```
+
+Note: Make sure that your compilation CUDA version and runtime CUDA version match.
+You can check the supported CUDA version for precompiled packages on the [PyTorch website](https://pytorch.org/).
+
+`E.g.1` If you have CUDA 10.1 installed under `/usr/local/cuda` and would like to install
+PyTorch 1.5, you need to install the prebuilt PyTorch with CUDA 10.1.
+
+```python
+conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
+```
+
+`E.g. 2` If you have CUDA 9.2 installed under `/usr/local/cuda` and would like to install
+PyTorch 1.3.1., you need to install the prebuilt PyTorch with CUDA 9.2.
+
+```python
+conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
+```
+
+If you build PyTorch from source instead of installing the prebuilt pacakge,
+you can use more CUDA versions such as 9.0.
 
 c. Clone OTEDetection repository.
 
@@ -93,41 +113,15 @@ We provide a [Dockerfile](https://github.com/opencv/mmdetection/blob/ote/docker/
 docker build -t otedetection docker/
 ```
 
-### Prepare datasets
+Run it with
 
-It is recommended to symlink the dataset root to `$OTEDETECTION/data`.
-If your folder structure is different, you may need to change the corresponding paths in config files.
-
-```
-mmdetection
-├── mmdet
-├── tools
-├── configs
-├── data
-│   ├── coco
-│   │   ├── annotations
-│   │   ├── train2017
-│   │   ├── val2017
-│   │   ├── test2017
-│   ├── cityscapes
-│   │   ├── annotations
-│   │   ├── train
-│   │   ├── val
-│   ├── VOCdevkit
-│   │   ├── VOC2007
-│   │   ├── VOC2012
-
-```
-The cityscapes annotations have to be converted into the coco format using the [cityscapesScripts](https://github.com/mcordts/cityscapesScripts) toolbox.
-For the moment we recommend following the instructions provided in the
-[maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/tree/master/maskrcnn_benchmark/data) toolbox. When using this script all images have to be moved into the same folder. On linux systems this can e.g. be done for the train images with:
 ```shell
-docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetection
+docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data otedetection
 ```
 
 ### A from-scratch setup script
 
-Here is a full script for setting up OTEDetection with conda and link the dataset path (supposing that your COCO dataset path is $COCO_ROOT).
+Here is a full script for setting up OTEDetection with conda.
 
 ```shell
 conda create -n ote-det python=3.7 -y
@@ -145,7 +139,7 @@ pip install -v -e .
 
 ### Using multiple OTEDetection versions
 
-If there are more than one OTEDetection on your machine, and you want to use them alternatively, the recommended way is to create multiple conda environments and use different environments for different versions.
+The train and test scripts already modify the `PYTHONPATH` to ensure the script use the MMDetection in the current directory.
 
 To use the default MMDetection installed in the environment rather than that you are working with, you can remove the following line in those scripts
 
