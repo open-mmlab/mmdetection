@@ -58,5 +58,5 @@ test_pipeline = [
             dict(type='Collect', keys=['img']),
         ])
 ]
-precise_bn = dict(interval=12, num_iters=200)
-evaluation = dict(interval=12)
+# precise_bn = dict(interval=12, num_iters=200)
+# evaluation = dict(interval=12)
