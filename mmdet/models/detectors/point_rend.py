@@ -4,6 +4,12 @@ from .two_stage import TwoStageDetector
 
 @DETECTORS.register_module()
 class PointRend(TwoStageDetector):
+    """PointRend: Image Segmentation as Rendering
+
+    This detector is the implementation of
+    `PointRend <https://arxiv.org/abs/1912.08193>`_.
+
+    """
 
     def __init__(self,
                  backbone,

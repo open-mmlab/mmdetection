@@ -13,7 +13,7 @@ def normalize(grid):
         grid (Tensor): The grid to be normalize, range [-1, 1].
 
     Returns:
-        Tensor: Denormalized grid, range [0, 1].
+        Tensor: Normalized grid, range [0, 1].
     """
 
     return (grid + 1.0) / 2.0
@@ -41,8 +41,8 @@ def generate_grid(num_grid, size, device):
         device (torch.device): Desired device of returned tensor.
 
     Returns:
-        (Tensor): A tensor of shape (num_grid, size[0]*size[1], 2) that
-        contains coordinates for the regular grids.
+        (torch.Tensor): A tensor of shape (num_grid, size[0]*size[1], 2) that
+            contains coordinates for the regular grids.
     """
 
     affine_trans = torch.tensor([[[1., 0., 0.], [0., 1., 0.]]], device=device)

@@ -8,7 +8,7 @@ from mmdet.models.builder import HEADS, build_loss
 from mmdet.ops import point_sample, rel_roi_point2rel_img_point
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class PointHead(nn.Module):
     """A mask point head use in PointRend.
 
@@ -174,8 +174,8 @@ class PointHead(nn.Module):
         Args:
             mask_pred (Tensor): A tensor of shape (N, C, mask_height,
                 mask_width) for class-specific or class-agnostic prediction.
-            labels (list): A list of length R that contains either predicted
-                of ground truth class for each predicted mask.
+            labels (list): The ground truth class for each instance.
+            cfg (dict): Training config of point head.
 
         Returns:
             point_coords (Tensor): A tensor of shape (N, P, 2) that contains
@@ -186,10 +186,10 @@ class PointHead(nn.Module):
         importance_sample_ratio = cfg.importance_sample_ratio
         assert oversample_ratio >= 1
         assert 0 <= importance_sample_ratio <= 1
-        num_rois = mask_pred.shape[0]
+        batch_size = mask_pred.shape[0]
         num_sampled = int(num_points * oversample_ratio)
         point_coords = torch.rand(
-            num_rois, num_sampled, 2, device=mask_pred.device)
+            batch_size, num_sampled, 2, device=mask_pred.device)
         point_logits = point_sample(mask_pred, point_coords)
         # It is crucial to calculate uncertainty based on the sampled
         # prediction value for the points. Calculating uncertainties of the
@@ -206,13 +206,13 @@ class PointHead(nn.Module):
         idx = torch.topk(
             point_uncertainties[:, 0, :], k=num_uncertain_points, dim=1)[1]
         shift = num_sampled * torch.arange(
-            num_rois, dtype=torch.long, device=mask_pred.device)
+            batch_size, dtype=torch.long, device=mask_pred.device)
         idx += shift[:, None]
         point_coords = point_coords.view(-1, 2)[idx.view(-1), :].view(
-            num_rois, num_uncertain_points, 2)
+            batch_size, num_uncertain_points, 2)
         if num_random_points > 0:
             rand_roi_coords = torch.rand(
-                num_rois, num_random_points, 2, device=mask_pred.device)
+                batch_size, num_random_points, 2, device=mask_pred.device)
             point_coords = torch.cat((point_coords, rand_roi_coords), dim=1)
         return point_coords
 
@@ -223,6 +223,8 @@ class PointHead(nn.Module):
         Args:
             mask_pred (Tensor): A tensor of shape (N, C, mask_height,
                 mask_width) for class-specific or class-agnostic prediction.
+            pred_label (list): The predication class for each instance.
+            cfg (dict): Testing config of point head.
 
         Returns:
             point_indices (Tensor): A tensor of shape (N, P) that contains
