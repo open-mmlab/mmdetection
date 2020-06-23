@@ -293,47 +293,100 @@ def test_albu_transform():
 
 
 def test_random_center_crop_pad():
-    # test assertion for invalid random center crop pad
-    with pytest.raises(AssertionError):
-        transform = dict(type='RandomCenterCropPad', crop_size=(-1, 0))
-        build_from_cfg(transform, PIPELINES)
-
+    # test assertion for invalid crop_size while test_mode=False
     with pytest.raises(AssertionError):
         transform = dict(
-            type='RandomCenterCropPad', crop_size=(511, 511), ratios=(1.0))
+            type='RandomCenterCropPad',
+            crop_size=(-1, 0),
+            test_mode=False,
+            test_pad_mode=None)
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion for invalid ratios while test_mode=False
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=(511, 511),
+            ratios=(1.0),
+            test_mode=False,
+            test_pad_mode=None)
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid mean, std and to_rgb
     with pytest.raises(AssertionError):
         transform = dict(
             type='RandomCenterCropPad',
             crop_size=(511, 511),
             mean=None,
             std=None,
-            to_rgb=None)
+            to_rgb=None,
+            test_mode=False,
+            test_pad_mode=None)
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion for invalid crop_size while test_mode=True
     with pytest.raises(AssertionError):
         transform = dict(
             type='RandomCenterCropPad',
             crop_size=(511, 511),
+            ratios=None,
+            border=None,
             mean=[123.675, 116.28, 103.53],
             std=[58.395, 57.12, 57.375],
             to_rgb=True,
             test_mode=True,
-            pad_mode=('do_nothing', 100))
+            test_pad_mode=('logical_or', 127))
         build_from_cfg(transform, PIPELINES)
 
-    results = dict()
-    img = mmcv.imread(
-        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
-    results['img'] = img
+    # test assertion for invalid ratios while test_mode=True
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=None,
+            ratios=(0.9, 1.0, 1.1),
+            border=None,
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=True,
+            test_pad_mode=('logical_or', 127))
+        build_from_cfg(transform, PIPELINES)
 
-    results['img_shape'] = img.shape
-    results['ori_shape'] = img.shape
-    results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
-    # Set initial values for default meta_keys
-    results['pad_shape'] = img.shape
-    results['scale_factor'] = 1.0
+    # test assertion for invalid border while test_mode=True
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=None,
+            ratios=None,
+            border=128,
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=True,
+            test_pad_mode=('logical_or', 127))
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid test_pad_mode while test_mode=True
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=None,
+            ratios=None,
+            border=None,
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=True,
+            test_pad_mode=('do_nothing', 100))
+        build_from_cfg(transform, PIPELINES)
+
+    results = dict(
+        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_info=dict(filename='color.jpg'))
+
+    load = dict(type='LoadImageFromFile', to_float32=True)
+    load = build_from_cfg(load, PIPELINES)
+    results = load(results)
     test_results = copy.deepcopy(results)
 
     def create_random_bboxes(num_bboxes, img_w, img_h):
@@ -344,7 +397,7 @@ def test_random_center_crop_pad():
             np.int)
         return bboxes
 
-    h, w, _ = img.shape
+    h, w, _ = results['img_shape']
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
     results['gt_bboxes'] = gt_bboxes
@@ -356,7 +409,9 @@ def test_random_center_crop_pad():
         border=128,
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
-        to_rgb=True)
+        to_rgb=True,
+        test_mode=False,
+        test_pad_mode=None)
     crop_module = build_from_cfg(train_transform, PIPELINES)
     train_results = crop_module(results)
     assert train_results['img'].shape[:2] == (h - 20, w - 20)
@@ -368,11 +423,13 @@ def test_random_center_crop_pad():
     test_transform = dict(
         type='RandomCenterCropPad',
         crop_size=None,
+        ratios=None,
+        border=None,
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
         to_rgb=True,
         test_mode=True,
-        pad_mode=('logical_or', 127))
+        test_pad_mode=('logical_or', 127))
     crop_module = build_from_cfg(test_transform, PIPELINES)
 
     test_results = crop_module(test_results)

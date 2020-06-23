@@ -1000,7 +1000,7 @@ class RandomCenterCropPad(object):
         6. Refine annotations.
 
     Test pipeline:
-        1. Compute output shape according to `pad_mode`.
+        1. Compute output shape according to `test_pad_mode`.
         2. Generate padding image with center matches the original image
             center.
         3. Initialize the padding image with pixel value equals to `mean`.
@@ -1022,7 +1022,7 @@ class RandomCenterCropPad(object):
             In train mode, crop_size is fixed, center coords and ratio is
             random selected from predefined lists. In test mode, crop_size
             is image's original shape, center coords and ratio is fixed.
-        pad_mode (tuple): padding method and padding shape value, only
+        test_pad_mode (tuple): padding method and padding shape value, only
             available in test mode. Default is using 'logical_or' with
             127 as padding shape value.
 
@@ -1039,10 +1039,22 @@ class RandomCenterCropPad(object):
                  std=None,
                  to_rgb=None,
                  test_mode=False,
-                 pad_mode=('logical_or', 127)):
-        assert crop_size is None or (crop_size[0] > 0 and crop_size[1] > 0)
+                 test_pad_mode=('logical_or', 127)):
+        if test_mode:
+            assert crop_size is None, 'crop_size must be None in test mode'
+            assert ratios is None, 'ratios must be None in test mode'
+            assert border is None, 'border must be None in test mode'
+            assert isinstance(test_pad_mode, (list, tuple))
+            assert test_pad_mode[0] in ['logical_or', 'size_divisor']
+        else:
+            assert isinstance(crop_size, (list, tuple))
+            assert crop_size[0] > 0 and crop_size[1] > 0, (
+                'crop_size must > 0 in train mode')
+            assert isinstance(ratios, (list, tuple))
+            assert test_pad_mode is None, (
+                'test_pad_mode must be None in train mode')
+
         self.crop_size = crop_size
-        assert isinstance(ratios, (list, tuple))
         self.ratios = ratios
         self.border = border
         # We do not set default value to mean, std and to_rgb because these
@@ -1050,13 +1062,16 @@ class RandomCenterCropPad(object):
         # Please use the same setting as Normalize for performance assurance.
         assert mean is not None and std is not None and to_rgb is not None
         self.to_rgb = to_rgb
+        self.input_mean = mean
+        self.input_std = std
         if to_rgb:
             self.mean = mean[::-1]
+            self.std = std[::-1]
         else:
             self.mean = mean
+            self.std = std
         self.test_mode = test_mode
-        assert pad_mode[0] in ['logical_or', 'size_divisor']
-        self.pad_mode = pad_mode
+        self.test_pad_mode = test_pad_mode
 
     def _get_border(self, border, size):
         i = pow(2, np.ceil(np.log2(np.ceil(2 * border / size))))
@@ -1084,8 +1099,6 @@ class RandomCenterCropPad(object):
         top, bottom = center_y - y0, y1 - center_y
 
         cropped_center_y, cropped_center_x = target_h // 2, target_w // 2
-        if image.dtype == np.uint8:
-            image = image.astype(np.float32)
         cropped_img = np.zeros((target_h, target_w, img_c), dtype=image.dtype)
         for i in range(img_c):
             cropped_img[:, :, i] += self.mean[i]
@@ -1103,6 +1116,9 @@ class RandomCenterCropPad(object):
 
     def __call__(self, results):
         img = results['img']
+        assert img.dtype == np.float32, (
+            'RandomCenterCropPad needs the input image of dtype np.float32,'
+            ' please set "to_float32=True" in "LoadImageFromFile" pipeline')
         h, w, c = img.shape
         assert c == len(self.mean)
         if not self.test_mode:
@@ -1163,11 +1179,11 @@ class RandomCenterCropPad(object):
                     return results
         else:  # test mode
             results['img_shape'] = img.shape
-            if self.pad_mode[0] in ['logical_or']:
-                target_h = h | self.pad_mode[1]
-                target_w = w | self.pad_mode[1]
-            elif self.pad_mode[0] in ['size_divisor']:
-                divisor = self.pad_mode[1]
+            if self.test_pad_mode[0] in ['logical_or']:
+                target_h = h | self.test_pad_mode[1]
+                target_w = w | self.test_pad_mode[1]
+            elif self.test_pad_mode[0] in ['size_divisor']:
+                divisor = self.test_pad_mode[1]
                 target_h = int(np.ceil(h / divisor)) * divisor
                 target_w = int(np.ceil(w / divisor)) * divisor
             else:
@@ -1184,9 +1200,12 @@ class RandomCenterCropPad(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'(crop_size={self.crop_size})'
-        repr_str += f'(ratios={self.ratios})'
-        repr_str += f'(border={self.border})'
-        repr_str += f'(mean={self.mean}, to_rgb=self.to_rgb)'
-        repr_str += f'(test_mode={self.test_mode}'
+        repr_str += f'(crop_size={self.crop_size}, '
+        repr_str += f'ratios={self.ratios}, '
+        repr_str += f'border={self.border}, '
+        repr_str += f'mean={self.input_mean}, '
+        repr_str += f'std={self.input_std}, '
+        repr_str += f'to_rgb=self.to_rgb, '
+        repr_str += f'test_mode={self.test_mode}, '
+        repr_str += f'test_pad_mode={self.test_pad_mode})'
         return repr_str
