@@ -6,7 +6,8 @@ import torch.nn.functional as F
 
 import logging
 
-from ..registry import HEADS
+from ..builder import HEADS
+from .base_dense_head import BaseDenseHead
 
 from mmcv.cnn import xavier_init
 from mmcv.runner import load_checkpoint
@@ -22,8 +23,9 @@ _EPSILON = 1e-6
 
 
 @HEADS.register_module
-class YoloHead(nn.Module):
+class YoloHead(BaseDenseHead):
 
+    # TODO: Move into cfg
     num_scales = 3
     num_classes_no_bkg = 80
     num_classes_w_bkg = num_classes_no_bkg + 1
@@ -42,7 +44,7 @@ class YoloHead(nn.Module):
                          [(10, 13), (16, 30), (33, 23)],
                          ]
 
-    def __init__(self):
+    def __init__(self, train_cfg=None, test_cfg=None):
         super(YoloHead, self).__init__()
         self.convs_bridge = nn.ModuleList()
         self.convs_final = nn.ModuleList()
@@ -54,6 +56,9 @@ class YoloHead(nn.Module):
 
             self.convs_bridge.append(conv_bridge)
             self.convs_final.append(conv_final)
+
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
@@ -78,7 +83,7 @@ class YoloHead(nn.Module):
         return tuple(results),
 
     @force_fp32(apply_to=('results_raw',))
-    def get_bboxes(self, results_raw, img_metas, cfg, rescale=False):
+    def get_bboxes(self, results_raw, img_metas, cfg=None, rescale=False):
         result_list = []
         for img_id in range(len(img_metas)):
             result_raw_list = [
@@ -100,6 +105,7 @@ class YoloHead(nn.Module):
         return grid_x, grid_y
 
     def get_bboxes_single(self, results_raw, scale_factor, cfg, rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(results_raw) == self.num_scales
         multi_lvl_bboxes = []
         multi_lvl_cls_scores = []
@@ -176,7 +182,7 @@ class YoloHead(nn.Module):
         det_bboxes, det_labels = multiclass_nms(multi_lvl_bboxes, multi_lvl_cls_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img, score_factors=multi_lvl_conf_scores)
-
+        det_labels -= 1  # Hot fix
         return det_bboxes, det_labels
 
     @force_fp32(apply_to=('preds_raw',))
@@ -185,7 +191,7 @@ class YoloHead(nn.Module):
              gt_bboxes,
              gt_labels,
              img_metas,
-             cfg,
+            #  cfg,  # removed since it's removed in mmdet 2.0
              gt_bboxes_ignore=None):
 
         losses = {'loss_xy': 0, 'loss_wh': 0, 'loss_conf': 0, 'loss_cls': 0}
@@ -209,6 +215,8 @@ class YoloHead(nn.Module):
             gt_bboxes_per_img = gt_bboxes[img_id]
             gt_labels_per_img = gt_labels[img_id]
 
+            # TODO: Move into cfg
+            cfg = {}  # Hot fix
             ignore_thresh = cfg.get('ignore_thresh', 0.5)
             one_hot_smoother = cfg.get('one_hot_smoother', 0.)
             xy_use_logit = cfg.get('xy_use_logit', False)
@@ -368,8 +376,12 @@ class YoloHead(nn.Module):
 
             gt_t_bbox = torch.stack((gt_tcx, gt_tcy, gt_tw, gt_th))
 
-            # raw label start from 1, need to minus 1 to compensate that
-            gt_label_one_hot = F.one_hot(gt_label - 1, num_classes=self.num_classes_no_bkg).float()
+            # in mmdet 1.x, raw label start from 1, need to minus 1 to compensate that
+            # gt_label_one_hot = F.one_hot(gt_label - 1, num_classes=self.num_classes_no_bkg).float()
+            # However, in mmdet 2.x, label “K” means background, 
+            # and labels [0, K-1] correspond to the K = num_categories object categories.
+            gt_label_one_hot = F.one_hot(gt_label, num_classes=self.num_classes_no_bkg).float()
+            # TODO: Check is pending
 
             gt_label_one_hot = gt_label_one_hot * (1 - one_hot_smoother) + one_hot_smoother / self.num_classes_no_bkg
 

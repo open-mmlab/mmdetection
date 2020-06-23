@@ -9,7 +9,7 @@ from mmcv.runner import load_checkpoint
 from mmcv.cnn import constant_init, kaiming_init
 
 from mmdet.models.utils import ConvLayer
-from ..registry import BACKBONES
+from ..builder import BACKBONES
 
 
 class ResBlock(nn.Module):

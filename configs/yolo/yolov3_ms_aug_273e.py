@@ -3,7 +3,7 @@
 # model settings
 model = dict(
     type='YoloNet',
-    pretrained='./work_dirs/pretrained/darknet_state_dict_only.pth',
+    pretrained='./work_dirs/darknet_state_dict_only.pth',
     backbone=dict(
         type='DarkNet53',),
     neck=dict(
@@ -64,7 +64,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=8,
+    samples_per_gpu=8,
     workers_per_gpu=8,
     train=dict(
         type=dataset_type,
@@ -113,3 +113,4 @@ work_dir = './work_dirs/yolo_pretrained'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
+evaluation = dict(interval=1, metric=['bbox'])
