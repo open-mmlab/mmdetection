@@ -24,13 +24,29 @@ class BaseRoIExtractor(nn.Module, metaclass=ABCMeta):
 
     @property
     def num_inputs(self):
-        """int: Input feature map levels."""
+        """Number of input feature maps."""
         return len(self.featmap_strides)
 
     def init_weights(self):
         pass
 
     def build_roi_layers(self, layer_cfg, featmap_strides):
+        """Build RoI operator to extract feature from each level feature map.
+
+        Args:
+            layer_cfg (dict): Dictionary to construct and config RoI layer
+                operation. Options are modules under ``mmdet/ops`` such as
+                ``RoIAlign``.
+            featmap_strides (int): The stride of input feature map w.r.t to the
+                original image size, which would be used to scale RoI
+                coordinate (original image coordinate system) to feature
+                coordinate system.
+
+        Returns:
+            nn.ModuleList: The RoI extractor modules for each level feature
+                map.
+        """
+
         cfg = layer_cfg.copy()
         layer_type = cfg.pop('type')
         assert hasattr(ops, layer_type)
@@ -40,6 +56,16 @@ class BaseRoIExtractor(nn.Module, metaclass=ABCMeta):
         return roi_layers
 
     def roi_rescale(self, rois, scale_factor):
+        """Scale RoI coordinates by scale factor.
+
+        Args:
+            rois (torch.Tensor): RoI (Region of Interest), shape (n, 5)
+            scale_factor (float): Scale factor that RoI will be multiplied by.
+
+        Returns:
+            torch.Tensor: Scaled RoI.
+        """
+
         cx = (rois[:, 1] + rois[:, 3]) * 0.5
         cy = (rois[:, 2] + rois[:, 4]) * 0.5
         w = rois[:, 3] - rois[:, 1]
