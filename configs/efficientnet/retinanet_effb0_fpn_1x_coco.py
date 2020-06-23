@@ -6,7 +6,7 @@ _base_ = [
 model = dict(
     pretrained='open-mmlab://efficientnet_b0',
     backbone=dict(
-        _delete_=True, type='EfficientNet', scale='0', frozen_stages=1),
+        _delete_=True, type='EfficientNet', scale=0, frozen_stages=1),
     neck=dict(
         type='FPN',
         in_channels=[40, 112, 320],
