@@ -4,9 +4,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 
-from mmdet.core import (anchor_inside_flags, bbox2distance, build_assigner,
-                        build_sampler, distance2bbox, force_fp32,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
+                        build_assigner, build_sampler, distance2bbox,
+                        force_fp32, images_to_levels, multi_apply,
+                        multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -142,21 +143,6 @@ class GFLHead(AnchorHead):
         anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
         return torch.stack([anchors_cx, anchors_cy], dim=-1)
 
-    def iou_target(self, pred, target, eps=1e-6):
-        # overlap
-        lt = torch.max(pred[:, :2], target[:, :2])
-        rb = torch.min(pred[:, 2:], target[:, 2:])
-        wh = (rb - lt + 1).clamp(min=0)
-        overlap = wh[:, 0] * wh[:, 1]
-        # union
-        ap = (pred[:, 2] - pred[:, 0] + 1) * (pred[:, 3] - pred[:, 1] + 1)
-        ag = (target[:, 2] - target[:, 0] + 1) * (
-            target[:, 3] - target[:, 1] + 1)
-        union = ap + ag - overlap + eps
-        # IoU
-        ious = overlap / union
-        return ious
-
     def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, stride, num_total_samples):
         assert stride[0] == stride[1], 'h stride is not equal to w stride!'
@@ -169,11 +155,10 @@ class GFLHead(AnchorHead):
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
 
-        # adjust label to fit Quality Focal Loss
-        labels = labels + 1
-        labels[labels == self.num_classes + 1] = 0
-
-        pos_inds = (labels > 0).nonzero().squeeze(1)
+        # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+        bg_class_ind = self.num_classes
+        pos_inds = ((labels >= 0)
+                    & (labels < bg_class_ind)).nonzero().squeeze(1)
         score = label_weights.new_zeros(labels.shape)
 
         if len(pos_inds) > 0:
@@ -184,16 +169,18 @@ class GFLHead(AnchorHead):
 
             weight_targets = cls_score.detach().sigmoid()
             weight_targets = weight_targets.max(dim=1)[0][pos_inds]
-            pos_bbox_pred_ltrb = self.integral(pos_bbox_pred)
+            pos_bbox_pred_corners = self.integral(pos_bbox_pred)
             pos_decode_bbox_pred = distance2bbox(pos_anchor_centers,
-                                                 pos_bbox_pred_ltrb)
+                                                 pos_bbox_pred_corners)
             pos_decode_bbox_targets = pos_bbox_targets / stride[0]
-            score[pos_inds] = self.iou_target(pos_decode_bbox_pred.detach(),
-                                              pos_decode_bbox_targets)
-            pred_ltrb = pos_bbox_pred.reshape(-1, self.reg_max + 1)
-            target_ltrb = bbox2distance(pos_anchor_centers,
-                                        pos_decode_bbox_targets,
-                                        self.reg_max).reshape(-1)
+            score[pos_inds] = bbox_overlaps(
+                pos_decode_bbox_pred.detach(),
+                pos_decode_bbox_targets,
+                is_aligned=True)
+            pred_corners = pos_bbox_pred.reshape(-1, self.reg_max + 1)
+            target_corners = bbox2distance(pos_anchor_centers,
+                                           pos_decode_bbox_targets,
+                                           self.reg_max).reshape(-1)
 
             # regression loss
             loss_bbox = self.loss_bbox(
@@ -204,8 +191,8 @@ class GFLHead(AnchorHead):
 
             # dfl loss
             loss_dfl = self.loss_dfl(
-                pred_ltrb,
-                target_ltrb,
+                pred_corners,
+                target_corners,
                 weight=weight_targets[:, None].expand(-1, 4).reshape(-1),
                 avg_factor=4.0)
         else:
@@ -213,7 +200,7 @@ class GFLHead(AnchorHead):
             loss_dfl = bbox_pred.sum() * 0
             weight_targets = torch.tensor(0).cuda()
 
-        # cls loss
+        # cls (qfl) loss
         loss_cls = self.loss_cls(
             cls_score, labels, score, avg_factor=num_total_samples)
 
@@ -273,37 +260,6 @@ class GFLHead(AnchorHead):
         return dict(
             loss_cls=losses_cls, loss_bbox=losses_bbox, loss_dfl=losses_dfl)
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   img_metas,
-                   cfg=None,
-                   rescale=False):
-        cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_scores) == len(bbox_preds)
-        num_levels = len(cls_scores)
-        device = cls_scores[0].device
-        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes, device=device)
-
-        result_list = []
-        for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                mlvl_anchors, img_shape,
-                                                scale_factor, cfg, rescale)
-            result_list.append(proposals)
-        return result_list
-
     def _get_bboxes_single(self,
                            cls_scores,
                            bbox_preds,
@@ -312,6 +268,7 @@ class GFLHead(AnchorHead):
                            scale_factor,
                            cfg,
                            rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
@@ -319,6 +276,7 @@ class GFLHead(AnchorHead):
                 cls_scores, bbox_preds, self.anchor_generator.strides,
                 mlvl_anchors):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            assert stride[0] == stride[1]
 
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
