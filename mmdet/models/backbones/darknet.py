@@ -47,7 +47,7 @@ def make_conv_and_res_block(in_channels, out_channels, res_repeat):
     return model
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class DarkNet53(nn.Module):
 
     def __init__(self,

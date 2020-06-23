@@ -22,7 +22,7 @@ from mmdet.ops.nms import nms_wrapper
 _EPSILON = 1e-6
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class YoloHead(BaseDenseHead):
 
     # TODO: Move into cfg
