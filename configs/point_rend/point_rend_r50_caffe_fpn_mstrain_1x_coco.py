@@ -5,7 +5,8 @@ model = dict(
     roi_head=dict(
         type='PointRendRoIHead',
         mask_roi_extractor=dict(
-            type='SingleRoIExtractor',
+            type='GenericRoIExtractor',
+            aggregation='concat',
             roi_layer=dict(_delete_=True, type='SimpleRoIAlign', out_size=14),
             out_channels=256,
             featmap_strides=[4]),
