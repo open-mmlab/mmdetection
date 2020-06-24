@@ -129,7 +129,6 @@ conda activate ote-det
 
 # install latest pytorch prebuilt with the default prebuilt CUDA version (usually the latest)
 conda install -c pytorch pytorch torchvision -y
-conda install cython -y
 git clone https://github.com/opencv/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
