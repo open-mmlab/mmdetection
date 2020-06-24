@@ -10,7 +10,8 @@ class SingleRoIExtractor(BaseRoIExtractor):
     """Extract RoI features from a single level feature map.
 
     If there are multiple input feature levels, each RoI is mapped to a level
-    according to its scale.
+    according to its scale. The mapping rule is proposed in
+    `FPN <https://arxiv.org/abs/1612.03144>`_.
 
     Args:
         roi_layer (dict): Specify RoI layer type and arguments.
@@ -19,8 +20,13 @@ class SingleRoIExtractor(BaseRoIExtractor):
         finest_scale (int): Scale threshold of mapping to level 0.
     """
 
-    def __init__(self, finest_scale=56, **kwargs):
-        super(SingleRoIExtractor, self).__init__(**kwargs)
+    def __init__(self,
+                 roi_layer,
+                 out_channels,
+                 featmap_strides,
+                 finest_scale=56):
+        super(SingleRoIExtractor, self).__init__(roi_layer, out_channels,
+                                                 featmap_strides)
         self.finest_scale = finest_scale
 
     def map_roi_levels(self, rois, num_levels):

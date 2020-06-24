@@ -1,10 +1,3 @@
-"""Generic RoI Extractor.
-
-A novel Region of Interest Extraction Layer for Instance Segmentation.
-"""
-
-from torch import nn
-
 from mmdet.core import force_fp32
 from mmdet.models.builder import ROI_EXTRACTORS
 from mmdet.ops.plugin import build_plugin_layer
@@ -13,9 +6,10 @@ from .base_roi_extractor import BaseRoIExtractor
 
 @ROI_EXTRACTORS.register_module()
 class GenericRoIExtractor(BaseRoIExtractor):
-    """Extract RoI features from all summed feature maps levels.
+    """Extract RoI features from all level feature maps levels.
 
-    https://arxiv.org/abs/2004.13665
+    This is the implementation of
+    `Generic RoI Extractor <https://arxiv.org/abs/2004.13665>`_.
 
     Args:
         aggregate_type (str): The method to aggregate multiple feature maps.
@@ -43,7 +37,6 @@ class GenericRoIExtractor(BaseRoIExtractor):
             self.post_module = build_plugin_layer(post_cfg, '_post_module')[1]
         if self.with_pre:
             self.pre_module = build_plugin_layer(pre_cfg, '_pre_module')[1]
-            self.relu = nn.ReLU(inplace=False)
 
     @force_fp32(apply_to=('feats', ), out_fp16=True)
     def forward(self, feats, rois, roi_scale_factor=None):
@@ -70,7 +63,6 @@ class GenericRoIExtractor(BaseRoIExtractor):
             if self.with_pre:
                 # apply pre-processing to a RoI extracted from each layer
                 roi_feats_t = self.pre_module(roi_feats_t)
-                roi_feats_t = self.relu(roi_feats_t)
             if self.aggregate_type == 'sum':
                 # and sum them all
                 roi_feats += roi_feats_t
