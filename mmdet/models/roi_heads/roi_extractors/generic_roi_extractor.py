@@ -8,28 +8,28 @@ from .base_roi_extractor import BaseRoIExtractor
 class GenericRoIExtractor(BaseRoIExtractor):
     """Extract RoI features from all level feature maps levels.
 
-    This is the implementation of
-    `Generic RoI Extractor <https://arxiv.org/abs/2004.13665>`_.
+    This is the implementation of `A novel Region of Interest Extraction Layer
+    for Instance Segmentation <https://arxiv.org/abs/2004.13665>`_.
 
     Args:
-        aggregate_type (str): The method to aggregate multiple feature maps.
+        aggregation (str): The method to aggregate multiple feature maps.
             Options are 'sum', 'concat'. Default: 'sum'.
         pre_cfg (dict|None): Specify pre-processing modules. Default: None.
         post_cfg (dict|None): Specify post-processing modules. Default: None.
         kwargs (keyword arguments): Arguments that are the same
-            as :class:`SingleRoIExtractor`.
+            as :class:`BaseRoIExtractor`.
     """
 
     def __init__(self,
-                 aggregate_type='sum',
+                 aggregation='sum',
                  pre_cfg=None,
                  post_cfg=None,
                  **kwargs):
         super(GenericRoIExtractor, self).__init__(**kwargs)
 
-        assert aggregate_type in ['sum', 'concat']
+        assert aggregation in ['sum', 'concat']
 
-        self.aggregate_type = aggregate_type
+        self.aggregation = aggregation
         self.with_post = post_cfg is not None
         self.with_pre = pre_cfg is not None
         # build pre/post processing modules
@@ -63,7 +63,7 @@ class GenericRoIExtractor(BaseRoIExtractor):
             if self.with_pre:
                 # apply pre-processing to a RoI extracted from each layer
                 roi_feats_t = self.pre_module(roi_feats_t)
-            if self.aggregate_type == 'sum':
+            if self.aggregation == 'sum':
                 # and sum them all
                 roi_feats += roi_feats_t
             else:
@@ -72,7 +72,7 @@ class GenericRoIExtractor(BaseRoIExtractor):
             # update channels starting position
             start_channels = end_channels
         # check if concat channels match at the end
-        if self.aggregate_type == 'concat':
+        if self.aggregation == 'concat':
             assert start_channels == self.out_channels
 
         if self.with_post:

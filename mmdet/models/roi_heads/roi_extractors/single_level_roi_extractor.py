@@ -17,7 +17,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
         roi_layer (dict): Specify RoI layer type and arguments.
         out_channels (int): Output channels of RoI layers.
         featmap_strides (int): Strides of input feature maps.
-        finest_scale (int): Scale threshold of mapping to level 0.
+        finest_scale (int): Scale threshold of mapping to level 0. Default: 56.
     """
 
     def __init__(self,
