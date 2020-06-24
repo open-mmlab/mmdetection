@@ -143,6 +143,7 @@ def stub_anchor_generator(model, anchor_head_name):
     anchor_head = getattr(model, anchor_head_name, None)
     if anchor_head is not None and isinstance(anchor_head, AnchorHead):
         anchor_generator = anchor_head.anchor_generator
+        anchor_generator.is_stubbed = True
         num_levels = anchor_generator.num_levels
         strides = anchor_generator.strides
 
@@ -225,7 +226,9 @@ def main(args):
             input_shape = [1, 3, *args.input_shape]
         export_to_openvino(cfg, onnx_model_path, args.output_dir, input_shape)
     else:
-        check_onnx_model(onnx_model_path)
+        # Model check raises a Segmentation Fault in the latest (1.6.0, 1.7.0) versions of onnx package.
+        # check_onnx_model(onnx_model_path)
+        pass
 
 
 def parse_args():
