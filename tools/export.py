@@ -52,7 +52,6 @@ def export_to_onnx(model,
         model.forward_export = forward_export_detector.__get__(model)
         model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
         model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
-        #model.bbox_head.get_bboxes = get_bboxes_ssd_head.__get__(model.bbox_head)
         model.onnx_export(img=data['img'][0],
                           img_metas=data['img_metas'][0],
                           export_name=export_name,
