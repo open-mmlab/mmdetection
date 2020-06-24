@@ -62,7 +62,7 @@ def test_groie():
 
     # test w.o. pre/post concat
     cfg = dict(
-        aggregate_type='concat',
+        aggregation='concat',
         roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
         out_channels=256 * 4,
         featmap_strides=[4, 8, 16, 32])
@@ -84,7 +84,7 @@ def test_groie():
     # test not supported aggregate method
     with pytest.raises(AssertionError):
         cfg = dict(
-            aggregate_type='not support',
+            aggregation='not support',
             roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
             out_channels=1024,
             featmap_strides=[4, 8, 16, 32])
@@ -92,7 +92,7 @@ def test_groie():
 
     # test concat channels number
     cfg = dict(
-        aggregate_type='concat',
+        aggregation='concat',
         roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
         out_channels=256 * 5,  # 256*5 != 256*4
         featmap_strides=[4, 8, 16, 32])
