@@ -62,7 +62,7 @@ class RSSH(nn.Module):
         return torch.cat((x1, x2, x3), axis=1)
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class RSSH_FPN(FPN):
 
     def __init__(self,

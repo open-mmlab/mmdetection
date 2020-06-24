@@ -466,7 +466,7 @@ class CocoDataset(CustomDataset):
         return eval_results
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class ConcatenatedCocoDataset(CocoDataset):
     def __init__(self, concatenated_dataset):
         for dataset in concatenated_dataset.datasets:

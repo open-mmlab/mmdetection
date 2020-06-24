@@ -6,7 +6,7 @@ from mmdet.ops.merge_cells import ConcatCell
 from ..builder import NECKS
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class NASFCOS_FPN(nn.Module):
     """FPN structure in NASFPN
 
