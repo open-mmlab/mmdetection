@@ -30,6 +30,15 @@ def _allreduce_coalesced(tensors, world_size, bucket_size_mb=-1):
 
 
 def allreduce_grads(params, coalesce=True, bucket_size_mb=-1):
+    """Allreduce gradients
+
+    Args:
+        params (list[torch.Parameters]): List of parameters of a model
+        coalesce (bool, optional): Whether allreduce parameters as a whole.
+            Defaults to True.
+        bucket_size_mb (int, optional): Size of bucket, the unit is MB.
+            Defaults to -1.
+    """
     grads = [
         param.grad.data for param in params
         if param.requires_grad and param.grad is not None

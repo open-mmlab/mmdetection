@@ -74,6 +74,14 @@ def bbox2roi(bbox_list):
 
 
 def roi2bbox(rois):
+    """Convert rois to bounding box format
+
+    Args:
+        rois (torch.Tensor): RoIs containing batch id information.
+
+    Returns:
+        torch.Tensor: Converted boxes of corresponding rois.
+    """
     bbox_list = []
     img_ids = torch.unique(rois[:, 0].cpu(), sorted=True)
     for img_id in img_ids:

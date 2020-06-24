@@ -195,6 +195,11 @@ class AssignResult(util_mixins.NiceRepr):
         return self
 
     def add_gt_(self, gt_labels):
+        """Add ground truth as assigned results
+
+        Args:
+            gt_labels (torch.Tensor): Labels of gt boxes
+        """
         self_inds = torch.arange(
             1, len(gt_labels) + 1, dtype=torch.long, device=gt_labels.device)
         self.gt_inds = torch.cat([self_inds, self.gt_inds])

@@ -7,8 +7,16 @@ from .random_sampler import RandomSampler
 
 @BBOX_SAMPLERS.register_module()
 class InstanceBalancedPosSampler(RandomSampler):
+    """
+    Instance balanced sampler that samples equal number of positive samples
+    for each instance.
+    """
 
     def _sample_pos(self, assign_result, num_expected, **kwargs):
+        """
+        Sample positive samples from ``assign_result`` according to
+        ``num_expected``.
+        """
         pos_inds = torch.nonzero(assign_result.gt_inds > 0, as_tuple=False)
         if pos_inds.numel() != 0:
             pos_inds = pos_inds.squeeze(1)

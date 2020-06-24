@@ -7,17 +7,38 @@ from .sampling_result import SamplingResult
 
 @BBOX_SAMPLERS.register_module()
 class PseudoSampler(BaseSampler):
+    """
+    A pseudo sampler that does not do sampling indeed.
+    """
 
     def __init__(self, **kwargs):
         pass
 
     def _sample_pos(self, **kwargs):
+        """
+        Sample positive samples from ``assign_result`` according to
+        ``num_expected``.
+        """
         raise NotImplementedError
 
     def _sample_neg(self, **kwargs):
+        """
+        Sample negative samples from ``assign_result`` according to
+        ``num_expected``.
+        """
         raise NotImplementedError
 
     def sample(self, assign_result, bboxes, gt_bboxes, **kwargs):
+        """Directly returns the positive and negative indexes of samples
+
+        Args:
+            assign_result (:obj:AssignResult): Assigned results
+            bboxes (torch.Tensor): Bounding boxes
+            gt_bboxes (torch.Tensor): Ground truth boxes
+
+        Returns:
+            :obj:`SamplingResult`: sampler results
+        """
         pos_inds = torch.nonzero(
             assign_result.gt_inds > 0, as_tuple=False).squeeze(-1).unique()
         neg_inds = torch.nonzero(
