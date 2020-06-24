@@ -176,7 +176,7 @@ def main(args):
         print(f'\nwriting results to {args.out}')
         mmcv.dump(results, args.out)
     if args.eval:
-        dataset.evaluate(results, args.eval)
+        dataset.evaluate(results, args.eval, test_cfg=cfg.test_cfg)
 
 
 def parse_args():
@@ -186,7 +186,7 @@ def parse_args():
     parser.add_argument('--out', type=str, help='path to file with inference results')
     parser.add_argument('--json_out', type=str, help='output result file name without extension')
     parser.add_argument('--eval', type=str, nargs='+',
-                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
+                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints', 'f1'],
                         help='eval types')
     parser.add_argument('--video', default=None, help='run model on the video rather than the dataset')
     parser.add_argument('--show', action='store_true', help='visualize results')
