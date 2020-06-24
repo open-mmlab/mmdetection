@@ -161,7 +161,6 @@ def stub_anchor_generator(model, anchor_head_name):
             for i in range(num_levels):
                 anchors = single_level_grid_anchors_generators[i](
                     anchor_generator.base_anchors[i].to(device),
-                    #torch.zeros([1, 1, featmap_sizes[i][0], featmap_sizes[i][1]], dtype=torch.float32, device=device),
                     featmap_sizes[i],
                     stride=strides[i],
                     device=device)
@@ -180,9 +179,6 @@ def stub_roi_feature_extractor(model, extractor_name):
             for i in range(len(extractor)):
                 if isinstance(extractor[i], SingleRoIExtractor):
                     extractor[i] = ROIFeatureExtractorStub(extractor[i])
-        print('!!!!!!!!!!! ye ', extractor_name)
-    else:
-        print('!!!!!!!!!!! no ', extractor_name)
 
 
 def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
