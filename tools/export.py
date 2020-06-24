@@ -88,9 +88,8 @@ def export_to_onnx(model,
 
 
 def check_onnx_model(export_name):
-    model = onnx.load(export_name)
     try:
-        onnx.checker.check_model(model)
+        onnx.checker.check_model(export_name)
         print('ONNX check passed.')
     except onnx.onnx_cpp2py_export.checker.ValidationError as ex:
         print('ONNX check failed.')
@@ -118,7 +117,7 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
 
     mean_values = normalize['mean']
     scale_values = normalize['std']
-    command_line = f'/opt/intel/openvino/deployment_tools/model_optimizer/mo.py --input_model="{onnx_model_path}" ' \
+    command_line = f'mo.py --input_model="{onnx_model_path}" ' \
                    f'--mean_values="{mean_values}" ' \
                    f'--scale_values="{scale_values}" ' \
                    f'--output_dir="{output_dir_path}" ' \
@@ -129,7 +128,7 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
         command_line += ' --reverse_input_channels'
 
     try:
-        check_call('/opt/intel/openvino/deployment_tools/model_optimizer/mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True)
+        check_call('mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True)
     except CalledProcessError as ex:
         print('OpenVINO Model Optimizer not found, please source '
               'openvino/bin/setupvars.sh before running this script.')
