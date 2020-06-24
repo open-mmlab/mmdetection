@@ -4,6 +4,7 @@ model = dict(
     roi_head=dict(
         bbox_roi_extractor=dict(
             type='GenericRoIExtractor',
+            aggregation='sum',
             roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32],
