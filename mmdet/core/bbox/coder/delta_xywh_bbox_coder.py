@@ -14,9 +14,9 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
     decodes delta (dx, dy, dw, dh) back to original bbox (x1, y1, x2, y2).
 
     Args:
-        target_means (Sequence[float]): denormalizing means of target for
+        target_means (Sequence[float]): Denormalizing means of target for
             delta coordinates
-        target_stds (Sequence[float]): denormalizing standard deviation of
+        target_stds (Sequence[float]): Denormalizing standard deviation of
             target for delta coordinates
     """
 
@@ -29,11 +29,11 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
 
     def encode(self, bboxes, gt_bboxes):
         """Get box regression transformation deltas that can be used
-            to transform the `bboxes` into the `gt_bboxes`.
+        to transform the `bboxes` into the `gt_bboxes`.
 
         Args:
-            bboxes (torch.Tensor): source boxes, e.g., object proposals.
-            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
+            bboxes (torch.Tensor): Source boxes, e.g., object proposals.
+            gt_bboxes (torch.Tensor): Target of the transformation, e.g.,
                 ground-truth boxes.
 
         Returns:

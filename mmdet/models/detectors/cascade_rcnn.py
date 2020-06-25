@@ -25,15 +25,7 @@ class CascadeRCNN(TwoStageDetector):
             pretrained=pretrained)
 
     def show_result(self, data, result, **kwargs):
-        """Show prediction results of the detector
-
-        Args:
-            data (): [description]
-            result (torch.Tensor, tuple): The results to draw on the image.
-
-        Returns:
-            [type]: [description]
-        """
+        """Show prediction results of the detector"""
         if self.with_mask:
             ms_bbox_result, ms_segm_result = result
             if isinstance(ms_bbox_result, dict):

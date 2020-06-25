@@ -58,14 +58,14 @@ class OHEMSampler(BaseSampler):
         """Sample positive boxes
 
         Args:
-            assign_result (:obj:AssignResult): Assigned results
+            assign_result (:obj:`AssignResult`): Assigned results
             num_expected (int): Number of expected positive samples
             bboxes (torch.Tensor, optional): Boxes. Defaults to None.
             feats (list[torch.Tensor], optional): Multi-level features.
                 Defaults to None.
 
         Returns:
-            torch.Tensor: Indexes of positive samples
+            torch.Tensor: Indices  of positive samples
         """
         # Sample some hard positive samples
         pos_inds = torch.nonzero(assign_result.gt_inds > 0, as_tuple=False)
@@ -86,14 +86,14 @@ class OHEMSampler(BaseSampler):
         """Sample negative boxes
 
         Args:
-            assign_result (:obj:AssignResult): Assigned results
+            assign_result (:obj:`AssignResult`): Assigned results
             num_expected (int): Number of expected negative samples
             bboxes (torch.Tensor, optional): Boxes. Defaults to None.
             feats (list[torch.Tensor], optional): Multi-level features.
                 Defaults to None.
 
         Returns:
-            torch.Tensor: Indexes of negative samples
+            torch.Tensor: Indices  of negative samples
         """
         # Sample some hard negative samples
         neg_inds = torch.nonzero(assign_result.gt_inds == 0, as_tuple=False)

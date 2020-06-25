@@ -32,8 +32,8 @@ class MSELoss(nn.Module):
         Args:
             pred (torch.Tensor): The prediction.
             target (torch.Tensor): The learning target of the prediction.
-            weight (torch.Tensor, optional): [description]. Weight of the loss
-                for each prediction
+            weight (torch.Tensor, optional): Weight of the loss for each
+                prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
 

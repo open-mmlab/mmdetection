@@ -147,15 +147,15 @@ class AnchorGenerator(object):
         """Generate base anchors of a single level
 
         Args:
-            base_size (int, float): Basic size of an anchor
-            scales (torch.Tensor): Scales of the anchor
+            base_size (int, float): Basic size of an anchor.
+            scales (torch.Tensor): Scales of the anchor.
             ratios (torch.Tensor): The ratio between between the height
                 and width of anchors in a single level.
             center (tuple, optional): The center of the base anchor related to
                 a single feature grid. Defaults to None.
 
         Returns:
-            [type]: [description]
+            torch.Tensor: Anchors in a single-level feature maps
         """
         w = base_size
         h = base_size
@@ -188,13 +188,13 @@ class AnchorGenerator(object):
         """Generate mesh grid of x and y
 
         Args:
-            x (torch.Tensor): Grids of x dimension
-            y (torch.Tensor): Grids of y dimension
+            x (torch.Tensor): Grids of x dimension.
+            y (torch.Tensor): Grids of y dimension.
             row_major (bool, optional): Whether the return y grids first.
                 Defaults to True.
 
         Returns:
-            tuple[torch.Tensor]: The mesh grids of x and y
+            tuple[torch.Tensor]: The mesh grids of x and y.
         """
         xx = x.repeat(len(y))
         yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
@@ -237,11 +237,11 @@ class AnchorGenerator(object):
         """Generate grid anchors of a single level.
 
         Note:
-            This function is usually called by method ``self.grid_anchors``
+            This function is usually called by method ``self.grid_anchors``.
 
         Args:
-            base_anchors (torch.Tensor): The base anchors of a feature grid
-            featmap_size (tuple[int]): Size of the feature maps
+            base_anchors (torch.Tensor): The base anchors of a feature grid.
+            featmap_size (tuple[int]): Size of the feature maps.
             stride (tuple[int], optional): Stride of the feature map.
                 Defaults to (16, 16).
             device (str, optional): Device the tensor will be put on.
@@ -303,7 +303,7 @@ class AnchorGenerator(object):
         Args:
             featmap_size (tuple[int]): The size of feature maps.
             valid_size (tuple[int]): The valid size of the feature maps.
-            num_base_anchors (int): The number of base anchors
+            num_base_anchors (int): The number of base anchors.
             device (str, optional): Device where the flags will be put on.
                 Defaults to 'cuda'.
 
@@ -527,15 +527,15 @@ class LegacyAnchorGenerator(AnchorGenerator):
                 the centers and corners to meet the V1.x coordinate system.
 
         Args:
-            base_size (int, float): Basic size of an anchor
-            scales (torch.Tensor): Scales of the anchor
-            ratios (torch.Tensor): The ratio between between the height
+            base_size (int, float): Basic size of an anchor.
+            scales (torch.Tensor): Scales of the anchor.
+            ratios (torch.Tensor): The ratio between between the height.
                 and width of anchors in a single level.
             center (tuple, optional): The center of the base anchor related to
                 a single feature grid. Defaults to None.
 
         Returns:
-            [type]: [description]
+            torch.Tensor: Anchors in a single-level feature map.
         """
         w = base_size
         h = base_size

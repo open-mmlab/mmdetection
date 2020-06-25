@@ -49,11 +49,11 @@ class IoUBalancedNegSampler(RandomSampler):
         Args:
             max_overlaps (torch.Tensor): IoU between bounding boxes and ground
                 truth boxes.
-            full_set (set(int)): A full set of indexes of boxes。
+            full_set (set(int)): A full set of indices of boxes。
             num_expected (int): Number of expected samples。
 
         Returns:
-            np.ndarray: Indexes of samples
+            np.ndarray: Indices  of samples
         """
         max_iou = max_overlaps.max()
         iou_interval = (max_iou - self.floor_thr) / self.num_bins

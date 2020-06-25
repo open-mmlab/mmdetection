@@ -143,8 +143,7 @@ class IoULoss(nn.Module):
 
         Args:
             pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction
-                in gaussian distribution.
+            target (torch.Tensor): The learning target of the prediction.
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average

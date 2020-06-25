@@ -8,7 +8,7 @@ from .sampling_result import SamplingResult
 @BBOX_SAMPLERS.register_module()
 class PseudoSampler(BaseSampler):
     """
-    A pseudo sampler that does not do sampling indeed.
+    A pseudo sampler that does not do sampling actually.
     """
 
     def __init__(self, **kwargs):
@@ -29,10 +29,10 @@ class PseudoSampler(BaseSampler):
         raise NotImplementedError
 
     def sample(self, assign_result, bboxes, gt_bboxes, **kwargs):
-        """Directly returns the positive and negative indexes of samples
+        """Directly returns the positive and negative indices  of samples
 
         Args:
-            assign_result (:obj:AssignResult): Assigned results
+            assign_result (:obj:`AssignResult`): Assigned results
             bboxes (torch.Tensor): Bounding boxes
             gt_bboxes (torch.Tensor): Ground truth boxes
 

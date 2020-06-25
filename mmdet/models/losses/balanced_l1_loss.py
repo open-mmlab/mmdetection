@@ -15,7 +15,7 @@ def balanced_l1_loss(pred,
                      reduction='mean'):
     """Calculate balanced L1 loss
 
-    Please see the `CVPR 2019 paper <https://arxiv.org/pdf/1904.02701.pdf>`_
+    Please see the `Libra R-CNN <https://arxiv.org/pdf/1904.02701.pdf>`_
 
     Args:
         pred (torch.Tensor): The prediction.

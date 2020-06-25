@@ -66,8 +66,8 @@ def binary_cross_entropy(pred,
     Args:
         pred (torch.Tensor): The prediction.
         label (torch.Tensor): The learning label of the prediction.
-        weight (torch.Tensor, optional): [description]. Weight of the loss
-            for each prediction.
+        weight (torch.Tensor, optional): Weight of the loss
+            for each prediction. Defaults to None.
         reduction (str, optional): The method used to reduce the loss.
             Options are "none", "mean" and "sum".
         avg_factor (int, optional): Average factor that is used to average

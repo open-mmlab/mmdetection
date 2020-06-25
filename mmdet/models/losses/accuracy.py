@@ -7,12 +7,12 @@ def accuracy(pred, target, topk=1):
     Args:
         pred (torch.Tensor): The model prediction.
         target (torch.Tensor): The target of each prediction
-        topk (int, tuple, optional): If the predictions in ``topk``
+        topk (int | tuple[int], optional): If the predictions in ``topk``
             matches the target, the predictions will be regarded as
             correct ones. Defaults to 1.
 
     Returns:
-        (float, tuple): If the input ``topk`` is a single integer,
+        (float | tuple): If the input ``topk`` is a single integer,
             the function will return a single float as accuracy. If
             ``topk`` is a tuple containing multiple integers, the
             function will return a tuple containing accuracies of

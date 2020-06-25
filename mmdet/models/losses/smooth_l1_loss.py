@@ -11,8 +11,7 @@ def smooth_l1_loss(pred, target, beta=1.0):
 
     Args:
         pred (torch.Tensor): The prediction.
-        target (torch.Tensor): The learning target of the prediction
-            in gaussian distribution.
+        target (torch.Tensor): The learning target of the prediction.
         beta (float, optional): The threshold in the piecewise function.
             Defaults to 1.0.
 
@@ -33,8 +32,7 @@ def l1_loss(pred, target):
 
     Args:
         pred (torch.Tensor): The prediction.
-        target (torch.Tensor): The learning target of the prediction
-            in gaussian distribution.
+        target (torch.Tensor): The learning target of the prediction.
 
     Returns:
         torch.Tensor: Calculated loss
@@ -73,8 +71,7 @@ class SmoothL1Loss(nn.Module):
 
         Args:
             pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction
-                in gaussian distribution.
+            target (torch.Tensor): The learning target of the prediction.
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
@@ -122,8 +119,7 @@ class L1Loss(nn.Module):
 
         Args:
             pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction
-                in gaussian distribution.
+            target (torch.Tensor): The learning target of the prediction.
             weight (torch.Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average

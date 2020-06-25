@@ -24,9 +24,9 @@ def anchor_inside_flags(flat_anchors,
     """Check whether the anchors are inside the border
 
     Args:
-        flat_anchors (torch.Tensor): Flatten anchors
-        valid_flags (torch.Tensor): An existing valid flags of anchors
-        img_shape (tuple(int)): Shape of current image
+        flat_anchors (torch.Tensor): Flatten anchors, shape (n, 4).
+        valid_flags (torch.Tensor): An existing valid flags of anchors.
+        img_shape (tuple(int)): Shape of current image.
         allowed_border (int, optional): The border to allow the valid anchor.
             Defaults to 0.
 
@@ -52,7 +52,7 @@ def calc_region(bbox, ratio, featmap_size=None):
     The bbox center are fixed and the new h' and w' is h * ratio and w * ratio.
 
     Args:
-        bbox (Tensor): Bboxes to calculate regions, shape (n, 4)
+        bbox (Tensor): Bboxes to calculate regions, shape (n, 4).
         ratio (float): Ratio of the output region.
         featmap_size (tuple): Feature map size used for clipping the boundary.
 
