@@ -5,7 +5,7 @@ import torch
 
 
 def cast_tensor_type(inputs, src_type, dst_type):
-    """Recursive converted Tensor in inputs from src_type to dst_type.
+    """Recursively convert Tensor in inputs from src_type to dst_type.
 
     Args:
         inputs: Inputs that to be casted.
