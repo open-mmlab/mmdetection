@@ -8,6 +8,25 @@ from .retina_head import RetinaHead
 
 @HEADS.register_module()
 class FreeAnchorRetinaHead(RetinaHead):
+    """FreeAnchor RetinaHead used in https://arxiv.org/abs/1909.02466.
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        stacked_convs (int): Number of conv layers in cls and reg tower.
+            Default: 4.
+        conv_cfg (dict): dictionary to construct and config conv layer.
+            Default: None.
+        norm_cfg (dict): dictionary to construct and config norm layer.
+            Default: norm_cfg=dict(type='GN', num_groups=32,
+            requires_grad=True).
+        pre_anchor_topk: Number of boxes that be token in each bag.
+        bbox_thr: The threshold of the saturated linear function. It is
+            usually the same with the IoU threshold used in NMS.
+        gamma (float): Gamma parameter in focal loss.
+        alpha: Alpha parameter in focal loss.
+    """  # noqa: W605
 
     def __init__(self,
                  num_classes,
@@ -36,6 +55,23 @@ class FreeAnchorRetinaHead(RetinaHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute losses of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Size / scale info for each image
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generator.base_anchors)
 
@@ -165,6 +201,17 @@ class FreeAnchorRetinaHead(RetinaHead):
         return losses
 
     def positive_bag_loss(self, matched_cls_prob, matched_box_prob):
+        """Compute positive bag loss.
+
+        Args:
+            matched_cls_prob (Tensor): Matched_cls_prob, in shape
+                (num_gt, pre_anchor_topk).
+            matched_box_prob (Tensor): Matched_box_prob, in shape
+                (num_gt, pre_anchor_topk).
+
+        Returns:
+            Tensor: Positive bag loss in shape (num_gt,).
+        """
         # bag_prob = Mean-max(matched_prob)
         matched_prob = matched_cls_prob * matched_box_prob
         weight = 1 / torch.clamp(1 - matched_prob, 1e-12, None)
@@ -175,6 +222,18 @@ class FreeAnchorRetinaHead(RetinaHead):
             bag_prob, torch.ones_like(bag_prob), reduction='none')
 
     def negative_bag_loss(self, cls_prob, box_prob):
+        """Compute negative bag loss.
+
+        Args:
+            cls_prob (Tensor): Cls prob, in shape
+                (num_img, num_anchors, num_classes).
+            box_prob (Tensor): Box prob, in shape
+                (num_img, num_anchors, num_classes).
+
+        Returns:
+            Tensor: Negative bag loss in shape
+                (num_img, num_anchors, num_classes).
+        """
         prob = cls_prob * (1 - box_prob)
         negative_bag_loss = prob**self.gamma * F.binary_cross_entropy(
             prob, torch.zeros_like(prob), reduction='none')

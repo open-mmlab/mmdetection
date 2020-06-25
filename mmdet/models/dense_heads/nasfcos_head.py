@@ -19,6 +19,7 @@ class NASFCOSHead(FCOSHead):
     """
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         dconv3x3_config = dict(
             type='DCNv2',
             kernel_size=3,
@@ -61,6 +62,7 @@ class NASFCOSHead(FCOSHead):
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
 
     def init_weights(self):
+        """Initialize weights of the head."""
         # retinanet_bias_init
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.fcos_reg, std=0.01)
