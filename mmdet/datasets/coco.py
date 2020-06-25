@@ -416,9 +416,6 @@ class CocoDataset(CustomDataset):
                     val = float(f'{cocoEval.stats[i + 6]:.3f}')
                     eval_results[item] = val
             else:
-                cocoEval.evaluate()
-                cocoEval.accumulate()
-                cocoEval.summarize()
 
                 if metric == 'f1':
                     predictions = cocoEval.cocoDt.imgToAnns
@@ -429,6 +426,11 @@ class CocoDataset(CustomDataset):
                         use_transcriptions=False)
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
                           format(recall, precision, hmean))
+                    continue
+
+                cocoEval.evaluate()
+                cocoEval.accumulate()
+                cocoEval.summarize()
 
                 if classwise:  # Compute per-category AP
                     # Compute per-category AP
