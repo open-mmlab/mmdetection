@@ -49,13 +49,21 @@ class TwoStageDetector(BaseDetector):
 
     @property
     def with_rpn(self):
+        """bool: whether the detector has RPN"""
         return hasattr(self, 'rpn_head') and self.rpn_head is not None
 
     @property
     def with_roi_head(self):
+        """bool: whether the detector has a RoI head"""
         return hasattr(self, 'roi_head') and self.roi_head is not None
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in detector
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(TwoStageDetector, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:

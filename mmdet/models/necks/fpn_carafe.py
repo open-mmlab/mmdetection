@@ -200,7 +200,7 @@ class FPN_CARAFE(nn.Module):
 
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
-        """Initiate the weights of module"""
+        """Initialize the weights of module"""
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
                 xavier_init(m, distribution='uniform')

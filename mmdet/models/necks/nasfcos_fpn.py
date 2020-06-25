@@ -147,7 +147,7 @@ class NASFCOS_FPN(nn.Module):
         return tuple(ret)
 
     def init_weights(self):
-        """Initiate the weights of module"""
+        """Initialize the weights of module"""
         for module in self.fpn.values():
             if hasattr(module, 'conv_out'):
                 caffe2_xavier_init(module.out_conv.conv)

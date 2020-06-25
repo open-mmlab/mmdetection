@@ -101,6 +101,7 @@ class Bottle2neck(_Bottleneck):
         delattr(self, self.norm2_name)
 
     def forward(self, x):
+        """Forward function"""
 
         def _inner_forward(x):
             identity = x

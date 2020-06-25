@@ -121,7 +121,7 @@ class NASFPN(nn.Module):
             self.fpn_stages.append(stage)
 
     def init_weights(self):
-        """Initiate the weights of module"""
+        """Initialize the weights of module"""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 caffe2_xavier_init(m)

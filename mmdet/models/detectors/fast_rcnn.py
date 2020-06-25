@@ -4,6 +4,7 @@ from .two_stage import TwoStageDetector
 
 @DETECTORS.register_module()
 class FastRCNN(TwoStageDetector):
+    """Implementation of `Fast R-CNN <https://arxiv.org/abs/1504.08083>`_"""
 
     def __init__(self,
                  backbone,
