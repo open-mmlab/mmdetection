@@ -7,25 +7,17 @@ from .sampling_result import SamplingResult
 
 @BBOX_SAMPLERS.register_module()
 class PseudoSampler(BaseSampler):
-    """
-    A pseudo sampler that does not do sampling actually.
-    """
+    """A pseudo sampler that does not do sampling actually."""
 
     def __init__(self, **kwargs):
         pass
 
     def _sample_pos(self, **kwargs):
-        """
-        Sample positive samples from ``assign_result`` according to
-        ``num_expected``.
-        """
+        """Sample positive samples"""
         raise NotImplementedError
 
     def _sample_neg(self, **kwargs):
-        """
-        Sample negative samples from ``assign_result`` according to
-        ``num_expected``.
-        """
+        """Sample negative samples"""
         raise NotImplementedError
 
     def sample(self, assign_result, bboxes, gt_bboxes, **kwargs):

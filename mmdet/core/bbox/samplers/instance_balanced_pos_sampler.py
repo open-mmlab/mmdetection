@@ -7,15 +7,18 @@ from .random_sampler import RandomSampler
 
 @BBOX_SAMPLERS.register_module()
 class InstanceBalancedPosSampler(RandomSampler):
-    """
-    Instance balanced sampler that samples equal number of positive samples
-    for each instance.
-    """
+    """Instance balanced sampler that samples equal number of positive samples
+    for each instance."""
 
     def _sample_pos(self, assign_result, num_expected, **kwargs):
-        """
-        Sample positive samples from ``assign_result`` according to
-        ``num_expected``.
+        """Sample positive boxes
+
+        Args:
+            assign_result (:obj:`AssignResult`): The assigned results of boxes.
+            num_expected (int): The number of expected positive samples
+
+        Returns:
+            Tensor or ndarray: sampled indices.
         """
         pos_inds = torch.nonzero(assign_result.gt_inds > 0, as_tuple=False)
         if pos_inds.numel() != 0:

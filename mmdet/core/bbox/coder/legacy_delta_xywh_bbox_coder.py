@@ -38,7 +38,7 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
 
     def encode(self, bboxes, gt_bboxes):
         """Get box regression transformation deltas that can be used
-            to transform the `bboxes` into the `gt_bboxes`.
+        to transform the `bboxes` into the `gt_bboxes`.
 
         Args:
             bboxes (torch.Tensor): source boxes, e.g., object proposals.

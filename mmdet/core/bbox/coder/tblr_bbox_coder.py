@@ -25,13 +25,13 @@ class TBLRBBoxCoder(BaseBBoxCoder):
 
     def encode(self, bboxes, gt_bboxes):
         """Get box regression transformation deltas that can be used
-            to transform the `bboxes` into the `gt_bboxes` in the top,
-            left, bottom, right order.
+        to transform the `bboxes` into the `gt_bboxes` in the top,
+        left, bottom, right order.
 
         Args:
             bboxes (torch.Tensor): source boxes, e.g., object proposals.
             gt_bboxes (torch.Tensor): target of the transformation, e.g.,
-                ground-truth boxes.
+                ground truth boxes.
 
         Returns:
             torch.Tensor: Box transformation deltas

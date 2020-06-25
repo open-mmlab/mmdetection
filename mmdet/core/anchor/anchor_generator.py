@@ -147,12 +147,12 @@ class AnchorGenerator(object):
         """Generate base anchors of a single level
 
         Args:
-            base_size (int, float): Basic size of an anchor.
+            base_size (int | float): Basic size of an anchor.
             scales (torch.Tensor): Scales of the anchor.
             ratios (torch.Tensor): The ratio between between the height
                 and width of anchors in a single level.
-            center (tuple, optional): The center of the base anchor related to
-                a single feature grid. Defaults to None.
+            center (tuple[float], optional): The center of the base anchor
+                related to a single feature grid. Defaults to None.
 
         Returns:
             torch.Tensor: Anchors in a single-level feature maps
@@ -190,7 +190,7 @@ class AnchorGenerator(object):
         Args:
             x (torch.Tensor): Grids of x dimension.
             y (torch.Tensor): Grids of y dimension.
-            row_major (bool, optional): Whether the return y grids first.
+            row_major (bool, optional): Whether to return y grids first.
                 Defaults to True.
 
         Returns:
@@ -527,12 +527,12 @@ class LegacyAnchorGenerator(AnchorGenerator):
                 the centers and corners to meet the V1.x coordinate system.
 
         Args:
-            base_size (int, float): Basic size of an anchor.
+            base_size (int | float): Basic size of an anchor.
             scales (torch.Tensor): Scales of the anchor.
             ratios (torch.Tensor): The ratio between between the height.
                 and width of anchors in a single level.
-            center (tuple, optional): The center of the base anchor related to
-                a single feature grid. Defaults to None.
+            center (tuple[float], optional): The center of the base anchor
+                related to a single feature grid. Defaults to None.
 
         Returns:
             torch.Tensor: Anchors in a single-level feature map.

@@ -53,7 +53,7 @@ class LoadImage(object):
         """Call function to load images into results
 
         Args:
-            results (dict): A result dict contains the filename
+            results (dict): A result dict contains the file name
                 of the image to be read.
 
         Returns:

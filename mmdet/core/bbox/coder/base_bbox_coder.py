@@ -2,9 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 
 class BaseBBoxCoder(metaclass=ABCMeta):
-    """
-    Base bounding box coder
-    """
+    """Base bounding box coder"""
 
     def __init__(self, **kwargs):
         pass

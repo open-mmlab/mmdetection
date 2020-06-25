@@ -12,7 +12,7 @@ def accuracy(pred, target, topk=1):
             correct ones. Defaults to 1.
 
     Returns:
-        (float | tuple): If the input ``topk`` is a single integer,
+        float | tuple[float]: If the input ``topk`` is a single integer,
             the function will return a single float as accuracy. If
             ``topk`` is a tuple containing multiple integers, the
             function will return a tuple containing accuracies of

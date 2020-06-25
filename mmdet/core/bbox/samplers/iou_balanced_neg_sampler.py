@@ -86,9 +86,14 @@ class IoUBalancedNegSampler(RandomSampler):
         return sampled_inds
 
     def _sample_neg(self, assign_result, num_expected, **kwargs):
-        """
-        Sample negative samples from ``assign_result`` according to
-        ``num_expected``.
+        """Sample negative boxes
+
+        Args:
+            assign_result (:obj:`AssignResult`): The assigned results of boxes.
+            num_expected (int): The number of expected negative samples
+
+        Returns:
+            Tensor or ndarray: sampled indices.
         """
         neg_inds = torch.nonzero(assign_result.gt_inds == 0, as_tuple=False)
         if neg_inds.numel() != 0:
