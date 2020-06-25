@@ -1,5 +1,6 @@
 from .context_block import ContextBlock
 from .conv_ws import ConvWS2d, conv_ws_2d
+from .corner_pool import CornerPool
 from .dcn import (DeformConv, DeformConvPack, DeformRoIPooling,
                   DeformRoIPoolingPack, ModulatedDeformConv,
                   ModulatedDeformConvPack, ModulatedDeformRoIPoolingPack,
@@ -26,6 +27,6 @@ __all__ = [
     'MaskedConv2d', 'ContextBlock', 'GeneralizedAttention', 'NonLocal2D',
     'get_compiler_version', 'get_compiling_cuda_version', 'ConvWS2d',
     'conv_ws_2d', 'build_plugin_layer', 'batched_nms', 'Conv2d',
-    'ConvTranspose2d', 'MaxPool2d', 'Linear', 'nms_match',
+    'ConvTranspose2d', 'MaxPool2d', 'Linear', 'nms_match', 'CornerPool',
     'NaiveSyncBatchNorm', 'MMSyncBatchNorm'
 ]

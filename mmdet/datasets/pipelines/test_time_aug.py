@@ -4,7 +4,6 @@ import mmcv
 
 from ..builder import PIPELINES
 from .compose import Compose
-from .transforms import RandomFlip
 
 
 @PIPELINES.register_module()
@@ -37,10 +36,10 @@ class MultiScaleFlipAug(object):
         if not self.flip and self.flip_direction != ['horizontal']:
             warnings.warn(
                 'flip_direction has no effect when flip is set to False')
-        if (self.flip and
-                not any([isinstance(_, RandomFlip) for _ in self.transforms])):
+        if (self.flip
+                and not any([t['type'] == 'RandomFlip' for t in transforms])):
             warnings.warn(
-                'flip has no effect when RandFlip is not in transforms')
+                'flip has no effect when RandomFlip is not in transforms')
 
     def __call__(self, results):
         aug_data = []

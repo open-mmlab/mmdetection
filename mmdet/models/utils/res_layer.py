@@ -17,6 +17,8 @@ class ResLayer(nn.Sequential):
             Default: None
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: dict(type='BN')
+        downsample_first (bool): Downsample at the first block or last block.
+            False for Hourglass, True for ResNet. Default: True
     """
 
     def __init__(self,
@@ -28,6 +30,7 @@ class ResLayer(nn.Sequential):
                  avg_down=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
+                 downsample_first=True,
                  **kwargs):
         self.block = block
 
@@ -56,22 +59,43 @@ class ResLayer(nn.Sequential):
             downsample = nn.Sequential(*downsample)
 
         layers = []
-        layers.append(
-            block(
-                inplanes=inplanes,
-                planes=planes,
-                stride=stride,
-                downsample=downsample,
-                conv_cfg=conv_cfg,
-                norm_cfg=norm_cfg,
-                **kwargs))
-        inplanes = planes * block.expansion
-        for i in range(1, num_blocks):
+        if downsample_first:
             layers.append(
                 block(
                     inplanes=inplanes,
                     planes=planes,
-                    stride=1,
+                    stride=stride,
+                    downsample=downsample,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    **kwargs))
+            inplanes = planes * block.expansion
+            for _ in range(1, num_blocks):
+                layers.append(
+                    block(
+                        inplanes=inplanes,
+                        planes=planes,
+                        stride=1,
+                        conv_cfg=conv_cfg,
+                        norm_cfg=norm_cfg,
+                        **kwargs))
+
+        else:  # downsample_first=False is for HourglassModule
+            for _ in range(num_blocks - 1):
+                layers.append(
+                    block(
+                        inplanes=inplanes,
+                        planes=inplanes,
+                        stride=1,
+                        conv_cfg=conv_cfg,
+                        norm_cfg=norm_cfg,
+                        **kwargs))
+            layers.append(
+                block(
+                    inplanes=inplanes,
+                    planes=planes,
+                    stride=stride,
+                    downsample=downsample,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     **kwargs))

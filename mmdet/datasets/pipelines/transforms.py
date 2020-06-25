@@ -200,12 +200,11 @@ class RandomFlip(object):
         flip_ratio (float, optional): The flipping probability.
     """
 
-    def __init__(self, flip_ratio=None, direction='horizontal'):
+    def __init__(self, flip_ratio=0.5, direction='horizontal'):
+        assert flip_ratio >= 0 and flip_ratio <= 1
+        assert direction in ['horizontal', 'vertical']
         self.flip_ratio = flip_ratio
         self.direction = direction
-        if flip_ratio is not None:
-            assert flip_ratio >= 0 and flip_ratio <= 1
-        assert direction in ['horizontal', 'vertical']
 
     def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
@@ -603,7 +602,8 @@ class Expand(object):
         results['img'] = expand_img
         # expand bboxes
         for key in results.get('bbox_fields', []):
-            results[key] += np.tile((left, top), 2).astype(results[key].dtype)
+            results[key] = results[key] + np.tile(
+                (left, top), 2).astype(results[key].dtype)
 
         # expand masks
         for key in results.get('mask_fields', []):
@@ -713,7 +713,7 @@ class MinIoURandomCrop(object):
                     if not mask.any():
                         continue
                     for key in results.get('bbox_fields', []):
-                        boxes = results[key]
+                        boxes = results[key].copy()
                         mask = is_center_of_bboxes_in_patch(boxes, patch)
                         boxes = boxes[mask]
                         boxes[:, 2:] = boxes[:, 2:].clip(max=patch[2:])
