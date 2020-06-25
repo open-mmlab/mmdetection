@@ -81,7 +81,7 @@ class BeproDataset(CustomDataset):
                 continue
 
             label = self.cat2label[name]
-            difficult = int(obj.find('difficult').text)
+            # difficult = int(obj.find('difficult').text)
             
             bnd_box = obj.find('bndbox')
             bbox = [
