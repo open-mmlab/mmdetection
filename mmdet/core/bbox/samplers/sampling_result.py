@@ -50,9 +50,7 @@ class SamplingResult(util_mixins.NiceRepr):
 
     @property
     def bboxes(self):
-        """
-        Return concatenated positive and negative boxes
-        """
+        """torch.Tensor: concatenated positive and negative boxes"""
         return torch.cat([self.pos_bboxes, self.neg_bboxes])
 
     def to(self, device):

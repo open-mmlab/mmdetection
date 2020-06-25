@@ -37,7 +37,7 @@ def multi_apply(func, *args, **kwargs):
 
     Note:
         This function applies the ``func`` to multiple inputs and
-            map the multiple outpus of the ``func`` into different
+            map the multiple outputs of the ``func`` into different
             list. Each list contains the same type of outputs corresponding
             to different inputs.
 

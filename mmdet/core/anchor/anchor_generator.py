@@ -111,17 +111,12 @@ class AnchorGenerator(object):
 
     @property
     def num_base_anchors(self):
-        """
-        Return the total number of base anchors in a feature grid.
-        """
+        """list[int]: total number of base anchors in a feature grid"""
         return [base_anchors.size(0) for base_anchors in self.base_anchors]
 
     @property
     def num_levels(self):
-        """
-        Return the number of feature levels that the generator will be applied
-            to.
-        """
+        """int: number of feature levels that the generator will be applied"""
         return len(self.strides)
 
     def gen_base_anchors(self):
@@ -330,9 +325,7 @@ class AnchorGenerator(object):
         return valid
 
     def __repr__(self):
-        """
-        Return a string that describes the module
-        """
+        """str: a string that describes the module"""
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
         repr_str += f'{indent_str}strides={self.strides},\n'
@@ -458,9 +451,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         return multi_level_base_anchors
 
     def __repr__(self):
-        """
-        Return a string that describes the module
-        """
+        """str: a string that describes the module"""
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
         repr_str += f'{indent_str}strides={self.strides},\n'
