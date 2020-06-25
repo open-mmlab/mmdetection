@@ -10,7 +10,6 @@ from tools.fuse_conv_bn import fuse_module
 
 from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.core import wrap_fp16_model
-from mmdet.core.precise_bn.update_stats import update_bn_stats
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 
@@ -132,20 +131,6 @@ def main():
             model.cuda(),
             device_ids=[torch.cuda.current_device()],
             broadcast_buffers=False)
-
-        precise_bn_cfg = cfg.get('precise_bn', None)
-        if precise_bn_cfg is not None:
-            precise_bn_dataset = build_dataset(cfg.data.train)
-            precise_bn_dataloader = build_dataloader(
-                precise_bn_dataset,
-                cfg.data.samples_per_gpu,
-                0,  # save memory and time
-                1,
-                dist=distributed,
-                seed=None)
-            update_bn_stats(model, precise_bn_dataloader,
-                            precise_bn_cfg['num_iters'])
-
         outputs = multi_gpu_test(model, data_loader, args.tmpdir,
                                  args.gpu_collect)
 

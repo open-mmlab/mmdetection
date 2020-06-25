@@ -1,7 +1,7 @@
 _base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
-norm_cfg = dict(type='NaiveSyncBN', requires_grad=True)
+norm_cfg = dict(type='MMSyncBN', requires_grad=True)
 model = dict(
-    pretrained='pretrain_model/resnest50-67b6df46.pth',
+    pretrained='pretrain_model/resnest50_d2-7497a55b.pth',
     backbone=dict(
         type='ResNeSt',
         stem_channels=64,
@@ -58,5 +58,3 @@ test_pipeline = [
             dict(type='Collect', keys=['img']),
         ])
 ]
-# precise_bn = dict(interval=12, num_iters=200)
-# evaluation = dict(interval=12)

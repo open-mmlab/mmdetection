@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import CONV_LAYERS
+
+# from mmcv.cnn import CONV_LAYERS
 
 
 def conv_ws_2d(input,
@@ -19,7 +20,7 @@ def conv_ws_2d(input,
     return F.conv2d(input, weight, bias, stride, padding, dilation, groups)
 
 
-@CONV_LAYERS.register_module('ConvWS')
+# @CONV_LAYERS.register_module('ConvWS')
 class ConvWS2d(nn.Conv2d):
 
     def __init__(self,

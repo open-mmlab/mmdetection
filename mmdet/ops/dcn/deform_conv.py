@@ -3,7 +3,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import CONV_LAYERS
+# from mmcv.cnn import CONV_LAYERS
 from mmcv.utils import print_log
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
@@ -253,7 +253,7 @@ class DeformConv(nn.Module):
         return out
 
 
-@CONV_LAYERS.register_module('DCN')
+# @CONV_LAYERS.register_module('DCN')
 class DeformConvPack(DeformConv):
     """A Deformable Conv Encapsulation that acts as normal Conv layers.
 
@@ -381,7 +381,7 @@ class ModulatedDeformConv(nn.Module):
                                      self.groups, self.deformable_groups)
 
 
-@CONV_LAYERS.register_module('DCNv2')
+# @CONV_LAYERS.register_module('DCNv2')
 class ModulatedDeformConvPack(ModulatedDeformConv):
     """A ModulatedDeformable Conv Encapsulation that acts as normal Conv layers.
 
