@@ -15,10 +15,10 @@ def cross_entropy(pred,
     """Calculate the CrossEntropy loss.
 
     Args:
-        pred (torch.Tensor): The prediction.
+        pred (torch.Tensor): The prediction with shape (N, C), C is the number
+            of classes.
         label (torch.Tensor): The learning label of the prediction.
-        weight (torch.Tensor, optional): Weight of the loss for each
-            prediction.
+        weight (torch.Tensor, optional): Sample-wise loss weight.
         reduction (str, optional): The method used to reduce the loss.
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
@@ -64,10 +64,9 @@ def binary_cross_entropy(pred,
     """Calculate the binary CrossEntropy loss.
 
     Args:
-        pred (torch.Tensor): The prediction.
+        pred (torch.Tensor): The prediction with shape (N, 1).
         label (torch.Tensor): The learning label of the prediction.
-        weight (torch.Tensor, optional): Weight of the loss
-            for each prediction. Defaults to None.
+        weight (torch.Tensor, optional): Sample-wise loss weight.
         reduction (str, optional): The method used to reduce the loss.
             Options are "none", "mean" and "sum".
         avg_factor (int, optional): Average factor that is used to average
@@ -101,7 +100,8 @@ def mask_cross_entropy(pred,
     """Calculate the CrossEntropy loss for masks.
 
     Args:
-        pred (torch.Tensor): The prediction.
+        pred (torch.Tensor): The prediction with shape (N, C), C is the number
+            of classes.
         target (torch.Tensor): The learning label of the prediction.
         label (torch.Tensor): ``label`` indicates the class label of the mask'
             corresponding object. This will be used to select the mask in the
@@ -143,7 +143,7 @@ class CrossEntropyLoss(nn.Module):
                 Defaults to False.
             reduction (str, optional): . Defaults to 'mean'.
                 Options are "none", "mean" and "sum".
-            class_weight ([type], optional): Weight of each class.
+            class_weight (list[float], optional): Weight of each class.
                 Defaults to None.
             loss_weight (float, optional): Weight of the loss. Defaults to 1.0.
         """
@@ -174,8 +174,7 @@ class CrossEntropyLoss(nn.Module):
         Args:
             cls_score (torch.Tensor): The prediction.
             label (torch.Tensor): The learning label of the prediction.
-            weight (torch.Tensor, optional): The weight of loss for each
-                prediction. Defaults to None.
+            weight (torch.Tensor, optional): Sample-wise loss weight.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
             reduction (str, optional): The method used to reduce the loss.

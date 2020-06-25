@@ -17,10 +17,10 @@ def py_sigmoid_focal_loss(pred,
     """PyTorch version of `Focal Loss <https://arxiv.org/abs/1708.02002>`_
 
     Args:
-        pred (torch.Tensor): The prediction.
+        pred (torch.Tensor): The prediction with shape (N, C), C is the
+            number of classes
         target (torch.Tensor): The learning label of the prediction.
-        weight (torch.Tensor, optional): Weight of the loss for each
-            prediction.
+        weight (torch.Tensor, optional): Sample-wise loss weight.
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 2.0.
         alpha (float, optional): A balanced form for Focal Loss.
@@ -52,10 +52,10 @@ def sigmoid_focal_loss(pred,
     `Focal Loss <https://arxiv.org/abs/1708.02002>`_
 
     Args:
-        pred (torch.Tensor): The prediction.
+        pred (torch.Tensor): The prediction with shape (N, C), C is the number
+            of classes.
         target (torch.Tensor): The learning label of the prediction.
-        weight (torch.Tensor, optional): Weight of the loss for each
-            prediction.
+        weight (torch.Tensor, optional): Sample-wise loss weight.
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 2.0.
         alpha (float, optional): A balanced form for Focal Loss.

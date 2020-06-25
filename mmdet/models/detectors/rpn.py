@@ -44,10 +44,11 @@ class RPN(BaseDetector):
         """Extract features
 
         Args:
-            img (torch.Tensor): Images
+            img (torch.Tensor): Image tensor with shape (n, c, h ,w).
 
         Returns:
-            list[torch.Tensor]: Multi-scale image fetures
+            list[torch.Tensor]: Multi-level features that may have
+                different resolutions.
         """
         x = self.backbone(img)
         if self.with_neck:
