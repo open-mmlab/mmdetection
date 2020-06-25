@@ -95,8 +95,7 @@ class SAConv2d(ConvAWS2d):
         x = x + avg_x
         # switch
         avg_x = F.pad(x, pad=(2, 2, 2, 2), mode='reflect')
-        avg_x = F.avg_pool2d(
-            avg_x, kernel_size=5, stride=1, padding=0)
+        avg_x = F.avg_pool2d(avg_x, kernel_size=5, stride=1, padding=0)
         switch = self.switch(avg_x)
         # sac
         weight = self._get_weight(self.weight)
