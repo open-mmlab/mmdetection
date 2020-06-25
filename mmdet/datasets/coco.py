@@ -398,7 +398,7 @@ class CocoDataset(CustomDataset):
                     level=logging.ERROR)
                 break
 
-            iou_type = 'bbox' if metric == 'proposal' or 'f1' else metric
+            iou_type = 'bbox' if metric in {'proposal' or 'f1'} else metric
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
