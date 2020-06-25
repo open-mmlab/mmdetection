@@ -52,7 +52,6 @@ def export_to_onnx(model,
         model.forward_export = forward_export_detector.__get__(model)
         model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
         model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
-        #model.bbox_head.get_bboxes = get_bboxes_ssd_head.__get__(model.bbox_head)
         model.onnx_export(img=data['img'][0],
                           img_metas=data['img_metas'][0],
                           export_name=export_name,
@@ -88,9 +87,8 @@ def export_to_onnx(model,
 
 
 def check_onnx_model(export_name):
-    model = onnx.load(export_name)
     try:
-        onnx.checker.check_model(model)
+        onnx.checker.check_model(export_name)
         print('ONNX check passed.')
     except onnx.onnx_cpp2py_export.checker.ValidationError as ex:
         print('ONNX check failed.')
@@ -118,7 +116,7 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
 
     mean_values = normalize['mean']
     scale_values = normalize['std']
-    command_line = f'/opt/intel/openvino/deployment_tools/model_optimizer/mo.py --input_model="{onnx_model_path}" ' \
+    command_line = f'mo.py --input_model="{onnx_model_path}" ' \
                    f'--mean_values="{mean_values}" ' \
                    f'--scale_values="{scale_values}" ' \
                    f'--output_dir="{output_dir_path}" ' \
@@ -129,7 +127,7 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
         command_line += ' --reverse_input_channels'
 
     try:
-        check_call('/opt/intel/openvino/deployment_tools/model_optimizer/mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True)
+        check_call('mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True)
     except CalledProcessError as ex:
         print('OpenVINO Model Optimizer not found, please source '
               'openvino/bin/setupvars.sh before running this script.')
@@ -143,6 +141,7 @@ def stub_anchor_generator(model, anchor_head_name):
     anchor_head = getattr(model, anchor_head_name, None)
     if anchor_head is not None and isinstance(anchor_head, AnchorHead):
         anchor_generator = anchor_head.anchor_generator
+        anchor_generator.is_stubbed = True
         num_levels = anchor_generator.num_levels
         strides = anchor_generator.strides
 
@@ -160,7 +159,6 @@ def stub_anchor_generator(model, anchor_head_name):
             for i in range(num_levels):
                 anchors = single_level_grid_anchors_generators[i](
                     anchor_generator.base_anchors[i].to(device),
-                    #torch.zeros([1, 1, featmap_sizes[i][0], featmap_sizes[i][1]], dtype=torch.float32, device=device),
                     featmap_sizes[i],
                     stride=strides[i],
                     device=device)
@@ -179,9 +177,6 @@ def stub_roi_feature_extractor(model, extractor_name):
             for i in range(len(extractor)):
                 if isinstance(extractor[i], SingleRoIExtractor):
                     extractor[i] = ROIFeatureExtractorStub(extractor[i])
-        print('!!!!!!!!!!! ye ', extractor_name)
-    else:
-        print('!!!!!!!!!!! no ', extractor_name)
 
 
 def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
@@ -225,7 +220,9 @@ def main(args):
             input_shape = [1, 3, *args.input_shape]
         export_to_openvino(cfg, onnx_model_path, args.output_dir, input_shape)
     else:
-        check_onnx_model(onnx_model_path)
+        # Model check raises a Segmentation Fault in the latest (1.6.0, 1.7.0) versions of onnx package.
+        # check_onnx_model(onnx_model_path)
+        pass
 
 
 def parse_args():

@@ -12,21 +12,20 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import argparse
-
 import sys
+
+import argparse
 import cv2
 import numpy as np
-
 import mmcv
+from mmcv.parallel import collate
+
+from mmdet.apis.inference import LoadImage
 from mmdet.core import encode_mask_results
 from mmdet.core.bbox.transforms import bbox2result
 from mmdet.core.mask.transforms import mask2result
 from mmdet.datasets import build_dataloader, build_dataset
-from mmcv.runner import get_dist_info, init_dist, load_checkpoint
-from mmcv.parallel import collate
 from mmdet.datasets.pipelines import Compose
-from mmdet.apis.inference import LoadImage
 
 
 def postprocess(result, img_meta, num_classes=80, rescale=True):
@@ -152,16 +151,17 @@ def main(args):
         try:
             result = model(im_data)
             result = postprocess(
-                    result,
-                    data['img_metas'][0].data[0],
-                    num_classes=classes_num,
-                    rescale=not args.show)
+                result,
+                data['img_metas'][0].data[0],
+                num_classes=classes_num,
+                rescale=not args.show)
         except Exception as ex:
-            print('\nException raised while processing item {}:'.format(i))
+            print(f'\nException raised while processing item {i}:')
             print(ex)
+            with_mask = hasattr(model.pt_model, 'with_mask') and model.pt_model.with_mask
             result = empty_result(
                 num_classes=classes_num,
-                with_mask=model.pt_model.with_mask)
+                with_mask=with_mask)
         results.append(result)
 
         if args.show:
@@ -172,19 +172,11 @@ def main(args):
         for _ in range(batch_size):
             prog_bar.update()
 
-    print('')
-    print('Writing results to {}'.format(args.out))
-    mmcv.dump(results, args.out)
-
-    outputs = results
-
-    rank, _ = get_dist_info()
-    if rank == 0:
-        if args.out:
-            print(f'\nwriting results to {args.out}')
-            mmcv.dump(outputs, args.out)
-        if args.eval:
-            dataset.evaluate(outputs, args.eval)
+    if args.out:
+        print(f'\nwriting results to {args.out}')
+        mmcv.dump(results, args.out)
+    if args.eval:
+        dataset.evaluate(results, args.eval)
 
 
 def parse_args():

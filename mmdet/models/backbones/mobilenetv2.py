@@ -96,7 +96,7 @@ class InvertedResidual(nn.Module):
             return self.compute_conv(x)
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class SSDMobilenetV2(nn.Module):
     def __init__(self, input_size, width_mult=1.0,
                  activation_type='relu',

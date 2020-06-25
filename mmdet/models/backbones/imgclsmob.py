@@ -103,7 +103,7 @@ def generate_backbones():
             custom_model_getter.__name__ = model_name
             return custom_model_getter
 
-        BACKBONES.register_module(closure(model_name, model_getter))
+        BACKBONES.register_module(name=model_name, module=closure(model_name, model_getter))
 
 
 generate_backbones()
