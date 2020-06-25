@@ -25,12 +25,12 @@ class BasicBlock(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 rfp_inp=None,
+                 rfp_inplanes=None,
                  sac=None,
                  plugins=None):
         super(BasicBlock, self).__init__()
         assert dcn is None, 'Not implemented yet.'
-        assert rfp_inp is None, 'Not implemented yet.'
+        assert rfp_inplanes is None, 'Not implemented yet.'
         assert sac is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
 
@@ -108,7 +108,7 @@ class Bottleneck(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 rfp_inp=None,
+                 rfp_inplanes=None,
                  sac=None,
                  plugins=None):
         """Bottleneck block for ResNet.
@@ -229,16 +229,16 @@ class Bottleneck(nn.Module):
             self.after_conv3_plugin_names = self.make_block_plugins(
                 planes * self.expansion, self.after_conv3_plugins)
 
-        self.rfp_inp = rfp_inp
-        if self.rfp_inp:
-            self.rfp_conv = nn.Conv2d(
-                self.rfp_inp,
+        self.rfp_inplanes = rfp_inplanes
+        if self.rfp_inplanes:
+            self.rfp_conv = build_conv_layer(
+                None,
+                self.rfp_inplanes,
                 planes * self.expansion,
-                kernel_size=1,
+                1,
                 stride=1,
                 bias=True)
-            self.rfp_conv.weight.data.fill_(0)
-            self.rfp_conv.bias.data.fill_(0)
+            constant_init(self.rfp_conv, 0)
 
     def make_block_plugins(self, in_channels, plugins):
         """ make plugins for block
@@ -360,7 +360,7 @@ class Bottleneck(nn.Module):
         else:
             out = _inner_forward(x)
 
-        if self.rfp_inp:
+        if self.rfp_inplanes:
             rfp_feat = self.rfp_conv(rfp_feat)
             out = out + rfp_feat
 
@@ -449,7 +449,7 @@ class ResNet(nn.Module):
                  stage_with_dcn=(False, False, False, False),
                  sac=None,
                  stage_with_sac=(False, False, False, False),
-                 rfp_inp=None,
+                 rfp_inplanes=None,
                  output_img=False,
                  plugins=None,
                  with_cp=False,
@@ -514,7 +514,7 @@ class ResNet(nn.Module):
                 norm_cfg=norm_cfg,
                 dcn=dcn,
                 sac=sac,
-                rfp_inp=rfp_inp if i > 0 else None,
+                rfp_inplanes=rfp_inplanes if i > 0 else None,
                 plugins=stage_plugins)
             self.inplanes = planes * self.block.expansion
             layer_name = f'layer{i + 1}'

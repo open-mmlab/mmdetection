@@ -10,7 +10,7 @@ model = dict(
         type='RFP',
         rfp_steps=2,
         rfp_backbone=dict(
-            rfp_inp=256,
+            rfp_inplanes=256,
             type='ResNet',
             depth=50,
             num_stages=4,
@@ -20,5 +20,4 @@ model = dict(
             norm_eval=True,
             conv_cfg=dict(type='ConvAWS'),
             style='pytorch'),
-        rfp_pretrained='torchvision://resnet50',
-    ))
+        rfp_pretrained='torchvision://resnet50'))

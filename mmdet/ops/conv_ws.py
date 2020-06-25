@@ -51,6 +51,27 @@ class ConvWS2d(nn.Conv2d):
 
 @CONV_LAYERS.register_module('ConvAWS')
 class ConvAWS2d(nn.Conv2d):
+    """AWS (Adaptive Weight Standardization)
+
+    This is a variant of Weight Standardization
+    (https://arxiv.org/pdf/1903.10520.pdf)
+    It is used in DetectoRS to avoid NaN
+    (https://arxiv.org/pdf/2006.02334.pdf)
+
+    Args:
+        in_channels (int): Number of channels in the input image
+        out_channels (int): Number of channels produced by the convolution
+        kernel_size (int or tuple): Size of the convolving kernel
+        stride (int or tuple, optional): Stride of the convolution. Default: 1
+        padding (int or tuple, optional): Zero-padding added to both sides of
+            the input. Default: 0
+        dilation (int or tuple, optional): Spacing between kernel elements.
+            Default: 1
+        groups (int, optional): Number of blocked connections from input
+            channels to output channels. Default: 1
+        bias (bool, optional): If ``True``, adds a learnable bias to the
+            output. Default: ``True``
+    """
 
     def __init__(self,
                  in_channels,
@@ -76,14 +97,10 @@ class ConvAWS2d(nn.Conv2d):
                              torch.zeros(self.out_channels, 1, 1, 1))
 
     def _get_weight(self, weight):
-        weight_mean = weight.mean(
-            dim=1, keepdim=True).mean(
-                dim=2, keepdim=True).mean(
-                    dim=3, keepdim=True)
-        weight = weight - weight_mean
-        std = torch.sqrt(weight.view(weight.size(0), -1).var(dim=1) +
-                         1e-5).view(-1, 1, 1, 1)
-        weight = weight / std
+        weight_flat = weight.view(weight.size(0), -1)
+        mean = weight_flat.mean(dim=1).view(-1, 1, 1, 1)
+        std = torch.sqrt(weight_flat.var(dim=1) + 1e-5).view(-1, 1, 1, 1)
+        weight = (weight - mean) / std
         weight = self.weight_gamma * weight + self.weight_beta
         return weight
 
@@ -101,13 +118,10 @@ class ConvAWS2d(nn.Conv2d):
         if self.weight_gamma.data.mean() > 0:
             return
         weight = self.weight.data
-        weight_mean = weight.data.mean(
-            dim=1, keepdim=True).mean(
-                dim=2, keepdim=True).mean(
-                    dim=3, keepdim=True)
-        self.weight_beta.data.copy_(weight_mean)
-        std = torch.sqrt(weight.view(weight.size(0), -1).var(dim=1) +
-                         1e-5).view(-1, 1, 1, 1)
+        weight_flat = weight.view(weight.size(0), -1)
+        mean = weight_flat.mean(dim=1).view(-1, 1, 1, 1)
+        std = torch.sqrt(weight_flat.var(dim=1) + 1e-5).view(-1, 1, 1, 1)
+        self.weight_beta.data.copy_(mean)
         self.weight_gamma.data.copy_(std)
         missing_gamma_beta = [
             k for k in missing_keys

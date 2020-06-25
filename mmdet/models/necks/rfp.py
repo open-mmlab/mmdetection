@@ -10,12 +10,26 @@ from .fpn import FPN
 
 
 class ASPP(torch.nn.Module):
+    """ASPP (Atrous Spatial Pyramid Pooling)
 
-    def __init__(self, in_channels, out_channels):
+    This is an implementation of the ASPP module used in DetectoRS
+    (https://arxiv.org/pdf/2006.02334.pdf)
+
+    Args:
+        in_channels (int): Number of channels in the input
+        out_channels (int): Number of channels produced by this module
+        kernel_sizes (list): Kernel sizes of the four branches
+        dilations (list): Dilations of the four branches
+        paddings (list): Paddings of the four branches
+    """
+
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_sizes=[1, 3, 3, 1],
+                 dilations=[1, 3, 6, 1],
+                 paddings=[0, 3, 6, 0]):
         super().__init__()
-        kernel_sizes = [1, 3, 3, 1]
-        dilations = [1, 3, 6, 1]
-        paddings = [0, 3, 6, 0]
         self.aspp = torch.nn.ModuleList()
         for aspp_idx in range(len(kernel_sizes)):
             conv = torch.nn.Conv2d(
