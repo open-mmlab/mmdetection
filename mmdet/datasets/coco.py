@@ -484,7 +484,7 @@ class ConcatenatedCocoDataset(CocoDataset):
         self.pipeline = concatenated_dataset.datasets[0].pipeline
         self.proposals = concatenated_dataset.datasets[0].proposals
         self.img_ids = []
-        self.img_infos = []
+        self.data_infos = []
         self.flag = None
         self.ann_infos = []
         self.img_prefix = None
@@ -498,11 +498,11 @@ class ConcatenatedCocoDataset(CocoDataset):
             for img_id in dataset.img_ids:
                 self.img_ids.append(img_id + img_shift)
 
-            for im_info in dataset.img_infos:
+            for im_info in dataset.data_infos:
                 im_info = im_info
                 im_info['id'] += img_shift
                 im_info['filename'] = os.path.join(dataset.img_prefix, im_info['filename'])
-                self.img_infos.append(im_info)
+                self.data_infos.append(im_info)
 
             if self.coco is None:
                 self.coco = dataset.coco

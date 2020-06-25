@@ -14,7 +14,6 @@
 
 import argparse
 import json
-import logging
 import os
 
 import mmcv
@@ -47,7 +46,7 @@ def get_sizes_from_config(config_path, min_box_size):
     cfg = mmcv.Config.fromfile(config_path)
 
     dataset = build_dataset(cfg.data.train)
-    logging.info(dataset)
+    print(dataset)
 
     data_loader = build_dataloader(
         dataset,
@@ -56,7 +55,7 @@ def get_sizes_from_config(config_path, min_box_size):
         dist=False,
         shuffle=False)
 
-    logging.info('Collecting statistics...')
+    print('Collecting statistics...')
     wh_stats = []
     for data_batch in tqdm(iter(data_loader)):
         boxes = data_batch['gt_bboxes'].data[0][0].numpy()
@@ -91,6 +90,18 @@ def get_sizes_from_coco(annotation_path, root, target_image_wh, min_box_size):
     return wh_stats
 
 
+def print_normalized(values, size, measure):
+    if isinstance(values[0], list):
+        text = '[\n'
+        for v in values:
+            text += f' [image_{measure} * x for x in {[x / size for x in v]}],\n'
+        text += ']'
+    else:
+        text = f'[image_{measure} * x for x in {[x / size for x in values]}]'
+    print(f'normalized {measure}s')
+    print(text)
+
+
 def main(args):
     assert args.config or args.coco_annotation
 
@@ -116,8 +127,9 @@ def main(args):
 
     for i in idx:
         center = centers[i]
-        logging.info('width: {:.3f}'.format(center[0]))
-        logging.info('height: {:.3f}'.format(center[1]))
+        print('width: {:.3f}'.format(center[0]))
+        print('height: {:.3f}'.format(center[1]))
+    print('')
 
     widths = [centers[i][0] for i in idx]
     heights = [centers[i][1] for i in idx]
@@ -129,13 +141,14 @@ def main(args):
         heights = [[heights[i] for i in range(group_as[j], group_as[j + 1])] for j in
                    range(len(group_as) - 1)]
 
-    logging.info(widths)
-    logging.info(heights)
+    print('widths\n', widths)
+    print('heights\n', heights)
+    print('')
+
+    print_normalized(widths, args.image_size_wh[0], 'width')
+    print_normalized(heights, args.image_size_wh[1], 'height')
 
 
 if __name__ == '__main__':
-    log_format = '{levelname} {asctime} {filename}:{lineno:>4d}] {message}'
-    date_format = '%d-%m-%y %H:%M:%S'
-    logging.basicConfig(level=logging.INFO, format=log_format, datefmt=date_format, style='{')
     args = parse_args()
     main(args)

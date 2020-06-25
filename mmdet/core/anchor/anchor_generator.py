@@ -406,7 +406,7 @@ class SSDAnchorGeneratorClustered(AnchorGenerator):
                  strides,
                  widths,
                  heights):
-        self.strides = strides
+        self.strides = [_pair(stride) for stride in strides]
         self.widths = widths
         self.heights = heights
         self.centers = [(stride / 2., stride / 2.) for stride in strides]
