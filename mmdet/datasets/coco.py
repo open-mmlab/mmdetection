@@ -398,7 +398,7 @@ class CocoDataset(CustomDataset):
                     level=logging.ERROR)
                 break
 
-            iou_type = 'bbox' if metric in {'proposal' or 'f1'} else metric
+            iou_type = 'bbox' if metric in {'proposal', 'f1'} else metric
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
@@ -426,6 +426,7 @@ class CocoDataset(CustomDataset):
                         use_transcriptions=False)
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
                           format(recall, precision, hmean))
+                    eval_results['hmean'] = float(f'{hmean:.3f}')
                     continue
 
                 cocoEval.evaluate()
