@@ -1,29 +1,18 @@
 _base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
 norm_cfg = dict(type='NaiveSyncBN', requires_grad=True)
 model = dict(
-    pretrained='pretrain_model/resnest50_d2-7497a55b.pth',
+    pretrained='open-mmlab://detectron2/resnet50_caffe',
     backbone=dict(
-        type='ResNeSt',
-        stem_channels=64,
-        depth=50,
-        radix=2,
-        reduction_factor=4,
-        avd=True,
-        num_stages=4,
-        out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
-        norm_cfg=norm_cfg,
-        norm_eval=False,
-        style='pytorch'),
+        type='ResNet', norm_cfg=norm_cfg, norm_eval=False, style='caffe'),
     neck=dict(norm_cfg=norm_cfg),
     roi_head=dict(
         bbox_head=dict(
             type='Shared4Conv1FCBBoxHead',
             conv_out_channels=256,
             norm_cfg=norm_cfg)))
-# # use ResNeSt img_norm
+# use caffe img_norm
 img_norm_cfg = dict(
-    mean=[123.68, 116.779, 103.939], std=[58.393, 57.12, 57.375], to_rgb=True)
+    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
