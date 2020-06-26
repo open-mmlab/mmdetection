@@ -86,6 +86,7 @@ class AssociativeEmbeddingLoss(nn.Module):
         self.push_weight = push_weight
 
     def forward(self, pred, target, match):
+        """Forward function"""
         batch = pred.size(0)
         pull_all, push_all = 0.0, 0.0
         for i in range(batch):

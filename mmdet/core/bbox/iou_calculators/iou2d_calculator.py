@@ -31,6 +31,7 @@ class BboxOverlaps2D(object):
         return bbox_overlaps(bboxes1, bboxes2, mode, is_aligned)
 
     def __repr__(self):
+        """str: a string describing the module"""
         repr_str = self.__class__.__name__ + '()'
         return repr_str
 

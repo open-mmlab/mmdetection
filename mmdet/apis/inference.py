@@ -47,8 +47,18 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
 
 
 class LoadImage(object):
+    """A simple pipeline to load image"""
 
     def __call__(self, results):
+        """Call function to load images into results
+
+        Args:
+            results (dict): A result dict contains the file name
+                of the image to be read.
+
+        Returns:
+            dict: ``results`` will be returned containing loaded image.
+        """
         if isinstance(results['img'], str):
             results['filename'] = results['img']
             results['ori_filename'] = results['img']

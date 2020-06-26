@@ -200,6 +200,7 @@ class FPN_CARAFE(nn.Module):
 
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
+        """Initialize the weights of module"""
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
                 xavier_init(m, distribution='uniform')
@@ -208,8 +209,19 @@ class FPN_CARAFE(nn.Module):
                 m.init_weights()
 
     def slice_as(self, src, dst):
-        # slice src as dst
-        # src should have the same or larger size than dst
+        """Slice ``src`` as ``dst``
+
+        Note:
+            ``src`` should have the same or larger size than ``dst``.
+
+        Args:
+            src (torch.Tensor): Tensors to be sliced.
+            dst (torch.Tensor): ``src`` will be sliced to have the same
+                size as ``dst``.
+
+        Returns:
+            torch.Tensor: Sliced tensor.
+        """
         assert (src.size(2) >= dst.size(2)) and (src.size(3) >= dst.size(3))
         if src.size(2) == dst.size(2) and src.size(3) == dst.size(3):
             return src
@@ -217,6 +229,7 @@ class FPN_CARAFE(nn.Module):
             return src[:, :, :dst.size(2), :dst.size(3)]
 
     def tensor_add(self, a, b):
+        """Add tensors ``a`` and ``b`` that might have different sizes"""
         if a.size() == b.size():
             c = a + b
         else:
@@ -224,6 +237,7 @@ class FPN_CARAFE(nn.Module):
         return c
 
     def forward(self, inputs):
+        """Forward function"""
         assert len(inputs) == len(self.in_channels)
 
         # build laterals
