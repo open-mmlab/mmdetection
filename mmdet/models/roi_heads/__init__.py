@@ -3,6 +3,7 @@ from .bbox_heads import (BBoxHead, ConvFCBBoxHead, DoubleConvFCBBoxHead,
                          Shared2FCBBoxHead, Shared4Conv1FCBBoxHead)
 from .cascade_roi_head import CascadeRoIHead
 from .double_roi_head import DoubleHeadRoIHead
+from .dynamic_roi_head import DynamicRoIHead
 from .grid_roi_head import GridRoIHead
 from .htc_roi_head import HybridTaskCascadeRoIHead
 from .mask_heads import (CoarseMaskHead, FCNMaskHead, FusedSemanticHead,
@@ -20,5 +21,5 @@ __all__ = [
     'ConvFCBBoxHead', 'Shared2FCBBoxHead', 'Shared4Conv1FCBBoxHead',
     'DoubleConvFCBBoxHead', 'FCNMaskHead', 'HTCMaskHead', 'FusedSemanticHead',
     'GridHead', 'MaskIoUHead', 'SingleRoIExtractor', 'PISARoIHead',
-    'PointRendRoIHead', 'PointHead', 'CoarseMaskHead'
+    'PointRendRoIHead', 'PointHead', 'CoarseMaskHead', 'DynamicRoIHead'
 ]
