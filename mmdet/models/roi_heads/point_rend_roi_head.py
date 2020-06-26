@@ -37,10 +37,9 @@ class PointRendRoIHead(StandardRoIHead):
                             img_metas):
         """Run forward function and calculate loss for mask head and point head
         in training"""
-        mask_results = super(PointRendRoIHead,
-                             self)._mask_forward_train(x, sampling_results,
-                                                       bbox_feats, gt_masks,
-                                                       img_metas)
+        mask_results = super()._mask_forward_train(x, sampling_results,
+                                                   bbox_feats, gt_masks,
+                                                   img_metas)
         if mask_results['loss_mask'] is not None:
             loss_point = self._mask_point_forward_train(
                 x, sampling_results, mask_results['mask_pred'], gt_masks,
