@@ -4,8 +4,9 @@ from .fused_semantic_head import FusedSemanticHead
 from .grid_head import GridHead
 from .htc_mask_head import HTCMaskHead
 from .maskiou_head import MaskIoUHead
+from .point_head import MaskPointHead
 
 __all__ = [
     'FCNMaskHead', 'HTCMaskHead', 'FusedSemanticHead', 'GridHead',
-    'MaskIoUHead', 'CoarseMaskHead'
+    'MaskIoUHead', 'CoarseMaskHead', 'MaskPointHead'
 ]
