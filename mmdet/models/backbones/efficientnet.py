@@ -6,7 +6,7 @@ from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
-from ..utils.activations import MemoryEfficientSwish as Swish
+from ..utils.activations import Swish
 from ..utils.se_block import SE
 
 
@@ -17,8 +17,8 @@ class MBConv(nn.Module):
         input_width (int): Number of input filters.
         output_width (int): Number of output filters.
         stride (int): stride of the first block.
-        exp_ratio (Sequence[int]): Expansion ratio..
-        kernel (Sequence[int]): Kernel size of the dwise conv.
+        exp_ratio (int): Expansion ratio..
+        kernel (int): Kernel size of the dwise conv.
         se_ratio (float): Ratio of the Squeeze-and-Excitation (SE).
             Default: 0.25
         conv_cfg (dict): dictionary to construct and config conv layer.
@@ -82,7 +82,7 @@ class MBConv(nn.Module):
             norm_cfg, output_width, postfix='lin_proj')
         self.add_module(self.lin_proj_bn_name, lin_proj_bn)
         # Skip connection if in and out shapes are the same (MN-V2 style)
-        self.has_skip = stride == 1 and input_width == output_width
+        self.has_skip = (stride == 1 and input_width == output_width)
 
     @property
     def dwise_bn(self):
@@ -116,9 +116,9 @@ class EfficientLayer(nn.Sequential):
         output_width (int): Number of output filters.
         depth (int): Number of Mobile inverted Bottleneck blocks.
         stride (int): stride of the first block.
-        exp_ratios (Sequence[int]):
+        exp_ratio (int):
             Expansion ratios of the MBConv blocks.
-        kernels (Sequence[int]):
+        kernel (int):
             Kernel size of the dwise conv of the MBConv blocks.
         se_ratio (float): Ratio of the Squeeze-and-Excitation (SE) blocks.
             Default: 0.25
@@ -158,7 +158,7 @@ class EfficientNet(nn.Module):
     """EfficientNet backbone.
 
     More details can be found in:
-        `paper <https://arxiv.org/abs/1905.11946>`_ .
+    `paper <https://arxiv.org/abs/1905.11946>`_ .
 
     Args:
         scale (int): Compund scale of EfficientNet.
