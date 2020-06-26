@@ -105,15 +105,17 @@ class SSDHead(AnchorHead):
         """Forward features from the upstream network.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, each has
-                shape (N, C, H, W).
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
 
         Returns:
             tuple:
-                cls_scores (list[Tensor]): Cls scores for all scale levels,
-                    each has shape (N, num_anchors * num_classes, H, W).
+                cls_scores (list[Tensor]): Classification scores for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * num_classes.
                 bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each has shape (N, num_anchors * 4, H, W).
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * 4.
         """
         cls_scores = []
         bbox_preds = []
@@ -194,7 +196,8 @@ class SSDHead(AnchorHead):
             gt_bboxes (list[Tensor]): each item are the truth boxes for each
                 image in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Size / scale info for each image
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
 

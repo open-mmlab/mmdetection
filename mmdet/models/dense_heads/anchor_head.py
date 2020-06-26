@@ -113,15 +113,14 @@ class AnchorHead(BaseDenseHead):
         """Forward feature of a single scale level.
 
         Args:
-            x (Tensor): Features of a single scale level with shape
-                (N, C, H, W).
+            x (Tensor): Features of a single scale level.
 
         Returns:
             tuple:
                 cls_score (Tensor): Cls scores for a single scale level
-                    with shape (N, num_anchors * num_classes, H, W).
+                    the channels number is num_anchors * num_classes.
                 bbox_pred (Tensor): Box energies / deltas for a single scale
-                    level with shape (N, num_anchors * 4, H, W).
+                    level, the channels number is num_anchors * 4.
         """
         cls_score = self.conv_cls(x)
         bbox_pred = self.conv_reg(x)
@@ -131,15 +130,17 @@ class AnchorHead(BaseDenseHead):
         """Forward features from the upstream network.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, usually
-                have 5 scales, each has shape (N, C, H, W).
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
 
         Returns:
-            tuple: Usually a tuple of cls score and bbox preds.
-                cls_scores (list[Tensor]): Cls scores for all scale levels,
-                    each has shape (N, num_anchors * num_classes, H, W).
+            tuple: Usually a tuple of classification scores and bbox prediction
+                cls_scores (list[Tensor]): Classification scores for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * num_classes.
                 bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each has shape (N, num_anchors * 4, H, W).
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * 4.
         """
         return multi_apply(self.forward_single, feats)
 
@@ -434,10 +435,11 @@ class AnchorHead(BaseDenseHead):
                 Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Size / scale info for each image
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss. Default: None
 
@@ -495,24 +497,26 @@ class AnchorHead(BaseDenseHead):
                    img_metas,
                    cfg=None,
                    rescale=False):
-        """Transform network output for a batch into labeled boxes.
+        """Transform network output for a batch into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
                 Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
-            img_metas (list[dict]): Size / scale info for each image
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
                 The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the class index of the
+                (n,) tensor where each item is the predicted class labelof the
                 corresponding box.
 
         Example:
@@ -573,7 +577,7 @@ class AnchorHead(BaseDenseHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-        """Transform outputs for a single batch item into labeled boxes.
+        """Transform outputs for a single batch item into bbox predictions.
 
         Args:
             cls_score_list (list[Tensor]): Box scores for a single scale level

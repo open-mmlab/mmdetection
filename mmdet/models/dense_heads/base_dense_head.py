@@ -16,7 +16,7 @@ class BaseDenseHead(nn.Module, metaclass=ABCMeta):
 
     @abstractmethod
     def get_bboxes(self, **kwargs):
-        """Transform network output for a batch into labeled boxes."""
+        """Transform network output for a batch into bbox predictions."""
         pass
 
     def forward_train(self,
@@ -30,7 +30,8 @@ class BaseDenseHead(nn.Module, metaclass=ABCMeta):
         """
         Args:
             x (list[Tensor]): Features from FPN.
-            img_metas (list[dict]): Size / scale info for each image
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             gt_bboxes (Tensor): Ground truth bboxes of the image,
                 shape (num_gts, 4).
             gt_labels (Tensor): Ground truth labels of each box,

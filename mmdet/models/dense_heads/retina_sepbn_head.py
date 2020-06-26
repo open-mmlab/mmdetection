@@ -82,18 +82,20 @@ class RetinaSepBNHead(AnchorHead):
         normal_init(self.retina_reg, std=0.01)
 
     def forward(self, feats):
-        """Forward features from upstream.
+        """Forward features from the upstream network.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream, usually have 5
-                scales, each has shape (N, C, H, W).
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
 
         Returns:
-            tuple (cls_scores, bbox_preds):
-                cls_scores (list[Tensor]): Cls scores for all scale levels,
-                    each has shape (N, num_anchors * num_classes, H, W).
+            tuple: Usually a tuple of classification scores and bbox prediction
+                cls_scores (list[Tensor]): Classification scores for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * num_classes.
                 bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each has shape (N, num_anchors * 4, H, W).
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * 4.
         """
         cls_scores = []
         bbox_preds = []

@@ -26,8 +26,8 @@ class RPNTestMixin(object):
         """Test without augmentation.
 
         Args:
-            x (tuple[Tensor]): Features from the upstream, usually have 5
-                scales, each has shape (N, C, H, W).
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
             img_metas (list[dict]): Meta info of each image.
 
         Returns:

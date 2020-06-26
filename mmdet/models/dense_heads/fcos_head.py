@@ -181,17 +181,19 @@ class FCOSHead(BaseDenseHead):
         """Forward features from the upstream network.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, usually
-                have 5 scales, each has shape (N, C, H, W).
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
 
         Returns:
-            tuple: Usually a tuple of cls score and bbox preds.
-                cls_scores (list[Tensor]): Cls scores for all scale levels,
-                    each has shape (N, num_points * num_classes, H, W).
-                bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each has shape (N, num_points * 4, H, W).
-                centerness (list[Tensor]): Centerness for all scal levels, each
-                    has shape (N, num_points, H, W).
+            tuple:
+                cls_scores (list[Tensor]): Box scores for each scale level,
+                    each is a 4D-tensor, the channel number is
+                    num_points * num_classes.
+                bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                    level, each is a 4D-tensor, the channel number is
+                    num_points * 4.
+                centernesses (list[Tensor]): Centerss for each scale level,
+                    each is a 4D-tensor, the channel number is num_points * 1.
         """
         return multi_apply(self.forward_single, feats, self.scales,
                            self.strides)
@@ -245,16 +247,19 @@ class FCOSHead(BaseDenseHead):
         """Compute loss of the head.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_points * num_classes, H, W).
+            cls_scores (list[Tensor]): Box scores for each scale level,
+                each is a 4D-tensor, the channel number is
+                num_points * num_classes.
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_points * 4, H, W).
-            centernesses (list[Tensor]): Centerss for each scale level with
-                shape (N, num_points * 1, H, W).
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
+                level, each is a 4D-tensor, the channel number is
+                num_points * 4.
+            centernesses (list[Tensor]): Centerss for each scale level, each
+                is a 4D-tensor, the channel number is num_points * 1.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Size / scale info for each image
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
 
@@ -335,7 +340,7 @@ class FCOSHead(BaseDenseHead):
                    img_metas,
                    cfg=None,
                    rescale=None):
-        """ Transform network output for a batch into labeled boxes.
+        """ Transform network output for a batch into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
@@ -344,7 +349,8 @@ class FCOSHead(BaseDenseHead):
                 level with shape (N, num_points * 4, H, W)
             centernesses (list[Tensor]): Centerness for each scale level with
                 shape (N, num_points * 1, H, W)
-            img_metas (list[dict]): Size / scale info for each image
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used
             rescale (bool): If True, return boxes in original image space
@@ -354,7 +360,7 @@ class FCOSHead(BaseDenseHead):
                 The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the class index of the
+                (n,) tensor where each item is the predicted class label of the
                 corresponding box.
         """
 
@@ -394,7 +400,7 @@ class FCOSHead(BaseDenseHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-        """Transform outputs for a single batch item into labeled boxes.
+        """Transform outputs for a single batch item into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for a single scale level
@@ -496,14 +502,18 @@ class FCOSHead(BaseDenseHead):
             in multiple images.
 
         Args:
-            points (list[Tensor]): Points of each fpn level.
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
-            gt_labels_list (list[Tensor]): Ground truth labels of each box.
+            points (list[Tensor]): Points of each fpn level, each has shape
+                (num_points, 2).
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image,
+                each has shape (num_gt, 4).
+            gt_labels_list (list[Tensor]): Ground truth labels of each box,
+                each has shape (num_gt,).
 
         Returns:
             tuple:
-                concat_lvl_labels: Labels of each level
-                concat_lvl_bbox_targets: BBox targets of each level
+                concat_lvl_labels (list[Tensor]): Labels of each level.
+                concat_lvl_bbox_targets (list[Tensor]): BBox targets of each
+                    level.
         """
         assert len(points) == len(self.regress_ranges)
         num_levels = len(points)

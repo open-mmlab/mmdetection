@@ -94,15 +94,14 @@ class RetinaHead(AnchorHead):
         """Forward feature of a single scale level.
 
         Args:
-            x (Tensor): Features of a single scale level with shape
-                (N, C, H, W).
+            x (Tensor): Features of a single scale level.
 
         Returns:
             tuple:
                 cls_score (Tensor): Cls scores for a single scale level
-                    with shape (N, num_anchors * num_classes, H, W).
+                    the channels number is num_anchors * num_classes.
                 bbox_pred (Tensor): Box energies / deltas for a single scale
-                    level with shape (N, num_anchors * 4, H, W).
+                    level, the channels number is num_anchors * 4.
         """
         cls_feat = x
         reg_feat = x

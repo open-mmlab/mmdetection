@@ -56,9 +56,10 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
-            img_metas (list[dict]): Size / scale info for each image
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
 
@@ -83,7 +84,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-        """Transform outputs for a single batch item into labeled boxes.
+        """Transform outputs for a single batch item into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level

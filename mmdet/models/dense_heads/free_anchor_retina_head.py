@@ -21,11 +21,11 @@ class FreeAnchorRetinaHead(RetinaHead):
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: norm_cfg=dict(type='GN', num_groups=32,
             requires_grad=True).
-        pre_anchor_topk: Number of boxes that be token in each bag.
-        bbox_thr: The threshold of the saturated linear function. It is
+        pre_anchor_topk (int): Number of boxes that be token in each bag.
+        bbox_thr (float): The threshold of the saturated linear function. It is
             usually the same with the IoU threshold used in NMS.
         gamma (float): Gamma parameter in focal loss.
-        alpha: Alpha parameter in focal loss.
+        alpha (float): Alpha parameter in focal loss.
     """  # noqa: W605
 
     def __init__(self,
@@ -65,7 +65,8 @@ class FreeAnchorRetinaHead(RetinaHead):
             gt_bboxes (list[Tensor]): each item are the truth boxes for each
                 image in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Size / scale info for each image
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
 
@@ -225,9 +226,9 @@ class FreeAnchorRetinaHead(RetinaHead):
         """Compute negative bag loss.
 
         Args:
-            cls_prob (Tensor): Cls prob, in shape
+            cls_prob (Tensor): Class probability, in shape
                 (num_img, num_anchors, num_classes).
-            box_prob (Tensor): Box prob, in shape
+            box_prob (Tensor): Box probability, in shape
                 (num_img, num_anchors, num_classes).
 
         Returns:

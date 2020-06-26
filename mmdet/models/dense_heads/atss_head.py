@@ -106,15 +106,17 @@ class ATSSHead(AnchorHead):
         """Forward features from the upstream network.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, usually
-                have 5 scales, each has shape (N, C, H, W).
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
 
         Returns:
-            tuple: Usually a tuple of cls score and bbox preds.
-                cls_scores (list[Tensor]): Cls scores for all scale levels,
-                    each has shape (N, num_anchors * num_classes, H, W).
+            tuple: Usually a tuple of classification scores and bbox prediction
+                cls_scores (list[Tensor]): Classification scores for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * num_classes.
                 bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each has shape (N, num_anchors * 4, H, W).
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * 4.
         """
         return multi_apply(self.forward_single, feats, self.scales)
 
@@ -122,17 +124,18 @@ class ATSSHead(AnchorHead):
         """Forward feature of a single scale level.
 
         Args:
-            feats (Tensor): Features of a single scale level with shape
-                (N, C, H, W).
+            x (Tensor): Features of a single scale level.
+            scale (:obj: `mmcv.cnn.Scale`): Learnable scale module to resize
+                the bbox prediction.
 
         Returns:
             tuple:
                 cls_score (Tensor): Cls scores for a single scale level
-                    with shape (N, num_anchors * num_classes, H, W).
+                    the channels number is num_anchors * num_classes.
                 bbox_pred (Tensor): Box energies / deltas for a single scale
-                    level with shape (N, num_anchors * 4, H, W).
-                centerness (Tensor): Centerness for a single scale level with
-                    shape (N, num_anchors * 1, H, W).
+                    level, the channels number is num_anchors * 4.
+                centerness (Tensor): Centerness for a single scale level, the
+                    channel number is (N, num_anchors * 1, H, W).
         """
         cls_feat = x
         reg_feat = x
@@ -239,11 +242,12 @@ class ATSSHead(AnchorHead):
                 level with shape (N, num_anchors * 4, H, W)
             centernesses (list[Tensor]): Centerness for each scale
                 level with shape (N, num_anchors * 1, H, W)
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Size / scale info for each image
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (list[Tensor] | None): specify which bounding
                 boxes can be ignored when computing the loss.
 
         Returns:
@@ -321,7 +325,7 @@ class ATSSHead(AnchorHead):
                    img_metas,
                    cfg=None,
                    rescale=False):
-        """Transform network output for a batch into labeled boxes.
+        """Transform network output for a batch into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
@@ -330,17 +334,19 @@ class ATSSHead(AnchorHead):
                 level with shape (N, num_anchors * 4, H, W)
             centernesses (list[Tensor]): Centerness for each scale
                 level with shape (N, num_anchors * 1, H, W)
-            img_metas (list[dict]): Size / scale info for each image
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space
+                if None, test_cfg would be used. Default: None.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
                 The first item is an (n, 5) tensor, where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the class index of the
+                (n,) tensor where each item is the predicted class label of the
                 corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
@@ -395,14 +401,19 @@ class ATSSHead(AnchorHead):
                 (height, width, 3).
             scale_factor (ndarray): Scale factor of the image arange as
                 (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
+                Default: False.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1.
+            tuple(Tensor):
+                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
+                    the first 4 columns are bounding box positions
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                    between 0 and 1.
+                det_labels (Tensor): A (n,) tensor where each item is the
+                    predicted class label of the corresponding box.
         """
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
@@ -558,9 +569,9 @@ class ATSSHead(AnchorHead):
                     image with shape (N, 4).
                 bbox_weights (Tensor): BBox weights of all anchors in the
                     image with shape (N, 4)
-                pos_inds (Tensor): Inds of postive anchor with shape
+                pos_inds (Tensor): Indices of postive anchor with shape
                     (num_pos,).
-                neg_inds (Tensor): Inds of negative anchor with shape
+                neg_inds (Tensor): Indices of negative anchor with shape
                     (num_neg,).
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,

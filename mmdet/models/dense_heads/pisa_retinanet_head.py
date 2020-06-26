@@ -36,7 +36,8 @@ class PISARetinaHead(RetinaHead):
                 with shape (num_obj, 4).
             gt_labels (list[Tensor]): Ground truth labels of each image
                 with shape (num_obj, 4).
-            img_metas (list[dict]): Size / scale info for each image
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             gt_bboxes_ignore (list[Tensor]): Ignored gt bboxes of each image.
                 Default: None.
 

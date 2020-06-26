@@ -33,11 +33,14 @@ class FSAFHead(RetinaHead):
         """Forward feature map of a single scale level.
 
         Args:
-            x: Feature map of a single scale level.
+            x (Tensor): Feature map of a single scale level.
 
         Returns:
-            tuple: scores for each class, bbox predictions
-                predictions of input feature map.
+            tuple (Tensor):
+                cls_score (Tensor): Box scores for each scale level
+                    Has shape (N, num_points * num_classes, H, W).
+                bbox_pred (Tensor): Box energies / deltas for each scale
+                    level with shape (N, num_points * 4, H, W).
         """
         cls_score, bbox_pred = super().forward_single(x)
         # relu: TBLR encoder only accepts positive bbox_pred
@@ -172,7 +175,8 @@ class FSAFHead(RetinaHead):
             gt_bboxes (list[Tensor]): each item are the truth boxes for each
                 image in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Size / scale info for each image
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
 
