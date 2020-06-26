@@ -107,11 +107,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
     @property
     @abstractmethod
     def areas(self):
-        """Compute area of each instance
-
-        Return:
-            ndarray: areas of each instance
-        """
+        """ndarray: areas of each instance."""
         pass
 
     @abstractmethod
