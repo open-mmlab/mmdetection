@@ -21,14 +21,22 @@ class PointRendRoIHead(StandardRoIHead):
         self.init_point_head(point_head)
 
     def init_point_head(self, point_head):
+        """Initialize ``point_head``"""
         self.point_head = builder.build_head(point_head)
 
     def init_weights(self, pretrained):
-        super(PointRendRoIHead, self).init_weights(pretrained)
+        """Initialize the weights in head
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+        """
+        super().init_weights(pretrained)
         self.point_head.init_weights()
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
+        """Run forward function and calculate loss for mask head and point head
+        in training"""
         mask_results = super(PointRendRoIHead,
                              self)._mask_forward_train(x, sampling_results,
                                                        bbox_feats, gt_masks,
@@ -43,7 +51,8 @@ class PointRendRoIHead(StandardRoIHead):
 
     def _mask_point_forward_train(self, x, sampling_results, mask_pred,
                                   gt_masks, img_metas):
-
+        """Run forward function and calculate loss for point head in
+        training"""
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
         rel_roi_points = self.point_head.get_roi_rel_points_train(
             mask_pred, pos_labels, cfg=self.train_cfg)
@@ -63,6 +72,8 @@ class PointRendRoIHead(StandardRoIHead):
 
     def _get_fine_grained_point_feats(self, x, rois, rel_roi_points,
                                       img_metas):
+        """Sample fine grained feats from each level feature map and
+        concatenate them together."""
         num_imgs = len(img_metas)
         fine_grained_feats = []
         for idx in range(self.mask_roi_extractor.num_inputs):
@@ -86,7 +97,7 @@ class PointRendRoIHead(StandardRoIHead):
 
     def _mask_point_forward_test(self, x, rois, label_pred, mask_pred,
                                  img_metas):
-
+        """Mask refining process with point head in testing"""
         refined_mask_pred = mask_pred.clone()
         for subdivision_step in range(self.test_cfg.subdivision_steps):
             refined_mask_pred = F.interpolate(
@@ -128,6 +139,7 @@ class PointRendRoIHead(StandardRoIHead):
                          det_bboxes,
                          det_labels,
                          rescale=False):
+        """Obtain mask prediction without augmentation"""
         # image shape of the first image in the batch (only one)
         ori_shape = img_metas[0]['ori_shape']
         scale_factor = img_metas[0]['scale_factor']
@@ -150,6 +162,7 @@ class PointRendRoIHead(StandardRoIHead):
         return segm_result
 
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):
+        """Test for mask head with test time augmentation."""
         if det_bboxes.shape[0] == 0:
             segm_result = [[] for _ in range(self.mask_head.num_classes)]
         else:

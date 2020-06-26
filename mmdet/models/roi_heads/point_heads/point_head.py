@@ -35,14 +35,15 @@ class PointHead(nn.Module):
     """
 
     def __init__(self,
+                 num_classes,
                  num_fcs=3,
                  in_channels=256,
                  fc_channels=256,
-                 num_classes=80,
                  class_agnostic=False,
                  coarse_pred_each_layer=True,
                  conv_cfg=dict(type='Conv1d'),
                  norm_cfg=None,
+                 act_cfg=dict(type='ReLU'),
                  loss_point=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
         super(PointHead, self).__init__()
@@ -66,7 +67,8 @@ class PointHead(nn.Module):
                 stride=1,
                 padding=0,
                 conv_cfg=conv_cfg,
-                norm_cfg=norm_cfg)
+                norm_cfg=norm_cfg,
+                act_cfg=act_cfg)
             self.fcs.append(fc)
             fc_in_channels = fc_channels
             fc_in_channels += num_classes if self.coarse_pred_each_layer else 0
@@ -74,21 +76,51 @@ class PointHead(nn.Module):
         out_channels = 1 if self.class_agnostic else self.num_classes
         self.fc_logits = nn.Conv1d(
             fc_in_channels, out_channels, kernel_size=1, stride=1, padding=0)
-        self.relu = nn.ReLU()
 
     def init_weights(self):
+        """Initialize last classification layer of PointHead, conv layers are
+        already initialized by ConvModule"""
         normal_init(self.fc_logits, std=0.001)
 
     def forward(self, fine_grained_feats, coarse_feats):
+        """Classify each point base on fine grained and coarse feats.
+
+        Args:
+            fine_grained_feats (Tensor): Fine grained feature sampled from FPN,
+                shape (num_rois, in_channels, num_points).
+            coarse_feats (Tensor): Coarse feature sampled from CoarseMaskHead,
+                shape (num_rois, num_classes, num_points).
+
+        Returns:
+            Tensor: Point classification results,
+                shape (num_rois, num_class, num_points).
+        """
+
         x = torch.cat([fine_grained_feats, coarse_feats], dim=1)
         for fc in self.fcs:
-            x = self.relu(fc(x))
+            x = fc(x)
             if self.coarse_pred_each_layer:
                 x = torch.cat((x, coarse_feats), dim=1)
         return self.fc_logits(x)
 
     def get_targets(self, rois, rel_roi_points, sampling_results, gt_masks,
                     cfg):
+        """Get training targets of PointHead for all images.
+
+        Args:
+            rois (Tensor): Region of Interest, shape (num_rois, 5).
+            rel_roi_points: Points coordinates relative to RoI, shape
+                (num_rois, num_points, 2).
+            sampling_results (:obj:`SamplingResult`): Sampling result after
+                sampling and assignment.
+            gt_masks (Tensor) : Ground truth segmentation masks of
+                corresponding boxes, shape (num_rois, height, width).
+            cfg (dict): Training cfg.
+
+        Returns:
+            Tensor: Point target, shape (num_rois, num_points).
+        """
+
         num_imgs = len(sampling_results)
         rois_list = []
         rel_roi_points_list = []
@@ -113,6 +145,7 @@ class PointHead(nn.Module):
 
     def _get_target_single(self, rois, rel_roi_points, pos_assigned_gt_inds,
                            gt_masks, cfg):
+        """Get training target of PointHead for each image."""
         num_pos = rois.size(0)
         num_points = cfg.num_points
         if num_pos > 0:
@@ -129,6 +162,19 @@ class PointHead(nn.Module):
         return point_targets
 
     def loss(self, point_pred, point_targets, labels):
+        """Calculate loss for PointHead
+
+        Args:
+            point_pred (Tensor): Point predication result, shape
+                (num_rois, num_classes, num_points).
+            point_targets (Tensor): Point targets, shape (num_roi, num_points).
+            labels (Tensor): Class label of corresponding boxes,
+                shape (num_rois, )
+
+        Returns:
+            dict[str, Tensor]: a dictionary of point loss components
+        """
+
         loss = dict()
         if self.class_agnostic:
             loss_point = self.loss_point(point_pred, point_targets,
@@ -141,21 +187,20 @@ class PointHead(nn.Module):
     def _get_uncertainty(self, mask_pred, labels):
         """Estimate uncertainty based on pred logits
 
-        We estimate uncertainty as L1 distance between 0.0 and the logit
+        We estimate uncertainty as L1 distance between 0.0 and the logits
         prediction in 'mask_pred' for the foreground class in `classes`.
 
         Args:
-            mask_pred (Tensor): mask predication logits, shape (R, C, H, W),
-                where R is the total number of predicted masks in all images
-                and C is the number of foreground classes.
+            mask_pred (Tensor): mask predication logits, shape (num_rois,
+                num_classes, mask_height, mask_width).
 
-            labels (list[Tensor]): A list of length R that contains either
-                predicted or ground truth class for each predicted mask.
+            labels (list[Tensor]): Either predicted or ground truth label for
+                each predicted mask, of length num_rois.
 
         Returns:
             scores (Tensor): Uncertainty scores with the most uncertain
                 locations having the highest uncertainty score,
-                shape (R, 1, H, W)
+                shape (num_rois, 1, mask_height, mask_width)
         """
         if mask_pred.shape[1] == 1:
             gt_class_logits = mask_pred.clone()
@@ -172,14 +217,15 @@ class PointHead(nn.Module):
         input.
 
         Args:
-            mask_pred (Tensor): A tensor of shape (N, C, mask_height,
-                mask_width) for class-specific or class-agnostic prediction.
+            mask_pred (Tensor): A tensor of shape (num_rois, num_classes,
+                mask_height, mask_width) for class-specific or class-agnostic
+                prediction.
             labels (list): The ground truth class for each instance.
             cfg (dict): Training config of point head.
 
         Returns:
-            point_coords (Tensor): A tensor of shape (N, P, 2) that contains
-                the coordinates of P sampled points.
+            point_coords (Tensor): A tensor of shape (num_rois, num_points, 2)
+                that contains the coordinates sampled points.
         """
         num_points = cfg.num_points
         oversample_ratio = cfg.oversample_ratio
@@ -221,18 +267,19 @@ class PointHead(nn.Module):
         Find `num_points` most uncertain points from `uncertainty_map` grid.
 
         Args:
-            mask_pred (Tensor): A tensor of shape (N, C, mask_height,
-                mask_width) for class-specific or class-agnostic prediction.
+            mask_pred (Tensor): A tensor of shape (num_rois, num_classes,
+                mask_height, mask_width) for class-specific or class-agnostic
+                prediction.
             pred_label (list): The predication class for each instance.
             cfg (dict): Testing config of point head.
 
         Returns:
-            point_indices (Tensor): A tensor of shape (N, P) that contains
-                indices from [0, mask_height x mask_width) of the most
-                uncertain points.
-            point_coords (Tensor): A tensor of shape (N, P, 2) that contains
-                [0, 1] x [0, 1] normalized coordinates of the most uncertain
-                points from the mask_height x mask_width grid .
+            point_indices (Tensor): A tensor of shape (num_rois, num_points)
+                that contains indices from [0, mask_height x mask_width) of the
+                most uncertain points.
+            point_coords (Tensor): A tensor of shape (num_rois, num_points, 2)
+                that contains [0, 1] x [0, 1] normalized coordinates of the
+                most uncertain points from the [mask_height, mask_width] grid .
             """
         num_points = cfg.subdivision_num_points
         uncertainty_map = self._get_uncertainty(mask_pred, pred_label)
