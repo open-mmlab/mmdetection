@@ -265,6 +265,14 @@ class LVISDataset(CocoDataset):
         'yoke_(animal_equipment)', 'zebra', 'zucchini')
 
     def load_annotations(self, ann_file):
+        """Load annotation from lvis style ann_file
+
+        Args:
+            ann_file (str): Path of annotation file.
+        Returns:
+            list[dict]: Annotation info from COCO api.
+        """
+
         try:
             from lvis import LVIS
         except ImportError:

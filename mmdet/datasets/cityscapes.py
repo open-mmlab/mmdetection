@@ -198,14 +198,14 @@ class CityscapesDataset(CocoDataset):
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05)):
-        """Evaluation in Cityscapes protocol.
+        """Evaluation in Cityscapes/COCO protocol.
 
         Args:
             results (list): Testing results of the dataset.
             metric (str | list[str]): Metrics to be evaluated.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
-            outfile_prefix (str | None):
+            outfile_prefix (str | None): The prefix of output file
             classwise (bool): Whether to evaluating the AP for each class.
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.
@@ -244,6 +244,18 @@ class CityscapesDataset(CocoDataset):
         return eval_results
 
     def _evaluate_cityscapes(self, results, txtfile_prefix, logger):
+        """Evaluation in Cityscapes protocol.
+
+        Args:
+            results (list): Testing results of the dataset.
+            txtfile_prefix (str | None): The prefix of output txt file
+            logger (logging.Logger | str | None): Logger used for printing
+                related information during evaluation. Default: None.
+
+        Returns:
+            dict[str: float]
+        """
+
         try:
             import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval  # noqa
         except ImportError:
