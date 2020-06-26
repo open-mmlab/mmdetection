@@ -59,7 +59,7 @@ class PointHead(nn.Module):
 
         fc_in_channels = in_channels + num_classes
         self.fcs = nn.ModuleList()
-        for k in range(num_fcs):
+        for _ in range(num_fcs):
             fc = ConvModule(
                 fc_in_channels,
                 fc_channels,
