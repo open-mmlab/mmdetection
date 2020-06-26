@@ -25,6 +25,26 @@ class PISARetinaHead(RetinaHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute losses of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            gt_bboxes (list[Tensor]): Ground truth bboxes of each image
+                with shape (num_obj, 4).
+            gt_labels (list[Tensor]): Ground truth labels of each image
+                with shape (num_obj, 4).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (list[Tensor]): Ignored gt bboxes of each image.
+                Default: None.
+
+        Returns:
+            dict: Loss dict, comprise classification loss, regression loss and
+                carl loss.
+        """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.anchor_generator.num_levels
 
