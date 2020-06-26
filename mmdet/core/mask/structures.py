@@ -221,7 +221,7 @@ class BitmapMasks(BaseInstanceMasks):
         Args:
             bboxes (Tensor): bboxes in format [x1, y1, x2, y2], shape (N, 4)
             out_shape (tuple[int]): target (h, w) of resized mask
-            inds (ndarray): indexes to assign masks to each bbox
+            inds (ndarray): indices  to assign masks to each bbox
             device (str): device of bboxes
             interpolation (str): see `mmcv.imresize`
 

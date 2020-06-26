@@ -173,6 +173,7 @@ class HRModule(nn.Module):
         return nn.ModuleList(fuse_layers)
 
     def forward(self, x):
+        """Forward function"""
         if self.num_branches == 1:
             return [self.branches[0](x[0])]
 
@@ -343,10 +344,12 @@ class HRNet(nn.Module):
 
     @property
     def norm1(self):
+        """nn.Module: the normalization layer named "norm1" """
         return getattr(self, self.norm1_name)
 
     @property
     def norm2(self):
+        """nn.Module: the normalization layer named "norm2" """
         return getattr(self, self.norm2_name)
 
     def _make_transition_layer(self, num_channels_pre_layer,
@@ -460,6 +463,12 @@ class HRNet(nn.Module):
         return nn.Sequential(*hr_modules), in_channels
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in backbone
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if isinstance(pretrained, str):
             logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)
@@ -480,7 +489,7 @@ class HRNet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
-
+        """Forward function"""
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.relu(x)
@@ -516,6 +525,8 @@ class HRNet(nn.Module):
         return y_list
 
     def train(self, mode=True):
+        """Convert the model into training mode whill keeping the normalization
+        layer freezed"""
         super(HRNet, self).train(mode)
         if mode and self.norm_eval:
             for m in self.modules():

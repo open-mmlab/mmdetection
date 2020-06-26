@@ -32,30 +32,42 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
 
     @property
     def with_bbox(self):
+        """bool: whether the RoI head contains a `bbox_head`"""
         return hasattr(self, 'bbox_head') and self.bbox_head is not None
 
     @property
     def with_mask(self):
+        """bool: whether the RoI head contains a `mask_head`"""
         return hasattr(self, 'mask_head') and self.mask_head is not None
 
     @property
     def with_shared_head(self):
+        """bool: whether the RoI head contains a `shared_head`"""
         return hasattr(self, 'shared_head') and self.shared_head is not None
 
     @abstractmethod
     def init_weights(self, pretrained):
+        """Initialize the weights in head
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         pass
 
     @abstractmethod
     def init_bbox_head(self):
+        """Initialize ``bbox_head``"""
         pass
 
     @abstractmethod
     def init_mask_head(self):
+        """Initialize ``mask_head``"""
         pass
 
     @abstractmethod
     def init_assigner_sampler(self):
+        """Initialize assigner and sampler"""
         pass
 
     @abstractmethod
@@ -72,6 +84,7 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
         pass
 
     async def async_simple_test(self, x, img_meta, **kwargs):
+        """Asynchronized test function"""
         raise NotImplementedError
 
     def simple_test(self,

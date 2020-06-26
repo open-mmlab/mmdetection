@@ -22,32 +22,46 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     @property
     def with_neck(self):
+        """bool: whether the detector has a neck"""
         return hasattr(self, 'neck') and self.neck is not None
 
     # TODO: these properties need to be carefully handled
     # for both single stage & two stage detectors
     @property
     def with_shared_head(self):
+        """bool: whether the detector has a shared head in the RoI Head"""
         return hasattr(self.roi_head,
                        'shared_head') and self.roi_head.shared_head is not None
 
     @property
     def with_bbox(self):
+        """bool: whether the detector has a bbox head"""
         return ((hasattr(self.roi_head, 'bbox_head')
                  and self.roi_head.bbox_head is not None)
                 or (hasattr(self, 'bbox_head') and self.bbox_head is not None))
 
     @property
     def with_mask(self):
+        """bool: whether the detector has a mask head"""
         return ((hasattr(self.roi_head, 'mask_head')
                  and self.roi_head.mask_head is not None)
                 or (hasattr(self, 'mask_head') and self.mask_head is not None))
 
     @abstractmethod
     def extract_feat(self, imgs):
+        """Extract features from images"""
         pass
 
     def extract_feats(self, imgs):
+        """Extract features from multiple images
+
+        Args:
+            imgs (list[torch.Tensor]): A list of images. The images are
+                augmented from the same image but in different ways.
+
+        Returns:
+            list[torch.Tensor]: Features of different images
+        """
         assert isinstance(imgs, list)
         return [self.extract_feat(img) for img in imgs]
 
@@ -75,9 +89,16 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     @abstractmethod
     def aug_test(self, imgs, img_metas, **kwargs):
+        """Test function with test time augmentation"""
         pass
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in detector
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if pretrained is not None:
             logger = get_root_logger()
             print_log(f'load model from: {pretrained}', logger=logger)
