@@ -139,7 +139,7 @@ class DynamicRoIHead(StandardRoIHead):
         on the training statistics.
 
         Returns:
-            list[float]: the updated `iou_thr` and `SmoothL1 beta`
+            tuple[float]: the updated `iou_thr` and `SmoothL1 beta`
         """
         new_iou_thr = max(self.initial_iou, np.mean(self.iou_history))
         self.iou_history = []
