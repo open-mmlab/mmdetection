@@ -11,8 +11,8 @@ from .fpn import FPN
 class PAFPN(FPN):
     """Path Aggregation Network for Instance Segmentation.
 
-    This is an implementation of the PAFPN in Path Aggregation Network
-    (https://arxiv.org/abs/1803.01534).
+    This is an implementation of the `PAFPN in Path Aggregation Network
+    <https://arxiv.org/abs/1803.01534>`_.
 
     Args:
         in_channels (List[int]): Number of input channels per scale.
@@ -82,6 +82,7 @@ class PAFPN(FPN):
 
     @auto_fp16()
     def forward(self, inputs):
+        """Forward function"""
         assert len(inputs) == len(self.in_channels)
 
         # build laterals

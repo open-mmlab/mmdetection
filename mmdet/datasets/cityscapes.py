@@ -121,7 +121,17 @@ class CityscapesDataset(CocoDataset):
 
             bbox_result, segm_result = result
             bboxes = np.vstack(bbox_result)
-            segms = mmcv.concat_list(segm_result)
+            # segm results
+            if isinstance(segm_result, tuple):
+                # Some detectors use different scores for bbox and mask,
+                # like Mask Scoring R-CNN. Score of segm will be used instead
+                # of bbox score.
+                segms = mmcv.concat_list(segm_result[0])
+                mask_score = segm_result[1]
+            else:
+                # use bbox score for mask score
+                segms = mmcv.concat_list(segm_result)
+                mask_score = [bbox[-1] for bbox in bboxes]
             labels = [
                 np.full(bbox.shape[0], i, dtype=np.int32)
                 for i, bbox in enumerate(bbox_result)
@@ -136,7 +146,7 @@ class CityscapesDataset(CocoDataset):
                     pred_class = labels[i]
                     classes = self.CLASSES[pred_class]
                     class_id = CSLabels.name2label[classes].id
-                    score = bboxes[i, -1]
+                    score = mask_score[i]
                     mask = maskUtils.decode(segms[i]).astype(np.uint8)
                     png_filename = osp.join(outfile_prefix,
                                             basename + f'_{i}_{classes}.png')
