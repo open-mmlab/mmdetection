@@ -205,7 +205,13 @@ class CityscapesDataset(CocoDataset):
             metric (str | list[str]): Metrics to be evaluated.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
-            outfile_prefix (str | None): The prefix of output file
+            outfile_prefix (str | None): The prefix of output file. It includes
+                the file path and the prefix of filename, e.g., "a/b/prefix".
+                If not specified, a temp file will be created. Default: None.
+                If results are evaluated with COCO protocol, it would be the
+                prefix of output json file. If results are evaluated with
+                cityscapes protocol, it would be the prefix of output txt/png
+                files.
             classwise (bool): Whether to evaluating the AP for each class.
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.
@@ -253,7 +259,8 @@ class CityscapesDataset(CocoDataset):
                 related information during evaluation. Default: None.
 
         Returns:
-            dict[str: float]
+            dict[str: float]: Cityscapes evaluation results, contains 'mAP'
+                and 'AP@50'.
         """
 
         try:
