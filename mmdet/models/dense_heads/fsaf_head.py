@@ -240,7 +240,8 @@ class FSAFHead(RetinaHead):
             list(range(len(losses_cls))),
             min_levels=argmin)
         num_pos = torch.cat(pos_inds, 0).sum().float()
-        acc = self.calculate_accuracy(cls_scores, labels_list, pos_inds)
+        pos_recall = self.calculate_pos_recall(cls_scores, labels_list,
+                                               pos_inds)
 
         if num_pos == 0:  # No gt
             avg_factor = num_pos + float(num_total_neg)
@@ -253,12 +254,32 @@ class FSAFHead(RetinaHead):
             loss_cls=losses_cls,
             loss_bbox=losses_bbox,
             num_pos=num_pos / batch_size,
-            accuracy=acc)
+            pos_recall=pos_recall)
 
-    def calculate_accuracy(self, cls_scores, labels_list, pos_inds):
+    def calculate_pos_recall(self,
+                             cls_scores,
+                             labels_list,
+                             pos_inds,
+                             score_threshold=0.2):
+        """Calculate positive recall with score threshold
+
+        Args:
+            cls_scores (list[Tensor]): Classification scores at all fpn levels.
+                Each tensor is in shape (N, num_classes * num_anchors, H, W)
+            labels_list (list[Tensor]): The label that each anchor is assigned
+                to. Shape (N * H * W * num_anchors, )
+            pos_inds (list[Tensor]): List of bool tensors indicating whether
+                the anchor is assigned to a positive label.
+                Shape (N * H * W * num_anchors, )
+            score_threshold (float): The score threshold that only score above
+                are counted as positive. Default to 0.2.
+
+        Returns:
+            Tensor: A single float number indicating the positive recall.
+        """
         with torch.no_grad():
             num_pos = torch.cat(pos_inds, 0).sum().float().clamp(min=1e-3)
-            num_class = cls_scores[0].size(1)
+            num_class = self.num_classes
             scores = [
                 cls.permute(0, 2, 3, 1).reshape(-1, num_class)[pos]
                 for cls, pos in zip(cls_scores, pos_inds)
@@ -268,10 +289,19 @@ class FSAFHead(RetinaHead):
                 for label, pos in zip(labels_list, pos_inds)
             ]
 
-            def argmax(x):
-                return x.argmax(1) if x.numel() > 0 else -100
+            def argmax(x, thresh=0.2):
+                """Get argmax to only scores > thresh, otherwise return -100"""
+                if x.numel() == 0:
+                    return -100
+                if self.use_sigmoid_cls:
+                    x = x.sigmoid()
+                else:
+                    x = x.softmax(dim=1)
+                value, argmax = x.max(1)
+                argmax[value < thresh] = -100
+                return argmax
 
-            num_correct = sum([(argmax(score) == label).sum()
+            num_correct = sum([(argmax(score, score_threshold) == label).sum()
                                for score, label in zip(scores, labels)])
             return num_correct.float() / num_pos
 
