@@ -210,7 +210,9 @@ class PointHead(nn.Module):
         return -torch.abs(gt_class_logits)
 
     def get_roi_rel_points_train(self, mask_pred, labels, cfg):
-        """
+        """Get ``num_points`` most uncertain points with random points during
+        train.
+
         Sample points in [0, 1] x [0, 1] coordinate space based on their
         uncertainty. The uncertainties are calculated for each point using
         '_get_uncertainty()' function that takes point's logit prediction as
@@ -263,8 +265,7 @@ class PointHead(nn.Module):
         return point_coords
 
     def get_roi_rel_points_test(self, mask_pred, pred_label, cfg):
-        """
-        Find `num_points` most uncertain points from `uncertainty_map` grid.
+        """Get ``num_points`` most uncertain points during test.
 
         Args:
             mask_pred (Tensor): A tensor of shape (num_rois, num_classes,
