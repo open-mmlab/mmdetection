@@ -155,3 +155,27 @@ def test_dataset_wrapper():
     for idx in np.random.randint(0, len(repeat_factor_dataset), 3):
         assert repeat_factor_dataset[idx] == bisect.bisect_right(
             repeat_factors_cumsum, idx)
+
+
+@pytest.mark.parametrize('classes, expected_length', [(['bus'], 2),
+                                                      (['car'], 1),
+                                                      (['bus', 'car'], 2)])
+def test_allow_empty_images(classes, expected_length):
+    dataset_class = DATASETS.get('CocoDataset')
+
+    filtered_dataset = dataset_class(
+        ann_file='tests/data/coco_sample.json',
+        img_prefix='tests/data',
+        pipeline=[],
+        classes=classes,
+        filter_empty_gt=True)
+
+    full_dataset = dataset_class(
+        ann_file='tests/data/coco_sample.json',
+        img_prefix='tests/data',
+        pipeline=[],
+        classes=classes,
+        filter_empty_gt=False)
+
+    assert len(filtered_dataset) == expected_length
+    assert len(full_dataset) == 3

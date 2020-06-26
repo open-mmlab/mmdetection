@@ -104,7 +104,6 @@ venv.bak/
 .mypy_cache/
 
 mmdet/version.py
-data/
 .vscode
 .idea
 .DS_Store
