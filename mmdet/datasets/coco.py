@@ -81,10 +81,11 @@ class CocoDataset(CustomDataset):
             ids (list[int]): integer list of img ids
         """
 
-        ids = set()
-        for i, class_id in enumerate(self.cat_ids):
-            ids |= set(self.coco.cat_img_map[class_id])
-        self.img_ids = list(ids)
+        if self.filter_empty_gt:
+            ids = set()
+            for i, class_id in enumerate(self.cat_ids):
+                ids |= set(self.coco.cat_img_map[class_id])
+            self.img_ids = list(ids)
 
         data_infos = []
         for i in self.img_ids:
