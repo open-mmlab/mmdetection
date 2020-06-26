@@ -52,7 +52,7 @@ def generate_grid(num_grid, size, device):
     return grid.view(1, -1, 2).expand(num_grid, -1, -1)
 
 
-def rel_roi_point2abs_img_point(rois, rel_roi_points):
+def rel_roi_point_to_abs_img_point(rois, rel_roi_points):
     """Convert roi based relative point coordinates to image based absolute
     point coordinates.
 
@@ -83,7 +83,9 @@ def rel_roi_point2abs_img_point(rois, rel_roi_points):
     return abs_img_points
 
 
-def abs_img_point2rel_img_point(abs_img_points, img_shape, spatial_scale=1.):
+def abs_img_point_to_rel_img_point(abs_img_points,
+                                   img_shape,
+                                   spatial_scale=1.):
     """Convert image based absolute point coordinates to image based relative
     coordinates for sampling.
 
@@ -109,10 +111,10 @@ def abs_img_point2rel_img_point(abs_img_points, img_shape, spatial_scale=1.):
     return rel_img_points
 
 
-def rel_roi_point2rel_img_point(rois,
-                                rel_roi_points,
-                                img_shape,
-                                spatial_scale=1.):
+def rel_roi_point_to_rel_img_point(rois,
+                                   rel_roi_points,
+                                   img_shape,
+                                   spatial_scale=1.):
     """Convert roi based relative point coordinates to image based absolute
     point coordinates.
 
@@ -128,9 +130,9 @@ def rel_roi_point2rel_img_point(rois,
             shape (N, P, 2)
     """
 
-    abs_img_point = rel_roi_point2abs_img_point(rois, rel_roi_points)
-    rel_img_point = abs_img_point2rel_img_point(abs_img_point, img_shape,
-                                                spatial_scale)
+    abs_img_point = rel_roi_point_to_abs_img_point(rois, rel_roi_points)
+    rel_img_point = abs_img_point_to_rel_img_point(abs_img_point, img_shape,
+                                                   spatial_scale)
 
     return rel_img_point
 
@@ -195,7 +197,7 @@ class SimpleRoIAlign(nn.Module):
             feat = features[batch_ind].unsqueeze(0)
             inds = (rois[:, 0].long() == batch_ind)
             if inds.any():
-                rel_img_points = rel_roi_point2rel_img_point(
+                rel_img_points = rel_roi_point_to_rel_img_point(
                     rois[inds], rel_roi_points[inds], feat.shape[2:],
                     self.spatial_scale).unsqueeze(0)
                 point_feat = point_sample(

@@ -1,3 +1,3 @@
-from .point_head import PointHead
+from .point_head import MaskPointHead
 
-__all__ = ['PointHead']
+__all__ = ['MaskPointHead']

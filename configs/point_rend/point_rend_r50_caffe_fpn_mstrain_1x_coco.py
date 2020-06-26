@@ -21,7 +21,7 @@ model = dict(
             loss_mask=dict(
                 type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)),
         point_head=dict(
-            type='PointHead',
+            type='MaskPointHead',
             num_fcs=3,
             in_channels=256,
             fc_channels=256,

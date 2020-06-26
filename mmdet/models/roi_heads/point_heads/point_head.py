@@ -5,14 +5,14 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init
 
 from mmdet.models.builder import HEADS, build_loss
-from mmdet.ops import point_sample, rel_roi_point2rel_img_point
+from mmdet.ops import point_sample, rel_roi_point_to_rel_img_point
 
 
 @HEADS.register_module()
-class PointHead(nn.Module):
+class MaskPointHead(nn.Module):
     """A mask point head use in PointRend.
 
-    ``PointHead`` use shared multi-layer perceptron (equivalent to
+    ``MaskPointHead`` use shared multi-layer perceptron (equivalent to
     nn.Conv1d) to predict the logit of input points. The fine-grained feature
     and coarse feature will be concatenate together for predication.
 
@@ -25,9 +25,9 @@ class PointHead(nn.Module):
             If so, the output channels of logits will be 1. Default: False.
         coarse_pred_each_layer (bool): Whether concatenate coarse feature with
             the output of each fc layer. Default: True.
-        conv_cfg (dict|None): Dictionary to construct and config conv layer.
+        conv_cfg (dict | None): Dictionary to construct and config conv layer.
             Default: dict(type='Conv1d'))
-        norm_cfg (dict|None): Dictionary to construct and config norm layer.
+        norm_cfg (dict | None): Dictionary to construct and config norm layer.
             Default: None.
         loss_point (dict): Dictionary to construct and config loss layer of
             point head. Default: dict(type='CrossEntropyLoss', use_mask=True,
@@ -46,7 +46,7 @@ class PointHead(nn.Module):
                  act_cfg=dict(type='ReLU'),
                  loss_point=dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)):
-        super(PointHead, self).__init__()
+        super().__init__()
         self.num_fcs = num_fcs
         self.in_channels = in_channels
         self.fc_channles = fc_channels
@@ -78,7 +78,7 @@ class PointHead(nn.Module):
             fc_in_channels, out_channels, kernel_size=1, stride=1, padding=0)
 
     def init_weights(self):
-        """Initialize last classification layer of PointHead, conv layers are
+        """Initialize last classification layer of MaskPointHead, conv layers are
         already initialized by ConvModule"""
         normal_init(self.fc_logits, std=0.001)
 
@@ -105,7 +105,7 @@ class PointHead(nn.Module):
 
     def get_targets(self, rois, rel_roi_points, sampling_results, gt_masks,
                     cfg):
-        """Get training targets of PointHead for all images.
+        """Get training targets of MaskPointHead for all images.
 
         Args:
             rois (Tensor): Region of Interest, shape (num_rois, 5).
@@ -145,7 +145,7 @@ class PointHead(nn.Module):
 
     def _get_target_single(self, rois, rel_roi_points, pos_assigned_gt_inds,
                            gt_masks, cfg):
-        """Get training target of PointHead for each image."""
+        """Get training target of MaskPointHead for each image."""
         num_pos = rois.size(0)
         num_points = cfg.num_points
         if num_pos > 0:
@@ -153,7 +153,7 @@ class PointHead(nn.Module):
                 gt_masks.to_tensor(rois.dtype, rois.device).index_select(
                     0, pos_assigned_gt_inds))
             gt_masks_th = gt_masks_th.unsqueeze(1)
-            rel_img_points = rel_roi_point2rel_img_point(
+            rel_img_points = rel_roi_point_to_rel_img_point(
                 rois, rel_roi_points, gt_masks_th.shape[2:])
             point_targets = point_sample(gt_masks_th,
                                          rel_img_points).squeeze(1)
@@ -162,7 +162,7 @@ class PointHead(nn.Module):
         return point_targets
 
     def loss(self, point_pred, point_targets, labels):
-        """Calculate loss for PointHead
+        """Calculate loss for MaskPointHead
 
         Args:
             point_pred (Tensor): Point predication result, shape

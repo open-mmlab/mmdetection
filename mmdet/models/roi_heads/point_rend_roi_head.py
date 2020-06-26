@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 
 from mmdet.core import bbox2roi, bbox_mapping, merge_aug_masks
-from mmdet.ops import point_sample, rel_roi_point2rel_img_point
+from mmdet.ops import point_sample, rel_roi_point_to_rel_img_point
 from .. import builder
 from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
@@ -16,7 +16,7 @@ class PointRendRoIHead(StandardRoIHead):
     """
 
     def __init__(self, point_head, *args, **kwargs):
-        super(PointRendRoIHead, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         assert self.with_bbox and self.with_mask
         self.init_point_head(point_head)
 
@@ -86,7 +86,7 @@ class PointRendRoIHead(StandardRoIHead):
                 feat = feats[batch_ind].unsqueeze(0)
                 inds = (rois[:, 0].long() == batch_ind)
                 if inds.any():
-                    rel_img_points = rel_roi_point2rel_img_point(
+                    rel_img_points = rel_roi_point_to_rel_img_point(
                         rois[inds], rel_roi_points[inds], feat.shape[2:],
                         spatial_scale).unsqueeze(0)
                     point_feat = point_sample(feat, rel_img_points)
