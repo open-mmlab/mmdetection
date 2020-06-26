@@ -204,15 +204,21 @@ class FreeAnchorRetinaHead(RetinaHead):
     def positive_bag_loss(self, matched_cls_prob, matched_box_prob):
         """Compute positive bag loss.
 
+        :math:`-log( Mean-max(P_{ij}^{cls} * P_{ij}^{loc}) )`.
+
+        :math:`P_{ij}^{cls}`: matched_cls_prob, classification probability of matched samples.
+
+        :math:`P_{ij}^{loc}`: matched_box_prob, box probability of matched samples.
+
         Args:
-            matched_cls_prob (Tensor): Matched_cls_prob, in shape
-                (num_gt, pre_anchor_topk).
-            matched_box_prob (Tensor): Matched_box_prob, in shape
-                (num_gt, pre_anchor_topk).
+            matched_cls_prob (Tensor): Classification probabilty of matched
+                samples in shape (num_gt, pre_anchor_topk).
+            matched_box_prob (Tensor): BBox probability of matched samples,
+                in shape (num_gt, pre_anchor_topk).
 
         Returns:
             Tensor: Positive bag loss in shape (num_gt,).
-        """
+        """  # noqa: E501, W605
         # bag_prob = Mean-max(matched_prob)
         matched_prob = matched_cls_prob * matched_box_prob
         weight = 1 / torch.clamp(1 - matched_prob, 1e-12, None)
@@ -225,16 +231,21 @@ class FreeAnchorRetinaHead(RetinaHead):
     def negative_bag_loss(self, cls_prob, box_prob):
         """Compute negative bag loss.
 
+        :math:`FL((1 - P_{a_{j} \in A_{+}}) * (1 - P_{j}^{bg}))`.
+
+        :math:`P_{a_{j} \in A_{+}}`: Box_probability of matched samples.
+
+        :math:`P_{j}^{bg}`: Classification probability of negative samples.
+
         Args:
-            cls_prob (Tensor): Class probability, in shape
+            cls_prob (Tensor): Classification probability, in shape
                 (num_img, num_anchors, num_classes).
             box_prob (Tensor): Box probability, in shape
                 (num_img, num_anchors, num_classes).
 
         Returns:
-            Tensor: Negative bag loss in shape
-                (num_img, num_anchors, num_classes).
-        """
+            Tensor: Negative bag loss in shape (num_img, num_anchors, num_classes).
+        """  # noqa: E501, W605
         prob = cls_prob * (1 - box_prob)
         negative_bag_loss = prob**self.gamma * F.binary_cross_entropy(
             prob, torch.zeros_like(prob), reduction='none')
