@@ -18,7 +18,6 @@ def mask_target(pos_proposals_list, pos_assigned_gt_inds_list, gt_masks_list,
 
     Returns:
         list[Tensor]: Mask target of each image.
-
     """
     cfg_list = [cfg for _ in range(len(pos_proposals_list))]
     mask_targets = map(mask_target_single, pos_proposals_list,

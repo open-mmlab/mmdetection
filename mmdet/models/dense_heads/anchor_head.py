@@ -113,7 +113,7 @@ class AnchorHead(BaseDenseHead):
         """Forward feature of a single scale level.
 
         Args:
-            feats (tuple[Tensor]): Features of a single scale level with shape
+            x (Tensor): Features of a single scale level with shape
                 (N, C, H, W).
 
         Returns:
@@ -439,7 +439,7 @@ class AnchorHead(BaseDenseHead):
             gt_labels (list[Tensor]): class indices corresponding to each box
             img_metas (list[dict]): Size / scale info for each image
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
+                boxes can be ignored when computing the loss. Default: None
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.

@@ -39,7 +39,7 @@ class Fp16OptimizerHook(OptimizerHook):
     def before_run(self, runner):
         """Preparing steps before Mixed Precision Training.
 
-        1. Make a master copy of weights for optimization.
+        1. Make a master copy of fp32 weights for optimization.
         2. Convert the main model from fp32 to fp16.
         """
         # keep a copy of fp32 weights
@@ -65,10 +65,10 @@ class Fp16OptimizerHook(OptimizerHook):
         """Backward optimization steps for Mixed Precision Training.
 
         1. Scale the loss by a scale factor.
-        2. Backward the gradient on the model.
-        3. Copy gradients from the model to the weight copy.
-        4. Optimize the weight copy.
-        5. Copy back the params from weight copy to the model.
+        2. Backward the loss to obtain the gradients (fp16).
+        3. Copy gradients from the model to the fp32 weight copy.
+        4. Scale the gradients back and update the fp32 weight copy.
+        5. Copy back the params from fp32 weight copy to the fp16 model.
         """
         # clear grads of last iteration
         runner.model.zero_grad()
@@ -124,7 +124,6 @@ def patch_norm_fp32(module):
     Returns:
         nn.Module: The converted module, the normalization layers have been
             converted to FP32.
-
     """
     if isinstance(module, (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
         module.float()

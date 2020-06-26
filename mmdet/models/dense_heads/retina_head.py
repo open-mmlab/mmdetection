@@ -94,7 +94,7 @@ class RetinaHead(AnchorHead):
         """Forward feature of a single scale level.
 
         Args:
-            x (tuple[Tensor]): Features of a single scale level with shape
+            x (Tensor): Features of a single scale level with shape
                 (N, C, H, W).
 
         Returns:

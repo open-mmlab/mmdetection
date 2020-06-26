@@ -122,7 +122,7 @@ class ATSSHead(AnchorHead):
         """Forward feature of a single scale level.
 
         Args:
-            feats (tuple[Tensor]): Features of a single scale level with shape
+            feats (Tensor): Features of a single scale level with shape
                 (N, C, H, W).
 
         Returns:

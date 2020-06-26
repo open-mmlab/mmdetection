@@ -20,7 +20,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
             interpolation (str): Same as :func:`mmcv.imrescale`.
 
         Returns:
-            BitmapMasks | PolygonMasks: The rescaled masks.
+            BaseInstanceMasks: The rescaled masks.
         """
         pass
 
@@ -33,7 +33,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
             interpolation (str): See `mmcv.imresize`.
 
         Returns:
-            BitmapMasks | PolygonMasks: The resized masks.
+            BaseInstanceMasks: The resized masks.
         """
         pass
 
@@ -45,7 +45,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
             flip_direction (str): Either 'horizontal' or 'vertical'.
 
         Returns:
-            BitmapMasks | PolygonMasks: The flipped masks.
+            BaseInstanceMasks: The flipped masks.
         """
         pass
 
@@ -58,7 +58,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
             pad_val (int): The padded value.
 
         Returns:
-            BitmapMasks | PolygonMasks: The padded masks.
+            BaseInstanceMasks: The padded masks.
         """
         pass
 
@@ -70,7 +70,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
             bbox (ndarray): Bbox in format [x1, y1, x2, y2], shape (4, ).
 
         Return:
-            BitmapMasks | PolygonMasks: The cropped masks.
+            BaseInstanceMasks: The cropped masks.
         """
         pass
 
@@ -95,7 +95,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
             interpolation (str): See `mmcv.imresize`
 
         Return:
-            BitmapMasks | PolygonMasks: the cropped and resized masks.
+            BaseInstanceMasks: the cropped and resized masks.
         """
         pass
 
@@ -120,7 +120,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
 
         Return:
             ndarray: Converted masks in the format of ndarray.
-
         """
         pass
 
@@ -169,7 +168,7 @@ class BitmapMasks(BaseInstanceMasks):
         """Index the BitmapMask.
 
         Args:
-            index (ndarray): An array of indices.
+            index (int | ndarray): Indices in the format of integer or ndarray.
 
         Returns:
             :obj:`BitmapMasks`: Indexed bitmap masks.
