@@ -48,7 +48,7 @@ class FCNMaskHead(nn.Module):
         self.conv_kernel_size = conv_kernel_size
         self.conv_out_channels = conv_out_channels
         self.upsample_method = self.upsample_cfg.get('type')
-        self.scale_factor = self.upsample_cfg.pop('scale_factor')
+        self.scale_factor = self.upsample_cfg.pop('scale_factor', None)
         self.num_classes = num_classes
         self.class_agnostic = class_agnostic
         self.conv_cfg = conv_cfg
@@ -80,9 +80,11 @@ class FCNMaskHead(nn.Module):
                 out_channels=self.conv_out_channels,
                 kernel_size=self.scale_factor,
                 stride=self.scale_factor)
+            self.upsample = build_upsample_layer(upsample_cfg_)
         elif self.upsample_method == 'carafe':
             upsample_cfg_.update(
                 channels=upsample_in_channels, scale_factor=self.scale_factor)
+            self.upsample = build_upsample_layer(upsample_cfg_)
         else:
             # suppress warnings
             align_corners = (None
@@ -91,7 +93,7 @@ class FCNMaskHead(nn.Module):
                 scale_factor=self.scale_factor,
                 mode=self.upsample_method,
                 align_corners=align_corners)
-        self.upsample = build_upsample_layer(upsample_cfg_)
+            self.upsample = build_upsample_layer(upsample_cfg_)
 
         out_channels = 1 if self.class_agnostic else self.num_classes
         logits_in_channel = (

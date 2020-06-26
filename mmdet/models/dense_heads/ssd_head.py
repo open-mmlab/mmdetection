@@ -13,6 +13,22 @@ from .anchor_head import AnchorHead
 # TODO: add loss evaluator for SSD
 @HEADS.register_module()
 class SSDHead(AnchorHead):
+    """SSD head used in https://arxiv.org/abs/1512.02325.
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        anchor_generator (dict): Config dict for anchor generator
+        background_label (int | None): Label ID of background, set as 0 for
+            RPN and num_classes for other heads. It will automatically set as
+            num_classes if None is given.
+        bbox_coder (dict): Config of bounding box coder.
+        reg_decoded_bbox (bool): If true, the regression loss would be
+            applied on decoded bounding boxes. Default: False
+        train_cfg (dict): Training config of anchor head.
+        test_cfg (dict): Testing config of anchor head.
+    """  # noqa: W605
 
     def __init__(self,
                  num_classes=80,
@@ -80,11 +96,27 @@ class SSDHead(AnchorHead):
         self.fp16_enabled = False
 
     def init_weights(self):
+        """Initialize weights of the head."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 xavier_init(m, distribution='uniform', bias=0)
 
     def forward(self, feats):
+        """Forward features from the upstream network.
+
+        Args:
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple:
+                cls_scores (list[Tensor]): Classification scores for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * num_classes.
+                bbox_preds (list[Tensor]): Box energies / deltas for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * 4.
+        """
         cls_scores = []
         bbox_preds = []
         for feat, reg_conv, cls_conv in zip(feats, self.reg_convs,
@@ -95,6 +127,31 @@ class SSDHead(AnchorHead):
 
     def loss_single(self, cls_score, bbox_pred, anchor, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples):
+        """Compute loss of a single image.
+
+        Args:
+            cls_score (Tensor): Box scores for eachimage
+                Has shape (num_total_anchors, num_classes).
+            bbox_pred (Tensor): Box energies / deltas for each image
+                level with shape (num_total_anchors, 4).
+            anchors (Tensor): Box reference for each scale level with shape
+                (num_total_anchors, 4).
+            labels (Tensor): Labels of each anchors with shape
+                (num_total_anchors,).
+            label_weights (Tensor): Label weights of each anchor with shape
+                (num_total_anchors,)
+            bbox_targets (Tensor): BBox regression targets of each anchor wight
+                shape (num_total_anchors, 4).
+            bbox_weights (Tensor): BBox regression loss weights of each anchor
+                with shape (num_total_anchors, 4).
+            num_total_samples (int): If sampling, num total samples equal to
+                the number of total anchors; Otherwise, it is the number of
+                positive anchors.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
@@ -129,6 +186,24 @@ class SSDHead(AnchorHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute losses of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.anchor_generator.num_levels
 

@@ -52,6 +52,17 @@ class RepPointsDetector(SingleStageDetector):
             return bboxes, scores
 
     def aug_test(self, imgs, img_metas, rescale=False):
+        """Test function with test time augmentation
+
+        Args:
+            imgs (list[torch.Tensor]): List of multiple images
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[ndarray]: bbox results of each class
+        """
         # recompute feats to save memory
         feats = self.extract_feats(imgs)
 

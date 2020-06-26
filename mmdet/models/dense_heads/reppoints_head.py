@@ -129,6 +129,7 @@ class RepPointsHead(BaseDenseHead):
         self._init_layers()
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -171,6 +172,7 @@ class RepPointsHead(BaseDenseHead):
                                                   pts_out_dim, 1, 1, 0)
 
     def init_weights(self):
+        """Initialize weights of the head."""
         for m in self.cls_convs:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
@@ -269,6 +271,7 @@ class RepPointsHead(BaseDenseHead):
         return grid_yx, regressed_bbox
 
     def forward_single(self, x):
+        """ Forward feature map of a single FPN level."""
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
         # If we use bounding bbox representation, the initial reppoints is
@@ -310,6 +313,15 @@ class RepPointsHead(BaseDenseHead):
         return cls_out, pts_out_init, pts_out_refine
 
     def forward(self, feats):
+        """Forward features from FPN.
+
+        Args:
+            feats (tuple[Tensor]): Features from FPN.
+
+        Returns:
+            tuple: Classification scores and bbox predictions of all FPN
+                levels.
+        """
         return multi_apply(self.forward_single, feats)
 
     def get_points(self, featmap_sizes, img_metas):
@@ -369,8 +381,7 @@ class RepPointsHead(BaseDenseHead):
         return bbox_list
 
     def offset_to_pts(self, center_list, pred_list):
-        """Change from point offset to point coordinate.
-        """
+        """Change from point offset to point coordinate."""
         pts_list = []
         for i_lvl in range(len(self.point_strides)):
             pts_lvl = []

@@ -128,6 +128,7 @@ class FCOSHead(BaseDenseHead):
         self._init_layers()
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
@@ -164,6 +165,7 @@ class FCOSHead(BaseDenseHead):
         self.scales = nn.ModuleList([Scale(1.0) for _ in self.strides])
 
     def init_weights(self):
+        """Initialize weights of the head."""
         for m in self.cls_convs:
             if isinstance(m.conv, nn.Conv2d):
                 normal_init(m.conv, std=0.01)
@@ -176,6 +178,23 @@ class FCOSHead(BaseDenseHead):
         normal_init(self.fcos_centerness, std=0.01)
 
     def forward(self, feats):
+        """Forward features from the upstream network.
+
+        Args:
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple:
+                cls_scores (list[Tensor]): Box scores for each scale level,
+                    each is a 4D-tensor, the channel number is
+                    num_points * num_classes.
+                bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                    level, each is a 4D-tensor, the channel number is
+                    num_points * 4.
+                centernesses (list[Tensor]): Centerss for each scale level,
+                    each is a 4D-tensor, the channel number is num_points * 1.
+        """
         return multi_apply(self.forward_single, feats, self.scales,
                            self.strides)
 
@@ -225,6 +244,28 @@ class FCOSHead(BaseDenseHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute loss of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level,
+                each is a 4D-tensor, the channel number is
+                num_points * num_classes.
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level, each is a 4D-tensor, the channel number is
+                num_points * 4.
+            centernesses (list[Tensor]): Centerss for each scale level, each
+                is a 4D-tensor, the channel number is num_points * 1.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         assert len(cls_scores) == len(bbox_preds) == len(centernesses)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
@@ -299,6 +340,30 @@ class FCOSHead(BaseDenseHead):
                    img_metas,
                    cfg=None,
                    rescale=None):
+        """ Transform network output for a batch into bbox predictions.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_points * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_points * 4, H, W)
+            centernesses (list[Tensor]): Centerness for each scale level with
+                shape (N, num_points * 1, H, W)
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used
+            rescale (bool): If True, return boxes in original image space
+
+        Returns:
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class label of the
+                corresponding box.
+        """
+
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
@@ -335,6 +400,30 @@ class FCOSHead(BaseDenseHead):
                            scale_factor,
                            cfg,
                            rescale=False):
+        """Transform outputs for a single batch item into bbox predictions.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for a single scale level
+                Has shape (num_points * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for a single scale
+                level with shape (num_points * 4, H, W).
+            centernesses (list[Tensor]): Centerness for a single scale level
+                with shape (num_points * 4, H, W).
+            mlvl_points (list[Tensor]): Box reference for a single scale level
+                with shape (num_total_points, 4).
+            img_shape (tuple[int]): Shape of the input image,
+                (height, width, 3).
+            scale_factor (ndarray): Scale factor of the image arrange as
+                (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+
+        Returns:
+            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1.
+        """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
         mlvl_bboxes = []
@@ -397,6 +486,7 @@ class FCOSHead(BaseDenseHead):
         return mlvl_points
 
     def _get_points_single(self, featmap_size, stride, dtype, device):
+        """Get points for a single scale level."""
         h, w = featmap_size
         x_range = torch.arange(
             0, w * stride, stride, dtype=dtype, device=device)
@@ -408,6 +498,23 @@ class FCOSHead(BaseDenseHead):
         return points
 
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
+        """Compute regression, classification and centerss targets for points
+            in multiple images.
+
+        Args:
+            points (list[Tensor]): Points of each fpn level, each has shape
+                (num_points, 2).
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image,
+                each has shape (num_gt, 4).
+            gt_labels_list (list[Tensor]): Ground truth labels of each box,
+                each has shape (num_gt,).
+
+        Returns:
+            tuple:
+                concat_lvl_labels (list[Tensor]): Labels of each level.
+                concat_lvl_bbox_targets (list[Tensor]): BBox targets of each
+                    level.
+        """
         assert len(points) == len(self.regress_ranges)
         num_levels = len(points)
         # expand regress ranges to align with points
@@ -453,6 +560,7 @@ class FCOSHead(BaseDenseHead):
 
     def _get_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
                            num_points_per_lvl):
+        """Compute regression and classification targets for a single image."""
         num_points = points.size(0)
         num_gts = gt_labels.size(0)
         if num_gts == 0:
@@ -535,6 +643,15 @@ class FCOSHead(BaseDenseHead):
         return labels, bbox_targets
 
     def centerness_target(self, pos_bbox_targets):
+        """Compute centerness targets.
+
+        Args:
+            pos_bbox_targets (Tensor): BBox targets of positive bboxes in shape
+                (num_pos, 4)
+
+        Returns:
+            Tensor: Centerness target.
+        """
         # only calculate pos centerness targets, otherwise there may be nan
         left_right = pos_bbox_targets[:, [0, 2]]
         top_bottom = pos_bbox_targets[:, [1, 3]]
