@@ -60,7 +60,7 @@ class MaskScoringRoIHead(StandardRoIHead):
                          det_bboxes,
                          det_labels,
                          rescale=False):
-        """Obtain mask prediction withour augmentation"""
+        """Obtain mask prediction without augmentation"""
         # image shape of the first image in the batch (only one)
         ori_shape = img_metas[0]['ori_shape']
         scale_factor = img_metas[0]['scale_factor']
