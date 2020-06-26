@@ -76,6 +76,7 @@ Results and models are available in the [model zoo](docs/model_zoo.md).
 | PAFPN              | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 | NAS-FCOS           | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 | PISA               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+| Dynamic R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
 
 Other features
 - [x] [CARAFE](configs/carafe/README.md)
