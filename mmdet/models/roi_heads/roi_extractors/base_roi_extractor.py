@@ -24,7 +24,7 @@ class BaseRoIExtractor(nn.Module, metaclass=ABCMeta):
 
     @property
     def num_inputs(self):
-        """Number of input feature maps."""
+        """int: Number of input feature maps."""
         return len(self.featmap_strides)
 
     def init_weights(self):

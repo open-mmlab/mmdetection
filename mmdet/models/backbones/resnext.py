@@ -123,6 +123,7 @@ class ResNeXt(ResNet):
         super(ResNeXt, self).__init__(**kwargs)
 
     def make_res_layer(self, **kwargs):
+        """Pack all blocks in a stage into a ``ResLayer``"""
         return ResLayer(
             groups=self.groups,
             base_width=self.base_width,

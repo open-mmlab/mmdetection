@@ -46,6 +46,12 @@ class ResLayer(nn.Module):
         self.add_module(f'layer{stage + 1}', res_layer)
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in the module
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if isinstance(pretrained, str):
             logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)
