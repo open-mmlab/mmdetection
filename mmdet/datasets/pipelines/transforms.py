@@ -75,6 +75,15 @@ class Resize(object):
 
     @staticmethod
     def random_select(img_scales):
+        """Randomly select an img_scale
+
+        Args:
+            img_scales (list[tuple[int]]): Images scales for selection.
+
+        Returns:
+            tuple[int]: Image scale selected.
+            int: The index of selected image scale.
+        """
         assert mmcv.is_list_of(img_scales, tuple)
         scale_idx = np.random.randint(len(img_scales))
         img_scale = img_scales[scale_idx]
@@ -200,11 +209,12 @@ class RandomFlip(object):
         flip_ratio (float, optional): The flipping probability.
     """
 
-    def __init__(self, flip_ratio=0.5, direction='horizontal'):
-        assert flip_ratio >= 0 and flip_ratio <= 1
-        assert direction in ['horizontal', 'vertical']
+    def __init__(self, flip_ratio=None, direction='horizontal'):
         self.flip_ratio = flip_ratio
         self.direction = direction
+        if flip_ratio is not None:
+            assert flip_ratio >= 0 and flip_ratio <= 1
+        assert direction in ['horizontal', 'vertical']
 
     def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.

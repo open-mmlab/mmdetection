@@ -42,6 +42,15 @@ class MultiScaleFlipAug(object):
                 'flip has no effect when RandomFlip is not in transforms')
 
     def __call__(self, results):
+        """Call function to apply time time augment transforms on results.
+
+        Args:
+            results (dict): Result dict contains the data to transform.
+
+        Returns:
+           dict: The augmented data, where each value is wrapped into a list.
+        """
+
         aug_data = []
         flip_aug = [False, True] if self.flip else [False]
         for scale in self.img_scale:
@@ -61,6 +70,7 @@ class MultiScaleFlipAug(object):
         return aug_data_dict
 
     def __repr__(self):
+        """str: Type of augmentations"""
         repr_str = self.__class__.__name__
         repr_str += f'(transforms={self.transforms}, '
         repr_str += f'img_scale={self.img_scale}, flip={self.flip})'
