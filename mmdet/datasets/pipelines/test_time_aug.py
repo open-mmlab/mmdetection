@@ -70,7 +70,7 @@ class MultiScaleFlipAug(object):
         return aug_data_dict
 
     def __repr__(self):
-        """str: Type of augmentations"""
+        """Type of augmentations"""
         repr_str = self.__class__.__name__
         repr_str += f'(transforms={self.transforms}, '
         repr_str += f'img_scale={self.img_scale}, flip={self.flip})'

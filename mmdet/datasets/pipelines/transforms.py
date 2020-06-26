@@ -75,15 +75,16 @@ class Resize(object):
 
     @staticmethod
     def random_select(img_scales):
-        """Randomly select an img_scale
+        """Randomly select an img_scale when ``multiscale_mode=='value'``
 
         Args:
-            img_scales (list[tuple[int]]): Images scales for selection.
+            img_scales (list[tuple]): Images scales for selection.
 
         Returns:
-            tuple[int]: Image scale selected.
+            tuple: Image scale selected.
             int: The index of selected image scale.
         """
+
         assert mmcv.is_list_of(img_scales, tuple)
         scale_idx = np.random.randint(len(img_scales))
         img_scale = img_scales[scale_idx]
@@ -91,6 +92,18 @@ class Resize(object):
 
     @staticmethod
     def random_sample(img_scales):
+        """Randomly sample an img_scale when ``multiscale_mode=='range'``.
+
+        Args:
+            img_scales (list[tuple]): Images scale range for sampling.
+                There must be two tuples in img_scales, which specify the lower
+                and uper bound of image scales.
+
+        Returns:
+            tuple[int]: Image scale sampled
+            None: Placeholder, to be consistent with :func:`random_select`.
+        """
+
         assert mmcv.is_list_of(img_scales, tuple) and len(img_scales) == 2
         img_scale_long = [max(s) for s in img_scales]
         img_scale_short = [min(s) for s in img_scales]
@@ -105,6 +118,18 @@ class Resize(object):
 
     @staticmethod
     def random_sample_ratio(img_scale, ratio_range):
+        """Randomly sample an img_scale when ``ratio_range`` is specified.
+
+        Args:
+            img_scale (tuple): Images scale base to multiply with ratio.
+            ratio_range (tuple[float]): The minimum and maximum ratio to scale
+                the ``img_scale``.
+
+        Returns:
+            tuple[int]: Image scale sampled
+            None: Placeholder, to be consistent with :func:`random_select`.
+        """
+
         assert isinstance(img_scale, tuple) and len(img_scale) == 2
         min_ratio, max_ratio = ratio_range
         assert min_ratio <= max_ratio
@@ -113,6 +138,17 @@ class Resize(object):
         return scale, None
 
     def _random_scale(self, results):
+        """Randomly sample an img_scale according to ``ratio_range`` and
+        ``multiscale_mode``.
+
+        Args:
+            results (dict): Result dict from :obj:`dataset`.
+
+        Returns:
+            dict: Two new keys 'scale` and 'scale_idx` are added into
+                ``results``, which would be used by subsequent pipelines.
+        """
+
         if self.ratio_range is not None:
             scale, scale_idx = self.random_sample_ratio(
                 self.img_scale[0], self.ratio_range)
@@ -129,6 +165,7 @@ class Resize(object):
         results['scale_idx'] = scale_idx
 
     def _resize_img(self, results):
+        """Resize images with ``results['scale']``."""
         for key in results.get('img_fields', ['img']):
             if self.keep_ratio:
                 img, scale_factor = mmcv.imrescale(
@@ -153,6 +190,7 @@ class Resize(object):
             results['keep_ratio'] = self.keep_ratio
 
     def _resize_bboxes(self, results):
+        """Resize bounding boxes with ``results['scale_factor']``."""
         img_shape = results['img_shape']
         for key in results.get('bbox_fields', []):
             bboxes = results[key] * results['scale_factor']
@@ -161,6 +199,7 @@ class Resize(object):
             results[key] = bboxes
 
     def _resize_masks(self, results):
+        """Resize masks with ``results['scale']``"""
         for key in results.get('mask_fields', []):
             if results[key] is None:
                 continue
@@ -170,6 +209,7 @@ class Resize(object):
                 results[key] = results[key].resize(results['img_shape'][:2])
 
     def _resize_seg(self, results):
+        """Resize semantic segmentation map with ``results['scale']``."""
         for key in results.get('seg_fields', []):
             if self.keep_ratio:
                 gt_seg = mmcv.imrescale(
@@ -180,6 +220,17 @@ class Resize(object):
             results['gt_semantic_seg'] = gt_seg
 
     def __call__(self, results):
+        """Call function to resize images, bounding boxes, masks, semantic
+        segmentation map.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor',
+                'keep_ratio' keys are added into result dict.
+        """
+
         if 'scale' not in results:
             self._random_scale(results)
         self._resize_img(results)
@@ -189,6 +240,7 @@ class Resize(object):
         return results
 
     def __repr__(self):
+        """str: Resize configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(img_scale={self.img_scale}, '
         repr_str += f'multiscale_mode={self.multiscale_mode}, '
@@ -207,6 +259,7 @@ class RandomFlip(object):
 
     Args:
         flip_ratio (float, optional): The flipping probability.
+        direction(str, optional): The flipping direction.
     """
 
     def __init__(self, flip_ratio=None, direction='horizontal'):
@@ -220,9 +273,15 @@ class RandomFlip(object):
         """Flip bboxes horizontally.
 
         Args:
-            bboxes(ndarray): shape (..., 4*k)
-            img_shape(tuple): (height, width)
+            bboxes (numpy.ndarray): Bounding boxes, shape (..., 4*k)
+            img_shape (tuple[int]): Image shape (height, width)
+            direction (str): Flip direction. Options are 'horizontal',
+                'vertical'.
+
+        Returns:
+            numpy.ndarray: Flipped bounding boxes.
         """
+
         assert bboxes.shape[-1] % 4 == 0
         flipped = bboxes.copy()
         if direction == 'horizontal':
@@ -238,6 +297,17 @@ class RandomFlip(object):
         return flipped
 
     def __call__(self, results):
+        """Call function to flip bounding boxes, masks, semantic segmentation
+        maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Flipped results, 'flip', 'flip_direction' keys are added into
+                result dict.
+        """
+
         if 'flip' not in results:
             flip = True if np.random.rand() < self.flip_ratio else False
             results['flip'] = flip
@@ -264,6 +334,7 @@ class RandomFlip(object):
         return results
 
     def __repr__(self):
+        """Flip configuration"""
         return self.__class__.__name__ + f'(flip_ratio={self.flip_ratio})'
 
 
@@ -289,6 +360,7 @@ class Pad(object):
         assert size is None or size_divisor is None
 
     def _pad_img(self, results):
+        """Pad images according to ``self.size``."""
         for key in results.get('img_fields', ['img']):
             if self.size is not None:
                 padded_img = mmcv.impad(results[key], self.size, self.pad_val)
@@ -301,21 +373,35 @@ class Pad(object):
         results['pad_size_divisor'] = self.size_divisor
 
     def _pad_masks(self, results):
+        """Pad masks according to ``results['pad_shape']``."""
         pad_shape = results['pad_shape'][:2]
         for key in results.get('mask_fields', []):
             results[key] = results[key].pad(pad_shape, pad_val=self.pad_val)
 
     def _pad_seg(self, results):
+        """Pad semantic segmentation map according to
+        ``results['pad_shape']``."""
         for key in results.get('seg_fields', []):
             results[key] = mmcv.impad(results[key], results['pad_shape'][:2])
 
     def __call__(self, results):
+        """Call function to pad images, masks, semantic segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Padded results, 'pad_shape', 'pad_fixed_size',
+                'pad_size_divisor' keys are added into result dict.
+
+        """
         self._pad_img(results)
         self._pad_masks(results)
         self._pad_seg(results)
         return results
 
     def __repr__(self):
+        """Padding configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(size={self.size}, '
         repr_str += f'size_divisor={self.size_divisor}, '
@@ -340,6 +426,16 @@ class Normalize(object):
         self.to_rgb = to_rgb
 
     def __call__(self, results):
+        """Call function to normalize images.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Normalized results, 'img_norm_cfg' key is added into
+                result dict.
+
+        """
         for key in results.get('img_fields', ['img']):
             results[key] = mmcv.imnormalize(results[key], self.mean, self.std,
                                             self.to_rgb)
@@ -384,6 +480,17 @@ class RandomCrop(object):
         }
 
     def __call__(self, results):
+        """Call function to randomly crop images, bounding boxes, masks,
+        semantic segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Randomly cropped results, 'img_shape' key in result dict is
+                updated according to crop size.
+        """
+
         for key in results.get('img_fields', ['img']):
             img = results[key]
             margin_h = max(img.shape[0] - self.crop_size[0], 0)
@@ -439,6 +546,7 @@ class RandomCrop(object):
         return results
 
     def __repr__(self):
+        """Random crop configuration"""
         return self.__class__.__name__ + f'(crop_size={self.crop_size})'
 
 
@@ -454,6 +562,15 @@ class SegRescale(object):
         self.scale_factor = scale_factor
 
     def __call__(self, results):
+        """Call function to scale the semantic segmentation map
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with semantic segmentation map scaled.
+        """
+
         for key in results.get('seg_fields', []):
             if self.scale_factor != 1:
                 results[key] = mmcv.imrescale(
@@ -461,6 +578,7 @@ class SegRescale(object):
         return results
 
     def __repr__(self):
+        """Segmentation scale configuration"""
         return self.__class__.__name__ + f'(scale_factor={self.scale_factor})'
 
 
@@ -497,6 +615,15 @@ class PhotoMetricDistortion(object):
         self.hue_delta = hue_delta
 
     def __call__(self, results):
+        """Call function to perform photo metric distortion on images.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with images distorted.
+        """
+
         if 'img_fields' in results:
             assert results['img_fields'] == ['img'], \
                 'Only single img_fields is allowed'
@@ -551,6 +678,7 @@ class PhotoMetricDistortion(object):
         return results
 
     def __repr__(self):
+        """Photo metric distortion configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(\nbrightness_delta={self.brightness_delta},\n'
         repr_str += 'contrast_range='
@@ -592,6 +720,15 @@ class Expand(object):
         self.prob = prob
 
     def __call__(self, results):
+        """Call function to expand images, bounding boxes.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with images, bounding boxes expanded
+        """
+
         if random.uniform(0, 1) > self.prob:
             return results
 
@@ -631,6 +768,7 @@ class Expand(object):
         return results
 
     def __repr__(self):
+        """Expand configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(mean={self.mean}, to_rgb={self.to_rgb}, '
         repr_str += f'ratio_range={self.ratio_range}, '
@@ -671,6 +809,17 @@ class MinIoURandomCrop(object):
         }
 
     def __call__(self, results):
+        """Call function to crop images and bounding boxes with minimum IoU
+        constraint.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with images and bounding boxes cropped,
+                'img_shape' key is updated.
+        """
+
         if 'img_fields' in results:
             assert results['img_fields'] == ['img'], \
                 'Only single img_fields is allowed'
@@ -761,12 +910,27 @@ class MinIoURandomCrop(object):
 
 @PIPELINES.register_module()
 class Corrupt(object):
+    """Corruption augmentation
+
+    Args:
+        corruption (str): Corruption name.
+        severity (int, optional): The severity of corruption. Default: 1.
+    """
 
     def __init__(self, corruption, severity=1):
         self.corruption = corruption
         self.severity = severity
 
     def __call__(self, results):
+        """Call function to corrupt image.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with images corrupted.
+        """
+
         if corrupt is None:
             raise RuntimeError('imagecorruptions is not installed')
         if 'img_fields' in results:
@@ -779,6 +943,7 @@ class Corrupt(object):
         return results
 
     def __repr__(self):
+        """Corrupt configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(corruption={self.corruption}, '
         repr_str += f'severity={self.severity})'
@@ -787,6 +952,19 @@ class Corrupt(object):
 
 @PIPELINES.register_module()
 class Albu(object):
+    """Albumentation augmentation.
+
+    Adds custom transformations from Albumentations lib.
+    Please, visit `https://albumentations.readthedocs.io`
+    to get more information.
+
+    Args:
+        transforms (list): list of albu transformations
+        bbox_params (dict): bbox_params for albumentation `Compose`
+        keymap (dict): contains {'input key':'albumentation-style key'}
+        skip_img_without_anno (bool): whether to skip the image if no ann left
+            after aug
+    """
 
     def __init__(self,
                  transforms,
@@ -794,17 +972,6 @@ class Albu(object):
                  keymap=None,
                  update_pad_shape=False,
                  skip_img_without_anno=False):
-        """
-        Adds custom transformations from Albumentations lib.
-        Please, visit `https://albumentations.readthedocs.io`
-        to get more information.
-
-        transforms (list): list of albu transformations
-        bbox_params (dict): bbox_params for albumentation `Compose`
-        keymap (dict): contains {'input key':'albumentation-style key'}
-        skip_img_without_anno (bool): whether to skip the image
-                                      if no ann left after aug
-        """
         if Compose is None:
             raise RuntimeError('albumentations is not installed')
 
@@ -845,6 +1012,7 @@ class Albu(object):
         Returns:
             obj: The constructed object.
         """
+
         assert isinstance(cfg, dict) and 'type' in cfg
         args = cfg.copy()
 
@@ -879,6 +1047,7 @@ class Albu(object):
         Returns:
             dict: new dict.
         """
+
         updated_dict = {}
         for k, v in zip(d.keys(), d.values()):
             new_k = keymap.get(k, k)
@@ -945,5 +1114,6 @@ class Albu(object):
         return results
 
     def __repr__(self):
+        """Albumentation configuration"""
         repr_str = self.__class__.__name__ + f'(transforms={self.transforms})'
         return repr_str

@@ -59,7 +59,7 @@ class ToTensor(object):
         return results
 
     def __repr__(self):
-        """str: The keys to apply."""
+        """The keys to apply."""
         return self.__class__.__name__ + f'(keys={self.keys})'
 
 
@@ -97,7 +97,7 @@ class ImageToTensor(object):
         return results
 
     def __repr__(self):
-        """str: The keys to apply."""
+        """The keys to apply."""
         return self.__class__.__name__ + f'(keys={self.keys})'
 
 
@@ -129,7 +129,7 @@ class Transpose(object):
         return results
 
     def __repr__(self):
-        """str: The keys to apply, the order to transpose."""
+        """The keys to apply, the order to transpose."""
         return self.__class__.__name__ + \
             f'(keys={self.keys}, order={self.order})'
 
@@ -168,7 +168,7 @@ class ToDataContainer(object):
         return results
 
     def __repr__(self):
-        """str: The field to apply."""
+        """The field to apply."""
         return self.__class__.__name__ + f'(fields={self.fields})'
 
 
@@ -220,7 +220,7 @@ class DefaultFormatBundle(object):
         return results
 
     def __repr__(self):
-        """str: Class name signature."""
+        """Class name signature."""
         return self.__class__.__name__
 
 
@@ -292,7 +292,7 @@ class Collect(object):
         return data
 
     def __repr__(self):
-        """str: Keys to collect and meta keys"""
+        """Keys to collect and meta keys"""
         return self.__class__.__name__ + \
             f'(keys={self.keys}, meta_keys={self.meta_keys})'
 
@@ -336,5 +336,5 @@ class WrapFieldsToLists(object):
         return results
 
     def __repr__(self):
-        """str: Class name signature."""
+        """Class name signature."""
         return f'{self.__class__.__name__}()'

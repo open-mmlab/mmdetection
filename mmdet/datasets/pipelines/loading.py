@@ -78,7 +78,7 @@ class LoadImageFromFile(object):
         return results
 
     def __repr__(self):
-        """str: Image loading configuration"""
+        """Image loading configuration"""
         repr_str = (f'{self.__class__.__name__}('
                     f'to_float32={self.to_float32}, '
                     f"color_type='{self.color_type}', "
@@ -162,7 +162,7 @@ class LoadMultiChannelImageFromFiles(object):
         return results
 
     def __repr__(self):
-        """str: Image loading configuration"""
+        """Image loading configuration"""
         repr_str = (f'{self.__class__.__name__}('
                     f'to_float32={self.to_float32}, '
                     f"color_type='{self.color_type}', "
@@ -351,7 +351,7 @@ class LoadAnnotations(object):
         return results
 
     def __repr__(self):
-        """str: Annotation loading configuration"""
+        """Annotation loading configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(with_bbox={self.with_bbox}, '
         repr_str += f'with_label={self.with_label}, '
@@ -400,6 +400,6 @@ class LoadProposals(object):
         return results
 
     def __repr__(self):
-        """str: Proposal loading configuration"""
+        """Proposal loading configuration"""
         return self.__class__.__name__ + \
             f'(num_max_proposals={self.num_max_proposals})'
