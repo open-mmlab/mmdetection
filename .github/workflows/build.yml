@@ -3,9 +3,9 @@ name: build
 on: [push, pull_request]
 
 jobs:
-  runs-on: ubuntu-latest
-
   build:
+
+    runs-on: ubuntu-latest
 
     env:
       CUDA: 10.1.105-1
