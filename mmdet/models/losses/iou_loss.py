@@ -14,13 +14,13 @@ def iou_loss(pred, target, eps=1e-6):
     The loss is calculated as negative log of IoU.
 
     Args:
-        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+        pred (torch.Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
-        target (Tensor): Corresponding gt bboxes, shape (n, 4).
+        target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
         eps (float): Eps to avoid log(0).
 
     Return:
-        Tensor: Loss tensor.
+        torch.Tensor: Loss tensor.
     """
     ious = bbox_overlaps(pred, target, is_aligned=True).clamp(min=eps)
     loss = -ious.log()
@@ -33,8 +33,8 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
     https://arxiv.org/abs/1711.00164.
 
     Args:
-        pred (tensor): Predicted bboxes.
-        target (tensor): Target bboxes.
+        pred (torch.Tensor): Predicted bboxes.
+        target (torch.Tensor): Target bboxes.
         beta (float): beta parameter in smoothl1.
         eps (float): eps to avoid NaN.
     """
@@ -80,9 +80,9 @@ def giou_loss(pred, target, eps=1e-7):
     https://github.com/sfzhang15/ATSS/blob/master/atss_core/modeling/rpn/atss/loss.py#L36
 
     Args:
-        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+        pred (torch.Tensor): Predicted bboxes of format (x1, y1, x2, y2),
             shape (n, 4).
-        target (Tensor): Corresponding gt bboxes, shape (n, 4).
+        target (torch.Tensor): Corresponding gt bboxes, shape (n, 4).
         eps (float): Eps to avoid log(0).
 
     Return:
@@ -116,6 +116,15 @@ def giou_loss(pred, target, eps=1e-7):
 
 @LOSSES.register_module()
 class IoULoss(nn.Module):
+    """IoULoss
+
+    Computing the IoU loss between a set of predicted bboxes and target bboxes.
+
+    Args:
+        eps (float): Eps to avoid log(0).
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+    """
 
     def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0):
         super(IoULoss, self).__init__()
@@ -130,6 +139,19 @@ class IoULoss(nn.Module):
                 avg_factor=None,
                 reduction_override=None,
                 **kwargs):
+        """Forward function
+
+        Args:
+            pred (torch.Tensor): The prediction.
+            target (torch.Tensor): The learning target of the prediction.
+            weight (torch.Tensor, optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None. Options are "none", "mean" and "sum".
+        """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)

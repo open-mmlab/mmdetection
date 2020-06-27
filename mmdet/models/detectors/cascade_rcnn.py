@@ -4,6 +4,8 @@ from .two_stage import TwoStageDetector
 
 @DETECTORS.register_module()
 class CascadeRCNN(TwoStageDetector):
+    """Implementation of `Cascade R-CNN and Cascade Mask R-CNN
+    <https://arxiv.org/abs/1906.09756>`_"""
 
     def __init__(self,
                  backbone,
@@ -23,6 +25,7 @@ class CascadeRCNN(TwoStageDetector):
             pretrained=pretrained)
 
     def show_result(self, data, result, **kwargs):
+        """Show prediction results of the detector"""
         if self.with_mask:
             ms_bbox_result, ms_segm_result = result
             if isinstance(ms_bbox_result, dict):

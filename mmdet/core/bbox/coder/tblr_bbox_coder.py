@@ -24,6 +24,18 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         self.normalizer = normalizer
 
     def encode(self, bboxes, gt_bboxes):
+        """Get box regression transformation deltas that can be used
+        to transform the `bboxes` into the `gt_bboxes` in the top,
+        left, bottom, right order.
+
+        Args:
+            bboxes (torch.Tensor): source boxes, e.g., object proposals.
+            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
+                ground truth boxes.
+
+        Returns:
+            torch.Tensor: Box transformation deltas
+        """
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bboxes2tblr(
@@ -31,6 +43,17 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         return encoded_bboxes
 
     def decode(self, bboxes, pred_bboxes, max_shape=None):
+        """Apply transformation `pred_bboxes` to `boxes`.
+
+        Args:
+            boxes (torch.Tensor): Basic boxes.
+            pred_bboxes (torch.Tensor): Encoded boxes with shape
+            max_shape (tuple[int], optional): Maximum shape of boxes.
+                Defaults to None.
+
+        Returns:
+            torch.Tensor: Decoded boxes.
+        """
         assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = tblr2bboxes(
             bboxes,
