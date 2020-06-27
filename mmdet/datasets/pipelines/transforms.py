@@ -252,7 +252,6 @@ class Resize(object):
         return results
 
     def __repr__(self):
-        """str: Resize configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(img_scale={self.img_scale}, '
         repr_str += f'multiscale_mode={self.multiscale_mode}, '
@@ -347,7 +346,6 @@ class RandomFlip(object):
         return results
 
     def __repr__(self):
-        """Flip configuration"""
         return self.__class__.__name__ + f'(flip_ratio={self.flip_ratio})'
 
 
@@ -414,7 +412,6 @@ class Pad(object):
         return results
 
     def __repr__(self):
-        """Padding configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(size={self.size}, '
         repr_str += f'size_divisor={self.size_divisor}, '
@@ -559,7 +556,6 @@ class RandomCrop(object):
         return results
 
     def __repr__(self):
-        """Random crop configuration"""
         return self.__class__.__name__ + f'(crop_size={self.crop_size})'
 
 
@@ -591,7 +587,6 @@ class SegRescale(object):
         return results
 
     def __repr__(self):
-        """Segmentation scale configuration"""
         return self.__class__.__name__ + f'(scale_factor={self.scale_factor})'
 
 
@@ -691,7 +686,6 @@ class PhotoMetricDistortion(object):
         return results
 
     def __repr__(self):
-        """Photo metric distortion configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(\nbrightness_delta={self.brightness_delta},\n'
         repr_str += 'contrast_range='
@@ -781,7 +775,6 @@ class Expand(object):
         return results
 
     def __repr__(self):
-        """Expand configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(mean={self.mean}, to_rgb={self.to_rgb}, '
         repr_str += f'ratio_range={self.ratio_range}, '
@@ -959,7 +952,6 @@ class Corrupt(object):
         return results
 
     def __repr__(self):
-        """Corrupt configuration"""
         repr_str = self.__class__.__name__
         repr_str += f'(corruption={self.corruption}, '
         repr_str += f'severity={self.severity})'
@@ -1157,6 +1149,5 @@ class Albu(object):
         return results
 
     def __repr__(self):
-        """Albumentation configuration"""
         repr_str = self.__class__.__name__ + f'(transforms={self.transforms})'
         return repr_str
