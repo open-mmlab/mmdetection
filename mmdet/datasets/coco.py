@@ -34,6 +34,15 @@ class CocoDataset(CustomDataset):
                'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
 
     def load_annotations(self, ann_file):
+        """Load annotation from COCO style annotation file.
+
+        Args:
+            ann_file (str): Path of annotation file.
+
+        Returns:
+            list[dict]: Annotation info from COCO api.
+        """
+
         self.coco = COCO(ann_file)
         self.cat_ids = self.coco.get_cat_ids(cat_names=self.CLASSES)
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
@@ -46,12 +55,30 @@ class CocoDataset(CustomDataset):
         return data_infos
 
     def get_ann_info(self, idx):
+        """Get COCO annotation by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
         img_id = self.data_infos[idx]['id']
         ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
         ann_info = self.coco.load_anns(ann_ids)
         return self._parse_ann_info(self.data_infos[idx], ann_info)
 
     def get_cat_ids(self, idx):
+        """Get COCO category ids by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            list[int]: All categories in the image of specified index.
+        """
+
         img_id = self.data_infos[idx]['id']
         ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
         ann_info = self.coco.load_anns(ann_ids)
@@ -153,6 +180,17 @@ class CocoDataset(CustomDataset):
         return ann
 
     def xyxy2xywh(self, bbox):
+        """Convert ``xyxy`` style bounding boxes to ``xywh`` style for COCO
+        evaluation.
+
+        Args:
+            bbox (numpy.ndarray): The bounding boxes, shape (4, ), in
+                ``xyxy`` order.
+
+        Returns:
+            list[float]: The converted bounding boxes, in ``xywh`` order.
+        """
+
         _bbox = bbox.tolist()
         return [
             _bbox[0],
@@ -162,6 +200,7 @@ class CocoDataset(CustomDataset):
         ]
 
     def _proposal2json(self, results):
+        """Convert proposal results to COCO json style"""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -176,6 +215,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _det2json(self, results):
+        """Convert detection results to COCO json style"""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -192,6 +232,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _segm2json(self, results):
+        """Convert instance segmentation results to COCO json style"""
         bbox_json_results = []
         segm_json_results = []
         for idx in range(len(self)):
@@ -229,7 +270,7 @@ class CocoDataset(CustomDataset):
         return bbox_json_results, segm_json_results
 
     def results2json(self, results, outfile_prefix):
-        """Dump the detection results to a json file.
+        """Dump the detection results to a COCO style json file.
 
         There are 3 types of results: proposals, bbox predictions, mask
         predictions, and they have different data types. This method will
@@ -296,7 +337,8 @@ class CocoDataset(CustomDataset):
         """Format the results to json (standard format for COCO evaluation).
 
         Args:
-            results (list): Testing results of the dataset.
+            results (list[tuple | numpy.ndarray]): Testing results of the
+                dataset.
             jsonfile_prefix (str | None): The prefix of json files. It includes
                 the file path and the prefix of filename, e.g., "a/b/prefix".
                 If not specified, a temp file will be created. Default: None.
@@ -330,8 +372,9 @@ class CocoDataset(CustomDataset):
         """Evaluation in COCO protocol.
 
         Args:
-            results (list): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated.
+            results (list[list | tuple]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Options are
+                'bbox', 'segm', 'proposal', 'proposal_fast'.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             jsonfile_prefix (str | None): The prefix of json files. It includes
@@ -346,7 +389,7 @@ class CocoDataset(CustomDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str: float]
+            dict[str, float]: COCO style evaluation metric.
         """
 
         metrics = metric if isinstance(metric, list) else [metric]
