@@ -57,6 +57,7 @@ jobs:
       run: |
         pip install mmcv
         pip install -r requirements.txt
+        pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
     - name: Lint with flake8
       run: flake8 .
     - name: Lint with isort
