@@ -184,11 +184,11 @@ class CocoDataset(CustomDataset):
         evaluation.
 
         Args:
-            bbox (numpy.ndarray): The bounding boxes, shape (n, 4), in
+            bbox (numpy.ndarray): The bounding boxes, shape (4, ), in
                 ``xyxy`` order.
 
         Returns:
-            list[list[float]]: The converted bounding boxes, in ``xywh`` order.
+            list[float]: The converted bounding boxes, in ``xywh`` order.
         """
 
         _bbox = bbox.tolist()
@@ -200,7 +200,7 @@ class CocoDataset(CustomDataset):
         ]
 
     def _proposal2json(self, results):
-        """Convert proposal results to json style"""
+        """Convert proposal results to COCO json style"""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -215,7 +215,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _det2json(self, results):
-        """Convert detection results to json style"""
+        """Convert detection results to COCO json style"""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -232,7 +232,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _segm2json(self, results):
-        """Convert instance segmentation results to json style"""
+        """Convert instance segmentation results to COCO json style"""
         bbox_json_results = []
         segm_json_results = []
         for idx in range(len(self)):
@@ -270,7 +270,7 @@ class CocoDataset(CustomDataset):
         return bbox_json_results, segm_json_results
 
     def results2json(self, results, outfile_prefix):
-        """Dump the detection results to a json file.
+        """Dump the detection results to a COCO style json file.
 
         There are 3 types of results: proposals, bbox predictions, mask
         predictions, and they have different data types. This method will
@@ -337,7 +337,8 @@ class CocoDataset(CustomDataset):
         """Format the results to json (standard format for COCO evaluation).
 
         Args:
-            results (list): Testing results of the dataset.
+            results (list[tuple | numpy.ndarray]): Testing results of the
+                dataset.
             jsonfile_prefix (str | None): The prefix of json files. It includes
                 the file path and the prefix of filename, e.g., "a/b/prefix".
                 If not specified, a temp file will be created. Default: None.

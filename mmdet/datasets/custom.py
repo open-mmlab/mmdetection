@@ -36,9 +36,9 @@ class CustomDataset(Dataset):
     Args:
         ann_file (str): Annotation file path.
         pipeline (list[dict]): Processing pipeline.
-        classes (str|Sequence[str]|None, optional): Specify classes to load.
+        classes (str | Sequence[str], optional): Specify classes to load.
             If is None, ``cls.CLASSES`` will be used. Default: None.
-        data_root (str|None, optional): Data root for ``ann_file``,
+        data_root (str | None, optional): Data root for ``ann_file``,
             ``img_prefix``, ``seg_prefix``, ``proposal_file`` if specified.
         test_mode (bool, optional): If set True, annotation will not be loaded.
         filter_empty_gt (bool, optional): If set true, images without bounding
@@ -101,15 +101,15 @@ class CustomDataset(Dataset):
         self.pipeline = Compose(pipeline)
 
     def __len__(self):
-        """Total number of data"""
+        """Total number of samples of data"""
         return len(self.data_infos)
 
     def load_annotations(self, ann_file):
-        """Load annotation from ann_file"""
+        """Load annotation from annotation file"""
         return mmcv.load(ann_file)
 
     def load_proposals(self, proposal_file):
-        """Load proposal from proposal_file"""
+        """Load proposal from proposal file"""
         return mmcv.load(proposal_file)
 
     def get_ann_info(self, idx):
@@ -166,7 +166,7 @@ class CustomDataset(Dataset):
                 self.flag[i] = 1
 
     def _rand_another(self, idx):
-        """Get another random index"""
+        """Get another random index from the same group as the given index"""
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
 

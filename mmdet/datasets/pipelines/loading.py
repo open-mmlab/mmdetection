@@ -41,7 +41,7 @@ class LoadImageFromFile(object):
         """Call functions to load image and get image meta information.
 
         Args:
-            results (dict): Result dict from :obj:`dataset`.
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 
         Returns:
             dict: The dict contains loaded image and meta information.
@@ -121,7 +121,7 @@ class LoadMultiChannelImageFromFiles(object):
         information.
 
         Args:
-            results (dict): Result dict from :obj:`dataset`.
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 
         Returns:
             dict: The dict contains loaded images and meta information.
@@ -209,7 +209,7 @@ class LoadAnnotations(object):
         """Private function to load bounding box annotations.
 
         Args:
-            results (dict): Result dict from :obj:`dataset`.
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 
         Returns:
             dict: The dict contains loaded bounding box annotations.
@@ -229,7 +229,7 @@ class LoadAnnotations(object):
         """Private function to load label annotations.
 
         Args:
-            results (dict): Result dict from :obj:`dataset`.
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 
         Returns:
             dict: The dict contains loaded label annotations.
@@ -239,12 +239,13 @@ class LoadAnnotations(object):
         return results
 
     def _poly2mask(self, mask_ann, img_h, img_w):
-        """Private function to convert polygon to mask
+        """Private function to convert masks represented with polygon to
+        bitmaps.
 
         Args:
-            mask_ann (list|dict|:obj:`rle`): Polygon mask annotation input.
-            img_h: The height of output mask.
-            img_w: The width of output mask.
+            mask_ann (list | dict): Polygon mask annotation input.
+            img_h (int): The height of output mask.
+            img_w (int): The width of output mask.
 
         Returns:
             numpy.ndarray: The decode bitmap mask of shape (img_h, img_w).
@@ -285,7 +286,7 @@ class LoadAnnotations(object):
         """Private function to load mask annotations.
 
         Args:
-            results (dict): Result dict from :obj:`dataset`.
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 
         Returns:
             dict: The dict contains loaded mask annotations.
@@ -331,7 +332,7 @@ class LoadAnnotations(object):
         """Call function to load multiple types annotations
 
         Args:
-            results (dict): Result dict from :obj:`dataset`.
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 
         Returns:
             dict: The dict contains loaded bounding box, label, mask and
@@ -366,8 +367,11 @@ class LoadAnnotations(object):
 class LoadProposals(object):
     """Load proposal pipeline.
 
+    Required key is "proposals". Updated keys are "proposals", "bbox_fields".
+
     Args:
         num_max_proposals (int, optional): Maximum number of proposals to load.
+            If not specified, all proposals will be loaded.
     """
 
     def __init__(self, num_max_proposals=None):
@@ -377,7 +381,7 @@ class LoadProposals(object):
         """Call function to load proposals from file.
 
         Args:
-            results (dict): Result dict from :obj:`dataset`.
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 
         Returns:
             dict: The dict contains loaded proposal annotations.

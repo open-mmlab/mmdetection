@@ -7,10 +7,10 @@ from ..builder import PIPELINES
 
 @PIPELINES.register_module()
 class Compose(object):
-    """Compose multiple pipeline sequentially.
+    """Compose multiple transforms sequentially.
 
     Args:
-        transforms (Sequence[dict|object]): Sequence of transform object or
+        transforms (Sequence[dict | callable]): Sequence of transform object or
             config dict to be composed.
     """
 
@@ -27,7 +27,7 @@ class Compose(object):
                 raise TypeError('transform must be callable or a dict')
 
     def __call__(self, data):
-        """Call function to apply transforms on data.
+        """Call function to apply transforms sequentially.
 
         Args:
             data (dict): A result dict contains the data to transform.

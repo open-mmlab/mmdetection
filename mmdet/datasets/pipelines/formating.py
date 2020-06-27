@@ -106,7 +106,7 @@ class Transpose(object):
     """Transpose some results by given keys.
 
     Args:
-        keys (Sequence[str]): Keys of results to be converted to transposed.
+        keys (Sequence[str]): Keys of results to be transposed.
         order (Sequence[int]): Order of transpose.
     """
 
@@ -141,7 +141,9 @@ class ToDataContainer(object):
     Args:
         fields (Sequence[dict]): Each field is a dict like
             ``dict(key='xxx', **kwargs)``. The ``key`` in result will
-            be converted to :obj:``mmcv.DataContainer`` with ``**kwargs``.
+            be converted to :obj:`mmcv.DataContainer` with ``**kwargs``.
+            Default: ``(dict(key='img', stack=True), dict(key='gt_bboxes'),
+                         dict(key='gt_labels'))``.
     """
 
     def __init__(self,
@@ -191,15 +193,14 @@ class DefaultFormatBundle(object):
     """
 
     def __call__(self, results):
-        """Call function to format common fields in results to
-        :obj:`mmcv.DataContainer`.
+        """Call function to transform and format common fields in results.
 
         Args:
             results (dict): Result dict contains the data to convert.
 
         Returns:
-            dict: The result dict contains the data converted to
-                :obj:`mmcv.DataContainer`.
+            dict: The result dict contains the data that is formatted with
+                default bundle.
         """
 
         if 'img' in results:
@@ -259,6 +260,9 @@ class Collect(object):
         keys (Sequence[str]): Keys of results to be collected in ``data``.
         meta_keys (Sequence[str], optional): Meta keys to be converted to
             ``mmcv.DataContainer`` and collected in ``data[img_metas]``.
+            Default: ``('filename', 'ori_filename', 'ori_shape', 'img_shape',
+            'pad_shape', 'scale_factor', 'flip', 'flip_direction',
+            'img_norm_cfg')``
     """
 
     def __init__(self,
@@ -270,8 +274,8 @@ class Collect(object):
         self.meta_keys = meta_keys
 
     def __call__(self, results):
-        """Call function to collect keys in results to
-        :obj:`mmcv.DataContainer`.
+        """Call function to collect keys in results. The keys in ``meta_keys``
+        will be converted to :obj:mmcv.DataContainer.
 
         Args:
             results (dict): Result dict contains the data to collect.

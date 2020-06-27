@@ -153,7 +153,7 @@ class ClassBalancedDataset(object):
             dataset (:obj:`CustomDataset`): The dataset
             repeat_thr (float): The threshold of frequency. If an image
                 contains the categories whose frequency below the threshold,
-                it would be repeat.
+                it would be repeated.
 
         Returns:
             list[float]: The repeat factors for each images in the dataset.

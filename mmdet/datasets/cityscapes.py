@@ -95,7 +95,7 @@ class CityscapesDataset(CocoDataset):
         """Dump the detection results to a txt file.
 
         Args:
-            results (list[list | tuple | ndarray]): Testing results of the
+            results (list[list | tuple]): Testing results of the
                 dataset.
             outfile_prefix (str): The filename prefix of the json files.
                 If the prefix is "somepath/xxx",
@@ -201,17 +201,23 @@ class CityscapesDataset(CocoDataset):
         """Evaluation in Cityscapes/COCO protocol.
 
         Args:
-            results (list): Testing results of the dataset.
+            results (list[list | tuple]): Testing results of the dataset.
             metric (str | list[str]): Metrics to be evaluated.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             outfile_prefix (str | None): The prefix of output file. It includes
                 the file path and the prefix of filename, e.g., "a/b/prefix".
-                If not specified, a temp file will be created. Default: None.
                 If results are evaluated with COCO protocol, it would be the
-                prefix of output json file. If results are evaluated with
-                cityscapes protocol, it would be the prefix of output txt/png
-                files.
+                prefix of output json file. For example, the metric is 'bbox'
+                and 'segm', then json files would be "a/b/prefix.bbox.json" and
+                "a/b/prefix.segm.json".
+                If results are evaluated with cityscapes protocol, it would be
+                the prefix of output txt/png files. The output files would be
+                png images under folder "a/b/prefix/xxx/" and the file name of
+                images would be written into a txt file
+                "a/b/prefix/xxx_pred.txt", where "xxx" is the video name of
+                cityscapes. If not specified, a temp file will be created.
+                Default: None.
             classwise (bool): Whether to evaluating the AP for each class.
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.

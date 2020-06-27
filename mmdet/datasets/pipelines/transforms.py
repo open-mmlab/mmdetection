@@ -75,14 +75,15 @@ class Resize(object):
 
     @staticmethod
     def random_select(img_scales):
-        """Randomly select an img_scale when ``multiscale_mode=='value'``
+        """Randomly select an img_scale from given candidates.``
 
         Args:
             img_scales (list[tuple]): Images scales for selection.
 
         Returns:
-            tuple: Image scale selected.
-            int: The index of selected image scale.
+            (tuple, int): Returns a tuple ``(img_scale, scale_dix)``,
+                where ``img_scale`` is the selected image scale and
+                ``scale_idx`` is the selected index in the given candidates.
         """
 
         assert mmcv.is_list_of(img_scales, tuple)
@@ -100,8 +101,9 @@ class Resize(object):
                 and uper bound of image scales.
 
         Returns:
-            tuple[int]: Image scale sampled
-            None: Placeholder, to be consistent with :func:`random_select`.
+            (tuple, None): Returns a tuple ``(img_scale, None)``, where
+                ``img_scale`` is sampled scale and None is just a placeholder
+                to be consistent with :func:`random_select`.
         """
 
         assert mmcv.is_list_of(img_scales, tuple) and len(img_scales) == 2
@@ -119,6 +121,10 @@ class Resize(object):
     @staticmethod
     def random_sample_ratio(img_scale, ratio_range):
         """Randomly sample an img_scale when ``ratio_range`` is specified.
+
+        A ratio will be randomly sampled from the range specified by
+        ``ratio_range``. Then it would be multiplied with ``img_scale`` to
+        generate sampled scale.
 
         Args:
             img_scale (tuple): Images scale base to multiply with ratio.
@@ -140,6 +146,12 @@ class Resize(object):
     def _random_scale(self, results):
         """Randomly sample an img_scale according to ``ratio_range`` and
         ``multiscale_mode``.
+
+        If ``ratio_range`` is specified, a ratio will be sampled and be
+        multiplied with ``img_scale``.
+        If multiple scales are specified by ``img_scale``, a scale will be
+        sampled according to ``multiscale_mode``.
+        Otherwise, single scale will be used.
 
         Args:
             results (dict): Result dict from :obj:`dataset`.
@@ -258,8 +270,9 @@ class RandomFlip(object):
     method.
 
     Args:
-        flip_ratio (float, optional): The flipping probability.
-        direction(str, optional): The flipping direction.
+        flip_ratio (float, optional): The flipping probability. Default: None.
+        direction(str, optional): The flipping direction. Options are
+            'horizontal' and 'vertical'. Default: 'horizontal'.
     """
 
     def __init__(self, flip_ratio=None, direction='horizontal'):
@@ -344,6 +357,7 @@ class Pad(object):
 
     There are two padding modes: (1) pad to a fixed size and (2) pad to the
     minimum size that is divisible by some number.
+    Added keys are "pad_shape", "pad_fixed_size", "pad_size_divisor",
 
     Args:
         size (tuple, optional): Fixed padding size.
@@ -391,8 +405,7 @@ class Pad(object):
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Padded results, 'pad_shape', 'pad_fixed_size',
-                'pad_size_divisor' keys are added into result dict.
+            dict: Updated result dict.
 
         """
         self._pad_img(results)
@@ -615,7 +628,7 @@ class PhotoMetricDistortion(object):
         self.hue_delta = hue_delta
 
     def __call__(self, results):
-        """Call function to perform photo metric distortion on images.
+        """Call function to perform photometric distortion on images.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -910,7 +923,10 @@ class MinIoURandomCrop(object):
 
 @PIPELINES.register_module()
 class Corrupt(object):
-    """Corruption augmentation
+    """Corruption augmentation.
+
+    Corruption transforms implemented based on
+    `imagecorruptions <https://github.com/bethgelab/imagecorruptions>`_.
 
     Args:
         corruption (str): Corruption name.
@@ -954,15 +970,42 @@ class Corrupt(object):
 class Albu(object):
     """Albumentation augmentation.
 
-    Adds custom transformations from Albumentations lib.
+    Adds custom transformations from Albumentations library.
     Please, visit `https://albumentations.readthedocs.io`
     to get more information.
 
+    An example of ``transforms`` is as followed:
+
+    .. code-block::
+
+        [
+            dict(
+                type='ShiftScaleRotate',
+                shift_limit=0.0625,
+                scale_limit=0.0,
+                rotate_limit=0,
+                interpolation=1,
+                p=0.5),
+            dict(
+                type='RandomBrightnessContrast',
+                brightness_limit=[0.1, 0.3],
+                contrast_limit=[0.1, 0.3],
+                p=0.2),
+            dict(type='ChannelShuffle', p=0.1),
+            dict(
+                type='OneOf',
+                transforms=[
+                    dict(type='Blur', blur_limit=3, p=1.0),
+                    dict(type='MedianBlur', blur_limit=3, p=1.0)
+                ],
+                p=0.1),
+        ]
+
     Args:
-        transforms (list): list of albu transformations
-        bbox_params (dict): bbox_params for albumentation `Compose`
-        keymap (dict): contains {'input key':'albumentation-style key'}
-        skip_img_without_anno (bool): whether to skip the image if no ann left
+        transforms (list[dict]): A list of albu transformations
+        bbox_params (dict): Bbox_params for albumentation `Compose`
+        keymap (dict): Contains {'input key':'albumentation-style key'}
+        skip_img_without_anno (bool): Whether to skip the image if no ann left
             after aug
     """
 

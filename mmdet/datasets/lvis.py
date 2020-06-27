@@ -265,12 +265,13 @@ class LVISDataset(CocoDataset):
         'yoke_(animal_equipment)', 'zebra', 'zucchini')
 
     def load_annotations(self, ann_file):
-        """Load annotation from lvis style ann_file
+        """Load annotation from lvis style annotation file
 
         Args:
             ann_file (str): Path of annotation file.
+
         Returns:
-            list[dict]: Annotation info from COCO api.
+            list[dict]: Annotation info from LVIS api.
         """
 
         try:
@@ -306,6 +307,7 @@ class LVISDataset(CocoDataset):
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05)):
         """Evaluation in LVIS protocol.
+
         Args:
             results (list): Testing results of the dataset.
             metric (str | list[str]): Metrics to be evaluated.
@@ -319,9 +321,11 @@ class LVISDataset(CocoDataset):
             iou_thrs (Sequence[float]): IoU threshold used for evaluating
                 recalls. If set to a list, the average recall of all IoUs will
                 also be computed. Default: 0.5.
+
         Returns:
-            dict[str: float]
+            dict[str: float]: LVIS style AP metrics.
         """
+
         try:
             from lvis import LVISResults, LVISEval
         except ImportError:

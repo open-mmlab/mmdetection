@@ -81,8 +81,6 @@ Supported methods:
 - [x] [PAFPN](configs/pafpn)
 - [x] [Dynamic R-CNN](configs/dynamic_rcnn)
 - [x] [PointRend](configs/point_rend)
-
-Other features:
 - [x] [CARAFE](configs/carafe/README.md)
 - [x] [DCNv2](configs/dcn/README.md)
 - [x] [Group Normalization](configs/gn/README.md)
