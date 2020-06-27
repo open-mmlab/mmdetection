@@ -14,7 +14,7 @@ class XMLDataset(CustomDataset):
     """XML dataset for detection.
 
     Args:
-        min_size (int|float|None, optional): The minimum size of bounding
+        min_size (int|float, optional): The minimum size of bounding
             boxes in the images. If the size of a bounding box is less than
             ``min_size``, it would be add to ignored field.
     """

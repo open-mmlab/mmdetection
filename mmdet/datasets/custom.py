@@ -38,7 +38,7 @@ class CustomDataset(Dataset):
         pipeline (list[dict]): Processing pipeline.
         classes (str | Sequence[str], optional): Specify classes to load.
             If is None, ``cls.CLASSES`` will be used. Default: None.
-        data_root (str | None, optional): Data root for ``ann_file``,
+        data_root (str, optional): Data root for ``ann_file``,
             ``img_prefix``, ``seg_prefix``, ``proposal_file`` if specified.
         test_mode (bool, optional): If set True, annotation will not be loaded.
         filter_empty_gt (bool, optional): If set true, images without bounding

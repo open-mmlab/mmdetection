@@ -34,7 +34,7 @@ class CocoDataset(CustomDataset):
                'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
 
     def load_annotations(self, ann_file):
-        """Load annotation from COCO style annotation file
+        """Load annotation from COCO style annotation file.
 
         Args:
             ann_file (str): Path of annotation file.
@@ -389,7 +389,7 @@ class CocoDataset(CustomDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str: float]: COCO style evaluation metric.
+            dict[str, float]: COCO style evaluation metric.
         """
 
         metrics = metric if isinstance(metric, list) else [metric]

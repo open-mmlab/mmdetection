@@ -324,7 +324,7 @@ class LVISDataset(CocoDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str: float]: LVIS style metrics.
+            dict[str, float]: LVIS style metrics.
         """
 
         try:

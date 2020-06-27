@@ -228,7 +228,7 @@ class CityscapesDataset(CocoDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str: float]: COCO style evaluation metric or cityscapes mAP
+            dict[str, float]: COCO style evaluation metric or cityscapes mAP
                 and AP@50.
         """
         eval_results = dict()

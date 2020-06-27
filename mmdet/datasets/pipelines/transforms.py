@@ -132,8 +132,10 @@ class Resize(object):
                 the ``img_scale``.
 
         Returns:
-            tuple[int]: Image scale sampled
-            None: Placeholder, to be consistent with :func:`random_select`.
+            (tuple, None): Returns a tuple ``(scale, None)``, where
+                ``scale`` is sampled ratio multiplied with ``img_scale`` and
+                None is just a placeholder to be consistent with
+                :func:`random_select`.
         """
 
         assert isinstance(img_scale, tuple) and len(img_scale) == 2
@@ -422,6 +424,8 @@ class Pad(object):
 @PIPELINES.register_module()
 class Normalize(object):
     """Normalize the image.
+
+    Added key is "img_norm_cfg".
 
     Args:
         mean (sequence): Mean values of 3 channels.

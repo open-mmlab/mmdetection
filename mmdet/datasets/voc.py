@@ -46,7 +46,7 @@ class VOCDataset(XMLDataset):
                 evaluation. Default: None.
 
         Returns:
-            dict[str: float]: AP/recall metrics.
+            dict[str, float]: AP/recall metrics.
         """
 
         if not isinstance(metric, str):
