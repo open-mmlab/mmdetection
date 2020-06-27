@@ -30,9 +30,10 @@ class VOCDataset(XMLDataset):
         """Evaluate in VOC protocol.
 
         Args:
-            results (list): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated.
-            logger (logging.Logger | None | str): Logger used for printing
+            results (list[list | tuple]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Options are
+                'mAP', 'recall'.
+            logger (logging.Logger | str, optional): Logger used for printing
                 related information during evaluation. Default: None.
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.
@@ -40,8 +41,12 @@ class VOCDataset(XMLDataset):
             iou_thr (float | list[float]): IoU threshold. It must be a float
                 when evaluating mAP, and can be a list when evaluating recall.
                 Default: 0.5.
-            scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
-                Default: None.
+            scale_ranges (list[tuple], optional): Scale ranges for evaluating
+                mAP. If not specified, all bounding boxes would be included in
+                evaluation. Default: None.
+
+        Returns:
+            dict[str: float]: AP/recall metrics.
         """
 
         if not isinstance(metric, str):

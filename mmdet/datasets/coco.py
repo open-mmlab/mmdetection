@@ -372,8 +372,9 @@ class CocoDataset(CustomDataset):
         """Evaluation in COCO protocol.
 
         Args:
-            results (list): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated.
+            results (list[list | tuple]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Options are
+                'bbox', 'segm', 'proposal', 'proposal_fast'.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             jsonfile_prefix (str | None): The prefix of json files. It includes
@@ -388,7 +389,7 @@ class CocoDataset(CustomDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str: float]
+            dict[str: float]: COCO style evaluation metric.
         """
 
         metrics = metric if isinstance(metric, list) else [metric]

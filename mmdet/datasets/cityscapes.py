@@ -202,7 +202,8 @@ class CityscapesDataset(CocoDataset):
 
         Args:
             results (list[list | tuple]): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated.
+            metric (str | list[str]): Metrics to be evaluated. Options are
+                'bbox', 'segm', 'proposal', 'proposal_fast'.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             outfile_prefix (str | None): The prefix of output file. It includes
@@ -227,7 +228,8 @@ class CityscapesDataset(CocoDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str: float]
+            dict[str: float]: COCO style evaluation metric or cityscapes mAP
+                and AP@50.
         """
         eval_results = dict()
 

@@ -309,8 +309,9 @@ class LVISDataset(CocoDataset):
         """Evaluation in LVIS protocol.
 
         Args:
-            results (list): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated.
+            results (list[list | tuple]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Options are
+                'bbox', 'segm', 'proposal', 'proposal_fast'.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             jsonfile_prefix (str | None):
@@ -323,7 +324,7 @@ class LVISDataset(CocoDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str: float]: LVIS style AP metrics.
+            dict[str: float]: LVIS style metrics.
         """
 
         try:
