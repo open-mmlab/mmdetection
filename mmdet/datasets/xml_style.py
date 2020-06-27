@@ -14,7 +14,7 @@ class XMLDataset(CustomDataset):
     """XML dataset for detection.
 
     Args:
-        min_size (int|float, optional): The minimum size of bounding
+        min_size (int | float, optional): The minimum size of bounding
             boxes in the images. If the size of a bounding box is less than
             ``min_size``, it would be add to ignored field.
     """
@@ -25,7 +25,7 @@ class XMLDataset(CustomDataset):
         self.min_size = min_size
 
     def load_annotations(self, ann_file):
-        """Load annotation from XML style ann_file
+        """Load annotation from XML style ann_file.
 
         Args:
             ann_file (str): Path of XML file.
@@ -59,8 +59,7 @@ class XMLDataset(CustomDataset):
         return data_infos
 
     def get_subset_by_classes(self):
-        """Filter imgs by user-defined categories
-        """
+        """Filter imgs by user-defined categories"""
         subset_data_infos = []
         for data_info in self.data_infos:
             img_id = data_info['id']
@@ -77,7 +76,7 @@ class XMLDataset(CustomDataset):
         return subset_data_infos
 
     def get_ann_info(self, idx):
-        """Get annotation from XML file by index
+        """Get annotation from XML file by index.
 
         Args:
             idx (int): Index of data.
@@ -142,7 +141,7 @@ class XMLDataset(CustomDataset):
         return ann
 
     def get_cat_ids(self, idx):
-        """Get category ids in XML file by index
+        """Get category ids in XML file by index.
 
         Args:
             idx (int): Index of data.

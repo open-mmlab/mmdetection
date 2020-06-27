@@ -75,7 +75,7 @@ class Resize(object):
 
     @staticmethod
     def random_select(img_scales):
-        """Randomly select an img_scale from given candidates.``
+        """Randomly select an img_scale from given candidates.
 
         Args:
             img_scales (list[tuple]): Images scales for selection.

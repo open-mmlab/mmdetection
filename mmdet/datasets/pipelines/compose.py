@@ -43,7 +43,6 @@ class Compose(object):
         return data
 
     def __repr__(self):
-        """str: The composed transformation."""
         format_string = self.__class__.__name__ + '('
         for t in self.transforms:
             format_string += '\n'

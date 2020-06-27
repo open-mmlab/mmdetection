@@ -55,7 +55,7 @@ class CocoDataset(CustomDataset):
         return data_infos
 
     def get_ann_info(self, idx):
-        """Get COCO annotation by index
+        """Get COCO annotation by index.
 
         Args:
             idx (int): Index of data.
@@ -70,7 +70,7 @@ class CocoDataset(CustomDataset):
         return self._parse_ann_info(self.data_infos[idx], ann_info)
 
     def get_cat_ids(self, idx):
-        """Get COCO category ids by index
+        """Get COCO category ids by index.
 
         Args:
             idx (int): Index of data.

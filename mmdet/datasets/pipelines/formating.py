@@ -15,8 +15,8 @@ def to_tensor(data):
     :class:`Sequence`, :class:`int` and :class:`float`.
 
     Args:
-        data (torch.Tensor|numpy.ndarray|Sequence|int|float): Data to be
-            converted.
+        data (torch.Tensor | numpy.ndarray | Sequence | int | float): Data to
+            be converted.
     """
 
     if isinstance(data, torch.Tensor):
