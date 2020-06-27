@@ -1,4 +1,4 @@
-dist: bionic  # ubuntu 18.04
+dist: bionic # ubuntu 18.04
 language: python
 
 python:
@@ -33,7 +33,7 @@ before_install:
   - sudo apt-get install -y ninja-build
 
 install:
-  - pip install Pillow==6.2.2  # remove this line when torchvision>=0.5
+  - pip install Pillow==6.2.2 # remove this line when torchvision>=0.5
   - pip install torch==${TORCH} torchvision==${TORCHVISION}
   - pip install mmcv
   - pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
@@ -43,6 +43,7 @@ before_script:
   - flake8 .
   - isort -rc --check-only --diff mmdet/ tools/ tests/
   - yapf -r -d --style .style.yapf mmdet/ tools/ tests/ configs/
+  - interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --exclude mmdet/ops --ignore-regex "__repr__" --fail-under 80 mmdet
 
 script:
   - python setup.py check -m -s
