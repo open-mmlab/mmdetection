@@ -4,8 +4,8 @@ from mmcv.cnn import build_conv_layer, build_norm_layer
 
 from ..builder import BACKBONES
 from ..utils import ResLayer
-from .resnet import Bottleneck as _Bottleneck
-from .resnet import ResNet
+from .detectors_resnet import Bottleneck as _Bottleneck
+from .detectors_resnet import DetectoRS_ResNet
 
 
 class Bottleneck(_Bottleneck):
@@ -49,7 +49,18 @@ class Bottleneck(_Bottleneck):
         self.with_modulated_dcn = False
         if self.with_dcn:
             fallback_on_stride = self.dcn.pop('fallback_on_stride', False)
-        if not self.with_dcn or fallback_on_stride:
+        if self.with_sac:
+            self.conv2 = build_conv_layer(
+                self.sac,
+                width,
+                width,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=self.dilation,
+                dilation=self.dilation,
+                groups=groups,
+                bias=False)
+        elif not self.with_dcn or fallback_on_stride:
             self.conv2 = build_conv_layer(
                 self.conv_cfg,
                 width,
@@ -83,32 +94,13 @@ class Bottleneck(_Bottleneck):
         self.add_module(self.norm3_name, norm3)
 
 
-@BACKBONES.register_module()
-class ResNeXt(ResNet):
-    """ResNeXt backbone.
+@BACKBONES.register_module(name='DetectoRS_ResNeXt')
+class DetectoRS_ResNeXt(DetectoRS_ResNet):
+    """ResNeXt backbone for DetectoRS.
 
     Args:
-        depth (int): Depth of resnet, from {18, 34, 50, 101, 152}.
-        in_channels (int): Number of input image channels. Default: 3.
-        num_stages (int): Resnet stages. Default: 4.
-        groups (int): Group of resnext.
-        base_width (int): Base width of resnext.
-        strides (Sequence[int]): Strides of the first block of each stage.
-        dilations (Sequence[int]): Dilation of each stage.
-        out_indices (Sequence[int]): Output from which stages.
-        style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
-            layer is the 3x3 conv layer, otherwise the stride-two layer is
-            the first 1x1 conv layer.
-        frozen_stages (int): Stages to be frozen (all param fixed). -1 means
-            not freezing any parameters.
-        norm_cfg (dict): dictionary to construct and config norm layer.
-        norm_eval (bool): Whether to set norm layers to eval mode, namely,
-            freeze running stats (mean and var). Note: Effect on Batch Norm
-            and its variants only.
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
-        zero_init_residual (bool): whether to use zero init for last norm layer
-            in resblocks to let them behave as identity.
+        groups (int): The number of groups in ResNeXt.
+        base_width (int): The base width of ResNeXt.
     """
 
     arch_settings = {
@@ -120,10 +112,9 @@ class ResNeXt(ResNet):
     def __init__(self, groups=1, base_width=4, **kwargs):
         self.groups = groups
         self.base_width = base_width
-        super(ResNeXt, self).__init__(**kwargs)
+        super(DetectoRS_ResNeXt, self).__init__(**kwargs)
 
     def make_res_layer(self, **kwargs):
-        """Pack all blocks in a stage into a ``ResLayer``"""
         return ResLayer(
             groups=self.groups,
             base_width=self.base_width,

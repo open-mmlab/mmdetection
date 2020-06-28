@@ -25,13 +25,9 @@ class BasicBlock(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 rfp_inplanes=None,
-                 sac=None,
                  plugins=None):
         super(BasicBlock, self).__init__()
         assert dcn is None, 'Not implemented yet.'
-        assert rfp_inplanes is None, 'Not implemented yet.'
-        assert sac is None, 'Not implemented yet.'
         assert plugins is None, 'Not implemented yet.'
 
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
@@ -59,13 +55,16 @@ class BasicBlock(nn.Module):
 
     @property
     def norm1(self):
+        """nn.Module: normalization layer after the first convolution layer"""
         return getattr(self, self.norm1_name)
 
     @property
     def norm2(self):
+        """nn.Module: normalization layer after the second convolution layer"""
         return getattr(self, self.norm2_name)
 
     def forward(self, x):
+        """Forward function"""
 
         def _inner_forward(x):
             identity = x
@@ -108,8 +107,6 @@ class Bottleneck(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  dcn=None,
-                 rfp_inplanes=None,
-                 sac=None,
                  plugins=None):
         """Bottleneck block for ResNet.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
@@ -118,7 +115,6 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
         assert dcn is None or isinstance(dcn, dict)
-        assert sac is None or isinstance(sac, dict)
         assert plugins is None or isinstance(plugins, list)
         if plugins is not None:
             allowed_position = ['after_conv1', 'after_conv2', 'after_conv3']
@@ -134,8 +130,6 @@ class Bottleneck(nn.Module):
         self.norm_cfg = norm_cfg
         self.dcn = dcn
         self.with_dcn = dcn is not None
-        self.sac = sac
-        self.with_sac = sac is not None
         self.plugins = plugins
         self.with_plugins = plugins is not None
 
@@ -177,17 +171,7 @@ class Bottleneck(nn.Module):
         fallback_on_stride = False
         if self.with_dcn:
             fallback_on_stride = dcn.pop('fallback_on_stride', False)
-        if self.with_sac:
-            self.conv2 = build_conv_layer(
-                sac,
-                planes,
-                planes,
-                kernel_size=3,
-                stride=self.conv2_stride,
-                padding=dilation,
-                dilation=dilation,
-                bias=False)
-        elif not self.with_dcn or fallback_on_stride:
+        if not self.with_dcn or fallback_on_stride:
             self.conv2 = build_conv_layer(
                 conv_cfg,
                 planes,
@@ -229,17 +213,6 @@ class Bottleneck(nn.Module):
             self.after_conv3_plugin_names = self.make_block_plugins(
                 planes * self.expansion, self.after_conv3_plugins)
 
-        self.rfp_inplanes = rfp_inplanes
-        if self.rfp_inplanes:
-            self.rfp_conv = build_conv_layer(
-                None,
-                self.rfp_inplanes,
-                planes * self.expansion,
-                1,
-                stride=1,
-                bias=True)
-            constant_init(self.rfp_conv, 0)
-
     def make_block_plugins(self, in_channels, plugins):
         """ make plugins for block
 
@@ -272,17 +245,21 @@ class Bottleneck(nn.Module):
 
     @property
     def norm1(self):
+        """nn.Module: normalization layer after the first convolution layer"""
         return getattr(self, self.norm1_name)
 
     @property
     def norm2(self):
+        """nn.Module: normalization layer after the second convolution layer"""
         return getattr(self, self.norm2_name)
 
     @property
     def norm3(self):
+        """nn.Module: normalization layer after the third convolution layer"""
         return getattr(self, self.norm3_name)
 
     def forward(self, x):
+        """Forward function"""
 
         def _inner_forward(x):
             identity = x
@@ -318,51 +295,6 @@ class Bottleneck(nn.Module):
             out = cp.checkpoint(_inner_forward, x)
         else:
             out = _inner_forward(x)
-
-        out = self.relu(out)
-
-        return out
-
-    def rfp_forward(self, x, rfp_feat):
-
-        def _inner_forward(x):
-            identity = x
-
-            out = self.conv1(x)
-            out = self.norm1(out)
-            out = self.relu(out)
-
-            if self.with_plugins:
-                out = self.forward_plugin(out, self.after_conv1_plugin_names)
-
-            out = self.conv2(out)
-            out = self.norm2(out)
-            out = self.relu(out)
-
-            if self.with_plugins:
-                out = self.forward_plugin(out, self.after_conv2_plugin_names)
-
-            out = self.conv3(out)
-            out = self.norm3(out)
-
-            if self.with_plugins:
-                out = self.forward_plugin(out, self.after_conv3_plugin_names)
-
-            if self.downsample is not None:
-                identity = self.downsample(x)
-
-            out += identity
-
-            return out
-
-        if self.with_cp and x.requires_grad:
-            out = cp.checkpoint(_inner_forward, x)
-        else:
-            out = _inner_forward(x)
-
-        if self.rfp_inplanes:
-            rfp_feat = self.rfp_conv(rfp_feat)
-            out = out + rfp_feat
 
         out = self.relu(out)
 
@@ -447,10 +379,6 @@ class ResNet(nn.Module):
                  norm_eval=True,
                  dcn=None,
                  stage_with_dcn=(False, False, False, False),
-                 sac=None,
-                 stage_with_sac=(False, False, False, False),
-                 rfp_inplanes=None,
-                 output_img=False,
                  plugins=None,
                  with_cp=False,
                  zero_init_residual=True):
@@ -479,8 +407,6 @@ class ResNet(nn.Module):
         self.stage_with_dcn = stage_with_dcn
         if dcn is not None:
             assert len(stage_with_dcn) == num_stages
-        self.sac = sac
-        self.stage_with_sac = stage_with_sac
         self.plugins = plugins
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
@@ -494,7 +420,6 @@ class ResNet(nn.Module):
             stride = strides[i]
             dilation = dilations[i]
             dcn = self.dcn if self.stage_with_dcn[i] else None
-            sac = self.sac if self.stage_with_sac[i] else None
             if plugins is not None:
                 stage_plugins = self.make_stage_plugins(plugins, i)
             else:
@@ -513,8 +438,6 @@ class ResNet(nn.Module):
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 dcn=dcn,
-                sac=sac,
-                rfp_inplanes=rfp_inplanes if i > 0 else None,
                 plugins=stage_plugins)
             self.inplanes = planes * self.block.expansion
             layer_name = f'layer{i + 1}'
@@ -525,8 +448,6 @@ class ResNet(nn.Module):
 
         self.feat_dim = self.block.expansion * base_channels * 2**(
             len(self.stage_blocks) - 1)
-
-        self.output_img = output_img
 
     def make_stage_plugins(self, plugins, stage_idx):
         """ make plugins for ResNet 'stage_idx'th stage .
@@ -589,10 +510,12 @@ class ResNet(nn.Module):
         return stage_plugins
 
     def make_res_layer(self, **kwargs):
+        """Pack all blocks in a stage into a ``ResLayer``"""
         return ResLayer(**kwargs)
 
     @property
     def norm1(self):
+        """nn.Module: the normalization layer named "norm1" """
         return getattr(self, self.norm1_name)
 
     def _make_stem_layer(self, in_channels, stem_channels):
@@ -662,6 +585,12 @@ class ResNet(nn.Module):
                 param.requires_grad = False
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in backbone
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if isinstance(pretrained, str):
             logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)
@@ -688,7 +617,7 @@ class ResNet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
-        img = x
+        """Forward function"""
         if self.deep_stem:
             x = self.stem(x)
         else:
@@ -702,29 +631,11 @@ class ResNet(nn.Module):
             x = res_layer(x)
             if i in self.out_indices:
                 outs.append(x)
-        if self.output_img:
-            outs.insert(0, img)
-        return tuple(outs)
-
-    def rfp_forward(self, x, rfp_feats):
-        if self.deep_stem:
-            x = self.stem(x)
-        else:
-            x = self.conv1(x)
-            x = self.norm1(x)
-            x = self.relu(x)
-        x = self.maxpool(x)
-        outs = []
-        for i, layer_name in enumerate(self.res_layers):
-            res_layer = getattr(self, layer_name)
-            rfp_feat = rfp_feats[i] if i > 0 else None
-            for layer in res_layer:
-                x = layer.rfp_forward(x, rfp_feat)
-            if i in self.out_indices:
-                outs.append(x)
         return tuple(outs)
 
     def train(self, mode=True):
+        """Convert the model into training mode while keep normalization layer
+        freezed"""
         super(ResNet, self).train(mode)
         self._freeze_stages()
         if mode and self.norm_eval:

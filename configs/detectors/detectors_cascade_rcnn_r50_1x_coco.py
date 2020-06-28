@@ -6,6 +6,7 @@ _base_ = [
 
 model = dict(
     backbone=dict(
+        type='DetectoRS_ResNet',
         conv_cfg=dict(type='ConvAWS'),
         sac=dict(type='SAC', use_deform=True),
         stage_with_sac=(False, True, True, True),
@@ -15,7 +16,7 @@ model = dict(
         rfp_steps=2,
         rfp_backbone=dict(
             rfp_inplanes=256,
-            type='ResNet',
+            type='DetectoRS_ResNet',
             depth=50,
             num_stages=4,
             out_indices=(0, 1, 2, 3),
@@ -25,5 +26,5 @@ model = dict(
             conv_cfg=dict(type='ConvAWS'),
             sac=dict(type='SAC', use_deform=True),
             stage_with_sac=(False, True, True, True),
-            style='pytorch'),
-        rfp_pretrained='torchvision://resnet50'))
+            pretrained='torchvision://resnet50',
+            style='pytorch')))

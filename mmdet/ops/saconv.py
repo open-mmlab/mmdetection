@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import CONV_LAYERS
+from mmcv.cnn import CONV_LAYERS, constant_init
 
 from .conv_ws import ConvAWS2d
 from .dcn import deform_conv
 
 
-@CONV_LAYERS.register_module('SAC')
+@CONV_LAYERS.register_module(name='SAC')
 class SAConv2d(ConvAWS2d):
     """SAC (Switchable Atrous Convolution)
 
@@ -61,12 +61,10 @@ class SAConv2d(ConvAWS2d):
         self.weight_diff.data.zero_()
         self.pre_context = nn.Conv2d(
             self.in_channels, self.in_channels, kernel_size=1, bias=True)
-        self.pre_context.weight.data.fill_(0)
-        self.pre_context.bias.data.fill_(0)
+        constant_init(self.pre_context, 0)
         self.post_context = nn.Conv2d(
             self.out_channels, self.out_channels, kernel_size=1, bias=True)
-        self.post_context.weight.data.fill_(0)
-        self.post_context.bias.data.fill_(0)
+        constant_init(self.post_context, 0)
         if self.use_deform:
             self.offset_s = nn.Conv2d(
                 self.in_channels,
@@ -82,10 +80,8 @@ class SAConv2d(ConvAWS2d):
                 padding=1,
                 stride=stride,
                 bias=True)
-            self.offset_s.weight.data.fill_(0)
-            self.offset_s.bias.data.fill_(0)
-            self.offset_l.weight.data.fill_(0)
-            self.offset_l.bias.data.fill_(0)
+            constant_init(self.offset_s, 0)
+            constant_init(self.offset_l, 0)
 
     def forward(self, x):
         # pre-context

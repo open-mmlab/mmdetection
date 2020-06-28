@@ -1,15 +1,13 @@
-import math
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
+from mmcv.cnn import constant_init, kaiming_init, xavier_init
 
 from ..builder import NECKS, build_backbone
 from .fpn import FPN
 
 
-class ASPP(torch.nn.Module):
+class ASPP(nn.Module):
     """ASPP (Atrous Spatial Pyramid Pooling)
 
     This is an implementation of the ASPP module used in DetectoRS
@@ -18,49 +16,47 @@ class ASPP(torch.nn.Module):
     Args:
         in_channels (int): Number of channels in the input
         out_channels (int): Number of channels produced by this module
-        kernel_sizes (list): Kernel sizes of the four branches
-        dilations (list): Dilations of the four branches
-        paddings (list): Paddings of the four branches
+        dilations (tuple): Dilations of the four branches.
+            Default: (1, 3, 6, 1)
     """
 
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_sizes=[1, 3, 3, 1],
-                 dilations=[1, 3, 6, 1],
-                 paddings=[0, 3, 6, 0]):
+    def __init__(self, in_channels, out_channels, dilations=(1, 3, 6, 1)):
         super().__init__()
-        self.aspp = torch.nn.ModuleList()
-        for aspp_idx in range(len(kernel_sizes)):
-            conv = torch.nn.Conv2d(
+        assert dilations[-1] == 1
+        self.aspp = nn.ModuleList()
+        for aspp_idx in range(len(dilations)):
+            dilation = dilations[aspp_idx]
+            kernel_size = 3 if dilation > 1 else 1
+            padding = dilation if dilation > 1 else 0
+            conv = nn.Conv2d(
                 in_channels,
                 out_channels,
-                kernel_size=kernel_sizes[aspp_idx],
+                kernel_size=kernel_size,
                 stride=1,
-                dilation=dilations[aspp_idx],
-                padding=paddings[aspp_idx],
+                dilation=dilation,
+                padding=padding,
                 bias=True)
             self.aspp.append(conv)
-        self.gap = torch.nn.AdaptiveAvgPool2d(1)
-        self.aspp_num = len(kernel_sizes)
+        self.gap = nn.AdaptiveAvgPool2d(1)
+        self.init_weights()
+
+    def init_weights(self):
         for m in self.modules():
-            if isinstance(m, torch.nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-                m.bias.data.fill_(0)
+            if isinstance(m, nn.Conv2d):
+                kaiming_init(m)
 
     def forward(self, x):
         avg_x = self.gap(x)
         out = []
-        for aspp_idx in range(self.aspp_num):
-            inp = avg_x if (aspp_idx == self.aspp_num - 1) else x
+        for aspp_idx in range(len(self.aspp)):
+            inp = avg_x if (aspp_idx == len(self.aspp) - 1) else x
             out.append(F.relu_(self.aspp[aspp_idx](inp)))
         out[-1] = out[-1].expand_as(out[-2])
         out = torch.cat(out, dim=1)
         return out
 
 
-@NECKS.register_module()
+@NECKS.register_module(name='RFP')
 class RFP(FPN):
     """RFP (Recursive Feature Pyramid)
 
@@ -70,21 +66,25 @@ class RFP(FPN):
     Args:
         rfp_steps (int): Number of unrolled steps of RFP
         rfp_backbone (dict): Configuration of the backbone
-        rfp_pretrained (str): Specifies the pre-trained models
-            for rfp_backbone
         kwargs: Args for FPN
+        aspp_dilations (tuple): Dilations of the four branches.
+            Default: (1, 3, 6, 1)
     """
 
-    def __init__(self, rfp_steps, rfp_backbone, rfp_pretrained, **kwargs):
+    def __init__(self,
+                 rfp_steps,
+                 rfp_backbone,
+                 aspp_dilations=(1, 3, 6, 1),
+                 **kwargs):
         super().__init__(**kwargs)
         self.rfp_steps = rfp_steps
         neck_out_channels = kwargs['out_channels']
         self.rfp_modules = nn.ModuleList()
         for rfp_idx in range(1, rfp_steps):
             rfp_module = build_backbone(rfp_backbone)
-            self.rfp_pretrained = rfp_pretrained
             self.rfp_modules.append(rfp_module)
-        self.rfp_aspp = ASPP(neck_out_channels, neck_out_channels // 4)
+        self.rfp_aspp = ASPP(neck_out_channels, neck_out_channels // 4,
+                             aspp_dilations)
         self.rfp_weight = nn.Conv2d(
             neck_out_channels,
             1,
@@ -92,8 +92,7 @@ class RFP(FPN):
             stride=1,
             padding=0,
             bias=True)
-        self.rfp_weight.weight.data.fill_(0)
-        self.rfp_weight.bias.data.fill_(0)
+        constant_init(self.rfp_weight, 0)
 
     def init_weights(self):
         for convs in [self.lateral_convs, self.fpn_convs]:
@@ -101,7 +100,8 @@ class RFP(FPN):
                 if isinstance(m, nn.Conv2d):
                     xavier_init(m, distribution='uniform')
         for rfp_idx in range(self.rfp_steps - 1):
-            self.rfp_modules[rfp_idx].init_weights(self.rfp_pretrained)
+            self.rfp_modules[rfp_idx].init_weights(
+                self.rfp_modules[rfp_idx].pretrained)
 
     def forward(self, inputs):
         inputs = list(inputs)
