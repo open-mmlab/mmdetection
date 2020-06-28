@@ -69,7 +69,7 @@ class AutoAugment(object):
                     "and contain the key of 'type'."
 
         self.auto_augment_policies = auto_augment_policies.copy()
-        raise NotImplementedError('Auto augmentation is working in progress'
+        raise NotImplementedError('Auto augmentation is working in progress '
                                   'and currently not callable.')
 
     def __call__(self, results):
