@@ -62,6 +62,8 @@ class RegNet(ResNet):
         (1, 1008, 1, 1)
     """
     arch_settings = {
+        'regnetx_400mf':
+        dict(w0=24, wa=24.48, wm=2.54, group_w=16, depth=22, bot_mul=1.0),
         'regnetx_800mf':
         dict(w0=56, wa=35.73, wm=2.28, group_w=16, depth=16, bot_mul=1.0),
         'regnetx_1.6gf':
