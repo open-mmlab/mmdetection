@@ -111,7 +111,7 @@ class AutoAugment(object):
             gt_masks = BitmapMasks(gt_masks_numpy, h, w)
         elif isinstance(gt_masks, PolygonMasks):
             encoded_gt_masks = []
-            for i in range(len(gt_masks)):
+            for i in range(len(gt_masks_numpy)):
                 encoded_gt_masks.append(
                     mask_util.encode(
                         np.array(
