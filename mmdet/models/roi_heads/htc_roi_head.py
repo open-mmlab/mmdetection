@@ -230,8 +230,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
             proposal_list (list[Tensors]): list of region proposals.
 
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
 
             gt_labels (list[Tensor]): class indices corresponding to each box
 

@@ -303,11 +303,16 @@ def _check_mask_head(mask_cfg, mask_head):
     else:
         assert mask_cfg['type'] == mask_head.__class__.__name__
         assert mask_cfg.in_channels == mask_head.in_channels
-        assert (
-            mask_cfg.conv_out_channels == mask_head.conv_logits.in_channels)
         class_agnostic = mask_cfg.get('class_agnostic', False)
         out_dim = (1 if class_agnostic else mask_cfg.num_classes)
-        assert mask_head.conv_logits.out_channels == out_dim
+        if hasattr(mask_head, 'conv_logits'):
+            assert (mask_cfg.conv_out_channels ==
+                    mask_head.conv_logits.in_channels)
+            assert mask_head.conv_logits.out_channels == out_dim
+        else:
+            assert mask_cfg.fc_out_channels == mask_head.fc_logits.in_features
+            assert (mask_head.fc_logits.out_features == out_dim *
+                    mask_head.output_area)
 
 
 def _check_bbox_head(bbox_cfg, bbox_head):

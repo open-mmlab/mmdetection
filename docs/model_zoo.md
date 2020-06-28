@@ -132,6 +132,12 @@ Please refer to [Res2Net](https://github.com/open-mmlab/mmdetection/blob/master/
 ### GRoIE
 Please refer to [GRoIE](https://github.com/open-mmlab/mmdetection/blob/master/configs/groie) for details.
 
+### Dynamic R-CNN
+Please refer to [Dynamic R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/dynamic_rcnn) for details.
+
+### PointRend
+Please refer to [PointRend](https://github.com/open-mmlab/mmdetection/blob/master/configs/point_rend) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).

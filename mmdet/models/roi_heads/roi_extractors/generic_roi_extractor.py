@@ -14,8 +14,8 @@ class GenericRoIExtractor(BaseRoIExtractor):
     Args:
         aggregation (str): The method to aggregate multiple feature maps.
             Options are 'sum', 'concat'. Default: 'sum'.
-        pre_cfg (dict|None): Specify pre-processing modules. Default: None.
-        post_cfg (dict|None): Specify post-processing modules. Default: None.
+        pre_cfg (dict | None): Specify pre-processing modules. Default: None.
+        post_cfg (dict | None): Specify post-processing modules. Default: None.
         kwargs (keyword arguments): Arguments that are the same
             as :class:`BaseRoIExtractor`.
     """
