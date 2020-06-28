@@ -147,7 +147,7 @@ class AnchorFreeHead(BaseDenseHead):
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
-        """Hack some keys of the model state dict so that can load checkpoints 
+        """Hack some keys of the model state dict so that can load checkpoints
         of previous version."""
         version = local_metadata.get('version', None)
         if version is None or version < 2.2:
@@ -208,7 +208,7 @@ class AnchorFreeHead(BaseDenseHead):
             x (Tensor): FPN feature maps of the specified stride.
 
         Returns:
-            tuple: Scores for each class, bbox predictions, features 
+            tuple: Scores for each class, bbox predictions, features
                 after classification and regression conv layers, some
                 models needs these features like FCOS.
         """
