@@ -18,11 +18,18 @@ class MaskScoringRoIHead(StandardRoIHead):
         self.mask_iou_head = build_head(mask_iou_head)
 
     def init_weights(self, pretrained):
+        """Initialize the weights in head
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(MaskScoringRoIHead, self).init_weights(pretrained)
         self.mask_iou_head.init_weights()
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
+        """Run forward function and calculate loss for Mask head in training"""
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
         mask_results = super(MaskScoringRoIHead,
                              self)._mask_forward_train(x, sampling_results,
@@ -53,6 +60,7 @@ class MaskScoringRoIHead(StandardRoIHead):
                          det_bboxes,
                          det_labels,
                          rescale=False):
+        """Obtain mask prediction without augmentation"""
         # image shape of the first image in the batch (only one)
         ori_shape = img_metas[0]['ori_shape']
         scale_factor = img_metas[0]['scale_factor']

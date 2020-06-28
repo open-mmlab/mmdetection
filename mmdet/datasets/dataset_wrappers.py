@@ -29,6 +29,15 @@ class ConcatDataset(_ConcatDataset):
             self.flag = np.concatenate(flags)
 
     def get_cat_ids(self, idx):
+        """Get category ids of concatenated dataset by index
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            list[int]: All categories in the image of specified index.
+        """
+
         if idx < 0:
             if -idx > len(self):
                 raise ValueError(
@@ -69,9 +78,19 @@ class RepeatDataset(object):
         return self.dataset[idx % self._ori_len]
 
     def get_cat_ids(self, idx):
+        """Get category ids of repeat dataset by index
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            list[int]: All categories in the image of specified index.
+        """
+
         return self.dataset.get_cat_ids(idx % self._ori_len)
 
     def __len__(self):
+        """Length after repetition"""
         return self.times * self._ori_len
 
 
@@ -128,6 +147,18 @@ class ClassBalancedDataset(object):
         self.flag = np.asarray(flags, dtype=np.uint8)
 
     def _get_repeat_factors(self, dataset, repeat_thr):
+        """Get repeat factor for each images in the dataset.
+
+        Args:
+            dataset (:obj:`CustomDataset`): The dataset
+            repeat_thr (float): The threshold of frequency. If an image
+                contains the categories whose frequency below the threshold,
+                it would be repeated.
+
+        Returns:
+            list[float]: The repeat factors for each images in the dataset.
+        """
+
         # 1. For each category c, compute the fraction # of images
         #   that contain it: f(c)
         category_freq = defaultdict(int)
@@ -163,4 +194,5 @@ class ClassBalancedDataset(object):
         return self.dataset[ori_index]
 
     def __len__(self):
+        """Length after repetition"""
         return len(self.repeat_indices)

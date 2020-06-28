@@ -400,7 +400,7 @@ You will get the result like this.
 ```
 ==============================
 Input shape: (3, 1280, 800)
-Flops: 239.32 GMac
+Flops: 239.32 GFLOPs
 Params: 37.74 M
 ==============================
 ```
@@ -408,8 +408,7 @@ Params: 37.74 M
 **Note**: This tool is still experimental and we do not guarantee that the number is correct. You may well use the result for simple comparisons, but double check it before you adopt it in technical reports or papers.
 
 (1) FLOPs are related to the input shape while parameters are not. The default input shape is (1, 3, 1280, 800).
-(2) Some operators are not counted into FLOPs like GN and custom operators.
-You can add support for new operators by modifying [`mmdet/utils/flops_counter.py`](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/utils/flops_counter.py).
+(2) Some operators are not counted into FLOPs like GN and custom operators. Refer to [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/flops_counter.py) for details.
 (3) The FLOPs of two-stage detectors is dependent on the number of proposals.
 
 ### Publish a model

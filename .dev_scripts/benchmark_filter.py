@@ -29,7 +29,8 @@ def parse_args():
 basic_arch_root = [
     'cascade_rcnn', 'double_heads', 'fcos', 'foveabox', 'free_anchor',
     'grid_rcnn', 'guided_anchoring', 'htc', 'libra_rcnn', 'atss', 'mask_rcnn',
-    'ms_rcnn', 'nas_fpn', 'reppoints', 'retinanet', 'ssd', 'gn', 'ghm', 'fsaf'
+    'ms_rcnn', 'nas_fpn', 'reppoints', 'retinanet', 'ssd', 'gn', 'ghm', 'fsaf',
+    'point_rend', 'nas_cos', 'pisa', 'dynamic_rcnn'
 ]
 
 datasets_root = ['wider_face', 'pascal_voc', 'cityscapes', 'mask_rcnn']
@@ -46,7 +47,11 @@ nn_module_root = [
 benchmark_pool = [
     'configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py',
     'configs/htc/htc_r50_fpn_1x_coco.py',
-    'ghm/retinanet_ghm_r50_fpn_1x_coco.py',
+    'configs/nas_fcos/nas_fcos_nashead_r50_caffe_fpn_gn-head_4x4_1x_coco.py',
+    'configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py',
+    'configs/pisa/pisa_mask_rcnn_r50_fpn_1x_coco.py',
+    'configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x.py',
+    'configs/ghm/retinanet_ghm_r50_fpn_1x_coco.py',
     'configs/carafe/mask_rcnn_r50_fpn_carafe_1x_coco.py',
     'configs/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
     'configs/albu_example/mask_rcnn_r50_fpn_albu_1x_coco.py',

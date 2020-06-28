@@ -306,6 +306,7 @@ class RegNet(ResNet):
         return stage_widths, stage_blocks
 
     def forward(self, x):
+        """Forward function"""
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.relu(x)

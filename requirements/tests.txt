@@ -1,6 +1,7 @@
 asynctest
 codecov
 flake8
+interrogate
 isort
 # Note: used for kwarray.group_items, this may be ported to mmcv in the future.
 kwarray

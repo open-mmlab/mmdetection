@@ -4,6 +4,7 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module()
 class FSAF(SingleStageDetector):
+    """Implementation of `FSAF <https://arxiv.org/abs/1903.00621>`_"""
 
     def __init__(self,
                  backbone,
