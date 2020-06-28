@@ -22,9 +22,9 @@ class AnchorFreeHead(BaseDenseHead):
         strides (tuple): Downsample factor of each feature map.
         dcn_on_last_conv (bool): If true, use dcn in the last layer of
             towers. Default: False.
-        conv_bias (bool | str): If specified as `auto`, it will be decided by the
-            norm_cfg. Bias of conv will be set as True if `norm_cfg` is None, otherwise
-            False. Default: "auto".
+        conv_bias (bool | str): If specified as `auto`, it will be decided by
+            the norm_cfg. Bias of conv will be set as True if `norm_cfg` is
+            None, otherwise False. Default: "auto".
         background_label (int | None): Label ID of background, set as 0 for
             RPN and num_classes for other heads. It will automatically set as
             num_classes if None is given.

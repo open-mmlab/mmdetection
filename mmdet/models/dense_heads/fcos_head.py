@@ -122,7 +122,7 @@ class FCOSHead(AnchorFreeHead):
 
     def forward_single(self, x, scale, stride):
         """Forward features of a single scale levle.
-        
+
         Args:
             x (Tensor): FPN feature maps of the specified stride.
             scale (:obj: `mmcv.cnn.Scale`): Learnable scale module to resize
