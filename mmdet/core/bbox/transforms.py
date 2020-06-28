@@ -136,7 +136,7 @@ def distance2bbox(points, distance, max_shape=None):
 
 
 def bbox2distance(points, bbox, max_dis=None, eps=0.1):
-    """Decode bounding box based to distances.
+    """Decode bounding box based on distances.
 
     Args:
         points (Tensor): Shape (n, 2), [x, y].
