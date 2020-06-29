@@ -1,5 +1,6 @@
+import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import build_conv_layer, constant_init
+from mmcv.cnn import build_conv_layer, build_norm_layer, constant_init
 
 from ..builder import BACKBONES
 from .resnet import Bottleneck as _Bottleneck
@@ -7,17 +8,19 @@ from .resnet import ResNet
 
 
 class Bottleneck(_Bottleneck):
-    """Bottleneck for the ResNet backbone in DetectoRS
-       (https://arxiv.org/pdf/2006.02334.pdf)
+    """Bottleneck for the ResNet backbone in `DetectoRS
+    <https://arxiv.org/pdf/2006.02334.pdf>`_.
 
     This bottleneck allows the users to specify whether to use
     SAC (Switchable Atrous Convolution) and RFP (Recursive Feature Pyramid).
 
     Args:
-         inplanes (int): The number of input channels
-         planes (int): The number of output channels before expansion
-         rfp_inplanes (int | None): The number of channels from RFP
-         sac (dict | None): Dictionary to construct SAC
+         inplanes (int): The number of input channels.
+         planes (int): The number of output channels before expansion.
+         rfp_inplanes (int, optional): The number of channels from RFP.
+             Default: None. If specified, an additional conv layer will be
+             added for ``rfp_feat``.
+         sac (dict, optional): Dictionary to construct SAC. Default: None.
     """
     expansion = 4
 
@@ -106,16 +109,103 @@ class Bottleneck(_Bottleneck):
         return out
 
 
-@BACKBONES.register_module(name='DetectoRS_ResNet')
+class ResLayer(nn.Sequential):
+    """ResLayer to build ResNet style backbone for RPF in detectoRS.
+
+    Args:
+        block (nn.Module): block used to build ResLayer.
+        inplanes (int): inplanes of block.
+        planes (int): planes of block.
+        num_blocks (int): number of blocks.
+        stride (int): stride of the first block. Default: 1
+        avg_down (bool): Use AvgPool instead of stride conv when
+            downsampling in the bottleneck. Default: False
+        conv_cfg (dict): dictionary to construct and config conv layer.
+            Default: None
+        norm_cfg (dict): dictionary to construct and config norm layer.
+            Default: dict(type='BN')
+        downsample_first (bool): Downsample at the first block or last block.
+            False for Hourglass, True for ResNet. Default: True
+    """
+
+    def __init__(self,
+                 block,
+                 inplanes,
+                 planes,
+                 num_blocks,
+                 stride=1,
+                 avg_down=False,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN'),
+                 downsample_first=True,
+                 rfp_inplanes=None,
+                 **kwargs):
+        self.block = block
+
+        downsample = None
+        if stride != 1 or inplanes != planes * block.expansion:
+            downsample = []
+            conv_stride = stride
+            if avg_down and stride != 1:
+                conv_stride = 1
+                downsample.append(
+                    nn.AvgPool2d(
+                        kernel_size=stride,
+                        stride=stride,
+                        ceil_mode=True,
+                        count_include_pad=False))
+            downsample.extend([
+                build_conv_layer(
+                    conv_cfg,
+                    inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=conv_stride,
+                    bias=False),
+                build_norm_layer(norm_cfg, planes * block.expansion)[1]
+            ])
+            downsample = nn.Sequential(*downsample)
+
+        layers = []
+        if downsample_first:
+            layers.append(
+                block(
+                    inplanes=inplanes,
+                    planes=planes,
+                    stride=stride,
+                    downsample=downsample,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    rfp_inplanes=rfp_inplanes,
+                    **kwargs))
+            inplanes = planes * block.expansion
+            for _ in range(1, num_blocks):
+                layers.append(
+                    block(
+                        inplanes=inplanes,
+                        planes=planes,
+                        stride=1,
+                        conv_cfg=conv_cfg,
+                        norm_cfg=norm_cfg,
+                        **kwargs))
+
+        super(ResLayer, self).__init__(*layers)
+
+
+@BACKBONES.register_module()
 class DetectoRS_ResNet(ResNet):
     """ResNet backbone for DetectoRS.
 
     Args:
-        sac (dict): Dictionary to construct sac layers.
-        stage_with_sac (list): Which stage to use sac.
-        rfp_inplanes (int): The number of channels from rfp.
-        output_img (bool): If `True`, insert image into the output.
-        pretrained (str): the pretrained model to load.
+        sac (dict, optional): Dictionary to construct SAC (Switchable Atrous
+            Convolution). Default: None.
+        stage_with_sac (list): Which stage to use sac. Default: (False, False,
+            False, False).
+        rfp_inplanes (int): The number of input channels from RFP (Recursive
+            Feature Pyramid).
+        output_img (bool): If ``True``, the input image will be inserted into
+            the starting position of output. Default: False.
+        pretrained (str, optional): The pretrained model to load.
     """
 
     arch_settings = {
@@ -172,6 +262,10 @@ class DetectoRS_ResNet(ResNet):
             self.res_layers.append(layer_name)
 
         self._freeze_stages()
+
+    def make_res_layer(self, **kwargs):
+        """Pack all blocks in a stage into a ``ResLayer`` for DetectoRS"""
+        return ResLayer(**kwargs)
 
     def forward(self, x):
         """Forward function"""

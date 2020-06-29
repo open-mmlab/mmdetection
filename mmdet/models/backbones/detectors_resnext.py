@@ -3,7 +3,6 @@ import math
 from mmcv.cnn import build_conv_layer, build_norm_layer
 
 from ..builder import BACKBONES
-from ..utils import ResLayer
 from .detectors_resnet import Bottleneck as _Bottleneck
 from .detectors_resnet import DetectoRS_ResNet
 
@@ -94,7 +93,7 @@ class Bottleneck(_Bottleneck):
         self.add_module(self.norm3_name, norm3)
 
 
-@BACKBONES.register_module(name='DetectoRS_ResNeXt')
+@BACKBONES.register_module()
 class DetectoRS_ResNeXt(DetectoRS_ResNet):
     """ResNeXt backbone for DetectoRS.
 
@@ -115,7 +114,7 @@ class DetectoRS_ResNeXt(DetectoRS_ResNet):
         super(DetectoRS_ResNeXt, self).__init__(**kwargs)
 
     def make_res_layer(self, **kwargs):
-        return ResLayer(
+        return super().make_res_layer(
             groups=self.groups,
             base_width=self.base_width,
             base_channels=self.base_channels,

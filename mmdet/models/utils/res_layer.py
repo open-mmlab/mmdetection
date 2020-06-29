@@ -69,7 +69,6 @@ class ResLayer(nn.Sequential):
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     **kwargs))
-            kwargs.pop('rfp_inplanes', None)
             inplanes = planes * block.expansion
             for _ in range(1, num_blocks):
                 layers.append(
@@ -82,8 +81,6 @@ class ResLayer(nn.Sequential):
                         **kwargs))
 
         else:  # downsample_first=False is for HourglassModule
-            rfp_inplanes = kwargs.pop('rfp_inplanes', None)
-            assert rfp_inplanes is None, 'Not implemented yet.'
             for _ in range(num_blocks - 1):
                 layers.append(
                     block(

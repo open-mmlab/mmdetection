@@ -61,7 +61,7 @@ class ConvAWS2d(nn.Conv2d):
     Args:
         in_channels (int): Number of channels in the input image
         out_channels (int): Number of channels produced by the convolution
-        kernel_size (int or tuple): Size of the convolving kernel
+        kernel_size (int or tuple): Size of the conv kernel
         stride (int or tuple, optional): Stride of the convolution. Default: 1
         padding (int or tuple, optional): Zero-padding added to both sides of
             the input. Default: 0
@@ -118,6 +118,7 @@ class ConvAWS2d(nn.Conv2d):
            Otherwise, it will compute the mean and std of the pretrained
            weights and store them in weight_beta and weight_gamma.
         """
+
         self.weight_gamma.data.fill_(-1)
         local_missing_keys = []
         super()._load_from_state_dict(state_dict, prefix, local_metadata,
