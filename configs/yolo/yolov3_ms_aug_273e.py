@@ -2,15 +2,15 @@
 
 # model settings
 model = dict(
-    type='YoloNet',
+    type='YOLOV3',
     pretrained='./work_dirs/darknet_state_dict_only.pth',
     backbone=dict(
         type='Darknet',
         depth=53,
         out_indices=(3, 4, 5),
     ),
-    neck=dict(type='YoloNeck', ),
-    bbox_head=dict(type='YoloHead', ))
+    neck=dict(type='YOLOV3Neck', ),
+    bbox_head=dict(type='YOLOV3Head', ))
 # training and testing settings
 train_cfg = dict(
     one_hot_smoother=0., ignore_config=0.5, xy_use_logit=False, debug=False)

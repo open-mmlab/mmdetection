@@ -16,13 +16,14 @@ _EPSILON = 1e-6
 
 
 @HEADS.register_module()
-class YoloHead(BaseDenseHead):
+class YOLOV3Head(BaseDenseHead):
 
     # TODO: Move into cfg
     num_scales = 3
     num_classes_no_bkg = 80
     num_classes_w_bkg = num_classes_no_bkg + 1
-    num_classes = num_classes_w_bkg
+    # num_classes = num_classes_w_bkg
+    num_classes = num_classes_no_bkg
     num_anchors_per_scale = 3
     num_attrib = num_classes_no_bkg + 5
     last_layer_dim = num_anchors_per_scale * num_attrib
@@ -38,7 +39,7 @@ class YoloHead(BaseDenseHead):
     ]
 
     def __init__(self, train_cfg=None, test_cfg=None):
-        super(YoloHead, self).__init__()
+        super(YOLOV3Head, self).__init__()
         self.convs_bridge = nn.ModuleList()
         self.convs_final = nn.ModuleList()
         for i_scale in range(self.num_scales):
@@ -188,11 +189,6 @@ class YoloHead(BaseDenseHead):
         if rescale:
             multi_lvl_bboxes /= multi_lvl_bboxes.new_tensor(scale_factor)
 
-        padding = multi_lvl_cls_scores.new_zeros(multi_lvl_cls_scores.shape[0],
-                                                 1)
-        multi_lvl_cls_scores = torch.cat([padding, multi_lvl_cls_scores],
-                                         dim=1)
-
         det_bboxes, det_labels = multiclass_nms(
             multi_lvl_bboxes,
             multi_lvl_cls_scores,
@@ -200,7 +196,7 @@ class YoloHead(BaseDenseHead):
             cfg.nms,
             cfg.max_per_img,
             score_factors=multi_lvl_conf_scores)
-        det_labels -= 1  # Hot fix
+
         return det_bboxes, det_labels
 
     @force_fp32(apply_to=('preds_raw', ))
