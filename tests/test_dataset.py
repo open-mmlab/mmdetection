@@ -162,14 +162,14 @@ def test_dataset_wrapper():
                                                       (['bus', 'car'], 2)])
 def test_allow_empty_images(classes, expected_length):
     dataset_class = DATASETS.get('CocoDataset')
-
+    # Filter empty images
     filtered_dataset = dataset_class(
         ann_file='tests/data/coco_sample.json',
         img_prefix='tests/data',
         pipeline=[],
         classes=classes,
         filter_empty_gt=True)
-
+    # Get all
     full_dataset = dataset_class(
         ann_file='tests/data/coco_sample.json',
         img_prefix='tests/data',
