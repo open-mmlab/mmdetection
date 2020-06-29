@@ -19,7 +19,8 @@ class Bottleneck(_Bottleneck):
          planes (int): The number of output channels before expansion.
          rfp_inplanes (int, optional): The number of channels from RFP.
              Default: None. If specified, an additional conv layer will be
-             added for ``rfp_feat``.
+             added for ``rfp_feat``. Otherwise, the structure is the same as
+             base class.
          sac (dict, optional): Dictionary to construct SAC. Default: None.
     """
     expansion = 4
@@ -112,6 +113,9 @@ class Bottleneck(_Bottleneck):
 class ResLayer(nn.Sequential):
     """ResLayer to build ResNet style backbone for RPF in detectoRS.
 
+    The difference between this module and base class is that we pass
+    ``rfp_inplanes`` to the first block.
+
     Args:
         block (nn.Module): block used to build ResLayer.
         inplanes (int): inplanes of block.
@@ -126,6 +130,10 @@ class ResLayer(nn.Sequential):
             Default: dict(type='BN')
         downsample_first (bool): Downsample at the first block or last block.
             False for Hourglass, True for ResNet. Default: True
+        rfp_inplanes (int, optional): The number of channels from RFP.
+            Default: None. If specified, an additional conv layer will be
+            added for ``rfp_feat``. Otherwise, the structure is the same as
+            base class.
     """
 
     def __init__(self,
@@ -141,6 +149,8 @@ class ResLayer(nn.Sequential):
                  rfp_inplanes=None,
                  **kwargs):
         self.block = block
+        assert downsample_first, f'downsampel_first={downsample_first} is ' \
+                                 'not supported in DetectoRS'
 
         downsample = None
         if stride != 1 or inplanes != planes * block.expansion:
@@ -167,27 +177,26 @@ class ResLayer(nn.Sequential):
             downsample = nn.Sequential(*downsample)
 
         layers = []
-        if downsample_first:
+        layers.append(
+            block(
+                inplanes=inplanes,
+                planes=planes,
+                stride=stride,
+                downsample=downsample,
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg,
+                rfp_inplanes=rfp_inplanes,
+                **kwargs))
+        inplanes = planes * block.expansion
+        for _ in range(1, num_blocks):
             layers.append(
                 block(
                     inplanes=inplanes,
                     planes=planes,
-                    stride=stride,
-                    downsample=downsample,
+                    stride=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
-                    rfp_inplanes=rfp_inplanes,
                     **kwargs))
-            inplanes = planes * block.expansion
-            for _ in range(1, num_blocks):
-                layers.append(
-                    block(
-                        inplanes=inplanes,
-                        planes=planes,
-                        stride=1,
-                        conv_cfg=conv_cfg,
-                        norm_cfg=norm_cfg,
-                        **kwargs))
 
         super(ResLayer, self).__init__(*layers)
 
@@ -201,8 +210,10 @@ class DetectoRS_ResNet(ResNet):
             Convolution). Default: None.
         stage_with_sac (list): Which stage to use sac. Default: (False, False,
             False, False).
-        rfp_inplanes (int): The number of input channels from RFP (Recursive
-            Feature Pyramid).
+        rfp_inplanes (int, optional): The number of channels from RFP.
+            Default: None. If specified, an additional conv layer will be
+            added for ``rfp_feat``. Otherwise, the structure is the same as
+            base class.
         output_img (bool): If ``True``, the input image will be inserted into
             the starting position of output. Default: False.
         pretrained (str, optional): The pretrained model to load.

@@ -29,8 +29,8 @@ class SAConv2d(ConvAWS2d):
             channels to output channels. Default: 1
         bias (bool, optional): If ``True``, adds a learnable bias to the
             output. Default: ``True``
-        use_deform: if ``True``, replace convolution with deformable
-            convolution
+        use_deform: If ``True``, replace convolution with deformable
+            convolution. Default: ``False``.
     """
 
     def __init__(self,

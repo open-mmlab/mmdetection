@@ -69,8 +69,8 @@ class ConvAWS2d(nn.Conv2d):
             Default: 1
         groups (int, optional): Number of blocked connections from input
             channels to output channels. Default: 1
-        bias (bool, optional): If ``True``, adds a learnable bias to the
-            output. Default: ``True``
+        bias (bool, optional): If set True, adds a learnable bias to the
+            output. Default: True
     """
 
     def __init__(self,
@@ -111,12 +111,14 @@ class ConvAWS2d(nn.Conv2d):
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
-        """AWS overrides the function _load_from_state_dict to recover
-           weight_gamma and weight_beta if they are missing.
-           If weight_gamma and weight_beta are found in the checkpoint, this
-           function will return after super()._load_from_state_dict.
-           Otherwise, it will compute the mean and std of the pretrained
-           weights and store them in weight_beta and weight_gamma.
+        """Override default load function
+
+        AWS overrides the function _load_from_state_dict to recover
+        weight_gamma and weight_beta if they are missing. If weight_gamma and
+        weight_beta are found in the checkpoint, this function will return
+        after super()._load_from_state_dict. Otherwise, it will compute the
+        mean and std of the pretrained weights and store them in weight_beta
+        and weight_gamma.
         """
 
         self.weight_gamma.data.fill_(-1)

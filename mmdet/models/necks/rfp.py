@@ -61,7 +61,7 @@ class RFP(FPN):
     """RFP (Recursive Feature Pyramid)
 
     This is an implementation of RFP in `DetectoRS
-    <https://arxiv.org/pdf/2006.02334.pdf>`_. Different for standard FPN, the
+    <https://arxiv.org/pdf/2006.02334.pdf>`_. Different from standard FPN, the
     input of RFP should be multi level features along with origin input image
     of backbone.
 
