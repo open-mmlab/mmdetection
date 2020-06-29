@@ -9,7 +9,12 @@ model = dict(
         depth=53,
         out_indices=(3, 4, 5),
     ),
-    neck=dict(type='YOLOV3Neck', ),
+    neck=dict(
+        type='YOLOV3Neck',
+        num_scales=3,
+        in_channels=[1024, 512, 256],
+        out_channels=[512, 256, 128],
+    ),
     bbox_head=dict(
         type='YOLOV3Head',
         num_classes=80,
