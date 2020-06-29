@@ -8,9 +8,7 @@ import torch.nn.functional as F
 
 from ..builder import NECKS
 
-from mmdet.models.utils import ConvLayer
-
-from mmcv.cnn import xavier_init
+from mmcv.cnn import xavier_init, ConvModule
 from mmcv.runner import load_checkpoint
 
 
@@ -30,11 +28,23 @@ class DetectionNeck(nn.Module):
         # assert double_out_channels % 2 == 0  #assert out_channels is an even number
         # out_channels = double_out_channels // 2
         double_out_channels = out_channels * 2
-        self.conv1 = ConvLayer(in_channels, out_channels, 1)
-        self.conv2 = ConvLayer(out_channels, double_out_channels, 3)
-        self.conv3 = ConvLayer(double_out_channels, out_channels, 1)
-        self.conv4 = ConvLayer(out_channels, double_out_channels, 3)
-        self.conv5 = ConvLayer(double_out_channels, out_channels, 1)
+        self.conv1 = ConvModule(in_channels, out_channels, 1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+        self.conv2 = ConvModule(out_channels, double_out_channels, 3,
+                                padding=1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+        self.conv3 = ConvModule(double_out_channels, out_channels, 1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+        self.conv4 = ConvModule(out_channels, double_out_channels, 3,
+                                padding=1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+        self.conv5 = ConvModule(double_out_channels, out_channels, 1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
 
     def forward(self, x):
         tmp = self.conv1(x)
@@ -56,9 +66,13 @@ class YoloNeck(nn.Module):
     def __init__(self):
         super(YoloNeck, self).__init__()
         self.detect1 = DetectionNeck(1024, 512)
-        self.conv1 = ConvLayer(512, 256, 1)
+        self.conv1 = ConvModule(512, 256, 1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
         self.detect2 = DetectionNeck(768, 256)
-        self.conv2 = ConvLayer(256, 128, 1)
+        self.conv2 = ConvModule(256, 128, 1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
         self.detect3 = DetectionNeck(384, 128)
 
     def forward(self, x):
