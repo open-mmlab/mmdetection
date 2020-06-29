@@ -5,7 +5,10 @@ model = dict(
     type='YoloNet',
     pretrained='./work_dirs/darknet_state_dict_only.pth',
     backbone=dict(
-        type='DarkNet53',),
+        type='Darknet',
+        depth=53,
+        out_indices=(3, 4, 5),
+        ),
     neck=dict(
         type='YoloNeck',),
     bbox_head=dict(
@@ -28,6 +31,7 @@ dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)
+# TODO: Add PhotoMetricDistortion
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -86,7 +90,7 @@ data = dict(
     )
 )
 # optimizer
-optimizer = dict(type='SGD', lr=5e-4, momentum=0.9, weight_decay=0.0005)
+optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=0.0005)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -101,12 +105,10 @@ log_config = dict(
     interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
     ])
 # yapf:enable
 # runtime settings
 total_epochs = 273
-device_ids = range(8)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/yolo_pretrained'
@@ -114,3 +116,5 @@ load_from = None
 resume_from = None
 workflow = [('train', 1)]
 evaluation = dict(interval=1, metric=['bbox'])
+# TODO: Remove hot fix
+find_unused_parameters=True
