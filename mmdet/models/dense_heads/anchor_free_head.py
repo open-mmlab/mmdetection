@@ -36,6 +36,8 @@ class AnchorFreeHead(BaseDenseHead):
         test_cfg (dict): Testing config of anchor head.
     """  # noqa: W605
 
+    _version = 1
+
     def __init__(self,
                  num_classes,
                  in_channels,
@@ -150,7 +152,7 @@ class AnchorFreeHead(BaseDenseHead):
         """Hack some keys of the model state dict so that can load checkpoints
         of previous version."""
         version = local_metadata.get('version', None)
-        if version is None or version < 2.2:
+        if version is None:
             # the key is different in early versions
             # for example, 'fcos_cls' become 'conv_cls' now
             bbox_head_keys = [
