@@ -1,4 +1,4 @@
-#YOLOv3
+# YOLOv3
 
 ## Introduction
 ```
@@ -16,8 +16,10 @@
 
 Test set: COCO val2017
 
-bbox_mAP: 0.3520
+bbox_mAP: 0.3640
 
-bbox_mAP_50: 0.6100
+bbox_mAP_50: 0.6350
 
 Checkpoint link: [here](https://drive.google.com/drive/folders/1NzQ5LwBaYPlu1gywnRAViNz70NV9743O?usp=sharing)
+
+This implementation originates from the project of Haoyu Wu(@wuhy08) at Western Digital.
