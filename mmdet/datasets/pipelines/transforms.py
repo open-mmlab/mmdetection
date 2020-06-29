@@ -183,6 +183,9 @@ class Resize(object):
                     [int(x * scale_factor) for x in img_shape][::-1])
             else:
                 self._random_scale(results)
+        else:
+            assert 'scale_factor' not in results, (
+                "scale and scale_factor cannot be both set.") 
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
