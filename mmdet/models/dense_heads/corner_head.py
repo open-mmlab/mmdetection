@@ -308,20 +308,20 @@ class CornerHead(nn.Module):
         width_ratio = float(width / img_w)
         height_ratio = float(height / img_h)
 
-        gt_tl_heatmap = gt_bboxes.new_zeros([batch_size, self.num_classes, height, width])
-        gt_br_heatmap = gt_bboxes.new_zeros([batch_size, self.num_classes, height, width])
-        gt_tl_offset = gt_bboxes.new_zeros([batch_size, 2, height, width])
-        gt_br_offset = gt_bboxes.new_zeros([batch_size, 2, height, width])
+        gt_tl_heatmap = gt_bboxes[-1].new_zeros([batch_size, self.num_classes, height, width])
+        gt_br_heatmap = gt_bboxes[-1].new_zeros([batch_size, self.num_classes, height, width])
+        gt_tl_offset = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
+        gt_br_offset = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
 
         if with_corner_emb:
             match = []
 
         if with_guiding_shift:
-            gt_tl_guiding_shift = gt_bboxes.new_zeros([batch_size, 2, height, width])
-            gt_br_guiding_shift = gt_bboxes.new_zeros([batch_size, 2, height, width])
+            gt_tl_guiding_shift = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
+            gt_br_guiding_shift = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
         if with_centripetal_shift:
-            gt_tl_centripetal_shift = gt_bboxes.new_zeros([batch_size, 2, height, width])
-            gt_br_centripetal_shift = gt_bboxes.new_zeros([batch_size, 2, height, width])
+            gt_tl_centripetal_shift = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
+            gt_br_centripetal_shift = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
 
         for batch_id in range(batch_size):
             corner_match = []
