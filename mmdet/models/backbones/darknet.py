@@ -6,9 +6,8 @@ import torch.nn as nn
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmcv.runner import load_checkpoint
-from mmcv.cnn import constant_init, kaiming_init
+from mmcv.cnn import constant_init, kaiming_init, ConvModule
 
-from mmdet.models.utils import ConvLayer
 from ..builder import BACKBONES
 
 
@@ -23,8 +22,19 @@ class ResBlock(nn.Module):
         super(ResBlock, self).__init__()
         assert in_channels % 2 == 0  # ensure the in_channels is an even number.
         half_in_channels = in_channels // 2
-        self.conv1 = ConvLayer(in_channels, half_in_channels, 1)
-        self.conv2 = ConvLayer(half_in_channels, in_channels, 3)
+        self.conv1 = ConvModule(in_channels,
+                                half_in_channels,
+                                1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+        self.conv2 = ConvModule(half_in_channels, 
+                                in_channels, 
+                                3,
+                                padding=1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+        # self.conv1 = ConvLayer(in_channels, half_in_channels, 1)
+        # self.conv2 = ConvLayer(half_in_channels, in_channels, 3)
 
     def forward(self, x):
         residual = x
@@ -41,7 +51,13 @@ def make_conv_and_res_block(in_channels, out_channels, res_repeat):
     The Conv layers always have 3x3 filters with stride=2.
     The number of the filters in Conv layer is the same as the out channels of the ResBlock"""
     model = nn.Sequential()
-    model.add_module('conv', ConvLayer(in_channels, out_channels, 3, stride=2))
+    model.add_module('conv', ConvModule(in_channels,
+                                        out_channels,
+                                        3,
+                                        stride=2,
+                                        padding=1,
+                                        norm_cfg=dict(type='BN', requires_grad=True),
+                                        act_cfg=dict(type='LeakyReLU', negative_slope=0.1)))
     for idx in range(res_repeat):
         model.add_module('res{}'.format(idx), ResBlock(out_channels))
     return model
@@ -54,7 +70,10 @@ class DarkNet53(nn.Module):
                  norm_eval=True,
                  reverse_output=False):
         super(DarkNet53, self).__init__()
-        self.conv1 = ConvLayer(3, 32, 3)
+        self.conv1 = ConvModule(3, 32, 3,
+                                padding=1,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
         self.cr_block1 = make_conv_and_res_block(32, 64, 1)
         self.cr_block2 = make_conv_and_res_block(64, 128, 2)
         self.cr_block3 = make_conv_and_res_block(128, 256, 8)

@@ -9,10 +9,8 @@ import logging
 from ..builder import HEADS
 from .base_dense_head import BaseDenseHead
 
-from mmcv.cnn import xavier_init
+from mmcv.cnn import xavier_init, ConvModule
 from mmcv.runner import load_checkpoint
-
-from mmdet.models.utils import ConvLayer
 
 from mmdet.core import (multiclass_nms, force_fp32)
 
@@ -51,7 +49,12 @@ class YoloHead(BaseDenseHead):
         for i_scale in range(self.num_scales):
             in_c = self.in_channels[i_scale]
             out_c = self.out_channels[i_scale]
-            conv_bridge = ConvLayer(in_c, out_c, 3)
+            conv_bridge = ConvModule(in_c,
+                                     out_c,
+                                     3,
+                                     padding=1,
+                                     norm_cfg=dict(type='BN', requires_grad=True),
+                                     act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
             conv_final = nn.Conv2d(out_c, self.last_layer_dim, 1, bias=True)
 
             self.convs_bridge.append(conv_bridge)
