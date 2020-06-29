@@ -111,11 +111,21 @@ class ConvAWS2d(nn.Conv2d):
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
+        """AWS overrides the function _load_from_state_dict to recover
+           weight_gamma and weight_beta if they are missing.
+           If weight_gamma and weight_beta are found in the checkpoint, this
+           function will return after super()._load_from_state_dict.
+           Otherwise, it will compute the mean and std of the pretrained
+           weights and store them in weight_beta and weight_gamma.
+        """
         self.weight_gamma.data.fill_(-1)
+        local_missing_keys = []
         super()._load_from_state_dict(state_dict, prefix, local_metadata,
-                                      strict, missing_keys, unexpected_keys,
-                                      error_msgs)
+                                      strict, local_missing_keys,
+                                      unexpected_keys, error_msgs)
         if self.weight_gamma.data.mean() > 0:
+            for k in local_missing_keys:
+                missing_keys.append(k)
             return
         weight = self.weight.data
         weight_flat = weight.view(weight.size(0), -1)
@@ -124,8 +134,10 @@ class ConvAWS2d(nn.Conv2d):
         self.weight_beta.data.copy_(mean)
         self.weight_gamma.data.copy_(std)
         missing_gamma_beta = [
-            k for k in missing_keys
-            if 'weight_gamma' in k or 'weight_beta' in k
+            k for k in local_missing_keys
+            if k.endswith('weight_gamma') or k.endswith('weight_beta')
         ]
         for k in missing_gamma_beta:
-            missing_keys.remove(k)
+            local_missing_keys.remove(k)
+        for k in local_missing_keys:
+            missing_keys.append(k)

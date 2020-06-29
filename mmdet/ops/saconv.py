@@ -55,8 +55,7 @@ class SAConv2d(ConvAWS2d):
         self.use_deform = use_deform
         self.switch = nn.Conv2d(
             self.in_channels, 1, kernel_size=1, stride=stride, bias=True)
-        self.switch.weight.data.fill_(0)
-        self.switch.bias.data.fill_(1)
+        constant_init(self.switch, 0, bias=1)
         self.weight_diff = nn.Parameter(torch.Tensor(self.weight.size()))
         self.weight_diff.data.zero_()
         self.pre_context = nn.Conv2d(

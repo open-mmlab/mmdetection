@@ -7,6 +7,18 @@ from .resnet import ResNet
 
 
 class Bottleneck(_Bottleneck):
+    """Bottleneck for the ResNet backbone in DetectoRS
+       (https://arxiv.org/pdf/2006.02334.pdf)
+
+    This bottleneck allows the users to specify whether to use
+    SAC (Switchable Atrous Convolution) and RFP (Recursive Feature Pyramid).
+
+    Args:
+         inplanes (int): The number of input channels
+         planes (int): The number of output channels before expansion
+         rfp_inplanes (int | None): The number of channels from RFP
+         sac (dict | None): Dictionary to construct SAC
+    """
     expansion = 4
 
     def __init__(self,
@@ -15,10 +27,6 @@ class Bottleneck(_Bottleneck):
                  rfp_inplanes=None,
                  sac=None,
                  **kwargs):
-        """Bottleneck block for DetectoRS_ResNet.
-        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
-        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
-        """
         super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
 
         assert sac is None or isinstance(sac, dict)
@@ -47,10 +55,12 @@ class Bottleneck(_Bottleneck):
         self.init_weights()
 
     def init_weights(self):
+        """Initialize the weights."""
         if self.rfp_inplanes:
             constant_init(self.rfp_conv, 0)
 
     def rfp_forward(self, x, rfp_feat):
+        """The forward function that also takes the RFP features as input."""
 
         def _inner_forward(x):
             identity = x
