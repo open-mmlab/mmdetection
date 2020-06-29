@@ -13,3 +13,4 @@ onnx==1.6.0
 onnxruntime==1.1.2
 lxml
 pycocotools @ git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools
+Polygon3==3.0.8

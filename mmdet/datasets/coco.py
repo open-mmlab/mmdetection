@@ -12,6 +12,7 @@ from pycocotools.cocoeval import COCOeval
 from terminaltables import AsciiTable
 
 from mmdet.core import eval_recalls
+from mmdet.core import text_eval
 from .builder import DATASETS
 from .custom import CustomDataset
 
@@ -334,7 +335,8 @@ class CocoDataset(CustomDataset):
                  jsonfile_prefix=None,
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
-                 iou_thrs=np.arange(0.5, 0.96, 0.05)):
+                 iou_thrs=np.arange(0.5, 0.96, 0.05),
+                 test_cfg=None):
         """Evaluation in COCO protocol.
 
         Args:
@@ -358,7 +360,7 @@ class CocoDataset(CustomDataset):
         """
 
         metrics = metric if isinstance(metric, list) else [metric]
-        allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast']
+        allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast', 'f1']
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
@@ -384,10 +386,11 @@ class CocoDataset(CustomDataset):
                 print_log(log_msg, logger=logger)
                 continue
 
-            if metric not in result_files:
-                raise KeyError(f'{metric} is not in results')
+            metric_type = 'bbox' if metric == 'f1' else metric
+            if metric_type not in result_files:
+                raise KeyError(f'{metric_type} is not in results')
             try:
-                cocoDt = cocoGt.loadRes(result_files[metric])
+                cocoDt = cocoGt.loadRes(result_files[metric_type])
             except IndexError:
                 print_log(
                     'The testing results of the whole dataset is empty.',
@@ -395,7 +398,7 @@ class CocoDataset(CustomDataset):
                     level=logging.ERROR)
                 break
 
-            iou_type = 'bbox' if metric == 'proposal' else metric
+            iou_type = 'bbox' if metric in {'proposal', 'f1'} else metric
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
@@ -413,9 +416,23 @@ class CocoDataset(CustomDataset):
                     val = float(f'{cocoEval.stats[i + 6]:.3f}')
                     eval_results[item] = val
             else:
+
+                if metric == 'f1':
+                    predictions = cocoEval.cocoDt.imgToAnns
+                    gt_annotations = cocoEval.cocoGt.imgToAnns
+                    recall, precision, hmean, _ = text_eval(
+                        predictions, gt_annotations, test_cfg.score_thr,
+                        show_recall_graph=False,
+                        use_transcriptions=False)
+                    print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
+                          format(recall, precision, hmean))
+                    eval_results['hmean'] = float(f'{hmean:.3f}')
+                    continue
+
                 cocoEval.evaluate()
                 cocoEval.accumulate()
                 cocoEval.summarize()
+
                 if classwise:  # Compute per-category AP
                     # Compute per-category AP
                     # from https://github.com/facebookresearch/detectron2/
