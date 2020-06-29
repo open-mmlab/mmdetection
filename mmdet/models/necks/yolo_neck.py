@@ -69,9 +69,9 @@ class DetectionNeck(nn.Module):
 
 
 @NECKS.register_module()
-class YoloNeck(nn.Module):
+class YOLOV3Neck(nn.Module):
     """
-    The neck of the YoloNet.
+    The neck of YOLOV3.
     It can be treated as a simplified version of FPN.
     It will take the result from Darknet backbone
     and do some upsampling and concatenation.
@@ -79,7 +79,7 @@ class YoloNeck(nn.Module):
     """
 
     def __init__(self):
-        super(YoloNeck, self).__init__()
+        super(YOLOV3Neck, self).__init__()
         self.detect1 = DetectionNeck(1024, 512)
         self.conv1 = ConvModule(
             512,
@@ -98,7 +98,7 @@ class YoloNeck(nn.Module):
 
     def forward(self, x):
         assert len(x) == 3
-        x1, x2, x3 = x
+        x3, x2, x1 = x
         out1 = self.detect1(x1)
         tmp = self.conv1(out1)
         tmp = F.interpolate(tmp, scale_factor=2)

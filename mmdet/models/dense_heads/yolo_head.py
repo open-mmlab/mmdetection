@@ -16,7 +16,7 @@ _EPSILON = 1e-6
 
 
 @HEADS.register_module()
-class YoloHead(BaseDenseHead):
+class YOLOV3Head(BaseDenseHead):
 
     # TODO: Move into cfg
     num_scales = 3
@@ -38,7 +38,7 @@ class YoloHead(BaseDenseHead):
     ]
 
     def __init__(self, train_cfg=None, test_cfg=None):
-        super(YoloHead, self).__init__()
+        super(YOLOV3Head, self).__init__()
         self.convs_bridge = nn.ModuleList()
         self.convs_final = nn.ModuleList()
         for i_scale in range(self.num_scales):
