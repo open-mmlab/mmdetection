@@ -64,11 +64,14 @@ class AutoAugment(object):
                     'dict and contain the key of "type".'
 
         self.policies = copy.deepcopy(policies)
+        transforms = []
+        for policy in self.policies:
+            transforms.append(Compose(policy))
+        self.transforms = transforms
 
     def __call__(self, results):
-        select_policies = self.policies[np.random.randint(len(self.policies))]
-        augmentation = Compose(select_policies)
-        return augmentation(results)
+        transform = np.random.choice(self.transforms)
+        return transform(results)
 
     def __repr__(self):
         return f'{self.__class__.__name__}' \
