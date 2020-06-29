@@ -1095,9 +1095,9 @@ class RandomCenterCropPad(object):
 
         Args:
             patch (list[int]): The cropped area, [left, top, right, bottom].
-            boxes (numpy array, N x 4): Ground truth boxes.
+            boxes (numpy array, (N x 4)): Ground truth boxes.
         Returns:
-            mask (numpy array, N): Each box is inside or outside the patch.
+            mask (numpy array, (N,)): Each box is inside or outside the patch.
         """
         center = (boxes[:, :2] + boxes[:, 2:]) / 2
         mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
