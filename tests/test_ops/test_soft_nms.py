@@ -4,7 +4,7 @@ CommandLine:
 """
 import numpy as np
 import torch
-from mmcv.op.nms.nms_wrapper import soft_nms
+from mmcv.ops.nms.nms_wrapper import soft_nms
 
 
 def test_soft_nms_device_and_dtypes_cpu():

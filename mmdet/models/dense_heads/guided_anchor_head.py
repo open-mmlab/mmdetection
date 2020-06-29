@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import bias_init_with_prob, normal_init
-from mmcv.op import DeformConv, MaskedConv2d
+from mmcv.ops import DeformConv, MaskedConv2d
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,

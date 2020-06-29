@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
-from mmcv.op import DeformConv
+from mmcv.ops import DeformConv
 
 from mmdet.core import multi_apply, multiclass_nms
 from ..builder import HEADS, build_loss

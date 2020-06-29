@@ -4,7 +4,7 @@ import io
 import mmcv
 import onnx
 import torch
-from mmcv.op import RoIAlign, RoIPool
+from mmcv.ops import RoIAlign, RoIPool
 from mmcv.runner import load_checkpoint
 from onnx import optimizer
 from torch.onnx import OperatorExportTypes

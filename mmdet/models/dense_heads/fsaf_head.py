@@ -30,11 +30,24 @@ class FSAFHead(RetinaHead):
     """
 
     def forward_single(self, x):
+        """Forward feature map of a single scale level.
+
+        Args:
+            x (Tensor): Feature map of a single scale level.
+
+        Returns:
+            tuple (Tensor):
+                cls_score (Tensor): Box scores for each scale level
+                    Has shape (N, num_points * num_classes, H, W).
+                bbox_pred (Tensor): Box energies / deltas for each scale
+                    level with shape (N, num_points * 4, H, W).
+        """
         cls_score, bbox_pred = super().forward_single(x)
         # relu: TBLR encoder only accepts positive bbox_pred
         return cls_score, self.relu(bbox_pred)
 
     def init_weights(self):
+        """Initialize weights of the head."""
         super(FSAFHead, self).init_weights()
         # The positive bias in self.retina_reg conv is to prevent predicted \
         #  bbox with 0 area
@@ -152,6 +165,24 @@ class FSAFHead(RetinaHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute loss of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_points * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_points * 4, H, W).
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         for i in range(len(bbox_preds)):  # loop over fpn level
             # avoid 0 area of the predicted bbox
             bbox_preds[i] = bbox_preds[i].clamp(min=1e-4)
@@ -256,6 +287,17 @@ class FSAFHead(RetinaHead):
             accuracy=acc)
 
     def calculate_accuracy(self, cls_scores, labels_list, pos_inds):
+        """Calculate accuracy of the classification prediction.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            labels_list: (list[Tensor]): Labels for each scale level.
+            pos_inds (list[Tensor]): Positive inds for each scale level.
+
+        Returns:
+            Tensor: Accuracy.
+        """
         with torch.no_grad():
             num_pos = torch.cat(pos_inds, 0).sum().float().clamp(min=1e-3)
             num_class = cls_scores[0].size(1)

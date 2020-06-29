@@ -46,38 +46,41 @@ A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](
 
 ## Benchmark and model zoo
 
-Supported methods and backbones are shown in the below table.
 Results and models are available in the [model zoo](docs/model_zoo.md).
 
-|                    | ResNet   | ResNeXt  | SENet    | VGG      | HRNet | RegNetX | Res2Net |
-|--------------------|:--------:|:--------:|:--------:|:--------:|:-----:|:--------:|:-----:|
-| RPN                | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Fast R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Faster R-CNN       | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
-| Mask R-CNN         | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ✓     |
-| Cascade R-CNN      | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
-| Cascade Mask R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
-| SSD                | ✗        | ✗        | ✗        | ✓        | ✗     | ✗        | ✗     |
-| RetinaNet          | ✓        | ✓        | ☐        | ✗        | ✓     | ✓        | ☐     |
-| GHM                | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Mask Scoring R-CNN | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Double-Head R-CNN  | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Grid R-CNN (Plus)  | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Hybrid Task Cascade| ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ✓     |
-| Libra R-CNN        | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Guided Anchoring   | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| FCOS               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| RepPoints          | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| Foveabox           | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| FreeAnchor         | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| NAS-FPN            | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| ATSS               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| FSAF               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| PAFPN              | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| NAS-FCOS           | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
-| PISA               | ✓        | ✓        | ☐        | ✗        | ✓     | ☐        | ☐     |
+Supported backbones:
+- [x] ResNet
+- [x] ResNeXt
+- [x] VGG
+- [x] HRNet
+- [x] RegNet
+- [x] Res2Net
 
-Other features
+Supported methods:
+- [x] [RPN](configs/rpn)
+- [x] [Fast R-CNN](configs/fast_rcnn)
+- [x] [Faster R-CNN](configs/faster_rcnn)
+- [x] [Mask R-CNN](configs/mask_rcnn)
+- [x] [Cascade R-CNN](configs/cascade_rcnn)
+- [x] [Cascade Mask R-CNN](configs/cascade_rcnn)
+- [x] [SSD](configs/ssd)
+- [x] [RetinaNet](configs/retinanet)
+- [x] [GHM](configs/ghm)
+- [x] [Mask Scoring R-CNN](configs/ms_rcnn)
+- [x] [Double-Head R-CNN](configs/double_heads)
+- [x] [Hybrid Task Cascade](configs/htc)
+- [x] [Libra R-CNN](configs/libra_rcnn)
+- [x] [Guided Anchoring](configs/guided_anchoring)
+- [x] [FCOS](configs/fcos)
+- [x] [RepPoints](configs/reppoints)
+- [x] [Foveabox](configs/foveabox)
+- [x] [FreeAnchor](configs/free_anchor)
+- [x] [NAS-FPN](configs/nas_fpn)
+- [x] [ATSS](configs/atss)
+- [x] [FSAF](configs/fsaf)
+- [x] [PAFPN](configs/pafpn)
+- [x] [Dynamic R-CNN](configs/dynamic_rcnn)
+- [x] [PointRend](configs/point_rend)
 - [x] [CARAFE](configs/carafe/README.md)
 - [x] [DCNv2](configs/dcn/README.md)
 - [x] [Group Normalization](configs/gn/README.md)

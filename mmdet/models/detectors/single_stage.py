@@ -32,6 +32,12 @@ class SingleStageDetector(BaseDetector):
         self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in detector
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(SingleStageDetector, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:
@@ -89,6 +95,17 @@ class SingleStageDetector(BaseDetector):
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
+        """Test function without test time augmentation
+
+        Args:
+            imgs (list[torch.Tensor]): List of multiple images
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            np.ndarray: proposals
+        """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
         bbox_list = self.bbox_head.get_bboxes(
@@ -100,4 +117,5 @@ class SingleStageDetector(BaseDetector):
         return bbox_results[0]
 
     def aug_test(self, imgs, img_metas, rescale=False):
+        """Test function with test time augmentation"""
         raise NotImplementedError

@@ -6,6 +6,18 @@ from .utils import weighted_loss
 
 @weighted_loss
 def gaussian_focal_loss(pred, gaussian_target, alpha=2.0, gamma=4.0):
+    """`Focal Loss <https://arxiv.org/abs/1708.02002>`_ for targets in
+    gaussian distribution.
+
+    Args:
+        pred (torch.Tensor): The prediction.
+        gaussian_target (torch.Tensor): The learning target of the prediction
+            in gaussian distribution.
+        alpha (float, optional): A balanced form for Focal Loss.
+            Defaults to 2.0.
+        gamma (float, optional): The gamma for calculating the modulating
+            factor. Defaults to 4.0.
+    """
     eps = 1e-12
     pos_weights = gaussian_target.eq(1)
     neg_weights = (1 - gaussian_target).pow(gamma)
@@ -16,7 +28,7 @@ def gaussian_focal_loss(pred, gaussian_target, alpha=2.0, gamma=4.0):
 
 @LOSSES.register_module()
 class GaussianFocalLoss(nn.Module):
-    """ GaussianFocalLoss is a variant of focal loss.
+    """GaussianFocalLoss is a variant of focal loss.
 
     More details can be found in the `paper
     <https://arxiv.org/abs/1808.01244>`_
@@ -49,6 +61,20 @@ class GaussianFocalLoss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None):
+        """Forward function
+
+        Args:
+            pred (torch.Tensor): The prediction.
+            target (torch.Tensor): The learning target of the prediction
+                in gaussian distribution.
+            weight (torch.Tensor, optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None.
+        """
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)

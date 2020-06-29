@@ -37,6 +37,17 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         self.stds = target_stds
 
     def encode(self, bboxes, gt_bboxes):
+        """Get box regression transformation deltas that can be used
+        to transform the `bboxes` into the `gt_bboxes`.
+
+        Args:
+            bboxes (torch.Tensor): source boxes, e.g., object proposals.
+            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
+                ground-truth boxes.
+
+        Returns:
+            torch.Tensor: Box transformation deltas
+        """
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = legacy_bbox2delta(bboxes, gt_bboxes, self.means,
@@ -48,6 +59,19 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
                pred_bboxes,
                max_shape=None,
                wh_ratio_clip=16 / 1000):
+        """Apply transformation `pred_bboxes` to `boxes`.
+
+        Args:
+            boxes (torch.Tensor): Basic boxes.
+            pred_bboxes (torch.Tensor): Encoded boxes with shape
+            max_shape (tuple[int], optional): Maximum shape of boxes.
+                Defaults to None.
+            wh_ratio_clip (float, optional): The allowed ratio between
+                width and height.
+
+        Returns:
+            torch.Tensor: Decoded boxes.
+        """
         assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = legacy_delta2bbox(bboxes, pred_bboxes, self.means,
                                            self.stds, max_shape, wh_ratio_clip)

@@ -1,5 +1,5 @@
 import torch
-from mmcv.op.nms import batched_nms
+from mmcv.ops.nms import batched_nms
 
 
 def multiclass_nms(multi_bboxes,
