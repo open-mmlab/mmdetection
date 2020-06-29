@@ -1155,8 +1155,7 @@ class RandomCenterCropPad(object):
         return cropped_img, border, patch
 
     def _train_aug(self, results):
-        """Around padding the original image without cropping.
-        The padding mode and value are from `test_pad_mode`.
+        """Random crop and around padding the original image.
 
         Args:
             results (dict): Image infomations in the augment pipeline.
@@ -1223,6 +1222,7 @@ class RandomCenterCropPad(object):
 
     def _test_aug(self, results):
         """Around padding the original image without cropping.
+
         The padding mode and value are from `test_pad_mode`.
 
         Args:
