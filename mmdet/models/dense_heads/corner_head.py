@@ -44,6 +44,13 @@ class BCPool(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
+        """Forward features from the upstream network.
+
+        Args:
+            x (tensor): Input feature of BCPool.
+        Returns:
+            conv2 (tensor): Output feature of BCPool.
+        """
         pool1_conv = self.pool1_conv(x)
         pool2_conv = self.pool2_conv(x)
         pool1_feat = self.pool1(pool1_conv)
@@ -117,14 +124,17 @@ class CornerHead(nn.Module):
         self._init_layers()
 
     def _make_layers(self, out_channels, in_channels=256, feat_channels=256):
-        if out_channels == 0:
-            return nn.Sequential()
-        else:
-            return nn.Sequential(
-                ConvModule(in_channels, feat_channels, 3, padding=1),
-                nn.Conv2d(feat_channels, out_channels, (1, 1)))
+        """Initialize conv sequential for CornerHead.
+        """
+        return nn.Sequential(
+            ConvModule(in_channels, feat_channels, 3, padding=1),
+            nn.Conv2d(feat_channels, out_channels, (1, 1)))
 
     def _init_corner_kpt_layers(self):
+        """Initialize corner keypoint layers. Including corner heatmap branch
+        and corner offset branch. Each branch has two parts: prefix `tl_` for
+        top-left and `br_` for bottom-right.
+        """
         self.tl_pool, self.br_pool = nn.ModuleList(), nn.ModuleList()
         self.tl_heat, self.br_heat = nn.ModuleList(), nn.ModuleList()
         self.tl_off, self.br_off = nn.ModuleList(), nn.ModuleList()
@@ -152,6 +162,10 @@ class CornerHead(nn.Module):
                     in_channels=self.in_channels))
 
     def _init_corner_emb_layers(self):
+        """Initialize corner embedding layers. Only include corner embedding
+        branch with two parts: prefix `tl_` for top-left and `br_` for
+        bottom-right.
+        """
         self.tl_emb, self.br_emb = nn.ModuleList(), nn.ModuleList()
 
         for _ in range(self.feat_num_levels):
@@ -165,6 +179,9 @@ class CornerHead(nn.Module):
                     in_channels=self.in_channels))
 
     def _init_layers(self):
+        """Initialize layers for CornerHead.
+        Including two parts: corner keypoint layers and corner embedding layers
+        """
         self._init_corner_kpt_layers()
         if self.with_corner_emb:
             self._init_corner_emb_layers()
@@ -181,10 +198,57 @@ class CornerHead(nn.Module):
             self.br_heat[i][-1].bias.data.fill_(-2.19)
 
     def forward(self, feats):
+        """Forward features from the upstream network.
+
+        Args:
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+        Returns:
+            tuple: Usually a tuple of corner heatmaps, offset heatmaps and
+                    embedding heatmaps.
+                tl_heats (list[Tensor]): Top-left corner heatmaps for all
+                    levels, each is a 4D-tensor, the channels number is
+                    num_classes.
+                br_heats (list[Tensor]): Bottom-right corner heatmaps for all
+                    levels, each is a 4D-tensor, the channels number is
+                    num_classes.
+                tl_embs (list[Tensor] | list[None]): Top-left embedding
+                    heatmaps for all levels, each is a 4D-tensor or None.
+                    If not None, the channels number is corner_emb_channels.
+                br_embs (list[Tensor] | list[None]): Bottom-right embedding
+                    heatmaps for all levels, each is a 4D-tensor or None.
+                    If not None, the channels number is corner_emb_channels.
+                tl_offs (list[Tensor]): Top-left offset heatmaps for all
+                    levels, each is a 4D-tensor. The channels number is
+                    corner_offset_channels.
+                br_offs (list[Tensor]): Bottom-right offset heatmaps for all
+                    levels, each is a 4D-tensor. The channels number is
+                    corner_offset_channels.
+        """
         lvl_ind = list(range(self.feat_num_levels))
         return multi_apply(self.forward_single, feats, lvl_ind)
 
     def forward_single(self, x, lvl_ind, return_pool=False):
+        """Forward feature of a single level.
+
+        Args:
+            x (Tensor): Feature of a single level.
+            lvl_ind (int): Level index of current feature.
+            return_pool (bool): Return corner pool feature or not.
+        Returns:
+            tuple:
+                tl_heat (Tensor): Predicted top-left corner heatmap.
+                br_heat (Tensor): Predicted bottom-right corner heatmap.
+                tl_emb (Tensor | None): Predicted top-left embedding heatmap.
+                    None for `self.with_corner_emb == False`.
+                br_emb (Tensor | None): Predicted bottom-right embedding
+                    heatmap. None for `self.with_corner_emb == False`.
+                tl_off (Tensor): Predicted top-left offset heatmap.
+                br_off (Tensor): Predicted bottom-right offset heatmap.
+                tl_pool (Tensor): Top-left corner pool feature. Not must have.
+                br_pool (Tensor): Bottom-right corner pool feature. Not must
+                    have.
+        """
         tl_pool = self.tl_pool[lvl_ind](x)
         tl_heat = self.tl_heat[lvl_ind](tl_pool)
         br_pool = self.br_pool[lvl_ind](x)
@@ -209,111 +273,118 @@ class CornerHead(nn.Module):
                       gt_bboxes,
                       gt_labels,
                       feat_shape,
-                      feat_dtype,
-                      feat_device,
                       img_shape,
                       with_corner_emb=False,
                       with_guiding_shift=False,
                       with_centripetal_shift=False):
-        b, _, h, w = feat_shape
+        """Generate corner targets.
+
+        Including corner heatmap, corner offset.
+        Optional: corner embedding, corner guiding shift, centripetal shift.
+        For CornerNet, we generate corner heatmap, corner offset and corner
+            embedding from this function.
+        For CentripetalNet, we generate corner heatmap, corner offset, guiding
+            shift and centripetal shift from this function.
+
+        Args:
+            gt_bboxes (list[Tensor]): Ground truth bboxes of each image, each
+                has shape (num_gt, 4).
+            gt_labels (list[Tensor]): Ground truth labels of each box, each has
+                shape (num_gt,).
+            feat_shape (list[int]): Shape of output feature,
+                [batch, channel, height, width].
+            img_shape (list[int]): Shape of input image,
+                [height, width, channel].
+            with_corner_emb (bool): Generate corner embedding target or not.
+                Default: False.
+            with_guiding_shift (bool): Generate guiding shift target or not.
+                Default: False.
+            with_centripetal_shift (bool): Generate centripetal shift target or
+                not. Default: False.
+        """
+        batch_size, _, height, width = feat_shape
         img_h, img_w = img_shape[:2]
 
-        width_ratio = float(w / img_w)
-        height_ratio = float(h / img_h)
+        width_ratio = float(width / img_w)
+        height_ratio = float(height / img_h)
 
-        gt_tl_heatmap = torch.zeros([b, self.num_classes, h, w],
-                                    dtype=feat_dtype,
-                                    device=feat_device)
-        gt_br_heatmap = torch.zeros([b, self.num_classes, h, w],
-                                    dtype=feat_dtype,
-                                    device=feat_device)
-        gt_tl_offset = torch.zeros([b, 2, h, w],
-                                   dtype=feat_dtype,
-                                   device=feat_device)
-        gt_br_offset = torch.zeros([b, 2, h, w],
-                                   dtype=feat_dtype,
-                                   device=feat_device)
+        gt_tl_heatmap = gt_bboxes.new_zeros([batch_size, self.num_classes, height, width])
+        gt_br_heatmap = gt_bboxes.new_zeros([batch_size, self.num_classes, height, width])
+        gt_tl_offset = gt_bboxes.new_zeros([batch_size, 2, height, width])
+        gt_br_offset = gt_bboxes.new_zeros([batch_size, 2, height, width])
 
         if with_corner_emb:
             match = []
 
         if with_guiding_shift:
-            gt_tl_guiding_shift = torch.zeros([b, 2, h, w],
-                                              dtype=feat_dtype,
-                                              device=feat_device)
-            gt_br_guiding_shift = torch.zeros([b, 2, h, w],
-                                              dtype=feat_dtype,
-                                              device=feat_device)
+            gt_tl_guiding_shift = gt_bboxes.new_zeros([batch_size, 2, height, width])
+            gt_br_guiding_shift = gt_bboxes.new_zeros([batch_size, 2, height, width])
         if with_centripetal_shift:
-            gt_tl_centripetal_shift = torch.zeros([b, 2, h, w],
-                                                  dtype=feat_dtype,
-                                                  device=feat_device)
-            gt_br_centripetal_shift = torch.zeros([b, 2, h, w],
-                                                  dtype=feat_dtype,
-                                                  device=feat_device)
+            gt_tl_centripetal_shift = gt_bboxes.new_zeros([batch_size, 2, height, width])
+            gt_br_centripetal_shift = gt_bboxes.new_zeros([batch_size, 2, height, width])
 
-        for b_id in range(b):
+        for batch_id in range(batch_size):
             corner_match = []
-            for box_id in range(len(gt_labels[b_id])):
-                tl_x, tl_y, br_x, br_y = gt_bboxes[b_id][box_id]
-                ct_x = (tl_x + br_x) / 2.0
-                ct_y = (tl_y + br_y) / 2.0
-                label = gt_labels[b_id][box_id]
+            for box_id in range(len(gt_labels[batch_id])):
+                left, top, right, bottom = gt_bboxes[batch_id][box_id]
+                center_x = (left + right) / 2.0
+                center_y = (top + bottom) / 2.0
+                label = gt_labels[batch_id][box_id]
 
-                ftlx = float(tl_x * width_ratio)
-                fbrx = float(br_x * width_ratio)
-                ftly = float(tl_y * height_ratio)
-                fbry = float(br_y * height_ratio)
-                fctx = float(ct_x * width_ratio)
-                fcty = float(ct_y * height_ratio)
+                scale_left = left * width_ratio
+                scale_right = right * width_ratio
+                scale_top = top * height_ratio
+                scale_bottom = bottom * height_ratio
+                scale_center_x = center_x * width_ratio
+                scale_center_y = center_y * height_ratio
 
-                tl_x_idx = int(min(ftlx, w - 1))
-                br_x_idx = int(min(fbrx, w - 1))
-                tl_y_idx = int(min(ftly, h - 1))
-                br_y_idx = int(min(fbry, h - 1))
+                left_idx = int(min(scale_left, width - 1))
+                right_idx = int(min(scale_right, width - 1))
+                top_idx = int(min(scale_top, height - 1))
+                bottom_idx = int(min(scale_bottom, height - 1))
 
-                width = ceil(fbrx - ftlx)
-                height = ceil(fbry - ftly)
+                width = ceil(scale_right - scale_left)
+                height = ceil(scale_bottom - scale_top)
 
                 radius = gaussian_radius((height, width), min_overlap=0.3)
                 radius = max(0, int(radius))
 
-                gen_gaussian_target(gt_tl_heatmap[b_id, label],
-                                    [tl_x_idx, tl_y_idx], radius)
-                gen_gaussian_target(gt_br_heatmap[b_id, label],
-                                    [br_x_idx, br_y_idx], radius)
+                gen_gaussian_target(gt_tl_heatmap[batch_id, label],
+                                    [left_idx, top_idx], radius)
+                gen_gaussian_target(gt_br_heatmap[batch_id, label],
+                                    [right_idx, bottom_idx], radius)
 
-                tl_x_offset = ftlx - tl_x_idx
-                tl_y_offset = ftly - tl_y_idx
-                br_x_offset = fbrx - br_x_idx
-                br_y_offset = fbry - br_y_idx
+                left_offset = scale_left - left_idx
+                top_offset = scale_top - top_idx 
+                right_offset = scale_right - right_idx
+                bottom_offset = scale_bottom - bottom_idx
 
-                gt_tl_offset[b_id, 0, tl_y_idx, tl_x_idx] = tl_x_offset
-                gt_tl_offset[b_id, 1, tl_y_idx, tl_x_idx] = tl_y_offset
-                gt_br_offset[b_id, 0, br_y_idx, br_x_idx] = br_x_offset
-                gt_br_offset[b_id, 1, br_y_idx, br_x_idx] = br_y_offset
+                gt_tl_offset[batch_id, 0, top_idx, left_idx] = left_offset
+                gt_tl_offset[batch_id, 1, top_idx, left_idx] = top_offset
+                gt_br_offset[batch_id, 0, bottom_idx, right_idx] = right_offset
+                gt_br_offset[batch_id, 1, bottom_idx, right_idx] = bottom_offset
 
                 if with_corner_emb:
-                    corner_match.append([[tl_y_idx, tl_x_idx],
-                                         [br_y_idx, br_x_idx]])
+                    corner_match.append([[top_idx, left_idx],
+                                         [bottom_idx, right_idx]])
                 if with_guiding_shift:
-                    gt_tl_guiding_shift[b_id, 0, tl_y_idx,
-                                        tl_x_idx] = fctx - tl_x_idx
-                    gt_tl_guiding_shift[b_id, 1, tl_y_idx,
-                                        tl_x_idx] = fcty - tl_y_idx
-                    gt_br_guiding_shift[b_id, 0, br_y_idx,
-                                        br_x_idx] = br_x_idx - fctx
-                    gt_br_guiding_shift[b_id, 1, br_y_idx,
-                                        br_x_idx] = br_y_idx - fcty
+                    gt_tl_guiding_shift[batch_id, 0, top_idx,
+                                        left_idx] = scale_center_x - left_idx
+                    gt_tl_guiding_shift[batch_id, 1, top_idx,
+                                        left_idx] = scale_center_y - top_idx 
+                    gt_br_guiding_shift[batch_id, 0, bottom_idx,
+                                        right_idx] = right_idx - scale_center_x 
+                    gt_br_guiding_shift[batch_id, 1, bottom_idx,
+                                        right_idx] = bottom_idx - scale_center_y
                 if with_centripetal_shift:
-                    gt_tl_centripetal_shift[b_id, 0, tl_y_idx,
-                                            tl_x_idx] = log(fctx - ftlx)
-                    gt_tl_centripetal_shift[b_id, 1, tl_y_idx,
-                                            tl_x_idx] = log(fcty - ftly)
-                    gt_br_centripetal_shift[b_id, 0, br_y_idx,
-                                            br_x_idx] = log(fbrx - fctx)
-                    gt_br_centripetal_shift[b_id, 1, br_y_idx,
-                                            br_x_idx] = log(fbry - fcty)
+                    gt_tl_centripetal_shift[batch_id, 0, top_idx,
+                                            left_idx] = log(scale_center_x - scale_left)
+                    gt_tl_centripetal_shift[batch_id, 1, top_idx,
+                                            left_idx] = log(scale_center_y - scale_top)
+                    gt_br_centripetal_shift[batch_id, 0, bottom_idx,
+                                            right_idx] = log(scale_right - scale_center_x)
+                    gt_br_centripetal_shift[batch_id, 1, bottom_idx,
+                                            right_idx] = log(scale_bottom - scale_center_y)
 
             if with_corner_emb:
                 match.append(corner_match)
@@ -344,12 +415,36 @@ class CornerHead(nn.Module):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute losses of the head.
+
+        Args:
+            tl_heats (list[Tensor]): Top-left corner heatmaps for each level
+                with shape (N, num_classes, H, W).
+            br_heats (list[Tensor]): Bottom-right corner heatmaps for each
+                level with shape (N, num_classes, H, W).
+            tl_embs (list[Tensor]): Top-left corner embeddings for each level
+                with shape (N, corner_emb_channels, H, W).
+            br_embs (list[Tensor]): Bottom-right corner embeddings for each
+                level with shape (N, corner_emb_channels, H, W).
+            tl_offs (list[Tensor]): Top-left corner offsets for each level
+                with shape (N, corner_offset_channels, H, W).
+            br_offs (list[Tensor]): Bottom-right corner offsets for each level
+                with shape (N, corner_offset_channels, H, W).
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [left, top, right, bottom] format.
+            gt_labels (list[Tensor]): Class indices corresponding to each box.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (list[Tensor] | None): Specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         targets = self.corner_target(
             gt_bboxes,
             gt_labels,
             tl_heats[-1].shape,
-            tl_heats[-1].dtype,
-            tl_heats[-1].device,
             img_metas[0]['pad_shape'],
             with_corner_emb=self.with_corner_emb)
         mlvl_targets = [targets for _ in range(self.feat_num_levels)]
@@ -364,6 +459,29 @@ class CornerHead(nn.Module):
 
     def loss_single(self, tl_hmp, br_hmp, tl_emb, br_emb, tl_off, br_off,
                     targets):
+        """Compute losses for single level.
+
+        Args:
+            tl_hmp (Tensor): Top-left corner heatmap for current level with
+                shape (N, num_classes, H, W).
+            br_hmp (Tensor): Bottom-right corner heatmap for current level with
+                shape (N, num_classes, H, W).
+            tl_emb (Tensor): Top-left corner embedding for current level with
+                shape (N, corner_emb_channels, H, W).
+            br_emb (Tensor): Bottom-right corner embedding for current level
+                with shape (N, corner_emb_channels, H, W).
+            tl_off (Tensor): Top-left corner offset for current level with
+                shape (N, corner_offset_channels, H, W).
+            br_off (Tensor): Bottom-right corner offset for current level with
+                shape (N, corner_offset_channels, H, W).
+            targets (list[Tensor]): Corner target generated by `corner_target`.
+
+        Returns:
+            det_loss (Tensor): Corner keypoint loss.
+            pull_loss (Tensor): Part of AssociativeEmbedding loss.
+            push_loss (Tensor): Another part of AssociativeEmbedding loss.
+            off_loss (Tensor): Corner offset loss.
+        """
         gt_tl_hmp, gt_br_hmp, gt_tl_off, gt_br_off, match = targets
 
         # Detection loss
@@ -415,6 +533,28 @@ class CornerHead(nn.Module):
                    img_metas,
                    rescale=False,
                    with_nms=True):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            tl_heats (list[Tensor]): Top-left corner heatmaps for each level
+                with shape (N, num_classes, H, W).
+            br_heats (list[Tensor]): Bottom-right corner heatmaps for each
+                level with shape (N, num_classes, H, W).
+            tl_embs (list[Tensor]): Top-left corner embeddings for each level
+                with shape (N, corner_emb_channels, H, W).
+            br_embs (list[Tensor]): Bottom-right corner embeddings for each
+                level with shape (N, corner_emb_channels, H, W).
+            tl_offs (list[Tensor]): Top-left corner offsets for each level
+                with shape (N, corner_offset_channels, H, W).
+            br_offs (list[Tensor]): Bottom-right corner offsets for each level
+                with shape (N, corner_offset_channels, H, W).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+        """
         assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(img_metas)
         result_list = []
         for img_id in range(len(img_metas)):
@@ -442,6 +582,29 @@ class CornerHead(nn.Module):
                            img_meta,
                            rescale=False,
                            with_nms=True):
+        """Transform outputs for a single batch item into bbox predictions.
+
+        Args:
+            tl_heat (Tensor): Top-left corner heatmap for current level with
+                shape (N, num_classes, H, W).
+            br_heat (Tensor): Bottom-right corner heatmap for current level with
+                shape (N, num_classes, H, W).
+            tl_emb (Tensor): Top-left corner embedding for current level with
+                shape (N, corner_emb_channels, H, W).
+            br_emb (Tensor): Bottom-right corner embedding for current level
+                with shape (N, corner_emb_channels, H, W).
+            tl_off (Tensor): Top-left corner offset for current level with
+                shape (N, corner_offset_channels, H, W).
+            br_off (Tensor): Bottom-right corner offset for current level with
+                shape (N, corner_offset_channels, H, W).
+            img_meta (dict): Meta information of current image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+        """
+            
         if isinstance(img_meta, (list, tuple)):
             img_meta = img_meta[0]
 
@@ -510,6 +673,15 @@ class CornerHead(nn.Module):
         return out_bboxes, out_labels
 
     def _gather_feat(self, feat, ind, mask=None):
+        """Gather feature according to index.
+
+        Args:
+            feat (Tensor): Target feature map.
+            ind (Tensor): Target coord index.
+            mask (Tensor | None): Mask of featuremap. Default: None.
+        Return:
+            feat (Tensor): Gathered feature.
+        """
         dim = feat.size(2)
         ind = ind.unsqueeze(2).expand(ind.size(0), ind.size(1), dim)
         feat = feat.gather(1, ind)
@@ -520,18 +692,48 @@ class CornerHead(nn.Module):
         return feat
 
     def _local_maximum(self, heat, kernel=3):
+        """Extract local maximum pixel with given kernal.
+
+        Args:
+            heat (Tensor): Target heatmap.
+            kernel (int): Kernel size of max pooling. Default: 3.
+        Return:
+            heat (Tensor): A heatmap where local maximum pixels maintain its
+                own value and other positions are 0.
+        """
         pad = (kernel - 1) // 2
         hmax = nn.functional.max_pool2d(heat, kernel, stride=1, padding=pad)
         keep = (hmax == heat).float()
         return heat * keep
 
     def _transpose_and_gather_feat(self, feat, ind):
+        """Transpose and gather feature according to index.
+
+        Args:
+            feat (Tensor): Target feature map.
+            ind (Tensor): Target coord index.
+        Return:
+            feat (Tensor): Transposed and gathered feature.
+        """
         feat = feat.permute(0, 2, 3, 1).contiguous()
         feat = feat.view(feat.size(0), -1, feat.size(3))
         feat = self._gather_feat(feat, ind)
         return feat
 
     def _topk(self, scores, K=20):
+        """Get top K positions from heatmap.
+
+        Args:
+            scores (Tensor): Target heatmap with shape
+                [batch, num_classes, height, width].
+            K (int): Target number. Default: 20.
+        Return:
+            topk_scores (Tensor): Max scores of each topk keypoint.
+            topk_inds (Tensor): Indexes of each topk keypoint.
+            topk_clses (Tensor): Categories of each topk keypoint.
+            topk_ys (Tensor): Y-coord of each topk keypoint.
+            topk_xs (Tensor): X-coord of each topk keypoint.
+        """
         batch, _, height, width = scores.size()
         topk_scores, topk_inds = torch.topk(scores.view(batch, -1), K)
         topk_clses = (topk_inds / (height * width)).int()
@@ -540,7 +742,6 @@ class CornerHead(nn.Module):
         topk_xs = (topk_inds % width).int().float()
         return topk_scores, topk_inds, topk_clses, topk_ys, topk_xs
 
-    # decode the output feature map to detection boxes
     def decode_heatmap(self,
                        tl_heat,
                        br_heat,
@@ -555,6 +756,38 @@ class CornerHead(nn.Module):
                        kernel=3,
                        distance_threshold=0.5,
                        num_dets=1000):
+        """Transform outputs for a single batch item into raw bbox predictions.
+
+        Args:
+            tl_heat (Tensor): Top-left corner heatmap for current level with
+                shape (N, num_classes, H, W).
+            br_heat (Tensor): Bottom-right corner heatmap for current level
+                with shape (N, num_classes, H, W).
+            tl_off (Tensor): Top-left corner offset for current level with
+                shape (N, corner_offset_channels, H, W).
+            br_off (Tensor): Bottom-right corner offset for current level with
+                shape (N, corner_offset_channels, H, W).
+            tl_emb (Tensor | None): Top-left corner embedding for current
+                level with shape (N, corner_emb_channels, H, W).
+            br_emb (Tensor | None): Bottom-right corner embedding for current
+                level with shape (N, corner_emb_channels, H, W).
+            tl_centripetal_shift (Tensor | None): Top-left centripetal shift
+                for current level with shape (N, 2, H, W).
+            br_centripetal_shift (Tensor | None): Bottom-right centripetal
+                shift for current level with shape (N, 2, H, W).
+            img_meta (dict): Meta information of current image, e.g.,
+                image size, scaling factor, etc.
+            K (int): Get top K corner keypoints from heatmap.
+            kernel (int): Max pooling kernel for extract local maximum pixels.
+            distance_threshold (float): Distance threshold. Top-left and
+                bottom-right corner keypoints with feature distance less than
+                the threshold will be regarded as keypoints from same object.
+            num_dets (int): Num of raw boxes before doing nms.
+        Return:
+            bboxes (Tensor): Coords of each box.
+            scores (Tensor): Scores of each box.
+            clses (Tensor): Categories of each box.
+        """
         with_embedding = tl_emb is not None and br_emb is not None
         with_centripetal_shift = (
             tl_centripetal_shift is not None
