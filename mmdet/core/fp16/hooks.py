@@ -37,6 +37,11 @@ class Fp16OptimizerHook(OptimizerHook):
         self.distributed = distributed
 
     def before_run(self, runner):
+        """Preparing steps before Mixed Precision Training.
+
+        1. Make a master copy of fp32 weights for optimization.
+        2. Convert the main model from fp32 to fp16.
+        """
         # keep a copy of fp32 weights
         runner.optimizer.param_groups = copy.deepcopy(
             runner.optimizer.param_groups)
@@ -57,6 +62,14 @@ class Fp16OptimizerHook(OptimizerHook):
             fp16_param.data.copy_(fp32_param.data)
 
     def after_train_iter(self, runner):
+        """Backward optimization steps for Mixed Precision Training.
+
+        1. Scale the loss by a scale factor.
+        2. Backward the loss to obtain the gradients (fp16).
+        3. Copy gradients from the model to the fp32 weight copy.
+        4. Scale the gradients back and update the fp32 weight copy.
+        5. Copy back the params from fp32 weight copy to the fp16 model.
+        """
         # clear grads of last iteration
         runner.model.zero_grad()
         runner.optimizer.zero_grad()
@@ -84,6 +97,14 @@ class Fp16OptimizerHook(OptimizerHook):
 
 
 def wrap_fp16_model(model):
+    """Wrap the FP32 model to FP16.
+
+    1. Convert FP32 model to FP16.
+    2. Remain some necessary layers to be FP32, e.g., normalization layers.
+
+    Args:
+        model (nn.Module): Model in FP32.
+    """
     # convert model to fp16
     model.half()
     # patch the normalization layers to make it work in fp32 mode
@@ -95,6 +116,15 @@ def wrap_fp16_model(model):
 
 
 def patch_norm_fp32(module):
+    """Recursively convert normalization layers from FP16 to FP32.
+
+    Args:
+        module (nn.Module): The modules to be converted in FP16.
+
+    Returns:
+        nn.Module: The converted module, the normalization layers have been
+            converted to FP32.
+    """
     if isinstance(module, (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
         module.float()
         if isinstance(module, nn.GroupNorm) or torch.__version__ < '1.3':

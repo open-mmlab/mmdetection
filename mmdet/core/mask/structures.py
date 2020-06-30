@@ -12,22 +12,66 @@ class BaseInstanceMasks(metaclass=ABCMeta):
 
     @abstractmethod
     def rescale(self, scale, interpolation='nearest'):
+        """Rescale masks as large as possible while keeping the aspect ratio.
+        For details can refer to `mmcv.imrescale`.
+
+        Args:
+            scale (tuple[int]): The maximum size (h, w) of rescaled mask.
+            interpolation (str): Same as :func:`mmcv.imrescale`.
+
+        Returns:
+            BaseInstanceMasks: The rescaled masks.
+        """
         pass
 
     @abstractmethod
     def resize(self, out_shape, interpolation='nearest'):
+        """Resize masks to the given out_shape.
+
+        Args:
+            out_shape: Target (h, w) of resized mask.
+            interpolation (str): See `mmcv.imresize`.
+
+        Returns:
+            BaseInstanceMasks: The resized masks.
+        """
         pass
 
     @abstractmethod
     def flip(self, flip_direction='horizontal'):
+        """Flip masks alone the given direction.
+
+        Args:
+            flip_direction (str): Either 'horizontal' or 'vertical'.
+
+        Returns:
+            BaseInstanceMasks: The flipped masks.
+        """
         pass
 
     @abstractmethod
     def pad(self, out_shape, pad_val):
+        """Pad masks to the given size of (h, w).
+
+        Args:
+            out_shape (tuple[int]): Target (h, w) of padded mask.
+            pad_val (int): The padded value.
+
+        Returns:
+            BaseInstanceMasks: The padded masks.
+        """
         pass
 
     @abstractmethod
     def crop(self, bbox):
+        """Crop each mask by the given bbox.
+
+        Args:
+            bbox (ndarray): Bbox in format [x1, y1, x2, y2], shape (4, ).
+
+        Return:
+            BaseInstanceMasks: The cropped masks.
+        """
         pass
 
     @abstractmethod
@@ -35,24 +79,57 @@ class BaseInstanceMasks(metaclass=ABCMeta):
                         bboxes,
                         out_shape,
                         inds,
+                        device,
                         interpolation='bilinear'):
+        """Crop and resize masks by the given bboxes.
+
+        This function is mainly used in mask targets computation.
+        It firstly align mask to bboxes by assigned_inds, then crop mask by the
+        assigned bbox and resize to the size of (mask_h, mask_w)
+
+        Args:
+            bboxes (Tensor): Bboxes in format [x1, y1, x2, y2], shape (N, 4)
+            out_shape (tuple[int]): Target (h, w) of resized mask
+            inds (ndarray): Indexes to assign masks to each bbox
+            device (str): Device of bboxes
+            interpolation (str): See `mmcv.imresize`
+
+        Return:
+            BaseInstanceMasks: the cropped and resized masks.
+        """
         pass
 
     @abstractmethod
     def expand(self, expanded_h, expanded_w, top, left):
+        """see `transforms.Expand`."""
         pass
 
     @property
     @abstractmethod
     def areas(self):
+        """ndarray: areas of each instance."""
         pass
 
     @abstractmethod
     def to_ndarray(self):
+        """Convert masks to the format of ndarray.
+
+        Return:
+            ndarray: Converted masks in the format of ndarray.
+        """
         pass
 
     @abstractmethod
     def to_tensor(self, dtype, device):
+        """Convert masks to the format of Tensor.
+
+        Args:
+            dtype (str): Dtype of converted mask.
+            device (torch.device): Device of conveted masks.
+
+        Returns:
+            Tensor: Converted masks in the format of Tensor.
+        """
         pass
 
 
@@ -84,6 +161,15 @@ class BitmapMasks(BaseInstanceMasks):
             assert self.masks.shape[2] == self.width
 
     def __getitem__(self, index):
+        """Index the BitmapMask.
+
+        Args:
+            index (int | ndarray): Indices in the format of integer or ndarray.
+
+        Returns:
+            :obj:`BitmapMasks`: Indexed bitmap masks.
+
+        """
         masks = self.masks[index].reshape(-1, self.height, self.width)
         return BitmapMasks(masks, self.height, self.width)
 
@@ -98,19 +184,11 @@ class BitmapMasks(BaseInstanceMasks):
         return s
 
     def __len__(self):
+        """Number of masks."""
         return len(self.masks)
 
     def rescale(self, scale, interpolation='nearest'):
-        """Rescale masks as large as possible while keeping the aspect ratio.
-        For details can refer to `mmcv.imrescale`
-
-        Args:
-            scale (tuple[int]): the maximum size (h, w) of rescaled mask
-            interpolation (str): same as :func:`mmcv.imrescale`
-
-        Returns:
-            BitmapMasks: the rescaled masks
-        """
+        """See :func:`BaseInstanceMasks.rescale()`."""
         if len(self.masks) == 0:
             new_w, new_h = mmcv.rescale_size((self.width, self.height), scale)
             rescaled_masks = np.empty((0, new_h, new_w), dtype=np.uint8)
@@ -123,15 +201,7 @@ class BitmapMasks(BaseInstanceMasks):
         return BitmapMasks(rescaled_masks, height, width)
 
     def resize(self, out_shape, interpolation='nearest'):
-        """Resize masks to the given out_shape.
-
-        Args:
-            out_shape: target (h, w) of resized mask
-            interpolation (str): see `mmcv.imresize`
-
-        Returns:
-            BitmapMasks: the resized masks
-        """
+        """See :func:`BaseInstanceMasks.resize()`."""
         if len(self.masks) == 0:
             resized_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
@@ -142,14 +212,7 @@ class BitmapMasks(BaseInstanceMasks):
         return BitmapMasks(resized_masks, *out_shape)
 
     def flip(self, flip_direction='horizontal'):
-        """flip masks alone the given direction.
-
-        Args:
-            flip_direction (str): either 'horizontal' or 'vertical'
-
-        Returns:
-            BitmapMasks: the flipped masks
-        """
+        """See :func:`BaseInstanceMasks.flip()`."""
         assert flip_direction in ('horizontal', 'vertical')
 
         if len(self.masks) == 0:
@@ -162,15 +225,7 @@ class BitmapMasks(BaseInstanceMasks):
         return BitmapMasks(flipped_masks, self.height, self.width)
 
     def pad(self, out_shape, pad_val=0):
-        """Pad masks to the given size of (h, w).
-
-        Args:
-            out_shape (tuple[int]): target (h, w) of padded mask
-            pad_val (int): the padded value
-
-        Returns:
-            BitmapMasks: the padded masks
-        """
+        """See :func:`BaseInstanceMasks.pad()`."""
         if len(self.masks) == 0:
             padded_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
@@ -181,14 +236,7 @@ class BitmapMasks(BaseInstanceMasks):
         return BitmapMasks(padded_masks, *out_shape)
 
     def crop(self, bbox):
-        """Crop each mask by the given bbox.
-
-        Args:
-            bbox (ndarray): bbox in format [x1, y1, x2, y2], shape (4, )
-
-        Return:
-            BitmapMasks: the cropped masks.
-        """
+        """See :func:`BaseInstanceMasks.crop()`."""
         assert isinstance(bbox, np.ndarray)
         assert bbox.ndim == 1
 
@@ -212,22 +260,7 @@ class BitmapMasks(BaseInstanceMasks):
                         inds,
                         device='cpu',
                         interpolation='bilinear'):
-        """Crop and resize masks by the given bboxes.
-
-        This function is mainly used in mask targets computation.
-        It firstly align mask to bboxes by assigned_inds, then crop mask by the
-        assigned bbox and resize to the size of (mask_h, mask_w)
-
-        Args:
-            bboxes (Tensor): bboxes in format [x1, y1, x2, y2], shape (N, 4)
-            out_shape (tuple[int]): target (h, w) of resized mask
-            inds (ndarray): indexes to assign masks to each bbox
-            device (str): device of bboxes
-            interpolation (str): see `mmcv.imresize`
-
-        Return:
-            ndarray: the cropped and resized masks.
-        """
+        """See :func:`BaseInstanceMasks.crop_and_resize()`."""
         if len(self.masks) == 0:
             empty_masks = np.empty((0, *out_shape), dtype=np.uint8)
             return BitmapMasks(empty_masks, *out_shape)
@@ -254,7 +287,7 @@ class BitmapMasks(BaseInstanceMasks):
         return BitmapMasks(resized_masks, *out_shape)
 
     def expand(self, expanded_h, expanded_w, top, left):
-        """see `transforms.Expand`."""
+        """See :func:`BaseInstanceMasks.expand()`."""
         if len(self.masks) == 0:
             expanded_mask = np.empty((0, expanded_h, expanded_w),
                                      dtype=np.uint8)
@@ -267,17 +300,15 @@ class BitmapMasks(BaseInstanceMasks):
 
     @property
     def areas(self):
-        """Compute area of each instance
-
-        Return:
-            ndarray: areas of each instance
-        """
+        """See :func:`BaseInstanceMasks.areas`."""
         return self.masks.sum((1, 2))
 
     def to_ndarray(self):
+        """See :func:`BaseInstanceMasks.to_ndarray()`."""
         return self.masks
 
     def to_tensor(self, dtype, device):
+        """See :func:`BaseInstanceMasks.to_tensor()`."""
         return torch.tensor(self.masks, dtype=dtype, device=device)
 
 
@@ -307,6 +338,14 @@ class PolygonMasks(BaseInstanceMasks):
         self.masks = masks
 
     def __getitem__(self, index):
+        """Index the polygon masks.
+
+        Args:
+            index (ndarray | List): The indices.
+
+        Returns:
+            :obj:`PolygonMasks`: The indexed polygon masks.
+        """
         if isinstance(index, np.ndarray):
             index = index.tolist()
         if isinstance(index, list):
@@ -332,10 +371,11 @@ class PolygonMasks(BaseInstanceMasks):
         return s
 
     def __len__(self):
+        """Number of masks."""
         return len(self.masks)
 
     def rescale(self, scale, interpolation=None):
-        """see BitmapMasks.rescale"""
+        """see :func:`BaseInstanceMasks.rescale()`"""
         new_w, new_h = mmcv.rescale_size((self.width, self.height), scale)
         if len(self.masks) == 0:
             rescaled_masks = PolygonMasks([], new_h, new_w)
@@ -344,7 +384,7 @@ class PolygonMasks(BaseInstanceMasks):
         return rescaled_masks
 
     def resize(self, out_shape, interpolation=None):
-        """see BitmapMasks.resize"""
+        """see :func:`BaseInstanceMasks.resize()`"""
         if len(self.masks) == 0:
             resized_masks = PolygonMasks([], *out_shape)
         else:
@@ -363,7 +403,7 @@ class PolygonMasks(BaseInstanceMasks):
         return resized_masks
 
     def flip(self, flip_direction='horizontal'):
-        """see BitmapMasks.flip"""
+        """see :func:`BaseInstanceMasks.flip()`"""
         assert flip_direction in ('horizontal', 'vertical')
         if len(self.masks) == 0:
             flipped_masks = PolygonMasks([], self.height, self.width)
@@ -387,7 +427,7 @@ class PolygonMasks(BaseInstanceMasks):
         return flipped_masks
 
     def crop(self, bbox):
-        """see BitmapMasks.crop"""
+        """see :func:`BaseInstanceMasks.crop()`"""
         assert isinstance(bbox, np.ndarray)
         assert bbox.ndim == 1
 
@@ -416,10 +456,11 @@ class PolygonMasks(BaseInstanceMasks):
         return cropped_masks
 
     def pad(self, out_shape, pad_val=0):
-        """padding has no effect on polygons"""
+        """padding has no effect on polygons`"""
         return PolygonMasks(self.masks, *out_shape)
 
     def expand(self, *args, **kwargs):
+        """TODO: Add expand for polygon"""
         raise NotImplementedError
 
     def crop_and_resize(self,
@@ -428,7 +469,7 @@ class PolygonMasks(BaseInstanceMasks):
                         inds,
                         device='cpu',
                         interpolation='bilinear'):
-        """see BitmapMasks.crop_and_resize"""
+        """see :func:`BaseInstanceMasks.crop_and_resize()`"""
         out_h, out_w = out_shape
         if len(self.masks) == 0:
             return PolygonMasks([], out_h, out_w)
@@ -499,6 +540,7 @@ class PolygonMasks(BaseInstanceMasks):
             np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
 
     def to_ndarray(self):
+        """Convert masks to the format of ndarray."""
         if len(self.masks) == 0:
             return np.empty((0, self.height, self.width), dtype=np.uint8)
         bitmap_masks = []
@@ -508,6 +550,7 @@ class PolygonMasks(BaseInstanceMasks):
         return np.stack(bitmap_masks)
 
     def to_tensor(self, dtype, device):
+        """See :func:`BaseInstanceMasks.to_tensor()`."""
         if len(self.masks) == 0:
             return torch.empty((0, self.height, self.width),
                                dtype=dtype,

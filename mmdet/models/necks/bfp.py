@@ -63,11 +63,13 @@ class BFP(nn.Module):
                 norm_cfg=self.norm_cfg)
 
     def init_weights(self):
+        """Initialize the weights of FPN module"""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 xavier_init(m, distribution='uniform')
 
     def forward(self, inputs):
+        """Forward function"""
         assert len(inputs) == self.num_levels
 
         # step 1: gather multi-level features by resize and average

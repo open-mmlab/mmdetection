@@ -7,6 +7,7 @@ from .base import BaseDetector
 
 @DETECTORS.register_module()
 class RPN(BaseDetector):
+    """Implementation of Region Proposal Network"""
 
     def __init__(self,
                  backbone,
@@ -27,6 +28,12 @@ class RPN(BaseDetector):
         self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in detector
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(RPN, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:
@@ -34,12 +41,22 @@ class RPN(BaseDetector):
         self.rpn_head.init_weights()
 
     def extract_feat(self, img):
+        """Extract features
+
+        Args:
+            img (torch.Tensor): Image tensor with shape (n, c, h ,w).
+
+        Returns:
+            list[torch.Tensor]: Multi-level features that may have
+                different resolutions.
+        """
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
         return x
 
     def forward_dummy(self, img):
+        """Dummy forward function"""
         x = self.extract_feat(img)
         rpn_outs = self.rpn_head(x)
         return rpn_outs
@@ -75,6 +92,17 @@ class RPN(BaseDetector):
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
+        """Test function without test time augmentation
+
+        Args:
+            imgs (list[torch.Tensor]): List of multiple images
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            np.ndarray: proposals
+        """
         x = self.extract_feat(img)
         proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         if rescale:
@@ -85,6 +113,17 @@ class RPN(BaseDetector):
         return proposal_list[0].cpu().numpy()
 
     def aug_test(self, imgs, img_metas, rescale=False):
+        """Test function with test time augmentation
+
+        Args:
+            imgs (list[torch.Tensor]): List of multiple images
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            np.ndarray: proposals
+        """
         proposal_list = self.rpn_head.aug_test_rpn(
             self.extract_feats(imgs), img_metas)
         if not rescale:

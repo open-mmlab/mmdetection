@@ -12,8 +12,6 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
-        dcn=dict(type='DCNv2', deformable_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True),
         norm_eval=True,
         style='pytorch'),
     neck=dict(
@@ -22,12 +20,12 @@ model = dict(
         out_channels=256,
         num_outs=5))
 img_norm_cfg = dict(
-    # The mean and std is used in PyCls when training RegNets
+    # The mean and std are used in PyCls when training RegNets
     mean=[103.53, 116.28, 123.675],
     std=[57.375, 57.12, 58.395],
     to_rgb=False)
 train_pipeline = [
-    # RegNet convert images to float32 directly after loading in PyCls
+    # Images are converted to float32 directly after loading in PyCls
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),

@@ -111,13 +111,21 @@ class AnchorGenerator(object):
 
     @property
     def num_base_anchors(self):
+        """list[int]: total number of base anchors in a feature grid"""
         return [base_anchors.size(0) for base_anchors in self.base_anchors]
 
     @property
     def num_levels(self):
+        """int: number of feature levels that the generator will be applied"""
         return len(self.strides)
 
     def gen_base_anchors(self):
+        """Generate base anchors
+
+        Returns:
+            list(torch.Tensor): Base anchors of a feature grid in multiple
+                feature levels.
+        """
         multi_level_base_anchors = []
         for i, base_size in enumerate(self.base_sizes):
             center = None
@@ -136,6 +144,19 @@ class AnchorGenerator(object):
                                       scales,
                                       ratios,
                                       center=None):
+        """Generate base anchors of a single level
+
+        Args:
+            base_size (int | float): Basic size of an anchor.
+            scales (torch.Tensor): Scales of the anchor.
+            ratios (torch.Tensor): The ratio between between the height
+                and width of anchors in a single level.
+            center (tuple[float], optional): The center of the base anchor
+                related to a single feature grid. Defaults to None.
+
+        Returns:
+            torch.Tensor: Anchors in a single-level feature maps
+        """
         w = base_size
         h = base_size
         if center is None:
@@ -164,6 +185,17 @@ class AnchorGenerator(object):
         return base_anchors
 
     def _meshgrid(self, x, y, row_major=True):
+        """Generate mesh grid of x and y
+
+        Args:
+            x (torch.Tensor): Grids of x dimension.
+            y (torch.Tensor): Grids of y dimension.
+            row_major (bool, optional): Whether to return y grids first.
+                Defaults to True.
+
+        Returns:
+            tuple[torch.Tensor]: The mesh grids of x and y.
+        """
         xx = x.repeat(len(y))
         yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
         if row_major:
@@ -202,6 +234,22 @@ class AnchorGenerator(object):
                                   featmap_size,
                                   stride=(16, 16),
                                   device='cuda'):
+        """Generate grid anchors of a single level.
+
+        Note:
+            This function is usually called by method ``self.grid_anchors``.
+
+        Args:
+            base_anchors (torch.Tensor): The base anchors of a feature grid.
+            featmap_size (tuple[int]): Size of the feature maps.
+            stride (tuple[int], optional): Stride of the feature map.
+                Defaults to (16, 16).
+            device (str, optional): Device the tensor will be put on.
+                Defaults to 'cuda'.
+
+        Returns:
+            torch.Tensor: Anchors in the overall feature maps.
+        """
         feat_h, feat_w = featmap_size
         shift_x = torch.arange(0, feat_w, device=device) * stride[0]
         shift_y = torch.arange(0, feat_h, device=device) * stride[1]
@@ -250,6 +298,19 @@ class AnchorGenerator(object):
                                  valid_size,
                                  num_base_anchors,
                                  device='cuda'):
+        """Generate the valid flags of anchor in a single feature map
+
+        Args:
+            featmap_size (tuple[int]): The size of feature maps.
+            valid_size (tuple[int]): The valid size of the feature maps.
+            num_base_anchors (int): The number of base anchors.
+            device (str, optional): Device where the flags will be put on.
+                Defaults to 'cuda'.
+
+        Returns:
+            torch.Tensor: The valid flags of each anchor in a single level
+                feature map.
+        """
         feat_h, feat_w = featmap_size
         valid_h, valid_w = valid_size
         assert valid_h <= feat_h and valid_w <= feat_w
@@ -264,6 +325,7 @@ class AnchorGenerator(object):
         return valid
 
     def __repr__(self):
+        """str: a string that describes the module"""
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
         repr_str += f'{indent_str}strides={self.strides},\n'
@@ -368,6 +430,12 @@ class SSDAnchorGenerator(AnchorGenerator):
         self.base_anchors = self.gen_base_anchors()
 
     def gen_base_anchors(self):
+        """Generate base anchors
+
+        Returns:
+            list(torch.Tensor): Base anchors of a feature grid in multiple
+                feature levels.
+        """
         multi_level_base_anchors = []
         for i, base_size in enumerate(self.base_sizes):
             base_anchors = self.gen_single_level_base_anchors(
@@ -383,6 +451,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         return multi_level_base_anchors
 
     def __repr__(self):
+        """str: a string that describes the module"""
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
         repr_str += f'{indent_str}strides={self.strides},\n'
@@ -451,6 +520,23 @@ class LegacyAnchorGenerator(AnchorGenerator):
                                       scales,
                                       ratios,
                                       center=None):
+        """Generate base anchors of a single level
+
+        Note:
+            The width/height of anchors are minused by 1 when calculating
+                the centers and corners to meet the V1.x coordinate system.
+
+        Args:
+            base_size (int | float): Basic size of an anchor.
+            scales (torch.Tensor): Scales of the anchor.
+            ratios (torch.Tensor): The ratio between between the height.
+                and width of anchors in a single level.
+            center (tuple[float], optional): The center of the base anchor
+                related to a single feature grid. Defaults to None.
+
+        Returns:
+            torch.Tensor: Anchors in a single-level feature map.
+        """
         w = base_size
         h = base_size
         if center is None:
