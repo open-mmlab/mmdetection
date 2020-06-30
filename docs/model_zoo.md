@@ -141,6 +141,9 @@ Please refer to [PointRend](https://github.com/open-mmlab/mmdetection/blob/maste
 ### DetectoRS
 Please refer to [DetectoRS](https://github.com/open-mmlab/mmdetection/blob/master/configs/detectors) for details.
 
+### Generalized Focal Loss
+Please refer to [Generalized Focal Loss](https://github.com/open-mmlab/mmdetection/blob/master/configs/gfl) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
