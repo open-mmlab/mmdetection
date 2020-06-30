@@ -24,8 +24,7 @@ class ASPP(nn.Module):
         super().__init__()
         assert dilations[-1] == 1
         self.aspp = nn.ModuleList()
-        for aspp_idx in range(len(dilations)):
-            dilation = dilations[aspp_idx]
+        for dilation in dilations:
             kernel_size = 3 if dilation > 1 else 1
             padding = dilation if dilation > 1 else 0
             conv = nn.Conv2d(
@@ -94,13 +93,13 @@ class RFP(FPN):
             stride=1,
             padding=0,
             bias=True)
-        constant_init(self.rfp_weight, 0)
 
     def init_weights(self):
         super().init_weights()
         for rfp_idx in range(self.rfp_steps - 1):
             self.rfp_modules[rfp_idx].init_weights(
                 self.rfp_modules[rfp_idx].pretrained)
+        constant_init(self.rfp_weight, 0)
 
     def forward(self, inputs):
         inputs = list(inputs)

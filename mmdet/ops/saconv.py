@@ -55,15 +55,11 @@ class SAConv2d(ConvAWS2d):
         self.use_deform = use_deform
         self.switch = nn.Conv2d(
             self.in_channels, 1, kernel_size=1, stride=stride, bias=True)
-        constant_init(self.switch, 0, bias=1)
         self.weight_diff = nn.Parameter(torch.Tensor(self.weight.size()))
-        self.weight_diff.data.zero_()
         self.pre_context = nn.Conv2d(
             self.in_channels, self.in_channels, kernel_size=1, bias=True)
-        constant_init(self.pre_context, 0)
         self.post_context = nn.Conv2d(
             self.out_channels, self.out_channels, kernel_size=1, bias=True)
-        constant_init(self.post_context, 0)
         if self.use_deform:
             self.offset_s = nn.Conv2d(
                 self.in_channels,
@@ -79,6 +75,14 @@ class SAConv2d(ConvAWS2d):
                 padding=1,
                 stride=stride,
                 bias=True)
+        self.init_weights()
+
+    def init_weights(self):
+        constant_init(self.switch, 0, bias=1)
+        self.weight_diff.data.zero_()
+        constant_init(self.pre_context, 0)
+        constant_init(self.post_context, 0)
+        if self.use_deform:
             constant_init(self.offset_s, 0)
             constant_init(self.offset_l, 0)
 
