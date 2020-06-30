@@ -1,6 +1,7 @@
+import math
+
 import torch
 import torch.nn as nn
-import math
 
 from mmdet.core import bbox_overlaps
 from ..builder import LOSSES
