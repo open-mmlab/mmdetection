@@ -76,7 +76,7 @@ def distribution_focal_loss(pred, label):
     return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class QualityFocalLoss(nn.Module):
     """Quality Focal Loss (QFL) is a variant of
     Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes
@@ -142,7 +142,7 @@ class QualityFocalLoss(nn.Module):
         return loss_cls
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class DistributionFocalLoss(nn.Module):
     """Distribution Focal Loss (DFL) is a variant of
     Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes
