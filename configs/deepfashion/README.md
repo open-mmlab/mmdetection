@@ -1,10 +1,10 @@
 ## DeepFashion
 
-MMFashion(https://github.com/open-mmlab/mmfashion) develops "fashion parsing and segmentation" module 
+MMFashion(https://github.com/open-mmlab/mmfashion) develops "fashion parsing and segmentation" module
 based on the dataset
-[DeepFashion-Inshop](https://drive.google.com/drive/folders/0B7EVK8r0v71pVDZFQXRsMDZCX1E?usp=sharing). 
+[DeepFashion-Inshop](https://drive.google.com/drive/folders/0B7EVK8r0v71pVDZFQXRsMDZCX1E?usp=sharing).
 Its annotation follows COCO style.
-To use it, you need to first download the data. Note that we only use "img_highres" in this task. 
+To use it, you need to first download the data. Note that we only use "img_highres" in this task.
 The file tree should be like this:
 
 ```sh
@@ -34,7 +34,7 @@ mmdetection
 
 ```
 
-After that you can train the Mask RCNN r50 on DeepFashion-In-shop dataset by launching training with the `mask_rcnn_r50_fpn_1x.py` config 
+After that you can train the Mask RCNN r50 on DeepFashion-In-shop dataset by launching training with the `mask_rcnn_r50_fpn_1x.py` config
 or creating your own config file.
 
 ## Model Zoo

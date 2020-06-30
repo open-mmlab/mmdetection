@@ -30,6 +30,7 @@ class RetinaSepBNHead(AnchorHead):
                                               **kwargs)
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -71,6 +72,7 @@ class RetinaSepBNHead(AnchorHead):
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
 
     def init_weights(self):
+        """Initialize weights of the head."""
         for m in self.cls_convs[0]:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs[0]:
@@ -80,6 +82,21 @@ class RetinaSepBNHead(AnchorHead):
         normal_init(self.retina_reg, std=0.01)
 
     def forward(self, feats):
+        """Forward features from the upstream network.
+
+        Args:
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple: Usually a tuple of classification scores and bbox prediction
+                cls_scores (list[Tensor]): Classification scores for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * num_classes.
+                bbox_preds (list[Tensor]): Box energies / deltas for all scale
+                    levels, each is a 4D-tensor, the channels number is
+                    num_anchors * 4.
+        """
         cls_scores = []
         bbox_preds = []
         for i, x in enumerate(feats):

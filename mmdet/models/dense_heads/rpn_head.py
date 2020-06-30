@@ -11,12 +11,18 @@ from .rpn_test_mixin import RPNTestMixin
 
 @HEADS.register_module()
 class RPNHead(RPNTestMixin, AnchorHead):
+    """RPN head.
+
+    Args:
+        in_channels (int): Number of channels in the input feature map.
+    """  # noqa: W605
 
     def __init__(self, in_channels, **kwargs):
         super(RPNHead, self).__init__(
             1, in_channels, background_label=0, **kwargs)
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.rpn_conv = nn.Conv2d(
             self.in_channels, self.feat_channels, 3, padding=1)
         self.rpn_cls = nn.Conv2d(self.feat_channels,
@@ -24,11 +30,13 @@ class RPNHead(RPNTestMixin, AnchorHead):
         self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
 
     def init_weights(self):
+        """Initialize weights of the head."""
         normal_init(self.rpn_conv, std=0.01)
         normal_init(self.rpn_cls, std=0.01)
         normal_init(self.rpn_reg, std=0.01)
 
     def forward_single(self, x):
+        """Forward feature map of a single scale level."""
         x = self.rpn_conv(x)
         x = F.relu(x, inplace=True)
         rpn_cls_score = self.rpn_cls(x)
@@ -41,6 +49,23 @@ class RPNHead(RPNTestMixin, AnchorHead):
              gt_bboxes,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute losses of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         losses = super(RPNHead, self).loss(
             cls_scores,
             bbox_preds,
@@ -59,6 +84,28 @@ class RPNHead(RPNTestMixin, AnchorHead):
                            scale_factor,
                            cfg,
                            rescale=False):
+        """Transform outputs for a single batch item into bbox predictions.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (num_anchors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (num_anchors * 4, H, W).
+            mlvl_anchors (list[Tensor]): Box reference for each scale level
+                with shape (num_total_anchors, 4).
+            img_shape (tuple[int]): Shape of the input image,
+                (height, width, 3).
+            scale_factor (ndarray): Scale factor of the image arange as
+                (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+
+        Returns:
+            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1.
+        """
         cfg = self.test_cfg if cfg is None else cfg
         # bboxes from different level should be independent during NMS,
         # level_ids are used as labels for batched NMS to separate them
