@@ -27,9 +27,10 @@ class AnchorHead(nn.Module):
             num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
-        loss_normalizer_momentum (float): The momentum factor (from 0-1) used
+        loss_normalizer_ratio (float): The momentum factor (from 0-1) used
             for exponential moving average (EMA) loss normalizer.
             Default: 0, no EMA
+        loss_normalizer (float): Default is 100
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
     """  # noqa: W605
@@ -56,6 +57,7 @@ class AnchorHead(nn.Module):
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
                  loss_normalizer_momentum=0,
+                 loss_normalizer=100,
                  train_cfg=None,
                  test_cfg=None):
         super(AnchorHead, self).__init__()
@@ -104,7 +106,8 @@ class AnchorHead(nn.Module):
             '"loss_normalizer_momentum" should be in range [0, 1], ' \
             f'got {loss_normalizer_momentum}'
         self.loss_normalizer_momentum = loss_normalizer_momentum
-        self.register_buffer('loss_normalizer', torch.tensor(100))
+        self.register_buffer('loss_normalizer',
+                             torch.tensor(loss_normalizer, dtype=torch.float))
 
         self.anchor_generator = build_anchor_generator(anchor_generator)
         # usually the numbers of anchors for each level are the same
@@ -386,7 +389,6 @@ class AnchorHead(nn.Module):
              gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.anchor_generator.num_levels
-
         device = cls_scores[0].device
 
         anchor_list, valid_flag_list = self.get_anchors(
@@ -416,6 +418,8 @@ class AnchorHead(nn.Module):
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
 
+        # Based on Detectron2, the loss normalizer using EMA could stablize
+        # training thus improve the performance.
         self.loss_normalizer = (
             self.loss_normalizer_momentum * self.loss_normalizer +
             (1 - self.loss_normalizer_momentum) * num_total_samples)

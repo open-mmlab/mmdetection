@@ -21,6 +21,7 @@ model = dict(
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_normalizer_momentum=0.9,
+        loss_normalizer=100,
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -30,5 +31,4 @@ model = dict(
         loss_bbox=dict(type='L1Loss', loss_weight=1.0)))
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+lr_config = dict(warmup_iters=1000, warmup_ratio=0.001)

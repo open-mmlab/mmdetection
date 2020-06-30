@@ -27,19 +27,21 @@
 
 ### Some tricks
 
-We also support exponential momentum average (EMA) over the number of positive samples as loss normalizer to improve the performance. This trick is introduced in [Detectron2](https://github.com/facebookresearch/detectron2/blob/bf11a9b5bbc8e80cfe713c547203576a77a09065/detectron2/modeling/meta_arch/retinanet.py#L108) to stabilize the training by reducing the variance of foreground number. Adding the following two lines in the head config could enable this option.
+We also support exponential moving average (EMA) over the number of positive samples as loss normalizer to improve the performance. This trick is introduced in [Detectron2](https://github.com/facebookresearch/detectron2/blob/bf11a9b5bbc8e80cfe713c547203576a77a09065/detectron2/modeling/meta_arch/retinanet.py#L108) to stabilize the training by reducing the variance of foreground number. Adding the following line in the head config could enable this option.
 
 ```python
 loss_normalizer_momentum=0.9,
+loss_normalizer=100,
 ```
 
 To enable a fair comparison when benchmarking with Detectron2, we use it in the benchmark configs. However, we do not recommend it as a default option since so many methods have proposed based on the original baseline. We compare the performance of models before/after adding EMA loss normalizer in the following table.
 
 |    Backbone     |  Style  |Multi-scale Training|EMA Normalizer |Lr schd | Mem (GB) | Inf time (fps) | box AP | Download  |
-| :-------------: | :-----: |Multi-scale Training|:-----:  |:-----: | :------: | :------------: | :----: | :-------: |
+| :-------------: | :-----: |:-----:  |:-----:  |:-----: | :------: | :------------: | :----: | :-------: |
 |    R-50-FPN     | pytorch | ✗       |✗       |  1x    |   3.8    |      16.6      |  36.5  |  |
-|    R-50-FPN     | pytorch | ✗       |✓       |  1x    |   3.8    |      16.6      |  37.1  |  |
-|    R-50-FPN     | pytorch |✓        |✗       |  1x    |  |      16.6      |  37.0  |  |
-|    R-50-FPN     | pytorch |✓        |✓       |  1x    |  |      16.6      |  37.9  |  |
-|    R-50-FPN     | pytorch |✓        |✗       |  3x    |  |      16.6      |        |  |
-|    R-50-FPN     | pytorch |✓        |✓       |  3x    |  |      16.6      |        |  |
+|    R-50-FPN     | pytorch | ✗       |✓       |  1x    |   3.8    |      16.6      |    |  |
+|    R-50-FPN     | caffe |✓        |✗       |  1x    |  |      16.6      |  37.0  |  |
+|    R-50-FPN     | caffe |✓        |✓       |  1x    |  |      16.6      |  37.3  |  |
+|    R-50-FPN     | caffe |✓        |✗       |  3x    |  |      16.6      |  38.7  |  |
+|    R-50-FPN     | caffe |✓        |✓       |  3x    |  |      16.6      |  38.8  |  |
+|    R-101-FPN    | caffe |✓        |✓       |  3x    |  |      |  40.4|  |

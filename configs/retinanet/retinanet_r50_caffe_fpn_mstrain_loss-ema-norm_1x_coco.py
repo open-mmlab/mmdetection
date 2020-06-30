@@ -1,6 +1,6 @@
 _base_ = './retinanet_r50_fpn_1x_coco.py'
 model = dict(
-    pretrained='open-mmlab://resnet50_caffe_bgr',
+    pretrained='open-mmlab://detectron2/resnet50_caffe',
     backbone=dict(
         norm_cfg=dict(requires_grad=False), norm_eval=True, style='caffe'),
     bbox_head=dict(
@@ -20,6 +20,7 @@ model = dict(
             target_means=[.0, .0, .0, .0],
             target_stds=[1.0, 1.0, 1.0, 1.0]),
         loss_normalizer_momentum=0.9,
+        loss_normalizer=100,
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -64,5 +65,5 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+lr_config = dict(warmup_iters=1000, warmup_ratio=0.001)
