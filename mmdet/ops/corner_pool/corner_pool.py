@@ -103,14 +103,12 @@ class CornerPool(nn.Module):
     def __init__(self, mode):
         super(CornerPool, self).__init__()
         assert mode in self.pool_functions
-        if torch.__version__ >= '1.5.0':
-            self.corner_pool = self.cummax_dim_flip[mode]
-        else:
-            self.corner_pool = self.pool_functions[mode]
+        self.mode = mode
+        self.corner_pool = self.pool_functions[mode]
 
     def forward(self, x):
         if torch.__version__ >= '1.5.0':
-            dim, flip = self.corner_pool
+            dim, flip = self.cummax_dim_flip[self.mode]
             if flip:
                 x = x.flip(dim)
             pool_tensor, _ = torch.cummax(x, dim=dim)
