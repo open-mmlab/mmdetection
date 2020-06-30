@@ -56,7 +56,7 @@ class AutoAugment(object):
                 'Each policy in policies must be a non-empty list.'
             for augment in policy:
                 assert isinstance(augment, dict) and 'type' in augment, \
-                    'Each specifically augmentation must be a dict with key' \
+                    'Each specific augmentation must be a dict with key' \
                     ' "type".'
 
         self.policies = copy.deepcopy(policies)
