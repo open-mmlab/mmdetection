@@ -351,13 +351,12 @@ class CornerHead(nn.Module):
                 radius = gaussian_radius((height, width), min_overlap=0.3)
                 radius = max(0, int(radius))
 
-                tl_heatmap = gt_tl_heatmap[batch_id, label]
-                br_heatmap = gt_br_heatmap[batch_id, label]
-                tl_heatmap = gen_gaussian_target(tl_heatmap,
-                                                 [left_idx, top_idx], radius)
-                br_heatmap = gen_gaussian_target(br_heatmap,
-                                                 [right_idx, bottom_idx],
-                                                 radius)
+                gt_tl_heatmap[batch_id, label] = gen_gaussian_target(
+                    gt_tl_heatmap[batch_id, label], [left_idx, top_idx],
+                    radius)
+                gt_br_heatmap[batch_id, label] = gen_gaussian_target(
+                    gt_br_heatmap[batch_id, label], [right_idx, bottom_idx],
+                    radius)
 
                 left_offset = scale_left - left_idx
                 top_offset = scale_top - top_idx

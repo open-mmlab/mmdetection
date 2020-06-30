@@ -36,7 +36,7 @@ def gen_gaussian_target(heatmap, center, radius, k=1):
         radius (int): Radius of gaussian kernel.
         k (int): Coefficient of gaussian kernel. Default: 1.
     Return:
-        heatmap (Tensor): Updated heatmap covered by gaussian kernel.
+        out_heatmap (Tensor): Updated heatmap covered by gaussian kernel.
     """
     diameter = 2 * radius + 1
     gaussian_kernel = gaussian2D(
@@ -52,7 +52,13 @@ def gen_gaussian_target(heatmap, center, radius, k=1):
     masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
     masked_gaussian = gaussian_kernel[radius - top:radius + bottom,
                                       radius - left:radius + right]
-    return torch.max(masked_heatmap, masked_gaussian * k)
+    out_heatmap = torch.zeros_like(heatmap)
+    torch.max(
+        masked_heatmap,
+        masked_gaussian * k,
+        out=out_heatmap[y - top:y + bottom, x - left:x + right])
+
+    return out_heatmap
 
 
 def gaussian_radius(det_size, min_overlap):
