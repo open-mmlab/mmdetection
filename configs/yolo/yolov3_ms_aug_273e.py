@@ -9,8 +9,26 @@ model = dict(
         depth=53,
         out_indices=(3, 4, 5),
     ),
-    neck=dict(type='YOLOV3Neck', ),
-    bbox_head=dict(type='YOLOV3Head', ))
+    neck=dict(
+        type='YOLOV3Neck',
+        num_scales=3,
+        in_channels=[1024, 512, 256],
+        out_channels=[512, 256, 128],
+    ),
+    bbox_head=dict(
+        type='YOLOV3Head',
+        num_classes=80,
+        num_scales=3,
+        num_anchors_per_scale=3,
+        in_channels=[512, 256, 128],
+        out_channels=[1024, 512, 256],
+        strides=[32, 16, 8],
+        anchor_base_sizes=[
+            [(116, 90), (156, 198), (373, 326)],
+            [(30, 61), (62, 45), (59, 119)],
+            [(10, 13), (16, 30), (33, 23)],
+        ],
+    ))
 # training and testing settings
 train_cfg = dict(
     one_hot_smoother=0., ignore_config=0.5, xy_use_logit=False, debug=False)

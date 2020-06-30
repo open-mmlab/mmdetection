@@ -82,11 +82,10 @@ class Darknet(nn.Module):
     Args:
         depth (int): Depth of Darknet. Currently only support 53.
         out_indices (Sequence[int]): Output from which stages.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
-        reverse_output (bool): If True, the sequence of the output layers
-            will be from bottom to up. Default: True. (To cope with YoloNeck)
 
     Example:
         >>> from mmdet.models import Darknet
@@ -103,7 +102,12 @@ class Darknet(nn.Module):
         (1, 1024, 13, 13)
     """
 
-    def __init__(self, depth=53, out_indices=(3, 4, 5), norm_eval=True):
+    def __init__(self,
+                 depth=53,
+                 out_indices=(3, 4, 5),
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
+                 norm_eval=True):
         super(Darknet, self).__init__()
         self.depth = depth
         self.out_indices = out_indices
@@ -115,12 +119,7 @@ class Darknet(nn.Module):
             raise KeyError(f'invalid depth {depth} for darknet')
 
         self.conv1 = ConvModule(
-            3,
-            32,
-            3,
-            padding=1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+            3, 32, 3, padding=1, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
         self.cr_blocks = ['conv1']
         for i, n_layers in enumerate(self.layers):

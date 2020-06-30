@@ -23,41 +23,23 @@ class DetectionNeck(nn.Module):
     out_channels = n
     """
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(DetectionNeck, self).__init__()
         double_out_channels = out_channels * 2
-        self.conv1 = ConvModule(
-            in_channels,
-            out_channels,
-            1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+
+        # shortcut
+        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+        self.conv1 = ConvModule(in_channels, out_channels, 1, **cfg)
         self.conv2 = ConvModule(
-            out_channels,
-            double_out_channels,
-            3,
-            padding=1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
-        self.conv3 = ConvModule(
-            double_out_channels,
-            out_channels,
-            1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+            out_channels, double_out_channels, 3, padding=1, **cfg)
+        self.conv3 = ConvModule(double_out_channels, out_channels, 1, **cfg)
         self.conv4 = ConvModule(
-            out_channels,
-            double_out_channels,
-            3,
-            padding=1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
-        self.conv5 = ConvModule(
-            double_out_channels,
-            out_channels,
-            1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+            out_channels, double_out_channels, 3, padding=1, **cfg)
+        self.conv5 = ConvModule(double_out_channels, out_channels, 1, **cfg)
 
     def forward(self, x):
         tmp = self.conv1(x)
@@ -78,38 +60,46 @@ class YOLOV3Neck(nn.Module):
     It will finally output the detection result.
     """
 
-    def __init__(self):
+    def __init__(self,
+                 num_scales,
+                 in_channels,
+                 out_channels,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(YOLOV3Neck, self).__init__()
-        self.detect1 = DetectionNeck(1024, 512)
-        self.conv1 = ConvModule(
-            512,
-            256,
-            1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
-        self.detect2 = DetectionNeck(768, 256)
-        self.conv2 = ConvModule(
-            256,
-            128,
-            1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
-        self.detect3 = DetectionNeck(384, 128)
+        assert (num_scales == len(in_channels) == len(out_channels))
+        self.num_scales = num_scales
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
-    def forward(self, x):
-        assert len(x) == 3
-        x3, x2, x1 = x
-        out1 = self.detect1(x1)
-        tmp = self.conv1(out1)
-        tmp = F.interpolate(tmp, scale_factor=2)
-        tmp = torch.cat((tmp, x2), 1)
-        out2 = self.detect2(tmp)
-        tmp = self.conv2(out2)
-        tmp = F.interpolate(tmp, scale_factor=2)
-        tmp = torch.cat((tmp, x3), 1)
-        out3 = self.detect3(tmp)
+        # shortcut
+        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
 
-        return out1, out2, out3
+        self.detect1 = DetectionNeck(in_channels[0], out_channels[0], **cfg)
+        for i in range(1, self.num_scales):
+            in_c, out_c = self.in_channels[i], self.out_channels[i]
+            self.add_module(f'conv{i}', ConvModule(in_c, out_c, 1, **cfg))
+            self.add_module(f'detect{i+1}',
+                            DetectionNeck(in_c + out_c, out_c, **cfg))
+
+    def forward(self, feats):
+        assert len(feats) == self.num_scales
+
+        outs = []
+
+        out = self.detect1(feats[-1])
+        outs.append(out)
+        for i, x in enumerate(feats[1::-1]):
+            conv = getattr(self, f'conv{i+1}')
+            tmp = conv(out)
+            tmp = F.interpolate(tmp, scale_factor=2)
+            tmp = torch.cat((tmp, x), 1)
+
+            detect = getattr(self, f'detect{i+2}')
+            out = detect(tmp)
+            outs.append(out)
+
+        return tuple(outs)
 
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
