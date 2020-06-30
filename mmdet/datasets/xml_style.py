@@ -11,6 +11,13 @@ from .custom import CustomDataset
 
 @DATASETS.register_module()
 class XMLDataset(CustomDataset):
+    """XML dataset for detection.
+
+    Args:
+        min_size (int | float, optional): The minimum size of bounding
+            boxes in the images. If the size of a bounding box is less than
+            ``min_size``, it would be add to ignored field.
+    """
 
     def __init__(self, min_size=None, **kwargs):
         super(XMLDataset, self).__init__(**kwargs)
@@ -18,6 +25,15 @@ class XMLDataset(CustomDataset):
         self.min_size = min_size
 
     def load_annotations(self, ann_file):
+        """Load annotation from XML style ann_file.
+
+        Args:
+            ann_file (str): Path of XML file.
+
+        Returns:
+            list[dict]: Annotation info from XML file.
+        """
+
         data_infos = []
         img_ids = mmcv.list_from_file(ann_file)
         for img_id in img_ids:
@@ -43,8 +59,7 @@ class XMLDataset(CustomDataset):
         return data_infos
 
     def get_subset_by_classes(self):
-        """Filter imgs by user-defined categories
-        """
+        """Filter imgs by user-defined categories"""
         subset_data_infos = []
         for data_info in self.data_infos:
             img_id = data_info['id']
@@ -61,6 +76,15 @@ class XMLDataset(CustomDataset):
         return subset_data_infos
 
     def get_ann_info(self, idx):
+        """Get annotation from XML file by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
         img_id = self.data_infos[idx]['id']
         xml_path = osp.join(self.img_prefix, 'Annotations', f'{img_id}.xml')
         tree = ET.parse(xml_path)
@@ -117,6 +141,15 @@ class XMLDataset(CustomDataset):
         return ann
 
     def get_cat_ids(self, idx):
+        """Get category ids in XML file by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            list[int]: All categories in the image of specified index.
+        """
+
         cat_ids = []
         img_id = self.data_infos[idx]['id']
         xml_path = osp.join(self.img_prefix, 'Annotations', f'{img_id}.xml')
