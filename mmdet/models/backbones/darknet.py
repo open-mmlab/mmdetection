@@ -20,27 +20,29 @@ class ResBlock(nn.Module):
     filters as much as the second convLayer.
     The first convLayer has filter size of 1x1 and the second one has the
     filter size of 3x3.
+
+    Args:
+        in_channels (int): The input channels. Must be even.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict): Config dict for activation layer.
+            Default: dict(type='LeakyReLU', negative_slope=0.1).
     """
 
-    def __init__(self, in_channels):
+    def __init__(self,
+                 in_channels,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(ResBlock, self).__init__()
         assert in_channels % 2 == 0  # ensure the in_channels is even
         half_in_channels = in_channels // 2
-        self.conv1 = ConvModule(
-            in_channels,
-            half_in_channels,
-            1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+
+        # shortcut
+        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+
+        self.conv1 = ConvModule(in_channels, half_in_channels, 1, **cfg)
         self.conv2 = ConvModule(
-            half_in_channels,
-            in_channels,
-            3,
-            padding=1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
-        # self.conv1 = ConvLayer(in_channels, half_in_channels, 1)
-        # self.conv2 = ConvLayer(half_in_channels, in_channels, 3)
+            half_in_channels, in_channels, 3, padding=1, **cfg)
 
     def forward(self, x):
         residual = x
@@ -51,27 +53,37 @@ class ResBlock(nn.Module):
         return out
 
 
-def make_conv_and_res_block(in_channels, out_channels, res_repeat):
+def make_conv_and_res_block(in_channels,
+                            out_channels,
+                            res_repeat,
+                            norm_cfg=dict(type='BN', requires_grad=True),
+                            act_cfg=dict(type='LeakyReLU',
+                                         negative_slope=0.1)):
     """
     In Darknet backbone, ConvLayer is usually followed by ResBlock.
     This function will make that.
     The Conv layers always have 3x3 filters with stride=2.
     The number of the filters in Conv layer is the same as the out
     channels of the ResBlock
+
+    Args:
+        in_channels (int): The number of input channels.
+        out_channels (int): The number of output channels.
+        res_repeat (int): The number of ResBlocks.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict): Config dict for activation layer.
+            Default: dict(type='LeakyReLU', negative_slope=0.1).
     """
+
+    cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+
     model = nn.Sequential()
     model.add_module(
         'conv',
-        ConvModule(
-            in_channels,
-            out_channels,
-            3,
-            stride=2,
-            padding=1,
-            norm_cfg=dict(type='BN', requires_grad=True),
-            act_cfg=dict(type='LeakyReLU', negative_slope=0.1)))
+        ConvModule(in_channels, out_channels, 3, stride=2, padding=1, **cfg))
     for idx in range(res_repeat):
-        model.add_module('res{}'.format(idx), ResBlock(out_channels))
+        model.add_module('res{}'.format(idx), ResBlock(out_channels, **cfg))
     return model
 
 
@@ -83,6 +95,9 @@ class Darknet(nn.Module):
         depth (int): Depth of Darknet. Currently only support 53.
         out_indices (Sequence[int]): Output from which stages.
         norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict): Config dict for activation layer.
+            Default: dict(type='LeakyReLU', negative_slope=0.1).
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
@@ -118,15 +133,17 @@ class Darknet(nn.Module):
         else:
             raise KeyError(f'invalid depth {depth} for darknet')
 
-        self.conv1 = ConvModule(
-            3, 32, 3, padding=1, norm_cfg=norm_cfg, act_cfg=act_cfg)
+        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+
+        self.conv1 = ConvModule(3, 32, 3, padding=1, **cfg)
 
         self.cr_blocks = ['conv1']
         for i, n_layers in enumerate(self.layers):
             layer_name = f'cr_block{i + 1}'
             in_c, out_c = self.channels[i]
-            self.add_module(layer_name,
-                            make_conv_and_res_block(in_c, out_c, n_layers))
+            self.add_module(
+                layer_name,
+                make_conv_and_res_block(in_c, out_c, n_layers, **cfg))
             self.cr_blocks.append(layer_name)
 
         self.norm_eval = norm_eval
