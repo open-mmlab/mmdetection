@@ -5,6 +5,7 @@ from mmcv.cnn import normal_init
 from mmdet.core import (anchor_inside_flags, force_fp32, images_to_levels,
                         multi_apply, unmap)
 from ..builder import HEADS
+from ..losses.accuracy import accuracy
 from ..losses.utils import weight_reduce_loss
 from .retina_head import RetinaHead
 
@@ -17,6 +18,13 @@ class FSAFHead(RetinaHead):
     the second regresses deltas for the anchors (num_anchors is 1 for anchor-
     free methods)
 
+    Args:
+        *args: Same as its base class in :class:`RetinaHead`
+        score_threshold (float, optional): The score_threshold to calculate
+            positive recall. If given, prediction scores lower than this value
+            is counted as incorrect prediction. Default to None.
+        **kwargs: Same as its base class in :class:`RetinaHead`
+
     Example:
         >>> import torch
         >>> self = FSAFHead(11, 7)
@@ -28,6 +36,10 @@ class FSAFHead(RetinaHead):
         >>> assert cls_per_anchor == self.num_classes
         >>> assert box_per_anchor == 4
     """
+
+    def __init__(self, *args, score_threshold=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.score_threshold = score_threshold
 
     def forward_single(self, x):
         """Forward feature map of a single scale level.
@@ -287,11 +299,7 @@ class FSAFHead(RetinaHead):
             num_pos=num_pos / batch_size,
             pos_recall=pos_recall)
 
-    def calculate_pos_recall(self,
-                             cls_scores,
-                             labels_list,
-                             pos_inds,
-                             score_threshold=0.2):
+    def calculate_pos_recall(self, cls_scores, labels_list, pos_inds):
         """Calculate positive recall with score threshold
 
         Args:
@@ -302,14 +310,11 @@ class FSAFHead(RetinaHead):
             pos_inds (list[Tensor]): List of bool tensors indicating whether
                 the anchor is assigned to a positive label.
                 Shape (N * H * W * num_anchors, )
-            score_threshold (float): The score threshold that only score above
-                are counted as positive. Default to 0.2.
 
         Returns:
             Tensor: A single float number indicating the positive recall.
         """
         with torch.no_grad():
-            num_pos = torch.cat(pos_inds, 0).sum().float().clamp(min=1e-3)
             num_class = self.num_classes
             scores = [
                 cls.permute(0, 2, 3, 1).reshape(-1, num_class)[pos]
@@ -319,22 +324,14 @@ class FSAFHead(RetinaHead):
                 label.reshape(-1)[pos]
                 for label, pos in zip(labels_list, pos_inds)
             ]
+            scores = torch.cat(scores, dim=0)
+            labels = torch.cat(labels, dim=0)
+            if self.use_sigmoid_cls:
+                scores = scores.sigmoid()
+            else:
+                scores = scores.softmax(dim=1)
 
-            def argmax(x, thresh=0.2):
-                """Get argmax to only scores > thresh, otherwise return -100"""
-                if x.numel() == 0:
-                    return -100
-                if self.use_sigmoid_cls:
-                    x = x.sigmoid()
-                else:
-                    x = x.softmax(dim=1)
-                value, argmax = x.max(1)
-                argmax[value < thresh] = -100
-                return argmax
-
-            num_correct = sum([(argmax(score, score_threshold) == label).sum()
-                               for score, label in zip(scores, labels)])
-            return num_correct.float() / num_pos
+            return accuracy(scores, labels, thresh=self.score_threshold)
 
     def collect_loss_level_single(self, cls_loss, reg_loss, assigned_gt_inds,
                                   labels_seq):
