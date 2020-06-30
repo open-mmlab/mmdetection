@@ -1,14 +1,12 @@
 import random
-from collections import OrderedDict
 
 import numpy as np
 import torch
-import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import DistSamplerSeedHook, Runner
+from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner, OptimizerHook,
+                         build_optimizer)
 
-from mmdet.core import (DistEvalHook, DistOptimizerHook, EvalHook,
-                        Fp16OptimizerHook, build_optimizer)
+from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.utils import get_root_logger
 
@@ -30,54 +28,6 @@ def set_random_seed(seed, deterministic=False):
     if deterministic:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-
-
-def parse_losses(losses):
-    log_vars = OrderedDict()
-    for loss_name, loss_value in losses.items():
-        if isinstance(loss_value, torch.Tensor):
-            log_vars[loss_name] = loss_value.mean()
-        elif isinstance(loss_value, list):
-            log_vars[loss_name] = sum(_loss.mean() for _loss in loss_value)
-        else:
-            raise TypeError(f'{loss_name} is not a tensor or list of tensors')
-
-    loss = sum(_value for _key, _value in log_vars.items() if 'loss' in _key)
-
-    log_vars['loss'] = loss
-    for loss_name, loss_value in log_vars.items():
-        # reduce loss when distributed training
-        if dist.is_available() and dist.is_initialized():
-            loss_value = loss_value.data.clone()
-            dist.all_reduce(loss_value.div_(dist.get_world_size()))
-        log_vars[loss_name] = loss_value.item()
-
-    return loss, log_vars
-
-
-def batch_processor(model, data, train_mode):
-    """Process a data batch.
-
-    This method is required as an argument of Runner, which defines how to
-    process a data batch and obtain proper outputs. The first 3 arguments of
-    batch_processor are fixed.
-
-    Args:
-        model (nn.Module): A PyTorch model.
-        data (dict): The data batch in a dict.
-        train_mode (bool): Training mode or not. It may be useless for some
-            models.
-
-    Returns:
-        dict: A dict containing losses and log vars.
-    """
-    losses = model(**data)
-    loss, log_vars = parse_losses(losses)
-
-    outputs = dict(
-        loss=loss, log_vars=log_vars, num_samples=len(data['img'].data))
-
-    return outputs
 
 
 def train_detector(model,
@@ -132,14 +82,13 @@ def train_detector(model,
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
-    runner = Runner(
+    runner = EpochBasedRunner(
         model,
-        batch_processor,
-        optimizer,
-        cfg.work_dir,
+        optimizer=optimizer,
+        work_dir=cfg.work_dir,
         logger=logger,
         meta=meta)
-    # an ugly walkaround to make the .log and .log.json filenames the same
+    # an ugly workaround to make .log and .log.json filenames the same
     runner.timestamp = timestamp
 
     # fp16 setting
@@ -148,7 +97,7 @@ def train_detector(model,
         optimizer_config = Fp16OptimizerHook(
             **cfg.optimizer_config, **fp16_cfg, distributed=distributed)
     elif distributed and 'type' not in cfg.optimizer_config:
-        optimizer_config = DistOptimizerHook(**cfg.optimizer_config)
+        optimizer_config = OptimizerHook(**cfg.optimizer_config)
     else:
         optimizer_config = cfg.optimizer_config
 

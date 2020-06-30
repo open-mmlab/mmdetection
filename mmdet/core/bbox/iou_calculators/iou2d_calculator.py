@@ -31,11 +31,12 @@ class BboxOverlaps2D(object):
         return bbox_overlaps(bboxes1, bboxes2, mode, is_aligned)
 
     def __repr__(self):
+        """str: a string describing the module"""
         repr_str = self.__class__.__name__ + '()'
         return repr_str
 
 
-def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
+def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     """Calculate overlap between two set of bboxes.
 
     If ``is_aligned`` is ``False``, then calculate the ious between each bbox
@@ -103,9 +104,9 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
         if mode == 'iou':
             area2 = (bboxes2[:, 2] - bboxes2[:, 0]) * (
                 bboxes2[:, 3] - bboxes2[:, 1])
-            ious = overlap / (area1 + area2 - overlap)
+            union = area1 + area2 - overlap
         else:
-            ious = overlap / area1
+            union = area1
     else:
         lt = torch.max(bboxes1[:, None, :2], bboxes2[:, :2])  # [rows, cols, 2]
         rb = torch.min(bboxes1[:, None, 2:], bboxes2[:, 2:])  # [rows, cols, 2]
@@ -118,8 +119,12 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
         if mode == 'iou':
             area2 = (bboxes2[:, 2] - bboxes2[:, 0]) * (
                 bboxes2[:, 3] - bboxes2[:, 1])
-            ious = overlap / (area1[:, None] + area2 - overlap)
+            union = area1[:, None] + area2 - overlap
         else:
-            ious = overlap / (area1[:, None])
+            union = area1[:, None]
+
+    eps = union.new_tensor([eps])
+    union = torch.max(union, eps)
+    ious = overlap / union
 
     return ious

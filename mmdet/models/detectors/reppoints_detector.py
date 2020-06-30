@@ -40,7 +40,9 @@ class RepPointsDetector(SingleStageDetector):
             img_shape = img_info[0]['img_shape']
             scale_factor = img_info[0]['scale_factor']
             flip = img_info[0]['flip']
-            bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip)
+            flip_direction = img_info[0]['flip_direction']
+            bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip,
+                                       flip_direction)
             recovered_bboxes.append(bboxes)
         bboxes = torch.cat(recovered_bboxes, dim=0)
         if aug_scores is None:
@@ -50,6 +52,17 @@ class RepPointsDetector(SingleStageDetector):
             return bboxes, scores
 
     def aug_test(self, imgs, img_metas, rescale=False):
+        """Test function with test time augmentation
+
+        Args:
+            imgs (list[torch.Tensor]): List of multiple images
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[ndarray]: bbox results of each class
+        """
         # recompute feats to save memory
         feats = self.extract_feats(imgs)
 

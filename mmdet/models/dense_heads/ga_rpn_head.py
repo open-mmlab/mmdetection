@@ -6,10 +6,11 @@ from mmcv.cnn import normal_init
 from mmdet.ops import nms
 from ..builder import HEADS
 from .guided_anchor_head import GuidedAnchorHead
+from .rpn_test_mixin import RPNTestMixin
 
 
 @HEADS.register_module()
-class GARPNHead(GuidedAnchorHead):
+class GARPNHead(RPNTestMixin, GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""
 
     def __init__(self, in_channels, **kwargs):
@@ -17,15 +18,19 @@ class GARPNHead(GuidedAnchorHead):
             1, in_channels, background_label=0, **kwargs)
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.rpn_conv = nn.Conv2d(
             self.in_channels, self.feat_channels, 3, padding=1)
         super(GARPNHead, self)._init_layers()
 
     def init_weights(self):
+        """Initialize weights of the head."""
         normal_init(self.rpn_conv, std=0.01)
         super(GARPNHead, self).init_weights()
 
     def forward_single(self, x):
+        """Forward feature of a single scale level."""
+
         x = self.rpn_conv(x)
         x = F.relu(x, inplace=True)
         (cls_score, bbox_pred, shape_pred,

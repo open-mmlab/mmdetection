@@ -85,6 +85,7 @@ class PISARoIHead(StandardRoIHead):
         return losses
 
     def _bbox_forward(self, x, rois):
+        """Box forward function used in both training and testing"""
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
@@ -103,6 +104,7 @@ class PISARoIHead(StandardRoIHead):
                             gt_labels,
                             img_metas,
                             neg_label_weights=None):
+        """Run forward function and calculate loss for box head in training"""
         rois = bbox2roi([res.bboxes for res in sampling_results])
 
         bbox_results = self._bbox_forward(x, rois)

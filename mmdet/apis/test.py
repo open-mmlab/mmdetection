@@ -2,6 +2,7 @@ import os.path as osp
 import pickle
 import shutil
 import tempfile
+import time
 
 import mmcv
 import torch
@@ -56,7 +57,7 @@ def single_gpu_test(model,
             result = bbox_results, encoded_mask_results
         results.append(result)
 
-        batch_size = data['img'][0].size(0)
+        batch_size = len(data['img_metas'][0].data)
         for _ in range(batch_size):
             prog_bar.update()
     return results
@@ -87,6 +88,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     rank, world_size = get_dist_info()
     if rank == 0:
         prog_bar = mmcv.ProgressBar(len(dataset))
+    time.sleep(2)  # This line can prevent deadlock problem in some cases.
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
@@ -98,9 +100,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
         results.append(result)
 
         if rank == 0:
-            batch_size = (
-                len(data['img_meta']._data)
-                if 'img_meta' in data else data['img'][0].size(0))
+            batch_size = len(data['img_metas'][0].data)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 

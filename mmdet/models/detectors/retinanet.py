@@ -4,6 +4,7 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module()
 class RetinaNet(SingleStageDetector):
+    """Implementation of `RetinaNet <https://arxiv.org/abs/1708.02002>`_"""
 
     def __init__(self,
                  backbone,

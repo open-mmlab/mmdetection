@@ -95,7 +95,7 @@ class CityscapesDataset(CocoDataset):
         """Dump the detection results to a txt file.
 
         Args:
-            results (list[list | tuple | ndarray]): Testing results of the
+            results (list[list | tuple]): Testing results of the
                 dataset.
             outfile_prefix (str): The filename prefix of the json files.
                 If the prefix is "somepath/xxx",
@@ -121,7 +121,17 @@ class CityscapesDataset(CocoDataset):
 
             bbox_result, segm_result = result
             bboxes = np.vstack(bbox_result)
-            segms = mmcv.concat_list(segm_result)
+            # segm results
+            if isinstance(segm_result, tuple):
+                # Some detectors use different scores for bbox and mask,
+                # like Mask Scoring R-CNN. Score of segm will be used instead
+                # of bbox score.
+                segms = mmcv.concat_list(segm_result[0])
+                mask_score = segm_result[1]
+            else:
+                # use bbox score for mask score
+                segms = mmcv.concat_list(segm_result)
+                mask_score = [bbox[-1] for bbox in bboxes]
             labels = [
                 np.full(bbox.shape[0], i, dtype=np.int32)
                 for i, bbox in enumerate(bbox_result)
@@ -136,7 +146,7 @@ class CityscapesDataset(CocoDataset):
                     pred_class = labels[i]
                     classes = self.CLASSES[pred_class]
                     class_id = CSLabels.name2label[classes].id
-                    score = bboxes[i, -1]
+                    score = mask_score[i]
                     mask = maskUtils.decode(segms[i]).astype(np.uint8)
                     png_filename = osp.join(outfile_prefix,
                                             basename + f'_{i}_{classes}.png')
@@ -188,14 +198,27 @@ class CityscapesDataset(CocoDataset):
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05)):
-        """Evaluation in Cityscapes protocol.
+        """Evaluation in Cityscapes/COCO protocol.
 
         Args:
-            results (list): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated.
+            results (list[list | tuple]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Options are
+                'bbox', 'segm', 'proposal', 'proposal_fast'.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
-            outfile_prefix (str | None):
+            outfile_prefix (str | None): The prefix of output file. It includes
+                the file path and the prefix of filename, e.g., "a/b/prefix".
+                If results are evaluated with COCO protocol, it would be the
+                prefix of output json file. For example, the metric is 'bbox'
+                and 'segm', then json files would be "a/b/prefix.bbox.json" and
+                "a/b/prefix.segm.json".
+                If results are evaluated with cityscapes protocol, it would be
+                the prefix of output txt/png files. The output files would be
+                png images under folder "a/b/prefix/xxx/" and the file name of
+                images would be written into a txt file
+                "a/b/prefix/xxx_pred.txt", where "xxx" is the video name of
+                cityscapes. If not specified, a temp file will be created.
+                Default: None.
             classwise (bool): Whether to evaluating the AP for each class.
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.
@@ -205,7 +228,8 @@ class CityscapesDataset(CocoDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str: float]
+            dict[str, float]: COCO style evaluation metric or cityscapes mAP
+                and AP@50.
         """
         eval_results = dict()
 
@@ -234,6 +258,19 @@ class CityscapesDataset(CocoDataset):
         return eval_results
 
     def _evaluate_cityscapes(self, results, txtfile_prefix, logger):
+        """Evaluation in Cityscapes protocol.
+
+        Args:
+            results (list): Testing results of the dataset.
+            txtfile_prefix (str | None): The prefix of output txt file
+            logger (logging.Logger | str | None): Logger used for printing
+                related information during evaluation. Default: None.
+
+        Returns:
+            dict[str: float]: Cityscapes evaluation results, contains 'mAP'
+                and 'AP@50'.
+        """
+
         try:
             import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as CSEval  # noqa
         except ImportError:

@@ -53,11 +53,12 @@ cd mmdetection
 ```
 
 d. Install build requirements and then install mmdetection.
-(We install pycocotools via the github repo instead of pypi because the pypi version is old and not compatible with the latest numpy.)
+(We install our forked version of pycocotools via the github repo instead of pypi
+for better compatibility with our repo.)
 
 ```shell
 pip install -r requirements/build.txt
-pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
+pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .  # or "python setup.py develop"
 ```
 
@@ -77,6 +78,7 @@ It is recommended that you run step d each time you pull some updates from githu
     ```
     pip uninstall mmdet
     rm -rf ./build
+    find . -name "*.so" | xargs rm
     ```
 
 2. Following the above instructions, mmdetection is installed on `dev` mode, any local modifications made to the code will take effect without the need to reinstall it (unless you submit some commits and want to update the version number).
@@ -129,7 +131,7 @@ conda install -c pytorch pytorch torchvision -y
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
-pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
+pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .
 ```
 
