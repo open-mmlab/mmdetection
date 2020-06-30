@@ -94,11 +94,11 @@ class CornerPool(nn.Module):
     }
 
     cummax_dim_flip = {
-         'bottom': [2, False],
-         'left': [3, True],
-         'right': [3, False],
-         'top': [2, True],
-     }
+        'bottom': [2, False],
+        'left': [3, True],
+        'right': [3, False],
+        'top': [2, True],
+    }
 
     def __init__(self, mode):
         super(CornerPool, self).__init__()
