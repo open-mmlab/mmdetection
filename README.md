@@ -92,6 +92,7 @@ Supported methods:
 - [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
 - [x] [InstaBoost](configs/instaboost/README.md)
 - [x] [GRoIE](configs/groie/README.md)
+- [x] [DetectoRS](configs/detectors/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
