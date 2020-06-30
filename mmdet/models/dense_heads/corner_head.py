@@ -5,7 +5,7 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob
 
 from mmdet.core import multi_apply
-from mmdet.ops import CornerPool, soft_nms
+from mmdet.ops import CornerPool, batched_nms
 from ..builder import HEADS, build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
 
@@ -648,30 +648,14 @@ class CornerHead(nn.Module):
 
         if with_nms:
             detections, labels = self._bboxes_nms(detections, labels,
-                                                  self.test_cfg,
-                                                  self.num_classes)
+                                                  self.test_cfg)
 
         return detections, labels
 
-    def _bboxes_nms(self, bboxes, labels, cfg, num_classes=80):
-        out_bboxes = []
-        out_labels = []
-        for i in range(num_classes):
-            keepinds = (labels == i)
-            nms_detections = bboxes[keepinds]
-            if nms_detections.size(0) == 0:
-                continue
-            nms_detections, _ = soft_nms(nms_detections, 0.5, 'gaussian')
-
-            out_bboxes.append(nms_detections)
-            out_labels += [i for _ in range(len(nms_detections))]
-
-        if len(out_bboxes) > 0:
-            out_bboxes = torch.cat(out_bboxes)
-            out_labels = torch.Tensor(out_labels)
-        else:
-            out_bboxes = torch.Tensor(out_bboxes)
-            out_labels = torch.Tensor(out_labels)
+    def _bboxes_nms(self, bboxes, labels, cfg):
+        out_bboxes, keep = batched_nms(bboxes[:, :4], bboxes[:, -1], labels,
+                                       cfg.nms_cfg)
+        out_labels = labels[keep]
 
         if len(out_bboxes) > 0:
             idx = torch.argsort(out_bboxes[:, -1], descending=True)
