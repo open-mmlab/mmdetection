@@ -46,13 +46,13 @@ def test_resize():
     results['ori_shape'] = img.shape
     # Set initial values for default meta_keys
     results['pad_shape'] = img.shape
-    results['scale_factor'] = 1.0
     results['img_fields'] = ['img', 'img2']
 
     results = resize_module(results)
     assert np.equal(results['img'], results['img2']).all()
 
     results.pop('scale')
+    results.pop('scale_factor')
     transform = dict(
         type='Resize',
         img_scale=(1280, 800),
@@ -290,3 +290,223 @@ def test_albu_transform():
     results = normalize(results)
 
     assert results['img'].dtype == np.float32
+
+
+def test_random_center_crop_pad():
+    # test assertion for invalid crop_size while test_mode=False
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=(-1, 0),
+            test_mode=False,
+            test_pad_mode=None)
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid ratios while test_mode=False
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=(511, 511),
+            ratios=(1.0),
+            test_mode=False,
+            test_pad_mode=None)
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid mean, std and to_rgb
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=(511, 511),
+            mean=None,
+            std=None,
+            to_rgb=None,
+            test_mode=False,
+            test_pad_mode=None)
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid crop_size while test_mode=True
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=(511, 511),
+            ratios=None,
+            border=None,
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=True,
+            test_pad_mode=('logical_or', 127))
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid ratios while test_mode=True
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=None,
+            ratios=(0.9, 1.0, 1.1),
+            border=None,
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=True,
+            test_pad_mode=('logical_or', 127))
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid border while test_mode=True
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=None,
+            ratios=None,
+            border=128,
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=True,
+            test_pad_mode=('logical_or', 127))
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid test_pad_mode while test_mode=True
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomCenterCropPad',
+            crop_size=None,
+            ratios=None,
+            border=None,
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=True,
+            test_pad_mode=('do_nothing', 100))
+        build_from_cfg(transform, PIPELINES)
+
+    results = dict(
+        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_info=dict(filename='color.jpg'))
+
+    load = dict(type='LoadImageFromFile', to_float32=True)
+    load = build_from_cfg(load, PIPELINES)
+    results = load(results)
+    test_results = copy.deepcopy(results)
+
+    def create_random_bboxes(num_bboxes, img_w, img_h):
+        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
+        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
+        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
+        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
+            np.int)
+        return bboxes
+
+    h, w, _ = results['img_shape']
+    gt_bboxes = create_random_bboxes(8, w, h)
+    gt_bboxes_ignore = create_random_bboxes(2, w, h)
+    results['gt_bboxes'] = gt_bboxes
+    results['gt_bboxes_ignore'] = gt_bboxes_ignore
+    train_transform = dict(
+        type='RandomCenterCropPad',
+        crop_size=(h - 20, w - 20),
+        ratios=(1.0, ),
+        border=128,
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        to_rgb=True,
+        test_mode=False,
+        test_pad_mode=None)
+    crop_module = build_from_cfg(train_transform, PIPELINES)
+    train_results = crop_module(results)
+    assert train_results['img'].shape[:2] == (h - 20, w - 20)
+    # All bboxes should be reserved after crop
+    assert train_results['pad_shape'][:2] == (h - 20, w - 20)
+    assert train_results['gt_bboxes'].shape[0] == 8
+    assert train_results['gt_bboxes_ignore'].shape[0] == 2
+
+    test_transform = dict(
+        type='RandomCenterCropPad',
+        crop_size=None,
+        ratios=None,
+        border=None,
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        to_rgb=True,
+        test_mode=True,
+        test_pad_mode=('logical_or', 127))
+    crop_module = build_from_cfg(test_transform, PIPELINES)
+
+    test_results = crop_module(test_results)
+    assert test_results['img'].shape[:2] == (h | 127, w | 127)
+    assert test_results['pad_shape'][:2] == (h | 127, w | 127)
+    assert 'border' in test_results
+
+
+def test_multi_scale_flip_aug():
+    # test assertion if give both scale_factor and img_scale
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='MultiScaleFlipAug',
+            scale_factor=1.0,
+            img_scale=[(1333, 800)],
+            transforms=[dict(type='Resize')])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion if both scale_factor and img_scale are None
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='MultiScaleFlipAug',
+            scale_factor=None,
+            img_scale=None,
+            transforms=[dict(type='Resize')])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion if img_scale is not tuple or list of tuple
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='MultiScaleFlipAug',
+            img_scale=[1333, 800],
+            transforms=[dict(type='Resize')])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion if flip_direction is not str or list of str
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='MultiScaleFlipAug',
+            img_scale=[(1333, 800)],
+            flip_direction=1,
+            transforms=[dict(type='Resize')])
+        build_from_cfg(transform, PIPELINES)
+
+    scale_transform = dict(
+        type='MultiScaleFlipAug',
+        img_scale=[(1333, 800), (1333, 640)],
+        transforms=[dict(type='Resize', keep_ratio=True)])
+    transform = build_from_cfg(scale_transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+    results['img'] = img
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    # Set initial values for default meta_keys
+    results['pad_shape'] = img.shape
+    results['img_fields'] = ['img']
+
+    scale_results = transform(copy.deepcopy(results))
+    assert len(scale_results['img']) == 2
+    assert scale_results['img'][0].shape == (750, 1333, 3)
+    assert scale_results['img_shape'][0] == (750, 1333, 3)
+    assert scale_results['img'][1].shape == (640, 1138, 3)
+    assert scale_results['img_shape'][1] == (640, 1138, 3)
+
+    scale_factor_transform = dict(
+        type='MultiScaleFlipAug',
+        scale_factor=[0.8, 1.0, 1.2],
+        transforms=[dict(type='Resize', keep_ratio=False)])
+    transform = build_from_cfg(scale_factor_transform, PIPELINES)
+    scale_factor_results = transform(copy.deepcopy(results))
+    assert len(scale_factor_results['img']) == 3
+    assert scale_factor_results['img'][0].shape == (230, 409, 3)
+    assert scale_factor_results['img_shape'][0] == (230, 409, 3)
+    assert scale_factor_results['img'][1].shape == (288, 512, 3)
+    assert scale_factor_results['img_shape'][1] == (288, 512, 3)
+    assert scale_factor_results['img'][2].shape == (345, 614, 3)
+    assert scale_factor_results['img_shape'][2] == (345, 614, 3)

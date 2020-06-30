@@ -7,6 +7,7 @@ from .free_anchor_retina_head import FreeAnchorRetinaHead
 from .fsaf_head import FSAFHead
 from .ga_retina_head import GARetinaHead
 from .ga_rpn_head import GARPNHead
+from .gfl_head import GFLHead
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 from .nasfcos_head import NASFCOSHead
 from .pisa_retinanet_head import PISARetinaHead
@@ -22,5 +23,5 @@ __all__ = [
     'RPNHead', 'GARPNHead', 'RetinaHead', 'RetinaSepBNHead', 'GARetinaHead',
     'SSDHead', 'FCOSHead', 'RepPointsHead', 'FoveaHead',
     'FreeAnchorRetinaHead', 'ATSSHead', 'FSAFHead', 'NASFCOSHead',
-    'PISARetinaHead', 'PISASSDHead'
+    'PISARetinaHead', 'PISASSDHead', 'GFLHead'
 ]

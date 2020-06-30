@@ -28,7 +28,10 @@ class Resize(object):
     This transform resizes the input image to some scale. Bboxes and masks are
     then resized with the same scale factor. If the input dict contains the key
     "scale", then the scale in the input dict is used, otherwise the specified
-    scale in the init method is used.
+    scale in the init method is used. If the input dict contains the key
+    "scale_factor" (if MultiScaleFlipAug does not give img_scale but
+    scale_factor), the actual scale will be computed by image shape and
+    scale_factor.
 
     `img_scale` can either be a tuple (single-scale) or a list of tuple
     (multi-scale). There are 3 multiscale modes:
@@ -246,7 +249,17 @@ class Resize(object):
         """
 
         if 'scale' not in results:
-            self._random_scale(results)
+            if 'scale_factor' in results:
+                img_shape = results['img'].shape[:2]
+                scale_factor = results['scale_factor']
+                assert isinstance(scale_factor, float)
+                results['scale'] = tuple(
+                    [int(x * scale_factor) for x in img_shape][::-1])
+            else:
+                self._random_scale(results)
+        else:
+            assert 'scale_factor' not in results, (
+                "scale and scale_factor cannot be both set.")
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
@@ -1154,4 +1167,331 @@ class Albu(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__ + f'(transforms={self.transforms})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class RandomCenterCropPad(object):
+    """Random center crop and random around padding for CornerNet.
+
+    This operation generates randomly cropped image from the original image and
+    pads it simultaneously. Different from `RandomCrop`, the output shape may
+    not equal to `crop_size` strictly. We choose a random value from `ratios`
+    and the output shape could be larger or smaller than `crop_size`. Also the
+    pad in this operation is different from `Pad`, actually we use around
+    padding instead of right-bottom padding.
+
+    The relation between output image (padding image) and original image:
+
+    :code-block:
+                    output image
+           +----------------------------+
+           |          padded area       |
+    +------|----------------------------|----------+
+    |      |         cropped area       |          |
+    |      |         +---------------+  |          |
+    |      |         |    .   center |  |          | original image
+    |      |         |        range  |  |          |
+    |      |         +---------------+  |          |
+    +------|----------------------------|----------+
+           |          padded area       |
+           +----------------------------+
+
+    There are 5 main areas in the figure:
+        - output image: output image of this operation, also called padding
+            image in following instruction.
+        - original image: input image of this operation.
+        - padded area: non-intersect area of output image and original image.
+        - cropped area: the overlap of output image and original image.
+        - center range: a smaller area where random center chosen from.
+            center range is computed by `border` and original image's shape
+            to avoid our random center is too close to original image's border.
+
+    Also this operation act differently in train and test mode, the summary
+    pipeline is listed below.
+
+    Train pipeline:
+        1. Choose a `random_ratio` from `ratios`, the shape of padding image
+            will be `random_ratio * crop_size`.
+        2. Choose a `random_center` in `center range`.
+        3. Generate padding image with center matches the `random_center`.
+        4. Initialize the padding image with pixel value equals to `mean`.
+        5. Copy the `cropped area` to padding image.
+        6. Refine annotations.
+
+    Test pipeline:
+        1. Compute output shape according to `test_pad_mode`.
+        2. Generate padding image with center matches the original image
+            center.
+        3. Initialize the padding image with pixel value equals to `mean`.
+        4. Copy the `cropped area` to padding image.
+
+    Args:
+        crop_size (tuple | None): expected size after crop, final size will
+            computed according to ratio. Requires (h, w) in train mode, and
+            None in test mode.
+        ratios (tuple): random select a ratio from tuple and crop image to
+            (crop_size[0] * ratio) * (crop_size[1] * ratio).
+            Only available in train mode.
+        border (int): max distance from center select area to image border.
+            Only available in train mode.
+        mean (sequence): Mean values of 3 channels.
+        std (sequence): Std values of 3 channels.
+        to_rgb (bool): Whether to convert the image from BGR to RGB.
+        test_mode (bool): whether involve random variables in transform.
+            In train mode, crop_size is fixed, center coords and ratio is
+            random selected from predefined lists. In test mode, crop_size
+            is image's original shape, center coords and ratio is fixed.
+        test_pad_mode (tuple): padding method and padding shape value, only
+            available in test mode. Default is using 'logical_or' with
+            127 as padding shape value.
+
+            - 'logical_or': final_shape = input_shape | padding_shape_value
+            - 'size_divisor': final_shape = int(
+                ceil(input_shape / padding_shape_value) * padding_shape_value)
+    """
+
+    def __init__(self,
+                 crop_size=None,
+                 ratios=(0.9, 1.0, 1.1),
+                 border=128,
+                 mean=None,
+                 std=None,
+                 to_rgb=None,
+                 test_mode=False,
+                 test_pad_mode=('logical_or', 127)):
+        if test_mode:
+            assert crop_size is None, 'crop_size must be None in test mode'
+            assert ratios is None, 'ratios must be None in test mode'
+            assert border is None, 'border must be None in test mode'
+            assert isinstance(test_pad_mode, (list, tuple))
+            assert test_pad_mode[0] in ['logical_or', 'size_divisor']
+        else:
+            assert isinstance(crop_size, (list, tuple))
+            assert crop_size[0] > 0 and crop_size[1] > 0, (
+                'crop_size must > 0 in train mode')
+            assert isinstance(ratios, (list, tuple))
+            assert test_pad_mode is None, (
+                'test_pad_mode must be None in train mode')
+
+        self.crop_size = crop_size
+        self.ratios = ratios
+        self.border = border
+        # We do not set default value to mean, std and to_rgb because these
+        # hyper-parameters are easy to forget but could affect the performance.
+        # Please use the same setting as Normalize for performance assurance.
+        assert mean is not None and std is not None and to_rgb is not None
+        self.to_rgb = to_rgb
+        self.input_mean = mean
+        self.input_std = std
+        if to_rgb:
+            self.mean = mean[::-1]
+            self.std = std[::-1]
+        else:
+            self.mean = mean
+            self.std = std
+        self.test_mode = test_mode
+        self.test_pad_mode = test_pad_mode
+
+    def _get_border(self, border, size):
+        """Get final border for the target size.
+
+        This function generates a `final_border` according to image's shape.
+        The area between `final_border` and `size - final_border` is the
+        `center range`. We randomly choose center from the `center range`
+        to avoid our random center is too close to original image's border.
+
+        Args:
+            border (int): The initial border, default is 128.
+            size (int): The width or height of original image.
+        Returns:
+            int: The final border.
+        """
+        i = pow(2, np.ceil(np.log2(np.ceil(2 * border / size))))
+        return border // i
+
+    def _filter_boxes(self, patch, boxes):
+        """Check whether the center of each box is in the patch.
+
+        Args:
+            patch (list[int]): The cropped area, [left, top, right, bottom].
+            boxes (numpy array, (N x 4)): Ground truth boxes.
+        Returns:
+            mask (numpy array, (N,)): Each box is inside or outside the patch.
+        """
+        center = (boxes[:, :2] + boxes[:, 2:]) / 2
+        mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
+            center[:, 0] < patch[2]) * (
+                center[:, 1] < patch[3])
+        return mask
+
+    def _crop_image_and_paste(self, image, center, size):
+        """Crop image with a given center and size, then paste the cropped
+        image to a blank image with two centers align.
+
+        This function is equivalent to generating a blank image with `size` as
+        its shape. Then cover it on the original image with two centers (
+        the center of blank image and the random center of original image)
+        aligned. The overlap area is paste from the original image and the
+        outside area is filled with `mean pixel`.
+
+        Args:
+            image (np array, H x W x C): Original image.
+            center (list[int]): Target crop center coord.
+            size (list[int]): Target crop size. [target_h, target_w]
+        Returns:
+            cropped_img (np array, target_h x target_w x C): Cropped image.
+            border (np array, 4): The distance of four border of `cropped_img`
+                to the original image area, [top, bottom, left, right]
+            patch (list[int]): The cropped area, [left, top, right, bottom].
+        """
+        center_y, center_x = center
+        target_h, target_w = size
+        img_h, img_w, img_c = image.shape
+
+        x0 = max(0, center_x - target_w // 2)
+        x1 = min(center_x + target_w // 2, img_w)
+        y0 = max(0, center_y - target_h // 2)
+        y1 = min(center_y + target_h // 2, img_h)
+        patch = np.array((int(x0), int(y0), int(x1), int(y1)))
+
+        left, right = center_x - x0, x1 - center_x
+        top, bottom = center_y - y0, y1 - center_y
+
+        cropped_center_y, cropped_center_x = target_h // 2, target_w // 2
+        cropped_img = np.zeros((target_h, target_w, img_c), dtype=image.dtype)
+        for i in range(img_c):
+            cropped_img[:, :, i] += self.mean[i]
+        y_slice = slice(cropped_center_y - top, cropped_center_y + bottom)
+        x_slice = slice(cropped_center_x - left, cropped_center_x + right)
+        cropped_img[y_slice, x_slice, :] = image[y0:y1, x0:x1, :]
+
+        border = np.array([
+            cropped_center_y - top, cropped_center_y + bottom,
+            cropped_center_x - left, cropped_center_x + right
+        ],
+                          dtype=np.float32)
+
+        return cropped_img, border, patch
+
+    def _train_aug(self, results):
+        """Random crop and around padding the original image.
+
+        Args:
+            results (dict): Image infomations in the augment pipeline.
+        Returns:
+            results (dict): The updated dict.
+        """
+        img = results['img']
+        h, w, c = img.shape
+        boxes = results['gt_bboxes']
+        while True:
+            scale = random.choice(self.ratios)
+            new_h = int(self.crop_size[0] * scale)
+            new_w = int(self.crop_size[1] * scale)
+            h_border = self._get_border(self.border, h)
+            w_border = self._get_border(self.border, w)
+
+            for i in range(50):
+                center_x = random.randint(low=w_border, high=w - w_border)
+                center_y = random.randint(low=h_border, high=h - h_border)
+
+                cropped_img, border, patch = self._crop_image_and_paste(
+                    img, [center_y, center_x], [new_h, new_w])
+
+                mask = self._filter_boxes(patch, boxes)
+                # if image do not have valid bbox, any crop patch is valid.
+                if not mask.any() and len(boxes) > 0:
+                    continue
+
+                results['img'] = cropped_img
+                results['img_shape'] = cropped_img.shape
+                results['pad_shape'] = cropped_img.shape
+
+                x0, y0, x1, y1 = patch
+
+                left_w, top_h = center_x - x0, center_y - y0
+                cropped_center_x, cropped_center_y = new_w // 2, new_h // 2
+
+                # crop bboxes accordingly and clip to the image boundary
+                for key in results.get('bbox_fields', []):
+                    mask = self._filter_boxes(patch, results[key])
+                    bboxes = results[key][mask]
+                    bboxes[:, 0:4:2] += cropped_center_x - left_w - x0
+                    bboxes[:, 1:4:2] += cropped_center_y - top_h - y0
+                    bboxes[:, 0:4:2] = np.clip(bboxes[:, 0:4:2], 0, new_w)
+                    bboxes[:, 1:4:2] = np.clip(bboxes[:, 1:4:2], 0, new_h)
+                    keep = (bboxes[:, 2] > bboxes[:, 0]) & (
+                        bboxes[:, 3] > bboxes[:, 1])
+                    bboxes = bboxes[keep]
+                    results[key] = bboxes
+                    if key in ['gt_bboxes']:
+                        if 'gt_labels' in results:
+                            labels = results['gt_labels'][mask]
+                            labels = labels[keep]
+                            results['gt_labels'] = labels
+                        if 'gt_masks' in results:
+                            raise NotImplementedError(
+                                'RandomCenterCropPad only supports bbox.')
+
+                # crop semantic seg
+                for key in results.get('seg_fields', []):
+                    raise NotImplementedError(
+                        'RandomCenterCropPad only supports bbox.')
+                return results
+
+    def _test_aug(self, results):
+        """Around padding the original image without cropping.
+
+        The padding mode and value are from `test_pad_mode`.
+
+        Args:
+            results (dict): Image infomations in the augment pipeline.
+        Returns:
+            results (dict): The updated dict.
+        """
+        img = results['img']
+        h, w, c = img.shape
+        results['img_shape'] = img.shape
+        if self.test_pad_mode[0] in ['logical_or']:
+            target_h = h | self.test_pad_mode[1]
+            target_w = w | self.test_pad_mode[1]
+        elif self.test_pad_mode[0] in ['size_divisor']:
+            divisor = self.test_pad_mode[1]
+            target_h = int(np.ceil(h / divisor)) * divisor
+            target_w = int(np.ceil(w / divisor)) * divisor
+        else:
+            raise NotImplementedError(
+                'RandomCenterCropPad only support two testing pad mode:'
+                'logical-or and size_divisor.')
+
+        cropped_img, border, _ = self._crop_image_and_paste(
+            img, [h // 2, w // 2], [target_h, target_w])
+        results['img'] = cropped_img
+        results['pad_shape'] = cropped_img.shape
+        results['border'] = border
+        return results
+
+    def __call__(self, results):
+        img = results['img']
+        assert img.dtype == np.float32, (
+            'RandomCenterCropPad needs the input image of dtype np.float32,'
+            ' please set "to_float32=True" in "LoadImageFromFile" pipeline')
+        h, w, c = img.shape
+        assert c == len(self.mean)
+        if self.test_mode:
+            return self._test_aug(results)
+        else:
+            return self._train_aug(results)
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(crop_size={self.crop_size}, '
+        repr_str += f'ratios={self.ratios}, '
+        repr_str += f'border={self.border}, '
+        repr_str += f'mean={self.input_mean}, '
+        repr_str += f'std={self.input_std}, '
+        repr_str += f'to_rgb={self.to_rgb}, '
+        repr_str += f'test_mode={self.test_mode}, '
+        repr_str += f'test_pad_mode={self.test_pad_mode})'
         return repr_str

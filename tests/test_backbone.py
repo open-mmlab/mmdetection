@@ -674,6 +674,9 @@ def test_resnext_backbone():
 
 
 regnet_test_data = [
+    ('regnetx_400mf',
+     dict(w0=24, wa=24.48, wm=2.54, group_w=16, depth=22,
+          bot_mul=1.0), [32, 64, 160, 384]),
     ('regnetx_800mf',
      dict(w0=56, wa=35.73, wm=2.28, group_w=16, depth=16,
           bot_mul=1.0), [64, 128, 288, 672]),
