@@ -2,7 +2,7 @@ from math import ceil, log
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule
+from mmcv.cnn import ConvModule, bias_init_with_prob
 
 from mmdet.core import multi_apply
 from mmdet.ops import CornerPool, soft_nms
@@ -66,7 +66,7 @@ class BCPool(nn.Module):
 class CornerHead(nn.Module):
     """Head of CornerNet: Detecting Objects as Paired Keypoints.
 
-    Code is modified from `official github repo
+    Code is modified from the `official github repo
     <https://github.com/princeton-vl/CornerNet/blob/master/models/py_utils/kp.py#L73>`_ .  # noqa: E501
     More details can be found in the `paper
     <https://arxiv.org/abs/1808.01244>`_ .
@@ -187,15 +187,11 @@ class CornerHead(nn.Module):
             self._init_corner_emb_layers()
 
     def init_weights(self):
-        """
-        -2.19 is the magic number copy from `official github repo
-        <https://github.com/princeton-vl/CornerNet/blob/master/models/py_utils/kp.py#L137>`_ .  # noqa: E501
-        More details can be found in the `issue link
-        <https://github.com/princeton-vl/CornerNet/issues/13>`_ .
-        """
+        """Initialize weights of the head."""
+        bias_init = bias_init_with_prob(0.1)
         for i in range(self.feat_num_levels):
-            self.tl_heat[i][-1].bias.data.fill_(-2.19)
-            self.br_heat[i][-1].bias.data.fill_(-2.19)
+            self.tl_heat[i][-1].bias.data.fill_(bias_init)
+            self.br_heat[i][-1].bias.data.fill_(bias_init)
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -308,8 +304,10 @@ class CornerHead(nn.Module):
         width_ratio = float(width / img_w)
         height_ratio = float(height / img_h)
 
-        gt_tl_heatmap = gt_bboxes[-1].new_zeros([batch_size, self.num_classes, height, width])
-        gt_br_heatmap = gt_bboxes[-1].new_zeros([batch_size, self.num_classes, height, width])
+        gt_tl_heatmap = gt_bboxes[-1].new_zeros(
+            [batch_size, self.num_classes, height, width])
+        gt_br_heatmap = gt_bboxes[-1].new_zeros(
+            [batch_size, self.num_classes, height, width])
         gt_tl_offset = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
         gt_br_offset = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
 
@@ -317,11 +315,15 @@ class CornerHead(nn.Module):
             match = []
 
         if with_guiding_shift:
-            gt_tl_guiding_shift = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
-            gt_br_guiding_shift = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
+            gt_tl_guiding_shift = gt_bboxes[-1].new_zeros(
+                [batch_size, 2, height, width])
+            gt_br_guiding_shift = gt_bboxes[-1].new_zeros(
+                [batch_size, 2, height, width])
         if with_centripetal_shift:
-            gt_tl_centripetal_shift = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
-            gt_br_centripetal_shift = gt_bboxes[-1].new_zeros([batch_size, 2, height, width])
+            gt_tl_centripetal_shift = gt_bboxes[-1].new_zeros(
+                [batch_size, 2, height, width])
+            gt_br_centripetal_shift = gt_bboxes[-1].new_zeros(
+                [batch_size, 2, height, width])
 
         for batch_id in range(batch_size):
             corner_match = []
@@ -349,20 +351,24 @@ class CornerHead(nn.Module):
                 radius = gaussian_radius((height, width), min_overlap=0.3)
                 radius = max(0, int(radius))
 
-                gen_gaussian_target(gt_tl_heatmap[batch_id, label],
-                                    [left_idx, top_idx], radius)
-                gen_gaussian_target(gt_br_heatmap[batch_id, label],
-                                    [right_idx, bottom_idx], radius)
+                tl_heatmap = gt_tl_heatmap[batch_id, label]
+                br_heatmap = gt_br_heatmap[batch_id, label]
+                tl_heatmap = gen_gaussian_target(tl_heatmap,
+                                                 [left_idx, top_idx], radius)
+                br_heatmap = gen_gaussian_target(br_heatmap,
+                                                 [right_idx, bottom_idx],
+                                                 radius)
 
                 left_offset = scale_left - left_idx
-                top_offset = scale_top - top_idx 
+                top_offset = scale_top - top_idx
                 right_offset = scale_right - right_idx
                 bottom_offset = scale_bottom - bottom_idx
 
                 gt_tl_offset[batch_id, 0, top_idx, left_idx] = left_offset
                 gt_tl_offset[batch_id, 1, top_idx, left_idx] = top_offset
                 gt_br_offset[batch_id, 0, bottom_idx, right_idx] = right_offset
-                gt_br_offset[batch_id, 1, bottom_idx, right_idx] = bottom_offset
+                gt_br_offset[batch_id, 1, bottom_idx,
+                             right_idx] = bottom_offset
 
                 if with_corner_emb:
                     corner_match.append([[top_idx, left_idx],
@@ -371,20 +377,25 @@ class CornerHead(nn.Module):
                     gt_tl_guiding_shift[batch_id, 0, top_idx,
                                         left_idx] = scale_center_x - left_idx
                     gt_tl_guiding_shift[batch_id, 1, top_idx,
-                                        left_idx] = scale_center_y - top_idx 
+                                        left_idx] = scale_center_y - top_idx
                     gt_br_guiding_shift[batch_id, 0, bottom_idx,
-                                        right_idx] = right_idx - scale_center_x 
-                    gt_br_guiding_shift[batch_id, 1, bottom_idx,
-                                        right_idx] = bottom_idx - scale_center_y
+                                        right_idx] = right_idx - scale_center_x
+                    gt_br_guiding_shift[
+                        batch_id, 1, bottom_idx,
+                        right_idx] = bottom_idx - scale_center_y
                 if with_centripetal_shift:
                     gt_tl_centripetal_shift[batch_id, 0, top_idx,
-                                            left_idx] = log(scale_center_x - scale_left)
+                                            left_idx] = log(scale_center_x -
+                                                            scale_left)
                     gt_tl_centripetal_shift[batch_id, 1, top_idx,
-                                            left_idx] = log(scale_center_y - scale_top)
+                                            left_idx] = log(scale_center_y -
+                                                            scale_top)
                     gt_br_centripetal_shift[batch_id, 0, bottom_idx,
-                                            right_idx] = log(scale_right - scale_center_x)
+                                            right_idx] = log(scale_right -
+                                                             scale_center_x)
                     gt_br_centripetal_shift[batch_id, 1, bottom_idx,
-                                            right_idx] = log(scale_bottom - scale_center_y)
+                                            right_idx] = log(scale_bottom -
+                                                             scale_center_y)
 
             if with_corner_emb:
                 match.append(corner_match)
@@ -587,8 +598,8 @@ class CornerHead(nn.Module):
         Args:
             tl_heat (Tensor): Top-left corner heatmap for current level with
                 shape (N, num_classes, H, W).
-            br_heat (Tensor): Bottom-right corner heatmap for current level with
-                shape (N, num_classes, H, W).
+            br_heat (Tensor): Bottom-right corner heatmap for current level
+                with shape (N, num_classes, H, W).
             tl_emb (Tensor): Top-left corner embedding for current level with
                 shape (N, corner_emb_channels, H, W).
             br_emb (Tensor): Bottom-right corner embedding for current level
@@ -604,7 +615,6 @@ class CornerHead(nn.Module):
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
         """
-            
         if isinstance(img_meta, (list, tuple)):
             img_meta = img_meta[0]
 
