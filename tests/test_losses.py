@@ -43,26 +43,26 @@ def test_accuracy():
                          [0.9, 0.0, 0.0, 0.1], [0.4, 0.7, 0.1, 0.1],
                          [0.0, 0.0, 0.99, 0]])
     # test for top1
-    true_label = torch.Tensor([2, 3, 0, 1, 2])
+    true_label = torch.Tensor([2, 3, 0, 1, 2]).long()
     accuracy = Accuracy(topk=1)
     acc = accuracy(pred, true_label)
     assert acc.item() == 100
 
     # test for top1 with score thresh=0.8
-    true_label = torch.Tensor([2, 3, 0, 1, 2])
+    true_label = torch.Tensor([2, 3, 0, 1, 2]).long()
     accuracy = Accuracy(topk=1, thresh=0.8)
     acc = accuracy(pred, true_label)
     assert acc.item() == 40
 
     # test for top2
     accuracy = Accuracy(topk=2)
-    label = torch.Tensor([3, 2, 0, 0, 2])
+    label = torch.Tensor([3, 2, 0, 0, 2]).long()
     acc = accuracy(pred, label)
     assert acc.item() == 100
 
     # test for both top1 and top2
     accuracy = Accuracy(topk=(1, 2))
-    true_label = torch.Tensor([2, 3, 0, 1, 2])
+    true_label = torch.Tensor([2, 3, 0, 1, 2]).long()
     acc = accuracy(pred, true_label)
     for a in acc:
         assert a.item() == 100
@@ -79,7 +79,7 @@ def test_accuracy():
 
     # label size is larger than required
     with pytest.raises(AssertionError):
-        label = torch.Tensor([2, 3, 0, 1, 2, 0])  # size mismatch
+        label = torch.Tensor([2, 3, 0, 1, 2, 0]).long()  # size mismatch
         accuracy = Accuracy()
         accuracy(pred, label)
 
