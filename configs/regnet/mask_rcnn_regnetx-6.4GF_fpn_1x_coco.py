@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_regnetx-3GF_fpn_1x_coco.py'
+_base_ = './mask_rcnn_regnetx-3.2GF_fpn_1x_coco.py'
 model = dict(
     pretrained='open-mmlab://regnetx_6.4gf',
     backbone=dict(
