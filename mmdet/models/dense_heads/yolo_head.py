@@ -19,8 +19,37 @@ _EPSILON = 1e-6
 class YOLOV3Head(BaseDenseHead):
     """
     YOLOV3Head
-
     Add a few more conv layers and generate the output.
+
+    Args:
+        num_classes (int): The number of object classes (w/o background)
+        num_scales (int): The number of scales / stages.
+        num_anchors_per_scale (int): The number of anchors per scale.
+            The official implementation uses 3.
+        in_channels (List[int]): Number of input channels per scale.
+        out_channels (List[int]): The number of output channels per scale
+            before the final 1x1 layer.
+        strides (List[int]): The stride of each scale.
+            Should be in descending order.
+        anchor_base_sizes (List[List[int]]): The sizes of anchors.
+            The official implementation uses
+                [[(116, 90), (156, 198), (373, 326)],
+                [( 30, 61), ( 62,  45), ( 59, 119)],
+                [( 10, 13), ( 16,  30), ( 33,  23)]]
+        ignore_thresh (float): Set negative samples if gt-anchor iou
+            is smaller than ignore_thresh. Default: 0.5
+        one_hot_smoother (float): Set a non-zero value to enable label-smooth
+            Default: 0.
+        xy_use_logit (bool): Whether to enable log scale regression
+            Default: False
+        balance_conf (bool): Whether to balance the confidence when calculating
+            loss. Default: False
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict): Config dict for activation layer.
+            Default: dict(type='LeakyReLU', negative_slope=0.1).
+        train_cfg (dict): Training config of YOLOV3 head. Default: None.
+        test_cfg (dict): Testing config of YOLOV3 head. Default: None.
     """
 
     def __init__(self,
@@ -35,6 +64,8 @@ class YOLOV3Head(BaseDenseHead):
                  one_hot_smoother=0.,
                  xy_use_logit=False,
                  balance_conf=False,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
                  train_cfg=None,
                  test_cfg=None):
         super(YOLOV3Head, self).__init__()
@@ -62,18 +93,13 @@ class YOLOV3Head(BaseDenseHead):
         self.num_attrib = self.num_classes + 5
         self.last_layer_dim = self.num_anchors_per_scale * self.num_attrib
 
+        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
         self.convs_bridge = nn.ModuleList()
         self.convs_final = nn.ModuleList()
         for i_scale in range(self.num_scales):
             in_c = self.in_channels[i_scale]
             out_c = self.out_channels[i_scale]
-            conv_bridge = ConvModule(
-                in_c,
-                out_c,
-                3,
-                padding=1,
-                norm_cfg=dict(type='BN', requires_grad=True),
-                act_cfg=dict(type='LeakyReLU', negative_slope=0.1))
+            conv_bridge = ConvModule(in_c, out_c, 3, padding=1, **cfg)
             conv_final = nn.Conv2d(out_c, self.last_layer_dim, 1, bias=True)
 
             self.convs_bridge.append(conv_bridge)
