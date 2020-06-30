@@ -12,15 +12,13 @@ class AutoAugment(object):
 
     This data augmentation is proposed in
     `Learning Data Augmentation Strategies for Object Detection <https://arxiv.org/pdf/1906.11172>`_  # noqa: E501
-    Required key is "img", and optional keys are "gt_bboxes", "gt_masks",
-    "gt_semantic_seg".
 
     Args:
         policies (list[list[dict]]): The policies of auto augmentation. Each
-            element in policies is a specifically augmentation policy, and is
-            composed by several augmentations (dict). When call AutoAugment, a
-            random element in policies will be selected to augment the image.
-            Defaults: None.
+            policy in ``policies`` is a specific augmentation policy, and is
+            composed by several augmentations (dict). When AutoAugment is
+            called, a random policy in ``policies`` will be selected to
+            augment images.
 
     Examples:
         >>> replace = (104, 116, 124)
@@ -52,27 +50,21 @@ class AutoAugment(object):
 
     def __init__(self, policies):
         assert isinstance(policies, list) and len(policies) > 0, \
-            'The type and length of policies must be list and more than 0, ' \
-            'respectively.'
+            'Policies must be a non-empty list.'
         for policy in policies:
             assert isinstance(policy, list) and len(policy) > 0, \
-                'The type and length of each element in policies must be' \
-                'list and more than 0, respectively.'
+                'Each policy in policies must be a non-empty list.'
             for augment in policy:
                 assert isinstance(augment, dict) and 'type' in augment, \
-                    'The type of each specifically augmentation must be' \
-                    'dict and contain the key of "type".'
+                    'Each specifically augmentation must be a dict with key' \
+                    ' "type".'
 
         self.policies = copy.deepcopy(policies)
-        transforms = []
-        for policy in self.policies:
-            transforms.append(Compose(policy))
-        self.transforms = transforms
+        self.transforms = [Compose(policy) for policy in self.policies]
 
     def __call__(self, results):
         transform = np.random.choice(self.transforms)
         return transform(results)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}' \
-            f'(policies={self.policies}'
+        return f'{self.__class__.__name__}(policies={self.policies}'
