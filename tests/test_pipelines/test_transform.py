@@ -4,6 +4,7 @@ import os.path as osp
 import mmcv
 import numpy as np
 import pytest
+import torch
 from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -33,6 +34,19 @@ def test_resize():
             keep_ratio=True,
             multiscale_mode='2333')
         build_from_cfg(transform, PIPELINES)
+
+    # test assertion if both scale and scale_factor are setted
+    with pytest.raises(AssertionError):
+        results = dict(
+            img_prefix=osp.join(osp.dirname(__file__), '../data'),
+            img_info=dict(filename='color.jpg'))
+        load = dict(type='LoadImageFromFile', with_default_meta_keys=True)
+        load = build_from_cfg(load, PIPELINES)
+        transform = dict(type='Resize', img_scale=(1333, 800), keep_ratio=True)
+        transform = build_from_cfg(transform, PIPELINES)
+        results = load(results)
+        results['scale'] = (1333, 800)
+        results = transform(results)
 
     transform = dict(type='Resize', img_scale=(1333, 800), keep_ratio=True)
     resize_module = build_from_cfg(transform, PIPELINES)
@@ -474,6 +488,19 @@ def test_multi_scale_flip_aug():
             transforms=[dict(type='Resize')])
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion if both scale and scale_factor are setted
+    with pytest.raises(AssertionError):
+        results = dict(
+            img_prefix=osp.join(osp.dirname(__file__), '../data'),
+            img_info=dict(filename='color.jpg'))
+        load, transform = mmcv.Config.fromfile(
+            'configs/_base_/datasets/coco_detection.py').test_pipeline
+        load['with_default_meta_keys'] = True  # set default meta keys
+        load = build_from_cfg(load, PIPELINES)
+        transform = build_from_cfg(transform, PIPELINES)
+        results = load(results)
+        results = transform(results)
+
     scale_transform = dict(
         type='MultiScaleFlipAug',
         img_scale=[(1333, 800), (1333, 640)],
@@ -510,3 +537,23 @@ def test_multi_scale_flip_aug():
     assert scale_factor_results['img_shape'][1] == (288, 512, 3)
     assert scale_factor_results['img'][2].shape == (345, 614, 3)
     assert scale_factor_results['img_shape'][2] == (345, 614, 3)
+
+    # test pipeline of coco_detection
+    results = dict(
+        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_info=dict(filename='color.jpg'))
+    load_cfg, multi_scale_cfg = mmcv.Config.fromfile(
+        'configs/_base_/datasets/coco_detection.py').test_pipeline
+    load = build_from_cfg(load_cfg, PIPELINES)
+    transform = build_from_cfg(multi_scale_cfg, PIPELINES)
+    results = transform(load(results))
+    assert len(results['img']) == 1
+    assert len(results['img_metas']) == 1
+    assert isinstance(results['img'][0], torch.Tensor)
+    assert isinstance(results['img_metas'][0], mmcv.parallel.DataContainer)
+    assert results['img_metas'][0].data['ori_shape'] == (288, 512, 3)
+    assert results['img_metas'][0].data['img_shape'] == (750, 1333, 3)
+    assert results['img_metas'][0].data['pad_shape'] == (768, 1344, 3)
+    assert results['img_metas'][0].data['scale_factor'].tolist() == [
+        2.603515625, 2.6041667461395264, 2.603515625, 2.6041667461395264
+    ]
