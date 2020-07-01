@@ -6,6 +6,7 @@
 - Support new methods: [DetectoRS](https://arxiv.org/abs/2006.02334), [PointRend](https://arxiv.org/abs/1912.08193), [Generalized Focal Loss](https://arxiv.org/abs/2006.04388), [Dynamic R-CNN](https://arxiv.org/abs/2004.06002)
 
 **Bug Fixes**
+ - Fixed `scale_factor` in MultiScaleFlip TTA (#3172, #3162)
  - Clean up deprecated usage of `register_module()` (#3092, #3161)
  - Fix pretrain bug in NAS FCOS (#3145)
  - Fix `num_classes` in SSD (#3142)
