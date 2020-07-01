@@ -40,12 +40,13 @@ def test_resize():
         results = dict(
             img_prefix=osp.join(osp.dirname(__file__), '../data'),
             img_info=dict(filename='color.jpg'))
-        load = dict(type='LoadImageFromFile', with_default_meta_keys=True)
+        load = dict(type='LoadImageFromFile')
         load = build_from_cfg(load, PIPELINES)
         transform = dict(type='Resize', img_scale=(1333, 800), keep_ratio=True)
         transform = build_from_cfg(transform, PIPELINES)
         results = load(results)
         results['scale'] = (1333, 800)
+        results['scale_factor'] = 1.0
         results = transform(results)
 
     transform = dict(type='Resize', img_scale=(1333, 800), keep_ratio=True)
@@ -487,19 +488,6 @@ def test_multi_scale_flip_aug():
             flip_direction=1,
             transforms=[dict(type='Resize')])
         build_from_cfg(transform, PIPELINES)
-
-    # test assertion if both scale and scale_factor are setted
-    with pytest.raises(AssertionError):
-        results = dict(
-            img_prefix=osp.join(osp.dirname(__file__), '../data'),
-            img_info=dict(filename='color.jpg'))
-        load, transform = mmcv.Config.fromfile(
-            'configs/_base_/datasets/coco_detection.py').test_pipeline
-        load['with_default_meta_keys'] = True  # set default meta keys
-        load = build_from_cfg(load, PIPELINES)
-        transform = build_from_cfg(transform, PIPELINES)
-        results = load(results)
-        results = transform(results)
 
     scale_transform = dict(
         type='MultiScaleFlipAug',
