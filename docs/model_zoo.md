@@ -138,6 +138,12 @@ Please refer to [Dynamic R-CNN](https://github.com/open-mmlab/mmdetection/blob/m
 ### PointRend
 Please refer to [PointRend](https://github.com/open-mmlab/mmdetection/blob/master/configs/point_rend) for details.
 
+### DetectoRS
+Please refer to [DetectoRS](https://github.com/open-mmlab/mmdetection/blob/master/configs/detectors) for details.
+
+### Generalized Focal Loss
+Please refer to [Generalized Focal Loss](https://github.com/open-mmlab/mmdetection/blob/master/configs/gfl) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).

@@ -10,7 +10,7 @@ from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class PointRendRoIHead(StandardRoIHead):
     """`PointRend <https://arxiv.org/abs/1912.08193>`_.
     """
