@@ -163,6 +163,7 @@ def main():
         publish_model_infos.append(model)
 
     models = dict(models=publish_model_infos)
+    print(f'Totally gathered {len(publish_model_infos)} models')
     mmcv.dump(models, osp.join(models_out, 'model_info.json'))
 
 
