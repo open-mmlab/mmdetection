@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule, normal_init
 
 from mmdet.core import multi_apply, multiclass_nms
 from mmdet.ops import DeformConv
-from ..builder import HEADS, build_loss
-from .base_dense_head import BaseDenseHead
+from ..builder import HEADS
+from .anchor_free_head import AnchorFreeHead
 
 INF = 1e8
 
@@ -40,7 +40,7 @@ class FeatureAlign(nn.Module):
 
 
 @HEADS.register_module()
-class FoveaHead(BaseDenseHead):
+class FoveaHead(AnchorFreeHead):
     """FoveaBox: Beyond Anchor-based Object Detector
     https://arxiv.org/abs/1904.03797
     """
@@ -48,81 +48,32 @@ class FoveaHead(BaseDenseHead):
     def __init__(self,
                  num_classes,
                  in_channels,
-                 feat_channels=256,
-                 stacked_convs=4,
-                 strides=(4, 8, 16, 32, 64),
                  base_edge_list=(16, 32, 64, 128, 256),
                  scale_ranges=((8, 32), (16, 64), (32, 128), (64, 256), (128,
                                                                          512)),
                  sigma=0.4,
                  with_deform=False,
                  deformable_groups=4,
-                 background_label=None,
-                 loss_cls=None,
-                 loss_bbox=None,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 train_cfg=None,
-                 test_cfg=None):
-        super(FoveaHead, self).__init__()
-        self.num_classes = num_classes
-        self.cls_out_channels = num_classes
-        self.in_channels = in_channels
-        self.feat_channels = feat_channels
-        self.stacked_convs = stacked_convs
-        self.strides = strides
+                 **kwargs):
         self.base_edge_list = base_edge_list
         self.scale_ranges = scale_ranges
         self.sigma = sigma
         self.with_deform = with_deform
         self.deformable_groups = deformable_groups
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox = build_loss(loss_bbox)
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-        self._init_layers()
+        super().__init__(num_classes, in_channels, **kwargs)
 
     def _init_layers(self):
-        self.cls_convs = nn.ModuleList()
-        self.reg_convs = nn.ModuleList()
         # box branch
-        for i in range(self.stacked_convs):
-            chn = self.in_channels if i == 0 else self.feat_channels
-            self.reg_convs.append(
-                ConvModule(
-                    chn,
-                    self.feat_channels,
-                    3,
-                    stride=1,
-                    padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
-        self.fovea_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
+        super()._init_reg_convs()
+        self.conv_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
+
         # cls branch
         if not self.with_deform:
-            for i in range(self.stacked_convs):
-                chn = self.in_channels if i == 0 else self.feat_channels
-                self.cls_convs.append(
-                    ConvModule(
-                        chn,
-                        self.feat_channels,
-                        3,
-                        stride=1,
-                        padding=1,
-                        conv_cfg=self.conv_cfg,
-                        norm_cfg=self.norm_cfg,
-                        bias=self.norm_cfg is None))
-            self.fovea_cls = nn.Conv2d(
+            super()._init_cls_convs()
+            self.conv_cls = nn.Conv2d(
                 self.feat_channels, self.cls_out_channels, 3, padding=1)
         else:
+            self.cls_convs = nn.ModuleList()
             self.cls_convs.append(
                 ConvModule(
                     self.feat_channels, (self.feat_channels * 4),
@@ -145,52 +96,33 @@ class FoveaHead(BaseDenseHead):
                 self.feat_channels,
                 kernel_size=3,
                 deformable_groups=self.deformable_groups)
-            self.fovea_cls = nn.Conv2d(
+            self.conv_cls = nn.Conv2d(
                 int(self.feat_channels * 4),
                 self.cls_out_channels,
                 3,
                 padding=1)
 
     def init_weights(self):
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.fovea_cls, std=0.01, bias=bias_cls)
-        normal_init(self.fovea_reg, std=0.01)
+        super().init_weights()
         if self.with_deform:
             self.feature_adaption.init_weights()
-
-    def forward(self, feats):
-        return multi_apply(self.forward_single, feats)
 
     def forward_single(self, x):
         cls_feat = x
         reg_feat = x
         for reg_layer in self.reg_convs:
             reg_feat = reg_layer(reg_feat)
-        bbox_pred = self.fovea_reg(reg_feat)
+        bbox_pred = self.conv_reg(reg_feat)
         if self.with_deform:
             cls_feat = self.feature_adaption(cls_feat, bbox_pred.exp())
         for cls_layer in self.cls_convs:
             cls_feat = cls_layer(cls_feat)
-        cls_score = self.fovea_cls(cls_feat)
+        cls_score = self.conv_cls(cls_feat)
         return cls_score, bbox_pred
 
-    def get_points(self, featmap_sizes, dtype, device, flatten=False):
-        points = []
-        for featmap_size in featmap_sizes:
-            x_range = torch.arange(
-                featmap_size[1], dtype=dtype, device=device) + 0.5
-            y_range = torch.arange(
-                featmap_size[0], dtype=dtype, device=device) + 0.5
-            y, x = torch.meshgrid(y_range, x_range)
-            if flatten:
-                points.append((y.flatten(), x.flatten()))
-            else:
-                points.append((y, x))
-        return points
+    def _get_points_single(self, *args, **kwargs):
+        y, x = super()._get_points_single(*args, **kwargs)
+        return y + 0.5, x + 0.5
 
     def loss(self,
              cls_scores,

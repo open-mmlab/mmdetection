@@ -1,7 +1,7 @@
 _base_ = 'fcos_r50_caffe_fpn_gn-head_4x4_1x_coco.py'
 
 model = dict(
-    pretrained='open-mmlab://resnet50_caffe_bgr',
+    pretrained='open-mmlab://detectron2/resnet50_caffe',
     backbone=dict(
         dcn=dict(type='DCNv2', deformable_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)),
