@@ -61,7 +61,7 @@
 | :-------------: | :-----: | :-----: | :------: | :-------------:|:------:| :------:|:--------:|
 |   HRNetV2p-W18  | pytorch |   20e   |          | 8.5            |        |         |  |
 |   HRNetV2p-W32  | pytorch |   20e   |          | 8.3            |44.3    |38.6     |  [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_coco/cascade_mask_rcnn_hrnetv2p_w32_20e_coco_20200512_154043-39d9cf7b.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_coco/cascade_mask_rcnn_hrnetv2p_w32_20e_coco_20200512_154043.log.json)  |
-|   HRNetV2p-W40  | pytorch |   20e   |          |                |        |         |  |
+|   HRNetV2p-W40  | pytorch |   20e   | 12.5     |                |45.1    |39.3     |  |
 
 ### Hybrid Task Cascade (HTC)
 
@@ -69,7 +69,7 @@
 | :-------------: | :-----: | :-----: | :------: | :-------------:|:------:| :------:|:--------:|
 |   HRNetV2p-W18  | pytorch |   20e   | 10.8     | 4.7            | 42.8   | 37.9    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w18_20e_coco/htc_hrnetv2p_w18_20e_coco_20200210-b266988c.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w18_20e_coco/htc_hrnetv2p_w18_20e_coco_20200210_182735.log.json) |
 |   HRNetV2p-W32  | pytorch |   20e   | 13.1     | 4.9            | 45.4   | 39.9    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w32_20e_coco/htc_hrnetv2p_w32_20e_coco_20200207-7639fa12.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w32_20e_coco/htc_hrnetv2p_w32_20e_coco_20200207_193153.log.json) |
-|   HRNetV2p-W48  | pytorch |   20e   |          |                |        |         |  |
+|   HRNetV2p-W40  | pytorch |   20e   | 14.6     |                | 46.4   | 40.8    |  |
 
 
 ### FCOS
