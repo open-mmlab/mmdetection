@@ -26,22 +26,16 @@ class LoadImageFromFile(object):
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
-        with_default_meta_keys (bool): Set default meta keys including
-            `pad_shape`, `flip`, `scale_factor` and `img_norm_cfg`. Must
-            be True if no `Resize`, `Normalize` and `Pad` in following ops.
-            Defaults to False.
     """
 
     def __init__(self,
                  to_float32=False,
                  color_type='color',
-                 file_client_args=dict(backend='disk'),
-                 with_default_meta_keys=False):
+                 file_client_args=dict(backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
         self.file_client_args = file_client_args.copy()
         self.file_client = None
-        self.with_default_meta_keys = with_default_meta_keys
 
     def __call__(self, results):
         """Call functions to load image and get image meta information.
@@ -72,15 +66,6 @@ class LoadImageFromFile(object):
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
-        # Set initial values for default meta_keys
-        if self.with_default_meta_keys:
-            results['pad_shape'] = img.shape
-            results['scale_factor'] = 1.0
-            num_channels = 1 if len(img.shape) < 3 else img.shape[2]
-            results['img_norm_cfg'] = dict(
-                mean=np.zeros(num_channels, dtype=np.float32),
-                std=np.ones(num_channels, dtype=np.float32),
-                to_rgb=False)
         results['img_fields'] = ['img']
         return results
 
