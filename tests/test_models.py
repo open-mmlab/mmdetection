@@ -134,7 +134,7 @@ class PublicModelsTestCase(unittest.TestCase):
         with open(log_file, 'w') as log_f:
             error = None
             try:
-                run(f'/home/paul/programs/intel/l_openvino_toolkit_p_2020.4.254/openvino/bin/setupvars.sh -pyver 3.6 && '
+                run(f'/opt/intel/openvino/bin/setupvars.sh && '
                     f'python tools/export.py '
                     f'{target_config_path} '
                     f'{snapshot} '
@@ -147,7 +147,7 @@ class PublicModelsTestCase(unittest.TestCase):
                 raise RuntimeError(error)
 
             try:
-                run(f'/home/paul/programs/intel/l_openvino_toolkit_p_2020.4.254/openvino/bin/setupvars.sh -pyver 3.6 && '
+                run(f'/opt/intel/openvino/bin/setupvars.sh && '
                     f'python tools/test_exported.py '
                     f'{target_config_path} '
                     f'{osp.join(test_dir, "config.xml")} '
