@@ -15,7 +15,7 @@
 import argparse
 import os.path as osp
 import sys
-from subprocess import call, check_call, CalledProcessError, DEVNULL
+from subprocess import run, check_call, CalledProcessError, DEVNULL
 
 import mmcv
 import numpy as np
@@ -127,14 +127,14 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
         command_line += ' --reverse_input_channels'
 
     try:
-        check_call('mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True)
+        run('mo.py -h', stdout=DEVNULL, stderr=DEVNULL, shell=True, check=True)
     except CalledProcessError as ex:
         print('OpenVINO Model Optimizer not found, please source '
               'openvino/bin/setupvars.sh before running this script.')
         return
 
     print(command_line)
-    call(command_line, shell=True)
+    run(command_line, shell=True, check=True)
 
 
 def stub_anchor_generator(model, anchor_head_name):
