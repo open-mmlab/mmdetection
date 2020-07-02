@@ -75,6 +75,19 @@ class TracerStub(nn.Module):
             return [x, ]
         return x
 
+    def compose_python_stub(self, actual_outputs):
+        
+        class StubFunction(torch.autograd.Function):
+            @staticmethod
+            def forward(ctx, *args):
+                return actual_outputs[0]
+            
+            @staticmethod
+            def symbolic(g, *args):
+                return self.symbolic(g, *args)
+
+        return StubFunction.apply
+
     def forward(self, *args, **kwargs):
         op = self.get_op()
         flat_args = self._flatten(args)
@@ -86,22 +99,25 @@ class TracerStub(nn.Module):
             devices = list(actual_output.device for actual_output in actual_outputs)
 
             if op is None or self.force_rebuild:
-                # Generate C++ stub code.
-                stub_op_source_template = \
-                    self.compose_stub_code(flat_args, self.num_outputs, actual_outputs)
-                if self.verbose:
-                    print(stub_op_source_template)
+                if self.num_outputs == 1:
+                    op = self.compose_python_stub(actual_outputs)
+                else:
+                    # Generate C++ stub code.
+                    stub_op_source_template = \
+                        self.compose_stub_code(flat_args, self.num_outputs, actual_outputs)
+                    if self.verbose:
+                        print(stub_op_source_template)
 
-                # Compile and register stub.
-                torch.utils.cpp_extension.load_inline(
-                    name=next(tempfile._get_candidate_names()),
-                    cpp_sources=stub_op_source_template,
-                    is_python_module=False,
-                    verbose=self.verbose,
-                )
+                    # Compile and register stub.
+                    torch.utils.cpp_extension.load_inline(
+                        name=next(tempfile._get_candidate_names()),
+                        cpp_sources=stub_op_source_template,
+                        is_python_module=False,
+                        verbose=self.verbose,
+                    )
 
-                # Get just loaded operation.
-                op = self.get_op()
+                    # Get just loaded operation.
+                    op = self.get_op()
 
             # kwargs are not forwarded to a stub call.
             # Save those as stubs' parameters to make them available for symbolic.
