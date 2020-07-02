@@ -165,7 +165,18 @@ def main(args):
         results.append(result)
 
         if args.show:
-            display_image = np.transpose(im_data[0], (1, 2, 0)).astype(np.uint8)
+            img_meta = data['img_metas'][0].data[0][0]
+
+            norm_cfg = img_meta['img_norm_cfg']
+            mean = np.array(norm_cfg['mean'], dtype=np.float32)
+            std = np.array(norm_cfg['std'], dtype=np.float32)
+            display_image = im_data[0].transpose(1, 2, 0)
+            display_image = mmcv.imdenormalize(display_image, mean, std, to_bgr=norm_cfg['to_rgb']).astype(np.uint8)
+            display_image = np.ascontiguousarray(display_image)
+
+            h, w, _ = img_meta['img_shape']
+            display_image = display_image[:h, :w, :]
+            
             model.show(display_image, result, score_thr=args.score_thr, wait_time=wait_key)
 
         batch_size = data['img'][0].size(0)
