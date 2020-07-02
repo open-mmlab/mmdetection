@@ -10,8 +10,8 @@ def accuracy(pred, target, topk=1, thresh=None):
         topk (int | tuple[int], optional): If the predictions in ``topk``
             matches the target, the predictions will be regarded as
             correct ones. Defaults to 1.
-        thresh (float, optional): If not None, threshold for pred with scores
-            under this value being incorrect. Default to None.
+        thresh (float, optional): If not None, predictions with scores under
+            this threshold are considered incorrect. Default to None.
 
     Returns:
         float | tuple[float]: If the input ``topk`` is a single integer,
