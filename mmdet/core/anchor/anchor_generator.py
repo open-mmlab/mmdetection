@@ -251,8 +251,8 @@ class AnchorGenerator(object):
         valid_y[:valid_h] = 1
         valid_xx, valid_yy = meshgrid(valid_x, valid_y)
         valid = valid_xx & valid_yy
-        valid = valid.view(-1, 1).expand(valid.size(0),
-                                         num_base_anchors).contiguous().view(-1)
+        valid = valid.view(-1, 1)
+        valid = valid.expand(valid.size(0), num_base_anchors).contiguous().view(-1)
         return valid
 
     def __repr__(self):
