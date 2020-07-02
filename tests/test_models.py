@@ -85,7 +85,7 @@ class PublicModelsTestCase(unittest.TestCase):
         with open(target_config_path, 'wt') as config_file:
             config_file.write(cfg.pretty_text)
         if not self.test_on_full:
-        replace_text_in_file(target_config_path, 'keep_ratio=True', 'keep_ratio=False')
+            replace_text_in_file(target_config_path, 'keep_ratio=True', 'keep_ratio=False')
         return log_file, target_config_path
 
     def postrun(self, log_file, expected_output_file, metrics, thr):
