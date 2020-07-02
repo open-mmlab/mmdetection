@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 
 from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
-from mmdet.core.utils.misc import topk
+from mmdet.core.utils.misc import topk, meshgrid
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 
@@ -399,7 +399,7 @@ class FCOSHead(BaseDenseHead):
             0, w * stride, stride, dtype=dtype, device=device)
         y_range = torch.arange(
             0, h * stride, stride, dtype=dtype, device=device)
-        y, x = torch.meshgrid(y_range, x_range)
+        y, x = meshgrid(y_range, x_range)
         points = torch.stack(
             (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
         return points
