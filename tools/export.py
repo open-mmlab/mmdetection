@@ -44,6 +44,10 @@ def export_to_onnx(model,
                    alt_ssd_export=False):
     register_extra_symbolics(opset)
 
+    kwargs = {}
+    if torch.__version__ >= '1.5':
+        kwargs['enable_onnx_checker'] = False
+
     if alt_ssd_export:
         assert isinstance(model, detectors.SingleStageDetector)
         
@@ -52,6 +56,7 @@ def export_to_onnx(model,
         model.forward_export = forward_export_detector.__get__(model)
         model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
         model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
+        
         model.onnx_export(img=data['img'][0],
                           img_metas=data['img_metas'][0],
                           export_name=export_name,
@@ -60,7 +65,9 @@ def export_to_onnx(model,
                           strip_doc_string=strip_doc_string,
                           operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
                           input_names=['image'],
-                          output_names=['detection_out'])
+                          output_names=['detection_out'],
+                          keep_initializers_as_inputs=True,
+                          **kwargs)
     else:
         output_names = ['boxes', 'labels']
         dynamic_axes = {
@@ -83,7 +90,10 @@ def export_to_onnx(model,
                 operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
                 input_names=['image'],
                 output_names=output_names,
-                dynamic_axes=dynamic_axes)
+                dynamic_axes=dynamic_axes,
+                keep_initializers_as_inputs=True,
+                **kwargs
+                )
 
 
 def check_onnx_model(export_name):
@@ -188,6 +198,24 @@ def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
     return data
 
 
+def optimize_onnx_graph(onnx_model_path):
+    onnx_model = onnx.load(onnx_model_path)
+
+    onnx_model = onnx.optimizer.optimize(onnx_model, ['extract_constant_to_initializer',
+                                                      'eliminate_unused_initializer'])
+
+    inputs = onnx_model.graph.input
+    name_to_input = {}
+    for input in inputs:
+        name_to_input[input.name] = input
+
+    for initializer in onnx_model.graph.initializer:
+        if initializer.name in name_to_input:
+            inputs.remove(name_to_input[initializer.name])
+
+    onnx.save(onnx_model, onnx_model_path)
+
+
 def main(args):
     torch.set_default_tensor_type(torch.FloatTensor)
     model = init_detector(args.config, args.checkpoint, device='cpu')
@@ -214,15 +242,18 @@ def main(args):
         add_node_names(onnx_model_path)
         print(f'ONNX model has been saved to "{onnx_model_path}"')
 
+    optimize_onnx_graph(onnx_model_path)
+
     if args.target == 'openvino':
         input_shape = list(fake_data['img'][0].shape)
         if args.input_shape:
             input_shape = [1, 3, *args.input_shape]
         export_to_openvino(cfg, onnx_model_path, args.output_dir, input_shape)
     else:
-        # Model check raises a Segmentation Fault in the latest (1.6.0, 1.7.0) versions of onnx package.
-        # check_onnx_model(onnx_model_path)
         pass
+        # Model check raises a Segmentation Fault in the latest (1.6.0, 1.7.0) versions of onnx package.
+        # Even for a valid graph.
+        # check_onnx_model(onnx_model_path)
 
 
 def parse_args():
