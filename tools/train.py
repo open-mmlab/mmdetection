@@ -62,6 +62,33 @@ def parse_args():
     return args
 
 
+def determine_max_batch_size(model, cfg, min_bs=2, max_bs=512, step=2):
+    cuda_model = model.cuda()
+
+    img_shape = list([t for t in cfg.data.train.dataset.pipeline if t['type'] == 'Resize'][0]['img_scale'])
+    channels = 3
+
+    batch_size = min_bs
+    for bs in range(min_bs, max_bs, step):
+        try:
+            gt_boxes = [torch.tensor([]).cuda() for _ in range(bs)]
+            gt_labels = [[] for _ in range(bs)]
+            img_metas = [{'img_shape': img_shape + [channels], 'pad_shape': img_shape + [channels]} for _ in
+                         range(bs)]
+
+            cuda_model.forward(torch.rand(bs, channels, *img_shape).cuda(), img_metas=img_metas,
+                               gt_bboxes=gt_boxes, gt_labels=gt_labels)
+            batch_size = bs
+        except RuntimeError as e:
+            if str(e).startswith('CUDA out of memory'):
+                break
+
+            raise e
+
+    print('Automatically selected batch size is', batch_size)
+    return batch_size
+
+
 def main():
     args = parse_args()
 
@@ -132,6 +159,10 @@ def main():
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+
+    if cfg.data.samples_per_gpu == 'auto':
+        cfg.data.samples_per_gpu = determine_max_batch_size(model, cfg)
+        cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
 
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
