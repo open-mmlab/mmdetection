@@ -237,6 +237,11 @@ class YOLOV3Head(BaseDenseHead):
         if rescale:
             multi_lvl_bboxes /= multi_lvl_bboxes.new_tensor(scale_factor)
 
+        padding = multi_lvl_cls_scores.new_zeros(multi_lvl_cls_scores.shape[0],
+                                                 1)
+        multi_lvl_cls_scores = torch.cat([multi_lvl_cls_scores, padding],
+                                         dim=1)
+
         det_bboxes, det_labels = multiclass_nms(
             multi_lvl_bboxes,
             multi_lvl_cls_scores,
