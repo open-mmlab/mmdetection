@@ -259,7 +259,7 @@ class Resize(object):
                 self._random_scale(results)
         else:
             assert 'scale_factor' not in results, (
-                "scale and scale_factor cannot be both set.")
+                'scale and scale_factor cannot be both set.')
 
         self._resize_img(results)
         self._resize_bboxes(results)
@@ -391,7 +391,8 @@ class Pad(object):
         """Pad images according to ``self.size``."""
         for key in results.get('img_fields', ['img']):
             if self.size is not None:
-                padded_img = mmcv.impad(results[key], self.size, self.pad_val)
+                padded_img = mmcv.impad(
+                    results[key], shape=self.size, pad_val=self.pad_val)
             elif self.size_divisor is not None:
                 padded_img = mmcv.impad_to_multiple(
                     results[key], self.size_divisor, pad_val=self.pad_val)
@@ -410,7 +411,8 @@ class Pad(object):
         """Pad semantic segmentation map according to
         ``results['pad_shape']``."""
         for key in results.get('seg_fields', []):
-            results[key] = mmcv.impad(results[key], results['pad_shape'][:2])
+            results[key] = mmcv.impad(
+                results[key], shape=results['pad_shape'][:2])
 
     def __call__(self, results):
         """Call function to pad images, masks, semantic segmentation maps.
