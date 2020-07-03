@@ -6,6 +6,7 @@ from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
                         force_fp32, images_to_levels, multi_apply,
                         multiclass_nms, unmap)
+from mmdet.core.utils.misc import topk
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -310,9 +311,9 @@ class ATSSHead(AnchorHead):
             centerness = centerness.permute(1, 2, 0).reshape(-1).sigmoid()
 
             nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+            if nms_pre > 0:
                 max_scores, _ = (scores * centerness[:, None]).max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
+                _, topk_inds = topk(max_scores, nms_pre)
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]

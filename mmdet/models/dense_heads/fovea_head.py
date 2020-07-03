@@ -185,7 +185,10 @@ class FoveaHead(BaseDenseHead):
         for featmap_size in featmap_sizes:
             x_range = arange(0, featmap_size[1], dtype=dtype, device=device) + 0.5
             y_range = arange(0, featmap_size[0], dtype=dtype, device=device) + 0.5
-            x, y = meshgrid(x_range, y_range, flatten=flatten)
+            y, x = meshgrid(y_range, x_range)
+            if flatten:
+                y = y.reshape(-1)
+                x = x.reshape(-1)
             points.append((y, x))
         return points
 

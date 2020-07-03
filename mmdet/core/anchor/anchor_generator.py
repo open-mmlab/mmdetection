@@ -164,14 +164,6 @@ class AnchorGenerator(object):
 
         return base_anchors
 
-    def _meshgrid(self, x, y, row_major=True):
-        xx = x.repeat(len(y))
-        yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
-        if row_major:
-            return xx, yy
-        else:
-            return yy, xx
-
     def grid_anchors(self, featmap_sizes, device='cuda'):
         """Generate grid anchors in multiple feature levels
 
@@ -206,14 +198,13 @@ class AnchorGenerator(object):
         feat_h, feat_w = featmap_size
         shift_x = torch.arange(0, feat_w, device=device) * stride[0]
         shift_y = torch.arange(0, feat_h, device=device) * stride[1]
-        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
-        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
+        shift_yy, shift_xx = meshgrid(shift_y, shift_x)
+        shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1).view(-1, 1, 4)
         shifts = shifts.type_as(base_anchors)
         # first feat_w elements correspond to the first row of shifts
         # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
         # shifted anchors (K, A, 4), reshape to (K*A, 4)
-
-        all_anchors = base_anchors[None, :, :] + shifts[:, None, :]
+        all_anchors = base_anchors[None, :, :] + shifts
         all_anchors = all_anchors.view(-1, 4)
         # first A rows correspond to A anchors of (0, 0) in feature map,
         # then (0, 1), (0, 2), ...
@@ -260,8 +251,8 @@ class AnchorGenerator(object):
         valid_y[:valid_h] = 1
         valid_xx, valid_yy = meshgrid(valid_x, valid_y)
         valid = valid_xx & valid_yy
-        valid = valid[:, None].expand(valid.size(0),
-                                      num_base_anchors).contiguous().view(-1)
+        valid = valid.view(-1, 1)
+        valid = valid.expand(valid.size(0), num_base_anchors).contiguous().view(-1)
         return valid
 
     def __repr__(self):

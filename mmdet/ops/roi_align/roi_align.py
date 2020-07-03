@@ -1,9 +1,10 @@
+import torch
 import torch.nn as nn
 import torch.onnx.symbolic_helper as sym_help
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
-from torch.onnx.symbolic_opset9 import reshape
+from torch.onnx.symbolic_opset9 import reshape, sub
 from torch.onnx.symbolic_opset10 import _slice
 
 from . import roi_align_ext
@@ -84,6 +85,10 @@ class RoIAlignFunction(Function):
                 _slice(g, rois, axes=[1], starts=[0], ends=[1]),
                 to_i=sym_help.cast_pytorch_to_onnx['Long']), [-1])
         bboxes = _slice(g, rois, axes=[1], starts=[1], ends=[5])
+        if aligned:
+            scale = sym_help._maybe_get_scalar(spatial_scale)
+            offset = g.op("Constant", value_t=torch.tensor(0.5 / scale, dtype=torch.float32))
+            bboxes = sub(g, bboxes, offset)
         out_h, out_w = _pair(out_size)
         return g.op(
             'RoiAlign',
