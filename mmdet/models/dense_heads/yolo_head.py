@@ -40,7 +40,7 @@ class YOLOV3Head(BaseDenseHead):
             is smaller than ignore_thresh. Default: 0.5
         one_hot_smoother (float): Set a non-zero value to enable label-smooth
             Default: 0.
-        xy_use_logit (bool): Whether to enable log scale regression
+        xy_use_logit (bool): Use log scale regression for bbox center
             Default: False
         balance_conf (bool): Whether to balance the confidence when calculating
             loss. Default: False
@@ -145,6 +145,18 @@ class YOLOV3Head(BaseDenseHead):
 
     @staticmethod
     def _get_anchors_grid_xy(num_grid_h, num_grid_w, stride, device='cpu'):
+        """
+        Get grid offset according to the stride.
+
+        Args:
+            num_grid_h (int): The height of the grid.
+            num_grid_w (int): The width of the grid.
+            stride (int): The stride.
+            device (torch.device): The desired device of the generated grid.
+
+        Returns:
+            grid_x, grid_y: grid offset according to the stride
+        """
         grid_x = torch.arange(
             num_grid_w, dtype=torch.float,
             device=device).repeat(num_grid_h, 1)
@@ -164,25 +176,24 @@ class YOLOV3Head(BaseDenseHead):
         multi_lvl_cls_scores = []
         multi_lvl_conf_scores = []
         for i_scale in range(self.num_scales):
+            # get some key info for current scale
             result_raw = results_raw[i_scale]
             num_grid_h = result_raw.size(1)
             num_grid_w = result_raw.size(2)
+            stride = self.strides[i_scale]
 
+            # for each sacle, reshape to (n_anchors, h, w, n_classes+5)
             prediction_raw = result_raw.view(self.num_anchors_per_scale,
                                              self.num_attrib,
                                              num_grid_h, num_grid_w).permute(
                                                  0, 2, 3, 1).contiguous()
 
             # grid x y offset, with stride step included
-
-            stride = self.strides[i_scale]
-
             grid_x, grid_y = self._get_anchors_grid_xy(num_grid_h, num_grid_w,
                                                        stride,
                                                        result_raw.device)
 
             # Get outputs x, y
-
             x_center_pred = torch.sigmoid(
                 prediction_raw[..., 0]) * stride + grid_x  # Center x
             y_center_pred = torch.sigmoid(
@@ -199,34 +210,37 @@ class YOLOV3Head(BaseDenseHead):
             w_pred = torch.exp(prediction_raw[..., 2]) * anchor_w  # Width
             h_pred = torch.exp(prediction_raw[..., 3]) * anchor_h  # Height
 
-            x1_pred = x_center_pred - w_pred / 2
-            y1_pred = y_center_pred - h_pred / 2
-
-            x2_pred = x_center_pred + w_pred / 2
-            y2_pred = y_center_pred + h_pred / 2
-
-            bbox_pred = torch.stack((x1_pred, y1_pred, x2_pred, y2_pred),
-                                    dim=3).view((-1, 4))  # cxcywh
-            conf_pred = torch.sigmoid(prediction_raw[..., 4]).view(-1)  # Conf
+            # bbox_pred: convert to x1y1x2y2
+            bbox_pred = torch.stack(
+                (x_center_pred - w_pred / 2, y_center_pred - h_pred / 2,
+                 x_center_pred + w_pred / 2, y_center_pred + h_pred / 2),
+                dim=3).view((-1, 4))
+            # conf and cls
+            conf_pred = torch.sigmoid(prediction_raw[..., 4]).view(-1)
             cls_pred = torch.sigmoid(prediction_raw[..., 5:]).view(
                 -1, self.num_classes)  # Cls pred one-hot.
 
+            # Filtering out all predictions with conf < conf_thr
             conf_thr = cfg.get('conf_thr', -1)
             conf_inds = conf_pred.ge(conf_thr).nonzero().flatten()
             bbox_pred = bbox_pred[conf_inds, :]
             cls_pred = cls_pred[conf_inds, :]
             conf_pred = conf_pred[conf_inds]
 
+            # Get top-k prediction
             nms_pre = cfg.get('nms_pre', -1)
             if 0 < nms_pre < conf_pred.size(0):
                 _, topk_inds = conf_pred.topk(nms_pre)
                 bbox_pred = bbox_pred[topk_inds, :]
                 cls_pred = cls_pred[topk_inds, :]
                 conf_pred = conf_pred[topk_inds]
+
+            # Save the result of current scale
             multi_lvl_bboxes.append(bbox_pred)
             multi_lvl_cls_scores.append(cls_pred)
             multi_lvl_conf_scores.append(conf_pred)
 
+        # Merge the results of different scales together
         multi_lvl_bboxes = torch.cat(multi_lvl_bboxes)
         multi_lvl_cls_scores = torch.cat(multi_lvl_cls_scores)
         multi_lvl_conf_scores = torch.cat(multi_lvl_conf_scores)
@@ -236,6 +250,13 @@ class YOLOV3Head(BaseDenseHead):
 
         if rescale:
             multi_lvl_bboxes /= multi_lvl_bboxes.new_tensor(scale_factor)
+
+        # In mmdet 2.x, the class_id for background is num_classes.
+        # i.e., the last column.
+        padding = multi_lvl_cls_scores.new_zeros(multi_lvl_cls_scores.shape[0],
+                                                 1)
+        multi_lvl_cls_scores = torch.cat([multi_lvl_cls_scores, padding],
+                                         dim=1)
 
         det_bboxes, det_labels = multiclass_nms(
             multi_lvl_bboxes,
@@ -259,31 +280,33 @@ class YOLOV3Head(BaseDenseHead):
         for img_id in range(len(img_metas)):
             pred_raw_list = []
             anchor_grids = []
+            # For each scale of each image:
             for i_scale in range(self.num_scales):
+                # 1. get some key information
                 pred_raw = preds_raw[i_scale][img_id]
                 num_grid_h = pred_raw.size(1)
                 num_grid_w = pred_raw.size(2)
+                # 2. reshape to (n_anchors, h, w, n_classes+5)
                 pred_raw = pred_raw.view(self.num_anchors_per_scale,
                                          self.num_attrib, num_grid_h,
                                          num_grid_w).permute(0, 2, 3,
                                                              1).contiguous()
+                # 3. get the grid of the anchors
                 anchor_grid = self.get_anchors(
                     num_grid_h, num_grid_w, i_scale, device=pred_raw.device)
 
                 pred_raw_list.append(pred_raw)
                 anchor_grids.append(anchor_grid)
 
-            gt_bboxes_per_img = gt_bboxes[img_id]
-            gt_labels_per_img = gt_labels[img_id]
-
+            # Then, generate target for each image
             gt_t_across_scale, negative_mask_across_scale = \
-                self._preprocess_target_single_img(gt_bboxes_per_img,
-                                                   gt_labels_per_img,
+                self._preprocess_target_single_img(gt_bboxes[img_id],
+                                                   gt_labels[img_id],
                                                    anchor_grids,
                                                    self.ignore_thresh,
                                                    self.one_hot_smoother,
                                                    self.xy_use_logit)
-
+            # Calculate loss
             losses_per_img = self.loss_single(
                 pred_raw_list,
                 gt_t_across_scale,
@@ -314,9 +337,8 @@ class YOLOV3Head(BaseDenseHead):
             pos_and_neg_mask = neg_mask + pos_mask
             pos_mask = pos_mask.unsqueeze(dim=-1)
             if torch.max(pos_and_neg_mask) > 1.:
-                raise Warning('pos_and_neg_mask gives max of more than 1.')
+                raise Warning('There is overlap between pos and neg sample.')
                 pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
-            # ignore_mask = (1. - pos_and_neg_mask).clamp(min=0)
 
             pred_t_xy = pred_raw[..., :2]
             pred_t_wh = pred_raw[..., 2:4]
@@ -376,21 +398,10 @@ class YOLOV3Head(BaseDenseHead):
                                       one_hot_smoother=0,
                                       xy_use_logit=False):
         """Generate matching bounding box prior and converted GT."""
-        assert gt_bboxes.size(1) == 4
-        assert gt_bboxes.size(0) == gt_labels.size(0)
-        assert len(anchor_grids) == self.num_scales
-
-        # iou_to_match_across_scale is a list of 3D tensors (in uint8).
-        # each tensor has dimension of AxWxH
-        # where A is the number of anchors in this scale,
-        # W and H is the size of the grid in this scale
-        # each element of the tensor represents whether the prediction
-        # should have generate non-objectness
         negative_mask_across_scale = []
-
         gt_t_across_scale = []
 
-        for anchor_grid in anchor_grids:
+        for anchor_grid in anchor_grids:  # len(anchor_grids) == num_scales
             negative_mask_size = list(anchor_grid.size())[:-1]
             negative_mask = anchor_grid.new_ones(
                 negative_mask_size, dtype=torch.uint8)
@@ -400,8 +411,7 @@ class YOLOV3Head(BaseDenseHead):
             gt_t_across_scale.append(gt_t)
 
         for gt_bbox, gt_label in zip(gt_bboxes, gt_labels):
-
-            # convert to cxywh
+            # For each gt, convert to cxywh
             gt_cx = (gt_bbox[0] + gt_bbox[2]) / 2
             gt_cy = (gt_bbox[1] + gt_bbox[3]) / 2
             gt_w = gt_bbox[2] - gt_bbox[0]
@@ -409,50 +419,56 @@ class YOLOV3Head(BaseDenseHead):
             gt_bbox_cxywh = torch.stack((gt_cx, gt_cy, gt_w, gt_h))
 
             iou_to_match_across_scale = []
-
             grid_coord_across_scale = []
 
             for i_scale in range(self.num_scales):
+                # For each sacle of each gt:
                 stride = self.strides[i_scale]
                 anchor_grid = anchor_grids[i_scale]
+                # 1. Calculate the iou between each anchor and the gt
                 iou_gt_anchor = iou_multiple_to_one(
                     anchor_grid, gt_bbox_cxywh, center=True)
+                # 2. Neg. sample if <= ignore thresh
                 negative_mask = (iou_gt_anchor <= ignore_thresh)
+                negative_mask_across_scale[i_scale] *= negative_mask
+                # 3. Save the coord of the anchor grid that the gt is in
+                # in this sacle
                 w_grid = int(gt_cx // stride)
                 h_grid = int(gt_cy // stride)
-                iou_to_match = list(iou_gt_anchor[:, h_grid, w_grid])
-
-                # AND operation, only negative when all are negative
-                negative_mask_across_scale[i_scale] *= negative_mask
-                iou_to_match_across_scale.extend(iou_to_match)
                 grid_coord_across_scale.append((h_grid, w_grid))
 
-            itmas = iou_to_match_across_scale  # make the name shorter
+                # AND operation, only negative when all are negative
+                iou_to_match = list(iou_gt_anchor[:, h_grid, w_grid])
+                iou_to_match_across_scale.extend(iou_to_match)
+
+            # get idx of max iou across all scales & anchors for current gt
             max_match_iou_idx = max(
-                range(len(itmas)),
-                key=lambda x: itmas[x])  # get idx of max iou
+                range(len(iou_to_match_across_scale)),
+                key=lambda x: iou_to_match_across_scale[x])
+
+            # decide which scale / anchor is matched (convert back)
             match_scale = max_match_iou_idx // self.num_anchors_per_scale
             match_anchor_in_scale = max_match_iou_idx - \
                 match_scale * self.num_anchors_per_scale
+            # extract the matched piror bbox to generate the target
             match_grid_h, match_grid_w = grid_coord_across_scale[match_scale]
-
             match_anchor_w, match_anchor_h = self.anchor_base_sizes[
                 match_scale][match_anchor_in_scale]
 
-            gt_tw = torch.log((gt_w / match_anchor_w).clamp(min=_EPSILON))
-            gt_th = torch.log((gt_h / match_anchor_h).clamp(min=_EPSILON))
-
+            # Generate gt bbox for regression
+            gt_tw = torch.log((gt_w / match_anchor_w).clamp(min=_EPSILON))  # w
+            gt_th = torch.log((gt_h / match_anchor_h).clamp(min=_EPSILON))  # h
+            # bbox center
             gt_tcx = (gt_cx / self.strides[match_scale] - match_grid_w).clamp(
                 _EPSILON, 1 - _EPSILON)
             gt_tcy = (gt_cy / self.strides[match_scale] - match_grid_h).clamp(
                 _EPSILON, 1 - _EPSILON)
-
-            if xy_use_logit:
+            if xy_use_logit:  # log for bbox center
                 gt_tcx = torch.log(gt_tcx /
                                    (1. - gt_tcx))  # inverse of sigmoid
                 gt_tcy = torch.log(gt_tcy /
                                    (1. - gt_tcy))  # inverse of sigmoid
-
+            # cat cx, cy, w, h together
             gt_t_bbox = torch.stack((gt_tcx, gt_tcy, gt_tw, gt_th))
 
             # In mmdet 2.x, label “K” means background, and labels
@@ -460,8 +476,9 @@ class YOLOV3Head(BaseDenseHead):
             gt_label_one_hot = F.one_hot(
                 gt_label, num_classes=self.num_classes).float()
 
-            gt_label_one_hot = gt_label_one_hot * (
-                1 - one_hot_smoother) + one_hot_smoother / self.num_classes
+            if one_hot_smoother != 0:  # label smooth
+                gt_label_one_hot = gt_label_one_hot * (
+                    1 - one_hot_smoother) + one_hot_smoother / self.num_classes
 
             gt_t_across_scale[match_scale][match_anchor_in_scale, match_grid_h,
                                            match_grid_w, :4] = gt_t_bbox
@@ -479,6 +496,18 @@ class YOLOV3Head(BaseDenseHead):
         return gt_t_across_scale, negative_mask_across_scale
 
     def get_anchors(self, num_grid_h, num_grid_w, scale, device='cpu'):
+        """
+        Get the grid offset according to the anchors and the scale.
+
+        Args:
+            num_grid_h (int): The height of the grid.
+            num_grid_w (int): The width of the grid.
+            scale (int): The index of scale.
+            device (torch.device): The desired device of the generated grid.
+
+        Returns:
+            anchor_cxywh: The anchors in (cx, cy, w, h) format
+        """
         assert scale in range(self.num_scales)
         anchors = torch.tensor(
             self.anchor_base_sizes[scale], device=device, dtype=torch.float32)
@@ -506,6 +535,7 @@ class YOLOV3Head(BaseDenseHead):
 def iou_multiple_to_one(bboxes1, bbox2, center=False, zero_center=False):
     """
     Calculate the IOUs between bboxes1 (multiple) and bbox2 (one).
+
     Args:
         bboxes1: (Tensor) A n-D tensor representing first group of bboxes.
             The dimension is (..., 4).
@@ -516,7 +546,8 @@ def iou_multiple_to_one(bboxes1, bbox2, center=False, zero_center=False):
         center: (bool). Whether the bboxes are in format (cx, cy, w, h).
         zero_center: (bool). Whether to align two bboxes so their center
         is aligned.
-    :return
+
+    Returns:
         iou_: (Tensor) A (n-1)-D tensor representing the IOUs.
         It has one less dim than bboxes1
     """
