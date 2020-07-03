@@ -56,8 +56,8 @@ class Accuracy(nn.Module):
         Args:
             topk (tuple, optional): The criterion used to calculate the
                 accuracy. Defaults to (1,).
-            thresh (float, optional): If not None, threshold for prediction
-                scores under this value being incorrect. Default to None.
+            thresh (float, optional): If not None, predictions with scores
+                under this threshold are considered incorrect. Default to None.
         """
         super().__init__()
         self.topk = topk
