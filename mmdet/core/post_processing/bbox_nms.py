@@ -1,11 +1,12 @@
 import torch
 import torch.onnx.symbolic_helper as sym_help
 from torch.autograd import Function
+from torch.onnx import is_in_onnx_export
 from torch.onnx.symbolic_opset9 import reshape
 from torch.onnx.symbolic_opset10 import _slice
 
-from mmdet.core.utils.misc import topk
-from mmdet.ops.nms import nms_wrapper
+from ..utils.misc import topk
+from ...ops.nms import batched_nms
 
 
 def multiclass_nms(multi_bboxes,
@@ -21,7 +22,7 @@ def multiclass_nms(multi_bboxes,
             contains scores of the background class, but this will be ignored.
         score_thr (float): bbox threshold, bboxes with scores lower than it
             will not be considered.
-        nms_cfg (float): NMS operation config
+        nms_cfg (dict): NMS operation config
         max_num (int): if there are more than max_num bboxes after NMS,
             only top max_num will be kept.
         score_factors (Tensor): The factors multiplied to scores before
@@ -30,21 +31,30 @@ def multiclass_nms(multi_bboxes,
         tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
             are 0-based.
     """
+
     if score_factors is not None:
         target_shape = list(score_factors.shape) + [1, ] * (multi_scores.dim() - score_factors.dim())
         scores = multi_scores * score_factors.view(*target_shape).expand_as(multi_scores)
     else:
         scores = multi_scores
-    combined_bboxes = GenericMulticlassNMS.apply(multi_bboxes, scores,
-                                                 score_thr, nms_cfg, max_num)
-    _, topk_inds = topk(combined_bboxes[:, 4].view(-1), max_num)
-    combined_bboxes = combined_bboxes[topk_inds]
-    bboxes = combined_bboxes[:, :5]
-    labels = combined_bboxes[:, 5].long().view(-1)
-    return bboxes, labels
+
+    dets = MulticlassNMS.apply(multi_bboxes, scores, score_thr, nms_cfg, max_num)
+
+    if max_num > 0:
+        if is_in_onnx_export():
+            scores = dets[:, 4].view(-1)
+            _, topk_inds = topk(scores, max_num)
+            dets = dets[topk_inds]
+        else:
+            dets = dets[:max_num]
+    
+    labels = dets[:, 5].long().view(-1)
+    dets = dets[:, :5]
+
+    return dets, labels
 
 
-class GenericMulticlassNMS(Function):
+class MulticlassNMS(Function):
 
     @staticmethod
     def forward(ctx,
@@ -53,43 +63,30 @@ class GenericMulticlassNMS(Function):
                 score_thr,
                 nms_cfg,
                 max_num=-1):
-        nms_op_cfg = nms_cfg.copy()
-        nms_op_type = nms_op_cfg.pop('type', 'nms')
-        nms_op = getattr(nms_wrapper, nms_op_type)
+        if is_in_onnx_export():
+            assert nms_cfg['type'] == 'nms', 'Only vanilla NMS is compatible with ONNX export'
 
-        num_classes = multi_scores.shape[1]
-        bboxes, labels = [], []
-        for i in range(num_classes):
-            cls_inds = multi_scores[:, i] > score_thr
-            if not cls_inds.any():
-                continue
-            # Get bboxes and scores of this class.
-            if multi_bboxes.shape[1] == 4:
-                _bboxes = multi_bboxes[cls_inds, :]
-            else:
-                _bboxes = multi_bboxes[cls_inds, i * 4:(i + 1) * 4]
-            _scores = multi_scores[cls_inds, i]
-            cls_dets = torch.cat([_bboxes, _scores[:, None]], dim=1)
-            cls_dets, _ = nms_op(cls_dets, **nms_op_cfg)
-            cls_labels = multi_bboxes.new_full((cls_dets.shape[0],),
-                                               i,
-                                               dtype=torch.long)
-            bboxes.append(cls_dets)
-            labels.append(cls_labels)
-
-        if bboxes:
-            bboxes = torch.cat(bboxes)
-            labels = torch.cat(labels)
-            if bboxes.shape[0] > max_num:
-                _, inds = bboxes[:, -1].topk(max_num, sorted=True)
-                bboxes = bboxes[inds]
-                labels = labels[inds]
-            combined_bboxes = torch.cat(
-                [bboxes, labels.to(bboxes.dtype).unsqueeze(-1)], dim=1)
+        if multi_bboxes.shape[1] > 4:
+            bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)
         else:
-            combined_bboxes = torch.zeros((0, 6), dtype=multi_bboxes.dtype, device=multi_bboxes.device)
+            num_classes = multi_scores.size(1)
+            bboxes = multi_bboxes[:, None].expand(-1, num_classes, 4)
+            
+        # filter out boxes with low scores
+        valid_mask = multi_scores > score_thr
+        bboxes = bboxes[valid_mask]
+        scores = multi_scores[valid_mask]
+        labels = valid_mask.nonzero()[:, 1]
 
-        return combined_bboxes
+        if bboxes.numel() == 0:
+            dets = multi_bboxes.new_zeros((0, 6))
+            return dets
+
+        dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
+
+        labels = labels[keep]
+        dets = torch.cat([dets, labels.to(dets.dtype).unsqueeze(-1)], dim=1)
+        return dets
 
     @staticmethod
     def symbolic(g,
