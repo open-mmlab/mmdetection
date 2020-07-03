@@ -10,9 +10,10 @@ from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
+from .catchall import CatchAllDataset
 
 __all__ = [
-    'CustomDataset', 'XMLDataset', 'CocoDataset', 'DeepFashionDataset',
+    'CustomDataset', 'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'CatchAllDataset',
     'VOCDataset', 'CityscapesDataset', 'LVISDataset', 'GroupSampler',
     'CustomDataset', 'XMLDataset', 'CocoDataset', 'VOCDataset',
     'CityscapesDataset', 'LVISDataset', 'DeepFashionDataset', 'GroupSampler',
