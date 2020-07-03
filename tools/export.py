@@ -118,7 +118,14 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
     cfg.data.test.test_mode = True
 
     onnx_model = onnx.load(onnx_model_path)
-    output_names = ','.join(out.name for out in onnx_model.graph.output)
+    output_names = set(out.name for out in onnx_model.graph.output)
+    # Clear names of the nodes that produce network's output blobs.
+    for node in onnx_model.graph.node:
+        if output_names.intersection(node.output):
+            node.ClearField('name')
+    onnx.save(onnx_model, onnx_model_path)
+    output_names = ','.join(output_names)
+    
 
     assert cfg.data.test.pipeline[1]['type'] == 'MultiScaleFlipAug'
     normalize = [v for v in cfg.data.test.pipeline[1]['transforms']
