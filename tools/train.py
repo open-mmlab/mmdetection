@@ -2,15 +2,17 @@ import argparse
 import copy
 import os
 import os.path as osp
+import tempfile
 import time
 
 import mmcv
 from mmcv import Config, DictAction
 from mmcv.parallel import collate, scatter
-from mmcv.runner import init_dist
+from mmcv.runner import init_dist, get_dist_info
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
+import torch.distributed as dist
 
 from mmdet import __version__
 from mmdet.apis import set_random_seed, train_detector
@@ -68,7 +70,7 @@ def parse_args():
     return args
 
 
-def determine_max_batch_size(cfg):
+def determine_max_batch_size(cfg, distributed):
     def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
         test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
         test_pipeline = Compose(test_pipeline)
@@ -132,6 +134,27 @@ def determine_max_batch_size(cfg):
 
     torch.cuda.empty_cache()
     resulting_batch_size = batch_size - 1
+
+    if distributed:
+        rank, world_size = get_dist_info()
+        if rank == 0:
+            temp_dir = tempfile.mkdtemp()
+        dist.barrier()
+        with open(os.path.join(temp_dir, str(rank)), 'w') as dst_file:
+            dst_file.write(str(resulting_batch_size))
+        dist.barrier()
+        if rank == 0:
+            min_batch_size = 1e6
+            for i in range(world_size):
+                with open(os.path.join(temp_dir, '0')) as src_file:
+                    min_batch_size = min(min_batch_size, int(src_file.readlines()[0].strip()))
+
+            with open(os.path.join(temp_dir, '0'), 'w') as dst_file:
+                dst_file.write(str(min_batch_size))
+
+        dist.barrier()
+        with open(os.path.join(temp_dir, '0')) as src_file:
+            resulting_batch_size = int(src_file.readlines()[0].strip())
 
     print('Automatically selected batch size is', resulting_batch_size)
     return resulting_batch_size
@@ -209,7 +232,7 @@ def main():
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
 
     if cfg.data.samples_per_gpu == 'auto':
-        cfg.data.samples_per_gpu = determine_max_batch_size(cfg)
+        cfg.data.samples_per_gpu = determine_max_batch_size(cfg, distributed)
         cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
 
     datasets = [build_dataset(cfg.data.train)]
