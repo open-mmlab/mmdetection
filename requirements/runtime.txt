@@ -5,12 +5,12 @@ numpy
 Pillow<=6.2.2
 six
 terminaltables
-torch==1.4
-torchvision==0.5.0
+torch>=1.3
+torchvision
 pytorchcv==0.0.55
 tqdm
-onnx==1.6.0
-onnxruntime==1.1.2
+onnx>=1.6.0
+onnxruntime>=1.1.2
 lxml
 pycocotools @ git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools
 Polygon3==3.0.8
