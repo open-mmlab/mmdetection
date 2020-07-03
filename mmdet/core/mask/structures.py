@@ -230,7 +230,7 @@ class BitmapMasks(BaseInstanceMasks):
             padded_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
             padded_masks = np.stack([
-                mmcv.impad(mask, out_shape, pad_val=pad_val)
+                mmcv.impad(mask, shape=out_shape, pad_val=pad_val)
                 for mask in self.masks
             ])
         return BitmapMasks(padded_masks, *out_shape)
