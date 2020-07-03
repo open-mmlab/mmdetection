@@ -21,6 +21,7 @@ class AutoAugment(object):
             augment images.
 
     Examples:
+        TODO: Implement 'Shear', 'Sharpness' and 'Rotate' transforms
         >>> replace = (104, 116, 124)
         >>> policies = [
         >>>     [
