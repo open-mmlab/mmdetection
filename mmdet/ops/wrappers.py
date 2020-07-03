@@ -26,7 +26,7 @@ class NewEmptyTensorOp(torch.autograd.Function):
         return NewEmptyTensorOp.apply(grad, shape), None
 
 
-@CONV_LAYERS.register_module('Conv', force=True)
+@CONV_LAYERS.register_module(name='Conv', force=True)
 class Conv2d(nn.Conv2d):
 
     def forward(self, x):

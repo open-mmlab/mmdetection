@@ -260,6 +260,7 @@ class Resize(object):
         else:
             assert 'scale_factor' not in results, (
                 "scale and scale_factor cannot be both set.")
+
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
