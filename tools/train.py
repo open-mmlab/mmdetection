@@ -23,6 +23,8 @@ from mmdet.core import BitmapMasks
 from mmdet.models import build_detector, TwoStageDetector
 from mmdet.utils import collect_env, get_root_logger
 
+from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -82,7 +84,19 @@ def determine_max_batch_size(cfg, distributed):
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
 
-    model.cuda()
+    # put model on gpus
+    if distributed:
+        find_unused_parameters = cfg.get('find_unused_parameters', False)
+        # Sets the `find_unused_parameters` parameter in
+        # torch.nn.parallel.DistributedDataParallel
+        model = MMDistributedDataParallel(
+            model.cuda(),
+            device_ids=[torch.cuda.current_device()],
+            broadcast_buffers=False,
+            find_unused_parameters=find_unused_parameters)
+    else:
+        model = MMDataParallel(
+            model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
 
     if 'pipeline' in cfg.data.train:
         img_shape = [t for t in cfg.data.train.pipeline if t['type'] == 'Resize'][0]['img_scale']
@@ -98,7 +112,7 @@ def determine_max_batch_size(cfg, distributed):
 
     min_bs = 2
     max_bs = 512
-    step = 1
+    step = 2
 
     batch_size = min_bs
     for bs in range(min_bs, max_bs, step):
@@ -133,30 +147,44 @@ def determine_max_batch_size(cfg, distributed):
     del model
 
     torch.cuda.empty_cache()
-    resulting_batch_size = batch_size - 1
+    resulting_batch_size = int(batch_size * 0.9)
 
     if distributed:
         rank, world_size = get_dist_info()
+        MAX_LEN = 512
+        # 32 is whitespace
+        dir_tensor = torch.full((MAX_LEN, ),
+                                32,
+                                dtype=torch.uint8,
+                                device='cuda')
         if rank == 0:
-            temp_dir = tempfile.mkdtemp()
+            tmpdir = tempfile.mkdtemp()
+            tmpdir = torch.tensor(
+                bytearray(tmpdir.encode()), dtype=torch.uint8, device='cuda')
+            dir_tensor[:len(tmpdir)] = tmpdir
+        dist.broadcast(dir_tensor, 0)
+        tmpdir = dir_tensor.cpu().numpy().tobytes().decode().rstrip()
         dist.barrier()
-        with open(os.path.join(temp_dir, str(rank)), 'w') as dst_file:
+        with open(os.path.join(tmpdir, str(rank)), 'w') as dst_file:
             dst_file.write(str(resulting_batch_size))
+
+        print('before rank', rank, 'resulting batch size ', resulting_batch_size)
         dist.barrier()
         if rank == 0:
             min_batch_size = 1e6
             for i in range(world_size):
-                with open(os.path.join(temp_dir, '0')) as src_file:
+                with open(os.path.join(tmpdir, '0')) as src_file:
                     min_batch_size = min(min_batch_size, int(src_file.readlines()[0].strip()))
 
-            with open(os.path.join(temp_dir, '0'), 'w') as dst_file:
+            with open(os.path.join(tmpdir, '0'), 'w') as dst_file:
                 dst_file.write(str(min_batch_size))
 
         dist.barrier()
-        with open(os.path.join(temp_dir, '0')) as src_file:
+        with open(os.path.join(tmpdir, '0')) as src_file:
             resulting_batch_size = int(src_file.readlines()[0].strip())
 
-    print('Automatically selected batch size is', resulting_batch_size)
+        print('rank', rank, 'resulting batch size ', resulting_batch_size)
+
     return resulting_batch_size
 
 
