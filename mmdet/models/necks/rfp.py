@@ -95,6 +95,9 @@ class RFP(FPN):
             bias=True)
 
     def init_weights(self):
+        # Avoid using super().init_weights(), which may alter the default
+        # initialization of the modules in self.rfp_modules that have missing
+        # keys in the pretrained checkpoint.
         for convs in [self.lateral_convs, self.fpn_convs]:
             for m in convs.modules():
                 if isinstance(m, nn.Conv2d):
