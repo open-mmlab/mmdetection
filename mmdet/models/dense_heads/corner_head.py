@@ -24,15 +24,21 @@ class BCPool(nn.Module):
                  in_channels,
                  pool_direction1,
                  pool_direction2,
+                 feat_channels=128,
                  norm_cfg=dict(type='BN', requires_grad=True)):
         super(BCPool, self).__init__()
         self.pool1_conv = ConvModule(
-            in_channels, 128, 3, padding=1, norm_cfg=norm_cfg)
+            in_channels, feat_channels, 3, padding=1, norm_cfg=norm_cfg)
         self.pool2_conv = ConvModule(
-            in_channels, 128, 3, padding=1, norm_cfg=norm_cfg)
+            in_channels, feat_channels, 3, padding=1, norm_cfg=norm_cfg)
 
         self.p_conv = ConvModule(
-            128, in_channels, 3, padding=1, norm_cfg=norm_cfg, act_cfg=None)
+            feat_channels,
+            in_channels,
+            3,
+            padding=1,
+            norm_cfg=norm_cfg,
+            act_cfg=None)
 
         self.conv1 = ConvModule(
             in_channels, in_channels, 1, norm_cfg=norm_cfg, act_cfg=None)
@@ -48,6 +54,7 @@ class BCPool(nn.Module):
 
         Args:
             x (tensor): Input feature of BCPool.
+
         Returns:
             conv2 (tensor): Output feature of BCPool.
         """
@@ -83,11 +90,11 @@ class CornerHead(nn.Module):
         train_cfg (dict | None): Training config. Useless in CornerHead,
             but we keep this variable for SingleStageDetector. Default: None.
         test_cfg (dict | None): Testing config of CornerHead. Default: None.
-        loss_hmp (dict | None): Config of corner heatmap loss. Default:
+        loss_heatmap (dict | None): Config of corner heatmap loss. Default:
             GaussianFocalLoss.
-        loss_emb (dict | None): Config of corner embedding loss. Default:
+        loss_embedding (dict | None): Config of corner embedding loss. Default:
             AssociativeEmbeddingLoss.
-        loss_off (dict | None): Config of corner offset loss. Default:
+        loss_offset (dict | None): Config of corner offset loss. Default:
             SmoothL1Loss.
     """
 
@@ -98,16 +105,17 @@ class CornerHead(nn.Module):
                  corner_emb_channels=1,
                  train_cfg=None,
                  test_cfg=None,
-                 loss_hmp=dict(
+                 loss_heatmap=dict(
                      type='GaussianFocalLoss',
                      alpha=2.0,
                      gamma=4.0,
                      loss_weight=1),
-                 loss_emb=dict(
+                 loss_embedding=dict(
                      type='AssociativeEmbeddingLoss',
                      pull_weight=0.25,
                      push_weight=0.25),
-                 loss_off=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1)):
+                 loss_offset=dict(
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1)):
         super(CornerHead, self).__init__()
         self.num_classes = num_classes
         self.in_channels = in_channels
@@ -115,9 +123,12 @@ class CornerHead(nn.Module):
         self.with_corner_emb = self.corner_emb_channels > 0
         self.corner_offset_channels = 2
         self.feat_num_levels = feat_num_levels
-        self.loss_hmp = build_loss(loss_hmp) if loss_hmp is not None else None
-        self.loss_emb = build_loss(loss_emb) if loss_emb is not None else None
-        self.loss_off = build_loss(loss_off) if loss_off is not None else None
+        self.loss_heatmap = build_loss(
+            loss_heatmap) if loss_heatmap is not None else None
+        self.loss_embedding = build_loss(
+            loss_embedding) if loss_embedding is not None else None
+        self.loss_offset = build_loss(
+            loss_offset) if loss_offset is not None else None
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
@@ -199,6 +210,7 @@ class CornerHead(nn.Module):
         Args:
             feats (tuple[Tensor]): Features from the upstream network, each is
                 a 4D-tensor.
+
         Returns:
             tuple: Usually a tuple of corner heatmaps, offset heatmaps and
                     embedding heatmaps.
@@ -231,6 +243,7 @@ class CornerHead(nn.Module):
             x (Tensor): Feature of a single level.
             lvl_ind (int): Level index of current feature.
             return_pool (bool): Return corner pool feature or not.
+
         Returns:
             tuple:
                 tl_heat (Tensor): Predicted top-left corner heatmap.
@@ -495,12 +508,12 @@ class CornerHead(nn.Module):
         gt_tl_hmp, gt_br_hmp, gt_tl_off, gt_br_off, match = targets
 
         # Detection loss
-        tl_det_loss = self.loss_hmp(
+        tl_det_loss = self.loss_heatmap(
             tl_hmp.sigmoid(),
             gt_tl_hmp,
             avg_factor=max(1,
                            gt_tl_hmp.eq(1).sum()))
-        br_det_loss = self.loss_hmp(
+        br_det_loss = self.loss_heatmap(
             br_hmp.sigmoid(),
             gt_br_hmp,
             avg_factor=max(1,
@@ -508,8 +521,8 @@ class CornerHead(nn.Module):
         det_loss = (tl_det_loss + br_det_loss) / 2.0
 
         # AssociativeEmbedding loss
-        if self.with_corner_emb and self.loss_emb is not None:
-            pull_loss, push_loss = self.loss_emb(tl_emb, br_emb, match)
+        if self.with_corner_emb and self.loss_embedding is not None:
+            pull_loss, push_loss = self.loss_embedding(tl_emb, br_emb, match)
         else:
             pull_loss, push_loss = None, None
 
@@ -518,12 +531,12 @@ class CornerHead(nn.Module):
             gt_tl_hmp)
         br_off_mask = gt_br_hmp.eq(1).sum(1).gt(0).unsqueeze(1).type_as(
             gt_br_hmp)
-        tl_off_loss = self.loss_off(
+        tl_off_loss = self.loss_offset(
             tl_off,
             gt_tl_off,
             tl_off_mask,
             avg_factor=max(1, tl_off_mask.sum()))
-        br_off_loss = self.loss_off(
+        br_off_loss = self.loss_offset(
             br_off,
             gt_br_off,
             br_off_mask,
@@ -672,7 +685,8 @@ class CornerHead(nn.Module):
             feat (Tensor): Target feature map.
             ind (Tensor): Target coord index.
             mask (Tensor | None): Mask of featuremap. Default: None.
-        Return:
+
+        Returns:
             feat (Tensor): Gathered feature.
         """
         dim = feat.size(2)
@@ -690,7 +704,8 @@ class CornerHead(nn.Module):
         Args:
             heat (Tensor): Target heatmap.
             kernel (int): Kernel size of max pooling. Default: 3.
-        Return:
+
+        Returns:
             heat (Tensor): A heatmap where local maximum pixels maintain its
                 own value and other positions are 0.
         """
@@ -705,7 +720,8 @@ class CornerHead(nn.Module):
         Args:
             feat (Tensor): Target feature map.
             ind (Tensor): Target coord index.
-        Return:
+
+        Returns:
             feat (Tensor): Transposed and gathered feature.
         """
         feat = feat.permute(0, 2, 3, 1).contiguous()
@@ -720,7 +736,8 @@ class CornerHead(nn.Module):
             scores (Tensor): Target heatmap with shape
                 [batch, num_classes, height, width].
             K (int): Target number. Default: 20.
-        Return:
+
+        Returns:
             topk_scores (Tensor): Max scores of each topk keypoint.
             topk_inds (Tensor): Indexes of each topk keypoint.
             topk_clses (Tensor): Categories of each topk keypoint.
@@ -776,7 +793,8 @@ class CornerHead(nn.Module):
                 bottom-right corner keypoints with feature distance less than
                 the threshold will be regarded as keypoints from same object.
             num_dets (int): Num of raw boxes before doing nms.
-        Return:
+
+        Returns:
             bboxes (Tensor): Coords of each box.
             scores (Tensor): Scores of each box.
             clses (Tensor): Categories of each box.
