@@ -1,9 +1,9 @@
 from collections.abc import Sequence
 
 import numpy as np
+from mmcv.utils import print_log
 from terminaltables import AsciiTable
 
-from mmdet.utils import print_log
 from .bbox_overlaps import bbox_overlaps
 
 
@@ -41,8 +41,7 @@ def _recalls(all_ious, proposal_nums, thrs):
 
 
 def set_recall_param(proposal_nums, iou_thrs):
-    """Check proposal_nums and iou_thrs and set correct format.
-    """
+    """Check proposal_nums and iou_thrs and set correct format."""
     if isinstance(proposal_nums, Sequence):
         _proposal_nums = np.array(proposal_nums)
     elif isinstance(proposal_nums, int):
@@ -133,10 +132,7 @@ def print_recall_summary(recalls,
     row_header = [''] + iou_thrs[col_idxs].tolist()
     table_data = [row_header]
     for i, num in enumerate(proposal_nums[row_idxs]):
-        row = [
-            '{:.3f}'.format(val)
-            for val in recalls[row_idxs[i], col_idxs].tolist()
-        ]
+        row = [f'{val:.3f}' for val in recalls[row_idxs[i], col_idxs].tolist()]
         row.insert(0, num)
         table_data.append(row)
     table = AsciiTable(table_data)

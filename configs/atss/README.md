@@ -15,6 +15,6 @@
 
 ## Results and Models
 
-| Backbone  | Style   | Lr schd | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP | Download |
-|:---------:|:-------:|:-------:|:--------:|:-------------------:|:--------------:|:------:|:--------:|
-| R-50      | pytorch | 1x      | 3.6      | 0.357               | 12.8           |  39.2  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/models/atss/atss_r50_fpn_1x_20200113-a7aa251e.pth)|
+| Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
+|:---------:|:-------:|:-------:|:--------:|:--------------:|:------:|:--------:|
+| R-50      | pytorch | 1x      | 3.7      | 19.7           |  39.4  | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209-985f7bd0.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/atss/atss_r50_fpn_1x_coco/atss_r50_fpn_1x_coco_20200209_102539.log.json) |

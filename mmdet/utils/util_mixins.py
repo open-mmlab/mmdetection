@@ -1,5 +1,4 @@
-"""
-This module defines the :class:`NiceRepr` mixin class, which defines a
+"""This module defines the :class:`NiceRepr` mixin class, which defines a
 ``__repr__`` and ``__str__`` method that only depend on a custom ``__nice__``
 method, which you must define. This means you only have to overload one
 function instead of two.  Furthermore, if the object defines a ``__len__``
@@ -20,8 +19,8 @@ Example:
     ...        return self.name
     >>> s1 = Student('Alice')
     >>> s2 = Student('Bob')
-    >>> print('s1 = {}'.format(s1))
-    >>> print('s2 = {}'.format(s2))
+    >>> print(f's1 = {s1}')
+    >>> print(f's2 = {s2}')
     s1 = <Student(Alice)>
     s2 = <Student(Bob)>
 
@@ -33,16 +32,14 @@ Example:
     ...    def __len__(self):
     ...        return len(self.data)
     >>> g = Group([1, 2, 3])
-    >>> print('g = {}'.format(g))
+    >>> print(f'g = {g}')
     g = <Group(3)>
-
 """
 import warnings
 
 
 class NiceRepr(object):
-    """
-    Inherit from this class and define ``__nice__`` to "nicely" print your
+    """Inherit from this class and define ``__nice__`` to "nicely" print your
     objects.
 
     Defines ``__str__`` and ``__repr__`` in terms of ``__nice__`` function
@@ -76,6 +73,7 @@ class NiceRepr(object):
     """
 
     def __nice__(self):
+        """str: a "nice" summary string describing this module"""
         if hasattr(self, '__len__'):
             # It is a common pattern for objects to use __len__ in __nice__
             # As a convenience we define a default __nice__ for these objects
@@ -83,22 +81,24 @@ class NiceRepr(object):
         else:
             # In all other cases force the subclass to overload __nice__
             raise NotImplementedError(
-                'Define the __nice__ method for {!r}'.format(self.__class__))
+                f'Define the __nice__ method for {self.__class__!r}')
 
     def __repr__(self):
+        """str: the string of the module"""
         try:
             nice = self.__nice__()
             classname = self.__class__.__name__
-            return '<{0}({1}) at {2}>'.format(classname, nice, hex(id(self)))
+            return f'<{classname}({nice}) at {hex(id(self))}>'
         except NotImplementedError as ex:
             warnings.warn(str(ex), category=RuntimeWarning)
             return object.__repr__(self)
 
     def __str__(self):
+        """str: the string of the module"""
         try:
             classname = self.__class__.__name__
             nice = self.__nice__()
-            return '<{0}({1})>'.format(classname, nice)
+            return f'<{classname}({nice})>'
         except NotImplementedError as ex:
             warnings.warn(str(ex), category=RuntimeWarning)
             return object.__repr__(self)

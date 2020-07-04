@@ -1,14 +1,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn.weight_init import caffe2_xavier_init
+from mmcv.cnn import ConvModule, caffe2_xavier_init
 from torch.utils.checkpoint import checkpoint
 
-from ..registry import NECKS
-from ..utils import ConvModule
+from ..builder import NECKS
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class HRFPN(nn.Module):
     """HRFPN (High Resolution Feature Pyrmamids)
 
@@ -51,7 +50,7 @@ class HRFPN(nn.Module):
             out_channels,
             kernel_size=1,
             conv_cfg=self.conv_cfg,
-            activation=None)
+            act_cfg=None)
 
         self.fpn_convs = nn.ModuleList()
         for i in range(self.num_outs):
@@ -63,7 +62,7 @@ class HRFPN(nn.Module):
                     padding=1,
                     stride=stride,
                     conv_cfg=self.conv_cfg,
-                    activation=None))
+                    act_cfg=None))
 
         if pooling_type == 'MAX':
             self.pooling = F.max_pool2d
@@ -71,11 +70,13 @@ class HRFPN(nn.Module):
             self.pooling = F.avg_pool2d
 
     def init_weights(self):
+        """Initialize the weights of module."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 caffe2_xavier_init(m)
 
     def forward(self, inputs):
+        """Forward function."""
         assert len(inputs) == self.num_ins
         outs = [inputs[0]]
         for i in range(1, self.num_ins):

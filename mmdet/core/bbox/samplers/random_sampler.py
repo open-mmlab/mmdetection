@@ -1,9 +1,21 @@
 import torch
 
+from ..builder import BBOX_SAMPLERS
 from .base_sampler import BaseSampler
 
 
+@BBOX_SAMPLERS.register_module()
 class RandomSampler(BaseSampler):
+    """Random sampler.
+
+    Args:
+        num (int): Number of samples
+        pos_fraction (float): Fraction of positive samples
+        neg_pos_up (int, optional): Upper bound number of negative and
+            positive samples. Defaults to -1.
+        add_gt_as_proposals (bool, optional): Whether to add ground truth
+            boxes as proposals. Defaults to True.
+    """
 
     def __init__(self,
                  num,
@@ -44,7 +56,7 @@ class RandomSampler(BaseSampler):
 
     def _sample_pos(self, assign_result, num_expected, **kwargs):
         """Randomly sample some positive samples."""
-        pos_inds = torch.nonzero(assign_result.gt_inds > 0)
+        pos_inds = torch.nonzero(assign_result.gt_inds > 0, as_tuple=False)
         if pos_inds.numel() != 0:
             pos_inds = pos_inds.squeeze(1)
         if pos_inds.numel() <= num_expected:
@@ -54,7 +66,7 @@ class RandomSampler(BaseSampler):
 
     def _sample_neg(self, assign_result, num_expected, **kwargs):
         """Randomly sample some negative samples."""
-        neg_inds = torch.nonzero(assign_result.gt_inds == 0)
+        neg_inds = torch.nonzero(assign_result.gt_inds == 0, as_tuple=False)
         if neg_inds.numel() != 0:
             neg_inds = neg_inds.squeeze(1)
         if len(neg_inds) <= num_expected:

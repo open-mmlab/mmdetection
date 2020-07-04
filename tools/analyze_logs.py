@@ -9,8 +9,7 @@ import seaborn as sns
 
 def cal_train_time(log_dicts, args):
     for i, log_dict in enumerate(log_dicts):
-        print('{}Analyze train time of {}{}'.format('-' * 5, args.json_logs[i],
-                                                    '-' * 5))
+        print(f'{"-" * 5}Analyze train time of {args.json_logs[i]}{"-" * 5}')
         all_times = []
         for epoch in log_dict.keys():
             if args.include_outliers:
@@ -22,12 +21,12 @@ def cal_train_time(log_dicts, args):
         slowest_epoch = epoch_ave_time.argmax()
         fastest_epoch = epoch_ave_time.argmin()
         std_over_epoch = epoch_ave_time.std()
-        print('slowest epoch {}, average time is {:.4f}'.format(
-            slowest_epoch + 1, epoch_ave_time[slowest_epoch]))
-        print('fastest epoch {}, average time is {:.4f}'.format(
-            fastest_epoch + 1, epoch_ave_time[fastest_epoch]))
-        print('time std over epochs is {:.4f}'.format(std_over_epoch))
-        print('average iter time: {:.4f} s/iter'.format(np.mean(all_times)))
+        print(f'slowest epoch {slowest_epoch + 1}, '
+              f'average time is {epoch_ave_time[slowest_epoch]:.4f}')
+        print(f'fastest epoch {fastest_epoch + 1}, '
+              f'average time is {epoch_ave_time[fastest_epoch]:.4f}')
+        print(f'time std over epochs is {std_over_epoch:.4f}')
+        print(f'average iter time: {np.mean(all_times):.4f} s/iter')
         print()
 
 
@@ -41,7 +40,7 @@ def plot_curve(log_dicts, args):
         legend = []
         for json_log in args.json_logs:
             for metric in args.keys:
-                legend.append('{}_{}'.format(json_log, metric))
+                legend.append(f'{json_log}_{metric}')
     assert len(legend) == (len(args.json_logs) * len(args.keys))
     metrics = args.keys
 
@@ -49,11 +48,10 @@ def plot_curve(log_dicts, args):
     for i, log_dict in enumerate(log_dicts):
         epochs = list(log_dict.keys())
         for j, metric in enumerate(metrics):
-            print('plot curve of {}, metric is {}'.format(
-                args.json_logs[i], metric))
+            print(f'plot curve of {args.json_logs[i]}, metric is {metric}')
             if metric not in log_dict[epochs[0]]:
-                raise KeyError('{} does not contain metric {}'.format(
-                    args.json_logs[i], metric))
+                raise KeyError(
+                    f'{args.json_logs[i]} does not contain metric {metric}')
 
             if 'mAP' in metric:
                 xs = np.arange(1, max(epochs) + 1)
@@ -86,7 +84,7 @@ def plot_curve(log_dicts, args):
     if args.out is None:
         plt.show()
     else:
-        print('save curve to: {}'.format(args.out))
+        print(f'save curve to: {args.out}')
         plt.savefig(args.out)
         plt.cla()
 
@@ -152,8 +150,8 @@ def load_json_logs(json_logs):
     log_dicts = [dict() for _ in json_logs]
     for json_log, log_dict in zip(json_logs, log_dicts):
         with open(json_log, 'r') as log_file:
-            for l in log_file:
-                log = json.loads(l.strip())
+            for line in log_file:
+                log = json.loads(line.strip())
                 # skip lines without `epoch` field
                 if 'epoch' not in log:
                     continue

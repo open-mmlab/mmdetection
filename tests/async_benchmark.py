@@ -13,38 +13,36 @@ from mmdet.utils.profiling import profile_time
 
 
 async def main():
-    """
-
-    Benchmark between async and synchronous inference interfaces.
+    """Benchmark between async and synchronous inference interfaces.
 
     Sample runs for 20 demo images on K80 GPU, model - mask_rcnn_r50_fpn_1x:
 
-    async	sync
+    async       sync
 
-    7981.79 ms	9660.82 ms
-    8074.52 ms	9660.94 ms
-    7976.44 ms	9406.83 ms
+    7981.79 ms  9660.82 ms
+    8074.52 ms  9660.94 ms
+    7976.44 ms  9406.83 ms
 
     Async variant takes about 0.83-0.85 of the time of the synchronous
     interface.
-
     """
     project_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-    config_file = os.path.join(project_dir, 'configs/mask_rcnn_r50_fpn_1x.py')
+    config_file = os.path.join(project_dir,
+                               'configs/mask_rcnn_r50_fpn_1x_coco.py')
     checkpoint_file = os.path.join(
         project_dir, 'checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth')
 
     if not os.path.exists(checkpoint_file):
         url = ('https://s3.ap-northeast-2.amazonaws.com/open-mmlab/mmdetection'
                '/models/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth')
-        print('Downloading {} ...'.format(url))
+        print(f'Downloading {url} ...')
         local_filename, _ = urllib.request.urlretrieve(url)
         os.makedirs(os.path.dirname(checkpoint_file), exist_ok=True)
         shutil.move(local_filename, checkpoint_file)
-        print('Saved as {}'.format(checkpoint_file))
+        print(f'Saved as {checkpoint_file}')
     else:
-        print('Using existing checkpoint {}'.format(checkpoint_file))
+        print(f'Using existing checkpoint {checkpoint_file}')
 
     device = 'cuda:0'
     model = init_detector(

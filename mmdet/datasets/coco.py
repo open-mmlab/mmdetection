@@ -1,67 +1,124 @@
+import itertools
 import logging
 import os.path as osp
 import tempfile
 
 import mmcv
 import numpy as np
+from mmcv.utils import print_log
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+from terminaltables import AsciiTable
 
 from mmdet.core import eval_recalls
-from mmdet.utils import print_log
+from .builder import DATASETS
 from .custom import CustomDataset
-from .registry import DATASETS
 
 
-@DATASETS.register_module
+@DATASETS.register_module()
 class CocoDataset(CustomDataset):
 
     CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
-               'train', 'truck', 'boat', 'traffic_light', 'fire_hydrant',
-               'stop_sign', 'parking_meter', 'bench', 'bird', 'cat', 'dog',
+               'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
+               'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
                'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
                'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-               'skis', 'snowboard', 'sports_ball', 'kite', 'baseball_bat',
-               'baseball_glove', 'skateboard', 'surfboard', 'tennis_racket',
-               'bottle', 'wine_glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
+               'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat',
+               'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
+               'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
                'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
-               'hot_dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-               'potted_plant', 'bed', 'dining_table', 'toilet', 'tv', 'laptop',
-               'mouse', 'remote', 'keyboard', 'cell_phone', 'microwave',
+               'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+               'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
+               'mouse', 'remote', 'keyboard', 'cell phone', 'microwave',
                'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock',
-               'vase', 'scissors', 'teddy_bear', 'hair_drier', 'toothbrush')
+               'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
 
     def load_annotations(self, ann_file):
+        """Load annotation from COCO style annotation file.
+
+        Args:
+            ann_file (str): Path of annotation file.
+
+        Returns:
+            list[dict]: Annotation info from COCO api.
+        """
+
         self.coco = COCO(ann_file)
-        self.cat_ids = self.coco.getCatIds()
-        self.cat2label = {
-            cat_id: i + 1
-            for i, cat_id in enumerate(self.cat_ids)
-        }
-        self.img_ids = self.coco.getImgIds()
-        img_infos = []
+        self.cat_ids = self.coco.get_cat_ids(cat_names=self.CLASSES)
+        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
+        self.img_ids = self.coco.get_img_ids()
+        data_infos = []
         for i in self.img_ids:
-            info = self.coco.loadImgs([i])[0]
+            info = self.coco.load_imgs([i])[0]
             info['filename'] = info['file_name']
-            img_infos.append(info)
-        return img_infos
+            data_infos.append(info)
+        return data_infos
 
     def get_ann_info(self, idx):
-        img_id = self.img_infos[idx]['id']
-        ann_ids = self.coco.getAnnIds(imgIds=[img_id])
-        ann_info = self.coco.loadAnns(ann_ids)
-        return self._parse_ann_info(self.img_infos[idx], ann_info)
+        """Get COCO annotation by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
+        img_id = self.data_infos[idx]['id']
+        ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
+        ann_info = self.coco.load_anns(ann_ids)
+        return self._parse_ann_info(self.data_infos[idx], ann_info)
+
+    def get_cat_ids(self, idx):
+        """Get COCO category ids by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            list[int]: All categories in the image of specified index.
+        """
+
+        img_id = self.data_infos[idx]['id']
+        ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
+        ann_info = self.coco.load_anns(ann_ids)
+        return [ann['category_id'] for ann in ann_info]
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small or without ground truths."""
         valid_inds = []
         ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
-        for i, img_info in enumerate(self.img_infos):
+        for i, img_info in enumerate(self.data_infos):
             if self.filter_empty_gt and self.img_ids[i] not in ids_with_ann:
                 continue
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
         return valid_inds
+
+    def get_subset_by_classes(self):
+        """Get img ids that contain any category in class_ids.
+
+        Different from the coco.getImgIds(), this function returns the id if
+        the img contains one of the categories rather than all.
+
+        Args:
+            class_ids (list[int]): list of category ids
+
+        Return:
+            ids (list[int]): integer list of img ids
+        """
+
+        ids = set()
+        for i, class_id in enumerate(self.cat_ids):
+            ids |= set(self.coco.cat_img_map[class_id])
+        self.img_ids = list(ids)
+
+        data_infos = []
+        for i in self.img_ids:
+            info = self.coco.load_imgs([i])[0]
+            info['filename'] = info['file_name']
+            data_infos.append(info)
+        return data_infos
 
     def _parse_ann_info(self, img_info, ann_info):
         """Parse bbox and mask annotation.
@@ -79,14 +136,19 @@ class CocoDataset(CustomDataset):
         gt_labels = []
         gt_bboxes_ignore = []
         gt_masks_ann = []
-
         for i, ann in enumerate(ann_info):
             if ann.get('ignore', False):
                 continue
             x1, y1, w, h = ann['bbox']
+            inter_w = max(0, min(x1 + w, img_info['width']) - max(x1, 0))
+            inter_h = max(0, min(y1 + h, img_info['height']) - max(y1, 0))
+            if inter_w * inter_h == 0:
+                continue
             if ann['area'] <= 0 or w < 1 or h < 1:
                 continue
-            bbox = [x1, y1, x1 + w - 1, y1 + h - 1]
+            if ann['category_id'] not in self.cat_ids:
+                continue
+            bbox = [x1, y1, x1 + w, y1 + h]
             if ann.get('iscrowd', False):
                 gt_bboxes_ignore.append(bbox)
             else:
@@ -118,15 +180,27 @@ class CocoDataset(CustomDataset):
         return ann
 
     def xyxy2xywh(self, bbox):
+        """Convert ``xyxy`` style bounding boxes to ``xywh`` style for COCO
+        evaluation.
+
+        Args:
+            bbox (numpy.ndarray): The bounding boxes, shape (4, ), in
+                ``xyxy`` order.
+
+        Returns:
+            list[float]: The converted bounding boxes, in ``xywh`` order.
+        """
+
         _bbox = bbox.tolist()
         return [
             _bbox[0],
             _bbox[1],
-            _bbox[2] - _bbox[0] + 1,
-            _bbox[3] - _bbox[1] + 1,
+            _bbox[2] - _bbox[0],
+            _bbox[3] - _bbox[1],
         ]
 
     def _proposal2json(self, results):
+        """Convert proposal results to COCO json style."""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -141,6 +215,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _det2json(self, results):
+        """Convert detection results to COCO json style."""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -157,6 +232,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _segm2json(self, results):
+        """Convert instance segmentation results to COCO json style."""
         bbox_json_results = []
         segm_json_results = []
         for idx in range(len(self)):
@@ -194,7 +270,7 @@ class CocoDataset(CustomDataset):
         return bbox_json_results, segm_json_results
 
     def results2json(self, results, outfile_prefix):
-        """Dump the detection results to a json file.
+        """Dump the detection results to a COCO style json file.
 
         There are 3 types of results: proposals, bbox predictions, mask
         predictions, and they have different data types. This method will
@@ -215,22 +291,19 @@ class CocoDataset(CustomDataset):
         result_files = dict()
         if isinstance(results[0], list):
             json_results = self._det2json(results)
-            result_files['bbox'] = '{}.{}.json'.format(outfile_prefix, 'bbox')
-            result_files['proposal'] = '{}.{}.json'.format(
-                outfile_prefix, 'bbox')
+            result_files['bbox'] = f'{outfile_prefix}.bbox.json'
+            result_files['proposal'] = f'{outfile_prefix}.bbox.json'
             mmcv.dump(json_results, result_files['bbox'])
         elif isinstance(results[0], tuple):
             json_results = self._segm2json(results)
-            result_files['bbox'] = '{}.{}.json'.format(outfile_prefix, 'bbox')
-            result_files['proposal'] = '{}.{}.json'.format(
-                outfile_prefix, 'bbox')
-            result_files['segm'] = '{}.{}.json'.format(outfile_prefix, 'segm')
+            result_files['bbox'] = f'{outfile_prefix}.bbox.json'
+            result_files['proposal'] = f'{outfile_prefix}.bbox.json'
+            result_files['segm'] = f'{outfile_prefix}.segm.json'
             mmcv.dump(json_results[0], result_files['bbox'])
             mmcv.dump(json_results[1], result_files['segm'])
         elif isinstance(results[0], np.ndarray):
             json_results = self._proposal2json(results)
-            result_files['proposal'] = '{}.{}.json'.format(
-                outfile_prefix, 'proposal')
+            result_files['proposal'] = f'{outfile_prefix}.proposal.json'
             mmcv.dump(json_results, result_files['proposal'])
         else:
             raise TypeError('invalid type of results')
@@ -239,8 +312,8 @@ class CocoDataset(CustomDataset):
     def fast_eval_recall(self, results, proposal_nums, iou_thrs, logger=None):
         gt_bboxes = []
         for i in range(len(self.img_ids)):
-            ann_ids = self.coco.getAnnIds(imgIds=self.img_ids[i])
-            ann_info = self.coco.loadAnns(ann_ids)
+            ann_ids = self.coco.get_ann_ids(img_ids=self.img_ids[i])
+            ann_info = self.coco.load_anns(ann_ids)
             if len(ann_info) == 0:
                 gt_bboxes.append(np.zeros((0, 4)))
                 continue
@@ -249,7 +322,7 @@ class CocoDataset(CustomDataset):
                 if ann.get('ignore', False) or ann['iscrowd']:
                     continue
                 x1, y1, w, h = ann['bbox']
-                bboxes.append([x1, y1, x1 + w - 1, y1 + h - 1])
+                bboxes.append([x1, y1, x1 + w, y1 + h])
             bboxes = np.array(bboxes, dtype=np.float32)
             if bboxes.shape[0] == 0:
                 bboxes = np.zeros((0, 4))
@@ -264,7 +337,8 @@ class CocoDataset(CustomDataset):
         """Format the results to json (standard format for COCO evaluation).
 
         Args:
-            results (list): Testing results of the dataset.
+            results (list[tuple | numpy.ndarray]): Testing results of the
+                dataset.
             jsonfile_prefix (str | None): The prefix of json files. It includes
                 the file path and the prefix of filename, e.g., "a/b/prefix".
                 If not specified, a temp file will be created. Default: None.
@@ -298,8 +372,9 @@ class CocoDataset(CustomDataset):
         """Evaluation in COCO protocol.
 
         Args:
-            results (list): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated.
+            results (list[list | tuple]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Options are
+                'bbox', 'segm', 'proposal', 'proposal_fast'.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             jsonfile_prefix (str | None): The prefix of json files. It includes
@@ -314,21 +389,21 @@ class CocoDataset(CustomDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str: float]
+            dict[str, float]: COCO style evaluation metric.
         """
 
         metrics = metric if isinstance(metric, list) else [metric]
         allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast']
         for metric in metrics:
             if metric not in allowed_metrics:
-                raise KeyError('metric {} is not supported'.format(metric))
+                raise KeyError(f'metric {metric} is not supported')
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
         eval_results = {}
         cocoGt = self.coco
         for metric in metrics:
-            msg = 'Evaluating {}...'.format(metric)
+            msg = f'Evaluating {metric}...'
             if logger is None:
                 msg = '\n' + msg
             print_log(msg, logger=logger)
@@ -338,14 +413,14 @@ class CocoDataset(CustomDataset):
                     results, proposal_nums, iou_thrs, logger='silent')
                 log_msg = []
                 for i, num in enumerate(proposal_nums):
-                    eval_results['AR@{}'.format(num)] = ar[i]
-                    log_msg.append('\nAR@{}\t{:.4f}'.format(num, ar[i]))
+                    eval_results[f'AR@{num}'] = ar[i]
+                    log_msg.append(f'\nAR@{num}\t{ar[i]:.4f}')
                 log_msg = ''.join(log_msg)
                 print_log(log_msg, logger=logger)
                 continue
 
             if metric not in result_files:
-                raise KeyError('{} is not in results'.format(metric))
+                raise KeyError(f'{metric} is not in results')
             try:
                 cocoDt = cocoGt.loadRes(result_files[metric])
             except IndexError:
@@ -357,6 +432,7 @@ class CocoDataset(CustomDataset):
 
             iou_type = 'bbox' if metric == 'proposal' else metric
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
+            cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
             if metric == 'proposal':
                 cocoEval.params.useCats = 0
@@ -369,24 +445,57 @@ class CocoDataset(CustomDataset):
                     'AR_l@1000'
                 ]
                 for i, item in enumerate(metric_items):
-                    val = float('{:.3f}'.format(cocoEval.stats[i + 6]))
+                    val = float(f'{cocoEval.stats[i + 6]:.3f}')
                     eval_results[item] = val
             else:
                 cocoEval.evaluate()
                 cocoEval.accumulate()
                 cocoEval.summarize()
                 if classwise:  # Compute per-category AP
-                    pass  # TODO
+                    # Compute per-category AP
+                    # from https://github.com/facebookresearch/detectron2/
+                    precisions = cocoEval.eval['precision']
+                    # precision: (iou, recall, cls, area range, max dets)
+                    assert len(self.cat_ids) == precisions.shape[2]
+
+                    results_per_category = []
+                    for idx, catId in enumerate(self.cat_ids):
+                        # area range index 0: all area ranges
+                        # max dets index -1: typically 100 per image
+                        nm = self.coco.loadCats(catId)[0]
+                        precision = precisions[:, :, idx, 0, -1]
+                        precision = precision[precision > -1]
+                        if precision.size:
+                            ap = np.mean(precision)
+                        else:
+                            ap = float('nan')
+                        results_per_category.append(
+                            (f'{nm["name"]}', f'{float(ap):0.3f}'))
+
+                    num_columns = min(6, len(results_per_category) * 2)
+                    results_flatten = list(
+                        itertools.chain(*results_per_category))
+                    headers = ['category', 'AP'] * (num_columns // 2)
+                    results_2d = itertools.zip_longest(*[
+                        results_flatten[i::num_columns]
+                        for i in range(num_columns)
+                    ])
+                    table_data = [headers]
+                    table_data += [result for result in results_2d]
+                    table = AsciiTable(table_data)
+                    print_log('\n' + table.table, logger=logger)
+
                 metric_items = [
                     'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
                 ]
                 for i in range(len(metric_items)):
-                    key = '{}_{}'.format(metric, metric_items[i])
-                    val = float('{:.3f}'.format(cocoEval.stats[i]))
+                    key = f'{metric}_{metric_items[i]}'
+                    val = float(f'{cocoEval.stats[i]:.3f}')
                     eval_results[key] = val
-                eval_results['{}_mAP_copypaste'.format(metric)] = (
-                    '{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
-                    '{ap[4]:.3f} {ap[5]:.3f}').format(ap=cocoEval.stats[:6])
+                ap = cocoEval.stats[:6]
+                eval_results[f'{metric}_mAP_copypaste'] = (
+                    f'{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
+                    f'{ap[4]:.3f} {ap[5]:.3f}')
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results

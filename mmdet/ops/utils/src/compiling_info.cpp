@@ -1,9 +1,9 @@
 // modified from
 // https://github.com/facebookresearch/detectron2/blob/master/detectron2/layers/csrc/vision.cpp
-#include <cuda_runtime_api.h>
 #include <torch/extension.h>
 
 #ifdef WITH_CUDA
+#include <cuda_runtime_api.h>
 int get_cudart_version() { return CUDART_VERSION; }
 #endif
 

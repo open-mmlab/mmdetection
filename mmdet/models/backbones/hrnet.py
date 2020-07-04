@@ -1,17 +1,19 @@
 import torch.nn as nn
-from mmcv.cnn import constant_init, kaiming_init
+from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
+                      kaiming_init)
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.utils import get_root_logger
-from ..registry import BACKBONES
-from ..utils import build_conv_layer, build_norm_layer
+from ..builder import BACKBONES
 from .resnet import BasicBlock, Bottleneck
 
 
 class HRModule(nn.Module):
-    """ High-Resolution Module for HRNet. In this module, every branch
-    has 4 BasicBlocks/Bottlenecks. Fusion/Exchange is in this module.
+    """High-Resolution Module for HRNet.
+
+    In this module, every branch has 4 BasicBlocks/Bottlenecks. Fusion/Exchange
+    is in this module.
     """
 
     def __init__(self,
@@ -43,18 +45,18 @@ class HRModule(nn.Module):
     def _check_branches(self, num_branches, num_blocks, in_channels,
                         num_channels):
         if num_branches != len(num_blocks):
-            error_msg = 'NUM_BRANCHES({}) <> NUM_BLOCKS({})'.format(
-                num_branches, len(num_blocks))
+            error_msg = f'NUM_BRANCHES({num_branches}) ' \
+                f'!= NUM_BLOCKS({len(num_blocks)})'
             raise ValueError(error_msg)
 
         if num_branches != len(num_channels):
-            error_msg = 'NUM_BRANCHES({}) <> NUM_CHANNELS({})'.format(
-                num_branches, len(num_channels))
+            error_msg = f'NUM_BRANCHES({num_branches}) ' \
+                f'!= NUM_CHANNELS({len(num_channels)})'
             raise ValueError(error_msg)
 
         if num_branches != len(in_channels):
-            error_msg = 'NUM_BRANCHES({}) <> NUM_INCHANNELS({})'.format(
-                num_branches, len(in_channels))
+            error_msg = f'NUM_BRANCHES({num_branches}) ' \
+                f'!= NUM_INCHANNELS({len(in_channels)})'
             raise ValueError(error_msg)
 
     def _make_one_branch(self,
@@ -173,6 +175,7 @@ class HRModule(nn.Module):
         return nn.ModuleList(fuse_layers)
 
     def forward(self, x):
+        """Forward function."""
         if self.num_branches == 1:
             return [self.branches[0](x[0])]
 
@@ -191,7 +194,7 @@ class HRModule(nn.Module):
         return x_fuse
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class HRNet(nn.Module):
     """HRNet backbone.
 
@@ -200,7 +203,7 @@ class HRNet(nn.Module):
 
     Args:
         extra (dict): detailed configuration for each stage of HRNet.
-        in_channels (int): Number of input image channels. Normally 3.
+        in_channels (int): Number of input image channels. Default: 3.
         conv_cfg (dict): dictionary to construct and config conv layer.
         norm_cfg (dict): dictionary to construct and config norm layer.
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
@@ -343,10 +346,12 @@ class HRNet(nn.Module):
 
     @property
     def norm1(self):
+        """nn.Module: the normalization layer named "norm1" """
         return getattr(self, self.norm1_name)
 
     @property
     def norm2(self):
+        """nn.Module: the normalization layer named "norm2" """
         return getattr(self, self.norm2_name)
 
     def _make_transition_layer(self, num_channels_pre_layer,
@@ -460,6 +465,12 @@ class HRNet(nn.Module):
         return nn.Sequential(*hr_modules), in_channels
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in backbone.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if isinstance(pretrained, str):
             logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)
@@ -480,7 +491,7 @@ class HRNet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
-
+        """Forward function."""
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.relu(x)
@@ -516,6 +527,8 @@ class HRNet(nn.Module):
         return y_list
 
     def train(self, mode=True):
+        """Convert the model into training mode whill keeping the normalization
+        layer freezed."""
         super(HRNet, self).train(mode)
         if mode and self.norm_eval:
             for m in self.modules():

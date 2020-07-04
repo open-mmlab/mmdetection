@@ -68,11 +68,15 @@ class AsyncInferenceTestCase(AsyncTestCase):
 
                 pytest.skip('test requires GPU and torch+cuda')
 
+            ori_grad_enabled = torch.is_grad_enabled()
             root_dir = os.path.dirname(os.path.dirname(__name__))
-            model_config = os.path.join(root_dir,
-                                        'configs/mask_rcnn_r50_fpn_1x.py')
+            model_config = os.path.join(
+                root_dir, 'configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')
             detector = MaskRCNNDetector(model_config)
             await detector.init()
             img_path = os.path.join(root_dir, 'demo/demo.jpg')
             bboxes, _ = await detector.apredict(img_path)
             self.assertTrue(bboxes)
+            # asy inference detector will hack grad_enabled,
+            # so restore here to avoid it to influence other tests
+            torch.set_grad_enabled(ori_grad_enabled)
