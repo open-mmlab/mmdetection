@@ -9,8 +9,8 @@ from .xml_style import XMLDataset
 
 @DATASETS.register_module()
 class WIDERFaceDataset(XMLDataset):
-    """
-    Reader for the WIDER Face dataset in PASCAL VOC format.
+    """Reader for the WIDER Face dataset in PASCAL VOC format.
+
     Conversion scripts can be found in
     https://github.com/sovrasov/wider-face-pascal-voc-annotations
     """

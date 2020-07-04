@@ -38,7 +38,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         self.mask_info_flow = mask_info_flow
 
     def init_weights(self, pretrained):
-        """Initialize the weights in head
+        """Initialize the weights in head.
 
         Args:
             pretrained (str, optional): Path to pre-trained weights.
@@ -57,7 +57,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             return False
 
     def forward_dummy(self, x, proposals):
-        """Dummy forward function"""
+        """Dummy forward function."""
         outs = ()
         # semantic head
         if self.with_semantic:
@@ -99,7 +99,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                             gt_labels,
                             rcnn_train_cfg,
                             semantic_feat=None):
-        """Run forward function and calculate loss for box head in training"""
+        """Run forward function and calculate loss for box head in training."""
         bbox_head = self.bbox_head[stage]
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(
@@ -125,7 +125,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                             gt_masks,
                             rcnn_train_cfg,
                             semantic_feat=None):
-        """Run forward function and calculate loss for mask head in training"""
+        """Run forward function and calculate loss for mask head in
+        training."""
         mask_roi_extractor = self.mask_roi_extractor[stage]
         mask_head = self.mask_head[stage]
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
@@ -163,7 +164,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         return mask_results
 
     def _bbox_forward(self, stage, x, rois, semantic_feat=None):
-        """Box head forward function used in both training and testing"""
+        """Box head forward function used in both training and testing."""
         bbox_roi_extractor = self.bbox_roi_extractor[stage]
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(
@@ -181,7 +182,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         return bbox_results
 
     def _mask_forward_test(self, stage, x, bboxes, semantic_feat=None):
-        """Mask head forward function for testing"""
+        """Mask head forward function for testing."""
         mask_roi_extractor = self.mask_roi_extractor[stage]
         mask_head = self.mask_head[stage]
         mask_rois = bbox2roi([bboxes])

@@ -12,10 +12,9 @@ from ..builder import HEADS
 class NASFCOSHead(FCOSHead):
     """Anchor-free head used in `NASFCOS <https://arxiv.org/abs/1906.04423>`_.
 
-    It is quite similar with FCOS head, except for the searched structure
-    of classification branch and bbox regression branch, where a structure
-    of "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
-
+    It is quite similar with FCOS head, except for the searched structure of
+    classification branch and bbox regression branch, where a structure of
+    "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
     """
 
     def _init_layers(self):

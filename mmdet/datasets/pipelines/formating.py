@@ -78,8 +78,8 @@ class ImageToTensor(object):
         self.keys = keys
 
     def __call__(self, results):
-        """Call function to convert image in results to :obj:`torch.Tensor`
-        and transpose the channel order.
+        """Call function to convert image in results to :obj:`torch.Tensor` and
+        transpose the channel order.
 
         Args:
             results (dict): Result dict contains the image data to convert.
@@ -140,7 +140,7 @@ class ToDataContainer(object):
             ``dict(key='xxx', **kwargs)``. The ``key`` in result will
             be converted to :obj:`mmcv.DataContainer` with ``**kwargs``.
             Default: ``(dict(key='img', stack=True), dict(key='gt_bboxes'),
-                         dict(key='gt_labels'))``.
+            dict(key='gt_labels'))``.
     """
 
     def __init__(self,
@@ -249,8 +249,7 @@ class DefaultFormatBundle(object):
 
 @PIPELINES.register_module()
 class Collect(object):
-    """
-    Collect data from the loader relevant to the specific task.
+    """Collect data from the loader relevant to the specific task.
 
     This is usually the last stage of the data loader pipeline. Typically keys
     is set to some subset of "img", "proposals", "gt_bboxes",
@@ -324,8 +323,7 @@ class Collect(object):
 
 @PIPELINES.register_module()
 class WrapFieldsToLists(object):
-    """
-    Wrap fields of the data dictionary into lists for evaluation.
+    """Wrap fields of the data dictionary into lists for evaluation.
 
     This class can be used as a last step of a test or validation
     pipeline for single image evaluation or inference.

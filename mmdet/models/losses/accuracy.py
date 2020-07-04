@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 def accuracy(pred, target, topk=1, thresh=None):
-    """Calculate accuracy according to the prediction and target
+    """Calculate accuracy according to the prediction and target.
 
     Args:
         pred (torch.Tensor): The model prediction, shape (N, num_class)
@@ -51,7 +51,7 @@ def accuracy(pred, target, topk=1, thresh=None):
 class Accuracy(nn.Module):
 
     def __init__(self, topk=(1, ), thresh=None):
-        """Module to calculate the accuracy
+        """Module to calculate the accuracy.
 
         Args:
             topk (tuple, optional): The criterion used to calculate the
@@ -64,7 +64,7 @@ class Accuracy(nn.Module):
         self.thresh = thresh
 
     def forward(self, pred, target):
-        """Forward function to calculate accuracy
+        """Forward function to calculate accuracy.
 
         Args:
             pred (torch.Tensor): Prediction of models.

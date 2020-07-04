@@ -111,7 +111,7 @@ class ConvAWS2d(nn.Conv2d):
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
-        """Override default load function
+        """Override default load function.
 
         AWS overrides the function _load_from_state_dict to recover
         weight_gamma and weight_beta if they are missing. If weight_gamma and

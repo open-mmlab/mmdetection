@@ -185,8 +185,8 @@ class AnchorHead(BaseDenseHead):
                             img_meta,
                             label_channels=1,
                             unmap_outputs=True):
-        """Compute regression and classification targets for anchors in
-            a single image.
+        """Compute regression and classification targets for anchors in a
+        single image.
 
         Args:
             flat_anchors (Tensor): Multi-level anchors of the image, which are
@@ -287,7 +287,7 @@ class AnchorHead(BaseDenseHead):
                     unmap_outputs=True,
                     return_sampling_results=False):
         """Compute regression and classification targets for anchors in
-            multiple images.
+        multiple images.
 
         Args:
             anchor_list (list[list[Tensor]]): Multi level anchors of each
@@ -319,7 +319,6 @@ class AnchorHead(BaseDenseHead):
                 `self._get_targets_single`. These returns are currently refined
                 to properties at each feature map (i.e. having HxW dimension).
                 The results will be concatenated after the end
-
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs

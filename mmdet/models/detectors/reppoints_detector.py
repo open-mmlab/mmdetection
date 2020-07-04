@@ -52,7 +52,7 @@ class RepPointsDetector(SingleStageDetector):
             return bboxes, scores
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        """Test function with test time augmentation
+        """Test function with test time augmentation.
 
         Args:
             imgs (list[torch.Tensor]): List of multiple images

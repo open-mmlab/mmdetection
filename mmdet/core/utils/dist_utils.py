@@ -30,7 +30,7 @@ def _allreduce_coalesced(tensors, world_size, bucket_size_mb=-1):
 
 
 def allreduce_grads(params, coalesce=True, bucket_size_mb=-1):
-    """Allreduce gradients
+    """Allreduce gradients.
 
     Args:
         params (list[torch.Parameters]): List of parameters of a model
@@ -52,7 +52,7 @@ def allreduce_grads(params, coalesce=True, bucket_size_mb=-1):
 
 
 class DistOptimizerHook(OptimizerHook):
-    """Deprecated optimizer hook for distributed training"""
+    """Deprecated optimizer hook for distributed training."""
 
     def __init__(self, *args, **kwargs):
         warnings.warn('"DistOptimizerHook" is deprecated, please switch to'

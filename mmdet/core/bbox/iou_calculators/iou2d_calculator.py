@@ -5,10 +5,10 @@ from .builder import IOU_CALCULATORS
 
 @IOU_CALCULATORS.register_module()
 class BboxOverlaps2D(object):
-    """2D IoU Calculator"""
+    """2D IoU Calculator."""
 
     def __call__(self, bboxes1, bboxes2, mode='iou', is_aligned=False):
-        """Calculate IoU between 2D bboxes
+        """Calculate IoU between 2D bboxes.
 
         Args:
             bboxes1 (Tensor): bboxes have shape (m, 4) in <x1, y1, x2, y2>

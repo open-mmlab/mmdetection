@@ -7,7 +7,7 @@ from .base import BaseDetector
 
 @DETECTORS.register_module()
 class RPN(BaseDetector):
-    """Implementation of Region Proposal Network"""
+    """Implementation of Region Proposal Network."""
 
     def __init__(self,
                  backbone,
@@ -28,7 +28,7 @@ class RPN(BaseDetector):
         self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):
-        """Initialize the weights in detector
+        """Initialize the weights in detector.
 
         Args:
             pretrained (str, optional): Path to pre-trained weights.
@@ -41,7 +41,7 @@ class RPN(BaseDetector):
         self.rpn_head.init_weights()
 
     def extract_feat(self, img):
-        """Extract features
+        """Extract features.
 
         Args:
             img (torch.Tensor): Image tensor with shape (n, c, h ,w).
@@ -56,7 +56,7 @@ class RPN(BaseDetector):
         return x
 
     def forward_dummy(self, img):
-        """Dummy forward function"""
+        """Dummy forward function."""
         x = self.extract_feat(img)
         rpn_outs = self.rpn_head(x)
         return rpn_outs
@@ -92,7 +92,7 @@ class RPN(BaseDetector):
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
-        """Test function without test time augmentation
+        """Test function without test time augmentation.
 
         Args:
             imgs (list[torch.Tensor]): List of multiple images
@@ -113,7 +113,7 @@ class RPN(BaseDetector):
         return proposal_list[0].cpu().numpy()
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        """Test function with test time augmentation
+        """Test function with test time augmentation.
 
         Args:
             imgs (list[torch.Tensor]): List of multiple images

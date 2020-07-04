@@ -14,9 +14,8 @@ if sys.version_info >= (3, 7):
                      end_stream=None):
         """Print time spent by CPU and GPU.
 
-        Useful as a temporary context manager to find sweet spots of
-        code suitable for async implementation.
-
+        Useful as a temporary context manager to find sweet spots of code
+        suitable for async implementation.
         """
         if (not enabled) or not torch.cuda.is_available():
             yield

@@ -10,8 +10,9 @@ from .compose import Compose
 class AutoAugment(object):
     """Auto augmentation.
 
-    This data augmentation is proposed in
-    `Learning Data Augmentation Strategies for Object Detection <https://arxiv.org/pdf/1906.11172>`_  # noqa: E501
+    This data augmentation is proposed in `Learning Data Augmentation
+    Strategies for Object Detection <https://arxiv.org/pdf/1906.11172>`_.
+
     TODO: Implement 'Shear', 'Sharpness' and 'Rotate' transforms
 
     Args:

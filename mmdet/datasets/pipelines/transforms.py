@@ -422,7 +422,6 @@ class Pad(object):
 
         Returns:
             dict: Updated result dict.
-
         """
         self._pad_img(results)
         self._pad_masks(results)
@@ -464,7 +463,6 @@ class Normalize(object):
         Returns:
             dict: Normalized results, 'img_norm_cfg' key is added into
                 result dict.
-
         """
         for key in results.get('img_fields', ['img']):
             results[key] = mmcv.imnormalize(results[key], self.mean, self.std,
@@ -591,7 +589,7 @@ class SegRescale(object):
         self.scale_factor = scale_factor
 
     def __call__(self, results):
-        """Call function to scale the semantic segmentation map
+        """Call function to scale the semantic segmentation map.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -1060,10 +1058,12 @@ class Albu(object):
 
     def albu_builder(self, cfg):
         """Import a module from albumentations.
-        Inherits some of `build_from_cfg` logic.
+
+        It inherits some of :func:`build_from_cfg` logic.
 
         Args:
             cfg (dict): Config dict. It should at least contain the key "type".
+
         Returns:
             obj: The constructed object.
         """
@@ -1092,9 +1092,7 @@ class Albu(object):
 
     @staticmethod
     def mapper(d, keymap):
-        """
-        Dictionary mapper.
-        Renames keys according to keymap provided.
+        """Dictionary mapper. Renames keys according to keymap provided.
 
         Args:
             d (dict): old dict
@@ -1186,19 +1184,20 @@ class RandomCenterCropPad(object):
 
     The relation between output image (padding image) and original image:
 
-    :code-block:
-                    output image
-           +----------------------------+
-           |          padded area       |
-    +------|----------------------------|----------+
-    |      |         cropped area       |          |
-    |      |         +---------------+  |          |
-    |      |         |    .   center |  |          | original image
-    |      |         |        range  |  |          |
-    |      |         +---------------+  |          |
-    +------|----------------------------|----------+
-           |          padded area       |
-           +----------------------------+
+    .. code-block: text
+
+                        output image
+            +----------------------------+
+            |          padded area       |
+        +------|----------------------------|----------+
+        |      |         cropped area       |          |
+        |      |         +---------------+  |          |
+        |      |         |    .   center |  |          | original image
+        |      |         |        range  |  |          |
+        |      |         +---------------+  |          |
+        +------|----------------------------|----------+
+            |          padded area       |
+            +----------------------------+
 
     There are 5 main areas in the figure:
         - output image: output image of this operation, also called padding

@@ -8,7 +8,7 @@ from .compose import Compose
 
 @PIPELINES.register_module()
 class MultiScaleFlipAug(object):
-    """Test-time augmentation with multiple scales and flipping
+    """Test-time augmentation with multiple scales and flipping.
 
     An example configuration is as followed:
 

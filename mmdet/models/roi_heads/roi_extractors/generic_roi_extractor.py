@@ -40,7 +40,7 @@ class GenericRoIExtractor(BaseRoIExtractor):
 
     @force_fp32(apply_to=('feats', ), out_fp16=True)
     def forward(self, feats, rois, roi_scale_factor=None):
-        """Forward function"""
+        """Forward function."""
         if len(feats) == 1:
             return self.roi_layers[0](feats[0], rois)
 

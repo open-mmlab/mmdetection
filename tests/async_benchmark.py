@@ -13,21 +13,18 @@ from mmdet.utils.profiling import profile_time
 
 
 async def main():
-    """
-
-    Benchmark between async and synchronous inference interfaces.
+    """Benchmark between async and synchronous inference interfaces.
 
     Sample runs for 20 demo images on K80 GPU, model - mask_rcnn_r50_fpn_1x:
 
-    async	sync
+    async       sync
 
-    7981.79 ms	9660.82 ms
-    8074.52 ms	9660.94 ms
-    7976.44 ms	9406.83 ms
+    7981.79 ms  9660.82 ms
+    8074.52 ms  9660.94 ms
+    7976.44 ms  9406.83 ms
 
     Async variant takes about 0.83-0.85 of the time of the synchronous
     interface.
-
     """
     project_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
