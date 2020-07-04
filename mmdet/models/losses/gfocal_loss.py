@@ -141,7 +141,7 @@ class QualityFocalLoss(nn.Module):
 
 @LOSSES.register_module()
 class DistributionFocalLoss(nn.Module):
-    """Distribution Focal Loss (DFL) is a variant of `Generalized Focal Loss:
+    r"""Distribution Focal Loss (DFL) is a variant of `Generalized Focal Loss:
     Learning Qualified and Distributed Bounding Boxes for Dense Object
     Detection <https://arxiv.org/abs/2006.04388>`_.
 
