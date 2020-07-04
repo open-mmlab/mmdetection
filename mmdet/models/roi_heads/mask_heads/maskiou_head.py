@@ -150,7 +150,7 @@ class MaskIoUHead(nn.Module):
 
     def _get_area_ratio(self, pos_proposals, pos_assigned_gt_inds, gt_masks):
         """Compute area ratio of the gt mask inside the proposal and the gt
-        mask of the corresponding instance"""
+        mask of the corresponding instance."""
         num_pos = pos_proposals.size(0)
         if num_pos > 0:
             area_ratios = []

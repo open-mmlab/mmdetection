@@ -11,7 +11,7 @@ class InstanceBalancedPosSampler(RandomSampler):
     for each instance."""
 
     def _sample_pos(self, assign_result, num_expected, **kwargs):
-        """Sample positive boxes
+        """Sample positive boxes.
 
         Args:
             assign_result (:obj:`AssignResult`): The assigned results of boxes.

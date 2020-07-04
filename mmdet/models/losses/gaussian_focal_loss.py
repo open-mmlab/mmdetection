@@ -6,8 +6,8 @@ from .utils import weighted_loss
 
 @weighted_loss
 def gaussian_focal_loss(pred, gaussian_target, alpha=2.0, gamma=4.0):
-    """`Focal Loss <https://arxiv.org/abs/1708.02002>`_ for targets in
-    gaussian distribution.
+    """`Focal Loss <https://arxiv.org/abs/1708.02002>`_ for targets in gaussian
+    distribution.
 
     Args:
         pred (torch.Tensor): The prediction.
@@ -61,7 +61,7 @@ class GaussianFocalLoss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None):
-        """Forward function
+        """Forward function.
 
         Args:
             pred (torch.Tensor): The prediction.

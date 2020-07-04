@@ -319,7 +319,7 @@ class LoadAnnotations(object):
         return results
 
     def __call__(self, results):
-        """Call function to load multiple types annotations
+        """Call function to load multiple types annotations.
 
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.

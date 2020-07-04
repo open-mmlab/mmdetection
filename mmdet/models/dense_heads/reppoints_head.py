@@ -250,7 +250,7 @@ class RepPointsHead(AnchorFreeHead):
         return multi_apply(self.forward_single, feats)
 
     def forward_single(self, x):
-        """ Forward feature map of a single FPN level."""
+        """Forward feature map of a single FPN level."""
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
         # If we use bounding bbox representation, the initial reppoints is
@@ -332,7 +332,9 @@ class RepPointsHead(AnchorFreeHead):
         return points_list, valid_flag_list
 
     def centers_to_bboxes(self, point_list):
-        """Get bboxes according to center points. Only used in MaxIOUAssigner.
+        """Get bboxes according to center points.
+
+        Only used in :class:`MaxIoUAssigner`.
         """
         bbox_list = []
         for i_img, point in enumerate(point_list):

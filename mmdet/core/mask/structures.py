@@ -168,7 +168,6 @@ class BitmapMasks(BaseInstanceMasks):
 
         Returns:
             :obj:`BitmapMasks`: Indexed bitmap masks.
-
         """
         masks = self.masks[index].reshape(-1, self.height, self.width)
         return BitmapMasks(masks, self.height, self.width)
@@ -500,7 +499,7 @@ class PolygonMasks(BaseInstanceMasks):
         return PolygonMasks(resized_masks, *out_shape)
 
     def to_bitmap(self):
-        """convert polygon masks to bitmap masks"""
+        """convert polygon masks to bitmap masks."""
         bitmap_masks = self.to_ndarray()
         return BitmapMasks(bitmap_masks, self.height, self.width)
 
@@ -562,13 +561,13 @@ class PolygonMasks(BaseInstanceMasks):
 def polygon_to_bitmap(polygons, height, width):
     """Convert masks from the form of polygons to bitmaps.
 
-        Args:
-            polygons (list[ndarray]): masks in polygon representation
-            height (int): mask height
-            width (int): mask width
+    Args:
+        polygons (list[ndarray]): masks in polygon representation
+        height (int): mask height
+        width (int): mask width
 
-        Return:
-            ndarray: the converted masks in bitmap representation
+    Return:
+        ndarray: the converted masks in bitmap representation
     """
     rles = maskUtils.frPyObjects(polygons, height, width)
     rle = maskUtils.merge(rles)

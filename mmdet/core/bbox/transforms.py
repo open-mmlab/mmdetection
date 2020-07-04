@@ -32,7 +32,7 @@ def bbox_mapping(bboxes,
                  scale_factor,
                  flip,
                  flip_direction='horizontal'):
-    """Map bboxes from the original image scale to testing scale"""
+    """Map bboxes from the original image scale to testing scale."""
     new_bboxes = bboxes * bboxes.new_tensor(scale_factor)
     if flip:
         new_bboxes = bbox_flip(new_bboxes, img_shape, flip_direction)
@@ -44,7 +44,7 @@ def bbox_mapping_back(bboxes,
                       scale_factor,
                       flip,
                       flip_direction='horizontal'):
-    """Map bboxes from testing scale to original image scale"""
+    """Map bboxes from testing scale to original image scale."""
     new_bboxes = bbox_flip(bboxes, img_shape,
                            flip_direction) if flip else bboxes
     new_bboxes = new_bboxes.view(-1, 4) / new_bboxes.new_tensor(scale_factor)
@@ -74,7 +74,7 @@ def bbox2roi(bbox_list):
 
 
 def roi2bbox(rois):
-    """Convert rois to bounding box format
+    """Convert rois to bounding box format.
 
     Args:
         rois (torch.Tensor): RoIs with the shape (n, 5) where the first

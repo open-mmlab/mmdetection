@@ -1,5 +1,4 @@
-"""
-This module defines the :class:`NiceRepr` mixin class, which defines a
+"""This module defines the :class:`NiceRepr` mixin class, which defines a
 ``__repr__`` and ``__str__`` method that only depend on a custom ``__nice__``
 method, which you must define. This means you only have to overload one
 function instead of two.  Furthermore, if the object defines a ``__len__``
@@ -35,14 +34,12 @@ Example:
     >>> g = Group([1, 2, 3])
     >>> print(f'g = {g}')
     g = <Group(3)>
-
 """
 import warnings
 
 
 class NiceRepr(object):
-    """
-    Inherit from this class and define ``__nice__`` to "nicely" print your
+    """Inherit from this class and define ``__nice__`` to "nicely" print your
     objects.
 
     Defines ``__str__`` and ``__repr__`` in terms of ``__nice__`` function

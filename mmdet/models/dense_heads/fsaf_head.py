@@ -74,8 +74,8 @@ class FSAFHead(RetinaHead):
                             img_meta,
                             label_channels=1,
                             unmap_outputs=True):
-        """Compute regression and classification targets for anchors in
-            a single image.
+        """Compute regression and classification targets for anchors in a
+        single image.
 
         Most of the codes are the same with the base class
           :obj: `AnchorHead`, except that it also collects and returns
@@ -300,7 +300,7 @@ class FSAFHead(RetinaHead):
             pos_recall=pos_recall)
 
     def calculate_pos_recall(self, cls_scores, labels_list, pos_inds):
-        """Calculate positive recall with score threshold
+        """Calculate positive recall with score threshold.
 
         Args:
             cls_scores (list[Tensor]): Classification scores at all fpn levels.
@@ -335,7 +335,7 @@ class FSAFHead(RetinaHead):
 
     def collect_loss_level_single(self, cls_loss, reg_loss, assigned_gt_inds,
                                   labels_seq):
-        """Get the average loss in each FPN level w.r.t. each gt label
+        """Get the average loss in each FPN level w.r.t. each gt label.
 
         Args:
             cls_loss (Tensor): Classification loss of each feature map pixel,

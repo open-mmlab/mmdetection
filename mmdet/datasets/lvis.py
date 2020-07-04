@@ -265,7 +265,7 @@ class LVISDataset(CocoDataset):
         'yoke_(animal_equipment)', 'zebra', 'zucchini')
 
     def load_annotations(self, ann_file):
-        """Load annotation from lvis style annotation file
+        """Load annotation from lvis style annotation file.
 
         Args:
             ann_file (str): Path of annotation file.

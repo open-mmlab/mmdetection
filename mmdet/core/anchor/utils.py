@@ -21,7 +21,7 @@ def anchor_inside_flags(flat_anchors,
                         valid_flags,
                         img_shape,
                         allowed_border=0):
-    """Check whether the anchors are inside the border
+    """Check whether the anchors are inside the border.
 
     Args:
         flat_anchors (torch.Tensor): Flatten anchors, shape (n, 4).

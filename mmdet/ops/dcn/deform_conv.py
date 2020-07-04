@@ -384,7 +384,8 @@ class ModulatedDeformConv(nn.Module):
 
 @CONV_LAYERS.register_module(name='DCNv2')
 class ModulatedDeformConvPack(ModulatedDeformConv):
-    """A ModulatedDeformable Conv Encapsulation that acts as normal Conv layers.
+    """A ModulatedDeformable Conv Encapsulation that acts as normal Conv
+    layers.
 
     Args:
         in_channels (int): Same as nn.Conv2d.
