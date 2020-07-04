@@ -2,6 +2,7 @@ from math import ceil, log
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.cnn import ConvModule, bias_init_with_prob
 
 from mmdet.core import multi_apply
@@ -10,29 +11,27 @@ from ..builder import HEADS, build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
 
 
-class BCPool(nn.Module):
+class BiCornerPool(nn.Module):
     """Bidirectional Corner Pooling Module (TopLeft, BottomRight, etc.)
 
     Args:
         in_channels (int): Input channels of module.
-        pool_direction1 (str): direction of the first CornerPool.
-        pool_direction2 (str): direction of the second CornerPool.
+        directions (list[str[): Directions of two CornerPools.
         norm_cfg (dict): Dictionary to construct and config norm layer.
     """
 
     def __init__(self,
                  in_channels,
-                 pool_direction1,
-                 pool_direction2,
+                 directions,
                  feat_channels=128,
                  norm_cfg=dict(type='BN', requires_grad=True)):
-        super(BCPool, self).__init__()
-        self.pool1_conv = ConvModule(
+        super(BiCornerPool, self).__init__()
+        self.direction1_conv = ConvModule(
             in_channels, feat_channels, 3, padding=1, norm_cfg=norm_cfg)
-        self.pool2_conv = ConvModule(
+        self.direction2_conv = ConvModule(
             in_channels, feat_channels, 3, padding=1, norm_cfg=norm_cfg)
 
-        self.p_conv = ConvModule(
+        self.aftpool_conv = ConvModule(
             feat_channels,
             in_channels,
             3,
@@ -45,26 +44,26 @@ class BCPool(nn.Module):
         self.conv2 = ConvModule(
             in_channels, in_channels, 3, padding=1, norm_cfg=norm_cfg)
 
-        self.pool1 = CornerPool(pool_direction1)
-        self.pool2 = CornerPool(pool_direction2)
+        self.direction1_pool = CornerPool(directions[0])
+        self.direction2_pool = CornerPool(directions[1])
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         """Forward features from the upstream network.
 
         Args:
-            x (tensor): Input feature of BCPool.
+            x (tensor): Input feature of BiCornerPool.
 
         Returns:
-            conv2 (tensor): Output feature of BCPool.
+            conv2 (tensor): Output feature of BiCornerPool.
         """
-        pool1_conv = self.pool1_conv(x)
-        pool2_conv = self.pool2_conv(x)
-        pool1_feat = self.pool1(pool1_conv)
-        pool2_feat = self.pool2(pool2_conv)
-        p_conv = self.p_conv(pool1_feat + pool2_feat)
+        direction1_conv = self.direction1_conv(x)
+        direction2_conv = self.direction2_conv(x)
+        direction1_feat = self.direction1_pool(direction1_conv)
+        direction2_feat = self.direction2_pool(direction2_conv)
+        aftpool_conv = self.aftpool_conv(direction1_feat + direction2_feat)
         conv1 = self.conv1(x)
-        relu = self.relu(p_conv + conv1)
+        relu = self.relu(aftpool_conv + conv1)
         conv2 = self.conv2(relu)
         return conv2
 
@@ -82,10 +81,11 @@ class CornerHead(nn.Module):
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
-        feat_num_levels (int): Levels of feature from previous module.
-            Default: 2 (HourglassNet-104 outputs the final feature and
-            intermediate supervision feature, HourglassNet-52 only outputs
-            the final feature, so feat_num_levels for HourglassNet-52 is 1).
+        num_feat_levels (int): Levels of feature from the previous module. 2
+            for HourglassNet-104 and 1 for HourglassNet-52. Because
+            HourglassNet-104 outputs the final feature and intermediate
+            supervision feature and HourglassNet-52 only outputs the final
+            feature. Default: 2.
         corner_emb_channels (int): Channel of embedding vector. Default: 1.
         train_cfg (dict | None): Training config. Useless in CornerHead,
             but we keep this variable for SingleStageDetector. Default: None.
@@ -101,7 +101,7 @@ class CornerHead(nn.Module):
     def __init__(self,
                  num_classes,
                  in_channels,
-                 feat_num_levels=2,
+                 num_feat_levels=2,
                  corner_emb_channels=1,
                  train_cfg=None,
                  test_cfg=None,
@@ -122,7 +122,7 @@ class CornerHead(nn.Module):
         self.corner_emb_channels = corner_emb_channels
         self.with_corner_emb = self.corner_emb_channels > 0
         self.corner_offset_channels = 2
-        self.feat_num_levels = feat_num_levels
+        self.num_feat_levels = num_feat_levels
         self.loss_heatmap = build_loss(
             loss_heatmap) if loss_heatmap is not None else None
         self.loss_embedding = build_loss(
@@ -139,7 +139,8 @@ class CornerHead(nn.Module):
         """
         return nn.Sequential(
             ConvModule(in_channels, feat_channels, 3, padding=1),
-            nn.Conv2d(feat_channels, out_channels, (1, 1)))
+            ConvModule(
+                feat_channels, out_channels, 1, norm_cfg=None, act_cfg=None))
 
     def _init_corner_kpt_layers(self):
         """Initialize corner keypoint layers. Including corner heatmap branch
@@ -150,9 +151,11 @@ class CornerHead(nn.Module):
         self.tl_heat, self.br_heat = nn.ModuleList(), nn.ModuleList()
         self.tl_off, self.br_off = nn.ModuleList(), nn.ModuleList()
 
-        for _ in range(self.feat_num_levels):
-            self.tl_pool.append(BCPool(self.in_channels, 'top', 'left'))
-            self.br_pool.append(BCPool(self.in_channels, 'bottom', 'right'))
+        for _ in range(self.num_feat_levels):
+            self.tl_pool.append(
+                BiCornerPool(self.in_channels, ['top', 'left']))
+            self.br_pool.append(
+                BiCornerPool(self.in_channels, ['bottom', 'right']))
 
             self.tl_heat.append(
                 self._make_layers(
@@ -179,7 +182,7 @@ class CornerHead(nn.Module):
         """
         self.tl_emb, self.br_emb = nn.ModuleList(), nn.ModuleList()
 
-        for _ in range(self.feat_num_levels):
+        for _ in range(self.num_feat_levels):
             self.tl_emb.append(
                 self._make_layers(
                     out_channels=self.corner_emb_channels,
@@ -200,7 +203,7 @@ class CornerHead(nn.Module):
     def init_weights(self):
         """Initialize weights of the head."""
         bias_init = bias_init_with_prob(0.1)
-        for i in range(self.feat_num_levels):
+        for i in range(self.num_feat_levels):
             self.tl_heat[i][-1].bias.data.fill_(bias_init)
             self.br_heat[i][-1].bias.data.fill_(bias_init)
 
@@ -233,7 +236,7 @@ class CornerHead(nn.Module):
                     levels, each is a 4D-tensor. The channels number is
                     corner_offset_channels.
         """
-        lvl_ind = list(range(self.feat_num_levels))
+        lvl_ind = list(range(self.num_feat_levels))
         return multi_apply(self.forward_single, feats, lvl_ind)
 
     def forward_single(self, x, lvl_ind, return_pool=False):
@@ -278,14 +281,14 @@ class CornerHead(nn.Module):
 
         return result_list
 
-    def corner_target(self,
-                      gt_bboxes,
-                      gt_labels,
-                      feat_shape,
-                      img_shape,
-                      with_corner_emb=False,
-                      with_guiding_shift=False,
-                      with_centripetal_shift=False):
+    def get_targets(self,
+                    gt_bboxes,
+                    gt_labels,
+                    feat_shape,
+                    img_shape,
+                    with_corner_emb=False,
+                    with_guiding_shift=False,
+                    with_centripetal_shift=False):
         """Generate corner targets.
 
         Including corner heatmap, corner offset.
@@ -310,6 +313,25 @@ class CornerHead(nn.Module):
                 Default: False.
             with_centripetal_shift (bool): Generate centripetal shift target or
                 not. Default: False.
+
+        Returns:
+            dict:
+                topleft_heatmap (Tensor): Ground truth top-left corner heatmap.
+                bottomright_heatmap (Tensor): Ground truth bottom-right corner
+                    heatmap.
+                topleft_offset (Tensor): Ground truth top-left corner offset.
+                bottomright_offset (Tensor): Ground truth bottom-right corner
+                    offset.
+                corner_embedding (list[list[list[int, int]]]): Ground truth
+                    corner embedding. Not must have.
+                topleft_guiding_shift (Tensor): Ground truth top-left corner
+                    guiding shift. Not must have.
+                bottomright_guiding_shift (Tensor): Ground truth bottom-right
+                    corner guiding shift. Not must have.
+                topleft_centripetal_shift (Tensor): Ground truth top-left
+                    corner centripetal shift. Not must have.
+                bottomright_centripetal_shift (Tensor): Ground truth
+                    bottom-right corner centripetal shift. Not must have.
         """
         batch_size, _, height, width = feat_shape
         img_h, img_w = img_shape[:2]
@@ -327,11 +349,14 @@ class CornerHead(nn.Module):
         if with_corner_emb:
             match = []
 
+        # Guiding shift is a kind of offset, from center to corner
         if with_guiding_shift:
             gt_tl_guiding_shift = gt_bboxes[-1].new_zeros(
                 [batch_size, 2, height, width])
             gt_br_guiding_shift = gt_bboxes[-1].new_zeros(
                 [batch_size, 2, height, width])
+        # Centripetal shift is also a kind of offset, from center to corner
+        # and normalized by log.
         if with_centripetal_shift:
             gt_tl_centripetal_shift = gt_bboxes[-1].new_zeros(
                 [batch_size, 2, height, width])
@@ -339,6 +364,7 @@ class CornerHead(nn.Module):
                 [batch_size, 2, height, width])
 
         for batch_id in range(batch_size):
+            # Ground truth of corner embedding per image is a list of coord set
             corner_match = []
             for box_id in range(len(gt_labels[batch_id])):
                 left, top, right, bottom = gt_bboxes[batch_id][box_id]
@@ -346,6 +372,7 @@ class CornerHead(nn.Module):
                 center_y = (top + bottom) / 2.0
                 label = gt_labels[batch_id][box_id]
 
+                # Use coords in the feature level to generate ground truth
                 scale_left = left * width_ratio
                 scale_right = right * width_ratio
                 scale_top = top * height_ratio
@@ -353,17 +380,18 @@ class CornerHead(nn.Module):
                 scale_center_x = center_x * width_ratio
                 scale_center_y = center_y * height_ratio
 
+                # Int coords on feature map/ground truth tensor
                 left_idx = int(min(scale_left, width - 1))
                 right_idx = int(min(scale_right, width - 1))
                 top_idx = int(min(scale_top, height - 1))
                 bottom_idx = int(min(scale_bottom, height - 1))
 
-                width = ceil(scale_right - scale_left)
-                height = ceil(scale_bottom - scale_top)
-
-                radius = gaussian_radius((height, width), min_overlap=0.3)
+                # Generate gaussian heatmap
+                scale_box_width = ceil(scale_right - scale_left)
+                scale_box_height = ceil(scale_bottom - scale_top)
+                radius = gaussian_radius((scale_box_height, scale_box_width),
+                                         min_overlap=0.3)
                 radius = max(0, int(radius))
-
                 gt_tl_heatmap[batch_id, label] = gen_gaussian_target(
                     gt_tl_heatmap[batch_id, label], [left_idx, top_idx],
                     radius)
@@ -371,20 +399,22 @@ class CornerHead(nn.Module):
                     gt_br_heatmap[batch_id, label], [right_idx, bottom_idx],
                     radius)
 
+                # Generate corner offset
                 left_offset = scale_left - left_idx
                 top_offset = scale_top - top_idx
                 right_offset = scale_right - right_idx
                 bottom_offset = scale_bottom - bottom_idx
-
                 gt_tl_offset[batch_id, 0, top_idx, left_idx] = left_offset
                 gt_tl_offset[batch_id, 1, top_idx, left_idx] = top_offset
                 gt_br_offset[batch_id, 0, bottom_idx, right_idx] = right_offset
                 gt_br_offset[batch_id, 1, bottom_idx,
                              right_idx] = bottom_offset
 
+                # Generate corner embedding
                 if with_corner_emb:
                     corner_match.append([[top_idx, left_idx],
                                          [bottom_idx, right_idx]])
+                # Generate guiding shift
                 if with_guiding_shift:
                     gt_tl_guiding_shift[batch_id, 0, top_idx,
                                         left_idx] = scale_center_x - left_idx
@@ -395,6 +425,7 @@ class CornerHead(nn.Module):
                     gt_br_guiding_shift[
                         batch_id, 1, bottom_idx,
                         right_idx] = bottom_idx - scale_center_y
+                # Generate centripetal shift
                 if with_centripetal_shift:
                     gt_tl_centripetal_shift[batch_id, 0, top_idx,
                                             left_idx] = log(scale_center_x -
@@ -412,20 +443,30 @@ class CornerHead(nn.Module):
             if with_corner_emb:
                 match.append(corner_match)
 
-        result_list = [
-            gt_tl_heatmap, gt_br_heatmap, gt_tl_offset, gt_br_offset
-        ]
+        target_result = dict(
+            topleft_heatmap=gt_tl_heatmap,
+            topleft_offset=gt_tl_offset,
+            bottomright_heatmap=gt_br_heatmap,
+            bottomright_offset=gt_br_offset)
 
         if with_corner_emb:
-            result_list.append(match)
+            target_result.update({'corner_embedding': match})
         if with_guiding_shift:
-            result_list.append(gt_tl_guiding_shift)
-            result_list.append(gt_br_guiding_shift)
+            target_result.update({
+                'topleft_guiding_shift':
+                gt_tl_guiding_shift,
+                'bottomright_guiding_shift':
+                gt_br_guiding_shift
+            })
         if with_centripetal_shift:
-            result_list.append(gt_tl_centripetal_shift)
-            result_list.append(gt_br_centripetal_shift)
+            target_result.update({
+                'topleft_centripetal_shift':
+                gt_tl_centripetal_shift,
+                'bottomright_centripetal_shift':
+                gt_br_centripetal_shift
+            })
 
-        return result_list
+        return target_result
 
     def loss(self,
              tl_heats,
@@ -464,20 +505,22 @@ class CornerHead(nn.Module):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        targets = self.corner_target(
+        targets = self.get_targets(
             gt_bboxes,
             gt_labels,
             tl_heats[-1].shape,
             img_metas[0]['pad_shape'],
             with_corner_emb=self.with_corner_emb)
-        mlvl_targets = [targets for _ in range(self.feat_num_levels)]
+        mlvl_targets = [targets for _ in range(self.num_feat_levels)]
         det_losses, pull_losses, push_losses, off_losses = multi_apply(
             self.loss_single, tl_heats, br_heats, tl_embs, br_embs, tl_offs,
             br_offs, mlvl_targets)
         loss_dict = dict(det_loss=det_losses, off_loss=off_losses)
         if self.with_corner_emb:
-            loss_dict.update({'pull_loss': pull_losses})
-            loss_dict.update({'push_loss': push_losses})
+            loss_dict.update({
+                'pull_loss': pull_losses,
+                'push_loss': push_losses
+            })
         return loss_dict
 
     def loss_single(self, tl_hmp, br_hmp, tl_emb, br_emb, tl_off, br_off,
@@ -497,7 +540,7 @@ class CornerHead(nn.Module):
                 shape (N, corner_offset_channels, H, W).
             br_off (Tensor): Bottom-right corner offset for current level with
                 shape (N, corner_offset_channels, H, W).
-            targets (list[Tensor]): Corner target generated by `corner_target`.
+            targets (dict): Corner target generated by `get_targets`.
 
         Returns:
             det_loss (Tensor): Corner keypoint loss.
@@ -505,7 +548,11 @@ class CornerHead(nn.Module):
             push_loss (Tensor): Another part of AssociativeEmbedding loss.
             off_loss (Tensor): Corner offset loss.
         """
-        gt_tl_hmp, gt_br_hmp, gt_tl_off, gt_br_off, match = targets
+        gt_tl_hmp = targets['topleft_heatmap']
+        gt_br_hmp = targets['bottomright_heatmap']
+        gt_tl_off = targets['topleft_offset']
+        gt_br_off = targets['bottomright_offset']
+        gt_embedding = targets['corner_embedding']
 
         # Detection loss
         tl_det_loss = self.loss_heatmap(
@@ -522,11 +569,16 @@ class CornerHead(nn.Module):
 
         # AssociativeEmbedding loss
         if self.with_corner_emb and self.loss_embedding is not None:
-            pull_loss, push_loss = self.loss_embedding(tl_emb, br_emb, match)
+            pull_loss, push_loss = self.loss_embedding(tl_emb, br_emb,
+                                                       gt_embedding)
         else:
             pull_loss, push_loss = None, None
 
         # Offset loss
+        # We only compute the offset loss at the real corner position.
+        # The value of real corner would be 1 in heatmap ground truth.
+        # The mask is computed in class agnostic mode and its shape is
+        # batch * 1 * width * height.
         tl_off_mask = gt_tl_hmp.eq(1).sum(1).gt(0).unsqueeze(1).type_as(
             gt_tl_hmp)
         br_off_mask = gt_br_hmp.eq(1).sum(1).gt(0).unsqueeze(1).type_as(
@@ -638,7 +690,7 @@ class CornerHead(nn.Module):
             tl_emb=tl_emb,
             br_emb=br_emb,
             img_meta=img_meta,
-            K=self.test_cfg.corner_topk,
+            k=self.test_cfg.corner_topk,
             kernel=self.test_cfg.local_maximum_kernel,
             distance_threshold=self.test_cfg.distance_threshold)
 
@@ -710,7 +762,7 @@ class CornerHead(nn.Module):
                 own value and other positions are 0.
         """
         pad = (kernel - 1) // 2
-        hmax = nn.functional.max_pool2d(heat, kernel, stride=1, padding=pad)
+        hmax = F.max_pool2d(heat, kernel, stride=1, padding=pad)
         keep = (hmax == heat).float()
         return heat * keep
 
@@ -729,13 +781,13 @@ class CornerHead(nn.Module):
         feat = self._gather_feat(feat, ind)
         return feat
 
-    def _topk(self, scores, K=20):
-        """Get top K positions from heatmap.
+    def _topk(self, scores, k=20):
+        """Get top k positions from heatmap.
 
         Args:
             scores (Tensor): Target heatmap with shape
                 [batch, num_classes, height, width].
-            K (int): Target number. Default: 20.
+            k (int): Target number. Default: 20.
 
         Returns:
             topk_scores (Tensor): Max scores of each topk keypoint.
@@ -745,7 +797,7 @@ class CornerHead(nn.Module):
             topk_xs (Tensor): X-coord of each topk keypoint.
         """
         batch, _, height, width = scores.size()
-        topk_scores, topk_inds = torch.topk(scores.view(batch, -1), K)
+        topk_scores, topk_inds = torch.topk(scores.view(batch, -1), k)
         topk_clses = (topk_inds / (height * width)).int()
         topk_inds = topk_inds % (height * width)
         topk_ys = (topk_inds / width).int().float()
@@ -762,7 +814,7 @@ class CornerHead(nn.Module):
                        tl_centripetal_shift=None,
                        br_centripetal_shift=None,
                        img_meta=None,
-                       K=100,
+                       k=100,
                        kernel=3,
                        distance_threshold=0.5,
                        num_dets=1000):
@@ -787,7 +839,7 @@ class CornerHead(nn.Module):
                 shift for current level with shape (N, 2, H, W).
             img_meta (dict): Meta information of current image, e.g.,
                 image size, scaling factor, etc.
-            K (int): Get top K corner keypoints from heatmap.
+            k (int): Get top k corner keypoints from heatmap.
             kernel (int): Max pooling kernel for extract local maximum pixels.
             distance_threshold (float): Distance threshold. Top-left and
                 bottom-right corner keypoints with feature distance less than
@@ -811,18 +863,18 @@ class CornerHead(nn.Module):
         tl_heat = self._local_maximum(tl_heat, kernel=kernel)
         br_heat = self._local_maximum(br_heat, kernel=kernel)
 
-        tl_scores, tl_inds, tl_clses, tl_ys, tl_xs = self._topk(tl_heat, K=K)
-        br_scores, br_inds, br_clses, br_ys, br_xs = self._topk(br_heat, K=K)
+        tl_scores, tl_inds, tl_clses, tl_ys, tl_xs = self._topk(tl_heat, k=k)
+        br_scores, br_inds, br_clses, br_ys, br_xs = self._topk(br_heat, k=k)
 
-        tl_ys = tl_ys.view(batch, K, 1).expand(batch, K, K)
-        tl_xs = tl_xs.view(batch, K, 1).expand(batch, K, K)
-        br_ys = br_ys.view(batch, 1, K).expand(batch, K, K)
-        br_xs = br_xs.view(batch, 1, K).expand(batch, K, K)
+        tl_ys = tl_ys.view(batch, k, 1).expand(batch, k, k)
+        tl_xs = tl_xs.view(batch, k, 1).expand(batch, k, k)
+        br_ys = br_ys.view(batch, 1, k).expand(batch, k, k)
+        br_xs = br_xs.view(batch, 1, k).expand(batch, k, k)
 
         tl_off = self._transpose_and_gather_feat(tl_off, tl_inds)
-        tl_off = tl_off.view(batch, K, 1, 2)
+        tl_off = tl_off.view(batch, k, 1, 2)
         br_off = self._transpose_and_gather_feat(br_off, br_inds)
-        br_off = br_off.view(batch, 1, K, 2)
+        br_off = br_off.view(batch, 1, k, 2)
 
         tl_xs = tl_xs + tl_off[..., 0]
         tl_ys = tl_ys + tl_off[..., 1]
@@ -831,9 +883,9 @@ class CornerHead(nn.Module):
 
         if with_centripetal_shift:
             tl_centripetal_shift = self._transpose_and_gather_feat(
-                tl_centripetal_shift, tl_inds).view(batch, K, 1, 2).exp()
+                tl_centripetal_shift, tl_inds).view(batch, k, 1, 2).exp()
             br_centripetal_shift = self._transpose_and_gather_feat(
-                br_centripetal_shift, br_inds).view(batch, 1, K, 2).exp()
+                br_centripetal_shift, br_inds).view(batch, 1, k, 2).exp()
 
             tl_ctxs = tl_xs + tl_centripetal_shift[..., 0]
             tl_ctys = tl_ys + tl_centripetal_shift[..., 1]
@@ -913,19 +965,19 @@ class CornerHead(nn.Module):
 
         if with_embedding:
             tl_emb = self._transpose_and_gather_feat(tl_emb, tl_inds)
-            tl_emb = tl_emb.view(batch, K, 1)
+            tl_emb = tl_emb.view(batch, k, 1)
             br_emb = self._transpose_and_gather_feat(br_emb, br_inds)
-            br_emb = br_emb.view(batch, 1, K)
+            br_emb = br_emb.view(batch, 1, k)
             dists = torch.abs(tl_emb - br_emb)
 
-        tl_scores = tl_scores.view(batch, K, 1).expand(batch, K, K)
-        br_scores = br_scores.view(batch, 1, K).expand(batch, K, K)
+        tl_scores = tl_scores.view(batch, k, 1).expand(batch, k, k)
+        br_scores = br_scores.view(batch, 1, k).expand(batch, k, k)
 
         scores = (tl_scores + br_scores) / 2  # scores for all possible boxes
 
         # tl and br should have same class
-        tl_clses = tl_clses.view(batch, K, 1).expand(batch, K, K)
-        br_clses = br_clses.view(batch, 1, K).expand(batch, K, K)
+        tl_clses = tl_clses.view(batch, k, 1).expand(batch, k, k)
+        br_clses = br_clses.view(batch, 1, k).expand(batch, k, k)
         cls_inds = (tl_clses != br_clses)
 
         # reject boxes based on distances

@@ -648,7 +648,7 @@ def test_corner_head_loss():
 
     # Corner head expects a multiple levels of features per image
     feat = [
-        torch.rand(1, 1, s // 4, s // 4) for _ in range(self.feat_num_levels)
+        torch.rand(1, 1, s // 4, s // 4) for _ in range(self.num_feat_levels)
     ]
     tl_heats, br_heats, tl_embs, br_embs, tl_offs, br_offs = self.forward(feat)
 
