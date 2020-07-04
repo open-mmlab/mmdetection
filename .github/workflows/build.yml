@@ -56,7 +56,7 @@ jobs:
       - name: Lint with flake8
         run: flake8 .
       - name: Lint with isort
-        run: isort --check-only --diff mmdet/ tools/ tests/
+        run: isort --recursive --check-only --diff mmdet/ tools/ tests/
       - name: Format with yapf
         run: yapf -r -d mmdet/ tools/ configs/ tests/
       - name: Check docstring
