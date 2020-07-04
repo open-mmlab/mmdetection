@@ -58,7 +58,6 @@ for better compatibility with our repo.)
 
 ```shell
 pip install -r requirements/build.txt
-conda install Cython
 pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .  # or "python setup.py develop"
 ```
@@ -132,7 +131,6 @@ conda install -c pytorch pytorch torchvision -y
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
-conda install Cython
 pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .
 ```
