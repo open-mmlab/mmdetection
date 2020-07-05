@@ -16,7 +16,7 @@ _EPSILON = 1e-6
 class YOLOV3Head(BaseDenseHead):
     """
     YOLOV3Head
-    Add a few more conv layers and generate the output.
+    Paper link: https://arxiv.org/abs/1804.02767
 
     Args:
         num_classes (int): The number of object classes (w/o background)
@@ -530,17 +530,17 @@ def iou_multiple_to_one(bboxes1, bbox2, center=False, zero_center=False):
     Args:
         bboxes1: (Tensor) A n-D tensor representing first group of bboxes.
             The dimension is (..., 4).
-            The lst dimension represent the bbox, with coordinate (x, y, w, h)
+            The last dimension represent the bbox, with coordinate (x, y, w, h)
             or (cx, cy, w, h).
         bbox2: (Tensor) A 1D tensor representing the second bbox.
             The dimension is (4,).
         center: (bool). Whether the bboxes are in format (cx, cy, w, h).
         zero_center: (bool). Whether to align two bboxes so their center
-        is aligned.
+            is aligned.
 
     Returns:
         iou_: (Tensor) A (n-1)-D tensor representing the IOUs.
-        It has one less dim than bboxes1
+            It has one less dim than bboxes1
     """
 
     epsilon = 1e-6
