@@ -155,7 +155,7 @@ class YOLOV3Head(BaseDenseHead):
             device (torch.device): The desired device of the generated grid.
 
         Returns:
-            grid_x, grid_y: grid offset according to the stride
+            tuple[torch.Tensor]: x and y grid offset according to the stride. 
         """
         grid_x = torch.arange(
             num_grid_w, dtype=torch.float,
