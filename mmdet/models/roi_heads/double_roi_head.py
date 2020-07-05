@@ -4,7 +4,7 @@ from .standard_roi_head import StandardRoIHead
 
 @HEADS.register_module()
 class DoubleHeadRoIHead(StandardRoIHead):
-    """RoI head for Double Head RCNN
+    """RoI head for Double Head RCNN.
 
     https://arxiv.org/abs/1904.06493
     """
@@ -14,6 +14,7 @@ class DoubleHeadRoIHead(StandardRoIHead):
         self.reg_roi_scale_factor = reg_roi_scale_factor
 
     def _bbox_forward(self, x, rois):
+        """Box head forward function used in both training and testing time."""
         bbox_cls_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
         bbox_reg_feats = self.bbox_roi_extractor(

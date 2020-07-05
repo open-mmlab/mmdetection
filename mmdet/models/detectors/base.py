@@ -14,7 +14,7 @@ from mmdet.utils import get_root_logger
 
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
-    """Base class for detectors"""
+    """Base class for detectors."""
 
     def __init__(self):
         super(BaseDetector, self).__init__()
@@ -22,32 +22,46 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     @property
     def with_neck(self):
+        """bool: whether the detector has a neck"""
         return hasattr(self, 'neck') and self.neck is not None
 
     # TODO: these properties need to be carefully handled
     # for both single stage & two stage detectors
     @property
     def with_shared_head(self):
+        """bool: whether the detector has a shared head in the RoI Head"""
         return hasattr(self.roi_head,
                        'shared_head') and self.roi_head.shared_head is not None
 
     @property
     def with_bbox(self):
+        """bool: whether the detector has a bbox head"""
         return ((hasattr(self.roi_head, 'bbox_head')
                  and self.roi_head.bbox_head is not None)
                 or (hasattr(self, 'bbox_head') and self.bbox_head is not None))
 
     @property
     def with_mask(self):
+        """bool: whether the detector has a mask head"""
         return ((hasattr(self.roi_head, 'mask_head')
                  and self.roi_head.mask_head is not None)
                 or (hasattr(self, 'mask_head') and self.mask_head is not None))
 
     @abstractmethod
     def extract_feat(self, imgs):
+        """Extract features from images."""
         pass
 
     def extract_feats(self, imgs):
+        """Extract features from multiple images.
+
+        Args:
+            imgs (list[torch.Tensor]): A list of images. The images are
+                augmented from the same image but in different ways.
+
+        Returns:
+            list[torch.Tensor]: Features of different images
+        """
         assert isinstance(imgs, list)
         return [self.extract_feat(img) for img in imgs]
 
@@ -75,9 +89,16 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     @abstractmethod
     def aug_test(self, imgs, img_metas, **kwargs):
+        """Test function with test time augmentation."""
         pass
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in detector.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if pretrained is not None:
             logger = get_root_logger()
             print_log(f'load model from: {pretrained}', logger=logger)
@@ -123,12 +144,11 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         assert samples_per_gpu == 1
 
         if num_augs == 1:
-            """
-            proposals (List[List[Tensor]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch. The Tensor should have a shape Px4, where
-                P is the number of proposals.
-            """
+            # proposals (List[List[Tensor]]): the outer list indicates
+            # test-time augs (multiscale, flip, etc.) and the inner list
+            # indicates images in a batch.
+            # The Tensor should have a shape Px4, where P is the number of
+            # proposals.
             if 'proposals' in kwargs:
                 kwargs['proposals'] = kwargs['proposals'][0]
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
@@ -139,11 +159,12 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
     @auto_fp16(apply_to=('img', ))
     def forward(self, img, img_metas, return_loss=True, **kwargs):
-        """
-        Calls either forward_train or forward_test depending on whether
-        return_loss=True. Note this setting will change the expected inputs.
-        When `return_loss=True`, img and img_meta are single-nested (i.e.
-        Tensor and List[dict]), and when `resturn_loss=False`, img and img_meta
+        """Calls either :func:`forward_train` or :func:`forward_test` depending
+        on whether ``return_loss`` is ``True``.
+
+        Note this setting will change the expected inputs. When
+        ``return_loss=True``, img and img_meta are single-nested (i.e. Tensor
+        and List[dict]), and when ``resturn_loss=False``, img and img_meta
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
         """

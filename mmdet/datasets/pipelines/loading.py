@@ -21,7 +21,7 @@ class LoadImageFromFile(object):
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
             Defaults to False.
-        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes`.
             Defaults to 'color'.
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
@@ -38,6 +38,15 @@ class LoadImageFromFile(object):
         self.file_client = None
 
     def __call__(self, results):
+        """Call functions to load image and get image meta information.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded image and meta information.
+        """
+
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
@@ -57,14 +66,6 @@ class LoadImageFromFile(object):
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
-        # Set initial values for default meta_keys
-        results['pad_shape'] = img.shape
-        results['scale_factor'] = 1.0
-        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
-        results['img_norm_cfg'] = dict(
-            mean=np.zeros(num_channels, dtype=np.float32),
-            std=np.ones(num_channels, dtype=np.float32),
-            to_rgb=False)
         results['img_fields'] = ['img']
         return results
 
@@ -90,7 +91,7 @@ class LoadMultiChannelImageFromFiles(object):
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
             Defaults to False.
-        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes`.
             Defaults to 'color'.
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
@@ -107,6 +108,16 @@ class LoadMultiChannelImageFromFiles(object):
         self.file_client = None
 
     def __call__(self, results):
+        """Call functions to load multiple images and get images meta
+        information.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded images and meta information.
+        """
+
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
@@ -151,7 +162,7 @@ class LoadMultiChannelImageFromFiles(object):
 
 @PIPELINES.register_module()
 class LoadAnnotations(object):
-    """Load annotations.
+    """Load mutiple types of annotations.
 
     Args:
         with_bbox (bool): Whether to parse and load the bbox annotation.
@@ -185,6 +196,15 @@ class LoadAnnotations(object):
         self.file_client = None
 
     def _load_bboxes(self, results):
+        """Private function to load bounding box annotations.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded bounding box annotations.
+        """
+
         ann_info = results['ann_info']
         results['gt_bboxes'] = ann_info['bboxes'].copy()
 
@@ -196,10 +216,31 @@ class LoadAnnotations(object):
         return results
 
     def _load_labels(self, results):
+        """Private function to load label annotations.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded label annotations.
+        """
+
         results['gt_labels'] = results['ann_info']['labels'].copy()
         return results
 
     def _poly2mask(self, mask_ann, img_h, img_w):
+        """Private function to convert masks represented with polygon to
+        bitmaps.
+
+        Args:
+            mask_ann (list | dict): Polygon mask annotation input.
+            img_h (int): The height of output mask.
+            img_w (int): The width of output mask.
+
+        Returns:
+            numpy.ndarray: The decode bitmap mask of shape (img_h, img_w).
+        """
+
         if isinstance(mask_ann, list):
             # polygon -- a single object might consist of multiple parts
             # we merge all parts into one mask rle code
@@ -218,11 +259,12 @@ class LoadAnnotations(object):
         """Convert polygons to list of ndarray and filter invalid polygons.
 
         Args:
-            polygons (list[list]): polygons of one instance.
+            polygons (list[list]): Polygons of one instance.
 
         Returns:
-            list[ndarray]: processed polygons.
+            list[numpy.ndarray]: Processed polygons.
         """
+
         polygons = [np.array(p) for p in polygons]
         valid_polygons = []
         for polygon in polygons:
@@ -231,6 +273,17 @@ class LoadAnnotations(object):
         return valid_polygons
 
     def _load_masks(self, results):
+        """Private function to load mask annotations.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded mask annotations.
+                If ``self.poly2mask`` is set ``True``, `gt_mask` will contain
+                :obj:`PolygonMasks`. Otherwise, :obj:`BitmapMasks` is used.
+        """
+
         h, w = results['img_info']['height'], results['img_info']['width']
         gt_masks = results['ann_info']['masks']
         if self.poly2mask:
@@ -245,6 +298,15 @@ class LoadAnnotations(object):
         return results
 
     def _load_semantic_seg(self, results):
+        """Private function to load semantic segmentation annotations.
+
+        Args:
+            results (dict): Result dict from :obj:`dataset`.
+
+        Returns:
+            dict: The dict contains loaded semantic segmentation annotations.
+        """
+
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
@@ -257,6 +319,16 @@ class LoadAnnotations(object):
         return results
 
     def __call__(self, results):
+        """Call function to load multiple types annotations.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded bounding box, label, mask and
+                semantic segmentation annotations.
+        """
+
         if self.with_bbox:
             results = self._load_bboxes(results)
             if results is None:
@@ -282,11 +354,28 @@ class LoadAnnotations(object):
 
 @PIPELINES.register_module()
 class LoadProposals(object):
+    """Load proposal pipeline.
+
+    Required key is "proposals". Updated keys are "proposals", "bbox_fields".
+
+    Args:
+        num_max_proposals (int, optional): Maximum number of proposals to load.
+            If not specified, all proposals will be loaded.
+    """
 
     def __init__(self, num_max_proposals=None):
         self.num_max_proposals = num_max_proposals
 
     def __call__(self, results):
+        """Call function to load proposals from file.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded proposal annotations.
+        """
+
         proposals = results['proposals']
         if proposals.shape[1] not in (4, 5):
             raise AssertionError(

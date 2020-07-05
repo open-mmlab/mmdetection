@@ -55,13 +55,16 @@ class BasicBlock(nn.Module):
 
     @property
     def norm1(self):
+        """nn.Module: normalization layer after the first convolution layer"""
         return getattr(self, self.norm1_name)
 
     @property
     def norm2(self):
+        """nn.Module: normalization layer after the second convolution layer"""
         return getattr(self, self.norm2_name)
 
     def forward(self, x):
+        """Forward function."""
 
         def _inner_forward(x):
             identity = x
@@ -106,8 +109,9 @@ class Bottleneck(nn.Module):
                  dcn=None,
                  plugins=None):
         """Bottleneck block for ResNet.
-        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
-        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
+
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
+        it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
@@ -211,7 +215,7 @@ class Bottleneck(nn.Module):
                 planes * self.expansion, self.after_conv3_plugins)
 
     def make_block_plugins(self, in_channels, plugins):
-        """ make plugins for block
+        """make plugins for block.
 
         Args:
             in_channels (int): Input channels of plugin.
@@ -219,7 +223,6 @@ class Bottleneck(nn.Module):
 
         Returns:
             list[str]: List of the names of plugin.
-
         """
         assert isinstance(plugins, list)
         plugin_names = []
@@ -242,17 +245,21 @@ class Bottleneck(nn.Module):
 
     @property
     def norm1(self):
+        """nn.Module: normalization layer after the first convolution layer"""
         return getattr(self, self.norm1_name)
 
     @property
     def norm2(self):
+        """nn.Module: normalization layer after the second convolution layer"""
         return getattr(self, self.norm2_name)
 
     @property
     def norm3(self):
+        """nn.Module: normalization layer after the third convolution layer"""
         return getattr(self, self.norm3_name)
 
     def forward(self, x):
+        """Forward function."""
 
         def _inner_forward(x):
             identity = x
@@ -443,33 +450,35 @@ class ResNet(nn.Module):
             len(self.stage_blocks) - 1)
 
     def make_stage_plugins(self, plugins, stage_idx):
-        """ make plugins for ResNet 'stage_idx'th stage .
+        """Make plugins for ResNet ``stage_idx`` th stage.
 
-        Currently we support to insert 'context_block',
-        'empirical_attention_block', 'nonlocal_block' into the backbone like
-        ResNet/ResNeXt. They could be inserted after conv1/conv2/conv3 of
+        Currently we support to insert ``context_block``,
+        ``empirical_attention_block``, ``nonlocal_block`` into the backbone
+        like ResNet/ResNeXt. They could be inserted after conv1/conv2/conv3 of
         Bottleneck.
+
         An example of plugins format could be:
 
-        >>> plugins=[
-        ...     dict(cfg=dict(type='xxx', arg1='xxx'),
-        ...          stages=(False, True, True, True),
-        ...          position='after_conv2'),
-        ...     dict(cfg=dict(type='yyy'),
-        ...          stages=(True, True, True, True),
-        ...          position='after_conv3'),
-        ...     dict(cfg=dict(type='zzz', postfix='1'),
-        ...          stages=(True, True, True, True),
-        ...          position='after_conv3'),
-        ...     dict(cfg=dict(type='zzz', postfix='2'),
-        ...          stages=(True, True, True, True),
-        ...          position='after_conv3')
-        ... ]
-        >>> self = ResNet(depth=18)
-        >>> stage_plugins = self.make_stage_plugins(plugins, 0)
-        >>> assert len(stage_plugins) == 3
+        Examples:
+            >>> plugins=[
+            ...     dict(cfg=dict(type='xxx', arg1='xxx'),
+            ...          stages=(False, True, True, True),
+            ...          position='after_conv2'),
+            ...     dict(cfg=dict(type='yyy'),
+            ...          stages=(True, True, True, True),
+            ...          position='after_conv3'),
+            ...     dict(cfg=dict(type='zzz', postfix='1'),
+            ...          stages=(True, True, True, True),
+            ...          position='after_conv3'),
+            ...     dict(cfg=dict(type='zzz', postfix='2'),
+            ...          stages=(True, True, True, True),
+            ...          position='after_conv3')
+            ... ]
+            >>> self = ResNet(depth=18)
+            >>> stage_plugins = self.make_stage_plugins(plugins, 0)
+            >>> assert len(stage_plugins) == 3
 
-        Suppose 'stage_idx=0', the structure of blocks in the stage would be:
+        Suppose ``stage_idx=0``, the structure of blocks in the stage would be:
 
         .. code-block:: none
 
@@ -503,10 +512,12 @@ class ResNet(nn.Module):
         return stage_plugins
 
     def make_res_layer(self, **kwargs):
+        """Pack all blocks in a stage into a ``ResLayer``."""
         return ResLayer(**kwargs)
 
     @property
     def norm1(self):
+        """nn.Module: the normalization layer named "norm1" """
         return getattr(self, self.norm1_name)
 
     def _make_stem_layer(self, in_channels, stem_channels):
@@ -576,6 +587,12 @@ class ResNet(nn.Module):
                 param.requires_grad = False
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in backbone.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         if isinstance(pretrained, str):
             logger = get_root_logger()
             load_checkpoint(self, pretrained, strict=False, logger=logger)
@@ -602,6 +619,7 @@ class ResNet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
+        """Forward function."""
         if self.deep_stem:
             x = self.stem(x)
         else:
@@ -618,6 +636,8 @@ class ResNet(nn.Module):
         return tuple(outs)
 
     def train(self, mode=True):
+        """Convert the model into training mode while keep normalization layer
+        freezed."""
         super(ResNet, self).train(mode)
         self._freeze_stages()
         if mode and self.norm_eval:
@@ -629,13 +649,12 @@ class ResNet(nn.Module):
 
 @BACKBONES.register_module()
 class ResNetV1d(ResNet):
-    """ResNetV1d variant described in
-    `Bag of Tricks <https://arxiv.org/pdf/1812.01187.pdf>`_.
+    r"""ResNetV1d variant described in `Bag of Tricks
+    <https://arxiv.org/pdf/1812.01187.pdf>`_.
 
-    Compared with default ResNet(ResNetV1b), ResNetV1d replaces the 7x7 conv
-    in the input stem with three 3x3 convs. And in the downsampling block,
-    a 2x2 avg_pool with stride 2 is added before conv, whose stride is
-    changed to 1.
+    Compared with default ResNet(ResNetV1b), ResNetV1d replaces the 7x7 conv in
+    the input stem with three 3x3 convs. And in the downsampling block, a 2x2
+    avg_pool with stride 2 is added before conv, whose stride is changed to 1.
     """
 
     def __init__(self, **kwargs):
