@@ -11,15 +11,12 @@ from ..builder import BACKBONES
 
 
 class ResBlock(nn.Module):
-    """
-    The basic residual block used in YoloV3.
-    Each ResBlock consists of two ConvModules and the input is added to
-    the final output.
-    Each ConvModule is composed of Conv, BN, and LeakyReLU
-    In YoloV3 paper, the first convLayer has half of the number of the
-    filters as much as the second convLayer.
-    The first convLayer has filter size of 1x1 and the second one has the
-    filter size of 3x3.
+    """The basic residual block used in YoloV3. Each ResBlock consists of two
+    ConvModules and the input is added to the final output. Each ConvModule is
+    composed of Conv, BN, and LeakyReLU In YoloV3 paper, the first convLayer
+    has half of the number of the filters as much as the second convLayer. The
+    first convLayer has filter size of 1x1 and the second one has the filter
+    size of 3x3.
 
     Args:
         in_channels (int): The input channels. Must be even.
@@ -59,12 +56,10 @@ def make_conv_and_res_block(in_channels,
                             norm_cfg=dict(type='BN', requires_grad=True),
                             act_cfg=dict(type='LeakyReLU',
                                          negative_slope=0.1)):
-    """
-    In Darknet backbone, ConvLayer is usually followed by ResBlock.
-    This function will make that.
-    The Conv layers always have 3x3 filters with stride=2.
-    The number of the filters in Conv layer is the same as the out
-    channels of the ResBlock
+    """In Darknet backbone, ConvLayer is usually followed by ResBlock. This
+    function will make that. The Conv layers always have 3x3 filters with
+    stride=2. The number of the filters in Conv layer is the same as the out
+    channels of the ResBlock.
 
     Args:
         in_channels (int): The number of input channels.

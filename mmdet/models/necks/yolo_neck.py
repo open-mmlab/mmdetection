@@ -59,12 +59,9 @@ class DetectionNeck(nn.Module):
 
 @NECKS.register_module()
 class YOLOV3Neck(nn.Module):
-    """
-    The neck of YOLOV3.
-    It can be treated as a simplified version of FPN.
-    It will take the result from Darknet backbone
-    and do some upsampling and concatenation.
-    It will finally output the detection result.
+    """The neck of YOLOV3. It can be treated as a simplified version of FPN. It
+    will take the result from Darknet backbone and do some upsampling and
+    concatenation. It will finally output the detection result.
 
     Note:
         The input feats should be from top to bottom.
@@ -81,7 +78,6 @@ class YOLOV3Neck(nn.Module):
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
-
     """
 
     def __init__(self,

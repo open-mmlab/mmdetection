@@ -14,9 +14,7 @@ _EPSILON = 1e-6
 
 @HEADS.register_module()
 class YOLOV3Head(BaseDenseHead):
-    """
-    YOLOV3Head
-    Paper link: https://arxiv.org/abs/1804.02767
+    """YOLOV3Head Paper link: https://arxiv.org/abs/1804.02767.
 
     Args:
         num_classes (int): The number of object classes (w/o background)
@@ -136,8 +134,7 @@ class YOLOV3Head(BaseDenseHead):
 
     @staticmethod
     def _get_anchors_grid_xy(num_grid_h, num_grid_w, stride, device='cpu'):
-        """
-        Get grid offset according to the stride.
+        """Get grid offset according to the stride.
 
         Args:
             num_grid_h (int): The height of the grid.
@@ -146,7 +143,7 @@ class YOLOV3Head(BaseDenseHead):
             device (torch.device): The desired device of the generated grid.
 
         Returns:
-            tuple[torch.Tensor]: x and y grid offset according to the stride. 
+            tuple[torch.Tensor]: x and y grid offset according to the stride.
         """
         grid_x = torch.arange(
             num_grid_w, dtype=torch.float,
@@ -487,8 +484,7 @@ class YOLOV3Head(BaseDenseHead):
         return gt_t_across_scale, negative_mask_across_scale
 
     def get_anchors(self, num_grid_h, num_grid_w, scale, device='cpu'):
-        """
-        Get the grid offset according to the anchors and the scale.
+        """Get the grid offset according to the anchors and the scale.
 
         Args:
             num_grid_h (int): The height of the grid.
@@ -524,8 +520,7 @@ class YOLOV3Head(BaseDenseHead):
 
 
 def iou_multiple_to_one(bboxes1, bbox2, center=False, zero_center=False):
-    """
-    Calculate the IOUs between bboxes1 (multiple) and bbox2 (one).
+    """Calculate the IOUs between bboxes1 (multiple) and bbox2 (one).
 
     Args:
         bboxes1: (Tensor) A n-D tensor representing first group of bboxes.
