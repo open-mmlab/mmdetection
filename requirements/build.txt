@@ -1,0 +1,4 @@
+# These must be installed before building mmdetection
+cython
+numpy
+torch>=1.3

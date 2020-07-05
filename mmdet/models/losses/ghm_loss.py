@@ -2,20 +2,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..registry import LOSSES
+from ..builder import LOSSES
 
 
-def _expand_binary_labels(labels, label_weights, label_channels):
+def _expand_onehot_labels(labels, label_weights, label_channels):
     bin_labels = labels.new_full((labels.size(0), label_channels), 0)
-    inds = torch.nonzero(labels >= 1).squeeze()
+    inds = torch.nonzero(
+        (labels >= 0) & (labels < label_channels), as_tuple=False).squeeze()
     if inds.numel() > 0:
-        bin_labels[inds, labels[inds] - 1] = 1
+        bin_labels[inds, labels[inds]] = 1
     bin_label_weights = label_weights.view(-1, 1).expand(
         label_weights.size(0), label_channels)
     return bin_labels, bin_label_weights
 
 
-@LOSSES.register_module
+# TODO: code refactoring to make it consistent with other losses
+@LOSSES.register_module()
 class GHMC(nn.Module):
     """GHM Classification Loss.
 
@@ -34,10 +36,12 @@ class GHMC(nn.Module):
         super(GHMC, self).__init__()
         self.bins = bins
         self.momentum = momentum
-        self.edges = torch.arange(bins + 1).float().cuda() / bins
+        edges = torch.arange(bins + 1).float() / bins
+        self.register_buffer('edges', edges)
         self.edges[-1] += 1e-6
         if momentum > 0:
-            self.acc_sum = torch.zeros(bins).cuda()
+            acc_sum = torch.zeros(bins)
+            self.register_buffer('acc_sum', acc_sum)
         self.use_sigmoid = use_sigmoid
         if not self.use_sigmoid:
             raise NotImplementedError
@@ -58,7 +62,7 @@ class GHMC(nn.Module):
         """
         # the target should be binary class label
         if pred.dim() != target.dim():
-            target, label_weight = _expand_binary_labels(
+            target, label_weight = _expand_onehot_labels(
                 target, label_weight, pred.size(-1))
         target, label_weight = target.float(), label_weight.float()
         edges = self.edges
@@ -90,7 +94,8 @@ class GHMC(nn.Module):
         return loss * self.loss_weight
 
 
-@LOSSES.register_module
+# TODO: code refactoring to make it consistent with other losses
+@LOSSES.register_module()
 class GHMR(nn.Module):
     """GHM Regression Loss.
 
@@ -109,13 +114,16 @@ class GHMR(nn.Module):
         super(GHMR, self).__init__()
         self.mu = mu
         self.bins = bins
-        self.edges = torch.arange(bins + 1).float().cuda() / bins
+        edges = torch.arange(bins + 1).float() / bins
+        self.register_buffer('edges', edges)
         self.edges[-1] = 1e3
         self.momentum = momentum
         if momentum > 0:
-            self.acc_sum = torch.zeros(bins).cuda()
+            acc_sum = torch.zeros(bins)
+            self.register_buffer('acc_sum', acc_sum)
         self.loss_weight = loss_weight
 
+    # TODO: support reduction parameter
     def forward(self, pred, target, label_weight, avg_factor=None):
         """Calculate the GHM-R loss.
 

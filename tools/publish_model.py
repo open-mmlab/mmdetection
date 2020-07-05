@@ -1,5 +1,6 @@
 import argparse
 import subprocess
+
 import torch
 
 
@@ -21,7 +22,9 @@ def process_checkpoint(in_file, out_file):
     # add the code here.
     torch.save(checkpoint, out_file)
     sha = subprocess.check_output(['sha256sum', out_file]).decode()
-    final_file = out_file.rstrip('.pth') + '-{}.pth'.format(sha[:8])
+    if out_file.endswith('.pth'):
+        out_file = out_file[:-4]
+    final_file = out_file + f'-{sha[:8]}.pth'
     subprocess.Popen(['mv', out_file, final_file])
 
 

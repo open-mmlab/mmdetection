@@ -1,6 +1,5 @@
-import torch
-
 import numpy as np
+import torch
 
 from mmdet.ops import nms
 from ..bbox import bbox_mapping_back
@@ -13,7 +12,13 @@ def merge_aug_proposals(aug_proposals, img_metas, rpn_test_cfg):
         aug_proposals (list[Tensor]): proposals from different testing
             schemes, shape (n, 5). Note that they are not rescaled to the
             original image size.
-        img_metas (list[dict]): image info including "shape_scale" and "flip".
+
+        img_metas (list[dict]): list of image info dict where each dict has:
+            'img_shape', 'scale_factor', 'flip', and my also contain
+            'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+            For details on the values of these keys see
+            `mmdet/datasets/pipelines/formatting.py:Collect`.
+
         rpn_test_cfg (dict): rpn test config.
 
     Returns:
@@ -24,9 +29,11 @@ def merge_aug_proposals(aug_proposals, img_metas, rpn_test_cfg):
         img_shape = img_info['img_shape']
         scale_factor = img_info['scale_factor']
         flip = img_info['flip']
+        flip_direction = img_info['flip_direction']
         _proposals = proposals.clone()
         _proposals[:, :4] = bbox_mapping_back(_proposals[:, :4], img_shape,
-                                              scale_factor, flip)
+                                              scale_factor, flip,
+                                              flip_direction)
         recovered_proposals.append(_proposals)
     aug_proposals = torch.cat(recovered_proposals, dim=0)
     merged_proposals, _ = nms(aug_proposals, rpn_test_cfg.nms_thr)
@@ -55,7 +62,9 @@ def merge_aug_bboxes(aug_bboxes, aug_scores, img_metas, rcnn_test_cfg):
         img_shape = img_info[0]['img_shape']
         scale_factor = img_info[0]['scale_factor']
         flip = img_info[0]['flip']
-        bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip)
+        flip_direction = img_info[0]['flip_direction']
+        bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip,
+                                   flip_direction)
         recovered_bboxes.append(bboxes)
     bboxes = torch.stack(recovered_bboxes).mean(dim=0)
     if aug_scores is None:
@@ -84,10 +93,20 @@ def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
     Returns:
         tuple: (bboxes, scores)
     """
-    recovered_masks = [
-        mask if not img_info[0]['flip'] else mask[..., ::-1]
-        for mask, img_info in zip(aug_masks, img_metas)
-    ]
+    recovered_masks = []
+    for mask, img_info in zip(aug_masks, img_metas):
+        flip = img_info[0]['flip']
+        flip_direction = img_info[0]['flip_direction']
+        if flip:
+            if flip_direction == 'horizontal':
+                mask = mask[:, :, :, ::-1]
+            elif flip_direction == 'vertical':
+                mask = mask[:, :, ::-1, :]
+            else:
+                raise ValueError(
+                    f"Invalid flipping direction '{flip_direction}'")
+        recovered_masks.append(mask)
+
     if weights is None:
         merged_masks = np.mean(recovered_masks, axis=0)
     else:

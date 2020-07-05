@@ -1,13 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import xavier_init
+from mmcv.cnn import ConvModule, xavier_init
 
-from ..plugins import NonLocal2D
-from ..registry import NECKS
-from ..utils import ConvModule
+from mmdet.ops import NonLocal2D
+from ..builder import NECKS
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class BFP(nn.Module):
     """BFP (Balanced Feature Pyrmamids)
 
@@ -64,11 +63,13 @@ class BFP(nn.Module):
                 norm_cfg=self.norm_cfg)
 
     def init_weights(self):
+        """Initialize the weights of FPN module."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 xavier_init(m, distribution='uniform')
 
     def forward(self, inputs):
+        """Forward function."""
         assert len(inputs) == self.num_levels
 
         # step 1: gather multi-level features by resize and average
