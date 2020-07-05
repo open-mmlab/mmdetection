@@ -506,7 +506,7 @@ class YOLOV3Head(BaseDenseHead):
             device (torch.device): The desired device of the generated grid.
 
         Returns:
-            anchor_cxywh: The anchors in (cx, cy, w, h) format
+            torch.Tensor: The anchors in (cx, cy, w, h) format
         """
         assert scale in range(self.num_scales)
         anchors = torch.tensor(
