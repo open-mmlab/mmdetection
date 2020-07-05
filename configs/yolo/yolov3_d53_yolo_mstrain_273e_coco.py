@@ -1,5 +1,7 @@
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
-
+_base_ = [
+    '../_base_/default_runtime.py',
+]
 # model settings
 model = dict(
     type='YOLOV3',
@@ -43,7 +45,6 @@ test_cfg = dict(
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)
-# TODO: Add PhotoMetricDistortion
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -110,22 +111,8 @@ lr_config = dict(
     warmup_iters=2000,  # same as burn-in in darknet
     warmup_ratio=0.1,
     step=[218, 246])
-checkpoint_config = dict(interval=1)
-# yapf:disable
-log_config = dict(
-    interval=50,
-    hooks=[
-        dict(type='TextLoggerHook'),
-    ])
-# yapf:enable
 # runtime settings
 total_epochs = 273
-dist_params = dict(backend='nccl')
-log_level = 'INFO'
 work_dir = './work_dirs/yolo_pretrained'
-load_from = None
-resume_from = None
-workflow = [('train', 1)]
 evaluation = dict(interval=1, metric=['bbox'])
-# TODO: Remove hot fix
 find_unused_parameters = True
