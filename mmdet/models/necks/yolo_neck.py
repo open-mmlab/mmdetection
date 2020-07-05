@@ -1,12 +1,9 @@
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
 
-import logging
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
-from mmcv.runner import load_checkpoint
 
 from ..builder import NECKS
 
@@ -24,6 +21,7 @@ class DetectionNeck(nn.Module):
     Args:
         in_channels (int): The number of input channels.
         out_channels (int): The number of output channels.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
@@ -34,13 +32,14 @@ class DetectionNeck(nn.Module):
     def __init__(self,
                  in_channels,
                  out_channels,
+                 conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(DetectionNeck, self).__init__()
         double_out_channels = out_channels * 2
 
         # shortcut
-        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
         self.conv1 = ConvModule(in_channels, out_channels, 1, **cfg)
         self.conv2 = ConvModule(
             out_channels, double_out_channels, 3, padding=1, **cfg)
@@ -77,6 +76,7 @@ class YOLOV3Neck(nn.Module):
         num_scales (int): The number of scales / stages.
         in_channels (int): The number of input channels.
         out_channels (int): The number of output channels.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
@@ -88,6 +88,7 @@ class YOLOV3Neck(nn.Module):
                  num_scales,
                  in_channels,
                  out_channels,
+                 conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(YOLOV3Neck, self).__init__()
@@ -97,7 +98,7 @@ class YOLOV3Neck(nn.Module):
         self.out_channels = out_channels
 
         # shortcut
-        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
         # To support arbitrary scales, the code looks awful, but it works.
         # Better solution is welcomed.
@@ -131,13 +132,7 @@ class YOLOV3Neck(nn.Module):
 
         return tuple(outs)
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str):
-            logger = logging.getLogger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    xavier_init(m, distribution='uniform')
-        else:
-            raise TypeError('pretrained must be a str or None')
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                xavier_init(m, distribution='uniform')
