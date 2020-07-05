@@ -1,12 +1,9 @@
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
 
-import logging
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
-from mmcv.runner import load_checkpoint
 
 from ..builder import NECKS
 
@@ -131,13 +128,7 @@ class YOLOV3Neck(nn.Module):
 
         return tuple(outs)
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str):
-            logger = logging.getLogger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    xavier_init(m, distribution='uniform')
-        else:
-            raise TypeError('pretrained must be a str or None')
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                xavier_init(m, distribution='uniform')

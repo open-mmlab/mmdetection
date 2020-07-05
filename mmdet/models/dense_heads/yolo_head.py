@@ -1,12 +1,9 @@
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
 
-import logging
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
-from mmcv.runner import load_checkpoint
 
 from mmdet.core import force_fp32, multiclass_nms
 from ..builder import HEADS
@@ -108,16 +105,10 @@ class YOLOV3Head(BaseDenseHead):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str):
-            logger = logging.getLogger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    xavier_init(m, distribution='uniform')
-        else:
-            raise TypeError('pretrained must be a str or None')
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                xavier_init(m, distribution='uniform')
 
     def forward(self, feats):
         assert len(feats) == self.num_scales
