@@ -124,7 +124,7 @@ class FSAFHead(RetinaHead):
             pos_gt_inds[pos_inds] = sampling_result.pos_assigned_gt_inds
             if gt_labels is None:
                 # only rpn gives gt_labels as None, this time FG is 1
-                labels[pos_inds] = 1
+                labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]

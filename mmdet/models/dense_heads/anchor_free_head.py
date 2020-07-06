@@ -42,7 +42,7 @@ class AnchorFreeHead(BaseDenseHead):
                  stacked_convs=4,
                  strides=(4, 8, 16, 32, 64),
                  dcn_on_last_conv=False,
-                 conv_bias='auto'
+                 conv_bias='auto',
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,

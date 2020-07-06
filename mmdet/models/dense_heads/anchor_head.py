@@ -212,7 +212,7 @@ class AnchorHead(BaseDenseHead):
             return (None, ) * 6
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
-        
+
         assign_result = self.assigner.assign(
             anchors, gt_bboxes, gt_bboxes_ignore,
             None if self.sampling else gt_labels)
