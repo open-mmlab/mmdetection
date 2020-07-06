@@ -102,7 +102,7 @@ Some other methods are also supported in [projects using MMDetection](./docs/pro
 Please refer to [install.md](docs/install.md) for installation and dataset preparation.
 
 
-## Get Started
+## Getting Started
 
 Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection. There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
 
