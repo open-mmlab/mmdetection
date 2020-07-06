@@ -62,13 +62,95 @@ def gen_gaussian_target(heatmap, center, radius, k=1):
 
 
 def gaussian_radius(det_size, min_overlap):
-    """Generate 2D gaussian radius
+    r"""Generate 2D gaussian radius
 
     This function is modified from the `official github repo
     <https://github.com/princeton-vl/CornerNet-Lite/blob/master/core/sample/utils.py#L65>` _. # noqa: E501
 
-    More details can be found in the `issue
-    <https://github.com/princeton-vl/CornerNet-Lite/issues/47>`_ .
+    Given min_overlap, radius could computed by a quadratic equation according
+    to Vieta's formulas.
+
+    There are 3 cases for computing gaussian radius, details are following:
+
+        - Explanation of figure: `lt` and `br` indicates the left-top and
+            bottom-right corner of ground truth box. `x` indicates the
+            generated corner at the limited position when `radius=r`.
+
+        - Case1: one corner is inside the gt box and the other is outside.
+
+        .. code-block:: text
+
+        |<   width   >|
+
+        lt-+----------+         -
+        |  |          |         ^
+        +--x----------+--+
+        |  |          |  |
+        |  |          |  |    height
+        |  | overlap  |  |
+        |  |          |  |
+        |  |          |  |      v
+        +--+---------br--+      -
+           |          |  |
+           +----------+--x
+
+        To ensure IoU of generated box and gt box is larger than `min_overlap`:
+
+        .. math::
+            \cfrac{(w-r)*(h-r)}{w*h+(w+h)r-r^2} \ge {iou} \quad\Rightarrow\quad
+            {r^2-(w+h)r+\cfrac{1-iou}{1+iou}*w*h} \ge 0\\
+            {a} = 1,\quad{b} = {-(w+h)},\quad{c} = {\cfrac{1-iou}{1+iou}*w*h}\\
+            r \le \cfrac{-b-\sqrt{b^2-4*a*c}}{2*a}
+
+        - Case2: both two corners are inside the gt box.
+
+        .. code-block:: text
+
+        |<   width   >|
+
+        lt-+----------+         -
+        |  |          |         ^
+        +--x-------+  |
+        |  |       |  |
+        |  |overlap|  |       height
+        |  |       |  |
+        |  +-------x--+
+        |          |  |         v
+        +----------+-br         -
+
+        To ensure IoU of generated box and gt box is larger than `min_overlap`:
+
+        .. math::
+            \cfrac{(w-2*r)*(h-2*r)}{w*h} \ge {iou} \quad\Rightarrow\quad
+            {4r^2-2(w+h)r+(1-iou)*w*h} \ge 0 \\
+            {a} = 4,\quad {b} = {-2(w+h)},\quad {c} = {(1-iou)*w*h} \\
+            r \le \cfrac{-b-\sqrt{b^2-4*a*c}}{2*a}
+
+        - Case3: both two corners are outside the gt box.
+
+        .. code-block:: text
+
+           |<   width   >|
+
+        x--+----------------+
+        |  |                |
+        +-lt-------------+  |   -
+        |  |             |  |   ^
+        |  |             |  |
+        |  |   overlap   |  | height
+        |  |             |  |
+        |  |             |  |   v
+        |  +------------br--+   -
+        |                |  |
+        +----------------+--x
+
+        To ensure IoU of generated box and gt box is larger than `min_overlap`:
+
+        .. math::
+            \cfrac{w*h}{(w+2*r)*(h+2*r)} \ge {iou} \quad\Rightarrow\quad
+            {4*iou*r^2+2*iou*(w+h)r+(iou-1)*w*h} \le 0 \\
+            {a} = 4*iou,\quad {b} = {-2*iou*(w+h)},\quad {c} = {(iou-1)*w*h} \\
+            r \le \cfrac{-b+\sqrt{b^2-4*a*c}}{2*a}
 
     Args:
         det_size (list[int]): Shape of object.
