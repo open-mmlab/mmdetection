@@ -145,7 +145,7 @@ class SamplingResult(util_mixins.NiceRepr):
         sampler = RandomSampler(
             num,
             pos_fraction,
-            neg_pos_ubo=neg_pos_ub,
+            neg_pos_ub=neg_pos_ub,
             add_gt_as_proposals=add_gt_as_proposals,
             rng=rng)
         self = sampler.sample(assign_result, bboxes, gt_bboxes, gt_labels)
