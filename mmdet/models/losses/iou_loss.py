@@ -73,10 +73,8 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
 
 @weighted_loss
 def giou_loss(pred, target, eps=1e-7):
-    """
-    Generalized Intersection over Union: A Metric and A Loss for
-    Bounding Box Regression
-    https://arxiv.org/abs/1902.09630
+    """Generalized Intersection over Union: A Metric and A Loss for
+    Bounding Box Regression, https://arxiv.org/abs/1902.09630.
 
     code refer to:
     https://github.com/sfzhang15/ATSS/blob/master/atss_core/modeling/rpn/atss/loss.py#L36
@@ -118,9 +116,8 @@ def giou_loss(pred, target, eps=1e-7):
 
 @weighted_loss
 def diou_loss(pred, target, eps=1e-7):
-    """
-    Distance-IoU Loss: Faster and Better Learning for Bounding Box Regression
-    https://arxiv.org/abs/1911.08287
+    """Distance-IoU Loss: Faster and Better Learning for Bounding
+    Box Regression, https://arxiv.org/abs/1911.08287.
 
     code refer to:
     https://github.com/Zzh-tju/DIoU
@@ -136,7 +133,7 @@ def diou_loss(pred, target, eps=1e-7):
     # overlap
     lt = torch.max(pred[:, :2], target[:, :2])
     rb = torch.min(pred[:, 2:], target[:, 2:])
-    wh = (rb - lt + 1).clamp(min=0)
+    wh = (rb - lt).clamp(min=0)
     overlap = wh[:, 0] * wh[:, 1]
 
     # union
@@ -193,7 +190,7 @@ def ciou_loss(pred, target, eps=1e-7):
     # overlap
     lt = torch.max(pred[:, :2], target[:, :2])
     rb = torch.min(pred[:, 2:], target[:, 2:])
-    wh = (rb - lt + 1).clamp(min=0)
+    wh = (rb - lt).clamp(min=0)
     overlap = wh[:, 0] * wh[:, 1]
 
     # union
