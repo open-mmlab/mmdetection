@@ -1,5 +1,9 @@
 import numpy as np
 import torch
+import torch.onnx.symbolic_helper as sym_help
+from torch.autograd import Function
+from torch.onnx.symbolic_opset9 import reshape, unsqueeze, squeeze
+from torch.onnx.symbolic_opset10 import _slice
 
 from . import nms_ext
 
@@ -45,18 +49,46 @@ def nms(dets, iou_thr, device_id=None):
         raise TypeError('dets must be either a Tensor or numpy array, '
                         f'but got {type(dets)}')
 
-    # execute cpu or cuda nms
-    if dets_th.shape[0] == 0:
-        inds = dets_th.new_zeros(0, dtype=torch.long)
-    else:
-        if dets_th.is_cuda:
-            inds = nms_ext.nms(dets_th, iou_thr)
-        else:
-            inds = nms_ext.nms(dets_th, iou_thr)
+    inds = NMSCore.apply(dets_th, iou_thr)
 
     if is_numpy:
         inds = inds.cpu().numpy()
     return dets[inds, :], inds
+
+
+class NMSCore(Function):
+
+    @staticmethod
+    def forward(ctx, dets, iou_thr):
+        if dets.shape[0] == 0:
+            inds = dets.new_zeros(0, dtype=torch.long)
+        else:
+            inds = nms_ext.nms(dets, iou_thr)
+        return inds
+
+    @staticmethod
+    def symbolic(g, dets, iou_thr):
+
+        def cast(x, dtype):
+            return g.op('Cast', x, to_i=sym_help.cast_pytorch_to_onnx[dtype])
+
+        assert 0 <= iou_thr <= 1
+        multi_bboxes = _slice(g, dets, axes=[1], starts=[0], ends=[4])
+        multi_bboxes = unsqueeze(g, multi_bboxes, 0)
+        multi_scores = _slice(g, dets, axes=[1], starts=[4], ends=[5])
+        multi_scores = reshape(g, multi_scores, [1, 1, -1])
+
+        max_num = 100500
+        assert max_num > 0
+
+        indices = g.op(
+            'NonMaxSuppression', multi_bboxes, multi_scores,
+            g.op('Constant', value_t=torch.LongTensor([max_num])),
+            g.op('Constant', value_t=torch.FloatTensor([iou_thr])),
+            g.op('Constant', value_t=torch.FloatTensor([0])))
+        indices = cast(squeeze(g, _slice(g, indices, axes=[1], starts=[2], ends=[3]), 1), 'Long')
+
+        return indices
 
 
 def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
