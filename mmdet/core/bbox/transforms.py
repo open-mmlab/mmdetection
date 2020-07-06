@@ -96,8 +96,8 @@ def bbox2result(bboxes, labels, num_classes):
     """Convert detection results to a list of numpy arrays.
 
     Args:
-        bboxes (Tensor): shape (n, 5)
-        labels (Tensor): shape (n, )
+        bboxes (torch.Tensor or np.ndarray): shape (n, 5)
+        labels (torch.Tensor or np.ndarray): shape (n, )
         num_classes (int): class number, including background class
 
     Returns:

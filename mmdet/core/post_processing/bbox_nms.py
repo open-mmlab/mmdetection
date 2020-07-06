@@ -1,5 +1,3 @@
-import warnings
-
 import torch
 from mmcv.ops.nms import batched_nms
 
@@ -40,6 +38,8 @@ def multiclass_nms(multi_bboxes,
     # filter out boxes with low scores
     valid_mask = scores > score_thr
 
+    # We use masked_select for ONNX exporting purpose,
+    # which is equivalent to bboxes = bboxes[valid_mask]
     # (TODO): as ONNX does not support repeat now,
     # we have to use this ugly code
     bboxes = torch.masked_select(
@@ -55,10 +55,9 @@ def multiclass_nms(multi_bboxes,
         bboxes = multi_bboxes.new_zeros((0, 5))
         labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
 
-        # onnx export
         if torch.onnx.is_in_onnx_export():
-            warnings.warn('[ONNX warning] Can not record NMS in ONNX '
-                          'as it is not be executed this time')
+            raise RuntimeError('[ONNX Error] Can not record NMS '
+                               'as it has not been executed this time')
         return bboxes, labels
 
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)

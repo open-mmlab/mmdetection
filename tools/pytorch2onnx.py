@@ -21,11 +21,10 @@ def pytorch2onnx(model,
                  output_file='tmp.onnx',
                  verify=False):
     model.cpu().eval()
-    # use dummy input to execute model for tracing
+    # read image
     one_img = mmcv.imread(input_img, 'color')
     one_img = mmcv.imresize(one_img, input_shape[2:]).transpose(2, 0, 1)
-    # normalize the input images
-    one_img = torch.from_numpy((one_img - 128) / 256).unsqueeze(0).float()
+    one_img = torch.from_numpy(one_img).unsqueeze(0).float()
     (_, C, H, W) = input_shape
     one_meta = {
         'img_shape': (H, W, C),
@@ -83,13 +82,15 @@ def pytorch2onnx(model,
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert MMDet to ONNX')
     parser.add_argument('config', help='test config file path')
+    parser.add_argument('checkpoint', help='checkpoint file')
     parser.add_argument('--input_img', type=str, help='Images for input')
-    parser.add_argument('--checkpoint', help='checkpoint file', default=None)
     parser.add_argument('--show', action='store_true', help='show onnx graph')
     parser.add_argument('--output_file', type=str, default='tmp.onnx')
     parser.add_argument('--opset_version', type=int, default=11)
     parser.add_argument(
-        '--verify', action='store_true', help='verify the onnx model')
+        '--verify',
+        action='store_true',
+        help='verify the onnx model output against pytorch output')
     parser.add_argument(
         '--shape',
         type=int,
@@ -125,13 +126,11 @@ if __name__ == '__main__':
 
     # build the model
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-    if args.checkpoint:
-        checkpoint = load_checkpoint(
-            model, args.checkpoint, map_location='cpu')
-        # old versions did not save class info in checkpoints,
-        # this walkaround is for backward compatibility
-        if 'CLASSES' in checkpoint['meta']:
-            model.CLASSES = checkpoint['meta']['CLASSES']
+    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
+    # old versions did not save class info in checkpoints,
+    # this walkaround is for backward compatibility
+    if 'CLASSES' in checkpoint['meta']:
+        model.CLASSES = checkpoint['meta']['CLASSES']
 
     # conver model to onnx file
     pytorch2onnx(
