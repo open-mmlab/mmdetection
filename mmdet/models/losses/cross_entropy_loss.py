@@ -45,8 +45,13 @@ def _expand_onehot_labels(labels, label_weights, label_channels):
         (labels >= 0) & (labels < label_channels), as_tuple=False).squeeze()
     if inds.numel() > 0:
         bin_labels[inds, labels[inds]] = 1
-    bin_label_weights = label_weights.view(-1, 1).expand(
-        label_weights.size(0), label_channels)
+
+    if label_weights is None:
+        bin_label_weights = None
+    else:
+        bin_label_weights = label_weights.view(-1, 1).expand(
+            label_weights.size(0), label_channels)
+
     return bin_labels, bin_label_weights
 
 
