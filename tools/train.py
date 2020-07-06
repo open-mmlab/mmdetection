@@ -2,28 +2,24 @@ import argparse
 import copy
 import os
 import os.path as osp
-import tempfile
 import time
 
 import mmcv
-from mmcv import Config, DictAction
-from mmcv.parallel import collate, scatter
-from mmcv.runner import init_dist, get_dist_info
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
 import torch.distributed as dist
-
+from mmcv import Config, DictAction
+from mmcv.parallel import collate, scatter
+from mmcv.runner import init_dist, get_dist_info
 from mmdet import __version__
 from mmdet.apis import set_random_seed, train_detector
 from mmdet.apis.inference import LoadImage
+from mmdet.core import BitmapMasks
 from mmdet.datasets import build_dataset
 from mmdet.datasets.pipelines import Compose
-from mmdet.core import BitmapMasks
 from mmdet.models import build_detector, TwoStageDetector
 from mmdet.utils import collect_env, get_root_logger
-
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
 
 def parse_args():
@@ -41,13 +37,13 @@ def parse_args():
         '--gpus',
         type=int,
         help='number of gpus to use '
-        '(only applicable to non-distributed training)')
+             '(only applicable to non-distributed training)')
     group_gpus.add_argument(
         '--gpu-ids',
         type=int,
         nargs='+',
         help='ids of gpus to use '
-        '(only applicable to non-distributed training)')
+             '(only applicable to non-distributed training)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
     parser.add_argument(
         '--deterministic',
@@ -87,7 +83,8 @@ def determine_max_batch_size(cfg, distributed):
     if 'pipeline' in cfg.data.train:
         img_shape = [t for t in cfg.data.train.pipeline if t['type'] == 'Resize'][0]['img_scale']
     else:
-        img_shape = [t for t in cfg.data.train.dataset.pipeline if t['type'] == 'Resize'][0]['img_scale']
+        img_shape = [t for t in cfg.data.train.dataset.pipeline if t['type'] == 'Resize'][0][
+            'img_scale']
 
     channels = 3
 
@@ -111,7 +108,8 @@ def determine_max_batch_size(cfg, distributed):
 
             if isinstance(model, TwoStageDetector):
                 if model.roi_head.with_mask:
-                    rles = maskUtils.frPyObjects([[0.0, 0.0, width, 0.0, width, height, 0.0, height]], height, width)
+                    rles = maskUtils.frPyObjects(
+                        [[0.0, 0.0, width, 0.0, width, height, 0.0, height]], height, width)
                     rle = maskUtils.merge(rles)
                     mask = maskUtils.decode(rle)
                     gt_masks = [BitmapMasks([mask], height, width) for _ in range(bs)]
@@ -128,8 +126,6 @@ def determine_max_batch_size(cfg, distributed):
             if str(e).startswith('CUDA out of memory'):
                 break
 
-            raise e
-
     resulting_batch_size = int(batch_size * 0.9)
 
     del model
@@ -143,7 +139,6 @@ def determine_max_batch_size(cfg, distributed):
         print('rank', rank, 'resulting_batch_size', resulting_batch_size)
 
         resulting_batch_size = int(resulting_batch_size.cpu())
-
 
     return resulting_batch_size
 
