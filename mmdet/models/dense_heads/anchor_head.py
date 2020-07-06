@@ -23,9 +23,6 @@ class AnchorHead(BaseDenseHead):
         bbox_coder (dict): Config of bounding box coder.
         reg_decoded_bbox (bool): If true, the regression loss would be
             applied on decoded bounding boxes. Default: False
-        background_label (int | None): Label ID of background, set as 0 for
-            RPN and num_classes for other heads. It will automatically set as
-            num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
         train_cfg (dict): Training config of anchor head.
@@ -46,7 +43,6 @@ class AnchorHead(BaseDenseHead):
                      target_means=(.0, .0, .0, .0),
                      target_stds=(1.0, 1.0, 1.0, 1.0)),
                  reg_decoded_bbox=False,
-                 background_label=None,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
@@ -72,12 +68,6 @@ class AnchorHead(BaseDenseHead):
         if self.cls_out_channels <= 0:
             raise ValueError(f'num_classes={num_classes} is too small')
         self.reg_decoded_bbox = reg_decoded_bbox
-
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
@@ -222,7 +212,7 @@ class AnchorHead(BaseDenseHead):
             return (None, ) * 6
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
-
+        
         assign_result = self.assigner.assign(
             anchors, gt_bboxes, gt_bboxes_ignore,
             None if self.sampling else gt_labels)
@@ -233,7 +223,7 @@ class AnchorHead(BaseDenseHead):
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
         labels = anchors.new_full((num_valid_anchors, ),
-                                  self.background_label,
+                                  self.num_classes,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
@@ -248,8 +238,8 @@ class AnchorHead(BaseDenseHead):
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
-                # only rpn gives gt_labels as None, this time FG is 1
-                labels[pos_inds] = 1
+                # Foreground is the first class
+                labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]
@@ -267,7 +257,7 @@ class AnchorHead(BaseDenseHead):
                 labels,
                 num_total_anchors,
                 inside_flags,
-                fill=self.background_label)  # fill bg label
+                fill=self.num_classes)  # fill bg label
             label_weights = unmap(label_weights, num_total_anchors,
                                   inside_flags)
             bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)

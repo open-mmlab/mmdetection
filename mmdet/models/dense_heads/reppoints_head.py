@@ -401,7 +401,7 @@ class RepPointsHead(AnchorFreeHead):
         pos_proposals = torch.zeros_like(proposals)
         proposals_weights = proposals.new_zeros([num_valid_proposals, 4])
         labels = proposals.new_full((num_valid_proposals, ),
-                                    self.background_label,
+                                    self.num_classes,
                                     dtype=torch.long)
         label_weights = proposals.new_zeros(
             num_valid_proposals, dtype=torch.float)
@@ -414,7 +414,7 @@ class RepPointsHead(AnchorFreeHead):
             pos_proposals[pos_inds, :] = proposals[pos_inds, :]
             proposals_weights[pos_inds, :] = 1.0
             if gt_labels is None:
-                labels[pos_inds] = 1
+                labels[pos_inds] = 0
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]

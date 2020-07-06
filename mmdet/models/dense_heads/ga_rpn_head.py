@@ -15,7 +15,7 @@ class GARPNHead(RPNTestMixin, GuidedAnchorHead):
 
     def __init__(self, in_channels, **kwargs):
         super(GARPNHead, self).__init__(
-            1, in_channels, background_label=0, **kwargs)
+            1, in_channels, **kwargs)
 
     def _init_layers(self):
         """Initialize layers of the head."""

@@ -149,8 +149,6 @@ class FSAFHead(RetinaHead):
                 idx_, label_ = shadowed_labels[:, 0], shadowed_labels[:, 1]
                 assert (labels[idx_] != label_).all(), \
                     'One label cannot be both positive and ignored'
-                # If background_label is 0. Then all labels increase by 1
-                label_ += int(self.background_label == 0)
                 label_weights[idx_, label_] = 0
             else:
                 label_weights[shadowed_labels] = 0

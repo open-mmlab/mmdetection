@@ -153,7 +153,7 @@ class FoveaHead(AnchorFreeHead):
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
         pos_inds = (
             (flatten_labels >= 0)
-            & (flatten_labels < self.background_label)).nonzero().view(-1)
+            & (flatten_labels < self.num_classes)).nonzero().view(-1)
         num_pos = len(pos_inds)
 
         loss_cls = self.loss_cls(
