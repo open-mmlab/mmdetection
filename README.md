@@ -1,10 +1,10 @@
 
 # OTEDetection
 
-![](https://img.shields.io/badge/python-3.6%7C3.7-green)
-![](https://img.shields.io/badge/pytorch-1.4-orange)
+![](https://img.shields.io/badge/python-3.6%2B-green)
+![](https://img.shields.io/badge/pytorch-1.3%2B-orange)
 ![](https://img.shields.io/badge/openvino-2020.4-blue)
-![](https://img.shields.io/badge/onnxruntime-1.1.2-yellow)
+![](https://img.shields.io/badge/onnxruntime-1.1.2%2B-yellow)
 
 
 This is an Object Detection and Instance Segmentation toolbox, that is a part of [OpenVINO Training Extensions](https://github.com/opencv/openvino_training_extensions).
