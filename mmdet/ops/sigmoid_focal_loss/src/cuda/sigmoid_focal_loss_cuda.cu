@@ -7,11 +7,20 @@
 // Cheng-Yang Fu
 // cyfu@cs.unc.edu
 #include <ATen/ATen.h>
+#ifdef __NVCC__
 #include <ATen/cuda/CUDAContext.h>
 
 #include <THC/THC.h>
 #include <THC/THCAtomics.cuh>
 #include <THC/THCDeviceUtils.cuh>
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+#include <ATen/hip/HIPContext.h>
+
+#include <THH/THH.h>
+#include <THH/THHAtomics.cuh>
+#include <THH/THHDeviceUtils.cuh>
+#endif
 
 #include <cfloat>
 
@@ -116,19 +125,34 @@ at::Tensor SigmoidFocalLoss_forward_cuda(const at::Tensor &logits,
   dim3 block(512);
 
   if (losses.numel() == 0) {
+#ifdef __NVCC__
     THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+    THCudaCheck(hipGetLastError());
+#endif
     return losses;
   }
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       logits.scalar_type(), "SigmoidFocalLoss_forward", [&] {
         SigmoidFocalLossForward<scalar_t>
+#ifdef __NVCC__
             <<<grid, block, 0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+            <<<grid, block, 0, at::cuda::getCurrentHIPStream()>>>(
+#endif
                 losses_size, logits.contiguous().data_ptr<scalar_t>(),
                 targets.contiguous().data_ptr<int64_t>(), num_classes, gamma,
                 alpha, num_samples, losses.data_ptr<scalar_t>());
       });
+#ifdef __NVCC__
   THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  THCudaCheck(hipGetLastError());
+#endif
   return losses;
 }
 
@@ -156,20 +180,35 @@ at::Tensor SigmoidFocalLoss_backward_cuda(const at::Tensor &logits,
   dim3 block(512);
 
   if (d_logits.numel() == 0) {
+#ifdef __NVCC__
     THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+    THCudaCheck(hipGetLastError());
+#endif
     return d_logits;
   }
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       logits.scalar_type(), "SigmoidFocalLoss_backward", [&] {
         SigmoidFocalLossBackward<scalar_t>
+#ifdef __NVCC__
             <<<grid, block, 0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+            <<<grid, block, 0, at::cuda::getCurrentHIPStream()>>>(
+#endif
                 d_logits_size, logits.contiguous().data_ptr<scalar_t>(),
                 targets.contiguous().data_ptr<int64_t>(),
                 d_losses.contiguous().data_ptr<scalar_t>(), num_classes, gamma,
                 alpha, num_samples, d_logits.data_ptr<scalar_t>());
       });
 
+#ifdef __NVCC__
   THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  THCudaCheck(hipGetLastError());
+#endif
   return d_logits;
 }

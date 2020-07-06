@@ -1,9 +1,20 @@
 #include <ATen/ATen.h>
 #include <ATen/TensorUtils.h>
 #include <ATen/Utils.h>
+
+#ifdef __NVCC__
 #include <ATen/cuda/CUDAContext.h>
 #include <ATen/cuda/CUDAApplyUtils.cuh>
 #include <THC/THCAtomics.cuh>
+#endif
+
+#ifdef __HIP_PLATFORM_HCC__
+#include <ATen/hip/HIPContext.h>
+#include <ATen/hip/HIPApplyUtils.cuh>
+#include <THH/THHAtomics.cuh>
+#include <hip/hip_runtime.h>
+#endif
+
 #include <cmath>
 
 using namespace at;
@@ -22,6 +33,7 @@ using namespace at;
 #define kBlockRows 8
 #define FULL_MASK 0xffffffff
 
+
 inline int divideUP(const int x, const int y) { return (((x) + (y)-1) / (y)); }
 
 __device__ inline int Loc2Index(const int n, const int c, const int h,
@@ -32,19 +44,34 @@ __device__ inline int Loc2Index(const int n, const int c, const int h,
 }
 /* TODO: move this to a common place */
 template <typename scalar_t>
+#ifdef __NVCC__
 __device__ inline scalar_t min(scalar_t a, scalar_t b) {
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+__device__ inline scalar_t min_min(scalar_t a, scalar_t b) {
+#endif
   return a < b ? a : b;
 }
 
 template <typename scalar_t>
+#ifdef __NVCC__
 __device__ inline scalar_t max(scalar_t a, scalar_t b) {
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+__device__ inline scalar_t max_max(scalar_t a, scalar_t b) {
+#endif
   return a > b ? a : b;
 }
 
 template <typename scalar_t>
 __device__ __forceinline__ scalar_t WARP_SHFL_DOWN(scalar_t val, int offset)
 {
+#ifdef __NVCC__
     return __shfl_down_sync(FULL_MASK, val, offset);
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+    return __shfl_down(FULL_MASK, val, offset);
+#endif
 }
 
 template<>
@@ -168,7 +195,12 @@ int CARAFEForwardLaucher(const at::Tensor features, const at::Tensor masks,
                          at::Tensor rfeatures, at::Tensor routput,
                          at::Tensor rmasks, at::Tensor output) {
   // one warp per pixel
+#ifdef __NVCC__
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipStream_t stream = at::cuda::getCurrentHIPStream();
+#endif
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       features.scalar_type(), "NCHW2NHWC_Feature", ([&] {
         const scalar_t *bottom_data = features.data_ptr<scalar_t>();
@@ -217,9 +249,16 @@ int CARAFEForwardLaucher(const at::Tensor features, const at::Tensor masks,
                 batch_size, output_height * output_width, channels, dh, dw,
                 bottom_data, top_data);
       }));
+#ifdef __NVCC__
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err) {
     fprintf(stderr, "cudaCheckError() failed : %s\n", cudaGetErrorString(err));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipError_t err = hipGetLastError();
+  if (hipSuccess != err) {
+    fprintf(stderr, "hipCheckError() failed : %s\n", hipGetErrorString(err));
+#endif
     exit(-1);
   }
 
@@ -373,7 +412,12 @@ __global__ void CARAFEBackward_Mask(const int num_kernels,
       down_x <= down_width - 1) {
     const int channels_per_mask = ceilf(channels / (float)group_size);
     const int start = channels_per_mask * mask_group;
+#ifdef __NVCC__
     const int end = min(channels_per_mask * (mask_group + 1), channels);
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+    const int end = min_min(channels_per_mask * (mask_group + 1), channels);
+#endif
     for (int c = start + lane_id; c < end; c += WARP_SIZE) {
       int bottom_id =
           Loc2Index(n, down_y, down_x, c, down_height, down_width, channels);
@@ -381,7 +425,13 @@ __global__ void CARAFEBackward_Mask(const int num_kernels,
       output_val += top_diff[top_id] * bottom_data[bottom_id];
     }
   }
+#ifdef __NVCC__
   __syncwarp();
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  // confused !!!
+  //__syncwarp(FULL_MASK);
+#endif
   output_val = warpReduceSum(output_val);
   if (lane_id == 0) {
     const int mask_id =
@@ -400,7 +450,12 @@ int CARAFEBackwardLaucher(const at::Tensor top_grad, const at::Tensor rfeatures,
                           at::Tensor rbottom_grad_hs, at::Tensor rbottom_grad,
                           at::Tensor rmask_grad, at::Tensor bottom_grad,
                           at::Tensor mask_grad) {
+#ifdef __NVCC__
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipStream_t stream = at::cuda::getCurrentHIPStream();
+#endif
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       top_grad.scalar_type(), "NCHW2NHWC_Top_Grad", ([&] {
         const scalar_t *bottom_data = top_grad.data_ptr<scalar_t>();
@@ -479,9 +534,16 @@ int CARAFEBackwardLaucher(const at::Tensor top_grad, const at::Tensor rfeatures,
                 batch_size, output_height * output_width, mask_channels, dh, dw,
                 bottom_data, top_data);
       }));
+#ifdef __NVCC__
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err) {
     fprintf(stderr, "cudaCheckError() failed : %s\n", cudaGetErrorString(err));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipError_t err = hipGetLastError();
+  if (hipSuccess != err) {
+    fprintf(stderr, "hipCheckError() failed : %s\n", hipGetErrorString(err));
+#endif
     exit(-1);
   }
 

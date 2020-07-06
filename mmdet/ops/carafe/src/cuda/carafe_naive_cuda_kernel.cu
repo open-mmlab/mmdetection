@@ -1,5 +1,10 @@
 #include <ATen/ATen.h>
+#ifdef __NVCC__
 #include <THC/THCAtomics.cuh>
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+#include <THH/THHAtomics.cuh>
+#endif
 
 using namespace at;  // temporal fix for pytorch<=0.4.1 (see #9848)
 
@@ -86,9 +91,16 @@ int CARAFENAIVEForwardLaucher(const at::Tensor features, const at::Tensor masks,
                 output_size, bottom_data, bottom_masks, kernel_size, group_size,
                 scale_factor, channels, height, width, top_data);
       }));
+#ifdef __NVCC__
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err) {
     fprintf(stderr, "cudaCheckError() failed : %s\n", cudaGetErrorString(err));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipError_t err = hipGetLastError();
+  if (hipSuccess != err) {
+    fprintf(stderr, "hipCheckError() failed : %s\n", hipGetErrorString(err));
+#endif
     exit(-1);
   }
 
@@ -166,9 +178,16 @@ int CARAFENAIVEBackwardLaucher(const at::Tensor top_grad,
                 mask_diff);
       }));
 
+#ifdef __NVCC__
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err) {
     fprintf(stderr, "cudaCheckError() failed : %s\n", cudaGetErrorString(err));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipError_t err = hipGetLastError();
+  if (hipSuccess != err) {
+    fprintf(stderr, "hipCheckError() failed : %s\n", hipGetErrorString(err));
+#endif
     exit(-1);
   }
 

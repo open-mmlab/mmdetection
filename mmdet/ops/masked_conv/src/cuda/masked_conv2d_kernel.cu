@@ -1,6 +1,12 @@
 #include <ATen/ATen.h>
+#ifdef __NVCC__
 #include <ATen/cuda/CUDAContext.h>
 #include <THC/THCAtomics.cuh>
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+#include <ATen/hip/HIPContext.h>
+#include <THH/THHAtomics.cuh>
+#endif
 
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; \
@@ -64,12 +70,23 @@ int MaskedIm2colForwardLaucher(const at::Tensor bottom_data, const int height,
         const int64_t *mask_w_idx_ = mask_w_idx.data_ptr<int64_t>();
         scalar_t *top_data_ = top_data.data_ptr<scalar_t>();
         MaskedIm2colForward<scalar_t>
+#ifdef __NVCC__
             <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()
 >>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentHIPStream()
+>>>(
+#endif
                 output_size, bottom_data_, height, width, kernel_h, kernel_w,
                 pad_h, pad_w, mask_h_idx_, mask_w_idx_, mask_cnt, top_data_);
       }));
+#ifdef __NVCC__
   THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  THCudaCheck(hipGetLastError());
+#endif
   return 1;
 }
 
@@ -105,10 +122,20 @@ int MaskedCol2imForwardLaucher(const at::Tensor bottom_data, const int height,
         scalar_t *top_data_ = top_data.data_ptr<scalar_t>();
 
         MaskedCol2imForward<scalar_t>
+#ifdef __NVCC__
             <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+            <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0, at::cuda::getCurrentHIPStream()>>>(
+#endif
                 output_size, bottom_data_, height, width, channels, mask_h_idx_,
                 mask_w_idx_, mask_cnt, top_data_);
       }));
+#ifdef __NVCC__
   THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  THCudaCheck(hipGetLastError());
+#endif
   return 1;
 }

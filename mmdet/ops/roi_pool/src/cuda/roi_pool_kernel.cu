@@ -1,6 +1,12 @@
 #include <ATen/ATen.h>
+#ifdef __NVCC__
 #include <ATen/cuda/CUDAContext.h>
 #include <THC/THCAtomics.cuh>
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+#include <ATen/hip/HIPContext.h>
+#include <THH/THHAtomics.cuh>
+#endif
 
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; \
@@ -93,12 +99,23 @@ int ROIPoolForwardLaucher(const at::Tensor features, const at::Tensor rois,
         scalar_t *top_data = output.data_ptr<scalar_t>();
         int *argmax_data = argmax.data_ptr<int>();
 
+#ifdef __NVCC__
         ROIPoolForward<scalar_t><<<GET_BLOCKS(output_size), THREADS_PER_BLOCK,
                                    0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+        ROIPoolForward<scalar_t><<<GET_BLOCKS(output_size), THREADS_PER_BLOCK,
+                                   0, at::cuda::getCurrentHIPStream()>>>(
+#endif
             output_size, bottom_data, rois_data, scalar_t(spatial_scale),
             channels, height, width, pooled_h, pooled_w, top_data, argmax_data);
       }));
+#ifdef __NVCC__
   THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  THCudaCheck(hipGetLastError());
+#endif
   return 1;
 }
 template <typename scalar_t>
@@ -140,12 +157,23 @@ int ROIPoolBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
           fprintf(stderr, "double is not supported\n");
           exit(-1);
         }
+#ifdef __NVCC__
         ROIPoolBackward<scalar_t><<<GET_BLOCKS(output_size), THREADS_PER_BLOCK,
                                     0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+        ROIPoolBackward<scalar_t><<<GET_BLOCKS(output_size), THREADS_PER_BLOCK,
+                                    0, at::cuda::getCurrentHIPStream()>>>(
+#endif
             output_size, top_diff, rois_data, argmax_data,
             scalar_t(spatial_scale), channels, height, width, pooled_h,
             pooled_w, bottom_diff);
       }));
+#ifdef __NVCC__
   THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  THCudaCheck(hipGetLastError());
+#endif
   return 1;
 }

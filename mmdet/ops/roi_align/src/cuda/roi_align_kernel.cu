@@ -1,6 +1,12 @@
 #include <ATen/ATen.h>
+#ifdef __NVCC__
 #include <ATen/cuda/CUDAContext.h>
 #include <THC/THCAtomics.cuh>
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+#include <ATen/hip/HIPContext.h>
+#include <THH/THHAtomics.cuh>
+#endif
 
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; \
@@ -131,12 +137,22 @@ int ROIAlignForwardLaucher(const at::Tensor features, const at::Tensor rois,
 
         ROIAlignForwardV1<scalar_t>
             <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0,
+#ifdef __NVCC__
                at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+               at::cuda::getCurrentHIPStream()>>>(
+#endif
                 output_size, bottom_data, rois_data, scalar_t(spatial_scale),
                 sample_num, channels, height, width, pooled_height,
                 pooled_width, top_data);
       }));
+#ifdef __NVCC__
   THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  THCudaCheck(hipGetLastError());
+#endif
   return 1;
 }
 
@@ -273,11 +289,21 @@ int ROIAlignBackwardLaucher(const at::Tensor top_grad, const at::Tensor rois,
 
         ROIAlignBackwardV1<scalar_t>
             <<<GET_BLOCKS(output_size), THREADS_PER_BLOCK, 0,
+#ifdef __NVCC__
                at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+               at::cuda::getCurrentHIPStream()>>>(
+#endif
                 output_size, top_diff, rois_data, spatial_scale, sample_num,
                 channels, height, width, pooled_height, pooled_width,
                 bottom_diff);
       }));
+#ifdef __NVCC__
   THCudaCheck(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  THCudaCheck(hipGetLastError());
+#endif
   return 1;
 }

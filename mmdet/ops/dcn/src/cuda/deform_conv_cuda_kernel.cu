@@ -61,8 +61,14 @@
 // modified from https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch/blob/mmdetection/mmdet/ops/dcn/src/deform_conv_cuda_kernel.cu
 
 #include <ATen/ATen.h>
+#ifdef __NVCC__
 #include <ATen/cuda/CUDAContext.h>
 #include <THC/THCAtomics.cuh>
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+#include <ATen/hip/HIPContext.h>
+#include <THH/THHAtomics.cuh>
+#endif
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
@@ -262,17 +268,30 @@ void deformable_im2col(
         const scalar_t *data_offset_ = data_offset.data_ptr<scalar_t>();
         scalar_t *data_col_ = data_col.data_ptr<scalar_t>();
 
+#ifdef __NVCC__
         deformable_im2col_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+        deformable_im2col_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentHIPStream()>>>(
+#endif
             num_kernels, data_im_, data_offset_, height, width, ksize_h, ksize_w,
             pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w,
             channel_per_deformable_group, parallel_imgs, channels, deformable_group,
             height_col, width_col, data_col_);
       }));
 
+#ifdef __NVCC__
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
   {
     printf("error in deformable_im2col: %s\n", cudaGetErrorString(err));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipError_t err = hipGetLastError();
+  if (err != hipSuccess)
+  {
+    printf("error in deformable_im2col: %s\n", hipGetErrorString(err));
+#endif
   }
 }
 
@@ -356,17 +375,30 @@ void deformable_col2im(
         const scalar_t *data_offset_ = data_offset.data_ptr<scalar_t>();
         scalar_t *grad_im_ = grad_im.data_ptr<scalar_t>();
 
+#ifdef __NVCC__
         deformable_col2im_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+        deformable_col2im_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentHIPStream()>>>(
+#endif
             num_kernels, data_col_, data_offset_, channels, height, width, ksize_h,
             ksize_w, pad_h, pad_w, stride_h, stride_w,
             dilation_h, dilation_w, channel_per_deformable_group,
             parallel_imgs, deformable_group, height_col, width_col, grad_im_);
       }));
 
+#ifdef __NVCC__
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
   {
     printf("error in deformable_col2im: %s\n", cudaGetErrorString(err));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipError_t err = hipGetLastError();
+  if (err != hipSuccess)
+  {
+    printf("error in deformable_col2im: %s\n", hipGetErrorString(err));
+#endif
   }
 }
 
@@ -455,7 +487,12 @@ void deformable_col2im_coord(
         const scalar_t *data_offset_ = data_offset.data_ptr<scalar_t>();
         scalar_t *grad_offset_ = grad_offset.data_ptr<scalar_t>();
 
+#ifdef __NVCC__
         deformable_col2im_coord_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+        deformable_col2im_coord_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentHIPStream()>>>(
+#endif
             num_kernels, data_col_, data_im_, data_offset_, channels, height, width,
             ksize_h, ksize_w, pad_h, pad_w, stride_h, stride_w,
             dilation_h, dilation_w, channel_per_deformable_group,
@@ -785,16 +822,29 @@ void modulated_deformable_im2col_cuda(
         const scalar_t *data_mask_ = data_mask.data_ptr<scalar_t>();
         scalar_t *data_col_ = data_col.data_ptr<scalar_t>();
 
+#ifdef __NVCC__
         modulated_deformable_im2col_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+        modulated_deformable_im2col_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentHIPStream()>>>(
+#endif
             num_kernels, data_im_, data_offset_, data_mask_, height_im, width_im, kernel_h, kenerl_w,
             pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w, channel_per_deformable_group,
             batch_size, channels, deformable_group, height_col, width_col, data_col_);
       }));
 
+#ifdef __NVCC__
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
   {
     printf("error in modulated_deformable_im2col_cuda: %s\n", cudaGetErrorString(err));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipError_t err = hipGetLastError();
+  if (err != hipSuccess)
+  {
+    printf("error in modulated_deformable_im2col_cuda: %s\n", hipGetErrorString(err));
+#endif
   }
 }
 
@@ -817,17 +867,30 @@ void modulated_deformable_col2im_cuda(
         const scalar_t *data_mask_ = data_mask.data_ptr<scalar_t>();
         scalar_t *grad_im_ = grad_im.data_ptr<scalar_t>();
 
+#ifdef __NVCC__
         modulated_deformable_col2im_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+        modulated_deformable_col2im_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentHIPStream()>>>(
+#endif
             num_kernels, data_col_, data_offset_, data_mask_, channels, height_im, width_im,
             kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w,
             dilation_h, dilation_w, channel_per_deformable_group,
             batch_size, deformable_group, height_col, width_col, grad_im_);
       }));
 
+#ifdef __NVCC__
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
   {
     printf("error in modulated_deformable_col2im_cuda: %s\n", cudaGetErrorString(err));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipError_t err = hipGetLastError();
+  if (err != hipSuccess)
+  {
+    printf("error in modulated_deformable_col2im_cuda: %s\n", hipGetErrorString(err));
+#endif
   }
 }
 
@@ -852,16 +915,29 @@ void modulated_deformable_col2im_coord_cuda(
         scalar_t *grad_offset_ = grad_offset.data_ptr<scalar_t>();
         scalar_t *grad_mask_ = grad_mask.data_ptr<scalar_t>();
 
+#ifdef __NVCC__
         modulated_deformable_col2im_coord_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentCUDAStream()>>>(
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+        modulated_deformable_col2im_coord_gpu_kernel<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS, 0, at::cuda::getCurrentHIPStream()>>>(
+#endif
             num_kernels, data_col_, data_im_, data_offset_, data_mask_, channels, height_im, width_im,
             kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w,
             dilation_h, dilation_w, channel_per_deformable_group,
             batch_size, 2 * kernel_h * kernel_w * deformable_group, deformable_group, height_col, width_col,
             grad_offset_, grad_mask_);
       }));
+#ifdef __NVCC__
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
   {
     printf("error in modulated_deformable_col2im_coord_cuda: %s\n", cudaGetErrorString(err));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipError_t err = hipGetLastError();
+  if (err != hipSuccess)
+  {
+    printf("error in modulated_deformable_col2im_coord_cuda: %s\n", hipGetErrorString(err));
+#endif
   }
 }

@@ -3,9 +3,16 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 #include <ATen/ATen.h>
+#ifdef __NVCC__
 #include <ATen/cuda/CUDAContext.h>
 #include <c10/cuda/CUDAGuard.h>
 #include <ATen/cuda/CUDAApplyUtils.cuh>
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+#include <ATen/hip/HIPContext.h>
+// #include <c10/hip/HIPGuard.h>    // ???
+#include <ATen/hip/HIPApplyUtils.cuh>
+#endif
 
 // TODO make it in a common file
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
@@ -275,7 +282,12 @@ at::Tensor ROIAlignForwardV2Laucher(const at::Tensor& input,
   at::CheckedFrom c = "ROIAlign_forward_cuda";
   at::checkAllSameGPU(c, {input_t, rois_t});
   at::checkAllSameType(c, {input_t, rois_t});
+#ifdef __NVCC__
   at::cuda::CUDAGuard device_guard(input.device());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  // at::cuda::HIPGuard device_guard(input.device());    // ???
+#endif
 
   auto num_rois = rois.size(0);
   auto channels = input.size(1);
@@ -285,13 +297,23 @@ at::Tensor ROIAlignForwardV2Laucher(const at::Tensor& input,
   auto output = at::empty({num_rois, channels, pooled_height, pooled_width},
                           input.options());
   auto output_size = num_rois * pooled_height * pooled_width * channels;
+#ifdef __NVCC__
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipStream_t stream = at::cuda::getCurrentHIPStream();
+#endif
 
   dim3 grid(std::min(at::cuda::ATenCeilDiv(static_cast<int64_t>(output_size), static_cast<int64_t>(512)), static_cast<int64_t>(4096)));
   dim3 block(512);
 
   if (output.numel() == 0) {
+#ifdef __NVCC__
     AT_CUDA_CHECK(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+    AT_CUDA_CHECK(hipGetLastError());
+#endif
     return output;
   }
 
@@ -301,8 +323,14 @@ at::Tensor ROIAlignForwardV2Laucher(const at::Tensor& input,
         channels, height, width, pooled_height, pooled_width, sampling_ratio,
         rois.contiguous().data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), aligned);
   });
+#ifdef __NVCC__
   cudaDeviceSynchronize();
   AT_CUDA_CHECK(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipDeviceSynchronize();
+  AT_CUDA_CHECK(hipGetLastError());
+#endif
   return output;
 }
 
@@ -319,20 +347,35 @@ at::Tensor ROIAlignBackwardV2Laucher(
   at::CheckedFrom c = "ROIAlign_backward_cuda";
   at::checkAllSameGPU(c, {grad_t, rois_t});
   at::checkAllSameType(c, {grad_t, rois_t});
+#ifdef __NVCC__
   at::cuda::CUDAGuard device_guard(grad.device());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  // at::cuda::HIPGuard device_guard(grad.device());    // ???
+#endif
 
   auto num_rois = rois.size(0);
   auto grad_input =
       at::zeros({batch_size, channels, height, width}, grad.options());
 
+#ifdef __NVCC__
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  hipStream_t stream = at::cuda::getCurrentHIPStream();
+#endif
 
   dim3 grid(std::min(at::cuda::ATenCeilDiv(static_cast<int64_t>(grad.numel()), static_cast<int64_t>(512)), static_cast<int64_t>(4096)));
   dim3 block(512);
 
   // handle possibly empty gradients
   if (grad.numel() == 0) {
+#ifdef __NVCC__
     AT_CUDA_CHECK(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+    AT_CUDA_CHECK(hipGetLastError());
+#endif
     return grad_input;
   }
 
@@ -343,6 +386,11 @@ at::Tensor ROIAlignBackwardV2Laucher(
         sampling_ratio, grad_input.data_ptr<scalar_t>(),
         rois.contiguous().data_ptr<scalar_t>(), aligned);
   });
+#ifdef __NVCC__
   AT_CUDA_CHECK(cudaGetLastError());
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  AT_CUDA_CHECK(hipGetLastError());
+#endif
   return grad_input;
 }

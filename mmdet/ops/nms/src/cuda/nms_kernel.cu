@@ -1,10 +1,17 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 #include <ATen/ATen.h>
-#include <ATen/cuda/CUDAContext.h>
 #include <ATen/DeviceGuard.h>
 
+#ifdef __NVCC__
+#include <ATen/cuda/CUDAContext.h>
 #include <THC/THC.h>
 #include <THC/THCDeviceUtils.cuh>
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+#include <ATen/hip/HIPContext.h>
+#include <THH/THH.h>
+#include <THH/THHDeviceUtils.cuh>
+#endif
 
 #include <vector>
 #include <iostream>
@@ -96,6 +103,7 @@ at::Tensor nms_cuda_forward(const at::Tensor boxes, float nms_overlap_thresh) {
   dim3 blocks(THCCeilDiv(boxes_num, threadsPerBlock),
               THCCeilDiv(boxes_num, threadsPerBlock));
   dim3 threads(threadsPerBlock);
+#ifdef __NVCC__
   nms_kernel<<<blocks, threads, 0, at::cuda::getCurrentCUDAStream()>>>(boxes_num,
                                   nms_overlap_thresh,
                                   boxes_dev,
@@ -109,6 +117,22 @@ at::Tensor nms_cuda_forward(const at::Tensor boxes, float nms_overlap_thresh) {
 			  cudaMemcpyDeviceToHost,
 			  at::cuda::getCurrentCUDAStream()
 			  ));
+#endif
+#ifdef __HIP_PLATFORM_HCC__
+  nms_kernel<<<blocks, threads, 0, at::cuda::getCurrentHIPStream()>>>(boxes_num,
+                                  nms_overlap_thresh,
+                                  boxes_dev,
+                                  mask_dev);
+
+  std::vector<unsigned long long> mask_host(boxes_num * col_blocks);
+  THCudaCheck(hipMemcpyAsync(
+			  &mask_host[0],
+			  mask_dev,
+			  sizeof(unsigned long long) * boxes_num * col_blocks,
+			  hipMemcpyDeviceToHost,
+			  at::cuda::getCurrentHIPStream()
+			  ));
+#endif
 
   std::vector<unsigned long long> remv(col_blocks);
   memset(&remv[0], 0, sizeof(unsigned long long) * col_blocks);
