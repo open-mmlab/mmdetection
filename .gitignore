@@ -114,6 +114,8 @@ data/
 *.pkl.json
 *.log.json
 work_dirs/
+configs/acai/
+data
 
 # Pytorch
 *.pth
