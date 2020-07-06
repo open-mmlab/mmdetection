@@ -87,7 +87,7 @@ class RPNHead(RPNTestMixin, AnchorHead):
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
             if cfg.nms_pre > 0:
-                scores, topk_inds = topk(scores, cfg.nms_pre)
+                scores, topk_inds = topk(scores, cfg.nms_pre, dim=0)
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds]
                 anchors = anchors[topk_inds]
             mlvl_scores.append(scores)

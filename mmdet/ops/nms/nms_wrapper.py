@@ -1,14 +1,14 @@
+import sys
+
 import numpy as np
 import torch
-import torch.onnx.symbolic_helper as sym_help
-from torch.autograd import Function
-from torch.onnx.symbolic_opset9 import reshape, unsqueeze, squeeze
-from torch.onnx.symbolic_opset10 import _slice
+from torch.onnx import is_in_onnx_export
 
+from mmdet.utils.deployment.symbolic import py_symbolic
 from . import nms_ext
 
 
-def nms(dets, iou_thr, device_id=None):
+def nms(dets, iou_thr, score_thr=0.0, max_num=sys.maxsize, device_id=None):
     """Dispatch to either CPU or GPU NMS implementations.
 
     The input can be either a torch tensor or numpy array. GPU NMS will be used
@@ -49,46 +49,28 @@ def nms(dets, iou_thr, device_id=None):
         raise TypeError('dets must be either a Tensor or numpy array, '
                         f'but got {type(dets)}')
 
-    inds = NMSCore.apply(dets_th, iou_thr)
+    inds = nms_core(dets_th, iou_thr, score_thr, max_num)
 
     if is_numpy:
         inds = inds.cpu().numpy()
     return dets[inds, :], inds
 
 
-class NMSCore(Function):
+@py_symbolic()
+def nms_core(dets, iou_thr, score_thr, max_num):
+    if is_in_onnx_export():
+        valid_dets_mask = dets[:, 4] > score_thr
+        dets = dets[valid_dets_mask]
 
-    @staticmethod
-    def forward(ctx, dets, iou_thr):
-        if dets.shape[0] == 0:
-            inds = dets.new_zeros(0, dtype=torch.long)
-        else:
-            inds = nms_ext.nms(dets, iou_thr)
-        return inds
+    if dets.shape[0] == 0:
+        inds = dets.new_zeros(0, dtype=torch.long)
+    else:
+        inds = nms_ext.nms(dets, iou_thr)
 
-    @staticmethod
-    def symbolic(g, dets, iou_thr):
+    if is_in_onnx_export():
+        inds = inds[:max_num]
 
-        def cast(x, dtype):
-            return g.op('Cast', x, to_i=sym_help.cast_pytorch_to_onnx[dtype])
-
-        assert 0 <= iou_thr <= 1
-        multi_bboxes = _slice(g, dets, axes=[1], starts=[0], ends=[4])
-        multi_bboxes = unsqueeze(g, multi_bboxes, 0)
-        multi_scores = _slice(g, dets, axes=[1], starts=[4], ends=[5])
-        multi_scores = reshape(g, multi_scores, [1, 1, -1])
-
-        max_num = 100500
-        assert max_num > 0
-
-        indices = g.op(
-            'NonMaxSuppression', multi_bboxes, multi_scores,
-            g.op('Constant', value_t=torch.LongTensor([max_num])),
-            g.op('Constant', value_t=torch.FloatTensor([iou_thr])),
-            g.op('Constant', value_t=torch.FloatTensor([0])))
-        indices = cast(squeeze(g, _slice(g, indices, axes=[1], starts=[2], ends=[3]), 1), 'Long')
-
-        return indices
+    return inds
 
 
 def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):

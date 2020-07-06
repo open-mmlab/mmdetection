@@ -20,17 +20,18 @@ from subprocess import run, check_call, CalledProcessError, DEVNULL
 import mmcv
 import numpy as np
 import onnx
-from mmcv.parallel import collate, scatter
-
 import torch
+from onnx.optimizer import optimize
+from torch.onnx.symbolic_helper import _onnx_stable_opsets as available_opsets
 
+from mmcv.parallel import collate, scatter
 from mmdet.apis import init_detector
 from mmdet.apis.inference import LoadImage
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import detectors
 from mmdet.models.dense_heads.anchor_head import AnchorHead
 from mmdet.models.roi_heads import SingleRoIExtractor
-from mmdet.utils.deployment import register_extra_symbolics
+from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.ssd_export_helpers import *
 from mmdet.utils.deployment.tracer_stubs import AnchorsGridGeneratorStub, ROIFeatureExtractorStub
 
@@ -208,8 +209,8 @@ def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
 def optimize_onnx_graph(onnx_model_path):
     onnx_model = onnx.load(onnx_model_path)
 
-    onnx_model = onnx.optimizer.optimize(onnx_model, ['extract_constant_to_initializer',
-                                                      'eliminate_unused_initializer'])
+    onnx_model = optimize(onnx_model, ['extract_constant_to_initializer',
+                                       'eliminate_unused_initializer'])
 
     inputs = onnx_model.graph.input
     name_to_input = {}
@@ -224,6 +225,9 @@ def optimize_onnx_graph(onnx_model_path):
 
 
 def main(args):
+    assert args.opset in available_opsets
+    assert args.opset > 9
+
     torch.set_default_tensor_type(torch.FloatTensor)
     model = init_detector(args.config, args.checkpoint, device='cpu')
     model.eval()
@@ -244,7 +248,7 @@ def main(args):
                                osp.splitext(osp.basename(args.config))[0] + '.onnx')
     
     with torch.no_grad():
-        export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=10,
+        export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=args.opset,
                        alt_ssd_export=getattr(args, 'alt_ssd_export', False))
         add_node_names(onnx_model_path)
         print(f'ONNX model has been saved to "{onnx_model_path}"')
@@ -268,6 +272,7 @@ def parse_args():
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help="path to file with model's weights")
     parser.add_argument('output_dir', help='path to directory to save exported models in')
+    parser.add_argument('--opset', type=int, default=10, help='ONNX opset')
 
     subparsers = parser.add_subparsers(title='target', dest='target', help='target model format')
     subparsers.required = True
