@@ -469,8 +469,8 @@ class RandomCrop(object):
 
     Args:
         crop_size (tuple): Expected size after cropping, (h, w).
-        allow_negative_crop (bool): Whether to allow a crop whose center is not
-            located in any bbox. Default to False.
+        allow_negative_crop (bool): Whether to allow a crop that does not
+            contain any bbox area. Default to False.
 
     Notes:
         - If the image is smaller than the crop size, return the original image
@@ -533,7 +533,7 @@ class RandomCrop(object):
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
             valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
                 bboxes[:, 3] > bboxes[:, 1])
-            # If the crop center is not located in any gt-bboxes and
+            # If the crop does not contain any gt-bbox area and
             # self.allow_negative_crop is False, skip this image.
             if (key == 'gt_bboxes' and not valid_inds.any()
                     and not self.allow_negative_crop):
