@@ -106,13 +106,12 @@ def determine_max_batch_size(cfg, distributed):
 
             gt_masks = None
 
-            if isinstance(model, TwoStageDetector):
-                if model.roi_head.with_mask:
-                    rles = maskUtils.frPyObjects(
-                        [[0.0, 0.0, width, 0.0, width, height, 0.0, height]], height, width)
-                    rle = maskUtils.merge(rles)
-                    mask = maskUtils.decode(rle)
-                    gt_masks = [BitmapMasks([mask], height, width) for _ in range(bs)]
+            if isinstance(model, TwoStageDetector) and model.roi_head.with_mask:
+                rles = maskUtils.frPyObjects(
+                    [[0.0, 0.0, width, 0.0, width, height, 0.0, height]], height, width)
+                rle = maskUtils.merge(rles)
+                mask = maskUtils.decode(rle)
+                gt_masks = [BitmapMasks([mask], height, width) for _ in range(bs)]
 
             if gt_masks is None:
                 model(torch.rand(bs, channels, height, width).cuda(), img_metas=img_metas,
