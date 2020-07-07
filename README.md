@@ -1,4 +1,6 @@
-![Logo](resources/mmdet-logo.png)
+<div align="center">
+  <img src="resources/mmdet-logo.png" width="500"/>
+</div>
 
 **News**: We released the technical report on [ArXiv](https://arxiv.org/abs/1906.07155).
 
