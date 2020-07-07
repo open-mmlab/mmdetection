@@ -5,7 +5,7 @@ model = dict(
         bbox_roi_extractor=dict(
             type='GenericRoIExtractor',
             aggregation='sum',
-            roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=2),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32],
             pre_cfg=dict(
@@ -25,7 +25,7 @@ model = dict(
                 kv_stride=2)),
         mask_roi_extractor=dict(
             type='GenericRoIExtractor',
-            roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
+            roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=2),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32],
             pre_cfg=dict(

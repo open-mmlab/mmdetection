@@ -7,7 +7,8 @@ model = dict(
         mask_roi_extractor=dict(
             type='GenericRoIExtractor',
             aggregation='concat',
-            roi_layer=dict(_delete_=True, type='SimpleRoIAlign', out_size=14),
+            roi_layer=dict(
+                _delete_=True, type='SimpleRoIAlign', output_size=14),
             out_channels=256,
             featmap_strides=[4]),
         mask_head=dict(

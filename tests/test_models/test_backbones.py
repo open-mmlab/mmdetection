@@ -52,7 +52,7 @@ def test_resnet_basic_block():
 
     with pytest.raises(AssertionError):
         # Not implemented yet.
-        dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
+        dcn = dict(type='DCN', deform_groups=1, fallback_on_stride=False)
         BasicBlock(64, 64, dcn=dcn)
 
     with pytest.raises(AssertionError):
@@ -146,7 +146,7 @@ def test_resnet_bottleneck():
     assert block.conv2.stride == (1, 1)
 
     # Test Bottleneck DCN
-    dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
+    dcn = dict(type='DCN', deform_groups=1, fallback_on_stride=False)
     with pytest.raises(AssertionError):
         Bottleneck(64, 64, dcn=dcn, conv_cfg=dict(type='Conv'))
     block = Bottleneck(64, 64, dcn=dcn)
@@ -301,7 +301,7 @@ def test_resnet_backbone():
 
     with pytest.raises(AssertionError):
         # len(stage_with_dcn) == num_stages
-        dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
+        dcn = dict(type='DCN', deform_groups=1, fallback_on_stride=False)
         ResNet(50, dcn=dcn, stage_with_dcn=(True, ))
 
     with pytest.raises(AssertionError):
@@ -632,7 +632,7 @@ def test_renext_bottleneck():
     assert block.conv2.out_channels == 128
 
     # Test ResNeXt Bottleneck with DCN
-    dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
+    dcn = dict(type='DCN', deform_groups=1, fallback_on_stride=False)
     with pytest.raises(AssertionError):
         # conv_cfg must be None if dcn is not None
         BottleneckX(
@@ -743,7 +743,7 @@ def test_res2net_bottle2neck():
     assert block.scales == 4
 
     # Test Res2Net Bottle2neck with DCN
-    dcn = dict(type='DCN', deformable_groups=1, fallback_on_stride=False)
+    dcn = dict(type='DCN', deform_groups=1, fallback_on_stride=False)
     with pytest.raises(AssertionError):
         # conv_cfg must be None if dcn is not None
         Bottle2neck(

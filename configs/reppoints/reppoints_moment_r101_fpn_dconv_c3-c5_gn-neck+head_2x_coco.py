@@ -3,5 +3,5 @@ model = dict(
     pretrained='torchvision://resnet101',
     backbone=dict(
         depth=101,
-        dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),
+        dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)))

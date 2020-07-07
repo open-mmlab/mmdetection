@@ -23,7 +23,7 @@ class NASFCOSHead(FCOSHead):
             type='DCNv2',
             kernel_size=3,
             use_bias=True,
-            deformable_groups=2,
+            deform_groups=2,
             padding=1)
         conv3x3_config = dict(type='Conv', kernel_size=3, padding=1)
         conv1x1_config = dict(type='Conv', kernel_size=1)
