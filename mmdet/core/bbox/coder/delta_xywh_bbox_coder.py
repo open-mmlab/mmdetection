@@ -7,7 +7,7 @@ from .base_bbox_coder import BaseBBoxCoder
 
 @BBOX_CODERS.register_module()
 class DeltaXYWHBBoxCoder(BaseBBoxCoder):
-    """Delta XYWH BBox coder
+    """Delta XYWH BBox coder.
 
     Following the practice in `R-CNN <https://arxiv.org/abs/1311.2524>`_,
     this coder encodes bbox (x1, y1, x2, y2) into delta (dx, dy, dw, dh) and
@@ -28,8 +28,8 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         self.stds = target_stds
 
     def encode(self, bboxes, gt_bboxes):
-        """Get box regression transformation deltas that can be used
-        to transform the `bboxes` into the `gt_bboxes`.
+        """Get box regression transformation deltas that can be used to
+        transform the ``bboxes`` into the ``gt_bboxes``.
 
         Args:
             bboxes (torch.Tensor): Source boxes, e.g., object proposals.
@@ -76,7 +76,7 @@ def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
 
     We usually compute the deltas of x, y, w, h of proposals w.r.t ground
     truth bboxes to get regression target.
-    This is the inverse function of `delta2bbox()`
+    This is the inverse function of :func:`delta2bbox`.
 
     Args:
         proposals (Tensor): Boxes to be transformed, shape (N, ..., 4)
@@ -88,7 +88,6 @@ def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     Returns:
         Tensor: deltas with shape (N, 4), where columns represent dx, dy,
             dw, dh.
-
     """
     assert proposals.size() == gt.size()
 
@@ -127,7 +126,7 @@ def delta2bbox(rois,
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are
     network outputs used to shift/scale those boxes.
-    This is the inverse function of `bbox2delta()`
+    This is the inverse function of :func:`bbox2delta`.
 
     Args:
         rois (Tensor): Boxes to be transformed. Has shape (N, 4)

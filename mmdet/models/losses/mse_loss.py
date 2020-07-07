@@ -7,13 +7,13 @@ from .utils import weighted_loss
 
 @weighted_loss
 def mse_loss(pred, target):
-    """Warpper of mse loss"""
+    """Warpper of mse loss."""
     return F.mse_loss(pred, target, reduction='none')
 
 
 @LOSSES.register_module()
 class MSELoss(nn.Module):
-    """MSELoss
+    """MSELoss.
 
     Args:
         reduction (str, optional): The method that reduces the loss to a
@@ -27,7 +27,7 @@ class MSELoss(nn.Module):
         self.loss_weight = loss_weight
 
     def forward(self, pred, target, weight=None, avg_factor=None):
-        """Forward function of loss
+        """Forward function of loss.
 
         Args:
             pred (torch.Tensor): The prediction.

@@ -1,7 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, caffe2_xavier_init
+from mmcv.ops.merge_cells import GlobalPoolingCell, SumCell
 
-from mmdet.ops.merge_cells import GlobalPoolingCell, SumCell
 from ..builder import NECKS
 
 
@@ -121,13 +121,13 @@ class NASFPN(nn.Module):
             self.fpn_stages.append(stage)
 
     def init_weights(self):
-        """Initialize the weights of module"""
+        """Initialize the weights of module."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 caffe2_xavier_init(m)
 
     def forward(self, inputs):
-        """Forward function"""
+        """Forward function."""
         # build P3-P5
         feats = [
             lateral_conv(inputs[i + self.start_level])

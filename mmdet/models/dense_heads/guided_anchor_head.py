@@ -299,8 +299,7 @@ class GuidedAnchorHead(AnchorHead):
                     img_metas,
                     use_loc_filter=False,
                     device='cuda'):
-        """Get squares according to feature map sizes and guided
-        anchors.
+        """Get squares according to feature map sizes and guided anchors.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.

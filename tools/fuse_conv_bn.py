@@ -8,11 +8,10 @@ from mmdet.apis import init_detector
 
 
 def fuse_conv_bn(conv, bn):
-    """ During inference, the functionary of batch norm layers is turned off
-    but only the mean and var alone channels are used, which exposes the
-    chance to fuse it with the preceding conv layers to save computations and
-    simplify network structures.
-    """
+    """During inference, the functionary of batch norm layers is turned off but
+    only the mean and var alone channels are used, which exposes the chance to
+    fuse it with the preceding conv layers to save computations and simplify
+    network structures."""
     conv_w = conv.weight
     conv_b = conv.bias if conv.bias is not None else torch.zeros_like(
         bn.running_mean)

@@ -46,7 +46,7 @@ class ResLayer(nn.Module):
         self.add_module(f'layer{stage + 1}', res_layer)
 
     def init_weights(self, pretrained=None):
-        """Initialize the weights in the module
+        """Initialize the weights in the module.
 
         Args:
             pretrained (str, optional): Path to pre-trained weights.

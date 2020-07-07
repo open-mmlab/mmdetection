@@ -34,7 +34,7 @@ def scale_boxes(bboxes, scale):
 
 
 def is_located_in(points, bboxes):
-    """Are points located in bboxes
+    """Are points located in bboxes.
 
     Args:
       points (Tensor): Points, shape: (m, 2).
@@ -59,7 +59,6 @@ def bboxes_area(bboxes):
 
     Returns:
         Tensor: Area of the bboxes. Shape: (m, )
-
     """
     assert bboxes.size(1) == 4
     w = (bboxes[:, 2] - bboxes[:, 0])
@@ -111,7 +110,6 @@ class CenterRegionAssigner(BaseAssigner):
         Returns:
             Tensor: The priority of gts so that gts with larger priority is
               more likely to be assigned. Shape (k, )
-
         """
         gt_areas = bboxes_area(gt_bboxes)
         # Rank all gt bbox areas. Smaller objects has larger priority
@@ -147,7 +145,6 @@ class CenterRegionAssigner(BaseAssigner):
             >>> assign_result = self.assign(bboxes, gt_bboxes)
             >>> expected_gt_inds = torch.LongTensor([1, 0])
             >>> assert torch.all(assign_result.gt_inds == expected_gt_inds)
-
         """
         # There are in total 5 steps in the pixel assignment
         # 1. Find core (the center region, say inner 0.2)
@@ -248,7 +245,7 @@ class CenterRegionAssigner(BaseAssigner):
                                   is_bbox_in_gt_core,
                                   is_bbox_in_gt_shadow,
                                   gt_priority=None):
-        """Assign only one gt index to each prior box
+        """Assign only one gt index to each prior box.
 
         Gts with large gt_priority are more likely to be assigned.
 

@@ -7,7 +7,7 @@ from .random_sampler import RandomSampler
 
 @BBOX_SAMPLERS.register_module()
 class IoUBalancedNegSampler(RandomSampler):
-    """IoU Balanced Sampling
+    """IoU Balanced Sampling.
 
     arXiv: https://arxiv.org/pdf/1904.02701.pdf (CVPR 2019)
 
@@ -44,7 +44,7 @@ class IoUBalancedNegSampler(RandomSampler):
         self.num_bins = num_bins
 
     def sample_via_interval(self, max_overlaps, full_set, num_expected):
-        """Sample according to the iou interval
+        """Sample according to the iou interval.
 
         Args:
             max_overlaps (torch.Tensor): IoU between bounding boxes and ground
@@ -86,7 +86,7 @@ class IoUBalancedNegSampler(RandomSampler):
         return sampled_inds
 
     def _sample_neg(self, assign_result, num_expected, **kwargs):
-        """Sample negative boxes
+        """Sample negative boxes.
 
         Args:
             assign_result (:obj:`AssignResult`): The assigned results of boxes.
