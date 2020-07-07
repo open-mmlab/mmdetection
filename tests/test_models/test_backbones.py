@@ -1,5 +1,6 @@
 import pytest
 import torch
+from mmcv.ops import DeformConv2dPack
 from torch.nn.modules import AvgPool2d, GroupNorm
 from torch.nn.modules.batchnorm import _BatchNorm
 
@@ -9,7 +10,6 @@ from mmdet.models.backbones.res2net import Bottle2neck
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.backbones.resnext import Bottleneck as BottleneckX
 from mmdet.models.utils import ResLayer
-from mmdet.ops import DeformConvPack
 
 
 def is_block(modules):
@@ -150,7 +150,7 @@ def test_resnet_bottleneck():
     with pytest.raises(AssertionError):
         Bottleneck(64, 64, dcn=dcn, conv_cfg=dict(type='Conv'))
     block = Bottleneck(64, 64, dcn=dcn)
-    assert isinstance(block.conv2, DeformConvPack)
+    assert isinstance(block.conv2, DeformConv2dPack)
 
     # Test Bottleneck forward
     block = Bottleneck(64, 16)

@@ -82,7 +82,7 @@ git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Install build requirements and then install mmdetection.
+e. Install build requirements and then install mmdetection.
 (We install our forked version of pycocotools via the github repo instead of pypi
 for better compatibility with our repo.)
 
