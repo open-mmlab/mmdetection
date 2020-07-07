@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="resources/mmdet-logo.png" width="400"/>
+  <img src="resources/mmdet-logo.png" width="600"/>
 </div>
 
 **News**: We released the technical report on [ArXiv](https://arxiv.org/abs/1906.07155).
