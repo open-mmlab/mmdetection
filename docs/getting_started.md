@@ -80,63 +80,63 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
 
-```shell
-python tools/test.py configs/faster_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
-    --show
-```
+   ```shell
+   python tools/test.py configs/faster_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
+       --show
+   ```
 
-2. Test Faster R-CNN and save the painted images for latter visualization.
+1. Test Faster R-CNN and save the painted images for latter visualization.
 
-```shell
-python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
-    --show-dir faster_rcnn_r50_fpn_1x_results
-```
+   ```shell
+   python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
+       --show-dir faster_rcnn_r50_fpn_1x_results
+   ```
 
-3. Test Faster R-CNN on PASCAL VOC (without saving the test results) and evaluate the mAP.
+1. Test Faster R-CNN on PASCAL VOC (without saving the test results) and evaluate the mAP.
 
-```shell
-python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
-    checkpoints/SOME_CHECKPOINT.pth \
-    --eval mAP
-```
+   ```shell
+   python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
+       checkpoints/SOME_CHECKPOINT.pth \
+       --eval mAP
+   ```
 
-4. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
+1. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
 
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --out results.pkl --eval bbox segm
-```
+   ```shell
+   ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+       8 --out results.pkl --eval bbox segm
+   ```
 
-5. Test Mask R-CNN with 8 GPUs, and evaluate the **classwise** bbox and mask AP.
+1. Test Mask R-CNN with 8 GPUs, and evaluate the **classwise** bbox and mask AP.
 
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --out results.pkl --eval bbox segm --options "classwise=True"
-```
+   ```shell
+   ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+       8 --out results.pkl --eval bbox segm --options "classwise=True"
+   ```
 
-6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
+1. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
 
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
-```
+   ```shell
+   ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+       8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+   ```
+   
+   You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
 
-You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+1. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate the txt and png files to be submit to the official evaluation server.
 
-7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate the txt and png files to be submit to the official evaluation server.
-
-```shell
-./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
-    8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
-```
-
-The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
+   ```shell
+   ./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
+       8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+   ```
+   
+   The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
 
 ### Image demo
