@@ -95,7 +95,7 @@ def determine_max_batch_size(cfg, distributed):
 
     min_bs = 2
     max_bs = 512
-    step = 2
+    step = 1
 
     batch_size = min_bs
     for bs in range(min_bs, max_bs, step):
