@@ -15,7 +15,7 @@ defines how to process the annotations and a data pipeline defines all the steps
 A pipeline consists of a sequence of operations. Each operation takes a dict as input and also output a dict for the next transform.
 
 We present a classical pipeline in the following figure. The blue blocks are pipeline operations. With the pipeline going on, each operator can add new keys (marked as green) to the result dict or update the existing keys (marked as orange).
-![pipeline figure](../../demo/data_pipeline.png)
+![pipeline figure](../../resources/data_pipeline.png)
 
 The operations are categorized into data loading, pre-processing, formatting and test-time augmentation.
 

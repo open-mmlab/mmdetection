@@ -344,7 +344,7 @@ We provide lots of useful tools under `tools/` directory.
 
 You can plot loss/mAP curves given a training log file. Run `pip install seaborn` first to install the dependency.
 
-![loss curve image](../demo/loss_curve.png)
+![loss curve image](../resources/loss_curve.png)
 
 ```shell
 python tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
