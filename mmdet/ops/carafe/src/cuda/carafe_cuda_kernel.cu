@@ -430,7 +430,7 @@ __global__ void CARAFEBackward_Mask(const int num_kernels,
 #endif
 #ifdef __HIP_PLATFORM_HCC__
   // confused !!!
-  //__syncwarp(FULL_MASK);
+  __syncthreads();
 #endif
   output_val = warpReduceSum(output_val);
   if (lane_id == 0) {
