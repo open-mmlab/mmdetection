@@ -30,7 +30,7 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
     now = datetime.now()
     date_time = now.strftime("%m%d%Y_%H%M%S")
 
-    log_filename = './demo/det.txt'
+    log_filename = './demo/dump/det.txt'
     log_file = open(log_filename, 'w')
 
     start_process = time.time()
@@ -96,7 +96,7 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
             print('[DBG][{}/{}] frame inference time: {} {}, elapsed time: {} {}'.format(f_number+slice_start, slice_end-1, end_time-start_time, '.s', (end_process-start_process), '.s'))
 
         if f_number == 1 or f_number % 1000 == 0:
-            dump_path = "./demo/dump-%06d.jpg" % (f_number)
+            dump_path = "./demo/dump/dump-%06d.jpg" % (f_number)
             cv2.imwrite(dump_path, frame)
             log_file.flush()
             os.fsync(log_file.fileno())
