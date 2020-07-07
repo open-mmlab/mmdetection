@@ -59,7 +59,7 @@ class XMLDataset(CustomDataset):
         return data_infos
 
     def get_subset_by_classes(self):
-        """Filter imgs by user-defined categories"""
+        """Filter imgs by user-defined categories."""
         subset_data_infos = []
         for data_info in self.data_infos:
             img_id = data_info['id']

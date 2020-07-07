@@ -14,7 +14,7 @@ plugin_cfg = {
 
 
 def build_plugin_layer(cfg, postfix='', **kwargs):
-    """ Build plugin layer
+    """Build plugin layer.
 
     Args:
         cfg (None or dict): cfg should contain:

@@ -10,13 +10,13 @@ import torch
 
 # build schedule look-up table to automatically find the final model
 SCHEDULES_LUT = {
-    '1x': 12,
-    '2x': 24,
-    '20e': 20,
-    '3x': 36,
-    '4x': 48,
-    '24e': 24,
-    '6x': 73
+    '_1x_': 12,
+    '_2x_': 24,
+    '_20e_': 20,
+    '_3x_': 36,
+    '_4x_': 48,
+    '_24e_': 24,
+    '_6x_': 73
 }
 RESULTS_LUT = ['bbox_mAP', 'segm_mAP']
 
@@ -163,6 +163,7 @@ def main():
         publish_model_infos.append(model)
 
     models = dict(models=publish_model_infos)
+    print(f'Totally gathered {len(publish_model_infos)} models')
     mmcv.dump(models, osp.join(models_out, 'model_info.json'))
 
 

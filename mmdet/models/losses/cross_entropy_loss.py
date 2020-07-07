@@ -134,7 +134,7 @@ class CrossEntropyLoss(nn.Module):
                  reduction='mean',
                  class_weight=None,
                  loss_weight=1.0):
-        """CrossEntropyLoss
+        """CrossEntropyLoss.
 
         Args:
             use_sigmoid (bool, optional): Whether the prediction uses sigmoid

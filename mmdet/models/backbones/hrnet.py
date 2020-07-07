@@ -10,8 +10,10 @@ from .resnet import BasicBlock, Bottleneck
 
 
 class HRModule(nn.Module):
-    """ High-Resolution Module for HRNet. In this module, every branch
-    has 4 BasicBlocks/Bottlenecks. Fusion/Exchange is in this module.
+    """High-Resolution Module for HRNet.
+
+    In this module, every branch has 4 BasicBlocks/Bottlenecks. Fusion/Exchange
+    is in this module.
     """
 
     def __init__(self,
@@ -173,7 +175,7 @@ class HRModule(nn.Module):
         return nn.ModuleList(fuse_layers)
 
     def forward(self, x):
-        """Forward function"""
+        """Forward function."""
         if self.num_branches == 1:
             return [self.branches[0](x[0])]
 
@@ -463,7 +465,7 @@ class HRNet(nn.Module):
         return nn.Sequential(*hr_modules), in_channels
 
     def init_weights(self, pretrained=None):
-        """Initialize the weights in backbone
+        """Initialize the weights in backbone.
 
         Args:
             pretrained (str, optional): Path to pre-trained weights.
@@ -489,7 +491,7 @@ class HRNet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
-        """Forward function"""
+        """Forward function."""
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.relu(x)
@@ -526,7 +528,7 @@ class HRNet(nn.Module):
 
     def train(self, mode=True):
         """Convert the model into training mode whill keeping the normalization
-        layer freezed"""
+        layer freezed."""
         super(HRNet, self).train(mode)
         if mode and self.norm_eval:
             for m in self.modules():

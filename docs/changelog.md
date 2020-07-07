@@ -1,5 +1,51 @@
 ## Changelog
 
+### v2.2.0 (1/7/2020)
+
+**Highlights**
+- Support new methods: [DetectoRS](https://arxiv.org/abs/2006.02334), [PointRend](https://arxiv.org/abs/1912.08193), [Generalized Focal Loss](https://arxiv.org/abs/2006.04388), [Dynamic R-CNN](https://arxiv.org/abs/2004.06002)
+
+**Bug Fixes**
+ - Fix FreeAnchor when no gt in image (#3176)
+ - Clean up deprecated usage of `register_module()` (#3092, #3161)
+ - Fix pretrain bug in NAS FCOS (#3145)
+ - Fix `num_classes` in SSD (#3142)
+ - Fix FCOS warmup (#3119)
+ - Fix `rstrip` in `tools/publish_model.py`
+ - Fix `flip_ratio` default value in RandomFLip pipeline (#3106)
+ - Fix cityscapes eval with ms_rcnn (#3112)
+ - Fix RPN softmax (#3056)
+ - Fix filename of LVIS@v0.5 (#2998)
+ - Fix nan loss by filtering out-of-frame gt_bboxes in COCO (#2999)
+ - Fix bug in FSAF (#3018)
+ - Add FocalLoss `num_classes` check (#2964)
+ - Fix PISA Loss when there are no gts (#2992)
+ - Avoid nan in `iou_calculator` (#2975)
+ - Prevent possible bugs in loading and transforms caused by shallow copy (#2967)
+
+**New Features**
+- Add DetectoRS (#3064)
+- Support Generalize Focal Loss (#3097)
+- Support PointRend (#2752)
+- Support Dynamic R-CNN (#3040)
+- Add DeepFashion dataset (#2968)
+- Implement FCOS training tricks (#2935)
+- Use BaseDenseHead as base class for anchor-base heads (#2963)
+- Add `with_cp` for BasicBlock (#2891)
+- Add `stem_channles` argument for ResNet (#2954)
+
+**Improvements**
+
+- Add anchor free base head (#2867)
+- Migrate to github action (#3137)
+- Add docstring for datasets, pipelines, core modules and methods (#3130, #3125, #3120)
+- Add VOC benchmark (#3060)
+- Add `concat` mode in GRoI (#3098)
+- Remove cmd arg `autorescale-lr` (#3080)
+- Use `len(data['img_metas'])` to indicate `num_samples` (#3073, #3053)
+- Switch to EpochBasedRunner (#2976)
+
+
 ### v2.1.0 (8/6/2020)
 
 **Highlights**

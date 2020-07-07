@@ -14,7 +14,7 @@ def py_sigmoid_focal_loss(pred,
                           alpha=0.25,
                           reduction='mean',
                           avg_factor=None):
-    """PyTorch version of `Focal Loss <https://arxiv.org/abs/1708.02002>`_
+    """PyTorch version of `Focal Loss <https://arxiv.org/abs/1708.02002>`_.
 
     Args:
         pred (torch.Tensor): The prediction with shape (N, C), C is the
@@ -48,8 +48,8 @@ def sigmoid_focal_loss(pred,
                        alpha=0.25,
                        reduction='mean',
                        avg_factor=None):
-    """A warpper of cuda version
-    `Focal Loss <https://arxiv.org/abs/1708.02002>`_
+    r"""A warpper of cuda version `Focal Loss
+    <https://arxiv.org/abs/1708.02002>`_.
 
     Args:
         pred (torch.Tensor): The prediction with shape (N, C), C is the number

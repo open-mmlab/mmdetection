@@ -4,7 +4,6 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     env:
@@ -25,61 +24,61 @@ jobs:
             cuda_arch: "7.0"
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install CUDA
-      run: |
-        export INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb
-        wget http://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/${INSTALLER}
-        sudo dpkg -i ${INSTALLER}
-        wget https://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/7fa2af80.pub
-        sudo apt-key add 7fa2af80.pub
-        sudo apt update -qq
-        sudo apt install -y cuda-${CUDA_SHORT/./-} cuda-cufft-dev-${CUDA_SHORT/./-}
-        sudo apt clean
-        export CUDA_HOME=/usr/local/cuda-${CUDA_SHORT}
-        export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${CUDA_HOME}/include:${LD_LIBRARY_PATH}
-        export PATH=${CUDA_HOME}/bin:${PATH}
-        sudo apt-get install -y ninja-build
-    - name: Install Pillow
-      run: pip install Pillow==6.2.2
-      if: ${{matrix.torchvision < 0.5}}
-    - name: Install PyTorch
-      run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}}
-    - name: Install mmdet dependencies
-      run: |
-        pip install mmcv
-        pip install -r requirements.txt
-        pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
-    - name: Lint with flake8
-      run: flake8 .
-    - name: Lint with isort
-      run: isort -rc --check-only --diff mmdet/ tools/ tests/
-    - name: Format with yapf
-      run: yapf -r -d mmdet/ tools/ configs/ tests/
-    - name: Check docstring
-      run: interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --exclude mmdet/ops --ignore-regex "__repr__" --fail-under 80 mmdet
-    - name: Build and install
-      env:
-        CUDA_ARCH: ${{matrix.cuda_arch}}
-      run: |
-        rm -rf .eggs
-        python setup.py check -m -s
-        TORCH_CUDA_ARCH_LIST=${CUDA_ARCH} python setup.py build_ext --inplace
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install CUDA
+        run: |
+          export INSTALLER=cuda-repo-${UBUNTU_VERSION}_${CUDA}_amd64.deb
+          wget http://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/${INSTALLER}
+          sudo dpkg -i ${INSTALLER}
+          wget https://developer.download.nvidia.com/compute/cuda/repos/${UBUNTU_VERSION}/x86_64/7fa2af80.pub
+          sudo apt-key add 7fa2af80.pub
+          sudo apt update -qq
+          sudo apt install -y cuda-${CUDA_SHORT/./-} cuda-cufft-dev-${CUDA_SHORT/./-}
+          sudo apt clean
+          export CUDA_HOME=/usr/local/cuda-${CUDA_SHORT}
+          export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${CUDA_HOME}/include:${LD_LIBRARY_PATH}
+          export PATH=${CUDA_HOME}/bin:${PATH}
+          sudo apt-get install -y ninja-build
+      - name: Install Pillow
+        run: pip install Pillow==6.2.2
+        if: ${{matrix.torchvision < 0.5}}
+      - name: Install PyTorch
+        run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}}
+      - name: Install mmdet dependencies
+        run: |
+          pip install mmcv
+          pip install -r requirements.txt
+          pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
+      - name: Lint with flake8
+        run: flake8 .
+      - name: Lint with isort
+        run: isort --recursive --check-only --diff mmdet/ tools/ tests/
+      - name: Format with yapf
+        run: yapf -r -d mmdet/ tools/ configs/ tests/
+      - name: Check docstring
+        run: interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --exclude mmdet/ops --ignore-regex "__repr__" --fail-under 80 mmdet
+      - name: Build and install
+        env:
+          CUDA_ARCH: ${{matrix.cuda_arch}}
+        run: |
+          rm -rf .eggs
+          python setup.py check -m -s
+          TORCH_CUDA_ARCH_LIST=${CUDA_ARCH} python setup.py build_ext --inplace
 
-    - name: Run unittests and generate coverage report
-      run: |
-        coverage run --branch --source mmdet -m pytest tests/
-        coverage xml
-        coverage report -m
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@master
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        env_vars: OS,PYTHON
-        name: codecov-umbrella
-        fail_ci_if_error: false
+      - name: Run unittests and generate coverage report
+        run: |
+          coverage run --branch --source mmdet -m pytest tests/
+          coverage xml
+          coverage report -m
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.0.10
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          env_vars: OS,PYTHON
+          name: codecov-umbrella
+          fail_ci_if_error: false

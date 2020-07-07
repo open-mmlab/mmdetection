@@ -9,9 +9,7 @@ from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
 
 
 def test_fcos_head_loss():
-    """
-    Tests fcos head loss when truth is empty and non-empty
-    """
+    """Tests fcos head loss when truth is empty and non-empty."""
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),
@@ -70,9 +68,7 @@ def test_fcos_head_loss():
 
 
 def test_anchor_head_loss():
-    """
-    Tests anchor head loss when truth is empty and non-empty
-    """
+    """Tests anchor head loss when truth is empty and non-empty."""
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),
@@ -137,8 +133,7 @@ def test_anchor_head_loss():
 
 
 def test_fsaf_head_loss():
-    """Tests anchor head loss when truth is empty and non-empty
-    """
+    """Tests anchor head loss when truth is empty and non-empty."""
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),
@@ -215,9 +210,7 @@ def test_fsaf_head_loss():
 
 
 def test_ga_anchor_head_loss():
-    """
-    Tests anchor head loss when truth is empty and non-empty
-    """
+    """Tests anchor head loss when truth is empty and non-empty."""
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),
@@ -303,9 +296,7 @@ def test_ga_anchor_head_loss():
 
 
 def test_bbox_head_loss():
-    """
-    Tests bbox head loss when truth is empty and non-empty
-    """
+    """Tests bbox head loss when truth is empty and non-empty."""
     self = BBoxHead(in_channels=8, roi_feat_size=3)
 
     # Dummy proposals
@@ -363,11 +354,9 @@ def test_bbox_head_loss():
 
 
 def test_refine_boxes():
-    """
-    Mirrors the doctest in
+    """Mirrors the doctest in
     ``mmdet.models.bbox_heads.bbox_head.BBoxHead.refine_boxes`` but checks for
-    multiple values of n_roi / n_img.
-    """
+    multiple values of n_roi / n_img."""
     self = BBoxHead(reg_class_agnostic=True)
 
     test_settings = [
@@ -488,10 +477,8 @@ def test_refine_boxes():
 
 
 def _demodata_refine_boxes(n_roi, n_img, rng=0):
-    """
-    Create random test data for the
-    ``mmdet.models.bbox_heads.bbox_head.BBoxHead.refine_boxes`` method
-    """
+    """Create random test data for the
+    ``mmdet.models.bbox_heads.bbox_head.BBoxHead.refine_boxes`` method."""
     import numpy as np
     from mmdet.core.bbox.demodata import random_boxes
     from mmdet.core.bbox.demodata import ensure_rng
@@ -532,9 +519,7 @@ def _demodata_refine_boxes(n_roi, n_img, rng=0):
 
 
 def test_mask_head_loss():
-    """
-    Test mask head loss when mask target is empty
-    """
+    """Test mask head loss when mask target is empty."""
     self = FCNMaskHead(
         num_convs=1,
         roi_feat_size=6,
@@ -598,9 +583,7 @@ def test_mask_head_loss():
 
 
 def _dummy_bbox_sampling(proposal_list, gt_bboxes, gt_labels):
-    """
-    Create sample results that can be passed to BBoxHead.get_targets
-    """
+    """Create sample results that can be passed to BBoxHead.get_targets."""
     num_imgs = 1
     feat = torch.rand(1, 1, 3, 3)
     assign_config = dict(

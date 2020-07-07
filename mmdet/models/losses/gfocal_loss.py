@@ -7,10 +7,9 @@ from .utils import weighted_loss
 
 @weighted_loss
 def quality_focal_loss(pred, target, beta=2.0):
-    """Quality Focal Loss (QFL) is from
-    Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes
-    for Dense Object Detection
-    https://arxiv.org/abs/2006.04388
+    r"""Quality Focal Loss (QFL) is from `Generalized Focal Loss: Learning
+    Qualified and Distributed Bounding Boxes for Dense Object Detection
+    <https://arxiv.org/abs/2006.04388>`_.
 
     Args:
         pred (torch.Tensor): Predicted joint representation of classification
@@ -21,7 +20,7 @@ def quality_focal_loss(pred, target, beta=2.0):
         beta (float): The beta parameter for calculating the modulating factor.
             Defaults to 2.0.
 
-    Return:
+    Returns:
         torch.Tensor: Loss tensor with shape (N,).
     """
     assert len(target) == 2, """target for QFL must be a tuple of two elements,
@@ -52,10 +51,9 @@ def quality_focal_loss(pred, target, beta=2.0):
 
 @weighted_loss
 def distribution_focal_loss(pred, label):
-    """Distribution Focal Loss (DFL) is from
-    Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes
-    for Dense Object Detection
-    https://arxiv.org/abs/2006.04388
+    r"""Distribution Focal Loss (DFL) is from `Generalized Focal Loss: Learning
+    Qualified and Distributed Bounding Boxes for Dense Object Detection
+    <https://arxiv.org/abs/2006.04388>`_.
 
     Args:
         pred (torch.Tensor): Predicted general distribution of bounding boxes
@@ -64,7 +62,7 @@ def distribution_focal_loss(pred, label):
         label (torch.Tensor): Target distance label for bounding boxes with
             shape (N,).
 
-    Return:
+    Returns:
         torch.Tensor: Loss tensor with shape (N,).
     """
     dis_left = label.long()
@@ -76,12 +74,11 @@ def distribution_focal_loss(pred, label):
     return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class QualityFocalLoss(nn.Module):
-    """Quality Focal Loss (QFL) is a variant of
-    Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes
-    for Dense Object Detection
-    https://arxiv.org/abs/2006.04388
+    r"""Quality Focal Loss (QFL) is a variant of `Generalized Focal Loss:
+    Learning Qualified and Distributed Bounding Boxes for Dense Object
+    Detection <https://arxiv.org/abs/2006.04388>`_.
 
     Args:
         use_sigmoid (bool): Whether sigmoid operation is conducted in QFL.
@@ -110,7 +107,7 @@ class QualityFocalLoss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None):
-        """Forward function
+        """Forward function.
 
         Args:
             pred (torch.Tensor): Predicted joint representation of
@@ -142,15 +139,14 @@ class QualityFocalLoss(nn.Module):
         return loss_cls
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class DistributionFocalLoss(nn.Module):
-    """Distribution Focal Loss (DFL) is a variant of
-    Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes
-    for Dense Object Detection
-    https://arxiv.org/abs/2006.04388
+    r"""Distribution Focal Loss (DFL) is a variant of `Generalized Focal Loss:
+    Learning Qualified and Distributed Bounding Boxes for Dense Object
+    Detection <https://arxiv.org/abs/2006.04388>`_.
 
     Args:
-        reduction (str): Options are "none", "mean" and "sum".
+        reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
         loss_weight (float): Loss weight of current loss.
     """
 
@@ -165,7 +161,7 @@ class DistributionFocalLoss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None):
-        """Forward function
+        """Forward function.
 
         Args:
             pred (torch.Tensor): Predicted general distribution of bounding

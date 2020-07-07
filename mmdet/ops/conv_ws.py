@@ -20,7 +20,7 @@ def conv_ws_2d(input,
     return F.conv2d(input, weight, bias, stride, padding, dilation, groups)
 
 
-@CONV_LAYERS.register_module('ConvWS')
+@CONV_LAYERS.register_module(name='ConvWS')
 class ConvWS2d(nn.Conv2d):
 
     def __init__(self,
@@ -49,7 +49,7 @@ class ConvWS2d(nn.Conv2d):
                           self.dilation, self.groups, self.eps)
 
 
-@CONV_LAYERS.register_module('ConvAWS')
+@CONV_LAYERS.register_module(name='ConvAWS')
 class ConvAWS2d(nn.Conv2d):
     """AWS (Adaptive Weight Standardization)
 
@@ -111,7 +111,7 @@ class ConvAWS2d(nn.Conv2d):
 
     def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
                               missing_keys, unexpected_keys, error_msgs):
-        """Override default load function
+        """Override default load function.
 
         AWS overrides the function _load_from_state_dict to recover
         weight_gamma and weight_beta if they are missing. If weight_gamma and

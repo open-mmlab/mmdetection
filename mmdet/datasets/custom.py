@@ -101,19 +101,19 @@ class CustomDataset(Dataset):
         self.pipeline = Compose(pipeline)
 
     def __len__(self):
-        """Total number of samples of data"""
+        """Total number of samples of data."""
         return len(self.data_infos)
 
     def load_annotations(self, ann_file):
-        """Load annotation from annotation file"""
+        """Load annotation from annotation file."""
         return mmcv.load(ann_file)
 
     def load_proposals(self, proposal_file):
-        """Load proposal from proposal file"""
+        """Load proposal from proposal file."""
         return mmcv.load(proposal_file)
 
     def get_ann_info(self, idx):
-        """Get annotation by index
+        """Get annotation by index.
 
         Args:
             idx (int): Index of data.
@@ -125,7 +125,7 @@ class CustomDataset(Dataset):
         return self.data_infos[idx]['ann']
 
     def get_cat_ids(self, idx):
-        """Get category ids by index
+        """Get category ids by index.
 
         Args:
             idx (int): Index of data.
@@ -137,7 +137,7 @@ class CustomDataset(Dataset):
         return self.data_infos[idx]['ann']['labels'].astype(np.int).tolist()
 
     def pre_pipeline(self, results):
-        """Prepare results dict for pipeline"""
+        """Prepare results dict for pipeline."""
         results['img_prefix'] = self.img_prefix
         results['seg_prefix'] = self.seg_prefix
         results['proposal_file'] = self.proposal_file
@@ -166,12 +166,12 @@ class CustomDataset(Dataset):
                 self.flag[i] = 1
 
     def _rand_another(self, idx):
-        """Get another random index from the same group as the given index"""
+        """Get another random index from the same group as the given index."""
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
 
     def __getitem__(self, idx):
-        """Get training/test data after pipeline
+        """Get training/test data after pipeline.
 
         Args:
             idx (int): Index of data.
@@ -229,7 +229,7 @@ class CustomDataset(Dataset):
 
     @classmethod
     def get_classes(cls, classes=None):
-        """Get class names of current dataset
+        """Get class names of current dataset.
 
         Args:
             classes (Sequence[str] | str | None): If classes is None, use
@@ -237,7 +237,6 @@ class CustomDataset(Dataset):
                 string, take it as a file name. The file contains the name of
                 classes where each line contains one class name. If classes is
                 a tuple or list, override the CLASSES defined by the dataset.
-
         """
         if classes is None:
             cls.custom_classes = False
@@ -258,7 +257,7 @@ class CustomDataset(Dataset):
         return self.data_infos
 
     def format_results(self, results, **kwargs):
-        """Place holder to format result to dataset specific output"""
+        """Place holder to format result to dataset specific output."""
         pass
 
     def evaluate(self,

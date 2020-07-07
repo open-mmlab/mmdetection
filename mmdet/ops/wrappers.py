@@ -1,9 +1,9 @@
-"""
-Modified from https://github.com/facebookresearch/detectron2/blob/master
-/detectron2/layers/wrappers.py
-Wrap some nn modules to support empty tensor input.
-Currently, these wrappers are mainly used in mask heads like fcn_mask_head
-and maskiou_heads since mask heads are trained on only positive RoIs.
+r"""Modified from https://github.com/facebookresearch/detectron2/blob/master/detectron2/layers/wrappers.py  # noqa: E501
+
+Wrap some nn modules to support empty tensor
+input. Currently, these wrappers are mainly used in mask heads like
+fcn_mask_head and maskiou_heads since mask heads are trained on only positive
+RoIs.
 """
 import math
 
@@ -26,7 +26,7 @@ class NewEmptyTensorOp(torch.autograd.Function):
         return NewEmptyTensorOp.apply(grad, shape), None
 
 
-@CONV_LAYERS.register_module('Conv', force=True)
+@CONV_LAYERS.register_module(name='Conv', force=True)
 class Conv2d(nn.Conv2d):
 
     def forward(self, x):
