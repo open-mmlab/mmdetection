@@ -50,7 +50,7 @@ jobs:
         run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}}
       - name: Install mmdet dependencies
         run: |
-          pip install mmcv
+          pip install git+https://github.com/yhcao6/mmcv@migrate-op
           pip install -r requirements.txt
           pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
       - name: Lint with flake8
