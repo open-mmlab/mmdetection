@@ -30,7 +30,7 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
     now = datetime.now()
     date_time = now.strftime("%m%d%Y_%H%M%S")
 
-    log_filename = './demo/dump/det.txt'
+    log_filename = './demo/det.txt'
     log_file = open(log_filename, 'w')
 
     start_process = time.time()
@@ -85,19 +85,18 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
         else:
             for i in range(len(bboxes)):
                 bb = bboxes[i]
-                if labels[i] != 0:  continue
                 d = (int(bb[0]), int(bb[1]), int(bb[2]), int(bb[3]))
                 cv2.rectangle(frame, (d[0], d[1]), (d[2], d[3]), (255,0,0), 2)
                 log_file.write(str(f_number)+","+str(d[0])+","+str(d[1])+","+str(d[2])+","+str(d[3]) + "\n")
 
             last_boxes = bboxes.copy()
 
-        if f_number == 1 or f_number % 50 == 0:
+        if f_number == 1 or f_number % 300 == 0:
             end_process = time.time()
             print('[DBG][{}/{}] frame inference time: {} {}, elapsed time: {} {}'.format(f_number+slice_start, slice_end-1, end_time-start_time, '.s', (end_process-start_process), '.s'))
 
-        if f_number == 1 or f_number % 300 == 0:
-            dump_path = "./demo/dump/dump-%06d.jpg" % (f_number)
+        if f_number == 1 or f_number % 1000 == 0:
+            dump_path = "./demo/dump-%06d.jpg" % (f_number)
             cv2.imwrite(dump_path, frame)
             log_file.flush()
             os.fsync(log_file.fileno())
