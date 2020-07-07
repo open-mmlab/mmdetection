@@ -278,6 +278,7 @@ Optional arguments are:
 - `--no-validate` (**not suggested**): By default, the codebase will perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training. To disable this behavior, use `--no-validate`.
 - `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
+- `--options 'Key=value'`: Overide some settings in the used config.
 
 Difference between `resume-from` and `load-from`:
 `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
@@ -315,24 +316,35 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
 CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
-If you use launch training jobs with Slurm, you need to modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
+If you use launch training jobs with Slurm, there are two ways to specify the ports.
 
-In `config1.py`,
-```python
-dist_params = dict(backend='nccl', port=29500)
-```
+1. Modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
 
-In `config2.py`,
-```python
-dist_params = dict(backend='nccl', port=29501)
-```
+   In `config1.py`,
 
-Then you can launch two jobs with `config1.py` ang `config2.py`.
+   ```python
+   dist_params = dict(backend='nccl', port=29500)
+   ```
 
-```shell
-CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR}
-CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR}
-```
+   In `config2.py`,
+
+   ```python
+   dist_params = dict(backend='nccl', port=29501)
+   ```
+
+   Then you can launch two jobs with `config1.py` ang `config2.py`.
+
+   ```shell
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR}
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR}
+   ```
+
+2. Set the port through `--options`. This is more recommended since it does not change the original configs.
+
+   ```shell
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --options 'dist_params.port=29500'
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --options 'dist_params.port=29501'
+   ```
 
 ## Useful tools
 
