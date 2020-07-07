@@ -8,7 +8,7 @@ from ..builder import NECKS
 
 @NECKS.register_module()
 class NASFCOS_FPN(nn.Module):
-    """FPN structure in NASFPN
+    """FPN structure in NASFPN.
 
     Implementation of paper `NAS-FCOS: Fast Neural Architecture Search for
     Object Detection <https://arxiv.org/abs/1906.04423>`_
@@ -113,7 +113,7 @@ class NASFCOS_FPN(nn.Module):
                     order=('act', 'norm', 'conv')))
 
     def forward(self, inputs):
-        """Forward function"""
+        """Forward function."""
         feats = [
             adapt_conv(inputs[i + self.start_level])
             for i, adapt_conv in enumerate(self.adapt_convs)
@@ -147,7 +147,7 @@ class NASFCOS_FPN(nn.Module):
         return tuple(ret)
 
     def init_weights(self):
-        """Initialize the weights of module"""
+        """Initialize the weights of module."""
         for module in self.fpn.values():
             if hasattr(module, 'conv_out'):
                 caffe2_xavier_init(module.out_conv.conv)

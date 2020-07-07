@@ -13,15 +13,15 @@ class PseudoSampler(BaseSampler):
         pass
 
     def _sample_pos(self, **kwargs):
-        """Sample positive samples"""
+        """Sample positive samples."""
         raise NotImplementedError
 
     def _sample_neg(self, **kwargs):
-        """Sample negative samples"""
+        """Sample negative samples."""
         raise NotImplementedError
 
     def sample(self, assign_result, bboxes, gt_bboxes, **kwargs):
-        """Directly returns the positive and negative indices  of samples
+        """Directly returns the positive and negative indices  of samples.
 
         Args:
             assign_result (:obj:`AssignResult`): Assigned results

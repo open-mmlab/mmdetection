@@ -8,11 +8,10 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 @HEADS.register_module()
 class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
-    """Simplest base roi head including one bbox head and one mask head.
-    """
+    """Simplest base roi head including one bbox head and one mask head."""
 
     def init_assigner_sampler(self):
-        """Initialize assigner and sampler"""
+        """Initialize assigner and sampler."""
         self.bbox_assigner = None
         self.bbox_sampler = None
         if self.train_cfg:
@@ -36,7 +35,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         self.mask_head = build_head(mask_head)
 
     def init_weights(self, pretrained):
-        """Initialize the weights in head
+        """Initialize the weights in head.
 
         Args:
             pretrained (str, optional): Path to pre-trained weights.
@@ -53,7 +52,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.mask_roi_extractor.init_weights()
 
     def forward_dummy(self, x, proposals):
-        """Dummy forward function"""
+        """Dummy forward function."""
         # bbox head
         outs = ()
         rois = bbox2roi([proposals])
@@ -134,7 +133,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return losses
 
     def _bbox_forward(self, x, rois):
-        """Box head forward function used in both training and testing"""
+        """Box head forward function used in both training and testing."""
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
@@ -148,7 +147,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
-        """Run forward function and calculate loss for box head in training"""
+        """Run forward function and calculate loss for box head in training."""
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(x, rois)
 
@@ -163,7 +162,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
-        """Run forward function and calculate loss for mask head in training"""
+        """Run forward function and calculate loss for mask head in
+        training."""
         if not self.share_roi_extractor:
             pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
             if pos_rois.shape[0] == 0:
@@ -199,7 +199,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return mask_results
 
     def _mask_forward(self, x, rois=None, pos_inds=None, bbox_feats=None):
-        """Mask head forward function used in both training and testing"""
+        """Mask head forward function used in both training and testing."""
         assert ((rois is not None) ^
                 (pos_inds is not None and bbox_feats is not None))
         if rois is not None:

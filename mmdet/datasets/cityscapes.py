@@ -158,7 +158,8 @@ class CityscapesDataset(CocoDataset):
         return result_files
 
     def format_results(self, results, txtfile_prefix=None):
-        """Format the results to txt (standard format for Cityscapes evaluation).
+        """Format the results to txt (standard format for Cityscapes
+        evaluation).
 
         Args:
             results (list): Testing results of the dataset.

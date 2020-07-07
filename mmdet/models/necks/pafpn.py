@@ -82,7 +82,7 @@ class PAFPN(FPN):
 
     @auto_fp16()
     def forward(self, inputs):
-        """Forward function"""
+        """Forward function."""
         assert len(inputs) == len(self.in_channels)
 
         # build laterals

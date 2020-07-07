@@ -6,7 +6,7 @@ from .base_sampler import BaseSampler
 
 @BBOX_SAMPLERS.register_module()
 class RandomSampler(BaseSampler):
-    """Random sampler
+    """Random sampler.
 
     Args:
         num (int): Number of samples

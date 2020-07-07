@@ -58,7 +58,7 @@ class TwoStageDetector(BaseDetector):
         return hasattr(self, 'roi_head') and self.roi_head is not None
 
     def init_weights(self, pretrained=None):
-        """Initialize the weights in detector
+        """Initialize the weights in detector.
 
         Args:
             pretrained (str, optional): Path to pre-trained weights.
@@ -78,8 +78,7 @@ class TwoStageDetector(BaseDetector):
             self.roi_head.init_weights(pretrained)
 
     def extract_feat(self, img):
-        """Directly extract features from the backbone+neck
-        """
+        """Directly extract features from the backbone+neck."""
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)

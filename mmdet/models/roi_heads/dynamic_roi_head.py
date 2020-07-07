@@ -27,7 +27,8 @@ class DynamicRoIHead(StandardRoIHead):
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None):
-        """
+        """Forward function for training.
+
         Args:
             x (list[Tensor]): list of multi-level img features.
 
@@ -130,12 +131,11 @@ class DynamicRoIHead(StandardRoIHead):
         return bbox_results
 
     def update_hyperparameters(self):
-        """
-        Update hyperparameters like `iou_thr` and `SmoothL1 beta` based
-        on the training statistics.
+        """Update hyperparameters like IoU thresholds for assigner and beta for
+        SmoothL1 loss based on the training statistics.
 
         Returns:
-            tuple[float]: the updated `iou_thr` and `SmoothL1 beta`
+            tuple[float]: the updated ``iou_thr`` and ``beta``.
         """
         new_iou_thr = max(self.train_cfg.dynamic_rcnn.initial_iou,
                           np.mean(self.iou_history))

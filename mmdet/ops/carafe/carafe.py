@@ -159,8 +159,8 @@ class CARAFE(Module):
 
 @UPSAMPLE_LAYERS.register_module(name='carafe')
 class CARAFEPack(nn.Module):
-    """ A unified package of CARAFE upsampler that contains:
-    1) channel compressor 2) content encoder 3) CARAFE op
+    """A unified package of CARAFE upsampler that contains: 1) channel
+    compressor 2) content encoder 3) CARAFE op.
 
     Official implementation of ICCV 2019 paper
     CARAFE: Content-Aware ReAssembly of FEatures
