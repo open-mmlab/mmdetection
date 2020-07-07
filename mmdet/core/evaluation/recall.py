@@ -41,8 +41,7 @@ def _recalls(all_ious, proposal_nums, thrs):
 
 
 def set_recall_param(proposal_nums, iou_thrs):
-    """Check proposal_nums and iou_thrs and set correct format.
-    """
+    """Check proposal_nums and iou_thrs and set correct format."""
     if isinstance(proposal_nums, Sequence):
         _proposal_nums = np.array(proposal_nums)
     elif isinstance(proposal_nums, int):

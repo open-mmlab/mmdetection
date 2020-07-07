@@ -4,8 +4,7 @@ from mmdet.utils import util_mixins
 
 
 class AssignResult(util_mixins.NiceRepr):
-    """
-    Stores assignments between predicted and truth boxes.
+    """Stores assignments between predicted and truth boxes.
 
     Attributes:
         num_gts (int): the number of truth boxes considered when computing this
@@ -54,12 +53,12 @@ class AssignResult(util_mixins.NiceRepr):
         return len(self.gt_inds)
 
     def set_extra_property(self, key, value):
-        """Set user-defined new property"""
+        """Set user-defined new property."""
         assert key not in self.info
         self._extra_properties[key] = value
 
     def get_extra_property(self, key):
-        """Get user-defined property"""
+        """Get user-defined property."""
         return self._extra_properties.get(key, None)
 
     @property
@@ -189,7 +188,7 @@ class AssignResult(util_mixins.NiceRepr):
         return self
 
     def add_gt_(self, gt_labels):
-        """Add ground truth as assigned results
+        """Add ground truth as assigned results.
 
         Args:
             gt_labels (torch.Tensor): Labels of gt boxes

@@ -78,8 +78,8 @@ class MaskPointHead(nn.Module):
             fc_in_channels, out_channels, kernel_size=1, stride=1, padding=0)
 
     def init_weights(self):
-        """Initialize last classification layer of MaskPointHead, conv layers are
-        already initialized by ConvModule"""
+        """Initialize last classification layer of MaskPointHead, conv layers
+        are already initialized by ConvModule."""
         normal_init(self.fc_logits, std=0.001)
 
     def forward(self, fine_grained_feats, coarse_feats):
@@ -162,7 +162,7 @@ class MaskPointHead(nn.Module):
         return point_targets
 
     def loss(self, point_pred, point_targets, labels):
-        """Calculate loss for MaskPointHead
+        """Calculate loss for MaskPointHead.
 
         Args:
             point_pred (Tensor): Point predication result, shape
@@ -185,7 +185,7 @@ class MaskPointHead(nn.Module):
         return loss
 
     def _get_uncertainty(self, mask_pred, labels):
-        """Estimate uncertainty based on pred logits
+        """Estimate uncertainty based on pred logits.
 
         We estimate uncertainty as L1 distance between 0.0 and the logits
         prediction in 'mask_pred' for the foreground class in `classes`.
@@ -281,7 +281,7 @@ class MaskPointHead(nn.Module):
             point_coords (Tensor): A tensor of shape (num_rois, num_points, 2)
                 that contains [0, 1] x [0, 1] normalized coordinates of the
                 most uncertain points from the [mask_height, mask_width] grid .
-            """
+        """
         num_points = cfg.subdivision_num_points
         uncertainty_map = self._get_uncertainty(mask_pred, pred_label)
         num_rois, _, mask_height, mask_width = uncertainty_map.shape

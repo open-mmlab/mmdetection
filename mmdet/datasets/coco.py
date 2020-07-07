@@ -200,7 +200,7 @@ class CocoDataset(CustomDataset):
         ]
 
     def _proposal2json(self, results):
-        """Convert proposal results to COCO json style"""
+        """Convert proposal results to COCO json style."""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -215,7 +215,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _det2json(self, results):
-        """Convert detection results to COCO json style"""
+        """Convert detection results to COCO json style."""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -232,7 +232,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _segm2json(self, results):
-        """Convert instance segmentation results to COCO json style"""
+        """Convert instance segmentation results to COCO json style."""
         bbox_json_results = []
         segm_json_results = []
         for idx in range(len(self)):

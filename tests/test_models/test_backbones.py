@@ -290,7 +290,7 @@ def test_resnet_res_layer():
 
 
 def test_resnet_backbone():
-    """Test resnet backbone"""
+    """Test resnet backbone."""
     with pytest.raises(KeyError):
         # ResNet depth should be in [18, 34, 50, 101, 152]
         ResNet(20)

@@ -8,7 +8,7 @@ from .resnet import ResNet
 
 
 class Bottleneck(_Bottleneck):
-    """Bottleneck for the ResNet backbone in `DetectoRS
+    r"""Bottleneck for the ResNet backbone in `DetectoRS
     <https://arxiv.org/pdf/2006.02334.pdf>`_.
 
     This bottleneck allows the users to specify whether to use
@@ -275,18 +275,18 @@ class DetectoRS_ResNet(ResNet):
         self._freeze_stages()
 
     def make_res_layer(self, **kwargs):
-        """Pack all blocks in a stage into a ``ResLayer`` for DetectoRS"""
+        """Pack all blocks in a stage into a ``ResLayer`` for DetectoRS."""
         return ResLayer(**kwargs)
 
     def forward(self, x):
-        """Forward function"""
+        """Forward function."""
         outs = list(super(DetectoRS_ResNet, self).forward(x))
         if self.output_img:
             outs.insert(0, x)
         return tuple(outs)
 
     def rfp_forward(self, x, rfp_feats):
-        """Forward function for RFP"""
+        """Forward function for RFP."""
         if self.deep_stem:
             x = self.stem(x)
         else:

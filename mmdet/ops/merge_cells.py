@@ -36,7 +36,6 @@ class BaseMergeCell(nn.Module):
         upsample_mode (str): Interpolation method used to resize the output
             of input1_conv and input2_conv to target size. Currently, we
             support ['nearest', 'bilinear']. Default: 'nearest'.
-
     """
 
     def __init__(self,

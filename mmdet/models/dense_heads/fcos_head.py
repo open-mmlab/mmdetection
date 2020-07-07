@@ -256,7 +256,7 @@ class FCOSHead(AnchorFreeHead):
                    img_metas,
                    cfg=None,
                    rescale=None):
-        """ Transform network output for a batch into bbox predictions.
+        """Transform network output for a batch into bbox predictions.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
@@ -396,7 +396,7 @@ class FCOSHead(AnchorFreeHead):
 
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
         """Compute regression, classification and centerss targets for points
-            in multiple images.
+        in multiple images.
 
         Args:
             points (list[Tensor]): Points of each fpn level, each has shape

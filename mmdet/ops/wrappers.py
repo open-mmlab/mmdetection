@@ -1,9 +1,9 @@
-"""
-Modified from https://github.com/facebookresearch/detectron2/blob/master
-/detectron2/layers/wrappers.py
-Wrap some nn modules to support empty tensor input.
-Currently, these wrappers are mainly used in mask heads like fcn_mask_head
-and maskiou_heads since mask heads are trained on only positive RoIs.
+r"""Modified from https://github.com/facebookresearch/detectron2/blob/master/detectron2/layers/wrappers.py  # noqa: E501
+
+Wrap some nn modules to support empty tensor
+input. Currently, these wrappers are mainly used in mask heads like
+fcn_mask_head and maskiou_heads since mask heads are trained on only positive
+RoIs.
 """
 import math
 

@@ -7,11 +7,9 @@ from .base_sampler import BaseSampler
 
 @BBOX_SAMPLERS.register_module()
 class OHEMSampler(BaseSampler):
-    """
-    Online Hard Example Mining Sampler described in [1]_.
-
-    References:
-        .. [1] https://arxiv.org/pdf/1604.03540.pdf
+    r"""Online Hard Example Mining Sampler described in `Training Region-based
+    Object Detectors with Online Hard Example Mining
+    <https://arxiv.org/abs/1604.03540>`_.
     """
 
     def __init__(self,
@@ -55,7 +53,7 @@ class OHEMSampler(BaseSampler):
                     bboxes=None,
                     feats=None,
                     **kwargs):
-        """Sample positive boxes
+        """Sample positive boxes.
 
         Args:
             assign_result (:obj:`AssignResult`): Assigned results
@@ -83,7 +81,7 @@ class OHEMSampler(BaseSampler):
                     bboxes=None,
                     feats=None,
                     **kwargs):
-        """Sample negative boxes
+        """Sample negative boxes.
 
         Args:
             assign_result (:obj:`AssignResult`): Assigned results

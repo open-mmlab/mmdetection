@@ -21,7 +21,7 @@ def reduce_mean(tensor):
 
 
 class Integral(nn.Module):
-    """A fixed layer for calculating integral result from distribution
+    """A fixed layer for calculating integral result from distribution.
 
     This layer calculates the target location by :math: `sum{P(y_i) * y_i}`,
     P(y_i) denotes the softmax vector that represents the discrete distribution
@@ -58,9 +58,8 @@ class Integral(nn.Module):
 
 @HEADS.register_module()
 class GFLHead(AnchorHead):
-    """
-    Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes
-    for Dense Object Detection
+    """Generalized Focal Loss: Learning Qualified and Distributed Bounding
+    Boxes for Dense Object Detection.
 
     GFL head structure is similar with ATSS, however GFL uses
     1) joint representation for classification and localization quality, and
@@ -531,7 +530,7 @@ class GFLHead(AnchorHead):
                            label_channels=1,
                            unmap_outputs=True):
         """Compute regression, classification targets for anchors in a single
-            image.
+        image.
 
         Args:
             flat_anchors (Tensor): Multi-level anchors of the image, which are

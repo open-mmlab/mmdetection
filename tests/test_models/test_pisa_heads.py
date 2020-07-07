@@ -6,9 +6,7 @@ from mmdet.models.roi_heads import PISARoIHead
 
 
 def test_pisa_retinanet_head_loss():
-    """
-    Tests pisa retinanet head loss when truth is empty and non-empty
-    """
+    """Tests pisa retinanet head loss when truth is empty and non-empty."""
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),
@@ -75,9 +73,7 @@ def test_pisa_retinanet_head_loss():
 
 
 def test_pisa_ssd_head_loss():
-    """
-    Tests pisa ssd head loss when truth is empty and non-empty
-    """
+    """Tests pisa ssd head loss when truth is empty and non-empty."""
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),
@@ -152,9 +148,7 @@ def test_pisa_ssd_head_loss():
 
 
 def test_pisa_roi_head_loss():
-    """
-    Tests pisa roi head loss when truth is empty and non-empty
-    """
+    """Tests pisa roi head loss when truth is empty and non-empty."""
     train_cfg = mmcv.Config(
         dict(
             assigner=dict(
