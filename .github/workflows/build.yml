@@ -60,7 +60,7 @@ jobs:
       - name: Format with yapf
         run: yapf -r -d mmdet/ tools/ configs/ tests/
       - name: Check docstring
-        run: interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --exclude mmdet/ops --ignore-regex "__repr__" --fail-under 80 mmdet
+        run: interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 80 mmdet
       - name: Build and install
         env:
           CUDA_ARCH: ${{matrix.cuda_arch}}
