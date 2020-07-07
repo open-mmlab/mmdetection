@@ -138,6 +138,8 @@ def determine_max_batch_size(cfg, distributed):
         print('rank', rank, 'resulting_batch_size', resulting_batch_size)
 
         resulting_batch_size = int(resulting_batch_size.cpu())
+    else:
+        print('resulting_batch_size', resulting_batch_size)
 
     return resulting_batch_size
 
