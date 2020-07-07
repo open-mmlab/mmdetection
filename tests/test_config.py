@@ -274,8 +274,8 @@ def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
     assert (len(config.featmap_strides) == len(roi_extractor.roi_layers))
     assert (config.out_channels == roi_extractor.out_channels)
     from torch.nn.modules.utils import _pair
-    assert (_pair(
-        config.roi_layer.out_size) == roi_extractor.roi_layers[0].out_size)
+    assert (_pair(config.roi_layer.output_size) ==
+            roi_extractor.roi_layers[0].output_size)
 
     if 'use_torchvision' in config.roi_layer:
         assert (config.roi_layer.use_torchvision ==

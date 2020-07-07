@@ -198,7 +198,7 @@ def test_resnet_bottleneck():
                 attention_type='0010',
                 kv_stride=2),
             position='after_conv2'),
-        dict(cfg=dict(type='NonLocal2D'), position='after_conv2'),
+        dict(cfg=dict(type='NonLocal2d'), position='after_conv2'),
         dict(
             cfg=dict(type='ContextBlock', ratio=1. / 16),
             position='after_conv3')
@@ -468,7 +468,7 @@ def test_resnet_backbone():
                 kv_stride=2),
             stages=(False, True, True, True),
             position='after_conv2'),
-        dict(cfg=dict(type='NonLocal2D'), position='after_conv2'),
+        dict(cfg=dict(type='NonLocal2d'), position='after_conv2'),
         dict(
             cfg=dict(type='ContextBlock', ratio=1. / 16),
             stages=(False, True, True, False),
