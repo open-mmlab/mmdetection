@@ -42,9 +42,6 @@ def multiclass_nms(multi_bboxes,
         scores = multi_scores
 
     dets = multiclass_nms_core(multi_bboxes, scores, score_thr, nms_cfg, max_num)
-
-    if not is_in_onnx_export() and max_num > 0:
-        dets = dets[:max_num]
     
     labels = dets[:, 5].long().view(-1)
     dets = dets[:, :5]
@@ -54,15 +51,11 @@ def multiclass_nms(multi_bboxes,
 
 @py_symbolic()
 def multiclass_nms_core(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=-1):
-
-    if is_in_onnx_export():
-        assert nms_cfg['type'] == 'nms', 'Only vanilla NMS is compatible with ONNX export'
-
     num_classes = multi_scores.size(1)
     if multi_bboxes.shape[1] > 4:
         bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)
     else:
-        bboxes = multi_bboxes[:, None].expand(-1, num_classes, 4)
+        bboxes = multi_bboxes[:, None].expand(multi_scores.size(0), num_classes, 4)
     scores = multi_scores
         
     if is_in_onnx_export():
@@ -73,6 +66,7 @@ def multiclass_nms_core(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=
         bboxes = bboxes.reshape(-1, 4)
         scores = scores.reshape(-1)
 
+        assert nms_cfg['type'] == 'nms', 'Only vanilla NMS is compatible with ONNX export'
         nms_cfg['score_thr'] = score_thr
         nms_cfg['max_num'] = max_num if max_num > 0 else sys.maxsize
     else:
@@ -89,5 +83,9 @@ def multiclass_nms_core(multi_bboxes, multi_scores, score_thr, nms_cfg, max_num=
 
     labels = labels[keep]
     dets = torch.cat([dets, labels.to(dets.dtype).unsqueeze(-1)], dim=1)
+
+    if not is_in_onnx_export() and max_num > 0:
+        dets = dets[:max_num]
+
     return dets
 
