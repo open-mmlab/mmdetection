@@ -291,8 +291,8 @@ class BBoxHead(nn.Module):
             pos_is_gts_ = pos_is_gts[i]
 
             if self.reg_class_agnostic:
-                bboxes = self.regress_by_class(
-                    bboxes_, label_, bbox_pred_, img_meta_)
+                bboxes = self.regress_by_class(bboxes_, label_, bbox_pred_,
+                                               img_meta_)
             else:
                 n_pos = len(pos_is_gts_)
                 pos_bboxes = self.regress_by_class(bboxes_[:n_pos],
