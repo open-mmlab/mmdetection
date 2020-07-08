@@ -478,8 +478,8 @@ class RandomCrop(object):
           `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
           `gt_bboxes_ignore` corresponds to `gt_labels_ignore` and
           `gt_masks_ignore`.
-        - If the crop is not located in any bbox and `allow_negative_crop` is
-          set to False, skip this image.
+        - If the crop does not contain any gt-bbox region and
+          `allow_negative_crop` is set to False, skip this image.
     """
 
     def __init__(self, crop_size, allow_negative_crop=False):
