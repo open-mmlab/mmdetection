@@ -483,6 +483,8 @@ class RandomCrop(object):
 
     Args:
         crop_size (tuple): Expected size after cropping, (h, w).
+        allow_negative_crop (bool): Whether to allow a crop that does not
+            contain any bbox area. Default to False.
 
     Notes:
         - If the image is smaller than the crop size, return the original image
@@ -490,13 +492,14 @@ class RandomCrop(object):
           `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
           `gt_bboxes_ignore` corresponds to `gt_labels_ignore` and
           `gt_masks_ignore`.
-        - If there are gt bboxes in an image and the cropping area does not
-          have intersection with any gt bbox, this image is skipped.
+        - If the crop does not contain any gt-bbox region and
+          `allow_negative_crop` is set to False, skip this image.
     """
 
-    def __init__(self, crop_size):
+    def __init__(self, crop_size, allow_negative_crop=False):
         assert crop_size[0] > 0 and crop_size[1] > 0
         self.crop_size = crop_size
+        self.allow_negative_crop = allow_negative_crop
         # The key correspondence from bboxes to labels and masks.
         self.bbox2label = {
             'gt_bboxes': 'gt_labels',
@@ -534,7 +537,6 @@ class RandomCrop(object):
             results[key] = img
         results['img_shape'] = img_shape
 
-        valid_flag = False
         # crop bboxes accordingly and clip to the image boundary
         for key in results.get('bbox_fields', []):
             # e.g. gt_bboxes and gt_bboxes_ignore
@@ -545,10 +547,11 @@ class RandomCrop(object):
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
             valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
                 bboxes[:, 3] > bboxes[:, 1])
-            # When there is no gt bbox, cropping is conducted.
-            # When the crop is valid, cropping is conducted.
-            if len(valid_inds) == 0 or valid_inds.any():
-                valid_flag = True
+            # If the crop does not contain any gt-bbox area and
+            # self.allow_negative_crop is False, skip this image.
+            if (key == 'gt_bboxes' and not valid_inds.any()
+                    and not self.allow_negative_crop):
+                return None
             results[key] = bboxes[valid_inds, :]
             # label fields. e.g. gt_labels and gt_labels_ignore
             label_key = self.bbox2label.get(key)
@@ -561,11 +564,6 @@ class RandomCrop(object):
                 results[mask_key] = results[mask_key][
                     valid_inds.nonzero()[0]].crop(
                         np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
-
-        # if no gt bbox remains after cropping, just skip this image
-        # TODO: check whether we can keep the image regardless of the crop.
-        if 'bbox_fields' in results and not valid_flag:
-            return None
 
         # crop semantic seg
         for key in results.get('seg_fields', []):
