@@ -19,6 +19,7 @@ import os
 import mmcv
 import numpy as np
 from mmdet.datasets import build_dataloader, build_dataset
+from mmdet.utils import ExtendedDictAction
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
@@ -31,19 +32,27 @@ def parse_args():
                        help='COCO annotation. This variant is much faster than --config in case of '
                             'COCO annotation.')
     parser.add_argument('--root', help='Images root folder.')
-    parser.add_argument('--image_size_wh', nargs=2, type=int)
+    parser.add_argument('--image_size_wh', nargs=2, type=int, default=(256, 256))
     parser.add_argument('--n_clust', type=int, required=True)
     parser.add_argument('--min_box_size', help='min bbox Width and Height', nargs=2, type=int,
                         default=(0, 0))
     parser.add_argument('--group_as', type=int, nargs='+',
                         help='If it is defined clustered widths and heights will be grouped by '
                              'numbers specified here.')
-    args = parser.parse_args()
-    return args
+    parser.add_argument('--update_config', nargs='+', action=ExtendedDictAction, help='arguments in dict')
+    parser.add_argument('--out')
+    return parser.parse_args()
 
 
-def get_sizes_from_config(config_path, min_box_size):
+def get_sizes_from_config(config_path, target_image_wh, min_box_size, update_config):
     cfg = mmcv.Config.fromfile(config_path)
+    if update_config is not None:
+        cfg.merge_from_dict(update_config)
+
+    if cfg.data.train.dataset.type == 'CocoDataset':
+        annotation_path = cfg.data.train.dataset.ann_file
+        root = cfg.data.train.dataset.img_prefix
+        return get_sizes_from_coco(annotation_path, root, target_image_wh, min_box_size)
 
     dataset = build_dataset(cfg.data.train)
     print(dataset)
@@ -109,12 +118,10 @@ def main(args):
         assert sum(args.group_as) == args.n_clust
 
     if args.config:
-        assert not args.image_size_wh
         assert not args.root
-        wh_stats = get_sizes_from_config(args.config, args.min_box_size)
+        wh_stats = get_sizes_from_config(args.config, args.image_size_wh, args.min_box_size, args.update_config)
 
     if args.coco_annotation:
-        assert args.image_size_wh
         assert args.root
         wh_stats = get_sizes_from_coco(args.coco_annotation, args.root, args.image_size_wh,
                                        args.min_box_size)
@@ -147,6 +154,10 @@ def main(args):
 
     print_normalized(widths, args.image_size_wh[0], 'width')
     print_normalized(heights, args.image_size_wh[1], 'height')
+
+    if args.out:
+        with open(args.out, 'w') as dst_file:
+            json.dump({'widths': widths, 'heights': heights}, dst_file)
 
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@ import numpy as np
 import pycocotools.mask as maskUtils
 import torch
 import torch.distributed as dist
-from mmcv import Config, DictAction
+from mmcv import Config
 from mmcv.parallel import collate, scatter
 from mmcv.runner import init_dist, get_dist_info
 from mmdet import __version__
@@ -19,7 +19,7 @@ from mmdet.core import BitmapMasks
 from mmdet.datasets import build_dataset
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector, TwoStageDetector
-from mmdet.utils import collect_env, get_root_logger
+from mmdet.utils import collect_env, get_root_logger, ExtendedDictAction
 
 
 def parse_args():
@@ -50,7 +50,7 @@ def parse_args():
         action='store_true',
         help='whether to set deterministic options for CUDNN backend.')
     parser.add_argument(
-        '--update_config', nargs='+', action=DictAction, help='arguments in dict')
+        '--update_config', nargs='+', action=ExtendedDictAction, help='arguments in dict')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
