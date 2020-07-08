@@ -73,71 +73,69 @@ Optional arguments:
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
 - `--show-score-thr`: If specified, detections with score below this threshold will be removed.
 
-
 Examples:
 
 Assume that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
 
-```shell
-python tools/test.py configs/faster_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
-    --show
-```
+   ```shell
+   python tools/test.py configs/faster_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
+       --show
+   ```
 
 2. Test Faster R-CNN and save the painted images for latter visualization.
 
-```shell
-python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
-    --show-dir faster_rcnn_r50_fpn_1x_results
-```
+   ```shell
+   python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
+       --show-dir faster_rcnn_r50_fpn_1x_results
+   ```
 
 3. Test Faster R-CNN on PASCAL VOC (without saving the test results) and evaluate the mAP.
 
-```shell
-python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
-    checkpoints/SOME_CHECKPOINT.pth \
-    --eval mAP
-```
+   ```shell
+   python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
+       checkpoints/SOME_CHECKPOINT.pth \
+       --eval mAP
+   ```
 
 4. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
 
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --out results.pkl --eval bbox segm
-```
+   ```shell
+   ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+       8 --out results.pkl --eval bbox segm
+   ```
 
 5. Test Mask R-CNN with 8 GPUs, and evaluate the **classwise** bbox and mask AP.
 
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --out results.pkl --eval bbox segm --options "classwise=True"
-```
+   ```shell
+   ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+       8 --out results.pkl --eval bbox segm --options "classwise=True"
+   ```
 
 6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
 
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
-```
+   ```shell
+   ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+       8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+   ```
 
-You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+   You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
 
 7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate the txt and png files to be submit to the official evaluation server.
 
-```shell
-./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
-    8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
-```
+   ```shell
+   ./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
+       8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+   ```
 
-The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
-
+   The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
 ### Image demo
 
@@ -280,6 +278,7 @@ Optional arguments are:
 - `--no-validate` (**not suggested**): By default, the codebase will perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training. To disable this behavior, use `--no-validate`.
 - `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
+- `--options 'Key=value'`: Overide some settings in the used config.
 
 Difference between `resume-from` and `load-from`:
 `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
@@ -317,24 +316,35 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
 CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
-If you use launch training jobs with Slurm, you need to modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
+If you use launch training jobs with Slurm, there are two ways to specify the ports.
 
-In `config1.py`,
-```python
-dist_params = dict(backend='nccl', port=29500)
-```
+1. Set the port through `--options`. This is more recommended since it does not change the original configs.
 
-In `config2.py`,
-```python
-dist_params = dict(backend='nccl', port=29501)
-```
+   ```shell
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --options 'dist_params.port=29500'
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --options 'dist_params.port=29501'
+   ```
 
-Then you can launch two jobs with `config1.py` ang `config2.py`.
+2. Modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
 
-```shell
-CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR}
-CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR}
-```
+   In `config1.py`,
+
+   ```python
+   dist_params = dict(backend='nccl', port=29500)
+   ```
+
+   In `config2.py`,
+
+   ```python
+   dist_params = dict(backend='nccl', port=29501)
+   ```
+
+   Then you can launch two jobs with `config1.py` ang `config2.py`.
+
+   ```shell
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR}
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR}
+   ```
 
 ## Useful tools
 
