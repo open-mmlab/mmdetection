@@ -306,7 +306,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             ms_scores.append(bbox_results['cls_score'])
 
             if i < self.num_stages - 1:
-                bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                bbox_label = bbox_results['cls_score'][:, :-1].argmax(dim=1)
                 rois = self.bbox_head[i].regress_by_class(
                     rois, bbox_label, bbox_results['bbox_pred'], img_metas[0])
 
@@ -380,7 +380,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 ms_scores.append(bbox_results['cls_score'])
 
                 if i < self.num_stages - 1:
-                    bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                    bbox_label = bbox_results['cls_score'][:, :-1].argmax(dim=1)
                     rois = self.bbox_head[i].regress_by_class(
                         rois, bbox_label, bbox_results['bbox_pred'],
                         img_meta[0])
