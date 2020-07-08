@@ -290,17 +290,8 @@ class BBoxHead(nn.Module):
             img_meta_ = img_metas[i]
             pos_is_gts_ = pos_is_gts[i]
 
-            if self.reg_class_agnostic:
-                bboxes = self.regress_by_class(bboxes_, label_, bbox_pred_,
-                                               img_meta_)
-            else:
-                n_pos = len(pos_is_gts_)
-                pos_bboxes = self.regress_by_class(bboxes_[:n_pos],
-                                                   label_[:n_pos],
-                                                   bbox_pred_[:n_pos],
-                                                   img_meta_)
-                neg_bboxes = bboxes_[n_pos:]
-                bboxes = torch.cat([pos_bboxes, neg_bboxes])
+            bboxes = self.regress_by_class(bboxes_, label_, bbox_pred_,
+                                           img_meta_)
 
             # filter gt bboxes
             pos_keep = 1 - pos_is_gts_

@@ -281,6 +281,10 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 # bbox_targets is a tuple
                 roi_labels = bbox_results['bbox_targets'][0]
                 with torch.no_grad():
+                    roi_labels = torch.where(
+                        roio_labels == self.bbox_heads[i].num_classes,
+                        bbox_results['cls_score'][:, :-1].argmax(1),
+                        roi_labels)
                     proposal_list = self.bbox_head[i].refine_bboxes(
                         bbox_results['rois'], roi_labels,
                         bbox_results['bbox_pred'], pos_is_gts, img_metas)
