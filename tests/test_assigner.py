@@ -82,7 +82,7 @@ def test_max_iou_assigner_with_empty_gt():
 
 
 def test_max_iou_assigner_with_empty_boxes():
-    """Test corner case where an network might predict no boxes."""
+    """Test corner case where a network might predict no boxes."""
     self = MaxIoUAssigner(
         pos_iou_thr=0.5,
         neg_iou_thr=0.5,
@@ -106,7 +106,7 @@ def test_max_iou_assigner_with_empty_boxes():
 
 
 def test_max_iou_assigner_with_empty_boxes_and_ignore():
-    """Test corner case where an network might predict no boxes and
+    """Test corner case where a network might predict no boxes and
     ignore_iof_thr is on."""
     self = MaxIoUAssigner(
         pos_iou_thr=0.5,
@@ -140,7 +140,7 @@ def test_max_iou_assigner_with_empty_boxes_and_ignore():
 
 
 def test_max_iou_assigner_with_empty_boxes_and_gt():
-    """Test corner case where an network might predict no boxes and no gt."""
+    """Test corner case where a network might predict no boxes and no gt."""
     self = MaxIoUAssigner(
         pos_iou_thr=0.5,
         neg_iou_thr=0.5,
