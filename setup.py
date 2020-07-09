@@ -70,7 +70,8 @@ version_info = ({})
     sha = get_hash()
     with open('mmdet/VERSION', 'r') as f:
         SHORT_VERSION = f.read().strip()
-    VERSION_INFO = ', '.join(SHORT_VERSION.split('.'))
+    VERSION_INFO = ', '.join(
+        [x if x.isdigit() else f'"{x}"' for x in SHORT_VERSION.split('.')])
     VERSION = SHORT_VERSION + '+' + sha
 
     version_file_str = content.format(time.asctime(), VERSION, SHORT_VERSION,
