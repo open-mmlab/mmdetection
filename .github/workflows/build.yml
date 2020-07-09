@@ -50,7 +50,7 @@ jobs:
         run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}}
       - name: Install mmdet dependencies
         run: |
-          pip install mmcv-full==1.0.0+torch${{matrix.torch}}+cu101 -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
+          pip install mmcv-full==latest+torch${{matrix.torch}}+cu101 -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
           pip install -r requirements.txt
           pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
       - name: Lint with flake8
