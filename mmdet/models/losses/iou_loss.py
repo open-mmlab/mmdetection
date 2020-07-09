@@ -137,8 +137,8 @@ def diou_loss(pred, target, eps=1e-7):
     overlap = wh[:, 0] * wh[:, 1]
 
     # union
-    ap = (pred[:, 2] - pred[:, 0] + 1) * (pred[:, 3] - pred[:, 1] + 1)
-    ag = (target[:, 2] - target[:, 0] + 1) * (target[:, 3] - target[:, 1] + 1)
+    ap = (pred[:, 2] - pred[:, 0]) * (pred[:, 3] - pred[:, 1])
+    ag = (target[:, 2] - target[:, 0]) * (target[:, 3] - target[:, 1])
     union = ap + ag - overlap + eps
 
     # IoU
@@ -147,7 +147,7 @@ def diou_loss(pred, target, eps=1e-7):
     # enclose area
     enclose_x1y1 = torch.min(pred[:, :2], target[:, :2])
     enclose_x2y2 = torch.max(pred[:, 2:], target[:, 2:])
-    enclose_wh = (enclose_x2y2 - enclose_x1y1 + 1).clamp(min=0)
+    enclose_wh = (enclose_x2y2 - enclose_x1y1).clamp(min=0)
 
     cw = enclose_wh[:, 0]
     ch = enclose_wh[:, 1]
@@ -194,8 +194,8 @@ def ciou_loss(pred, target, eps=1e-7):
     overlap = wh[:, 0] * wh[:, 1]
 
     # union
-    ap = (pred[:, 2] - pred[:, 0] + 1) * (pred[:, 3] - pred[:, 1] + 1)
-    ag = (target[:, 2] - target[:, 0] + 1) * (target[:, 3] - target[:, 1] + 1)
+    ap = (pred[:, 2] - pred[:, 0]) * (pred[:, 3] - pred[:, 1])
+    ag = (target[:, 2] - target[:, 0]) * (target[:, 3] - target[:, 1])
     union = ap + ag - overlap + eps
 
     # IoU
@@ -204,7 +204,7 @@ def ciou_loss(pred, target, eps=1e-7):
     # enclose area
     enclose_x1y1 = torch.min(pred[:, :2], target[:, :2])
     enclose_x2y2 = torch.max(pred[:, 2:], target[:, 2:])
-    enclose_wh = (enclose_x2y2 - enclose_x1y1 + 1).clamp(min=0)
+    enclose_wh = (enclose_x2y2 - enclose_x1y1).clamp(min=0)
 
     cw = enclose_wh[:, 0]
     ch = enclose_wh[:, 1]
