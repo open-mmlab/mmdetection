@@ -40,6 +40,31 @@ def model_aug_test_template(cfg_file):
     return aug_result
 
 
+def test_aug_test_size():
+    results = dict(
+        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_info=dict(filename='color.jpg'))
+
+    # Define simple pipeline
+    load = dict(type='LoadImageFromFile')
+    load = build_from_cfg(load, PIPELINES)
+
+    # get config
+    transform = dict(
+        type='MultiScaleFlipAug',
+        transforms=[],
+        img_scale=[(1333, 800), (800, 600), (640, 480)],
+        flip=True,
+        flip_direction=['horizontal', 'vertical'])
+    multi_aug_test_module = build_from_cfg(transform, PIPELINES)
+
+    results = load(results)
+    results = multi_aug_test_module(load(results))
+    # len(["original", "horizontal", "vertical"]) *
+    # len([(1333, 800), (800, 600), (640, 480)])
+    assert len(results['img']) == 9
+
+
 def test_cascade_rcnn_aug_test():
     aug_result = model_aug_test_template(
         'configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py')
