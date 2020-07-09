@@ -26,7 +26,7 @@ A placeholder for the command.
 
 **Environment**
 
-1. Please run `python mmdet/utils/collect_env.py` to collect necessary environment infomation and paste it here.
+1. Please run `python mmdet/utils/collect_env.py` to collect necessary environment information and paste it here.
 2. You may add addition that may be helpful for locating the problem, such as
     - How you installed PyTorch [e.g., pip, conda, source]
     - Other environment variables that may be related (such as `$PATH`, `$LD_LIBRARY_PATH`, `$PYTHONPATH`, etc.)

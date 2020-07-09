@@ -19,7 +19,7 @@ We present a classical pipeline in the following figure. The blue blocks are pip
 
 The operations are categorized into data loading, pre-processing, formatting and test-time augmentation.
 
-Here is an pipeline example for Faster R-CNN.
+Here is a pipeline example for Faster R-CNN.
 ```python
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
