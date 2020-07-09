@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, caffe2_xavier_init
+from mmcv.ops.merge_cells import ConcatCell
 
-from mmdet.ops.merge_cells import ConcatCell
 from ..builder import NECKS
 
 

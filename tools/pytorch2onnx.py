@@ -4,12 +4,12 @@ import io
 import mmcv
 import onnx
 import torch
+from mmcv.ops import RoIAlign, RoIPool
 from mmcv.runner import load_checkpoint
 from onnx import optimizer
 from torch.onnx import OperatorExportTypes
 
 from mmdet.models import build_detector
-from mmdet.ops import RoIAlign, RoIPool
 
 
 def export_onnx_model(model, inputs, passes):
