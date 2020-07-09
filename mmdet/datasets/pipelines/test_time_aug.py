@@ -92,9 +92,9 @@ class MultiScaleFlipAug(object):
         """
 
         aug_data = []
-        flip_args = [[False, None]]
+        flip_args = [(False, None)]
         if self.flip:
-            flip_args += [[True, direction]
+            flip_args += [(True, direction)
                           for direction in self.flip_direction]
         for scale in self.img_scale:
             for flip, direction in flip_args:
