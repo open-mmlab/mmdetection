@@ -13,6 +13,7 @@ from onnx_util.symbolic import register_extra_symbolics
 
 from mmdet.models import build_detector
 
+
 def pytorch2onnx(model,
                  input_img,
                  input_shape,
