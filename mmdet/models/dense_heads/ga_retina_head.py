@@ -1,7 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.ops import MaskedConv2d
 
-from mmdet.ops import MaskedConv2d
 from ..builder import HEADS
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 
@@ -55,12 +55,12 @@ class GARetinaHead(GuidedAnchorHead):
             self.feat_channels,
             self.feat_channels,
             kernel_size=3,
-            deformable_groups=self.deformable_groups)
+            deform_groups=self.deform_groups)
         self.feature_adaption_reg = FeatureAdaption(
             self.feat_channels,
             self.feat_channels,
             kernel_size=3,
-            deformable_groups=self.deformable_groups)
+            deform_groups=self.deform_groups)
         self.retina_cls = MaskedConv2d(
             self.feat_channels,
             self.num_anchors * self.cls_out_channels,

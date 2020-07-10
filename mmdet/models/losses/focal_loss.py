@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.ops import sigmoid_focal_loss as _sigmoid_focal_loss
 
-from mmdet.ops import sigmoid_focal_loss as _sigmoid_focal_loss
 from ..builder import LOSSES
 from .utils import weight_reduce_loss
 
@@ -67,7 +67,7 @@ def sigmoid_focal_loss(pred,
     """
     # Function.apply does not accept keyword arguments, so the decorator
     # "weighted_loss" is not applicable
-    loss = _sigmoid_focal_loss(pred, target, gamma, alpha)
+    loss = _sigmoid_focal_loss(pred, target, gamma, alpha, None, 'none')
     if weight is not None:
         if weight.shape != loss.shape:
             if weight.size(0) == loss.size(0):

@@ -45,14 +45,24 @@ conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
 If you build PyTorch from source instead of installing the prebuilt pacakge,
 you can use more CUDA versions such as 9.0.
 
-c. Clone the mmdetection repository.
+c. Install mmcv, you can [install](https://github.com/open-mmlab/mmcv#install-with-pip) the pre-build mmcv.
+Or you can choose either to compile mmcv from source by the following command
+
+```
+git clone https://github.com/open-mmlab/mmcv.git
+cd mmcv
+pip install -e .
+cd ..
+```
+
+d. Clone the mmdetection repository.
 
 ```shell
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Install build requirements and then install mmdetection.
+e. Install build requirements and then install mmdetection.
 (We install our forked version of pycocotools via the github repo instead of pypi
 for better compatibility with our repo.)
 

@@ -43,7 +43,7 @@ model = dict(
             norm_eval=True),
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', out_size=14, sample_num=0),
+            roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=0),
             out_channels=1024,
             featmap_strides=[16]),
         bbox_head=dict(
@@ -111,4 +111,6 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.05, nms=dict(type='nms', iou_thr=0.5), max_per_img=100))
+        score_thr=0.05,
+        nms=dict(type='nms', iou_threshold=0.5),
+        max_per_img=100))
