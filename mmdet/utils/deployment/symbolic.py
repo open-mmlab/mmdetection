@@ -133,9 +133,6 @@ def nms_core_symbolic(g, dets, iou_thr, score_thr, max_num):
     from torch.onnx.symbolic_opset9 import reshape, unsqueeze, squeeze
     from torch.onnx.symbolic_opset10 import _slice
 
-    def cast(x, dtype):
-        return g.op('Cast', x, to_i=sym_help.cast_pytorch_to_onnx[dtype])
-
     assert 0 <= iou_thr <= 1
     multi_bboxes = _slice(g, dets, axes=[1], starts=[0], ends=[4])
     multi_bboxes = unsqueeze(g, multi_bboxes, 0)
@@ -149,7 +146,7 @@ def nms_core_symbolic(g, dets, iou_thr, score_thr, max_num):
         g.op('Constant', value_t=torch.LongTensor([max_num])),
         g.op('Constant', value_t=torch.FloatTensor([iou_thr])),
         g.op('Constant', value_t=torch.FloatTensor([score_thr])))
-    indices = cast(squeeze(g, _slice(g, indices, axes=[1], starts=[2], ends=[3]), 1), 'Long')
+    indices = squeeze(g, _slice(g, indices, axes=[1], starts=[2], ends=[3]), 1)
 
     return indices
 
@@ -201,9 +198,9 @@ def multiclass_nms_core_symbolic(g, multi_bboxes, multi_scores, score_thr, nms_c
     multi_scores_flat = reshape(g, multi_scores, [-1, ])
 
     # Flatten indices.
-    batch_indices = cast(_slice(g, indices, axes=[1], starts=[0], ends=[1]), 'Long')
-    class_indices = cast(_slice(g, indices, axes=[1], starts=[1], ends=[2]), 'Long')
-    box_indices = cast(_slice(g, indices, axes=[1], starts=[2], ends=[3]), 'Long')
+    batch_indices = _slice(g, indices, axes=[1], starts=[0], ends=[1])
+    class_indices = _slice(g, indices, axes=[1], starts=[1], ends=[2])
+    box_indices = _slice(g, indices, axes=[1], starts=[2], ends=[3])
 
     def add(*args, dtype='Long'):
         x = g.op('Add', args[0], args[1])
