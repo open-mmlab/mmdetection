@@ -1,6 +1,6 @@
 import torch
+from mmcv.ops import nms_match
 
-from mmdet.ops import nms_match
 from ..builder import BBOX_SAMPLERS
 from ..transforms import bbox2roi
 from .base_sampler import BaseSampler

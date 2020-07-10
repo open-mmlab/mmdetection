@@ -1,6 +1,7 @@
+from mmcv.cnn.bricks import build_plugin_layer
+
 from mmdet.core import force_fp32
 from mmdet.models.builder import ROI_EXTRACTORS
-from mmdet.ops.plugin import build_plugin_layer
 from .base_roi_extractor import BaseRoIExtractor
 
 
@@ -44,7 +45,7 @@ class GenericRoIExtractor(BaseRoIExtractor):
         if len(feats) == 1:
             return self.roi_layers[0](feats[0], rois)
 
-        out_size = self.roi_layers[0].out_size
+        out_size = self.roi_layers[0].output_size
         num_levels = len(feats)
         roi_feats = feats[0].new_zeros(
             rois.size(0), self.out_channels, *out_size)

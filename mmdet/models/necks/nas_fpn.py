@@ -1,7 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, caffe2_xavier_init
+from mmcv.ops.merge_cells import GlobalPoolingCell, SumCell
 
-from mmdet.ops.merge_cells import GlobalPoolingCell, SumCell
 from ..builder import NECKS
 
 

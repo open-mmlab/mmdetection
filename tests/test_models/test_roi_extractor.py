@@ -7,7 +7,7 @@ from mmdet.models.roi_heads.roi_extractors import GenericRoIExtractor
 def test_groie():
     # test with pre/post
     cfg = dict(
-        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
+        roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=2),
         out_channels=256,
         featmap_strides=[4, 8, 16, 32],
         pre_cfg=dict(
@@ -42,7 +42,7 @@ def test_groie():
 
     # test w.o. pre/post
     cfg = dict(
-        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
+        roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=2),
         out_channels=256,
         featmap_strides=[4, 8, 16, 32])
 
@@ -63,7 +63,7 @@ def test_groie():
     # test w.o. pre/post concat
     cfg = dict(
         aggregation='concat',
-        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
+        roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=2),
         out_channels=256 * 4,
         featmap_strides=[4, 8, 16, 32])
 
@@ -85,7 +85,7 @@ def test_groie():
     with pytest.raises(AssertionError):
         cfg = dict(
             aggregation='not support',
-            roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=2),
             out_channels=1024,
             featmap_strides=[4, 8, 16, 32])
         _ = GenericRoIExtractor(**cfg)
@@ -93,7 +93,7 @@ def test_groie():
     # test concat channels number
     cfg = dict(
         aggregation='concat',
-        roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
+        roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=2),
         out_channels=256 * 5,  # 256*5 != 256*4
         featmap_strides=[4, 8, 16, 32])
 
