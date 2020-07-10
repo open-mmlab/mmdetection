@@ -45,18 +45,18 @@ class TridentFasterRCNN(FasterRCNN):
     #     # for (k, v) in self.named_parameters():
     #     #     print("%-60s "%(k), v.shape)
 
-    def simple_test_rpn(self, x, img_metas):
-        assert len(img_metas) == 1
-        num_branch = (self.num_branch
-                      if self.test_branch_idx==-1 else 1)
-        trident_img_metas = img_metas * num_branch
-        rpn_score, rpn_bbox = self.rpn_head(x)
-
-        proposal_list = self.rpn_head.get_bboxes(
-            rpn_score, rpn_bbox,
-            trident_img_metas
-        )
-        return proposal_list
+    # def simple_test_rpn(self, x, img_metas):
+    #     assert len(img_metas) == 1
+    #     num_branch = (self.num_branch
+    #                   if self.test_branch_idx==-1 else 1)
+    #     trident_img_metas = img_metas * num_branch
+    #     rpn_score, rpn_bbox = self.rpn_head(x)
+    #
+    #     proposal_list = self.rpn_head.get_bboxes(
+    #         rpn_score, rpn_bbox,
+    #         trident_img_metas
+    #     )
+    #     return proposal_list
 
     def forward_train(self,
                       img,

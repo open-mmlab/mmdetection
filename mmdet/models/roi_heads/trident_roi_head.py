@@ -19,60 +19,60 @@ class TridentRoIHead(StandardRoIHead):
         self.test_branch_idx = test_branch_idx
         super(TridentRoIHead, self).__init__(**kwargs)
 
-    def simple_test(self,
-                    x,
-                    proposal_list,
-                    img_metas,
-                    proposals=None,
-                    rescale=False):
-        """Test without augmentation."""
-        assert self.with_bbox, 'Bbox head must be implemented.'
-
-        assert len(img_metas) == 1
-        num_branch = (self.num_branch
-                      if self.test_branch_idx == -1 else 1)
-
-        det_bboxes_list, det_labels_list = [], []
-        for _ in range(num_branch):
-            det_bboxes, det_labels = self.simple_test_bboxes(
-                x,
-                img_metas,
-                proposal_list[_:_ + 1],
-                self.test_cfg,
-                rescale=rescale)
-            det_bboxes_list.append(det_bboxes)
-            det_labels_list.append(det_labels)
-
-        trident_det_bboxes = torch.cat(det_bboxes_list, 0)
-        trident_det_labels = torch.cat(det_labels_list, 0)
-        # bbox_results = bbox2result(trident_det_bboxes, trident_det_labels,
-        #                            self.bbox_head.num_classes)
-        # return bbox_results
-
-        if trident_det_bboxes.numel() == 0:
-            det_bboxes = trident_det_bboxes.new_zeros((0, 5))
-            det_labels = trident_det_bboxes.new_zeros((0,), dtype=torch.long)
-        else:
-            nms_bboxes = trident_det_bboxes[:, :4]
-            nms_scores = trident_det_bboxes[:, 4]
-            nms_inds = trident_det_labels
-            nms_cfg = self.test_cfg['nms']
-            det_bboxes, keep = batched_nms(nms_bboxes, nms_scores,
-                                           nms_inds, nms_cfg)
-            det_labels = trident_det_labels[keep]
-            if self.test_cfg['max_per_img'] > 0:
-                det_labels = det_labels[:self.test_cfg['max_per_img']]
-                det_bboxes = det_bboxes[:self.test_cfg['max_per_img']]
-
-        bbox_results = bbox2result(det_bboxes, det_labels,
-                                   self.bbox_head.num_classes)
-
-        if not self.with_mask:
-            return bbox_results
-        else:
-            segm_results = self.simple_test_mask(
-                x, img_metas, det_bboxes, det_labels, rescale=rescale)
-            return bbox_results, segm_results
+    # def simple_test(self,
+    #                 x,
+    #                 proposal_list,
+    #                 img_metas,
+    #                 proposals=None,
+    #                 rescale=False):
+    #     """Test without augmentation."""
+    #     assert self.with_bbox, 'Bbox head must be implemented.'
+    #
+    #     assert len(img_metas) == 1
+    #     num_branch = (self.num_branch
+    #                   if self.test_branch_idx == -1 else 1)
+    #
+    #     det_bboxes_list, det_labels_list = [], []
+    #     for _ in range(num_branch):
+    #         det_bboxes, det_labels = self.simple_test_bboxes(
+    #             x,
+    #             img_metas,
+    #             proposal_list[_:_ + 1],
+    #             self.test_cfg,
+    #             rescale=rescale)
+    #         det_bboxes_list.append(det_bboxes)
+    #         det_labels_list.append(det_labels)
+    #
+    #     trident_det_bboxes = torch.cat(det_bboxes_list, 0)
+    #     trident_det_labels = torch.cat(det_labels_list, 0)
+    #     # bbox_results = bbox2result(trident_det_bboxes, trident_det_labels,
+    #     #                            self.bbox_head.num_classes)
+    #     # return bbox_results
+    #
+    #     if trident_det_bboxes.numel() == 0:
+    #         det_bboxes = trident_det_bboxes.new_zeros((0, 5))
+    #         det_labels = trident_det_bboxes.new_zeros((0,), dtype=torch.long)
+    #     else:
+    #         nms_bboxes = trident_det_bboxes[:, :4]
+    #         nms_scores = trident_det_bboxes[:, 4]
+    #         nms_inds = trident_det_labels
+    #         nms_cfg = self.test_cfg['nms']
+    #         det_bboxes, keep = batched_nms(nms_bboxes, nms_scores,
+    #                                        nms_inds, nms_cfg)
+    #         det_labels = trident_det_labels[keep]
+    #         if self.test_cfg['max_per_img'] > 0:
+    #             det_labels = det_labels[:self.test_cfg['max_per_img']]
+    #             det_bboxes = det_bboxes[:self.test_cfg['max_per_img']]
+    #
+    #     bbox_results = bbox2result(det_bboxes, det_labels,
+    #                                self.bbox_head.num_classes)
+    #
+    #     if not self.with_mask:
+    #         return bbox_results
+    #     else:
+    #         segm_results = self.simple_test_mask(
+    #             x, img_metas, det_bboxes, det_labels, rescale=rescale)
+    #         return bbox_results, segm_results
 
     def forward_train(self,
                       x,
