@@ -52,7 +52,6 @@ jobs:
         run: |
           pip install mmcv-full==latest+torch${{matrix.torch}}+cu101 -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
           pip install -r requirements.txt
-          pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
       - name: Lint with flake8
         run: flake8 .
       - name: Lint with isort

@@ -142,6 +142,8 @@ def parse_requirements(fname='requirements.txt', with_version=True):
             info = {'line': line}
             if line.startswith('-e '):
                 info['package'] = line.split('#egg=')[1]
+            elif '@git+' in line:
+                info['package'] = line
             else:
                 # Remove versioning from the package
                 pat = '(' + '|'.join(['>=', '==', '>']) + ')'
