@@ -11,8 +11,6 @@ from .anchor_head import AnchorHead
 from .rpn_test_mixin import RPNTestMixin
 
 
-
-
 @HEADS.register_module()
 class RPNHead(RPNTestMixin, AnchorHead):
 
