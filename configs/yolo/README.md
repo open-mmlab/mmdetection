@@ -14,9 +14,10 @@
 
 ## Results and Models
 
-|    Backbone     | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
-| :-------------: | :-----: | :------: | :------------: | :----: |:--------:|
-|   DarkNet-53    |  273e   |   1.8    |      44        |  36.7  | [model](https://drive.google.com/drive/folders/1NzQ5LwBaYPlu1gywnRAViNz70NV9743O?usp=sharing) &#124; [log]() |
+|    Backbone     | Train Scale  | Lr schd | Mem (GB) | Eval Scale | Inf time (fps) | box AP | Download |
+| :-------------: | :----------: | :-----: | :------: | :--------: | :------------: | :----: |:--------:|
+|   DarkNet-53    | Multi-Scale  |  273e   |   1.8    | 608 * 608  |      44        |**37.6**| [model](https://drive.google.com/file/d/1Ca27fP4hlBFduMCv5b_f-0J9EdfxCgPb/view?usp=sharing) &#124; [log](https://github.com/open-mmlab/mmdetection/files/4910982/log.zip) |
+|        -        |      -       |     -   |  -       | 416 * 416  |      **64**    |  34.8  | - |
 
 
 ## Credit
