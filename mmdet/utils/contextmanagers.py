@@ -17,11 +17,8 @@ async def completed(trace_name='',
                     name='',
                     sleep_interval=0.05,
                     streams: List[torch.cuda.Stream] = None):
-    """
-    Async context manager that waits for work to complete on
-    given CUDA streams.
-
-    """
+    """Async context manager that waits for work to complete on given CUDA
+    streams."""
     if not torch.cuda.is_available():
         yield
         return
@@ -99,7 +96,6 @@ async def concurrent(streamqueue: asyncio.Queue,
     :param streamqueue: asyncio.Queue instance.
 
     Queue tasks define the pool of streams used for concurrent execution.
-
     """
     if not torch.cuda.is_available():
         yield

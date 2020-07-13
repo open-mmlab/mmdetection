@@ -8,6 +8,25 @@ from .retina_head import RetinaHead
 
 @HEADS.register_module()
 class FreeAnchorRetinaHead(RetinaHead):
+    """FreeAnchor RetinaHead used in https://arxiv.org/abs/1909.02466.
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        stacked_convs (int): Number of conv layers in cls and reg tower.
+            Default: 4.
+        conv_cfg (dict): dictionary to construct and config conv layer.
+            Default: None.
+        norm_cfg (dict): dictionary to construct and config norm layer.
+            Default: norm_cfg=dict(type='GN', num_groups=32,
+            requires_grad=True).
+        pre_anchor_topk (int): Number of boxes that be token in each bag.
+        bbox_thr (float): The threshold of the saturated linear function. It is
+            usually the same with the IoU threshold used in NMS.
+        gamma (float): Gamma parameter in focal loss.
+        alpha (float): Alpha parameter in focal loss.
+    """  # noqa: W605
 
     def __init__(self,
                  num_classes,
@@ -36,6 +55,24 @@ class FreeAnchorRetinaHead(RetinaHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute losses of the head.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            gt_bboxes (list[Tensor]): each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generator.base_anchors)
 
@@ -64,57 +101,65 @@ class FreeAnchorRetinaHead(RetinaHead):
                     zip(anchors, gt_labels, gt_bboxes, cls_prob, bbox_preds)):
 
             with torch.no_grad():
-                # box_localization: a_{j}^{loc}, shape: [j, 4]
-                pred_boxes = self.bbox_coder.decode(anchors_, bbox_preds_)
-
-                # object_box_iou: IoU_{ij}^{loc}, shape: [i, j]
-                object_box_iou = bbox_overlaps(gt_bboxes_, pred_boxes)
-
-                # object_box_prob: P{a_{j} -> b_{i}}, shape: [i, j]
-                t1 = self.bbox_thr
-                t2 = object_box_iou.max(
-                    dim=1, keepdim=True).values.clamp(min=t1 + 1e-12)
-                object_box_prob = ((object_box_iou - t1) / (t2 - t1)).clamp(
-                    min=0, max=1)
-
-                # object_cls_box_prob: P{a_{j} -> b_{i}}, shape: [i, c, j]
-                num_obj = gt_labels_.size(0)
-                indices = torch.stack(
-                    [torch.arange(num_obj).type_as(gt_labels_), gt_labels_],
-                    dim=0)
-                object_cls_box_prob = torch.sparse_coo_tensor(
-                    indices, object_box_prob)
-
-                # image_box_iou: P{a_{j} \in A_{+}}, shape: [c, j]
-                """
-                from "start" to "end" implement:
-                image_box_iou = torch.sparse.max(object_cls_box_prob,
-                                                 dim=0).t()
-
-                """
-                # start
-                box_cls_prob = torch.sparse.sum(
-                    object_cls_box_prob, dim=0).to_dense()
-
-                indices = torch.nonzero(box_cls_prob, as_tuple=False).t_()
-                if indices.numel() == 0:
+                if len(gt_bboxes_) == 0:
                     image_box_prob = torch.zeros(
                         anchors_.size(0),
-                        self.cls_out_channels).type_as(object_box_prob)
+                        self.cls_out_channels).type_as(bbox_preds_)
                 else:
-                    nonzero_box_prob = torch.where(
-                        (gt_labels_.unsqueeze(dim=-1) == indices[0]),
-                        object_box_prob[:, indices[1]],
-                        torch.tensor(
-                            [0]).type_as(object_box_prob)).max(dim=0).values
+                    # box_localization: a_{j}^{loc}, shape: [j, 4]
+                    pred_boxes = self.bbox_coder.decode(anchors_, bbox_preds_)
 
-                    # upmap to shape [j, c]
-                    image_box_prob = torch.sparse_coo_tensor(
-                        indices.flip([0]),
-                        nonzero_box_prob,
-                        size=(anchors_.size(0),
-                              self.cls_out_channels)).to_dense()
-                # end
+                    # object_box_iou: IoU_{ij}^{loc}, shape: [i, j]
+                    object_box_iou = bbox_overlaps(gt_bboxes_, pred_boxes)
+
+                    # object_box_prob: P{a_{j} -> b_{i}}, shape: [i, j]
+                    t1 = self.bbox_thr
+                    t2 = object_box_iou.max(
+                        dim=1, keepdim=True).values.clamp(min=t1 + 1e-12)
+                    object_box_prob = ((object_box_iou - t1) /
+                                       (t2 - t1)).clamp(
+                                           min=0, max=1)
+
+                    # object_cls_box_prob: P{a_{j} -> b_{i}}, shape: [i, c, j]
+                    num_obj = gt_labels_.size(0)
+                    indices = torch.stack([
+                        torch.arange(num_obj).type_as(gt_labels_), gt_labels_
+                    ],
+                                          dim=0)
+                    object_cls_box_prob = torch.sparse_coo_tensor(
+                        indices, object_box_prob)
+
+                    # image_box_iou: P{a_{j} \in A_{+}}, shape: [c, j]
+                    """
+                    from "start" to "end" implement:
+                    image_box_iou = torch.sparse.max(object_cls_box_prob,
+                                                     dim=0).t()
+
+                    """
+                    # start
+                    box_cls_prob = torch.sparse.sum(
+                        object_cls_box_prob, dim=0).to_dense()
+
+                    indices = torch.nonzero(box_cls_prob, as_tuple=False).t_()
+                    if indices.numel() == 0:
+                        image_box_prob = torch.zeros(
+                            anchors_.size(0),
+                            self.cls_out_channels).type_as(object_box_prob)
+                    else:
+                        nonzero_box_prob = torch.where(
+                            (gt_labels_.unsqueeze(dim=-1) == indices[0]),
+                            object_box_prob[:, indices[1]],
+                            torch.tensor([
+                                0
+                            ]).type_as(object_box_prob)).max(dim=0).values
+
+                        # upmap to shape [j, c]
+                        image_box_prob = torch.sparse_coo_tensor(
+                            indices.flip([0]),
+                            nonzero_box_prob,
+                            size=(anchors_.size(0),
+                                  self.cls_out_channels)).to_dense()
+                    # end
 
                 box_prob.append(image_box_prob)
 
@@ -158,6 +203,11 @@ class FreeAnchorRetinaHead(RetinaHead):
         negative_loss = self.negative_bag_loss(cls_prob, box_prob).sum() / max(
             1, num_pos * self.pre_anchor_topk)
 
+        # avoid the absence of gradients in regression subnet
+        # when no ground-truth in a batch
+        if num_pos == 0:
+            positive_loss = bbox_preds.sum() * 0
+
         losses = {
             'positive_bag_loss': positive_loss,
             'negative_bag_loss': negative_loss
@@ -165,6 +215,23 @@ class FreeAnchorRetinaHead(RetinaHead):
         return losses
 
     def positive_bag_loss(self, matched_cls_prob, matched_box_prob):
+        """Compute positive bag loss.
+
+        :math:`-log( Mean-max(P_{ij}^{cls} * P_{ij}^{loc}) )`.
+
+        :math:`P_{ij}^{cls}`: matched_cls_prob, classification probability of matched samples.
+
+        :math:`P_{ij}^{loc}`: matched_box_prob, box probability of matched samples.
+
+        Args:
+            matched_cls_prob (Tensor): Classification probabilty of matched
+                samples in shape (num_gt, pre_anchor_topk).
+            matched_box_prob (Tensor): BBox probability of matched samples,
+                in shape (num_gt, pre_anchor_topk).
+
+        Returns:
+            Tensor: Positive bag loss in shape (num_gt,).
+        """  # noqa: E501, W605
         # bag_prob = Mean-max(matched_prob)
         matched_prob = matched_cls_prob * matched_box_prob
         weight = 1 / torch.clamp(1 - matched_prob, 1e-12, None)
@@ -175,6 +242,23 @@ class FreeAnchorRetinaHead(RetinaHead):
             bag_prob, torch.ones_like(bag_prob), reduction='none')
 
     def negative_bag_loss(self, cls_prob, box_prob):
+        """Compute negative bag loss.
+
+        :math:`FL((1 - P_{a_{j} \in A_{+}}) * (1 - P_{j}^{bg}))`.
+
+        :math:`P_{a_{j} \in A_{+}}`: Box_probability of matched samples.
+
+        :math:`P_{j}^{bg}`: Classification probability of negative samples.
+
+        Args:
+            cls_prob (Tensor): Classification probability, in shape
+                (num_img, num_anchors, num_classes).
+            box_prob (Tensor): Box probability, in shape
+                (num_img, num_anchors, num_classes).
+
+        Returns:
+            Tensor: Negative bag loss in shape (num_img, num_anchors, num_classes).
+        """  # noqa: E501, W605
         prob = cls_prob * (1 - box_prob)
         negative_bag_loss = prob**self.gamma * F.binary_cross_entropy(
             prob, torch.zeros_like(prob), reduction='none')

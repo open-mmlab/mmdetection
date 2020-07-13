@@ -1,9 +1,14 @@
 import argparse
 
+import torch
 from mmcv import Config
 
 from mmdet.models import build_detector
-from mmdet.utils import get_model_complexity_info
+
+try:
+    from mmcv.cnn import get_model_complexity_info
+except ImportError:
+    raise ImportError('Please upgrade mmcv to >0.6.2')
 
 
 def parse_args():
@@ -32,7 +37,9 @@ def main():
 
     cfg = Config.fromfile(args.config)
     model = build_detector(
-        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg).cuda()
+        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+    if torch.cuda.is_available():
+        model.cuda()
     model.eval()
 
     if hasattr(model, 'forward_dummy'):

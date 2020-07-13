@@ -7,12 +7,18 @@ model = dict(
     roi_head=dict(
         bbox_roi_extractor=dict(
             roi_layer=dict(
-                type='RoIAlign', out_size=7, sample_num=2, aligned=False)),
+                type='RoIAlign',
+                output_size=7,
+                sampling_ratio=2,
+                aligned=False)),
         bbox_head=dict(
             loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
         mask_roi_extractor=dict(
             roi_layer=dict(
-                type='RoIAlign', out_size=14, sample_num=2, aligned=False))))
+                type='RoIAlign',
+                output_size=14,
+                sampling_ratio=2,
+                aligned=False))))
 # use caffe img_norm
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)

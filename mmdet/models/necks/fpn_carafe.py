@@ -1,14 +1,14 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, build_upsample_layer, xavier_init
+from mmcv.ops.carafe import CARAFEPack
 
-from mmdet.ops.carafe import CARAFEPack
 from ..builder import NECKS
 
 
 @NECKS.register_module()
 class FPN_CARAFE(nn.Module):
-    """FPN_CARAFE is a more flexible implementation of FPN.
-    It allows more choice for upsample methods during the top-down pathway.
+    """FPN_CARAFE is a more flexible implementation of FPN. It allows more
+    choice for upsample methods during the top-down pathway.
 
     It can reproduce the preformance of ICCV 2019 paper
     CARAFE: Content-Aware ReAssembly of FEatures
@@ -200,6 +200,7 @@ class FPN_CARAFE(nn.Module):
 
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
+        """Initialize the weights of module."""
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
                 xavier_init(m, distribution='uniform')
@@ -208,8 +209,19 @@ class FPN_CARAFE(nn.Module):
                 m.init_weights()
 
     def slice_as(self, src, dst):
-        # slice src as dst
-        # src should have the same or larger size than dst
+        """Slice ``src`` as ``dst``
+
+        Note:
+            ``src`` should have the same or larger size than ``dst``.
+
+        Args:
+            src (torch.Tensor): Tensors to be sliced.
+            dst (torch.Tensor): ``src`` will be sliced to have the same
+                size as ``dst``.
+
+        Returns:
+            torch.Tensor: Sliced tensor.
+        """
         assert (src.size(2) >= dst.size(2)) and (src.size(3) >= dst.size(3))
         if src.size(2) == dst.size(2) and src.size(3) == dst.size(3):
             return src
@@ -217,6 +229,7 @@ class FPN_CARAFE(nn.Module):
             return src[:, :, :dst.size(2), :dst.size(3)]
 
     def tensor_add(self, a, b):
+        """Add tensors ``a`` and ``b`` that might have different sizes."""
         if a.size() == b.size():
             c = a + b
         else:
@@ -224,6 +237,7 @@ class FPN_CARAFE(nn.Module):
         return c
 
     def forward(self, inputs):
+        """Forward function."""
         assert len(inputs) == len(self.in_channels)
 
         # build laterals
