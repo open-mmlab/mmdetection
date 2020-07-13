@@ -135,7 +135,8 @@ def nms_core_symbolic(g, dets, iou_thr, score_thr, max_num):
 
     assert 0 <= iou_thr <= 1
     multi_bboxes = _slice(g, dets, axes=[1], starts=[0], ends=[4])
-    multi_bboxes = unsqueeze(g, multi_bboxes, 0)
+    # multi_bboxes = unsqueeze(g, multi_bboxes, 0)
+    multi_bboxes = reshape(g, multi_bboxes, [1, -1, 4])
     multi_scores = _slice(g, dets, axes=[1], starts=[4], ends=[5])
     multi_scores = reshape(g, multi_scores, [1, 1, -1])
 
@@ -147,6 +148,13 @@ def nms_core_symbolic(g, dets, iou_thr, score_thr, max_num):
         g.op('Constant', value_t=torch.FloatTensor([iou_thr])),
         g.op('Constant', value_t=torch.FloatTensor([score_thr])))
     indices = squeeze(g, _slice(g, indices, axes=[1], starts=[2], ends=[3]), 1)
+
+    # Sort indices by score.
+    scores = reshape(g, multi_scores, [-1, ])
+    keeped_scores = g.op('Gather', scores, indices, axis_i=0)
+    elements_num = sym_help._size_helper(g, keeped_scores, dim=g.op('Constant', value_t=torch.LongTensor([0])))
+    _, order = sym_help._topk_helper(g, keeped_scores, elements_num, dim=0)
+    indices = g.op('Gather', indices, order, axis_i=0)
 
     return indices
 
@@ -242,7 +250,8 @@ def multiclass_nms_core_symbolic(g, multi_bboxes, multi_scores, score_thr, nms_c
     else:
         kn = g.op('Min', max_num, elements_num)
     _, top_indices = sym_help._topk_helper(g, out_scores, kn, dim=0)
-    top_indices = squeeze(g, top_indices, dim=1)
+    # top_indices = squeeze(g, top_indices, dim=1)
+    top_indices = reshape(g, top_indices, [-1, ])
     out_combined_bboxes = g.op('Gather', out_combined_bboxes, top_indices, axis_i=0)
 
     return out_combined_bboxes

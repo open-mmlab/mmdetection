@@ -8,7 +8,7 @@ from mmdet.utils.deployment.symbolic import py_symbolic
 from . import nms_ext
 
 
-def nms(dets, iou_thr, score_thr=0.0, max_num=sys.maxsize, device_id=None):
+def nms(dets, iou_thr, score_thr=0.0, max_num=-1, device_id=None):
     """Dispatch to either CPU or GPU NMS implementations.
 
     The input can be either a torch tensor or numpy array. GPU NMS will be used
@@ -48,6 +48,9 @@ def nms(dets, iou_thr, score_thr=0.0, max_num=sys.maxsize, device_id=None):
     else:
         raise TypeError('dets must be either a Tensor or numpy array, '
                         f'but got {type(dets)}')
+
+    if max_num < 0:
+        max_num = int(dets_th.size(0))
 
     inds = nms_core(dets_th, iou_thr, score_thr, max_num)
 
