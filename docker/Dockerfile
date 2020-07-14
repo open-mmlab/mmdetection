@@ -29,7 +29,7 @@ RUN apt update && \
         wget \
         curl
 
-ARG OPENVINO_LINK=http://registrationcenter-download.intel.com/akdlm/irc_nas/16670/l_openvino_toolkit_p_2020.3.194.tgz
+ARG OPENVINO_LINK=http://registrationcenter-download.intel.com/akdlm/irc_nas/16803/l_openvino_toolkit_p_2020.4.287.tgz
 RUN mkdir -p /tmp/openvino_installer && cd /tmp/openvino_installer && \
     wget --no-verbose $OPENVINO_LINK && \
     tar xf l_openvino_toolkit*.tgz && \
