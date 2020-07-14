@@ -12,6 +12,7 @@ import mmdet
 
 
 def collect_env():
+    """Collect the information of the running environments."""
     env_info = {}
     env_info['sys.platform'] = sys.platform
     env_info['Python'] = sys.version.replace('\n', '')
@@ -52,7 +53,7 @@ def collect_env():
 
     env_info['MMCV'] = mmcv.__version__
     env_info['MMDetection'] = mmdet.__version__
-    from mmdet.ops import get_compiler_version, get_compiling_cuda_version
+    from mmcv.ops import get_compiler_version, get_compiling_cuda_version
     env_info['MMDetection Compiler'] = get_compiler_version()
     env_info['MMDetection CUDA Compiler'] = get_compiling_cuda_version()
     return env_info

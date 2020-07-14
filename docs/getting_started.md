@@ -73,71 +73,69 @@ Optional arguments:
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
 - `--show-score-thr`: If specified, detections with score below this threshold will be removed.
 
-
 Examples:
 
 Assume that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
 
-```shell
-python tools/test.py configs/faster_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
-    --show
-```
+   ```shell
+   python tools/test.py configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
+       --show
+   ```
 
 2. Test Faster R-CNN and save the painted images for latter visualization.
 
-```shell
-python tools/test.py configs/faster_rcnn_r50_fpn_1x.py \
-    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
-    --show-dir faster_rcnn_r50_fpn_1x_results
-```
+   ```shell
+   python tools/test.py configs/faster_rcnn/faster_rcnn_r50_fpn_1x.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth \
+       --show-dir faster_rcnn_r50_fpn_1x_results
+   ```
 
 3. Test Faster R-CNN on PASCAL VOC (without saving the test results) and evaluate the mAP.
 
-```shell
-python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
-    checkpoints/SOME_CHECKPOINT.pth \
-    --eval mAP
-```
+   ```shell
+   python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
+       checkpoints/SOME_CHECKPOINT.pth \
+       --eval mAP
+   ```
 
 4. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
 
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --out results.pkl --eval bbox segm
-```
+   ```shell
+   ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+       8 --out results.pkl --eval bbox segm
+   ```
 
 5. Test Mask R-CNN with 8 GPUs, and evaluate the **classwise** bbox and mask AP.
 
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --out results.pkl --eval bbox segm --options "classwise=True"
-```
+   ```shell
+   ./tools/dist_test.sh configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+       8 --out results.pkl --eval bbox segm --options "classwise=True"
+   ```
 
 6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
 
-```shell
-./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
-```
+   ```shell
+   ./tools/dist_test.sh configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+       8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+   ```
 
-You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+   You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
 
 7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate the txt and png files to be submit to the official evaluation server.
 
-```shell
-./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
-    checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
-    8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
-```
+   ```shell
+   ./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
+       checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
+       8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+   ```
 
-The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
-
+   The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
 
 ### Image demo
 
@@ -179,7 +177,7 @@ Here is an example of building the model and test given images.
 from mmdet.apis import init_detector, inference_detector
 import mmcv
 
-config_file = 'configs/faster_rcnn_r50_fpn_1x_coco.py'
+config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
 
 # build the model from a config file and a checkpoint file
@@ -215,7 +213,7 @@ from mmdet.apis import init_detector, async_inference_detector
 from mmdet.utils.contextmanagers import concurrent
 
 async def main():
-    config_file = 'configs/faster_rcnn_r50_fpn_1x_coco.py'
+    config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
     checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth'
     device = 'cuda:0'
     model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
@@ -280,6 +278,7 @@ Optional arguments are:
 - `--no-validate` (**not suggested**): By default, the codebase will perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training. To disable this behavior, use `--no-validate`.
 - `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
+- `--options 'Key=value'`: Overide some settings in the used config.
 
 Difference between `resume-from` and `load-from`:
 `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
@@ -302,7 +301,7 @@ GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco
 You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
 
 If you have just multiple machines connected with ethernet, you can refer to
-PyTorch [launch utility](https://pytorch.org/docs/stable/distributed_deprecated.html#launch-utility).
+PyTorch [launch utility](https://pytorch.org/docs/stable/distributed.html#launch-utility).
 Usually it is slow if you do not have high speed networking like InfiniBand.
 
 ### Launch multiple jobs on a single machine
@@ -317,24 +316,35 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
 CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
-If you use launch training jobs with Slurm, you need to modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
+If you use launch training jobs with Slurm, there are two ways to specify the ports.
 
-In `config1.py`,
-```python
-dist_params = dict(backend='nccl', port=29500)
-```
+1. Set the port through `--options`. This is more recommended since it does not change the original configs.
 
-In `config2.py`,
-```python
-dist_params = dict(backend='nccl', port=29501)
-```
+   ```shell
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --options 'dist_params.port=29500'
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --options 'dist_params.port=29501'
+   ```
 
-Then you can launch two jobs with `config1.py` ang `config2.py`.
+2. Modify the config files (usually the 6th line from the bottom in config files) to set different communication ports.
 
-```shell
-CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR}
-CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR}
-```
+   In `config1.py`,
+
+   ```python
+   dist_params = dict(backend='nccl', port=29500)
+   ```
+
+   In `config2.py`,
+
+   ```python
+   dist_params = dict(backend='nccl', port=29501)
+   ```
+
+   Then you can launch two jobs with `config1.py` ang `config2.py`.
+
+   ```shell
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR}
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR}
+   ```
 
 ## Useful tools
 
@@ -344,7 +354,7 @@ We provide lots of useful tools under `tools/` directory.
 
 You can plot loss/mAP curves given a training log file. Run `pip install seaborn` first to install the dependency.
 
-![loss curve image](../demo/loss_curve.png)
+![loss curve image](../resources/loss_curve.png)
 
 ```shell
 python tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
@@ -400,7 +410,7 @@ You will get the result like this.
 ```
 ==============================
 Input shape: (3, 1280, 800)
-Flops: 239.32 GMac
+Flops: 239.32 GFLOPs
 Params: 37.74 M
 ==============================
 ```
@@ -408,8 +418,7 @@ Params: 37.74 M
 **Note**: This tool is still experimental and we do not guarantee that the number is correct. You may well use the result for simple comparisons, but double check it before you adopt it in technical reports or papers.
 
 (1) FLOPs are related to the input shape while parameters are not. The default input shape is (1, 3, 1280, 800).
-(2) Some operators are not counted into FLOPs like GN and custom operators.
-You can add support for new operators by modifying [`mmdet/utils/flops_counter.py`](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/utils/flops_counter.py).
+(2) Some operators are not counted into FLOPs like GN and custom operators. Refer to [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/flops_counter.py) for details.
 (3) The FLOPs of two-stage detectors is dependent on the number of proposals.
 
 ### Publish a model

@@ -8,8 +8,7 @@ from ..builder import NECKS
 
 @NECKS.register_module()
 class FPN(nn.Module):
-    """
-    Feature Pyramid Network.
+    """Feature Pyramid Network.
 
     This is an implementation of - Feature Pyramid Networks for Object
     Detection (https://arxiv.org/abs/1612.03144)
@@ -157,12 +156,14 @@ class FPN(nn.Module):
 
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
+        """Initialize the weights of FPN module."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 xavier_init(m, distribution='uniform')
 
     @auto_fp16()
     def forward(self, inputs):
+        """Forward function."""
         assert len(inputs) == len(self.in_channels)
 
         # build laterals
