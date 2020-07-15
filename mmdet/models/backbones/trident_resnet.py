@@ -1,15 +1,29 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer
-from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.backbones.resnet import Bottleneck, ResNet
 from mmdet.models.builder import BACKBONES
 
 
 class TridentConv(nn.Module):
+    """Trident Convolution Module.
+
+    Args:
+        in_channels (int): Number of channels in input.
+        out_channels (int): Number of channels in output.
+        kernel_size (int): Size of convolution kernel.
+        stride (int): Convolution stride. Default: 1.
+        trident_dilations (tuple[int, int, int]): Dilations of different
+            trident branch. Default: (1, 2, 3).
+        test_branch_idx (int): In inference, all 3 branches will be used
+            if `test_branch_idx==-1`, otherwise only branch with index
+            `test_branch_idx` will be used. Default: 1.
+        bias (bool): Whether to use bias in convolution or not.
+            Default: False.
+    """
 
     def __init__(
             self,
@@ -18,18 +32,13 @@ class TridentConv(nn.Module):
             kernel_size,
             stride=1,
             trident_dilations=(1, 2, 3),
-            # num_branch=3,
-            test_branch_idx=-1,
+            test_branch_idx=1,
             bias=False,
-            norm=None,
-            activation=None,
     ):
         super(TridentConv, self).__init__()
         self.num_branch = len(trident_dilations)
         self.with_bias = bias
         self.test_branch_idx = test_branch_idx
-        self.norm = norm
-        self.activation = activation
         self.stride = stride
         self.kernel_size = kernel_size
         self.paddings = trident_dilations
@@ -37,11 +46,6 @@ class TridentConv(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.bias = bias
-
-        # if isinstance(paddings, int):
-        #     self.paddings = [paddings] * self.num_branch
-        # if isinstance(trident_dilations, int):
-        #     self.dilations = [trident_dilations] * self.num_branch
 
         self.weight = nn.Parameter(
             torch.Tensor(out_channels, in_channels, self.kernel_size,
@@ -68,32 +72,35 @@ class TridentConv(nn.Module):
         return tmpstr
 
     def forward(self, inputs):
-        # num_branch = (self.num_branch
-        #               if self.training or test_branch_idx == -1
-        #               else 1)
-
         if self.training or self.test_branch_idx == -1:
             outputs = [
                 F.conv2d(input, self.weight, self.bias, self.stride, padding,
                          dilation) for input, dilation, padding in zip(
-                    inputs, self.dilations, self.paddings)
+                             inputs, self.dilations, self.paddings)
             ]
         else:
-            assert len(inputs)==1
+            assert len(inputs) == 1
             outputs = [
                 F.conv2d(inputs[0], self.weight, self.bias, self.stride,
                          self.paddings[self.test_branch_idx],
                          self.dilations[self.test_branch_idx])
             ]
 
-        if self.norm is not None:
-            outputs = [self.norm(x) for x in outputs]
-        if self.activation is not None:
-            outputs = [self.activation(x) for x in outputs]
         return outputs
 
 
 class TridentBottleneckBlock(Bottleneck):
+    """BottleBlock for TridentResNet.
+
+    Args:
+        trident_dilations (tuple[int, int, int]): Dilations of different
+            trident branch. Default: (1, 2, 3).
+        test_branch_idx (int): In inference, all 3 branches will be used
+            if `test_branch_idx==-1`, otherwise only branch with index
+            `test_branch_idx` will be used. Default: 1.
+        concat_output (bool): Whether to concat the output list to a Tensor.
+            `True` only in the last Block. Default: False.
+    """
 
     def __init__(self,
                  trident_dilations=(1, 2, 3),
@@ -102,6 +109,8 @@ class TridentBottleneckBlock(Bottleneck):
                  **kwargs):
 
         super(TridentBottleneckBlock, self).__init__(**kwargs)
+        assert self.with_plugins is False, \
+            "TridentResNet doesn't support plugins for now."
         self.trident_dilations = trident_dilations
         self.num_branch = len(trident_dilations)
         self.concat_output = concat_output
@@ -111,55 +120,48 @@ class TridentBottleneckBlock(Bottleneck):
             self.planes,
             kernel_size=3,
             stride=self.conv2_stride,
-            # paddings=self.trident_dilations,
             bias=False,
             trident_dilations=self.trident_dilations,
-            # num_branch=self.num_branch,
-            test_branch_idx=test_branch_idx,
-            norm=None)
+            test_branch_idx=test_branch_idx)
 
     def forward(self, x):
-        num_branch = (self.num_branch
-                      if self.training or self.test_branch_idx == -1
-                      else 1)
-        identity = x
-        if not isinstance(x, list):
-            x = (x, ) * num_branch
+
+        def _inner_forward(x):
+            num_branch = (
+                self.num_branch
+                if self.training or self.test_branch_idx == -1 else 1)
             identity = x
-            if self.downsample is not None:
-                identity = [self.downsample(b) for b in x]
+            if not isinstance(x, list):
+                x = (x, ) * num_branch
+                identity = x
+                if self.downsample is not None:
+                    identity = [self.downsample(b) for b in x]
 
-        out = [self.conv1(b) for b in x]
-        out = [self.norm1(b) for b in out]
-        out = [self.relu(b) for b in out]
-        # if self.with_plugins:
-        #     out = self.forward_plugin(out, self.after_conv1_plugin_names)
+            out = [self.conv1(b) for b in x]
+            out = [self.norm1(b) for b in out]
+            out = [self.relu(b) for b in out]
 
-        out = self.conv2(out)
-        out = [self.norm2(b) for b in out]
-        out = [self.relu(b) for b in out]
+            out = self.conv2(out)
+            out = [self.norm2(b) for b in out]
+            out = [self.relu(b) for b in out]
 
-        # if self.with_plugins:
-        #     out = self.forward_plugin(out, self.after_conv2_plugin_names)
+            out = [self.conv3(b) for b in out]
+            out = [self.norm3(b) for b in out]
 
-        out = [self.conv3(b) for b in out]
-        out = [self.norm3(b) for b in out]
+            out = [
+                out_b + identity_b for out_b, identity_b in zip(out, identity)
+            ]
+            return out
 
-        # if self.with_plugins:
-        #     out = self.forward_plugin(out, self.after_conv3_plugin_names)
+        if self.with_cp and x.requires_grad:
+            out = cp.checkpoint(_inner_forward, x)
+        else:
+            out = _inner_forward(x)
 
-        out = [out_b + identity_b for out_b, identity_b in zip(out, identity)]
         out = [self.relu(b) for b in out]
         if self.concat_output:
             out = torch.cat(out, dim=0)
         return out
-
-    # def forward_plugin(self, x, plugin_names):
-    #     out = x
-    #     for (i, single_x) in enumerate(out):
-    #         for name in plugin_names:
-    #             out[i] = getattr(self, name)(single_x)
-    #     return out
 
 
 def make_trident_res_layer(block,
@@ -175,6 +177,8 @@ def make_trident_res_layer(block,
                            dcn=None,
                            plugins=None,
                            test_branch_idx=-1):
+    """Build Trident Res Layers."""
+
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
         downsample = []
@@ -215,6 +219,16 @@ def make_trident_res_layer(block,
 
 @BACKBONES.register_module
 class TridentResNet(ResNet):
+    """The stem layer, stage 1 and stage 2 in Trident ResNet are identical to
+    ResNet, while in stage 3, Trident BottleBlock is utilized to replace the
+    normal BottleBlock to yield trident output. Different branch shares the
+    convolution weight but uses different dilations to achieve multi-scale
+    output.
+
+                               / stage3(b0) \
+    x - stem - stage1 - stage2 - stage3(b1) - output
+                               \ stage3(b2) /
+    """ # noqa
 
     def __init__(self,
                  depth,
@@ -222,7 +236,7 @@ class TridentResNet(ResNet):
                  test_branch_idx,
                  trident_dilations=(1, 2, 3),
                  **kwargs):
-        assert depth >= 50
+
         assert num_branch == len(trident_dilations)
         super(TridentResNet, self).__init__(depth, **kwargs)
         self.test_branch_idx = test_branch_idx
@@ -237,11 +251,11 @@ class TridentResNet(ResNet):
                                                     last_stage_idx)
         else:
             stage_plugins = None
-        planes = self.base_channels * 2 ** last_stage_idx
+        planes = self.base_channels * 2**last_stage_idx
         res_layer = make_trident_res_layer(
             TridentBottleneckBlock,
             inplanes=self.block.expansion * self.base_channels *
-                     2 ** (last_stage_idx - 1),
+            2**(last_stage_idx - 1),
             planes=planes,
             num_blocks=self.stage_blocks[last_stage_idx],
             stride=stride,
@@ -252,8 +266,7 @@ class TridentResNet(ResNet):
             norm_cfg=self.norm_cfg,
             dcn=dcn,
             plugins=stage_plugins,
-            test_branch_idx=self.test_branch_idx
-        )
+            test_branch_idx=self.test_branch_idx)
 
         layer_name = f'layer{last_stage_idx + 1}'
 
@@ -262,60 +275,3 @@ class TridentResNet(ResNet):
         self.res_layers.insert(last_stage_idx, layer_name)
 
         self._freeze_stages()
-
-        # self.feat_dim = self.block.expansion *
-        #                 self.base_channels * 2 ** (
-        #                         len(self.stage_blocks) - 1)
-
-    # def forward(self, x):
-    #     # for (k, v) in self.state_dict().items():
-    #     #     if 'num_ba' in k:
-    #     #         print("%035s %020s     %5d" %
-    #     #               (k, str(list(v.shape)), v))
-    #     #     else:
-    #     #         print("%035s %020s     %5f     %.5f" %
-    #     #               (k, str(list(v.shape)), v.mean().item(), v.std().item()))
-    #     # asasas
-    #     # import joblib
-    #     # for (k, v) in self.named_parameters():
-    #     #     nn.init.constant_(v, 0.001*(v.shape[0]//64)+0.001)
-    #     #     print(k, 0.001*(v.shape[0]//64)+0.001)
-    #     # x = joblib.load("/home/nirvana/temp/input.pkl").cuda()
-    #
-    #     if self.deep_stem:
-    #         x = self.stem(x)
-    #     else:
-    #         x = self.conv1(x)
-    #         x = self.norm1(x)
-    #         x = self.relu(x)
-    #     x = self.maxpool(x)
-    #
-    #     outs = []
-    #     for i, layer_name in enumerate(self.res_layers):
-    #         res_layer = getattr(self, layer_name)
-    #         x = res_layer(x)
-    #         if i in self.out_indices:
-    #             outs.append(x)
-    #     #         print(x.shape, x.mean().item(), x.std().item())
-    #     #
-    #     # asasasas
-    #     return tuple(outs)
-
-
-if __name__ == '__main__':
-    net = TridentResNet(depth=50)
-    # block = TridentBottleneckBlock(inplanes=128*4, planes=128)
-    for m in net.modules():
-        if isinstance(m, (nn.Conv2d, nn.BatchNorm2d, TridentConv)):
-            nn.init.constant_(m.weight, 0.05)
-            if hasattr(m, 'bias') and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-
-    import joblib
-
-    # inputs = torch.randn([2, 128 * 4, 32, 32])
-    # joblib.dump(inputs, "/home/nirvana/temp/inputs.pth")
-    inputs = joblib.load('/home/nirvana/temp/inputs.pth')
-    outputs = block(inputs)
-    for k in range(3):
-        print(outputs[k].mean().item(), outputs[k].std().item())

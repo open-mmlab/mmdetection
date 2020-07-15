@@ -1,10 +1,7 @@
 _base_ = [
     '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_1x.py',
-    '../_base_/default_runtime.py'
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-
-resume_from='mmdet_output/trident/trident_fast_1x_13e.py/latest.pth'
 
 model = dict(
     type='TridentFasterRCNN',
@@ -125,6 +122,7 @@ test_cfg = dict(
 
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
+
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -156,8 +154,3 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-
-# optimizer
-# optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-
-total_epochs = 13
