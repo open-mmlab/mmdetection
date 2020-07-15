@@ -52,7 +52,7 @@ class TridentRoIHead(StandardRoIHead):
             det_labels = trident_det_bboxes.new_zeros((0, ), dtype=torch.long)
         else:
             nms_bboxes = trident_det_bboxes[:, :4]
-            nms_scores = trident_det_bboxes[:, 4]
+            nms_scores = trident_det_bboxes[:, 4].contiguous()
             nms_inds = trident_det_labels
             nms_cfg = self.test_cfg['nms']
             det_bboxes, keep = batched_nms(nms_bboxes, nms_scores, nms_inds,
