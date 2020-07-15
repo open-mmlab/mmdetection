@@ -85,6 +85,8 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
         else:
             for i in range(len(bboxes)):
                 bb = bboxes[i]
+                if labels[i] != 1:  
+                    continue
                 d = (int(bb[0]), int(bb[1]), int(bb[2]), int(bb[3]))
                 cv2.rectangle(frame, (d[0], d[1]), (d[2], d[3]), (255,0,0), 2)
                 log_file.write(str(f_number)+","+str(d[0])+","+str(d[1])+","+str(d[2])+","+str(d[3]) + "\n")
