@@ -10,7 +10,6 @@ from .gfl import GFL
 from .grid_rcnn import GridRCNN
 from .htc import HybridTaskCascade
 from .mask_rcnn import MaskRCNN
-from .trident_faster_rcnn import TridentFasterRCNN
 from .mask_scoring_rcnn import MaskScoringRCNN
 from .nasfcos import NASFCOS
 from .point_rend import PointRend
@@ -18,6 +17,7 @@ from .reppoints_detector import RepPointsDetector
 from .retinanet import RetinaNet
 from .rpn import RPN
 from .single_stage import SingleStageDetector
+from .trident_faster_rcnn import TridentFasterRCNN
 from .two_stage import TwoStageDetector
 
 __all__ = [
