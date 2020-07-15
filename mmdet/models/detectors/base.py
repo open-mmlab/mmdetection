@@ -10,7 +10,6 @@ import torch
 import torch.distributed as dist
 
 import torch.nn as nn
-import torch.onnx
 from mmcv.utils import print_log
 
 from mmdet.core import auto_fp16
@@ -158,8 +157,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
 
     def forward_export(self, imgs):
-        from torch.onnx import operators
-        img_shape = operators.shape_as_tensor(imgs[0])
+        from torch.onnx.operators import shape_as_tensor
+        img_shape = shape_as_tensor(imgs[0])
         imgs_per_gpu = int(imgs[0].size(0))
         assert imgs_per_gpu == 1
         self.img_metas[0][0]['img_shape'] = img_shape[2:4]

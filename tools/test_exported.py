@@ -134,14 +134,14 @@ def main(args):
     classes_num = len(dataset.CLASSES) + 1
 
     if backend == 'openvino':
-        from mmdet.utils.deployment import DetectorOpenVINO
+        from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO
         model = DetectorOpenVINO(args.model,
                                  args.model[:-3] + 'bin',
                                  mapping_file_path=args.model[:-3] + 'mapping',
                                  cfg=cfg,
                                  classes=dataset.CLASSES)
     else:
-        from mmdet.utils.deployment import ModelONNXRuntime
+        from mmdet.utils.deployment.onnxruntime_backend import ModelONNXRuntime
         model = ModelONNXRuntime(args.model, cfg=cfg, classes=dataset.CLASSES)
 
     results = []
