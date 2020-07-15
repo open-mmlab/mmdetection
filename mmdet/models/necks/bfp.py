@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
+from mmcv.cnn.bricks import NonLocal2d
 
-from mmdet.ops import NonLocal2D
 from ..builder import NECKS
 
 
@@ -55,7 +55,7 @@ class BFP(nn.Module):
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
         elif self.refine_type == 'non_local':
-            self.refine = NonLocal2D(
+            self.refine = NonLocal2d(
                 self.in_channels,
                 reduction=1,
                 use_scale=False,

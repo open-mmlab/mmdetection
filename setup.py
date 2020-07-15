@@ -70,7 +70,8 @@ version_info = ({})
     sha = get_hash()
     with open('mmdet/VERSION', 'r') as f:
         SHORT_VERSION = f.read().strip()
-    VERSION_INFO = ', '.join(SHORT_VERSION.split('.'))
+    VERSION_INFO = ', '.join(
+        [x if x.isdigit() else f'"{x}"' for x in SHORT_VERSION.split('.')])
     VERSION = SHORT_VERSION + '+' + sha
 
     version_file_str = content.format(time.asctime(), VERSION, SHORT_VERSION,
@@ -141,6 +142,8 @@ def parse_requirements(fname='requirements.txt', with_version=True):
             info = {'line': line}
             if line.startswith('-e '):
                 info['package'] = line.split('#egg=')[1]
+            elif '@git+' in line:
+                info['package'] = line
             else:
                 # Remove versioning from the package
                 pat = '(' + '|'.join(['>=', '==', '>']) + ')'
@@ -199,7 +202,6 @@ if __name__ == '__main__':
         keywords='computer vision, object detection',
         url='https://github.com/open-mmlab/mmdetection',
         packages=find_packages(exclude=('configs', 'tools', 'demo')),
-        package_data={'mmdet.ops': ['*/*.so']},
         classifiers=[
             'Development Status :: 4 - Beta',
             'License :: OSI Approved :: Apache Software License',
@@ -219,83 +221,6 @@ if __name__ == '__main__':
             'build': parse_requirements('requirements/build.txt'),
             'optional': parse_requirements('requirements/optional.txt'),
         },
-        ext_modules=[
-            make_cuda_ext(
-                name='compiling_info',
-                module='mmdet.ops.utils',
-                sources=['src/compiling_info.cpp']),
-            make_cuda_ext(
-                name='nms_ext',
-                module='mmdet.ops.nms',
-                sources=['src/nms_ext.cpp', 'src/cpu/nms_cpu.cpp'],
-                sources_cuda=[
-                    'src/cuda/nms_cuda.cpp', 'src/cuda/nms_kernel.cu'
-                ]),
-            make_cuda_ext(
-                name='roi_align_ext',
-                module='mmdet.ops.roi_align',
-                sources=[
-                    'src/roi_align_ext.cpp',
-                    'src/cpu/roi_align_v2.cpp',
-                ],
-                sources_cuda=[
-                    'src/cuda/roi_align_kernel.cu',
-                    'src/cuda/roi_align_kernel_v2.cu'
-                ]),
-            make_cuda_ext(
-                name='roi_pool_ext',
-                module='mmdet.ops.roi_pool',
-                sources=['src/roi_pool_ext.cpp'],
-                sources_cuda=['src/cuda/roi_pool_kernel.cu']),
-            make_cuda_ext(
-                name='deform_conv_ext',
-                module='mmdet.ops.dcn',
-                sources=['src/deform_conv_ext.cpp'],
-                sources_cuda=[
-                    'src/cuda/deform_conv_cuda.cpp',
-                    'src/cuda/deform_conv_cuda_kernel.cu'
-                ]),
-            make_cuda_ext(
-                name='deform_pool_ext',
-                module='mmdet.ops.dcn',
-                sources=['src/deform_pool_ext.cpp'],
-                sources_cuda=[
-                    'src/cuda/deform_pool_cuda.cpp',
-                    'src/cuda/deform_pool_cuda_kernel.cu'
-                ]),
-            make_cuda_ext(
-                name='sigmoid_focal_loss_ext',
-                module='mmdet.ops.sigmoid_focal_loss',
-                sources=['src/sigmoid_focal_loss_ext.cpp'],
-                sources_cuda=['src/cuda/sigmoid_focal_loss_cuda.cu']),
-            make_cuda_ext(
-                name='masked_conv2d_ext',
-                module='mmdet.ops.masked_conv',
-                sources=['src/masked_conv2d_ext.cpp'],
-                sources_cuda=[
-                    'src/cuda/masked_conv2d_cuda.cpp',
-                    'src/cuda/masked_conv2d_kernel.cu'
-                ]),
-            make_cuda_ext(
-                name='carafe_ext',
-                module='mmdet.ops.carafe',
-                sources=['src/carafe_ext.cpp'],
-                sources_cuda=[
-                    'src/cuda/carafe_cuda.cpp',
-                    'src/cuda/carafe_cuda_kernel.cu'
-                ]),
-            make_cuda_ext(
-                name='carafe_naive_ext',
-                module='mmdet.ops.carafe',
-                sources=['src/carafe_naive_ext.cpp'],
-                sources_cuda=[
-                    'src/cuda/carafe_naive_cuda.cpp',
-                    'src/cuda/carafe_naive_cuda_kernel.cu'
-                ]),
-            make_cuda_ext(
-                name='corner_pool_ext',
-                module='mmdet.ops.corner_pool',
-                sources=['src/corner_pool.cpp']),
-        ],
+        ext_modules=[],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)
