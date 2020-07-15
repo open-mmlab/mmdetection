@@ -1,13 +1,73 @@
 # Getting Started
 
 This page provides basic tutorials about the usage of OTEDetection.
-For installation instructions, please see [INSTALL.md](INSTALL.md).
+For installation instructions, please see [install.md](install.md).
 
-## Export pretrained model
+# Table of contents
 
-We provide you a way to export pretrained models to OpenVINO IR and ONNX.
+- [Prepare datasets](#prepare-datasets)
+- [Export pretrained model to ONNX and OpenVINO IR](#export-pretrained-model-to-onnx-and-openvino-ir)
+- [Inference with pretrained models](#inference-with-pretrained-models)
+  - [Test using PyTorch](#test-using-pytorch)
+  - [Test using OpenVINO or ONNXRuntime](#test-using-openvino-or-onnxruntime)
+  - [Image demo](#image-demo)
+  - [Webcam demo](#webcam-demo)
+- [Train a model](#train-a-model)
+  - [Train with a single GPU](#train-with-a-single-gpu)
+  - [Train with multiple GPUs](#train-with-multiple-gpus)
+  - [Train with multiple machines](#train-with-multiple-machines)
+  - [Launch multiple jobs on a single machine](#launch-multiple-jobs-on-a-single-machine)
+- [Useful tools](#useful-tools)
+  - [Analyze logs](#analyze-logs)
+  - [Get the FLOPs and params (experimental)](#get-the-flops-and-params-experimental)
+  - [Publish a model](#publish-a-model)
+  - [Test the robustness of detectors](#test-the-robustness-of-detectors)
+- [Tutorials](#tutorials)
 
-### Export to ONNX and OpenVINO IR
+
+## Prepare datasets
+
+It is recommended to symlink the dataset root to `./data`.
+If your folder structure is different, you may need to change the corresponding paths in config files.
+
+```
+mmdetection
+├── mmdet
+├── tools
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
+│   ├── cityscapes
+│   │   ├── annotations
+│   │   ├── leftImg8bit
+│   │   │   ├── train
+│   │   │   ├── val
+│   │   ├── gtFine
+│   │   │   ├── train
+│   │   │   ├── val
+│   ├── VOCdevkit
+│   │   ├── VOC2007
+│   │   ├── VOC2012
+
+```
+
+The cityscapes annotations have to be converted into the coco format using `tools/convert_datasets/cityscapes.py`:
+
+```shell
+pip install cityscapesscripts
+python tools/convert_datasets/cityscapes.py ./data/cityscapes --nproc 8 --out-dir ./data/cityscapes/annotations
+```
+
+Currently the config files in `cityscapes` use COCO pre-trained weights to initialize.
+You could download the pre-trained models in advance if network is unavailable or slow, otherwise it would cause errors at the beginning of training.
+
+For using custom datasets, please refer to [Tutorials 2: Adding New Dataset](tutorials/new_dataset.md).
+
+## Export pretrained model to ONNX and OpenVINO IR
 
 To export pretrained model to ONNX format run the script:
 
@@ -36,7 +96,8 @@ To opt for this model representation use `--alt_ssd_export` option.
 
 * Not all models are currently exportable.
 
-* Before running the script make sure that all OpenVINO-related environment variables are set properly. To do this run the following command:
+* Before running the script make sure that all OpenVINO-related environment variables are set properly.
+  To do this run the following command:
 
   ```shell
   source /opt/intel/openvino/bin/setupvars.sh
@@ -48,6 +109,10 @@ We provide testing scripts to evaluate a whole dataset (COCO, PASCAL VOC, Citysc
 and also some high-level apis for easier integration to other projects.
 
 ### Test using PyTorch
+
+- single GPU
+- single node multiple GPU
+- multiple node
 
 You can use the following commands to test a dataset.
 
@@ -103,6 +168,34 @@ python tools/test.py configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
     8 --out results.pkl --eval bbox segm
 ```
 
+5. Test Mask R-CNN with 8 GPUs, and evaluate the **classwise** bbox and mask AP.
+
+```shell
+./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+    8 --out results.pkl --eval bbox segm --options "classwise=True"
+```
+
+6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
+
+```shell
+./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
+    8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+```
+
+You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+
+7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate the txt and png files to be submit to the official evaluation server.
+
+```shell
+./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
+    checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
+    8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+```
+
+The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
+
 ### Test using OpenVINO or ONNXRuntime
 
 You can test the model being exported via the `tools/export.py` script by simply switching the `tools/test.py` script with a `tools/test_exported.py`.
@@ -113,6 +206,21 @@ python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.xml [--out ${RE
 
 # test with ONNXRuntime
 python tools/test_exported.py config.py ${DEPLOY_DIR}/checkpoint.onnx [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}] [--show]
+```
+
+### Image demo
+
+We provide a demo script to test a single image.
+
+```shell
+python demo/image_demo.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}] [--score-thr ${SCORE_THR}]
+```
+
+Examples:
+
+```shell
+python demo/image_demo.py demo/demo.jpg configs/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_20181010-3d1b3351.pth --device cpu
 ```
 
 ### Webcam demo
@@ -172,7 +280,7 @@ Difference between `resume-from` and `load-from`:
 
 ### Train with multiple machines
 
-If you run OTEDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`.
+If you run OTEDetection on a cluster managed with [slurm](https://slurm.schedmd.com/), you can use the script `slurm_train.sh`. (This script also supports single machine training.)
 
 ```shell
 [GPUS=${GPUS}] ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
@@ -317,104 +425,8 @@ The final output filename will be `faster_rcnn_r50_fpn_1x_20190801-{hash id}.pth
 
 ### Test the robustness of detectors
 
-Please refer to [ROBUSTNESS_BENCHMARKING.md](ROBUSTNESS_BENCHMARKING.md).
+Please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
 
-
-## How-to
-
-### Use my own datasets
-
-The simplest way is to convert your dataset to COCO format and use `CustomCocoDataset` listing the names of classes in config file:
-
-```python
-dataset=dict(
-    type='CustomCocoDataset',
-    classes=('a', 'b', 'c', 'd', 'e'),
-    ...)
-```
-
-It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
-Actually, we define a simple annotation format and all existing datasets are
-processed to be compatible with it, either online or offline.
-
-The annotation of a dataset is a list of dict, each dict corresponds to an image.
-There are 3 field `filename` (relative path), `width`, `height` for testing,
-and an additional field `ann` for training. `ann` is also a dict containing at least 2 fields:
-`bboxes` and `labels`, both of which are numpy arrays. Some datasets may provide
-annotations like crowd/difficult/ignored bboxes, we use `bboxes_ignore` and `labels_ignore`
-to cover them.
-
-Here is an example.
-```
-[
-    {
-        'filename': 'a.jpg',
-        'width': 1280,
-        'height': 720,
-        'ann': {
-            'bboxes': <np.ndarray, float32> (n, 4),
-            'labels': <np.ndarray, int64> (n, ),
-            'bboxes_ignore': <np.ndarray, float32> (k, 4),
-            'labels_ignore': <np.ndarray, int64> (k, ) (optional field)
-        }
-    },
-    ...
-]
-```
-
-There are two ways to work with custom datasets.
-
-- online conversion
-
-  You can write a new Dataset class inherited from `CustomDataset`, and overwrite two methods
-  `load_annotations(self, ann_file)` and `get_ann_info(self, idx)`,
-  like [CocoDataset](../mmdet/datasets/coco.py) and [VOCDataset](../mmdet/datasets/voc.py).
-
-- offline conversion
-
-  You can convert the annotation format to the expected format above and save it to
-  a pickle or json file, like [pascal_voc.py](../tools/convert_datasets/pascal_voc.py).
-  Then you can simply use `CustomDataset`.
-
-### Develop new components
-
-We basically categorize model components into 4 types.
-
-- backbone: usually an FCN network to extract feature maps, e.g., ResNet, MobileNet.
-- neck: the component between backbones and heads, e.g., FPN, PAFPN.
-- head: the component for specific tasks, e.g., bbox prediction and mask prediction.
-- roi extractor: the part for extracting RoI features from feature maps, e.g., RoI Align.
-
-Here we show how to develop new components with an example of MobileNet.
-
-1. Create a new file `mmdet/models/backbones/mobilenet.py`.
-
-```python
-import torch.nn as nn
-
-from ..registry import BACKBONES
-
-
-@BACKBONES.register_module
-class MobileNet(nn.Module):
-
-    def __init__(self, arg1, arg2):
-        pass
-
-    def forward(self, x):  # should return a tuple
-        pass
-
-    def init_weights(self, pretrained=None):
-        pass
-```
-
-2. Import the module in `mmdet/models/backbones/__init__.py`.
-
-```python
-from .mobilenet import MobileNet
-```
-
-**Note**: This tool is still experimental. Customized operators are not supported for now. We set `use_torchvision=True` on-the-fly for `RoIPool` and `RoIAlign`.
 
 ## Tutorials
 
