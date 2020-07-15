@@ -57,9 +57,15 @@ Optionally you can choose to compile mmcv from source by the following command
 ```
 git clone https://github.com/open-mmlab/mmcv.git
 cd mmcv
-pip install -e .
+MMCV_WITH_OPS=1 pip install -e .  # package mmcv-full will be installed after this step
 cd ..
 ```
+Or directly run
+```python
+pip install mmcv-full
+```
+**Important**: You need to run `pip unisntall mmcv` first if you have mmcv installed.
+If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
 d. Clone the mmdetection repository.
 
