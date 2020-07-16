@@ -4,15 +4,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as cp
-from mmcv.cnn import NORM_LAYERS, build_conv_layer, build_norm_layer
-from mmcv.ops import SyncBatchNorm
+from mmcv.cnn import build_conv_layer, build_norm_layer
 
 from ..builder import BACKBONES
 from ..utils import ResLayer
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNetV1d
-
-NORM_LAYERS.register_module(module=SyncBatchNorm, name='MMSyncBN', force=True)
 
 
 class rSoftMax(nn.Module):
