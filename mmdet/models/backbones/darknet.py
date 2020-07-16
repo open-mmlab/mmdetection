@@ -20,6 +20,7 @@ class ResBlock(nn.Module):
 
     Args:
         in_channels (int): The input channels. Must be even.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
@@ -28,6 +29,7 @@ class ResBlock(nn.Module):
 
     def __init__(self,
                  in_channels,
+                 conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(ResBlock, self).__init__()
@@ -35,7 +37,7 @@ class ResBlock(nn.Module):
         half_in_channels = in_channels // 2
 
         # shortcut
-        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
         self.conv1 = ConvModule(in_channels, half_in_channels, 1, **cfg)
         self.conv2 = ConvModule(
@@ -53,6 +55,7 @@ class ResBlock(nn.Module):
 def make_conv_and_res_block(in_channels,
                             out_channels,
                             res_repeat,
+                            conv_cfg=None,
                             norm_cfg=dict(type='BN', requires_grad=True),
                             act_cfg=dict(type='LeakyReLU',
                                          negative_slope=0.1)):
@@ -65,13 +68,14 @@ def make_conv_and_res_block(in_channels,
         in_channels (int): The number of input channels.
         out_channels (int): The number of output channels.
         res_repeat (int): The number of ResBlocks.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
     """
 
-    cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+    cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
     model = nn.Sequential()
     model.add_module(
@@ -89,6 +93,7 @@ class Darknet(nn.Module):
     Args:
         depth (int): Depth of Darknet. Currently only support 53.
         out_indices (Sequence[int]): Output from which stages.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
@@ -115,6 +120,7 @@ class Darknet(nn.Module):
     def __init__(self,
                  depth=53,
                  out_indices=(3, 4, 5),
+                 conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
                  norm_eval=True):
@@ -128,7 +134,7 @@ class Darknet(nn.Module):
         else:
             raise KeyError(f'invalid depth {depth} for darknet')
 
-        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
         self.conv1 = ConvModule(3, 32, 3, padding=1, **cfg)
 

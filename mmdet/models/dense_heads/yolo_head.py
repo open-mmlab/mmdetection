@@ -39,6 +39,7 @@ class YOLOV3Head(BaseDenseHead):
             Default: False
         balance_conf (bool): Whether to balance the confidence when calculating
             loss. Default: False
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
@@ -59,6 +60,7 @@ class YOLOV3Head(BaseDenseHead):
                  one_hot_smoother=0.,
                  xy_use_logit=False,
                  balance_conf=False,
+                 conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
                  train_cfg=None,
@@ -88,7 +90,7 @@ class YOLOV3Head(BaseDenseHead):
         self.num_attrib = self.num_classes + 5
         self.last_layer_dim = self.num_anchors_per_scale * self.num_attrib
 
-        cfg = dict(norm_cfg=norm_cfg, act_cfg=act_cfg)
+        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
         self.convs_bridge = nn.ModuleList()
         self.convs_final = nn.ModuleList()
         for i_scale in range(self.num_scales):
