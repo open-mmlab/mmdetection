@@ -166,7 +166,8 @@ class YOLOV3Head(BaseDenseHead):
             device (torch.device): The desired device of the generated grid.
 
         Returns:
-            tuple[torch.Tensor]: x and y grid offset according to the stride.
+            tuple[torch.Tensor]: x and y grid offset according to the stride
+                in shape (1, num_grid_h, num_grid_w)
         """
         grid_x = torch.arange(
             num_grid_w, dtype=torch.float,
@@ -562,7 +563,8 @@ class YOLOV3Head(BaseDenseHead):
             device (torch.device): The desired device of the generated grid.
 
         Returns:
-            torch.Tensor: The anchors in (cx, cy, w, h) format
+            torch.Tensor: The anchors in cxcywh format in shape
+                (num_anchors, num_grid_h, num_grid_w, 4)
         """
         assert scale in range(self.num_scales)
         anchors = torch.tensor(
