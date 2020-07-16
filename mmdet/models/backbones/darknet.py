@@ -117,6 +117,12 @@ class Darknet(nn.Module):
         (1, 1024, 13, 13)
     """
 
+    # Dict(depth: (layers, channels))
+    arch_settings = {
+        53: ((1, 2, 8, 8, 4), ((32, 64), (64, 128), (128, 256), (256, 512),
+                               (512, 1024)))
+    }
+
     def __init__(self,
                  depth=53,
                  out_indices=(3, 4, 5),
@@ -125,14 +131,11 @@ class Darknet(nn.Module):
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
                  norm_eval=True):
         super(Darknet, self).__init__()
+        if depth not in self.arch_settings:
+            raise KeyError(f'invalid depth {depth} for darknet')
         self.depth = depth
         self.out_indices = out_indices
-        if self.depth == 53:
-            self.layers = [1, 2, 8, 8, 4]
-            self.channels = [[32, 64], [64, 128], [128, 256], [256, 512],
-                             [512, 1024]]
-        else:
-            raise KeyError(f'invalid depth {depth} for darknet')
+        self.layers, self.channels = self.arch_settings[depth]
 
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
