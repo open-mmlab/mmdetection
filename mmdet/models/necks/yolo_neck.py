@@ -109,12 +109,12 @@ class YOLOV3Neck(nn.Module):
     def forward(self, feats):
         assert len(feats) == self.num_scales
 
+        # processed from bottom (high-lvl) to top (low-lvl)
         outs = []
         out = self.detect1(feats[-1])
         outs.append(out)
 
-        # processed from bottom (high-lvl) to top (low-lvl)
-        for i, x in enumerate(feats[1::-1]):
+        for i, x in enumerate(reversed(feats[:-1])):
             conv = getattr(self, f'conv{i+1}')
             tmp = conv(out)
 
