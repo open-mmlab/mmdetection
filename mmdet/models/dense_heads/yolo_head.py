@@ -1,5 +1,7 @@
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
 
+import warnings
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -87,6 +89,7 @@ class YOLOV3Head(BaseDenseHead):
         self.xy_use_logit = xy_use_logit
         self.balance_conf = balance_conf
 
+        # self.num_attrib = num_classes + bboxes (4) + objectness (1)
         self.num_attrib = self.num_classes + 5
         self.last_layer_dim = self.num_anchors_per_scale * self.num_attrib
 
@@ -123,6 +126,24 @@ class YOLOV3Head(BaseDenseHead):
 
     @force_fp32(apply_to=('results_raw', ))
     def get_bboxes(self, results_raw, img_metas, cfg=None, rescale=False):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            results_raw (list[Tensor]): Raw predictions for a batch of images.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used
+            rescale (bool): If True, return boxes in original image space
+
+        Returns:
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class label of the
+                corresponding box.
+        """
         result_list = []
         for img_id in range(len(img_metas)):
             result_raw_list = [
@@ -160,6 +181,21 @@ class YOLOV3Head(BaseDenseHead):
         return grid_x, grid_y
 
     def get_bboxes_single(self, results_raw, scale_factor, cfg, rescale=False):
+        """Transform outputs for a single batch item into bbox predictions.
+
+        Args:
+            results_raw (list[Tensor]): Raw predictions for different scales
+                of each single image in the batch.
+            scale_factor (ndarray): Scale factor of the image arrange as
+                (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+        Returns:
+            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1.
+        """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(results_raw) == self.num_scales
         multi_lvl_bboxes = []
@@ -265,6 +301,22 @@ class YOLOV3Head(BaseDenseHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """Compute loss of the head.
+
+        Args:
+            preds_raw (list[Tensor]): Raw predictions for a batch of images.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+
         losses = {'loss_xy': 0, 'loss_wh': 0, 'loss_conf': 0, 'loss_cls': 0}
 
         for img_id in range(len(img_metas)):
@@ -316,6 +368,21 @@ class YOLOV3Head(BaseDenseHead):
                     neg_masks,
                     xy_use_logit=False,
                     balance_conf=False):
+        """Compute loss of a single image from a batch.
+
+        Args:
+            preds_raw (list[Tensor]): Raw predictions for an image from the
+                batch.
+            gts_t (list[Tensor]): The Ground-Truth targets across scales.
+            neg_masks (list[Tensor]): The negative masks across scales.
+            xy_use_logit (bool): Use log scale regression for bbox center
+                Default: False
+            balance_conf (bool): Whether to balance the confidence when
+                calculating loss. Default: False
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
 
         losses = {'xy': 0, 'wh': 0, 'conf': 0, 'cls': 0}
 
@@ -327,7 +394,7 @@ class YOLOV3Head(BaseDenseHead):
             pos_and_neg_mask = neg_mask + pos_mask
             pos_mask = pos_mask.unsqueeze(dim=-1)
             if torch.max(pos_and_neg_mask) > 1.:
-                raise Warning('There is overlap between pos and neg sample.')
+                warnings.warn('There is overlap between pos and neg sample.')
                 pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
 
             pred_t_xy = pred_raw[..., :2]
