@@ -364,7 +364,7 @@ class ResNet(nn.Module):
     def __init__(self,
                  depth,
                  in_channels=3,
-                 stem_channels=64,
+                 stem_channels=None,
                  base_channels=64,
                  num_stages=4,
                  strides=(1, 2, 2, 2),
