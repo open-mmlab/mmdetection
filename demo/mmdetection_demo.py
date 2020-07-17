@@ -84,12 +84,14 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
                     log_file.write(str(f_number)+","+str(d[0])+","+str(d[1])+","+str(d[2])+","+str(d[3]) + "\n")
         else:
             for i in range(len(bboxes)):
+                # bb [816.4531     265.64264    832.7383     311.08356      0.99859136]
                 bb = bboxes[i]
                 if labels[i] != 1:  
                     continue
-                d = (int(bb[0]), int(bb[1]), int(bb[2]), int(bb[3]))
-                cv2.rectangle(frame, (d[0], d[1]), (d[2], d[3]), (255,0,0), 2)
-                log_file.write(str(f_number)+","+str(d[0])+","+str(d[1])+","+str(d[2])+","+str(d[3]) + "\n")
+
+                d = (bb[0], bb[1], bb[2], bb[3], bb[4])
+                cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (255,0,0), 2)
+                log_file.write(str(f_number)+","+str(d[0])+","+str(d[1])+","+str(d[2])+","+str(d[3]) + +","+str(d[4]) + "\n")
 
             last_boxes = bboxes.copy()
 
