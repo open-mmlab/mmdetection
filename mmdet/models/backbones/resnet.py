@@ -307,7 +307,7 @@ class ResNet(nn.Module):
     Args:
         depth (int): Depth of resnet, from {18, 34, 50, 101, 152}.
         stem_channels (int | None): Number of stem channels. If not specified,
-            will be the same as `base_channels`. Default: None.
+            it will be the same as `base_channels`. Default: None.
         base_channels (int): Number of base channels of res layer. Default: 64.
         in_channels (int): Number of input image channels. Default: 3.
         num_stages (int): Resnet stages. Default: 4.
