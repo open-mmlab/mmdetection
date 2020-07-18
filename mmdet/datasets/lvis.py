@@ -706,6 +706,10 @@ class LVISV1Dataset(LVISDataset):
         data_infos = []
         for i in self.img_ids:
             info = self.coco.load_imgs([i])[0]
-            info['filename'] = info['coco_url'].split('/')[-1]
+            # coco_url is used in LVISv1 instead of file_name
+            # e.g. http://images.cocodataset.org/train2017/000000391895.jpg
+            # train/val split in specified in url
+            info['filename'] = info['coco_url'].replace(
+                'http://images.cocodataset.org/', '')
             data_infos.append(info)
         return data_infos
