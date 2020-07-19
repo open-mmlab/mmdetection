@@ -507,9 +507,9 @@ class PolygonMasks(BaseInstanceMasks):
     def areas(self):
         """Compute areas of masks.
 
-        This func is modified from
-        https://github.com/facebookresearch/detectron2/blob/ffff8acc35ea88ad1cb1806ab0f00b4c1c5dbfd9/detectron2/structures/masks.py#L387
-        Only works with Polygons, using the shoelace formula
+        This func is modified from `detectron2
+        <https://github.com/facebookresearch/detectron2/blob/ffff8acc35ea88ad1cb1806ab0f00b4c1c5dbfd9/detectron2/structures/masks.py#L387>`_.
+        The function only works with Polygons using the shoelace formula.
 
         Return:
             ndarray: areas of each instance

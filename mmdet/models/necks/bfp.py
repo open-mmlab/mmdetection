@@ -13,7 +13,8 @@ class BFP(nn.Module):
     BFP takes multi-level features as inputs and gather them into a single one,
     then refine the gathered feature and scatter the refined results to
     multi-level features. This module is used in Libra R-CNN (CVPR 2019), see
-    https://arxiv.org/pdf/1904.02701.pdf for details.
+    the paper `Libra R-CNN: Towards Balanced Learning for Object Detection
+    <https://arxiv.org/abs/1904.02701>`_ for details.
 
     Args:
         in_channels (int): Number of input channels (feature maps of all levels
