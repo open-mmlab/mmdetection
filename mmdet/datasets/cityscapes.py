@@ -45,8 +45,8 @@ class CityscapesDataset(CocoDataset):
             ann_info (list[dict]): Annotation info of an image.
 
         Returns:
-            dict: A dict containing the following keys: bboxes, bboxes_ignore, \
-                labels, masks, seg_map. \
+            dict: A dict containing the following keys: bboxes, \
+                bboxes_ignore, labels, masks, seg_map. \
                 "masks" are already decoded into binary masks.
         """
         gt_bboxes = []
