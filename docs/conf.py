@@ -39,8 +39,7 @@ extensions = [
 ]
 
 autodoc_mock_imports = [
-    'matplotlib', 'pycocotools', 'terminaltables', 'mmdet.version',
-    'mmcv'
+    'matplotlib', 'pycocotools', 'terminaltables', 'mmdet.version', 'mmcv.ops'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
