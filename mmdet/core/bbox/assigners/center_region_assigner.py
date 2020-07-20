@@ -114,6 +114,7 @@ class CenterRegionAssigner(BaseAssigner):
         gt_areas = bboxes_area(gt_bboxes)
         # Rank all gt bbox areas. Smaller objects has larger priority
         _, sort_idx = gt_areas.sort(descending=True)
+        sort_idx = sort_idx.argsort()
         return sort_idx
 
     def assign(self, bboxes, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
