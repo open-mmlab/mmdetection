@@ -16,7 +16,9 @@ class BiCornerPool(nn.Module):
 
     Args:
         in_channels (int): Input channels of module.
-        directions (list[str[): Directions of two CornerPools.
+        out_channels (int): Output channels of module.
+        feat_channels (int): Feature channels of module.
+        directions (list[str]): Directions of two CornerPools.
         norm_cfg (dict): Dictionary to construct and config norm layer.
     """
 
@@ -24,6 +26,7 @@ class BiCornerPool(nn.Module):
                  in_channels,
                  directions,
                  feat_channels=128,
+                 out_channels=128,
                  norm_cfg=dict(type='BN', requires_grad=True)):
         super(BiCornerPool, self).__init__()
         self.direction1_conv = ConvModule(
@@ -33,16 +36,16 @@ class BiCornerPool(nn.Module):
 
         self.aftpool_conv = ConvModule(
             feat_channels,
-            in_channels,
+            out_channels,
             3,
             padding=1,
             norm_cfg=norm_cfg,
             act_cfg=None)
 
         self.conv1 = ConvModule(
-            in_channels, in_channels, 1, norm_cfg=norm_cfg, act_cfg=None)
+            in_channels, out_channels, 1, norm_cfg=norm_cfg, act_cfg=None)
         self.conv2 = ConvModule(
-            in_channels, in_channels, 3, padding=1, norm_cfg=norm_cfg)
+            in_channels, out_channels, 3, padding=1, norm_cfg=norm_cfg)
 
         self.direction1_pool = CornerPool(directions[0])
         self.direction2_pool = CornerPool(directions[1])
@@ -73,7 +76,9 @@ class CornerHead(nn.Module):
     """Head of CornerNet: Detecting Objects as Paired Keypoints.
 
     Code is modified from the `official github repo
-    <https://github.com/princeton-vl/CornerNet/blob/master/models/py_utils/kp.py#L73>`_ .  # noqa: E501
+    <https://github.com/princeton-vl/CornerNet/blob/master/models/py_utils/
+    kp.py#L73>`_ .
+
     More details can be found in the `paper
     <https://arxiv.org/abs/1808.01244>`_ .
 
@@ -135,8 +140,7 @@ class CornerHead(nn.Module):
         self._init_layers()
 
     def _make_layers(self, out_channels, in_channels=256, feat_channels=256):
-        """Initialize conv sequential for CornerHead.
-        """
+        """Initialize conv sequential for CornerHead."""
         return nn.Sequential(
             ConvModule(in_channels, feat_channels, 3, padding=1),
             ConvModule(
@@ -153,9 +157,13 @@ class CornerHead(nn.Module):
 
         for _ in range(self.num_feat_levels):
             self.tl_pool.append(
-                BiCornerPool(self.in_channels, ['top', 'left']))
+                BiCornerPool(
+                    self.in_channels, ['top', 'left'],
+                    out_channels=self.in_channels))
             self.br_pool.append(
-                BiCornerPool(self.in_channels, ['bottom', 'right']))
+                BiCornerPool(
+                    self.in_channels, ['bottom', 'right'],
+                    out_channels=self.in_channels))
 
             self.tl_heat.append(
                 self._make_layers(
@@ -216,25 +224,25 @@ class CornerHead(nn.Module):
 
         Returns:
             tuple: Usually a tuple of corner heatmaps, offset heatmaps and
-                    embedding heatmaps.
+            embedding heatmaps.
                 - tl_heats (list[Tensor]): Top-left corner heatmaps for all
-                    levels, each is a 4D-tensor, the channels number is
-                    num_classes.
+                  levels, each is a 4D-tensor, the channels number is
+                  num_classes.
                 - br_heats (list[Tensor]): Bottom-right corner heatmaps for all
-                    levels, each is a 4D-tensor, the channels number is
-                    num_classes.
+                  levels, each is a 4D-tensor, the channels number is
+                  num_classes.
                 - tl_embs (list[Tensor] | list[None]): Top-left embedding
-                    heatmaps for all levels, each is a 4D-tensor or None.
-                    If not None, the channels number is corner_emb_channels.
+                  heatmaps for all levels, each is a 4D-tensor or None.
+                  If not None, the channels number is corner_emb_channels.
                 - br_embs (list[Tensor] | list[None]): Bottom-right embedding
-                    heatmaps for all levels, each is a 4D-tensor or None.
-                    If not None, the channels number is corner_emb_channels.
+                  heatmaps for all levels, each is a 4D-tensor or None.
+                  If not None, the channels number is corner_emb_channels.
                 - tl_offs (list[Tensor]): Top-left offset heatmaps for all
-                    levels, each is a 4D-tensor. The channels number is
-                    corner_offset_channels.
+                  levels, each is a 4D-tensor. The channels number is
+                  corner_offset_channels.
                 - br_offs (list[Tensor]): Bottom-right offset heatmaps for all
-                    levels, each is a 4D-tensor. The channels number is
-                    corner_offset_channels.
+                  levels, each is a 4D-tensor. The channels number is
+                  corner_offset_channels.
         """
         lvl_ind = list(range(self.num_feat_levels))
         return multi_apply(self.forward_single, feats, lvl_ind)
@@ -249,20 +257,20 @@ class CornerHead(nn.Module):
 
         Returns:
             tuple[Tensor]: A tuple of CornerHead's output for current feature
-                level. Containing the following Tensors:
+            level. Containing the following Tensors:
 
                 - tl_heat (Tensor): Predicted top-left corner heatmap.
                 - br_heat (Tensor): Predicted bottom-right corner heatmap.
                 - tl_emb (Tensor | None): Predicted top-left embedding heatmap.
-                    None for `self.with_corner_emb == False`.
+                  None for `self.with_corner_emb == False`.
                 - br_emb (Tensor | None): Predicted bottom-right embedding
-                    heatmap. None for `self.with_corner_emb == False`.
+                  heatmap. None for `self.with_corner_emb == False`.
                 - tl_off (Tensor): Predicted top-left offset heatmap.
                 - br_off (Tensor): Predicted bottom-right offset heatmap.
                 - tl_pool (Tensor): Top-left corner pool feature. Not must
-                    have.
+                  have.
                 - br_pool (Tensor): Bottom-right corner pool feature. Not must
-                    have.
+                  have.
         """
         tl_pool = self.tl_pool[lvl_ind](x)
         tl_heat = self.tl_heat[lvl_ind](tl_pool)
@@ -295,11 +303,14 @@ class CornerHead(nn.Module):
         """Generate corner targets.
 
         Including corner heatmap, corner offset.
+
         Optional: corner embedding, corner guiding shift, centripetal shift.
+
         For CornerNet, we generate corner heatmap, corner offset and corner
-            embedding from this function.
+        embedding from this function.
+
         For CentripetalNet, we generate corner heatmap, corner offset, guiding
-            shift and centripetal shift from this function.
+        shift and centripetal shift from this function.
 
         Args:
             gt_bboxes (list[Tensor]): Ground truth bboxes of each image, each
@@ -319,26 +330,26 @@ class CornerHead(nn.Module):
 
         Returns:
             dict: Ground truth of corner heatmap, corner offset, corner
-                embedding, guiding shift and centripetal shift. Containing the
-                following keys:
+            embedding, guiding shift and centripetal shift. Containing the
+            following keys:
 
                 - topleft_heatmap (Tensor): Ground truth top-left corner
-                    heatmap.
+                  heatmap.
                 - bottomright_heatmap (Tensor): Ground truth bottom-right
-                    corner heatmap.
+                  corner heatmap.
                 - topleft_offset (Tensor): Ground truth top-left corner offset.
                 - bottomright_offset (Tensor): Ground truth bottom-right corner
-                    offset.
+                  offset.
                 - corner_embedding (list[list[list[int]]]): Ground truth corner
-                    embedding. Not must have.
+                  embedding. Not must have.
                 - topleft_guiding_shift (Tensor): Ground truth top-left corner
-                    guiding shift. Not must have.
+                  guiding shift. Not must have.
                 - bottomright_guiding_shift (Tensor): Ground truth bottom-right
-                    corner guiding shift. Not must have.
+                  corner guiding shift. Not must have.
                 - topleft_centripetal_shift (Tensor): Ground truth top-left
-                    corner centripetal shift. Not must have.
+                  corner centripetal shift. Not must have.
                 - bottomright_centripetal_shift (Tensor): Ground truth
-                    bottom-right corner centripetal shift. Not must have.
+                  bottom-right corner centripetal shift. Not must have.
         """
         batch_size, _, height, width = feat_shape
         img_h, img_w = img_shape[:2]
@@ -505,16 +516,16 @@ class CornerHead(nn.Module):
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components. Containing the
-                following losses:
+            following losses:
 
                 - det_loss (list[Tensor]): Corner keypoint losses of all
-                    feature levels.
+                  feature levels.
                 - pull_loss (list[Tensor]): Part one of AssociativeEmbedding
-                    losses of all feature levels.
+                  losses of all feature levels.
                 - push_loss (list[Tensor]): Part two of AssociativeEmbedding
-                    losses of all feature levels.
+                  losses of all feature levels.
                 - off_loss (list[Tensor]): Corner offset losses of all feature
-                    levels.
+                  levels.
         """
         targets = self.get_targets(
             gt_bboxes,
@@ -552,7 +563,7 @@ class CornerHead(nn.Module):
 
         Returns:
             tuple[torch.Tensor]: Losses of the head's differnet branches
-                containing the following losses:
+            containing the following losses:
 
                 - det_loss (Tensor): Corner keypoint loss.
                 - pull_loss (Tensor): Part one of AssociativeEmbedding loss.
@@ -862,7 +873,7 @@ class CornerHead(nn.Module):
 
         Returns:
             tuple[torch.Tensor]: Decoded output of CornerHead, containing the
-                following Tensors:
+            following Tensors:
 
             - bboxes (Tensor): Coords of each box.
             - scores (Tensor): Scores of each box.
