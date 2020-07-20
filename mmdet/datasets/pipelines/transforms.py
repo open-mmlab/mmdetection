@@ -36,11 +36,11 @@ class Resize(object):
     `img_scale` can either be a tuple (single-scale) or a list of tuple
     (multi-scale). There are 3 multiscale modes:
 
-    - ``ratio_range is not None``: randomly sample a ratio from the ratio range
-      and multiply it with the image scale.
-    - ``ratio_range is None`` and ``multiscale_mode == "range"``: randomly
+    - ``ratio_range is not None``: randomly sample a ratio from the ratio \
+      range and multiply it with the image scale.
+    - ``ratio_range is None`` and ``multiscale_mode == "range"``: randomly \
       sample a scale from the multiscale range.
-    - ``ratio_range is None`` and ``multiscale_mode == "value"``: randomly
+    - ``ratio_range is None`` and ``multiscale_mode == "value"``: randomly \
       sample a scale from multiple scales.
 
     Args:
@@ -84,8 +84,8 @@ class Resize(object):
             img_scales (list[tuple]): Images scales for selection.
 
         Returns:
-            (tuple, int): Returns a tuple ``(img_scale, scale_dix)``,
-                where ``img_scale`` is the selected image scale and
+            (tuple, int): Returns a tuple ``(img_scale, scale_dix)``, \
+                where ``img_scale`` is the selected image scale and \
                 ``scale_idx`` is the selected index in the given candidates.
         """
 
@@ -104,8 +104,8 @@ class Resize(object):
                 and uper bound of image scales.
 
         Returns:
-            (tuple, None): Returns a tuple ``(img_scale, None)``, where
-                ``img_scale`` is sampled scale and None is just a placeholder
+            (tuple, None): Returns a tuple ``(img_scale, None)``, where \
+                ``img_scale`` is sampled scale and None is just a placeholder \
                 to be consistent with :func:`random_select`.
         """
 
@@ -135,9 +135,9 @@ class Resize(object):
                 the ``img_scale``.
 
         Returns:
-            (tuple, None): Returns a tuple ``(scale, None)``, where
-                ``scale`` is sampled ratio multiplied with ``img_scale`` and
-                None is just a placeholder to be consistent with
+            (tuple, None): Returns a tuple ``(scale, None)``, where \
+                ``scale`` is sampled ratio multiplied with ``img_scale`` and \
+                None is just a placeholder to be consistent with \
                 :func:`random_select`.
         """
 
@@ -162,7 +162,7 @@ class Resize(object):
             results (dict): Result dict from :obj:`dataset`.
 
         Returns:
-            dict: Two new keys 'scale` and 'scale_idx` are added into
+            dict: Two new keys 'scale` and 'scale_idx` are added into \
                 ``results``, which would be used by subsequent pipelines.
         """
 
@@ -244,7 +244,7 @@ class Resize(object):
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor',
+            dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor', \
                 'keep_ratio' keys are added into result dict.
         """
 
@@ -332,8 +332,8 @@ class RandomFlip(object):
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Flipped results, 'flip', 'flip_direction' keys are added into
-                result dict.
+            dict: Flipped results, 'flip', 'flip_direction' keys are added \
+                into result dict.
         """
 
         if 'flip' not in results:
@@ -486,7 +486,7 @@ class RandomCrop(object):
         allow_negative_crop (bool): Whether to allow a crop that does not
             contain any bbox area. Default to False.
 
-    Notes:
+    Note:
         - If the image is smaller than the crop size, return the original image
         - The keys for bboxes, labels and masks must be aligned. That is,
           `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
@@ -810,9 +810,9 @@ class MinIoURandomCrop(object):
         min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
         where a >= min_crop_size).
 
-    Notes:
-        The keys for bboxes, labels and masks should be paired. That is,
-        `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
+    Note:
+        The keys for bboxes, labels and masks should be paired. That is, \
+        `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and \
         `gt_bboxes_ignore` to `gt_labels_ignore` and `gt_masks_ignore`.
     """
 
@@ -838,7 +838,7 @@ class MinIoURandomCrop(object):
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Result dict with images and bounding boxes cropped,
+            dict: Result dict with images and bounding boxes cropped, \
                 'img_shape' key is updated.
         """
 
@@ -1174,19 +1174,19 @@ class RandomCenterCropPad(object):
     """Random center crop and random around padding for CornerNet.
 
     This operation generates randomly cropped image from the original image and
-    pads it simultaneously. Different from `RandomCrop`, the output shape may
-    not equal to `crop_size` strictly. We choose a random value from `ratios`
-    and the output shape could be larger or smaller than `crop_size`. Also the
-    pad in this operation is different from `Pad`, actually we use around
-    padding instead of right-bottom padding.
+    pads it simultaneously. Different from :class:`RandomCrop`, the output
+    shape may not equal to ``crop_size`` strictly. We choose a random value
+    from ``ratios`` and the output shape could be larger or smaller than
+    ``crop_size``. The padding operation is also different from :class:`Pad`,
+    here we use around padding instead of right-bottom padding.
 
     The relation between output image (padding image) and original image:
 
-    .. code-block: text
+    .. code-block::
 
-                        output image
-            +----------------------------+
-            |          padded area       |
+                          output image
+               +----------------------------+
+               |          padded area       |
         +------|----------------------------|----------+
         |      |         cropped area       |          |
         |      |         +---------------+  |          |
@@ -1194,24 +1194,26 @@ class RandomCenterCropPad(object):
         |      |         |        range  |  |          |
         |      |         +---------------+  |          |
         +------|----------------------------|----------+
-            |          padded area       |
-            +----------------------------+
+               |          padded area       |
+               +----------------------------+
 
     There are 5 main areas in the figure:
-        - output image: output image of this operation, also called padding
+
+        - output image: output image of this operation, also called padding \
             image in following instruction.
         - original image: input image of this operation.
         - padded area: non-intersect area of output image and original image.
         - cropped area: the overlap of output image and original image.
-        - center range: a smaller area where random center chosen from.
-            center range is computed by `border` and original image's shape
+        - center range: a smaller area where random center chosen from. \
+            center range is computed by `border` and original image's shape \
             to avoid our random center is too close to original image's border.
 
     Also this operation act differently in train and test mode, the summary
     pipeline is listed below.
 
     Train pipeline:
-        1. Choose a `random_ratio` from `ratios`, the shape of padding image
+
+        1. Choose a `random_ratio` from `ratios`, the shape of padding image \
             will be `random_ratio * crop_size`.
         2. Choose a `random_center` in `center range`.
         3. Generate padding image with center matches the `random_center`.
@@ -1220,8 +1222,9 @@ class RandomCenterCropPad(object):
         6. Refine annotations.
 
     Test pipeline:
+
         1. Compute output shape according to `test_pad_mode`.
-        2. Generate padding image with center matches the original image
+        2. Generate padding image with center matches the original image \
             center.
         3. Initialize the padding image with pixel value equals to `mean`.
         4. Copy the `cropped area` to padding image.
@@ -1247,7 +1250,7 @@ class RandomCenterCropPad(object):
             127 as padding shape value.
 
             - 'logical_or': final_shape = input_shape | padding_shape_value
-            - 'size_divisor': final_shape = int(
+            - 'size_divisor': final_shape = int( \
                 ceil(input_shape / padding_shape_value) * padding_shape_value)
     """
 
@@ -1316,6 +1319,7 @@ class RandomCenterCropPad(object):
         Args:
             patch (list[int]): The cropped area, [left, top, right, bottom].
             boxes (numpy array, (N x 4)): Ground truth boxes.
+
         Returns:
             mask (numpy array, (N,)): Each box is inside or outside the patch.
         """
@@ -1339,6 +1343,7 @@ class RandomCenterCropPad(object):
             image (np array, H x W x C): Original image.
             center (list[int]): Target crop center coord.
             size (list[int]): Target crop size. [target_h, target_w]
+
         Returns:
             cropped_img (np array, target_h x target_w x C): Cropped image.
             border (np array, 4): The distance of four border of `cropped_img`

@@ -29,8 +29,10 @@ def iou_loss(pred, target, eps=1e-6):
 
 @weighted_loss
 def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
-    """`Improving Object Localization with Fitness NMS and Bounded IoU Loss.
+    """BIoULoss.
 
+    This is an implementation of paper
+    `Improving Object Localization with Fitness NMS and Bounded IoU Loss.
     <https://arxiv.org/abs/1711.00164>`_.
 
     Args:
