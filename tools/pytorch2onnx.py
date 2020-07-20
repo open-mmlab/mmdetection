@@ -7,9 +7,8 @@ import numpy as np
 import onnx
 import onnxruntime as rt
 import torch
-from mmcv.ops import RoIAlign, RoIPool
+from mmcv.onnx.symbolic import register_extra_symbolics
 from mmcv.runner import load_checkpoint
-from onnx_util.symbolic import register_extra_symbolics
 
 from mmdet.models import build_detector
 
@@ -74,9 +73,9 @@ def pytorch2onnx(model,
         # only compare a part of result
         bbox_results = bbox2result(det_bboxes, det_labels, 1)
         onnx_results = bbox_results[0]
-        assert (np.abs(
-            (pytorch_result[0][:, 4] - onnx_results[:, 4])) > 0.01).sum(
-            ) == 0, 'The outputs are different between Pytorch and ONNX'
+        assert np.allclose(
+            pytorch_result[0][:, 4], onnx_results[:, 4]
+        ), 'The outputs are different between Pytorch and ONNX'
         print('The numerical values are same between Pytorch and ONNX')
 
 
