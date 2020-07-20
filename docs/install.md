@@ -45,20 +45,41 @@ conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
 If you build PyTorch from source instead of installing the prebuilt pacakge,
 you can use more CUDA versions such as 9.0.
 
-c. Clone the mmdetection repository.
+c. Install mmcv, we recommend you to install the pre-build mmcv as below.
+
+```shell
+pip install mmcv-full==latest+torch1.5.0+cu101 -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
+```
+
+See [here]((https://github.com/open-mmlab/mmcv#install-with-pip)) for different versions of MMCV compatible to different PyTorch and CUDA versions.
+Optionally you can choose to compile mmcv from source by the following command
+
+```
+git clone https://github.com/open-mmlab/mmcv.git
+cd mmcv
+MMCV_WITH_OPS=1 pip install -e .  # package mmcv-full will be installed after this step
+cd ..
+```
+Or directly run
+```python
+pip install mmcv-full
+```
+**Important**: You need to run `pip unisntall mmcv` first if you have mmcv installed.
+If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
+
+d. Clone the mmdetection repository.
 
 ```shell
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 ```
 
-d. Install build requirements and then install mmdetection.
+e. Install build requirements and then install mmdetection.
 (We install our forked version of pycocotools via the github repo instead of pypi
 for better compatibility with our repo.)
 
 ```shell
 pip install -r requirements/build.txt
-pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .  # or "python setup.py develop"
 ```
 
@@ -128,10 +149,14 @@ conda activate open-mmlab
 
 # install latest pytorch prebuilt with the default prebuilt CUDA version (usually the latest)
 conda install -c pytorch pytorch torchvision -y
+
+# install the latest mmcv
+pip install mmcv-full
+
+# install mmdetection
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
-pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 pip install -v -e .
 ```
 

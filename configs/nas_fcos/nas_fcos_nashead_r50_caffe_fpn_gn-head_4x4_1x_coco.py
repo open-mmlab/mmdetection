@@ -22,7 +22,7 @@ model = dict(
         add_extra_convs=True,
         num_outs=5,
         norm_cfg=dict(type='BN'),
-        conv_cfg=dict(type='DCNv2', deformable_groups=2)),
+        conv_cfg=dict(type='DCNv2', deform_groups=2)),
     bbox_head=dict(
         type='NASFCOSHead',
         num_classes=80,
@@ -54,7 +54,7 @@ test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
     score_thr=0.05,
-    nms=dict(type='nms', iou_thr=0.6),
+    nms=dict(type='nms', iou_threshold=0.6),
     max_per_img=100)
 
 img_norm_cfg = dict(

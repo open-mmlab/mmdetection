@@ -27,27 +27,4 @@ The results on COCO 2017 val is shown in the below table.
 
 ## Implementation
 
-The CUDA implementation of CARAFE can be find at `mmdet/ops/carafe` under this repository.
-
-## Setup CARAFE
-
-a. Use CARAFE in mmdetection.
-
-Install mmdetection following the official guide.
-
-b. Use CARAFE in your own project.
-
-Git clone mmdetection.
-```shell
-git clone https://github.com/open-mmlab/mmdetection.git
-cd mmdetection
-```
-Setup CARAFE in your own project.
-```shell
-cp -r ./mmdet/ops/carafe $Your_Project_Path$
-cd $Your_Project_Path$/carafe
-python setup.py develop
-# or "pip install -v -e ."
-cd ..
-python ./carafe/grad_check.py
-```
+The CUDA implementation of CARAFE can be find at https://github.com/myownskyW7/CARAFE.
