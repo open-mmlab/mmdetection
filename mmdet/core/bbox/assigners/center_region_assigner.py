@@ -108,7 +108,7 @@ class CenterRegionAssigner(BaseAssigner):
             gt_bboxes (Tensor): Ground truth boxes, shape (k, 4).
 
         Returns:
-            Tensor: The priority of gts so that gts with larger priority is
+            Tensor: The priority of gts so that gts with larger priority is \
               more likely to be assigned. Shape (k, )
         """
         gt_areas = bboxes_area(gt_bboxes)
@@ -119,9 +119,10 @@ class CenterRegionAssigner(BaseAssigner):
     def assign(self, bboxes, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
         """Assign gt to bboxes.
 
-        This method assigns gts to every bbox (proposal/anchor), each bbox will
-         be assigned with -1, or a semi-positive number. -1 means negative
-         sample, semi-positive number is the index (0-based) of assigned gt.
+        This method assigns gts to every bbox (proposal/anchor), each bbox \
+        will be assigned with -1, or a semi-positive number. -1 means \
+        negative sample, semi-positive number is the index (0-based) of \
+        assigned gt.
 
         Args:
             bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
@@ -131,12 +132,13 @@ class CenterRegionAssigner(BaseAssigner):
             gt_labels (tensor, optional): Label of gt_bboxes, shape (num_gts,).
 
         Returns:
-            :obj:`AssignResult`: The assigned result. Note that shadowed_labels
-              of shape (N, 2) is also added as an `assign_result` attribute.
-              `shadowed_labels` is a tensor composed of N pairs of
-              [anchor_ind, class_label], where N is the number of anchors that
-              lie in the outer region of a gt, anchor_ind is the shadowed
-              anchor index and class_label is the shadowed class label.
+            :obj:`AssignResult`: The assigned result. Note that \
+              shadowed_labels of shape (N, 2) is also added as an \
+              `assign_result` attribute. `shadowed_labels` is a tensor \
+              composed of N pairs of anchor_ind, class_label], where N \
+              is the number of anchors that lie in the outer region of a \
+              gt, anchor_ind is the shadowed anchor index and class_label \
+              is the shadowed class label.
 
         Example:
             >>> self = CenterRegionAssigner(0.2, 0.2)
@@ -261,11 +263,14 @@ class CenterRegionAssigner(BaseAssigner):
               match with multiple gts. Shape: (num_gt, ).
 
         Returns:
-            assigned_gt_inds: The assigned gt index of each prior bbox
-              (i.e. index from 1 to num_gts). Shape: (num_prior, ).
-            shadowed_gt_inds: shadowed gt indices. It is a tensor of shape
-              (num_ignore, 2) with first column being the shadowed prior bbox
-              indices and the second column the shadowed gt indices (1-based)
+            tuple: Returns (assigned_gt_inds, shadowed_gt_inds).
+
+                - assigned_gt_inds: The assigned gt index of each prior bbox \
+                    (i.e. index from 1 to num_gts). Shape: (num_prior, ).
+                - shadowed_gt_inds: shadowed gt indices. It is a tensor of \
+                    shape (num_ignore, 2) with first column being the \
+                    shadowed prior bbox indices and the second column the \
+                    shadowed gt indices (1-based).
         """
         num_bboxes, num_gts = is_bbox_in_gt_core.shape
 
