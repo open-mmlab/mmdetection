@@ -47,7 +47,7 @@ class ResBlock(nn.Module):
         residual = x
         out = self.conv1(x)
         out = self.conv2(out)
-        out += residual
+        out = out + residual
 
         return out
 
@@ -99,7 +99,7 @@ class Darknet(nn.Module):
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
-            Default: dict(type='LeakyReLU', negative_slope=0.1, inplace=False).
+            Default: dict(type='LeakyReLU', negative_slope=0.1).
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
@@ -131,7 +131,7 @@ class Darknet(nn.Module):
                  frozen_stages=-1,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1, inplace=False),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
                  norm_eval=True):
         super(Darknet, self).__init__()
         if depth not in self.arch_settings:
