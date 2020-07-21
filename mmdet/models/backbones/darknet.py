@@ -183,10 +183,10 @@ class Darknet(nn.Module):
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
             for i in range(0, self.frozen_stages):
-            m = getattr(self, self.cr_blocks[i])
-            m.eval()
-            for param in m.parameters():
-                param.requires_grad = False
+                m = getattr(self, self.cr_blocks[i])
+                m.eval()
+                for param in m.parameters():
+                    param.requires_grad = False
 
     def train(self, mode=True):
         super(Darknet, self).train(mode)
