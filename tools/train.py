@@ -233,6 +233,10 @@ def main():
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
+    dataset_len = sum(len(dataset) for dataset in datasets)
+    if dataset_len < cfg.data.samples_per_gpu:
+        logger.warning(f'Decreased samples_per_gpu because of dataset length: {dataset_len}')
+        cfg.data.samples_per_gpu = dataset_len
     train_detector(
         model,
         datasets,
