@@ -8,7 +8,7 @@ from .compose import Compose
 
 @PIPELINES.register_module()
 class MultiScaleFlipAug(object):
-    """Test-time augmentation with multiple scales and flipping
+    """Test-time augmentation with multiple scales and flipping.
 
     An example configuration is as followed:
 
@@ -40,7 +40,8 @@ class MultiScaleFlipAug(object):
 
     Args:
         transforms (list[dict]): Transforms to apply in each augmentation.
-        img_scale (tuple | list[tuple]: Images scales for resizing.
+        img_scale (tuple | list[tuple] | None): Images scales for resizing.
+        scale_factor (float | list[float] | None): Scale factors for resizing.
         flip (bool): Whether apply flip augmentation. Default: False.
         flip_direction (str | list[str]): Flip augmentation directions,
             options are "horizontal" and "vertical". If flip_direction is list,
@@ -50,13 +51,23 @@ class MultiScaleFlipAug(object):
 
     def __init__(self,
                  transforms,
-                 img_scale,
+                 img_scale=None,
+                 scale_factor=None,
                  flip=False,
                  flip_direction='horizontal'):
         self.transforms = Compose(transforms)
-        self.img_scale = img_scale if isinstance(img_scale,
-                                                 list) else [img_scale]
-        assert mmcv.is_list_of(self.img_scale, tuple)
+        assert (img_scale is None) ^ (scale_factor is None), (
+            'Must have but only one variable can be setted')
+        if img_scale is not None:
+            self.img_scale = img_scale if isinstance(img_scale,
+                                                     list) else [img_scale]
+            self.scale_key = 'scale'
+            assert mmcv.is_list_of(self.img_scale, tuple)
+        else:
+            self.img_scale = scale_factor if isinstance(
+                scale_factor, list) else [scale_factor]
+            self.scale_key = 'scale_factor'
+
         self.flip = flip
         self.flip_direction = flip_direction if isinstance(
             flip_direction, list) else [flip_direction]
@@ -81,16 +92,18 @@ class MultiScaleFlipAug(object):
         """
 
         aug_data = []
-        flip_aug = [False, True] if self.flip else [False]
+        flip_args = [(False, None)]
+        if self.flip:
+            flip_args += [(True, direction)
+                          for direction in self.flip_direction]
         for scale in self.img_scale:
-            for flip in flip_aug:
-                for direction in self.flip_direction:
-                    _results = results.copy()
-                    _results['scale'] = scale
-                    _results['flip'] = flip
-                    _results['flip_direction'] = direction
-                    data = self.transforms(_results)
-                    aug_data.append(data)
+            for flip, direction in flip_args:
+                _results = results.copy()
+                _results[self.scale_key] = scale
+                _results['flip'] = flip
+                _results['flip_direction'] = direction
+                data = self.transforms(_results)
+                aug_data.append(data)
         # list of dict to dict of list
         aug_data_dict = {key: [] for key in aug_data[0]}
         for data in aug_data:

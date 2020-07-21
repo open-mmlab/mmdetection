@@ -21,7 +21,7 @@ class LoadImageFromFile(object):
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
             Defaults to False.
-        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes`.
             Defaults to 'color'.
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
@@ -66,14 +66,6 @@ class LoadImageFromFile(object):
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
-        # Set initial values for default meta_keys
-        results['pad_shape'] = img.shape
-        results['scale_factor'] = 1.0
-        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
-        results['img_norm_cfg'] = dict(
-            mean=np.zeros(num_channels, dtype=np.float32),
-            std=np.ones(num_channels, dtype=np.float32),
-            to_rgb=False)
         results['img_fields'] = ['img']
         return results
 
@@ -99,7 +91,7 @@ class LoadMultiChannelImageFromFiles(object):
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
             Defaults to False.
-        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes`.
             Defaults to 'color'.
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
@@ -327,7 +319,7 @@ class LoadAnnotations(object):
         return results
 
     def __call__(self, results):
-        """Call function to load multiple types annotations
+        """Call function to load multiple types annotations.
 
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.

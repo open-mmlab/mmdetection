@@ -1,4 +1,6 @@
-# MMDetection
+<div align="center">
+  <img src="resources/mmdet-logo.png" width="600"/>
+</div>
 
 **News**: We released the technical report on [ArXiv](https://arxiv.org/abs/1906.07155).
 
@@ -6,13 +8,13 @@ Documentation: https://mmdetection.readthedocs.io/
 
 ## Introduction
 
-The master branch works with **PyTorch 1.3 to 1.5**.
-The old v1.x branch works with PyTorch 1.1 to 1.4, but v2.0 is strongly recommended for faster speed, higher performance, better design and more friendly usage.
-
 MMDetection is an open source object detection toolbox based on PyTorch. It is
 a part of the OpenMMLab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
 
-![demo image](demo/coco_test_12510.jpg)
+The master branch works with **PyTorch 1.3 to 1.5**.
+The old v1.x branch works with PyTorch 1.1 to 1.4, but v2.0 is strongly recommended for faster speed, higher performance, better design and more friendly usage.
+
+![demo image](resources/coco_test_12510.jpg)
 
 ### Major features
 
@@ -40,7 +42,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.1.0 was released in 8/6/2020.
+v2.2.0 was released in 1/7/2020.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -92,6 +94,8 @@ Supported methods:
 - [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
 - [x] [InstaBoost](configs/instaboost/README.md)
 - [x] [GRoIE](configs/groie/README.md)
+- [x] [DetectoRS](configs/detectors/README.md)
+- [x] [Generalized Focal Loss](configs/gfl/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
@@ -100,9 +104,11 @@ Some other methods are also supported in [projects using MMDetection](./docs/pro
 Please refer to [install.md](docs/install.md) for installation and dataset preparation.
 
 
-## Get Started
+## Getting Started
 
-Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection. There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
+Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection.
+We provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
+There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
 
 ## Contributing
 

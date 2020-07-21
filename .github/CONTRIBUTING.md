@@ -27,7 +27,7 @@ We use the following tools for linting and formatting:
 - [yapf](https://github.com/google/yapf): formatter
 - [isort](https://github.com/timothycrosley/isort): sort imports
 
-Style configurations of yapf and isort can be found in [.style.yapf](../.style.yapf) and [.isort.cfg](../.isort.cfg).
+Style configurations of yapf and isort can be found in [setup.cfg](../setup.cfg).
 
 We use [pre-commit hook](https://pre-commit.com/) that checks and formats for `flake8`, `yapf`, `isort`, `trailing whitespaces`,
  fixes `end-of-files`, sorts `requirments.txt` automatically on every commit.

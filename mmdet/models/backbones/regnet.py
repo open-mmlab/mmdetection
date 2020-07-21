@@ -15,6 +15,7 @@ class RegNet(ResNet):
 
     Args:
         arch (dict): The parameter of RegNets.
+
             - w0 (int): initial width
             - wa (float): slope of width
             - wm (float): quantization parameter to quantize the width
@@ -155,6 +156,7 @@ class RegNet(ResNet):
         self.plugins = plugins
         self.zero_init_residual = zero_init_residual
         self.block = Bottleneck
+        expansion_bak = self.block.expansion
         self.block.expansion = 1
         self.stage_blocks = stage_blocks[:num_stages]
 
@@ -200,6 +202,7 @@ class RegNet(ResNet):
         self._freeze_stages()
 
         self.feat_dim = stage_widths[-1]
+        self.block.expansion = expansion_bak
 
     def _make_stem_layer(self, in_channels, base_channels):
         self.conv1 = build_conv_layer(
@@ -231,8 +234,8 @@ class RegNet(ResNet):
             divisor (int, optional): The divisor of channels. Defaults to 8.
 
         Returns:
-            list, int: return a list of widths of each stage and the number of
-                stages
+            list, int: return a list of widths of each stage and the number \
+                of stages
         """
         assert width_slope >= 0
         assert initial_width > 0
@@ -286,7 +289,7 @@ class RegNet(ResNet):
         return widths, groups
 
     def get_stages_from_blocks(self, widths):
-        """Gets widths/stage_blocks of network at each stage
+        """Gets widths/stage_blocks of network at each stage.
 
         Args:
             widths (list[int]): Width in each stage.
@@ -308,7 +311,7 @@ class RegNet(ResNet):
         return stage_widths, stage_blocks
 
     def forward(self, x):
-        """Forward function"""
+        """Forward function."""
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.relu(x)

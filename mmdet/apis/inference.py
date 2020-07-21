@@ -3,13 +3,13 @@ import warnings
 import matplotlib.pyplot as plt
 import mmcv
 import torch
+from mmcv.ops import RoIAlign, RoIPool
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import get_classes
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
-from mmdet.ops import RoIAlign, RoIPool
 
 
 def init_detector(config, checkpoint=None, device='cuda:0'):
@@ -32,7 +32,8 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
     config.model.pretrained = None
     model = build_detector(config.model, test_cfg=config.test_cfg)
     if checkpoint is not None:
-        checkpoint = load_checkpoint(model, checkpoint)
+        map_loc = 'cpu' if device == 'cpu' else None
+        checkpoint = load_checkpoint(model, checkpoint, map_location=map_loc)
         if 'CLASSES' in checkpoint['meta']:
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
@@ -47,10 +48,10 @@ def init_detector(config, checkpoint=None, device='cuda:0'):
 
 
 class LoadImage(object):
-    """A simple pipeline to load image"""
+    """A simple pipeline to load image."""
 
     def __call__(self, results):
-        """Call function to load images into results
+        """Call function to load images into results.
 
         Args:
             results (dict): A result dict contains the file name

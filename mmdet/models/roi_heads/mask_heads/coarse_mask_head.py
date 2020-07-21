@@ -6,7 +6,7 @@ from mmdet.models.builder import HEADS
 from .fcn_mask_head import FCNMaskHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class CoarseMaskHead(FCNMaskHead):
     """Coarse mask head used in PointRend.
 

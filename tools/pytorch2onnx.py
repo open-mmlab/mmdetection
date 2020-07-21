@@ -4,18 +4,17 @@ import io
 import mmcv
 import onnx
 import torch
+from mmcv.ops import RoIAlign, RoIPool
 from mmcv.runner import load_checkpoint
 from onnx import optimizer
 from torch.onnx import OperatorExportTypes
 
 from mmdet.models import build_detector
-from mmdet.ops import RoIAlign, RoIPool
 
 
 def export_onnx_model(model, inputs, passes):
-    """
-    Trace and export a model to onnx format.
-    Modified from https://github.com/facebookresearch/detectron2/
+    """Trace and export a model to onnx format. Modified from
+    https://github.com/facebookresearch/detectron2/
 
     Args:
         model (nn.Module):

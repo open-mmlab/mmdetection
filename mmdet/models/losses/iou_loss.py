@@ -31,8 +31,11 @@ def iou_loss(pred, target, eps=1e-6):
 
 @weighted_loss
 def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
-    """Improving Object Localization with Fitness NMS and Bounded IoU Loss,
-    https://arxiv.org/abs/1711.00164.
+    """BIoULoss.
+
+    This is an implementation of paper
+    `Improving Object Localization with Fitness NMS and Bounded IoU Loss.
+    <https://arxiv.org/abs/1711.00164>`_.
 
     Args:
         pred (torch.Tensor): Predicted bboxes.
@@ -73,11 +76,8 @@ def bounded_iou_loss(pred, target, beta=0.2, eps=1e-3):
 
 @weighted_loss
 def giou_loss(pred, target, eps=1e-7):
-    """Generalized Intersection over Union: A Metric and A Loss for
-    Bounding Box Regression, https://arxiv.org/abs/1902.09630.
-
-    code refer to:
-    https://github.com/sfzhang15/ATSS/blob/master/atss_core/modeling/rpn/atss/loss.py#L36
+    r"""`Generalized Intersection over Union: A Metric and A Loss for Bounding
+    Box Regression <https://arxiv.org/abs/1902.09630>`_.
 
     Args:
         pred (torch.Tensor): Predicted bboxes of format (x1, y1, x2, y2),
@@ -234,7 +234,7 @@ def ciou_loss(pred, target, eps=1e-7):
 
 @LOSSES.register_module()
 class IoULoss(nn.Module):
-    """IoULoss
+    """IoULoss.
 
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
 
@@ -257,7 +257,7 @@ class IoULoss(nn.Module):
                 avg_factor=None,
                 reduction_override=None,
                 **kwargs):
-        """Forward function
+        """Forward function.
 
         Args:
             pred (torch.Tensor): The prediction.

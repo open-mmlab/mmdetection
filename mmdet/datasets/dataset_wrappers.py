@@ -29,7 +29,7 @@ class ConcatDataset(_ConcatDataset):
             self.flag = np.concatenate(flags)
 
     def get_cat_ids(self, idx):
-        """Get category ids of concatenated dataset by index
+        """Get category ids of concatenated dataset by index.
 
         Args:
             idx (int): Index of data.
@@ -78,7 +78,7 @@ class RepeatDataset(object):
         return self.dataset[idx % self._ori_len]
 
     def get_cat_ids(self, idx):
-        """Get category ids of repeat dataset by index
+        """Get category ids of repeat dataset by index.
 
         Args:
             idx (int): Index of data.
@@ -90,7 +90,7 @@ class RepeatDataset(object):
         return self.dataset.get_cat_ids(idx % self._ori_len)
 
     def __len__(self):
-        """Length after repetition"""
+        """Length after repetition."""
         return self.times * self._ori_len
 
 
@@ -100,30 +100,30 @@ class ClassBalancedDataset(object):
     """A wrapper of repeated dataset with repeat factor.
 
     Suitable for training on class imbalanced datasets like LVIS. Following
-    the sampling strategy in [1], in each epoch, an image may appear multiple
-    times based on its "repeat factor".
+    the sampling strategy in the `paper <https://arxiv.org/abs/1908.03195>`_,
+    in each epoch, an image may appear multiple times based on its
+    "repeat factor".
     The repeat factor for an image is a function of the frequency the rarest
     category labeled in that image. The "frequency of category c" in [0, 1]
     is defined by the fraction of images in the training set (without repeats)
     in which category c appears.
-    The dataset needs to instantiate :func:`self.get_cat_ids(idx)` to support
+    The dataset needs to instantiate :func:`self.get_cat_ids` to support
     ClassBalancedDataset.
-    The repeat factor is computed as followed.
-    1. For each category c, compute the fraction # of images
-        that contain it: f(c)
-    2. For each category c, compute the category-level repeat factor:
-        r(c) = max(1, sqrt(t/f(c)))
-    3. For each image I, compute the image-level repeat factor:
-        r(I) = max_{c in I} r(c)
 
-    References:
-        .. [1]  https://arxiv.org/pdf/1903.00621v2.pdf
+    The repeat factor is computed as followed.
+
+    1. For each category c, compute the fraction # of images
+       that contain it: :math:`f(c)`
+    2. For each category c, compute the category-level repeat factor:
+       :math:`r(c) = max(1, sqrt(t/f(c)))`
+    3. For each image I, compute the image-level repeat factor:
+       :math:`r(I) = max_{c in I} r(c)`
 
     Args:
         dataset (:obj:`CustomDataset`): The dataset to be repeated.
         oversample_thr (float): frequency threshold below which data is
-            repeated. For categories with `f_c` >= `oversample_thr`, there is
-            no oversampling. For categories with `f_c` < `oversample_thr`, the
+            repeated. For categories with ``f_c >= oversample_thr``, there is
+            no oversampling. For categories with ``f_c < oversample_thr``, the
             degree of oversampling following the square-root inverse frequency
             heuristic above.
     """
@@ -194,5 +194,5 @@ class ClassBalancedDataset(object):
         return self.dataset[ori_index]
 
     def __len__(self):
-        """Length after repetition"""
+        """Length after repetition."""
         return len(self.repeat_indices)

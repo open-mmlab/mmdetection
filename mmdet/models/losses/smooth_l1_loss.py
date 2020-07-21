@@ -7,7 +7,7 @@ from .utils import weighted_loss
 
 @weighted_loss
 def smooth_l1_loss(pred, target, beta=1.0):
-    """Smooth L1 loss
+    """Smooth L1 loss.
 
     Args:
         pred (torch.Tensor): The prediction.
@@ -28,7 +28,7 @@ def smooth_l1_loss(pred, target, beta=1.0):
 
 @weighted_loss
 def l1_loss(pred, target):
-    """L1 loss
+    """L1 loss.
 
     Args:
         pred (torch.Tensor): The prediction.
@@ -44,7 +44,7 @@ def l1_loss(pred, target):
 
 @LOSSES.register_module()
 class SmoothL1Loss(nn.Module):
-    """Smooth L1 loss
+    """Smooth L1 loss.
 
     Args:
         beta (float, optional): The threshold in the piecewise function.
@@ -67,7 +67,7 @@ class SmoothL1Loss(nn.Module):
                 avg_factor=None,
                 reduction_override=None,
                 **kwargs):
-        """Forward function
+        """Forward function.
 
         Args:
             pred (torch.Tensor): The prediction.
@@ -96,7 +96,7 @@ class SmoothL1Loss(nn.Module):
 
 @LOSSES.register_module()
 class L1Loss(nn.Module):
-    """L1 loss
+    """L1 loss.
 
     Args:
         reduction (str, optional): The method to reduce the loss.
@@ -115,7 +115,7 @@ class L1Loss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None):
-        """Forward function
+        """Forward function.
 
         Args:
             pred (torch.Tensor): The prediction.

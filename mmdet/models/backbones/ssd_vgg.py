@@ -10,7 +10,7 @@ from ..builder import BACKBONES
 
 @BACKBONES.register_module()
 class SSDVGG(VGG):
-    """VGG Backbone network for single-shot-detection
+    """VGG Backbone network for single-shot-detection.
 
     Args:
         input_size (int): width and height of input, from {300, 512}.
@@ -73,7 +73,7 @@ class SSDVGG(VGG):
             l2_norm_scale)
 
     def init_weights(self, pretrained=None):
-        """Initialize the weights in backbone
+        """Initialize the weights in backbone.
 
         Args:
             pretrained (str, optional): Path to pre-trained weights.
@@ -100,7 +100,7 @@ class SSDVGG(VGG):
         constant_init(self.l2_norm, self.l2_norm.scale)
 
     def forward(self, x):
-        """Forward function"""
+        """Forward function."""
         outs = []
         for i, layer in enumerate(self.features):
             x = layer(x)
@@ -146,7 +146,7 @@ class SSDVGG(VGG):
 class L2Norm(nn.Module):
 
     def __init__(self, n_dims, scale=20., eps=1e-10):
-        """L2 normalization layer
+        """L2 normalization layer.
 
         Args:
             n_dims (int): Number of dimensions to be normalized
@@ -161,7 +161,7 @@ class L2Norm(nn.Module):
         self.scale = scale
 
     def forward(self, x):
-        """Forward function"""
+        """Forward function."""
         # normalization layer convert to FP32 in FP16 training
         x_float = x.float()
         norm = x_float.pow(2).sum(1, keepdim=True).sqrt() + self.eps

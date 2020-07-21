@@ -11,7 +11,7 @@ DETECTORS = Registry('detector')
 
 
 def build(cfg, registry, default_args=None):
-    """Build a module
+    """Build a module.
 
     Args:
         cfg (dict, list[dict]): The config of modules, is is either a dict
@@ -33,35 +33,35 @@ def build(cfg, registry, default_args=None):
 
 
 def build_backbone(cfg):
-    """Build backbone"""
+    """Build backbone."""
     return build(cfg, BACKBONES)
 
 
 def build_neck(cfg):
-    """Build neck"""
+    """Build neck."""
     return build(cfg, NECKS)
 
 
 def build_roi_extractor(cfg):
-    """Build roi extractor"""
+    """Build roi extractor."""
     return build(cfg, ROI_EXTRACTORS)
 
 
 def build_shared_head(cfg):
-    """Build shared head"""
+    """Build shared head."""
     return build(cfg, SHARED_HEADS)
 
 
 def build_head(cfg):
-    """Build head"""
+    """Build head."""
     return build(cfg, HEADS)
 
 
 def build_loss(cfg):
-    """Build loss"""
+    """Build loss."""
     return build(cfg, LOSSES)
 
 
 def build_detector(cfg, train_cfg=None, test_cfg=None):
-    """Build detector"""
+    """Build detector."""
     return build(cfg, DETECTORS, dict(train_cfg=train_cfg, test_cfg=test_cfg))

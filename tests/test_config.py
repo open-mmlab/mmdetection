@@ -7,7 +7,7 @@ from mmdet.core import BitmapMasks, PolygonMasks
 
 
 def _get_config_directory():
-    """ Find the predefined detector config directory """
+    """Find the predefined detector config directory."""
     try:
         # Assume we are running in the source mmdetection repo
         repo_dpath = dirname(dirname(__file__))
@@ -22,9 +22,8 @@ def _get_config_directory():
 
 
 def test_config_build_detector():
-    """
-    Test that all detection models defined in the configs can be initialized.
-    """
+    """Test that all detection models defined in the configs can be
+    initialized."""
     from mmcv import Config
     from mmdet.models import build_detector
 
@@ -77,8 +76,8 @@ def test_config_build_detector():
 
 
 def test_config_data_pipeline():
-    """
-    Test whether the data pipeline is valid and can process corner cases.
+    """Test whether the data pipeline is valid and can process corner cases.
+
     CommandLine:
         xdoctest -m tests/test_config.py test_config_build_data_pipeline
     """
@@ -275,8 +274,8 @@ def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
     assert (len(config.featmap_strides) == len(roi_extractor.roi_layers))
     assert (config.out_channels == roi_extractor.out_channels)
     from torch.nn.modules.utils import _pair
-    assert (_pair(
-        config.roi_layer.out_size) == roi_extractor.roi_layers[0].out_size)
+    assert (_pair(config.roi_layer.output_size) ==
+            roi_extractor.roi_layers[0].output_size)
 
     if 'use_torchvision' in config.roi_layer:
         assert (config.roi_layer.use_torchvision ==

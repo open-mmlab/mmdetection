@@ -4,7 +4,7 @@ from .base_bbox_coder import BaseBBoxCoder
 
 @BBOX_CODERS.register_module()
 class PseudoBBoxCoder(BaseBBoxCoder):
-    """Pseudo bounding box coder"""
+    """Pseudo bounding box coder."""
 
     def __init__(self, **kwargs):
         super(BaseBBoxCoder, self).__init__(**kwargs)

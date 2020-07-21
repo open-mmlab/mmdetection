@@ -1,11 +1,10 @@
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
-                      kaiming_init)
+from mmcv.cnn import (build_conv_layer, build_norm_layer, build_plugin_layer,
+                      constant_init, kaiming_init)
 from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.ops import build_plugin_layer
 from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 from ..utils import ResLayer
@@ -64,7 +63,7 @@ class BasicBlock(nn.Module):
         return getattr(self, self.norm2_name)
 
     def forward(self, x):
-        """Forward function"""
+        """Forward function."""
 
         def _inner_forward(x):
             identity = x
@@ -109,8 +108,9 @@ class Bottleneck(nn.Module):
                  dcn=None,
                  plugins=None):
         """Bottleneck block for ResNet.
-        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
-        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
+
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
+        it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
@@ -214,7 +214,7 @@ class Bottleneck(nn.Module):
                 planes * self.expansion, self.after_conv3_plugins)
 
     def make_block_plugins(self, in_channels, plugins):
-        """ make plugins for block
+        """make plugins for block.
 
         Args:
             in_channels (int): Input channels of plugin.
@@ -222,7 +222,6 @@ class Bottleneck(nn.Module):
 
         Returns:
             list[str]: List of the names of plugin.
-
         """
         assert isinstance(plugins, list)
         plugin_names = []
@@ -259,7 +258,7 @@ class Bottleneck(nn.Module):
         return getattr(self, self.norm3_name)
 
     def forward(self, x):
-        """Forward function"""
+        """Forward function."""
 
         def _inner_forward(x):
             identity = x
@@ -307,7 +306,8 @@ class ResNet(nn.Module):
 
     Args:
         depth (int): Depth of resnet, from {18, 34, 50, 101, 152}.
-        stem_channels (int): Number of stem channels. Default: 64.
+        stem_channels (int | None): Number of stem channels. If not specified,
+            it will be the same as `base_channels`. Default: None.
         base_channels (int): Number of base channels of res layer. Default: 64.
         in_channels (int): Number of input image channels. Default: 3.
         num_stages (int): Resnet stages. Default: 4.
@@ -364,7 +364,7 @@ class ResNet(nn.Module):
     def __init__(self,
                  depth,
                  in_channels=3,
-                 stem_channels=64,
+                 stem_channels=None,
                  base_channels=64,
                  num_stages=4,
                  strides=(1, 2, 2, 2),
@@ -386,6 +386,8 @@ class ResNet(nn.Module):
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for resnet')
         self.depth = depth
+        if stem_channels is None:
+            stem_channels = base_channels
         self.stem_channels = stem_channels
         self.base_channels = base_channels
         self.num_stages = num_stages
@@ -450,33 +452,35 @@ class ResNet(nn.Module):
             len(self.stage_blocks) - 1)
 
     def make_stage_plugins(self, plugins, stage_idx):
-        """ make plugins for ResNet 'stage_idx'th stage .
+        """Make plugins for ResNet ``stage_idx`` th stage.
 
-        Currently we support to insert 'context_block',
-        'empirical_attention_block', 'nonlocal_block' into the backbone like
-        ResNet/ResNeXt. They could be inserted after conv1/conv2/conv3 of
+        Currently we support to insert ``context_block``,
+        ``empirical_attention_block``, ``nonlocal_block`` into the backbone
+        like ResNet/ResNeXt. They could be inserted after conv1/conv2/conv3 of
         Bottleneck.
+
         An example of plugins format could be:
 
-        >>> plugins=[
-        ...     dict(cfg=dict(type='xxx', arg1='xxx'),
-        ...          stages=(False, True, True, True),
-        ...          position='after_conv2'),
-        ...     dict(cfg=dict(type='yyy'),
-        ...          stages=(True, True, True, True),
-        ...          position='after_conv3'),
-        ...     dict(cfg=dict(type='zzz', postfix='1'),
-        ...          stages=(True, True, True, True),
-        ...          position='after_conv3'),
-        ...     dict(cfg=dict(type='zzz', postfix='2'),
-        ...          stages=(True, True, True, True),
-        ...          position='after_conv3')
-        ... ]
-        >>> self = ResNet(depth=18)
-        >>> stage_plugins = self.make_stage_plugins(plugins, 0)
-        >>> assert len(stage_plugins) == 3
+        Examples:
+            >>> plugins=[
+            ...     dict(cfg=dict(type='xxx', arg1='xxx'),
+            ...          stages=(False, True, True, True),
+            ...          position='after_conv2'),
+            ...     dict(cfg=dict(type='yyy'),
+            ...          stages=(True, True, True, True),
+            ...          position='after_conv3'),
+            ...     dict(cfg=dict(type='zzz', postfix='1'),
+            ...          stages=(True, True, True, True),
+            ...          position='after_conv3'),
+            ...     dict(cfg=dict(type='zzz', postfix='2'),
+            ...          stages=(True, True, True, True),
+            ...          position='after_conv3')
+            ... ]
+            >>> self = ResNet(depth=18)
+            >>> stage_plugins = self.make_stage_plugins(plugins, 0)
+            >>> assert len(stage_plugins) == 3
 
-        Suppose 'stage_idx=0', the structure of blocks in the stage would be:
+        Suppose ``stage_idx=0``, the structure of blocks in the stage would be:
 
         .. code-block:: none
 
@@ -510,7 +514,7 @@ class ResNet(nn.Module):
         return stage_plugins
 
     def make_res_layer(self, **kwargs):
-        """Pack all blocks in a stage into a ``ResLayer``"""
+        """Pack all blocks in a stage into a ``ResLayer``."""
         return ResLayer(**kwargs)
 
     @property
@@ -585,7 +589,7 @@ class ResNet(nn.Module):
                 param.requires_grad = False
 
     def init_weights(self, pretrained=None):
-        """Initialize the weights in backbone
+        """Initialize the weights in backbone.
 
         Args:
             pretrained (str, optional): Path to pre-trained weights.
@@ -617,7 +621,7 @@ class ResNet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
-        """Forward function"""
+        """Forward function."""
         if self.deep_stem:
             x = self.stem(x)
         else:
@@ -635,7 +639,7 @@ class ResNet(nn.Module):
 
     def train(self, mode=True):
         """Convert the model into training mode while keep normalization layer
-        freezed"""
+        freezed."""
         super(ResNet, self).train(mode)
         self._freeze_stages()
         if mode and self.norm_eval:
@@ -647,13 +651,12 @@ class ResNet(nn.Module):
 
 @BACKBONES.register_module()
 class ResNetV1d(ResNet):
-    """ResNetV1d variant described in
-    `Bag of Tricks <https://arxiv.org/pdf/1812.01187.pdf>`_.
+    r"""ResNetV1d variant described in `Bag of Tricks
+    <https://arxiv.org/pdf/1812.01187.pdf>`_.
 
-    Compared with default ResNet(ResNetV1b), ResNetV1d replaces the 7x7 conv
-    in the input stem with three 3x3 convs. And in the downsampling block,
-    a 2x2 avg_pool with stride 2 is added before conv, whose stride is
-    changed to 1.
+    Compared with default ResNet(ResNetV1b), ResNetV1d replaces the 7x7 conv in
+    the input stem with three 3x3 convs. And in the downsampling block, a 2x2
+    avg_pool with stride 2 is added before conv, whose stride is changed to 1.
     """
 
     def __init__(self, **kwargs):

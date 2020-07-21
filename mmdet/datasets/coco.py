@@ -128,8 +128,8 @@ class CocoDataset(CustomDataset):
             with_mask (bool): Whether to parse mask annotations.
 
         Returns:
-            dict: A dict containing the following keys: bboxes, bboxes_ignore,
-                labels, masks, seg_map. "masks" are raw annotations and not
+            dict: A dict containing the following keys: bboxes, bboxes_ignore,\
+                labels, masks, seg_map. "masks" are raw annotations and not \
                 decoded into binary masks.
         """
         gt_bboxes = []
@@ -200,7 +200,7 @@ class CocoDataset(CustomDataset):
         ]
 
     def _proposal2json(self, results):
-        """Convert proposal results to COCO json style"""
+        """Convert proposal results to COCO json style."""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -215,7 +215,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _det2json(self, results):
-        """Convert detection results to COCO json style"""
+        """Convert detection results to COCO json style."""
         json_results = []
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
@@ -232,7 +232,7 @@ class CocoDataset(CustomDataset):
         return json_results
 
     def _segm2json(self, results):
-        """Convert instance segmentation results to COCO json style"""
+        """Convert instance segmentation results to COCO json style."""
         bbox_json_results = []
         segm_json_results = []
         for idx in range(len(self)):
@@ -285,7 +285,7 @@ class CocoDataset(CustomDataset):
                 "somepath/xxx.proposal.json".
 
         Returns:
-            dict[str: str]: Possible keys are "bbox", "segm", "proposal", and
+            dict[str: str]: Possible keys are "bbox", "segm", "proposal", and \
                 values are corresponding filenames.
         """
         result_files = dict()
@@ -344,8 +344,8 @@ class CocoDataset(CustomDataset):
                 If not specified, a temp file will be created. Default: None.
 
         Returns:
-            tuple: (result_files, tmp_dir), result_files is a dict containing
-                the json filepaths, tmp_dir is the temporal directory created
+            tuple: (result_files, tmp_dir), result_files is a dict containing \
+                the json filepaths, tmp_dir is the temporal directory created \
                 for saving json files when jsonfile_prefix is not specified.
         """
         assert isinstance(results, list), 'results must be a list'

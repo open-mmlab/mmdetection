@@ -8,7 +8,7 @@ from .builder import ANCHOR_GENERATORS
 
 @ANCHOR_GENERATORS.register_module()
 class AnchorGenerator(object):
-    """Standard anchor generator for 2D anchor-based detectors
+    """Standard anchor generator for 2D anchor-based detectors.
 
     Args:
         strides (list[int] | list[tuple[int, int]]): Strides of anchors
@@ -120,10 +120,10 @@ class AnchorGenerator(object):
         return len(self.strides)
 
     def gen_base_anchors(self):
-        """Generate base anchors
+        """Generate base anchors.
 
         Returns:
-            list(torch.Tensor): Base anchors of a feature grid in multiple
+            list(torch.Tensor): Base anchors of a feature grid in multiple \
                 feature levels.
         """
         multi_level_base_anchors = []
@@ -144,7 +144,7 @@ class AnchorGenerator(object):
                                       scales,
                                       ratios,
                                       center=None):
-        """Generate base anchors of a single level
+        """Generate base anchors of a single level.
 
         Args:
             base_size (int | float): Basic size of an anchor.
@@ -155,7 +155,7 @@ class AnchorGenerator(object):
                 related to a single feature grid. Defaults to None.
 
         Returns:
-            torch.Tensor: Anchors in a single-level feature maps
+            torch.Tensor: Anchors in a single-level feature maps.
         """
         w = base_size
         h = base_size
@@ -185,7 +185,7 @@ class AnchorGenerator(object):
         return base_anchors
 
     def _meshgrid(self, x, y, row_major=True):
-        """Generate mesh grid of x and y
+        """Generate mesh grid of x and y.
 
         Args:
             x (torch.Tensor): Grids of x dimension.
@@ -204,7 +204,7 @@ class AnchorGenerator(object):
             return yy, xx
 
     def grid_anchors(self, featmap_sizes, device='cuda'):
-        """Generate grid anchors in multiple feature levels
+        """Generate grid anchors in multiple feature levels.
 
         Args:
             featmap_sizes (list[tuple]): List of feature map sizes in
@@ -212,10 +212,10 @@ class AnchorGenerator(object):
             device (str): Device where the anchors will be put on.
 
         Return:
-            list[torch.Tensor]: Anchors in multiple feature levels.
-                The sizes of each tensor should be [N, 4], where
-                N = width * height * num_base_anchors, width and height
-                are the sizes of the corresponding feature lavel,
+            list[torch.Tensor]: Anchors in multiple feature levels. \
+                The sizes of each tensor should be [N, 4], where \
+                N = width * height * num_base_anchors, width and height \
+                are the sizes of the corresponding feature lavel, \
                 num_base_anchors is the number of anchors for that level.
         """
         assert self.num_levels == len(featmap_sizes)
@@ -267,7 +267,7 @@ class AnchorGenerator(object):
         return all_anchors
 
     def valid_flags(self, featmap_sizes, pad_shape, device='cuda'):
-        """Generate valid flags of anchors in multiple feature levels
+        """Generate valid flags of anchors in multiple feature levels.
 
         Args:
             featmap_sizes (list(tuple)): List of feature map sizes in
@@ -298,7 +298,7 @@ class AnchorGenerator(object):
                                  valid_size,
                                  num_base_anchors,
                                  device='cuda'):
-        """Generate the valid flags of anchor in a single feature map
+        """Generate the valid flags of anchor in a single feature map.
 
         Args:
             featmap_size (tuple[int]): The size of feature maps.
@@ -308,7 +308,7 @@ class AnchorGenerator(object):
                 Defaults to 'cuda'.
 
         Returns:
-            torch.Tensor: The valid flags of each anchor in a single level
+            torch.Tensor: The valid flags of each anchor in a single level \
                 feature map.
         """
         feat_h, feat_w = featmap_size
@@ -345,7 +345,7 @@ class AnchorGenerator(object):
 
 @ANCHOR_GENERATORS.register_module()
 class SSDAnchorGenerator(AnchorGenerator):
-    """Anchor generator for SSD
+    """Anchor generator for SSD.
 
     Args:
         strides (list[int]  | list[tuple[int, int]]): Strides of anchors
@@ -430,10 +430,10 @@ class SSDAnchorGenerator(AnchorGenerator):
         self.base_anchors = self.gen_base_anchors()
 
     def gen_base_anchors(self):
-        """Generate base anchors
+        """Generate base anchors.
 
         Returns:
-            list(torch.Tensor): Base anchors of a feature grid in multiple
+            list(torch.Tensor): Base anchors of a feature grid in multiple \
                 feature levels.
         """
         multi_level_base_anchors = []
@@ -469,14 +469,15 @@ class SSDAnchorGenerator(AnchorGenerator):
 
 @ANCHOR_GENERATORS.register_module()
 class LegacyAnchorGenerator(AnchorGenerator):
-    """Legacy anchor generator used in MMDetection V1.x
+    """Legacy anchor generator used in MMDetection V1.x.
 
-    Difference to the V2.0 anchor generator:
+    Note:
+        Difference to the V2.0 anchor generator:
 
-    1. The center offset of V1.x anchors are set to be 0.5 rather than 0.
-    2. The width/height are minused by 1 when calculating the anchors' centers
-       and corners to meet the V1.x coordinate system.
-    3. The anchors' corners are quantized.
+        1. The center offset of V1.x anchors are set to be 0.5 rather than 0.
+        2. The width/height are minused by 1 when calculating the anchors' \
+            centers and corners to meet the V1.x coordinate system.
+        3. The anchors' corners are quantized.
 
     Args:
         strides (list[int] | list[tuple[int]]): Strides of anchors
@@ -520,10 +521,10 @@ class LegacyAnchorGenerator(AnchorGenerator):
                                       scales,
                                       ratios,
                                       center=None):
-        """Generate base anchors of a single level
+        """Generate base anchors of a single level.
 
         Note:
-            The width/height of anchors are minused by 1 when calculating
+            The width/height of anchors are minused by 1 when calculating \
                 the centers and corners to meet the V1.x coordinate system.
 
         Args:
@@ -567,7 +568,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
 
 @ANCHOR_GENERATORS.register_module()
 class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
-    """Legacy anchor generator used in MMDetection V1.x
+    """Legacy anchor generator used in MMDetection V1.x.
 
     The difference between `LegacySSDAnchorGenerator` and `SSDAnchorGenerator`
     can be found in `LegacyAnchorGenerator`.

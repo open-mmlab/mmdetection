@@ -101,57 +101,65 @@ class FreeAnchorRetinaHead(RetinaHead):
                     zip(anchors, gt_labels, gt_bboxes, cls_prob, bbox_preds)):
 
             with torch.no_grad():
-                # box_localization: a_{j}^{loc}, shape: [j, 4]
-                pred_boxes = self.bbox_coder.decode(anchors_, bbox_preds_)
-
-                # object_box_iou: IoU_{ij}^{loc}, shape: [i, j]
-                object_box_iou = bbox_overlaps(gt_bboxes_, pred_boxes)
-
-                # object_box_prob: P{a_{j} -> b_{i}}, shape: [i, j]
-                t1 = self.bbox_thr
-                t2 = object_box_iou.max(
-                    dim=1, keepdim=True).values.clamp(min=t1 + 1e-12)
-                object_box_prob = ((object_box_iou - t1) / (t2 - t1)).clamp(
-                    min=0, max=1)
-
-                # object_cls_box_prob: P{a_{j} -> b_{i}}, shape: [i, c, j]
-                num_obj = gt_labels_.size(0)
-                indices = torch.stack(
-                    [torch.arange(num_obj).type_as(gt_labels_), gt_labels_],
-                    dim=0)
-                object_cls_box_prob = torch.sparse_coo_tensor(
-                    indices, object_box_prob)
-
-                # image_box_iou: P{a_{j} \in A_{+}}, shape: [c, j]
-                """
-                from "start" to "end" implement:
-                image_box_iou = torch.sparse.max(object_cls_box_prob,
-                                                 dim=0).t()
-
-                """
-                # start
-                box_cls_prob = torch.sparse.sum(
-                    object_cls_box_prob, dim=0).to_dense()
-
-                indices = torch.nonzero(box_cls_prob, as_tuple=False).t_()
-                if indices.numel() == 0:
+                if len(gt_bboxes_) == 0:
                     image_box_prob = torch.zeros(
                         anchors_.size(0),
-                        self.cls_out_channels).type_as(object_box_prob)
+                        self.cls_out_channels).type_as(bbox_preds_)
                 else:
-                    nonzero_box_prob = torch.where(
-                        (gt_labels_.unsqueeze(dim=-1) == indices[0]),
-                        object_box_prob[:, indices[1]],
-                        torch.tensor(
-                            [0]).type_as(object_box_prob)).max(dim=0).values
+                    # box_localization: a_{j}^{loc}, shape: [j, 4]
+                    pred_boxes = self.bbox_coder.decode(anchors_, bbox_preds_)
 
-                    # upmap to shape [j, c]
-                    image_box_prob = torch.sparse_coo_tensor(
-                        indices.flip([0]),
-                        nonzero_box_prob,
-                        size=(anchors_.size(0),
-                              self.cls_out_channels)).to_dense()
-                # end
+                    # object_box_iou: IoU_{ij}^{loc}, shape: [i, j]
+                    object_box_iou = bbox_overlaps(gt_bboxes_, pred_boxes)
+
+                    # object_box_prob: P{a_{j} -> b_{i}}, shape: [i, j]
+                    t1 = self.bbox_thr
+                    t2 = object_box_iou.max(
+                        dim=1, keepdim=True).values.clamp(min=t1 + 1e-12)
+                    object_box_prob = ((object_box_iou - t1) /
+                                       (t2 - t1)).clamp(
+                                           min=0, max=1)
+
+                    # object_cls_box_prob: P{a_{j} -> b_{i}}, shape: [i, c, j]
+                    num_obj = gt_labels_.size(0)
+                    indices = torch.stack([
+                        torch.arange(num_obj).type_as(gt_labels_), gt_labels_
+                    ],
+                                          dim=0)
+                    object_cls_box_prob = torch.sparse_coo_tensor(
+                        indices, object_box_prob)
+
+                    # image_box_iou: P{a_{j} \in A_{+}}, shape: [c, j]
+                    """
+                    from "start" to "end" implement:
+                    image_box_iou = torch.sparse.max(object_cls_box_prob,
+                                                     dim=0).t()
+
+                    """
+                    # start
+                    box_cls_prob = torch.sparse.sum(
+                        object_cls_box_prob, dim=0).to_dense()
+
+                    indices = torch.nonzero(box_cls_prob, as_tuple=False).t_()
+                    if indices.numel() == 0:
+                        image_box_prob = torch.zeros(
+                            anchors_.size(0),
+                            self.cls_out_channels).type_as(object_box_prob)
+                    else:
+                        nonzero_box_prob = torch.where(
+                            (gt_labels_.unsqueeze(dim=-1) == indices[0]),
+                            object_box_prob[:, indices[1]],
+                            torch.tensor([
+                                0
+                            ]).type_as(object_box_prob)).max(dim=0).values
+
+                        # upmap to shape [j, c]
+                        image_box_prob = torch.sparse_coo_tensor(
+                            indices.flip([0]),
+                            nonzero_box_prob,
+                            size=(anchors_.size(0),
+                                  self.cls_out_channels)).to_dense()
+                    # end
 
                 box_prob.append(image_box_prob)
 
@@ -194,6 +202,11 @@ class FreeAnchorRetinaHead(RetinaHead):
         # \sum_{j}{ FL((1 - P{a_{j} \in A_{+}}) * (1 - P_{j}^{bg})) } / n||B||
         negative_loss = self.negative_bag_loss(cls_prob, box_prob).sum() / max(
             1, num_pos * self.pre_anchor_topk)
+
+        # avoid the absence of gradients in regression subnet
+        # when no ground-truth in a batch
+        if num_pos == 0:
+            positive_loss = bbox_preds.sum() * 0
 
         losses = {
             'positive_bag_loss': positive_loss,

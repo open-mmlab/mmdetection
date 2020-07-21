@@ -6,7 +6,7 @@ from ..builder import build_shared_head
 
 
 class BaseRoIHead(nn.Module, metaclass=ABCMeta):
-    """Base class for RoIHeads"""
+    """Base class for RoIHeads."""
 
     def __init__(self,
                  bbox_roi_extractor=None,
@@ -47,7 +47,7 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
 
     @abstractmethod
     def init_weights(self, pretrained):
-        """Initialize the weights in head
+        """Initialize the weights in head.
 
         Args:
             pretrained (str, optional): Path to pre-trained weights.
@@ -67,7 +67,7 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
 
     @abstractmethod
     def init_assigner_sampler(self):
-        """Initialize assigner and sampler"""
+        """Initialize assigner and sampler."""
         pass
 
     @abstractmethod
@@ -80,11 +80,11 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       **kwargs):
-        """Forward function during training"""
+        """Forward function during training."""
         pass
 
     async def async_simple_test(self, x, img_meta, **kwargs):
-        """Asynchronized test function"""
+        """Asynchronized test function."""
         raise NotImplementedError
 
     def simple_test(self,
