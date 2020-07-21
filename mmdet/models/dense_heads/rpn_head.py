@@ -2,11 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import normal_init
+from torch.onnx import is_in_onnx_export
 
 from mmdet.ops import batched_nms
-from mmdet.core.post_processing import multiclass_nms
-from mmdet.core.bbox.coder.delta_xywh_bbox_coder import delta2bbox
-from mmdet.core.utils.misc import topk
+from ...core.utils.misc import topk
 from ..builder import HEADS
 from .anchor_head import AnchorHead
 from .rpn_test_mixin import RPNTestMixin
@@ -63,7 +62,12 @@ class RPNHead(RPNTestMixin, AnchorHead):
                            cfg,
                            rescale=False):
         cfg = self.test_cfg if cfg is None else cfg
-        mlvl_proposals = []
+        # bboxes from different level should be independent during NMS,
+        # level_ids are used as labels for batched NMS to separate them
+        level_ids = []
+        mlvl_scores = []
+        mlvl_bbox_preds = []
+        mlvl_valid_anchors = []
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
@@ -80,34 +84,37 @@ class RPNHead(RPNTestMixin, AnchorHead):
                 scores = rpn_cls_score.softmax(dim=1)[:, 1]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
-            nms_pre = int(cfg.nms_pre)
-            scores, topk_inds = topk(scores, nms_pre)
-            rpn_bbox_pred = rpn_bbox_pred[topk_inds]
-            anchors = anchors[topk_inds]
-            proposals = self.bbox_coder.decode(
-                    anchors, rpn_bbox_pred, max_shape=img_shape)
-            if cfg.min_bbox_size > 0:
-                w = proposals[:, 2] - proposals[:, 0]
-                h = proposals[:, 3] - proposals[:, 1]
-                valid_inds = torch.nonzero((w >= cfg.min_bbox_size) &
-                                           (h >= cfg.min_bbox_size)).squeeze()
+            if cfg.nms_pre > 0:
+                scores, topk_inds = topk(scores, cfg.nms_pre, dim=0)
+                rpn_bbox_pred = rpn_bbox_pred[topk_inds]
+                anchors = anchors[topk_inds]
+            mlvl_scores.append(scores)
+            mlvl_bbox_preds.append(rpn_bbox_pred)
+            mlvl_valid_anchors.append(anchors)
+            level_ids.append(
+                torch.full((scores.size(0), ), idx, dtype=torch.long, device=scores.device)
+            )
+
+        scores = torch.cat(mlvl_scores)
+        anchors = torch.cat(mlvl_valid_anchors)
+        rpn_bbox_pred = torch.cat(mlvl_bbox_preds)
+        proposals = self.bbox_coder.decode(
+            anchors, rpn_bbox_pred, max_shape=img_shape)
+        ids = torch.cat(level_ids)
+
+        if cfg.min_bbox_size > 0:
+            w = proposals[:, 2] - proposals[:, 0]
+            h = proposals[:, 3] - proposals[:, 1]
+            valid_inds = torch.nonzero(
+                (w >= cfg.min_bbox_size)
+                & (h >= cfg.min_bbox_size),
+                as_tuple=False).squeeze()
+            if valid_inds.sum().item() != len(proposals) or is_in_onnx_export():
                 proposals = proposals[valid_inds, :]
                 scores = scores[valid_inds]
-            proposals, _ = multiclass_nms(proposals, scores.unsqueeze(1), 0.0,
-                                          {
-                                              'type': 'nms',
-                                              'iou_thr': cfg.nms_thr
-                                          }, cfg.nms_post)
-            mlvl_proposals.append(proposals)
-        proposals = torch.cat(mlvl_proposals, 0)
-        if cfg.nms_across_levels:
-            proposals, _ = multiclass_nms(proposals[:, :4],
-                                          proposals[:, 4].unsqueeze(1), 0.0, {
-                                              'type': 'nms',
-                                              'iou_thr': cfg.nms_thr
-                                          }, cfg.max_num)
-        else:
-            scores = proposals[:, 4]
-            _, topk_inds = topk(scores, cfg.max_num)
-            proposals = proposals[topk_inds]
-        return proposals
+                ids = ids[valid_inds]
+
+        # TODO: remove the hard coded nms type
+        nms_cfg = dict(type='nms', iou_thr=cfg.nms_thr)
+        dets, keep = batched_nms(proposals, scores, ids, nms_cfg)
+        return dets[:cfg.nms_post]

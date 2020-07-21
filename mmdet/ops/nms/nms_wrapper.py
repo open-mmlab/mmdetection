@@ -1,10 +1,14 @@
+import sys
+
 import numpy as np
 import torch
+from torch.onnx import is_in_onnx_export
 
+from mmdet.utils.deployment.symbolic import py_symbolic
 from . import nms_ext
 
 
-def nms(dets, iou_thr, device_id=None):
+def nms(dets, iou_thr, score_thr=0.0, max_num=-1, device_id=None):
     """Dispatch to either CPU or GPU NMS implementations.
 
     The input can be either a torch tensor or numpy array. GPU NMS will be used
@@ -45,18 +49,31 @@ def nms(dets, iou_thr, device_id=None):
         raise TypeError('dets must be either a Tensor or numpy array, '
                         f'but got {type(dets)}')
 
-    # execute cpu or cuda nms
-    if dets_th.shape[0] == 0:
-        inds = dets_th.new_zeros(0, dtype=torch.long)
-    else:
-        if dets_th.is_cuda:
-            inds = nms_ext.nms(dets_th, iou_thr)
-        else:
-            inds = nms_ext.nms(dets_th, iou_thr)
+    if max_num < 0:
+        max_num = int(dets_th.size(0))
+
+    inds = nms_core(dets_th, iou_thr, score_thr, max_num)
 
     if is_numpy:
         inds = inds.cpu().numpy()
     return dets[inds, :], inds
+
+
+@py_symbolic()
+def nms_core(dets, iou_thr, score_thr, max_num):
+    if is_in_onnx_export():
+        valid_dets_mask = dets[:, 4] > score_thr
+        dets = dets[valid_dets_mask]
+
+    if dets.shape[0] == 0:
+        inds = dets.new_zeros(0, dtype=torch.long)
+    else:
+        inds = nms_ext.nms(dets, iou_thr)
+
+    if is_in_onnx_export():
+        inds = inds[:max_num]
+
+    return inds
 
 
 def soft_nms(dets, iou_thr, method='linear', sigma=0.5, min_score=1e-3):
