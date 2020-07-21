@@ -181,7 +181,8 @@ class Darknet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def _freeze_stages(self):
-        for i in range(0, self.frozen_stages):
+        if self.frozen_stages >= 0:
+            for i in range(0, self.frozen_stages):
             m = getattr(self, self.cr_blocks[i])
             m.eval()
             for param in m.parameters():
