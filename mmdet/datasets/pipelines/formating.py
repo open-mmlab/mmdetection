@@ -119,7 +119,7 @@ class Transpose(object):
             results (dict): Result dict contains the data to transpose.
 
         Returns:
-            dict: The result dict contains the data transposed to
+            dict: The result dict contains the data transposed to \
                 ``self.order``.
         """
         for key in self.keys:
@@ -156,7 +156,7 @@ class ToDataContainer(object):
             results (dict): Result dict contains the data to convert.
 
         Returns:
-            dict: The result dict contains the data converted to
+            dict: The result dict contains the data converted to \
                 :obj:`mmcv.DataContainer`.
         """
 
@@ -184,7 +184,7 @@ class DefaultFormatBundle(object):
     - gt_bboxes_ignore: (1)to tensor, (2)to DataContainer
     - gt_labels: (1)to tensor, (2)to DataContainer
     - gt_masks: (1)to tensor, (2)to DataContainer (cpu_only=True)
-    - gt_semantic_seg: (1)unsqueeze dim-0 (2)to tensor,
+    - gt_semantic_seg: (1)unsqueeze dim-0 (2)to tensor, \
                        (3)to DataContainer (stack=True)
     """
 
@@ -195,7 +195,7 @@ class DefaultFormatBundle(object):
             results (dict): Result dict contains the data to convert.
 
         Returns:
-            dict: The result dict contains the data that is formatted with
+            dict: The result dict contains the data that is formatted with \
                 default bundle.
         """
 
@@ -258,9 +258,9 @@ class Collect(object):
     The "img_meta" item is always populated.  The contents of the "img_meta"
     dictionary depends on "meta_keys". By default this includes:
 
-        - "img_shape": shape of the image input to the network as a tuple
-            (h, w, c).  Note that images may be zero padded on the bottom/right
-            if the batch tensor is larger than this shape.
+        - "img_shape": shape of the image input to the network as a tuple \
+            (h, w, c).  Note that images may be zero padded on the \
+            bottom/right if the batch tensor is larger than this shape.
 
         - "scale_factor": a float indicating the preprocessing scale
 
@@ -273,6 +273,7 @@ class Collect(object):
         - "pad_shape": image shape after padding
 
         - "img_norm_cfg": a dict of normalization information:
+
             - mean - per channel mean subtraction
             - std - per channel std divisor
             - to_rgb - bool indicating if bgr was converted to rgb
@@ -303,6 +304,7 @@ class Collect(object):
 
         Returns:
             dict: The result dict contains the following keys
+
                 - keys in``self.keys``
                 - ``img_metas``
         """
@@ -349,7 +351,7 @@ class WrapFieldsToLists(object):
             results (dict): Result dict contains the data to wrap.
 
         Returns:
-            dict: The result dict where value of ``self.keys`` are wrapped
+            dict: The result dict where value of ``self.keys`` are wrapped \
                 into list.
         """
 

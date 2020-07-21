@@ -22,8 +22,8 @@ class GHMC(nn.Module):
     """GHM Classification Loss.
 
     Details of the theorem can be viewed in the paper
-    "Gradient Harmonized Single-stage Detector".
-    https://arxiv.org/abs/1811.05181
+    `Gradient Harmonized Single-stage Detector
+    <https://arxiv.org/abs/1811.05181>`_.
 
     Args:
         bins (int): Number of the unit regions for distribution calculation.
@@ -100,8 +100,8 @@ class GHMR(nn.Module):
     """GHM Regression Loss.
 
     Details of the theorem can be viewed in the paper
-    "Gradient Harmonized Single-stage Detector"
-    https://arxiv.org/abs/1811.05181
+    `Gradient Harmonized Single-stage Detector
+    <https://arxiv.org/abs/1811.05181>`_.
 
     Args:
         mu (float): The parameter for the Authentic Smooth L1 loss.
