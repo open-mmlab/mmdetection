@@ -93,11 +93,13 @@ class Darknet(nn.Module):
     Args:
         depth (int): Depth of Darknet. Currently only support 53.
         out_indices (Sequence[int]): Output from which stages.
+        frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
+            -1 means not freezing any parameters. Default: -1.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
-            Default: dict(type='LeakyReLU', negative_slope=0.1).
+            Default: dict(type='LeakyReLU', negative_slope=0.1, inplace=False).
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
@@ -126,15 +128,17 @@ class Darknet(nn.Module):
     def __init__(self,
                  depth=53,
                  out_indices=(3, 4, 5),
+                 frozen_stages=-1,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1, inplace=False),
                  norm_eval=True):
         super(Darknet, self).__init__()
         if depth not in self.arch_settings:
             raise KeyError(f'invalid depth {depth} for darknet')
         self.depth = depth
         self.out_indices = out_indices
+        self.frozen_stages = frozen_stages
         self.layers, self.channels = self.arch_settings[depth]
 
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
@@ -177,8 +181,11 @@ class Darknet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def _freeze_stages(self):
-        for param in self.parameters():
-            param.requires_grad = False
+        for i in range(0, self.frozen_stages):
+            m = getattr(self, self.cr_blocks[i])
+            m.eval()
+            for param in m.parameters():
+                param.requires_grad = False
 
     def train(self, mode=True):
         super(Darknet, self).train(mode)
