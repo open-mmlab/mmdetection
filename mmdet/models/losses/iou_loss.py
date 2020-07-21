@@ -116,11 +116,10 @@ def giou_loss(pred, target, eps=1e-7):
 
 @weighted_loss
 def diou_loss(pred, target, eps=1e-7):
-    """Distance-IoU Loss: Faster and Better Learning for Bounding
-    Box Regression, https://arxiv.org/abs/1911.08287.
+    r"""`Implementation of Distance-IoU Loss: Faster and Better
+    Learning for Bounding Box Regression, https://arxiv.org/abs/1911.08287`_.
 
-    code refer to:
-    https://github.com/Zzh-tju/DIoU
+    Code is modified from https://github.com/Zzh-tju/DIoU.
 
     Args:
         pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
@@ -171,13 +170,11 @@ def diou_loss(pred, target, eps=1e-7):
 
 @weighted_loss
 def ciou_loss(pred, target, eps=1e-7):
-    """
-    Enhancing Geometric Factors into Model Learning and Inference
-    for Object Detection and Instance Segmentation
-    https://arxiv.org/abs/2005.03572
+    r"""`Implementation of paper `Enhancing Geometric Factors into
+    Model Learning and Inference for Object Detection and Instance
+    Segmentation <https://arxiv.org/abs/2005.03572>`_.
 
-    code refer to:
-    https://github.com/Zzh-tju/CIoU
+    Code is modified from https://github.com/Zzh-tju/CIoU.
 
     Args:
         pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
