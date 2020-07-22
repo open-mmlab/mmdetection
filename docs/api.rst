@@ -94,3 +94,8 @@ losses
 ^^^^^^^^^^
 .. automodule:: mmdet.models.losses
     :members:
+
+utils
+^^^^^^^^^^
+.. automodule:: mmdet.models.utils
+    :members:
