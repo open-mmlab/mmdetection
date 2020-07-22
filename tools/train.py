@@ -235,8 +235,14 @@ def main():
     model.CLASSES = datasets[0].CLASSES
     dataset_len = sum(len(dataset) for dataset in datasets)
     if dataset_len < cfg.data.samples_per_gpu:
-        logger.warning(f'Decreased samples_per_gpu because of dataset length: {dataset_len}')
         cfg.data.samples_per_gpu = dataset_len
+        if distributed:
+            _, world_size = get_dist_info()
+            cfg.data.samples_per_gpu = cfg.data.samples_per_gpu // world_size
+            assert cfg.data.samples_per_gpu > 0
+        logger.warning(f'Decreased samples_per_gpu to: {cfg.data.samples_per_gpu} '
+                       f'because of dataset length: {dataset_len} '
+                       f'and gpus number: {world_size}')
     train_detector(
         model,
         datasets,
