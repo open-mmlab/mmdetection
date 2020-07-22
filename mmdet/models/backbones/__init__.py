@@ -1,3 +1,5 @@
+from .detectors_resnet import DetectoRS_ResNet
+from .detectors_resnext import DetectoRS_ResNeXt
 from .efficientnet import EfficientNet
 from .hourglass import HourglassNet
 from .hrnet import HRNet
@@ -9,5 +11,5 @@ from .ssd_vgg import SSDVGG
 
 __all__ = [
     'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet', 'Res2Net',
-    'HourglassNet', 'EfficientNet'
+    'HourglassNet', 'DetectoRS_ResNet', 'DetectoRS_ResNeXt', 'EfficientNet'
 ]

@@ -1,6 +1,5 @@
 import torch
-
-from mmdet.ops.nms import batched_nms
+from mmcv.ops.nms import batched_nms
 
 
 def multiclass_nms(multi_bboxes,
@@ -24,7 +23,7 @@ def multiclass_nms(multi_bboxes,
             applying NMS
 
     Returns:
-        tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels
+        tuple: (bboxes, labels), tensors of shape (k, 5) and (k, 1). Labels \
             are 0-based.
     """
     num_classes = multi_scores.size(1) - 1

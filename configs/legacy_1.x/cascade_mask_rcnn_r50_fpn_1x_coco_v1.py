@@ -30,7 +30,10 @@ model = dict(
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(
-                type='RoIAlign', out_size=7, sample_num=2, aligned=False)),
+                type='RoIAlign',
+                output_size=7,
+                sampling_ratio=2,
+                aligned=False)),
         bbox_head=[
             dict(
                 type='Shared2FCBBoxHead',
@@ -69,5 +72,8 @@ model = dict(
         mask_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(
-                type='RoIAlign', out_size=14, sample_num=2, aligned=False))))
+                type='RoIAlign',
+                output_size=14,
+                sampling_ratio=2,
+                aligned=False))))
 dist_params = dict(backend='nccl', port=29515)

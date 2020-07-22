@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
+from mmcv.cnn.bricks import NonLocal2d
 
-from mmdet.ops import NonLocal2D
 from ..builder import NECKS
 
 
@@ -13,7 +13,8 @@ class BFP(nn.Module):
     BFP takes multi-level features as inputs and gather them into a single one,
     then refine the gathered feature and scatter the refined results to
     multi-level features. This module is used in Libra R-CNN (CVPR 2019), see
-    https://arxiv.org/pdf/1904.02701.pdf for details.
+    the paper `Libra R-CNN: Towards Balanced Learning for Object Detection
+    <https://arxiv.org/abs/1904.02701>`_ for details.
 
     Args:
         in_channels (int): Number of input channels (feature maps of all levels
@@ -55,7 +56,7 @@ class BFP(nn.Module):
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
         elif self.refine_type == 'non_local':
-            self.refine = NonLocal2D(
+            self.refine = NonLocal2d(
                 self.in_channels,
                 reduction=1,
                 use_scale=False,
@@ -63,11 +64,13 @@ class BFP(nn.Module):
                 norm_cfg=self.norm_cfg)
 
     def init_weights(self):
+        """Initialize the weights of FPN module."""
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 xavier_init(m, distribution='uniform')
 
     def forward(self, inputs):
+        """Forward function."""
         assert len(inputs) == self.num_levels
 
         # step 1: gather multi-level features by resize and average

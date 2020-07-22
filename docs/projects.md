@@ -1,13 +1,28 @@
 # Projects
 
 There are many projects built upon MMDetection.
-Some of them are published in top-tier conferences (CVPR, ICCV, and ECCV), the others are also highly influential.
 We list some of them as examples of how to extend MMDetection for your own projects.
 Pull requests are also welcomed.
 
+## Projects as an extension
+
+Some projects extend the boundary of MMDetection for deployment or other research fields.
+They reveal the potential of what MMDetection can do. We list several of them as below.
+
+- [OTEDetection](https://github.com/opencv/mmdetection): OpenVINO training extensions for object detection.
+- [MMDetection3d](https://github.com/open-mmlab/mmdetection3d): OpenMMLab's next-generation platform for general 3D object detection.
+
+## Projects of papers
+
+There are also projects released with papers.
+Some of the papers are published in top-tier conferences (CVPR, ICCV, and ECCV), the others are also highly influential.
 To make this list also a reference for the community to develop and compare new object detection algorithms, we list them following the time order of top-tier conferences.
 Methods already supported and maintained by MMDetection are not listed.
 
+- Overcoming Classifier Imbalance for Long-tail Object Detection with Balanced Group Softmax, CVPR2020. [[paper]](http://openaccess.thecvf.com/content_CVPR_2020/papers/Li_Overcoming_Classifier_Imbalance_for_Long-Tail_Object_Detection_With_Balanced_Group_CVPR_2020_paper.pdf)[[github]](https://github.com/FishYuLi/BalancedGroupSoftmax)
+- Coherent Reconstruction of Multiple Humans from a Single Image, CVPR2020. [[paper]](https://jiangwenpl.github.io/multiperson/)[[github]](https://github.com/JiangWenPL/multiperson)
+- Look-into-Object: Self-supervised Structure Modeling for Object Recognition, CVPR 2020. [[paper]](http://openaccess.thecvf.com/content_CVPR_2020/papers/Zhou_Look-Into-Object_Self-Supervised_Structure_Modeling_for_Object_Recognition_CVPR_2020_paper.pdf)[[github]](https://github.com/JDAI-CV/LIO)
+- Video Panoptic Segmentation, CVPR2020. [[paper]](https://arxiv.org/abs/2006.11339)[[github]](https://github.com/mcahny/vps)
 - D2Det: Towards High Quality Object Detection and Instance Segmentation, CVPR2020. [[paper]](http://openaccess.thecvf.com/content_CVPR_2020/html/Cao_D2Det_Towards_High_Quality_Object_Detection_and_Instance_Segmentation_CVPR_2020_paper.html)[[github]](https://github.com/JialeCao001/D2Det)
 - CentripetalNet: Pursuing High-quality Keypoint Pairs for Object Detection, CVPR2020. [[paper]](https://arxiv.org/abs/2003.09119)[[github]](https://github.com/KiveeDong/CentripetalNet)
 - Learning a Unified Sample Weighting Network for Object Detection, CVPR 2020. [[paper]](http://openaccess.thecvf.com/content_CVPR_2020/html/Cai_Learning_a_Unified_Sample_Weighting_Network_for_Object_Detection_CVPR_2020_paper.html)[[github]](https://github.com/caiqi/sample-weighting-network)
@@ -27,5 +42,4 @@ Methods already supported and maintained by MMDetection are not listed.
 - Dense Peppoints: Representing Visual Objects with Dense Point Sets. [[paper]](https://arxiv.org/abs/1912.11473)[[github]](https://github.com/justimyhxu/Dense-RepPoints)
 - IterDet: Iterative Scheme for Object Detection in Crowded Environments. [[paper]](https://arxiv.org/abs/2005.05708)[[github]](https://github.com/saic-vul/iterdet)
 - Cross-Iteration Batch Normalization. [[paper]](https://arxiv.org/abs/2002.05712)[[github]](https://github.com/Howal/Cross-iterationBatchNorm)
--  DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution. [[paper]](https://arxiv.org/abs/2006.02334)[[github]](https://github.com/joe-siyuan-qiao/DetectoRS)
--  Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection. [[paper]](https://arxiv.org/abs/2006.04388v1)[[github]](https://github.com/implus/GFocal)
+- Pedestrian Detection: The Elephant In The Room. [[paper]](https://arxiv.org/abs/2003.08799)[[github]](https://github.com/hasanirtiza/Pedestron)

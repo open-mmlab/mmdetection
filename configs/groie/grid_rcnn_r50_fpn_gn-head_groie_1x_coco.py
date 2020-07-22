@@ -3,8 +3,9 @@ _base_ = '../grid_rcnn/grid_rcnn_r50_fpn_gn-head_1x_coco.py'
 model = dict(
     roi_head=dict(
         bbox_roi_extractor=dict(
-            type='SumGenericRoiExtractor',
-            roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
+            type='GenericRoIExtractor',
+            aggregation='sum',
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=2),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32],
             pre_cfg=dict(
@@ -23,8 +24,8 @@ model = dict(
                 attention_type='0100',
                 kv_stride=2)),
         grid_roi_extractor=dict(
-            type='SumGenericRoiExtractor',
-            roi_layer=dict(type='RoIAlign', out_size=14, sample_num=2),
+            type='GenericRoIExtractor',
+            roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=2),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32],
             pre_cfg=dict(

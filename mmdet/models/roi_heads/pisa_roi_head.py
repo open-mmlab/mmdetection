@@ -6,6 +6,8 @@ from .standard_roi_head import StandardRoIHead
 
 @HEADS.register_module()
 class PISARoIHead(StandardRoIHead):
+    r"""The RoI head for `Prime Sample Attention in Object Detection
+    <https://arxiv.org/abs/1904.04821>`_."""
 
     def forward_train(self,
                       x,
@@ -15,8 +17,7 @@ class PISARoIHead(StandardRoIHead):
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None):
-        """ StandardRoIHead with PrIme Sample Attention (PISA),
-        described in `PISA <https://arxiv.org/abs/1904.04821>`_.
+        """Forward function for training.
 
         Args:
             x (list[Tensor]): List of multi-level img features.
@@ -85,6 +86,7 @@ class PISARoIHead(StandardRoIHead):
         return losses
 
     def _bbox_forward(self, x, rois):
+        """Box forward function used in both training and testing."""
         # TODO: a more flexible way to decide which feature maps to use
         bbox_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
@@ -103,6 +105,7 @@ class PISARoIHead(StandardRoIHead):
                             gt_labels,
                             img_metas,
                             neg_label_weights=None):
+        """Run forward function and calculate loss for box head in training."""
         rois = bbox2roi([res.bboxes for res in sampling_results])
 
         bbox_results = self._bbox_forward(x, rois)

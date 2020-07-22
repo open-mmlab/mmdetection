@@ -22,8 +22,9 @@ class Bottle2neck(_Bottleneck):
                  stage_type='normal',
                  **kwargs):
         """Bottle2neck block for Res2Net.
-        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
-        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
+
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
+        it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottle2neck, self).__init__(inplanes, planes, **kwargs)
         assert scales > 1, 'Res2Net degenerates to ResNet when scales = 1.'
@@ -101,6 +102,7 @@ class Bottle2neck(_Bottleneck):
         delattr(self, self.norm2_name)
 
     def forward(self, x):
+        """Forward function."""
 
         def _inner_forward(x):
             identity = x

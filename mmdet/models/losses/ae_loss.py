@@ -62,6 +62,8 @@ def ae_loss_per_image(tl_preds, br_preds, match):
 
         if N > 1:  # more than one object in current image
             push_loss = F.relu(conf_mat).sum() / (N * (N - 1))
+        else:
+            push_loss = tl_preds.sum()[None] * 0.
 
     return pull_loss, push_loss
 
@@ -86,6 +88,7 @@ class AssociativeEmbeddingLoss(nn.Module):
         self.push_weight = push_weight
 
     def forward(self, pred, target, match):
+        """Forward function."""
         batch = pred.size(0)
         pull_all, push_all = 0.0, 0.0
         for i in range(batch):

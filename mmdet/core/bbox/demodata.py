@@ -3,8 +3,7 @@ import torch
 
 
 def ensure_rng(rng=None):
-    """
-    Simple version of the ``kwarray.ensure_rng``
+    """Simple version of the ``kwarray.ensure_rng``
 
     Args:
         rng (int | numpy.random.RandomState | None):
@@ -28,8 +27,7 @@ def ensure_rng(rng=None):
 
 
 def random_boxes(num=1, scale=1, rng=None):
-    """
-    Simple version of ``kwimage.Boxes.random``
+    """Simple version of ``kwimage.Boxes.random``
 
     Returns:
         Tensor: shape (n, 4) in x1, y1, x2, y2 format.

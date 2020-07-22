@@ -32,7 +32,7 @@ def bbox_mapping(bboxes,
                  scale_factor,
                  flip,
                  flip_direction='horizontal'):
-    """Map bboxes from the original image scale to testing scale"""
+    """Map bboxes from the original image scale to testing scale."""
     new_bboxes = bboxes * bboxes.new_tensor(scale_factor)
     if flip:
         new_bboxes = bbox_flip(new_bboxes, img_shape, flip_direction)
@@ -44,7 +44,7 @@ def bbox_mapping_back(bboxes,
                       scale_factor,
                       flip,
                       flip_direction='horizontal'):
-    """Map bboxes from testing scale to original image scale"""
+    """Map bboxes from testing scale to original image scale."""
     new_bboxes = bbox_flip(bboxes, img_shape,
                            flip_direction) if flip else bboxes
     new_bboxes = new_bboxes.view(-1, 4) / new_bboxes.new_tensor(scale_factor)
@@ -74,6 +74,15 @@ def bbox2roi(bbox_list):
 
 
 def roi2bbox(rois):
+    """Convert rois to bounding box format.
+
+    Args:
+        rois (torch.Tensor): RoIs with the shape (n, 5) where the first
+            column indicates batch id of each RoI.
+
+    Returns:
+        list[torch.Tensor]: Converted boxes of corresponding rois.
+    """
     bbox_list = []
     img_ids = torch.unique(rois[:, 0].cpu(), sorted=True)
     for img_id in img_ids:
@@ -124,3 +133,27 @@ def distance2bbox(points, distance, max_shape=None):
         x2 = x2.clamp(min=0, max=max_shape[1])
         y2 = y2.clamp(min=0, max=max_shape[0])
     return torch.stack([x1, y1, x2, y2], -1)
+
+
+def bbox2distance(points, bbox, max_dis=None, eps=0.1):
+    """Decode bounding box based on distances.
+
+    Args:
+        points (Tensor): Shape (n, 2), [x, y].
+        bbox (Tensor): Shape (n, 4), "xyxy" format
+        max_dis (float): Upper bound of the distance.
+        eps (float): a small value to ensure target < max_dis, instead <=
+
+    Returns:
+        Tensor: Decoded distances.
+    """
+    left = points[:, 0] - bbox[:, 0]
+    top = points[:, 1] - bbox[:, 1]
+    right = bbox[:, 2] - points[:, 0]
+    bottom = bbox[:, 3] - points[:, 1]
+    if max_dis is not None:
+        left = left.clamp(min=0, max=max_dis - eps)
+        top = top.clamp(min=0, max=max_dis - eps)
+        right = right.clamp(min=0, max=max_dis - eps)
+        bottom = bottom.clamp(min=0, max=max_dis - eps)
+    return torch.stack([left, top, right, bottom], -1)

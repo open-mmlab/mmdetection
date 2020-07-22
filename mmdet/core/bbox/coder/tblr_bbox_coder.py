@@ -6,7 +6,7 @@ from .base_bbox_coder import BaseBBoxCoder
 
 @BBOX_CODERS.register_module()
 class TBLRBBoxCoder(BaseBBoxCoder):
-    """TBLR BBox coder
+    """TBLR BBox coder.
 
     Following the practice in `FSAF <https://arxiv.org/abs/1903.00621>`_,
     this coder encodes gt bboxes (x1, y1, x2, y2) into (top, bottom, left,
@@ -24,6 +24,18 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         self.normalizer = normalizer
 
     def encode(self, bboxes, gt_bboxes):
+        """Get box regression transformation deltas that can be used to
+        transform the ``bboxes`` into the ``gt_bboxes`` in the (top, left,
+        bottom, right) order.
+
+        Args:
+            bboxes (torch.Tensor): source boxes, e.g., object proposals.
+            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
+                ground truth boxes.
+
+        Returns:
+            torch.Tensor: Box transformation deltas
+        """
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bboxes2tblr(
@@ -31,6 +43,17 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         return encoded_bboxes
 
     def decode(self, bboxes, pred_bboxes, max_shape=None):
+        """Apply transformation `pred_bboxes` to `boxes`.
+
+        Args:
+            boxes (torch.Tensor): Basic boxes.
+            pred_bboxes (torch.Tensor): Encoded boxes with shape
+            max_shape (tuple[int], optional): Maximum shape of boxes.
+                Defaults to None.
+
+        Returns:
+            torch.Tensor: Decoded boxes.
+        """
         assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = tblr2bboxes(
             bboxes,
@@ -42,7 +65,7 @@ class TBLRBBoxCoder(BaseBBoxCoder):
 
 
 def bboxes2tblr(priors, gts, normalizer=4.0, normalize_by_wh=True):
-    """Encode ground truth boxes to tblr coordinate
+    """Encode ground truth boxes to tblr coordinate.
 
     It first convert the gt coordinate to tblr format,
      (top, bottom, left, right), relative to prior box centers.
@@ -92,7 +115,7 @@ def tblr2bboxes(priors,
                 normalizer=4.0,
                 normalize_by_wh=True,
                 max_shape=None):
-    """Decode tblr outputs to prediction boxes
+    """Decode tblr outputs to prediction boxes.
 
     The process includes 3 steps: 1) De-normalize tblr coordinates by
     multiplying it with `normalizer`; 2) De-normalize tblr coordinates by the

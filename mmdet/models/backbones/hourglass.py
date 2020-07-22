@@ -68,6 +68,7 @@ class HourglassModule(nn.Module):
         self.up2 = nn.Upsample(scale_factor=2)
 
     def forward(self, x):
+        """Forward function."""
         up1 = self.up1(x)
         low1 = self.low1(x)
         low2 = self.low2(low1)
@@ -161,16 +162,19 @@ class HourglassNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
     def init_weights(self, pretrained=None):
-        """
-        We do nothing in this function because all modules we used (ConvModule,
-        BasicBlock and etc.) have default initialization, and currently
-        we don't provide pretrained model of HourglassNet.
+        """Init module weights.
+
+        We do nothing in this function because all modules we used
+        (ConvModule, BasicBlock and etc.) have default initialization, and
+        currently we don't provide pretrained model of HourglassNet.
+
         Detector's __init__() will call backbone's init_weights() with
         pretrained as input, so we keep this function.
         """
         pass
 
     def forward(self, x):
+        """Forward function."""
         inter_feat = self.stem(x)
         out_feats = []
 
