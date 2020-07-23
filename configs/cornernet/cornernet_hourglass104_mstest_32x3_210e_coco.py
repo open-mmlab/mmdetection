@@ -1,4 +1,6 @@
-_base_ = ['../_base_/default_runtime.py']
+_base_ = [
+    '../_base_/default_runtime.py', '../_base_/datasets/coco_detection.py'
+]
 
 # model settings
 model = dict(
@@ -25,8 +27,6 @@ model = dict(
             push_weight=0.25),
         loss_offset=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1)))
 # data settings
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
@@ -80,22 +80,9 @@ test_pipeline = [
 data = dict(
     samples_per_gpu=3,
     workers_per_gpu=3,
-    train=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
-        pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='bbox')
+    train=dict(pipeline=train_pipeline),
+    val=dict(pipeline=test_pipeline),
+    test=dict(pipeline=test_pipeline))
 # training and testing settings
 train_cfg = None
 test_cfg = dict(
