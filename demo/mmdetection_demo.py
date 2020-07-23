@@ -91,7 +91,7 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
 
                 d = (bb[0], bb[1], bb[2], bb[3], bb[4])
                 cv2.rectangle(frame, (int(d[0]), int(d[1])), (int(d[2]), int(d[3])), (255,0,0), 2)
-                log_file.write(str(f_number)+","+str(d[0])+","+str(d[1])+","+str(d[2])+","+str(d[3]) + +","+str(d[4]) + "\n")
+                log_file.write(str(f_number)+","+str(d[0])+","+str(d[1])+","+str(d[2])+","+str(d[3])+","+str(d[4]) + "\n")
 
             last_boxes = bboxes.copy()
 
