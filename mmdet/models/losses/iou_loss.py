@@ -213,8 +213,8 @@ def ciou_loss(pred, target, eps=1e-7):
     b2_x1, b2_y1 = target[:, 0], target[:, 1]
     b2_x2, b2_y2 = target[:, 2], target[:, 3]
 
-    w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1
-    w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1
+    w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
+    w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
 
     left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
     right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
