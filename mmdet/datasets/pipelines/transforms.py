@@ -51,7 +51,7 @@ class Resize(object):
             image.
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
-            to 'pillow'.
+            to 'cv2'.
     """
 
     def __init__(self,
