@@ -1,6 +1,7 @@
 import inspect
 
 import mmcv
+import cv2
 import numpy as np
 from numpy import random
 
@@ -475,6 +476,324 @@ class Normalize(object):
         repr_str = self.__class__.__name__
         repr_str += f'(mean={self.mean}, std={self.std}, to_rgb={self.to_rgb})'
         return repr_str
+
+
+# author: Mingtao
+@PIPELINES.register_module()
+class Mosaic(object):
+    """Mosaic augmentation.
+
+    As this process contains random cropping, random flipping
+    and photo metric distortion, you don't need to add them
+    into the pipeline.
+
+    Not that the behavior of photo metric distortion is not
+    completely same as the class `PhotoMetricDistortion`.
+
+    Args:
+        jitter (float): It decides the size of the cropping window.
+        min_offset (float): Volume of the offset of the cropping widnwow.
+        letter_box(bool): Whether to maintain the aspect ratio of the
+            subimages.
+        flip(bool): Whether to apply random flipping.
+        gaussian(float): Stddev of the gaussian noise.
+        blur(float): Not implemented now (not used in YOLOv4).
+        hue(float): 
+        sat(float):
+        exp(float):
+    """
+
+    def __init__(self, size=(640, 640), jitter=0.2, min_offset=0.2, letter_box=False,
+                 flip=True, gaussian=0, blur=0, hue=0, sat=1, exp=1):
+        self.w, self.h = size
+        self.jitter = jitter
+        self.min_offset = min_offset
+        self.letter_box = letter_box
+        self.flip = flip
+        self.gaussian = gaussian
+        self.blur = blur
+        self.hue = hue
+        self.sat = sat
+        self.exp = exp
+        self.bbox2label = {
+            'gt_bboxes': 'gt_labels',
+            'gt_bboxes_ignore': 'gt_labels_ignore'
+        }
+
+        if blur != 0:
+            raise NotImplementedError
+
+    def __call__(self, results):
+        assert len(results['filename']) == 4
+
+        # TODO Mingtao: seg_field
+
+        w = self.w
+        h = self.h
+
+        cut_x = random.randint(int(w * self.min_offset), int(w * (1 - self.min_offset)))
+        cut_y = random.randint(int(h * self.min_offset), int(h * (1 - self.min_offset)))
+
+        tmp_img = np.zeros((h, w, 3), dtype=np.uint8)
+
+        out_bboxes = []
+        out_labels = []
+        out_ignores = []
+
+        for i_mosaic in range(4):
+            img = results['img'][i_mosaic]
+
+            result = {}
+            # TODO Mingtao: write in a abstract way
+            # e.g. with `bbox_fields` or `img_fileds`
+            bboxes = results['gt_bboxes'][i_mosaic]
+            labels = results['gt_labels'][i_mosaic]
+            ignores = results['gt_bboxes_ignore'][i_mosaic]
+
+            oh, ow, c = img.shape
+
+            dw = int(ow * self.jitter)
+            dh = int(oh * self.jitter)
+
+            pleft = random.randint(-dw, dw)
+            pright = random.randint(-dw, dw)
+            ptop = random.randint(-dh, dh)
+            pbot = random.randint(-dh, dh)
+
+            flip = random.randint(2) if self.flip else 0
+
+            dhue = random.uniform(-self.hue, self.hue)
+            dsat = random.uniform(1, self.sat) ** (1 if random.randint(2) else -1)
+            dexp = random.uniform(1, self.exp) ** (1 if random.randint(2) else -1)
+
+            if self.blur:
+                tmp_blur = random.randint(3)  # 0 - disable, 1 - blur background, 2 - blur the whole image
+                if tmp_blur == 0:
+                    blur = 0
+                elif tmp_blur == 1:
+                    blur = 1
+                else:
+                    blur = self.blur
+            else:
+                blur = 0
+
+            if self.gaussian and random.randint(2):
+                gaussian_noise = self.gaussian
+            else:
+                gaussian_noise = 0
+
+            if self.letter_box:
+                img_ar = ow / oh
+                net_ar = w / h
+                result_ar = img_ar / net_ar
+
+                if result_ar > 1:  # sheight - should be increased
+                    oh_tmp = int(ow / net_ar)
+                    delta_h = int((oh_tmp - oh) / 2)
+                    ptop = ptop - delta_h
+                    pbot = pbot - delta_h
+                else:  # swidth - should be increased
+                    ow_tmp = int(oh * net_ar)
+                    delta_w = int((ow_tmp - ow) / 2)
+                    pleft = pleft - delta_w
+                    pright = pright - delta_w
+
+            swidth = ow - pleft - pright
+            sheight = oh - ptop - pbot
+
+            aug_img   = self.image_data_augmentation(img, w, h, pleft, ptop, swidth, sheight, flip, gaussian_noise, blur, dhue, dsat, dexp)
+            aug_boxes, aug_labels = \
+                self.bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, sheight, flip)
+            aug_ignores, _ = \
+                self.bboxes_data_augmentation(ignores, None, w, h, pleft, ptop, swidth, sheight, flip)
+
+            left_shift = int(min(cut_x, max(0, -pleft * w / swidth)))
+            top_shift = int(min(cut_y, max(0, -ptop * h / sheight)))
+            right_shift = int(min(w - cut_x, max(0, -pright * w / swidth)))
+            bot_shift = int(min(h - cut_y, max(0, -pbot * h / sheight)))
+
+            left_shift = min(left_shift, w - cut_x)
+            top_shift = min(top_shift, h - cut_y)
+            right_shift = min(right_shift, cut_x)
+            bot_shift = min(bot_shift, cut_y)
+
+            if i_mosaic == 0:
+                bboxes, labels = self.filter_truth(aug_boxes, aug_labels, left_shift, top_shift, cut_x, cut_y, 0, 0)
+                ignores, _ = self.filter_truth(aug_ignores, None, left_shift, top_shift, cut_x, cut_y, 0, 0)
+                tmp_img[:cut_y, :cut_x] = aug_img[top_shift:top_shift + cut_y, left_shift:left_shift + cut_x]
+            elif i_mosaic == 1:
+                bboxes, labels = self.filter_truth(aug_boxes, aug_labels, cut_x - right_shift, top_shift, w - cut_x, cut_y, cut_x, 0)
+                ignores, _ = self.filter_truth(aug_ignores, None, cut_x - right_shift, top_shift, w - cut_x, cut_y, cut_x, 0)
+                tmp_img[:cut_y, cut_x:] = aug_img[top_shift:top_shift + cut_y, cut_x - right_shift:w - right_shift]
+            elif i_mosaic == 2:
+                bboxes, labels = self.filter_truth(aug_boxes, aug_labels, left_shift, cut_y - bot_shift, cut_x, h - cut_y, 0, cut_y)
+                ignores, _ = self.filter_truth(aug_ignores, _, left_shift, cut_y - bot_shift, cut_x, h - cut_y, 0, cut_y)
+                tmp_img[cut_y:, :cut_x] = aug_img[cut_y - bot_shift:h - bot_shift, left_shift:left_shift + cut_x]
+            elif i_mosaic == 3:
+                bboxes, labels = self.filter_truth(aug_boxes, aug_labels,  cut_x - right_shift, cut_y - bot_shift, w - cut_x, h - cut_y, cut_x, cut_y)
+                ignores, _ = self.filter_truth(aug_ignores, _,  cut_x - right_shift, cut_y - bot_shift, w - cut_x, h - cut_y, cut_x, cut_y)
+                tmp_img[cut_y:, cut_x:] = aug_img[cut_y - bot_shift:h - bot_shift, cut_x - right_shift:w - right_shift]
+
+            out_bboxes.append(bboxes)
+            out_labels.append(labels)
+            out_ignores.append(ignores)
+
+        out_bboxes = np.concatenate(out_bboxes, axis=0)
+        out_labels = np.concatenate(out_labels, axis=0)
+        out_ignores = np.concatenate(out_ignores, axis=0)
+
+        results['img'] = tmp_img
+        results['flip'] = False
+        results['flip_direction'] = 'horizontal'
+        results['img_shape'] = tmp_img.shape
+        results['gt_bboxes'] = out_bboxes
+        results['gt_labels'] = out_labels
+        results['gt_bboxes_ignore'] = out_ignores
+
+        return results
+
+    @staticmethod
+    def filter_truth(bboxes, labels, dx, dy, sx, sy, xd, yd):
+        if bboxes.shape[0] == 0:
+            return bboxes, labels
+
+        bboxes[:, 0::2] -= dx
+        bboxes[:, 1::2] -= dy
+        # areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
+
+        bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, sx)
+        bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, sy)
+        # new_areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
+
+        """
+        # NOTE Mingtao: It's designed by me
+        reserved_idx = new_areas / areas >= 0.2
+        """
+        reserved_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
+            bboxes[:, 3] > bboxes[:, 1])
+
+        bboxes = bboxes[reserved_inds]
+        if labels is not None:
+            labels = labels[reserved_inds]
+
+        bboxes[:, 0::2] += xd
+        bboxes[:, 1::2] += yd
+
+        return bboxes, labels
+
+
+    @staticmethod
+    def bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, sheight, flip):
+        """
+        1. crop_mosaic
+        2. resize
+        3. flip
+        3. photo (needn't)
+        4. blur (needn't)
+        5. gaussian_noise (needn't)
+        """
+
+        if bboxes.shape[0] == 0:
+            return bboxes, labels
+
+        ######### 1. crop_mosaic ##########
+        bboxes[:, 0::2] -= pleft
+        bboxes[:, 1::2] -= ptop
+        areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
+
+        bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, swidth)
+        bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, sheight)
+        new_areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
+
+        """
+        # NOTE Mingtao: It's designed by me
+        reserved_idx = new_areas / areas >= 0.2
+        """
+        reserved_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
+            bboxes[:, 3] > bboxes[:, 1])
+
+        bboxes = bboxes[reserved_inds]
+        if labels is not None:
+            labels = labels[reserved_inds]
+        
+        if bboxes.shape[0] == 0:
+            return bboxes, labels
+
+        ######### 2. resize ##########
+        bboxes[:, 0::2] *= w / swidth
+        bboxes[:, 1::2] *= h / sheight
+
+        ######### 3. flip ##########
+        if flip:
+            temp = w - bboxes[:, 0]
+            bboxes[:, 0] = w - bboxes[:, 2]
+            bboxes[:, 2] = temp
+
+        return bboxes, labels
+
+    @staticmethod
+    def image_data_augmentation(img, w, h, pleft, ptop, swidth, sheight, flip, gaussian_noise, blur, dhue, dsat, dexp):
+        """
+        1. crop_mosaic
+        2. resize
+        3. flip
+        3. photo
+        4. blur
+        5. gaussian_noise
+        """
+        oh, ow, c = img.shape
+
+        ######### 1. crop_mosaic ##########
+        crop_rect = [pleft, ptop, pleft + swidth, ptop + sheight]
+        img_rect = [0, 0, ow, oh]
+        inter_rect = [max(0, pleft), max(0, ptop), 
+                      min(ow, pleft + swidth), min(oh, ptop + sheight)]
+        dst_rect = [max(0, -pleft), max(0, -ptop), 
+                    max(0, -pleft) + inter_rect[2] - inter_rect[0],
+                    max(0, -ptop) + inter_rect[3] - inter_rect[1]]
+
+        if crop_rect[0] == 0 and crop_rect[1] == 0 and \
+                crop_rect[2] == img.shape[0] and crop_rect[3] == img.shape[1]:
+            cropped = src
+        else:
+            cropped = np.zeros([sheight, swidth, 3], dtype=img.dtype)
+            cropped[:, :,] = np.mean(img, axis=(0, 1))
+            cropped[dst_rect[1]:dst_rect[3], dst_rect[0]:dst_rect[2]] = \
+                img[inter_rect[1]:inter_rect[3], inter_rect[0]:inter_rect[2]]
+
+        ############ 2. resize ###########
+        res = mmcv.imresize(cropped, (w, h), interpolation='bilinear')
+
+        ############ 3. flip ###########
+        if flip:
+            res = mmcv.imflip(res, 'horizontal')
+
+        ############ 3. photo ###########
+        # HSV augmentation
+        # cv2.COLOR_BGR2HSV, cv2.COLOR_RGB2HSV, cv2.COLOR_HSV2BGR, cv2.COLOR_HSV2RGB
+        assert res.dtype == np.float32
+
+        if dsat != 1 or dexp != 1 or dhue != 0:
+            if img.shape[2] >= 3:
+                hsv = mmcv.bgr2hsv(res)  # RGB to HSV
+                hsv[..., 1] *= dsat
+                hsv[..., 2] *= dexp
+                hsv[..., 0] += 179 * dhue
+                res = np.clip(mmcv.hsv2bgr(hsv), 0, 255)  # HSV to RGB (the same as previous)
+            else:
+                res *= dexp
+
+        ############ 4. blur ###########
+        # TODO
+        if blur:
+            raise NotImplementedError
+
+        ############ 5. gaussian noise ###########
+        if gaussian_noise:
+            gaussian_noise = max(min(gaussian_noise, 127), 0)
+            noise = random.normal(0, gaussian_noise, res.shape) # mean and stddev
+            res += noise
+        return res
 
 
 @PIPELINES.register_module()
