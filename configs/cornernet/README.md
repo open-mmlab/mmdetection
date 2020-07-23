@@ -15,7 +15,7 @@
 ## Results and models
 
 | Backbone        | Batch Size | Step/Total Epochs | Mem (GB) | Inf time (fps) | box AP | Download |
-| :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :-------------: | :------: |
+| :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :------: |
 | HourglassNet-104 | [10 x 5](./cornernet_hourglass104_mstest_10x5_210e_coco.py) | 180/210 | 13.9 | | 40.6<br>TTA: 41.3 | |
 | HourglassNet-104 | [8 x 6](./cornernet_hourglass104_mstest_8x6_210e_coco.py) | 180/210 | 15.9 | | 40.9<br>TTA: 41.2 | |
 | HourglassNet-104 | [32 x 3](./cornernet_hourglass104_mstest_32x3_210e_coco.py) | 180/210 | 9.5 | | 39.6<br>TTA: 40.4 | |
