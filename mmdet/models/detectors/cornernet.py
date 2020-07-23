@@ -7,6 +7,11 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module()
 class CornerNet(SingleStageDetector):
+    """CornerNet: Detecting Objects as Paired Keypoints.
+
+    This detector is the implementation of `CornerNet
+    <https://arxiv.org/abs/1808.01244>`_ .
+    """
 
     def __init__(self,
                  backbone,
@@ -19,6 +24,17 @@ class CornerNet(SingleStageDetector):
                                         test_cfg, pretrained)
 
     def merge_aug_results(self, aug_results, img_metas):
+        """Merge augmented detection bboxes and score.
+
+        Args:
+            aug_results (list[list[Tensor]]): Det_bboxes and det_labels of each
+                image.
+            img_metas (list[list[dict]]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+
+        Returns:
+            tuple: (bboxes, labels)
+        """
         recovered_bboxes, aug_labels = [], []
         for bboxes_labels, img_info in zip(aug_results, img_metas):
             img_shape = img_info[0]['img_shape']  # using shape before padding
@@ -33,16 +49,34 @@ class CornerNet(SingleStageDetector):
         bboxes = torch.cat(recovered_bboxes, dim=0)
         labels = torch.cat(aug_labels)
 
-        out_bboxes, out_labels = self.bbox_head._bboxes_nms(
-            bboxes, labels, self.bbox_head.test_cfg)
+        if bboxes.shape[0] > 0:
+            out_bboxes, out_labels = self.bbox_head._bboxes_nms(
+                bboxes, labels, self.bbox_head.test_cfg)
+        else:
+            out_bboxes, out_labels = bboxes, labels
 
         return out_bboxes, out_labels
 
     def aug_test(self, imgs, img_metas, rescale=False):
+        """Augment testing of CornerNet.
+
+        Args:
+            imgs (list[Tensor]): Augmented images.
+            img_metas (list[list[dict]]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+
+        Note:
+            ``imgs`` must including flipped image pairs.
+
+        Returns:
+            bbox_results (tuple[np.ndarry]): Detection result of each class.
+        """
         img_inds = list(range(len(imgs)))
 
-        # aug test must have flipped image pair
-        assert img_metas[0][0]['flip'] + img_metas[1][0]['flip']
+        assert img_metas[0][0]['flip'] + img_metas[1][0]['flip'], (
+            "aug test must have flipped image pair")
         aug_results = []
         for ind, flip_ind in zip(img_inds[0::2], img_inds[1::2]):
             img_pair = torch.cat([imgs[ind], imgs[flip_ind]])

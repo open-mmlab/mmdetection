@@ -58,6 +58,7 @@ test_pipeline = [
         scale_factor=1.0,
         flip=True,
         transforms=[
+            dict(type='Resize'),
             dict(
                 type='RandomCenterCropPad',
                 crop_size=None,
