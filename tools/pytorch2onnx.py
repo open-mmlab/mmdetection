@@ -19,10 +19,14 @@ def pytorch2onnx(model,
                  opset_version=11,
                  show=False,
                  output_file='tmp.onnx',
-                 verify=False):
+                 verify=False,
+                 normalize_cfg=None):
     model.cpu().eval()
     # read image
     one_img = mmcv.imread(input_img, 'color')
+    if normalize_cfg:
+        one_img = mmcv.imnormalize(one_img, normalize_cfg['mean'],
+                                   normalize_cfg['std'])
     one_img = mmcv.imresize(one_img, input_shape[2:]).transpose(2, 0, 1)
     one_img = torch.from_numpy(one_img).unsqueeze(0).float()
     (_, C, H, W) = input_shape
@@ -97,6 +101,18 @@ def parse_args():
         nargs='+',
         default=[800, 1216],
         help='input image size')
+    parser.add_argument(
+        '--mean',
+        type=int,
+        nargs='+',
+        default=[0, 0, 0],
+        help='mean value used for preprocess input data')
+    parser.add_argument(
+        '--std',
+        type=int,
+        nargs='+',
+        default=[1, 1, 1],
+        help='variance value used for preprocess input data')
     args = parser.parse_args()
     return args
 
@@ -120,6 +136,14 @@ if __name__ == '__main__':
     else:
         raise ValueError('invalid input shape')
 
+    assert len(args.mean) == 3
+    assert len(args.std) == 3
+
+    normalize_cfg = {
+        'mean': np.array(args.mean, dtype=np.float32),
+        'std': np.array(args.std, dtype=np.float32)
+    }
+
     cfg = mmcv.Config.fromfile(args.config)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
@@ -140,4 +164,5 @@ if __name__ == '__main__':
         opset_version=args.opset_version,
         show=args.show,
         output_file=args.output_file,
-        verify=args.verify)
+        verify=args.verify,
+        normalize_cfg=normalize_cfg)
