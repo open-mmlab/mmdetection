@@ -281,6 +281,10 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 # bbox_targets is a tuple
                 roi_labels = bbox_results['bbox_targets'][0]
                 with torch.no_grad():
+                    roi_labels = torch.where(
+                        roi_labels == self.bbox_head[i].num_classes,
+                        bbox_results['cls_score'][:, :-1].argmax(1),
+                        roi_labels)
                     proposal_list = self.bbox_head[i].refine_bboxes(
                         bbox_results['rois'], roi_labels,
                         bbox_results['bbox_pred'], pos_is_gts, img_metas)
@@ -306,7 +310,7 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             ms_scores.append(bbox_results['cls_score'])
 
             if i < self.num_stages - 1:
-                bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                bbox_label = bbox_results['cls_score'][:, :-1].argmax(dim=1)
                 rois = self.bbox_head[i].regress_by_class(
                     rois, bbox_label, bbox_results['bbox_pred'], img_metas[0])
 
@@ -380,7 +384,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 ms_scores.append(bbox_results['cls_score'])
 
                 if i < self.num_stages - 1:
-                    bbox_label = bbox_results['cls_score'].argmax(dim=1)
+                    bbox_label = bbox_results['cls_score'][:, :-1].argmax(
+                        dim=1)
                     rois = self.bbox_head[i].regress_by_class(
                         rois, bbox_label, bbox_results['bbox_pred'],
                         img_meta[0])

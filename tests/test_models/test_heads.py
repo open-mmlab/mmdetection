@@ -2,8 +2,8 @@ import mmcv
 import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
-from mmdet.models.dense_heads import (AnchorHead, FCOSHead, FSAFHead,
-                                      GuidedAnchorHead)
+from mmdet.models.dense_heads import (AnchorHead, CornerHead, FCOSHead,
+                                      FSAFHead, GuidedAnchorHead)
 from mmdet.models.roi_heads.bbox_heads import BBoxHead
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
 
@@ -614,3 +614,79 @@ def _dummy_bbox_sampling(proposal_list, gt_bboxes, gt_labels):
         sampling_results.append(sampling_result)
 
     return sampling_results
+
+
+def test_corner_head_loss():
+    """
+    Tests corner head loss when truth is empty and non-empty
+    """
+    s = 256
+    img_metas = [{
+        'img_shape': (s, s, 3),
+        'scale_factor': 1,
+        'pad_shape': (s, s, 3)
+    }]
+
+    self = CornerHead(num_classes=4, in_channels=1)
+
+    # Corner head expects a multiple levels of features per image
+    feat = [
+        torch.rand(1, 1, s // 4, s // 4) for _ in range(self.num_feat_levels)
+    ]
+    tl_heats, br_heats, tl_embs, br_embs, tl_offs, br_offs = self.forward(feat)
+
+    # Test that empty ground truth encourages the network to predict background
+    gt_bboxes = [torch.empty((0, 4))]
+    gt_labels = [torch.LongTensor([])]
+
+    gt_bboxes_ignore = None
+    empty_gt_losses = self.loss(tl_heats, br_heats, tl_embs, br_embs, tl_offs,
+                                br_offs, gt_bboxes, gt_labels, img_metas,
+                                gt_bboxes_ignore)
+    empty_det_loss = sum(empty_gt_losses['det_loss'])
+    empty_push_loss = sum(empty_gt_losses['push_loss'])
+    empty_pull_loss = sum(empty_gt_losses['pull_loss'])
+    empty_off_loss = sum(empty_gt_losses['off_loss'])
+    assert empty_det_loss.item() > 0, 'det loss should be non-zero'
+    assert empty_push_loss.item() == 0, (
+        'there should be no push loss when there are no true boxes')
+    assert empty_pull_loss.item() == 0, (
+        'there should be no pull loss when there are no true boxes')
+    assert empty_off_loss.item() == 0, (
+        'there should be no box loss when there are no true boxes')
+
+    # When truth is non-empty then both cls and box loss should be nonzero for
+    # random inputs
+    gt_bboxes = [
+        torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
+    ]
+    gt_labels = [torch.LongTensor([2])]
+    one_gt_losses = self.loss(tl_heats, br_heats, tl_embs, br_embs, tl_offs,
+                              br_offs, gt_bboxes, gt_labels, img_metas,
+                              gt_bboxes_ignore)
+    onegt_det_loss = sum(one_gt_losses['det_loss'])
+    onegt_push_loss = sum(one_gt_losses['push_loss'])
+    onegt_pull_loss = sum(one_gt_losses['pull_loss'])
+    onegt_off_loss = sum(one_gt_losses['off_loss'])
+    assert onegt_det_loss.item() > 0, 'det loss should be non-zero'
+    assert onegt_push_loss.item() == 0, (
+        'there should be no push loss when there are only one true box')
+    assert onegt_pull_loss.item() > 0, 'pull loss should be non-zero'
+    assert onegt_off_loss.item() > 0, 'off loss should be non-zero'
+
+    gt_bboxes = [
+        torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874],
+                      [123.6667, 123.8757, 338.6326, 251.8874]]),
+    ]
+    gt_labels = [torch.LongTensor([2, 3])]
+    two_gt_losses = self.loss(tl_heats, br_heats, tl_embs, br_embs, tl_offs,
+                              br_offs, gt_bboxes, gt_labels, img_metas,
+                              gt_bboxes_ignore)
+    twogt_det_loss = sum(two_gt_losses['det_loss'])
+    twogt_push_loss = sum(two_gt_losses['push_loss'])
+    twogt_pull_loss = sum(two_gt_losses['pull_loss'])
+    twogt_off_loss = sum(two_gt_losses['off_loss'])
+    assert twogt_det_loss.item() > 0, 'det loss should be non-zero'
+    assert twogt_push_loss.item() > 0, 'push loss should be non-zero'
+    assert twogt_pull_loss.item() > 0, 'pull loss should be non-zero'
+    assert twogt_off_loss.item() > 0, 'off loss should be non-zero'
