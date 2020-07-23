@@ -8,6 +8,7 @@ from .deepfashion import DeepFashionDataset
 from .lvis import LVISDataset
 from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
 from .voc import VOCDataset
+from .wflw import WflwDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 
@@ -16,5 +17,5 @@ __all__ = [
     'VOCDataset', 'CityscapesDataset', 'LVISDataset', 'GroupSampler',
     'DistributedGroupSampler', 'DistributedSampler', 'build_dataloader',
     'ConcatDataset', 'RepeatDataset', 'ClassBalancedDataset',
-    'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset'
+    'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset', 'WflwDataset'
 ]

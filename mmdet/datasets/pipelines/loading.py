@@ -182,12 +182,14 @@ class LoadAnnotations(object):
 
     def __init__(self,
                  with_bbox=True,
+                 with_keypoint=False,
                  with_label=True,
                  with_mask=False,
                  with_seg=False,
                  poly2mask=True,
                  file_client_args=dict(backend='disk')):
         self.with_bbox = with_bbox
+        self.with_keypoint = with_keypoint
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
@@ -318,6 +320,12 @@ class LoadAnnotations(object):
         results['seg_fields'].append('gt_semantic_seg')
         return results
 
+    def _load_keypoints(self, results):
+        anno_info = results['ann_info']
+        results['gt_keypoints'] = anno_info['keypoints']
+        results['keypoint_fields'].append('gt_keypoints')
+        return results
+
     def __call__(self, results):
         """Call function to load multiple types annotations.
 
@@ -331,19 +339,20 @@ class LoadAnnotations(object):
 
         if self.with_bbox:
             results = self._load_bboxes(results)
-            if results is None:
-                return None
-        if self.with_label:
+        if bool(results) and self.with_keypoint:
+            results = self._load_keypoints(results)
+        if bool(results) and self.with_label:
             results = self._load_labels(results)
-        if self.with_mask:
+        if bool(results) and self.with_mask:
             results = self._load_masks(results)
-        if self.with_seg:
+        if bool(results) and self.with_seg:
             results = self._load_semantic_seg(results)
         return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(with_bbox={self.with_bbox}, '
+        repr_str += f'with_keypoint={self.with_keypoint}, '
         repr_str += f'with_label={self.with_label}, '
         repr_str += f'with_mask={self.with_mask}, '
         repr_str += f'with_seg={self.with_seg})'

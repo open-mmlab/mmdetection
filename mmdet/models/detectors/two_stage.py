@@ -108,6 +108,7 @@ class TwoStageDetector(BaseDetector):
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None,
+                      gt_keypoints=None,
                       gt_masks=None,
                       proposals=None,
                       **kwargs):
@@ -160,7 +161,8 @@ class TwoStageDetector(BaseDetector):
 
         roi_losses = self.roi_head.forward_train(x, img_metas, proposal_list,
                                                  gt_bboxes, gt_labels,
-                                                 gt_bboxes_ignore, gt_masks,
+                                                 gt_bboxes_ignore,
+                                                 gt_keypoints, gt_masks,
                                                  **kwargs)
         losses.update(roi_losses)
 
@@ -172,7 +174,7 @@ class TwoStageDetector(BaseDetector):
                                 proposals=None,
                                 rescale=False):
         """Async test without augmentation."""
-        assert self.with_bbox, 'Bbox head must be implemented.'
+        # assert self.with_bbox, 'Bbox head must be implemented.'
         x = self.extract_feat(img)
 
         if proposals is None:
@@ -186,7 +188,7 @@ class TwoStageDetector(BaseDetector):
 
     def simple_test(self, img, img_metas, proposals=None, rescale=False):
         """Test without augmentation."""
-        assert self.with_bbox, 'Bbox head must be implemented.'
+        # assert self.with_bbox, 'Bbox head must be implemented.'
 
         x = self.extract_feat(img)
 

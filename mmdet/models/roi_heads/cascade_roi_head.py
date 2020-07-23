@@ -207,7 +207,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None,
-                      gt_masks=None):
+                      gt_keypoints=None,
+                      gt_masks=None,
+                      heatmaps=None):
         """
         Args:
             x (list[Tensor]): list of multi-level img features.
@@ -228,6 +230,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
+        if gt_keypoints or heatmaps:
+            raise NotImplementedError
         losses = dict()
         for i in range(self.num_stages):
             self.current_stage = i

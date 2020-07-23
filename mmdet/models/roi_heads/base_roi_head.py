@@ -11,6 +11,8 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
     def __init__(self,
                  bbox_roi_extractor=None,
                  bbox_head=None,
+                 keypoint_roi_extractor=None,
+                 keypoint_head=None,
                  mask_roi_extractor=None,
                  mask_head=None,
                  shared_head=None,
@@ -25,6 +27,9 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
         if bbox_head is not None:
             self.init_bbox_head(bbox_roi_extractor, bbox_head)
 
+        if keypoint_head is not None:
+            self.init_keypoint_head(keypoint_roi_extractor, keypoint_head)
+
         if mask_head is not None:
             self.init_mask_head(mask_roi_extractor, mask_head)
 
@@ -34,6 +39,11 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
     def with_bbox(self):
         """bool: whether the RoI head contains a `bbox_head`"""
         return hasattr(self, 'bbox_head') and self.bbox_head is not None
+
+    @property
+    def with_keypoint(self):
+        return hasattr(self,
+                       'keypoint_head') and self.keypoint_head is not None
 
     @property
     def with_mask(self):
@@ -60,6 +70,12 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
         """Initialize ``bbox_head``"""
         pass
 
+    # TODO: Restore after it has been overwritten in every single head
+    # The `abstractmethod` make it crash if not implemented in child obj
+    # @abstractmethod
+    # def init_keypoint_head(self):
+    #     pass
+
     @abstractmethod
     def init_mask_head(self):
         """Initialize ``mask_head``"""
@@ -78,6 +94,7 @@ class BaseRoIHead(nn.Module, metaclass=ABCMeta):
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None,
+                      gt_keypoints=None,
                       gt_masks=None,
                       **kwargs):
         """Forward function during training."""
