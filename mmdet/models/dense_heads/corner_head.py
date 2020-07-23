@@ -9,6 +9,7 @@ from mmcv.ops import CornerPool, batched_nms
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
+from .base_dense_head import BaseDenseHead
 
 
 class BiCornerPool(nn.Module):
@@ -72,7 +73,7 @@ class BiCornerPool(nn.Module):
 
 
 @HEADS.register_module()
-class CornerHead(nn.Module):
+class CornerHead(BaseDenseHead):
     """Head of CornerNet: Detecting Objects as Paired Keypoints.
 
     Code is modified from the `official github repo
@@ -212,8 +213,8 @@ class CornerHead(nn.Module):
         """Initialize weights of the head."""
         bias_init = bias_init_with_prob(0.1)
         for i in range(self.num_feat_levels):
-            self.tl_heat[i][-1].bias.data.fill_(bias_init)
-            self.br_heat[i][-1].bias.data.fill_(bias_init)
+            self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
+            self.br_heat[i][-1].conv.bias.data.fill_(bias_init)
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -659,11 +660,11 @@ class CornerHead(nn.Module):
                 self._get_bboxes_single(
                     tl_heats[-1][img_id:img_id + 1, :],
                     br_heats[-1][img_id:img_id + 1, :],
-                    tl_embs[-1][img_id:img_id + 1, :],
-                    br_embs[-1][img_id:img_id + 1, :],
                     tl_offs[-1][img_id:img_id + 1, :],
                     br_offs[-1][img_id:img_id + 1, :],
                     img_metas[img_id],
+                    tl_emb=tl_embs[-1][img_id:img_id + 1, :],
+                    br_emb=br_embs[-1][img_id:img_id + 1, :],
                     rescale=rescale,
                     with_nms=with_nms))
 
@@ -672,11 +673,13 @@ class CornerHead(nn.Module):
     def _get_bboxes_single(self,
                            tl_heat,
                            br_heat,
-                           tl_emb,
-                           br_emb,
                            tl_off,
                            br_off,
                            img_meta,
+                           tl_emb=None,
+                           br_emb=None,
+                           tl_centripetal_shift=None,
+                           br_centripetal_shift=None,
                            rescale=False,
                            with_nms=True):
         """Transform outputs for a single batch item into bbox predictions.
@@ -686,16 +689,20 @@ class CornerHead(nn.Module):
                 shape (N, num_classes, H, W).
             br_heat (Tensor): Bottom-right corner heatmap for current level
                 with shape (N, num_classes, H, W).
-            tl_emb (Tensor): Top-left corner embedding for current level with
-                shape (N, corner_emb_channels, H, W).
-            br_emb (Tensor): Bottom-right corner embedding for current level
-                with shape (N, corner_emb_channels, H, W).
             tl_off (Tensor): Top-left corner offset for current level with
                 shape (N, corner_offset_channels, H, W).
             br_off (Tensor): Bottom-right corner offset for current level with
                 shape (N, corner_offset_channels, H, W).
             img_meta (dict): Meta information of current image, e.g.,
                 image size, scaling factor, etc.
+            tl_emb (Tensor): Top-left corner embedding for current level with
+                shape (N, corner_emb_channels, H, W).
+            br_emb (Tensor): Bottom-right corner embedding for current level
+                with shape (N, corner_emb_channels, H, W).
+            tl_centripetal_shift: Top-left corner's centripetal shift for
+                current level with shape (N, 2, H, W).
+            br_centripetal_shift: Bottom-right corner's centripetal shift for
+                current level with shape (N, 2, H, W).
             rescale (bool): If True, return boxes in original image space.
                 Default: False.
             with_nms (bool): If True, do nms before return boxes.
@@ -711,6 +718,8 @@ class CornerHead(nn.Module):
             br_off=br_off,
             tl_emb=tl_emb,
             br_emb=br_emb,
+            tl_centripetal_shift=tl_centripetal_shift,
+            br_centripetal_shift=br_centripetal_shift,
             img_meta=img_meta,
             k=self.test_cfg.corner_topk,
             kernel=self.test_cfg.local_maximum_kernel,
