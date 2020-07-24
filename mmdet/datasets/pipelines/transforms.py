@@ -598,10 +598,14 @@ class SegRescale(object):
 
     Args:
         scale_factor (float): The scale factor of the final output.
+        backend (str): Image rescale backend, choices are 'cv2' and 'pillow'.
+            These two backends generates slightly different results. Defaults
+            to 'cv2'.
     """
 
-    def __init__(self, scale_factor=1):
+    def __init__(self, scale_factor=1, backend='cv2'):
         self.scale_factor = scale_factor
+        self.backend = backend
 
     def __call__(self, results):
         """Call function to scale the semantic segmentation map.
