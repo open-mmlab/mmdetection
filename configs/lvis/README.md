@@ -16,7 +16,7 @@
     ```
     pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=lvis"
     ```
-    or 
+    or
     ```
     pip install -r requirements/optional.txt
     ```
