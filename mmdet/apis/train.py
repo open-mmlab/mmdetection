@@ -123,7 +123,7 @@ def train_detector(model,
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
     # user-defined hooks
-    if cfg.get('hooks', None):
+    if cfg.get('custom_hooks', None):
         for hook_cfg in cfg.hooks:
             hook_cfg = hook_cfg.copy()
             priority = hook_cfg.pop('priority', 'NORMAL')
