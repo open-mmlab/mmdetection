@@ -616,7 +616,10 @@ class SegRescale(object):
         for key in results.get('seg_fields', []):
             if self.scale_factor != 1:
                 results[key] = mmcv.imrescale(
-                    results[key], self.scale_factor, interpolation='nearest')
+                    results[key],
+                    self.scale_factor,
+                    interpolation='nearest',
+                    backend=self.backend)
         return results
 
     def __repr__(self):
