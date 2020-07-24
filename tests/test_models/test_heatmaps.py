@@ -77,7 +77,7 @@ def test_large_heatmaps():
     dividers = [4, 4]
     sigmas = [3]
     label_type = 'Gaussian'
-    pad_shapes = [[384, 384], [512, 512], [768, 768]]
+    pad_shapes = [[384, 384]]
     _process_inner_keypoints(dividers, sigmas, label_type, pad_shapes)
 
 
