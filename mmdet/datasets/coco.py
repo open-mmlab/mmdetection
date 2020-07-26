@@ -434,6 +434,7 @@ class CocoDataset(CustomDataset):
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
+            cocoEval.params.iouThrs = iou_thrs
             if metric == 'proposal':
                 cocoEval.params.useCats = 0
                 cocoEval.params.maxDets = list(proposal_nums)
