@@ -1,11 +1,10 @@
-# Copyright (c) 2019 Western Digital Corporation or its affiliates.
 _base_ = [
     '../_base_/default_runtime.py',
 ]
 # model settings
 model = dict(
     type='YOLOV3',
-    pretrained='./work_dirs/darknet_state_dict_only.pth',
+    pretrained='./pretrain_model/darknet53-7aecc596.pth',
     backbone=dict(
         type='Darknet',
         depth=53,
@@ -81,8 +80,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=8,
-    workers_per_gpu=8,
+    samples_per_gpu=16,
+    workers_per_gpu=4,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_train2017.json',
@@ -102,7 +101,7 @@ data = dict(
         pipeline=test_pipeline,
     ))
 # optimizer
-optimizer = dict(type='SGD', lr=5e-4, momentum=0.9, weight_decay=0.0005)
+optimizer = dict(type='SGD', lr=0.008, momentum=0.9, weight_decay=0.0005)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -113,6 +112,4 @@ lr_config = dict(
     step=[218, 246])
 # runtime settings
 total_epochs = 273
-work_dir = './work_dirs/yolo_pretrained'
 evaluation = dict(interval=1, metric=['bbox'])
-find_unused_parameters = True
