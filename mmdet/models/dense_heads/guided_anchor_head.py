@@ -1,12 +1,12 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import bias_init_with_prob, normal_init
+from mmcv.ops import DeformConv2d, MaskedConv2d
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
                         calc_region, force_fp32, images_to_levels, multi_apply,
                         multiclass_nms, unmap)
-from mmdet.ops import DeformConv, MaskedConv2d
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -16,30 +16,30 @@ class FeatureAdaption(nn.Module):
 
     Feature Adaption Module is implemented based on DCN v1.
     It uses anchor shape prediction rather than feature map to
-    predict offsets of deformable conv layer.
+    predict offsets of deform conv layer.
 
     Args:
         in_channels (int): Number of channels in the input feature map.
         out_channels (int): Number of channels in the output feature map.
         kernel_size (int): Deformable conv kernel size.
-        deformable_groups (int): Deformable conv group size.
+        deform_groups (int): Deformable conv group size.
     """
 
     def __init__(self,
                  in_channels,
                  out_channels,
                  kernel_size=3,
-                 deformable_groups=4):
+                 deform_groups=4):
         super(FeatureAdaption, self).__init__()
         offset_channels = kernel_size * kernel_size * 2
         self.conv_offset = nn.Conv2d(
-            2, deformable_groups * offset_channels, 1, bias=False)
-        self.conv_adaption = DeformConv(
+            2, deform_groups * offset_channels, 1, bias=False)
+        self.conv_adaption = DeformConv2d(
             in_channels,
             out_channels,
             kernel_size=kernel_size,
             padding=(kernel_size - 1) // 2,
-            deformable_groups=deformable_groups)
+            deform_groups=deform_groups)
         self.relu = nn.ReLU(inplace=True)
 
     def init_weights(self):
@@ -74,7 +74,7 @@ class GuidedAnchorHead(AnchorHead):
         square_anchor_generator (dict): Config dict for square generator
         anchor_coder (dict): Config dict for anchor coder
         bbox_coder (dict): Config dict for bbox coder
-        deformable_groups: (int): Group number of DCN in
+        deform_groups: (int): Group number of DCN in
             FeatureAdaption module.
         loc_filter_thr (float): Threshold to filter out unconcerned regions.
         background_label (int | None): Label ID of background, set as 0 for
@@ -113,7 +113,7 @@ class GuidedAnchorHead(AnchorHead):
             target_stds=[1.0, 1.0, 1.0, 1.0]
         ),
         reg_decoded_bbox=False,
-        deformable_groups=4,
+        deform_groups=4,
         loc_filter_thr=0.01,
         background_label=None,
         train_cfg=None,
@@ -133,7 +133,7 @@ class GuidedAnchorHead(AnchorHead):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
-        self.deformable_groups = deformable_groups
+        self.deform_groups = deform_groups
         self.loc_filter_thr = loc_filter_thr
 
         # build approx_anchor_generator and square_anchor_generator
@@ -209,7 +209,7 @@ class GuidedAnchorHead(AnchorHead):
             self.in_channels,
             self.feat_channels,
             kernel_size=3,
-            deformable_groups=self.deformable_groups)
+            deform_groups=self.deform_groups)
         self.conv_cls = MaskedConv2d(self.feat_channels,
                                      self.num_anchors * self.cls_out_channels,
                                      1)
@@ -636,8 +636,8 @@ class GuidedAnchorHead(AnchorHead):
                         loc_avg_factor):
         loss_loc = self.loss_loc(
             loc_pred.reshape(-1, 1),
-            loc_target.reshape(-1, 1).long(),
-            loc_weight.reshape(-1, 1),
+            loc_target.reshape(-1).long(),
+            loc_weight.reshape(-1),
             avg_factor=loc_avg_factor)
         return loss_loc
 

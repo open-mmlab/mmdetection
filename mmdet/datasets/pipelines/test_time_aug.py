@@ -92,16 +92,18 @@ class MultiScaleFlipAug(object):
         """
 
         aug_data = []
-        flip_aug = [False, True] if self.flip else [False]
+        flip_args = [(False, None)]
+        if self.flip:
+            flip_args += [(True, direction)
+                          for direction in self.flip_direction]
         for scale in self.img_scale:
-            for flip in flip_aug:
-                for direction in self.flip_direction:
-                    _results = results.copy()
-                    _results[self.scale_key] = scale
-                    _results['flip'] = flip
-                    _results['flip_direction'] = direction
-                    data = self.transforms(_results)
-                    aug_data.append(data)
+            for flip, direction in flip_args:
+                _results = results.copy()
+                _results[self.scale_key] = scale
+                _results['flip'] = flip
+                _results['flip_direction'] = direction
+                data = self.transforms(_results)
+                aug_data.append(data)
         # list of dict to dict of list
         aug_data_dict = {key: [] for key in aug_data[0]}
         for data in aug_data:

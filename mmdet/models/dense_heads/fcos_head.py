@@ -45,6 +45,7 @@ class FCOSHead(AnchorFreeHead):
         loss_centerness (dict): Config of centerness loss.
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: norm_cfg=dict(type='GN', num_groups=32, requires_grad=True).
+
     Example:
         >>> self = FCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
@@ -108,13 +109,13 @@ class FCOSHead(AnchorFreeHead):
 
         Returns:
             tuple:
-                cls_scores (list[Tensor]): Box scores for each scale level,
-                    each is a 4D-tensor, the channel number is
+                cls_scores (list[Tensor]): Box scores for each scale level, \
+                    each is a 4D-tensor, the channel number is \
                     num_points * num_classes.
-                bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                    level, each is a 4D-tensor, the channel number is
+                bbox_preds (list[Tensor]): Box energies / deltas for each \
+                    scale level, each is a 4D-tensor, the channel number is \
                     num_points * 4.
-                centernesses (list[Tensor]): Centerss for each scale level,
+                centernesses (list[Tensor]): Centerss for each scale level, \
                     each is a 4D-tensor, the channel number is num_points * 1.
         """
         return multi_apply(self.forward_single, feats, self.scales,
@@ -132,7 +133,7 @@ class FCOSHead(AnchorFreeHead):
                 is True.
 
         Returns:
-            tuple: scores for each class, bbox predictions and centerness
+            tuple: scores for each class, bbox predictions and centerness \
                 predictions of input feature maps.
         """
         cls_score, bbox_pred, cls_feat, reg_feat = super().forward_single(x)
@@ -272,12 +273,12 @@ class FCOSHead(AnchorFreeHead):
             rescale (bool): If True, return boxes in original image space
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of the
-                corresponding box.
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
+                The first item is an (n, 5) tensor, where the first 4 columns \
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
+                5-th column is a score between 0 and 1. The second item is a \
+                (n,) tensor where each item is the predicted class label of \
+                the corresponding box.
         """
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
@@ -335,8 +336,8 @@ class FCOSHead(AnchorFreeHead):
             rescale (bool): If True, return boxes in original image space.
 
         Returns:
-            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns \
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
                 5-th column is a score between 0 and 1.
         """
         cfg = self.test_cfg if cfg is None else cfg
@@ -408,8 +409,8 @@ class FCOSHead(AnchorFreeHead):
 
         Returns:
             tuple:
-                concat_lvl_labels (list[Tensor]): Labels of each level.
-                concat_lvl_bbox_targets (list[Tensor]): BBox targets of each
+                concat_lvl_labels (list[Tensor]): Labels of each level. \
+                concat_lvl_bbox_targets (list[Tensor]): BBox targets of each \
                     level.
         """
         assert len(points) == len(self.regress_ranges)

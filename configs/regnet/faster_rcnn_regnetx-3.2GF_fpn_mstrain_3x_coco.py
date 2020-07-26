@@ -11,7 +11,7 @@ model = dict(
         arch='regnetx_3.2gf',
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch'),
     neck=dict(
@@ -25,7 +25,7 @@ img_norm_cfg = dict(
     std=[57.375, 57.12, 58.395],
     to_rgb=False)
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Resize',

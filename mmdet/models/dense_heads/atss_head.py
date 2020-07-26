@@ -577,7 +577,7 @@ class ATSSHead(AnchorHead):
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
         if not inside_flags.any():
-            return (None, ) * 6
+            return (None, ) * 7
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 

@@ -50,9 +50,8 @@ jobs:
         run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}}
       - name: Install mmdet dependencies
         run: |
-          pip install mmcv
+          pip install mmcv-full==latest+torch${{matrix.torch}}+cu101 -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
           pip install -r requirements.txt
-          pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
       - name: Lint with flake8
         run: flake8 .
       - name: Lint with isort
@@ -60,7 +59,7 @@ jobs:
       - name: Format with yapf
         run: yapf -r -d mmdet/ tools/ configs/ tests/
       - name: Check docstring
-        run: interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --exclude mmdet/ops --ignore-regex "__repr__" --fail-under 80 mmdet
+        run: interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 80 mmdet
       - name: Build and install
         env:
           CUDA_ARCH: ${{matrix.cuda_arch}}
