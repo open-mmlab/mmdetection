@@ -91,7 +91,7 @@ jobs:
         run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}}
       - name: Install mmdet dependencies
         run: |
-          pip install mmcv-full==latest+torch${{matrix.torch}}+cu101 -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
+          pip install mmcv-full==${{mmcv}} -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
           pip install -r requirements.txt
       - name: Build and install
         run: |
