@@ -127,7 +127,8 @@ def patch_norm_fp32(module):
     """
     if isinstance(module, (nn.modules.batchnorm._BatchNorm, nn.GroupNorm)):
         module.float()
-        if isinstance(module, nn.GroupNorm) or torch.__version__ < '1.3':
+        if (isinstance(module, nn.GroupNorm) or torch.__version__ < '1.3'
+                or torch.__version__ == 'parrots'):
             module.forward = patch_forward_method(module.forward, torch.half,
                                                   torch.float)
     for child in module.children():

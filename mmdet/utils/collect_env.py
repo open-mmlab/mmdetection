@@ -7,6 +7,7 @@ import cv2
 import mmcv
 import torch
 import torchvision
+from mmcv.utils import get_build_config
 
 import mmdet
 
@@ -45,7 +46,7 @@ def collect_env():
     env_info['GCC'] = gcc
 
     env_info['PyTorch'] = torch.__version__
-    env_info['PyTorch compiling details'] = torch.__config__.show()
+    env_info['PyTorch compiling details'] = get_build_config()
 
     env_info['TorchVision'] = torchvision.__version__
 
