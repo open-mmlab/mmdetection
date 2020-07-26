@@ -35,7 +35,7 @@ jobs:
       - name: Install MMCV
         run: pip install mmcv-full==latest+torch1.5.0+cpu -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
       - name: Install unittest dependencies
-        run: pip install -r requirements/tests.txt
+        run: pip install -r requirements/tests.txt -r requirements/optional.txt
       - name: Build and install
         run: rm -rf .eggs && pip install -e .
       - name: Run unittests and generate coverage report
