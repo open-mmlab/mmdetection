@@ -386,6 +386,7 @@ def test_trident_resnet_backbone():
         test_branch_idx=1,
         strides=(1, 2, 2),
         dilations=(1, 1, 1),
+        trident_dilations=(1, 2, 3),
         out_indices=(2, ),
     )
     """Test tridentresnet backbone."""
