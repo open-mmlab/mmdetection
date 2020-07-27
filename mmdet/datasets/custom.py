@@ -177,7 +177,7 @@ class CustomDataset(Dataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Training/test data (with annotation if `test_mode` is set
+            dict: Training/test data (with annotation if `test_mode` is set \
                 True).
         """
 
@@ -197,7 +197,7 @@ class CustomDataset(Dataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Training data and annotation after pipeline with new keys
+            dict: Training data and annotation after pipeline with new keys \
                 introduced by pipeline.
         """
 
@@ -216,7 +216,7 @@ class CustomDataset(Dataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Testing data after pipeline with new keys intorduced by
+            dict: Testing data after pipeline with new keys intorduced by \
                 piepline.
         """
 

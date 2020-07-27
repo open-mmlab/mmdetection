@@ -1,10 +1,21 @@
 # Projects
 
 There are many projects built upon MMDetection.
-Some of them are published in top-tier conferences (CVPR, ICCV, and ECCV), the others are also highly influential.
 We list some of them as examples of how to extend MMDetection for your own projects.
 Pull requests are also welcomed.
 
+## Projects as an extension
+
+Some projects extend the boundary of MMDetection for deployment or other research fields.
+They reveal the potential of what MMDetection can do. We list several of them as below.
+
+- [OTEDetection](https://github.com/opencv/mmdetection): OpenVINO training extensions for object detection.
+- [MMDetection3d](https://github.com/open-mmlab/mmdetection3d): OpenMMLab's next-generation platform for general 3D object detection.
+
+## Projects of papers
+
+There are also projects released with papers.
+Some of the papers are published in top-tier conferences (CVPR, ICCV, and ECCV), the others are also highly influential.
 To make this list also a reference for the community to develop and compare new object detection algorithms, we list them following the time order of top-tier conferences.
 Methods already supported and maintained by MMDetection are not listed.
 
@@ -31,6 +42,4 @@ Methods already supported and maintained by MMDetection are not listed.
 - Dense Peppoints: Representing Visual Objects with Dense Point Sets. [[paper]](https://arxiv.org/abs/1912.11473)[[github]](https://github.com/justimyhxu/Dense-RepPoints)
 - IterDet: Iterative Scheme for Object Detection in Crowded Environments. [[paper]](https://arxiv.org/abs/2005.05708)[[github]](https://github.com/saic-vul/iterdet)
 - Cross-Iteration Batch Normalization. [[paper]](https://arxiv.org/abs/2002.05712)[[github]](https://github.com/Howal/Cross-iterationBatchNorm)
--  DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution. [[paper]](https://arxiv.org/abs/2006.02334)[[github]](https://github.com/joe-siyuan-qiao/DetectoRS)
--  Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection. [[paper]](https://arxiv.org/abs/2006.04388v1)[[github]](https://github.com/implus/GFocal)
 - Pedestrian Detection: The Elephant In The Room. [[paper]](https://arxiv.org/abs/2003.08799)[[github]](https://github.com/hasanirtiza/Pedestron)

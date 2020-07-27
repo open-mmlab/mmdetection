@@ -45,8 +45,8 @@ class CityscapesDataset(CocoDataset):
             ann_info (list[dict]): Annotation info of an image.
 
         Returns:
-            dict: A dict containing the following keys: bboxes, bboxes_ignore,
-                labels, masks, seg_map.
+            dict: A dict containing the following keys: bboxes, \
+                bboxes_ignore, labels, masks, seg_map. \
                 "masks" are already decoded into binary masks.
         """
         gt_bboxes = []
@@ -102,8 +102,8 @@ class CityscapesDataset(CocoDataset):
                 the txt files will be named "somepath/xxx.txt".
 
         Returns:
-            list[str: str]: result txt files which contains corresponding
-            instance segmentation images.
+            list[str]: Result txt files which contains corresponding \
+                instance segmentation images.
         """
         try:
             import cityscapesscripts.helpers.labels as CSLabels
@@ -168,8 +168,8 @@ class CityscapesDataset(CocoDataset):
                 If not specified, a temp file will be created. Default: None.
 
         Returns:
-            tuple: (result_files, tmp_dir), result_files is a dict containing
-                the json filepaths, tmp_dir is the temporal directory created
+            tuple: (result_files, tmp_dir), result_files is a dict containing \
+                the json filepaths, tmp_dir is the temporal directory created \
                 for saving txt/png files when txtfile_prefix is not specified.
         """
         assert isinstance(results, list), 'results must be a list'
@@ -229,7 +229,7 @@ class CityscapesDataset(CocoDataset):
                 also be computed. Default: 0.5.
 
         Returns:
-            dict[str, float]: COCO style evaluation metric or cityscapes mAP
+            dict[str, float]: COCO style evaluation metric or cityscapes mAP \
                 and AP@50.
         """
         eval_results = dict()
@@ -268,7 +268,7 @@ class CityscapesDataset(CocoDataset):
                 related information during evaluation. Default: None.
 
         Returns:
-            dict[str: float]: Cityscapes evaluation results, contains 'mAP'
+            dict[str: float]: Cityscapes evaluation results, contains 'mAP' \
                 and 'AP@50'.
         """
 

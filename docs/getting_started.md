@@ -265,7 +265,7 @@ According to the [Linear Scaling Rule](https://arxiv.org/abs/1706.02677), you ne
 python tools/train.py ${CONFIG_FILE} [optional arguments]
 ```
 
-If you want to specify the working directory in the command, you can add an argument `--work_dir ${YOUR_WORK_DIR}`.
+If you want to specify the working directory in the command, you can add an argument `--work-dir ${YOUR_WORK_DIR}`.
 
 ### Train with multiple GPUs
 
