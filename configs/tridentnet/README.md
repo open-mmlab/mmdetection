@@ -14,3 +14,5 @@
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
 |    R-50         |  caffe  |   1x    |          |                | 37.8   |  |
+
+**Note**: We find that it is unstable to train TridentNet and there is a chance that results can be 0.2% mAP lower.

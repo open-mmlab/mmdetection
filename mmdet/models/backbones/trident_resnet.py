@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer
+from torch.nn.modules.utils import _pair
 
 from mmdet.models.backbones.resnet import Bottleneck, ResNet
 from mmdet.models.builder import BACKBONES
@@ -39,17 +40,16 @@ class TridentConv(nn.Module):
         self.num_branch = len(trident_dilations)
         self.with_bias = bias
         self.test_branch_idx = test_branch_idx
-        self.stride = stride
-        self.kernel_size = kernel_size
-        self.paddings = trident_dilations
+        self.stride = _pair(stride)
+        self.kernel_size = _pair(kernel_size)
+        self.paddings = _pair(trident_dilations)
         self.dilations = trident_dilations
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.bias = bias
 
         self.weight = nn.Parameter(
-            torch.Tensor(out_channels, in_channels, self.kernel_size,
-                         self.kernel_size))
+            torch.Tensor(out_channels, in_channels, *self.kernel_size))
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_channels))
         else:
@@ -89,7 +89,9 @@ class TridentConv(nn.Module):
         return outputs
 
 
-class TridentBottleneckBlock(Bottleneck):
+# Since TridentNet if defined over ResNet50 and ResNet101, here we
+# only support TridentBottleneckBlock.
+class TridentBottleneck(Bottleneck):
     """BottleBlock for TridentResNet.
 
     Args:
@@ -102,15 +104,10 @@ class TridentBottleneckBlock(Bottleneck):
             `True` only in the last Block. Default: False.
     """
 
-    def __init__(self,
-                 trident_dilations=(1, 2, 3),
-                 test_branch_idx=1,
-                 concat_output=False,
+    def __init__(self, trident_dilations, test_branch_idx, concat_output,
                  **kwargs):
 
-        super(TridentBottleneckBlock, self).__init__(**kwargs)
-        assert self.with_plugins is False, \
-            "TridentResNet doesn't support plugins for now."
+        super(TridentBottleneck, self).__init__(**kwargs)
         self.trident_dilations = trident_dilations
         self.num_branch = len(trident_dilations)
         self.concat_output = concat_output
@@ -141,12 +138,26 @@ class TridentBottleneckBlock(Bottleneck):
             out = [self.norm1(b) for b in out]
             out = [self.relu(b) for b in out]
 
+            if self.with_plugins:
+                for k in range(len(out)):
+                    out[k] = self.forward_plugin(out[k],
+                                                 self.after_conv1_plugin_names)
+
             out = self.conv2(out)
             out = [self.norm2(b) for b in out]
             out = [self.relu(b) for b in out]
+            if self.with_plugins:
+                for k in range(len(out)):
+                    out[k] = self.forward_plugin(out[k],
+                                                 self.after_conv2_plugin_names)
 
             out = [self.conv3(b) for b in out]
             out = [self.norm3(b) for b in out]
+
+            if self.with_plugins:
+                for k in range(len(out)):
+                    out[k] = self.forward_plugin(out[k],
+                                                 self.after_conv3_plugin_names)
 
             out = [
                 out_b + identity_b for out_b, identity_b in zip(out, identity)
@@ -228,17 +239,24 @@ class TridentResNet(ResNet):
                                / stage3(b0) \
     x - stem - stage1 - stage2 - stage3(b1) - output
                                \ stage3(b2) /
+
+    Args:
+        depth (int): Depth of resnet, from {50, 101, 152}.
+        num_branch (int): Number of branches in TridentNet.
+        test_branch_idx (int): In inference, all 3 branches will be used
+            if `test_branch_idx==-1`, otherwise only branch with index
+            `test_branch_idx` will be used.
+        trident_dilations (tuple[int]): Dilations of different trident branch.
+            len(trident_dilations) should be equal to num_branch.
     """ # noqa
 
-    def __init__(self,
-                 depth,
-                 num_branch,
-                 test_branch_idx,
-                 trident_dilations=(1, 2, 3),
+    def __init__(self, depth, num_branch, test_branch_idx, trident_dilations,
                  **kwargs):
 
         assert num_branch == len(trident_dilations)
+        assert depth in (50, 101, 152)
         super(TridentResNet, self).__init__(depth, **kwargs)
+        assert self.num_stages == 3
         self.test_branch_idx = test_branch_idx
         self.num_branch = num_branch
 
@@ -253,7 +271,7 @@ class TridentResNet(ResNet):
             stage_plugins = None
         planes = self.base_channels * 2**last_stage_idx
         res_layer = make_trident_res_layer(
-            TridentBottleneckBlock,
+            TridentBottleneck,
             inplanes=self.block.expansion * self.base_channels *
             2**(last_stage_idx - 1),
             planes=planes,

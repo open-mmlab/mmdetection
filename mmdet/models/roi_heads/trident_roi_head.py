@@ -8,7 +8,14 @@ from ..builder import HEADS
 
 @HEADS.register_module()
 class TridentRoIHead(StandardRoIHead):
-    """Trident roi head including one bbox head."""
+    """Trident roi head.
+
+    Args:
+        num_branch (int): Number of branches in TridentNet.
+        test_branch_idx (int): In inference, all 3 branches will be used
+            if `test_branch_idx==-1`, otherwise only branch with index
+            `test_branch_idx` will be used.
+    """
 
     def __init__(self, num_branch, test_branch_idx, **kwargs):
         self.num_branch = num_branch
