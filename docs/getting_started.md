@@ -455,7 +455,7 @@ python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --out ${ONNX_FILE
 
 ### Visualize the output results
 
-If you need a lightweight GUI for visualizing the detection results, you can refer [this project](https://github.com/Chien-Hung/DetVisGUI/tree/mmdetection).
+If you need a lightweight GUI for visualizing the detection results, you can refer [DetVisGUI project](https://github.com/Chien-Hung/DetVisGUI/tree/mmdetection).
 
 ## Tutorials
 
