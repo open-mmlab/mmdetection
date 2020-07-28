@@ -52,8 +52,7 @@ def masks_to_rects(masks, is_rle):
 def polygon_from_points(points):
     """ Returns a Polygon object to use with the Polygon2 class from a list of 8 points:
         x1,y1,x2,y2,x3,y3,x4,y4 """
-    if len(points) == 1:
-        [points] = points
+
     point_mat = np.array(points[:8]).astype(np.int32).reshape(4, 2)
     return plg.Polygon(point_mat)
 
