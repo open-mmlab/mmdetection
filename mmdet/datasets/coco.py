@@ -508,6 +508,7 @@ class ConcatenatedCocoDataset(CocoDataset):
         self.seg_prefix = None
         self.proposal_file = None
         self.coco = None
+        self.min_size = concatenated_dataset.datasets[0].min_size
 
         for dataset in concatenated_dataset.datasets:
             img_shift = 0 if not self.img_ids else max(self.img_ids) + 1
@@ -551,4 +552,7 @@ class ConcatenatedCocoDataset(CocoDataset):
                 if self.flag is None:
                     self.flag = dataset.flag
                 else:
-                    self.flag = np.concatenate(dataset.flag, axis=0)
+                    self.flag = np.concatenate([self.flag, dataset.flag], axis=0)
+
+            if dataset.min_size != self.min_size:
+                raise Exception(f'Different min_size values are met {self.min_size} and {dataset.min_size}')
