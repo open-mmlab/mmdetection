@@ -77,10 +77,10 @@ def batch_bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
             B, rows, cols)
 
     if is_aligned:
-        lt = torch.max(bboxes1[:, :2], bboxes2[:, :2])  # [rows, 2]
-        rb = torch.min(bboxes1[:, 2:], bboxes2[:, 2:])  # [rows, 2]
+        lt = torch.max(bboxes1[:, :2], bboxes2[:, :2])
+        rb = torch.min(bboxes1[:, 2:], bboxes2[:, 2:])
 
-        wh = (rb - lt + 1).clamp(min=0)  # [rows, 2]
+        wh = (rb - lt + 1).clamp(min=0)
         overlap = wh[:, 0] * wh[:, 1]
         area1 = (bboxes1[:, 2] - bboxes1[:, 0] + 1) * (
             bboxes1[:, 3] - bboxes1[:, 1] + 1)
@@ -92,19 +92,17 @@ def batch_bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
         else:
             ious = overlap / area1
     else:
-        lt = torch.max(bboxes1[:, :, None, :2],
-                       bboxes2[:, None, :, :2])  # [B, rows, cols, 2]
-        rb = torch.min(bboxes1[:, :, None, 2:],
-                       bboxes2[:, None, :, 2:])  # [B, rows, cols, 2]
+        lt = torch.max(bboxes1[:, :, None, :2], bboxes2[:, None, :, :2])
+        rb = torch.min(bboxes1[:, :, None, 2:], bboxes2[:, None, :, 2:])
 
-        wh = (rb - lt + 1).clamp(min=0)  # [B, rows, cols, 2]
-        overlap = wh[:, :, :, 0] * wh[:, :, :, 1]  # [B, rows, cols]
+        wh = (rb - lt + 1).clamp(min=0)
+        overlap = wh[:, :, :, 0] * wh[:, :, :, 1]
         area1 = (bboxes1[:, :, 2] - bboxes1[:, :, 0] + 1) * (
-            bboxes1[:, :, 3] - bboxes1[:, :, 1] + 1)  # [B, rows]
+            bboxes1[:, :, 3] - bboxes1[:, :, 1] + 1)
 
         if mode == 'iou':
             area2 = (bboxes2[:, :, 2] - bboxes2[:, :, 0] + 1) * (
-                bboxes2[:, :, 3] - bboxes2[:, :, 1] + 1)  # [B, cols]
+                bboxes2[:, :, 3] - bboxes2[:, :, 1] + 1)
             ious = overlap / (area1[:, :, None] + area2[:, None, :] - overlap)
         else:
             ious = overlap / (area1[:, :, None])

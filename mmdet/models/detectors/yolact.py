@@ -7,6 +7,7 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module()
 class Yolact(SingleStageDetector):
+    """Implementation of `YOLACT <https://arxiv.org/abs/1904.02689>`_"""
 
     def __init__(self,
                  backbone,
@@ -26,12 +27,14 @@ class Yolact(SingleStageDetector):
             self.min_gt_box_wh = train_cfg.min_gt_box_wh
 
     def init_segm_mask_weights(self):
+        """Initialize weights of the YOLACT semg head and YOLACT mask head."""
         self.segm_head.init_weights()
         self.mask_head.init_weights()
 
     def process_gt_single(self, gt_bboxes, gt_labels, gt_masks, min_gt_box_wh,
                           device):
-        # Cuda the gt_masks and discard boxes that are smaller than we'd like
+        """Cuda the gt_masks and discard boxes that are smaller than we'd
+        like."""
         gt_masks = torch.from_numpy(gt_masks.masks).to(device)
         w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
         h = gt_bboxes[:, 3] - gt_bboxes[:, 1]

@@ -14,10 +14,21 @@ from .anchor_head import AnchorHead
 
 @HEADS.register_module()
 class YolactHead(AnchorHead):
-    """An anchor-based head used in YOLACT [1]_.
+    """YOLACT box head used in https://arxiv.org/abs/1904.02689.
 
-    References:
-        .. [1]  https://arxiv.org/pdf/1904.02689.pdf
+    Note that YOLACT head is a light version of RetinaNet head.
+    Four differences are described as follows:
+    1. YOLACT box head has three-times fewer anchors.
+    2. YOLACT box head shares the convs for box and cls branches.
+    3. YOLACT box head uses OHEM instead of Focal loss.
+    4. YOLACT box head predicts a set of mask coefficients for each box.
+
+    Args:
+        num_head_convs (int): Number of the conv layers shared by
+            box and cls branches.
+        num_protos (int): Number of the mask coefficients.
+        use_OHEM (bool): If true, `loss_single_OHEM` will be used for
+            cls loss calculation. If false, `loss_single` will be used.
     """
 
     def __init__(self,
@@ -111,6 +122,12 @@ class YolactHead(AnchorHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
+        """A combination of the func:`AnchorHead.loss` and func:`SSDHead.loss`.
+
+        When self.use_OHEM == True, it functions like `SSDHead.loss`,
+        otherwise, it follows `AnchorHead.loss`. Besides, it additionally
+        returns `sampling_results`.
+        """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.anchor_generator.num_levels
 
@@ -200,32 +217,10 @@ class YolactHead(AnchorHead):
         return dict(
             loss_cls=losses_cls, loss_bbox=losses_bbox), sampling_results
 
-    def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples):
-        # classification loss
-        labels = labels.reshape(-1)
-        label_weights = label_weights.reshape(-1)
-        cls_score = cls_score.permute(0, 2, 3,
-                                      1).reshape(-1, self.cls_out_channels)
-        loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=num_total_samples)
-        # regression loss
-        bbox_targets = bbox_targets.reshape(-1, 4)
-        bbox_weights = bbox_weights.reshape(-1, 4)
-        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
-        if self.reg_decoded_bbox:
-            anchors = anchors.reshape(-1, 4)
-            bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
-        loss_bbox = self.loss_bbox(
-            bbox_pred,
-            bbox_targets,
-            bbox_weights,
-            avg_factor=num_total_samples)
-        return loss_cls, loss_bbox
-
     def loss_single_OHEM(self, cls_score, bbox_pred, anchors, labels,
                          label_weights, bbox_targets, bbox_weights,
                          num_total_samples):
+        """"See func:`SSDHead.loss`."""
         loss_cls_all = F.cross_entropy(
             cls_score, labels, reduction='none') * label_weights
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
@@ -260,7 +255,8 @@ class YolactHead(AnchorHead):
                    img_metas,
                    cfg=None,
                    rescale=False):
-
+        """"Similiar to func:`AnchorHead.get_bboxes`, but additionally
+        processes coeff_preds."""
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
@@ -298,7 +294,9 @@ class YolactHead(AnchorHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-
+        """"Similiar to func:`AnchorHead._get_bboxes_single`, but additionally
+        processes coeff_preds_list and uses fast NMS instead of traditional
+        NMS."""
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
         mlvl_bboxes = []
@@ -357,6 +355,12 @@ class YolactHead(AnchorHead):
 
 @HEADS.register_module()
 class YolactSegmHead(nn.Module):
+    """YOLACT segmentation head used in https://arxiv.org/abs/1904.02689.
+
+    Apply a semantic segmentation loss on feature space using layers that are
+    only evaluated during training to increase performance with no speed
+    penalty.
+    """
 
     def __init__(self,
                  in_channels=256,
@@ -414,9 +418,9 @@ class YolactSegmHead(nn.Module):
 
 @HEADS.register_module()
 class YolactProtonet(nn.Module):
-    """Protonet of Yolact.
+    """YOLACT mask head used in https://arxiv.org/abs/1904.02689.
 
-    This head outputs the prototypes for Yolact.
+    This head outputs the mask prototypes for YOLACT.
     """
 
     def __init__(
@@ -440,10 +444,7 @@ class YolactProtonet(nn.Module):
 
     def make_net(self, in_channels, config, include_last_relu=True):
         """A helper function to take a config setting and turn it into a
-        network.
-
-        Used by protonet and extrahead. Returns (network)
-        """
+        network."""
 
         def make_layer(layer_cfg):
             nonlocal in_channels
@@ -520,6 +521,7 @@ class YolactProtonet(nn.Module):
                 pos_inds = cur_sampling_results.pos_inds
                 cur_coeff_pred = cur_coeff_pred[pos_inds]
 
+            # Linearly combining the prototypes with the mask coefficients
             mask_pred = cur_prototypes @ cur_coeff_pred.t()
             mask_pred = torch.sigmoid(mask_pred)
 
@@ -550,6 +552,9 @@ class YolactProtonet(nn.Module):
             num_pos = pos_assigned_gt_inds.size(0)
             if num_pos * cur_gt_masks.size(0) == 0:
                 continue
+            # Since we're producing (near) full image masks,
+            # it'd take too much vram to backprop on every single mask.
+            # Thus we select only a subset.
             if num_pos > self.max_masks_to_train:
                 perm = torch.randperm(num_pos)
                 select = perm[:self.max_masks_to_train]
@@ -607,13 +612,13 @@ class YolactProtonet(nn.Module):
         return cls_segms
 
     def crop(self, masks, boxes, padding=1):
-        """"Crop" predicted masks by zeroing out everything not in the
-        predicted bbox.
+        """Crop predicted masks by zeroing out everything not in the predicted
+        bbox.
 
         Args:
-            masks should be a size [h, w, n] tensor of masks
+            masks should be a size [h, w, n] tensor of masks.
             boxes should be a size [n, 4] tensor of bbox coords in
-                relative point form
+                relative point form.
         """
         h, w, n = masks.size()
         x1, x2 = self.sanitize_coordinates(

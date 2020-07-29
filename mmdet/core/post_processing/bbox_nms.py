@@ -64,11 +64,11 @@ def fast_nms(multi_bboxes,
              score_thr,
              nms_cfg,
              max_num=-1):
-    """Fast NMS in YOLACT.
+    """Fast NMS in `YOLACT <https://arxiv.org/abs/1904.02689>`_.
 
     Args:
         multi_bboxes (Tensor): shape (n, #class*4) or (n, 4)
-        multi_scores (Tensor): shape (n, #class), where the 0th column
+        multi_scores (Tensor): shape (n, #class), where the last column
             contains scores of the background class, but this will be ignored.
         multi_coeffs (Tensor): shape (n, #class*coeffs_dim).
         score_thr (float): bbox threshold, bboxes with scores lower than it
