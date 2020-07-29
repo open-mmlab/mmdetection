@@ -50,9 +50,15 @@ def get_sizes_from_config(config_path, target_image_wh, min_box_size, update_con
         cfg.merge_from_dict(update_config)
 
     if cfg.data.train.dataset.type == 'CocoDataset':
-        annotation_path = cfg.data.train.dataset.ann_file
-        root = cfg.data.train.dataset.img_prefix
-        return get_sizes_from_coco(annotation_path, root, target_image_wh, min_box_size)
+        annotation_paths = cfg.data.train.dataset.ann_file
+        roots = cfg.data.train.dataset.img_prefix
+        if not isinstance(annotation_paths, (list, tuple)):
+            annotation_paths = [annotation_paths]
+            roots = [roots]
+        sizes = []
+        for annotation_path, root in zip(annotation_paths, roots):
+            sizes.extend(get_sizes_from_coco(annotation_path, root, target_image_wh, min_box_size))
+        return sizes
 
     dataset = build_dataset(cfg.data.train)
     print(dataset)
