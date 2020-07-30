@@ -53,6 +53,7 @@ class SplAtConv2d(nn.Module):
         self.cardinality = groups
         self.channels = channels
         self.with_dcn = dcn is not None
+        self.dcn = dcn
         fallback_on_stride = False
         if self.with_dcn:
             fallback_on_stride = self.dcn.pop('fallback_on_stride', False)
@@ -74,16 +75,12 @@ class SplAtConv2d(nn.Module):
         self.add_module(self.norm0_name, norm0)
         self.relu = nn.ReLU(inplace=True)
         self.fc1 = build_conv_layer(
-            conv_cfg, channels, inter_channels, 1, groups=self.cardinality)
+            None, channels, inter_channels, 1, groups=self.cardinality)
         self.norm1_name, norm1 = build_norm_layer(
             norm_cfg, inter_channels, postfix=1)
         self.add_module(self.norm1_name, norm1)
         self.fc2 = build_conv_layer(
-            conv_cfg,
-            inter_channels,
-            channels * radix,
-            1,
-            groups=self.cardinality)
+            None, inter_channels, channels * radix, 1, groups=self.cardinality)
         self.rsoftmax = rSoftMax(radix, groups)
 
     @property
@@ -96,7 +93,7 @@ class SplAtConv2d(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
-        x = self.bn0(x)
+        x = self.norm0(x)
         x = self.relu(x)
 
         batch, rchannel = x.shape[:2]
@@ -108,7 +105,7 @@ class SplAtConv2d(nn.Module):
         gap = F.adaptive_avg_pool2d(gap, 1)
         gap = self.fc1(gap)
 
-        gap = self.bn1(gap)
+        gap = self.norm1(gap)
         gap = self.relu(gap)
 
         atten = self.fc2(gap)
@@ -133,13 +130,9 @@ class Bottleneck(_Bottleneck):
                  base_channels=64,
                  radix=2,
                  reduction_factor=4,
-                 avd=True,
+                 avg_down_stride=True,
                  **kwargs):
-        """Bottleneck block for ResNeSt.
-
-        If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
-        it is "caffe", the stride-two layer is the first 1x1 conv layer.
-        """
+        """Bottleneck block for ResNeSt."""
         super(Bottleneck, self).__init__(inplanes, planes, **kwargs)
 
         if groups == 1:
@@ -148,7 +141,7 @@ class Bottleneck(_Bottleneck):
             width = math.floor(self.planes *
                                (base_width / base_channels)) * groups
 
-        self.avd = avd and self.conv2_stride > 1
+        self.avg_down_stride = avg_down_stride and self.conv2_stride > 1
 
         self.norm1_name, norm1 = build_norm_layer(
             self.norm_cfg, width, postfix=1)
@@ -168,7 +161,7 @@ class Bottleneck(_Bottleneck):
             width,
             width,
             kernel_size=3,
-            stride=1 if self.avd else self.conv2_stride,
+            stride=1 if self.avg_down_stride else self.conv2_stride,
             padding=self.dilation,
             dilation=self.dilation,
             groups=groups,
@@ -180,7 +173,7 @@ class Bottleneck(_Bottleneck):
             dcn=self.dcn)
         delattr(self, self.norm2_name)
 
-        if self.avd:
+        if self.avg_down_stride:
             self.avd_layer = nn.AvgPool2d(3, self.conv2_stride, padding=1)
 
         self.conv3 = build_conv_layer(
@@ -205,7 +198,7 @@ class Bottleneck(_Bottleneck):
 
             out = self.conv2(out)
 
-            if self.avd:
+            if self.avg_down_stride:
                 out = self.avd_layer(out)
 
             if self.with_plugins:
@@ -239,27 +232,13 @@ class ResNeSt(ResNetV1d):
     """ResNeSt backbone.
 
     Args:
-        depth (int): Depth of resnet, from {18, 34, 50, 101, 152}.
-        in_channels (int): Number of input image channels. Normally 3.
-        num_stages (int): Resnet stages, normally 4.
-        groups (int): Group of resnext.
-        base_width (int): Base width of resnext.
-        strides (Sequence[int]): Strides of the first block of each stage.
-        dilations (Sequence[int]): Dilation of each stage.
-        out_indices (Sequence[int]): Output from which stages.
-        style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
-            layer is the 3x3 conv layer, otherwise the stride-two layer is
-            the first 1x1 conv layer.
-        frozen_stages (int): Stages to be frozen (all param fixed). -1 means
-            not freezing any parameters.
-        norm_cfg (dict): dictionary to construct and config norm layer.
-        norm_eval (bool): Whether to set norm layers to eval mode, namely,
-            freeze running stats (mean and var). Note: Effect on Batch Norm
-            and its variants only.
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
-        zero_init_residual (bool): whether to use zero init for last norm layer
-            in resblocks to let them behave as identity.
+        groups (int): Number of groups of Bottleneck. Default: 1
+        base_width (int): Base width of Bottleneck. Default: 4
+        radix (int): Radix of SpltAtConv2d. Default: 2
+        reduction_factor (int): Reduction factor of SplAtConv2d. Default: 4.
+        avg_down_stride (bool): Whether to use average pool for stride in
+            Bottleneck. Default: True.
+        kwargs (dict): Keyword arguments for ResNet.
     """
 
     arch_settings = {
@@ -273,13 +252,13 @@ class ResNeSt(ResNetV1d):
                  base_width=4,
                  radix=2,
                  reduction_factor=4,
-                 avd=True,
+                 avg_down_stride=True,
                  **kwargs):
         self.groups = groups
         self.base_width = base_width
         self.radix = radix
         self.reduction_factor = reduction_factor
-        self.avd = avd
+        self.avg_down_stride = avg_down_stride
         super(ResNeSt, self).__init__(**kwargs)
 
     def make_res_layer(self, **kwargs):
@@ -289,5 +268,5 @@ class ResNeSt(ResNetV1d):
             base_channels=self.base_channels,
             radix=self.radix,
             reduction_factor=self.reduction_factor,
-            avd=self.avd,
+            avg_down_stride=self.avg_down_stride,
             **kwargs)
