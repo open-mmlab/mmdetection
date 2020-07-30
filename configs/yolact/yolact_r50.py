@@ -9,6 +9,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=-1,  # do not freeze stem
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=False,  # update the statistics of bn
         zero_init_residual=False,
         style='pytorch'),
@@ -163,3 +164,4 @@ load_from = None
 resume_from = None
 workflow = [('train', 1)]
 cudnn_benchmark = True
+evaluation = dict(metric=['bbox', 'segm'])
