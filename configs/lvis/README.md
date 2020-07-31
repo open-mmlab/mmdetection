@@ -36,7 +36,7 @@
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |
-|    R-50-FPN     | pytorch |   1x    | -        | -              | 22.9   | 22.0    | [model]() &#124; [log]()  |
-|    R-101-FPN    | pytorch |   1x    | -        | -              | 24.7   | 23.8    | [model]() &#124; [log]()  |
-| X-101-32x4d-FPN | pytorch |   1x    | -        | -              | 26.2   | 25.0    | [model]() &#124; [log]()  |
+|    R-50-FPN     | pytorch |   1x    | -        | -              | 22.9   | 22.0    | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_r50_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r50_fpn_sample1e-3_mstrain_1x_lvis_v1-2d7182e1.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_r50_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r50_fpn_sample1e-3_mstrain_1x_lvis_v1-20200719_104831.log.json)  |
+|    R-101-FPN    | pytorch |   1x    | -        | -              | 24.7   | 23.8    | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1-3213fe1c.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1-20200719_104937.log.json)  |
+| X-101-32x4d-FPN | pytorch |   1x    | -        | -              | 26.2   | 25.0    | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-3a5c9978.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-20200720_135338.log.json)  |
 | X-101-64x4d-FPN | pytorch |   1x    | -        |   -            | -   | -    | [model]() &#124; [log]()  |
