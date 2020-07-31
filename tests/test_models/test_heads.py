@@ -617,9 +617,7 @@ def _dummy_bbox_sampling(proposal_list, gt_bboxes, gt_labels):
 
 
 def test_corner_head_loss():
-    """
-    Tests corner head loss when truth is empty and non-empty
-    """
+    """Tests corner head loss when truth is empty and non-empty."""
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),

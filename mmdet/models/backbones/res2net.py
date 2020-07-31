@@ -115,7 +115,7 @@ class Bottle2neck(_Bottleneck):
                 out = self.forward_plugin(out, self.after_conv1_plugin_names)
 
             spx = torch.split(out, self.width, 1)
-            sp = self.convs[0](spx[0])
+            sp = self.convs[0](spx[0].contiguous())
             sp = self.relu(self.bns[0](sp))
             out = sp
             for i in range(1, self.scales - 1):
@@ -123,7 +123,7 @@ class Bottle2neck(_Bottleneck):
                     sp = spx[i]
                 else:
                     sp = sp + spx[i]
-                sp = self.convs[i](sp)
+                sp = self.convs[i](sp.contiguous())
                 sp = self.relu(self.bns[i](sp))
                 out = torch.cat((out, sp), 1)
 
