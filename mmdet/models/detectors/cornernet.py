@@ -7,10 +7,10 @@ from .single_stage import SingleStageDetector
 
 @DETECTORS.register_module()
 class CornerNet(SingleStageDetector):
-    """CornerNet: Detecting Objects as Paired Keypoints.
+    """CornerNet.
 
-    This detector is the implementation of `CornerNet
-    <https://arxiv.org/abs/1808.01244>`_ .
+    This detector is the implementation of the paper `CornerNet: Detecting
+    Objects as Paired Keypoints <https://arxiv.org/abs/1808.01244>`_ .
     """
 
     def __init__(self,
@@ -76,7 +76,7 @@ class CornerNet(SingleStageDetector):
         img_inds = list(range(len(imgs)))
 
         assert img_metas[0][0]['flip'] + img_metas[1][0]['flip'], (
-            "aug test must have flipped image pair")
+            'aug test must have flipped image pair')
         aug_results = []
         for ind, flip_ind in zip(img_inds[0::2], img_inds[1::2]):
             img_pair = torch.cat([imgs[ind], imgs[flip_ind]])

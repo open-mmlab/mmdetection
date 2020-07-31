@@ -22,8 +22,8 @@
 
 Note: 
 - TTA setting is single-scale and `flip=True`.
-- Experiments with `images_per_gpu=6` are implemented on Tesla V100-SXM2-32GB, `images_per_gpu=3` are implemented on GeForce GTX 1080 Ti.
+- Experiments with `images_per_gpu=6` are conducted on Tesla V100-SXM2-32GB, `images_per_gpu=3` are conducted on GeForce GTX 1080 Ti.
 - Here are the descriptions of each experiment setting:
-    - 10 x 5: 10 GPUs with 5 images per gpu. This is the setting align to paper and needs 2 nodes to train.
-    - 8 x 6: 8 GPUs with 6 images per gpu. The total batchsize is similar with paper and only need 1 node to train.
+    - 10 x 5: 10 GPUs with 5 images per gpu. This is the same setting as that reported in the original paper.
+    - 8 x 6: 8 GPUs with 6 images per gpu. The total batchsize is similar to paper and only need 1 node to train.
     - 32 x 3: 32 GPUs with 3 images per gpu. The default setting for 1080TI and need 4 nodes to train.
