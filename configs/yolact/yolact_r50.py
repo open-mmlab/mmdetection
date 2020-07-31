@@ -32,8 +32,11 @@ model = dict(
             type='AnchorGenerator',
             octave_base_scale=3,
             scales_per_octave=1,
+            base_sizes=[8, 16, 32, 64, 128],
             ratios=[0.5, 1.0, 2.0],
-            strides=[8, 16, 32, 64, 128]),
+            strides=[550.0 / x for x in [69, 35, 18, 9, 5]],
+            centers=[(550 * 0.5 / x, 550 * 0.5 / x)
+                     for x in [69, 35, 18, 9, 5]]),
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
