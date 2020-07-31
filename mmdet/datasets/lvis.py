@@ -12,7 +12,7 @@ from .coco import CocoDataset
 
 
 @DATASETS.register_module()
-class LVISDataset(CocoDataset):
+class LVISV05Dataset(CocoDataset):
 
     CLASSES = (
         'acorn', 'aerosol_can', 'air_conditioner', 'airplane', 'alarm_clock',
@@ -447,6 +447,10 @@ class LVISDataset(CocoDataset):
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
+
+
+LVISDataset = LVISV05Dataset
+DATASETS.register_module(module=LVISDataset)
 
 
 @DATASETS.register_module()
