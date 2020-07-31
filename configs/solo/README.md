@@ -13,9 +13,16 @@
 
 ## Results and Models
 
+### SOLO
 
-| Backbone  | Style   | GN      | MS train | Lr schd | Mem (GB) | Inf time (fps) | mask AP | Download |
-|:---------:|:-------:|:-------:|:--------:|:-------:|:--------:|:--------------:|:------:|:--------:|
-| R-50      | pytorch   | Y       | N        | 1x      |       |            |    |  [model]() &#124; [log]() |
-| R-50      | pytorch   | Y       | Y        | 3x      |       |          |    |  [model]() &#124; [log]() |
+| Backbone  | Style   | MS train | Lr schd | Mem (GB) | Inf time (fps) | mask AP | Download |
+|:---------:|:-------:|:--------:|:-------:|:--------:|:--------------:|:------:|:--------:|
+| R-50      | pytorch   | N        | 1x      |       |            |    |  [model]() &#124; [log]() |
+| R-50      | pytorch   | Y        | 3x      |       |          |    |  [model]() &#124; [log]() |
 
+### Decoupled SOLO
+
+| Backbone  | Style   | MS train | Lr schd | Mem (GB) | Inf time (fps) | mask AP | Download |
+|:---------:|:-------:|:--------:|:-------:|:--------:|:--------------:|:------:|:--------:|
+| R-50      | pytorch   | N        | 1x      |       |            |    |  [model]() &#124; [log]() |
+| R-50      | pytorch   | Y        | 3x      |       |          |    |  [model]() &#124; [log]() |

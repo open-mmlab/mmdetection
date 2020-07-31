@@ -19,11 +19,12 @@ from .rpn import RPN
 from .single_stage import SingleStageDetector
 from .single_stage_seg import SingleStageSegDetector
 from .solo import SOLO
+from .decoupled_solo_head import DecoupledSOLOHead
 from .two_stage import TwoStageDetector
 
 __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',
     'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector',
-    'FOVEA', 'FSAF', 'NASFCOS', 'PointRend', 'GFL', 'SingleStageSegDetector', 'SOLO'
+    'FOVEA', 'FSAF', 'NASFCOS', 'PointRend', 'GFL', 'SingleStageSegDetector', 'SOLO', 'DecoupledSOLOHead'
 ]
