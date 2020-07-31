@@ -691,9 +691,7 @@ def test_corner_head_loss():
 
 
 def test_corner_head_encode_and_decode_heatmap():
-    """
-    Tests corner head generating and decoding the heatmap
-    """
+    """Tests corner head generating and decoding the heatmap."""
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),

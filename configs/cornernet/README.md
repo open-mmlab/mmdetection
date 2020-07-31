@@ -20,7 +20,7 @@
 | HourglassNet-104 | [8 x 6](./cornernet_hourglass104_mstest_8x6_210e_coco.py) | 180/210 | 15.9 | 4.2 | 40.9<br>TTA: 41.2 | |
 | HourglassNet-104 | [32 x 3](./cornernet_hourglass104_mstest_32x3_210e_coco.py) | 180/210 | 9.5 | 3.9 | 39.6<br>TTA: 40.4 | |
 
-Note: 
+Note:
 - TTA setting is single-scale and `flip=True`.
 - Experiments with `images_per_gpu=6` are conducted on Tesla V100-SXM2-32GB, `images_per_gpu=3` are conducted on GeForce GTX 1080 Ti.
 - Here are the descriptions of each experiment setting:
