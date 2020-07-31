@@ -450,7 +450,7 @@ class LVISV05Dataset(CocoDataset):
 
 
 LVISDataset = LVISV05Dataset
-DATASETS.register_module(module=LVISDataset)
+DATASETS.register_module(name='LVISDataset', module=LVISDataset)
 
 
 @DATASETS.register_module()
