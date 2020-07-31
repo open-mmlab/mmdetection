@@ -62,11 +62,13 @@ def test_config_build_detector():
         if 'roi_head' in config_mod.model.keys():
             # for two stage detector
             # detectors must have bbox head
-            assert detector.roi_head.with_bbox and detector.with_bbox
+            assert (detector.roi_head.with_bbox
+                    and detector.with_bbox) or detector.roi_head.with_keypoint
             assert detector.roi_head.with_mask == detector.with_mask
 
             head_config = config_mod.model['roi_head']
-            _check_roi_head(head_config, detector.roi_head)
+            if detector.with_bbox:
+                _check_roi_head(head_config, detector.roi_head)
         # else:
         #     # for single stage detector
         #     # detectors must have bbox head

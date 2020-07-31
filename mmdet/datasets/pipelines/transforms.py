@@ -16,14 +16,16 @@ except ImportError:
 try:
     import albumentations
     from albumentations import Compose
+    from albumentations.augmentations import keypoints_utils
 except ImportError:
     albumentations = None
     Compose = None
+    keypoints_utils = None
 
 
 @PIPELINES.register_module()
 class Resize(object):
-    """Resize images & bbox & mask.
+    """Resize images & bbox & mask & keypoints.
 
     This transform resizes the input image to some scale. Bboxes and masks are
     then resized with the same scale factor. If the input dict contains the key
@@ -215,6 +217,15 @@ class Resize(object):
             bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
             results[key] = bboxes
 
+    def _resize_keypoints(self, results):
+        for key in results.get('keypoint_fields', []):
+            keypoints = results[key].copy()
+            n_sets = keypoints.shape[0]
+            for i in range(n_sets):
+                keypoints[i, :, :2] = keypoints[
+                    i, :, :2] * results['scale_factor'][:2]
+            results[key] = keypoints
+
     def _resize_masks(self, results):
         """Resize masks with ``results['scale']``"""
         for key in results.get('mask_fields', []):
@@ -263,6 +274,7 @@ class Resize(object):
 
         self._resize_img(results)
         self._resize_bboxes(results)
+        self._resize_keypoints(results)
         self._resize_masks(results)
         self._resize_seg(results)
         return results
@@ -278,7 +290,7 @@ class Resize(object):
 
 @PIPELINES.register_module()
 class RandomFlip(object):
-    """Flip the image & bbox & mask.
+    """Flip the image & bbox & mask & keypoints.
 
     If the input dict contains the key "flip", then the flag will be used,
     otherwise it will be randomly decided by a ratio specified in the init
@@ -324,6 +336,30 @@ class RandomFlip(object):
             raise ValueError(f"Invalid flipping direction '{direction}'")
         return flipped
 
+    def keypoints_flip(self, keypoints, img_shape, direction):
+        """Flip keypoints horizontally or vertically.
+
+        Args:
+            keypoints(ndarray): shape (..., 2)
+            img_shape(tuple): (height, width)
+        """
+        assert keypoints.shape[-1] == 3
+        flipped = keypoints.copy()
+        h = img_shape[0]
+        w = img_shape[1]
+        if direction == 'horizontal':
+            flipped[..., 0] = w - keypoints[..., 0]
+        elif direction == 'vertical':
+            flipped[..., 1] = h - keypoints[..., 1]
+        else:
+            raise ValueError(f"Invalid flipping direction '{direction}'")
+        for kpts_set in flipped:
+            invisible = np.logical_or(
+                np.any(kpts_set[:, :2] < 0, axis=1),
+                np.logical_or(kpts_set[:, 0] >= h, kpts_set[:, 1] >= w))
+            kpts_set[invisible, 2] = 0
+        return flipped
+
     def __call__(self, results):
         """Call function to flip bounding boxes, masks, semantic segmentation
         maps.
@@ -351,6 +387,11 @@ class RandomFlip(object):
                 results[key] = self.bbox_flip(results[key],
                                               results['img_shape'],
                                               results['flip_direction'])
+            # flip keypoints
+            for key in results.get('keypoint_fields', []):
+                results[key] = self.keypoints_flip(results[key],
+                                                   results['img_shape'],
+                                                   results['flip_direction'])
             # flip masks
             for key in results.get('mask_fields', []):
                 results[key] = results[key].flip(results['flip_direction'])
@@ -416,6 +457,8 @@ class Pad(object):
 
     def __call__(self, results):
         """Call function to pad images, masks, semantic segmentation maps.
+        Heatmaps are supposed to be generated after padding, hence we do not
+        need to handle them here.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -479,7 +522,7 @@ class Normalize(object):
 
 @PIPELINES.register_module()
 class RandomCrop(object):
-    """Random crop the image & bboxes & masks.
+    """Random crop the image & bboxes & masks & keypoints.
 
     Args:
         crop_size (tuple): Expected size after cropping, (h, w).
@@ -564,6 +607,19 @@ class RandomCrop(object):
                 results[mask_key] = results[mask_key][
                     valid_inds.nonzero()[0]].crop(
                         np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
+
+        # crop keypoints accordingly and clip to the image boundary
+        for key in results.get('keypoint_fields', []):
+            keypoint_offset = np.array([offset_w, offset_h, 0])
+            keypoints = results[key] - keypoint_offset
+            outside_point_idx = (keypoints[..., 0] < 0) + \
+                                (keypoints[..., 0] > (img.shape[1] - 1)) + \
+                                (keypoints[..., 1] < 0) + \
+                                (keypoints[..., 1] > (img.shape[0] - 1))
+            keypoints[outside_point_idx, 2] = 0
+            if np.all(outside_point_idx):
+                return None  # No valid keypoint found
+            results[key] = keypoints
 
         # crop semantic seg
         for key in results.get('seg_fields', []):
@@ -714,7 +770,7 @@ class PhotoMetricDistortion(object):
 
 @PIPELINES.register_module()
 class Expand(object):
-    """Random expand the image & bboxes.
+    """Random expand the image & bboxes & keypoints.
 
     Randomly place the original image on a canvas of 'ratio' x original image
     size filled with mean values. The ratio is in the range of ratio_range.
@@ -743,7 +799,7 @@ class Expand(object):
         self.prob = prob
 
     def __call__(self, results):
-        """Call function to expand images, bounding boxes.
+        """Call function to expand images, bounding boxes, keypoints.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -775,6 +831,10 @@ class Expand(object):
             results[key] = results[key] + np.tile(
                 (left, top), 2).astype(results[key].dtype)
 
+        # expand keypoints
+        for key in results.get('keypoint_fields', []):
+            results[key] += np.array([left, top, 0]).astype(results[key].dtype)
+
         # expand masks
         for key in results.get('mask_fields', []):
             results[key] = results[key].expand(
@@ -800,9 +860,9 @@ class Expand(object):
 
 @PIPELINES.register_module()
 class MinIoURandomCrop(object):
-    """Random crop the image & bboxes, the cropped patches have minimum IoU
-    requirement with original image & bboxes, the IoU threshold is randomly
-    selected from min_ious.
+    """Random crop the image & bboxes & keypoints, the cropped patches have
+    minimum IoU requirement with original image & bboxes & keypoints, the IoU
+    threshold is randomly selected from min_ious.
 
     Args:
         min_ious (tuple): minimum IoU threshold for all intersections with
@@ -912,6 +972,20 @@ class MinIoURandomCrop(object):
                         if mask_key in results:
                             results[mask_key] = results[mask_key][
                                 mask.nonzero()[0]].crop(patch)
+
+                    for key in results.get('keypoint_fields', []):
+                        offset = np.array([patch[0], patch[1],
+                                           0]).astype(boxes.dtype)
+                        keypoints = results[key] - offset
+                        outside_point_idx = (keypoints[..., 0] < 0) + \
+                            (keypoints[..., 0] > (patch[2] - patch[0] - 1)) + \
+                            (keypoints[..., 1] < 0) + \
+                            (keypoints[..., 1] > (patch[3] - patch[1] - 1))
+                        keypoints[outside_point_idx, 2] = 0
+                        if np.all(outside_point_idx):
+                            return None  # No valid keypoint found
+                        results[key] = keypoints
+
                 # adjust the img no matter whether the gt is empty before crop
                 img = img[patch[1]:patch[3], patch[0]:patch[2]]
                 results['img'] = img
@@ -1048,7 +1122,8 @@ class Albu(object):
             self.keymap_to_albu = {
                 'img': 'image',
                 'gt_masks': 'masks',
-                'gt_bboxes': 'bboxes'
+                'gt_bboxes': 'bboxes',
+                'gt_keypoints': 'keypoints'
             }
         else:
             self.keymap_to_albu = keymap
@@ -1117,6 +1192,21 @@ class Albu(object):
             if self.filter_lost_elements:
                 results['idx_mapper'] = np.arange(len(results['bboxes']))
 
+        # TODO: add keypoints_fields
+        if 'keypoints' in results:
+            n_kpts_per_class = results['keypoints'].shape[0]
+            converted_kpts = []
+            cols, rows, _ = results['img_shape']
+            kpts_vis = results[
+                'keypoints'][:, :,
+                             2]  # Keep a copy of keypoints visibility flag
+            for x in range(n_kpts_per_class):
+                kpts = results['keypoints'][x, :, :2]
+                new_kpts = keypoints_utils.convert_keypoints_to_albumentations(
+                    kpts, 'xy', rows, cols)
+                converted_kpts.extend(new_kpts)
+            results['keypoints'] = converted_kpts
+
         # TODO: Support mask structure in albu
         if 'masks' in results:
             if isinstance(results['masks'], PolygonMasks):
@@ -1154,6 +1244,25 @@ class Albu(object):
             if isinstance(results['gt_labels'], list):
                 results['gt_labels'] = np.array(results['gt_labels'])
             results['gt_labels'] = results['gt_labels'].astype(np.int64)
+
+        if 'keypoints' in results:
+            cols, rows, _ = results['img_shape']
+            kpts = results['keypoints']
+            new_kpts = keypoints_utils.convert_keypoints_from_albumentations(
+                kpts, 'xy', rows, cols)
+            new_kpts = np.array(new_kpts).reshape(n_kpts_per_class, -1, 2)
+            pts = np.zeros((n_kpts_per_class, new_kpts.shape[1], 3))
+            pts[:, :, :2] = new_kpts
+            pts[:, :, 2] = kpts_vis
+
+            outside_point_idx = (pts[..., 0] < 0) + \
+                                (pts[..., 0] > (cols - 1)) + \
+                                (pts[..., 1] < 0) + \
+                                (pts[..., 1] > (rows - 1))
+            pts[outside_point_idx, 2] = 0
+            if np.all(outside_point_idx) and self.skip_img_without_anno:
+                return None  # No valid keypoint found
+            results['keypoints'] = pts
 
         # back to the original format
         results = self.mapper(results, self.keymap_back)
@@ -1441,6 +1550,17 @@ class RandomCenterCropPad(object):
                         if 'gt_masks' in results:
                             raise NotImplementedError(
                                 'RandomCenterCropPad only supports bbox.')
+
+                # crop keypoints accordingly and clip to the image boundary
+                for key in results.get('keypoint_fields', []):
+                    kpts = results[key]
+                    kpts[:, :, 0] += cropped_center_x - left_w - x0
+                    kpts[:, :, 1] += cropped_center_y - top_h - y0
+                    keep = (kpts[:, :, 0] >= 0) & (kpts[:, :, 0] < new_w) & (
+                        kpts[:, :, 1] >= 0) & (
+                            kpts[:, :, 1] < new_h)
+                    kpts[np.invert(keep), 2] = 0
+                    results[key] = kpts
 
                 # crop semantic seg
                 for key in results.get('seg_fields', []):

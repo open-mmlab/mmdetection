@@ -74,7 +74,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                       gt_bboxes,
                       gt_labels,
                       gt_bboxes_ignore=None,
-                      gt_masks=None):
+                      gt_keypoints=None,
+                      gt_masks=None,
+                      heatmaps=None):
         """
         Args:
             x (list[Tensor]): list of multi-level img features.
@@ -95,6 +97,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
+        if gt_keypoints or heatmaps:
+            raise NotImplementedError
         # assign gts and sample proposals
         if self.with_bbox or self.with_mask:
             num_imgs = len(img_metas)

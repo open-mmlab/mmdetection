@@ -207,7 +207,10 @@ class DefaultFormatBundle(object):
                 img = np.expand_dims(img, -1)
             img = np.ascontiguousarray(img.transpose(2, 0, 1))
             results['img'] = DC(to_tensor(img), stack=True)
-        for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
+        for key in [
+                'proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels',
+                'gt_keypoints'
+        ]:
             if key not in results:
                 continue
             results[key] = DC(to_tensor(results[key]))
@@ -216,6 +219,9 @@ class DefaultFormatBundle(object):
         if 'gt_semantic_seg' in results:
             results['gt_semantic_seg'] = DC(
                 to_tensor(results['gt_semantic_seg'][None, ...]), stack=True)
+        if 'heatmaps' in results:
+            results['heatmaps'] = DC(
+                to_tensor(results['heatmaps']), cpu_only=False)
         return results
 
     def _add_default_meta_keys(self, results):
@@ -362,3 +368,82 @@ class WrapFieldsToLists(object):
 
     def __repr__(self):
         return f'{self.__class__.__name__}()'
+
+
+@PIPELINES.register_module()
+class KeypointsToHeatmaps(object):
+    """Generate Heatmaps from keypoints.
+
+    This should be applied after data augmentation on keypoints
+    """
+
+    def __init__(self,
+                 dividers=[4, 4],
+                 sigma=1.5,
+                 label_type='Gaussian',
+                 draw_invisible=False):
+        self.sigma = sigma
+        self.label_type = label_type
+        self.dividers = dividers  # image_size / heatmap_size
+        self.draw_invisible = False
+
+    def generate_target(self, img, pt, sigma, label_type='Gaussian'):
+        shift = np.mod(pt[:2], self.dividers) / self.dividers
+        pt = pt[:2] // self.dividers
+        # Check that any part of the gaussian is in-bounds
+        tmp_size = sigma * 3
+        ul = [int(pt[0] - tmp_size), int(pt[1] - tmp_size)]
+        br = [int(pt[0] + tmp_size + 1), int(pt[1] + tmp_size + 1)]
+        if (ul[0] >= img.shape[1] or ul[1] >= img.shape[0] or br[0] < 0
+                or br[1] < 0):
+            # If not, just return the image as is
+            return img
+
+        # Generate gaussian
+        size = 2 * tmp_size + 1
+        x = np.arange(0, size, 1, np.float32)
+        y = x[:, np.newaxis]
+        x0, y0 = size // 2 + shift
+        # The gaussian is not normalized, we want the center value to equal 1
+        if label_type == 'Gaussian':
+            g = np.exp(-((x - x0)**2 + (y - y0)**2) / (2 * sigma**2))
+        else:
+            g = sigma / (((x - x0)**2 + (y - y0)**2 + sigma**2)**1.5)
+
+        # Usable gaussian range
+        g_x = [max(0, -ul[0]), min(br[0], img.shape[1]) - ul[0]]
+        g_y = [max(0, -ul[1]), min(br[1], img.shape[0]) - ul[1]]
+        # Image range
+        img_x = [max(0, ul[0]), min(br[0], img.shape[1])]
+        img_y = [max(0, ul[1]), min(br[1], img.shape[0])]
+
+        if img_x[1] < size:
+            g_x[0] += 1
+            img_x[1] -= 1
+        if img_y[1] < size:
+            g_y[0] += 1
+            img_y[1] -= 1
+
+        img[img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[0]:g_y[1],
+                                                      g_x[0]:g_x[1]]
+        return img
+
+    def __call__(self, results):
+        if 'gt_keypoints' in results:
+            nparts = results['gt_keypoints'].shape[1]
+            hm_sz = results['pad_shape'][0] // self.dividers[0], results[
+                'pad_shape'][1] // self.dividers[1]
+            target = np.zeros((nparts, hm_sz[0], hm_sz[1]), dtype=np.float32)
+            tpts = results['gt_keypoints'].copy()
+            for i in range(nparts):
+                for j in range(tpts.shape[0]):
+                    draw = tpts[j, i, 2] == 2 or (tpts[j, i, 2] == 1
+                                                  and self.draw_invisible)
+                    if draw:
+                        target[i] = self.generate_target(
+                            target[i],
+                            tpts[j, i, :],
+                            self.sigma,
+                            label_type=self.label_type)
+            results['heatmaps'] = target
+        return results
