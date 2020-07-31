@@ -1,10 +1,10 @@
-_base_ = './mask_rcnn_r50_fpn_sample1e-3_mstrain_2x_lvis.py'
+_base_ = './mask_rcnn_r50_fpn_sample1e-3_mstrain_2x_lvis_v05.py'
 model = dict(
-    pretrained='open-mmlab://resnext101_64x4d',
+    pretrained='open-mmlab://resnext101_32x4d',
     backbone=dict(
         type='ResNeXt',
         depth=101,
-        groups=64,
+        groups=32,
         base_width=4,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
