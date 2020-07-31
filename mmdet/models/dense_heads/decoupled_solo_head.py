@@ -1,3 +1,4 @@
+import numpy as np
 import mmcv
 import torch
 import torch.nn as nn
@@ -5,7 +6,6 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 from mmdet.core import multi_apply, bbox2roi, matrix_nms
 from ..builder import HEADS, build_loss
-from ..registry import HEADS
 from .base_dense_seg_head import BaseDenseSegHead
 
 INF = 1e8
@@ -295,7 +295,7 @@ class DecoupledSOLOHead(BaseDenseSegHead):
                 cate_label_list.append(cate_label)
                 ins_ind_label = torch.zeros([1], dtype=torch.bool, device=device)
                 ins_ind_label_list.append(ins_ind_label)
-                ins_ind_label_list_xy.append(cate_label.nonzero())
+                ins_ind_label_list_xy.append((cate_label-self.num_classes).nonzero())
                 continue
             gt_bboxes = gt_bboxes_raw[hit_indices]
             gt_labels = gt_labels_raw[hit_indices]
@@ -346,7 +346,7 @@ class DecoupledSOLOHead(BaseDenseSegHead):
             ins_ind_label = ins_ind_label[ins_ind_label]
             ins_ind_label_list.append(ins_ind_label)
 
-            ins_ind_label_list_xy.append(cate_label.nonzero())
+            ins_ind_label_list_xy.append((cate_label-self.num_classes).nonzero())
         return ins_label_list, cate_label_list, ins_ind_label_list, ins_ind_label_list_xy
 
     def get_seg(self, seg_preds_x, seg_preds_y, cate_preds, img_metas, cfg, rescale=None):
