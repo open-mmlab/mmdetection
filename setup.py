@@ -66,16 +66,17 @@ def write_version_py():
 __version__ = '{}'
 short_version = '{}'
 version_info = ({})
+version_hash = "{}"
 """
     sha = get_hash()
     with open('mmdet/VERSION', 'r') as f:
         SHORT_VERSION = f.read().strip()
     VERSION_INFO = ', '.join(
         [x if x.isdigit() else f'"{x}"' for x in SHORT_VERSION.split('.')])
-    VERSION = SHORT_VERSION + '+' + sha
+    VERSION = SHORT_VERSION
 
     version_file_str = content.format(time.asctime(), VERSION, SHORT_VERSION,
-                                      VERSION_INFO)
+                                      VERSION_INFO, sha)
     with open(version_file, 'w') as f:
         f.write(version_file_str)
 
