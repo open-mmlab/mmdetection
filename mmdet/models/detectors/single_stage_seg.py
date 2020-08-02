@@ -1,6 +1,5 @@
 import torch.nn as nn
 
-from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -9,8 +8,8 @@ from .base import BaseDetector
 class SingleStageSegDetector(BaseDetector):
     """Base class for single-stage instance segmenters.
 
-    Single-stage instance segmenters directly and densely predict object masks on the
-    output features of the backbone+neck.
+    Single-stage instance segmenters directly and densely predict
+    object masks on the output features of the backbone+neck.
     """
 
     def __init__(self,
@@ -92,8 +91,9 @@ class SingleStageSegDetector(BaseDetector):
             dict[str, Tensor]: A dictionary of loss components.
         """
         x = self.extract_feat(img)
-        losses = self.bbox_head.forward_train(x, img_metas, gt_bboxes,
-                                              gt_labels, gt_bboxes_ignore, gt_masks)
+        losses = self.bbox_head.forward_train(x, img_metas,
+                                              gt_bboxes, gt_labels,
+                                              gt_bboxes_ignore, gt_masks)
         return losses
 
     def simple_test(self, img, img_meta, rescale=False):
