@@ -24,11 +24,19 @@ class YolactHead(AnchorHead):
     4. YOLACT box head predicts a set of mask coefficients for each box.
 
     Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
         num_head_convs (int): Number of the conv layers shared by
             box and cls branches.
         num_protos (int): Number of the mask coefficients.
         use_OHEM (bool): If true, `loss_single_OHEM` will be used for
             cls loss calculation. If false, `loss_single` will be used.
+        conv_cfg (dict): Dictionary to construct and config conv layer.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+        loss_cls (dict): Config of classification loss.
+        loss_bbox (dict): Config of localization loss.
+        anchor_generator (dict): Config dict for anchor generator.
     """
 
     def __init__(self,
@@ -107,6 +115,20 @@ class YolactHead(AnchorHead):
         xavier_init(self.yolact_coeff, distribution='uniform', bias=0)
 
     def forward_single(self, x):
+        """Forward feature of a single scale level.
+
+        Args:
+            x (Tensor): Features of a single scale level.
+
+        Returns:
+            tuple:
+                cls_score (Tensor): Cls scores for a single scale level \
+                    the channels number is num_anchors * num_classes.
+                bbox_pred (Tensor): Box energies / deltas for a single scale \
+                    level, the channels number is num_anchors * 4.
+                coeff_pred (Tensor): Mask coefficients for a single scale \
+                    level, the channels number is num_anchors * num_protos.
+        """
         for head_conv in self.head_convs:
             x = head_conv(x)
         cls_score = self.yolact_cls(x)
@@ -127,6 +149,24 @@ class YolactHead(AnchorHead):
         When self.use_OHEM == True, it functions like `SSDHead.loss`,
         otherwise, it follows `AnchorHead.loss`. Besides, it additionally
         returns `sampling_results`.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                Has shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): Class indices corresponding to each box
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore (None | list[Tensor]): Specify which bounding
+                boxes can be ignored when computing the loss. Default: None
+
+        Returns:
+            tuple:
+                dict[str, Tensor]: A dictionary of loss components.
+                List[:obj:`SamplingResult`]: Sampler results for each image.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.anchor_generator.num_levels
@@ -256,7 +296,33 @@ class YolactHead(AnchorHead):
                    cfg=None,
                    rescale=False):
         """"Similiar to func:`AnchorHead.get_bboxes`, but additionally
-        processes coeff_preds."""
+        processes coeff_preds.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                with shape (N, num_anchors * num_classes, H, W)
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W)
+            coeff_preds (list[Tensor]): Mask coefficients for each scale
+                level with shape (N, num_anchors * num_protos, H, W)
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
+                if None, test_cfg would be used
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+
+        Returns:
+            list[tuple[Tensor, Tensor, Tensor]]: Each item in result_list is
+                a 3-tuple. The first item is an (n, 5) tensor, where the
+                first 4 columns are bounding box positions
+                (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                between 0 and 1. The second item is an (n,) tensor where each
+                item is the predicted class label of the corresponding box.
+                The third item is an (n, num_protos) tensor where each item
+                is the predicted mask coefficients of instance inside the
+                corresponding box.
+        """
         assert len(cls_scores) == len(bbox_preds)
         num_levels = len(cls_scores)
 
@@ -296,7 +362,35 @@ class YolactHead(AnchorHead):
                            rescale=False):
         """"Similiar to func:`AnchorHead._get_bboxes_single`, but additionally
         processes coeff_preds_list and uses fast NMS instead of traditional
-        NMS."""
+        NMS.
+
+        Args:
+            cls_score_list (list[Tensor]): Box scores for a single scale level
+                Has shape (num_anchors * num_classes, H, W).
+            bbox_pred_list (list[Tensor]): Box energies / deltas for a single
+                scale level with shape (num_anchors * 4, H, W).
+            coeff_preds_list (list[Tensor]): Mask coefficients for a single
+                scale level with shape (num_anchors * num_protos, H, W).
+            mlvl_anchors (list[Tensor]): Box reference for a single scale level
+                with shape (num_total_anchors, 4).
+            img_shape (tuple[int]): Shape of the input image,
+                (height, width, 3).
+            scale_factor (ndarray): Scale factor of the image arange as
+                (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+
+        Returns:
+            tuple[Tensor, Tensor, Tensor]: The first item is an (n, 5) tensor,
+                where the first 4 columns are bounding box positions
+                (tl_x, tl_y, br_x, br_y) and the 5-th column is a score between
+                0 and 1. The second item is an (n,) tensor where each item is
+                the predicted class label of the corresponding box. The third
+                item is an (n, num_protos) tensor where each item is the
+                predicted mask coefficients of instance inside the
+                corresponding box.
+        """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
         mlvl_bboxes = []
@@ -360,6 +454,12 @@ class YolactSegmHead(nn.Module):
     Apply a semantic segmentation loss on feature space using layers that are
     only evaluated during training to increase performance with no speed
     penalty.
+
+    Args:
+        in_channels (int): Number of channels in the input feature map.
+        num_classes (int): Number of categories excluding the background
+            category.
+        loss_segm (dict): Config of semantic segmentation loss.
     """
 
     def __init__(self,
@@ -377,37 +477,49 @@ class YolactSegmHead(nn.Module):
         self.fp16_enabled = False
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.segm_conv = nn.Conv2d(
             self.in_channels, self.num_classes, kernel_size=1)
 
     def init_weights(self):
+        """Initialize weights of the head."""
         xavier_init(self.segm_conv, distribution='uniform')
 
     def forward(self, x):
+        """Forward feature from the upstream network.
+
+        Args:
+            x (Tensor): Feature from the upstream network, which is
+                a 4D-tensor.
+
+        Returns:
+            Tensor: Predicted semantic segmentation map with shape
+                (N, num_classes, H, W).
+        """
         return self.segm_conv(x)
 
     @force_fp32(apply_to=('segm_pred', ))
     def loss(self, segm_pred, gt_masks, gt_labels):
+        """Compute loss of the head.
+
+        Args:
+            segm_pred (list[Tensor]): Predicted semantic segmentation map
+                with shape (N, num_classes, H, W).
+            gt_masks (list[Tensor]): Ground truth masks for each image with
+                the same shape of the input image.
+            gt_labels (list[Tensor]): Class indices corresponding to each box.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         loss_segm = []
         num_imgs, num_classes, mask_h, mask_w = segm_pred.size()
         for idx in range(num_imgs):
             cur_segm_pred = segm_pred[idx]
             cur_gt_masks = gt_masks[idx].float()
             cur_gt_labels = gt_labels[idx]
-
-            with torch.no_grad():
-                downsampled_masks = F.interpolate(
-                    cur_gt_masks.unsqueeze(0), (mask_h, mask_w),
-                    mode='bilinear',
-                    align_corners=False).squeeze(0)
-                downsampled_masks = downsampled_masks.gt(0.5).float()
-                segm_targets = torch.zeros_like(
-                    cur_segm_pred, requires_grad=False)
-                for obj_idx in range(downsampled_masks.size(0)):
-                    segm_targets[cur_gt_labels[obj_idx] - 1] = torch.max(
-                        segm_targets[cur_gt_labels[obj_idx] - 1],
-                        downsampled_masks[obj_idx])
-
+            segm_targets = self.get_targets(cur_segm_pred, cur_gt_masks,
+                                            cur_gt_labels)
             loss = self.loss_segm(
                 cur_segm_pred,
                 segm_targets,
@@ -415,61 +527,97 @@ class YolactSegmHead(nn.Module):
             loss_segm.append(loss)
         return dict(loss_segm=loss_segm)
 
+    def get_targets(self, segm_pred, gt_masks, gt_labels):
+        """Compute semantic segmentation targets for each image.
+
+        Args:
+            segm_pred (Tensor): Predicted semantic segmentation map
+                with shape (num_classes, H, W).
+            gt_masks (Tensor): Ground truth masks for each image with
+                the same shape of the input image.
+            gt_labels (Tensor): Class indices corresponding to each box.
+
+        Returns:
+            Tensor: Semantic segmentation targets with shape
+                (num_classes, H, W).
+        """
+        num_classes, mask_h, mask_w = segm_pred.size()
+        with torch.no_grad():
+            downsampled_masks = F.interpolate(
+                gt_masks.unsqueeze(0), (mask_h, mask_w),
+                mode='bilinear',
+                align_corners=False).squeeze(0)
+            downsampled_masks = downsampled_masks.gt(0.5).float()
+            segm_targets = torch.zeros_like(segm_pred, requires_grad=False)
+            for obj_idx in range(downsampled_masks.size(0)):
+                segm_targets[gt_labels[obj_idx] - 1] = torch.max(
+                    segm_targets[gt_labels[obj_idx] - 1],
+                    downsampled_masks[obj_idx])
+            return segm_targets
+
 
 @HEADS.register_module()
 class YolactProtonet(nn.Module):
     """YOLACT mask head used in https://arxiv.org/abs/1904.02689.
 
     This head outputs the mask prototypes for YOLACT.
+
+    Args:
+        protonet_cfg (dict): Config of Protonet.
+        in_channels (int): Number of channels in the input feature map.
+        num_protos (int): Number of prototypes.
+        num_classes (int): Number of categories excluding the background
+            category.
+        loss_mask_weight (float): Reweight the mask loss by this factor.
+        max_masks_to_train (int): Maximum number of masks to train for
+            each image.
     """
 
-    def __init__(
-        self,
-        in_channels=256,
-        num_protos=32,
-        num_classes=80,
-        loss_mask_weight=1.0,
-        max_masks_to_train=100,
-    ):
+    def __init__(self,
+                 protonet_cfg,
+                 in_channels=256,
+                 num_protos=32,
+                 num_classes=80,
+                 loss_mask_weight=1.0,
+                 max_masks_to_train=100):
         super(YolactProtonet, self).__init__()
-        config = [(256, 3, {'padding': 1})] * 3 + \
-            [(None, -2, {}), (256, 3, {'padding': 1})] \
-            + [(num_protos, 1, {})]
-        self.protonet = self.make_net(in_channels, config)
+        self.protonet = self.make_net(in_channels, protonet_cfg)
         self.loss_mask_weight = loss_mask_weight
         self.num_protos = num_protos
         self.num_classes = num_classes
         self.max_masks_to_train = max_masks_to_train
         self.fp16_enabled = False
 
-    def make_net(self, in_channels, config, include_last_relu=True):
+    def make_net(self, in_channels, protonet_cfg, include_last_relu=True):
         """A helper function to take a config setting and turn it into a
         network."""
 
-        def make_layer(layer_cfg):
+        def make_layer(num_channels, kernel_size):
             nonlocal in_channels
 
             # Possible patterns:
-            # ( 256, 3, {}) -> conv
-            # ( 256,-2, {}) -> deconv
-            # (None,-2, {}) -> bilinear interpolate
-
-            num_channels = layer_cfg[0]
-            kernel_size = layer_cfg[1]
+            # ( 256, 3) -> conv
+            # ( 256,-2) -> deconv
+            # (None,-2) -> bilinear interpolate
 
             if kernel_size > 0:
-                layer = nn.Conv2d(in_channels, num_channels, kernel_size,
-                                  **layer_cfg[2])
+                layer = nn.Conv2d(
+                    in_channels,
+                    num_channels,
+                    kernel_size,
+                    padding=kernel_size // 2)
             else:
                 if num_channels is None:
                     layer = InterpolateModule(
                         scale_factor=-kernel_size,
                         mode='bilinear',
-                        align_corners=False,
-                        **layer_cfg[2])
+                        align_corners=False)
                 else:
-                    layer = nn.ConvTranspose2d(in_channels, num_channels,
-                                               -kernel_size, **layer_cfg[2])
+                    layer = nn.ConvTranspose2d(
+                        in_channels,
+                        num_channels,
+                        -kernel_size,
+                        padding=kernel_size // 2)
 
             in_channels = num_channels if num_channels is not None \
                 else in_channels
@@ -477,24 +625,49 @@ class YolactProtonet(nn.Module):
             return [layer, nn.ReLU(inplace=True)]
 
         # Use sum to concat together all the component layer lists
-        net = sum([make_layer(x) for x in config], [])
+        net = sum([
+            make_layer(x, y) for x, y in zip(protonet_cfg['num_channels'],
+                                             protonet_cfg['kernel_size'])
+        ], [])
         if not include_last_relu:
             net = net[:-1]
 
         return nn.Sequential(*(net))
 
     def init_weights(self):
+        """Initialize weights of the head."""
         for m in self.protonet:
             if isinstance(m, nn.Conv2d):
                 xavier_init(m, distribution='uniform')
 
     def forward(self, x, coeff_pred, bboxes, img_meta, sampling_results=None):
+        """Forward feature from the upstream network to get prototypes and
+        linearly combine the prototypes, using masks coefficients, into
+        instance masks. Finally, crop the instance masks with given bboxes.
+
+        Args:
+            x (Tensor): Feature from the upstream network, which is
+                a 4D-tensor.
+            coeff_pred (list[Tensor]): Mask coefficients for each scale
+                level with shape (N, num_anchors * num_protos, H, W).
+            bboxes (list[Tensor]): Box used for cropping with shape
+                (N, num_anchors * 4, H, W). During training, they are
+                ground truth boxes. During testing, they are predicted
+                boxes.
+            img_meta (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            sampling_results (List[:obj:`SamplingResult`]): Sampler results
+                for each image.
+
+        Returns:
+            list[Tensor]: Predicted instance segmentation masks.
+        """
         prototypes = self.protonet(x)
         prototypes = prototypes.permute(0, 2, 3, 1).contiguous()
 
         num_imgs = x.size(0)
         # Training state
-        if sampling_results is not None:
+        if self.training:
             coeff_pred_list = []
             for coeff_pred_per_level in coeff_pred:
                 coeff_pred_per_level = \
@@ -511,7 +684,7 @@ class YolactProtonet(nn.Module):
             cur_img_meta = img_meta[idx]
 
             # Testing state
-            if sampling_results is None:
+            if not self.training:
                 bboxes_for_cropping = cur_bboxes
             else:
                 cur_sampling_results = sampling_results[idx]
@@ -521,7 +694,7 @@ class YolactProtonet(nn.Module):
                 pos_inds = cur_sampling_results.pos_inds
                 cur_coeff_pred = cur_coeff_pred[pos_inds]
 
-            # Linearly combining the prototypes with the mask coefficients
+            # Linearly combine the prototypes with the mask coefficients
             mask_pred = cur_prototypes @ cur_coeff_pred.t()
             mask_pred = torch.sigmoid(mask_pred)
 
@@ -538,6 +711,23 @@ class YolactProtonet(nn.Module):
 
     @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, gt_masks, gt_bboxes, img_meta, sampling_results):
+        """Compute loss of the head.
+
+        Args:
+            mask_pred (list[Tensor]): Predicted prototypes with shape
+                (num_classes, H, W).
+            gt_masks (list[Tensor]): Ground truth masks for each image with
+                the same shape of the input image.
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            img_meta (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            sampling_results (List[:obj:`SamplingResult`]): Sampler results
+                for each image.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         loss_mask = []
         num_imgs = len(mask_pred)
         total_pos = 0
@@ -565,13 +755,8 @@ class YolactProtonet(nn.Module):
 
             gt_bboxes_for_reweight = cur_gt_bboxes[pos_assigned_gt_inds]
 
-            mask_h, mask_w = cur_mask_pred.shape[-2:]
-            cur_gt_masks = F.interpolate(
-                cur_gt_masks.unsqueeze(0), (mask_h, mask_w),
-                mode='bilinear',
-                align_corners=False).squeeze(0)
-            cur_gt_masks = cur_gt_masks.gt(0.5).float()
-            mask_targets = cur_gt_masks[pos_assigned_gt_inds]
+            mask_targets = self.get_targets(cur_mask_pred, cur_gt_masks,
+                                            pos_assigned_gt_inds)
 
             cur_mask_pred = torch.clamp(cur_mask_pred, 0, 1)
             loss = F.binary_cross_entropy(
@@ -591,7 +776,42 @@ class YolactProtonet(nn.Module):
 
         return dict(loss_mask=loss_mask)
 
+    def get_targets(self, mask_pred, gt_masks, pos_assigned_gt_inds):
+        """Compute instance segmentation targets for each image.
+
+        Args:
+            mask_pred (Tensor): Predicted prototypes with shape
+                (num_classes, H, W).
+            gt_masks (Tensor): Ground truth masks for each image with
+                the same shape of the input image.
+            pos_assigned_gt_inds (Tensor): GT indices of the corresponding
+                positive samples.
+        Returns:
+            Tensor: Instance segmentation targets with shape
+                (num_instances, H, W).
+        """
+        mask_h, mask_w = mask_pred.shape[-2:]
+        gt_masks = F.interpolate(
+            gt_masks.unsqueeze(0), (mask_h, mask_w),
+            mode='bilinear',
+            align_corners=False).squeeze(0)
+        gt_masks = gt_masks.gt(0.5).float()
+        mask_targets = gt_masks[pos_assigned_gt_inds]
+        return mask_targets
+
     def get_seg_masks(self, mask_pred, label_pred, img_meta, rescale):
+        """Resize, binarize, and format the instance mask predictions.
+
+        Args:
+            mask_pred (Tensor): shape (N, H, W).
+            label_pred (Tensor): shape (N, ).
+            img_meta (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            rescale (bool): If rescale is False, then returned masks will
+                fit the scale of imgs[0].
+        Returns:
+            list[ndarray]: Mask predictions grouped by their predicted classes.
+        """
         ori_shape = img_meta[0]['ori_shape']
         scale_factor = img_meta[0]['scale_factor']
         if rescale:
@@ -616,9 +836,12 @@ class YolactProtonet(nn.Module):
         bbox.
 
         Args:
-            masks should be a size [h, w, n] tensor of masks.
-            boxes should be a size [n, 4] tensor of bbox coords in
-                relative point form.
+            masks (Tensor): shape [H, W, N].
+            boxes (Tensor): bbox coords in relative point form with
+                shape [N, 4].
+
+        Return:
+            Tensor: The cropped masks.
         """
         h, w, n = masks.size()
         x1, x2 = self.sanitize_coordinates(
@@ -647,9 +870,19 @@ class YolactProtonet(nn.Module):
         and x2 <= image_size. Also converts from relative to absolute
         coordinates and casts the results to long tensors.
 
-        If cast is false, the result won't be cast to longs.
         Warning: this does things in-place behind the scenes so
         copy if necessary.
+
+        Args:
+            _x1 (Tensor): shape (N, ).
+            _x2 (Tensor): shape (N, ).
+            img_size (int): Size of the input image.
+            padding (int): x1 >= padding, x2 <= image_size-padding.
+            cast (bool): If cast is false, the result won't be cast to longs.
+        Returns:
+            tuple:
+                x1 (Tensor): Sanitized _x1.
+                x2 (Tensor): Sanitized _x2.
         """
         _x1 = _x1 * img_size
         _x2 = _x2 * img_size
@@ -677,4 +910,5 @@ class InterpolateModule(nn.Module):
         self.kwdargs = kwdargs
 
     def forward(self, x):
+        """Forward features from the upstream network."""
         return F.interpolate(x, *self.args, **self.kwdargs)

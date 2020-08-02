@@ -1,3 +1,5 @@
+_base_ = '../_base_/default_runtime.py'
+
 # model settings
 img_size = 550
 model = dict(
@@ -47,6 +49,9 @@ model = dict(
         loss_bbox=dict(type='L1Loss', loss_weight=1.5)),
     mask_head=dict(
         type='YolactProtonet',
+        protonet_cfg=dict(
+            kernel_size=[3, 3, 3, -2, 3, 1],
+            num_channels=[256, 256, 256, None, 256, 32]),
         in_channels=256,
         num_protos=32,
         num_classes=80,
@@ -57,8 +62,7 @@ model = dict(
         in_channels=256,
         num_classes=80,
         loss_segm=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-    ))
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
@@ -150,21 +154,6 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.1,
     step=[20, 42, 49, 52])
-checkpoint_config = dict(interval=1)
-# yapf:disable
-log_config = dict(
-    interval=10,
-    hooks=[
-        dict(type='TextLoggerHook'),
-    ])
-# yapf:enable
-# runtime settings
 total_epochs = 55
-dist_params = dict(backend='nccl')
-log_level = 'INFO'
-work_dir = './work_dirs/yolact_r50'
-load_from = None
-resume_from = None
-workflow = [('train', 1)]
 cudnn_benchmark = True
 evaluation = dict(metric=['bbox', 'segm'])

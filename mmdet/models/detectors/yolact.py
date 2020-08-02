@@ -58,6 +58,31 @@ class Yolact(SingleStageDetector):
                       gt_labels,
                       gt_bboxes_ignore=None,
                       gt_masks=None):
+        """
+        Args:
+            img (Tensor): of shape (N, C, H, W) encoding input images.
+                Typically these should be mean centered and std scaled.
+
+            img_metas (list[dict]): list of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+
+            gt_labels (list[Tensor]): class indices corresponding to each box
+
+            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+            gt_masks (None | Tensor) : true segmentation masks for each box
+                used if the architecture supports a segmentation task.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
         gt_bboxes, gt_labels, gt_masks = multi_apply(
             self.process_gt_single,
             gt_bboxes,
@@ -97,6 +122,7 @@ class Yolact(SingleStageDetector):
         return losses
 
     def simple_test(self, img, img_meta, rescale=False):
+        """Test function without test time augmentation."""
         x = self.extract_feat(img)
 
         cls_score, bbox_pred, coeff_pred = self.bbox_head(x)
@@ -124,4 +150,5 @@ class Yolact(SingleStageDetector):
         return bbox_results, mask_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
+        """Test with augmentations."""
         raise NotImplementedError
