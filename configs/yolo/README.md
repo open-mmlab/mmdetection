@@ -14,10 +14,11 @@
 
 ## Results and Models
 
-|    Backbone     | Train Scale  | Lr schd | Mem (GB) | Eval Scale | Inf time (fps) | box AP | Download |
-| :-------------: | :----------: | :-----: | :------: | :--------: | :------------: | :----: |:--------:|
-|   DarkNet-53    | Multi-Scale  |  273e   |   1.8    | 608 * 608  |      44        |**37.6**| [model](https://drive.google.com/file/d/1Ca27fP4hlBFduMCv5b_f-0J9EdfxCgPb/view?usp=sharing) &#124; [log](https://github.com/open-mmlab/mmdetection/files/4910982/log.zip) |
-|        -        |      -       |     -   |  -       | 416 * 416  |      **64**    |  34.8  | - |
+|    Backbone     |  Scale  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download  |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-------: |
+|   DarkNet-53    |   320   |   273e  |   2.7    |      50.9      |  28.6  | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_320_273e_coco/yolov3_d53_320_273e_coco-7cf15c63.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_320_273e_coco/yolov3_d53_320_273e_coco-20200801_151445.log.json) |
+|   DarkNet-53    |   416   |   273e  |   3.8    |      50.9      |  30.7  | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-416_273e_coco/yolov3_d53_mstrain-416_273e_coco-1a24e53b.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-416_273e_coco/yolov3_d53_mstrain-416_273e_coco-20200801_150219.log.json) |
+|   DarkNet-53    |   608   |   273e  |   7.1    |      47.1      |  33.6  | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-608_273e_coco/yolov3_d53_mstrain-608_273e_coco-d97b9e5c.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-608_273e_coco/yolov3_d53_mstrain-608_273e_coco-20200801_150110.log.json) |
 
 
 ## Credit
