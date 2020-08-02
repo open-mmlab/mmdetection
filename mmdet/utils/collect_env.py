@@ -53,7 +53,7 @@ def collect_env():
     env_info['OpenCV'] = cv2.__version__
 
     env_info['MMCV'] = mmcv.__version__
-    env_info['MMDetection'] = mmdet.__version__
+    env_info['MMDetection'] = mmdet.__version__ + '+' + mmdet.version_hash
     from mmcv.ops import get_compiler_version, get_compiling_cuda_version
     env_info['MMDetection Compiler'] = get_compiler_version()
     env_info['MMDetection CUDA Compiler'] = get_compiling_cuda_version()
