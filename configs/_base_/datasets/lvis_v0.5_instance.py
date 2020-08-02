@@ -1,10 +1,11 @@
 _base_ = 'coco_instance.py'
-dataset_type = 'LVISDataset'
-data_root = 'data/lvis/'
+dataset_type = 'LVISV05Dataset'
+data_root = 'data/lvis_v0.5/'
 data = dict(
     samples_per_gpu=2,
     workers_per_gpu=2,
     train=dict(
+        _delete_=True,
         type='ClassBalancedDataset',
         oversample_thr=1e-3,
         dataset=dict(
