@@ -128,8 +128,8 @@ class CocoDataset(CustomDataset):
             with_mask (bool): Whether to parse mask annotations.
 
         Returns:
-            dict: A dict containing the following keys: bboxes, bboxes_ignore,
-                labels, masks, seg_map. "masks" are raw annotations and not
+            dict: A dict containing the following keys: bboxes, bboxes_ignore,\
+                labels, masks, seg_map. "masks" are raw annotations and not \
                 decoded into binary masks.
         """
         gt_bboxes = []
@@ -285,7 +285,7 @@ class CocoDataset(CustomDataset):
                 "somepath/xxx.proposal.json".
 
         Returns:
-            dict[str: str]: Possible keys are "bbox", "segm", "proposal", and
+            dict[str: str]: Possible keys are "bbox", "segm", "proposal", and \
                 values are corresponding filenames.
         """
         result_files = dict()
@@ -344,8 +344,8 @@ class CocoDataset(CustomDataset):
                 If not specified, a temp file will be created. Default: None.
 
         Returns:
-            tuple: (result_files, tmp_dir), result_files is a dict containing
-                the json filepaths, tmp_dir is the temporal directory created
+            tuple: (result_files, tmp_dir), result_files is a dict containing \
+                the json filepaths, tmp_dir is the temporal directory created \
                 for saving json files when jsonfile_prefix is not specified.
         """
         assert isinstance(results, list), 'results must be a list'
@@ -385,8 +385,8 @@ class CocoDataset(CustomDataset):
                 recalls, such as recall@100, recall@1000.
                 Default: (100, 300, 1000).
             iou_thrs (Sequence[float]): IoU threshold used for evaluating
-                recalls. If set to a list, the average recall of all IoUs will
-                also be computed. Default: 0.5.
+                recalls/mAPs. If set to a list, the average of all IoUs will
+                also be computed. Default: np.arange(0.5, 0.96, 0.05).
 
         Returns:
             dict[str, float]: COCO style evaluation metric.
@@ -434,6 +434,7 @@ class CocoDataset(CustomDataset):
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
+            cocoEval.params.iouThrs = iou_thrs
             if metric == 'proposal':
                 cocoEval.params.useCats = 0
                 cocoEval.params.maxDets = list(proposal_nums)

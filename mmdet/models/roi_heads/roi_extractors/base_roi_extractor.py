@@ -2,8 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 import torch
 import torch.nn as nn
-
-from mmdet import ops
+from mmcv import ops
 
 
 class BaseRoIExtractor(nn.Module, metaclass=ABCMeta):
@@ -35,7 +34,7 @@ class BaseRoIExtractor(nn.Module, metaclass=ABCMeta):
 
         Args:
             layer_cfg (dict): Dictionary to construct and config RoI layer
-                operation. Options are modules under ``mmdet/ops`` such as
+                operation. Options are modules under ``mmcv/ops`` such as
                 ``RoIAlign``.
             featmap_strides (int): The stride of input feature map w.r.t to the
                 original image size, which would be used to scale RoI

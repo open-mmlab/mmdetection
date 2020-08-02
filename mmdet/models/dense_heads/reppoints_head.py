@@ -2,10 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.ops import DeformConv2d
 
 from mmdet.core import (PointGenerator, build_assigner, build_sampler,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
-from mmdet.ops import DeformConv
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -57,7 +57,7 @@ class RepPointsHead(AnchorFreeHead):
         self.use_grid_points = use_grid_points
         self.center_init = center_init
 
-        # we use deformable conv to extract points features
+        # we use deform conv to extract points features
         self.dcn_kernel = int(np.sqrt(num_points))
         self.dcn_pad = int((self.dcn_kernel - 1) / 2)
         assert self.dcn_kernel * self.dcn_kernel == num_points, \
@@ -130,9 +130,10 @@ class RepPointsHead(AnchorFreeHead):
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg))
         pts_out_dim = 4 if self.use_grid_points else 2 * self.num_points
-        self.reppoints_cls_conv = DeformConv(self.feat_channels,
-                                             self.point_feat_channels,
-                                             self.dcn_kernel, 1, self.dcn_pad)
+        self.reppoints_cls_conv = DeformConv2d(self.feat_channels,
+                                               self.point_feat_channels,
+                                               self.dcn_kernel, 1,
+                                               self.dcn_pad)
         self.reppoints_cls_out = nn.Conv2d(self.point_feat_channels,
                                            self.cls_out_channels, 1, 1, 0)
         self.reppoints_pts_init_conv = nn.Conv2d(self.feat_channels,
@@ -140,10 +141,10 @@ class RepPointsHead(AnchorFreeHead):
                                                  1, 1)
         self.reppoints_pts_init_out = nn.Conv2d(self.point_feat_channels,
                                                 pts_out_dim, 1, 1, 0)
-        self.reppoints_pts_refine_conv = DeformConv(self.feat_channels,
-                                                    self.point_feat_channels,
-                                                    self.dcn_kernel, 1,
-                                                    self.dcn_pad)
+        self.reppoints_pts_refine_conv = DeformConv2d(self.feat_channels,
+                                                      self.point_feat_channels,
+                                                      self.dcn_kernel, 1,
+                                                      self.dcn_pad)
         self.reppoints_pts_refine_out = nn.Conv2d(self.point_feat_channels,
                                                   pts_out_dim, 1, 1, 0)
 

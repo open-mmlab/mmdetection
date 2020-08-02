@@ -52,7 +52,7 @@ class Integral(nn.Module):
                 offsets from the box center in four directions, shape (N, 4).
         """
         x = F.softmax(x.reshape(-1, self.reg_max + 1), dim=1)
-        x = F.linear(x, self.project).reshape(-1, 4)
+        x = F.linear(x, self.project.type_as(x)).reshape(-1, 4)
         return x
 
 
@@ -570,7 +570,7 @@ class GFLHead(AnchorHead):
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
         if not inside_flags.any():
-            return (None, ) * 6
+            return (None, ) * 7
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 

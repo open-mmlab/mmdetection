@@ -1,8 +1,8 @@
 matplotlib
-mmcv>=0.6.2
 numpy
 # need older pillow until torchvision is fixed
 Pillow<=6.2.2
+pycocotools@git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools
 six
 terminaltables
 torch>=1.3

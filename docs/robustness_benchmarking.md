@@ -18,7 +18,7 @@ This page provides basic tutorials how to use the benchmark.
 }
 ```
 
-![image corruption example](../demo/corruptions_sev_3.png)
+![image corruption example](../resources/corruptions_sev_3.png)
 
 ## About the benchmark
 

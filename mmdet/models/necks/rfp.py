@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import constant_init, kaiming_init
+from mmcv.cnn import constant_init, kaiming_init, xavier_init
 
 from ..builder import NECKS, build_backbone
 from .fpn import FPN
@@ -95,7 +95,13 @@ class RFP(FPN):
             bias=True)
 
     def init_weights(self):
-        super().init_weights()
+        # Avoid using super().init_weights(), which may alter the default
+        # initialization of the modules in self.rfp_modules that have missing
+        # keys in the pretrained checkpoint.
+        for convs in [self.lateral_convs, self.fpn_convs]:
+            for m in convs.modules():
+                if isinstance(m, nn.Conv2d):
+                    xavier_init(m, distribution='uniform')
         for rfp_idx in range(self.rfp_steps - 1):
             self.rfp_modules[rfp_idx].init_weights(
                 self.rfp_modules[rfp_idx].pretrained)
