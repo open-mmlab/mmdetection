@@ -50,8 +50,8 @@ class DecoupledSOLOHead(BaseDenseSegHead):
                  num_grids=None,
                  cate_down_pos=0,
                  background_label=None,
-                 loss_ins=None,
-                 loss_cate=None,
+                 loss_mask=None,
+                 loss_cls=None,
                  conv_cfg=None,
                  norm_cfg=None,
                  train_cfg=None,
@@ -73,8 +73,8 @@ class DecoupledSOLOHead(BaseDenseSegHead):
         # background_label should be either 0 or num_classes
         assert (self.background_label == 0
                 or self.background_label == num_classes)
-        self.loss_cate = build_loss(loss_cate)
-        self.ins_loss_weight = loss_ins['loss_weight']
+        self.loss_cls = build_loss(loss_cls)
+        self.ins_loss_weight = loss_mask['loss_weight']
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.train_cfg = train_cfg
@@ -82,7 +82,6 @@ class DecoupledSOLOHead(BaseDenseSegHead):
         self._init_layers()
 
     def _init_layers(self):
-        norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
         self.ins_convs_x = nn.ModuleList()
         self.ins_convs_y = nn.ModuleList()
         self.cate_convs = nn.ModuleList()
@@ -96,8 +95,8 @@ class DecoupledSOLOHead(BaseDenseSegHead):
                     3,
                     stride=1,
                     padding=1,
-                    norm_cfg=norm_cfg,
-                    bias=norm_cfg is None))
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
             self.ins_convs_y.append(
                 ConvModule(
                     chn,
@@ -105,8 +104,8 @@ class DecoupledSOLOHead(BaseDenseSegHead):
                     3,
                     stride=1,
                     padding=1,
-                    norm_cfg=norm_cfg,
-                    bias=norm_cfg is None))
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
 
             chn = self.in_channels if i == 0 else self.seg_feat_channels
             self.cate_convs.append(
@@ -116,8 +115,8 @@ class DecoupledSOLOHead(BaseDenseSegHead):
                     3,
                     stride=1,
                     padding=1,
-                    norm_cfg=norm_cfg,
-                    bias=norm_cfg is None))
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
 
         self.dsolo_ins_list_x = nn.ModuleList()
         self.dsolo_ins_list_y = nn.ModuleList()
@@ -256,7 +255,7 @@ class DecoupledSOLOHead(BaseDenseSegHead):
 
         num_ins = 0.
         # dice loss
-        loss_ins = []
+        loss_mask = []
         for input_x, input_y, target in \
                 zip(ins_preds_x_final, ins_preds_y_final, ins_labels):
             mask_n = input_x.size(0)
@@ -264,8 +263,8 @@ class DecoupledSOLOHead(BaseDenseSegHead):
                 continue
             num_ins += mask_n
             input = (input_x.sigmoid())*(input_y.sigmoid())
-            loss_ins.append(dice_loss(input, target))
-        loss_ins = torch.cat(loss_ins).mean() * self.ins_loss_weight
+            loss_mask.append(dice_loss(input, target))
+        loss_mask = torch.cat(loss_mask).mean() * self.ins_loss_weight
 
         # cate
         cate_labels = [
@@ -281,11 +280,11 @@ class DecoupledSOLOHead(BaseDenseSegHead):
         ]
         flatten_cate_preds = torch.cat(cate_preds)
 
-        loss_cate = self.loss_cate(flatten_cate_preds, flatten_cate_labels,
+        loss_cls = self.loss_cls(flatten_cate_preds, flatten_cate_labels,
                                    avg_factor=num_ins + 1)
         return dict(
-            loss_ins=loss_ins,
-            loss_cate=loss_cate)
+            loss_mask=loss_mask,
+            loss_cls=loss_cls)
 
     def solo_target_single(self,
                            gt_bboxes_raw,
