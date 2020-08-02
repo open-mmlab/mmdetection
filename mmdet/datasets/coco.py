@@ -385,8 +385,8 @@ class CocoDataset(CustomDataset):
                 recalls, such as recall@100, recall@1000.
                 Default: (100, 300, 1000).
             iou_thrs (Sequence[float]): IoU threshold used for evaluating
-                recalls. If set to a list, the average recall of all IoUs will
-                also be computed. Default: 0.5.
+                recalls/mAPs. If set to a list, the average of all IoUs will
+                also be computed. Default: np.arange(0.5, 0.96, 0.05).
 
         Returns:
             dict[str, float]: COCO style evaluation metric.
@@ -434,6 +434,7 @@ class CocoDataset(CustomDataset):
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
+            cocoEval.params.iouThrs = iou_thrs
             if metric == 'proposal':
                 cocoEval.params.useCats = 0
                 cocoEval.params.maxDets = list(proposal_nums)

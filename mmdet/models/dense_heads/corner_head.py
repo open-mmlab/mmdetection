@@ -9,6 +9,7 @@ from mmcv.ops import CornerPool, batched_nms
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
+from .base_dense_head import BaseDenseHead
 
 
 class BiCornerPool(nn.Module):
@@ -72,7 +73,7 @@ class BiCornerPool(nn.Module):
 
 
 @HEADS.register_module()
-class CornerHead(nn.Module):
+class CornerHead(BaseDenseHead):
     """Head of CornerNet: Detecting Objects as Paired Keypoints.
 
     Code is modified from the `official github repo
@@ -215,8 +216,8 @@ class CornerHead(nn.Module):
         """Initialize weights of the head."""
         bias_init = bias_init_with_prob(0.1)
         for i in range(self.num_feat_levels):
-            self.tl_heat[i][-1].bias.data.fill_(bias_init)
-            self.br_heat[i][-1].bias.data.fill_(bias_init)
+            self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
+            self.br_heat[i][-1].conv.bias.data.fill_(bias_init)
 
     def forward(self, feats):
         """Forward features from the upstream network.

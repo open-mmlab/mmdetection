@@ -79,7 +79,7 @@ pip install mmcv-full
 | 2.1.0               | mmcv>=0.5.9, <=0.6.1|
 | 2.0.0               | mmcv>=0.5.1, <=0.5.8|
 
-2. You need to run `pip unisntall mmcv` first if you have mmcv installed.
+2. You need to run `pip uninstall mmcv` first if you have mmcv installed.
 If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
 d. Clone the mmdetection repository.
