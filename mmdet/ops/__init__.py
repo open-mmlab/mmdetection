@@ -1,3 +1,6 @@
+# This file is added for back-compatibility. Thus, downstream codebase
+# could still use and import mmdet.ops.
+
 # yapf: disable
 from mmcv.ops import (ContextBlock, Conv2d, ConvTranspose2d, ConvWS2d,
                       CornerPool, DeformConv, DeformConvPack, DeformRoIPooling,
