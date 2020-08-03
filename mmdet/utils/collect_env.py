@@ -7,10 +7,9 @@ import cv2
 import mmcv
 import torch
 import torchvision
-from mmcv.utils import get_build_config
+from mmcv.utils import get_build_config, get_git_hash
 
 import mmdet
-from .version_utils import get_git_hash
 
 
 def collect_env():
