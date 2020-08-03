@@ -1304,6 +1304,7 @@ class RandomCenterCropPad(object):
         The area between ``final_border`` and ``size - final_border`` is the
         ``center range``. We randomly choose center from the ``center range``
         to avoid our random center is too close to original image's border.
+        Also ``center range`` should be larger than 0.
 
         Args:
             border (int): The initial border, default is 128.
@@ -1311,7 +1312,8 @@ class RandomCenterCropPad(object):
         Returns:
             int: The final border.
         """
-        i = pow(2, np.ceil(np.log2(np.ceil(2 * border / size))))
+        k = 2 * border / size
+        i = pow(2, np.ceil(np.log2(np.ceil(k))) + (k == int(k)))
         return border // i
 
     def _filter_boxes(self, patch, boxes):
