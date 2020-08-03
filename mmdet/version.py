@@ -4,9 +4,9 @@ __version__ = '2.3.0rc0'
 short_version = '2.3.0rc0'
 
 
-def parse_version_info():
+def parse_version_info(version_str):
     version_info = []
-    for x in short_version.split('.'):
+    for x in version_str.split('.'):
         if x.isdigit():
             version_info.append(int(x))
         elif x.find('rc') != -1:
@@ -16,4 +16,4 @@ def parse_version_info():
     return tuple(version_info)
 
 
-version_info = parse_version_info()
+version_info = parse_version_info(__version__)
