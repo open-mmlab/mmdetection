@@ -10,6 +10,7 @@ import torchvision
 from mmcv.utils import get_build_config
 
 import mmdet
+from .version_utils import get_git_hash
 
 
 def collect_env():
@@ -53,7 +54,7 @@ def collect_env():
     env_info['OpenCV'] = cv2.__version__
 
     env_info['MMCV'] = mmcv.__version__
-    env_info['MMDetection'] = mmdet.__version__ + '+' + mmdet.version_hash
+    env_info['MMDetection'] = mmdet.__version__ + '+' + get_git_hash()
     from mmcv.ops import get_compiler_version, get_compiling_cuda_version
     env_info['MMDetection Compiler'] = get_compiler_version()
     env_info['MMDetection CUDA Compiler'] = get_compiling_cuda_version()
