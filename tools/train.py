@@ -135,7 +135,7 @@ def main():
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
-            mmdet_version=__version__ + get_git_hash(),
+            mmdet_version=__version__ + get_git_hash()[:7],
             config=cfg.pretty_text,
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
