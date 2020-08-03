@@ -184,7 +184,7 @@ class HRModule(nn.Module):
 
         x_fuse = []
         for i in range(len(self.fuse_layers)):
-            y = 0
+            y = x[0] if i == 0 else self.fuse_layers[i][0](x[0])
             for j in range(self.num_branches):
                 if i == j:
                     y += x[j]
