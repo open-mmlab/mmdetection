@@ -235,7 +235,7 @@ class SOLOHead(BaseDenseSegHead):
         ]
         flatten_cate_preds = torch.cat(cate_preds)
         loss_cls = self.loss_cls(flatten_cate_preds, flatten_cate_labels,
-                                   avg_factor=num_ins + 1)
+                                 avg_factor=num_ins + 1)
 
         # dice loss
         loss_mask = []

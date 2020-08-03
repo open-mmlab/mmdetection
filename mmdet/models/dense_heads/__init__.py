@@ -27,5 +27,5 @@ __all__ = [
     'SSDHead', 'FCOSHead', 'RepPointsHead', 'FoveaHead',
     'FreeAnchorRetinaHead', 'ATSSHead', 'FSAFHead', 'NASFCOSHead',
     'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead',
-    'SOLOHead', 'DecoupledSOLOLightHead'
+    'SOLOHead', 'DecoupledSOLOHead'
 ]
