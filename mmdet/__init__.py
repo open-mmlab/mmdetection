@@ -8,8 +8,10 @@ def digit_version(version_str):
     for x in version_str.split('.'):
         if x.isdigit():
             digit_version.append(int(x))
-        else:
-            digit_version.append(-1)
+        elif x.find('rc') != -1:
+            patch_version = x.split('rc')
+            digit_version.append(int(patch_version[0]) - 1)
+            digit_version.append(int(patch_version[1]))
     return digit_version
 
 
