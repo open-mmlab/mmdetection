@@ -1,7 +1,7 @@
 # Copyright (c) Open-MMLab. All rights reserved.
 
 __version__ = '2.3.0rc0'
-short_version = '2.3.0rc0'
+short_version = __version__
 
 
 def parse_version_info(version_str):
