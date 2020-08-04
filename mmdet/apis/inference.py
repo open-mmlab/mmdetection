@@ -7,7 +7,7 @@ from mmcv.ops import RoIAlign, RoIPool
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
-ft rom mmdet.core import get_classes
+from mmdet.core import get_classes
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
 import  cv2
