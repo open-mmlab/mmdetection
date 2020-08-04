@@ -170,7 +170,7 @@ def main():
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
-        '--score-thr', type=float, default=0., help='bbox score threshold')
+        '--score-thr', type=float, default=0.5, help='bbox score threshold')
     args = parser.parse_args()
 
     # build the model from a config file and a checkpoint file
