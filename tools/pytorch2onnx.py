@@ -110,13 +110,13 @@ def parse_args():
         '--mean',
         type=int,
         nargs='+',
-        default=[0, 0, 0],
+        default=[123.675, 116.28, 103.53],
         help='mean value used for preprocess input data')
     parser.add_argument(
         '--std',
         type=int,
         nargs='+',
-        default=[1, 1, 1],
+        default=[58.395, 57.12, 57.375],
         help='variance value used for preprocess input data')
     args = parser.parse_args()
     return args
