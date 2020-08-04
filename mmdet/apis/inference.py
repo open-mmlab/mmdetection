@@ -159,7 +159,7 @@ def show_result_pyplot(model, img, result, score_thr=0.3, fig_size=(15, 10)):
     """
     if hasattr(model, 'module'):
         model = model.module
-    img, coordinates_list = model.show_result(img, result, score_thr=score_thr, show=False)
+    img, coordinates_list, label_txts = model.show_result(img, result, score_thr=score_thr, show=False)
     # color_scheme = extract_color_scheme(img, coordinates_list)
     # color_scheme = scheme(img, coordinates_list)
     plt.figure(figsize=fig_size)
@@ -167,4 +167,4 @@ def show_result_pyplot(model, img, result, score_thr=0.3, fig_size=(15, 10)):
     plt.show()
     # img = mmcv.bgr2rgb(img)
     # mmcv.imwrite(img, 'lol_men_custom2.jpg')
-    return img, coordinates_list
+    return img, coordinates_list, label_txts

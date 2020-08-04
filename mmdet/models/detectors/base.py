@@ -10,6 +10,7 @@ from mmcv.utils import print_log
 
 from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
+import  cv2
 
 
 class BaseDetector(nn.Module, metaclass=ABCMeta):
@@ -257,6 +258,79 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
         return outputs
 
+    def imshow_det_bboxes(self,
+                          img,
+                          bboxes,
+                          labels,
+                          class_names=None,
+                          score_thr=0,
+                          bbox_color='green',
+                          text_color='green',
+                          thickness=1,
+                          font_scale=0.5,
+                          show=True,
+                          win_name='',
+                          wait_time=0,
+                          out_file=None):
+        coordinates_list = []
+        """Draw bboxes and class labels (with scores) on an image.
+
+        Args:
+            img (str or ndarray): The image to be displayed.
+            bboxes (ndarray): Bounding boxes (with scores), shaped (n, 4) or
+                (n, 5).
+            labels (ndarray): Labels of bboxes.
+            class_names (list[str]): Names of each classes.
+            score_thr (float): Minimum score of bboxes to be shown.
+            bbox_color (str or tuple or :obj:`Color`): Color of bbox lines.
+            text_color (str or tuple or :obj:`Color`): Color of texts.
+            thickness (int): Thickness of lines.
+            font_scale (float): Font scales of texts.
+            show (bool): Whether to show the image.
+            win_name (str): The window name.
+            wait_time (int): Value of waitKey param.
+            out_file (str or None): The filename to write the image.
+        """
+        assert bboxes.ndim == 2
+        assert labels.ndim == 1
+        assert bboxes.shape[0] == labels.shape[0]
+        assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5
+        img = mmcv.imread(img)
+    
+        if score_thr > 0:
+            assert bboxes.shape[1] == 5
+            scores = bboxes[:, -1]
+            inds = scores > score_thr
+            bboxes = bboxes[inds, :]
+            labels = labels[inds]
+    
+        bbox_color = mmcv.color_val(bbox_color)
+        text_color = mmcv.color_val(text_color)
+        img = np.ascontiguousarray(img)
+        labels_txts = []
+        for bbox, label in zip(bboxes, labels):
+            bbox_int = bbox.astype(np.int32)
+            left_top = (bbox_int[0], bbox_int[1])
+            right_bottom = (bbox_int[2], bbox_int[3])
+            cv2.rectangle(
+                img, left_top, right_bottom, bbox_color, thickness=thickness)
+            label_text = class_names[
+                label] if class_names is not None else f'cls {label}'
+            right_bottom = (bbox_int[2], bbox_int[3], label_text)
+        
+            coordinates_list.append(left_top + right_bottom)
+            if len(bbox) > 4:
+                label_text += f'|{bbox[-1]:.02f}'
+            cv2.putText(img, label_text, (bbox_int[0], bbox_int[1] - 2),
+                        cv2.FONT_HERSHEY_COMPLEX, font_scale, text_color)
+        
+            labels_txts.append(label_text)
+        if show:
+            mmcv.imshow(img, win_name, wait_time)
+        if out_file is not None:
+            mmcv.imwrite(img, out_file)
+        return coordinates_list, labels_txts
+
     def show_result(self,
                     img,
                     result,
@@ -324,7 +398,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if out_file is not None:
             show = False
         # draw bounding boxes
-        coordinates_list = mmcv.imshow_det_bboxes(
+        coordinates_list, label_txts = self.imshow_det_bboxes(
             img,
             bboxes,
             labels,
@@ -339,8 +413,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             wait_time=wait_time,
             out_file=out_file)
 
-        if not (show or out_file):
-            return img, coordinates_list
-        else:
-            return None, coordinates_list
-            
+        # if not (show or out_file):
+        #     return img, coordinates_list, label_txts
+        # else:
+        #     return None, coordinates_list, label_txts
+        
+        return img, coordinates_list, label_txts
