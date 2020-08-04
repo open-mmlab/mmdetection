@@ -1,6 +1,5 @@
 matplotlib
 numpy
-# need older pillow until torchvision is fixed
 pycocotools@git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools
 six
 terminaltables
