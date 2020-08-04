@@ -153,10 +153,10 @@ def extract_color_scheme(img_path, coord_list):
 
         ordered_colors = get_colors(curr_img, 8, True)
         # print('for ' + coord[4]  + ' color scheme is ' + ordered_colors)
-        try:
-            cv2.imwrite('lol_men_extracted_' + str(i) +'.jpg', curr_img)
-        except:
-            print('exception')
+        # try:
+        #     # cv2.imwrite('lol_men_extracted_' + str(i) +'.jpg', curr_img)
+        # except:
+        #     print('exception')
         i = i + 1
 
     return color_scheme

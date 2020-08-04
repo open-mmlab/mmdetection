@@ -166,5 +166,5 @@ def show_result_pyplot(model, img, result, score_thr=0.3, fig_size=(15, 10)):
     plt.imshow(mmcv.bgr2rgb(img))
     plt.show()
     # img = mmcv.bgr2rgb(img)
-    mmcv.imwrite(img, 'lol_men_custom2.jpg')
+    # mmcv.imwrite(img, 'lol_men_custom2.jpg')
     return img, coordinates_list
