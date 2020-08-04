@@ -134,10 +134,7 @@ if __name__ == '__main__':
     if len(args.shape) == 1:
         input_shape = (1, 3, args.shape[0], args.shape[0])
     elif len(args.shape) == 2:
-        input_shape = (
-            1,
-            3,
-        ) + tuple(args.shape)
+        input_shape = (1, 3) + tuple(args.shape)
     else:
         raise ValueError('invalid input shape')
 
