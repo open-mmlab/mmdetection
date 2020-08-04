@@ -40,9 +40,9 @@
 - Add colab training tutorials for beginners (#3213, #3273)
 - Move CUDA/C++ operators into `mmcv.ops` and keep `mmdet.ops` as warppers for backward compatibility (#3232)(#3457)
 - Update installation scripts in documentation (#3290) and dockerfile (#3320)
+- Support to set image resize backend (#3392)
 - Remove git hash in version file (#3466)
 - Check mmcv version to force version compatibility (#3460)
-
 
 
 ### v2.2.0 (1/7/2020)
