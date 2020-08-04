@@ -7,10 +7,14 @@ import numpy as np
 import onnx
 import onnxruntime as rt
 import torch
-from mmcv.onnx.symbolic import register_extra_symbolics
 from mmcv.runner import load_checkpoint
 
 from mmdet.models import build_detector
+
+try:
+    from mmcv.onnx.symbolic import register_extra_symbolics
+except ModuleNotFoundError:
+    raise NotImplementedError('please update mmcv to version>=v1.0.4')
 
 
 def pytorch2onnx(model,
