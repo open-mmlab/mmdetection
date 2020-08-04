@@ -72,7 +72,8 @@ pip install mmcv-full
 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
-| master              | mmcv-full>=1.0.2    |
+| master              | mmcv-full>=1.0.5    |
+| 2.3.0               | mmcv-full>=1.0.5    |
 | 2.3.0rc0            | mmcv-full>=1.0.2    |
 | 2.2.1               | mmcv==0.6.2         |
 | 2.2.0               | mmcv==0.6.2         |
