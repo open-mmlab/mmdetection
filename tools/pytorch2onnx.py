@@ -27,7 +27,7 @@ def pytorch2onnx(model,
                  normalize_cfg=None):
     model.cpu().eval()
     # read image
-    one_img = mmcv.imread(input_img, 'color')
+    one_img = mmcv.imread(input_img)
     if normalize_cfg:
         one_img = mmcv.imnormalize(one_img, normalize_cfg['mean'],
                                    normalize_cfg['std'])
@@ -88,13 +88,14 @@ def pytorch2onnx(model,
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Convert MMDet to ONNX')
+    parser = argparse.ArgumentParser(
+        description='Convert MMDetection models to ONNX')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
-    parser.add_argument('--input_img', type=str, help='Images for input')
+    parser.add_argument('--input-img', type=str, help='Images for input')
     parser.add_argument('--show', action='store_true', help='show onnx graph')
-    parser.add_argument('--output_file', type=str, default='tmp.onnx')
-    parser.add_argument('--opset_version', type=int, default=11)
+    parser.add_argument('--output-file', type=str, default='tmp.onnx')
+    parser.add_argument('--opset-version', type=int, default=11)
     parser.add_argument(
         '--verify',
         action='store_true',
@@ -155,10 +156,6 @@ if __name__ == '__main__':
     # build the model
     model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
     checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
-    # old versions did not save class info in checkpoints,
-    # this walkaround is for backward compatibility
-    if 'CLASSES' in checkpoint['meta']:
-        model.CLASSES = checkpoint['meta']['CLASSES']
 
     # conver model to onnx file
     pytorch2onnx(
