@@ -11,7 +11,7 @@ from ..builder import BACKBONES
 
 
 class ResBlock(nn.Module):
-    """The basic residual block used in YoloV3. Each ResBlock consists of two
+    """The basic residual block used in Darknet. Each ResBlock consists of two
     ConvModules and the input is added to the final output. Each ConvModule is
     composed of Conv, BN, and LeakyReLU In YoloV3 paper, the first convLayer
     has half of the number of the filters as much as the second convLayer. The
@@ -50,40 +50,6 @@ class ResBlock(nn.Module):
         out = out + residual
 
         return out
-
-
-def make_conv_and_res_block(in_channels,
-                            out_channels,
-                            res_repeat,
-                            conv_cfg=None,
-                            norm_cfg=dict(type='BN', requires_grad=True),
-                            act_cfg=dict(type='LeakyReLU',
-                                         negative_slope=0.1)):
-    """In Darknet backbone, ConvLayer is usually followed by ResBlock. This
-    function will make that. The Conv layers always have 3x3 filters with
-    stride=2. The number of the filters in Conv layer is the same as the out
-    channels of the ResBlock.
-
-    Args:
-        in_channels (int): The number of input channels.
-        out_channels (int): The number of output channels.
-        res_repeat (int): The number of ResBlocks.
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True)
-        act_cfg (dict): Config dict for activation layer.
-            Default: dict(type='LeakyReLU', negative_slope=0.1).
-    """
-
-    cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
-
-    model = nn.Sequential()
-    model.add_module(
-        'conv',
-        ConvModule(in_channels, out_channels, 3, stride=2, padding=1, **cfg))
-    for idx in range(res_repeat):
-        model.add_module('res{}'.format(idx), ResBlock(out_channels, **cfg))
-    return model
 
 
 @BACKBONES.register_module()
@@ -151,7 +117,7 @@ class Darknet(nn.Module):
             in_c, out_c = self.channels[i]
             self.add_module(
                 layer_name,
-                make_conv_and_res_block(in_c, out_c, n_layers, **cfg))
+                self.make_conv_and_res_block(in_c, out_c, n_layers, **cfg))
             self.cr_blocks.append(layer_name)
 
         self.norm_eval = norm_eval
@@ -182,7 +148,7 @@ class Darknet(nn.Module):
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
-            for i in range(0, self.frozen_stages):
+            for i in range(self.frozen_stages):
                 m = getattr(self, self.cr_blocks[i])
                 m.eval()
                 for param in m.parameters():
@@ -193,6 +159,41 @@ class Darknet(nn.Module):
         self._freeze_stages()
         if mode and self.norm_eval:
             for m in self.modules():
-                # trick: eval have effect on BatchNorm only
                 if isinstance(m, _BatchNorm):
                     m.eval()
+
+    @staticmethod
+    def make_conv_and_res_block(in_channels,
+                                out_channels,
+                                res_repeat,
+                                conv_cfg=None,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(
+                                    type='LeakyReLU', negative_slope=0.1)):
+        """In Darknet backbone, ConvLayer is usually followed by ResBlock. This
+        function will make that. The Conv layers always have 3x3 filters with
+        stride=2. The number of the filters in Conv layer is the same as the
+        out channels of the ResBlock.
+
+        Args:
+            in_channels (int): The number of input channels.
+            out_channels (int): The number of output channels.
+            res_repeat (int): The number of ResBlocks.
+            conv_cfg (dict): Config dict for convolution layer. Default: None.
+            norm_cfg (dict): Dictionary to construct and config norm layer.
+                Default: dict(type='BN', requires_grad=True)
+            act_cfg (dict): Config dict for activation layer.
+                Default: dict(type='LeakyReLU', negative_slope=0.1).
+        """
+
+        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
+
+        model = nn.Sequential()
+        model.add_module(
+            'conv',
+            ConvModule(
+                in_channels, out_channels, 3, stride=2, padding=1, **cfg))
+        for idx in range(res_repeat):
+            model.add_module('res{}'.format(idx),
+                             ResBlock(out_channels, **cfg))
+        return model

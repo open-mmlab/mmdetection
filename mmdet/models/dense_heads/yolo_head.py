@@ -20,19 +20,18 @@ class YOLOV3Head(BaseDenseHead):
 
     Args:
         num_classes (int): The number of object classes (w/o background)
-        num_scales (int): The number of scales / stages.
-        num_anchors_per_scale (int): The number of anchors per scale.
-            The official implementation uses 3.
         in_channels (List[int]): Number of input channels per scale.
+        num_scales (int): The number of scales / stages. Default: 3.
+        num_anchors_per_scale (int): The number of anchors per scale.
+            Default: 3.
         out_channels (List[int]): The number of output channels per scale
-            before the final 1x1 layer.
+            before the final 1x1 layer. Default: (1024, 512, 256).
         strides (List[int]): The stride of each scale.
-            Should be in descending order.
+            Should be in descending order. Default: (32, 16, 8).
         anchor_base_sizes (List[List[int]]): The sizes of anchors.
-            The official implementation uses
-                [[(116, 90), (156, 198), (373, 326)],
-                [( 30, 61), ( 62,  45), ( 59, 119)],
-                [( 10, 13), ( 16,  30), ( 33,  23)]]
+            Default: (((116, 90), (156, 198), (373, 326)),
+                      (( 30, 61), ( 62,  45), ( 59, 119)),
+                      (( 10, 13), ( 16,  30), ( 33,  23)))
         ignore_thresh (float): Set negative samples if gt-anchor iou
             is smaller than ignore_thresh. Default: 0.5
         one_hot_smoother (float): Set a non-zero value to enable label-smooth
@@ -52,12 +51,14 @@ class YOLOV3Head(BaseDenseHead):
 
     def __init__(self,
                  num_classes,
-                 num_scales,
-                 num_anchors_per_scale,
                  in_channels,
-                 out_channels,
-                 strides,
-                 anchor_base_sizes,
+                 num_scales=3,
+                 num_anchors_per_scale=3,
+                 out_channels=(1024, 512, 256),
+                 strides=(32, 16, 8),
+                 anchor_base_sizes=(((116, 90), (156, 198), (373, 326)),
+                                    ((30, 61), (62, 45), (59, 119)),
+                                    ((10, 13), (16, 30), (33, 23))),
                  ignore_thresh=0.5,
                  one_hot_smoother=0.,
                  xy_use_logit=False,
@@ -95,15 +96,15 @@ class YOLOV3Head(BaseDenseHead):
 
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
         self.convs_bridge = nn.ModuleList()
-        self.convs_final = nn.ModuleList()
-        for i_scale in range(self.num_scales):
-            in_c = self.in_channels[i_scale]
-            out_c = self.out_channels[i_scale]
+        self.convs_pred = nn.ModuleList()
+        for i in range(self.num_scales):
+            in_c = self.in_channels[i]
+            out_c = self.out_channels[i]
             conv_bridge = ConvModule(in_c, out_c, 3, padding=1, **cfg)
-            conv_final = nn.Conv2d(out_c, self.last_layer_dim, 1, bias=True)
+            conv_pred = nn.Conv2d(out_c, self.last_layer_dim, 1, bias=True)
 
             self.convs_bridge.append(conv_bridge)
-            self.convs_final.append(conv_final)
+            self.convs_pred.append(conv_pred)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -119,7 +120,7 @@ class YOLOV3Head(BaseDenseHead):
         for i in range(self.num_scales):
             x = feats[i]
             x = self.convs_bridge[i](x)
-            out = self.convs_final[i](x)
+            out = self.convs_pred[i](x)
             results.append(out)
 
         return tuple(results),
