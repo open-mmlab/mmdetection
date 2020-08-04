@@ -249,5 +249,5 @@ log_level = 'INFO'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-work_dir = './work_dirs/mask_rcnn_r50_fpn_15e_deepfashion'
+work_dir = './work_dirs/mask_rcnn'
 gpu_ids = range(0, 1)
