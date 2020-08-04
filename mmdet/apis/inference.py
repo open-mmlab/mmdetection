@@ -7,9 +7,10 @@ from mmcv.ops import RoIAlign, RoIPool
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
-from mmdet.core import get_classes
+ft rom mmdet.core import get_classes
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
+import  cv2
 
 
 def init_detector(config, checkpoint=None, device='cuda:0'):
@@ -144,6 +145,7 @@ async def async_inference_detector(model, img):
     return result
 
 
+
 def show_result_pyplot(model, img, result, score_thr=0.3, fig_size=(15, 10)):
     """Visualize the detection results on the image.
 
@@ -157,7 +159,12 @@ def show_result_pyplot(model, img, result, score_thr=0.3, fig_size=(15, 10)):
     """
     if hasattr(model, 'module'):
         model = model.module
-    img = model.show_result(img, result, score_thr=score_thr, show=False)
+    img, coordinates_list = model.show_result(img, result, score_thr=score_thr, show=False)
+    # color_scheme = extract_color_scheme(img, coordinates_list)
+    # color_scheme = scheme(img, coordinates_list)
     plt.figure(figsize=fig_size)
     plt.imshow(mmcv.bgr2rgb(img))
     plt.show()
+    # img = mmcv.bgr2rgb(img)
+    mmcv.imwrite(img, 'lol_men_custom2.jpg')
+    return img, coordinates_list

@@ -330,6 +330,5 @@ class CenterRegionAssigner(BaseAssigner):
         # `is_bbox_in_gt_core` should be changed back to keep arguments intact.
         is_bbox_in_gt_core[inds_of_match, argmax_priority] = 1
         # 1-based shadowed gt indices, to be consistent with `assigned_gt_inds`
-        if shadowed_gt_inds.numel() > 0:
-            shadowed_gt_inds[:, 1] += 1
+        shadowed_gt_inds[:, 1] += 1
         return assigned_gt_inds, shadowed_gt_inds

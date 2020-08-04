@@ -29,24 +29,24 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    imgs_per_gpu=2,
+    imgs_per_gpu=1,
     workers_per_gpu=1,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/DeepFashion_segmentation_query.json',
+        ann_file=data_root + 'annotations/DeepFashion_segmentation_query_custom.json',
         img_prefix=data_root + 'Img/',
         pipeline=train_pipeline,
         data_root=data_root),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/DeepFashion_segmentation_query.json',
+        ann_file=data_root + 'annotations/DeepFashion_segmentation_query_custom.json',
         img_prefix=data_root + 'Img/',
         pipeline=test_pipeline,
         data_root=data_root),
     test=dict(
         type=dataset_type,
         ann_file=data_root +
-        'annotations/DeepFashion_segmentation_gallery.json',
+        'annotations/DeepFashion_segmentation_gallery_custom.json',
         img_prefix=data_root + 'Img/',
         pipeline=test_pipeline,
         data_root=data_root))

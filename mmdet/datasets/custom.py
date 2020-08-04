@@ -69,9 +69,13 @@ class CustomDataset(Dataset):
         # join paths if data_root is specified
         if self.data_root is not None:
             if not osp.isabs(self.ann_file):
-                self.ann_file = osp.join(self.data_root, self.ann_file)
+                #commented
+                # self.ann_file = osp.join(self.data_root, self.ann_file)
+                self.ann_file = self.ann_file
             if not (self.img_prefix is None or osp.isabs(self.img_prefix)):
-                self.img_prefix = osp.join(self.data_root, self.img_prefix)
+                #commented
+                # self.img_prefix = osp.join(self.data_root, self.img_prefix)
+                self.img_prefix = self.img_prefix
             if not (self.seg_prefix is None or osp.isabs(self.seg_prefix)):
                 self.seg_prefix = osp.join(self.data_root, self.seg_prefix)
             if not (self.proposal_file is None

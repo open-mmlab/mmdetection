@@ -307,24 +307,24 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         ]
         labels = np.concatenate(labels)
         # draw segmentation masks
-        if segm_result is not None and len(labels) > 0:  # non empty
-            segms = mmcv.concat_list(segm_result)
-            inds = np.where(bboxes[:, -1] > score_thr)[0]
-            np.random.seed(42)
-            color_masks = [
-                np.random.randint(0, 256, (1, 3), dtype=np.uint8)
-                for _ in range(max(labels) + 1)
-            ]
-            for i in inds:
-                i = int(i)
-                color_mask = color_masks[labels[i]]
-                mask = segms[i]
-                img[mask] = img[mask] * 0.5 + color_mask * 0.5
+        # if segm_result is not None and len(labels) > 0:  # non empty
+        #     segms = mmcv.concat_list(segm_result)
+        #     inds = np.where(bboxes[:, -1] > score_thr)[0]
+        #     np.random.seed(42)
+        #     color_masks = [
+        #         np.random.randint(0, 256, (1, 3), dtype=np.uint8)
+        #         for _ in range(max(labels) + 1)
+        #     ]
+        #     for i in inds:
+        #         i = int(i)
+        #         color_mask = color_masks[labels[i]]
+        #         mask = segms[i]
+        #         img[mask] = img[mask] * 0.5 + color_mask * 0.5
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
         # draw bounding boxes
-        mmcv.imshow_det_bboxes(
+        coordinates_list = mmcv.imshow_det_bboxes(
             img,
             bboxes,
             labels,
@@ -340,4 +340,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             out_file=out_file)
 
         if not (show or out_file):
-            return img
+            return img, coordinates_list
+        else:
+            return None, coordinates_list
+            
