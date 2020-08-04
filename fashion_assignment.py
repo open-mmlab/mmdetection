@@ -164,9 +164,9 @@ def extract_color_scheme(img_path, coord_list):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('img', help='Image file')
-    parser.add_argument('config', help='Config file')
-    parser.add_argument('checkpoint', help='Checkpoint file')
+    parser.add_argument('--img', help='Image file', default='images/01_4_full.jpg')
+    parser.add_argument('--config', default='configs/fashion/mask_rcnn.py', help='Config file' )
+    parser.add_argument('--checkpoint', default='checkpoints/fashion_product_detector.pth',  help='Checkpoint file')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
