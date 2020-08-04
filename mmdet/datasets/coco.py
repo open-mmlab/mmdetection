@@ -220,7 +220,7 @@ class CocoDataset(CustomDataset):
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
             result = results[idx]
-            for label in range(len(result)):
+            for label in range(len(result)-1):
                 bboxes = result[label]
                 for i in range(bboxes.shape[0]):
                     data = dict()
@@ -238,7 +238,7 @@ class CocoDataset(CustomDataset):
         for idx in range(len(self)):
             img_id = self.img_ids[idx]
             det, seg = results[idx]
-            for label in range(len(det)):
+            for label in range(len(det)-1):
                 # bbox results
                 bboxes = det[label]
                 for i in range(bboxes.shape[0]):
