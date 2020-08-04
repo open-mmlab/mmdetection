@@ -6,6 +6,7 @@
 - The CUDA/C++ operators have been moved to `mmcv.ops`. For backward compatibility `mmdet.ops` is kept as warppers of `mmcv.ops`.
 - Support new methods [CornerNet](https://arxiv.org/abs/1808.01244), [DIOU](https://arxiv.org/abs/1911.08287)/[CIOU](https://arxiv.org/abs/2005.03572) loss, and new dataset: [LVIS V1](https://arxiv.org/abs/1908.03195)
 - Provide more detailed colab training tutorials and more complete documentation.
+- Support to convert RetinaNet from Pytorch to ONNX.
 
 **Bug Fixes**
 - Fix the model initialization bug of DetectoRS (#3187)
@@ -37,7 +38,7 @@
 - Refactoring unit tests (#3206)
 - Unify the training settings of `to_float32` and `norm_cfg` in RegNets configs (#3210)
 - Add colab training tutorials for beginners (#3213, #3273)
-- Move CUDA/C++ operators into `mmcv.ops` and add ops warpper for backward compatibility (#3232)(#3457)
+- Move CUDA/C++ operators into `mmcv.ops` and keep `mmdet.ops` as warppers for backward compatibility (#3232)(#3457)
 - Update installation scripts in documentation (#3290) and dockerfile (#3320)
 - Remove git hash in version file (#3466)
 - Check mmcv version to force version compatibility (#3460)
