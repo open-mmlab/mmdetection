@@ -54,14 +54,14 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7]
-        torch: [1.3.1, 1.5.1]
+        torch: [1.3.1, 1.5.1+cu101]
         include:
           - torch: 1.3.1
             torchvision: 0.4.2
             mmcv: "latest+torch1.3.0+cu101"
             cuda_arch: "6.0"
-          - torch: 1.5.1
-            torchvision: 0.6.1
+          - torch: 1.5.1+cu101
+            torchvision: 0.6.1+cu101
             mmcv: "latest+torch1.5.0+cu101"
             cuda_arch: "7.0"
 
@@ -88,7 +88,7 @@ jobs:
         run: pip install Pillow==6.2.2
         if: ${{matrix.torchvision < 0.5}}
       - name: Install PyTorch
-        run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}}
+        run: pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
       - name: Install mmdet dependencies
         run: |
           pip install mmcv-full==${{matrix.mmcv}} -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
