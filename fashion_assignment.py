@@ -9,45 +9,14 @@ from collections import Counter
 from webcolors import rgb_to_name
 import webcolors
 
+import json
+
 # def extract_color_scheme()
 
-color_map = {
-    (255, 0, 0): 'red',
-    (0, 128, 0): 'green',
-    (0, 0, 255): 'blue',
-    (0, 255, 255): 'cyan',
-    (0, 0, 160): 'darkblue',
-    (173, 216, 230): 'lightblue',
-    (128, 0, 128): 'purple',
-    (255, 255, 0): 'yellow',
-    (0, 255, 0): 'lime',
-    (255, 0, 255): 'magenta',
-    (255, 255, 255): 'white',
-    (192, 192, 192): 'silver',
-    (128, 128, 128): 'grey',
-    (0, 0, 0): 'black',
-    (255, 128, 64): 'orange',
-    (165, 42, 42): 'brown',
-    (128, 0, 0): 'maroon',
-    (128, 128, 0): 'olive'
-}
+color_map = {}
 
-additions = {}
-
-for key, name in webcolors.css3_hex_to_names.items():
-    lol = webcolors.hex_to_rgb(key)
-    if name not in color_map.values():
-        for k, v in color_map.items():
-            if v in name:
-                additions[lol] = v
-    else:
-        print('already present')
-
-color_map.update(additions)
-
-t = color_map[(173, 216, 230)]
-
-temp = 0
+with open('resources/color_map.json') as cmp:
+    color_map = json.load(cmp)
 
 
 def get_name_of_color_lib(color_array):
@@ -72,13 +41,13 @@ def get_name_of_color_local(color_array):
     
     # for key, name in webcolors.css3_hex_to_names.items():
     for key, name in color_map.items():
-        r_c, g_c, b_c = key
+        r_c, g_c, b_c = name
         # if name == 'black':
         #     lol = 0
         rd = (r_c - requested_colour[0]) ** 2
         gd = (g_c - requested_colour[1]) ** 2
         bd = (b_c - requested_colour[2]) ** 2
-        min_colours[(rd + gd + bd)] = name
+        min_colours[(rd + gd + bd)] = key
     
     return min_colours[min(min_colours.keys())]
 
@@ -124,7 +93,7 @@ def get_colors(image, number_of_colors, show_chart):
     percenatges = get_percentages(ordered_colors)
     temp = 0
     
-    return ordered_colors_lib
+    return ordered_colors
 
 # hex_colors = [RGB2HEX(ordered_colors[i]) for i in counts.keys()]
 # rgb_colors = [ordered_colors[i] for i in counts.keys()]
