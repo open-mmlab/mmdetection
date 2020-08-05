@@ -368,7 +368,8 @@ class CocoDataset(CustomDataset):
                  jsonfile_prefix=None,
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
-                 iou_thrs=np.arange(0.5, 0.96, 0.05)):
+                 iou_thrs=None,
+                 metric_items=None):
         """Evaluation in COCO protocol.
 
         Args:
@@ -384,9 +385,17 @@ class CocoDataset(CustomDataset):
             proposal_nums (Sequence[int]): Proposal number used for evaluating
                 recalls, such as recall@100, recall@1000.
                 Default: (100, 300, 1000).
-            iou_thrs (Sequence[float]): IoU threshold used for evaluating
-                recalls/mAPs. If set to a list, the average of all IoUs will
-                also be computed. Default: np.arange(0.5, 0.96, 0.05).
+            iou_thrs (Sequence[float], optional): IoU threshold used for
+                evaluating recalls/mAPs. If set to a list, the average of all
+                IoUs will also be computed. If not specified, [0.50, 0.55,
+                0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95] will be used.
+                Default: None.
+            metric_items (list[str] | str, optional): Metric items that will
+                be returned. If not specified, ``['AR@100', 'AR@300',
+                'AR@1000', 'AR_s@1000', 'AR_m@1000', 'AR_l@1000' ]`` will be
+                used when ``metric=='proposal'``, ``['mAP', 'mAP_50', 'mAP_75',
+                'mAP_s', 'mAP_m', 'mAP_l']`` will be used when
+                ``metric=='bbox' or metric=='segm'``.
 
         Returns:
             dict[str, float]: COCO style evaluation metric.
@@ -397,6 +406,12 @@ class CocoDataset(CustomDataset):
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
+        if iou_thrs is None:
+            iou_thrs = np.linspace(
+                .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
+        if metric_items is not None:
+            if not isinstance(metric_items, list):
+                metric_items = [metric_items]
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
@@ -441,10 +456,18 @@ class CocoDataset(CustomDataset):
                 cocoEval.evaluate()
                 cocoEval.accumulate()
                 cocoEval.summarize()
-                metric_items = [
+                allowed_metric_items = [
                     'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000', 'AR_m@1000',
                     'AR_l@1000'
                 ]
+                if metric_items is not None:
+                    for metric_item in metric_items:
+                        if metric_item not in allowed_metric_items:
+                            raise KeyError(
+                                f'metric item {metric_item} is not supported')
+                else:
+                    metric_items = allowed_metric_items
+
                 for i, item in enumerate(metric_items):
                     val = float(f'{cocoEval.stats[i + 6]:.3f}')
                     eval_results[item] = val
@@ -486,9 +509,17 @@ class CocoDataset(CustomDataset):
                     table = AsciiTable(table_data)
                     print_log('\n' + table.table, logger=logger)
 
-                metric_items = [
+                allowed_metric_items = [
                     'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
                 ]
+                if metric_items is not None:
+                    for metric_item in metric_items:
+                        if metric_item not in allowed_metric_items:
+                            raise KeyError(
+                                f'metric item {metric_item} is not supported')
+                else:
+                    metric_items = allowed_metric_items
+
                 for i in range(len(metric_items)):
                     key = f'{metric}_{metric_items[i]}'
                     val = float(f'{cocoEval.stats[i]:.3f}')
