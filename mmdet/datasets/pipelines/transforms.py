@@ -49,13 +49,17 @@ class Resize(object):
         ratio_range (tuple[float]): (min_ratio, max_ratio)
         keep_ratio (bool): Whether to keep the aspect ratio when resizing the
             image.
+        backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
+            These two backends generates slightly different results. Defaults
+            to 'cv2'.
     """
 
     def __init__(self,
                  img_scale=None,
                  multiscale_mode='range',
                  ratio_range=None,
-                 keep_ratio=True):
+                 keep_ratio=True,
+                 backend='cv2'):
         if img_scale is None:
             self.img_scale = None
         else:
@@ -72,6 +76,7 @@ class Resize(object):
             # mode 2: given multiple scales or a range of scales
             assert multiscale_mode in ['value', 'range']
 
+        self.backend = backend
         self.multiscale_mode = multiscale_mode
         self.ratio_range = ratio_range
         self.keep_ratio = keep_ratio
@@ -186,7 +191,10 @@ class Resize(object):
         for key in results.get('img_fields', ['img']):
             if self.keep_ratio:
                 img, scale_factor = mmcv.imrescale(
-                    results[key], results['scale'], return_scale=True)
+                    results[key],
+                    results['scale'],
+                    return_scale=True,
+                    backend=self.backend)
                 # the w_scale and h_scale has minor difference
                 # a real fix should be done in the mmcv.imrescale in the future
                 new_h, new_w = img.shape[:2]
@@ -195,7 +203,10 @@ class Resize(object):
                 h_scale = new_h / h
             else:
                 img, w_scale, h_scale = mmcv.imresize(
-                    results[key], results['scale'], return_scale=True)
+                    results[key],
+                    results['scale'],
+                    return_scale=True,
+                    backend=self.backend)
             results[key] = img
 
             scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
@@ -230,10 +241,16 @@ class Resize(object):
         for key in results.get('seg_fields', []):
             if self.keep_ratio:
                 gt_seg = mmcv.imrescale(
-                    results[key], results['scale'], interpolation='nearest')
+                    results[key],
+                    results['scale'],
+                    interpolation='nearest',
+                    backend=self.backend)
             else:
                 gt_seg = mmcv.imresize(
-                    results[key], results['scale'], interpolation='nearest')
+                    results[key],
+                    results['scale'],
+                    interpolation='nearest',
+                    backend=self.backend)
             results['gt_semantic_seg'] = gt_seg
 
     def __call__(self, results):
@@ -581,10 +598,14 @@ class SegRescale(object):
 
     Args:
         scale_factor (float): The scale factor of the final output.
+        backend (str): Image rescale backend, choices are 'cv2' and 'pillow'.
+            These two backends generates slightly different results. Defaults
+            to 'cv2'.
     """
 
-    def __init__(self, scale_factor=1):
+    def __init__(self, scale_factor=1, backend='cv2'):
         self.scale_factor = scale_factor
+        self.backend = backend
 
     def __call__(self, results):
         """Call function to scale the semantic segmentation map.
@@ -599,7 +620,10 @@ class SegRescale(object):
         for key in results.get('seg_fields', []):
             if self.scale_factor != 1:
                 results[key] = mmcv.imrescale(
-                    results[key], self.scale_factor, interpolation='nearest')
+                    results[key],
+                    self.scale_factor,
+                    interpolation='nearest',
+                    backend=self.backend)
         return results
 
     def __repr__(self):
