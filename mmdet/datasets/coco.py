@@ -449,27 +449,43 @@ class CocoDataset(CustomDataset):
             cocoEval = COCOeval(cocoGt, cocoDt, iou_type)
             cocoEval.params.catIds = self.cat_ids
             cocoEval.params.imgIds = self.img_ids
+            cocoEval.params.maxDets = list(proposal_nums)
             cocoEval.params.iouThrs = iou_thrs
+            # mapping of cocoEval.stats
+            coco_metric_names = {
+                'mAP': 0,
+                'mAP_50': 1,
+                'mAP_75': 2,
+                'mAP_s': 3,
+                'mAP_m': 4,
+                'mAP_l': 5,
+                'AR@100': 6,
+                'AR@300': 7,
+                'AR@1000': 8,
+                'AR_s@1000': 9,
+                'AR_m@1000': 10,
+                'AR_l@1000': 11
+            }
+            if metric_items is not None:
+                for metric_item in metric_items:
+                    if metric_item not in coco_metric_names:
+                        raise KeyError(
+                            f'metric item {metric_item} is not supported')
+
             if metric == 'proposal':
                 cocoEval.params.useCats = 0
-                cocoEval.params.maxDets = list(proposal_nums)
                 cocoEval.evaluate()
                 cocoEval.accumulate()
                 cocoEval.summarize()
-                allowed_metric_items = [
-                    'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000', 'AR_m@1000',
-                    'AR_l@1000'
-                ]
-                if metric_items is not None:
-                    for metric_item in metric_items:
-                        if metric_item not in allowed_metric_items:
-                            raise KeyError(
-                                f'metric item {metric_item} is not supported')
-                else:
-                    metric_items = allowed_metric_items
+                if metric_items is None:
+                    metric_items = [
+                        'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000',
+                        'AR_m@1000', 'AR_l@1000'
+                    ]
 
-                for i, item in enumerate(metric_items):
-                    val = float(f'{cocoEval.stats[i + 6]:.3f}')
+                for item in metric_items:
+                    val = float(
+                        f'{cocoEval.stats[coco_metric_names[item]]:.3f}')
                     eval_results[item] = val
             else:
                 cocoEval.evaluate()
@@ -509,20 +525,16 @@ class CocoDataset(CustomDataset):
                     table = AsciiTable(table_data)
                     print_log('\n' + table.table, logger=logger)
 
-                allowed_metric_items = [
-                    'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
-                ]
-                if metric_items is not None:
-                    for metric_item in metric_items:
-                        if metric_item not in allowed_metric_items:
-                            raise KeyError(
-                                f'metric item {metric_item} is not supported')
-                else:
-                    metric_items = allowed_metric_items
+                if metric_items is None:
+                    metric_items = [
+                        'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
+                    ]
 
-                for i in range(len(metric_items)):
-                    key = f'{metric}_{metric_items[i]}'
-                    val = float(f'{cocoEval.stats[i]:.3f}')
+                for metric_item in metric_items:
+                    key = f'{metric}_{metric_item}'
+                    val = float(
+                        f'{cocoEval.stats[coco_metric_names[metric_item]]:.3f}'
+                    )
                     eval_results[key] = val
                 ap = cocoEval.stats[:6]
                 eval_results[f'{metric}_mAP_copypaste'] = (
