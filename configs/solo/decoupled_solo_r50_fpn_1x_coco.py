@@ -64,6 +64,4 @@ lr_config = dict(
     warmup_ratio=1.0 / 3,
     step=[9, 11])
 # runtime settings
-device_ids = range(8)
-work_dir = './work_dirs/decoupled_solo_release_r50_fpn_8gpu_1x'
 find_unused_parameters = True

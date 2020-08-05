@@ -9,7 +9,7 @@ def matrix_nms(seg_masks, cate_labels, cate_scores,
         seg_masks (Tensor): shape (n, h, w)
         cate_labels (Tensor): shape (n), mask labels in descending order
         cate_scores (Tensor): shape (n), mask scores in descending order
-        kernel (str):  'linear' or 'gauss'
+        kernel (str):  'linear' or 'gaussian'
         sigma (float): std in gaussian method
         sum_masks (Tensor): The sum of seg_masks
 
