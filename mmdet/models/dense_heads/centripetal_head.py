@@ -63,11 +63,12 @@ class CentripetalHead(CornerHead):
         self.loss_centripetal_shift = build_loss(loss_centripetal_shift)
 
     def _init_centripetal_layers(self):
-        """Initialize centripetal layers. Including feature adaption deform
-        convs (feat_adaption), deform offset prediction convs (dcn_off),
-        guiding shift (guiding_shift) and centripetal shift (
-        centripetal_shift). Each branch has two parts: prefix `tl_` for
-        top-left and `br_` for bottom-right.
+        """Initialize centripetal layers.
+
+        Including feature adaption deform convs (feat_adaption), deform offset
+        prediction convs (dcn_off), guiding shift (guiding_shift) and
+        centripetal shift ( centripetal_shift). Each branch has two parts:
+        prefix `tl_` for top-left and `br_` for bottom-right.
         """
         self.tl_feat_adaption = nn.ModuleList()
         self.br_feat_adaption = nn.ModuleList()
@@ -123,6 +124,7 @@ class CentripetalHead(CornerHead):
 
     def _init_layers(self):
         """Initialize layers for CentripetalHead.
+
         Including two parts: CornerHead layers and CentripetalHead layers
         """
         super()._init_layers()  # using _init_layers in CornerHead
