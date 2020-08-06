@@ -22,10 +22,9 @@ class CentripetalHead(CornerHead):
             category.
         in_channels (int): Number of channels in the input feature map.
         num_feat_levels (int): Levels of feature from the previous module. 2
-            for HourglassNet-104 and 1 for HourglassNet-52. Because
-            HourglassNet-104 outputs the final feature and intermediate
-            supervision feature and HourglassNet-52 only outputs the final
-            feature. Default: 2.
+            for HourglassNet-104 and 1 for HourglassNet-52. HourglassNet-104
+            outputs the final feature and intermediate supervision feature and
+            HourglassNet-52 only outputs the final feature. Default: 2.
         corner_emb_channels (int): Channel of embedding vector. Default: 1.
         train_cfg (dict | None): Training config. Useless in CornerHead,
             but we keep this variable for SingleStageDetector. Default: None.
@@ -44,38 +43,48 @@ class CentripetalHead(CornerHead):
 
     def __init__(self,
                  *args,
+                 centripetal_shift_channels=2,
+                 guiding_shift_channels=2,
+                 feat_adaption_conv_kernel=3,
                  loss_guiding_shift=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=0.05),
                  loss_centripetal_shift=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
                  **kwargs):
-        self.centripetal_shift_channels = 2
-        self.guiding_shift_channels = 2
-        self.fadp_conv_kernel = 3
+        assert centripetal_shift_channels == 2, (
+            'CentripetalHead only support centripetal_shift_channels == 2')
+        self.centripetal_shift_channels = centripetal_shift_channels
+        assert guiding_shift_channels == 2, (
+            'CentripetalHead only support guiding_shift_channels == 2')
+        self.guiding_shift_channels = guiding_shift_channels
+        self.feat_adaption_conv_kernel = feat_adaption_conv_kernel
         super(CentripetalHead, self).__init__(*args, **kwargs)
         self.loss_guiding_shift = build_loss(loss_guiding_shift)
         self.loss_centripetal_shift = build_loss(loss_centripetal_shift)
 
     def _init_centripetal_layers(self):
         """Initialize centripetal layers. Including feature adaption deform
-        convs (fadp), deform offset prediction convs (dcn_off), guiding shift
-        (guiding_shift) and centripetal shift (centripetal_shift). Each branch
-        has two parts: prefix `tl_` for top-left and `br_` for bottom-right.
+        convs (feat_adaption), deform offset prediction convs (dcn_off),
+        guiding shift (guiding_shift) and centripetal shift (
+        centripetal_shift). Each branch has two parts: prefix `tl_` for
+        top-left and `br_` for bottom-right.
         """
-        self.tl_fadp, self.br_fadp = nn.ModuleList(), nn.ModuleList()
-        self.tl_dcn_off, self.br_dcn_off = nn.ModuleList(), nn.ModuleList()
+        self.tl_feat_adaption = nn.ModuleList()
+        self.br_feat_adaption = nn.ModuleList()
+        self.tl_dcn_offset = nn.ModuleList()
+        self.br_dcn_offset = nn.ModuleList()
         self.tl_guiding_shift = nn.ModuleList()
         self.br_guiding_shift = nn.ModuleList()
         self.tl_centripetal_shift = nn.ModuleList()
         self.br_centripetal_shift = nn.ModuleList()
 
         for _ in range(self.num_feat_levels):
-            self.tl_fadp.append(
+            self.tl_feat_adaption.append(
                 DeformConv2d(self.in_channels, self.in_channels,
-                             self.fadp_conv_kernel, 1, 1))
-            self.br_fadp.append(
+                             self.feat_adaption_conv_kernel, 1, 1))
+            self.br_feat_adaption.append(
                 DeformConv2d(self.in_channels, self.in_channels,
-                             self.fadp_conv_kernel, 1, 1))
+                             self.feat_adaption_conv_kernel, 1, 1))
 
             self.tl_guiding_shift.append(
                 self._make_layers(
@@ -86,17 +95,19 @@ class CentripetalHead(CornerHead):
                     out_channels=self.guiding_shift_channels,
                     in_channels=self.in_channels))
 
-            self.tl_dcn_off.append(
+            self.tl_dcn_offset.append(
                 ConvModule(
                     self.guiding_shift_channels,
-                    self.fadp_conv_kernel**2 * self.guiding_shift_channels,
+                    self.feat_adaption_conv_kernel**2 *
+                    self.guiding_shift_channels,
                     1,
                     bias=False,
                     act_cfg=None))
-            self.br_dcn_off.append(
+            self.br_dcn_offset.append(
                 ConvModule(
                     self.guiding_shift_channels,
-                    self.fadp_conv_kernel**2 * self.guiding_shift_channels,
+                    self.feat_adaption_conv_kernel**2 *
+                    self.guiding_shift_channels,
                     1,
                     bias=False,
                     act_cfg=None))
@@ -121,10 +132,10 @@ class CentripetalHead(CornerHead):
         """Initialize weights of the head."""
         super().init_weights()
         for i in range(self.num_feat_levels):
-            normal_init(self.tl_fadp[i], std=0.01)
-            normal_init(self.br_fadp[i], std=0.01)
-            normal_init(self.tl_dcn_off[i].conv, std=0.1)
-            normal_init(self.br_dcn_off[i].conv, std=0.1)
+            normal_init(self.tl_feat_adaption[i], std=0.01)
+            normal_init(self.br_feat_adaption[i], std=0.01)
+            normal_init(self.tl_dcn_offset[i].conv, std=0.1)
+            normal_init(self.br_dcn_offset[i].conv, std=0.1)
 
     def forward_single(self, x, lvl_ind):
         """Forward feature of a single level.
@@ -157,14 +168,18 @@ class CentripetalHead(CornerHead):
         tl_guiding_shift = self.tl_guiding_shift[lvl_ind](tl_pool)
         br_guiding_shift = self.br_guiding_shift[lvl_ind](br_pool)
 
-        tl_dcn_offset = self.tl_dcn_off[lvl_ind](tl_guiding_shift.detach())
-        br_dcn_offset = self.br_dcn_off[lvl_ind](br_guiding_shift.detach())
+        tl_dcn_offset = self.tl_dcn_offset[lvl_ind](tl_guiding_shift.detach())
+        br_dcn_offset = self.br_dcn_offset[lvl_ind](br_guiding_shift.detach())
 
-        tl_fadp = self.tl_fadp[lvl_ind](tl_pool, tl_dcn_offset)
-        br_fadp = self.br_fadp[lvl_ind](br_pool, br_dcn_offset)
+        tl_feat_adaption = self.tl_feat_adaption[lvl_ind](tl_pool,
+                                                          tl_dcn_offset)
+        br_feat_adaption = self.br_feat_adaption[lvl_ind](br_pool,
+                                                          br_dcn_offset)
 
-        tl_centripetal_shift = self.tl_centripetal_shift[lvl_ind](tl_fadp)
-        br_centripetal_shift = self.br_centripetal_shift[lvl_ind](br_fadp)
+        tl_centripetal_shift = self.tl_centripetal_shift[lvl_ind](
+            tl_feat_adaption)
+        br_centripetal_shift = self.br_centripetal_shift[lvl_ind](
+            br_feat_adaption)
 
         result_list = [
             tl_heat, br_heat, tl_off, br_off, tl_guiding_shift,
