@@ -7,6 +7,7 @@ import cv2
 import mmcv
 import torch
 import torchvision
+from mmcv.utils import get_build_config, get_git_hash
 
 import mmdet
 
@@ -45,14 +46,14 @@ def collect_env():
     env_info['GCC'] = gcc
 
     env_info['PyTorch'] = torch.__version__
-    env_info['PyTorch compiling details'] = torch.__config__.show()
+    env_info['PyTorch compiling details'] = get_build_config()
 
     env_info['TorchVision'] = torchvision.__version__
 
     env_info['OpenCV'] = cv2.__version__
 
     env_info['MMCV'] = mmcv.__version__
-    env_info['MMDetection'] = mmdet.__version__
+    env_info['MMDetection'] = mmdet.__version__ + '+' + get_git_hash()[:7]
     from mmcv.ops import get_compiler_version, get_compiling_cuda_version
     env_info['MMDetection Compiler'] = get_compiler_version()
     env_info['MMDetection CUDA Compiler'] = get_compiling_cuda_version()
