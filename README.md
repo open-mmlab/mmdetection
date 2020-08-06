@@ -96,6 +96,7 @@ Supported methods:
 - [x] [GRoIE](configs/groie/README.md)
 - [x] [DetectoRS](configs/detectors/README.md)
 - [x] [Generalized Focal Loss](configs/gfl/README.md)
+- [x] [CornerNet](configs/cornernet/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
