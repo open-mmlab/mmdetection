@@ -16,14 +16,14 @@
     ```
     pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=lvis"
     ```
-    or 
+    or
     ```
     pip install -r requirements/optional.txt
     ```
 * All experiments use oversample strategy [here](../../docs/tutorials/new_dataset.md#class-balanced-dataset) with oversample threshold `1e-3`.
 * The size of LVIS v0.5 is half of COCO, so schedule `2x` in LVIS is roughly the same iterations as `1x` in COCO.
 
-## Results and models
+## Results and models of LVIS v0.5
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |
@@ -31,3 +31,12 @@
 |    R-101-FPN    | pytorch |   2x    | -        | -              | 27.1   | 27.0    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_2x_lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_2x_lvis-54582ee2.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_2x_lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_2x_lvis_20200601_134748.log.json)  |
 | X-101-32x4d-FPN | pytorch |   2x    | -        | -              | 26.7   | 26.9    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_2x_lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_2x_lvis-3cf55ea2.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_2x_lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_2x_lvis_20200531_221749.log.json)  |
 | X-101-64x4d-FPN | pytorch |   2x    | -        |   -            | 26.4   | 26.0    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_2x_lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_2x_lvis-1c99a5ad.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_2x_lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_2x_lvis_20200601_194651.log.json)  |
+
+## Results and models of LVIS v1
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |
+|    R-50-FPN     | pytorch |   1x    | -        | -              | 22.9   | 22.0    | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_r50_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r50_fpn_sample1e-3_mstrain_1x_lvis_v1-2d7182e1.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_r50_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r50_fpn_sample1e-3_mstrain_1x_lvis_v1-20200719_104831.log.json)  |
+|    R-101-FPN    | pytorch |   1x    | -        | -              | 24.7   | 23.8    | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1-3213fe1c.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1-20200719_104937.log.json)  |
+| X-101-32x4d-FPN | pytorch |   1x    | -        | -              | 26.2   | 25.0    | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-3a5c9978.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-20200720_135338.log.json)  |
+| X-101-64x4d-FPN | pytorch |   1x    | -        |   -            | -   | -    | [model]() &#124; [log]()  |

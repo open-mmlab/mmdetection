@@ -84,3 +84,35 @@ def test_htc_aug_test():
     assert len(aug_result) == 2
     assert len(aug_result[0]) == 80
     assert len(aug_result[1]) == 80
+
+
+def test_cornernet_aug_test():
+    # get config
+    cfg = mmcv.Config.fromfile(
+        'configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py')
+    # init model
+    cfg.model.pretrained = None
+    model = build_detector(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+
+    # init test pipeline and set aug test
+    load_cfg, multi_scale_cfg = cfg.test_pipeline
+    multi_scale_cfg['flip'] = True
+    multi_scale_cfg['scale_factor'] = [0.5, 1.0, 2.0]
+
+    load = build_from_cfg(load_cfg, PIPELINES)
+    transform = build_from_cfg(multi_scale_cfg, PIPELINES)
+
+    results = dict(
+        img_prefix=osp.join(osp.dirname(__file__), '../data'),
+        img_info=dict(filename='color.jpg'))
+    results = transform(load(results))
+    assert len(results['img']) == 6
+    assert len(results['img_metas']) == 6
+
+    results['img'] = [collate([x]) for x in results['img']]
+    results['img_metas'] = [collate([x]).data[0] for x in results['img_metas']]
+    # aug test the model
+    model.eval()
+    with torch.no_grad():
+        aug_result = model(return_loss=False, rescale=True, **results)
+    assert len(aug_result) == 80

@@ -103,7 +103,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-mmdet/version.py
 data/
 .vscode
 .idea

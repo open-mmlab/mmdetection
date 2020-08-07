@@ -42,7 +42,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.2.0 was released in 1/7/2020.
+v2.3.0 was released in 5/8/2020.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -96,6 +96,7 @@ Supported methods:
 - [x] [GRoIE](configs/groie/README.md)
 - [x] [DetectoRS](configs/detectors/README.md)
 - [x] [Generalized Focal Loss](configs/gfl/README.md)
+- [x] [CornerNet](configs/cornernet/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
