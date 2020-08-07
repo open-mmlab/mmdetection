@@ -127,7 +127,7 @@ def parse_requirements(fname='requirements.txt', with_version=True):
 
 if __name__ == '__main__':
     setup(
-        name='mmdet',
+        name='mmdetection',
         version=get_version(),
         description='OpenMMLab Detection Toolbox and Benchmark',
         long_description=readme(),

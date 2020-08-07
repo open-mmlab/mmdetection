@@ -7,6 +7,7 @@
 - Support new methods [CornerNet](https://arxiv.org/abs/1808.01244), [DIOU](https://arxiv.org/abs/1911.08287)/[CIOU](https://arxiv.org/abs/2005.03572) loss, and new dataset: [LVIS V1](https://arxiv.org/abs/1908.03195)
 - Provide more detailed colab training tutorials and more complete documentation.
 - Support to convert RetinaNet from Pytorch to ONNX.
+- The package is published to Pypi and users can install MMDetection through `pip install mmdetection` now.
 
 **Bug Fixes**
 - Fix the model initialization bug of DetectoRS (#3187)
@@ -30,6 +31,7 @@
 - Support customized hooks in training (#3395)
 - Support fp16 training of generalized focal loss (#3410)
 - Support to convert RetinaNet from Pytorch to ONNX (#3075)
+- Support to deploy package to Pypi.
 
 **Improvements**
 - Support to process ignore boxes in ATSS assigner (#3082)
