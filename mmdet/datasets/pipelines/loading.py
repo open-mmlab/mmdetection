@@ -299,10 +299,9 @@ class LoadMultiImagesAnnotations(object):
         for i, gt_bboxes_ignore in enumerate(gt_bboxes_ignores):
             if gt_bboxes_ignore is not None:
                 results['gt_bboxes_ignore'].append(gt_bboxes_ignore.copy())
-                results['bbox_fields'].append('gt_bboxes_ignore')
-            else:
-                results['gt_bboxes_ignore'].append(None)
-            results['bbox_fields'].append('gt_bboxes')
+        if gt_bboxes_ignore is not None:
+            results['bbox_fields'].append('gt_bboxes_ignore')
+        results['bbox_fields'].append('gt_bboxes')
         return results
 
  
