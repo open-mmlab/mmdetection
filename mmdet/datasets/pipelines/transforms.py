@@ -4,6 +4,7 @@ import mmcv
 import cv2
 import numpy as np
 from numpy import random
+import logging
 
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -477,6 +478,81 @@ class Normalize(object):
         repr_str += f'(mean={self.mean}, std={self.std}, to_rgb={self.to_rgb})'
         return repr_str
 
+@PIPELINES.register_module()
+class MosaicCrop(object):
+    def __init__(self):
+        self.bbox2label = {
+            'gt_bboxes': 'gt_labels',
+            'gt_bboxes_ignore': 'gt_labels_ignore'
+        }
+
+    def __call__(self, results, w, h, pleft, ptop, swidth, sheight):
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+            aug_img = self.image_data_augmentation(img, pleft, ptop, swidth, sheight)
+            results[key] = aug_img
+        results['img_shape'] = aug_img.shape
+
+        for key in results.get('bbox_fields', []):
+            bboxes = results[key]
+            label_key = self.bbox2label.get(key)
+            if label_key in results:
+                labels = results[label_key]
+            else:
+                labels = None
+
+            aug_bboxes, aug_labels = self.bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, sheight)
+
+            results[key] = aug_bboxes
+            if label_key in results:
+                results[label_key] = aug_labels
+
+        return results
+
+    @staticmethod
+    def bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, sheight):
+        if bboxes.shape[0] == 0:
+            return bboxes, labels
+
+        bboxes[:, 0::2] -= pleft
+        bboxes[:, 1::2] -= ptop
+
+        bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, swidth)
+        bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, sheight)
+
+        reserved_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
+            bboxes[:, 3] > bboxes[:, 1])
+
+        bboxes = bboxes[reserved_inds]
+        if labels is not None:
+            labels = labels[reserved_inds]
+        
+        return bboxes, labels
+
+    @staticmethod
+    def image_data_augmentation(img, pleft, ptop, swidth, sheight):
+        oh, ow, c = img.shape
+
+        crop_rect = [pleft, ptop, pleft + swidth, ptop + sheight]
+        img_rect = [0, 0, ow, oh]
+        inter_rect = [max(0, pleft), max(0, ptop), 
+                      min(ow, pleft + swidth), min(oh, ptop + sheight)]
+        dst_rect = [max(0, -pleft), max(0, -ptop), 
+                    max(0, -pleft) + inter_rect[2] - inter_rect[0],
+                    max(0, -ptop) + inter_rect[3] - inter_rect[1]]
+
+        if crop_rect[0] == 0 and crop_rect[1] == 0 and \
+                crop_rect[2] == img.shape[0] and crop_rect[3] == img.shape[1]:
+            cropped = src
+        else:
+            cropped = np.zeros([sheight, swidth, 3], dtype=img.dtype)
+            cropped[:, :,] = np.mean(img, axis=(0, 1))
+            cropped[dst_rect[1]:dst_rect[3], dst_rect[0]:dst_rect[2]] = \
+                img[inter_rect[1]:inter_rect[3], inter_rect[0]:inter_rect[2]]
+
+        return cropped
+
+
 
 # author: Mingtao
 @PIPELINES.register_module()
@@ -504,7 +580,8 @@ class Mosaic(object):
     """
 
     def __init__(self, size=(640, 640), jitter=0.2, min_offset=0.2, letter_box=False,
-                 flip=True, gaussian=0, blur=0, hue=0, sat=1, exp=1):
+                 flip=True, gaussian=0, blur=0, brightness_delta=32, contrast_range=(0.5, 1.5),
+                 saturation_range=(0.5, 1.5), hue_delta=18):
         self.w, self.h = size
         self.jitter = jitter
         self.min_offset = min_offset
@@ -512,9 +589,17 @@ class Mosaic(object):
         self.flip = flip
         self.gaussian = gaussian
         self.blur = blur
-        self.hue = hue
-        self.sat = sat
-        self.exp = exp
+
+        self.mosaic_crop = MosaicCrop()
+        self.photo_metric_distortion = PhotoMetricDistortion(
+            brightness_delta=brightness_delta,
+            contrast_range=contrast_range,
+            saturation_range=saturation_range,
+            hue_delta=hue_delta
+        )
+        self.resize = Resize(keep_ratio=False)
+        self.flip = RandomFlip(0.5)
+
         self.bbox2label = {
             'gt_bboxes': 'gt_labels',
             'gt_bboxes_ignore': 'gt_labels_ignore'
@@ -523,9 +608,35 @@ class Mosaic(object):
         if blur != 0:
             raise NotImplementedError
 
+    def _split_results(self, results):
+        results_list = [{
+            'img_fields': results['img_fields'],
+            'bbox_fields': results['bbox_fields']
+        } for _ in range(4)]
+
+        # img
+        for key in results.get('img_fields', ['img']):
+            for results_i, v_i in zip(results_list, results[key]):
+                results_i[key] = v_i
+
+        # bbox
+        for key in results.get('bbox_fields', []):
+            for i, (results_i, v_i) in enumerate(zip(results_list, results[key])):
+                results_i[key] = v_i
+
+                label_key = self.bbox2label.get(key)
+                if label_key in results:
+                    results_i[label_key] = results[label_key][i]
+
+        # TODO meta
+
+        # TODO mask_field
+        # TODO seg_field
+
+        return results_list
+
     def __call__(self, results):
         assert len(results['filename']) == 4
-
         # TODO Mingtao: seg_field
 
         w = self.w
@@ -540,47 +651,25 @@ class Mosaic(object):
         out_labels = []
         out_ignores = []
 
-        for i_mosaic in range(4):
-            img = results['img'][i_mosaic]
+        splited_results = self._split_results(results)
 
-            result = {}
+        for i_mosaic in range(4):
+
+            results_i = splited_results[i_mosaic]
             # TODO Mingtao: write in a abstract way
             # e.g. with `bbox_fields` or `img_fileds`
-            bboxes = results['gt_bboxes'][i_mosaic]
-            labels = results['gt_labels'][i_mosaic]
-            ignores = results['gt_bboxes_ignore'][i_mosaic]
 
+            assert results_i['img_fields'] == ['img']
+            img = results_i['img']
             oh, ow, c = img.shape
 
             dw = int(ow * self.jitter)
             dh = int(oh * self.jitter)
 
-            pleft = random.randint(-dw, dw)
-            pright = random.randint(-dw, dw)
-            ptop = random.randint(-dh, dh)
-            pbot = random.randint(-dh, dh)
-
-            flip = random.randint(2) if self.flip else 0
-
-            dhue = random.uniform(-self.hue, self.hue)
-            dsat = random.uniform(1, self.sat) ** (1 if random.randint(2) else -1)
-            dexp = random.uniform(1, self.exp) ** (1 if random.randint(2) else -1)
-
-            if self.blur:
-                tmp_blur = random.randint(3)  # 0 - disable, 1 - blur background, 2 - blur the whole image
-                if tmp_blur == 0:
-                    blur = 0
-                elif tmp_blur == 1:
-                    blur = 1
-                else:
-                    blur = self.blur
-            else:
-                blur = 0
-
-            if self.gaussian and random.randint(2):
-                gaussian_noise = self.gaussian
-            else:
-                gaussian_noise = 0
+            pleft = random.randint(-dw, dw + 1)
+            pright = random.randint(-dw, dw + 1)
+            ptop = random.randint(-dh, dh + 1)
+            pbot = random.randint(-dh, dh + 1)
 
             if self.letter_box:
                 img_ar = ow / oh
@@ -601,11 +690,11 @@ class Mosaic(object):
             swidth = ow - pleft - pright
             sheight = oh - ptop - pbot
 
-            aug_img   = self.image_data_augmentation(img, w, h, pleft, ptop, swidth, sheight, flip, gaussian_noise, blur, dhue, dsat, dexp)
-            aug_boxes, aug_labels = \
-                self.bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, sheight, flip)
-            aug_ignores, _ = \
-                self.bboxes_data_augmentation(ignores, None, w, h, pleft, ptop, swidth, sheight, flip)
+            results_i = self.mosaic_crop(results_i, w, h, pleft, ptop, swidth, sheight)
+            results_i["scale"] = (w, h)
+            results_i = self.resize(results_i)
+            results_i = self.flip(results_i)
+            # results_i = self.photo_metric_distortion(results_i)
 
             left_shift = int(min(cut_x, max(0, -pleft * w / swidth)))
             top_shift = int(min(cut_y, max(0, -ptop * h / sheight)))
@@ -617,6 +706,11 @@ class Mosaic(object):
             right_shift = min(right_shift, cut_x)
             bot_shift = min(bot_shift, cut_y)
 
+            aug_img = results_i['img']
+            aug_boxes = results_i['gt_bboxes']
+            aug_labels = results_i['gt_labels']
+            aug_ignores = results_i['gt_bboxes_ignore']
+
             if i_mosaic == 0:
                 bboxes, labels = self.filter_truth(aug_boxes, aug_labels, left_shift, top_shift, cut_x, cut_y, 0, 0)
                 ignores, _ = self.filter_truth(aug_ignores, None, left_shift, top_shift, cut_x, cut_y, 0, 0)
@@ -627,11 +721,11 @@ class Mosaic(object):
                 tmp_img[:cut_y, cut_x:] = aug_img[top_shift:top_shift + cut_y, cut_x - right_shift:w - right_shift]
             elif i_mosaic == 2:
                 bboxes, labels = self.filter_truth(aug_boxes, aug_labels, left_shift, cut_y - bot_shift, cut_x, h - cut_y, 0, cut_y)
-                ignores, _ = self.filter_truth(aug_ignores, _, left_shift, cut_y - bot_shift, cut_x, h - cut_y, 0, cut_y)
+                ignores, _ = self.filter_truth(aug_ignores, None, left_shift, cut_y - bot_shift, cut_x, h - cut_y, 0, cut_y)
                 tmp_img[cut_y:, :cut_x] = aug_img[cut_y - bot_shift:h - bot_shift, left_shift:left_shift + cut_x]
             elif i_mosaic == 3:
                 bboxes, labels = self.filter_truth(aug_boxes, aug_labels,  cut_x - right_shift, cut_y - bot_shift, w - cut_x, h - cut_y, cut_x, cut_y)
-                ignores, _ = self.filter_truth(aug_ignores, _,  cut_x - right_shift, cut_y - bot_shift, w - cut_x, h - cut_y, cut_x, cut_y)
+                ignores, _ = self.filter_truth(aug_ignores, None,  cut_x - right_shift, cut_y - bot_shift, w - cut_x, h - cut_y, cut_x, cut_y)
                 tmp_img[cut_y:, cut_x:] = aug_img[cut_y - bot_shift:h - bot_shift, cut_x - right_shift:w - right_shift]
 
             out_bboxes.append(bboxes)
@@ -642,6 +736,7 @@ class Mosaic(object):
         out_labels = np.concatenate(out_labels, axis=0)
         out_ignores = np.concatenate(out_ignores, axis=0)
 
+        # results = {}
         results['img'] = tmp_img
         results['flip'] = False
         results['flip_direction'] = 'horizontal'
@@ -769,10 +864,9 @@ class Mosaic(object):
             res = mmcv.imflip(res, 'horizontal')
 
         ############ 3. photo ###########
-        # HSV augmentation
-        # cv2.COLOR_BGR2HSV, cv2.COLOR_RGB2HSV, cv2.COLOR_HSV2BGR, cv2.COLOR_HSV2RGB
         assert res.dtype == np.float32
 
+        self.photo_metric_distortion(results)
         if dsat != 1 or dexp != 1 or dhue != 0:
             if img.shape[2] >= 3:
                 hsv = mmcv.bgr2hsv(res)  # RGB to HSV
