@@ -164,6 +164,121 @@ class LoadImageFromFile(object):
 
 
 @PIPELINES.register_module()
+class LoadMultiImagesFromMultiFiles(object):
+    """Load multiple images from multiple files.
+
+    Required keys are "img_prefix" and img_info_keys (dicts that must
+    contain the key "filename").
+    (`img_info_keys = [prefix + '_imgs_info' for prefix in prefixs]`)
+    Added or updated keys are "*filenames",
+    "*ori_filenames", "*img*", "img_shape", "ori_shape" (same as `img_shape`),
+    "pad_shape" (same as `img_shape`), "scale_factor" (1.0) and "img_norm_cfg"
+    (means=0 and stds=1).
+
+    Args:
+        prefixs (list): the prefix keys of img info.
+            Defaults to ['target', 'ref'].
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
+        color_type (str): The flag argument for :func:`mmcv.imfrombytes()`.
+            Defaults to 'color'.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+    """
+
+    def __init__(self,
+                 prefixs=['target', 'ref'],
+                 to_float32=False,
+                 color_type='color',
+                 file_client_args=dict(backend='disk')):
+        self.prefixs = prefixs.copy()
+        self.to_float32 = to_float32
+        self.color_type = color_type
+        self.file_client_args = file_client_args.copy()
+        self.file_client = None
+
+    def load_img_core(self, results, fname_id, fname, ori_fname, img_prefix):
+        img_bytes = self.file_client.get(fname)
+        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
+        if self.to_float32:
+            img = img.astype(np.float32)
+
+        # e.g. img_prefix = 'target' or 'ref'
+        results[f'{img_prefix}_filenames'].append(fname)
+        results[f'{img_prefix}_ori_filenames'].append(ori_fname)
+        results[f'{img_prefix}_img_{str(fname_id)}'] = img
+        results['img_fields'].append(f'{img_prefix}_img_{str(fname_id)}')
+
+        results['img_shape'] = img.shape
+        results['ori_shape'] = img.shape
+        # Set initial values for default meta_keys
+        results['pad_shape'] = img.shape
+        results['scale_factor'] = 1.0
+        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
+        results['img_norm_cfg'] = dict(
+            mean=np.zeros(num_channels, dtype=np.float32),
+            std=np.ones(num_channels, dtype=np.float32),
+            to_rgb=False)
+        return results
+
+    def __call__(self, results):
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
+
+        img_info_keys = [prefix + '_imgs_info' for prefix in self.prefixs]
+        error_flag = 1
+        for img_info_key in img_info_keys:
+            if img_info_key in results:
+                error_flag = 0
+        if error_flag:
+            raise KeyError(f'"results" should contain at least one key in '
+                           f'{img_info_keys}, obtain {results.keys()}')
+
+        results['img_fields'] = []
+        for prefix, img_info_key in zip(self.prefixs, img_info_keys):
+            if img_info_key not in results:
+                continue
+            ori_filenames = results[img_info_key]['filename']
+            if type(ori_filenames) is str:
+                if results['img_prefix'] is not None:
+                    filenames = [
+                        osp.join(results['img_prefix'], ori_filenames)
+                    ]
+                else:
+                    filenames = [ori_filenames]
+                ori_filenames = [ori_filenames]
+            elif type(ori_filenames) is list:
+                if results['img_prefix'] is not None:
+                    filenames = [
+                        osp.join(results['img_prefix'], fname)
+                        for fname in ori_filenames
+                    ]
+                else:
+                    filenames = ori_filenames
+            else:
+                raise TypeError('the type of filename must be a str or list')
+
+            results[f'{prefix}_filenames'] = []
+            results[f'{prefix}_ori_filenames'] = []
+            for fname_id, fname in enumerate(filenames):
+                ori_fname = ori_filenames[fname_id]
+                results = self.load_img_core(results, fname_id, fname,
+                                             ori_fname, prefix)
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(\n\tprefixs={self.prefixs},\n'
+        repr_str += f'\tto_float32={self.to_float32},\n'
+        repr_str += f"\tcolor_type='{self.color_type}',\n"
+        repr_str += f'\tfile_client_args={self.file_client_args})\n'
+        return repr_str
+
+
+@PIPELINES.register_module()
 class LoadMultiChannelImageFromFiles(object):
     """Load multi-channel images from a list of separate channel files.
 
