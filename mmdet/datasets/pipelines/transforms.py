@@ -530,7 +530,7 @@ class MosaicCrop(object):
         return results
 
     @staticmethod
-    def bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, 
+    def bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth,
                                  sheight):
         if bboxes.shape[0] == 0:
             return bboxes, labels
@@ -566,7 +566,7 @@ class MosaicCrop(object):
             cropped = img
         else:
             cropped = np.zeros([sheight, swidth, 3], dtype=img.dtype)
-            cropped[:, :,] = np.mean(img, axis=(0, 1))
+            cropped[:, :, ] = np.mean(img, axis=(0, 1))
             cropped[dst_rect[1]:dst_rect[3], dst_rect[0]:dst_rect[2]] = \
                 img[inter_rect[1]:inter_rect[3], inter_rect[0]:inter_rect[2]]
 
@@ -587,7 +587,7 @@ class Mosaic(object):
             subimages.
     """
 
-    def __init__(self, size=(640, 640), jitter=0.2, min_offset=0.2, 
+    def __init__(self, size=(640, 640), jitter=0.2, min_offset=0.2,
                  load_pipeline=None, sub_pipeline=None, letter_box=False):
         self.w, self.h = size
         self.jitter = jitter
@@ -607,8 +607,10 @@ class Mosaic(object):
         w = self.w
         h = self.h
 
-        cut_x = random.randint(int(w * self.min_offset), int(w * (1 - self.min_offset)))
-        cut_y = random.randint(int(h * self.min_offset), int(h * (1 - self.min_offset)))
+        cut_x = random.randint(int(w * self.min_offset), 
+                               int(w * (1 - self.min_offset)))
+        cut_y = random.randint(int(h * self.min_offset), 
+                               int(h * (1 - self.min_offset)))
 
         tmp_img = np.zeros((h, w, 3), dtype=np.uint8)
 
@@ -654,7 +656,8 @@ class Mosaic(object):
             swidth = ow - pleft - pright
             sheight = oh - ptop - pbot
 
-            results_i = self.mosaic_crop(results_i, w, h, pleft, ptop, swidth, sheight)
+            results_i = self.mosaic_crop(results_i, w, h, pleft, ptop,
+                                         swidth, sheight)
             results_i["scale"] = (w, h)
             results_i = self.resize(results_i)
 
@@ -676,21 +679,50 @@ class Mosaic(object):
             aug_ignores = results_i['gt_bboxes_ignore']
 
             if i_mosaic == 0:
-                bboxes, labels = self.filter_truth(aug_boxes, aug_labels, left_shift, top_shift, cut_x, cut_y, 0, 0)
-                ignores, _ = self.filter_truth(aug_ignores, None, left_shift, top_shift, cut_x, cut_y, 0, 0)
-                tmp_img[:cut_y, :cut_x] = aug_img[top_shift:top_shift + cut_y, left_shift:left_shift + cut_x]
+                bboxes, labels = self.filter_truth(aug_boxes, aug_labels,
+                                                   left_shift, top_shift,
+                                                   cut_x, cut_y, 0, 0)
+                ignores, _ = self.filter_truth(aug_ignores, None, left_shift,
+                                               top_shift, cut_x, cut_y, 0, 0)
+                tmp_img[:cut_y, :cut_x] = \
+                    aug_img[top_shift:top_shift + cut_y,
+                            left_shift:left_shift + cut_x]
             elif i_mosaic == 1:
-                bboxes, labels = self.filter_truth(aug_boxes, aug_labels, cut_x - right_shift, top_shift, w - cut_x, cut_y, cut_x, 0)
-                ignores, _ = self.filter_truth(aug_ignores, None, cut_x - right_shift, top_shift, w - cut_x, cut_y, cut_x, 0)
-                tmp_img[:cut_y, cut_x:] = aug_img[top_shift:top_shift + cut_y, cut_x - right_shift:w - right_shift]
+                bboxes, labels = self.filter_truth(aug_boxes, aug_labels,
+                                                   cut_x - right_shift,
+                                                   top_shift, w - cut_x,
+                                                   cut_y, cut_x, 0)
+                ignores, _ = self.filter_truth(aug_ignores, None, 
+                                               cut_x - right_shift,
+                                               top_shift, w - cut_x,
+                                               cut_y, cut_x, 0)
+                tmp_img[:cut_y, cut_x:] = \
+                    aug_img[top_shift:top_shift + cut_y,
+                            cut_x - right_shift:w - right_shift]
             elif i_mosaic == 2:
-                bboxes, labels = self.filter_truth(aug_boxes, aug_labels, left_shift, cut_y - bot_shift, cut_x, h - cut_y, 0, cut_y)
-                ignores, _ = self.filter_truth(aug_ignores, None, left_shift, cut_y - bot_shift, cut_x, h - cut_y, 0, cut_y)
-                tmp_img[cut_y:, :cut_x] = aug_img[cut_y - bot_shift:h - bot_shift, left_shift:left_shift + cut_x]
+                bboxes, labels = self.filter_truth(aug_boxes, aug_labels,
+                                                   left_shift,
+                                                   cut_y - bot_shift,
+                                                   cut_x, h - cut_y, 0, cut_y)
+                ignores, _ = self.filter_truth(aug_ignores, None, left_shift,
+                                               cut_y - bot_shift, cut_x,
+                                               h - cut_y, 0, cut_y)
+                tmp_img[cut_y:, :cut_x] = \
+                    aug_img[cut_y - bot_shift:h - bot_shift,
+                            left_shift:left_shift + cut_x]
             elif i_mosaic == 3:
-                bboxes, labels = self.filter_truth(aug_boxes, aug_labels,  cut_x - right_shift, cut_y - bot_shift, w - cut_x, h - cut_y, cut_x, cut_y)
-                ignores, _ = self.filter_truth(aug_ignores, None,  cut_x - right_shift, cut_y - bot_shift, w - cut_x, h - cut_y, cut_x, cut_y)
-                tmp_img[cut_y:, cut_x:] = aug_img[cut_y - bot_shift:h - bot_shift, cut_x - right_shift:w - right_shift]
+                bboxes, labels = self.filter_truth(aug_boxes, aug_labels,
+                                                   cut_x - right_shift,
+                                                   cut_y - bot_shift,
+                                                   w - cut_x, h - cut_y,
+                                                   cut_x, cut_y)
+                ignores, _ = self.filter_truth(aug_ignores, None,
+                                               cut_x - right_shift,
+                                               cut_y - bot_shift, w - cut_x,
+                                               h - cut_y, cut_x, cut_y)
+                tmp_img[cut_y:, cut_x:] = \
+                    aug_img[cut_y - bot_shift:h - bot_shift,
+                            cut_x - right_shift:w - right_shift]
 
             out_bboxes.append(bboxes)
             out_labels.append(labels)
@@ -716,11 +748,9 @@ class Mosaic(object):
 
         bboxes[:, 0::2] -= dx
         bboxes[:, 1::2] -= dy
-        # areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
 
         bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, sx)
         bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, sy)
-        # new_areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
 
         """
         # NOTE Mingtao: It's designed by me

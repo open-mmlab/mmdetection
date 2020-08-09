@@ -9,7 +9,7 @@ from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets.builder import PIPELINES
-from mmdet.datasets import build_dataloader, build_dataset
+from mmdet.datasets import build_dataset
 
 
 def test_resize():
@@ -79,6 +79,7 @@ def test_resize():
     assert np.equal(results['img'], results['img2']).all()
     assert results['img_shape'] == (800, 1280, 3)
 
+
 def test_mosaic():
     pipeline = [
         dict(
@@ -110,7 +111,7 @@ def test_mosaic():
         'pipeline': pipeline,
         'num_samples_per_iter': 4})
 
-    data = datasets.__getitem__(2)
+    # data = datasets.__getitem__(2)
     # img = data['img']
     # bboxes = data['gt_bboxes']
     # mmcv.imshow_bboxes(img, bboxes, show=False)
