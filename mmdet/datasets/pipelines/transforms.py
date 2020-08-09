@@ -7,6 +7,7 @@ from numpy import random
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..builder import PIPELINES
+from .compose import Compose as AugCompose
 
 try:
     from imagecorruptions import corrupt
@@ -19,8 +20,6 @@ try:
 except ImportError:
     albumentations = None
     Compose = None
-
-from .compose import Compose as AugCompose
 
 
 @PIPELINES.register_module()
@@ -498,6 +497,7 @@ class Normalize(object):
 
 @PIPELINES.register_module()
 class MosaicCrop(object):
+
     def __init__(self):
         self.bbox2label = {
             'gt_bboxes': 'gt_labels',
@@ -555,11 +555,18 @@ class MosaicCrop(object):
         oh, ow, c = img.shape
 
         crop_rect = [pleft, ptop, pleft + swidth, ptop + sheight]
-        inter_rect = [max(0, pleft), max(0, ptop),
-                      min(ow, pleft + swidth), min(oh, ptop + sheight)]
-        dst_rect = [max(0, -pleft), max(0, -ptop),
-                    max(0, -pleft) + inter_rect[2] - inter_rect[0],
-                    max(0, -ptop) + inter_rect[3] - inter_rect[1]]
+        inter_rect = [
+            max(0, pleft),
+            max(0, ptop),
+            min(ow, pleft + swidth),
+            min(oh, ptop + sheight)
+        ]
+        dst_rect = [
+            max(0, -pleft),
+            max(0, -ptop),
+            max(0, -pleft) + inter_rect[2] - inter_rect[0],
+            max(0, -ptop) + inter_rect[3] - inter_rect[1]
+        ]
 
         if crop_rect[0] == 0 and crop_rect[1] == 0 and \
                 crop_rect[2] == img.shape[0] and crop_rect[3] == img.shape[1]:
@@ -577,19 +584,28 @@ class MosaicCrop(object):
 class Mosaic(object):
     """Mosaic augmentation.
 
+    For each sub-image, we crop it and resize to `size`, followed by
+    other augmentations such as `PhotoMetricDistortion` and `RandomFlip`.
+    The outputed image is composed of the parts from each sub-image.
+
     Args:
-        size (tuple): Output size of the image.
+        size (tuple): Output size of the image. Default: (640, 640).
         jitter (float): It decides the size of the cropping window.
-        min_offset (float): Volume of the offset of the cropping widnwow.
+        min_offset (float): Volume of the offset of the cropping window.
         load_pipeline (list): Pipeline for loading images and annotations.
         sub_pipeline (list): Pipeline for other data augmentations.
         letter_box(bool): Whether to maintain the aspect ratio of the
             subimages.
     """
 
-    def __init__(self, size=(640, 640), jitter=0.2, min_offset=0.2,
-                 load_pipeline=None, sub_pipeline=None, letter_box=False):
-        self.w, self.h = size
+    def __init__(self,
+                 size=(640, 640),
+                 jitter=0.2,
+                 min_offset=0.2,
+                 load_pipeline=None,
+                 sub_pipeline=None,
+                 letter_box=False):
+        self.h, self.w = size
         self.jitter = jitter
         self.min_offset = min_offset
         self.letter_box = letter_box
@@ -602,27 +618,24 @@ class Mosaic(object):
 
     def __call__(self, results):
         assert len(results) == 4
-        # TODO Mingtao: seg_field
-
+        # seg_field
         w = self.w
         h = self.h
+        cut_x = random.randint(
+            int(w * self.min_offset), int(w * (1 - self.min_offset)))
+        cut_y = random.randint(
+            int(h * self.min_offset), int(h * (1 - self.min_offset)))
 
-        cut_x = random.randint(int(w * self.min_offset),
-                               int(w * (1 - self.min_offset)))
-        cut_y = random.randint(int(h * self.min_offset),
-                               int(h * (1 - self.min_offset)))
-
-        tmp_img = np.zeros((h, w, 3), dtype=np.uint8)
+        tmp_img = np.zeros((h, w, 3), dtype=np.float32)
 
         out_bboxes = []
         out_labels = []
         out_ignores = []
 
-        for i_mosaic in range(4):
-
-            results_i = results[i_mosaic]
+        for i in range(4):
+            results_i = results[i]
             results_i = self.load_pipeline(results_i)
-            # TODO Mingtao: write in a abstract way
+            # TODO write in a abstract way
             # e.g. with `bbox_fields` or `img_fileds`
 
             assert results_i['img_fields'] == ['img']
@@ -656,9 +669,9 @@ class Mosaic(object):
             swidth = ow - pleft - pright
             sheight = oh - ptop - pbot
 
-            results_i = self.mosaic_crop(results_i, w, h, pleft, ptop,
-                                         swidth, sheight)
-            results_i["scale"] = (w, h)
+            results_i = self.mosaic_crop(results_i, w, h, pleft, ptop, swidth,
+                                         sheight)
+            results_i['scale'] = (w, h)
             results_i = self.resize(results_i)
 
             results_i = self.sub_pipeline(results_i)
@@ -678,7 +691,7 @@ class Mosaic(object):
             aug_labels = results_i['gt_labels']
             aug_ignores = results_i['gt_bboxes_ignore']
 
-            if i_mosaic == 0:
+            if i == 0:
                 bboxes, labels = self.filter_truth(aug_boxes, aug_labels,
                                                    left_shift, top_shift,
                                                    cut_x, cut_y, 0, 0)
@@ -687,35 +700,34 @@ class Mosaic(object):
                 tmp_img[:cut_y, :cut_x] = \
                     aug_img[top_shift:top_shift + cut_y,
                             left_shift:left_shift + cut_x]
-            elif i_mosaic == 1:
+            elif i == 1:
                 bboxes, labels = self.filter_truth(aug_boxes, aug_labels,
                                                    cut_x - right_shift,
-                                                   top_shift, w - cut_x,
-                                                   cut_y, cut_x, 0)
+                                                   top_shift, w - cut_x, cut_y,
+                                                   cut_x, 0)
                 ignores, _ = self.filter_truth(aug_ignores, None,
-                                               cut_x - right_shift,
-                                               top_shift, w - cut_x,
-                                               cut_y, cut_x, 0)
+                                               cut_x - right_shift, top_shift,
+                                               w - cut_x, cut_y, cut_x, 0)
                 tmp_img[:cut_y, cut_x:] = \
                     aug_img[top_shift:top_shift + cut_y,
                             cut_x - right_shift:w - right_shift]
-            elif i_mosaic == 2:
+            elif i == 2:
                 bboxes, labels = self.filter_truth(aug_boxes, aug_labels,
                                                    left_shift,
-                                                   cut_y - bot_shift,
-                                                   cut_x, h - cut_y, 0, cut_y)
+                                                   cut_y - bot_shift, cut_x,
+                                                   h - cut_y, 0, cut_y)
                 ignores, _ = self.filter_truth(aug_ignores, None, left_shift,
                                                cut_y - bot_shift, cut_x,
                                                h - cut_y, 0, cut_y)
                 tmp_img[cut_y:, :cut_x] = \
                     aug_img[cut_y - bot_shift:h - bot_shift,
                             left_shift:left_shift + cut_x]
-            elif i_mosaic == 3:
+            elif i == 3:
                 bboxes, labels = self.filter_truth(aug_boxes, aug_labels,
                                                    cut_x - right_shift,
                                                    cut_y - bot_shift,
-                                                   w - cut_x, h - cut_y,
-                                                   cut_x, cut_y)
+                                                   w - cut_x, h - cut_y, cut_x,
+                                                   cut_y)
                 ignores, _ = self.filter_truth(aug_ignores, None,
                                                cut_x - right_shift,
                                                cut_y - bot_shift, w - cut_x,
@@ -751,9 +763,8 @@ class Mosaic(object):
 
         bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, sx)
         bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, sy)
-
         """
-        # NOTE Mingtao: It's designed by me
+        # NOTE It's designed by me
         reserved_idx = new_areas / areas >= 0.2
         """
         reserved_inds = (bboxes[:, 2] > bboxes[:, 0]) & (

@@ -8,8 +8,8 @@ import torch
 from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-from mmdet.datasets.builder import PIPELINES
 from mmdet.datasets import build_dataset
+from mmdet.datasets.builder import PIPELINES
 
 
 def test_resize():
@@ -109,7 +109,8 @@ def test_mosaic():
         'ann_file': data_root + 'annotations/instances_train2017.json',
         'img_prefix': data_root + 'train2017/',
         'pipeline': pipeline,
-        'num_samples_per_iter': 4})
+        'num_samples_per_iter': 4
+    })
 
     data = datasets.__getitem__(2)
     img = data['img']

@@ -1,8 +1,8 @@
 import os.path as osp
-import random
 
 import mmcv
 import numpy as np
+from numpy import random
 from torch.utils.data import Dataset
 
 from mmdet.core import eval_map, eval_recalls
@@ -218,8 +218,8 @@ class CustomDataset(Dataset):
         return self.pipeline(results)
 
     def prepare_train_imgs(self, idx):
-        """Get training data and annotations (of multiple images)
-        after pipeline.
+        """Get training data and annotations (of multiple images) after
+        pipeline.
 
         While the main sample is determined by idx, the other samples
         are selected randomly.
