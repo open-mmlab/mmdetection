@@ -607,9 +607,9 @@ class Mosaic(object):
         w = self.w
         h = self.h
 
-        cut_x = random.randint(int(w * self.min_offset), 
+        cut_x = random.randint(int(w * self.min_offset),
                                int(w * (1 - self.min_offset)))
-        cut_y = random.randint(int(h * self.min_offset), 
+        cut_y = random.randint(int(h * self.min_offset),
                                int(h * (1 - self.min_offset)))
 
         tmp_img = np.zeros((h, w, 3), dtype=np.uint8)
@@ -692,7 +692,7 @@ class Mosaic(object):
                                                    cut_x - right_shift,
                                                    top_shift, w - cut_x,
                                                    cut_y, cut_x, 0)
-                ignores, _ = self.filter_truth(aug_ignores, None, 
+                ignores, _ = self.filter_truth(aug_ignores, None,
                                                cut_x - right_shift,
                                                top_shift, w - cut_x,
                                                cut_y, cut_x, 0)

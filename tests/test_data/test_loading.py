@@ -2,7 +2,6 @@ import copy
 import os.path as osp
 
 import numpy as np
-import pytest
 
 from mmdet.datasets.pipelines import (LoadImageFromFile,
                                       LoadMultiChannelImageFromFiles)

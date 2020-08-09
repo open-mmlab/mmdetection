@@ -111,10 +111,10 @@ def test_mosaic():
         'pipeline': pipeline,
         'num_samples_per_iter': 4})
 
-    # data = datasets.__getitem__(2)
-    # img = data['img']
-    # bboxes = data['gt_bboxes']
-    # mmcv.imshow_bboxes(img, bboxes, show=False)
+    data = datasets.__getitem__(2)
+    img = data['img']
+    bboxes = data['gt_bboxes']
+    mmcv.imshow_bboxes(img, bboxes, show=False)
     # mmcv.imwrite(img, "img.png")
 
 
