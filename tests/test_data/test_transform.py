@@ -78,6 +78,45 @@ def test_resize():
     assert np.equal(results['img'], results['img2']).all()
     assert results['img_shape'] == (800, 1280, 3)
 
+def test_mosaic():
+    from mmdet.datasets import build_dataloader, build_dataset
+    import logging
+    pipeline = [
+        dict(
+            type='Mosaic',
+            load_pipeline=[
+                dict(type='LoadImageFromFile', to_float32=True),
+                dict(type='LoadAnnotations', with_bbox=True)
+            ],
+            sub_pipeline=[
+                dict(
+                    type='PhotoMetricDistortion',
+                    brightness_delta=32,
+                    contrast_range=(0.5, 1.5),
+                    saturation_range=(0.5, 1.5),
+                    hue_delta=18),
+                dict(type='RandomFlip', flip_ratio=0.5)
+            ],
+            size=(640, 640), 
+            jitter=0.2, 
+            min_offset=0.2, 
+            letter_box=False)
+    ]
+    # mosaic_module = build_from_cfg(transform, PIPELINES)
+    data_root = 'data/coco/'
+    datasets = build_dataset({
+        'type': 'CocoDataset',
+        'ann_file': data_root + 'annotations/instances_train2017.json',
+        'img_prefix': data_root + 'train2017/',
+        'pipeline': pipeline, 
+        'num_samples_per_iter': 4})
+
+    data = datasets.__getitem__(2)
+    img = data['img']
+    bboxes = data['gt_bboxes']
+    # mmcv.imshow_bboxes(img, bboxes, show=False)
+    # mmcv.imwrite(img, "img.png")
+
 
 def test_flip():
     # test assertion for invalid flip_ratio

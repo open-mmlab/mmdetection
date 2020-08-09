@@ -27,19 +27,25 @@ train_cfg = dict(assigner=dict(neg_iou_thr=0.5))
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImagesFromFile', to_float32=True),
-    dict(type='LoadMultiImagesAnnotations', with_bbox=True),
-    dict(type='Mosaic', 
-         size=(640, 640), 
-         jitter=0.2, 
-         min_offset=0.2, 
-         letter_box=False,
-         gaussian=0,
-         blur=0,
-         hue=0.1, # 0.1
-         sat=1.5, #  1.5
-         exp=1.5, # 1.5
-         flip=True),
+    dict(
+        type='Mosaic',
+        load_pipeline=[
+            dict(type='LoadImageFromFile', to_float32=True),
+            dict(type='LoadAnnotations', with_bbox=True)
+        ],
+        sub_pipeline=[
+            dict(
+                type='PhotoMetricDistortion',
+                brightness_delta=32,
+                contrast_range=(0.5, 1.5),
+                saturation_range=(0.5, 1.5),
+                hue_delta=18),
+            dict(type='RandomFlip', flip_ratio=0.5)
+        ],
+        size=(640, 640), 
+        jitter=0.2, 
+        min_offset=0.2, 
+        letter_box=False),
     dict(type='Normalize', **img_norm_cfg),
     # dict(type='Pad', size=(640, 640)),
     dict(type='DefaultFormatBundle'),
@@ -63,7 +69,7 @@ test_pipeline = [
 data = dict(
     samples_per_gpu=8,
     workers_per_gpu=4,
-    train=dict(pipeline=train_pipeline, load_multiple_samples=True),
+    train=dict(pipeline=train_pipeline, num_samples_per_iter=4),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 # optimizer

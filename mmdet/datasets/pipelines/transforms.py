@@ -22,6 +22,7 @@ except ImportError:
     albumentations = None
     Compose = None
 
+from .compose import Compose as AugCompose
 
 @PIPELINES.register_module()
 class Resize(object):
@@ -569,91 +570,36 @@ class MosaicCrop(object):
 
         return cropped
 
-
-
 # author: Mingtao
 @PIPELINES.register_module()
 class Mosaic(object):
     """Mosaic augmentation.
 
-    As this process contains random cropping, random flipping
-    and photo metric distortion, you don't need to add them
-    into the pipeline.
-
-    Not that the behavior of photo metric distortion is not
-    completely same as the class `PhotoMetricDistortion`.
-
     Args:
+        size (tuple): Output size of the image.
         jitter (float): It decides the size of the cropping window.
         min_offset (float): Volume of the offset of the cropping widnwow.
+        load_pipeline (list): Pipeline for loading images and annotations.
+        sub_pipeline (list): Pipeline for other data augmentations.
         letter_box(bool): Whether to maintain the aspect ratio of the
             subimages.
-        flip(bool): Whether to apply random flipping.
-        gaussian(float): Stddev of the gaussian noise.
-        blur(float): Not implemented now (not used in YOLOv4).
-        hue(float): 
-        sat(float):
-        exp(float):
     """
 
-    def __init__(self, size=(640, 640), jitter=0.2, min_offset=0.2, letter_box=False,
-                 flip=True, gaussian=0, blur=0, brightness_delta=32, contrast_range=(0.5, 1.5),
-                 saturation_range=(0.5, 1.5), hue_delta=18):
+    def __init__(self, size=(640, 640), jitter=0.2, min_offset=0.2, 
+                 load_pipeline=None, sub_pipeline=None, letter_box=False):
         self.w, self.h = size
         self.jitter = jitter
         self.min_offset = min_offset
         self.letter_box = letter_box
-        self.flip = flip
-        self.gaussian = gaussian
-        self.blur = blur
+
+        self.load_pipeline = AugCompose(load_pipeline)
+        self.sub_pipeline = AugCompose(sub_pipeline)
 
         self.mosaic_crop = MosaicCrop()
-        self.photo_metric_distortion = PhotoMetricDistortion(
-            brightness_delta=brightness_delta,
-            contrast_range=contrast_range,
-            saturation_range=saturation_range,
-            hue_delta=hue_delta
-        )
         self.resize = Resize(keep_ratio=False)
-        self.flip = RandomFlip(0.5)
-
-        self.bbox2label = {
-            'gt_bboxes': 'gt_labels',
-            'gt_bboxes_ignore': 'gt_labels_ignore'
-        }
-
-        if blur != 0:
-            raise NotImplementedError
-
-    def _split_results(self, results):
-        results_list = [{
-            'img_fields': results['img_fields'],
-            'bbox_fields': results['bbox_fields']
-        } for _ in range(4)]
-
-        # img
-        for key in results.get('img_fields', ['img']):
-            for results_i, v_i in zip(results_list, results[key]):
-                results_i[key] = v_i
-
-        # bbox
-        for key in results.get('bbox_fields', []):
-            for i, (results_i, v_i) in enumerate(zip(results_list, results[key])):
-                results_i[key] = v_i
-
-                label_key = self.bbox2label.get(key)
-                if label_key in results:
-                    results_i[label_key] = results[label_key][i]
-
-        # TODO meta
-
-        # TODO mask_field
-        # TODO seg_field
-
-        return results_list
 
     def __call__(self, results):
-        assert len(results['filename']) == 4
+        assert len(results) == 4
         # TODO Mingtao: seg_field
 
         w = self.w
@@ -668,11 +614,10 @@ class Mosaic(object):
         out_labels = []
         out_ignores = []
 
-        splited_results = self._split_results(results)
-
         for i_mosaic in range(4):
 
-            results_i = splited_results[i_mosaic]
+            results_i = results[i_mosaic]
+            results_i = self.load_pipeline(results_i)
             # TODO Mingtao: write in a abstract way
             # e.g. with `bbox_fields` or `img_fileds`
 
@@ -710,8 +655,8 @@ class Mosaic(object):
             results_i = self.mosaic_crop(results_i, w, h, pleft, ptop, swidth, sheight)
             results_i["scale"] = (w, h)
             results_i = self.resize(results_i)
-            results_i = self.flip(results_i)
-            # results_i = self.photo_metric_distortion(results_i)
+
+            results_i = self.sub_pipeline(results_i)
 
             left_shift = int(min(cut_x, max(0, -pleft * w / swidth)))
             top_shift = int(min(cut_y, max(0, -ptop * h / sheight)))
@@ -753,10 +698,10 @@ class Mosaic(object):
         out_labels = np.concatenate(out_labels, axis=0)
         out_ignores = np.concatenate(out_ignores, axis=0)
 
-        # results = {}
+        results = results[0]
         results['img'] = tmp_img
-        results['flip'] = False
-        results['flip_direction'] = 'horizontal'
+        # results['flip'] = False
+        # results['flip_direction'] = 'horizontal'
         results['img_shape'] = tmp_img.shape
         results['gt_bboxes'] = out_bboxes
         results['gt_labels'] = out_labels

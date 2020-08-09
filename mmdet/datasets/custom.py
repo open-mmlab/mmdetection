@@ -44,8 +44,8 @@ class CustomDataset(Dataset):
         test_mode (bool, optional): If set True, annotation will not be loaded.
         filter_empty_gt (bool, optional): If set true, images without bounding
             boxes will be filtered out.
-        load_multiple_samples (bool, optional): Whether to load multiple
-            samples (for mosaic augmentation).
+        num_samples_per_iter (int, optional): The number of samples per 
+            iterarion, used for mixup or mosaic augmentation.
     """
 
     CLASSES = None
@@ -60,7 +60,7 @@ class CustomDataset(Dataset):
                  proposal_file=None,
                  test_mode=False,
                  filter_empty_gt=True,
-                 load_multiple_samples=False):
+                 num_samples_per_iter=1):
         self.ann_file = ann_file
         self.data_root = data_root
         self.img_prefix = img_prefix
@@ -68,7 +68,7 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
-        self.load_multiple_samples = load_multiple_samples
+        self.num_samples_per_iter = num_samples_per_iter
         self.CLASSES = self.get_classes(classes)
 
         # join paths if data_root is specified
@@ -189,7 +189,7 @@ class CustomDataset(Dataset):
         if self.test_mode:
             return self.prepare_test_img(idx)
         while True:
-            if self.load_multiple_samples:
+            if self.num_samples_per_iter > 1:
                 data = self.prepare_train_imgs(idx)
             else:
                 data = self.prepare_train_img(idx)
@@ -217,19 +217,21 @@ class CustomDataset(Dataset):
         self.pre_pipeline(results)
         return self.pipeline(results)
 
-    # NOTE author: Mingtao
     def prepare_train_imgs(self, idx):
         """Get training data and annotations (of multiple images)
         after pipeline.
 
+        While the main sample is determined by idx, the other samples
+        are selected randomly.
+
         Args:
-            idx (int): Index of data.
+            idx (int): Index of the main sample.
 
         Returns:
             dict: Training data and annotation after pipeline with new keys
                 introduced by pipeline.
         """
-        num = 4 - 1
+        num = self.num_samples_per_iter - 1
 
         n_samples = self.__len__()
         total_indices = list(range(n_samples))
@@ -238,19 +240,16 @@ class CustomDataset(Dataset):
         selected_indices = random.sample(total_indices, num)
         selected_indices.insert(0, idx)
 
-        img_info = [self.data_infos[i] for i in selected_indices]
-        ann_info = [self.get_ann_info(i) for i in selected_indices]
-        results = dict(img_info=img_info, ann_info=ann_info)
-
-        if self.proposals is not None:
-            results['proposals'] = \
-                [self.proposals[i] for i in selected_indices]
-
-        self.pre_pipeline(results)
-
+        results = []
+        for i in selected_indices:
+            img_info = self.data_infos[i]
+            ann_info = self.get_ann_info(i)
+            results_i = dict(img_info=img_info, ann_info=ann_info)
+            if self.proposals is not None:
+                results_i['proposals'] = self.proposals[i]
+            self.pre_pipeline(results_i)
+            results.append(results_i)
         return self.pipeline(results)
-
-
 
     def prepare_test_img(self, idx):
         """Get testing data  after pipeline.
