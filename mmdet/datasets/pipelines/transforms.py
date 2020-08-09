@@ -1,10 +1,8 @@
 import inspect
 
 import mmcv
-import cv2
 import numpy as np
 from numpy import random
-import logging
 
 from mmdet.core import PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -23,6 +21,7 @@ except ImportError:
     Compose = None
 
 from .compose import Compose as AugCompose
+
 
 @PIPELINES.register_module()
 class Resize(object):
@@ -496,6 +495,7 @@ class Normalize(object):
         repr_str += f'(mean={self.mean}, std={self.std}, to_rgb={self.to_rgb})'
         return repr_str
 
+
 @PIPELINES.register_module()
 class MosaicCrop(object):
     def __init__(self):
@@ -507,7 +507,8 @@ class MosaicCrop(object):
     def __call__(self, results, w, h, pleft, ptop, swidth, sheight):
         for key in results.get('img_fields', ['img']):
             img = results[key]
-            aug_img = self.image_data_augmentation(img, pleft, ptop, swidth, sheight)
+            aug_img = self.image_data_augmentation(img, pleft, ptop, swidth,
+                                                   sheight)
             results[key] = aug_img
         results['img_shape'] = aug_img.shape
 
@@ -519,7 +520,8 @@ class MosaicCrop(object):
             else:
                 labels = None
 
-            aug_bboxes, aug_labels = self.bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, sheight)
+            aug_bboxes, aug_labels = self.bboxes_data_augmentation(
+                bboxes, labels, w, h, pleft, ptop, swidth, sheight)
 
             results[key] = aug_bboxes
             if label_key in results:
@@ -528,7 +530,8 @@ class MosaicCrop(object):
         return results
 
     @staticmethod
-    def bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, sheight):
+    def bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, 
+                                 sheight):
         if bboxes.shape[0] == 0:
             return bboxes, labels
 
@@ -544,7 +547,7 @@ class MosaicCrop(object):
         bboxes = bboxes[reserved_inds]
         if labels is not None:
             labels = labels[reserved_inds]
-        
+
         return bboxes, labels
 
     @staticmethod
@@ -552,16 +555,15 @@ class MosaicCrop(object):
         oh, ow, c = img.shape
 
         crop_rect = [pleft, ptop, pleft + swidth, ptop + sheight]
-        img_rect = [0, 0, ow, oh]
-        inter_rect = [max(0, pleft), max(0, ptop), 
+        inter_rect = [max(0, pleft), max(0, ptop),
                       min(ow, pleft + swidth), min(oh, ptop + sheight)]
-        dst_rect = [max(0, -pleft), max(0, -ptop), 
+        dst_rect = [max(0, -pleft), max(0, -ptop),
                     max(0, -pleft) + inter_rect[2] - inter_rect[0],
                     max(0, -ptop) + inter_rect[3] - inter_rect[1]]
 
         if crop_rect[0] == 0 and crop_rect[1] == 0 and \
                 crop_rect[2] == img.shape[0] and crop_rect[3] == img.shape[1]:
-            cropped = src
+            cropped = img
         else:
             cropped = np.zeros([sheight, swidth, 3], dtype=img.dtype)
             cropped[:, :,] = np.mean(img, axis=(0, 1))
@@ -570,7 +572,7 @@ class MosaicCrop(object):
 
         return cropped
 
-# author: Mingtao
+
 @PIPELINES.register_module()
 class Mosaic(object):
     """Mosaic augmentation.
@@ -700,8 +702,6 @@ class Mosaic(object):
 
         results = results[0]
         results['img'] = tmp_img
-        # results['flip'] = False
-        # results['flip_direction'] = 'horizontal'
         results['img_shape'] = tmp_img.shape
         results['gt_bboxes'] = out_bboxes
         results['gt_labels'] = out_labels
@@ -737,119 +737,6 @@ class Mosaic(object):
         bboxes[:, 1::2] += yd
 
         return bboxes, labels
-
-
-    @staticmethod
-    def bboxes_data_augmentation(bboxes, labels, w, h, pleft, ptop, swidth, sheight, flip):
-        """
-        1. crop_mosaic
-        2. resize
-        3. flip
-        3. photo (needn't)
-        4. blur (needn't)
-        5. gaussian_noise (needn't)
-        """
-
-        if bboxes.shape[0] == 0:
-            return bboxes, labels
-
-        ######### 1. crop_mosaic ##########
-        bboxes[:, 0::2] -= pleft
-        bboxes[:, 1::2] -= ptop
-        areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
-
-        bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, swidth)
-        bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, sheight)
-        new_areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
-
-        """
-        # NOTE Mingtao: It's designed by me
-        reserved_idx = new_areas / areas >= 0.2
-        """
-        reserved_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
-            bboxes[:, 3] > bboxes[:, 1])
-
-        bboxes = bboxes[reserved_inds]
-        if labels is not None:
-            labels = labels[reserved_inds]
-        
-        if bboxes.shape[0] == 0:
-            return bboxes, labels
-
-        ######### 2. resize ##########
-        bboxes[:, 0::2] *= w / swidth
-        bboxes[:, 1::2] *= h / sheight
-
-        ######### 3. flip ##########
-        if flip:
-            temp = w - bboxes[:, 0]
-            bboxes[:, 0] = w - bboxes[:, 2]
-            bboxes[:, 2] = temp
-
-        return bboxes, labels
-
-    @staticmethod
-    def image_data_augmentation(img, w, h, pleft, ptop, swidth, sheight, flip, gaussian_noise, blur, dhue, dsat, dexp):
-        """
-        1. crop_mosaic
-        2. resize
-        3. flip
-        3. photo
-        4. blur
-        5. gaussian_noise
-        """
-        oh, ow, c = img.shape
-
-        ######### 1. crop_mosaic ##########
-        crop_rect = [pleft, ptop, pleft + swidth, ptop + sheight]
-        img_rect = [0, 0, ow, oh]
-        inter_rect = [max(0, pleft), max(0, ptop), 
-                      min(ow, pleft + swidth), min(oh, ptop + sheight)]
-        dst_rect = [max(0, -pleft), max(0, -ptop), 
-                    max(0, -pleft) + inter_rect[2] - inter_rect[0],
-                    max(0, -ptop) + inter_rect[3] - inter_rect[1]]
-
-        if crop_rect[0] == 0 and crop_rect[1] == 0 and \
-                crop_rect[2] == img.shape[0] and crop_rect[3] == img.shape[1]:
-            cropped = src
-        else:
-            cropped = np.zeros([sheight, swidth, 3], dtype=img.dtype)
-            cropped[:, :,] = np.mean(img, axis=(0, 1))
-            cropped[dst_rect[1]:dst_rect[3], dst_rect[0]:dst_rect[2]] = \
-                img[inter_rect[1]:inter_rect[3], inter_rect[0]:inter_rect[2]]
-
-        ############ 2. resize ###########
-        res = mmcv.imresize(cropped, (w, h), interpolation='bilinear')
-
-        ############ 3. flip ###########
-        if flip:
-            res = mmcv.imflip(res, 'horizontal')
-
-        ############ 3. photo ###########
-        assert res.dtype == np.float32
-
-        self.photo_metric_distortion(results)
-        if dsat != 1 or dexp != 1 or dhue != 0:
-            if img.shape[2] >= 3:
-                hsv = mmcv.bgr2hsv(res)  # RGB to HSV
-                hsv[..., 1] *= dsat
-                hsv[..., 2] *= dexp
-                hsv[..., 0] += 179 * dhue
-                res = np.clip(mmcv.hsv2bgr(hsv), 0, 255)  # HSV to RGB (the same as previous)
-            else:
-                res *= dexp
-
-        ############ 4. blur ###########
-        # TODO
-        if blur:
-            raise NotImplementedError
-
-        ############ 5. gaussian noise ###########
-        if gaussian_noise:
-            gaussian_noise = max(min(gaussian_noise, 127), 0)
-            noise = random.normal(0, gaussian_noise, res.shape) # mean and stddev
-            res += noise
-        return res
 
 
 @PIPELINES.register_module()

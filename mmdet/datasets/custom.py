@@ -44,7 +44,7 @@ class CustomDataset(Dataset):
         test_mode (bool, optional): If set True, annotation will not be loaded.
         filter_empty_gt (bool, optional): If set true, images without bounding
             boxes will be filtered out.
-        num_samples_per_iter (int, optional): The number of samples per 
+        num_samples_per_iter (int, optional): The number of samples per
             iterarion, used for mixup or mosaic augmentation.
     """
 

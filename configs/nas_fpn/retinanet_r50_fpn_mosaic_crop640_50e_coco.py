@@ -42,9 +42,9 @@ train_pipeline = [
                 hue_delta=18),
             dict(type='RandomFlip', flip_ratio=0.5)
         ],
-        size=(640, 640), 
-        jitter=0.2, 
-        min_offset=0.2, 
+        size=(640, 640),
+        jitter=0.2,
+        min_offset=0.2,
         letter_box=False),
     dict(type='Normalize', **img_norm_cfg),
     # dict(type='Pad', size=(640, 640)),
