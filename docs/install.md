@@ -30,14 +30,14 @@ You can check the supported CUDA version for precompiled packages on the [PyTorc
 `E.g.1` If you have CUDA 10.1 installed under `/usr/local/cuda` and would like to install
 PyTorch 1.5, you need to install the prebuilt PyTorch with CUDA 10.1.
 
-```python
+```shell
 conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
 ```
 
 `E.g. 2` If you have CUDA 9.2 installed under `/usr/local/cuda` and would like to install
 PyTorch 1.3.1., you need to install the prebuilt PyTorch with CUDA 9.2.
 
-```python
+```shell
 conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
 ```
 
@@ -50,7 +50,7 @@ c. Install mmcv, we recommend you to install the pre-build mmcv as below.
 pip install mmcv-full==latest+torch1.5.0+cu101 -f https://openmmlab.oss-accelerate.aliyuncs.com/mmcv/dist/index.html
 ```
 
-See [here]((https://github.com/open-mmlab/mmcv#install-with-pip)) for different versions of MMCV compatible to different PyTorch and CUDA versions.
+See [here](https://github.com/open-mmlab/mmcv#install-with-pip) for different versions of MMCV compatible to different PyTorch and CUDA versions.
 Optionally you can choose to compile mmcv from source by the following command
 
 ```shell
