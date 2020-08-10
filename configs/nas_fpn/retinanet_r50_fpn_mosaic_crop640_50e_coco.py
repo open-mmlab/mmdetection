@@ -33,6 +33,13 @@ train_pipeline = [
             dict(type='LoadImageFromFile', to_float32=True),
             dict(type='LoadAnnotations', with_bbox=True),
             dict(
+                type='PhotoMetricDistortion',
+                brightness_delta=32,
+                contrast_range=(0.5, 1.5),
+                saturation_range=(0.5, 1.5),
+                hue_delta=18),
+            dict(type='RandomFlip', flip_ratio=0.5),
+            dict(
                 type='Expand',
                 mean=img_norm_cfg['mean'],
                 to_rgb=img_norm_cfg['to_rgb'],
@@ -43,14 +50,7 @@ train_pipeline = [
                 crop_size=None,
                 min_crop_size=0.4286,  # 0.6 / 1.4
                 allow_negative_crop=True),
-            dict(type='Resize', img_scale=(640, 640), keep_ratio=False),
-            dict(
-                type='PhotoMetricDistortion',
-                brightness_delta=32,
-                contrast_range=(0.5, 1.5),
-                saturation_range=(0.5, 1.5),
-                hue_delta=18),
-            dict(type='RandomFlip', flip_ratio=0.5)
+            dict(type='Resize', img_scale=(640, 640), keep_ratio=False)
         ],
         size=(640, 640),
         min_offset=0.2),
