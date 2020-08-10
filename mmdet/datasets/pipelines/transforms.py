@@ -1530,3 +1530,61 @@ class RandomCenterCropPad(object):
         repr_str += f'test_mode={self.test_mode}, '
         repr_str += f'test_pad_mode={self.test_pad_mode})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class CutOut(object):
+    """Randomly drop some regions of image used in `Cutout.
+
+    <https://arxiv.org/abs/1708.04552>`_.
+
+    Args:
+        n_holes (int | tuple[int, int]): Number of regions to be dropped.
+            If it is given as a list, number of n_holes will be randomly
+            selected from `n_holes[0]` to `n_holes[1]`.
+        cutout_shape (tuple[int, int] | list[tuple[int, int]] |
+            tuple[float, float] | list[tuple[float, float]]): The candidate
+            shape of dropped regions. It can be
+                1. `tuple[int, int]`: use a fixed cutout shape.
+                2. `tuple[float, float]`: use a fixed ratio of image shape.
+                3. `list[tuple[int, int]]`: random choose shape from list.
+                4. `list[tuple[int, int]]`: random choose ratio from list.
+            Default: (8, 8).
+        fill_in (tuple[int, int, int]): The value of pixel to fill in the
+            dropped regions. Default: (0, 0, 0).
+    """
+
+    def __init__(self, n_holes, cutout_shape=(8, 8), fill_in=(0, 0, 0)):
+        assert (isinstance(cutout_shape, (list, tuple)))
+        if isinstance(n_holes, tuple):
+            assert len(n_holes) == 2 and 0 <= n_holes[0] < n_holes[1]
+        else:
+            n_holes = (n_holes, n_holes)
+        self.n_holes = n_holes
+        self.cutout_shape = cutout_shape
+        if not isinstance(self.cutout_shape, list):
+            self.cutout_shape = [self.cutout_shape]
+        self.fill_in = fill_in
+
+    def __call__(self, results):
+        h, w, c = results['img'].shape
+        mask = np.ones_like(results['img'])
+        fills = np.zeros_like(results['img'])
+        n_holes = np.random.randint(self.n_holes[0], self.n_holes[1] + 1)
+        for _ in range(n_holes):
+            x1 = np.random.randint(0, w)
+            y1 = np.random.randint(0, h)
+            index = np.random.randint(0, len(self.cutout_shape))
+            if isinstance(self.cutout_shape[index][0], int):
+                cutout_w, cutout_h = self.cutout_shape[index]
+            else:
+                cutout_w = int(self.cutout_shape[index][0] * w)
+                cutout_h = int(self.cutout_shape[index][1] * h)
+
+            x2 = np.clip(x1 + cutout_w, 0, w)
+            y2 = np.clip(y1 + cutout_h, 0, h)
+            mask[y1:y2, x1:x2, :] = 0
+            fills[y1:y2, x1:x2, :] = self.fill_in
+
+        results['img'] = results['img'] * mask + fills
+        return results

@@ -545,3 +545,33 @@ def test_multi_scale_flip_aug():
     assert results['img_metas'][0].data['scale_factor'].tolist() == [
         2.603515625, 2.6041667461395264, 2.603515625, 2.6041667461395264
     ]
+
+
+def test_cutout():
+    # n_holes test
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=(5, 3))
+        build_from_cfg(transform, PIPELINES)
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=(3, 4, 5))
+        build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+
+    results['img'] = img
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['img_fields'] = ['img']
+
+    transform = dict(type='CutOut', n_holes=1)
+    cutout_module = build_from_cfg(transform, PIPELINES)
+    cutout_result = cutout_module(results)
+    assert cutout_result['img'].sum() < img.sum()
+
+    transform = dict(type='CutOut', n_holes=1, fill_in=(255, 255, 255))
+    cutout_module = build_from_cfg(transform, PIPELINES)
+    cutout_result = cutout_module(results)
+    assert cutout_result['img'].sum() > img.sum()
