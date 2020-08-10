@@ -8,7 +8,7 @@ import torch
 from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
-from mmdet.datasets import build_dataset
+# from mmdet.datasets import build_dataset
 from mmdet.datasets.builder import PIPELINES
 
 
@@ -80,43 +80,55 @@ def test_resize():
     assert results['img_shape'] == (800, 1280, 3)
 
 
-def test_mosaic():
-    pipeline = [
-        dict(
-            type='Mosaic',
-            load_pipeline=[
-                dict(type='LoadImageFromFile', to_float32=True),
-                dict(type='LoadAnnotations', with_bbox=True)
-            ],
-            sub_pipeline=[
-                dict(
-                    type='PhotoMetricDistortion',
-                    brightness_delta=32,
-                    contrast_range=(0.5, 1.5),
-                    saturation_range=(0.5, 1.5),
-                    hue_delta=18),
-                dict(type='RandomFlip', flip_ratio=0.5)
-            ],
-            size=(640, 640),
-            jitter=0.2,
-            min_offset=0.2,
-            letter_box=False)
-    ]
-    # mosaic_module = build_from_cfg(transform, PIPELINES)
-    data_root = 'data/coco/'
-    datasets = build_dataset({
-        'type': 'CocoDataset',
-        'ann_file': data_root + 'annotations/instances_train2017.json',
-        'img_prefix': data_root + 'train2017/',
-        'pipeline': pipeline,
-        'num_samples_per_iter': 4
-    })
-
-    data = datasets.__getitem__(2)
-    img = data['img']
-    bboxes = data['gt_bboxes']
-    mmcv.imshow_bboxes(img, bboxes, show=False)
-    # mmcv.imwrite(img, "img.png")
+# def test_mosaic():
+#     img_norm_cfg = dict(
+#         mean=[123.675, 116.28, 103.53],
+#         std=[58.395, 57.12, 57.375],
+#         to_rgb=True)
+#     pipeline = [
+#         dict(
+#             type='Mosaic',
+#             sub_pipeline=[
+#                 dict(type='LoadImageFromFile', to_float32=True),
+#                 dict(type='LoadAnnotations', with_bbox=True),
+#                 dict(
+#                     type='Expand',
+#                     mean=img_norm_cfg['mean'],
+#                     to_rgb=img_norm_cfg['to_rgb'],
+#                     ratio_range=(1.4, 1.4),
+#                     prob=1.0),
+#                 dict(
+#                     type='RandomCrop',
+#                     crop_size=None,
+#                     min_crop_size=0.4286,  # 0.6 / 1.4
+#                 ),
+#                 dict(type='Resize', img_scale=(640, 640), keep_ratio=False),
+#                  dict(
+#                     type='PhotoMetricDistortion',
+#                     brightness_delta=32,
+#                     contrast_range=(0.5, 1.5),
+#                     saturation_range=(0.5, 1.5),
+#                     hue_delta=18),
+#                 dict(type='RandomFlip', flip_ratio=0.5)
+#             ],
+#             size=(640, 640),
+#             min_offset=0.2)
+#     ]
+#     # mosaic_module = build_from_cfg(transform, PIPELINES)
+#     data_root = 'data/coco/'
+#     datasets = build_dataset({
+#         'type': 'CocoDataset',
+#         'ann_file': data_root + 'annotations/instances_train2017.json',
+#         'img_prefix': data_root + 'train2017/',
+#         'pipeline': pipeline,
+#         'num_samples_per_iter': 4
+#     })
+#
+#     data = datasets[0]
+#     img = data['img']
+#     bboxes = data['gt_bboxes']
+#     mmcv.imshow_bboxes(img, bboxes, show=False)
+#     # mmcv.imwrite(img, "img.png")
 
 
 def test_flip():

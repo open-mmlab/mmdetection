@@ -44,8 +44,8 @@ class CustomDataset(Dataset):
         test_mode (bool, optional): If set True, annotation will not be loaded.
         filter_empty_gt (bool, optional): If set true, images without bounding
             boxes will be filtered out.
-        num_samples_per_iter (int, optional): The number of samples per
-            iterarion, used for mixup or mosaic augmentation.
+        num_samples_per_iter (int): The number of samples per iterarion, used
+            in augmentations such as mixup and mosaic. Default: 1.
     """
 
     CLASSES = None
@@ -190,7 +190,7 @@ class CustomDataset(Dataset):
             return self.prepare_test_img(idx)
         while True:
             if self.num_samples_per_iter > 1:
-                data = self.prepare_train_imgs(idx)
+                data = self.prepare_multiple_train_imgs(idx)
             else:
                 data = self.prepare_train_img(idx)
             if data is None:
@@ -217,7 +217,7 @@ class CustomDataset(Dataset):
         self.pre_pipeline(results)
         return self.pipeline(results)
 
-    def prepare_train_imgs(self, idx):
+    def prepare_multiple_train_imgs(self, idx):
         """Get training data and annotations (of multiple images) after
         pipeline.
 
@@ -228,17 +228,17 @@ class CustomDataset(Dataset):
             idx (int): Index of the main sample.
 
         Returns:
-            dict: Training data and annotation after pipeline with new keys
+            dict: Training data and annotation after pipeline with new keys \
                 introduced by pipeline.
         """
         num = self.num_samples_per_iter - 1
 
-        n_samples = self.__len__()
+        n_samples = len(self)
         total_indices = list(range(n_samples))
         total_indices.remove(idx)
 
-        selected_indices = random.sample(total_indices, num)
-        selected_indices.insert(0, idx)
+        selected_indices = random.choice(total_indices, num, False)
+        selected_indices = np.insert(selected_indices, 0, idx)
 
         results = []
         for i in selected_indices:

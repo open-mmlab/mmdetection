@@ -212,6 +212,9 @@ class Resize(object):
 
             scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
                                     dtype=np.float32)
+            if 'expand' in results:
+                results['expand'] *= scale_factor
+
             results['img_shape'] = img.shape
             # in case that there is no padding
             results['pad_shape'] = img.shape
@@ -495,6 +498,7 @@ class Normalize(object):
         return repr_str
 
 
+# Deprecated. Use `Expand` + `RandomCrop`
 @PIPELINES.register_module()
 class MosaicCrop(object):
 
@@ -590,35 +594,18 @@ class Mosaic(object):
 
     Args:
         size (tuple): Output size of the image. Default: (640, 640).
-        jitter (float): It decides the size of the cropping window.
         min_offset (float): Volume of the offset of the cropping window.
-        load_pipeline (list): Pipeline for loading images and annotations.
         sub_pipeline (list): Pipeline for other data augmentations.
-        letter_box(bool): Whether to maintain the aspect ratio of the
-            subimages.
     """
 
-    def __init__(self,
-                 size=(640, 640),
-                 jitter=0.2,
-                 min_offset=0.2,
-                 load_pipeline=None,
-                 sub_pipeline=None,
-                 letter_box=False):
+    def __init__(self, size=(640, 640), min_offset=0.2, sub_pipeline=None):
         self.h, self.w = size
-        self.jitter = jitter
         self.min_offset = min_offset
-        self.letter_box = letter_box
-
-        self.load_pipeline = AugCompose(load_pipeline)
         self.sub_pipeline = AugCompose(sub_pipeline)
-
-        self.mosaic_crop = MosaicCrop()
-        self.resize = Resize(keep_ratio=False)
 
     def __call__(self, results):
         assert len(results) == 4
-        # seg_field
+        # TODO seg_field
         w = self.w
         h = self.h
         cut_x = random.randint(
@@ -634,52 +621,17 @@ class Mosaic(object):
 
         for i in range(4):
             results_i = results[i]
-            results_i = self.load_pipeline(results_i)
+            results_i = self.sub_pipeline(results_i)
             # TODO write in a abstract way
             # e.g. with `bbox_fields` or `img_fileds`
-
             assert results_i['img_fields'] == ['img']
             img = results_i['img']
             oh, ow, c = img.shape
 
-            dw = int(ow * self.jitter)
-            dh = int(oh * self.jitter)
-
-            pleft = random.randint(-dw, dw + 1)
-            pright = random.randint(-dw, dw + 1)
-            ptop = random.randint(-dh, dh + 1)
-            pbot = random.randint(-dh, dh + 1)
-
-            if self.letter_box:
-                img_ar = ow / oh
-                net_ar = w / h
-                result_ar = img_ar / net_ar
-
-                if result_ar > 1:  # sheight - should be increased
-                    oh_tmp = int(ow / net_ar)
-                    delta_h = int((oh_tmp - oh) / 2)
-                    ptop = ptop - delta_h
-                    pbot = pbot - delta_h
-                else:  # swidth - should be increased
-                    ow_tmp = int(oh * net_ar)
-                    delta_w = int((ow_tmp - ow) / 2)
-                    pleft = pleft - delta_w
-                    pright = pright - delta_w
-
-            swidth = ow - pleft - pright
-            sheight = oh - ptop - pbot
-
-            results_i = self.mosaic_crop(results_i, w, h, pleft, ptop, swidth,
-                                         sheight)
-            results_i['scale'] = (w, h)
-            results_i = self.resize(results_i)
-
-            results_i = self.sub_pipeline(results_i)
-
-            left_shift = int(min(cut_x, max(0, -pleft * w / swidth)))
-            top_shift = int(min(cut_y, max(0, -ptop * h / sheight)))
-            right_shift = int(min(w - cut_x, max(0, -pright * w / swidth)))
-            bot_shift = int(min(h - cut_y, max(0, -pbot * h / sheight)))
+            left_shift = int(min(cut_x, results_i['expand'][0]))
+            top_shift = int(min(cut_y, results_i['expand'][1]))
+            right_shift = int(min(w - cut_x, results_i['expand'][2]))
+            bot_shift = int(min(h - cut_y, results_i['expand'][3]))
 
             left_shift = min(left_shift, w - cut_x)
             top_shift = min(top_shift, h - cut_y)
@@ -746,7 +698,9 @@ class Mosaic(object):
 
         results = results[0]
         results['img'] = tmp_img
+        results['flip'] = False
         results['img_shape'] = tmp_img.shape
+        results['expand'] = None
         results['gt_bboxes'] = out_bboxes
         results['gt_labels'] = out_labels
         results['gt_bboxes_ignore'] = out_ignores
@@ -799,9 +753,18 @@ class RandomCrop(object):
           `allow_negative_crop` is set to False, skip this image.
     """
 
-    def __init__(self, crop_size, allow_negative_crop=False):
-        assert crop_size[0] > 0 and crop_size[1] > 0
+    def __init__(self,
+                 crop_size=None,
+                 min_crop_size=None,
+                 allow_negative_crop=False):
+        assert (crop_size is None) ^ (min_crop_size is None)
+        if crop_size is not None:
+            assert crop_size[0] > 0 and crop_size[1] > 0
+        else:
+            assert min_crop_size > 0
+
         self.crop_size = crop_size
+        self.min_crop_size = min_crop_size
         self.allow_negative_crop = allow_negative_crop
         # The key correspondence from bboxes to labels and masks.
         self.bbox2label = {
@@ -827,12 +790,27 @@ class RandomCrop(object):
 
         for key in results.get('img_fields', ['img']):
             img = results[key]
+
+            if self.min_crop_size is not None:
+                h, w, c = img.shape
+                new_w = random.uniform(self.min_crop_size * w, w)
+                new_h = random.uniform(self.min_crop_size * h, h)
+                self.crop_size = (int(new_h), int(new_w))
+
             margin_h = max(img.shape[0] - self.crop_size[0], 0)
             margin_w = max(img.shape[1] - self.crop_size[1], 0)
             offset_h = np.random.randint(0, margin_h + 1)
             offset_w = np.random.randint(0, margin_w + 1)
             crop_y1, crop_y2 = offset_h, offset_h + self.crop_size[0]
             crop_x1, crop_x2 = offset_w, offset_w + self.crop_size[1]
+
+            if 'expand' in results:
+                results['expand'][0] = max(results['expand'][0] - crop_x1, 0)
+                results['expand'][1] = max(results['expand'][1] - crop_y1, 0)
+                results['expand'][2] = max(
+                    results['expand'][2] - img.shape[1] + crop_x2, 0)
+                results['expand'][3] = max(
+                    results['expand'][3] - img.shape[0] + crop_y2, 0)
 
             # crop the image
             img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
@@ -1080,6 +1058,13 @@ class Expand(object):
         expand_img[top:top + h, left:left + w] = img
 
         results['img'] = expand_img
+        # left, top, right, bottom
+        results['expand'] = np.array([
+            left, top, expand_img.shape[1] - left - w,
+            expand_img.shape[0] - top - h
+        ],
+                                     dtype=np.float32)
+
         # expand bboxes
         for key in results.get('bbox_fields', []):
             results[key] = results[key] + np.tile(
