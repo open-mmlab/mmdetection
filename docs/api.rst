@@ -1,4 +1,4 @@
-API Documentation
+API Reference
 =================
 
 mmdet.apis
@@ -93,4 +93,9 @@ roi_heads
 losses
 ^^^^^^^^^^
 .. automodule:: mmdet.models.losses
+    :members:
+
+utils
+^^^^^^^^^^
+.. automodule:: mmdet.models.utils
     :members:

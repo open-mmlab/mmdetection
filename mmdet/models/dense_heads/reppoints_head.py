@@ -2,29 +2,24 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.ops import DeformConv2d
 
 from mmdet.core import (PointGenerator, build_assigner, build_sampler,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
-from mmdet.ops import DeformConv
 from ..builder import HEADS, build_loss
+from .anchor_free_head import AnchorFreeHead
 
 
 @HEADS.register_module()
-class RepPointsHead(nn.Module):
+class RepPointsHead(AnchorFreeHead):
     """RepPoint head.
 
     Args:
-        in_channels (int): Number of channels in the input feature map.
-        feat_channels (int): Number of channels of the feature map.
         point_feat_channels (int): Number of channels of points features.
-        stacked_convs (int): How many conv layers are used.
         gradient_mul (float): The multiplier to gradients from
             points refinement and recognition.
         point_strides (Iterable): points strides.
         point_base_scale (int): bbox scale for assigning labels.
-        background_label (int | None): Label ID of background, set as 0 for
-            RPN and num_classes for other heads. It will automatically set as
-            num_classes if None is given.
         loss_cls (dict): Config of classification loss.
         loss_bbox_init (dict): Config of initial points loss.
         loss_bbox_refine (dict): Config of points loss in refinement.
@@ -37,16 +32,11 @@ class RepPointsHead(nn.Module):
     def __init__(self,
                  num_classes,
                  in_channels,
-                 feat_channels=256,
                  point_feat_channels=256,
-                 stacked_convs=3,
                  num_points=9,
                  gradient_mul=0.1,
                  point_strides=[8, 16, 32, 64, 128],
                  point_base_scale=4,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 background_label=None,
                  loss_cls=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -61,57 +51,13 @@ class RepPointsHead(nn.Module):
                  center_init=True,
                  transform_method='moment',
                  moment_mul=0.01,
-                 train_cfg=None,
-                 test_cfg=None):
-        super(RepPointsHead, self).__init__()
-        self.in_channels = in_channels
-        self.num_classes = num_classes
-        self.feat_channels = feat_channels
-        self.point_feat_channels = point_feat_channels
-        self.stacked_convs = stacked_convs
+                 **kwargs):
         self.num_points = num_points
-        self.gradient_mul = gradient_mul
-        self.point_base_scale = point_base_scale
-        self.point_strides = point_strides
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
-
-        self.background_label = (
-            num_classes if background_label is None else background_label)
-        # background_label should be either 0 or num_classes
-        assert (self.background_label == 0
-                or self.background_label == num_classes)
-
-        self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        self.sampling = loss_cls['type'] not in ['FocalLoss']
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox_init = build_loss(loss_bbox_init)
-        self.loss_bbox_refine = build_loss(loss_bbox_refine)
-        if self.train_cfg:
-            self.init_assigner = build_assigner(self.train_cfg.init.assigner)
-            self.refine_assigner = build_assigner(
-                self.train_cfg.refine.assigner)
-            # use PseudoSampler when sampling is False
-            if self.sampling and hasattr(self.train_cfg, 'sampler'):
-                sampler_cfg = self.train_cfg.sampler
-            else:
-                sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
+        self.point_feat_channels = point_feat_channels
         self.use_grid_points = use_grid_points
         self.center_init = center_init
-        self.transform_method = transform_method
-        if self.transform_method == 'moment':
-            self.moment_transfer = nn.Parameter(
-                data=torch.zeros(2), requires_grad=True)
-            self.moment_mul = moment_mul
-        if self.use_sigmoid_cls:
-            self.cls_out_channels = self.num_classes
-        else:
-            self.cls_out_channels = self.num_classes + 1
-        self.point_generators = [PointGenerator() for _ in self.point_strides]
-        # we use deformable conv to extract points features
+
+        # we use deform conv to extract points features
         self.dcn_kernel = int(np.sqrt(num_points))
         self.dcn_pad = int((self.dcn_kernel - 1) / 2)
         assert self.dcn_kernel * self.dcn_kernel == num_points, \
@@ -125,9 +71,41 @@ class RepPointsHead(nn.Module):
         dcn_base_offset = np.stack([dcn_base_y, dcn_base_x], axis=1).reshape(
             (-1))
         self.dcn_base_offset = torch.tensor(dcn_base_offset).view(1, -1, 1, 1)
-        self._init_layers()
+
+        super().__init__(num_classes, in_channels, loss_cls=loss_cls, **kwargs)
+
+        self.gradient_mul = gradient_mul
+        self.point_base_scale = point_base_scale
+        self.point_strides = point_strides
+        self.point_generators = [PointGenerator() for _ in self.point_strides]
+
+        self.sampling = loss_cls['type'] not in ['FocalLoss']
+        if self.train_cfg:
+            self.init_assigner = build_assigner(self.train_cfg.init.assigner)
+            self.refine_assigner = build_assigner(
+                self.train_cfg.refine.assigner)
+            # use PseudoSampler when sampling is False
+            if self.sampling and hasattr(self.train_cfg, 'sampler'):
+                sampler_cfg = self.train_cfg.sampler
+            else:
+                sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
+        self.transform_method = transform_method
+        if self.transform_method == 'moment':
+            self.moment_transfer = nn.Parameter(
+                data=torch.zeros(2), requires_grad=True)
+            self.moment_mul = moment_mul
+
+        self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
+        if self.use_sigmoid_cls:
+            self.cls_out_channels = self.num_classes
+        else:
+            self.cls_out_channels = self.num_classes + 1
+        self.loss_bbox_init = build_loss(loss_bbox_init)
+        self.loss_bbox_refine = build_loss(loss_bbox_refine)
 
     def _init_layers(self):
+        """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -152,9 +130,10 @@ class RepPointsHead(nn.Module):
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg))
         pts_out_dim = 4 if self.use_grid_points else 2 * self.num_points
-        self.reppoints_cls_conv = DeformConv(self.feat_channels,
-                                             self.point_feat_channels,
-                                             self.dcn_kernel, 1, self.dcn_pad)
+        self.reppoints_cls_conv = DeformConv2d(self.feat_channels,
+                                               self.point_feat_channels,
+                                               self.dcn_kernel, 1,
+                                               self.dcn_pad)
         self.reppoints_cls_out = nn.Conv2d(self.point_feat_channels,
                                            self.cls_out_channels, 1, 1, 0)
         self.reppoints_pts_init_conv = nn.Conv2d(self.feat_channels,
@@ -162,14 +141,15 @@ class RepPointsHead(nn.Module):
                                                  1, 1)
         self.reppoints_pts_init_out = nn.Conv2d(self.point_feat_channels,
                                                 pts_out_dim, 1, 1, 0)
-        self.reppoints_pts_refine_conv = DeformConv(self.feat_channels,
-                                                    self.point_feat_channels,
-                                                    self.dcn_kernel, 1,
-                                                    self.dcn_pad)
+        self.reppoints_pts_refine_conv = DeformConv2d(self.feat_channels,
+                                                      self.point_feat_channels,
+                                                      self.dcn_kernel, 1,
+                                                      self.dcn_pad)
         self.reppoints_pts_refine_out = nn.Conv2d(self.point_feat_channels,
                                                   pts_out_dim, 1, 1, 0)
 
     def init_weights(self):
+        """Initialize weights of the head."""
         for m in self.cls_convs:
             normal_init(m.conv, std=0.01)
         for m in self.reg_convs:
@@ -267,7 +247,11 @@ class RepPointsHead(nn.Module):
         ], 1)
         return grid_yx, regressed_bbox
 
+    def forward(self, feats):
+        return multi_apply(self.forward_single, feats)
+
     def forward_single(self, x):
+        """Forward feature map of a single FPN level."""
         dcn_base_offset = self.dcn_base_offset.type_as(x)
         # If we use center_init, the initial reppoints is from center points.
         # If we use bounding bbox representation, the initial reppoints is
@@ -307,9 +291,6 @@ class RepPointsHead(nn.Module):
         else:
             pts_out_refine = pts_out_refine + pts_out_init.detach()
         return cls_out, pts_out_init, pts_out_refine
-
-    def forward(self, feats):
-        return multi_apply(self.forward_single, feats)
 
     def get_points(self, featmap_sizes, img_metas):
         """Get points according to feature map sizes.
@@ -352,7 +333,9 @@ class RepPointsHead(nn.Module):
         return points_list, valid_flag_list
 
     def centers_to_bboxes(self, point_list):
-        """Get bboxes according to center points. Only used in MaxIOUAssigner.
+        """Get bboxes according to center points.
+
+        Only used in :class:`MaxIoUAssigner`.
         """
         bbox_list = []
         for i_img, point in enumerate(point_list):
@@ -368,8 +351,7 @@ class RepPointsHead(nn.Module):
         return bbox_list
 
     def offset_to_pts(self, center_list, pred_list):
-        """Change from point offset to point coordinate.
-        """
+        """Change from point offset to point coordinate."""
         pts_list = []
         for i_lvl in range(len(self.point_strides)):
             pts_lvl = []

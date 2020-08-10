@@ -3,11 +3,11 @@ import mmcv
 from mmdet.core import bbox_mapping, tensor2imgs
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
-from .test_mixins import RPNTestMixin
 
 
 @DETECTORS.register_module()
-class RPN(BaseDetector, RPNTestMixin):
+class RPN(BaseDetector):
+    """Implementation of Region Proposal Network."""
 
     def __init__(self,
                  backbone,
@@ -28,6 +28,12 @@ class RPN(BaseDetector, RPNTestMixin):
         self.init_weights(pretrained=pretrained)
 
     def init_weights(self, pretrained=None):
+        """Initialize the weights in detector.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(RPN, self).init_weights(pretrained)
         self.backbone.init_weights(pretrained=pretrained)
         if self.with_neck:
@@ -35,12 +41,22 @@ class RPN(BaseDetector, RPNTestMixin):
         self.rpn_head.init_weights()
 
     def extract_feat(self, img):
+        """Extract features.
+
+        Args:
+            img (torch.Tensor): Image tensor with shape (n, c, h ,w).
+
+        Returns:
+            list[torch.Tensor]: Multi-level features that may have
+                different resolutions.
+        """
         x = self.backbone(img)
         if self.with_neck:
             x = self.neck(x)
         return x
 
     def forward_dummy(self, img):
+        """Dummy forward function."""
         x = self.extract_feat(img)
         rpn_outs = self.rpn_head(x)
         return rpn_outs
@@ -71,16 +87,24 @@ class RPN(BaseDetector, RPNTestMixin):
             self.rpn_head.debug_imgs = tensor2imgs(img)
 
         x = self.extract_feat(img)
-        rpn_outs = self.rpn_head(x)
-
-        rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas)
-        losses = self.rpn_head.loss(
-            *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        losses = self.rpn_head.forward_train(x, img_metas, gt_bboxes, None,
+                                             gt_bboxes_ignore)
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
+        """Test function without test time augmentation.
+
+        Args:
+            imgs (list[torch.Tensor]): List of multiple images
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            np.ndarray: proposals
+        """
         x = self.extract_feat(img)
-        proposal_list = self.simple_test_rpn(x, img_metas)
+        proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         if rescale:
             for proposals, meta in zip(proposal_list, img_metas):
                 proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])
@@ -89,8 +113,19 @@ class RPN(BaseDetector, RPNTestMixin):
         return proposal_list[0].cpu().numpy()
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        proposal_list = self.aug_test_rpn(
-            self.extract_feats(imgs), img_metas, self.test_cfg.rpn)
+        """Test function with test time augmentation.
+
+        Args:
+            imgs (list[torch.Tensor]): List of multiple images
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            np.ndarray: proposals
+        """
+        proposal_list = self.rpn_head.aug_test_rpn(
+            self.extract_feats(imgs), img_metas)
         if not rescale:
             for proposals, img_meta in zip(proposal_list, img_metas[0]):
                 img_shape = img_meta['img_shape']

@@ -24,6 +24,12 @@ class GridRoIHead(StandardRoIHead):
         self.grid_head = build_head(grid_head)
 
     def init_weights(self, pretrained):
+        """Initialize the weights in head.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(GridRoIHead, self).init_weights(pretrained)
         self.grid_head.init_weights()
         if not self.share_roi_extractor:
@@ -55,6 +61,7 @@ class GridRoIHead(StandardRoIHead):
         return sampling_results
 
     def forward_dummy(self, x, proposals):
+        """Dummy forward function."""
         # bbox head
         outs = ()
         rois = bbox2roi([proposals])
@@ -81,6 +88,7 @@ class GridRoIHead(StandardRoIHead):
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
+        """Run forward function and calculate loss for box head in training."""
         bbox_results = super(GridRoIHead,
                              self)._bbox_forward_train(x, sampling_results,
                                                        gt_bboxes, gt_labels,
@@ -129,9 +137,9 @@ class GridRoIHead(StandardRoIHead):
             x, img_metas, proposal_list, self.test_cfg, rescale=False)
         # pack rois into bboxes
         grid_rois = bbox2roi([det_bboxes[:, :4]])
-        grid_feats = self.grid_roi_extractor(
-            x[:len(self.grid_roi_extractor.featmap_strides)], grid_rois)
         if grid_rois.shape[0] != 0:
+            grid_feats = self.grid_roi_extractor(
+                x[:len(self.grid_roi_extractor.featmap_strides)], grid_rois)
             self.grid_head.test_mode = True
             grid_pred = self.grid_head(grid_feats)
             det_bboxes = self.grid_head.get_bboxes(det_bboxes,

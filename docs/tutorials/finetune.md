@@ -1,7 +1,7 @@
 # Tutorial 1: Finetuning Models
 
 Detectors pre-trained on the COCO dataset can serve as a good pre-trained model for other datasets, e.g., CityScapes and KITTI Dataset.
-This tutorial provides instruction for users to use the models provided in the [Model Zoo](../model_zoo.md) for other datasets to obatin better performance.
+This tutorial provides instruction for users to use the models provided in the [Model Zoo](../model_zoo.md) for other datasets to obtain better performance.
 
 There are two steps to finetune a model on a new dataset.
 - Add support for the new dataset following [Tutorial 2: Adding New Dataset](new_dataset.md).
@@ -11,7 +11,7 @@ There are two steps to finetune a model on a new dataset.
 Take the finetuning process on Cityscapes Dataset as an example, the users need to modify five parts in the config.
 
 ## Inherit base configs
-To release the burdun and reduce bugs in writing the whole configs, MMDetection V2.0 support inheriting configs from multiple existing configs. To finetune a Mask RCNN model, the new config needs to inherit
+To release the burden and reduce bugs in writing the whole configs, MMDetection V2.0 support inheriting configs from multiple existing configs. To finetune a Mask RCNN model, the new config needs to inherit
 `_base_/models/mask_rcnn_r50_fpn.py` to build the basic structure of the model. To use the Cityscapes Dataset, the new config can also simply inherit `_base_/datasets/cityscapes_instance.py`. For runtime settings such as training schedules, the new config needs to inherit `_base_/default_runtime.py`. This configs are in the `configs` directory and the users can also choose to write the whole contents rather than use inheritance.
 
 ```python
@@ -34,8 +34,10 @@ model = dict(
             fc_out_channels=1024,
             roi_feat_size=7,
             num_classes=8,
-            target_means=[0., 0., 0., 0.],
-            target_stds=[0.1, 0.1, 0.2, 0.2],
+            bbox_coder=dict(
+                type='DeltaXYWHBBoxCoder',
+                target_means=[0., 0., 0., 0.],
+                target_stds=[0.1, 0.1, 0.2, 0.2]),
             reg_class_agnostic=False,
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),

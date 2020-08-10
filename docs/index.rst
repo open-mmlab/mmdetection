@@ -8,13 +8,19 @@ Welcome to MMDetection's documentation!
    getting_started.md
    config.md
    model_zoo.md
-   tutorials/finetune.md
-   tutorials/new_dataset.md
-   tutorials/data_pipeline.md
-   tutorials/new_modules.md
    compatibility.md
    changelog.md
    projects.md
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+
+   tutorials/index.rst
+
+.. toctree::
+   :caption: API Reference
+
    api.rst
 
 
