@@ -29,11 +29,22 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(
         type='Mosaic',
-        load_pipeline=[
-            dict(type='LoadImageFromFile', to_float32=True),
-            dict(type='LoadAnnotations', with_bbox=True)
-        ],
         sub_pipeline=[
+            dict(type='LoadImageFromFile', to_float32=True),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(
+                type='Expand',
+                mean=img_norm_cfg['mean'],
+                to_rgb=img_norm_cfg['to_rgb'],
+                ratio_range=(1.4, 1.4),
+                prob=1.0),
+            dict(
+                type='RandomCrop',
+                crop_size=None,
+                min_crop_size=0.4286, # 0.6 / 1.4
+                allow_negative_crop=True
+            ),
+            dict(type='Resize', img_scale=(640, 640), keep_ratio=False),
             dict(
                 type='PhotoMetricDistortion',
                 brightness_delta=32,
@@ -43,11 +54,8 @@ train_pipeline = [
             dict(type='RandomFlip', flip_ratio=0.5)
         ],
         size=(640, 640),
-        jitter=0.2,
-        min_offset=0.2,
-        letter_box=False),
+        min_offset=0.2),
     dict(type='Normalize', **img_norm_cfg),
-    # dict(type='Pad', size=(640, 640)),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
