@@ -5,6 +5,7 @@ from mmcv import Config
 
 from mmdet.models import build_detector
 from mmdet.utils import get_model_complexity_info
+from mmdet.utils import ExtendedDictAction
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -16,22 +17,24 @@ def parse_args():
         default=[1280, 800],
         help='input image size')
     parser.add_argument('--out')
+    parser.add_argument('--update_config', nargs='+', action=ExtendedDictAction, help='arguments in dict')
     args = parser.parse_args()
     return args
 
 
 def main():
-
     args = parse_args()
 
     if len(args.shape) == 1:
         input_shape = (3, args.shape[0], args.shape[0])
     elif len(args.shape) == 2:
-        input_shape = (3, ) + tuple(args.shape)
+        input_shape = (3,) + tuple(args.shape)
     else:
         raise ValueError('invalid input shape')
 
     cfg = Config.fromfile(args.config)
+    if args.update_config is not None:
+        cfg.merge_from_dict(args.update_config)
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg).cuda()
     model.eval()
@@ -41,7 +44,7 @@ def main():
     else:
         raise NotImplementedError(
             'FLOPs counter is currently not currently supported with {}'.
-            format(model.__class__.__name__))
+                format(model.__class__.__name__))
 
     flops, params = get_model_complexity_info(model, input_shape)
     split_line = '=' * 30

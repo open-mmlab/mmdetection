@@ -12,6 +12,7 @@ from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.core import wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
+from mmdet.utils import ExtendedDictAction
 from mmdet.parallel import MMDataCPU
 
 
@@ -63,7 +64,7 @@ def parse_args():
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument(
-        '--update_config', nargs='+', action=DictAction,
+        '--update_config', nargs='+', action=ExtendedDictAction,
         help='Update configuration file by parameters specified here.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:

@@ -3,13 +3,14 @@ import copy
 import os
 import os.path as osp
 import time
+import sys
 
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
 import torch.distributed as dist
-from mmcv import Config, DictAction
+from mmcv import Config
 from mmcv.parallel import collate, scatter
 from mmcv.runner import init_dist, get_dist_info
 from mmdet import __version__
@@ -19,7 +20,7 @@ from mmdet.core import BitmapMasks
 from mmdet.datasets import build_dataset
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector, TwoStageDetector
-from mmdet.utils import collect_env, get_root_logger
+from mmdet.utils import collect_env, get_root_logger, ExtendedDictAction
 
 
 def parse_args():
@@ -50,7 +51,7 @@ def parse_args():
         action='store_true',
         help='whether to set deterministic options for CUDNN backend.')
     parser.add_argument(
-        '--update_config', nargs='+', action=DictAction, help='arguments in dict')
+        '--update_config', nargs='+', action=ExtendedDictAction, help='arguments in dict')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
@@ -68,7 +69,7 @@ def parse_args():
     return args
 
 
-def determine_max_batch_size(cfg, distributed):
+def determine_max_batch_size(cfg, distributed, dataset_len_per_gpu):
     def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
         test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
         test_pipeline = Compose(test_pipeline)
@@ -93,8 +94,10 @@ def determine_max_batch_size(cfg, distributed):
 
     width, height = img_shape[0], img_shape[1]
 
+    percentage = 0.9
+
     min_bs = 2
-    max_bs = 512
+    max_bs = min(512, int(dataset_len_per_gpu / percentage) + 1)
     step = 1
 
     batch_size = min_bs
@@ -125,7 +128,7 @@ def determine_max_batch_size(cfg, distributed):
             if str(e).startswith('CUDA out of memory'):
                 break
 
-    resulting_batch_size = int(batch_size * 0.9)
+    resulting_batch_size = int(batch_size * percentage)
 
     del model
     torch.cuda.empty_cache()
@@ -215,11 +218,23 @@ def main():
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
 
-    if cfg.data.samples_per_gpu == 'auto':
-        cfg.data.samples_per_gpu = determine_max_batch_size(cfg, distributed)
-        cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
-
     datasets = [build_dataset(cfg.data.train)]
+
+    dataset_len_per_gpu = sum(len(dataset) for dataset in datasets)
+    if distributed:
+        dataset_len_per_gpu = dataset_len_per_gpu // get_dist_info()[1]
+    assert dataset_len_per_gpu > 0
+    if cfg.data.samples_per_gpu == 'auto':
+        logger.info(f'Auto-selection of samples per gpu (batch size).')
+        cfg.data.samples_per_gpu = determine_max_batch_size(cfg, distributed, dataset_len_per_gpu)
+        logger.info(f'Auto selected batch size: {cfg.data.samples_per_gpu} {dataset_len_per_gpu}')
+        cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
+    if dataset_len_per_gpu < cfg.data.samples_per_gpu:
+        cfg.data.samples_per_gpu = dataset_len_per_gpu
+        logger.warning(f'Decreased samples_per_gpu to: {cfg.data.samples_per_gpu} '
+                       f'because of dataset length: {dataset_len_per_gpu} '
+                       f'and gpus number: {get_dist_info()[1]}')
+
     if len(cfg.workflow) == 2:
         val_dataset = copy.deepcopy(cfg.data.val)
         val_dataset.pipeline = cfg.data.train.pipeline
@@ -233,6 +248,7 @@ def main():
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
+
     train_detector(
         model,
         datasets,
