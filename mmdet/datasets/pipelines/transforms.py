@@ -1534,9 +1534,7 @@ class RandomCenterCropPad(object):
 
 @PIPELINES.register_module()
 class CutOut(object):
-    """Randomly drop some regions of image used in `Cutout.
-
-    <https://arxiv.org/abs/1708.04552>`_.
+    """Randomly drop some regions of image.
 
     Args:
         n_holes (int | tuple[int, int]): Number of regions to be dropped.

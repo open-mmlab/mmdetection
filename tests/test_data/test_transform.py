@@ -568,10 +568,10 @@ def test_cutout():
 
     transform = dict(type='CutOut', n_holes=1)
     cutout_module = build_from_cfg(transform, PIPELINES)
-    cutout_result = cutout_module(results)
+    cutout_result = cutout_module(copy.deepcopy(results))
     assert cutout_result['img'].sum() < img.sum()
 
     transform = dict(type='CutOut', n_holes=1, fill_in=(255, 255, 255))
     cutout_module = build_from_cfg(transform, PIPELINES)
-    cutout_result = cutout_module(results)
+    cutout_result = cutout_module(copy.deepcopy(results))
     assert cutout_result['img'].sum() > img.sum()
