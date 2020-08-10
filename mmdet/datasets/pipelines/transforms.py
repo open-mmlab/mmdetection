@@ -1565,6 +1565,7 @@ class CutOut(object):
         self.fill_in = fill_in
 
     def __call__(self, results):
+        """Call function to drop some regions of image."""
         h, w, c = results['img'].shape
         mask = np.ones_like(results['img'])
         fills = np.zeros_like(results['img'])
@@ -1586,3 +1587,10 @@ class CutOut(object):
 
         results['img'] = results['img'] * mask + fills
         return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(n_holes={self.n_holes}, '
+        repr_str += f'cutout_shape={self.cutout_shape}, '
+        repr_str += f'fill_in={self.fill_in})'
+        return repr_str

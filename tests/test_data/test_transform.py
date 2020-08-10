@@ -548,7 +548,7 @@ def test_multi_scale_flip_aug():
 
 
 def test_cutout():
-    # n_holes test
+    # test n_holes
     with pytest.raises(AssertionError):
         transform = dict(type='CutOut', n_holes=(5, 3))
         build_from_cfg(transform, PIPELINES)
