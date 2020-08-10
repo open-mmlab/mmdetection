@@ -41,9 +41,8 @@ train_pipeline = [
             dict(
                 type='RandomCrop',
                 crop_size=None,
-                min_crop_size=0.4286, # 0.6 / 1.4
-                allow_negative_crop=True
-            ),
+                min_crop_size=0.4286,  # 0.6 / 1.4
+                allow_negative_crop=True),
             dict(type='Resize', img_scale=(640, 640), keep_ratio=False),
             dict(
                 type='PhotoMetricDistortion',
