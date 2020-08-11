@@ -155,7 +155,7 @@ def test_yolo_anchor_generator():
     anchor_generator_cfg = dict(
         type='YOLOAnchorGenerator',
         strides=[32, 16, 8],
-        anchor_base_sizes=[
+        base_sizes=[
             [(116, 90), (156, 198), (373, 326)],
             [(30, 61), (62, 45), (59, 119)],
             [(10, 13), (16, 30), (33, 23)],
