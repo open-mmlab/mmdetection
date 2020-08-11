@@ -4,9 +4,9 @@ import os
 import mmcv
 import torch
 from mmcv import Config, DictAction
+from mmcv.cnn import fuse_conv_bn
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
-from tools.fuse_conv_bn import fuse_module
 
 from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.core import wrap_fp16_model
@@ -117,7 +117,7 @@ def main():
         wrap_fp16_model(model)
     checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
     if args.fuse_conv_bn:
-        model = fuse_module(model)
+        model = fuse_conv_bn(model)
     # old versions did not save class info in checkpoints, this walkaround is
     # for backward compatibility
     if 'CLASSES' in checkpoint['meta']:
