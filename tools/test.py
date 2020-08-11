@@ -54,7 +54,15 @@ def parse_args():
         help='tmp directory used for collecting results from multiple '
         'workers, available when gpu-collect is not specified')
     parser.add_argument(
-        '--options', nargs='+', action=DictAction, help='arguments in dict')
+        '--options',
+        nargs='+',
+        action=DictAction,
+        help='custom options to overwrite config')
+    parser.add_argument(
+        '--eval-options',
+        nargs='+',
+        action=DictAction,
+        help='custom options for evaluation')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
@@ -83,6 +91,8 @@ def main():
         raise ValueError('The output file must be a pkl file.')
 
     cfg = Config.fromfile(args.config)
+    if args.options is not None:
+        cfg.merge_from_dict(args.options)
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -142,7 +152,7 @@ def main():
         if args.out:
             print(f'\nwriting results to {args.out}')
             mmcv.dump(outputs, args.out)
-        kwargs = {} if args.options is None else args.options
+        kwargs = {} if args.eval_options is None else args.eval_options
         if args.format_only:
             dataset.format_results(outputs, **kwargs)
         if args.eval:
