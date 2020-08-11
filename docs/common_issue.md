@@ -7,7 +7,7 @@ We list some common issues and their corresponding solutions here. Feel free to 
 Compatibility issue between MMCV and MMDetection; "ConvWS is already registered in conv layer";
 </summary>
 
-    Please install the correct version of MMCV for the version of your MMDetection following the instruction above.
+Please install the correct version of MMCV for the version of your MMDetection following the instruction above.
 
 </details><br/>
 
