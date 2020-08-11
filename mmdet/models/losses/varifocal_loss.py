@@ -51,7 +51,7 @@ def varifocal_loss(pred,
     return loss
 
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class VarifocalLoss(nn.Module):
 
     def __init__(self,
