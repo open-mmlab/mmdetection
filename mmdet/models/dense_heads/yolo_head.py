@@ -7,7 +7,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
 
-from mmdet.core import force_fp32, multiclass_nms
+from mmdet.core import (build_anchor_generator, build_bbox_coder, force_fp32,
+                        multiclass_nms)
 from ..builder import HEADS
 from .base_dense_head import BaseDenseHead
 
@@ -84,6 +85,12 @@ class YOLOV3Head(BaseDenseHead):
         self.out_channels = out_channels
         self.strides = strides
         self.anchor_base_sizes = anchor_base_sizes
+        self.anchor_generator = build_anchor_generator(
+            dict(
+                type='YOLOAnchorGenerator',
+                strides=strides,
+                base_sizes=anchor_base_sizes))
+        self.bbox_coder = build_bbox_coder(dict(type='YOLOBBoxCoder'))
 
         self.ignore_thresh = ignore_thresh
         self.one_hot_smoother = one_hot_smoother
@@ -96,7 +103,7 @@ class YOLOV3Head(BaseDenseHead):
 
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
         self.convs_bridge = nn.ModuleList()
-        self.convs_pred = nn.ModuleList()
+        self.convs_final = nn.ModuleList()
         for i in range(self.num_scales):
             in_c = self.in_channels[i]
             out_c = self.out_channels[i]
@@ -104,7 +111,7 @@ class YOLOV3Head(BaseDenseHead):
             conv_pred = nn.Conv2d(out_c, self.last_layer_dim, 1, bias=True)
 
             self.convs_bridge.append(conv_bridge)
-            self.convs_pred.append(conv_pred)
+            self.convs_final.append(conv_pred)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -120,7 +127,7 @@ class YOLOV3Head(BaseDenseHead):
         for i in range(self.num_scales):
             x = feats[i]
             x = self.convs_bridge[i](x)
-            out = self.convs_pred[i](x)
+            out = self.convs_final[i](x)
             results.append(out)
 
         return tuple(results),
@@ -203,6 +210,19 @@ class YOLOV3Head(BaseDenseHead):
         multi_lvl_bboxes = []
         multi_lvl_cls_scores = []
         multi_lvl_conf_scores = []
+        num_levels = len(results_raw)
+        featmap_sizes = [results_raw[i].shape[-2:] for i in range(num_levels)]
+        anchor_grids_g = self.anchor_generator.grid_anchors(
+            featmap_sizes, results_raw[0][0].device)
+        for i in range(num_levels):
+            # x1, y1, x2, y2 = anchor_grids_g[i].split(1, dim=-1)
+            # anchor_grid_g = torch.stack(
+            #     [(x1 + x2) * 0.5, (y1 + y2) * 0.5,
+            #      x2 - x1, y2 - y1], dim=-1)
+            anchor_grid_g = anchor_grids_g[i]
+            anchor_grids_g[i] = anchor_grid_g.view(*results_raw[i].shape[-2:],
+                                                   self.num_anchors_per_scale,
+                                                   4).permute(2, 0, 1, 3)
         for i_scale in range(self.num_scales):
             # get some key info for current scale
             result_raw = results_raw[i_scale]
@@ -243,6 +263,12 @@ class YOLOV3Head(BaseDenseHead):
                 (x_center_pred - w_pred / 2, y_center_pred - h_pred / 2,
                  x_center_pred + w_pred / 2, y_center_pred + h_pred / 2),
                 dim=3).view((-1, 4))
+
+            prediction_raw[..., :2] = torch.sigmoid(prediction_raw[..., :2])
+            bbox_pred_g = self.bbox_coder.decode(anchor_grids_g[i_scale],
+                                                 prediction_raw[..., :4],
+                                                 stride)
+            assert torch.allclose(bbox_pred, bbox_pred_g.view((-1, 4)))
             # conf and cls
             conf_pred = torch.sigmoid(prediction_raw[..., 4]).view(-1)
             cls_pred = torch.sigmoid(prediction_raw[..., 5:]).view(
@@ -321,6 +347,19 @@ class YOLOV3Head(BaseDenseHead):
 
         losses = {'loss_xy': 0, 'loss_wh': 0, 'loss_conf': 0, 'loss_cls': 0}
 
+        num_levels = len(preds_raw)
+        featmap_sizes = [preds_raw[i].shape[-2:] for i in range(num_levels)]
+        anchor_grids_g = self.anchor_generator.grid_anchors(
+            featmap_sizes, preds_raw[0][0].device)
+        for i in range(num_levels):
+            x1, y1, x2, y2 = anchor_grids_g[i].split(1, dim=-1)
+            anchor_grid_g = torch.stack([(x1 + x2) * 0.5,
+                                         (y1 + y2) * 0.5, x2 - x1, y2 - y1],
+                                        dim=-1)
+            anchor_grids_g[i] = anchor_grid_g.view(*preds_raw[i].shape[-2:],
+                                                   self.num_anchors_per_scale,
+                                                   4).permute(2, 0, 1, 3)
+
         for img_id in range(len(img_metas)):
             pred_raw_list = []
             anchor_grids = []
@@ -341,6 +380,8 @@ class YOLOV3Head(BaseDenseHead):
 
                 pred_raw_list.append(pred_raw)
                 anchor_grids.append(anchor_grid)
+
+                assert torch.allclose(anchor_grid, anchor_grids_g[i_scale])
 
             # Then, generate target for each image
             gt_t_across_scale, negative_mask_across_scale = \
@@ -481,7 +522,7 @@ class YOLOV3Head(BaseDenseHead):
             grid_coord_across_scale = []
 
             for i_scale in range(self.num_scales):
-                # For each sacle of each gt:
+                # For each scale of each gt:
                 stride = self.strides[i_scale]
                 anchor_grid = anchor_grids[i_scale]
                 # 1. Calculate the iou between each anchor and the gt
@@ -491,7 +532,7 @@ class YOLOV3Head(BaseDenseHead):
                 negative_mask = (iou_gt_anchor <= ignore_thresh)
                 negative_mask_across_scale[i_scale] *= negative_mask
                 # 3. Save the coord of the anchor grid that the gt is in
-                # in this sacle
+                # in this scale
                 w_grid = int(gt_cx // stride)
                 h_grid = int(gt_cy // stride)
                 grid_coord_across_scale.append((h_grid, w_grid))
@@ -509,7 +550,7 @@ class YOLOV3Head(BaseDenseHead):
             match_scale = max_match_iou_idx // self.num_anchors_per_scale
             match_anchor_in_scale = max_match_iou_idx - \
                 match_scale * self.num_anchors_per_scale
-            # extract the matched piror bbox to generate the target
+            # extract the matched prior bbox to generate the target
             match_grid_h, match_grid_w = grid_coord_across_scale[match_scale]
             match_anchor_w, match_anchor_h = self.anchor_base_sizes[
                 match_scale][match_anchor_in_scale]
