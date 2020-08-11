@@ -550,10 +550,22 @@ def test_multi_scale_flip_aug():
 def test_cutout():
     # test n_holes
     with pytest.raises(AssertionError):
-        transform = dict(type='CutOut', n_holes=(5, 3))
+        transform = dict(type='CutOut', n_holes=(5, 3), cutout_shape=(8, 8))
         build_from_cfg(transform, PIPELINES)
     with pytest.raises(AssertionError):
-        transform = dict(type='CutOut', n_holes=(3, 4, 5))
+        transform = dict(type='CutOut', n_holes=(3, 4, 5), cutout_shape=(8, 8))
+        build_from_cfg(transform, PIPELINES)
+
+    # either of cutout_shape and cutout_ratio should be given
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=1)
+        build_from_cfg(transform, PIPELINES)
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='CutOut',
+            n_holes=1,
+            cutout_shape=(2, 2),
+            cutout_ratio=(0.4, 0.4))
         build_from_cfg(transform, PIPELINES)
 
     results = dict()
@@ -566,12 +578,30 @@ def test_cutout():
     results['pad_shape'] = img.shape
     results['img_fields'] = ['img']
 
-    transform = dict(type='CutOut', n_holes=1)
+    transform = dict(type='CutOut', n_holes=1, cutout_shape=(10, 10))
     cutout_module = build_from_cfg(transform, PIPELINES)
     cutout_result = cutout_module(copy.deepcopy(results))
     assert cutout_result['img'].sum() < img.sum()
 
-    transform = dict(type='CutOut', n_holes=1, fill_in=(255, 255, 255))
+    transform = dict(type='CutOut', n_holes=1, cutout_ratio=(0.8, 0.8))
+    cutout_module = build_from_cfg(transform, PIPELINES)
+    cutout_result = cutout_module(copy.deepcopy(results))
+    assert cutout_result['img'].sum() < img.sum()
+
+    transform = dict(
+        type='CutOut',
+        n_holes=1,
+        cutout_shape=(10, 10),
+        fill_in=(255, 255, 255))
+    cutout_module = build_from_cfg(transform, PIPELINES)
+    cutout_result = cutout_module(copy.deepcopy(results))
+    assert cutout_result['img'].sum() > img.sum()
+
+    transform = dict(
+        type='CutOut',
+        n_holes=1,
+        cutout_ratio=(0.8, 0.8),
+        fill_in=(255, 255, 255))
     cutout_module = build_from_cfg(transform, PIPELINES)
     cutout_result = cutout_module(copy.deepcopy(results))
     assert cutout_result['img'].sum() > img.sum()

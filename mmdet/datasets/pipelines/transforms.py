@@ -1534,35 +1534,48 @@ class RandomCenterCropPad(object):
 
 @PIPELINES.register_module()
 class CutOut(object):
-    """Randomly drop some regions of image.
+    """CutOut operation.
+
+    Randomly drop some regions of image used in
+    `Cutout <https://arxiv.org/abs/1708.04552>`_.
 
     Args:
         n_holes (int | tuple[int, int]): Number of regions to be dropped.
             If it is given as a list, number of n_holes will be randomly
             selected from `n_holes[0]` to `n_holes[1]`.
-        cutout_shape (tuple[int, int] | list[tuple[int, int]] |
-            tuple[float, float] | list[tuple[float, float]]): The candidate
-            shape of dropped regions. It can be
-                1. `tuple[int, int]`: use a fixed cutout shape.
-                2. `tuple[float, float]`: use a fixed ratio of image shape.
-                3. `list[tuple[int, int]]`: random choose shape from list.
-                4. `list[tuple[int, int]]`: random choose ratio from list.
-            Default: (8, 8).
-        fill_in (tuple[int, int, int]): The value of pixel to fill in the
-            dropped regions. Default: (0, 0, 0).
+        cutout_shape (tuple[int, int] | list[tuple[int, int]]): The candidate
+            shape of dropped regions. It can be `tuple[int, int]` to use a
+            fixed cutout shape, or `list[tuple[int, int]]` to randomly choose
+            shape from the given list.
+        cutout_ratio (tuple[float, float] | list[tuple[float, float]]): The
+            candidate ratio of dropped regions. It can be `tuple[float, float]`
+            to use a fixed ratio or `list[tuple[float, float]]` to randomly
+            choose ratio from the given list. Please note that `cutout_shape`
+            and `cutout_ratio` cannot be both given at the same time.
+        fill_in (tuple[float, float, float] | tuple[int, int, int]): The value
+            of pixel to fill in the dropped regions. Default: (0, 0, 0).
     """
 
-    def __init__(self, n_holes, cutout_shape=(8, 8), fill_in=(0, 0, 0)):
-        assert (isinstance(cutout_shape, (list, tuple)))
+    def __init__(self,
+                 n_holes,
+                 cutout_shape=None,
+                 cutout_ratio=None,
+                 fill_in=(0, 0, 0)):
+
+        assert (cutout_shape is None) ^ (cutout_ratio is None), \
+            'Either cutout_shape or cutout_ratio should be specified.'
+        assert (isinstance(cutout_shape, (list, tuple))
+                or isinstance(cutout_ratio, (list, tuple)))
         if isinstance(n_holes, tuple):
             assert len(n_holes) == 2 and 0 <= n_holes[0] < n_holes[1]
         else:
             n_holes = (n_holes, n_holes)
         self.n_holes = n_holes
-        self.cutout_shape = cutout_shape
-        if not isinstance(self.cutout_shape, list):
-            self.cutout_shape = [self.cutout_shape]
         self.fill_in = fill_in
+        self.with_ratio = cutout_ratio is not None
+        self.candidates = cutout_ratio if self.with_ratio else cutout_shape
+        if not isinstance(self.candidates, list):
+            self.candidates = [self.candidates]
 
     def __call__(self, results):
         """Call function to drop some regions of image."""
@@ -1573,12 +1586,12 @@ class CutOut(object):
         for _ in range(n_holes):
             x1 = np.random.randint(0, w)
             y1 = np.random.randint(0, h)
-            index = np.random.randint(0, len(self.cutout_shape))
-            if isinstance(self.cutout_shape[index][0], int):
-                cutout_w, cutout_h = self.cutout_shape[index]
+            index = np.random.randint(0, len(self.candidates))
+            if not self.with_ratio:
+                cutout_w, cutout_h = self.candidates[index]
             else:
-                cutout_w = int(self.cutout_shape[index][0] * w)
-                cutout_h = int(self.cutout_shape[index][1] * h)
+                cutout_w = int(self.candidates[index][0] * w)
+                cutout_h = int(self.candidates[index][1] * h)
 
             x2 = np.clip(x1 + cutout_w, 0, w)
             y2 = np.clip(y1 + cutout_h, 0, h)
@@ -1591,6 +1604,7 @@ class CutOut(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(n_holes={self.n_holes}, '
-        repr_str += f'cutout_shape={self.cutout_shape}, '
+        repr_str += (f'cutout_ratio={self.cutout_ratio}, ' if self.with_ratio
+                     else f'cutout_shape={self.cutout_shape}, ')
         repr_str += f'fill_in={self.fill_in})'
         return repr_str
