@@ -19,7 +19,7 @@ We list some common issues and their corresponding solutions here. Feel free to 
 
     1. Uninstall existing mmcv in the environment using `pip uninstall mmcv`.
     2. Install mmcv-full following the instruction above.
-    </details><br/>
+    </details>
 
 - "invalid device function" or "no kernel image is available for execution".
     <details>
