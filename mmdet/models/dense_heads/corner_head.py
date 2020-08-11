@@ -829,7 +829,7 @@ class CornerHead(BaseDenseHead):
         topk_scores, topk_inds = torch.topk(scores.view(batch, -1), k)
         topk_clses = topk_inds // (height * width)
         topk_inds = topk_inds % (height * width)
-        topk_ys = topk_inds // width.int()
+        topk_ys = topk_inds // width
         topk_xs = (topk_inds % width).int().float()
         return topk_scores, topk_inds, topk_clses, topk_ys, topk_xs
 
