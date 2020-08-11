@@ -10,7 +10,7 @@ Welcome to MMDetection's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials
+   :caption: Notes
 
    config.md
    compatibility.md
