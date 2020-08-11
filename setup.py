@@ -1,17 +1,12 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import os
-import platform
 import subprocess
 import time
-from setuptools import Extension, dist, find_packages, setup
+from setuptools import find_packages, setup
 
 import torch
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension
-
-dist.Distribution().fetch_build_eggs(['Cython', 'numpy>=1.11.1'])
-import numpy as np  # noqa: E402, isort:skip
-from Cython.Build import cythonize  # noqa: E402, isort:skip
+from torch.utils.cpp_extension import (BuildExtension, CppExtension,
+                                       CUDAExtension)
 
 
 def readme():
@@ -19,15 +14,6 @@ def readme():
         content = f.read()
     return content
 
-
-MAJOR = 1
-MINOR = 0
-PATCH = ''
-SUFFIX = 'rc1'
-if PATCH:
-    SHORT_VERSION = '{}.{}.{}{}'.format(MAJOR, MINOR, PATCH, SUFFIX)
-else:
-    SHORT_VERSION = '{}.{}{}'.format(MAJOR, MINOR, SUFFIX)
 
 version_file = 'mmdet/version.py'
 
@@ -79,12 +65,18 @@ def write_version_py():
 
 __version__ = '{}'
 short_version = '{}'
+version_info = ({})
 """
     sha = get_hash()
+    with open('mmdet/VERSION', 'r') as f:
+        SHORT_VERSION = f.read().strip()
+    VERSION_INFO = ', '.join(SHORT_VERSION.split('.'))
     VERSION = SHORT_VERSION + '+' + sha
 
+    version_file_str = content.format(time.asctime(), VERSION, SHORT_VERSION,
+                                      VERSION_INFO)
     with open(version_file, 'w') as f:
-        f.write(content.format(time.asctime(), VERSION, SHORT_VERSION))
+        f.write(version_file_str)
 
 
 def get_version():
@@ -93,44 +85,30 @@ def get_version():
     return locals()['__version__']
 
 
-def make_cuda_ext(name, module, sources):
+def make_cuda_ext(name, module, sources, sources_cuda=[]):
 
     define_macros = []
+    extra_compile_args = {'cxx': []}
 
     if torch.cuda.is_available() or os.getenv('FORCE_CUDA', '0') == '1':
-        define_macros += [("WITH_CUDA", None)]
+        define_macros += [('WITH_CUDA', None)]
+        extension = CUDAExtension
+        extra_compile_args['nvcc'] = [
+            '-D__CUDA_NO_HALF_OPERATORS__',
+            '-D__CUDA_NO_HALF_CONVERSIONS__',
+            '-D__CUDA_NO_HALF2_OPERATORS__',
+        ]
+        sources += sources_cuda
     else:
-        raise EnvironmentError('CUDA is required to compile MMDetection!')
+        print(f'Compiling {name} without CUDA')
+        extension = CppExtension
+        # raise EnvironmentError('CUDA is required to compile MMDetection!')
 
-    return CUDAExtension(
-        name='{}.{}'.format(module, name),
+    return extension(
+        name=f'{module}.{name}',
         sources=[os.path.join(*module.split('.'), p) for p in sources],
         define_macros=define_macros,
-        extra_compile_args={
-            'cxx': [],
-            'nvcc': [
-                '-D__CUDA_NO_HALF_OPERATORS__',
-                '-D__CUDA_NO_HALF_CONVERSIONS__',
-                '-D__CUDA_NO_HALF2_OPERATORS__',
-            ]
-        })
-
-
-def make_cython_ext(name, module, sources):
-    extra_compile_args = None
-    if platform.system() != 'Windows':
-        extra_compile_args = {
-            'cxx': ['-Wno-unused-function', '-Wno-write-strings']
-        }
-
-    extension = Extension(
-        '{}.{}'.format(module, name),
-        [os.path.join(*module.split('.'), p) for p in sources],
-        include_dirs=[np.get_include()],
-        language='c++',
         extra_compile_args=extra_compile_args)
-    extension, = cythonize(extension)
-    return extension
 
 
 def parse_requirements(fname='requirements.txt', with_version=True):
@@ -249,53 +227,78 @@ if __name__ == '__main__':
                 name='compiling_info',
                 module='mmdet.ops.utils',
                 sources=['src/compiling_info.cpp']),
-            make_cython_ext(
-                name='soft_nms_cpu',
-                module='mmdet.ops.nms',
-                sources=['src/soft_nms_cpu.pyx']),
             make_cuda_ext(
-                name='nms_cpu',
+                name='nms_ext',
                 module='mmdet.ops.nms',
-                sources=['src/nms_cpu.cpp']),
+                sources=['src/nms_ext.cpp', 'src/cpu/nms_cpu.cpp'],
+                sources_cuda=[
+                    'src/cuda/nms_cuda.cpp', 'src/cuda/nms_kernel.cu'
+                ]),
             make_cuda_ext(
-                name='nms_cuda',
-                module='mmdet.ops.nms',
-                sources=['src/nms_cuda.cpp', 'src/nms_kernel.cu']),
-            make_cuda_ext(
-                name='roi_align_cuda',
+                name='roi_align_ext',
                 module='mmdet.ops.roi_align',
-                sources=['src/roi_align_cuda.cpp', 'src/roi_align_kernel.cu']),
+                sources=[
+                    'src/roi_align_ext.cpp',
+                    'src/cpu/roi_align_v2.cpp',
+                ],
+                sources_cuda=[
+                    'src/cuda/roi_align_kernel.cu',
+                    'src/cuda/roi_align_kernel_v2.cu'
+                ]),
             make_cuda_ext(
-                name='roi_pool_cuda',
+                name='roi_pool_ext',
                 module='mmdet.ops.roi_pool',
-                sources=['src/roi_pool_cuda.cpp', 'src/roi_pool_kernel.cu']),
+                sources=['src/roi_pool_ext.cpp'],
+                sources_cuda=['src/cuda/roi_pool_kernel.cu']),
             make_cuda_ext(
-                name='deform_conv_cuda',
+                name='deform_conv_ext',
                 module='mmdet.ops.dcn',
-                sources=[
-                    'src/deform_conv_cuda.cpp',
-                    'src/deform_conv_cuda_kernel.cu'
+                sources=['src/deform_conv_ext.cpp'],
+                sources_cuda=[
+                    'src/cuda/deform_conv_cuda.cpp',
+                    'src/cuda/deform_conv_cuda_kernel.cu'
                 ]),
             make_cuda_ext(
-                name='deform_pool_cuda',
+                name='deform_pool_ext',
                 module='mmdet.ops.dcn',
-                sources=[
-                    'src/deform_pool_cuda.cpp',
-                    'src/deform_pool_cuda_kernel.cu'
+                sources=['src/deform_pool_ext.cpp'],
+                sources_cuda=[
+                    'src/cuda/deform_pool_cuda.cpp',
+                    'src/cuda/deform_pool_cuda_kernel.cu'
                 ]),
             make_cuda_ext(
-                name='sigmoid_focal_loss_cuda',
+                name='sigmoid_focal_loss_ext',
                 module='mmdet.ops.sigmoid_focal_loss',
-                sources=[
-                    'src/sigmoid_focal_loss.cpp',
-                    'src/sigmoid_focal_loss_cuda.cu'
+                sources=['src/sigmoid_focal_loss_ext.cpp'],
+                sources_cuda=['src/cuda/sigmoid_focal_loss_cuda.cu']),
+            make_cuda_ext(
+                name='masked_conv2d_ext',
+                module='mmdet.ops.masked_conv',
+                sources=['src/masked_conv2d_ext.cpp'],
+                sources_cuda=[
+                    'src/cuda/masked_conv2d_cuda.cpp',
+                    'src/cuda/masked_conv2d_kernel.cu'
                 ]),
             make_cuda_ext(
-                name='masked_conv2d_cuda',
-                module='mmdet.ops.masked_conv',
-                sources=[
-                    'src/masked_conv2d_cuda.cpp', 'src/masked_conv2d_kernel.cu'
+                name='carafe_ext',
+                module='mmdet.ops.carafe',
+                sources=['src/carafe_ext.cpp'],
+                sources_cuda=[
+                    'src/cuda/carafe_cuda.cpp',
+                    'src/cuda/carafe_cuda_kernel.cu'
                 ]),
+            make_cuda_ext(
+                name='carafe_naive_ext',
+                module='mmdet.ops.carafe',
+                sources=['src/carafe_naive_ext.cpp'],
+                sources_cuda=[
+                    'src/cuda/carafe_naive_cuda.cpp',
+                    'src/cuda/carafe_naive_cuda_kernel.cu'
+                ]),
+            make_cuda_ext(
+                name='corner_pool_ext',
+                module='mmdet.ops.corner_pool',
+                sources=['src/corner_pool.cpp']),
         ],
         cmdclass={'build_ext': BuildExtension},
         zip_safe=False)

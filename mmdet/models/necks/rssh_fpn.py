@@ -17,15 +17,15 @@ import torch.nn as nn
 from mmdet.core import auto_fp16
 
 from .fpn import FPN
-from ..registry import NECKS
-from ..utils import ConvModule
+from ..builder import NECKS
+from mmcv.cnn import ConvModule
 
 
 class RSSH(nn.Module):
-    def __init__(self, in_channels, conv_cfg, norm_cfg, activation):
+    def __init__(self, in_channels, conv_cfg, norm_cfg, act_cfg):
         super(RSSH, self).__init__()
         self.in_channels = in_channels
-        self.activation = activation
+        self.act_cfg = act_cfg
 
         self.conv1 = ConvModule(
             in_channels,
@@ -33,7 +33,7 @@ class RSSH(nn.Module):
             1,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
-            activation=self.activation,
+            act_cfg=self.act_cfg,
             inplace=False)
 
         self.conv2 = ConvModule(
@@ -42,7 +42,7 @@ class RSSH(nn.Module):
             1,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
-            activation=self.activation,
+            act_cfg=self.act_cfg,
             inplace=False)
 
         self.conv3 = ConvModule(
@@ -51,7 +51,7 @@ class RSSH(nn.Module):
             1,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
-            activation=self.activation,
+            act_cfg=self.act_cfg,
             inplace=False)
 
     def forward(self, inputs):
@@ -62,7 +62,7 @@ class RSSH(nn.Module):
         return torch.cat((x1, x2, x3), axis=1)
 
 
-@NECKS.register_module
+@NECKS.register_module()
 class RSSH_FPN(FPN):
 
     def __init__(self,
@@ -77,7 +77,7 @@ class RSSH_FPN(FPN):
                  no_norm_on_lateral=False,
                  conv_cfg=None,
                  norm_cfg=None,
-                 activation=None):
+                 act_cfg=None):
         super().__init__(in_channels,
                          out_channels,
                          num_outs,
@@ -89,11 +89,11 @@ class RSSH_FPN(FPN):
                          no_norm_on_lateral,
                          conv_cfg,
                          norm_cfg,
-                         activation)
+                         act_cfg)
 
         self.context_modules = \
             nn.ModuleList(
-                [RSSH(out_channels, conv_cfg, norm_cfg, activation) for _ in self.fpn_convs])
+                [RSSH(out_channels, conv_cfg, norm_cfg, act_cfg) for _ in self.fpn_convs])
 
     @auto_fp16()
     def forward(self, inputs):

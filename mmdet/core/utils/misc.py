@@ -30,11 +30,11 @@ def unmap(data, count, inds, fill=0):
     size count) """
     if data.dim() == 1:
         ret = data.new_full((count, ), fill)
-        ret[inds] = data
+        ret[inds.type(torch.bool)] = data
     else:
         new_size = (count, ) + data.size()[1:]
         ret = data.new_full(new_size, fill)
-        ret[inds, :] = data
+        ret[inds.type(torch.bool), :] = data
     return ret
 
 
@@ -111,17 +111,14 @@ def topk(x, k, dim=None, **kwargs):
     return values, keep
 
 
-def meshgrid(x, y, row_major=True, flatten=True):
-    n, m = y.shape[0], x.shape[0]
-    yy = y.view(-1, 1).expand(n, m)
-    xx = x.view(1, -1).expand(n, m)
-    if flatten:
-        xx = xx.reshape(-1)
-        yy = yy.reshape(-1)
-    if row_major:
-        return xx, yy
+def meshgrid(y, x):
+    if torch.__version__ < '1.4':
+        n, m = y.shape[0], x.shape[0]
+        yy = y.view(-1, 1).expand(n, m)
+        xx = x.view(1, -1).expand(n, m)
     else:
-        return yy, xx
+        yy, xx = torch.meshgrid(y, x)
+    return yy, xx
 
 
 def dummy_pad(x, padding):

@@ -12,25 +12,23 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
-import argparse
-
 import sys
-import cv2
-import mmcv
-import numpy as np
 
-from mmdet.core import coco_eval, results2json
+import argparse
+import cv2
+import numpy as np
+import mmcv
+from mmcv.parallel import collate
+
+from mmdet.apis.inference import LoadImage
+from mmdet.core import encode_mask_results
 from mmdet.core.bbox.transforms import bbox2result
 from mmdet.core.mask.transforms import mask2result
 from mmdet.datasets import build_dataloader, build_dataset
-from mmdet.models import build_detector
-
-from mmcv.parallel import collate
 from mmdet.datasets.pipelines import Compose
-from mmdet.apis.inference import LoadImage
 
 
-def postprocess(result, img_meta, num_classes=81, rescale=True):
+def postprocess(result, img_meta, num_classes=80, rescale=True):
     det_bboxes = result['boxes']
     det_labels = result['labels']
     det_masks = result.get('masks', None)
@@ -53,19 +51,18 @@ def postprocess(result, img_meta, num_classes=81, rescale=True):
             det_masks,
             num_classes,
             mask_thr_binary=0.5,
-            rle=True,
-            full_size=True,
             img_size=(img_h, img_w))
+        segm_results = encode_mask_results(segm_results)
         return bbox_results, segm_results
     return bbox_results
 
 
-def empty_result(num_classes=81, with_mask=False):
+def empty_result(num_classes=80, with_mask=False):
     bbox_results = [
-        np.zeros((0, 5), dtype=np.float32) for _ in range(num_classes - 1)
+        np.zeros((0, 5), dtype=np.float32) for _ in range(num_classes)
     ]
     if with_mask:
-        segm_results = [[] for _ in range(num_classes - 1)]
+        segm_results = [[] for _ in range(num_classes)]
         return bbox_results, segm_results
     return bbox_results
 
@@ -127,7 +124,7 @@ def main(args):
         dataset = build_dataset(cfg.data.test)
         data_loader = build_dataloader(
             dataset,
-            imgs_per_gpu=1,
+            samples_per_gpu=1,
             workers_per_gpu=cfg.data.workers_per_gpu,
             dist=False,
             shuffle=False)
@@ -137,14 +134,14 @@ def main(args):
     classes_num = len(dataset.CLASSES) + 1
 
     if backend == 'openvino':
-        from mmdet.utils.deployment import DetectorOpenVINO
+        from mmdet.utils.deployment.openvino_backend import DetectorOpenVINO
         model = DetectorOpenVINO(args.model,
                                  args.model[:-3] + 'bin',
                                  mapping_file_path=args.model[:-3] + 'mapping',
                                  cfg=cfg,
                                  classes=dataset.CLASSES)
     else:
-        from mmdet.utils.deployment import ModelONNXRuntime
+        from mmdet.utils.deployment.onnxruntime_backend import ModelONNXRuntime
         model = ModelONNXRuntime(args.model, cfg=cfg, classes=dataset.CLASSES)
 
     results = []
@@ -155,56 +152,42 @@ def main(args):
             result = model(im_data)
             result = postprocess(
                 result,
-                data['img_meta'][0].data[0],
+                data['img_metas'][0].data[0],
                 num_classes=classes_num,
                 rescale=not args.show)
         except Exception as ex:
-            print('\nException raised while processing item {}:'.format(i))
+            print(f'\nException raised while processing item {i}:')
             print(ex)
+            with_mask = hasattr(model.pt_model, 'with_mask') and model.pt_model.with_mask
             result = empty_result(
                 num_classes=classes_num,
-                with_mask=model.pt_model.with_mask)
+                with_mask=with_mask)
         results.append(result)
 
         if args.show:
-            model.show(data, result, score_thr=args.score_thr, wait_time=wait_key)
+            img_meta = data['img_metas'][0].data[0][0]
+
+            norm_cfg = img_meta['img_norm_cfg']
+            mean = np.array(norm_cfg['mean'], dtype=np.float32)
+            std = np.array(norm_cfg['std'], dtype=np.float32)
+            display_image = im_data[0].transpose(1, 2, 0)
+            display_image = mmcv.imdenormalize(display_image, mean, std, to_bgr=norm_cfg['to_rgb']).astype(np.uint8)
+            display_image = np.ascontiguousarray(display_image)
+
+            h, w, _ = img_meta['img_shape']
+            display_image = display_image[:h, :w, :]
+            
+            model.show(display_image, result, score_thr=args.score_thr, wait_time=wait_key)
 
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
             prog_bar.update()
 
-    print('')
-    print('Writing results to {}'.format(args.out))
-    mmcv.dump(results, args.out)
-
-    eval_types = args.eval
-    if eval_types:
-        print('Starting evaluate {}'.format(' and '.join(eval_types)))
-        if eval_types == ['proposal_fast']:
-            result_file = args.out
-            coco_eval(result_file, eval_types, dataset.coco)
-        else:
-            if not isinstance(results[0], dict):
-                result_files = results2json(dataset, results, args.out)
-                coco_eval(result_files, eval_types, dataset.coco)
-            else:
-                for name in results[0]:
-                    print('\nEvaluating {}'.format(name))
-                    outputs_ = [out[name] for out in results]
-                    result_file = args.out + '.{}'.format(name)
-                    result_files = results2json(dataset, outputs_,
-                                                result_file)
-                    coco_eval(result_files, eval_types, dataset.coco)
-
-    # Save predictions in the COCO json format
-    if args.json_out:
-        if not isinstance(results[0], dict):
-            results2json(dataset, results, args.json_out)
-        else:
-            for name in results[0]:
-                outputs_ = [out[name] for out in results]
-                result_file = args.json_out + '.{}'.format(name)
-                results2json(dataset, outputs_, result_file)
+    if args.out:
+        print(f'\nwriting results to {args.out}')
+        mmcv.dump(results, args.out)
+    if args.eval:
+        dataset.evaluate(results, args.eval, test_cfg=cfg.test_cfg)
 
 
 def parse_args():
@@ -214,7 +197,7 @@ def parse_args():
     parser.add_argument('--out', type=str, help='path to file with inference results')
     parser.add_argument('--json_out', type=str, help='output result file name without extension')
     parser.add_argument('--eval', type=str, nargs='+',
-                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
+                        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints', 'f1'],
                         help='eval types')
     parser.add_argument('--video', default=None, help='run model on the video rather than the dataset')
     parser.add_argument('--show', action='store_true', help='visualize results')

@@ -15,7 +15,7 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import (constant_init, kaiming_init, normal_init)
-from ..registry import BACKBONES
+from ..builder import BACKBONES
 
 
 def conv_bn(inp, oup, stride, groups=1, act_fn=nn.ReLU):
@@ -96,7 +96,7 @@ class InvertedResidual(nn.Module):
             return self.compute_conv(x)
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class SSDMobilenetV2(nn.Module):
     def __init__(self, input_size, width_mult=1.0,
                  activation_type='relu',

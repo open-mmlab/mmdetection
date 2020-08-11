@@ -75,9 +75,23 @@ def print_stat(content, palette, cat_id_to_color_id):
     print('   images:', len(content['images']))
     print('   annotations:', len(content['annotations']))
     print('   categories:', len(content['categories']))
+    per_cat_counts = defaultdict(int)
+    per_cat_occluded_counts = defaultdict(int)
+    per_cat_is_crowd_counts = defaultdict(int)
+    
+    for i, ann in enumerate(content['annotations']):
+        per_cat_counts[ann['category_id']] += 1
+        if ann['is_occluded']:
+            per_cat_occluded_counts[ann['category_id']] += 1
+        if ann['iscrowd']:
+            per_cat_is_crowd_counts[ann['category_id']] += 1
+
     for i, cat in enumerate(content['categories']):
         color = palette[cat_id_to_color_id[cat['id']]]
-        print('      ', bg(*color) + '   ' + bg.rs + ' ' + str(cat))
+        print('      ', bg(*color) + '   ' + bg.rs + ' ' + str(cat) +
+              f' objects {per_cat_counts[cat["id"]]}'
+              f' occluded {per_cat_occluded_counts[cat["id"]]}'
+              f' is_crowd {per_cat_is_crowd_counts[cat["id"]]}')
 
 
 def parse_segmentation(segmentation, img_h, img_w):

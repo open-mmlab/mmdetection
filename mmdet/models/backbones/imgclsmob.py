@@ -20,7 +20,7 @@ import torch.nn as nn
 from pytorchcv.model_provider import _models
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from ..registry import BACKBONES
+from ..builder import BACKBONES
 
 from mmcv.runner import get_dist_info
 
@@ -89,6 +89,11 @@ def generate_backbones():
                         model.forward = types.MethodType(multioutput_forward, model)
                         model.init_weights = types.MethodType(init_weights, model)
                         model.train = types.MethodType(train, model)
+
+                        model.output = None
+                        for i, _ in enumerate(model.features):
+                            if i > max(out_indices):
+                                model.features[i] = None
                     else:
                         raise ValueError('Failed to automatically wrap backbone network. '
                                          'Object of type {} has no valid attribute called '
@@ -98,7 +103,7 @@ def generate_backbones():
             custom_model_getter.__name__ = model_name
             return custom_model_getter
 
-        BACKBONES.register_module(closure(model_name, model_getter))
+        BACKBONES.register_module(name=model_name, module=closure(model_name, model_getter))
 
 
 generate_backbones()

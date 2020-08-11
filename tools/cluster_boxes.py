@@ -14,12 +14,12 @@
 
 import argparse
 import json
-import logging
 import os
 
 import mmcv
 import numpy as np
 from mmdet.datasets import build_dataloader, build_dataset
+from mmdet.utils import ExtendedDictAction
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
@@ -32,22 +32,36 @@ def parse_args():
                        help='COCO annotation. This variant is much faster than --config in case of '
                             'COCO annotation.')
     parser.add_argument('--root', help='Images root folder.')
-    parser.add_argument('--image_size_wh', nargs=2, type=int)
+    parser.add_argument('--image_size_wh', nargs=2, type=int, default=(256, 256))
     parser.add_argument('--n_clust', type=int, required=True)
     parser.add_argument('--min_box_size', help='min bbox Width and Height', nargs=2, type=int,
                         default=(0, 0))
     parser.add_argument('--group_as', type=int, nargs='+',
                         help='If it is defined clustered widths and heights will be grouped by '
                              'numbers specified here.')
-    args = parser.parse_args()
-    return args
+    parser.add_argument('--update_config', nargs='+', action=ExtendedDictAction, help='arguments in dict')
+    parser.add_argument('--out')
+    return parser.parse_args()
 
 
-def get_sizes_from_config(config_path, min_box_size):
+def get_sizes_from_config(config_path, target_image_wh, min_box_size, update_config):
     cfg = mmcv.Config.fromfile(config_path)
+    if update_config is not None:
+        cfg.merge_from_dict(update_config)
+
+    if cfg.data.train.dataset.type == 'CocoDataset':
+        annotation_paths = cfg.data.train.dataset.ann_file
+        roots = cfg.data.train.dataset.img_prefix
+        if not isinstance(annotation_paths, (list, tuple)):
+            annotation_paths = [annotation_paths]
+            roots = [roots]
+        sizes = []
+        for annotation_path, root in zip(annotation_paths, roots):
+            sizes.extend(get_sizes_from_coco(annotation_path, root, target_image_wh, min_box_size))
+        return sizes
 
     dataset = build_dataset(cfg.data.train)
-    logging.info(dataset)
+    print(dataset)
 
     data_loader = build_dataloader(
         dataset,
@@ -56,7 +70,7 @@ def get_sizes_from_config(config_path, min_box_size):
         dist=False,
         shuffle=False)
 
-    logging.info('Collecting statistics...')
+    print('Collecting statistics...')
     wh_stats = []
     for data_batch in tqdm(iter(data_loader)):
         boxes = data_batch['gt_bboxes'].data[0][0].numpy()
@@ -91,6 +105,18 @@ def get_sizes_from_coco(annotation_path, root, target_image_wh, min_box_size):
     return wh_stats
 
 
+def print_normalized(values, size, measure):
+    if isinstance(values[0], list):
+        text = '[\n'
+        for v in values:
+            text += f' [image_{measure} * x for x in {[x / size for x in v]}],\n'
+        text += ']'
+    else:
+        text = f'[image_{measure} * x for x in {[x / size for x in values]}]'
+    print(f'normalized {measure}s')
+    print(text)
+
+
 def main(args):
     assert args.config or args.coco_annotation
 
@@ -98,12 +124,10 @@ def main(args):
         assert sum(args.group_as) == args.n_clust
 
     if args.config:
-        assert not args.image_size_wh
         assert not args.root
-        wh_stats = get_sizes_from_config(args.config, args.min_box_size)
+        wh_stats = get_sizes_from_config(args.config, args.image_size_wh, args.min_box_size, args.update_config)
 
     if args.coco_annotation:
-        assert args.image_size_wh
         assert args.root
         wh_stats = get_sizes_from_coco(args.coco_annotation, args.root, args.image_size_wh,
                                        args.min_box_size)
@@ -116,8 +140,9 @@ def main(args):
 
     for i in idx:
         center = centers[i]
-        logging.info('width: {:.3f}'.format(center[0]))
-        logging.info('height: {:.3f}'.format(center[1]))
+        print('width: {:.3f}'.format(center[0]))
+        print('height: {:.3f}'.format(center[1]))
+    print('')
 
     widths = [centers[i][0] for i in idx]
     heights = [centers[i][1] for i in idx]
@@ -129,13 +154,18 @@ def main(args):
         heights = [[heights[i] for i in range(group_as[j], group_as[j + 1])] for j in
                    range(len(group_as) - 1)]
 
-    logging.info(widths)
-    logging.info(heights)
+    print('widths\n', widths)
+    print('heights\n', heights)
+    print('')
+
+    print_normalized(widths, args.image_size_wh[0], 'width')
+    print_normalized(heights, args.image_size_wh[1], 'height')
+
+    if args.out:
+        with open(args.out, 'w') as dst_file:
+            json.dump({'widths': widths, 'heights': heights}, dst_file)
 
 
 if __name__ == '__main__':
-    log_format = '{levelname} {asctime} {filename}:{lineno:>4d}] {message}'
-    date_format = '%d-%m-%y %H:%M:%S'
-    logging.basicConfig(level=logging.INFO, format=log_format, datefmt=date_format, style='{')
     args = parse_args()
     main(args)

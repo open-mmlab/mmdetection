@@ -1,0 +1,7 @@
+version: 2
+
+python:
+    version: 3.7
+    install:
+      - requirements: requirements/docs.txt
+      - requirements: requirements/readthedocs.txt
