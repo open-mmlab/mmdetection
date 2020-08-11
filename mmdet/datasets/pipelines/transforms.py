@@ -1546,11 +1546,11 @@ class CutOut(object):
         cutout_shape (tuple[int, int] | list[tuple[int, int]]): The candidate
             shape of dropped regions. It can be `tuple[int, int]` to use a
             fixed cutout shape, or `list[tuple[int, int]]` to randomly choose
-            shape from the given list.
+            shape from the list.
         cutout_ratio (tuple[float, float] | list[tuple[float, float]]): The
             candidate ratio of dropped regions. It can be `tuple[float, float]`
             to use a fixed ratio or `list[tuple[float, float]]` to randomly
-            choose ratio from the given list. Please note that `cutout_shape`
+            choose ratio from the list. Please note that `cutout_shape`
             and `cutout_ratio` cannot be both given at the same time.
         fill_in (tuple[float, float, float] | tuple[int, int, int]): The value
             of pixel to fill in the dropped regions. Default: (0, 0, 0).
