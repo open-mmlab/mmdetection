@@ -1604,7 +1604,7 @@ class CutOut(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(n_holes={self.n_holes}, '
-        repr_str += (f'cutout_ratio={self.cutout_ratio}, ' if self.with_ratio
-                     else f'cutout_shape={self.cutout_shape}, ')
+        repr_str += (f'cutout_ratio={self.candidates}, ' if self.with_ratio
+                     else f'cutout_shape={self.candidates}, ')
         repr_str += f'fill_in={self.fill_in})'
         return repr_str
