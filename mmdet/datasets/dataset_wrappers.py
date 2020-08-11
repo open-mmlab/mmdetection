@@ -3,6 +3,7 @@ import math
 from collections import defaultdict
 
 import numpy as np
+from mmcv.utils import print_log
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
 from .builder import DATASETS
@@ -52,30 +53,59 @@ class ConcatDataset(_ConcatDataset):
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
 
-    def evaluate(self, results, metric, **kwargs):
+    def evaluate(self, results, metric, logger=None, **kwargs):
+        """Evaluate the results.
+
+        Args:
+            results (list[list | tuple]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated. Options are
+                'bbox', 'segm', 'proposal', 'proposal_fast'.
+            logger (logging.Logger | str | None): Logger used for printing
+                related information during evaluation. Default: None.
+
+        Returns:
+            dict[str: float]: AP results of the total dataset or each separate
+            dataset if `self.separate_eval=True`.
+        """
+        assert len(results) == self.cumulative_sizes[-1], \
+            f'wrong sizes{self.cumulative_sizes[-1]} v.s. {len(results)}'
+
         if self.separate_eval:
-            start_idx = 0
-            for dataset in self.datasets:
-                dataset.evaluate(results[start_idx:start_idx + len(dataset)],
-                                 metric, **kwargs)
-                start_idx += len(dataset)
+            dataset_idx = -1
+            total_eval_results = dict()
+            for size, dataset in zip(self.cumulative_sizes, self.datasets):
+                start_idx = 0 if dataset_idx == -1 else \
+                    self.cumulative_sizes[dataset_idx]
+                end_idx = self.cumulative_sizes[dataset_idx + 1]
+
+                results_per_dataset = results[start_idx:end_idx]
+                print_log(
+                    f'\nEvaluateing {dataset.ann_file} with '
+                    f'{len(results_per_dataset)} images now',
+                    logger=logger)
+
+                eval_results_per_dataset = dataset.evaluate(
+                    results_per_dataset, **kwargs)
+                dataset_idx += 1
+                for k, v in eval_results_per_dataset:
+                    total_eval_results.update({f'{k}_{dataset_idx}': v})
+
+            return total_eval_results
+        elif any([isinstance(ds, CocoDataset) for ds in self.datasets]):
+            raise NotImplementedError(
+                'Evaluating concatenated CocoDataset is not supported')
         else:
             assert all([
-                not isinstance(dataset, CocoDataset)
-                for dataset in self.datasets
-            ]), 'Evaluating concatenated CocoDataset is not supported'
-
-            assert all([
-                not isinstance(dataset, type(self.datasets[0]))
+                isinstance(dataset, type(self.datasets[0]))
                 for dataset in self.datasets
             ]), f'All the datasets should be {type(self.datasets[0])}'
 
             original_data_infos = self.datasets[0].data_infos
-            self.dataset[0].data_infos = [
-                dataset.data_infos for dataset in self.datasets
-            ]
-            self.dataset[0].evaluate(results, metric, **kwargs)
+            self.dataset[0].data_infos = sum(
+                [dataset.data_infos for dataset in self.datasets], [])
+            eval_results = self.dataset[0].evaluate(results, metric, **kwargs)
             self.dataset[0].data_infos = original_data_infos
+            return eval_results
 
 
 @DATASETS.register_module()
@@ -162,8 +192,8 @@ class ClassBalancedDataset(object):
 
         repeat_factors = self._get_repeat_factors(dataset, oversample_thr)
         repeat_indices = []
-        for dataset_index, repeat_factor in enumerate(repeat_factors):
-            repeat_indices.extend([dataset_index] * math.ceil(repeat_factor))
+        for dataset_idx, repeat_factor in enumerate(repeat_factors):
+            repeat_indices.extend([dataset_idx] * math.ceil(repeat_factor))
         self.repeat_indices = repeat_indices
 
         flags = []
