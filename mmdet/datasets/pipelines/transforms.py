@@ -1541,8 +1541,8 @@ class CutOut(object):
 
     Args:
         n_holes (int | tuple[int, int]): Number of regions to be dropped.
-            If it is given as a list, number of n_holes will be randomly
-            selected from `n_holes[0]` to `n_holes[1]`.
+            If it is given as a list, number of holes will be randomly
+            selected from the closed interval [`n_holes[0]`, `n_holes[1]`].
         cutout_shape (tuple[int, int] | list[tuple[int, int]]): The candidate
             shape of dropped regions. It can be `tuple[int, int]` to use a
             fixed cutout shape, or `list[tuple[int, int]]` to randomly choose
