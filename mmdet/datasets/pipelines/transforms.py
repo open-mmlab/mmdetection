@@ -1580,8 +1580,6 @@ class CutOut(object):
     def __call__(self, results):
         """Call function to drop some regions of image."""
         h, w, c = results['img'].shape
-        mask = np.ones_like(results['img'])
-        fills = np.zeros_like(results['img'])
         n_holes = np.random.randint(self.n_holes[0], self.n_holes[1] + 1)
         for _ in range(n_holes):
             x1 = np.random.randint(0, w)
@@ -1595,10 +1593,8 @@ class CutOut(object):
 
             x2 = np.clip(x1 + cutout_w, 0, w)
             y2 = np.clip(y1 + cutout_h, 0, h)
-            mask[y1:y2, x1:x2, :] = 0
-            fills[y1:y2, x1:x2, :] = self.fill_in
+            results['img'][y1:y2, x1:x2, :] = self.fill_in
 
-        results['img'] = results['img'] * mask + fills
         return results
 
     def __repr__(self):
