@@ -555,7 +555,13 @@ def test_cutout():
     with pytest.raises(AssertionError):
         transform = dict(type='CutOut', n_holes=(3, 4, 5), cutout_shape=(8, 8))
         build_from_cfg(transform, PIPELINES)
-
+    # test cutout_shape and cutout_ratio
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=1, cutout_shape=8)
+        build_from_cfg(transform, PIPELINES)
+    with pytest.raises(AssertionError):
+        transform = dict(type='CutOut', n_holes=1, cutout_ratio=0.2)
+        build_from_cfg(transform, PIPELINES)
     # either of cutout_shape and cutout_ratio should be given
     with pytest.raises(AssertionError):
         transform = dict(type='CutOut', n_holes=1)
@@ -590,8 +596,8 @@ def test_cutout():
 
     transform = dict(
         type='CutOut',
-        n_holes=1,
-        cutout_shape=(10, 10),
+        n_holes=(2, 4),
+        cutout_shape=[(10, 10), (15, 15)],
         fill_in=(255, 255, 255))
     cutout_module = build_from_cfg(transform, PIPELINES)
     cutout_result = cutout_module(copy.deepcopy(results))
