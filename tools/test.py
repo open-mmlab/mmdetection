@@ -57,12 +57,14 @@ def parse_args():
         '--options',
         nargs='+',
         action=DictAction,
-        help='custom options to overwrite config')
+        help='override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file.')
     parser.add_argument(
         '--eval-options',
         nargs='+',
         action=DictAction,
-        help='custom options for evaluation')
+        help='custom options for evaluation, the key-value pair in xxx=yyy '
+        'format will be kwargs for dataset.evaluate() function')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],

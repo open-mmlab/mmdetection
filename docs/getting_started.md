@@ -114,7 +114,7 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
    ```shell
    ./tools/dist_test.sh configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-       8 --out results.pkl --eval bbox segm --options "classwise=True"
+       8 --out results.pkl --eval bbox segm --eval-options "classwise=True"
    ```
 
 6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
@@ -122,7 +122,7 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
    ```shell
    ./tools/dist_test.sh configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-       8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+       8 --format-only --eval-options "jsonfile_prefix=./mask_rcnn_test-dev_results"
    ```
 
    You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
@@ -132,7 +132,7 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
    ```shell
    ./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
        checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
-       8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+       8  --format-only --eval-options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
    ```
 
    The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
