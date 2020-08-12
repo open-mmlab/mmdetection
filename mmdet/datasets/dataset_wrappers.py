@@ -7,7 +7,6 @@ from mmcv.utils import print_log
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
 from .builder import DATASETS
-from .coco import CocoDataset
 
 
 @DATASETS.register_module()
@@ -25,6 +24,15 @@ class ConcatDataset(_ConcatDataset):
         super(ConcatDataset, self).__init__(datasets)
         self.CLASSES = datasets[0].CLASSES
         self.separate_eval = separate_eval
+        if not separate_eval:
+            if any([ds['type'] == 'CocoDataset' for ds in datasets]):
+                raise NotImplementedError(
+                    'Evaluating concatenated CocoDataset as a whole is not'
+                    ' supported! Please set "separate_eval=True"')
+            elif len(set([ds['type'] for ds in datasets])) != 1:
+                raise NotImplementedError(
+                    'All the datasets should have same types')
+
         if hasattr(datasets[0], 'flag'):
             flags = []
             for i in range(0, len(datasets)):
@@ -91,15 +99,14 @@ class ConcatDataset(_ConcatDataset):
                     total_eval_results.update({f'{k}_{dataset_idx}': v})
 
             return total_eval_results
-        elif any([isinstance(ds, CocoDataset) for ds in self.datasets]):
+        elif any([ds['type'] == 'CocoDataset' for ds in self.datasets]):
             raise NotImplementedError(
-                'Evaluating concatenated CocoDataset is not supported')
+                'Evaluating concatenated CocoDataset as a whole is not'
+                ' supported! Please set "separate_eval=True"')
+        elif len(set([ds['type'] for ds in self.datasets])) != 1:
+            raise NotImplementedError(
+                'All the datasets should have same types')
         else:
-            assert all([
-                isinstance(dataset, type(self.datasets[0]))
-                for dataset in self.datasets
-            ]), f'All the datasets should be {type(self.datasets[0])}'
-
             original_data_infos = self.datasets[0].data_infos
             self.dataset[0].data_infos = sum(
                 [dataset.data_infos for dataset in self.datasets], [])
