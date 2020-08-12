@@ -16,7 +16,7 @@ Note
 - If you plan to add some new features that involve large changes, it is encouraged to open an issue for discussion first.
 - If you are the author of some papers and would like to include your method to mmdetection,
 please contact Kai Chen (chenkaidev[at]gmail[dot]com). We will much appreciate your contribution.
-- For new features and new modules, we recommend the contributors to also write unit tests to improve the code's robustness.
+- For new features and new modules, unit tests are required to improve the code's robustness.
 
 ## Code style
 
