@@ -110,7 +110,7 @@ def main():
                 dash_line)
     meta['env_info'] = env_info
     meta['config_dict'] = dict(cfg)
-    meta['config_file'] = osp.realpath(args.config)
+    meta['config_file'] = osp.abspath(args.config)
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
