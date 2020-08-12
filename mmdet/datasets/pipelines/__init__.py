@@ -6,8 +6,8 @@ from .instaboost import InstaBoost
 from .loading import (LoadAnnotations, LoadImageFromFile,
                       LoadMultiChannelImageFromFiles, LoadProposals)
 from .test_time_aug import MultiScaleFlipAug
-from .transforms import (Albu, Expand, MinIoURandomCrop, Normalize, Pad,
-                         PhotoMetricDistortion, RandomCenterCropPad,
+from .transforms import (Albu, CutOut, Expand, MinIoURandomCrop, Normalize,
+                         Pad, PhotoMetricDistortion, RandomCenterCropPad,
                          RandomCrop, RandomFlip, Resize, SegRescale)
 
 __all__ = [
@@ -16,5 +16,5 @@ __all__ = [
     'LoadMultiChannelImageFromFiles', 'LoadProposals', 'MultiScaleFlipAug',
     'Resize', 'RandomFlip', 'Pad', 'RandomCrop', 'Normalize', 'SegRescale',
     'MinIoURandomCrop', 'Expand', 'PhotoMetricDistortion', 'Albu',
-    'InstaBoost', 'RandomCenterCropPad', 'AutoAugment'
+    'InstaBoost', 'RandomCenterCropPad', 'AutoAugment', 'CutOut'
 ]
