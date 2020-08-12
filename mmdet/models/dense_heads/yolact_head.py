@@ -269,9 +269,12 @@ class YolactHead(AnchorHead):
         neg_inds = (labels == self.background_label).nonzero().view(-1)
 
         num_pos_samples = pos_inds.size(0)
-        num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples
-        if num_neg_samples > neg_inds.size(0):
+        if num_pos_samples == 0:
             num_neg_samples = neg_inds.size(0)
+        else:
+            num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples
+            if num_neg_samples > neg_inds.size(0):
+                num_neg_samples = neg_inds.size(0)
         topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
         loss_cls_pos = loss_cls_all[pos_inds].sum()
         loss_cls_neg = topk_loss_cls_neg.sum()
@@ -520,10 +523,15 @@ class YolactSegmHead(nn.Module):
             cur_gt_labels = gt_labels[idx]
             segm_targets = self.get_targets(cur_segm_pred, cur_gt_masks,
                                             cur_gt_labels)
-            loss = self.loss_segm(
-                cur_segm_pred,
-                segm_targets,
-                avg_factor=num_imgs * mask_h * mask_w)
+            if segm_targets is None:
+                loss = self.loss_segm(cur_segm_pred,
+                                      torch.zeros_like(cur_segm_pred),
+                                      torch.zeros_like(cur_segm_pred))
+            else:
+                loss = self.loss_segm(
+                    cur_segm_pred,
+                    segm_targets,
+                    avg_factor=num_imgs * mask_h * mask_w)
             loss_segm.append(loss)
         return dict(loss_segm=loss_segm)
 
@@ -541,6 +549,8 @@ class YolactSegmHead(nn.Module):
             Tensor: Semantic segmentation targets with shape
                 (num_classes, H, W).
         """
+        if gt_masks.size(0) == 0:
+            return None
         num_classes, mask_h, mask_w = segm_pred.size()
         with torch.no_grad():
             downsampled_masks = F.interpolate(
@@ -740,8 +750,6 @@ class YolactProtonet(nn.Module):
 
             pos_assigned_gt_inds = cur_sampling_results.pos_assigned_gt_inds
             num_pos = pos_assigned_gt_inds.size(0)
-            if num_pos * cur_gt_masks.size(0) == 0:
-                continue
             # Since we're producing (near) full image masks,
             # it'd take too much vram to backprop on every single mask.
             # Thus we select only a subset.
@@ -757,19 +765,26 @@ class YolactProtonet(nn.Module):
 
             mask_targets = self.get_targets(cur_mask_pred, cur_gt_masks,
                                             pos_assigned_gt_inds)
+            if num_pos == 0:
+                continue
+            elif mask_targets is None:
+                loss = F.binary_cross_entropy(cur_mask_pred,
+                                              torch.zeros_like(cur_mask_pred),
+                                              torch.zeros_like(cur_mask_pred))
+            else:
+                cur_mask_pred = torch.clamp(cur_mask_pred, 0, 1)
+                loss = F.binary_cross_entropy(
+                    cur_mask_pred, mask_targets,
+                    reduction='none') * self.loss_mask_weight
 
-            cur_mask_pred = torch.clamp(cur_mask_pred, 0, 1)
-            loss = F.binary_cross_entropy(
-                cur_mask_pred, mask_targets,
-                reduction='none') * self.loss_mask_weight
-
-            h, w = cur_img_meta['img_shape'][:2]
-            gt_bboxes_width = (gt_bboxes_for_reweight[:, 2] -
-                               gt_bboxes_for_reweight[:, 0]) / w
-            gt_bboxes_height = (gt_bboxes_for_reweight[:, 3] -
-                                gt_bboxes_for_reweight[:, 1]) / h
-            loss = loss.mean(dim=(1, 2)) / gt_bboxes_width / gt_bboxes_height
-            loss = torch.sum(loss)
+                h, w = cur_img_meta['img_shape'][:2]
+                gt_bboxes_width = (gt_bboxes_for_reweight[:, 2] -
+                                   gt_bboxes_for_reweight[:, 0]) / w
+                gt_bboxes_height = (gt_bboxes_for_reweight[:, 3] -
+                                    gt_bboxes_for_reweight[:, 1]) / h
+                loss = loss.mean(dim=(1,
+                                      2)) / gt_bboxes_width / gt_bboxes_height
+                loss = torch.sum(loss)
             loss_mask.append(loss)
 
         loss_mask = [x / total_pos for x in loss_mask]
@@ -790,6 +805,8 @@ class YolactProtonet(nn.Module):
             Tensor: Instance segmentation targets with shape
                 (num_instances, H, W).
         """
+        if gt_masks.size(0) == 0:
+            return None
         mask_h, mask_w = mask_pred.shape[-2:]
         gt_masks = F.interpolate(
             gt_masks.unsqueeze(0), (mask_h, mask_w),
