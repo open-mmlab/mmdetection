@@ -18,12 +18,13 @@ from .retina_head import RetinaHead
 from .retina_sepbn_head import RetinaSepBNHead
 from .rpn_head import RPNHead
 from .ssd_head import SSDHead
-from .yolact_head import YolactHead
+from .yolact_head import YolactHead, YolactProtonet, YolactSegmHead
 
 __all__ = [
     'AnchorFreeHead', 'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption',
     'RPNHead', 'GARPNHead', 'RetinaHead', 'RetinaSepBNHead', 'GARetinaHead',
     'SSDHead', 'FCOSHead', 'RepPointsHead', 'FoveaHead',
     'FreeAnchorRetinaHead', 'ATSSHead', 'FSAFHead', 'NASFCOSHead',
-    'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead', 'YolactHead'
+    'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead', 'YolactHead',
+    'YolactSegmHead', 'YolactProtonet'
 ]
