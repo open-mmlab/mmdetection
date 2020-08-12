@@ -95,8 +95,8 @@ class ConcatDataset(_ConcatDataset):
                 eval_results_per_dataset = dataset.evaluate(
                     results_per_dataset, **kwargs)
                 dataset_idx += 1
-                for k, v in eval_results_per_dataset:
-                    total_eval_results.update({f'{k}_{dataset_idx}': v})
+                for k, v in eval_results_per_dataset.items():
+                    total_eval_results.update({f'{dataset_idx}_{k}': v})
 
             return total_eval_results
         elif any([ds['type'] == 'CocoDataset' for ds in self.datasets]):

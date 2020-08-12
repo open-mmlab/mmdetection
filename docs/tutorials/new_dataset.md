@@ -249,7 +249,7 @@ You may refer to [source code](../../mmdet/datasets/dataset_wrappers.py) for det
 
 ### Concatenate dataset
 
-There two ways to concatenate the dataset.
+There three ways to concatenate the dataset.
 
 1. If the datasets you want to concatenate are in the same type with different annotation files, you can concatenate the dataset configs like the following.
 
@@ -260,7 +260,15 @@ There two ways to concatenate the dataset.
         pipeline=train_pipeline
     )
     ```
-    If the concatenated dataset is used for test or evaluation, this manner supports to evaluate each dataset separately.
+    If the concatenated dataset is used for test or evaluation, this manner supports to evaluate each dataset separately. To test the concatenated datasets as a whole, you can set `separate_eval=False` as below.
+    ```python
+    dataset_A_train = dict(
+        type='Dataset_A',
+        ann_file = ['anno_file_1', 'anno_file_2'],
+        separate_eval=False,
+        pipeline=train_pipeline
+    )
+    ```
 
 2. In case the dataset you want to concatenate is different, you can concatenate the dataset configs like the following.
 
@@ -294,12 +302,12 @@ There two ways to concatenate the dataset.
         val=dict(
             type='ConcatDataset',
             datasets=[dataset_A_val, dataset_B_val],
-            separate_eval=False,
-        )
-    )
+            separate_eval=False))
     ```
-    This manner allows users to evaluate the all the datasets as a single one by setting `separate_eval=False`.
-    This option assumes the dataset uses `self.data_infos` during evaluation. Therefore, COCO datasets does not support this behavior since COCO datasets do not fully rely on `self.data_infos` during evaluation. Combining different type of datasets and evaluating them as a whole is not tested.
+    This manner allows users to evaluate all the datasets as a single one by setting `separate_eval=False`.
+
+**Note:**
+This option `separate_eval=False` assumes the dataset uses `self.data_infos` during evaluation. Therefore, COCO datasets does notsupport this behavior since COCO datasets do not fully rely on `self.data_infos` during evaluation. Combining different type ofdatasets and evaluating them as a whole is not tested thus is not suggested.
 
 
 A more complex example that repeats `Dataset_A` and `Dataset_B` by N and M times, respectively, and then concatenates the repeated datasets is as the following.
