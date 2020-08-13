@@ -111,6 +111,8 @@ Please see [getting_started.md](docs/getting_started.md) for the basic usage of 
 We provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
 There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
 
+For trouble shooting, please refer to [trouble_shooting.md](docs/trouble_shooting.md)
+
 ## Contributing
 
 We appreciate all contributions to improve MMDetection. Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contributing guideline.
