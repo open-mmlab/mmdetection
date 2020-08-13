@@ -4,7 +4,7 @@
 **VarifocalNet** learns to predict the IoU-aware classification score which mixes the object presence confidence and localization accuracy together. This learning is supervised by the proposed Varifocal Loss (VFL), based on a star shape bounding box feature representation (the features at nine yellow sampling points). Given the new representation, the object localization accuracy is further improved by refining the initially regressed bounding box.
 
 <div align="center">
-  <img src="VFNet.png" width="400px" />
+  <img src="VFNet.png" width="600px" />
   <p>Learning to Predict the IoU-aware Classification Score.</p>
 </div>
 
