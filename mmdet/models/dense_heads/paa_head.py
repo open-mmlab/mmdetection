@@ -50,10 +50,10 @@ class PAAHead(ATSSHead):
         score_voting (bool): Whether to use score voting in post-process.
     """
 
-    def __init__(self, *args, topk=9, with_voting=False, **kwargs):
+    def __init__(self, *args, topk=9, score_voting=True, **kwargs):
         # topk used in paa reassign process
         self.topk = topk
-        self.with_voting = with_voting
+        self.score_voting = score_voting
         super(PAAHead, self).__init__(*args, **kwargs)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
@@ -516,10 +516,28 @@ class PAAHead(ATSSHead):
         mlvl_iou_preds = torch.cat(mlvl_iou_preds)
 
         det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes,
-            mlvl_scores,
+            mlvl_bboxes, (mlvl_scores * mlvl_iou_preds[:, None]).sqrt(),
             cfg.score_thr,
             cfg.nms,
             cfg.max_per_img,
-            score_factors=mlvl_iou_preds)
+            score_factors=None)
+        if self.score_voting:
+            self.score_voting(det_labels, det_bboxes, mlvl_bboxes, mlvl_scores)
+
         return det_bboxes, det_labels
+
+    def score_voting(self, det_bboxes, det_labels, mlvl_bboxes, mlvl_scores):
+        """Implementation of score voting method works on each remaining boxes
+        after NMS procedure.
+
+        Args:
+            det_bboxes (Tensor): Remaining boxes after NMS procedure,
+                with shape (k, 5), last dimesion means (x1,x2,y1,y1,score).
+            det_labels (Tensor): The label of remaining boxes, with shape
+                (k, 1),Labels are 0-based.
+            mlvl_bboxes (Tensor): All boxes before the NMS procedure,
+                with shape (num_anchors,4).
+            mlvl_scores (Tensor): The scores of all boxes befor the NMS
+                procedure, with shape (num_anchors, num_class)
+        """
+        pass
