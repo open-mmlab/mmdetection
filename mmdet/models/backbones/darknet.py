@@ -113,11 +113,11 @@ class Darknet(nn.Module):
 
         self.cr_blocks = ['conv1']
         for i, n_layers in enumerate(self.layers):
-            layer_name = f'cr_block{i + 1}'
+            layer_name = f'conv_res_block{i + 1}'
             in_c, out_c = self.channels[i]
             self.add_module(
                 layer_name,
-                self.make_conv_and_res_block(in_c, out_c, n_layers, **cfg))
+                self.make_conv_res_block(in_c, out_c, n_layers, **cfg))
             self.cr_blocks.append(layer_name)
 
         self.norm_eval = norm_eval
@@ -163,13 +163,13 @@ class Darknet(nn.Module):
                     m.eval()
 
     @staticmethod
-    def make_conv_and_res_block(in_channels,
-                                out_channels,
-                                res_repeat,
-                                conv_cfg=None,
-                                norm_cfg=dict(type='BN', requires_grad=True),
-                                act_cfg=dict(
-                                    type='LeakyReLU', negative_slope=0.1)):
+    def make_conv_res_block(in_channels,
+                            out_channels,
+                            res_repeat,
+                            conv_cfg=None,
+                            norm_cfg=dict(type='BN', requires_grad=True),
+                            act_cfg=dict(type='LeakyReLU',
+                                         negative_slope=0.1)):
         """In Darknet backbone, ConvLayer is usually followed by ResBlock. This
         function will make that. The Conv layers always have 3x3 filters with
         stride=2. The number of the filters in Conv layer is the same as the

@@ -20,6 +20,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
             bboxes (torch.Tensor): Source boxes, e.g., object proposals.
             gt_bboxes (torch.Tensor): Target of the transformation, e.g.,
                 ground-truth boxes.
+            grid_size (torch.Tensor | int): Grid size to encode ground truth.
 
         Returns:
             torch.Tensor: Box transformation deltas
@@ -31,13 +32,15 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         y_center_gt = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) * 0.5
         w_gt = gt_bboxes[..., 2] - gt_bboxes[..., 0]
         h_gt = gt_bboxes[..., 3] - gt_bboxes[..., 1]
+        x_center = (bboxes[..., 0] + bboxes[..., 2]) * 0.5
+        y_center = (bboxes[..., 1] + bboxes[..., 3]) * 0.5
         w = bboxes[..., 2] - bboxes[..., 0]
         h = bboxes[..., 3] - bboxes[..., 1]
         w_target = torch.log((w_gt / w).clamp(min=self.epsilon))
         h_target = torch.log((h_gt / h).clamp(min=self.epsilon))
-        x_center_target = (x_center_gt / grid_size - w).clamp(
+        x_center_target = ((x_center_gt - x_center) / grid_size + 0.5).clamp(
             self.epsilon, 1 - self.epsilon)
-        y_center_target = (y_center_gt / grid_size - h).clamp(
+        y_center_target = ((y_center_gt - y_center) / grid_size + 0.5).clamp(
             self.epsilon, 1 - self.epsilon)
         encoded_bboxes = torch.stack(
             [x_center_target, y_center_target, w_target, h_target], dim=-1)
@@ -49,10 +52,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         Args:
             boxes (torch.Tensor): Basic boxes.
             pred_bboxes (torch.Tensor): Encoded boxes with shape
-            max_shape (tuple[int], optional): Maximum shape of boxes.
-                Defaults to None.
-            wh_ratio_clip (float, optional): The allowed ratio between
-                width and height.
+            grid_size (torch.Tensor | int): Grid size to decode predication.
 
         Returns:
             torch.Tensor: Decoded boxes.

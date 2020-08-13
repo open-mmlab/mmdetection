@@ -5,14 +5,13 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, xavier_init
+from mmcv.cnn import ConvModule, normal_init
 
-from mmdet.core import (build_anchor_generator, build_bbox_coder, force_fp32,
-                        multiclass_nms)
+from mmdet.core import (build_anchor_generator, build_assigner,
+                        build_bbox_coder, build_sampler, force_fp32,
+                        images_to_levels, multi_apply, multiclass_nms)
 from ..builder import HEADS
 from .base_dense_head import BaseDenseHead
-
-_EPSILON = 1e-6
 
 
 @HEADS.register_module()
@@ -22,23 +21,14 @@ class YOLOV3Head(BaseDenseHead):
     Args:
         num_classes (int): The number of object classes (w/o background)
         in_channels (List[int]): Number of input channels per scale.
-        num_scales (int): The number of scales / stages. Default: 3.
-        num_anchors_per_scale (int): The number of anchors per scale.
-            Default: 3.
         out_channels (List[int]): The number of output channels per scale
             before the final 1x1 layer. Default: (1024, 512, 256).
-        strides (List[int]): The stride of each scale.
+        anchor_generator (dict): Config dict for anchor generator
+        bbox_coder (dict): Config of bounding box coder.
+        featmap_strides (List[int]): The stride of each scale.
             Should be in descending order. Default: (32, 16, 8).
-        anchor_base_sizes (List[List[int]]): The sizes of anchors.
-            Default: (((116, 90), (156, 198), (373, 326)),
-                      (( 30, 61), ( 62,  45), ( 59, 119)),
-                      (( 10, 13), ( 16,  30), ( 33,  23)))
-        ignore_thresh (float): Set negative samples if gt-anchor iou
-            is smaller than ignore_thresh. Default: 0.5
         one_hot_smoother (float): Set a non-zero value to enable label-smooth
             Default: 0.
-        xy_use_logit (bool): Use log scale regression for bbox center
-            Default: False
         balance_conf (bool): Whether to balance the confidence when calculating
             loss. Default: False
         conv_cfg (dict): Config dict for convolution layer. Default: None.
@@ -53,16 +43,18 @@ class YOLOV3Head(BaseDenseHead):
     def __init__(self,
                  num_classes,
                  in_channels,
-                 num_scales=3,
-                 num_anchors_per_scale=3,
                  out_channels=(1024, 512, 256),
-                 strides=(32, 16, 8),
-                 anchor_base_sizes=(((116, 90), (156, 198), (373, 326)),
-                                    ((30, 61), (62, 45), (59, 119)),
-                                    ((10, 13), (16, 30), (33, 23))),
-                 ignore_thresh=0.5,
+                 anchor_generator=dict(
+                     type='YOLOAnchorGenerator',
+                     base_sizes=[
+                         [(116, 90), (156, 198), (373, 326)],
+                         [(30, 61), (62, 45), (59, 119)],
+                         [(10, 13), (16, 30), (33, 23)],
+                     ],
+                     strides=[32, 16, 8]),
+                 bbox_coder=dict(type='YOLOBBoxCoder'),
+                 featmap_strides=[32, 16, 8],
                  one_hot_smoother=0.,
-                 xy_use_logit=False,
                  balance_conf=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
@@ -71,73 +63,100 @@ class YOLOV3Head(BaseDenseHead):
                  test_cfg=None):
         super(YOLOV3Head, self).__init__()
         # Check params
-        assert (num_scales == len(in_channels) == len(out_channels) ==
-                len(strides) == len(anchor_base_sizes))
-        for anchor_base_size in anchor_base_sizes:
-            assert (len(anchor_base_size) == num_anchors_per_scale)
-            for anchor_size in anchor_base_size:
-                assert (len(anchor_size) == 2)
+        assert (len(in_channels) == len(out_channels) == len(featmap_strides))
 
         self.num_classes = num_classes
-        self.num_scales = num_scales
-        self.num_anchors_per_scale = num_anchors_per_scale
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.strides = strides
-        self.anchor_base_sizes = anchor_base_sizes
-        self.anchor_generator = build_anchor_generator(
-            dict(
-                type='YOLOAnchorGenerator',
-                strides=strides,
-                base_sizes=anchor_base_sizes))
-        self.bbox_coder = build_bbox_coder(dict(type='YOLOBBoxCoder'))
-
-        self.ignore_thresh = ignore_thresh
-        self.one_hot_smoother = one_hot_smoother
-        self.xy_use_logit = xy_use_logit
-        self.balance_conf = balance_conf
-
-        # self.num_attrib = num_classes + bboxes (4) + objectness (1)
-        self.num_attrib = self.num_classes + 5
-        self.last_layer_dim = self.num_anchors_per_scale * self.num_attrib
-
-        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
-        self.convs_bridge = nn.ModuleList()
-        self.convs_final = nn.ModuleList()
-        for i in range(self.num_scales):
-            in_c = self.in_channels[i]
-            out_c = self.out_channels[i]
-            conv_bridge = ConvModule(in_c, out_c, 3, padding=1, **cfg)
-            conv_pred = nn.Conv2d(out_c, self.last_layer_dim, 1, bias=True)
-
-            self.convs_bridge.append(conv_bridge)
-            self.convs_final.append(conv_pred)
-
+        self.featmap_strides = featmap_strides
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        if self.train_cfg:
+            self.assigner = build_assigner(self.train_cfg.assigner)
+            if hasattr(self.train_cfg, 'sampler'):
+                sampler_cfg = self.train_cfg.sampler
+            else:
+                sampler_cfg = dict(type='PseudoSampler')
+            self.sampler = build_sampler(sampler_cfg, context=self)
+
+        self.one_hot_smoother = one_hot_smoother
+        self.balance_conf = balance_conf
+
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.act_cfg = act_cfg
+
+        self.bbox_coder = build_bbox_coder(bbox_coder)
+        self.anchor_generator = build_anchor_generator(anchor_generator)
+        # usually the numbers of anchors for each level are the same
+        # except SSD detectors
+        self.num_anchors = self.anchor_generator.num_base_anchors[0]
+        assert len(
+            self.anchor_generator.num_base_anchors) == len(featmap_strides)
+        self._init_layers()
+
+    @property
+    def num_levels(self):
+        return len(self.featmap_strides)
+
+    @property
+    def num_attrib(self):
+        """int: number of attributes in pred_map, bboxes (4) +
+        objectness (1) + num_classes"""
+
+        return 5 + self.num_classes
+
+    def _init_layers(self):
+        self.convs_bridge = nn.ModuleList()
+        self.convs_pred = nn.ModuleList()
+        for i in range(self.num_levels):
+            conv_bridge = ConvModule(
+                self.in_channels[i],
+                self.out_channels[i],
+                3,
+                padding=1,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg,
+                act_cfg=self.act_cfg)
+            conv_pred = nn.Conv2d(self.out_channels[i],
+                                  self.num_anchors * self.num_attrib, 1)
+
+            self.convs_bridge.append(conv_bridge)
+            self.convs_pred.append(conv_pred)
 
     def init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
+        """Initialize weights of the head."""
+        for m in self.convs_pred:
+            normal_init(m, std=0.01)
 
     def forward(self, feats):
-        assert len(feats) == self.num_scales
-        results = []
-        for i in range(self.num_scales):
+        """Forward features from the upstream network.
+
+        Args:
+            feats (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple[Tensor]: A tuple of multi-level predication map, each is a
+                4D-tensor of shape (batch_size, 5+num_classes, height, width).
+        """
+
+        assert len(feats) == self.num_levels
+        pred_maps = []
+        for i in range(self.num_levels):
             x = feats[i]
             x = self.convs_bridge[i](x)
-            out = self.convs_final[i](x)
-            results.append(out)
+            pred_map = self.convs_pred[i](x)
+            pred_maps.append(pred_map)
 
-        return tuple(results),
+        return tuple(pred_maps),
 
-    @force_fp32(apply_to=('results_raw', ))
-    def get_bboxes(self, results_raw, img_metas, cfg=None, rescale=False):
+    @force_fp32(apply_to=('pred_maps', ))
+    def get_bboxes(self, pred_maps, img_metas, cfg=None, rescale=False):
         """Transform network output for a batch into bbox predictions.
 
         Args:
-            results_raw (list[Tensor]): Raw predictions for a batch of images.
+            pred_maps (list[Tensor]): Raw predictions for a batch of images.
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             cfg (mmcv.Config): Test / postprocessing configuration,
@@ -153,47 +172,26 @@ class YOLOV3Head(BaseDenseHead):
                 corresponding box.
         """
         result_list = []
+        num_levels = len(pred_maps)
         for img_id in range(len(img_metas)):
-            result_raw_list = [
-                results_raw[i][img_id].detach() for i in range(self.num_scales)
+            pred_maps_list = [
+                pred_maps[i][img_id].detach() for i in range(num_levels)
             ]
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self.get_bboxes_single(result_raw_list, scale_factor,
-                                               cfg, rescale)
+            proposals = self._get_bboxes_single(pred_maps_list, scale_factor,
+                                                cfg, rescale)
             result_list.append(proposals)
         return result_list
 
-    @staticmethod
-    def _get_anchors_grid_xy(num_grid_h, num_grid_w, stride, device='cpu'):
-        """Get grid offset according to the stride.
-
-        Args:
-            num_grid_h (int): The height of the grid.
-            num_grid_w (int): The width of the grid.
-            stride (int): The stride.
-            device (torch.device): The desired device of the generated grid.
-
-        Returns:
-            tuple[torch.Tensor]: x and y grid offset according to the stride
-                in shape (1, num_grid_h, num_grid_w)
-        """
-        grid_x = torch.arange(
-            num_grid_w, dtype=torch.float,
-            device=device).repeat(num_grid_h, 1)
-        grid_y = torch.arange(
-            num_grid_h, dtype=torch.float,
-            device=device).repeat(num_grid_w, 1)
-
-        grid_x = grid_x.unsqueeze(0) * stride
-        grid_y = grid_y.t().unsqueeze(0) * stride
-
-        return grid_x, grid_y
-
-    def get_bboxes_single(self, results_raw, scale_factor, cfg, rescale=False):
+    def _get_bboxes_single(self,
+                           pred_maps_list,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
         """Transform outputs for a single batch item into bbox predictions.
 
         Args:
-            results_raw (list[Tensor]): Raw predictions for different scales
+            pred_maps_list (list[Tensor]): Prediction maps for different scales
                 of each single image in the batch.
             scale_factor (ndarray): Scale factor of the image arrange as
                 (w_scale, h_scale, w_scale, h_scale).
@@ -206,72 +204,38 @@ class YOLOV3Head(BaseDenseHead):
                 5-th column is a score between 0 and 1.
         """
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(results_raw) == self.num_scales
+        assert len(pred_maps_list) == self.num_levels
         multi_lvl_bboxes = []
         multi_lvl_cls_scores = []
         multi_lvl_conf_scores = []
-        num_levels = len(results_raw)
-        featmap_sizes = [results_raw[i].shape[-2:] for i in range(num_levels)]
-        anchor_grids_g = self.anchor_generator.grid_anchors(
-            featmap_sizes, results_raw[0][0].device)
+        num_levels = len(pred_maps_list)
+        featmap_sizes = [
+            pred_maps_list[i].shape[-2:] for i in range(num_levels)
+        ]
+        multi_lvl_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, pred_maps_list[0][0].device)
         for i in range(num_levels):
-            # x1, y1, x2, y2 = anchor_grids_g[i].split(1, dim=-1)
-            # anchor_grid_g = torch.stack(
-            #     [(x1 + x2) * 0.5, (y1 + y2) * 0.5,
-            #      x2 - x1, y2 - y1], dim=-1)
-            anchor_grid_g = anchor_grids_g[i]
-            anchor_grids_g[i] = anchor_grid_g.view(*results_raw[i].shape[-2:],
-                                                   self.num_anchors_per_scale,
-                                                   4).permute(2, 0, 1, 3)
-        for i_scale in range(self.num_scales):
+            # for each scale, reshape to (num_anchors, h, w, 4)
+            multi_lvl_anchors[i] = multi_lvl_anchors[i].view(
+                *pred_maps_list[i].shape[-2:], self.num_anchors,
+                4).permute(2, 0, 1, 3)
+        for i in range(self.num_levels):
             # get some key info for current scale
-            result_raw = results_raw[i_scale]
-            num_grid_h = result_raw.size(1)
-            num_grid_w = result_raw.size(2)
-            stride = self.strides[i_scale]
+            pred_map = pred_maps_list[i]
+            h, w = featmap_sizes[i]
+            stride = self.featmap_strides[i]
 
-            # for each sacle, reshape to (n_anchors, h, w, n_classes+5)
-            prediction_raw = result_raw.view(self.num_anchors_per_scale,
-                                             self.num_attrib,
-                                             num_grid_h, num_grid_w).permute(
-                                                 0, 2, 3, 1).contiguous()
+            # for each scale, reshape to (num_anchors, h, w, 5+num_classes)
+            pred_map = pred_map.view(self.num_anchors, self.num_attrib, h,
+                                     w).permute(0, 2, 3, 1).contiguous()
 
-            # grid x y offset, with stride step included
-            grid_x, grid_y = self._get_anchors_grid_xy(num_grid_h, num_grid_w,
-                                                       stride,
-                                                       result_raw.device)
-
-            # Get outputs x, y
-            x_center_pred = torch.sigmoid(
-                prediction_raw[..., 0]) * stride + grid_x  # Center x
-            y_center_pred = torch.sigmoid(
-                prediction_raw[..., 1]) * stride + grid_y  # Center y
-
-            anchors = torch.tensor(
-                self.anchor_base_sizes[i_scale],
-                device=result_raw.device,
-                dtype=torch.float32)
-
-            anchor_w = anchors[:, 0:1].view((-1, 1, 1))
-            anchor_h = anchors[:, 1:2].view((-1, 1, 1))
-
-            w_pred = torch.exp(prediction_raw[..., 2]) * anchor_w  # Width
-            h_pred = torch.exp(prediction_raw[..., 3]) * anchor_h  # Height
-
-            # bbox_pred: convert to x1y1x2y2
-            bbox_pred = torch.stack(
-                (x_center_pred - w_pred / 2, y_center_pred - h_pred / 2,
-                 x_center_pred + w_pred / 2, y_center_pred + h_pred / 2),
-                dim=3).view((-1, 4))
-
-            prediction_raw[..., :2] = torch.sigmoid(prediction_raw[..., :2])
-            bbox_pred_g = self.bbox_coder.decode(anchor_grids_g[i_scale],
-                                                 prediction_raw[..., :4],
-                                                 stride)
-            assert torch.allclose(bbox_pred, bbox_pred_g.view((-1, 4)))
+            pred_map[..., :2] = torch.sigmoid(pred_map[..., :2])
+            bbox_pred = self.bbox_coder.decode(multi_lvl_anchors[i],
+                                               pred_map[..., :4], stride).view(
+                                                   (-1, 4))
             # conf and cls
-            conf_pred = torch.sigmoid(prediction_raw[..., 4]).view(-1)
-            cls_pred = torch.sigmoid(prediction_raw[..., 5:]).view(
+            conf_pred = torch.sigmoid(pred_map[..., 4]).view(-1)
+            cls_pred = torch.sigmoid(pred_map[..., 5:]).view(
                 -1, self.num_classes)  # Cls pred one-hot.
 
             # Filtering out all predictions with conf < conf_thr
@@ -322,9 +286,9 @@ class YOLOV3Head(BaseDenseHead):
 
         return det_bboxes, det_labels
 
-    @force_fp32(apply_to=('preds_raw', ))
+    @force_fp32(apply_to=('pred_maps', ))
     def loss(self,
-             preds_raw,
+             pred_maps,
              gt_bboxes,
              gt_labels,
              img_metas,
@@ -332,7 +296,8 @@ class YOLOV3Head(BaseDenseHead):
         """Compute loss of the head.
 
         Args:
-            preds_raw (list[Tensor]): Raw predictions for a batch of images.
+            pred_maps (list[Tensor]): Prediction map for each scale level,
+                shape (N, num_anchors * num_attrib, H, W)
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
@@ -344,351 +309,199 @@ class YOLOV3Head(BaseDenseHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+        num_imgs = len(img_metas)
 
-        losses = {'loss_xy': 0, 'loss_wh': 0, 'loss_conf': 0, 'loss_cls': 0}
+        # losses = {'loss_xy': 0, 'loss_wh': 0, 'loss_conf': 0, 'loss_cls': 0}
 
-        num_levels = len(preds_raw)
-        featmap_sizes = [preds_raw[i].shape[-2:] for i in range(num_levels)]
-        anchor_grids_g = self.anchor_generator.grid_anchors(
-            featmap_sizes, preds_raw[0][0].device)
-        for i in range(num_levels):
-            x1, y1, x2, y2 = anchor_grids_g[i].split(1, dim=-1)
-            anchor_grid_g = torch.stack([(x1 + x2) * 0.5,
-                                         (y1 + y2) * 0.5, x2 - x1, y2 - y1],
-                                        dim=-1)
-            anchor_grids_g[i] = anchor_grid_g.view(*preds_raw[i].shape[-2:],
-                                                   self.num_anchors_per_scale,
-                                                   4).permute(2, 0, 1, 3)
+        reshaped_pred_maps = []
+        featmap_sizes = [
+            pred_maps[i].shape[-2:] for i in range(self.num_levels)
+        ]
+        multi_level_anchors = self.anchor_generator.grid_anchors(
+            featmap_sizes, pred_maps[0][0].device)
+        for i in range(self.num_levels):
+            # reshape to (num_anchors, h, w, 5+num_classes) for each level
+            h, w = featmap_sizes[i]
+            multi_level_anchors[i] = multi_level_anchors[i].view(
+                h, w, self.num_anchors, 4).permute(2, 0, 1, 3).reshape(-1, 4)
+            reshaped_pred_maps.append(pred_maps[i].view(
+                num_imgs, self.num_anchors, self.num_attrib, h,
+                w).permute(0, 1, 3, 4, 2).contiguous())
+        anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
-        for img_id in range(len(img_metas)):
-            pred_raw_list = []
-            anchor_grids = []
-            # For each scale of each image:
-            for i_scale in range(self.num_scales):
-                # 1. get some key information
-                pred_raw = preds_raw[i_scale][img_id]
-                num_grid_h = pred_raw.size(1)
-                num_grid_w = pred_raw.size(2)
-                # 2. reshape to (n_anchors, h, w, n_classes+5)
-                pred_raw = pred_raw.view(self.num_anchors_per_scale,
-                                         self.num_attrib, num_grid_h,
-                                         num_grid_w).permute(0, 2, 3,
-                                                             1).contiguous()
-                # 3. get the grid of the anchors
-                anchor_grid = self.get_anchors(
-                    num_grid_h, num_grid_w, i_scale, device=pred_raw.device)
+        target_maps_list, neg_maps_list = self.get_targets(
+            anchor_list, gt_bboxes, gt_labels, featmap_sizes)
 
-                pred_raw_list.append(pred_raw)
-                anchor_grids.append(anchor_grid)
+        losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
+            self.loss_single, reshaped_pred_maps, target_maps_list,
+            neg_maps_list)
 
-                assert torch.allclose(anchor_grid, anchor_grids_g[i_scale])
+        return dict(
+            loss_cls=losses_cls,
+            loss_conf=losses_conf,
+            loss_xy=losses_xy,
+            loss_wh=losses_wh)
 
-            # Then, generate target for each image
-            gt_t_across_scale, negative_mask_across_scale = \
-                self._preprocess_target_single_img(gt_bboxes[img_id],
-                                                   gt_labels[img_id],
-                                                   anchor_grids,
-                                                   self.ignore_thresh,
-                                                   self.one_hot_smoother,
-                                                   self.xy_use_logit)
-            # Calculate loss
-            losses_per_img = self.loss_single(
-                pred_raw_list,
-                gt_t_across_scale,
-                negative_mask_across_scale,
-                xy_use_logit=self.xy_use_logit,
-                balance_conf=self.balance_conf)
-
-            for loss_term in losses:
-                term_no_loss = loss_term[5:]
-                losses[loss_term] += losses_per_img[term_no_loss]
-
-        return losses
-
-    def loss_single(self,
-                    preds_raw,
-                    gts_t,
-                    neg_masks,
-                    xy_use_logit=False,
-                    balance_conf=False):
+    def loss_single(self, pred_map, target_map, neg_map):
         """Compute loss of a single image from a batch.
 
         Args:
-            preds_raw (list[Tensor]): Raw predictions for an image from the
-                batch.
-            gts_t (list[Tensor]): The Ground-Truth targets across scales.
-            neg_masks (list[Tensor]): The negative masks across scales.
-            xy_use_logit (bool): Use log scale regression for bbox center
-                Default: False
-            balance_conf (bool): Whether to balance the confidence when
-                calculating loss. Default: False
+            pred_map (Tensor): Raw predictions for a single level.
+            target_map (Tensor): The Ground-Truth target for a single level.
+            neg_map (Tensor): The negative masks for a single level.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            tuple:
+                loss_cls (Tensor): Classification loss.
+                loss_conf (Tensor): Confidence loss.
+                loss_xy (Tensor): Regression loss of x, y coordinate.
+                loss_wh (Tensor): Regression loss of w, h coordinate.
         """
 
-        losses = {'xy': 0, 'wh': 0, 'conf': 0, 'cls': 0}
+        neg_mask = neg_map.float()
+        pos_mask = target_map[..., 4]
+        pos_and_neg_mask = neg_mask + pos_mask
+        pos_mask = pos_mask.unsqueeze(dim=-1)
+        if torch.max(pos_and_neg_mask) > 1.:
+            warnings.warn('There is overlap between pos and neg sample.')
+            pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
 
-        for i_scale in range(self.num_scales):
-            pred_raw = preds_raw[i_scale]
-            gt_t = gts_t[i_scale]
-            neg_mask = neg_masks[i_scale].float()
-            pos_mask = gt_t[..., 4]
-            pos_and_neg_mask = neg_mask + pos_mask
-            pos_mask = pos_mask.unsqueeze(dim=-1)
-            if torch.max(pos_and_neg_mask) > 1.:
-                warnings.warn('There is overlap between pos and neg sample.')
-                pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
+        pred_xy = pred_map[..., :2]
+        pred_wh = pred_map[..., 2:4]
+        pred_conf = pred_map[..., 4]
+        pred_label = pred_map[..., 5:]
 
-            pred_t_xy = pred_raw[..., :2]
-            pred_t_wh = pred_raw[..., 2:4]
-            pred_conf = pred_raw[..., 4]
-            pred_label = pred_raw[..., 5:]
+        target_xy = target_map[..., :2]
+        target_wh = target_map[..., 2:4]
+        target_conf = target_map[..., 4]
+        target_label = target_map[..., 5:]
 
-            gt_t_xy = gt_t[..., :2]
-            gt_t_wh = gt_t[..., 2:4]
-            gt_conf = gt_t[..., 4]
-            gt_label = gt_t[..., 5:]
+        if self.balance_conf:
+            num_pos_gt = max(int(torch.sum(target_conf)), 1)
+            num_total_grids = target_conf.numel()
+            pos_weight = num_total_grids / num_pos_gt
+            conf_loss_weight = 1 / pos_weight
+        else:
+            pos_weight = 1
+            conf_loss_weight = 1
 
-            if balance_conf:
-                num_pos_gt = max(int(torch.sum(gt_conf)), 1)
-                grid_size = list(gt_conf.size())
-                num_total_grids = 1
-                for s in grid_size:
-                    num_total_grids *= s
-                pos_weight = num_total_grids / num_pos_gt
-                conf_loss_weight = 1 / pos_weight
-            else:
-                pos_weight = 1
-                conf_loss_weight = 1
+        pos_weight = target_label.new_tensor(pos_weight)
 
-            pos_weight = gt_label.new_tensor(pos_weight)
+        loss_cls = F.binary_cross_entropy_with_logits(
+            pred_label, target_label, reduction='none') * pos_mask
 
-            losses_cls = F.binary_cross_entropy_with_logits(
-                pred_label, gt_label, reduction='none')
+        loss_conf = F.binary_cross_entropy_with_logits(
+            pred_conf, target_conf, reduction='none',
+            pos_weight=pos_weight) * pos_and_neg_mask * conf_loss_weight
 
-            losses_cls *= pos_mask
+        loss_xy = F.binary_cross_entropy_with_logits(
+            pred_xy, target_xy, reduction='none') * pos_mask * 2
 
-            losses_conf = F.binary_cross_entropy_with_logits(
-                pred_conf, gt_conf, reduction='none',
-                pos_weight=pos_weight) * pos_and_neg_mask * conf_loss_weight
+        loss_wh = F.mse_loss(
+            pred_wh, target_wh, reduction='none') * pos_mask * 2
 
-            if xy_use_logit:
-                losses_xy = F.mse_loss(
-                    pred_t_xy, gt_t_xy, reduction='none') * pos_mask * 2
-            else:
-                losses_xy = F.binary_cross_entropy_with_logits(
-                    pred_t_xy, gt_t_xy, reduction='none') * pos_mask * 2
+        loss_cls = loss_cls.sum()
+        loss_conf = loss_conf.sum()
+        loss_xy = loss_xy.sum()
+        loss_wh = loss_wh.sum()
 
-            losses_wh = F.mse_loss(
-                pred_t_wh, gt_t_wh, reduction='none') * pos_mask * 2
+        return loss_cls, loss_conf, loss_xy, loss_wh
 
-            losses['cls'] += torch.sum(losses_cls)
-            losses['conf'] += torch.sum(losses_conf)
-            losses['xy'] += torch.sum(losses_xy)
-            losses['wh'] += torch.sum(losses_wh)
-
-        return losses
-
-    def _preprocess_target_single_img(self,
-                                      gt_bboxes,
-                                      gt_labels,
-                                      anchor_grids,
-                                      ignore_thresh,
-                                      one_hot_smoother=0,
-                                      xy_use_logit=False):
-        """Generate matching bounding box prior and converted GT."""
-        negative_mask_across_scale = []
-        gt_t_across_scale = []
-
-        for anchor_grid in anchor_grids:  # len(anchor_grids) == num_scales
-            negative_mask_size = list(anchor_grid.size())[:-1]
-            negative_mask = anchor_grid.new_ones(
-                negative_mask_size, dtype=torch.uint8)
-            negative_mask_across_scale.append(negative_mask)
-            gt_t_size = negative_mask_size + [self.num_attrib]
-            gt_t = anchor_grid.new_zeros(gt_t_size)
-            gt_t_across_scale.append(gt_t)
-
-        for gt_bbox, gt_label in zip(gt_bboxes, gt_labels):
-            # For each gt, convert to cxywh
-            gt_cx = (gt_bbox[0] + gt_bbox[2]) / 2
-            gt_cy = (gt_bbox[1] + gt_bbox[3]) / 2
-            gt_w = gt_bbox[2] - gt_bbox[0]
-            gt_h = gt_bbox[3] - gt_bbox[1]
-            gt_bbox_cxywh = torch.stack((gt_cx, gt_cy, gt_w, gt_h))
-
-            iou_to_match_across_scale = []
-            grid_coord_across_scale = []
-
-            for i_scale in range(self.num_scales):
-                # For each scale of each gt:
-                stride = self.strides[i_scale]
-                anchor_grid = anchor_grids[i_scale]
-                # 1. Calculate the iou between each anchor and the gt
-                iou_gt_anchor = iou_multiple_to_one(
-                    anchor_grid, gt_bbox_cxywh, center=True)
-                # 2. Neg. sample if <= ignore thresh
-                negative_mask = (iou_gt_anchor <= ignore_thresh)
-                negative_mask_across_scale[i_scale] *= negative_mask
-                # 3. Save the coord of the anchor grid that the gt is in
-                # in this scale
-                w_grid = int(gt_cx // stride)
-                h_grid = int(gt_cy // stride)
-                grid_coord_across_scale.append((h_grid, w_grid))
-
-                # AND operation, only negative when all are negative
-                iou_to_match = list(iou_gt_anchor[:, h_grid, w_grid])
-                iou_to_match_across_scale.extend(iou_to_match)
-
-            # get idx of max iou across all scales & anchors for current gt
-            max_match_iou_idx = max(
-                range(len(iou_to_match_across_scale)),
-                key=lambda x: iou_to_match_across_scale[x])
-
-            # decide which scale / anchor is matched (convert back)
-            match_scale = max_match_iou_idx // self.num_anchors_per_scale
-            match_anchor_in_scale = max_match_iou_idx - \
-                match_scale * self.num_anchors_per_scale
-            # extract the matched prior bbox to generate the target
-            match_grid_h, match_grid_w = grid_coord_across_scale[match_scale]
-            match_anchor_w, match_anchor_h = self.anchor_base_sizes[
-                match_scale][match_anchor_in_scale]
-
-            # Generate gt bbox for regression
-            gt_tw = torch.log((gt_w / match_anchor_w).clamp(min=_EPSILON))  # w
-            gt_th = torch.log((gt_h / match_anchor_h).clamp(min=_EPSILON))  # h
-            # bbox center
-            gt_tcx = (gt_cx / self.strides[match_scale] - match_grid_w).clamp(
-                _EPSILON, 1 - _EPSILON)
-            gt_tcy = (gt_cy / self.strides[match_scale] - match_grid_h).clamp(
-                _EPSILON, 1 - _EPSILON)
-            if xy_use_logit:  # log for bbox center
-                gt_tcx = torch.log(gt_tcx /
-                                   (1. - gt_tcx))  # inverse of sigmoid
-                gt_tcy = torch.log(gt_tcy /
-                                   (1. - gt_tcy))  # inverse of sigmoid
-            # cat cx, cy, w, h together
-            gt_t_bbox = torch.stack((gt_tcx, gt_tcy, gt_tw, gt_th))
-
-            # In mmdet 2.x, label “K” means background, and labels
-            # [0, K-1] correspond to the K = num_categories object categories.
-            gt_label_one_hot = F.one_hot(
-                gt_label, num_classes=self.num_classes).float()
-
-            if one_hot_smoother != 0:  # label smooth
-                gt_label_one_hot = gt_label_one_hot * (
-                    1 - one_hot_smoother) + one_hot_smoother / self.num_classes
-
-            gt_t_across_scale[match_scale][match_anchor_in_scale, match_grid_h,
-                                           match_grid_w, :4] = gt_t_bbox
-            gt_t_across_scale[match_scale][match_anchor_in_scale, match_grid_h,
-                                           match_grid_w, 4] = 1.
-            gt_t_across_scale[match_scale][match_anchor_in_scale, match_grid_h,
-                                           match_grid_w, 5:] = gt_label_one_hot
-
-            # although iou fall under a certain thres,
-            # since it has max iou, still positive
-            negative_mask_across_scale[match_scale][match_anchor_in_scale,
-                                                    match_grid_h,
-                                                    match_grid_w] = 0
-
-        return gt_t_across_scale, negative_mask_across_scale
-
-    def get_anchors(self, num_grid_h, num_grid_w, scale, device='cpu'):
-        """Get the grid offset according to the anchors and the scale.
+    def get_targets(self, anchor_list, gt_bboxes_list, gt_labels_list,
+                    featmap_sizes):
+        """Compute target maps for anchors in multiple images.
 
         Args:
-            num_grid_h (int): The height of the grid.
-            num_grid_w (int): The width of the grid.
-            scale (int): The index of scale.
-            device (torch.device): The desired device of the generated grid.
+            anchor_list (list[list[Tensor]]): Multi level anchors of each
+                image. The outer list indicates images, and the inner list
+                corresponds to feature levels of the image. Each element of
+                the inner list is a tensor of shape (num_total_anchors, 4).
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
+            gt_labels_list (list[Tensor]): Ground truth labels of each box.
+            featmap_sizes (list[tuple[int]]): Sizes of the feature maps of
+                each scale level.
 
         Returns:
-            torch.Tensor: The anchors in cxcywh format in shape
-                (num_anchors, num_grid_h, num_grid_w, 4)
+            tuple: Usually returns a tuple containing learning targets.
+                - target_map_list (list[Tensor]): Target map of each level.
+                - neg_map_list (list[Tensor]): Negative map of each level.
         """
-        assert scale in range(self.num_scales)
-        anchors = torch.tensor(
-            self.anchor_base_sizes[scale], device=device, dtype=torch.float32)
-        num_anchors = anchors.size(0)
-        stride = self.strides[scale]
+        num_imgs = len(anchor_list)
 
-        grid_x, grid_y = self._get_anchors_grid_xy(num_grid_h, num_grid_w,
-                                                   stride, device)
+        # anchor number of multi levels
+        num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
 
-        grid_x += stride / 2  # convert to center of the grid,
-        grid_y += stride / 2  # that is, making the raw prediction 0, not -inf
-        grid_x = grid_x.expand((num_anchors, -1, -1))
-        grid_y = grid_y.expand((num_anchors, -1, -1))
+        results = multi_apply(self._get_targets_single, anchor_list,
+                              gt_bboxes_list, gt_labels_list)
 
-        anchor_w = anchors[:, 0:1].view((-1, 1, 1))
-        anchor_h = anchors[:, 1:2].view((-1, 1, 1))
-        anchor_w = anchor_w.expand((-1, num_grid_h, num_grid_w))
-        anchor_h = anchor_h.expand((-1, num_grid_h, num_grid_w))
+        all_target_maps, all_neg_maps = results
+        assert num_imgs == len(all_target_maps) == len(all_neg_maps)
+        target_maps_list = images_to_levels(all_target_maps, num_level_anchors)
+        neg_maps_list = images_to_levels(all_neg_maps, num_level_anchors)
 
-        anchor_cxywh = torch.stack((grid_x, grid_y, anchor_w, anchor_h), dim=3)
+        # expand into map
+        for i in range(len(target_maps_list)):
+            h, w = featmap_sizes[i]
+            target_maps_list[i] = target_maps_list[i].reshape(
+                num_imgs, self.num_anchors, h, w, self.num_attrib)
+            neg_maps_list[i] = neg_maps_list[i].reshape(
+                num_imgs, self.num_anchors, h, w)
 
-        return anchor_cxywh
+        return target_maps_list, neg_maps_list
 
+    def _get_targets_single(self, anchors, gt_bboxes, gt_labels):
+        """Generate matching bounding box prior and converted GT.
 
-def iou_multiple_to_one(bboxes1, bbox2, center=False, zero_center=False):
-    """Calculate the IOUs between bboxes1 (multiple) and bbox2 (one).
+        Args:
+            anchors (list[Tensor]): Multi-level anchors of the image.
+            gt_bboxes (Tensor): Ground truth bboxes of single image.
+            gt_labels (Tensor): Ground truth labels of single image.
+            featmap_sizes (list[tuple[int]]): Sizes of the feature maps of
+                each scale level.
 
-    Args:
-        bboxes1: (Tensor) A n-D tensor representing first group of bboxes.
-            The dimension is (..., 4).
-            The last dimension represent the bbox, with coordinate (x, y, w, h)
-            or (cx, cy, w, h).
-        bbox2: (Tensor) A 1D tensor representing the second bbox.
-            The dimension is (4,).
-        center: (bool). Whether the bboxes are in format (cx, cy, w, h).
-        zero_center: (bool). Whether to align two bboxes so their center
-            is aligned.
+        Returns:
+            tuple:
+                target_map (Tensor): Predication target map of each
+                    scale level, shape (num_total_anchors,
+                    5+num_classes)
+                neg_map (Tensor): Negative map of each scale level,
+                    shape (num_total_anchors,)
+        """
 
-    Returns:
-        iou_: (Tensor) A (n-1)-D tensor representing the IOUs.
-            It has one less dim than bboxes1
-    """
+        grid_size = []
+        for i in range(len(anchors)):
+            grid_size.append(
+                torch.tensor(self.featmap_strides[i],
+                             device=gt_bboxes.device).repeat(len(anchors[i])))
+        concat_anchors = torch.cat(anchors)
 
-    epsilon = 1e-6
+        grid_size = torch.cat(grid_size)
+        assert len(grid_size) == len(concat_anchors)
+        assign_result = self.assigner.assign(concat_anchors, gt_bboxes)
+        sampling_result = self.sampler.sample(assign_result, concat_anchors,
+                                              gt_bboxes)
 
-    x1 = bboxes1[..., 0]
-    y1 = bboxes1[..., 1]
-    w1 = bboxes1[..., 2]
-    h1 = bboxes1[..., 3]
+        target_map = concat_anchors.new_zeros(
+            concat_anchors.size(0), self.num_attrib)
 
-    x2 = bbox2[0]
-    y2 = bbox2[1]
-    w2 = bbox2[2]
-    h2 = bbox2[3]
+        target_map[sampling_result.pos_inds, :4] = self.bbox_coder.encode(
+            concat_anchors[sampling_result.pos_inds],
+            gt_bboxes[sampling_result.pos_assigned_gt_inds],
+            grid_size[sampling_result.pos_inds])
 
-    area1 = w1 * h1
-    area2 = w2 * h2
+        target_map[sampling_result.pos_inds, 4] = 1
 
-    if zero_center:
-        w_intersect = torch.min(w1, w2).clamp(min=0)
-        h_intersect = torch.min(h1, h2).clamp(min=0)
-    else:
-        if center:
-            x1 = x1 - w1 / 2
-            y1 = y1 - h1 / 2
-            x2 = x2 - w2 / 2
-            y2 = y2 - h2 / 2
-        right1 = (x1 + w1)
-        right2 = (x2 + w2)
-        top1 = (y1 + h1)
-        top2 = (y2 + h2)
-        left1 = x1
-        left2 = x2
-        bottom1 = y1
-        bottom2 = y2
-        w_intersect = (torch.min(right1, right2) -
-                       torch.max(left1, left2)).clamp(min=0)
-        h_intersect = (torch.min(top1, top2) -
-                       torch.max(bottom1, bottom2)).clamp(min=0)
-    area_intersect = h_intersect * w_intersect
+        gt_labels_one_hot = F.one_hot(
+            gt_labels, num_classes=self.num_classes).float()
+        if self.one_hot_smoother != 0:  # label smooth
+            gt_labels_one_hot = gt_labels_one_hot * (
+                1 - self.one_hot_smoother
+            ) + self.one_hot_smoother / self.num_classes
+        target_map[sampling_result.pos_inds, 5:] = gt_labels_one_hot[
+            sampling_result.pos_assigned_gt_inds]
 
-    iou_ = area_intersect / (area1 + area2 - area_intersect + epsilon)
+        neg_map = concat_anchors.new_zeros(
+            concat_anchors.size(0), dtype=torch.uint8)
+        neg_map[sampling_result.neg_inds] = 1
 
-    return iou_
+        return target_map, neg_map

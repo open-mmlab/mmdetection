@@ -4,7 +4,7 @@ _base_ = [
 # model settings
 model = dict(
     type='YOLOV3',
-    pretrained='./pretrain_model/darknet53-7aecc596.pth',
+    pretrained='./pretrain_model/darknet53-a628ea1b.pth',
     backbone=dict(
         type='Darknet',
         depth=53,
@@ -19,20 +19,29 @@ model = dict(
     bbox_head=dict(
         type='YOLOV3Head',
         num_classes=80,
-        num_scales=3,
-        num_anchors_per_scale=3,
         in_channels=[512, 256, 128],
         out_channels=[1024, 512, 256],
-        strides=[32, 16, 8],
-        anchor_base_sizes=[
-            [(116, 90), (156, 198), (373, 326)],
-            [(30, 61), (62, 45), (59, 119)],
-            [(10, 13), (16, 30), (33, 23)],
-        ],
-    ))
+        anchor_generator=dict(
+            type='YOLOAnchorGenerator',
+            base_sizes=[
+                [(116, 90), (156, 198), (373, 326)],
+                [(30, 61), (62, 45), (59, 119)],
+                [(10, 13), (16, 30), (33, 23)],
+            ],
+            strides=[32, 16, 8]),
+        bbox_coder=dict(type='YOLOBBoxCoder'),
+        featmap_strides=[32, 16, 8]))
 # training and testing settings
 train_cfg = dict(
-    one_hot_smoother=0., ignore_config=0.5, xy_use_logit=False, debug=False)
+    assigner=dict(
+        type='MaxIoUAssigner',
+        # use low_quality only
+        pos_iou_thr=1.,
+        neg_iou_thr=0.5,
+        min_pos_iou=0.,
+        gt_max_assign_all=False,
+        match_low_quality=True,
+        ignore_iof_thr=-1))
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
