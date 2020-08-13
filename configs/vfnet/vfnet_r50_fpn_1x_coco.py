@@ -111,5 +111,4 @@ total_epochs = 12
 # runtime
 load_from = None
 resume_from = None
-work_dir = './work_dirs/vfnet_r50_fpn_gn-head_1x_coco'
 workflow = [('train', 1)]

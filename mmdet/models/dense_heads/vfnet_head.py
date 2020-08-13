@@ -268,13 +268,13 @@ class VFNetHead(AnchorFreeHead):
         # compute star deformable convolution offsets
         dcn_offset = self.star_dcn_offset(bbox_pred, self.gradient_mul, stride)
 
-        # refine bbox_pred
+        # refine the bbox_pred
         reg_feat = self.relu(self.vfnet_reg_refine_dconv(reg_feat, dcn_offset))
         bbox_pred_refine = scale_refine(
             self.vfnet_reg_refine(reg_feat)).float().exp()
         bbox_pred_refine = bbox_pred_refine * bbox_pred.detach()
 
-        # predict iou-aware cls score
+        # predict the iou-aware cls score
         cls_feat = self.relu(self.vfnet_cls_dconv(cls_feat, dcn_offset))
         cls_score = self.vfnet_cls(cls_feat)
 
@@ -404,7 +404,7 @@ class VFNetHead(AnchorFreeHead):
         pos_bbox_preds_refine = flatten_bbox_preds_refine[pos_inds]
         pos_labels = flatten_labels[pos_inds]
 
-        # sync num_pos from all gpus
+        # sync num_pos across all gpus
         num_gpus = get_num_gpus()
         if self.sync_num_pos:
             pos_inds_t = pos_inds.clone()
@@ -451,7 +451,7 @@ class VFNetHead(AnchorFreeHead):
                 weight=bbox_weights_rf,
                 avg_factor=bbox_avg_factor_rf)
 
-            # if use varifocal loss for training IoU-aware cls_scores
+            # build IoU-aware cls_score targets
             if self.use_vfl:
                 pos_ious = iou_targets_rf.clone().detach()
                 cls_iou_targets = torch.zeros_like(flatten_cls_scores)
@@ -512,7 +512,7 @@ class VFNetHead(AnchorFreeHead):
                 (n,) tensor where each item is the predicted class label of
                 the corresponding box.
         """
-        assert len(cls_scores) == len(bbox_preds)
+        assert len(cls_scores) == len(bbox_preds) == len(bbox_preds_refine)
         num_levels = len(cls_scores)
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
@@ -865,7 +865,7 @@ class VFNetHead(AnchorFreeHead):
 
         Returns:
             bbox_targets (list[Tensor]): Regression targets of each level in
-            the form of (l, t, r, b).
+                the form of (l, t, r, b).
         """
         assert len(decoded_bboxes) == len(mlvl_points)
         num_levels = len(decoded_bboxes)
