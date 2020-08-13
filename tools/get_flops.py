@@ -36,7 +36,7 @@ def main():
     if args.update_config is not None:
         cfg.merge_from_dict(args.update_config)
     model = build_detector(
-        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg).cuda()
+        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     model.eval()
 
     if hasattr(model, 'forward_dummy'):
