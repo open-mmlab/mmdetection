@@ -62,21 +62,16 @@ class Yolact(SingleStageDetector):
         Args:
             img (Tensor): of shape (N, C, H, W) encoding input images.
                 Typically these should be mean centered and std scaled.
-
             img_metas (list[dict]): list of image info dict where each dict
                 has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-
             gt_labels (list[Tensor]): class indices corresponding to each box
-
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
-
             gt_masks (None | Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
 
