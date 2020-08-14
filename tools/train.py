@@ -109,7 +109,7 @@ def main():
     logger.info('Environment info:\n' + dash_line + env_info + '\n' +
                 dash_line)
     meta['env_info'] = env_info
-    meta['config_dict'] = dict(cfg)
+    meta['config_dict'] = copy.deepcopy(dict(cfg))
     meta['config_file'] = osp.abspath(args.config)
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
