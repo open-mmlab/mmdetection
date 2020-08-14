@@ -15,7 +15,7 @@ def levels_to_images(mlvl_tensor):
 
     Args:
         mlvl_tensor (list[torch.Tensor]): list of Tensor which collect from
-            corresponding level. Each element shape (n,c,h,w)
+            corresponding level. Each element shape (N, C, H, W)
 
     Returns:
         list[torch.Tensor]: A list contains n tensors and each tensor
@@ -524,8 +524,10 @@ class PAAHead(ATSSHead):
             cfg.max_per_img,
             score_factors=None)
         if self.with_score_voting:
-            self.score_voting(det_bboxes, det_labels, mlvl_bboxes,
-                              mlvl_nms_scores, cfg.score_thr)
+            det_bboxes, det_labels = self.score_voting(det_bboxes, det_labels,
+                                                       mlvl_bboxes,
+                                                       mlvl_nms_scores,
+                                                       cfg.score_thr)
 
         return det_bboxes, det_labels
 
