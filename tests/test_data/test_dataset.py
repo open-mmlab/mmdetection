@@ -98,6 +98,106 @@ def _create_dummy_results():
     return [boxes]
 
 
+def test_dataset_evaluation():
+    tmp_dir = tempfile.TemporaryDirectory()
+    # create dummy data
+    fake_json_file = osp.join(tmp_dir.name, 'fake_data.json')
+    _create_dummy_coco_json(fake_json_file)
+
+    # test single coco dataset evaluation
+    coco_dataset = CocoDataset(
+        ann_file=fake_json_file, classes=('car', ), pipeline=[])
+    fake_results = _create_dummy_results()
+    eval_results = coco_dataset.evaluate(fake_results, classwise=True)
+    assert eval_results['bbox_mAP'] == 1
+    assert eval_results['bbox_mAP_50'] == 1
+    assert eval_results['bbox_mAP_75'] == 1
+
+    # test concat dataset evaluation
+    fake_concat_results = _create_dummy_results() + _create_dummy_results()
+
+    # build concat dataset through two config dict
+    coco_cfg = dict(
+        type='CocoDataset',
+        ann_file=fake_json_file,
+        classes=('car', ),
+        pipeline=[])
+    concat_cfgs = [coco_cfg, coco_cfg]
+    concat_dataset = build_dataset(concat_cfgs)
+    eval_results = concat_dataset.evaluate(fake_concat_results)
+    assert eval_results['0_bbox_mAP'] == 1
+    assert eval_results['0_bbox_mAP_50'] == 1
+    assert eval_results['0_bbox_mAP_75'] == 1
+    assert eval_results['1_bbox_mAP'] == 1
+    assert eval_results['1_bbox_mAP_50'] == 1
+    assert eval_results['1_bbox_mAP_75'] == 1
+
+    # build concat dataset through concatenated ann_file
+    coco_cfg = dict(
+        type='CocoDataset',
+        ann_file=[fake_json_file, fake_json_file],
+        classes=('car', ),
+        pipeline=[])
+    concat_dataset = build_dataset(coco_cfg)
+    eval_results = concat_dataset.evaluate(fake_concat_results)
+    assert eval_results['0_bbox_mAP'] == 1
+    assert eval_results['0_bbox_mAP_50'] == 1
+    assert eval_results['0_bbox_mAP_75'] == 1
+    assert eval_results['1_bbox_mAP'] == 1
+    assert eval_results['1_bbox_mAP_50'] == 1
+    assert eval_results['1_bbox_mAP_75'] == 1
+
+    # create dummy data
+    fake_pkl_file = osp.join(tmp_dir.name, 'fake_data.pkl')
+    _create_dummy_custom_pkl(fake_pkl_file)
+
+    # test single custom dataset evaluation
+    custom_dataset = CustomDataset(
+        ann_file=fake_pkl_file, classes=('car', ), pipeline=[])
+    fake_results = _create_dummy_results()
+    eval_results = custom_dataset.evaluate(fake_results)
+    assert eval_results['mAP'] == 1
+
+    # test concat dataset evaluation
+    fake_concat_results = _create_dummy_results() + _create_dummy_results()
+
+    # build concat dataset through two config dict
+    custom_cfg = dict(
+        type='CustomDataset',
+        ann_file=fake_pkl_file,
+        classes=('car', ),
+        pipeline=[])
+    concat_cfgs = [custom_cfg, custom_cfg]
+    concat_dataset = build_dataset(concat_cfgs)
+    eval_results = concat_dataset.evaluate(fake_concat_results)
+    assert eval_results['0_mAP'] == 1
+    assert eval_results['1_mAP'] == 1
+
+    # build concat dataset through concatenated ann_file
+    concat_cfg = dict(
+        type='CustomDataset',
+        ann_file=[fake_pkl_file, fake_pkl_file],
+        classes=('car', ),
+        pipeline=[])
+    concat_dataset = build_dataset(concat_cfg)
+    eval_results = concat_dataset.evaluate(fake_concat_results)
+    assert eval_results['0_mAP'] == 1
+    assert eval_results['1_mAP'] == 1
+
+    # build concat dataset through explict type
+    concat_cfg = dict(
+        type='ConcatDataset',
+        datasets=[custom_cfg, custom_cfg],
+        separate_eval=False)
+    concat_dataset = build_dataset(concat_cfg)
+    eval_results = concat_dataset.evaluate(fake_concat_results, metric='mAP')
+    assert eval_results['mAP'] == 1
+    assert len(concat_dataset.datasets[0].data_infos) == \
+        len(concat_dataset.datasets[1].data_infos)
+    assert len(concat_dataset.datasets[0].data_infos) == 1
+    tmp_dir.cleanup()
+
+
 @pytest.mark.parametrize('dataset',
                          ['CocoDataset', 'VOCDataset', 'CityscapesDataset'])
 def test_custom_classes_override_default(dataset):
@@ -243,103 +343,3 @@ def test_dataset_wrapper():
     for idx in np.random.randint(0, len(repeat_factor_dataset), 3):
         assert repeat_factor_dataset[idx] == bisect.bisect_right(
             repeat_factors_cumsum, idx)
-
-
-def test_dataset_evaluation():
-    tmp_dir = tempfile.TemporaryDirectory()
-    # create dummy data
-    fake_json_file = osp.join(tmp_dir.name, 'fake_data.json')
-    _create_dummy_coco_json(fake_json_file)
-
-    # test single coco dataset evaluation
-    coco_dataset = CocoDataset(
-        ann_file=fake_json_file, classes=('car', ), pipeline=[])
-    fake_results = _create_dummy_results()
-    eval_results = coco_dataset.evaluate(fake_results, classwise=True)
-    assert eval_results['bbox_mAP'] == 1
-    assert eval_results['bbox_mAP_50'] == 1
-    assert eval_results['bbox_mAP_75'] == 1
-
-    # test concat dataset evaluation
-    fake_concat_results = _create_dummy_results() + _create_dummy_results()
-
-    # build concat dataset through two config dict
-    coco_cfg = dict(
-        type='CocoDataset',
-        ann_file=fake_json_file,
-        classes=('car', ),
-        pipeline=[])
-    concat_cfgs = [coco_cfg, coco_cfg]
-    concat_dataset = build_dataset(concat_cfgs)
-    eval_results = concat_dataset.evaluate(fake_concat_results)
-    assert eval_results['0_bbox_mAP'] == 1
-    assert eval_results['0_bbox_mAP_50'] == 1
-    assert eval_results['0_bbox_mAP_75'] == 1
-    assert eval_results['1_bbox_mAP'] == 1
-    assert eval_results['1_bbox_mAP_50'] == 1
-    assert eval_results['1_bbox_mAP_75'] == 1
-
-    # build concat dataset through concatenated ann_file
-    coco_cfg = dict(
-        type='CocoDataset',
-        ann_file=[fake_json_file, fake_json_file],
-        classes=('car', ),
-        pipeline=[])
-    concat_dataset = build_dataset(coco_cfg)
-    eval_results = concat_dataset.evaluate(fake_concat_results)
-    assert eval_results['0_bbox_mAP'] == 1
-    assert eval_results['0_bbox_mAP_50'] == 1
-    assert eval_results['0_bbox_mAP_75'] == 1
-    assert eval_results['1_bbox_mAP'] == 1
-    assert eval_results['1_bbox_mAP_50'] == 1
-    assert eval_results['1_bbox_mAP_75'] == 1
-
-    # create dummy data
-    fake_pkl_file = osp.join(tmp_dir.name, 'fake_data.pkl')
-    _create_dummy_custom_pkl(fake_pkl_file)
-
-    # test single custom dataset evaluation
-    custom_dataset = CustomDataset(
-        ann_file=fake_pkl_file, classes=('car', ), pipeline=[])
-    fake_results = _create_dummy_results()
-    eval_results = custom_dataset.evaluate(fake_results)
-    assert eval_results['mAP'] == 1
-
-    # test concat dataset evaluation
-    fake_concat_results = _create_dummy_results() + _create_dummy_results()
-
-    # build concat dataset through two config dict
-    custom_cfg = dict(
-        type='CustomDataset',
-        ann_file=fake_pkl_file,
-        classes=('car', ),
-        pipeline=[])
-    concat_cfgs = [custom_cfg, custom_cfg]
-    concat_dataset = build_dataset(concat_cfgs)
-    eval_results = concat_dataset.evaluate(fake_concat_results)
-    assert eval_results['0_mAP'] == 1
-    assert eval_results['1_mAP'] == 1
-
-    # build concat dataset through concatenated ann_file
-    concat_cfg = dict(
-        type='CustomDataset',
-        ann_file=[fake_pkl_file, fake_pkl_file],
-        classes=('car', ),
-        pipeline=[])
-    concat_dataset = build_dataset(concat_cfg)
-    eval_results = concat_dataset.evaluate(fake_concat_results)
-    assert eval_results['0_mAP'] == 1
-    assert eval_results['1_mAP'] == 1
-
-    # build concat dataset through explict type
-    concat_cfg = dict(
-        type='ConcatDataset',
-        datasets=[custom_cfg, custom_cfg],
-        separate_eval=False)
-    concat_dataset = build_dataset(concat_cfg)
-    eval_results = concat_dataset.evaluate(fake_concat_results, metric='mAP')
-    assert eval_results['mAP'] == 1
-    assert len(concat_dataset.datasets[0].data_infos) == \
-        len(concat_dataset.datasets[1].data_infos)
-    assert len(concat_dataset.datasets[0].data_infos) == 1
-    tmp_dir.cleanup()
