@@ -214,25 +214,17 @@ class YOLOV3Head(BaseDenseHead):
         ]
         multi_lvl_anchors = self.anchor_generator.grid_anchors(
             featmap_sizes, pred_maps_list[0][0].device)
-        for i in range(num_levels):
-            # for each scale, reshape to (num_anchors, h, w, 4)
-            multi_lvl_anchors[i] = multi_lvl_anchors[i].view(
-                *pred_maps_list[i].shape[-2:], self.num_anchors,
-                4).permute(2, 0, 1, 3)
         for i in range(self.num_levels):
             # get some key info for current scale
             pred_map = pred_maps_list[i]
-            h, w = featmap_sizes[i]
             stride = self.featmap_strides[i]
 
-            # for each scale, reshape to (num_anchors, h, w, 5+num_classes)
-            pred_map = pred_map.view(self.num_anchors, self.num_attrib, h,
-                                     w).permute(0, 2, 3, 1).contiguous()
+            # (h, w, num_anchors*num_attrib) -> (h*w*num_anchors, num_attrib)
+            pred_map = pred_map.permute(1, 2, 0).reshape(-1, self.num_attrib)
 
             pred_map[..., :2] = torch.sigmoid(pred_map[..., :2])
             bbox_pred = self.bbox_coder.decode(multi_lvl_anchors[i],
-                                               pred_map[..., :4], stride).view(
-                                                   (-1, 4))
+                                               pred_map[..., :4], stride)
             # conf and cls
             conf_pred = torch.sigmoid(pred_map[..., 4]).view(-1)
             cls_pred = torch.sigmoid(pred_map[..., 5:]).view(
@@ -311,30 +303,18 @@ class YOLOV3Head(BaseDenseHead):
         """
         num_imgs = len(img_metas)
 
-        # losses = {'loss_xy': 0, 'loss_wh': 0, 'loss_conf': 0, 'loss_cls': 0}
-
-        reshaped_pred_maps = []
         featmap_sizes = [
             pred_maps[i].shape[-2:] for i in range(self.num_levels)
         ]
         multi_level_anchors = self.anchor_generator.grid_anchors(
             featmap_sizes, pred_maps[0][0].device)
-        for i in range(self.num_levels):
-            # reshape to (num_anchors, h, w, 5+num_classes) for each level
-            h, w = featmap_sizes[i]
-            multi_level_anchors[i] = multi_level_anchors[i].view(
-                h, w, self.num_anchors, 4).permute(2, 0, 1, 3).reshape(-1, 4)
-            reshaped_pred_maps.append(pred_maps[i].view(
-                num_imgs, self.num_anchors, self.num_attrib, h,
-                w).permute(0, 1, 3, 4, 2).contiguous())
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
         target_maps_list, neg_maps_list = self.get_targets(
-            anchor_list, gt_bboxes, gt_labels, featmap_sizes)
+            anchor_list, gt_bboxes, gt_labels)
 
         losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
-            self.loss_single, reshaped_pred_maps, target_maps_list,
-            neg_maps_list)
+            self.loss_single, pred_maps, target_maps_list, neg_maps_list)
 
         return dict(
             loss_cls=losses_cls,
@@ -358,6 +338,9 @@ class YOLOV3Head(BaseDenseHead):
                 loss_wh (Tensor): Regression loss of w, h coordinate.
         """
 
+        num_imgs = len(pred_map)
+        pred_map = pred_map.permute(0, 2, 3,
+                                    1).reshape(num_imgs, -1, self.num_attrib)
         neg_mask = neg_map.float()
         pos_mask = target_map[..., 4]
         pos_and_neg_mask = neg_mask + pos_mask
@@ -407,8 +390,7 @@ class YOLOV3Head(BaseDenseHead):
 
         return loss_cls, loss_conf, loss_xy, loss_wh
 
-    def get_targets(self, anchor_list, gt_bboxes_list, gt_labels_list,
-                    featmap_sizes):
+    def get_targets(self, anchor_list, gt_bboxes_list, gt_labels_list):
         """Compute target maps for anchors in multiple images.
 
         Args:
@@ -418,8 +400,6 @@ class YOLOV3Head(BaseDenseHead):
                 the inner list is a tensor of shape (num_total_anchors, 4).
             gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
             gt_labels_list (list[Tensor]): Ground truth labels of each box.
-            featmap_sizes (list[tuple[int]]): Sizes of the feature maps of
-                each scale level.
 
         Returns:
             tuple: Usually returns a tuple containing learning targets.
@@ -439,13 +419,13 @@ class YOLOV3Head(BaseDenseHead):
         target_maps_list = images_to_levels(all_target_maps, num_level_anchors)
         neg_maps_list = images_to_levels(all_neg_maps, num_level_anchors)
 
-        # expand into map
-        for i in range(len(target_maps_list)):
-            h, w = featmap_sizes[i]
-            target_maps_list[i] = target_maps_list[i].reshape(
-                num_imgs, self.num_anchors, h, w, self.num_attrib)
-            neg_maps_list[i] = neg_maps_list[i].reshape(
-                num_imgs, self.num_anchors, h, w)
+        # # expand into map
+        # for i in range(len(target_maps_list)):
+        #     h, w = featmap_sizes[i]
+        #     target_maps_list[i] = target_maps_list[i].reshape(
+        #         num_imgs, self.num_anchors, h, w, self.num_attrib)
+        #     neg_maps_list[i] = neg_maps_list[i].reshape(
+        #         num_imgs, self.num_anchors, h, w)
 
         return target_maps_list, neg_maps_list
 
@@ -468,15 +448,15 @@ class YOLOV3Head(BaseDenseHead):
                     shape (num_total_anchors,)
         """
 
-        grid_size = []
+        anchor_strides = []
         for i in range(len(anchors)):
-            grid_size.append(
+            anchor_strides.append(
                 torch.tensor(self.featmap_strides[i],
                              device=gt_bboxes.device).repeat(len(anchors[i])))
         concat_anchors = torch.cat(anchors)
 
-        grid_size = torch.cat(grid_size)
-        assert len(grid_size) == len(concat_anchors)
+        anchor_strides = torch.cat(anchor_strides)
+        assert len(anchor_strides) == len(concat_anchors)
         assign_result = self.assigner.assign(concat_anchors, gt_bboxes)
         sampling_result = self.sampler.sample(assign_result, concat_anchors,
                                               gt_bboxes)
@@ -487,7 +467,7 @@ class YOLOV3Head(BaseDenseHead):
         target_map[sampling_result.pos_inds, :4] = self.bbox_coder.encode(
             concat_anchors[sampling_result.pos_inds],
             gt_bboxes[sampling_result.pos_assigned_gt_inds],
-            grid_size[sampling_result.pos_inds])
+            anchor_strides[sampling_result.pos_inds])
 
         target_map[sampling_result.pos_inds, 4] = 1
 

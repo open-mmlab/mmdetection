@@ -6,21 +6,30 @@ from .base_bbox_coder import BaseBBoxCoder
 
 @BBOX_CODERS.register_module()
 class YOLOBBoxCoder(BaseBBoxCoder):
-    """YOLO BBox coder."""
+    """YOLO BBox coder.
+
+    Following `YOLO <https://arxiv.org/abs/1506.02640>`_, this coder divide
+    image into grids, and encode bbox (x1, y1, x2, y2) into (cx, cy, dw, dh).
+    cx, cy in [0., 1.], denotes relative center position w.r.t the center of
+    bboxes. dw, dh are the same as :obj:`DeltaXYWHBBoxCoder`.
+
+    Args:
+        epsilon (float): Min value of cx, cy when encoding.
+    """
 
     def __init__(self, epsilon=1e-6):
         super(BaseBBoxCoder, self).__init__()
         self.epsilon = epsilon
 
-    def encode(self, bboxes, gt_bboxes, grid_size):
+    def encode(self, bboxes, gt_bboxes, stride):
         """Get box regression transformation deltas that can be used to
         transform the ``bboxes`` into the ``gt_bboxes``.
 
         Args:
-            bboxes (torch.Tensor): Source boxes, e.g., object proposals.
+            bboxes (torch.Tensor): Source boxes, e.g., anchors.
             gt_bboxes (torch.Tensor): Target of the transformation, e.g.,
                 ground-truth boxes.
-            grid_size (torch.Tensor | int): Grid size to encode ground truth.
+            stride (torch.Tensor | int): Stride of bboxes.
 
         Returns:
             torch.Tensor: Box transformation deltas
@@ -38,21 +47,21 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         h = bboxes[..., 3] - bboxes[..., 1]
         w_target = torch.log((w_gt / w).clamp(min=self.epsilon))
         h_target = torch.log((h_gt / h).clamp(min=self.epsilon))
-        x_center_target = ((x_center_gt - x_center) / grid_size + 0.5).clamp(
+        x_center_target = ((x_center_gt - x_center) / stride + 0.5).clamp(
             self.epsilon, 1 - self.epsilon)
-        y_center_target = ((y_center_gt - y_center) / grid_size + 0.5).clamp(
+        y_center_target = ((y_center_gt - y_center) / stride + 0.5).clamp(
             self.epsilon, 1 - self.epsilon)
         encoded_bboxes = torch.stack(
             [x_center_target, y_center_target, w_target, h_target], dim=-1)
         return encoded_bboxes
 
-    def decode(self, bboxes, pred_bboxes, grid_size):
+    def decode(self, bboxes, pred_bboxes, stride):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            boxes (torch.Tensor): Basic boxes.
+            boxes (torch.Tensor): Basic boxes, e.g. anchors.
             pred_bboxes (torch.Tensor): Encoded boxes with shape
-            grid_size (torch.Tensor | int): Grid size to decode predication.
+            stride (torch.Tensor | int): Strides of bboxes.
 
         Returns:
             torch.Tensor: Decoded boxes.
@@ -64,8 +73,8 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         w = bboxes[..., 2] - bboxes[..., 0]
         h = bboxes[..., 3] - bboxes[..., 1]
         # Get outputs x, y
-        x_center_pred = (pred_bboxes[..., 0] - 0.5) * grid_size + x_center
-        y_center_pred = (pred_bboxes[..., 1] - 0.5) * grid_size + y_center
+        x_center_pred = (pred_bboxes[..., 0] - 0.5) * stride + x_center
+        y_center_pred = (pred_bboxes[..., 1] - 0.5) * stride + y_center
         w_pred = torch.exp(pred_bboxes[..., 2]) * w
         h_pred = torch.exp(pred_bboxes[..., 3]) * h
 

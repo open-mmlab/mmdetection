@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, xavier_init
+from mmcv.cnn import ConvModule
 
 from ..builder import NECKS
 
@@ -129,6 +129,6 @@ class YOLOV3Neck(nn.Module):
         return tuple(outs)
 
     def init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                xavier_init(m, distribution='uniform')
+        """Initialize the weights of module."""
+        # init is done in ConvModule
+        pass
