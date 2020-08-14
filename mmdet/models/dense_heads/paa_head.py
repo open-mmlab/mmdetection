@@ -53,7 +53,7 @@ class PAAHead(ATSSHead):
     def __init__(self, *args, topk=9, score_voting=True, **kwargs):
         # topk used in paa reassign process
         self.topk = topk
-        self.score_voting = score_voting
+        self.with_score_voting = score_voting
         super(PAAHead, self).__init__(*args, **kwargs)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
@@ -474,7 +474,8 @@ class PAAHead(ATSSHead):
 
         This method is almost same as `ATSSHead._get_bboxes_single()`.
         We use sqrt(iou_preds * cls_scores) in NMS process instead of just
-        cls_scores.
+        cls_scores.Besides can use score voting when set score voting as
+        True.
         """
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
@@ -514,30 +515,83 @@ class PAAHead(ATSSHead):
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         mlvl_iou_preds = torch.cat(mlvl_iou_preds)
-
+        mlvl_nms_scores = (mlvl_scores * mlvl_iou_preds[:, None]).sqrt()
         det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes, (mlvl_scores * mlvl_iou_preds[:, None]).sqrt(),
+            mlvl_bboxes,
+            mlvl_nms_scores,
             cfg.score_thr,
             cfg.nms,
             cfg.max_per_img,
             score_factors=None)
-        if self.score_voting:
-            self.score_voting(det_labels, det_bboxes, mlvl_bboxes, mlvl_scores)
+        if self.with_score_voting:
+            self.score_voting(det_bboxes, det_labels, mlvl_bboxes,
+                              mlvl_nms_scores, cfg.score_thr)
 
         return det_bboxes, det_labels
 
-    def score_voting(self, det_bboxes, det_labels, mlvl_bboxes, mlvl_scores):
+    def score_voting(self, det_bboxes, det_labels, mlvl_bboxes,
+                     mlvl_nms_scores, score_thr):
         """Implementation of score voting method works on each remaining boxes
         after NMS procedure.
 
         Args:
             det_bboxes (Tensor): Remaining boxes after NMS procedure,
-                with shape (k, 5), last dimesion means (x1,x2,y1,y1,score).
+                with shape (k, 5), each dimension means
+                (x1, y1, x2, y2, score).
             det_labels (Tensor): The label of remaining boxes, with shape
                 (k, 1),Labels are 0-based.
             mlvl_bboxes (Tensor): All boxes before the NMS procedure,
                 with shape (num_anchors,4).
-            mlvl_scores (Tensor): The scores of all boxes befor the NMS
-                procedure, with shape (num_anchors, num_class)
+            mlvl_nms_scores (Tensor): The scores of all boxes which is used
+                in the NMS procedure, with shape (num_anchors, num_class)
+            mlvl_iou_preds (Tensot): The predictions of IOU of all boxes
+                before the NMS procedure, with shape (num_anchors, 1)
+            score_thr (float): The score threshold of bboxes.
+
+        Returns:
+            tuple: Usually returns a tuple containing voting results.
+
+                - det_bboxes_voted (Tensor): Remaining boxes after
+                    score voting procedure, with shape (k, 5), each
+                    dimension means (x1, y1, x2, y2, score).
+                - det_labels_voted (Tensor): Label of remaining bboxes
+                    after voting, with shape (num_anchors,).
         """
-        pass
+        candidate_mask = mlvl_nms_scores > score_thr
+        candidate_mask_nozeros = candidate_mask.nonzero()
+        candidate_inds = candidate_mask_nozeros[:, 0]
+        candidate_labels = candidate_mask_nozeros[:, 1]
+        candidate_bboxes = mlvl_bboxes[candidate_inds]
+        candidate_scores = mlvl_nms_scores[candidate_mask]
+        det_bboxes_voted = []
+        det_labels_voted = []
+        for cls in range(self.cls_out_channels):
+            candidate_cls_mask = candidate_labels == cls
+            if not candidate_cls_mask.any():
+                continue
+            candidate_cls_scores = candidate_scores[candidate_cls_mask]
+            candidate_cls_bboxes = candidate_bboxes[candidate_cls_mask]
+            det_cls_mask = det_labels == cls
+            det_cls_bboxes = det_bboxes[det_cls_mask].view(
+                -1, det_bboxes.size(-1))
+            det_candidate_ious = bbox_overlaps(det_cls_bboxes[:, :4],
+                                               candidate_cls_bboxes)
+            for det_ind in range(len(det_cls_bboxes)):
+                single_det_ious = det_candidate_ious[det_ind]
+                pos_ious_mask = single_det_ious > 0.01
+                pos_ious = single_det_ious[pos_ious_mask]
+                pos_bboxes = candidate_cls_bboxes[pos_ious_mask]
+                pos_scores = candidate_cls_scores[pos_ious_mask]
+                pis = (torch.exp(-(1 - pos_ious)**2 / 0.025) *
+                       pos_scores)[:, None]
+                voted_box = torch.sum(
+                    pis * pos_bboxes, dim=0) / torch.sum(
+                        pis, dim=0)
+                voted_score = det_cls_bboxes[det_ind][-1:][None, :]
+                det_bboxes_voted.append(
+                    torch.cat((voted_box[None, :], voted_score), dim=1))
+                det_labels_voted.append(cls)
+
+        det_bboxes_voted = torch.cat(det_bboxes_voted, dim=0)
+        det_labels_voted = det_labels.new_tensor(det_labels_voted)
+        return det_bboxes_voted, det_labels_voted
