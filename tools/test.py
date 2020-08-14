@@ -173,7 +173,10 @@ def main():
         if args.format_only:
             dataset.format_results(outputs, **kwargs)
         if args.eval:
-            dataset.evaluate(outputs, args.eval, **kwargs)
+            eval_kwargs = cfg.get('evaluation', {}).copy()
+            eval_kwargs.pop('interval', None)
+            eval_kwargs.update(dict(metric=args.eval, **kwargs))
+            print(dataset.evaluate(outputs, **eval_kwargs))
 
 
 if __name__ == '__main__':
