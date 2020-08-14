@@ -7,6 +7,7 @@ from mmcv.utils import print_log
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
 from .builder import DATASETS
+from .coco import CocoDataset
 
 
 @DATASETS.register_module()
@@ -25,11 +26,11 @@ class ConcatDataset(_ConcatDataset):
         self.CLASSES = datasets[0].CLASSES
         self.separate_eval = separate_eval
         if not separate_eval:
-            if any([ds['type'] == 'CocoDataset' for ds in datasets]):
+            if any([isinstance(ds, CocoDataset) for ds in datasets]):
                 raise NotImplementedError(
                     'Evaluating concatenated CocoDataset as a whole is not'
                     ' supported! Please set "separate_eval=True"')
-            elif len(set([ds['type'] for ds in datasets])) != 1:
+            elif len(set([type(ds) for ds in datasets])) != 1:
                 raise NotImplementedError(
                     'All the datasets should have same types')
 
@@ -61,13 +62,13 @@ class ConcatDataset(_ConcatDataset):
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
 
-    def evaluate(self, results, metric, logger=None, **kwargs):
+    def evaluate(self, results, metric='bbox', logger=None, **kwargs):
         """Evaluate the results.
 
         Args:
             results (list[list | tuple]): Testing results of the dataset.
             metric (str | list[str]): Metrics to be evaluated. Options are
-                'bbox', 'segm', 'proposal', 'proposal_fast'.
+                'bbox', 'segm', 'proposal', 'proposal_fast', 'mAP'.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
 
@@ -76,7 +77,8 @@ class ConcatDataset(_ConcatDataset):
             dataset if `self.separate_eval=True`.
         """
         assert len(results) == self.cumulative_sizes[-1], \
-            f'wrong sizes{self.cumulative_sizes[-1]} v.s. {len(results)}'
+            ('Dataset and results have different sizes: '
+             f'{self.cumulative_sizes[-1]} v.s. {len(results)}')
 
         if self.separate_eval:
             dataset_idx = -1
@@ -99,19 +101,19 @@ class ConcatDataset(_ConcatDataset):
                     total_eval_results.update({f'{dataset_idx}_{k}': v})
 
             return total_eval_results
-        elif any([ds['type'] == 'CocoDataset' for ds in self.datasets]):
+        elif any([isinstance(ds, CocoDataset) for ds in self.datasets]):
             raise NotImplementedError(
                 'Evaluating concatenated CocoDataset as a whole is not'
                 ' supported! Please set "separate_eval=True"')
-        elif len(set([ds['type'] for ds in self.datasets])) != 1:
+        elif len(set([type(ds) for ds in self.datasets])) != 1:
             raise NotImplementedError(
                 'All the datasets should have same types')
         else:
             original_data_infos = self.datasets[0].data_infos
-            self.dataset[0].data_infos = sum(
+            self.datasets[0].data_infos = sum(
                 [dataset.data_infos for dataset in self.datasets], [])
-            eval_results = self.dataset[0].evaluate(results, metric, **kwargs)
-            self.dataset[0].data_infos = original_data_infos
+            eval_results = self.datasets[0].evaluate(results, metric, **kwargs)
+            self.datasets[0].data_infos = original_data_infos
             return eval_results
 
 
