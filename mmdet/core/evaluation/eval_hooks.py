@@ -10,25 +10,29 @@ class EvalHook(Hook):
     Attributes:
         dataloader (DataLoader): A PyTorch dataloader.
         interval (int): Evaluation interval (by epochs). Default: 1.
+        start (int, optional): Evaluation starting epoch. If None, whether to
+          evaluate is merely decided by ``interval``. Default: None.
         init_eval (bool): Evaluation before run. It is useful when loading a
           checkpoint. Default: False
     """
 
-    def __init__(self, dataloader, interval=1, init_eval=False, **eval_kwargs):
+    def __init__(self, dataloader, interval=1, start=None, **eval_kwargs):
         if not isinstance(dataloader, DataLoader):
             raise TypeError('dataloader must be a pytorch DataLoader, but got'
                             f' {type(dataloader)}')
         self.dataloader = dataloader
         self.interval = interval
-        self.init_eval = init_eval
+        self.start = start
         self.eval_kwargs = eval_kwargs
 
     def before_run(self, runner):
         """Evaluate the model at the start of training."""
-        if self.init_eval:
+        if self.start is not None and runner.epoch >= self.start:
             self.after_train_epoch(runner)
 
     def after_train_epoch(self, runner):
+        if self.start is not None and (runner.epoch + 1) < self.start:
+            return
         if not self.every_n_epochs(runner, self.interval):
             return
         from mmdet.apis import single_gpu_test
@@ -51,8 +55,8 @@ class DistEvalHook(EvalHook):
         interval (int): Evaluation interval (by epochs). Default: 1.
         tmpdir (str | None): Temporary directory to save the results of all
             processes. Default: None.
-        init_eval (bool): Evaluation before run. It is useful when loading a
-          checkpoint. Default: False
+        start (int, optional): Evaluation starting epoch. If None, whether to
+            evaluate is merely decided by ``interval``. Default: None.
         gpu_collect (bool): Whether to use gpu or cpu to collect results.
             Default: False.
     """
@@ -60,7 +64,7 @@ class DistEvalHook(EvalHook):
     def __init__(self,
                  dataloader,
                  interval=1,
-                 init_eval=False,
+                 start=None,
                  gpu_collect=False,
                  **eval_kwargs):
         if not isinstance(dataloader, DataLoader):
@@ -68,11 +72,13 @@ class DistEvalHook(EvalHook):
                             f'{type(dataloader)}')
         self.dataloader = dataloader
         self.interval = interval
-        self.init_eval = init_eval
+        self.start = start
         self.gpu_collect = gpu_collect
         self.eval_kwargs = eval_kwargs
 
     def after_train_epoch(self, runner):
+        if self.start is not None and (runner.epoch + 1) < self.start:
+            return
         if not self.every_n_epochs(runner, self.interval):
             return
         from mmdet.apis import multi_gpu_test
