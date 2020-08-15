@@ -11,9 +11,9 @@ class EvalHook(Hook):
         dataloader (DataLoader): A PyTorch dataloader.
         interval (int): Evaluation interval (by epochs). Default: 1.
         start (int, optional): Evaluation starting epoch. If None, whether to
-          evaluate is merely decided by ``interval``. Default: None.
-        init_eval (bool): Evaluation before run. It is useful when loading a
-          checkpoint. Default: False
+            evaluate is merely decided by ``interval``. Default: None.
+        **eval_kwargs: Evaluation arguments fed into the evaluate function of
+            the dataset.
     """
 
     def __init__(self, dataloader, interval=1, start=None, **eval_kwargs):
@@ -59,6 +59,8 @@ class DistEvalHook(EvalHook):
             evaluate is merely decided by ``interval``. Default: None.
         gpu_collect (bool): Whether to use gpu or cpu to collect results.
             Default: False.
+        **eval_kwargs: Evaluation arguments fed into the evaluate function of
+            the dataset.
     """
 
     def __init__(self,
