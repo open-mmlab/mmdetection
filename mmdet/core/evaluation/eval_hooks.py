@@ -12,7 +12,7 @@ class EvalHook(Hook):
         interval (int): Evaluation interval (by epochs). Default: 1.
         start (int, optional): Evaluation starting epoch. It enables evaluation
             before the training starts if ``start`` <= the resuming epoch.
-            If None, whether to evaluate is merely decided by``interval``.
+            If None, whether to evaluate is merely decided by ``interval``.
             Default: None.
         **eval_kwargs: Evaluation arguments fed into the evaluate function of
             the dataset.
@@ -59,7 +59,7 @@ class DistEvalHook(EvalHook):
             processes. Default: None.
         start (int, optional): Evaluation starting epoch. It enables evaluation
             before the training starts if ``start`` <= the resuming epoch.
-            If None, whether to evaluate is merely decided by``interval``.
+            If None, whether to evaluate is merely decided by ``interval``.
             Default: None.
         gpu_collect (bool): Whether to use gpu or cpu to collect results.
             Default: False.
@@ -70,6 +70,7 @@ class DistEvalHook(EvalHook):
     def __init__(self,
                  dataloader,
                  interval=1,
+                 tmpdir=None,
                  start=None,
                  gpu_collect=False,
                  **eval_kwargs):
@@ -78,6 +79,7 @@ class DistEvalHook(EvalHook):
                             f'{type(dataloader)}')
         self.dataloader = dataloader
         self.interval = interval
+        self.tmpdir = tmpdir
         self.start = start
         self.gpu_collect = gpu_collect
         self.eval_kwargs = eval_kwargs
@@ -88,10 +90,13 @@ class DistEvalHook(EvalHook):
         if not self.every_n_epochs(runner, self.interval):
             return
         from mmdet.apis import multi_gpu_test
+        tmpdir = self.tmpdir
+        if tmpdir is None:
+            tmpdir = osp.join(runner.work_dir, '.eval_hook')
         results = multi_gpu_test(
             runner.model,
             self.dataloader,
-            tmpdir=osp.join(runner.work_dir, '.eval_hook'),
+            tmpdir=tmpdir,
             gpu_collect=self.gpu_collect)
         if runner.rank == 0:
             print('\n')
