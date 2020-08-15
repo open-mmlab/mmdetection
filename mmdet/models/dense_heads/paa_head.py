@@ -1,4 +1,3 @@
-import sklearn.mixture as skm
 import torch
 
 from mmdet.core import (anchor_inside_flags, force_fp32, multi_apply,
@@ -266,6 +265,11 @@ class PAAHead(ATSSHead):
             means_init = [[min_loss], [max_loss]]
             weights_init = [0.5, 0.5]
             precisions_init = [[[1.0]], [[1.0]]]
+            try:
+                import sklearn.mixture as skm
+            except ImportError:
+                raise ImportError('Please run "pip install sklearn" '
+                                  'to install sklearn first.')
             gmm = skm.GaussianMixture(
                 2,
                 weights_init=weights_init,
