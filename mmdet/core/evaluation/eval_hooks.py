@@ -26,11 +26,15 @@ class EvalHook(Hook):
         self.interval = interval
         self.start = start
         self.eval_kwargs = eval_kwargs
+        self.initial_epoch_flag = True
 
-    def before_run(self, runner):
-        """Evaluate the model at the start of training."""
+    def before_train_epoch(self, runner):
+        """Evaluate the model only at the start of training."""
+        if not self.initial_epoch_flag:
+            return
         if self.start is not None and runner.epoch >= self.start:
             self.after_train_epoch(runner)
+        self.initial_epoch_flag = False
 
     def after_train_epoch(self, runner):
         if self.start is not None and (runner.epoch + 1) < self.start:
@@ -74,15 +78,10 @@ class DistEvalHook(EvalHook):
                  start=None,
                  gpu_collect=False,
                  **eval_kwargs):
-        if not isinstance(dataloader, DataLoader):
-            raise TypeError('dataloader must be a pytorch DataLoader, but got '
-                            f'{type(dataloader)}')
-        self.dataloader = dataloader
-        self.interval = interval
+        super().__init__(
+            dataloader, interval=interval, start=start, **eval_kwargs)
         self.tmpdir = tmpdir
-        self.start = start
         self.gpu_collect = gpu_collect
-        self.eval_kwargs = eval_kwargs
 
     def after_train_epoch(self, runner):
         if self.start is not None and (runner.epoch + 1) < self.start:
