@@ -109,8 +109,7 @@ class RPN(BaseDetector):
             for proposals, meta in zip(proposal_list, img_metas):
                 proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])
 
-        # TODO: remove this restriction
-        return proposal_list[0].cpu().numpy()
+        return [proposal.cpu().numpy() for proposal in proposal_list]
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test function with test time augmentation.
@@ -135,8 +134,7 @@ class RPN(BaseDetector):
                 proposals[:, :4] = bbox_mapping(proposals[:, :4], img_shape,
                                                 scale_factor, flip,
                                                 flip_direction)
-        # TODO: remove this restriction
-        return proposal_list[0].cpu().numpy()
+        return [proposal.cpu().numpy() for proposal in proposal_list]
 
     def show_result(self, data, result, dataset=None, top_k=20):
         """Show RPN proposals on the image.

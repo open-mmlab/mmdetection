@@ -138,9 +138,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         if num_augs != len(img_metas):
             raise ValueError(f'num of augmentations ({len(imgs)}) '
                              f'!= num of image meta ({len(img_metas)})')
-        # TODO: remove the restriction of samples_per_gpu == 1 when prepared
-        samples_per_gpu = imgs[0].size(0)
-        assert samples_per_gpu == 1
 
         if num_augs == 1:
             # proposals (List[List[Tensor]]): the outer list indicates
@@ -152,6 +149,8 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
                 kwargs['proposals'] = kwargs['proposals'][0]
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
+            assert imgs[0].size(0) == 1, 'aug test does not support batch ' \
+                                         'inference'
             # TODO: support test augmentation for predefined proposals
             assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
