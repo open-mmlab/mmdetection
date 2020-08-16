@@ -183,12 +183,13 @@ class FCNMaskHead(nn.Module):
             if isinstance(scale_factor, float):
                 img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
                 img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
-                scale_factor = 1.0
             else:
                 w_scale, h_scale = scale_factor[0], scale_factor[1]
-                img_h = np.round(ori_shape[0] * h_scale).astype(np.int32)
-                img_w = np.round(ori_shape[1] * w_scale).astype(np.int32)
-                scale_factor[:] = 1.0
+                img_h = np.round(ori_shape[0] * h_scale.item()).astype(
+                    np.int32)
+                img_w = np.round(ori_shape[1] * w_scale.item()).astype(
+                    np.int32)
+            scale_factor = 1.0
 
         if not isinstance(scale_factor, (float, torch.Tensor)):
             scale_factor = bboxes.new_tensor(scale_factor)
