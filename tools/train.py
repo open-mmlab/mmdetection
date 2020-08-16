@@ -49,7 +49,7 @@ def parse_args():
         '--options',
         nargs='+',
         action=DictAction,
-        help='arguments in dict (deprecated)')
+        help='arguments in dict (deprecated), change to --cfg-options instead')
     parser.add_argument(
         '--cfg-options',
         nargs='+',

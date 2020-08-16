@@ -65,7 +65,8 @@ def parse_args():
         nargs='+',
         action=DictAction,
         help='custom options for evaluation, the key-value pair in xxx=yyy '
-        'format will be kwargs for dataset.evaluate() function (deprecate)')
+        'format will be kwargs for dataset.evaluate() function (deprecate), '
+        'change to --eval-options instead.')
     parser.add_argument(
         '--eval-options',
         nargs='+',
