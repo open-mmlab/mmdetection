@@ -249,7 +249,7 @@ You may refer to [source code](../../mmdet/datasets/dataset_wrappers.py) for det
 
 ### Concatenate dataset
 
-There three ways to concatenate the dataset.
+There are three ways to concatenate the dataset.
 
 1. If the datasets you want to concatenate are in the same type with different annotation files, you can concatenate the dataset configs like the following.
 
@@ -307,7 +307,7 @@ There three ways to concatenate the dataset.
     This manner allows users to evaluate all the datasets as a single one by setting `separate_eval=False`.
 
 **Note:**
-This option `separate_eval=False` assumes the dataset uses `self.data_infos` during evaluation. Therefore, COCO datasets does notsupport this behavior since COCO datasets do not fully rely on `self.data_infos` during evaluation. Combining different type ofdatasets and evaluating them as a whole is not tested thus is not suggested.
+The option `separate_eval=False` assumes the datasets use `self.data_infos` during evaluation. Therefore, COCO datasets do not support this behavior since COCO datasets do not fully rely on `self.data_infos` for evaluation. Combining different types of ofdatasets and evaluating them as a whole is not tested thus is not suggested.
 
 
 A more complex example that repeats `Dataset_A` and `Dataset_B` by N and M times, respectively, and then concatenates the repeated datasets is as the following.
