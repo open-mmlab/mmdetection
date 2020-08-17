@@ -1,7 +1,10 @@
 import copy
 
+import cv2
 import numpy as np
+import pycocotools.mask as mask_util
 
+from mmdet.core.mask import BitmapMasks, PolygonMasks
 from ..builder import PIPELINES
 from .compose import Compose
 
@@ -23,7 +26,7 @@ class AutoAugment(object):
             augment images.
 
     Examples:
-        >>> replace = (104, 116, 124)
+        >>> fill_val = (104, 116, 124)
         >>> policies = [
         >>>     [
         >>>         dict(type='Sharpness', prob=0.0, level=8),
@@ -31,7 +34,7 @@ class AutoAugment(object):
         >>>             type='Shear',
         >>>             prob=0.4,
         >>>             level=0,
-        >>>             replace=replace,
+        >>>             fill_val=fill_val,
         >>>             axis='x')
         >>>     ],
         >>>     [
@@ -39,7 +42,7 @@ class AutoAugment(object):
         >>>             type='Rotate',
         >>>             prob=0.6,
         >>>             level=10,
-        >>>             replace=replace),
+        >>>             fill_val=fill_val),
         >>>         dict(type='Color', prob=1.0, level=6)
         >>>     ]
         >>> ]
@@ -70,3 +73,190 @@ class AutoAugment(object):
 
     def __repr__(self):
         return f'{self.__class__.__name__}(policies={self.policies}'
+
+
+@PIPELINES.register_module()
+class Translate(object):
+    """Translate images along with x-axis or y-axis.
+
+    Args:
+        # base_offset (float): base_offset * 25.0 is the actual offset of
+        #     translation.
+        level (int or float): The level for Translate and should be in
+            range (0,_MAX_LEVEL]. This value controls the offset used for
+            translate the image/bboxes/masks/seg along with x-axis or y-axis.
+        prob (float): The probability for perform translating and should be in
+            range 0 to 1.
+        fill_val (float or tuple): The filled values for image border.
+            If float, the same fill_val will be used for all the three channels
+            of image. If tuple, the should be 3 elements (e.g. equals the
+            number of channels for image)
+        axis (str): Translate images along with x-axis or y-axis. The option
+            of axis is 'x' or 'y'.
+        max_translate_offset (int or float): Pixel's maximum offset value for
+            Translate along with x-axis or y-axis.
+    """
+    _MAX_LEVEL = 10
+
+    def __init__(self,
+                 level,
+                 prob=0.5,
+                 fill_val=128.,
+                 axis='x',
+                 max_translate_offset=250.):
+        assert isinstance(level, (int, float)), \
+            'The level must be type int or float.'
+        assert 0 <= level <= Translate._MAX_LEVEL, \
+            'The level used for calculating Translate\'s offset should be ' \
+            'in range (0,_MAX_LEVEL]'
+        assert 0 <= prob <= 1.0, \
+            'The probability of translation should be in range 0 to 1.'
+        if isinstance(fill_val, (float, int)):
+            fill_val = tuple([float(fill_val)])
+        elif isinstance(fill_val, tuple):
+            assert len(fill_val) == 3, \
+                'fill_val as tuple must have 3 elements.'
+            fill_val = tuple([float(val) for val in fill_val])
+        else:
+            raise ValueError(
+                'fill_val must be a float scale or a tuple with 3 elements.')
+        assert np.all([0 <= val <= 255 for val in fill_val]), \
+            'all elements of fill_val should between range [0,255].'
+        assert axis in ('x', 'y'), \
+            'Translate should be alone with x-axis or y-axis.'
+        assert isinstance(max_translate_offset, (int, float)), \
+            'The max_translate_offset must be type int or float.'
+        # the offset for translation
+        self.offset = int(
+            (level / Translate._MAX_LEVEL) * max_translate_offset)
+        self.prob = prob
+        self.fill_val = fill_val
+        self.axis = axis
+
+    @staticmethod
+    def warpAffine(data,
+                   trans_matrix,
+                   out_size,
+                   fill_val,
+                   flags=cv2.INTER_NEAREST,
+                   borderMode=cv2.BORDER_CONSTANT):
+        return cv2.warpAffine(
+            data,
+            trans_matrix,
+            dsize=out_size,  # dsize takes input size as order (w,h).
+            flags=flags,
+            borderMode=borderMode,
+            borderValue=fill_val)
+
+    def __call__(self, results, min_size=0.0, neg_offset_prob=0.5):
+        if np.random.rand() > self.prob:
+            return results
+
+        offset = -self.offset if np.random.rand(
+        ) < neg_offset_prob else self.offset
+        # the transformation matrix of cv2
+        if self.axis == 'x':
+            trans_matrix = np.float32([[1, 0, offset], [0, 1, 0]])
+        else:
+            trans_matrix = np.float32([[1, 0, 0], [0, 1, offset]])
+
+        self._translate_img(results, trans_matrix, fill_val=self.fill_val)
+        self._translate_bboxes(results, offset)
+        # fill_val set to 0 for background of mask.
+        self._translate_masks(results, trans_matrix, fill_val=0)
+        # fill_val set to 255 for the ignored value of segmentation map.
+        self._translate_seg(results, trans_matrix, fill_val=255)
+        self._filter_invalid(results, min_size=min_size)
+        return results
+
+    def _translate_img(self, results, trans_matrix, fill_val):
+        for key in results.get('img_fields', ['img']):
+            results[key] = self.warpAffine(results[key], trans_matrix,
+                                           results[key].shape[:2][::-1],
+                                           fill_val)
+
+    def _translate_bboxes(self, results, offset):
+        h, w, c = results['img_shape']
+        for key in results.get('box_fields', []):
+            min_x, min_y, max_x, max_y = results[key]
+            if self.axis == 'x':
+                min_x = np.maximum(0, min_x + offset)
+                max_x = np.minimum(w, max_x + offset)
+            else:
+                min_y = np.maximum(0, min_y + offset)
+                max_y = np.minimum(h, max_y + offset)
+
+            # clip box
+            min_x = np.clip(min_x, 0, w)
+            min_y = np.clip(min_y, 0, h)
+            max_x = np.clip(max_x, 0, w)
+            max_y = np.clip(max_y, 0, h)
+            # the boxs translated outside of image will be filtered along with
+            # the corresponding masks, by invoking func '_filter_invalid'.
+            results[key] = np.stack([min_x, min_y, max_x, max_y], -1)
+
+    def _translate_masks(self, results, trans_matrix, fill_val=0):
+        h, w, c = results['img_shape']
+        for key in results.get('mask_fields', []):
+            translate_masks = []
+            for mask in results[key].to_ndarray():
+                translate_mask = self.warpAffine(mask, trans_matrix,
+                                                 mask.shape[:2][::-1],
+                                                 fill_val)[np.newaxis, :, :]
+                if isinstance(results[key], BitmapMasks):
+                    translate_masks.append(translate_mask)
+                elif isinstance(results[key], PolygonMasks):
+                    # encoded with RLE
+                    translate_masks.append(
+                        mask_util.encode(
+                            np.array(
+                                translate_mask[:, :, np.newaxis],
+                                order='F',
+                                dtype='uint8'))[0])
+
+            if isinstance(results[key], BitmapMasks):
+                results[key] = BitmapMasks(
+                    np.concatenate(translate_masks), h, w)
+            elif isinstance(results[key], PolygonMasks):
+                results[key] = PolygonMasks(translate_masks, h, w)
+            # TODO mask need unsqueeze(1)?
+
+    def _translate_seg(self, results, trans_matrix, fill_val=255):
+        for key in results.get('seg_fields', []):
+            results[key] = self.warpAffine(results[key], trans_matrix,
+                                           results[key].shape[:2][::-1],
+                                           fill_val)
+
+    def _filter_invalid(self, results, min_size=0):
+        """Filter bboxes and masks too small or translated out of image."""
+        # The key correspondence from bboxes to labels and masks.
+        bbox2label = {
+            'gt_bboxes': 'gt_labels',
+            'gt_bboxes_ignore': 'gt_labels_ignore'
+        }
+        bbox2mask = {
+            'gt_bboxes': 'gt_masks',
+            'gt_bboxes_ignore': 'gt_masks_ignore'
+        }
+        for key in results.get('bbox_fields', []):
+            bbox_w = results[key][:, 2] - results[key][:, 0]
+            bbox_h = results[key][:, 3] - results[key][:, 1]
+            valid_inds = (bbox_w > min_size) & (bbox_h > min_size)
+            results[key] = results[key][valid_inds]
+            # label fields. e.g. gt_labels and gt_labels_ignore
+            label_key = bbox2label.get(key)
+            if label_key in results:
+                results[label_key] = results[label_key][valid_inds]
+            # mask fields, e.g. gt_masks and gt_masks_ignore
+            mask_key = bbox2mask.get(key)
+            if mask_key in results:
+                results[mask_key] = results[mask_key][valid_inds]
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        # repr_str += f'(base_offset={self.base_offset}, '
+        repr_str += f'prob={self.prob}, '
+        repr_str += f'fill_val={self.fill_val}, '
+        repr_str += f'axis={self.axis})'
+        return repr_str
