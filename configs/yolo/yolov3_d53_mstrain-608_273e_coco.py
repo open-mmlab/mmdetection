@@ -35,12 +35,9 @@ model = dict(
 train_cfg = dict(
     assigner=dict(
         type='MaxIoUAssigner',
-        # use low_quality only
-        pos_iou_thr=1.,
+        pos_iou_thr=0.5,
         neg_iou_thr=0.5,
-        min_pos_iou=0.,
-        gt_max_assign_all=False,
-        match_low_quality=True,
+        min_pos_iou=0,
         ignore_iof_thr=-1))
 test_cfg = dict(
     nms_pre=1000,
