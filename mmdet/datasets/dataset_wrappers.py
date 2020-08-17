@@ -19,6 +19,9 @@ class ConcatDataset(_ConcatDataset):
 
     Args:
         datasets (list[:obj:`Dataset`]): A list of datasets.
+        separate_eval (bool): Whether to evaluate the results
+            separately if it is used as validation dataset.
+            Defaults to True.
     """
 
     def __init__(self, datasets, separate_eval=True):
@@ -79,6 +82,11 @@ class ConcatDataset(_ConcatDataset):
         assert len(results) == self.cumulative_sizes[-1], \
             ('Dataset and results have different sizes: '
              f'{self.cumulative_sizes[-1]} v.s. {len(results)}')
+
+        # Check whether all the datasets support evaluation
+        for dataset in self.datasets:
+            assert hasattr(dataset, 'evaluate'), \
+                    f'{type(dataset)} does not implement evaluate function'
 
         if self.separate_eval:
             dataset_idx = -1
