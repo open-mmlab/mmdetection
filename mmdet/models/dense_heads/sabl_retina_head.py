@@ -23,15 +23,15 @@ class SABLRetinaHead(BaseDenseHead):
                  feat_channels=256,
                  approx_anchor_generator=dict(
                      type='AnchorGenerator',
-                     octave_base_scale=8,
+                     octave_base_scale=4,
                      scales_per_octave=3,
                      ratios=[0.5, 1.0, 2.0],
-                     strides=[4, 8, 16, 32, 64]),
+                     strides=[8, 16, 32, 64, 128]),
                  square_anchor_generator=dict(
                      type='AnchorGenerator',
                      ratios=[1.0],
-                     scales=[8],
-                     strides=[4, 8, 16, 32, 64]),
+                     scales=[4],
+                     strides=[8, 16, 32, 64, 128]),
                  conv_cfg=None,
                  norm_cfg=None,
                  bbox_coder=dict(
@@ -547,7 +547,7 @@ class SABLRetinaHead(BaseDenseHead):
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
                 else:
-                    max_scores, _ = scores[:, 1:].max(dim=1)
+                    max_scores, _ = scores[:, :-1].max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds, :]
                 bbox_cls_pred = bbox_cls_pred[topk_inds, :]
