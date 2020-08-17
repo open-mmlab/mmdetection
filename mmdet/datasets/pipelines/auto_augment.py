@@ -72,7 +72,7 @@ class AutoAugment(object):
         return transform(results)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(policies={self.policies}'
+        return f'{self.__class__.__name__}(policies={self.policies})'
 
 
 @PIPELINES.register_module()
@@ -129,9 +129,11 @@ class Translate(object):
         # the offset for translation
         self.offset = int(
             (level / Translate._MAX_LEVEL) * max_translate_offset)
+        self.level = level
         self.prob = prob
         self.fill_val = fill_val
         self.axis = axis
+        self.max_translate_offset = max_translate_offset
 
     @staticmethod
     def warpAffine(data,
@@ -219,7 +221,6 @@ class Translate(object):
                     np.concatenate(translate_masks), h, w)
             elif isinstance(results[key], PolygonMasks):
                 results[key] = PolygonMasks(translate_masks, h, w)
-            # TODO mask need unsqueeze(1)?
 
     def _translate_seg(self, results, trans_matrix, fill_val=255):
         for key in results.get('seg_fields', []):
@@ -255,8 +256,9 @@ class Translate(object):
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        # repr_str += f'(base_offset={self.base_offset}, '
+        repr_str += f'(level={self.level}, '
         repr_str += f'prob={self.prob}, '
         repr_str += f'fill_val={self.fill_val}, '
-        repr_str += f'axis={self.axis})'
+        repr_str += f'axis={self.axis}, '
+        repr_str += f'max_translate_offset={self.max_translate_offset})'
         return repr_str
