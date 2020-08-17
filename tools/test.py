@@ -175,7 +175,9 @@ def main():
             dataset.format_results(outputs, **kwargs)
         if args.eval:
             eval_kwargs = cfg.get('evaluation', {}).copy()
-            eval_kwargs.pop('interval', None)
+            # hard-code way to remove EvalHook args
+            for key in ['interval', 'tmpdir', 'start', 'gpu_collect']:
+                eval_kwargs.pop(key, None)
             eval_kwargs.update(dict(metric=args.eval, **kwargs))
             print(dataset.evaluate(outputs, **eval_kwargs))
 

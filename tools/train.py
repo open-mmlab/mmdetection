@@ -49,12 +49,15 @@ def parse_args():
         '--options',
         nargs='+',
         action=DictAction,
-        help='arguments in dict (deprecated), change to --cfg-options instead')
+        help='override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file (deprecate), '
+        'change to --cfg-options instead.')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
         action=DictAction,
-        help='arguments in dict')
+        help='override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file.')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
