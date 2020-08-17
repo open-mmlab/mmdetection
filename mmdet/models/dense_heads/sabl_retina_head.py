@@ -491,7 +491,9 @@ class SABLRetinaHead(BaseDenseHead):
         num_levels = len(cls_scores)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
 
-        mlvl_anchors = self.get_anchors(featmap_sizes, img_metas)
+        device = cls_scores[0].device
+        mlvl_anchors = self.get_anchors(
+            featmap_sizes, img_metas, device=device)
         result_list = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
@@ -569,7 +571,7 @@ class SABLRetinaHead(BaseDenseHead):
         mlvl_confids = torch.cat(mlvl_confids)
         if self.use_sigmoid_cls:
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([padding, mlvl_scores], dim=1)
+            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         det_bboxes, det_labels = multiclass_nms(
             mlvl_bboxes,
             mlvl_scores,
