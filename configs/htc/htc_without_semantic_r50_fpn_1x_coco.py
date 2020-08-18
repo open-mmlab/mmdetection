@@ -44,7 +44,7 @@ model = dict(
         stage_loss_weights=[1, 0.5, 0.25],
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', out_size=7, sample_num=0),
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
         bbox_head=[
@@ -101,7 +101,7 @@ model = dict(
         ],
         mask_roi_extractor=dict(
             type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', out_size=14, sample_num=0),
+            roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=0),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
         mask_head=[
@@ -216,7 +216,7 @@ test_cfg = dict(
         min_bbox_size=0),
     rcnn=dict(
         score_thr=0.001,
-        nms=dict(type='nms', iou_thr=0.5),
+        nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100,
         mask_thr_binary=0.5))
 img_norm_cfg = dict(

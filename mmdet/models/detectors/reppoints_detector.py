@@ -40,7 +40,9 @@ class RepPointsDetector(SingleStageDetector):
             img_shape = img_info[0]['img_shape']
             scale_factor = img_info[0]['scale_factor']
             flip = img_info[0]['flip']
-            bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip)
+            flip_direction = img_info[0]['flip_direction']
+            bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip,
+                                       flip_direction)
             recovered_bboxes.append(bboxes)
         bboxes = torch.cat(recovered_bboxes, dim=0)
         if aug_scores is None:
@@ -50,6 +52,21 @@ class RepPointsDetector(SingleStageDetector):
             return bboxes, scores
 
     def aug_test(self, imgs, img_metas, rescale=False):
+        """Test function with test time augmentation.
+
+        Args:
+            imgs (list[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            img_metas (list[list[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. each dict has image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[ndarray]: bbox results of each class
+        """
         # recompute feats to save memory
         feats = self.extract_feats(imgs)
 
@@ -58,7 +75,7 @@ class RepPointsDetector(SingleStageDetector):
         for x, img_meta in zip(feats, img_metas):
             # only one image in the batch
             outs = self.bbox_head(x)
-            bbox_inputs = outs + (img_metas, self.test_cfg, False, False)
+            bbox_inputs = outs + (img_meta, self.test_cfg, False, False)
             det_bboxes, det_scores = self.bbox_head.get_bboxes(*bbox_inputs)[0]
             aug_bboxes.append(det_bboxes)
             aug_scores.append(det_scores)

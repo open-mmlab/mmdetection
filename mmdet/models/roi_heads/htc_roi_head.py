@@ -38,18 +38,26 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         self.mask_info_flow = mask_info_flow
 
     def init_weights(self, pretrained):
+        """Initialize the weights in head.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
         super(HybridTaskCascadeRoIHead, self).init_weights(pretrained)
         if self.with_semantic:
             self.semantic_head.init_weights()
 
     @property
     def with_semantic(self):
+        """bool: whether the head has semantic head"""
         if hasattr(self, 'semantic_head') and self.semantic_head is not None:
             return True
         else:
             return False
 
     def forward_dummy(self, x, proposals):
+        """Dummy forward function."""
         outs = ()
         # semantic head
         if self.with_semantic:
@@ -91,6 +99,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                             gt_labels,
                             rcnn_train_cfg,
                             semantic_feat=None):
+        """Run forward function and calculate loss for box head in training."""
         bbox_head = self.bbox_head[stage]
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(
@@ -116,6 +125,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                             gt_masks,
                             rcnn_train_cfg,
                             semantic_feat=None):
+        """Run forward function and calculate loss for mask head in
+        training."""
         mask_roi_extractor = self.mask_roi_extractor[stage]
         mask_head = self.mask_head[stage]
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
@@ -153,6 +164,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         return mask_results
 
     def _bbox_forward(self, stage, x, rois, semantic_feat=None):
+        """Box head forward function used in both training and testing."""
         bbox_roi_extractor = self.bbox_roi_extractor[stage]
         bbox_head = self.bbox_head[stage]
         bbox_feats = bbox_roi_extractor(
@@ -170,6 +182,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         return bbox_results
 
     def _mask_forward_test(self, stage, x, bboxes, semantic_feat=None):
+        """Mask head forward function for testing."""
         mask_roi_extractor = self.mask_roi_extractor[stage]
         mask_head = self.mask_head[stage]
         mask_rois = bbox2roi([bboxes])
@@ -206,6 +219,35 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       gt_semantic_seg=None):
+        """
+        Args:
+            x (list[Tensor]): list of multi-level img features.
+
+            img_metas (list[dict]): list of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+
+            proposal_list (list[Tensors]): list of region proposals.
+
+            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
+                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+
+            gt_labels (list[Tensor]): class indices corresponding to each box
+
+            gt_bboxes_ignore (None, list[Tensor]): specify which bounding
+                boxes can be ignored when computing the loss.
+
+            gt_masks (None, Tensor) : true segmentation masks for each box
+                used if the architecture supports a segmentation task.
+
+            gt_semantic_seg (None, list[Tensor]): semantic segmentation masks
+                used if the architecture supports semantic segmentation task.
+
+        Returns:
+            dict[str, Tensor]: a dictionary of loss components
+        """
         # semantic segmentation part
         # 2 outputs: segmentation prediction and embedded features
         losses = dict()
@@ -294,6 +336,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         return losses
 
     def simple_test(self, x, proposal_list, img_metas, rescale=False):
+        """Test without augmentation."""
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)
         else:
@@ -376,7 +419,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         return results
 
-    def aug_test(self, img_feats, img_metas, proposals=None, rescale=False):
+    def aug_test(self, img_feats, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
 
         If rescale is False, then returned bboxes and masks will fit the scale
@@ -389,10 +432,6 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         else:
             semantic_feats = [None] * len(img_metas)
 
-        # recompute feats to save memory
-        proposal_list = self.aug_test_rpn(img_feats, img_metas,
-                                          self.test_cfg.rpn)
-
         rcnn_test_cfg = self.test_cfg
         aug_bboxes = []
         aug_scores = []
@@ -401,9 +440,10 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             img_shape = img_meta[0]['img_shape']
             scale_factor = img_meta[0]['scale_factor']
             flip = img_meta[0]['flip']
+            flip_direction = img_meta[0]['flip_direction']
 
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
-                                     scale_factor, flip)
+                                     scale_factor, flip, flip_direction)
             # "ms" in variable names means multi-stage
             ms_scores = []
 
@@ -456,8 +496,9 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                     img_shape = img_meta[0]['img_shape']
                     scale_factor = img_meta[0]['scale_factor']
                     flip = img_meta[0]['flip']
+                    flip_direction = img_meta[0]['flip_direction']
                     _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
-                                           scale_factor, flip)
+                                           scale_factor, flip, flip_direction)
                     mask_rois = bbox2roi([_bboxes])
                     mask_feats = self.mask_roi_extractor[-1](
                         x[:len(self.mask_roi_extractor[-1].featmap_strides)],

@@ -87,7 +87,7 @@ class ConvFCBBoxHead(BBoxHead):
                             num_branch_fcs,
                             in_channels,
                             is_shared=False):
-        """Add shared or separable branch
+        """Add shared or separable branch.
 
         convs -> avg pool (optional) -> fcs
         """

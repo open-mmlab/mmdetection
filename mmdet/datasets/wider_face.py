@@ -9,8 +9,8 @@ from .xml_style import XMLDataset
 
 @DATASETS.register_module()
 class WIDERFaceDataset(XMLDataset):
-    """
-    Reader for the WIDER Face dataset in PASCAL VOC format.
+    """Reader for the WIDER Face dataset in PASCAL VOC format.
+
     Conversion scripts can be found in
     https://github.com/sovrasov/wider-face-pascal-voc-annotations
     """
@@ -20,6 +20,15 @@ class WIDERFaceDataset(XMLDataset):
         super(WIDERFaceDataset, self).__init__(**kwargs)
 
     def load_annotations(self, ann_file):
+        """Load annotation from WIDERFace XML style annotation file.
+
+        Args:
+            ann_file (str): Path of XML file.
+
+        Returns:
+            list[dict]: Annotation info from XML file.
+        """
+
         data_infos = []
         img_ids = mmcv.list_from_file(ann_file)
         for img_id in img_ids:

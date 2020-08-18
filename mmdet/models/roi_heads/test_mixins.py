@@ -24,7 +24,7 @@ class BBoxTestMixin(object):
                                     rescale=False,
                                     bbox_semaphore=None,
                                     global_lock=None):
-            """Async test only det bboxes without augmentation."""
+            """Asynchronized test for box head without augmentation."""
             rois = bbox2roi(proposals)
             roi_feats = self.bbox_roi_extractor(
                 x[:len(self.bbox_roi_extractor.featmap_strides)], rois)
@@ -71,6 +71,7 @@ class BBoxTestMixin(object):
         return det_bboxes, det_labels
 
     def aug_test_bboxes(self, feats, img_metas, proposal_list, rcnn_test_cfg):
+        """Test det bboxes with test time augmentation."""
         aug_bboxes = []
         aug_scores = []
         for x, img_meta in zip(feats, img_metas):
@@ -78,9 +79,10 @@ class BBoxTestMixin(object):
             img_shape = img_meta[0]['img_shape']
             scale_factor = img_meta[0]['scale_factor']
             flip = img_meta[0]['flip']
+            flip_direction = img_meta[0]['flip_direction']
             # TODO more flexible
             proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
-                                     scale_factor, flip)
+                                     scale_factor, flip, flip_direction)
             rois = bbox2roi([proposals])
             # recompute feature maps to save GPU memory
             bbox_results = self._bbox_forward(x, rois)
@@ -115,6 +117,7 @@ class MaskTestMixin(object):
                                   det_labels,
                                   rescale=False,
                                   mask_test_cfg=None):
+            """Asynchronized test for mask head without augmentation."""
             # image shape of the first image in the batch (only one)
             ori_shape = img_metas[0]['ori_shape']
             scale_factor = img_metas[0]['scale_factor']
@@ -151,6 +154,7 @@ class MaskTestMixin(object):
                          det_bboxes,
                          det_labels,
                          rescale=False):
+        """Simple test for mask head without augmentation."""
         # image shape of the first image in the batch (only one)
         ori_shape = img_metas[0]['ori_shape']
         scale_factor = img_metas[0]['scale_factor']
@@ -172,6 +176,7 @@ class MaskTestMixin(object):
         return segm_result
 
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):
+        """Test for mask head with test time augmentation."""
         if det_bboxes.shape[0] == 0:
             segm_result = [[] for _ in range(self.mask_head.num_classes)]
         else:
@@ -180,8 +185,9 @@ class MaskTestMixin(object):
                 img_shape = img_meta[0]['img_shape']
                 scale_factor = img_meta[0]['scale_factor']
                 flip = img_meta[0]['flip']
+                flip_direction = img_meta[0]['flip_direction']
                 _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
-                                       scale_factor, flip)
+                                       scale_factor, flip, flip_direction)
                 mask_rois = bbox2roi([_bboxes])
                 mask_results = self._mask_forward(x, mask_rois)
                 # convert to numpy array to save memory

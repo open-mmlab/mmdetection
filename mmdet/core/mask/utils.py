@@ -17,8 +17,8 @@ def split_combined_polys(polys, poly_lens, polys_per_mask):
             of each mask
 
     Returns:
-        list: a list (length = image num) of list (length = mask num) of
-            list (length = poly num) of numpy array
+        list: a list (length = image num) of list (length = mask num) of \
+            list (length = poly num) of numpy array.
     """
     mask_polys_list = []
     for img_id in range(len(polys)):

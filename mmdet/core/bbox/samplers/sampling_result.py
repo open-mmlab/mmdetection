@@ -50,6 +50,7 @@ class SamplingResult(util_mixins.NiceRepr):
 
     @property
     def bboxes(self):
+        """torch.Tensor: concatenated positive and negative boxes"""
         return torch.cat([self.pos_bboxes, self.neg_bboxes])
 
     def to(self, device):
@@ -96,9 +97,9 @@ class SamplingResult(util_mixins.NiceRepr):
             kwargs (keyword arguments):
                 - num_preds: number of predicted boxes
                 - num_gts: number of true boxes
-                - p_ignore (float): probability of a predicted box assinged to
+                - p_ignore (float): probability of a predicted box assinged to \
                     an ignored truth.
-                - p_assigned (float): probability of a predicted box not being
+                - p_assigned (float): probability of a predicted box not being \
                     assigned.
                 - p_use_label (float | bool): with labels or not.
 
@@ -144,7 +145,7 @@ class SamplingResult(util_mixins.NiceRepr):
         sampler = RandomSampler(
             num,
             pos_fraction,
-            neg_pos_ubo=neg_pos_ub,
+            neg_pos_ub=neg_pos_ub,
             add_gt_as_proposals=add_gt_as_proposals,
             rng=rng)
         self = sampler.sample(assign_result, bboxes, gt_bboxes, gt_labels)

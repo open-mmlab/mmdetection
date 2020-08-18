@@ -1,13 +1,13 @@
 from os.path import dirname, exists, join, relpath
 
 import torch
+from mmcv.runner import build_optimizer
 
 from mmdet.core import BitmapMasks, PolygonMasks
-from mmdet.core.optimizer import build_optimizer
 
 
 def _get_config_directory():
-    """ Find the predefined detector config directory """
+    """Find the predefined detector config directory."""
     try:
         # Assume we are running in the source mmdetection repo
         repo_dpath = dirname(dirname(__file__))
@@ -22,9 +22,8 @@ def _get_config_directory():
 
 
 def test_config_build_detector():
-    """
-    Test that all detection models defined in the configs can be initialized.
-    """
+    """Test that all detection models defined in the configs can be
+    initialized."""
     from mmcv import Config
     from mmdet.models import build_detector
 
@@ -77,8 +76,8 @@ def test_config_build_detector():
 
 
 def test_config_data_pipeline():
-    """
-    Test whether the data pipeline is valid and can process corner cases.
+    """Test whether the data pipeline is valid and can process corner cases.
+
     CommandLine:
         xdoctest -m tests/test_config.py test_config_build_data_pipeline
     """
@@ -99,7 +98,7 @@ def test_config_data_pipeline():
         'foveabox/fovea_align_r50_fpn_gn-head_mstrain_640-800_4x4_2x_coco.py',
         'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
         'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain_1x_coco.py',
-        'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
+        'fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py'
     ]
 
     def dummy_masks(h, w, num_obj=3, mode='bitmap'):
@@ -275,8 +274,8 @@ def _check_roi_extractor(config, roi_extractor, prev_roi_extractor=None):
     assert (len(config.featmap_strides) == len(roi_extractor.roi_layers))
     assert (config.out_channels == roi_extractor.out_channels)
     from torch.nn.modules.utils import _pair
-    assert (_pair(
-        config.roi_layer.out_size) == roi_extractor.roi_layers[0].out_size)
+    assert (_pair(config.roi_layer.output_size) ==
+            roi_extractor.roi_layers[0].output_size)
 
     if 'use_torchvision' in config.roi_layer:
         assert (config.roi_layer.use_torchvision ==
@@ -303,11 +302,16 @@ def _check_mask_head(mask_cfg, mask_head):
     else:
         assert mask_cfg['type'] == mask_head.__class__.__name__
         assert mask_cfg.in_channels == mask_head.in_channels
-        assert (
-            mask_cfg.conv_out_channels == mask_head.conv_logits.in_channels)
         class_agnostic = mask_cfg.get('class_agnostic', False)
         out_dim = (1 if class_agnostic else mask_cfg.num_classes)
-        assert mask_head.conv_logits.out_channels == out_dim
+        if hasattr(mask_head, 'conv_logits'):
+            assert (mask_cfg.conv_out_channels ==
+                    mask_head.conv_logits.in_channels)
+            assert mask_head.conv_logits.out_channels == out_dim
+        else:
+            assert mask_cfg.fc_out_channels == mask_head.fc_logits.in_features
+            assert (mask_head.fc_logits.out_features == out_dim *
+                    mask_head.output_area)
 
 
 def _check_bbox_head(bbox_cfg, bbox_head):

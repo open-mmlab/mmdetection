@@ -8,6 +8,7 @@ import mmcv
 import torch
 from mmcv import Config, DictAction
 from mmcv.runner import init_dist
+from mmcv.utils import get_git_hash
 
 from mmdet import __version__
 from mmdet.apis import set_random_seed, train_detector
@@ -51,10 +52,6 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
-    parser.add_argument(
-        '--autoscale-lr',
-        action='store_true',
-        help='automatically scale lr with the number of gpus')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -86,10 +83,6 @@ def main():
         cfg.gpu_ids = args.gpu_ids
     else:
         cfg.gpu_ids = range(1) if args.gpus is None else range(args.gpus)
-
-    if args.autoscale_lr:
-        # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
-        cfg.optimizer['lr'] = cfg.optimizer['lr'] * len(cfg.gpu_ids) / 8
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
@@ -142,7 +135,7 @@ def main():
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
-            mmdet_version=__version__,
+            mmdet_version=__version__ + get_git_hash()[:7],
             config=cfg.pretty_text,
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience

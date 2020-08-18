@@ -22,8 +22,9 @@ class Bottle2neck(_Bottleneck):
                  stage_type='normal',
                  **kwargs):
         """Bottle2neck block for Res2Net.
-        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
-        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
+
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
+        it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottle2neck, self).__init__(inplanes, planes, **kwargs)
         assert scales > 1, 'Res2Net degenerates to ResNet when scales = 1.'
@@ -101,6 +102,7 @@ class Bottle2neck(_Bottleneck):
         delattr(self, self.norm2_name)
 
     def forward(self, x):
+        """Forward function."""
 
         def _inner_forward(x):
             identity = x
@@ -113,7 +115,7 @@ class Bottle2neck(_Bottleneck):
                 out = self.forward_plugin(out, self.after_conv1_plugin_names)
 
             spx = torch.split(out, self.width, 1)
-            sp = self.convs[0](spx[0])
+            sp = self.convs[0](spx[0].contiguous())
             sp = self.relu(self.bns[0](sp))
             out = sp
             for i in range(1, self.scales - 1):
@@ -121,7 +123,7 @@ class Bottle2neck(_Bottleneck):
                     sp = spx[i]
                 else:
                     sp = sp + spx[i]
-                sp = self.convs[i](sp)
+                sp = self.convs[i](sp.contiguous())
                 sp = self.relu(self.bns[i](sp))
                 out = torch.cat((out, sp), 1)
 
@@ -243,8 +245,8 @@ class Res2Net(ResNet):
         scales (int): Scales used in Res2Net. Default: 4
         base_width (int): Basic width of each scale. Default: 26
         depth (int): Depth of res2net, from {50, 101, 152}.
-        in_channels (int): Number of input image channels. Normally 3.
-        num_stages (int): Res2net stages, normally 4.
+        in_channels (int): Number of input image channels. Default: 3.
+        num_stages (int): Res2net stages. Default: 4.
         strides (Sequence[int]): Strides of the first block of each stage.
         dilations (Sequence[int]): Dilation of each stage.
         out_indices (Sequence[int]): Output from which stages.

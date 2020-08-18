@@ -1,3 +1,4 @@
+import warnings
 from collections import OrderedDict
 
 import torch.distributed as dist
@@ -29,6 +30,15 @@ def _allreduce_coalesced(tensors, world_size, bucket_size_mb=-1):
 
 
 def allreduce_grads(params, coalesce=True, bucket_size_mb=-1):
+    """Allreduce gradients.
+
+    Args:
+        params (list[torch.Parameters]): List of parameters of a model
+        coalesce (bool, optional): Whether allreduce parameters as a whole.
+            Defaults to True.
+        bucket_size_mb (int, optional): Size of bucket, the unit is MB.
+            Defaults to -1.
+    """
     grads = [
         param.grad.data for param in params
         if param.requires_grad and param.grad is not None
@@ -42,15 +52,9 @@ def allreduce_grads(params, coalesce=True, bucket_size_mb=-1):
 
 
 class DistOptimizerHook(OptimizerHook):
+    """Deprecated optimizer hook for distributed training."""
 
-    def __init__(self, grad_clip=None, coalesce=True, bucket_size_mb=-1):
-        self.grad_clip = grad_clip
-        self.coalesce = coalesce
-        self.bucket_size_mb = bucket_size_mb
-
-    def after_train_iter(self, runner):
-        runner.optimizer.zero_grad()
-        runner.outputs['loss'].backward()
-        if self.grad_clip is not None:
-            self.clip_grads(runner.model.parameters())
-        runner.optimizer.step()
+    def __init__(self, *args, **kwargs):
+        warnings.warn('"DistOptimizerHook" is deprecated, please switch to'
+                      '"mmcv.runner.OptimizerHook".')
+        super().__init__(*args, **kwargs)
