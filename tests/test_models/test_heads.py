@@ -794,8 +794,6 @@ def test_yolact_head_loss():
         num_classes=80,
         in_channels=256,
         feat_channels=256,
-        num_head_convs=1,
-        num_protos=32,
         anchor_generator=dict(
             type='AnchorGenerator',
             octave_base_scale=3,
@@ -810,9 +808,14 @@ def test_yolact_head_loss():
             target_means=[.0, .0, .0, .0],
             target_stds=[0.1, 0.1, 0.2, 0.2]),
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            type='CrossEntropyLoss',
+            use_sigmoid=False,
+            reduction='none',
+            loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.5),
+        num_head_convs=1,
+        num_protos=32,
         use_ohem=True,
-        loss_bbox=dict(type='L1Loss', loss_weight=1.5),
         train_cfg=train_cfg)
     segm_head = YolactSegmHead(
         in_channels=256,
