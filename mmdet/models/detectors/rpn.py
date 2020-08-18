@@ -67,20 +67,22 @@ class RPN(BaseDetector, RPNTestMixin):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        if self.train_cfg.rpn.get('debug', False):
-            self.rpn_head.debug_imgs = tensor2imgs(img)
+        # if self.train_cfg.rpn.get('debug', False):
+        #     self.rpn_head.debug_imgs = tensor2imgs(img)
 
         x = self.extract_feat(img)
-        rpn_outs = self.rpn_head(x)
+        # rpn_outs = self.rpn_head(x)
 
-        rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas)
-        losses = self.rpn_head.loss(
-            *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        # rpn_loss_inputs = rpn_outs + (gt_bboxes, img_metas)
+        # losses = self.rpn_head.loss(
+        #     *rpn_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        losses = self.rpn_head.forward_train(x, img_metas, gt_bboxes, None,
+                                             gt_bboxes_ignore)
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
         x = self.extract_feat(img)
-        proposal_list = self.simple_test_rpn(x, img_metas)
+        proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         if rescale:
             for proposals, meta in zip(proposal_list, img_metas):
                 proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])

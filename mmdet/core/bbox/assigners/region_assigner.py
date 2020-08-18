@@ -1,5 +1,6 @@
 import torch
 
+from ..builder import BBOX_ASSIGNERS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
@@ -45,6 +46,7 @@ def anchor_outside_flags(flat_anchors,
     return outside_flags
 
 
+@BBOX_ASSIGNERS.register_module()
 class RegionAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 

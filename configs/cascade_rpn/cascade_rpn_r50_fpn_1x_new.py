@@ -1,7 +1,6 @@
 # model settings
 model = dict(
-    type='CascadeRPN',
-    num_stages=2,
+    type='RPN',
     pretrained='open-mmlab://resnet50_caffe',
     backbone=dict(
         type='ResNet',
@@ -16,39 +15,42 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5),
-    rpn_head=[
-        dict(
-            type='StageCascadeRPNHead',
-            in_channels=256,
-            feat_channels=256,
-            with_cls=False,
-            dilation=3,
-            bridged_feature=True,
-            sampling=False,
-            reg_decoded_bbox=True,
-            bbox_coder=dict(
-                type='DeltaXYWHBBoxCoder',
-                target_means=(.0, .0, .0, .0),
-                target_stds=(0.1, 0.1, 0.5, 0.5)),
-            loss_cls=dict(
-                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-            loss_bbox=dict(
-                type='IoULoss', linear=True, loss_weight=10.0)),
-        dict(
-            type='StageCascadeRPNHead',
-            in_channels=256,
-            feat_channels=256,
-            feat_adapt=True,
-            reg_decoded_bbox=True,
-            bbox_coder=dict(
-                type='DeltaXYWHBBoxCoder',
-                target_means=(.0, .0, .0, .0),
-                target_stds=(0.05, 0.05, 0.1, 0.1)),
-            loss_cls=dict(
-                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-            loss_bbox=dict(
-                type='IoULoss', linear=True, loss_weight=10.0))
-    ])
+    rpn_head=dict(
+        type='CascadeRPNHead',
+        num_stages=2,
+        stages=[
+            dict(
+                type='StageCascadeRPNHead',
+                in_channels=256,
+                feat_channels=256,
+                with_cls=False,
+                dilation=3,
+                bridged_feature=True,
+                sampling=False,
+                reg_decoded_bbox=True,
+                bbox_coder=dict(
+                    type='DeltaXYWHBBoxCoder',
+                    target_means=(.0, .0, .0, .0),
+                    target_stds=(0.1, 0.1, 0.5, 0.5)),
+                loss_cls=dict(
+                    type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+                loss_bbox=dict(
+                    type='IoULoss', linear=True, loss_weight=10.0)),
+            dict(
+                type='StageCascadeRPNHead',
+                in_channels=256,
+                feat_channels=256,
+                feat_adapt=True,
+                reg_decoded_bbox=True,
+                bbox_coder=dict(
+                    type='DeltaXYWHBBoxCoder',
+                    target_means=(.0, .0, .0, .0),
+                    target_stds=(0.05, 0.05, 0.1, 0.1)),
+                loss_cls=dict(
+                    type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+                loss_bbox=dict(
+                    type='IoULoss', linear=True, loss_weight=10.0))
+        ]))
 # model training and testing settings
 train_cfg = dict(
     rpn=[
