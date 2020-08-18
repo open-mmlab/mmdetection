@@ -9,6 +9,7 @@ from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
+from .guided_anchor_head import GuidedAnchorHead
 
 
 @HEADS.register_module
@@ -168,56 +169,6 @@ class SABLRetinaHead(BaseDenseHead):
 
     def forward(self, feats):
         return multi_apply(self.forward_single, feats)
-
-    def get_sampled_approxs(self, featmap_sizes, img_metas, device='cuda'):
-        """Get sampled approxs and inside flags according to feature map sizes.
-
-        Args:
-            featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            img_metas (list[dict]): Image meta info.
-            device (torch.device | str): device for returned tensors
-
-        Returns:
-            tuple: approxes of each image, inside flags of each image
-        """
-        num_imgs = len(img_metas)
-
-        # since feature map sizes of all images are the same, we only compute
-        # approxes for one time
-        multi_level_approxs = self.approx_anchor_generator.grid_anchors(
-            featmap_sizes, device=device)
-        approxs_list = [multi_level_approxs for _ in range(num_imgs)]
-
-        # for each image, we compute inside flags of multi level approxes
-        inside_flag_list = []
-        for img_id, img_meta in enumerate(img_metas):
-            multi_level_flags = []
-            multi_level_approxs = approxs_list[img_id]
-
-            # obtain valid flags for each approx first
-            multi_level_approx_flags = self.approx_anchor_generator \
-                .valid_flags(featmap_sizes,
-                             img_meta['pad_shape'],
-                             device=device)
-
-            for i, flags in enumerate(multi_level_approx_flags):
-                approxs = multi_level_approxs[i]
-                inside_flags_list = []
-                for i in range(self.approxs_per_octave):
-                    split_valid_flags = flags[i::self.approxs_per_octave]
-                    split_approxs = approxs[i::self.approxs_per_octave, :]
-                    inside_flags = anchor_inside_flags(
-                        split_approxs, split_valid_flags,
-                        img_meta['img_shape'][:2],
-                        self.train_cfg.allowed_border)
-                    inside_flags_list.append(inside_flags)
-                # inside_flag for a position is true if any anchor in this
-                # position is true
-                inside_flags = (
-                    torch.stack(inside_flags_list, 0).sum(dim=0) > 0)
-                multi_level_flags.append(inside_flags)
-            inside_flag_list.append(multi_level_flags)
-        return approxs_list, inside_flag_list
 
     def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
         """Get squares according to feature map sizes and guided
@@ -440,8 +391,8 @@ class SABLRetinaHead(BaseDenseHead):
         device = cls_scores[0].device
 
         # get sampled approxes
-        approxs_list, inside_flag_list = self.get_sampled_approxs(
-            featmap_sizes, img_metas, device=device)
+        approxs_list, inside_flag_list = GuidedAnchorHead.get_sampled_approxs(
+            self, featmap_sizes, img_metas, device=device)
 
         square_list = self.get_anchors(featmap_sizes, img_metas, device=device)
 
