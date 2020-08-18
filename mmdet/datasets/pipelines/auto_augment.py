@@ -234,11 +234,6 @@ class Translate(object):
                 min_y = np.maximum(0, min_y + offset)
                 max_y = np.minimum(h, max_y + offset)
 
-            # clip box
-            min_x = np.clip(min_x, 0, w)
-            min_y = np.clip(min_y, 0, h)
-            max_x = np.clip(max_x, 0, w)
-            max_y = np.clip(max_y, 0, h)
             # the boxs translated outside of image will be filtered along with
             # the corresponding masks, by invoking ``_filter_invalid``.
             results[key] = np.concatenate([min_x, min_y, max_x, max_y],
