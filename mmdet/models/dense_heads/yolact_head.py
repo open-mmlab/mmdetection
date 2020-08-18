@@ -8,7 +8,6 @@ from mmcv.cnn import ConvModule, xavier_init
 from mmdet.core import (build_sampler, fast_nms, force_fp32, images_to_levels,
                         multi_apply)
 from ..builder import HEADS, build_loss
-from ..losses import smooth_l1_loss
 from .anchor_head import AnchorHead
 
 
@@ -18,6 +17,7 @@ class YolactHead(AnchorHead):
 
     Note that YOLACT head is a light version of RetinaNet head.
     Four differences are described as follows:
+
     1. YOLACT box head has three-times fewer anchors.
     2. YOLACT box head shares the convs for box and cls branches.
     3. YOLACT box head uses OHEM instead of Focal loss.
@@ -27,41 +27,43 @@ class YolactHead(AnchorHead):
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
+        anchor_generator (dict): Config dict for anchor generator
+        loss_cls (dict): Config of classification loss.
+        loss_bbox (dict): Config of localization loss.
         num_head_convs (int): Number of the conv layers shared by
             box and cls branches.
         num_protos (int): Number of the mask coefficients.
-        use_OHEM (bool): If true, `loss_single_OHEM` will be used for
-            cls loss calculation. If false, `loss_single` will be used.
+        use_ohem (bool): If true, ``loss_single_OHEM`` will be used for
+            cls loss calculation. If false, ``loss_single`` will be used.
         conv_cfg (dict): Dictionary to construct and config conv layer.
         norm_cfg (dict): Dictionary to construct and config norm layer.
-        loss_cls (dict): Config of classification loss.
-        loss_bbox (dict): Config of localization loss.
-        anchor_generator (dict): Config dict for anchor generator.
     """
 
     def __init__(self,
                  num_classes,
                  in_channels,
-                 num_head_convs=1,
-                 num_protos=32,
-                 use_OHEM=True,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 loss_cls=dict(
-                     type='CrossEntropyLoss',
-                     use_sigmoid=False,
-                     loss_weight=1.0),
-                 loss_bbox=dict(type='L1Loss', loss_weight=1.5),
                  anchor_generator=dict(
                      type='AnchorGenerator',
                      octave_base_scale=3,
                      scales_per_octave=1,
                      ratios=[0.5, 1.0, 2.0],
                      strides=[8, 16, 32, 64, 128]),
+                 loss_cls=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=False,
+                     reduction='none',
+                     loss_weight=1.0),
+                 loss_bbox=dict(
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1.5),
+                 num_head_convs=1,
+                 num_protos=32,
+                 use_ohem=True,
+                 conv_cfg=None,
+                 norm_cfg=None,
                  **kwargs):
         self.num_head_convs = num_head_convs
         self.num_protos = num_protos
-        self.use_OHEM = use_OHEM
+        self.use_ohem = use_ohem
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         super(YolactHead, self).__init__(
@@ -71,9 +73,7 @@ class YolactHead(AnchorHead):
             loss_bbox=loss_bbox,
             anchor_generator=anchor_generator,
             **kwargs)
-        if self.use_OHEM:
-            self.loss_cls_weight = loss_cls.get('loss_weight', 1.0)
-            self.loss_bbox_weight = loss_bbox.get('loss_weight', 1.0)
+        if self.use_ohem:
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
             self.sampling = False
@@ -93,14 +93,14 @@ class YolactHead(AnchorHead):
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg))
-        self.yolact_cls = nn.Conv2d(
+        self.conv_cls = nn.Conv2d(
             self.feat_channels,
             self.num_anchors * self.cls_out_channels,
             3,
             padding=1)
-        self.yolact_reg = nn.Conv2d(
+        self.conv_reg = nn.Conv2d(
             self.feat_channels, self.num_anchors * 4, 3, padding=1)
-        self.yolact_coeff = nn.Conv2d(
+        self.conv_coeff = nn.Conv2d(
             self.feat_channels,
             self.num_anchors * self.num_protos,
             3,
@@ -110,9 +110,9 @@ class YolactHead(AnchorHead):
         """Initialize weights of the head."""
         for m in self.head_convs:
             xavier_init(m.conv, distribution='uniform', bias=0)
-        xavier_init(self.yolact_cls, distribution='uniform', bias=0)
-        xavier_init(self.yolact_reg, distribution='uniform', bias=0)
-        xavier_init(self.yolact_coeff, distribution='uniform', bias=0)
+        xavier_init(self.conv_cls, distribution='uniform', bias=0)
+        xavier_init(self.conv_reg, distribution='uniform', bias=0)
+        xavier_init(self.conv_coeff, distribution='uniform', bias=0)
 
     def forward_single(self, x):
         """Forward feature of a single scale level.
@@ -131,9 +131,9 @@ class YolactHead(AnchorHead):
         """
         for head_conv in self.head_convs:
             x = head_conv(x)
-        cls_score = self.yolact_cls(x)
-        bbox_pred = self.yolact_reg(x)
-        coeff_pred = self.yolact_coeff(x).tanh()
+        cls_score = self.conv_cls(x)
+        bbox_pred = self.conv_reg(x)
+        coeff_pred = self.conv_coeff(x).tanh()
         return cls_score, bbox_pred, coeff_pred
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
@@ -144,11 +144,12 @@ class YolactHead(AnchorHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None):
-        """A combination of the func:`AnchorHead.loss` and func:`SSDHead.loss`.
+        """A combination of the func:``AnchorHead.loss`` and
+        func:``SSDHead.loss``.
 
-        When self.use_OHEM == True, it functions like `SSDHead.loss`,
-        otherwise, it follows `AnchorHead.loss`. Besides, it additionally
-        returns `sampling_results`.
+        When ``self.use_ohem == True``, it functions like ``SSDHead.loss``,
+        otherwise, it follows ``AnchorHead.loss``. Besides, it additionally
+        returns ``sampling_results``.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
@@ -166,7 +167,7 @@ class YolactHead(AnchorHead):
         Returns:
             tuple:
                 dict[str, Tensor]: A dictionary of loss components.
-                List[:obj:`SamplingResult`]: Sampler results for each image.
+                List[:obj:``SamplingResult``]: Sampler results for each image.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.anchor_generator.num_levels
@@ -184,14 +185,14 @@ class YolactHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            unmap_outputs=not self.use_OHEM,
+            unmap_outputs=not self.use_ohem,
             return_sampling_results=True)
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg, sampling_results) = cls_reg_targets
 
-        if self.use_OHEM:
+        if self.use_ohem:
             num_images = len(img_metas)
             all_cls_scores = torch.cat([
                 s.permute(0, 2, 3, 1).reshape(
@@ -260,9 +261,9 @@ class YolactHead(AnchorHead):
     def loss_single_OHEM(self, cls_score, bbox_pred, anchors, labels,
                          label_weights, bbox_targets, bbox_weights,
                          num_total_samples):
-        """"See func:`SSDHead.loss`."""
-        loss_cls_all = F.cross_entropy(
-            cls_score, labels, reduction='none') * label_weights
+        """"See func:``SSDHead.loss``."""
+        loss_cls_all = self.loss_cls(cls_score, labels, label_weights)
+
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
         pos_inds = ((labels >= 0) &
                     (labels < self.background_label)).nonzero().reshape(-1)
@@ -278,16 +279,14 @@ class YolactHead(AnchorHead):
         topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
         loss_cls_pos = loss_cls_all[pos_inds].sum()
         loss_cls_neg = topk_loss_cls_neg.sum()
-        loss_cls = (loss_cls_pos +
-                    loss_cls_neg) / num_total_samples * self.loss_cls_weight
+        loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
         if self.reg_decoded_bbox:
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
-        loss_bbox = smooth_l1_loss(
+        loss_bbox = self.loss_bbox(
             bbox_pred,
             bbox_targets,
             bbox_weights,
-            beta=self.train_cfg.smoothl1_beta,
-            avg_factor=num_total_samples) * self.loss_bbox_weight
+            avg_factor=num_total_samples)
         return loss_cls[None], loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'coeff_preds'))
@@ -298,7 +297,7 @@ class YolactHead(AnchorHead):
                    img_metas,
                    cfg=None,
                    rescale=False):
-        """"Similiar to func:`AnchorHead.get_bboxes`, but additionally
+        """"Similiar to func:``AnchorHead.get_bboxes``, but additionally
         processes coeff_preds.
 
         Args:
@@ -363,9 +362,9 @@ class YolactHead(AnchorHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-        """"Similiar to func:`AnchorHead._get_bboxes_single`, but additionally
-        processes coeff_preds_list and uses fast NMS instead of traditional
-        NMS.
+        """"Similiar to func:``AnchorHead._get_bboxes_single``, but
+        additionally processes coeff_preds_list and uses fast NMS instead of
+        traditional NMS.
 
         Args:
             cls_score_list (list[Tensor]): Box scores for a single scale level
@@ -445,7 +444,8 @@ class YolactHead(AnchorHead):
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         det_bboxes, det_labels, det_coeffs = fast_nms(mlvl_bboxes, mlvl_scores,
                                                       mlvl_coeffs,
-                                                      cfg.score_thr, cfg.nms,
+                                                      cfg.score_thr,
+                                                      cfg.iou_thr, cfg.top_k,
                                                       cfg.max_per_img)
         return det_bboxes, det_labels, det_coeffs
 
@@ -666,7 +666,7 @@ class YolactProtonet(nn.Module):
                 boxes.
             img_meta (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            sampling_results (List[:obj:`SamplingResult`]): Sampler results
+            sampling_results (List[:obj:``SamplingResult``]): Sampler results
                 for each image.
 
         Returns:
@@ -732,7 +732,7 @@ class YolactProtonet(nn.Module):
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             img_meta (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            sampling_results (List[:obj:`SamplingResult`]): Sampler results
+            sampling_results (List[:obj:``SamplingResult``]): Sampler results
                 for each image.
 
         Returns:

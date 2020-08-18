@@ -20,8 +20,8 @@ Here are our YOLACT models along with their FPS on a Titan Xp and mAP on COCO's 
 
 | Image Size | Backbone      | *FPS  | mAP  | Weights                                                                                                             |
 |:----------:|:-------------:|:----:|:----:|----------------------------------------------------------------------------------------------------------------------|
-| 550        | Resnet50-FPN  | 42.5 | 29.0 | [yolact_r50_epoch_55.pth](https://drive.google.com/file/d/1oMsGbrHS-sE1260at_QrwrcR6DqNlyzt/view?usp=sharing) |
-| 550        | Resnet101-FPN | 33.5 | 30.4 | [yolact_r101_epoch_55.pth](https://drive.google.com/file/d/1K32-sd7QTnfFdv7bRPR91AM06p-z7-WF/view?usp=sharing)|
+| 550        | Resnet50-FPN  | 42.5 | 29.0 | [yolact_r50_epoch_55.pth](https://drive.google.com/file/d/1S30dWxxF1jmz7Tbh1cWbHZUiMpNOK1ts/view?usp=sharing) |
+| 550        | Resnet101-FPN | 33.5 | 30.4 | [yolact_r101_epoch_55.pth](https://drive.google.com/file/d/1yv752K659KbR9arOVD1f6Rst8i00OZnX/view?usp=sharing)|
 
 *Note: The FPS is evaluated by the [original implementation](https://github.com/dbolya/yolact). When calculating FPS, only the model inference time is taken into account. Data loading and post-processing operations such as converting masks to RLE code, generating COCO JSON results, image rendering are not included.
 

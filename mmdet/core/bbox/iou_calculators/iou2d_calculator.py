@@ -128,3 +128,64 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     ious = overlap / union
 
     return ious
+
+
+def batch_bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False):
+    """Calculate overlap between two set of bboxes.
+
+    Similar to `bbox_overlaps` but the input boxes has an extra batch dim B.
+
+    Args:
+        bboxes1 (Tensor): shape (B, m, 4) in <x1, y1, x2, y2> format.
+        bboxes2 (Tensor): shape (B, n, 4) in <x1, y1, x2, y2> format.
+        mode (str): "iou" (intersection over union) or iof (intersection over
+            foreground).
+
+    Returns:
+        ious(Tensor): shape (B, m, n) if is_aligned == False else shape
+            (B, m, 1)
+    """
+
+    assert mode in ['iou', 'iof']
+
+    B, rows, _ = bboxes1.size()
+    _, cols, _ = bboxes2.size()
+    if is_aligned:
+        assert rows == cols
+
+    if rows * cols == 0:
+        return bboxes1.new(B, rows, 1) if is_aligned else bboxes1.new(
+            B, rows, cols)
+
+    if is_aligned:
+        lt = torch.max(bboxes1[:, :2], bboxes2[:, :2])
+        rb = torch.min(bboxes1[:, 2:], bboxes2[:, 2:])
+
+        wh = (rb - lt).clamp(min=0)
+        overlap = wh[:, 0] * wh[:, 1]
+        area1 = (bboxes1[:, 2] - bboxes1[:, 0]) * (
+            bboxes1[:, 3] - bboxes1[:, 1])
+
+        if mode == 'iou':
+            area2 = (bboxes2[:, 2] - bboxes2[:, 0]) * (
+                bboxes2[:, 3] - bboxes2[:, 1])
+            ious = overlap / (area1 + area2 - overlap)
+        else:
+            ious = overlap / area1
+    else:
+        lt = torch.max(bboxes1[:, :, None, :2], bboxes2[:, None, :, :2])
+        rb = torch.min(bboxes1[:, :, None, 2:], bboxes2[:, None, :, 2:])
+
+        wh = (rb - lt).clamp(min=0)
+        overlap = wh[:, :, :, 0] * wh[:, :, :, 1]
+        area1 = (bboxes1[:, :, 2] - bboxes1[:, :, 0]) * (
+            bboxes1[:, :, 3] - bboxes1[:, :, 1])
+
+        if mode == 'iou':
+            area2 = (bboxes2[:, :, 2] - bboxes2[:, :, 0]) * (
+                bboxes2[:, :, 3] - bboxes2[:, :, 1])
+            ious = overlap / (area1[:, :, None] + area2[:, None, :] - overlap)
+        else:
+            ious = overlap / (area1[:, :, None])
+
+    return ious

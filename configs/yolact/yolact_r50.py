@@ -28,8 +28,6 @@ model = dict(
         num_classes=80,
         in_channels=256,
         feat_channels=256,
-        num_head_convs=1,
-        num_protos=32,
         anchor_generator=dict(
             type='AnchorGenerator',
             octave_base_scale=3,
@@ -44,9 +42,14 @@ model = dict(
             target_means=[.0, .0, .0, .0],
             target_stds=[0.1, 0.1, 0.2, 0.2]),
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-        use_OHEM=True,
-        loss_bbox=dict(type='L1Loss', loss_weight=1.5)),
+            type='CrossEntropyLoss',
+            use_sigmoid=False,
+            reduction='none',
+            loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.5),
+        num_head_convs=1,
+        num_protos=32,
+        use_ohem=True),
     mask_head=dict(
         type='YolactProtonet',
         protonet_cfg=dict(
@@ -72,7 +75,7 @@ train_cfg = dict(
         min_pos_iou=0.,
         ignore_iof_thr=-1,
         gt_max_assign_all=False),
-    smoothl1_beta=1.,
+    # smoothl1_beta=1.,
     allowed_border=-1,
     pos_weight=-1,
     neg_pos_ratio=3,
@@ -82,7 +85,8 @@ test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
     score_thr=0.05,
-    nms=dict(type='nms', iou_thr=0.5, top_k=200),
+    iou_thr=0.5,
+    top_k=200,
     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'

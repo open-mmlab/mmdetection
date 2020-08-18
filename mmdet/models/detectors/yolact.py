@@ -35,10 +35,10 @@ class Yolact(SingleStageDetector):
                           device):
         """Cuda the gt_masks and discard boxes that are smaller than we'd
         like."""
-        gt_masks = torch.from_numpy(gt_masks.masks).to(device)
+        gt_masks = gt_masks.to_tensor(torch.uint8, device)
         w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
         h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
-        keep = (w > min_gt_box_wh[0]) * (h > min_gt_box_wh[1])
+        keep = (w > min_gt_box_wh[0]) & (h > min_gt_box_wh[1])
         gt_bboxes = gt_bboxes[keep]
         gt_labels = gt_labels[keep]
         gt_masks = gt_masks[keep]
