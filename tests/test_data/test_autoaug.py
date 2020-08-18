@@ -110,15 +110,15 @@ def test_translate():
             'gt_bboxes_ignore': 'gt_masks_ignore'
         }
 
-        def _translate_bbox(bboxes, offset, axis, max_h, max_w, min_size=0.):
+        def _translate_bbox(bboxes, offset, axis, max_h, max_w):
             if axis == 'x':
                 bboxes[:, 0::2] = bboxes[:, 0::2] + offset
             elif axis == 'y':
                 bboxes[:, 1::2] = bboxes[:, 1::2] + offset
             else:
                 raise ValueError
-            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, w)
-            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, h)
+            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, max_w)
+            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, max_h)
             return bboxes
 
         h, w, c = results_translated['img'].shape
@@ -133,7 +133,7 @@ def test_translate():
                     results_translated[mask_key])
             # construct gt_bboxes
             gt_bboxes = _translate_bbox(
-                copy.deepcopy(results[key]), offset, axis, h, w, min_size)
+                copy.deepcopy(results[key]), offset, axis, h, w)
             valid_inds = (gt_bboxes[:, 2] - gt_bboxes[:, 0] > min_size) & (
                 gt_bboxes[:, 3] - gt_bboxes[:, 1] > min_size)
             gt_bboxes = gt_bboxes[valid_inds]
