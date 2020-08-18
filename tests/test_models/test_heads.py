@@ -811,7 +811,7 @@ def test_yolact_head_loss():
             target_stds=[0.1, 0.1, 0.2, 0.2]),
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-        use_OHEM=True,
+        use_ohem=True,
         loss_bbox=dict(type='L1Loss', loss_weight=1.5),
         train_cfg=train_cfg)
     segm_head = YolactSegmHead(
