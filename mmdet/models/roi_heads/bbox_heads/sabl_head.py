@@ -404,9 +404,9 @@ class SABLHead(nn.Module):
         if bbox_pred is not None:
             bboxes, confids = self.bbox_coder.decode(rois[:, 1:], bbox_pred,
                                                      img_shape)
-            scores = scores * confids[:, None]
         else:
             bboxes = rois[:, 1:].clone()
+            confids = None
             if img_shape is not None:
                 bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1] - 1)
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
@@ -420,9 +420,13 @@ class SABLHead(nn.Module):
         if cfg is None:
             return bboxes, scores
         else:
-            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
+            det_bboxes, det_labels = multiclass_nms(
+                bboxes,
+                scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=confids)
 
             return det_bboxes, det_labels
 
