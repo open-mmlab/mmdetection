@@ -64,7 +64,7 @@ def test_translate():
             with_seg=True),
     ]
     # TODO handle data_root, assume folder 'coco' is in path test/data
-    data_root = osp.join(osp.dirname(__file__), '../data/coco/')
+    data_root = osp.join(osp.dirname(__file__), '../data/coco_dummy/')
     val_data = dict(
         type='CocoDataset',
         ann_file=osp.join(data_root, 'annotations/instances_val2017.json'),
