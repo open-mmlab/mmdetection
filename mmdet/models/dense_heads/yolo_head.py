@@ -419,14 +419,6 @@ class YOLOV3Head(BaseDenseHead):
         target_maps_list = images_to_levels(all_target_maps, num_level_anchors)
         neg_maps_list = images_to_levels(all_neg_maps, num_level_anchors)
 
-        # # expand into map
-        # for i in range(len(target_maps_list)):
-        #     h, w = featmap_sizes[i]
-        #     target_maps_list[i] = target_maps_list[i].reshape(
-        #         num_imgs, self.num_anchors, h, w, self.num_attrib)
-        #     neg_maps_list[i] = neg_maps_list[i].reshape(
-        #         num_imgs, self.num_anchors, h, w)
-
         return target_maps_list, neg_maps_list
 
     def _get_targets_single(self, anchors, gt_bboxes, gt_labels):
@@ -436,8 +428,6 @@ class YOLOV3Head(BaseDenseHead):
             anchors (list[Tensor]): Multi-level anchors of the image.
             gt_bboxes (Tensor): Ground truth bboxes of single image.
             gt_labels (Tensor): Ground truth labels of single image.
-            featmap_sizes (list[tuple[int]]): Sizes of the feature maps of
-                each scale level.
 
         Returns:
             tuple:
@@ -465,8 +455,7 @@ class YOLOV3Head(BaseDenseHead):
             concat_anchors.size(0), self.num_attrib)
 
         target_map[sampling_result.pos_inds, :4] = self.bbox_coder.encode(
-            concat_anchors[sampling_result.pos_inds],
-            gt_bboxes[sampling_result.pos_assigned_gt_inds],
+            sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes,
             anchor_strides[sampling_result.pos_inds])
 
         target_map[sampling_result.pos_inds, 4] = 1
