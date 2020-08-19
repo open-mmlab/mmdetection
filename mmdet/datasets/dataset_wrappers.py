@@ -189,9 +189,11 @@ class ClassBalancedDataset(object):
             cat_ids = set(self.dataset.get_cat_ids(idx))
             if len(cat_ids) == 0 and self.include_bkg:
                 cat_ids = set([len(self.CLASSES)])
-            repeat_factor = max(
-                {category_repeat[cat_id]
-                 for cat_id in cat_ids})
+            repeat_factor = 1
+            if len(cat_ids) > 0:
+                repeat_factor = max(
+                    {category_repeat[cat_id]
+                     for cat_id in cat_ids})
             repeat_factors.append(repeat_factor)
 
         return repeat_factors
