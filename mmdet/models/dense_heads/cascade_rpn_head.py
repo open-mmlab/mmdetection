@@ -6,9 +6,10 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
-from mmdet.ops import DeformConv, nms
+from mmdet.ops import DeformConv, batched_nms
 from ..builder import HEADS, build_head
-from .anchor_head import AnchorHead
+from .rpn_head import RPNHead
+from .base_dense_head import BaseDenseHead
 
 
 class AdaptiveConv(nn.Module):
@@ -53,6 +54,7 @@ class AdaptiveConv(nn.Module):
             assert H * W == offset.shape[1]
             # reshape [N, NA, 18] to (N, 18, H, W)
             offset = offset.permute(0, 2, 1).reshape(N, -1, H, W)
+            offset = offset.contiguous()
             x = self.conv(x, offset)
         else:
             assert offset is None
@@ -61,8 +63,8 @@ class AdaptiveConv(nn.Module):
 
 
 @HEADS.register_module()
-class StageCascadeRPNHead(AnchorHead):
-    """Anchor-based head (RPN, RetinaNet, SSD, etc.).
+class StageCascadeRPNHead(RPNHead):
+    """Stage of CascadeRPNHead.
 
     Args:
         in_channels (int): Number of channels in the input feature map.
@@ -93,9 +95,7 @@ class StageCascadeRPNHead(AnchorHead):
         self.bridged_feature = bridged_feature
         self.adapt_cfg = adapt_cfg
         super(StageCascadeRPNHead, self).__init__(
-            1,
             in_channels,
-            background_label=0,
             anchor_generator=anchor_generator,
             **kwargs)
 
@@ -185,10 +185,10 @@ class StageCascadeRPNHead(AnchorHead):
             else:
                 labels[pos_inds] = gt_labels[
                     sampling_result.pos_assigned_gt_inds]
-            if self.cfg.pos_weight <= 0:
+            if self.train_cfg.pos_weight <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg.pos_weight
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
@@ -311,8 +311,8 @@ class StageCascadeRPNHead(AnchorHead):
             yy, xx = torch.meshgrid(idx, idx)  # return order matters
             xx = xx.reshape(-1)
             yy = yy.reshape(-1)
-            w = (anchors[:, 2] - anchors[:, 0] + 1) / stride
-            h = (anchors[:, 3] - anchors[:, 1] + 1) / stride
+            w = (anchors[:, 2] - anchors[:, 0]) / stride
+            h = (anchors[:, 3] - anchors[:, 1]) / stride
             w = w / (ks - 1) - dilation
             h = h / (ks - 1) - dilation
             offset_x = w[:, None] * xx  # (NA, ks**2)
@@ -326,8 +326,8 @@ class StageCascadeRPNHead(AnchorHead):
             x = (anchors[:, 0] + anchors[:, 2]) * 0.5
             y = (anchors[:, 1] + anchors[:, 3]) * 0.5
             # compute centers on feature map
-            x = (x - (stride - 1) * 0.5) / stride
-            y = (y - (stride - 1) * 0.5) / stride
+            x = x / stride
+            y = y / stride
             # compute predefine centers
             xx = torch.arange(0, feat_w, device=anchors.device)
             yy = torch.arange(0, feat_h, device=anchors.device)
@@ -483,60 +483,9 @@ class StageCascadeRPNHead(AnchorHead):
             new_anchor_list.append(mlvl_anchors)
         return new_anchor_list
 
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_anchors,
-                           img_shape,
-                           scale_factor,
-                           cfg,
-                           rescale=False):
-        mlvl_proposals = []
-        for idx in range(len(cls_scores)):
-            rpn_cls_score = cls_scores[idx]
-            rpn_bbox_pred = bbox_preds[idx]
-            assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
-            anchors = mlvl_anchors[idx]
-            rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
-            if self.use_sigmoid_cls:
-                rpn_cls_score = rpn_cls_score.reshape(-1)
-                scores = rpn_cls_score.sigmoid()
-            else:
-                rpn_cls_score = rpn_cls_score.reshape(-1, 2)
-                scores = rpn_cls_score.softmax(dim=1)[:, 1]
-            rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
-                _, topk_inds = scores.topk(cfg.nms_pre)
-                rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
-                anchors = anchors[topk_inds, :]
-                scores = scores[topk_inds]
-            proposals = self.bbox_coder.decode(anchors, rpn_bbox_pred,
-                                               img_shape)
-            if cfg.min_bbox_size > 0:
-                w = proposals[:, 2] - proposals[:, 0] + 1
-                h = proposals[:, 3] - proposals[:, 1] + 1
-                valid_inds = torch.nonzero((w >= cfg.min_bbox_size) &
-                                           (h >= cfg.min_bbox_size)).squeeze()
-                proposals = proposals[valid_inds, :]
-                scores = scores[valid_inds]
-            proposals = torch.cat([proposals, scores.unsqueeze(-1)], dim=-1)
-            proposals, _ = nms(proposals, cfg.nms_thr)
-            proposals = proposals[:cfg.nms_post, :]
-            mlvl_proposals.append(proposals)
-        proposals = torch.cat(mlvl_proposals, 0)
-        if cfg.nms_across_levels:
-            proposals, _ = nms(proposals, cfg.nms_thr)
-            proposals = proposals[:cfg.max_num, :]
-        else:
-            scores = proposals[:, 4]
-            num = min(cfg.max_num, proposals.shape[0])
-            _, topk_inds = scores.topk(num)
-            proposals = proposals[topk_inds, :]
-        return proposals
-
 
 @HEADS.register_module()
-class CascadeRPNHead(nn.Module):  # TODO: inherit BaseDenseHead
+class CascadeRPNHead(BaseDenseHead):
 
     def __init__(self, num_stages, stages, train_cfg, test_cfg):
         super(CascadeRPNHead, self).__init__()
@@ -554,6 +503,14 @@ class CascadeRPNHead(nn.Module):  # TODO: inherit BaseDenseHead
     def init_weights(self):
         for i in range(self.num_stages):
             self.stages[i].init_weights()
+
+    def loss(self):
+        """loss is implemented in StageCascadeRPNHead"""
+        pass
+
+    def get_bboxes(self):
+        """get_bboxes is implemented in StageCascadeRPNHead"""
+        pass
 
     def forward_train(self,
                       x,

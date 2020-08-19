@@ -6,23 +6,23 @@ from .base_assigner import BaseAssigner
 
 
 def calc_region(bbox, ratio, stride, featmap_size=None):
-    # Base anchor locates in (stride - 1) * 0.5
-    f_bbox = (bbox - (stride - 1) * 0.5) / stride
+    # project bbox on the feature
+    f_bbox = bbox / stride
     x1 = torch.round((1 - ratio) * f_bbox[0] + ratio * f_bbox[2])
     y1 = torch.round((1 - ratio) * f_bbox[1] + ratio * f_bbox[3])
     x2 = torch.round(ratio * f_bbox[0] + (1 - ratio) * f_bbox[2])
     y2 = torch.round(ratio * f_bbox[1] + (1 - ratio) * f_bbox[3])
     if featmap_size is not None:
-        x1 = x1.clamp(min=0, max=featmap_size[1] - 1)
-        y1 = y1.clamp(min=0, max=featmap_size[0] - 1)
-        x2 = x2.clamp(min=0, max=featmap_size[1] - 1)
-        y2 = y2.clamp(min=0, max=featmap_size[0] - 1)
+        x1 = x1.clamp(min=0, max=featmap_size[1])
+        y1 = y1.clamp(min=0, max=featmap_size[0])
+        x2 = x2.clamp(min=0, max=featmap_size[1])
+        y2 = y2.clamp(min=0, max=featmap_size[0])
     return (x1, y1, x2, y2)
 
 
 def anchor_ctr_inside_region_flags(anchors, stride, region):
     x1, y1, x2, y2 = region
-    f_anchors = (anchors - (stride - 1) * 0.5) / stride
+    f_anchors = anchors / stride
     x = (f_anchors[:, 0] + f_anchors[:, 2]) * 0.5
     y = (f_anchors[:, 1] + f_anchors[:, 3]) * 0.5
     flags = (x >= x1) & (x <= x2) & (y >= y1) & (y <= y2)
@@ -119,8 +119,8 @@ class RegionAssigner(BaseAssigner):
         r1 = (1 - self.center_ratio) / 2
         r2 = (1 - self.ignore_ratio) / 2
 
-        scale = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0] + 1) *
-                           (gt_bboxes[:, 3] - gt_bboxes[:, 1] + 1))
+        scale = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
+                           (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
         min_anchor_size = scale.new_full(
             (1, ), float(anchor_scale * anchor_strides[0]))
         target_lvls = torch.floor(
@@ -167,7 +167,7 @@ class RegionAssigner(BaseAssigner):
                 d_anchors = mlvl_anchors[d_lvl]
                 d_featmap_size = featmap_sizes[d_lvl]
                 d_stride = anchor_strides[d_lvl]
-                d_ignore_region = calc_region(gt_bbox, d_stride, r2,
+                d_ignore_region = calc_region(gt_bbox, r2, d_stride,
                                               d_featmap_size)
                 ignore_flags = anchor_ctr_inside_region_flags(
                     d_anchors, d_stride, d_ignore_region)
@@ -177,7 +177,7 @@ class RegionAssigner(BaseAssigner):
                 u_anchors = mlvl_anchors[u_lvl]
                 u_featmap_size = featmap_sizes[u_lvl]
                 u_stride = anchor_strides[u_lvl]
-                u_ignore_region = calc_region(gt_bbox, u_stride, r2,
+                u_ignore_region = calc_region(gt_bbox, r2, u_stride,
                                               u_featmap_size)
                 ignore_flags = anchor_ctr_inside_region_flags(
                     u_anchors, u_stride, u_ignore_region)
