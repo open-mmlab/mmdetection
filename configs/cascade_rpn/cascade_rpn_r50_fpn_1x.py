@@ -32,8 +32,7 @@ model = dict(
                 target_stds=(0.1, 0.1, 0.5, 0.5)),
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-            loss_bbox=dict(
-                type='IoULoss', linear=True, loss_weight=10.0)),
+            loss_bbox=dict(type='IoULoss', linear=True, loss_weight=10.0)),
         dict(
             type='StageCascadeRPNHead',
             in_channels=256,
@@ -46,37 +45,34 @@ model = dict(
                 target_stds=(0.05, 0.05, 0.1, 0.1)),
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-            loss_bbox=dict(
-                type='IoULoss', linear=True, loss_weight=10.0))
+            loss_bbox=dict(type='IoULoss', linear=True, loss_weight=10.0))
     ])
 # model training and testing settings
-train_cfg = dict(
-    rpn=[
-        dict(
-            assigner=dict(
-                type='RegionAssigner',
-                center_ratio=0.2,
-                ignore_ratio=0.5),
-            allowed_border=-1,
-            pos_weight=-1,
-            debug=False),
-        dict(
-            assigner=dict(
-                type='MaxIoUAssigner',
-                pos_iou_thr=0.7,
-                neg_iou_thr=0.7,
-                min_pos_iou=0.3,
-                ignore_iof_thr=-1,
-                iou_calculator=dict(type='BboxOverlaps2D')),
-            sampler=dict(
-                type='RandomSampler',
-                num=256,
-                pos_fraction=0.5,
-                neg_pos_ub=-1,
-                add_gt_as_proposals=False),
-            allowed_border=-1,
-            pos_weight=-1,
-            debug=False)])
+train_cfg = dict(rpn=[
+    dict(
+        assigner=dict(
+            type='RegionAssigner', center_ratio=0.2, ignore_ratio=0.5),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False),
+    dict(
+        assigner=dict(
+            type='MaxIoUAssigner',
+            pos_iou_thr=0.7,
+            neg_iou_thr=0.7,
+            min_pos_iou=0.3,
+            ignore_iof_thr=-1,
+            iou_calculator=dict(type='BboxOverlaps2D')),
+        sampler=dict(
+            type='RandomSampler',
+            num=256,
+            pos_fraction=0.5,
+            neg_pos_ub=-1,
+            add_gt_as_proposals=False),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False)
+])
 test_cfg = dict(
     rpn=dict(
         nms_across_levels=False,

@@ -54,7 +54,8 @@ model = dict(
                 use_sigmoid=True,
                 loss_weight=1.0 * rpn_weight),
             loss_bbox=dict(
-                type='IoULoss', linear=True, loss_weight=10.0 * rpn_weight))],
+                type='IoULoss', linear=True, loss_weight=10.0 * rpn_weight))
+    ],
     bbox_roi_extractor=dict(
         type='SingleRoIExtractor',
         roi_layer=dict(type='RoIAlign', out_size=7, sample_num=2),
@@ -78,9 +79,7 @@ train_cfg = dict(
     rpn=[
         dict(
             assigner=dict(
-                type='RegionAssigner',
-                center_ratio=0.2,
-                ignore_ratio=0.5),
+                type='RegionAssigner', center_ratio=0.2, ignore_ratio=0.5),
             allowed_border=-1,
             pos_weight=-1,
             debug=False),
@@ -99,7 +98,8 @@ train_cfg = dict(
                 add_gt_as_proposals=False),
             allowed_border=-1,
             pos_weight=-1,
-            debug=False)],
+            debug=False)
+    ],
     rpn_proposal=dict(
         nms_across_levels=False,
         nms_pre=2000,

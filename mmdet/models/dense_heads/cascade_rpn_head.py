@@ -6,14 +6,14 @@ from mmcv.cnn import normal_init
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
-from mmdet.ops import DeformConv, batched_nms
+from mmdet.ops import DeformConv
 from ..builder import HEADS, build_head
-from .rpn_head import RPNHead
 from .base_dense_head import BaseDenseHead
+from .rpn_head import RPNHead
 
 
 class AdaptiveConv(nn.Module):
-    """ AdaptiveConv used to adapt the sampling location with the anchors.
+    """AdaptiveConv used to adapt the sampling location with the anchors.
 
     Args:
         in_channels (int): number of input channels.
@@ -95,9 +95,7 @@ class StageCascadeRPNHead(RPNHead):
         self.bridged_feature = bridged_feature
         self.adapt_cfg = adapt_cfg
         super(StageCascadeRPNHead, self).__init__(
-            in_channels,
-            anchor_generator=anchor_generator,
-            **kwargs)
+            in_channels, anchor_generator=anchor_generator, **kwargs)
 
         # override sampling and sampler
         self.sampling = sampling
@@ -505,11 +503,11 @@ class CascadeRPNHead(BaseDenseHead):
             self.stages[i].init_weights()
 
     def loss(self):
-        """loss is implemented in StageCascadeRPNHead"""
+        """loss is implemented in StageCascadeRPNHead."""
         pass
 
     def get_bboxes(self):
-        """get_bboxes is implemented in StageCascadeRPNHead"""
+        """get_bboxes is implemented in StageCascadeRPNHead."""
         pass
 
     def forward_train(self,
