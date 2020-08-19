@@ -313,8 +313,9 @@ class YOLOV3Head(BaseDenseHead):
 
         responsible_flag_list = []
         for img_id in range(len(img_metas)):
-            responsible_flag_list.append(self.anchor_generator.responsible_flags(
-                featmap_sizes, gt_bboxes[img_id], device))
+            responsible_flag_list.append(
+                self.anchor_generator.responsible_flags(
+                    featmap_sizes, gt_bboxes[img_id], device))
 
         target_maps_list, neg_maps_list = self.get_targets(
             anchor_list, responsible_flag_list, gt_bboxes, gt_labels)
@@ -396,7 +397,8 @@ class YOLOV3Head(BaseDenseHead):
 
         return loss_cls, loss_conf, loss_xy, loss_wh
 
-    def get_targets(self, anchor_list, responsible_flag_list, gt_bboxes_list, gt_labels_list):
+    def get_targets(self, anchor_list, responsible_flag_list, gt_bboxes_list,
+                    gt_labels_list):
         """Compute target maps for anchors in multiple images.
 
         Args:
@@ -405,7 +407,7 @@ class YOLOV3Head(BaseDenseHead):
                 corresponds to feature levels of the image. Each element of
                 the inner list is a tensor of shape (num_total_anchors, 4).
             responsible_flag_list (list[list[Tensor]]): Multi level responsible
-                flags of each image. Each element is a tensor of shape 
+                flags of each image. Each element is a tensor of shape
                 (num_total_anchors, )
             gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
             gt_labels_list (list[Tensor]): Ground truth labels of each box.
@@ -420,8 +422,9 @@ class YOLOV3Head(BaseDenseHead):
         # anchor number of multi levels
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
 
-        results = multi_apply(self._get_targets_single, anchor_list, responsible_flag_list
-                              gt_bboxes_list, gt_labels_list)
+        results = multi_apply(self._get_targets_single, anchor_list,
+                              responsible_flag_list, gt_bboxes_list,
+                              gt_labels_list)
 
         all_target_maps, all_neg_maps = results
         assert num_imgs == len(all_target_maps) == len(all_neg_maps)
@@ -430,12 +433,14 @@ class YOLOV3Head(BaseDenseHead):
 
         return target_maps_list, neg_maps_list
 
-    def _get_targets_single(self, anchors, responsible_flags, gt_bboxes, gt_labels):
+    def _get_targets_single(self, anchors, responsible_flags, gt_bboxes,
+                            gt_labels):
         """Generate matching bounding box prior and converted GT.
 
         Args:
             anchors (list[Tensor]): Multi-level anchors of the image.
-            responsible_flags (list[Tensor]): Multi-level responsible flags of anchors
+            responsible_flags (list[Tensor]): Multi-level responsible flags of
+                anchors
             gt_bboxes (Tensor): Ground truth bboxes of single image.
             gt_labels (Tensor): Ground truth labels of single image.
 
@@ -457,8 +462,10 @@ class YOLOV3Head(BaseDenseHead):
         concat_responsible_flags = torch.cat(responsible_flags)
 
         anchor_strides = torch.cat(anchor_strides)
-        assert len(anchor_strides) == len(concat_anchors) == len(concat_responsible_flags)
-        assign_result = self.assigner.assign(concat_anchors, concat_responsible_flags,
+        assert len(anchor_strides) == len(concat_anchors) == \
+               len(concat_responsible_flags)
+        assign_result = self.assigner.assign(concat_anchors,
+                                             concat_responsible_flags,
                                              gt_bboxes)
         sampling_result = self.sampler.sample(assign_result, concat_anchors,
                                               gt_bboxes)
