@@ -6,14 +6,6 @@ _base_ = [
 # model settings
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(
-    neck=dict(
-        type='FPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
-        start_level=1,
-        add_extra_convs=True,
-        extra_convs_on_inputs=False,
-        num_outs=5),
     bbox_head=dict(
         _delete_=True,
         type='SABLRetinaHead',
@@ -51,7 +43,7 @@ train_cfg = dict(
         type='ApproxMaxIoUAssigner',
         pos_iou_thr=0.5,
         neg_iou_thr=0.4,
-        min_pos_iou=0.4,
+        min_pos_iou=0.0,
         ignore_iof_thr=-1),
     allowed_border=-1,
     pos_weight=-1,
