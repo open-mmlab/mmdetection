@@ -168,11 +168,10 @@ class ClassBalancedDataset(object):
         num_images = len(dataset)
         for idx in range(num_images):
             cat_ids = set(self.dataset.get_cat_ids(idx))
-            if len(cat_ids) > 0:
-                for cat_id in cat_ids:
-                    category_freq[cat_id] += 1
-            elif self.include_bkg:
-                category_freq[len(self.CLASSES)] += 1
+            if len(cat_ids) == 0 and self.include_bkg:
+                cat_ids = set([len(self.CLASSES)])
+            for cat_id in cat_ids:
+                category_freq[cat_id] += 1
         for k, v in category_freq.items():
             category_freq[k] = v / num_images
 
@@ -188,6 +187,8 @@ class ClassBalancedDataset(object):
         repeat_factors = []
         for idx in range(num_images):
             cat_ids = set(self.dataset.get_cat_ids(idx))
+            if len(cat_ids) == 0 and self.include_bkg:
+                cat_ids = set([len(self.CLASSES)])
             repeat_factor = max(
                 {category_repeat[cat_id]
                  for cat_id in cat_ids})
