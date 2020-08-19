@@ -126,11 +126,14 @@ class ClassBalancedDataset(object):
             no oversampling. For categories with ``f_c < oversample_thr``, the
             degree of oversampling following the square-root inverse frequency
             heuristic above.
+        include_bkg (bool): Whether to include pure background images as an
+            independent category during autobalancing. Default: False.
     """
 
-    def __init__(self, dataset, oversample_thr):
+    def __init__(self, dataset, oversample_thr, include_bkg=False):
         self.dataset = dataset
         self.oversample_thr = oversample_thr
+        self.include_bkg = include_bkg
         self.CLASSES = dataset.CLASSES
 
         repeat_factors = self._get_repeat_factors(dataset, oversample_thr)
@@ -165,8 +168,11 @@ class ClassBalancedDataset(object):
         num_images = len(dataset)
         for idx in range(num_images):
             cat_ids = set(self.dataset.get_cat_ids(idx))
-            for cat_id in cat_ids:
-                category_freq[cat_id] += 1
+            if len(cat_ids) > 0:
+                for cat_id in cat_ids:
+                    category_freq[cat_id] += 1
+            elif self.include_bkg:
+                category_freq[len(self.CLASSES)] += 1
         for k, v in category_freq.items():
             category_freq[k] = v / num_images
 
