@@ -7,9 +7,13 @@ from torch.utils.data import DataLoader
 class EvalHook(Hook):
     """Evaluation hook.
 
+    Note that if new arguments are added for EvalHook, tools/test.py may be
+    effected.
+
     Attributes:
         dataloader (DataLoader): A PyTorch dataloader.
         interval (int): Evaluation interval (by epochs). Default: 1.
+        eval_kwargs (dict): Evaluation arguments of :func:`dataset.evaluate()`.
     """
 
     def __init__(self, dataloader, interval=1, **eval_kwargs):
