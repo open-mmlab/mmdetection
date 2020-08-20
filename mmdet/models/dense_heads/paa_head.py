@@ -1,10 +1,15 @@
+import numpy as np
 import torch
 
-from mmdet.core import (anchor_inside_flags, force_fp32, multi_apply,
-                        multiclass_nms, unmap)
+from mmdet.core import force_fp32, multi_apply, multiclass_nms
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead
+
+try:
+    import sklearn.mixture as skm
+except ImportError:
+    skm = None
 
 
 def levels_to_images(mlvl_tensor):
@@ -106,14 +111,18 @@ class PAAHead(ATSSHead):
         cls_scores = levels_to_images(cls_scores)
         bbox_preds = levels_to_images(bbox_preds)
         iou_preds = levels_to_images(iou_preds)
+
+        pos_losses_list, _ = multi_apply(self.get_pos_loss, anchor_list,
+                                         cls_scores, bbox_preds, labels,
+                                         labels_weight, bboxes_target,
+                                         bboxes_weight, pos_inds)
+
         with torch.no_grad():
             labels, label_weights, bbox_weights, num_pos = multi_apply(
                 self.paa_reassign,
-                cls_scores,
-                bbox_preds,
+                pos_losses_list,
                 labels,
                 labels_weight,
-                bboxes_target,
                 bboxes_weight,
                 pos_inds,
                 pos_gt_index,
@@ -160,18 +169,19 @@ class PAAHead(ATSSHead):
         return dict(
             loss_cls=losses_cls, loss_bbox=losses_bbox, loss_iou=losses_iou)
 
-    def paa_reassign(self, cls_score, bbox_pred, label, label_weight,
-                     bbox_target, bbox_weight, pos_inds, pos_gt_inds, anchors):
-        """Fit loss to GMM distribution and separate positive, ignore, negative
-        samples again with GMM model.
+    def get_pos_loss(self, anchors, cls_score, bbox_pred, label, label_weight,
+                     bbox_target, bbox_weight, pos_inds):
+        """Calculate loss of all potential positive samples obtained from first
+        match process.
 
         Args:
+            anchors (list[Tensor]): Anchors of each scale.
             cls_score (Tensor): Box scores of single image with shape
                 (num_anchors, num_classes)
             bbox_pred (Tensor): Box energies / deltas of single image
                 with shape (num_anchors, 4)
-            label (Tensor): classification target of each anchor with shape
-                (num_anchors,)
+            label (Tensor): classification target of each anchor with
+                shape (num_anchors,)
             label_weight (Tensor): Classification loss weight of each
                 anchor with shape (num_anchors).
             bbox_target (dict): Regression target of each anchor with
@@ -180,29 +190,11 @@ class PAAHead(ATSSHead):
                 (num_anchors, 4).
             pos_inds (Tensor): Index of all positive samples got from
                 first assign process.
-            pos_gt_inds (Tensor): Gt_index of all positive samples got
-                from first assign process.
-            anchors (list[Tensor]): Anchors of each scale.
 
         Returns:
-            tuple: Usually returns a tuple containing learning targets.
-
-                - label (Tensor): classification target of each anchor after
-                  paa assign, with shape (num_anchors,)
-                - label_weight (Tensor): Classification loss weight of each
-                  anchor after paa assign, with shape (num_anchors).
-                - bbox_weight (Tensor): Bbox weight of each anchor with shape
-                  (num_anchors, 4).
-                - num_pos (int): The number of positive samples after paa
-                  assign.
+            Tensor: Losses of all positive samples in single image.
         """
-        if not len(pos_inds):
-            return label, label_weight, bbox_weight, 0
-
-        num_gt = pos_gt_inds.max() + 1
-        num_level = len(anchors)
         anchors_all_level = torch.cat(anchors, 0)
-        num_anchors_each_level = [item.size(0) for item in anchors]
         pos_scores = cls_score[pos_inds]
         pos_bbox_pred = bbox_pred[pos_inds]
         pos_label = label[pos_inds]
@@ -229,12 +221,48 @@ class PAAHead(ATSSHead):
 
         loss_cls = loss_cls.sum(-1)
         pos_loss = loss_bbox + loss_cls
-        assert not torch.isnan(pos_loss).any()
-        inds_level_interval = [
-            sum(num_anchors_each_level[:i])
-            for i in range(0,
-                           len(num_anchors_each_level) + 1)
-        ]
+        return pos_loss, None
+
+    def paa_reassign(self, pos_losses, label, label_weight, bbox_weight,
+                     pos_inds, pos_gt_inds, anchors):
+        """Fit loss to GMM distribution and separate positive, ignore, negative
+        samples again with GMM model.
+
+        Args:
+            pos_losses (Tensor): Losses of all positive samples in
+                single image.
+            label (Tensor): classification target of each anchor with
+                shape (num_anchors,)
+            label_weight (Tensor): Classification loss weight of each
+                anchor with shape (num_anchors).
+            bbox_weight (Tensor): Bbox weight of each anchor with shape
+                (num_anchors, 4).
+            pos_inds (Tensor): Index of all positive samples got from
+                first assign process.
+            pos_gt_inds (Tensor): Gt_index of all positive samples got
+                from first assign process.
+            anchors (list[Tensor]): Anchors of each scale.
+
+        Returns:
+            tuple: Usually returns a tuple containing learning targets.
+
+                - label (Tensor): classification target of each anchor after
+                  paa assign, with shape (num_anchors,)
+                - label_weight (Tensor): Classification loss weight of each
+                  anchor after paa assign, with shape (num_anchors).
+                - bbox_weight (Tensor): Bbox weight of each anchor with shape
+                  (num_anchors, 4).
+                - num_pos (int): The number of positive samples after paa
+                  assign.
+        """
+        if not len(pos_inds):
+            return label, label_weight, bbox_weight, 0
+
+        num_gt = pos_gt_inds.max() + 1
+        num_level = len(anchors)
+        num_anchors_each_level = [item.size(0) for item in anchors]
+        num_anchors_each_level.insert(0, 0)
+        inds_level_interval = np.cumsum(num_anchors_each_level)
         pos_level_mask = []
         for i in range(num_level):
             mask = (pos_inds >= inds_level_interval[i]) & (
@@ -248,7 +276,7 @@ class PAAHead(ATSSHead):
             for level in range(num_level):
                 level_mask = pos_level_mask[level]
                 level_gt_mask = level_mask & gt_mask
-                value, topk_inds = pos_loss[level_gt_mask].topk(
+                value, topk_inds = pos_losses[level_gt_mask].topk(
                     min(level_gt_mask.sum(), self.topk), largest=False)
                 pos_inds_gmm.append(pos_inds[level_gt_mask][topk_inds])
                 pos_loss_gmm.append(value)
@@ -265,9 +293,7 @@ class PAAHead(ATSSHead):
             means_init = [[min_loss], [max_loss]]
             weights_init = [0.5, 0.5]
             precisions_init = [[[1.0]], [[1.0]]]
-            try:
-                import sklearn.mixture as skm
-            except ImportError:
+            if skm is None:
                 raise ImportError('Please run "pip install sklearn" '
                                   'to install sklearn first.')
             gmm = skm.GaussianMixture(
@@ -406,64 +432,15 @@ class PAAHead(ATSSHead):
         """
         assert unmap_outputs, 'We must map outputs back to the original' \
             'set of anchors in PAAhead'
-        inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
-                                           img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
-        if not inside_flags.any():
-            return (None, ) * 7
-        # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags, :]
-        assign_result = self.assigner.assign(
-            anchors, gt_bboxes, gt_bboxes_ignore,
-            None if self.sampling else gt_labels)
-        sampling_result = self.sampler.sample(assign_result, anchors,
-                                              gt_bboxes)
-
-        num_valid_anchors = anchors.shape[0]
-        bbox_targets = torch.zeros_like(anchors)
-        bbox_weights = torch.zeros_like(anchors)
-        labels = anchors.new_full((num_valid_anchors, ),
-                                  self.background_label,
-                                  dtype=torch.long)
-        label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
-
-        pos_inds = sampling_result.pos_inds
-        neg_inds = sampling_result.neg_inds
-        if len(pos_inds) > 0:
-            if not self.reg_decoded_bbox:
-                pos_bbox_targets = self.bbox_coder.encode(
-                    sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
-            else:
-                pos_bbox_targets = sampling_result.pos_gt_bboxes
-            bbox_targets[pos_inds, :] = pos_bbox_targets
-            bbox_weights[pos_inds, :] = 1.0
-            if gt_labels is None:
-                # only rpn gives gt_labels as None, this time FG is 1
-                labels[pos_inds] = 1
-            else:
-                labels[pos_inds] = gt_labels[
-                    sampling_result.pos_assigned_gt_inds]
-            if self.train_cfg.pos_weight <= 0:
-                label_weights[pos_inds] = 1.0
-            else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
-        if len(neg_inds) > 0:
-            label_weights[neg_inds] = 1.0
-
-        # map up to original set of anchors
-        if unmap_outputs:
-            num_total_anchors = flat_anchors.size(0)
-            labels = unmap(
-                labels,
-                num_total_anchors,
-                inside_flags,
-                fill=self.background_label)  # fill bg label
-            label_weights = unmap(label_weights, num_total_anchors,
-                                  inside_flags)
-            bbox_targets = unmap(bbox_targets, num_total_anchors, inside_flags)
-            bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
-        return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
-                neg_inds, sampling_result)
+        return super(ATSSHead, self)._get_targets_single(
+            flat_anchors,
+            valid_flags,
+            gt_bboxes,
+            gt_bboxes_ignore,
+            gt_labels,
+            img_meta,
+            label_channels=1,
+            unmap_outputs=True)
 
     def _get_bboxes_single(self,
                            cls_scores,
