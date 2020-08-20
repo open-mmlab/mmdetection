@@ -176,7 +176,7 @@ class Translate(object):
             borderMode=borderMode,
             borderValue=fill_val)
 
-    def __call__(self, results, min_size=0.0, neg_offset_prob=0.5):
+    def __call__(self, results, min_size=0.0, random_negative_prob=0.5):
         """Call function to translate images, bounding boxes, masks and
         semantic segmentation maps.
 
@@ -184,7 +184,7 @@ class Translate(object):
             results (dict): Result dict from loading pipeline.
             min_size (int | float): Minimum pixel size for the
              translated bboxes.
-            neg_offset_prob (float): The probability that turns the
+            random_negative_prob (float): The probability that turns the
              offset negative.
 
         Returns:
@@ -194,7 +194,7 @@ class Translate(object):
             return results
 
         offset = -self.offset if np.random.rand(
-        ) < neg_offset_prob else self.offset
+        ) < random_negative_prob else self.offset
         # the transformation matrix of cv2
         if self.axis == 'x':
             trans_matrix = np.float32([[1, 0, offset], [0, 1, 0]])
@@ -243,6 +243,10 @@ class Translate(object):
         ``trans_matrix``."""
         h, w, c = results['img_shape']
         for key in results.get('mask_fields', []):
+            if isinstance(results[key], PolygonMasks):
+                # convert BitmapMasks to PolygonMasks is not
+                # supported currently
+                raise NotImplementedError
             translate_masks = []
             for mask in results[key].to_ndarray():
                 translate_mask = self.warpAffine(
@@ -251,14 +255,7 @@ class Translate(object):
                 if isinstance(results[key], BitmapMasks):
                     translate_masks.append(translate_mask[np.newaxis, :, :])
                 elif isinstance(results[key], PolygonMasks):
-                    # encoded with RLE
-                    # translate_masks.append(
-                    #     mask_util.encode(
-                    #         np.array(
-                    #             translate_mask[:, :, np.newaxis],
-                    #             order='F',
-                    #             dtype='uint8'))[0])
-                    raise NotImplementedError
+                    pass  # TODO suport for type PolygonMasks
 
             if isinstance(results[key],
                           BitmapMasks) and len(translate_masks) > 0:
@@ -266,8 +263,7 @@ class Translate(object):
                     np.concatenate(translate_masks), h, w)
             elif isinstance(results[key],
                             PolygonMasks) and len(translate_masks) > 0:
-                # results[key] = PolygonMasks(translate_masks, h, w)
-                raise NotImplementedError
+                pass  # TODO suport type  PolygonMasks
 
     def _translate_seg(self, results, trans_matrix, fill_val=255):
         """Translate segmentation maps horizontally or vertically, according to

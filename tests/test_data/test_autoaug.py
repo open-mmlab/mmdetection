@@ -8,6 +8,23 @@ from mmcv.utils import build_from_cfg
 from mmdet.datasets.builder import DATASETS, PIPELINES
 
 
+def _check_keys(results, results_translated):
+    assert len(set(results.keys()).difference(set(
+        results_translated.keys()))) == 0
+    assert len(set(results_translated.keys()).difference(set(
+        results.keys()))) == 0
+
+
+def _pad(h, w, c, pad_val, axis=-1, dtype=np.float32):
+    assert isinstance(pad_val, (int, float, tuple))
+    if isinstance(pad_val, (int, float)):
+        pad_val = tuple([pad_val] * c)
+    assert len(pad_val) == c
+    pad_data = np.stack([np.ones((h, w)) * pad_val[i] for i in range(c)],
+                        axis=axis).astype(dtype)
+    return pad_data
+
+
 def test_translate():
     # test assertion for invalid value of level
     with pytest.raises(AssertionError):
@@ -76,23 +93,6 @@ def test_translate():
     # randomly sample one image and load the results according to
     # ``pipeline``
     results = coco_dataset[np.random.choice(len(coco_dataset))]
-
-    def _check_keys(results, results_translated):
-        assert len(
-            set(results.keys()).difference(set(
-                results_translated.keys()))) == 0
-        assert len(
-            set(results_translated.keys()).difference(set(
-                results.keys()))) == 0
-
-    def _pad(h, w, c, pad_val, axis=-1, dtype=np.float32):
-        assert isinstance(pad_val, (int, float, tuple))
-        if isinstance(pad_val, (int, float)):
-            pad_val = tuple([pad_val] * c)
-        assert len(pad_val) == c
-        pad_data = np.stack([np.ones((h, w)) * pad_val[i] for i in range(c)],
-                            axis=axis).astype(dtype)
-        return pad_data
 
     def _check_bbox_mask(results,
                          results_translated,
@@ -279,7 +279,7 @@ def test_translate():
     translate_module = build_from_cfg(transform, PIPELINES)
     offset = translate_module.offset
     results_translated = translate_module(
-        copy.deepcopy(results), neg_offset_prob=1.0)
+        copy.deepcopy(results), random_negative_prob=1.0)
     check_translate(
         copy.deepcopy(results),
         results_translated,
@@ -291,7 +291,7 @@ def test_translate():
 
     # test case when level>0 and translate along x-axis (right shift).
     results_translated = translate_module(
-        copy.deepcopy(results), neg_offset_prob=0.0)
+        copy.deepcopy(results), random_negative_prob=0.0)
     check_translate(
         copy.deepcopy(results),
         results_translated,
@@ -312,14 +312,61 @@ def test_translate():
     translate_module = build_from_cfg(transform, PIPELINES)
     offset = translate_module.offset
     results_translated = translate_module(
-        copy.deepcopy(results), neg_offset_prob=1.0)
+        copy.deepcopy(results), random_negative_prob=1.0)
     check_translate(
         copy.deepcopy(results), results_translated, -offset, img_fill_val,
         seg_ignore_label, 'y')
 
     # test case when level>0 and translate along y-axis (bottom shift).
     results_translated = translate_module(
-        copy.deepcopy(results), neg_offset_prob=0.0)
+        copy.deepcopy(results), random_negative_prob=0.0)
     check_translate(
         copy.deepcopy(results), results_translated, offset, img_fill_val,
         seg_ignore_label, 'y')
+
+    # test case when no translation is called (prob<=0)
+    transform = dict(
+        type='Translate',
+        level=8,
+        prob=0.0,
+        fill_val=img_fill_val,
+        seg_ignore_label=seg_ignore_label,
+        axis='x')
+    translate_module = build_from_cfg(transform, PIPELINES)
+    results_translated = translate_module(
+        copy.deepcopy(results), random_negative_prob=0.0)
+
+    # test mask with type PolygonMasks
+    pipeline = [
+        dict(type='LoadImageFromFile'),
+        dict(
+            type='LoadAnnotations',
+            with_bbox=True,
+            with_mask=True,
+            with_seg=True,
+            poly2mask=False),
+    ]
+    data = dict(
+        type='CocoDataset',
+        ann_file=osp.join(data_root, 'annotations/instances_val2017.json'),
+        img_prefix=osp.join(data_root, 'val2017/'),
+        seg_prefix=osp.join(data_root, 'stuffthingmaps/val2017/'),
+        pipeline=pipeline,
+        test_mode=False)
+    coco_dataset = build_from_cfg(data, DATASETS)
+    results = coco_dataset[np.random.choice(len(coco_dataset))]
+    transform = dict(
+        type='Translate',
+        level=7,
+        prob=1.0,
+        fill_val=img_fill_val,
+        seg_ignore_label=seg_ignore_label,
+        axis='x')
+    translate_module = build_from_cfg(transform, PIPELINES)
+    with pytest.raises(NotImplementedError):
+        translate_module(copy.deepcopy(results), random_negative_prob=1.0)
+
+    # test __repr__
+    assert repr(translate_module) == 'Translate(level=7, prob=1.0, ' \
+        'fill_val=(104.0, 116.0, 124.0), seg_ignore_label=255, axis=x,' \
+        ' max_translate_offset=250.0)'
