@@ -2,7 +2,6 @@ import copy
 
 import cv2
 import numpy as np
-import pycocotools.mask as mask_util
 
 from mmdet.core.mask import BitmapMasks, PolygonMasks
 from ..builder import PIPELINES
@@ -246,19 +245,20 @@ class Translate(object):
         for key in results.get('mask_fields', []):
             translate_masks = []
             for mask in results[key].to_ndarray():
-                translate_mask = self.warpAffine(mask, trans_matrix,
-                                                 mask.shape[:2][::-1],
-                                                 fill_val)[np.newaxis, :, :]
+                translate_mask = self.warpAffine(
+                    mask.astype(np.uint8), trans_matrix, mask.shape[:2][::-1],
+                    fill_val)
                 if isinstance(results[key], BitmapMasks):
-                    translate_masks.append(translate_mask)
+                    translate_masks.append(translate_mask[np.newaxis, :, :])
                 elif isinstance(results[key], PolygonMasks):
                     # encoded with RLE
-                    translate_masks.append(
-                        mask_util.encode(
-                            np.array(
-                                translate_mask[:, :, np.newaxis],
-                                order='F',
-                                dtype='uint8'))[0])
+                    # translate_masks.append(
+                    #     mask_util.encode(
+                    #         np.array(
+                    #             translate_mask[:, :, np.newaxis],
+                    #             order='F',
+                    #             dtype='uint8'))[0])
+                    raise NotImplementedError
 
             if isinstance(results[key],
                           BitmapMasks) and len(translate_masks) > 0:
@@ -266,7 +266,8 @@ class Translate(object):
                     np.concatenate(translate_masks), h, w)
             elif isinstance(results[key],
                             PolygonMasks) and len(translate_masks) > 0:
-                results[key] = PolygonMasks(translate_masks, h, w)
+                # results[key] = PolygonMasks(translate_masks, h, w)
+                raise NotImplementedError
 
     def _translate_seg(self, results, trans_matrix, fill_val=255):
         """Translate segmentation maps horizontally or vertically, according to

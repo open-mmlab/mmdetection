@@ -55,28 +55,27 @@ def test_translate():
         build_from_cfg(transform, PIPELINES)
 
     # construct CocoDataset as the dataset example for testing
-    train_pipeline = [
+    pipeline = [
         dict(type='LoadImageFromFile'),
         dict(
             type='LoadAnnotations',
             with_bbox=True,
             with_mask=True,
-            with_seg=True),
+            with_seg=True,
+            poly2mask=True),
     ]
-    # TODO handle data_root, assume folder 'coco' is in path test/data
     data_root = osp.join(osp.dirname(__file__), '../data/coco_dummy/')
-    val_data = dict(
+    data = dict(
         type='CocoDataset',
         ann_file=osp.join(data_root, 'annotations/instances_val2017.json'),
         img_prefix=osp.join(data_root, 'val2017/'),
         seg_prefix=osp.join(data_root, 'stuffthingmaps/val2017/'),
-        pipeline=train_pipeline,
+        pipeline=pipeline,
         test_mode=False)
-    coco_dataset = build_from_cfg(val_data, DATASETS)
+    coco_dataset = build_from_cfg(data, DATASETS)
     # randomly sample one image and load the results according to
-    # ``train_pipeline``
-    results = coco_dataset.__getitem__(
-        np.random.choice(range(len(coco_dataset))))
+    # ``pipeline``
+    results = coco_dataset[np.random.choice(len(coco_dataset))]
 
     def _check_keys(results, results_translated):
         assert len(
