@@ -9,6 +9,7 @@ from mmcv.ops import CornerPool, batched_nms
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
+from .base_dense_head import BaseDenseHead
 
 
 class BiCornerPool(nn.Module):
@@ -72,7 +73,7 @@ class BiCornerPool(nn.Module):
 
 
 @HEADS.register_module()
-class CornerHead(nn.Module):
+class CornerHead(BaseDenseHead):
     """Head of CornerNet: Detecting Objects as Paired Keypoints.
 
     Code is modified from the `official github repo
@@ -147,9 +148,10 @@ class CornerHead(nn.Module):
                 feat_channels, out_channels, 1, norm_cfg=None, act_cfg=None))
 
     def _init_corner_kpt_layers(self):
-        """Initialize corner keypoint layers. Including corner heatmap branch
-        and corner offset branch. Each branch has two parts: prefix `tl_` for
-        top-left and `br_` for bottom-right.
+        """Initialize corner keypoint layers.
+
+        Including corner heatmap branch and corner offset branch. Each branch
+        has two parts: prefix `tl_` for top-left and `br_` for bottom-right.
         """
         self.tl_pool, self.br_pool = nn.ModuleList(), nn.ModuleList()
         self.tl_heat, self.br_heat = nn.ModuleList(), nn.ModuleList()
@@ -184,9 +186,10 @@ class CornerHead(nn.Module):
                     in_channels=self.in_channels))
 
     def _init_corner_emb_layers(self):
-        """Initialize corner embedding layers. Only include corner embedding
-        branch with two parts: prefix `tl_` for top-left and `br_` for
-        bottom-right.
+        """Initialize corner embedding layers.
+
+        Only include corner embedding branch with two parts: prefix `tl_` for
+        top-left and `br_` for bottom-right.
         """
         self.tl_emb, self.br_emb = nn.ModuleList(), nn.ModuleList()
 
@@ -202,6 +205,7 @@ class CornerHead(nn.Module):
 
     def _init_layers(self):
         """Initialize layers for CornerHead.
+
         Including two parts: corner keypoint layers and corner embedding layers
         """
         self._init_corner_kpt_layers()
@@ -212,8 +216,8 @@ class CornerHead(nn.Module):
         """Initialize weights of the head."""
         bias_init = bias_init_with_prob(0.1)
         for i in range(self.num_feat_levels):
-            self.tl_heat[i][-1].bias.data.fill_(bias_init)
-            self.br_heat[i][-1].bias.data.fill_(bias_init)
+            self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
+            self.br_heat[i][-1].conv.bias.data.fill_(bias_init)
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -823,9 +827,9 @@ class CornerHead(nn.Module):
         """
         batch, _, height, width = scores.size()
         topk_scores, topk_inds = torch.topk(scores.view(batch, -1), k)
-        topk_clses = (topk_inds / (height * width)).int()
+        topk_clses = topk_inds // (height * width)
         topk_inds = topk_inds % (height * width)
-        topk_ys = (topk_inds / width).int().float()
+        topk_ys = topk_inds // width
         topk_xs = (topk_inds % width).int().float()
         return topk_scores, topk_inds, topk_clses, topk_ys, topk_xs
 

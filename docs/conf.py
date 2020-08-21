@@ -20,10 +20,17 @@ sys.path.insert(0, os.path.abspath('..'))
 project = 'MMDetection'
 copyright = '2018-2020, OpenMMLab'
 author = 'MMDetection Authors'
+version_file = '../mmdet/version.py'
+
+
+def get_version():
+    with open(version_file, 'r') as f:
+        exec(compile(f.read(), version_file, 'exec'))
+    return locals()['__version__']
+
 
 # The full version, including alpha/beta/rc tags
-with open('../mmdet/VERSION', 'r') as f:
-    release = f.read().strip()
+release = get_version()
 
 # -- General configuration ---------------------------------------------------
 

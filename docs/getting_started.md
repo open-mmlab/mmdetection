@@ -114,7 +114,7 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
    ```shell
    ./tools/dist_test.sh configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-       8 --out results.pkl --eval bbox segm --options "classwise=True"
+       8 --out results.pkl --eval bbox segm --eval-options "classwise=True"
    ```
 
 6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate the json file to be submit to the official evaluation server.
@@ -122,7 +122,7 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
    ```shell
    ./tools/dist_test.sh configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_20181010-069fa190.pth \
-       8 --format-only --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
+       8 --format-only --eval-options "jsonfile_prefix=./mask_rcnn_test-dev_results"
    ```
 
    You will get two json files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
@@ -132,7 +132,7 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
    ```shell
    ./tools/dist_test.sh configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
        checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
-       8  --format-only --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
+       8  --format-only --eval-options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
    ```
 
    The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
@@ -265,7 +265,7 @@ According to the [Linear Scaling Rule](https://arxiv.org/abs/1706.02677), you ne
 python tools/train.py ${CONFIG_FILE} [optional arguments]
 ```
 
-If you want to specify the working directory in the command, you can add an argument `--work_dir ${YOUR_WORK_DIR}`.
+If you want to specify the working directory in the command, you can add an argument `--work-dir ${YOUR_WORK_DIR}`.
 
 ### Train with multiple GPUs
 
@@ -278,11 +278,12 @@ Optional arguments are:
 - `--no-validate` (**not suggested**): By default, the codebase will perform evaluation at every k (default value is 1, which can be modified like [this](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py#L174)) epochs during the training. To disable this behavior, use `--no-validate`.
 - `--work-dir ${WORK_DIR}`: Override the working directory specified in the config file.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
-- `--options 'Key=value'`: Overide some settings in the used config.
+- `--cfg-options 'Key=value'`: Overide some settings in the used config.
 
-Difference between `resume-from` and `load-from`:
-`resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
-`load-from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
+**Note**:
+
+- `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
+- For more clear usage, the original `load-from` is deprecated and you can use `--cfg-options 'load_from="path/to/you/model"'` instead. It only loads the model weights and the training epoch starts from 0 which is usually used for finetuning.
 
 ### Train with multiple machines
 
@@ -318,7 +319,7 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 
 If you use launch training jobs with Slurm, there are two ways to specify the ports.
 
-1. Set the port through `--options`. This is more recommended since it does not change the original configs.
+1. Set the port through `--cfg-options`. This is more recommended since it does not change the original configs.
 
    ```shell
    CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --options 'dist_params.port=29500'
@@ -445,13 +446,17 @@ Please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
 
 ### Convert to ONNX (experimental)
 
-We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. The converted model could be visualized by tools like [Netron](https://github.com/lutzroeder/netron).
+We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. The converted model could be visualized by tools like [Netron](https://github.com/lutzroeder/netron). Besides, we also support comparing the output results between Pytorch and ONNX model.
 
 ```shell
-python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --out ${ONNX_FILE} [--shape ${INPUT_SHAPE}]
+python tools/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output_file ${ONNX_FILE} [--shape ${INPUT_SHAPE} --verify]
 ```
 
-**Note**: This tool is still experimental. Customized operators are not supported for now. We set `use_torchvision=True` on-the-fly for `RoIPool` and `RoIAlign`.
+**Note**: This tool is still experimental. Some customized operators are not supported for now. We only support exporting RetinaNet model at this moment.
+
+### Visualize the output results
+
+If you need a lightweight GUI for visualizing the detection results, you can refer [DetVisGUI project](https://github.com/Chien-Hung/DetVisGUI/tree/mmdetection).
 
 ## Tutorials
 

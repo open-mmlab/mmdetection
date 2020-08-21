@@ -137,9 +137,9 @@ class GridRoIHead(StandardRoIHead):
             x, img_metas, proposal_list, self.test_cfg, rescale=False)
         # pack rois into bboxes
         grid_rois = bbox2roi([det_bboxes[:, :4]])
-        grid_feats = self.grid_roi_extractor(
-            x[:len(self.grid_roi_extractor.featmap_strides)], grid_rois)
         if grid_rois.shape[0] != 0:
+            grid_feats = self.grid_roi_extractor(
+                x[:len(self.grid_roi_extractor.featmap_strides)], grid_rois)
             self.grid_head.test_mode = True
             grid_pred = self.grid_head(grid_feats)
             det_bboxes = self.grid_head.get_bboxes(det_bboxes,
