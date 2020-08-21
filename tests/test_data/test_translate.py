@@ -386,6 +386,18 @@ def test_translate():
 
 
 def test_translate_only_bbox():
+    # test assertion with invalid type of bbox_aug_factor
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='TranslateOnlyBBox', level=2, bbox_aug_factor=[1.])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion with invalid value of bbox_aug_factor
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='TranslateOnlyBBox', level=2, bbox_aug_factor=0.5)
+        build_from_cfg(transform, PIPELINES)
+
     # construct CocoDataset as the dataset example for testing
     pipeline = [
         dict(type='LoadImageFromFile'),
