@@ -23,11 +23,11 @@ def levels_to_images(mlvl_tensor):
             corresponding level. Each element shape (N, C, H, W)
 
     Returns:
-        list[torch.Tensor]: A list contains n tensors and each tensor
-            shape (num_elements, c)
+        list[torch.Tensor]: A list that contains N tensors and each tensor
+            shape (num_elements, C)
     """
     batch_size = mlvl_tensor[0].size(0)
-    batch_list = [[] for i in range(batch_size)]
+    batch_list = [[] for _ in range(batch_size)]
     channels = mlvl_tensor[0].size(1)
     for t in mlvl_tensor:
         t = t.permute(0, 2, 3, 1)
@@ -211,19 +211,19 @@ class PAAHead(ATSSHead):
         pos_bbox_pred = self.bbox_coder.decode(pos_anchors, pos_bbox_pred)
 
         # to keep loss dimension
-        origin_reduction = self.loss_cls.reduction
-        self.loss_cls.reduction = 'none'
         loss_cls = self.loss_cls(
-            pos_scores, pos_label, pos_label_weight,
-            avg_factor=None) / self.loss_cls.loss_weight
-        self.loss_cls.reduction = origin_reduction
+            pos_scores,
+            pos_label,
+            pos_label_weight,
+            avg_factor=self.loss_cls.loss_weight,
+            reduction_override='none')
 
-        origin_reduction = self.loss_bbox.reduction
-        self.loss_bbox.reduction = 'none'
         loss_bbox = self.loss_bbox(
-            pos_bbox_pred, pos_bbox_target, pos_bbox_weight,
-            avg_factor=None) / self.loss_bbox.loss_weight
-        self.loss_bbox.reduction = origin_reduction
+            pos_bbox_pred,
+            pos_bbox_target,
+            pos_bbox_weight,
+            avg_factor=self.loss_cls.loss_weight,
+            reduction_override='none')
 
         loss_cls = loss_cls.sum(-1)
         pos_loss = loss_bbox + loss_cls
