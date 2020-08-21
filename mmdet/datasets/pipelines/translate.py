@@ -375,11 +375,6 @@ class TranslateOnlyBBox(Translate):
                         masks[idx][min_y:max_y,
                                    min_x:max_x] = augmented_mask_content
 
-            # if masks is not None and len(masks) > 0 and isinstance(
-            #         results[mask_key], BitmapMasks):
-            #     results[mask_key] = BitmapMasks(masks, img.shape[0],
-            #                                     img.shape[1])
-
             if keep_inds:
                 results[key] = results[key][keep_inds]
                 if label_key in results:
