@@ -25,7 +25,6 @@ class MBConv(nn.Module):
             Default: None
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
-
     """
 
     def __init__(self,

@@ -4,7 +4,7 @@ from .activations import Swish
 
 
 class SE(nn.Module):
-    """Squeeze-and-Excitation (SE) block with (optional) Swish
+    """Squeeze-and-Excitation (SE) block with (optional) Swish.
 
     Args:
         w_in (int): Number of input channels.
