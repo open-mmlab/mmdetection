@@ -1,4 +1,4 @@
-from .auto_augment import AutoAugment, Translate
+from .auto_augment import AutoAugment
 from .compose import Compose
 from .formating import (Collect, ImageToTensor, ToDataContainer, ToTensor,
                         Transpose, to_tensor)
@@ -9,6 +9,7 @@ from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Albu, CutOut, Expand, MinIoURandomCrop, Normalize,
                          Pad, PhotoMetricDistortion, RandomCenterCropPad,
                          RandomCrop, RandomFlip, Resize, SegRescale)
+from .translate import Translate, TranslateOnlyBBox
 
 __all__ = [
     'Compose',
@@ -38,4 +39,5 @@ __all__ = [
     'AutoAugment',
     'CutOut',
     'Translate',
+    'TranslateOnlyBBox',
 ]
