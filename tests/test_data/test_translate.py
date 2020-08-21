@@ -467,6 +467,9 @@ def test_translate_only_bbox():
             for idx in inds:
                 min_x, min_y, max_x, max_y = bboxes[idx].copy().astype(
                     np.int32)
+                if min_x == max_x or min_y == max_y:
+                    keep_inds.append(idx)
+                    continue
                 cropped_img = img[min_y:max_y, min_x:max_x, :].transpose(
                     (2, 0, 1))
                 img[min_y:max_y,
@@ -495,9 +498,12 @@ def test_translate_only_bbox():
                 if mask_key in results:
                     masks = masks[keep_inds]
             else:
+                results[key] = np.zeros((0, 4), dtype=np.float32)
                 if masks is not None and len(masks) > 0:
                     masks = np.empty((0, masks.shape[1], masks.shape[2]),
                                      dtype=masks.dtype)
+                if label_key in results:
+                    results[label_key] = np.array([], dtype=np.int64)
 
             # check bboxs
             assert np.equal(results[key], results_translated[key]).all()
@@ -556,7 +562,7 @@ def test_translate_only_bbox():
         fill_val=img_fill_val,
         seg_ignore_label=seg_ignore_label,
         axis='y',
-        max_translate_offset=120.,
+        max_translate_offset=20.,
         force_aug=True,
     )
     translate_module = build_from_cfg(transform, PIPELINES)

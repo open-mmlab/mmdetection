@@ -345,6 +345,9 @@ class TranslateOnlyBBox(Translate):
                     # translate image
                     min_x, min_y, max_x, max_y = bboxes[idx].copy().astype(
                         np.int32)
+                    if min_x == max_x or min_y == max_y:
+                        keep_inds.append(idx)
+                        continue
                     bbox_content = img[min_y:max_y, min_x:max_x, :]
                     augmented_bbox_content = self.warpAffine(
                         bbox_content, trans_matrix,
@@ -374,6 +377,8 @@ class TranslateOnlyBBox(Translate):
                             mask_content.shape[::-1], 0)
                         masks[idx][min_y:max_y,
                                    min_x:max_x] = augmented_mask_content
+                else:
+                    keep_inds.append(idx)
 
             if keep_inds:
                 results[key] = results[key][keep_inds]
@@ -385,10 +390,14 @@ class TranslateOnlyBBox(Translate):
                                                     img.shape[0], img.shape[1])
             else:
                 # len keep_inds is 0, case when masks are all filtered
+                results[key] = np.zeros((0, 4), dtype=np.float32)
                 if masks is not None and len(masks) > 0 and isinstance(
                         results[mask_key], BitmapMasks):
                     results[mask_key] = BitmapMasks([], img.shape[0],
                                                     img.shape[1])
+                if label_key in results:
+                    results[label_key] = np.array([], dtype=np.int64)
+
         return results
 
     def __repr__(self):
