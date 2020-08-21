@@ -383,6 +383,12 @@ class TranslateOnlyBBox(Translate):
                         results[mask_key], BitmapMasks):
                     results[mask_key] = BitmapMasks(masks[keep_inds],
                                                     img.shape[0], img.shape[1])
+            else:
+                # len keep_inds is 0, case when masks are all filtered
+                if masks is not None and len(masks) > 0 and isinstance(
+                        results[mask_key], BitmapMasks):
+                    results[mask_key] = BitmapMasks([], img.shape[0],
+                                                    img.shape[1])
         return results
 
     def __repr__(self):

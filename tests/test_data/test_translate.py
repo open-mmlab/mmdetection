@@ -494,6 +494,10 @@ def test_translate_only_bbox():
                     results[label_key] = results[label_key][keep_inds]
                 if mask_key in results:
                     masks = masks[keep_inds]
+            else:
+                if masks is not None and len(masks) > 0:
+                    masks = np.empty((0, masks.shape[1], masks.shape[2]),
+                                     dtype=masks.dtype)
 
             # check bboxs
             assert np.equal(results[key], results_translated[key]).all()
