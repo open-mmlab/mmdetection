@@ -6,6 +6,7 @@ from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead
 
+eps = 1e-12
 try:
     import sklearn.mixture as skm
 except ImportError:
@@ -109,8 +110,13 @@ class PAAHead(ATSSHead):
         (labels, labels_weight, bboxes_target, bboxes_weight, pos_inds,
          pos_gt_index) = cls_reg_targets
         cls_scores = levels_to_images(cls_scores)
+        cls_scores = [
+            item.reshape(-1, self.cls_out_channels) for item in cls_scores
+        ]
         bbox_preds = levels_to_images(bbox_preds)
+        bbox_preds = [item.reshape(-1, 4) for item in bbox_preds]
         iou_preds = levels_to_images(iou_preds)
+        iou_preds = [item.reshape(-1, 1) for item in iou_preds]
 
         pos_losses_list, _ = multi_apply(self.get_pos_loss, anchor_list,
                                          cls_scores, bbox_preds, labels,
@@ -160,7 +166,7 @@ class PAAHead(ATSSHead):
             losses_bbox = self.loss_bbox(
                 pos_bbox_pred,
                 pos_bbox_target,
-                iou_target,
+                iou_target.clamp(min=eps),
                 avg_factor=iou_target.sum())
         else:
             losses_iou = iou_preds.sum() * 0
