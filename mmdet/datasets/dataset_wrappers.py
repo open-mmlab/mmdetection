@@ -126,15 +126,16 @@ class ClassBalancedDataset(object):
             no oversampling. For categories with ``f_c < oversample_thr``, the
             degree of oversampling following the square-root inverse frequency
             heuristic above.
-        include_empty (bool): Whether to include images without gt bboxes as an
-            independent category (background) during auto-balancing.
-            Default: False.
+        filter_empty_gt (bool, optional): If set true, images without bounding
+            boxes will not be oversampled. Otherwise, they will be categorized
+            as the pure background class and involved into the oversampling.
+            Default: True.
     """
 
-    def __init__(self, dataset, oversample_thr, include_empty=False):
+    def __init__(self, dataset, oversample_thr, filter_empty_gt=True):
         self.dataset = dataset
         self.oversample_thr = oversample_thr
-        self.include_empty = include_empty
+        self.filter_empty_gt = filter_empty_gt
         self.CLASSES = dataset.CLASSES
 
         repeat_factors = self._get_repeat_factors(dataset, oversample_thr)
@@ -169,7 +170,7 @@ class ClassBalancedDataset(object):
         num_images = len(dataset)
         for idx in range(num_images):
             cat_ids = set(self.dataset.get_cat_ids(idx))
-            if len(cat_ids) == 0 and self.include_empty:
+            if len(cat_ids) == 0 and not self.filter_empty_gt:
                 cat_ids = set([len(self.CLASSES)])
             for cat_id in cat_ids:
                 category_freq[cat_id] += 1
@@ -188,7 +189,7 @@ class ClassBalancedDataset(object):
         repeat_factors = []
         for idx in range(num_images):
             cat_ids = set(self.dataset.get_cat_ids(idx))
-            if len(cat_ids) == 0 and self.include_empty:
+            if len(cat_ids) == 0 and not self.filter_empty_gt:
                 cat_ids = set([len(self.CLASSES)])
             repeat_factor = 1
             if len(cat_ids) > 0:
