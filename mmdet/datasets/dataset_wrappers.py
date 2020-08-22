@@ -65,13 +65,11 @@ class ConcatDataset(_ConcatDataset):
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
 
-    def evaluate(self, results, metric='bbox', logger=None, **kwargs):
+    def evaluate(self, results, logger=None, **kwargs):
         """Evaluate the results.
 
         Args:
             results (list[list | tuple]): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated. Options are
-                'bbox', 'segm', 'proposal', 'proposal_fast', 'mAP'.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
 
@@ -103,7 +101,7 @@ class ConcatDataset(_ConcatDataset):
                     logger=logger)
 
                 eval_results_per_dataset = dataset.evaluate(
-                    results_per_dataset, **kwargs)
+                    results_per_dataset, logger=logger, **kwargs)
                 dataset_idx += 1
                 for k, v in eval_results_per_dataset.items():
                     total_eval_results.update({f'{dataset_idx}_{k}': v})
@@ -120,7 +118,8 @@ class ConcatDataset(_ConcatDataset):
             original_data_infos = self.datasets[0].data_infos
             self.datasets[0].data_infos = sum(
                 [dataset.data_infos for dataset in self.datasets], [])
-            eval_results = self.datasets[0].evaluate(results, metric, **kwargs)
+            eval_results = self.datasets[0].evaluate(
+                results, logger=logger, **kwargs)
             self.datasets[0].data_infos = original_data_infos
             return eval_results
 
