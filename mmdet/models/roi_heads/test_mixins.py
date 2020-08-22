@@ -64,12 +64,13 @@ class BBoxTestMixin(object):
         # split batch bbox prediction back to each image
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
-        num_pp_per_img = tuple(len(p) for p in proposals)
-        rois = rois.split(num_pp_per_img, 0)
-        cls_score = cls_score.split(num_pp_per_img, 0)
+        num_proposals_per_img = tuple(len(p) for p in proposals)
+        rois = rois.split(num_proposals_per_img, 0)
+        cls_score = cls_score.split(num_proposals_per_img, 0)
         # some detector with_reg is False, bbox_pred will be None
         bbox_pred = bbox_pred.split(
-            num_pp_per_img, 0) if bbox_pred is not None else [None, None]
+            num_proposals_per_img,
+            0) if bbox_pred is not None else [None, None]
 
         # apply bbox post-processing to each image individually
         det_bboxes = []
@@ -177,7 +178,7 @@ class MaskTestMixin(object):
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
         num_imgs = len(det_bboxes)
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
-            segm_results = [[[] for _ in range(self.mask_head.num_classes - 1)]
+            segm_results = [[[] for _ in range(self.mask_head.num_classes)]
                             for _ in range(num_imgs)]
         else:
             # if det_bboxes is rescaled to the original image size, we need to
@@ -204,7 +205,7 @@ class MaskTestMixin(object):
             for i in range(num_imgs):
                 if det_bboxes[i].shape[0] == 0:
                     segm_results.append(
-                        [[] for _ in range(self.mask_head.num_classes - 1)])
+                        [[] for _ in range(self.mask_head.num_classes)])
                 else:
                     segm_result = self.mask_head.get_seg_masks(
                         mask_preds[i], _bboxes[i], det_labels[i],

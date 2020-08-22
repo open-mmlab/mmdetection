@@ -262,10 +262,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         else:
             segm_results = self.simple_test_mask(
                 x, img_metas, det_bboxes, det_labels, rescale=rescale)
-            return [
-                (bbox_result, segm_result)
-                for bbox_result, segm_result in zip(bbox_results, segm_results)
-            ]
+            return list(zip(bbox_results, segm_results))
 
     def aug_test(self, x, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
