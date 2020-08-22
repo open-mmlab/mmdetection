@@ -12,6 +12,45 @@ from mmdet.models.losses import accuracy
 
 @HEADS.register_module
 class SABLHead(nn.Module):
+    """Side-Aware Boundary Localization (SABL) for RoI-Head.
+
+    Side-Aware features are extracted by conv layers
+    with an attention mechanism.
+    Boundary Localization with Bucketing and Bucketing Guided Rescoring
+    are implemented in BucketingBBoxCoder.
+
+    Please refer to https://arxiv.org/abs/1912.04260 for more details.
+
+    Args:
+        cls_in_channels (int): Input channels of cls RoI feature. \
+            Defaults to 256.
+        reg_in_channels (int): Input channels of reg RoI feature. \
+            Defaults to 256.
+        roi_feat_size (int): Size of RoI features. Defaults to 7.
+        reg_feat_up_ratio (int): Upsample ratio of reg features. \
+            Defaults to 2.
+        reg_pre_kernel (int): Kernel of 2D conv layers before \
+            attention pooling. Defaults to 3.
+        reg_pos_kernel (int): Kernel of 1D conv layers after \
+            attention pooling. Defaults to 3.
+        reg_pre_num (int): Number of pre convs. Defaults to 2.
+        reg_pos_num (int): Number of post convs. Defaults to 1.
+        num_classes (int): Number of classes in dataset. Defaults to 80.
+        cls_out_channels (int): Hidden channels in cls fcs. Defaults to 1024.
+        reg_offset_out_channels (int): Hidden and output channel \
+            of reg offset branch. Defaults to 256.
+        reg_cls_out_channels (int): Hidden and output channel \
+            of reg cls branch. Defaults to 256.
+        cls_fcs_num (int): Number of fcs for cls branch. Defaults to 1.
+        reg_fcs_num (int): Number of fcs for reg branch.. Defaults to 0.
+        reg_class_agnostic (bool): Class agnostic regresion or not. \
+            Defaults to True.
+        norm_cfg (dict): Config of norm layers. Defaults to None.
+        bbox_coder (dict): Config of bbox coder. Defaults 'BucketingBBoxCoder'.
+        loss_cls (dict): Config of classification loss.
+        loss_bbox_cls (dict): Config of classification loss for bbox branch.
+        loss_bbox_reg (dict): Config of regression loss for bbox branch.
+    """
 
     def __init__(self,
                  cls_in_channels=256,
@@ -186,7 +225,9 @@ class SABLHead(nn.Module):
         cls_score = self.fc_cls(cls_x)
         return cls_score
 
-    def side_pool(self, reg_x):
+    def attention_pool(self, reg_x):
+        # Extract direction-specific features
+        # fx and fy with attention methanism
         reg_fx = reg_x
         reg_fy = reg_x
         reg_fx_att = self.reg_conv_att_x(reg_fx).sigmoid()
@@ -197,10 +238,11 @@ class SABLHead(nn.Module):
         reg_fy = (reg_fy * reg_fy_att).sum(dim=3)
         return reg_fx, reg_fy
 
-    def reg_pool(self, reg_x):
+    def direction_feature_extractor(self, reg_x):
+        # Refine and extract direction-specific features
         for reg_pre_conv in self.reg_pre_convs:
             reg_x = reg_pre_conv(reg_x)
-        reg_fx, reg_fy = self.side_pool(reg_x)
+        reg_fx, reg_fy = self.attention_pool(reg_x)
 
         if self.reg_pos_num > 0:
             reg_fx = reg_fx.unsqueeze(2)
@@ -233,7 +275,9 @@ class SABLHead(nn.Module):
 
         return offset_pred, cls_pred
 
-    def side_flip(self, feat):
+    def side_aware_split(self, feat):
+        # Extract side-aware features aligned with
+        # orders of bucketing targets.
         l_end = int(np.ceil(self.up_reg_feat_size / 2))
         r_start = int(np.floor(self.up_reg_feat_size / 2))
         feat_fl = feat[:, :l_end]
@@ -244,7 +288,7 @@ class SABLHead(nn.Module):
         return feat
 
     def reg_forward(self, reg_x):
-        outs = self.reg_pool(reg_x)
+        outs = self.direction_feature_extractor(reg_x)
         edge_offset_preds = []
         edge_cls_preds = []
         reg_fx = outs[0]
@@ -253,10 +297,10 @@ class SABLHead(nn.Module):
                                                   self.reg_cls_fcs)
         offset_pred_y, cls_pred_y = self.reg_pred(reg_fy, self.reg_offset_fcs,
                                                   self.reg_cls_fcs)
-        offset_pred_x = self.side_flip(offset_pred_x)
-        offset_pred_y = self.side_flip(offset_pred_y)
-        cls_pred_x = self.side_flip(cls_pred_x)
-        cls_pred_y = self.side_flip(cls_pred_y)
+        offset_pred_x = self.side_aware_split(offset_pred_x)
+        offset_pred_y = self.side_aware_split(offset_pred_y)
+        cls_pred_x = self.side_aware_split(cls_pred_x)
+        cls_pred_y = self.side_aware_split(cls_pred_y)
         edge_offset_preds = torch.cat([offset_pred_x, offset_pred_y], dim=-1)
         edge_cls_preds = torch.cat([cls_pred_x, cls_pred_y], dim=-1)
 
@@ -293,7 +337,7 @@ class SABLHead(nn.Module):
                       concat=True):
         (labels, label_weights, bucket_cls_targets, bucket_cls_weights,
          bucket_offset_targets, bucket_offset_weights) = multi_apply(
-             self.bucket_target_single,
+             self._bucket_target_single,
              pos_proposals_list,
              neg_proposals_list,
              pos_gt_bboxes_list,
@@ -310,8 +354,8 @@ class SABLHead(nn.Module):
         return (labels, label_weights, bucket_cls_targets, bucket_cls_weights,
                 bucket_offset_targets, bucket_offset_weights)
 
-    def bucket_target_single(self, pos_proposals, neg_proposals, pos_gt_bboxes,
-                             pos_gt_labels, cfg):
+    def _bucket_target_single(self, pos_proposals, neg_proposals,
+                              pos_gt_bboxes, pos_gt_labels, cfg):
         num_pos = pos_proposals.size(0)
         num_neg = neg_proposals.size(0)
         num_samples = num_pos + num_neg
@@ -437,7 +481,8 @@ class SABLHead(nn.Module):
             rois (Tensor): Shape (n*bs, 5), where n is image number per GPU,
                 and bs is the sampled RoIs per image.
             labels (Tensor): Shape (n*bs, ).
-            bbox_preds (Tensor): Shape (n*bs, 4) or (n*bs, 4*#class).
+            bbox_preds (list[Tensor]): Shape [(n*bs, bucket_num*2), \
+                (n*bs, bucket_num*2)].
             pos_is_gts (list[Tensor]): Flags indicating if each positive bbox
                 is a gt bbox.
             img_metas (list[dict]): Meta info of each image.
@@ -481,7 +526,8 @@ class SABLHead(nn.Module):
         Args:
             rois (Tensor): shape (n, 4) or (n, 5)
             label (Tensor): shape (n, )
-            bbox_pred (Tensor): shape (n, 4*(#class+1)) or (n, 4)
+            bbox_pred (list[Tensor]): shape [(n, bucket_num *2), \
+                (n, bucket_num *2)]
             img_meta (dict): Image meta info.
 
         Returns:
