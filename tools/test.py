@@ -119,7 +119,13 @@ def main():
         if cfg.model.neck.get('rfp_backbone'):
             if cfg.model.neck.rfp_backbone.get('pretrained'):
                 cfg.model.neck.rfp_backbone.pretrained = None
-    cfg.data.test.test_mode = True
+
+    # in case the test dataset is concatenated
+    if isinstance(cfg.data.test, dict):
+        cfg.data.test.test_mode = True
+    elif isinstance(cfg.data.test, list):
+        for ds_cfg in cfg.data.test:
+            ds_cfg.test_mode = True
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
