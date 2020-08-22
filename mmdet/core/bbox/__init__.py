@@ -9,8 +9,8 @@ from .samplers import (BaseSampler, CombinedSampler,
                        OHEMSampler, PseudoSampler, RandomSampler,
                        SamplingResult, ScoreHLRSampler)
 from .transforms import (bbox2distance, bbox2result, bbox2roi, bbox_flip,
-                         bbox_mapping, bbox_mapping_back, distance2bbox,
-                         roi2bbox, bbox_rescale)
+                         bbox_mapping, bbox_mapping_back, bbox_rescale,
+                         distance2bbox, roi2bbox)
 
 __all__ = [
     'bbox_overlaps', 'BboxOverlaps2D', 'BaseAssigner', 'MaxIoUAssigner',
