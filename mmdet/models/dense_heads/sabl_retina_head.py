@@ -3,10 +3,9 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 
-from mmdet.core import (anchor_inside_flags, build_anchor_generator,
-                        build_assigner, build_bbox_coder, build_sampler,
-                        force_fp32, images_to_levels, multi_apply,
-                        multiclass_nms, unmap)
+from mmdet.core import (build_anchor_generator, build_assigner,
+                        build_bbox_coder, build_sampler, force_fp32,
+                        images_to_levels, multi_apply, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .guided_anchor_head import GuidedAnchorHead
@@ -14,8 +13,7 @@ from .guided_anchor_head import GuidedAnchorHead
 
 @HEADS.register_module
 class SABLRetinaHead(BaseDenseHead):
-    """Anchor-based head (RPN, RetinaNet, SSD, etc.).
-    """  # noqa: W605
+    """Anchor-based head (RPN, RetinaNet, SSD, etc.)."""  # noqa: W605
 
     def __init__(self,
                  num_classes,
@@ -171,8 +169,7 @@ class SABLRetinaHead(BaseDenseHead):
         return multi_apply(self.forward_single, feats)
 
     def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
-        """Get squares according to feature map sizes and guided
-        anchors.
+        """Get squares according to feature map sizes and guided anchors.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
@@ -202,8 +199,7 @@ class SABLRetinaHead(BaseDenseHead):
                       label_channels=None,
                       sampling=True,
                       unmap_outputs=True):
-        """Compute guided anchoring targets.
-        """
+        """Compute guided anchoring targets."""
         num_imgs = len(img_metas)
         assert len(approx_list) == len(inside_flag_list) == len(
             square_list) == num_imgs
@@ -271,8 +267,7 @@ class SABLRetinaHead(BaseDenseHead):
                              label_channels=None,
                              sampling=True,
                              unmap_outputs=True):
-        """Compute guided anchoring targets.
-        """
+        """Compute guided anchoring targets."""
         if not inside_flags.any():
             return (None, ) * 8
         # assign gt and sample anchors

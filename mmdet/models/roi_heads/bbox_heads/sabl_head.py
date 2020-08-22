@@ -2,13 +2,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.modules.utils import _pair
+from mmcv.cnn import ConvModule
 
-from mmdet.core import (auto_fp16, build_bbox_coder, force_fp32, multi_apply,
+from mmdet.core import (build_bbox_coder, force_fp32, multi_apply,
                         multiclass_nms)
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.losses import accuracy
-from mmcv.cnn import ConvModule
 
 
 @HEADS.register_module
