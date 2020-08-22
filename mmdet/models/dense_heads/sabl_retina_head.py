@@ -13,7 +13,34 @@ from .guided_anchor_head import GuidedAnchorHead
 
 @HEADS.register_module
 class SABLRetinaHead(BaseDenseHead):
-    """Anchor-based head (RPN, RetinaNet, SSD, etc.)."""  # noqa: W605
+    """Side-Aware Boundary Localization (SABL) for RetinaNet.
+
+    The anchor generation, assigning and sampling in SABLRetinaHead
+    are the same as GuidedAnchorHead for guided anchoring.
+
+    Please refer to https://arxiv.org/abs/1912.04260 for more details.
+
+    Args:
+        num_classes (int): Number of classes.
+        in_channels (int): Number of channels in the input feature map.
+        stacked_convs (int): Number of Convs for classification \
+            and regression branches. Defaults to 4.
+        feat_channels (int): Number of hidden channels. \
+            Defaults to 256.
+        approx_anchor_generator (dict): Config dict for approx generator.
+        square_anchor_generator (dict): Config dict for square generator.
+        conv_cfg (dict): Config dict for ConvModule. Defaults to None.
+        norm_cfg (dict): Config dict for Norm Layer. Defaults to None.
+        bbox_coder (dict): Config dict for bbox coder.
+        reg_decoded_bbox (bool): Whether to regress decoded bbox. \
+            Defaults to False.
+        background_label (int): Background label. Defaults to None.
+        train_cfg (dict): Training config of SABLRetinaHead.
+        test_cfg (dict): Testing config of SABLRetinaHead.
+        loss_cls (dict): Config of classification loss.
+        loss_bbox_cls (dict): Config of classification loss for bbox branch.
+        loss_bbox_reg (dict): Config of regression loss for bbox branch.
+    """
 
     def __init__(self,
                  num_classes,
@@ -174,6 +201,7 @@ class SABLRetinaHead(BaseDenseHead):
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
             img_metas (list[dict]): Image meta info.
+            device (torch.device | str): device for returned tensors
 
         Returns:
             tuple: square approxs of each image
@@ -199,7 +227,39 @@ class SABLRetinaHead(BaseDenseHead):
                       label_channels=None,
                       sampling=True,
                       unmap_outputs=True):
-        """Compute guided anchoring targets."""
+        """Compute bucketing targets.
+        Args:
+            approx_list (list[list]): Multi level approxs of each image.
+            inside_flag_list (list[list]): Multi level inside flags of each
+                image.
+            square_list (list[list]): Multi level squares of each image.
+            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
+            img_metas (list[dict]): Meta info of each image.
+            gt_bboxes_ignore_list (list[Tensor]): ignore list of gt bboxes.
+            gt_bboxes_list (list[Tensor]): Gt bboxes of each image.
+            label_channels (int): Channel of label.
+            sampling (bool): Sample Anchors or not.
+            unmap_outputs (bool): unmap outputs or not.
+
+        Returns:
+            tuple: Returns a tuple containing learning targets.
+
+                - labels_list (list[Tensor]): Labels of each level.
+                - label_weights_list (list[Tensor]): Label weights of each \
+                    level.
+                - bbox_cls_targets_list (list[Tensor]): BBox cls targets of \
+                    each level.
+                - bbox_cls_weights_list (list[Tensor]): BBox cls weights of \
+                    each level.
+                - bbox_reg_targets_list (list[Tensor]): BBox reg targets of \
+                    each level.
+                - bbox_reg_weights_list (list[Tensor]): BBox reg weights of \
+                    each level.
+                - num_total_pos (int): Number of positive samples in all \
+                    images.
+                - num_total_neg (int): Number of negative samples in all \
+                    images.
+        """
         num_imgs = len(img_metas)
         assert len(approx_list) == len(inside_flag_list) == len(
             square_list) == num_imgs
@@ -223,7 +283,7 @@ class SABLRetinaHead(BaseDenseHead):
         (all_labels, all_label_weights, all_bbox_cls_targets,
          all_bbox_cls_weights, all_bbox_reg_targets, all_bbox_reg_weights,
          pos_inds_list, neg_inds_list) = multi_apply(
-             self.bucket_target_single,
+             self._bucket_target_single,
              approx_flat_list,
              inside_flag_flat_list,
              square_flat_list,
@@ -256,18 +316,51 @@ class SABLRetinaHead(BaseDenseHead):
                 bbox_cls_weights_list, bbox_reg_targets_list,
                 bbox_reg_weights_list, num_total_pos, num_total_neg)
 
-    def bucket_target_single(self,
-                             flat_approxs,
-                             inside_flags,
-                             flat_squares,
-                             gt_bboxes,
-                             gt_bboxes_ignore,
-                             gt_labels,
-                             img_meta,
-                             label_channels=None,
-                             sampling=True,
-                             unmap_outputs=True):
-        """Compute guided anchoring targets."""
+    def _bucket_target_single(self,
+                              flat_approxs,
+                              inside_flags,
+                              flat_squares,
+                              gt_bboxes,
+                              gt_bboxes_ignore,
+                              gt_labels,
+                              img_meta,
+                              label_channels=None,
+                              sampling=True,
+                              unmap_outputs=True):
+        """Compute regression and classification targets for anchors in a
+        single image.
+
+        Args:
+            flat_approxs (Tensor): flat approxs of a single image,
+                shape (n, 4)
+            inside_flags (Tensor): inside flags of a single image,
+                shape (n, ).
+            flat_squares (Tensor): flat squares of a single image,
+                shape (approxs_per_octave * n, 4)
+            gt_bboxes (Tensor): Ground truth bboxes of a single image, \
+                shape (num_gts, 4).
+            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
+                ignored, shape (num_ignored_gts, 4).
+            gt_labels (Tensor): Ground truth labels of each box,
+                shape (num_gts,).
+            img_meta (dict): Meta info of the image.
+            label_channels (int): Channel of label.
+            sampling (bool): Sample Anchors or not.
+            unmap_outputs (bool): unmap outputs or not.
+
+        Returns:
+            tuple:
+                - labels_list (Tensor): Labels in a single image
+                - label_weights (Tensor): Label weights in a single image
+                - bbox_cls_targets (Tensor): BBox cls targets in a single image
+                - bbox_cls_weights (Tensor): BBox cls weights in a single image
+                - bbox_reg_targets (Tensor): BBox cls targets in a single image
+                - bbox_reg_weights (Tensor): BBox cls weights in a single image
+                - num_total_pos (int): Number of positive samples \
+                    in a single image
+                - num_total_neg (int): Number of negative samples \
+                    in a single image
+        """
         if not inside_flags.any():
             return (None, ) * 8
         # assign gt and sample anchors
