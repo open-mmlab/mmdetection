@@ -9,16 +9,16 @@ class EvalHook(Hook):
 
     Attributes:
         dataloader (DataLoader): A PyTorch dataloader.
-        interval (int): Evaluation interval (by epochs). Default: 1.
         start (int, optional): Evaluation starting epoch. It enables evaluation
             before the training starts if ``start`` <= the resuming epoch.
             If None, whether to evaluate is merely decided by ``interval``.
             Default: None.
+        interval (int): Evaluation interval (by epochs). Default: 1.
         **eval_kwargs: Evaluation arguments fed into the evaluate function of
             the dataset.
     """
 
-    def __init__(self, dataloader, interval=1, start=None, **eval_kwargs):
+    def __init__(self, dataloader, start=None, interval=1, **eval_kwargs):
         if not isinstance(dataloader, DataLoader):
             raise TypeError('dataloader must be a pytorch DataLoader, but got'
                             f' {type(dataloader)}')
@@ -58,13 +58,13 @@ class DistEvalHook(EvalHook):
 
     Attributes:
         dataloader (DataLoader): A PyTorch dataloader.
-        interval (int): Evaluation interval (by epochs). Default: 1.
-        tmpdir (str | None): Temporary directory to save the results of all
-            processes. Default: None.
         start (int, optional): Evaluation starting epoch. It enables evaluation
             before the training starts if ``start`` <= the resuming epoch.
             If None, whether to evaluate is merely decided by ``interval``.
             Default: None.
+        interval (int): Evaluation interval (by epochs). Default: 1.
+        tmpdir (str | None): Temporary directory to save the results of all
+            processes. Default: None.
         gpu_collect (bool): Whether to use gpu or cpu to collect results.
             Default: False.
         **eval_kwargs: Evaluation arguments fed into the evaluate function of
@@ -73,13 +73,13 @@ class DistEvalHook(EvalHook):
 
     def __init__(self,
                  dataloader,
+                 start=None,
                  interval=1,
                  tmpdir=None,
-                 start=None,
                  gpu_collect=False,
                  **eval_kwargs):
         super().__init__(
-            dataloader, interval=interval, start=start, **eval_kwargs)
+            dataloader, start=start, interval=interval, **eval_kwargs)
         self.tmpdir = tmpdir
         self.gpu_collect = gpu_collect
 
