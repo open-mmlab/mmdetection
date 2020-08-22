@@ -2,15 +2,14 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from ..transforms import bbox_rescale
 from ..builder import BBOX_CODERS
+from ..transforms import bbox_rescale
 from .base_bbox_coder import BaseBBoxCoder
 
 
 @BBOX_CODERS.register_module()
 class BucketingBBoxCoder(BaseBBoxCoder):
-    """Delta XYWH BBox coder.
-    """
+    """Delta XYWH BBox coder."""
 
     def __init__(self,
                  bucket_num,
@@ -26,8 +25,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         self.cls_ignore_neighbor = cls_ignore_neighbor
 
     def encode(self, bboxes, gt_bboxes):
-        """Get box regression transformation deltas that can be used to
-        """
+        """Get box regression transformation deltas that can be used to."""
 
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
@@ -38,8 +36,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         return encoded_bboxes
 
     def decode(self, bboxes, pred_bboxes, max_shape=None):
-        """Apply transformation `pred_bboxes` to `boxes`.
-        """
+        """Apply transformation `pred_bboxes` to `boxes`."""
         assert len(pred_bboxes) == 2
         cls_preds, offset_preds = pred_bboxes
         assert cls_preds.size(0) == bboxes.size(0) and offset_preds.size(
@@ -95,7 +92,9 @@ def bbox2bucket(proposals,
                 offset_topk=2,
                 offset_allow=1.0,
                 cls_ignore_neighbor=True):
-    """Compute deltas of proposals w.r.t. gt.
+    """Compute deltas of proposals w.r.t.
+
+    gt.
     """
     assert proposals.size() == gt.size()
 
@@ -180,8 +179,7 @@ def bucket2bbox(proposals,
                 bucket_num,
                 scale_factor=1.0,
                 max_shape=None):
-    """Apply deltas to shift/scale base boxes.
-    """
+    """Apply deltas to shift/scale base boxes."""
     side_num = int(np.ceil(bucket_num / 2.0))
     cls_preds = cls_preds.view(-1, side_num)
     offset_preds = offset_preds.view(-1, side_num)
