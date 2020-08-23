@@ -84,6 +84,17 @@ def test_flip():
     with pytest.raises(AssertionError):
         transform = dict(type='RandomFlip', flip_ratio=1.5)
         build_from_cfg(transform, PIPELINES)
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomFlip',
+            flip_ratio=[0.7, 0.8],
+            direction=['horizontal', 'vertical'])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for mismatch between number of flip_ratio and direction
+    with pytest.raises(AssertionError):
+        transform = dict(type='RandomFlip', flip_ratio=[0.4, 0.5])
+        build_from_cfg(transform, PIPELINES)
 
     # test assertion for invalid direction
     with pytest.raises(AssertionError):

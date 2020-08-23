@@ -320,6 +320,7 @@ class RandomFlip(object):
         for d in direction:
             assert d in ['horizontal', 'vertical', 'horizontal+vertical']
         self.direction = direction
+        assert len(self.flip_ratio) == len(self.direction)
 
     def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
@@ -371,14 +372,10 @@ class RandomFlip(object):
         # None means no flip
         cur_dir = np.random.choice(
             self.direction + [None], p=self.flip_ratio + [non_flip_ratio])
-        results['flip'] = cur_dir is not None
+        if 'flip' not in results:
+            results['flip'] = cur_dir is not None
         if 'flip_direction' not in results:
             results['flip_direction'] = cur_dir
-        # if 'flip' not in results:
-        #     flip = True if np.random.rand() < self.flip_ratio else False
-        #     results['flip'] = flip
-        # if 'flip_direction' not in results:
-        #     results['flip_direction'] = self.direction
         if results['flip']:
             # flip image
             for key in results.get('img_fields', ['img']):
