@@ -38,18 +38,28 @@ class EvalHook(Hook):
             self.after_train_epoch(runner)
         self.initial_epoch_flag = False
 
-    def after_train_epoch(self, runner):
+    def evaluation_flag(self, runner):
+        """Judge whether to perform_evaluation after this epoch.
+
+        Returns:
+            bool: The flag indicating whether to perform evaluation.
+        """
         if self.start is None:
             if not self.every_n_epochs(runner, self.interval):
                 # No evaluation during the interval epochs.
-                return
+                return False
         elif (runner.epoch + 1) < self.start:
             # No evaluation if start is larger than the current epoch.
-            return
+            return False
         else:
             # Evaluation only at epochs 3, 5, 7... if start==3 and interval==2
             if (runner.epoch + 1 - self.start) % self.interval:
-                return
+                return False
+        return True
+
+    def after_train_epoch(self, runner):
+        if not self.evaluation_flag(runner):
+            return
         from mmdet.apis import single_gpu_test
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         self.evaluate(runner, results)
@@ -93,17 +103,8 @@ class DistEvalHook(EvalHook):
         self.gpu_collect = gpu_collect
 
     def after_train_epoch(self, runner):
-        if self.start is None:
-            if not self.every_n_epochs(runner, self.interval):
-                # No evaluation during the interval epochs.
-                return
-        elif (runner.epoch + 1) < self.start:
-            # No evaluation if start is larger than the current epoch.
+        if not self.evaluation_flag(runner):
             return
-        else:
-            # Evaluation only at epochs 3, 5, 7... if start==3 and interval==2
-            if (runner.epoch + 1 - self.start) % self.interval:
-                return
         from mmdet.apis import multi_gpu_test
         tmpdir = self.tmpdir
         if tmpdir is None:
