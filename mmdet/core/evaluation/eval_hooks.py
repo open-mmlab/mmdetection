@@ -1,4 +1,5 @@
 import os.path as osp
+import warnings
 
 from mmcv.runner import Hook
 from torch.utils.data import DataLoader
@@ -28,6 +29,11 @@ class EvalHook(Hook):
                             f' {type(dataloader)}')
         if not interval > 0:
             raise ValueError(f'interval must be positive, but got {interval}')
+        if start is not None and start < 0:
+            warnings.warn(
+                f'The start epoch {start} is smaller than 0, '
+                f'use 0 instead', UserWarning)
+            start = 0
         self.dataloader = dataloader
         self.interval = interval
         self.start = start
