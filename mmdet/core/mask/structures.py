@@ -212,7 +212,7 @@ class BitmapMasks(BaseInstanceMasks):
 
     def flip(self, flip_direction='horizontal'):
         """See :func:`BaseInstanceMasks.flip`."""
-        assert flip_direction in ('horizontal', 'vertical')
+        assert flip_direction in ('horizontal', 'vertical', 'diagonal')
 
         if len(self.masks) == 0:
             flipped_masks = self.masks

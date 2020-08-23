@@ -302,17 +302,24 @@ class RandomFlip(object):
     method.
 
     Args:
-        flip_ratio (float, optional): The flipping probability. Default: None.
-        direction(str, optional): The flipping direction. Options are
-            'horizontal' and 'vertical'. Default: 'horizontal'.
+        flip_ratio (float | list[float], optional): The flipping probability.
+            Default: None.
+        direction(str | list[str], optional): The flipping direction. Options
+            are 'horizontal', 'vertical', 'diagonal'. Default: 'horizontal'.
     """
 
     def __init__(self, flip_ratio=None, direction='horizontal'):
-        self.flip_ratio = flip_ratio
-        self.direction = direction
         if flip_ratio is not None:
-            assert flip_ratio >= 0 and flip_ratio <= 1
-        assert direction in ['horizontal', 'vertical']
+            if not isinstance(flip_ratio, list):
+                flip_ratio = [flip_ratio]
+            assert mmcv.is_list_of(flip_ratio, float)
+            assert 0 <= sum(flip_ratio) <= 1
+        self.flip_ratio = flip_ratio
+
+        direction = direction if isinstance(direction, list) else [direction]
+        for d in direction:
+            assert d in ['horizontal', 'vertical', 'horizontal+vertical']
+        self.direction = direction
 
     def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
@@ -337,6 +344,13 @@ class RandomFlip(object):
             h = img_shape[0]
             flipped[..., 1::4] = h - bboxes[..., 3::4]
             flipped[..., 3::4] = h - bboxes[..., 1::4]
+        elif direction == 'diagonal':
+            w = img_shape[1]
+            h = img_shape[0]
+            flipped[..., 0::4] = w - bboxes[..., 2::4]
+            flipped[..., 1::4] = h - bboxes[..., 3::4]
+            flipped[..., 2::4] = w - bboxes[..., 0::4]
+            flipped[..., 3::4] = h - bboxes[..., 1::4]
         else:
             raise ValueError(f"Invalid flipping direction '{direction}'")
         return flipped
@@ -353,11 +367,18 @@ class RandomFlip(object):
                 into result dict.
         """
 
-        if 'flip' not in results:
-            flip = True if np.random.rand() < self.flip_ratio else False
-            results['flip'] = flip
+        non_flip_ratio = 1 - sum(self.flip_ratio)
+        # None means no flip
+        cur_dir = np.random.choice(
+            self.direction + [None], p=self.flip_ratio + [non_flip_ratio])
+        results['flip'] = cur_dir is not None
         if 'flip_direction' not in results:
-            results['flip_direction'] = self.direction
+            results['flip_direction'] = cur_dir
+        # if 'flip' not in results:
+        #     flip = True if np.random.rand() < self.flip_ratio else False
+        #     results['flip'] = flip
+        # if 'flip_direction' not in results:
+        #     results['flip_direction'] = self.direction
         if results['flip']:
             # flip image
             for key in results.get('img_fields', ['img']):
