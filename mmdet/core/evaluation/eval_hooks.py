@@ -31,7 +31,7 @@ class EvalHook(Hook):
             raise ValueError(f'interval must be positive, but got {interval}')
         if start is not None and start < 0:
             warnings.warn(
-                f'The start epoch {start} is smaller than 0, '
+                f'The evaluation start epoch {start} is smaller than 0, '
                 f'use 0 instead', UserWarning)
             start = 0
         self.dataloader = dataloader
