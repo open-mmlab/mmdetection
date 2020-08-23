@@ -22,6 +22,8 @@ class EvalHook(Hook):
         if not isinstance(dataloader, DataLoader):
             raise TypeError('dataloader must be a pytorch DataLoader, but got'
                             f' {type(dataloader)}')
+        if not interval > 0:
+            raise ValueError(f'interval must be positive, but got {interval}')
         self.dataloader = dataloader
         self.interval = interval
         self.start = start
@@ -37,10 +39,17 @@ class EvalHook(Hook):
         self.initial_epoch_flag = False
 
     def after_train_epoch(self, runner):
-        if self.start is not None and (runner.epoch + 1) < self.start:
+        if self.start is None:
+            if not self.every_n_epochs(runner, self.interval):
+                # No evaluation during the interval epochs.
+                return
+        elif (runner.epoch + 1) < self.start:
+            # No evaluation if start is larger than the current epoch.
             return
-        if not self.every_n_epochs(runner, self.interval):
-            return
+        else:
+            # Evaluation only at epochs 3, 5, 7... if start==3 and interval==2
+            if (runner.epoch + 1 - self.start) % self.interval:
+                return
         from mmdet.apis import single_gpu_test
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         self.evaluate(runner, results)
@@ -84,10 +93,17 @@ class DistEvalHook(EvalHook):
         self.gpu_collect = gpu_collect
 
     def after_train_epoch(self, runner):
-        if self.start is not None and (runner.epoch + 1) < self.start:
+        if self.start is None:
+            if not self.every_n_epochs(runner, self.interval):
+                # No evaluation during the interval epochs.
+                return
+        elif (runner.epoch + 1) < self.start:
+            # No evaluation if start is larger than the current epoch.
             return
-        if not self.every_n_epochs(runner, self.interval):
-            return
+        else:
+            # Evaluation only at epochs 3, 5, 7... if start==3 and interval==2
+            if (runner.epoch + 1 - self.start) % self.interval:
+                return
         from mmdet.apis import multi_gpu_test
         tmpdir = self.tmpdir
         if tmpdir is None:
