@@ -4,7 +4,7 @@ _base_ = [
 # model settings
 model = dict(
     type='YOLOV3',
-    pretrained='./pretrain_model/darknet53-a628ea1b.pth',
+    pretrained='open-mmlab://darknet53',
     backbone=dict(
         type='Darknet',
         depth=53,
