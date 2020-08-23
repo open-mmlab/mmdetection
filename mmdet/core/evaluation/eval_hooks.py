@@ -7,6 +7,10 @@ from torch.utils.data import DataLoader
 class EvalHook(Hook):
     """Evaluation hook.
 
+    Notes:
+        If new arguments are added for EvalHook, tools/test.py may be
+    effected.
+
     Attributes:
         dataloader (DataLoader): A PyTorch dataloader.
         start (int, optional): Evaluation starting epoch. It enables evaluation
@@ -74,6 +78,9 @@ class EvalHook(Hook):
 
 class DistEvalHook(EvalHook):
     """Distributed evaluation hook.
+
+    Notes:
+        If new arguments are added, tools/test.py may be effected.
 
     Attributes:
         dataloader (DataLoader): A PyTorch dataloader.

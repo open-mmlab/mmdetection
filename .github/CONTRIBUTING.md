@@ -15,7 +15,8 @@ All kinds of contributions are welcome, including but not limited to the followi
 Note
 - If you plan to add some new features that involve large changes, it is encouraged to open an issue for discussion first.
 - If you are the author of some papers and would like to include your method to mmdetection,
-please contact Kai Chen (chenkaidev[at]gmail[dot]com). We will much appreciate your contribution.
+please let us know (open an issue or contact the maintainers). We will much appreciate your contribution.
+- For new features and new modules, unit tests are required to improve the code's robustness.
 
 ## Code style
 
