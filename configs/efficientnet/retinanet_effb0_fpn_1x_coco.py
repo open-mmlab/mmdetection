@@ -23,7 +23,11 @@ train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Resize', img_scale=(512, 512), keep_ratio=True, ratio_range=(0.1, 2.0)),
+    dict(
+        type='Resize',
+        img_scale=(512, 512),
+        keep_ratio=True,
+        ratio_range=(0.1, 2.0)),
     dict(type='RandomCrop', crop_size=(512, 512), allow_negative_crop=True),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -47,13 +51,12 @@ test_pipeline = [
 ]
 data = dict(
     samples_per_gpu=8,
-    workers_per_gpu=3,    
+    workers_per_gpu=3,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
 
 # lr = 0.08 * (batch_size / 64)
-# https://github.com/google/automl/blob/master/efficientdet/keras/train_lib.py#L35
 optimizer = dict(type='SGD', lr=0.08, momentum=0.9, weight_decay=4e-5)
 
 lr_config = dict(
