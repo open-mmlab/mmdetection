@@ -15,7 +15,7 @@
 import argparse
 import os.path as osp
 import sys
-from subprocess import run, check_call, CalledProcessError, DEVNULL
+from subprocess import run, CalledProcessError, DEVNULL
 
 import mmcv
 import numpy as np
@@ -31,8 +31,8 @@ from mmdet.datasets.pipelines import Compose
 from mmdet.models import detectors
 from mmdet.models.dense_heads.anchor_head import AnchorHead
 from mmdet.models.roi_heads import SingleRoIExtractor
-from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.ssd_export_helpers import *
+from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.tracer_stubs import AnchorsGridGeneratorStub, ROIFeatureExtractorStub
 
 
@@ -51,13 +51,13 @@ def export_to_onnx(model,
 
     if alt_ssd_export:
         assert isinstance(model, detectors.SingleStageDetector)
-        
+
         model.onnx_export = onnx_export.__get__(model)
         model.forward = forward.__get__(model)
         model.forward_export = forward_export_detector.__get__(model)
         model.bbox_head.export_forward = export_forward_ssd_head.__get__(model.bbox_head)
         model.bbox_head._prepare_cls_scores_bbox_preds = prepare_cls_scores_bbox_preds_ssd_head.__get__(model.bbox_head)
-        
+
         model.onnx_export(img=data['img'][0],
                           img_metas=data['img_metas'][0],
                           export_name=export_name,
@@ -94,7 +94,7 @@ def export_to_onnx(model,
                 dynamic_axes=dynamic_axes,
                 keep_initializers_as_inputs=True,
                 **kwargs
-                )
+            )
 
 
 def check_onnx_model(export_name):
@@ -114,7 +114,7 @@ def add_node_names(export_name):
     onnx.save(model, export_name)
 
 
-def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
+def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, input_format='bgr'):
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
@@ -126,7 +126,6 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
             node.ClearField('name')
     onnx.save(onnx_model, onnx_model_path)
     output_names = ','.join(output_names)
-    
 
     assert cfg.data.test.pipeline[1]['type'] == 'MultiScaleFlipAug'
     normalize = [v for v in cfg.data.test.pipeline[1]['transforms']
@@ -138,10 +137,14 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None):
                    f'--mean_values="{mean_values}" ' \
                    f'--scale_values="{scale_values}" ' \
                    f'--output_dir="{output_dir_path}" ' \
-                   f'--output="{output_names}"' 
+                   f'--output="{output_names}"'
+
+    assert input_format.lower() in ['bgr', 'rgb']
+
     if input_shape is not None:
         command_line += f' --input_shape="{input_shape}"'
-    if normalize['to_rgb']:
+    if normalize['to_rgb'] and input_format.lower() == 'bgr' or \
+            not normalize['to_rgb'] and input_format.lower() == 'rgb':
         command_line += ' --reverse_input_channels'
 
     try:
@@ -231,7 +234,8 @@ def main(args):
     torch.set_default_tensor_type(torch.FloatTensor)
     model = init_detector(args.config, args.checkpoint, device='cpu')
     model.eval()
-    model.cuda()
+    if torch.cuda.is_available():
+        model.cuda()
     device = next(model.parameters()).device
     cfg = model.cfg
     fake_data = get_fake_input(cfg, device=device)
@@ -246,7 +250,7 @@ def main(args):
     mmcv.mkdir_or_exist(osp.abspath(args.output_dir))
     onnx_model_path = osp.join(args.output_dir,
                                osp.splitext(osp.basename(args.config))[0] + '.onnx')
-    
+
     with torch.no_grad():
         export_to_onnx(model, fake_data, export_name=onnx_model_path, opset=args.opset,
                        alt_ssd_export=getattr(args, 'alt_ssd_export', False))
@@ -259,7 +263,7 @@ def main(args):
         input_shape = list(fake_data['img'][0].shape)
         if args.input_shape:
             input_shape = [1, 3, *args.input_shape]
-        export_to_openvino(cfg, onnx_model_path, args.output_dir, input_shape)
+        export_to_openvino(cfg, onnx_model_path, args.output_dir, input_shape, args.input_format)
     else:
         pass
         # Model check raises a Segmentation Fault in the latest (1.6.0, 1.7.0) versions of onnx package.
@@ -282,6 +286,8 @@ def parse_args():
                                  help='input shape as a height-width pair')
     parser_openvino.add_argument('--alt_ssd_export', action='store_true',
                                  help='use alternative ONNX representation of SSD net')
+    parser_openvino.add_argument('--input_format', choices=['BGR', 'RGB'], default='BGR',
+                                 help='Input image format for exported model.')
     args = parser.parse_args()
     return args
 

@@ -151,6 +151,7 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    cfg_samples_per_gpu = cfg.data.samples_per_gpu
     if args.update_config is not None:
         cfg.merge_from_dict(args.update_config)
     # set cudnn_benchmark
@@ -225,10 +226,15 @@ def main():
         dataset_len_per_gpu = dataset_len_per_gpu // get_dist_info()[1]
     assert dataset_len_per_gpu > 0
     if cfg.data.samples_per_gpu == 'auto':
-        logger.info(f'Auto-selection of samples per gpu (batch size).')
-        cfg.data.samples_per_gpu = determine_max_batch_size(cfg, distributed, dataset_len_per_gpu)
-        logger.info(f'Auto selected batch size: {cfg.data.samples_per_gpu} {dataset_len_per_gpu}')
-        cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
+        if torch.cuda.is_available():
+            logger.info(f'Auto-selection of samples per gpu (batch size).')
+            cfg.data.samples_per_gpu = determine_max_batch_size(cfg, distributed, dataset_len_per_gpu)
+            logger.info(f'Auto selected batch size: {cfg.data.samples_per_gpu} {dataset_len_per_gpu}')
+            cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
+        else:
+            logger.warning('Auto-selection of batch size is not implemented for CPU.')
+            logger.warning('Setting batch size to value taken from configuration file.')
+            cfg.data.samples_per_gpu = cfg_samples_per_gpu
     if dataset_len_per_gpu < cfg.data.samples_per_gpu:
         cfg.data.samples_per_gpu = dataset_len_per_gpu
         logger.warning(f'Decreased samples_per_gpu to: {cfg.data.samples_per_gpu} '

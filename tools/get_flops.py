@@ -1,11 +1,12 @@
 import argparse
 import json
 
+import torch
 from mmcv import Config
-
 from mmdet.models import build_detector
-from mmdet.utils import get_model_complexity_info
 from mmdet.utils import ExtendedDictAction
+from mmdet.utils import get_model_complexity_info
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -36,8 +37,10 @@ def main():
     if args.update_config is not None:
         cfg.merge_from_dict(args.update_config)
     model = build_detector(
-        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg).cuda()
+        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
     model.eval()
+    if torch.cuda.is_available():
+        model.cuda()
 
     if hasattr(model, 'forward_dummy'):
         model.forward = model.forward_dummy
