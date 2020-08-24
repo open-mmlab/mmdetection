@@ -1,9 +1,11 @@
 import mmcv
+import numpy as np
 import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
 from mmdet.models.dense_heads import (AnchorHead, CornerHead, FCOSHead,
-                                      FSAFHead, GuidedAnchorHead, PAAHead)
+                                      FSAFHead, GuidedAnchorHead, PAAHead,
+                                      paa_head)
 from mmdet.models.dense_heads.paa_head import levels_to_images
 from mmdet.models.roi_heads.bbox_heads import BBoxHead
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
@@ -11,6 +13,25 @@ from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
 
 def test_paa_head_loss():
     """Tests paa head loss when truth is empty and non-empty."""
+
+    class mock_skm(object):
+
+        def GaussianMixture(self, *args, **kwargs):
+            return self
+
+        def fit(self, loss):
+            pass
+
+        def predict(self, loss):
+            components = np.zeros_like(loss, dtype=np.long)
+            return components.reshape(-1)
+
+        def score_samples(self, loss):
+            scores = np.random.random(len(loss))
+            return scores
+
+    paa_head.skm = mock_skm()
+
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),
