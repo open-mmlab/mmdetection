@@ -5,6 +5,7 @@ from .formating import (Collect, ImageToTensor, ToDataContainer, ToTensor,
 from .instaboost import InstaBoost
 from .loading import (LoadAnnotations, LoadImageFromFile,
                       LoadMultiChannelImageFromFiles, LoadProposals)
+from .shear import Shear
 from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Albu, CutOut, Expand, MinIoURandomCrop, Normalize,
                          Pad, PhotoMetricDistortion, RandomCenterCropPad,
@@ -40,4 +41,5 @@ __all__ = [
     'CutOut',
     'Translate',
     'TranslateOnlyBBox',
+    'Shear',
 ]
