@@ -234,7 +234,8 @@ def main(args):
     torch.set_default_tensor_type(torch.FloatTensor)
     model = init_detector(args.config, args.checkpoint, device='cpu')
     model.eval()
-    model.cuda()
+    if torch.cuda.is_available():
+        model.cuda()
     device = next(model.parameters()).device
     cfg = model.cfg
     fake_data = get_fake_input(cfg, device=device)
