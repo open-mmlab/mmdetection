@@ -259,12 +259,6 @@ class ATSSHead(AnchorHead):
         device = cls_scores[0].device
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
 
-        from torch.onnx import is_in_onnx_export
-        if is_in_onnx_export() and getattr(self.anchor_generator, 'is_stubbed', False):
-            # FIXME. Workaround for OpenVINO-friendly export:
-            #        passing scores tensor itself instead of its spatial size.
-            featmap_sizes = cls_scores
-
         mlvl_anchors = self.anchor_generator.grid_anchors(
             featmap_sizes, device=device)
 
