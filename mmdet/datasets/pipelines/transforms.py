@@ -318,7 +318,7 @@ class RandomFlip(object):
 
         direction = direction if isinstance(direction, list) else [direction]
         for d in direction:
-            assert d in ['horizontal', 'vertical', 'horizontal+vertical']
+            assert d in ['horizontal', 'vertical', 'diagonal']
         self.direction = direction
         assert len(self.flip_ratio) == len(self.direction)
 
