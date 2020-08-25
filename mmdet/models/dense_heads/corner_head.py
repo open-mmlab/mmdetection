@@ -216,6 +216,9 @@ class CornerHead(BaseDenseHead):
         """Initialize weights of the head."""
         bias_init = bias_init_with_prob(0.1)
         for i in range(self.num_feat_levels):
+            # Due to the initial parameters are different between nn.Conv2d and
+            # ConvModule, and our experiment shows using the initial parameter
+            # from nn.Conv2d could increase the final mAP about 0.2%.
             self.tl_heat[i][-1].conv.reset_parameters()
             self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
             self.br_heat[i][-1].conv.reset_parameters()
@@ -904,6 +907,10 @@ class CornerHead(BaseDenseHead):
         tl_scores, tl_inds, tl_clses, tl_ys, tl_xs = self._topk(tl_heat, k=k)
         br_scores, br_inds, br_clses, br_ys, br_xs = self._topk(br_heat, k=k)
 
+        # We use repeat instead of expand here because expand is a
+        # shallow-copy method, and in that way the testing result would be
+        # unexpected sometimes. According to our experiment, using expand will
+        # decrease testing mAP about 10% compared to using repeat.
         tl_ys = tl_ys.view(batch, k, 1).repeat(1, 1, k)
         tl_xs = tl_xs.view(batch, k, 1).repeat(1, 1, k)
         br_ys = br_ys.view(batch, 1, k).repeat(1, k, 1)
