@@ -6,7 +6,7 @@
 pip install torch==1.3.1 torchvision==0.4.2
 pip install cython
 pip install pycocotools==2.0.0
-pip install mmcv==0.6.2
+pip install mmcv-full
 
 mkdir data
 
