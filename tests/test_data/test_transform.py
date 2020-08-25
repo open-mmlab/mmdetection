@@ -102,7 +102,7 @@ def test_flip():
             type='RandomFlip', flip_ratio=1, direction='horizonta')
         build_from_cfg(transform, PIPELINES)
 
-    transform = dict(type='RandomFlip', flip_ratio=1)
+    transform = dict(type='RandomFlip', flip_ratio=1.)
     flip_module = build_from_cfg(transform, PIPELINES)
 
     results = dict()
@@ -125,6 +125,27 @@ def test_flip():
     results = flip_module(results)
     assert np.equal(results['img'], results['img2']).all()
     assert np.equal(original_img, results['img']).all()
+
+    transform = dict(
+        type='RandomFlip',
+        flip_ratio=[0.3, 0.3, 0.2],
+        direction=['horizontal', 'vertical', 'diagonal'])
+    flip_module = build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    # Set initial values for default meta_keys
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['img_fields'] = ['img']
+    results = flip_module(results)
+    assert np.array_equal(
+        mmcv.imflip(original_img, results['flip_direction']), results['img'])
 
 
 def test_random_crop():
