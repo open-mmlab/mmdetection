@@ -89,10 +89,9 @@ def inference_detector(model, img):
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
     # build the data pipeline
-    test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
-    test_pipeline = Compose(test_pipeline)
+    test_pipeline = Compose(cfg.data.test.pipeline)
     # prepare data
-    data = dict(img=img)
+    data = dict(img_info=dict(filename=img), img_prefix=None)
     data = test_pipeline(data)
     data = collate([data], samples_per_gpu=1)
     if next(model.parameters()).is_cuda:
@@ -130,10 +129,9 @@ async def async_inference_detector(model, img):
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
     # build the data pipeline
-    test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
-    test_pipeline = Compose(test_pipeline)
+    test_pipeline = Compose(cfg.data.test.pipeline)
     # prepare data
-    data = dict(img=img)
+    data = dict(img_info=dict(filename=img), img_prefix=None)
     data = test_pipeline(data)
     data = scatter(collate([data], samples_per_gpu=1), [device])[0]
 
