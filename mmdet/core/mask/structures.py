@@ -133,16 +133,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         """
         pass
 
-    # @staticmethod
-    # def _get_shear_matrix(magnitude, axis='x'):
-    #     if axis == 'x':
-    #         shear_matrix = np.float32([[1, magnitude, 0], [0, 1, 0]])
-    #     elif axis == 'y':
-    #         shear_matrix = np.float32([[1, 0, 0], [magnitude, 1, 0]])
-    #     else:
-    #         raise ValueError
-    #     return shear_matrix
-
     @staticmethod
     def warpAffine(data,
                    trans_matrix,

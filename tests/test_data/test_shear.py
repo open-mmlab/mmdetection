@@ -9,7 +9,7 @@ from mmdet.core.mask import BitmapMasks
 from mmdet.datasets.builder import DATASETS, PIPELINES
 
 
-def construct_cocodata_example():
+def construct_cocodata_example(poly2mask=True):
     # construct CocoDataset as the dataset example for testing
     pipeline = [
         dict(type='LoadImageFromFile'),
@@ -18,7 +18,7 @@ def construct_cocodata_example():
             with_bbox=True,
             with_mask=True,
             with_seg=True,
-            poly2mask=True),
+            poly2mask=poly2mask),
     ]
     data_root = osp.join(osp.dirname(__file__), '../data/coco_dummy/')
     data = dict(
@@ -72,7 +72,7 @@ def test_shear():
     # randomly sample one image and load the results
     results = coco_dataset[np.random.choice(len(coco_dataset))]
 
-    # test case when no shear aug (level=0)
+    # test case when no shear aug (level=0, axis='x')
     img_fill_val = (104, 116, 124)
     seg_ignore_label = 255
     transform = dict(
@@ -86,6 +86,18 @@ def test_shear():
     results_wo_shear = shear_module(copy.deepcopy(results))
     check_shear(results, results_wo_shear)
 
+    # test case when no shear aug (level=0, axis='y')
+    transform = dict(
+        type='Shear',
+        level=0,
+        prob=1.,
+        img_fill_val=img_fill_val,
+        seg_ignore_label=seg_ignore_label,
+        axis='y')
+    shear_module = build_from_cfg(transform, PIPELINES)
+    results_wo_shear = shear_module(copy.deepcopy(results))
+    check_shear(results, results_wo_shear)
+
     # test case when no shear aug (prob<=0)
     transform = dict(
         type='Shear', level=10, prob=0., img_fill_val=img_fill_val, axis='y')
@@ -93,5 +105,11 @@ def test_shear():
     results_wo_shear = shear_module(copy.deepcopy(results))
     check_shear(results, results_wo_shear)
 
-
-test_shear()
+    # test mask with type PolygonMasks
+    coco_dataset = construct_cocodata_example(poly2mask=False)
+    results = coco_dataset[np.random.choice(len(coco_dataset))]
+    transform = dict(
+        type='Shear', level=10, prob=1., img_fill_val=img_fill_val, axis='y')
+    shear_module = build_from_cfg(transform, PIPELINES)
+    with pytest.raises(NotImplementedError):
+        shear_module(copy.deepcopy(results))

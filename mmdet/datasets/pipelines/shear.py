@@ -199,9 +199,25 @@ class Shear(object):
                                            seg.shape[:2][::-1],
                                            fill_val).astype(seg.dtype)
 
-    def _filter_invalid(self, results, min_bbox_size):
+    def _filter_invalid(self, results, min_bbox_size=0):
         # TODO check whether need or not?
-        pass
+        """Filter bboxes and corresponding masks too small after shear
+        augmentation."""
+        # The key correspondence from bboxes to labels and masks.
+        bbox2label, bbox2mask, _ = bbox2fields()
+        for key in results.get('bbox_fields', []):
+            bbox_w = results[key][:, 2] - results[key][:, 0]
+            bbox_h = results[key][:, 3] - results[key][:, 1]
+            valid_inds = (bbox_w > min_bbox_size) & (bbox_h > min_bbox_size)
+            results[key] = results[key][valid_inds]
+            # label fields. e.g. gt_labels and gt_labels_ignore
+            label_key = bbox2label.get(key)
+            if label_key in results:
+                results[label_key] = results[label_key][valid_inds]
+            # mask fields, e.g. gt_masks and gt_masks_ignore
+            mask_key = bbox2mask.get(key)
+            if mask_key in results:
+                results[mask_key] = results[mask_key][valid_inds]
 
     def __call__(self, results, random_negative_prob=0.5):
         """Call function to shear images, bounding boxes, masks and semantic
@@ -225,6 +241,7 @@ class Shear(object):
         # fill_val set to 0 for background of mask.
         self._shear_masks(results, shear_matrix, fill_val=0)
         self._shear_seg(results, shear_matrix, fill_val=self.seg_ignore_label)
+        self._filter_invalid(results)
         return results
 
     def __repr__(self):
