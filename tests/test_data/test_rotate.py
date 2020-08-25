@@ -101,6 +101,3 @@ def test_rotate():
     rotate_module = build_from_cfg(transform, PIPELINES)
     with pytest.raises(NotImplementedError):
         rotate_module(copy.deepcopy(results))
-
-
-test_rotate()
