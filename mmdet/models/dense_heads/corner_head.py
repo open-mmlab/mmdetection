@@ -223,10 +223,11 @@ class CornerHead(BaseDenseHead):
             self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
             self.br_heat[i][-1].conv.reset_parameters()
             self.br_heat[i][-1].conv.bias.data.fill_(bias_init)
-            self.tl_emb[i][-1].conv.reset_parameters()
-            self.br_emb[i][-1].conv.reset_parameters()
             self.tl_off[i][-1].conv.reset_parameters()
             self.br_off[i][-1].conv.reset_parameters()
+            if self.with_corner_emb:
+                self.tl_emb[i][-1].conv.reset_parameters()
+                self.br_emb[i][-1].conv.reset_parameters()
 
     def forward(self, feats):
         """Forward features from the upstream network.
