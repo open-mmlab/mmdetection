@@ -278,6 +278,7 @@ class PAAHead(ATSSHead):
                 pos_inds < inds_level_interval[i + 1])
             pos_level_mask.append(mask)
         pos_inds_after_paa = []
+        ignore_inds_after_paa = []
         for gt_ind in range(num_gt):
             pos_inds_gmm = []
             pos_loss_gmm = []
@@ -315,22 +316,52 @@ class PAAHead(ATSSHead):
             scores = gmm.score_samples(pos_loss_gmm)
             components = torch.from_numpy(components).to(device)
             scores = torch.from_numpy(scores).to(device)
-            fgs = components == 0
-            # The implementation is (c) in Fig.3 in origin paper intead of (b).
-            # You can refer to issues such as
-            # https://github.com/kkhoot/PAA/issues/8 and
-            # https://github.com/kkhoot/PAA/issues/9.
-            if fgs.nonzero().numel():
-                _, pos_thr_ind = scores[fgs].topk(1)
-                pos_inds_after_paa.append(pos_inds_gmm[fgs][:pos_thr_ind + 1])
+
+            pos_inds_temp, ignore_inds_temp = self.boundary_scheme(
+                components, scores, pos_inds_gmm)
+            pos_inds_after_paa.append(pos_inds_temp)
+            ignore_inds_after_paa.append(ignore_inds_temp)
 
         pos_inds_after_paa = torch.cat(pos_inds_after_paa)
+        ignore_inds_after_paa = torch.cat(ignore_inds_after_paa)
         reassign_mask = (pos_inds.unsqueeze(1) != pos_inds_after_paa).all(1)
         reassign_ids = pos_inds[reassign_mask]
         label[reassign_ids] = self.background_label
+        label_weight[ignore_inds_after_paa] = 0
         bbox_weight[reassign_ids] = 0
         num_pos = len(pos_inds_after_paa)
         return label, label_weight, bbox_weight, num_pos
+
+    def boundary_scheme(self, components, scores, pos_inds_gmm):
+        """A general interface of the boundary schemes. You can implement other
+        boundary schemes by rewriting this function.
+
+        Args:
+            components (Tensor): The prediction of GMM. The value indicate
+                 which distribution the sample come from.
+            scores (Tensor): The probability of sample come from the
+                fit gmm distribution.
+            pos_inds_gmm (Tensor): All the indexes of samples which used
+                to fit gmm model.
+
+        Returns:
+            tuple: Usually returns a tuple.
+
+                - pos_inds_temp (Tensor): Index of positive samples after
+                    partition.
+                - ignore_inds_temp (Tensor): Index of ignore samples after
+                    partition.
+        """
+        # The implementation is (c) in Fig.3 in origin paper intead of (b).
+        # You can refer to issues such as
+        # https://github.com/kkhoot/PAA/issues/8 and
+        # https://github.com/kkhoot/PAA/issues/9.
+        fgs = components == 0
+        if fgs.nonzero().numel():
+            _, pos_thr_ind = scores[fgs].topk(1)
+            pos_inds_temp = pos_inds_gmm[fgs][:pos_thr_ind + 1]
+            ignore_inds_temp = pos_inds_gmm.new_tensor([])
+        return pos_inds_temp, ignore_inds_temp
 
     def get_targets(
         self,
