@@ -218,6 +218,7 @@ class YOLOV3Head(BaseDenseHead):
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
+
         Returns:
             Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
@@ -396,24 +397,6 @@ class YOLOV3Head(BaseDenseHead):
             conf_loss_weight = 1
 
         pos_weight = target_label.new_tensor(pos_weight)
-
-        # loss_cls = F.binary_cross_entropy_with_logits(
-        #     pred_label, target_label, reduction='none') * pos_mask
-
-        # loss_conf = F.binary_cross_entropy_with_logits(
-        #     pred_conf, target_conf, reduction='none',
-        #     pos_weight=pos_weight) * pos_and_neg_mask * conf_loss_weight
-
-        # loss_xy = F.binary_cross_entropy_with_logits(
-        #     pred_xy, target_xy, reduction='none') * pos_mask * 2
-
-        # loss_wh = F.mse_loss(
-        #     pred_wh, target_wh, reduction='none') * pos_mask * 2
-
-        # loss_cls = loss_cls.sum()
-        # loss_conf = loss_conf.sum()
-        # loss_xy = loss_xy.sum()
-        # loss_wh = loss_wh.sum()
 
         loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
         loss_conf = self.loss_conf(
