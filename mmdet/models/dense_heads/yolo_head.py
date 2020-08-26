@@ -46,11 +46,9 @@ class YOLOV3Head(BaseDenseHead):
                  out_channels=(1024, 512, 256),
                  anchor_generator=dict(
                      type='YOLOAnchorGenerator',
-                     base_sizes=[
-                         [(116, 90), (156, 198), (373, 326)],
-                         [(30, 61), (62, 45), (59, 119)],
-                         [(10, 13), (16, 30), (33, 23)],
-                     ],
+                     base_sizes=[[(116, 90), (156, 198), (373, 326)],
+                                 [(30, 61), (62, 45), (59, 119)],
+                                 [(10, 13), (16, 30), (33, 23)]],
                      strides=[32, 16, 8]),
                  bbox_coder=dict(type='YOLOBBoxCoder'),
                  featmap_strides=[32, 16, 8],

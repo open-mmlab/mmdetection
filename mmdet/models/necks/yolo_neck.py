@@ -8,8 +8,9 @@ from mmcv.cnn import ConvModule
 from ..builder import NECKS
 
 
-class DetectionNeck(nn.Module):
-    """
+class DetectionBlock(nn.Module):
+    """Detection block in YOLO neck.
+
     Let out_channels = n, the DetectionBlock contains:
     Six ConvLayers, 1 Conv2D Layer and 1 YoloLayer.
     The first 6 ConvLayers are formed the following way:
@@ -26,7 +27,6 @@ class DetectionNeck(nn.Module):
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
-
     """
 
     def __init__(self,
@@ -35,7 +35,7 @@ class DetectionNeck(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
-        super(DetectionNeck, self).__init__()
+        super(DetectionBlock, self).__init__()
         double_out_channels = out_channels * 2
 
         # shortcut
@@ -59,7 +59,9 @@ class DetectionNeck(nn.Module):
 
 @NECKS.register_module()
 class YOLOV3Neck(nn.Module):
-    """The neck of YOLOV3. It can be treated as a simplified version of FPN. It
+    """The neck of YOLOV3.
+
+    It can be treated as a simplified version of FPN. It
     will take the result from Darknet backbone and do some upsampling and
     concatenation. It will finally output the detection result.
 
@@ -98,13 +100,13 @@ class YOLOV3Neck(nn.Module):
 
         # To support arbitrary scales, the code looks awful, but it works.
         # Better solution is welcomed.
-        self.detect1 = DetectionNeck(in_channels[0], out_channels[0], **cfg)
+        self.detect1 = DetectionBlock(in_channels[0], out_channels[0], **cfg)
         for i in range(1, self.num_scales):
             in_c, out_c = self.in_channels[i], self.out_channels[i]
             self.add_module(f'conv{i}', ConvModule(in_c, out_c, 1, **cfg))
             # in_c + out_c : High-lvl feats will be cat with low-lvl feats
             self.add_module(f'detect{i+1}',
-                            DetectionNeck(in_c + out_c, out_c, **cfg))
+                            DetectionBlock(in_c + out_c, out_c, **cfg))
 
     def forward(self, feats):
         assert len(feats) == self.num_scales

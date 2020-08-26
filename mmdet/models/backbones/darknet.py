@@ -13,7 +13,7 @@ from ..builder import BACKBONES
 class ResBlock(nn.Module):
     """The basic residual block used in Darknet. Each ResBlock consists of two
     ConvModules and the input is added to the final output. Each ConvModule is
-    composed of Conv, BN, and LeakyReLU In YoloV3 paper, the first convLayer
+    composed of Conv, BN, and LeakyReLU. In YoloV3 paper, the first convLayer
     has half of the number of the filters as much as the second convLayer. The
     first convLayer has filter size of 1x1 and the second one has the filter
     size of 3x3.

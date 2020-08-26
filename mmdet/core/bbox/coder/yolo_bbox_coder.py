@@ -14,12 +14,12 @@ class YOLOBBoxCoder(BaseBBoxCoder):
     bboxes. dw, dh are the same as :obj:`DeltaXYWHBBoxCoder`.
 
     Args:
-        epsilon (float): Min value of cx, cy when encoding.
+        eps (float): Min value of cx, cy when encoding.
     """
 
-    def __init__(self, epsilon=1e-6):
+    def __init__(self, eps=1e-6):
         super(BaseBBoxCoder, self).__init__()
-        self.epsilon = epsilon
+        self.eps = eps
 
     def encode(self, bboxes, gt_bboxes, stride):
         """Get box regression transformation deltas that can be used to
@@ -45,12 +45,12 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         y_center = (bboxes[..., 1] + bboxes[..., 3]) * 0.5
         w = bboxes[..., 2] - bboxes[..., 0]
         h = bboxes[..., 3] - bboxes[..., 1]
-        w_target = torch.log((w_gt / w).clamp(min=self.epsilon))
-        h_target = torch.log((h_gt / h).clamp(min=self.epsilon))
+        w_target = torch.log((w_gt / w).clamp(min=self.eps))
+        h_target = torch.log((h_gt / h).clamp(min=self.eps))
         x_center_target = ((x_center_gt - x_center) / stride + 0.5).clamp(
-            self.epsilon, 1 - self.epsilon)
+            self.eps, 1 - self.eps)
         y_center_target = ((y_center_gt - y_center) / stride + 0.5).clamp(
-            self.epsilon, 1 - self.epsilon)
+            self.eps, 1 - self.eps)
         encoded_bboxes = torch.stack(
             [x_center_target, y_center_target, w_target, h_target], dim=-1)
         return encoded_bboxes

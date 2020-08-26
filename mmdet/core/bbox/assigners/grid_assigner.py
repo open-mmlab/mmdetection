@@ -18,16 +18,13 @@ class GridAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-            pos_iou_thr (float): IoU threshold for positive bboxes.
-
+        pos_iou_thr (float): IoU threshold for positive bboxes.
         neg_iou_thr (float or tuple): IoU threshold for negative bboxes.
-
-            min_pos_iou (float): Minimum iou for a bbox to be considered as a
-        positive bbox. Positive samples can have smaller IoU than
-        pos_iou_thr due to the 4th step (assign max IoU sample to each gt).
-
-    gt_max_assign_all (bool): Whether to assign all bboxes with the same
-        highest overlap with some gt to that gt.
+        min_pos_iou (float): Minimum iou for a bbox to be considered as a
+            positive bbox. Positive samples can have smaller IoU than
+            pos_iou_thr due to the 4th step (assign max IoU sample to each gt).
+        gt_max_assign_all (bool): Whether to assign all bboxes with the same
+            highest overlap with some gt to that gt.
     """
 
     def __init__(self,
