@@ -17,14 +17,17 @@ def levels_to_images(mlvl_tensor):
     """Concat multi-level feature maps by image.
 
     [feature_level0, feature_level1...] -> [feature_image0, feature_image1...]
+    Convert the shape of each element in mlvl_tensor from (N, C, H, W) to
+    (N, H*W , C), then split the element to N elements with shape (H*W, C), and
+    concat elements in same image of all level along first dimension.
 
     Args:
         mlvl_tensor (list[torch.Tensor]): list of Tensor which collect from
-            corresponding level. Each element shape (N, C, H, W)
+            corresponding level. Each element is of shape (N, C, H, W)
 
     Returns:
-        list[torch.Tensor]: A list that contains N tensors and each tensor
-            shape (num_elements, C)
+        list[torch.Tensor]: A list that contains N tensors and each tensor is
+            of shape (num_elements, C)
     """
     batch_size = mlvl_tensor[0].size(0)
     batch_list = [[] for _ in range(batch_size)]
@@ -322,9 +325,8 @@ class PAAHead(ATSSHead):
                 pos_inds_after_paa.append(pos_inds_gmm[fgs][:pos_thr_ind + 1])
 
         pos_inds_after_paa = torch.cat(pos_inds_after_paa)
-        reassign_ids = set(pos_inds.tolist()) - set(
-            pos_inds_after_paa.tolist())
-        reassign_ids = pos_inds.new_tensor(list(reassign_ids))
+        reassign_mask = (pos_inds.unsqueeze(1) != pos_inds_after_paa).all(1)
+        reassign_ids = pos_inds[reassign_mask]
         label[reassign_ids] = self.background_label
         bbox_weight[reassign_ids] = 0
         num_pos = len(pos_inds_after_paa)
@@ -461,8 +463,8 @@ class PAAHead(ATSSHead):
 
         This method is almost same as `ATSSHead._get_bboxes_single()`.
         We use sqrt(iou_preds * cls_scores) in NMS process instead of just
-        cls_scores.Besides can use score voting when set score voting as
-        True.
+        cls_scores. Besides, score voting is used when `` score_voting``
+        is set to True.
         """
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
@@ -476,7 +478,6 @@ class PAAHead(ATSSHead):
                 -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             iou_preds = iou_preds.permute(1, 2, 0).reshape(-1).sigmoid()
-
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
                 max_scores, _ = (scores * iou_preds[:, None]).sqrt().max(dim=1)

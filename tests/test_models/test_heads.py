@@ -64,7 +64,7 @@ def test_paa_head_loss():
         for feat_size in [4, 8, 16, 32, 64]
     ]
     self.init_weights()
-    cls_scores, bbox_preds, iou_preds = self.forward(feat)
+    cls_scores, bbox_preds, iou_preds = self(feat)
     # Test that empty ground truth encourages the network to predict background
     gt_bboxes = [torch.empty((0, 4))]
     gt_labels = [torch.LongTensor([])]
@@ -101,6 +101,30 @@ def test_paa_head_loss():
     results = levels_to_images(mlvl_tensor)
     assert len(results) == n
     assert results[0].size() == (h * w * 5, c)
+    assert self.with_score_voting
+    cls_scores = [torch.ones(4, 5, 5)]
+    bbox_preds = [torch.ones(4, 5, 5)]
+    iou_preds = [torch.ones(1, 5, 5)]
+    mlvl_anchors = [torch.ones(5 * 5, 4)]
+    img_shape = None
+    scale_factor = [0.5, 0.5]
+    cfg = mmcv.Config(
+        dict(
+            nms_pre=1000,
+            min_bbox_size=0,
+            score_thr=0.05,
+            nms=dict(type='nms', iou_threshold=0.6),
+            max_per_img=100))
+    rescale = False
+    self._get_bboxes_single(
+        cls_scores,
+        bbox_preds,
+        iou_preds,
+        mlvl_anchors,
+        img_shape,
+        scale_factor,
+        cfg,
+        rescale=rescale)
 
 
 def test_fcos_head_loss():
