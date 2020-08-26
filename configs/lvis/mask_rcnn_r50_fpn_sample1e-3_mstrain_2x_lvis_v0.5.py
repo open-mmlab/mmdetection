@@ -5,7 +5,7 @@ _base_ = [
 ]
 model = dict(
     roi_head=dict(
-        bbox_head=dict(num_classes=1230), mask_head=dict(num_classes=1230)))
+        bbox_head=dict(num_classes=1203), mask_head=dict(num_classes=1203)))
 test_cfg = dict(
     rcnn=dict(
         score_thr=0.0001,
