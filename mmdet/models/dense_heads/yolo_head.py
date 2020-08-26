@@ -10,7 +10,7 @@ from mmcv.cnn import ConvModule, normal_init
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, force_fp32,
                         images_to_levels, multi_apply, multiclass_nms)
-from ..builder import HEADS
+from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 
 
@@ -36,6 +36,10 @@ class YOLOV3Head(BaseDenseHead):
             Default: dict(type='BN', requires_grad=True)
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
+        loss_cls (dict): Config of classification loss.
+        loss_conf (dict): Config of confidence loss.
+        loss_xy (dict): Config of xy coordinate loss.
+        loss_wh (dict): Config of wh coordinate loss.
         train_cfg (dict): Training config of YOLOV3 head. Default: None.
         test_cfg (dict): Testing config of YOLOV3 head. Default: None.
     """
@@ -57,6 +61,19 @@ class YOLOV3Head(BaseDenseHead):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
+                 loss_cls=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=True,
+                     loss_weight=1.0),
+                 loss_conf=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=True,
+                     loss_weight=1.0),
+                 loss_xy=dict(
+                     type='CrossEntropyLoss',
+                     use_sigmoid=True,
+                     loss_weight=1.0),
+                 loss_wh=dict(type='MSELoss', loss_weight=1.0),
                  train_cfg=None,
                  test_cfg=None):
         super(YOLOV3Head, self).__init__()
@@ -86,6 +103,11 @@ class YOLOV3Head(BaseDenseHead):
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.anchor_generator = build_anchor_generator(anchor_generator)
+
+        self.loss_cls = build_loss(loss_cls)
+        self.loss_conf = build_loss(loss_conf)
+        self.loss_xy = build_loss(loss_xy)
+        self.loss_wh = build_loss(loss_wh)
         # usually the numbers of anchors for each level are the same
         # except SSD detectors
         self.num_anchors = self.anchor_generator.num_base_anchors[0]
@@ -375,23 +397,32 @@ class YOLOV3Head(BaseDenseHead):
 
         pos_weight = target_label.new_tensor(pos_weight)
 
-        loss_cls = F.binary_cross_entropy_with_logits(
-            pred_label, target_label, reduction='none') * pos_mask
+        # loss_cls = F.binary_cross_entropy_with_logits(
+        #     pred_label, target_label, reduction='none') * pos_mask
 
-        loss_conf = F.binary_cross_entropy_with_logits(
-            pred_conf, target_conf, reduction='none',
-            pos_weight=pos_weight) * pos_and_neg_mask * conf_loss_weight
+        # loss_conf = F.binary_cross_entropy_with_logits(
+        #     pred_conf, target_conf, reduction='none',
+        #     pos_weight=pos_weight) * pos_and_neg_mask * conf_loss_weight
 
-        loss_xy = F.binary_cross_entropy_with_logits(
-            pred_xy, target_xy, reduction='none') * pos_mask * 2
+        # loss_xy = F.binary_cross_entropy_with_logits(
+        #     pred_xy, target_xy, reduction='none') * pos_mask * 2
 
-        loss_wh = F.mse_loss(
-            pred_wh, target_wh, reduction='none') * pos_mask * 2
+        # loss_wh = F.mse_loss(
+        #     pred_wh, target_wh, reduction='none') * pos_mask * 2
 
-        loss_cls = loss_cls.sum()
-        loss_conf = loss_conf.sum()
-        loss_xy = loss_xy.sum()
-        loss_wh = loss_wh.sum()
+        # loss_cls = loss_cls.sum()
+        # loss_conf = loss_conf.sum()
+        # loss_xy = loss_xy.sum()
+        # loss_wh = loss_wh.sum()
+
+        loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
+        loss_conf = self.loss_conf(
+            pred_conf,
+            target_conf,
+            pos_weight=pos_weight,
+            weight=pos_and_neg_mask * conf_loss_weight)
+        loss_xy = self.loss_xy(pred_xy, target_xy, weight=pos_mask)
+        loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
 
         return loss_cls, loss_conf, loss_xy, loss_wh
 
