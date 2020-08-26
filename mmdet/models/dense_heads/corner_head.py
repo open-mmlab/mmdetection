@@ -218,7 +218,7 @@ class CornerHead(BaseDenseHead):
         for i in range(self.num_feat_levels):
             # The initialization of parameters are different between nn.Conv2d
             # and ConvModule. Our experiments show that using the original
-            # initialization of nn.Conv2d increases the final mAP by about 0.2%.
+            # initialization of nn.Conv2d increases the final mAP by about 0.2%
             self.tl_heat[i][-1].conv.reset_parameters()
             self.tl_heat[i][-1].conv.bias.data.fill_(bias_init)
             self.br_heat[i][-1].conv.reset_parameters()
