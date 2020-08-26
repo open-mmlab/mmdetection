@@ -121,10 +121,10 @@ class PAAHead(ATSSHead):
         iou_preds = levels_to_images(iou_preds)
         iou_preds = [item.reshape(-1, 1) for item in iou_preds]
 
-        pos_losses_list, _ = multi_apply(self.get_pos_loss, anchor_list,
-                                         cls_scores, bbox_preds, labels,
-                                         labels_weight, bboxes_target,
-                                         bboxes_weight, pos_inds)
+        pos_losses_list, = multi_apply(self.get_pos_loss, anchor_list,
+                                       cls_scores, bbox_preds, labels,
+                                       labels_weight, bboxes_target,
+                                       bboxes_weight, pos_inds)
 
         with torch.no_grad():
             labels, label_weights, bbox_weights, num_pos = multi_apply(
@@ -230,7 +230,7 @@ class PAAHead(ATSSHead):
 
         loss_cls = loss_cls.sum(-1)
         pos_loss = loss_bbox + loss_cls
-        return pos_loss, None
+        return pos_loss,
 
     def paa_reassign(self, pos_losses, label, label_weight, bbox_weight,
                      pos_inds, pos_gt_inds, anchors):
