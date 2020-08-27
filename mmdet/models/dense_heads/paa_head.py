@@ -351,10 +351,8 @@ class PAAHead(ATSSHead):
         Returns:
             tuple[Tensor]: The indices of positive and ignored samples.
 
-                - pos_inds_temp (Tensor): Indexes of positive samples after
-                    partition.
-                - ignore_inds_temp (Tensor): Indexes of ignore samples after
-                    partition.
+                - pos_inds_temp (Tensor): Indices of positive samples.
+                - ignore_inds_temp (Tensor): Indices of ignore samples.
         """
         # The implementation is (c) in Fig.3 in origin paper intead of (b).
         # You can refer to issues such as
