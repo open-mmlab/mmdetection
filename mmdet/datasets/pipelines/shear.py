@@ -200,7 +200,6 @@ class Shear(object):
                                            fill_val).astype(seg.dtype)
 
     def _filter_invalid(self, results, min_bbox_size=0):
-        # TODO check whether need or not?
         """Filter bboxes and corresponding masks too small after shear
         augmentation."""
         # The key correspondence from bboxes to labels and masks.
