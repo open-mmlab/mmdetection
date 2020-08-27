@@ -398,21 +398,14 @@ class YOLOV3Head(BaseDenseHead):
 
         pos_weight = target_label.new_tensor(pos_weight)
 
-        loss_cls = self.loss_cls(
-            pred_label,
-            target_label,
-            weight=pos_mask,
-            avg_factor=pos_mask.sum())
+        loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
         loss_conf = self.loss_conf(
             pred_conf,
             target_conf,
             pos_weight=pos_weight,
-            weight=pos_and_neg_mask * conf_loss_weight,
-            avg_factor=pos_and_neg_mask.sum())
-        loss_xy = self.loss_xy(
-            pred_xy, target_xy, weight=pos_mask, avg_factor=pos_mask.sum())
-        loss_wh = self.loss_wh(
-            pred_wh, target_wh, weight=pos_mask, avg_factor=pos_mask.sum())
+            weight=pos_and_neg_mask * conf_loss_weight)
+        loss_xy = self.loss_xy(pred_xy, target_xy, weight=pos_mask)
+        loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
 
         return loss_cls, loss_conf, loss_xy, loss_wh
 

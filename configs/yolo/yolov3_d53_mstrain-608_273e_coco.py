@@ -30,12 +30,21 @@ model = dict(
         bbox_coder=dict(type='YOLOBBoxCoder'),
         featmap_strides=[32, 16, 8],
         loss_cls=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            loss_weight=1.0,
+            reduction='sum'),
         loss_conf=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            loss_weight=1.0,
+            reduction='sum'),
         loss_xy=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        loss_wh=dict(type='MSELoss', loss_weight=1.0)))
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            loss_weight=2.0,
+            reduction='sum'),
+        loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
@@ -106,7 +115,7 @@ data = dict(
         pipeline=test_pipeline))
 # optimizer
 optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
-optimizer_config = dict(grad_clip=None)
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
