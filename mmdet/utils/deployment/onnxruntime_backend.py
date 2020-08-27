@@ -20,7 +20,7 @@ from onnx.utils import polish_model
 from mmdet.models import build_detector
 
 
-class ModelONNXRuntime(object):
+class ModelONNXRuntime:
 
     def __init__(self, model_file_path, cfg=None, classes=None):
         self.device = onnxruntime.get_device()
