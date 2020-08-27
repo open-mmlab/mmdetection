@@ -87,8 +87,8 @@ class PAAHead(ATSSHead):
             gt_labels (list[Tensor]): class indices corresponding to each box
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (list[Tensor] | None): specify which bounding
-                boxes can be ignored when computing the loss.
+            gt_bboxes_ignore (list[Tensor] | None): Specify which bounding
+                boxes can be ignored when are computing the loss.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -337,19 +337,23 @@ class PAAHead(ATSSHead):
         boundary schemes by rewriting this function.
 
         Args:
-            components (Tensor): The prediction of GMM. The value indicate
-                 which distribution the sample come from.
-            scores (Tensor): The probability of sample come from the
-                fit gmm distribution.
-            pos_inds_gmm (Tensor): All the indexes of samples which used
-                to fit gmm model.
+            components (Tensor): The prediction of GMM which is with one
+                dimension. The length is equaling to the number of samples
+                used to fit GMM The 0/1 value indicates which distribution
+                the sample come from.
+            scores (Tensor): The probability of sample coming from the
+                fit GMM distribution. It is with one dimension and the
+                length is same as components.
+            pos_inds_gmm (Tensor): All the indexes of samples which are used
+                to fit GMM model. It is with one dimension and the length is
+                same sa components.
 
         Returns:
-            tuple: Usually returns a tuple.
+            tuple[Tensor]: The indices of positive and ignored samples.
 
-                - pos_inds_temp (Tensor): Index of positive samples after
+                - pos_inds_temp (Tensor): Indexes of positive samples after
                     partition.
-                - ignore_inds_temp (Tensor): Index of ignore samples after
+                - ignore_inds_temp (Tensor): Indexes of ignore samples after
                     partition.
         """
         # The implementation is (c) in Fig.3 in origin paper intead of (b).
@@ -378,7 +382,7 @@ class PAAHead(ATSSHead):
 
         This method is almost the same as `AnchorHead.get_targets()`. We direct
         return the results from _get_targets_single instead map it to levels
-        by images_to_levels fuction.
+        by images_to_levels function.
 
         Args:
             anchor_list (list[list[Tensor]]): Multi level anchors of each
