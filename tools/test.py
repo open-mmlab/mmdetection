@@ -129,7 +129,6 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
 
     # build the dataloader
-    # TODO: support multiple images per gpu (only minor changes are needed)
     samples_per_gpu = 1
     if 'samples_per_gpu' in cfg.data.test:
         samples_per_gpu = cfg.data.test.pop('samples_per_gpu')
