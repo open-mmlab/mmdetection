@@ -1,3 +1,4 @@
+from .aug_only_img import Color, Sharpness
 from .auto_augment import AutoAugment
 from .compose import Compose
 from .formating import (Collect, ImageToTensor, ToDataContainer, ToTensor,
@@ -16,5 +17,6 @@ __all__ = [
     'LoadMultiChannelImageFromFiles', 'LoadProposals', 'MultiScaleFlipAug',
     'Resize', 'RandomFlip', 'Pad', 'RandomCrop', 'Normalize', 'SegRescale',
     'MinIoURandomCrop', 'Expand', 'PhotoMetricDistortion', 'Albu',
-    'InstaBoost', 'RandomCenterCropPad', 'AutoAugment', 'CutOut'
+    'InstaBoost', 'RandomCenterCropPad', 'AutoAugment', 'CutOut', 'Color',
+    'Sharpness'
 ]
