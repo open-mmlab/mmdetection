@@ -10,7 +10,6 @@ from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Albu, CutOut, Expand, MinIoURandomCrop, Normalize,
                          Pad, PhotoMetricDistortion, RandomCenterCropPad,
                          RandomCrop, RandomFlip, Resize, SegRescale)
-from .translate import Translate, TranslateOnlyBBox
 
 __all__ = [
     'Compose',
