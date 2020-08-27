@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -103,6 +104,35 @@ class BaseInstanceMasks(metaclass=ABCMeta):
     def expand(self, expanded_h, expanded_w, top, left):
         """see :class:`Expand`."""
         pass
+
+    @staticmethod
+    def warpAffine(data,
+                   trans_matrix,
+                   out_size,
+                   fill_val,
+                   flags=cv2.INTER_NEAREST,
+                   borderMode=cv2.BORDER_CONSTANT):
+        """Affine wrapper which transforms the source data using the given
+        trans_matrix.
+
+        Args:
+            data (np.ndarray): Source data.
+            trans_matrix (np.ndarray): Transformation matrix with shape (2, 3).
+            out_size (tuple): Size of the output data with format (w, h).
+            fill_val (int | float | tuple): Value used in case of a constant
+                border.
+            flags: Interpolation methods used in ``cv2.warpAffine``.
+            borderMode: pixel extrapolation method used in ``cv2.warpAffine``.
+        Returns:
+            np.ndarray: transformed data with the same shape as input data.
+        """
+        return cv2.warpAffine(
+            data,
+            trans_matrix,
+            dsize=out_size,  # dsize takes input size as order (w,h).
+            flags=flags,
+            borderMode=borderMode,
+            borderValue=fill_val)
 
     @property
     @abstractmethod
@@ -296,6 +326,22 @@ class BitmapMasks(BaseInstanceMasks):
             expanded_mask[:, top:top + self.height,
                           left:left + self.width] = self.masks
         return BitmapMasks(expanded_mask, expanded_h, expanded_w)
+
+    def translate(self,
+                  trans_matrix,
+                  out_shape,
+                  fill_val=0,
+                  flags=cv2.INTER_NEAREST,
+                  borderMode=cv2.BORDER_CONSTANT):
+        """Translate mask."""
+        if len(self.masks) == 0:
+            translated_masks = np.empty((0, *out_shape), dtype=np.uint8)
+        else:
+            translated_masks = np.stack([
+                self.warpAffine(mask, trans_matrix, out_shape[::-1], fill_val,
+                                flags, borderMode) for mask in self.masks
+            ]).astype(self.masks.dtype)
+        return BitmapMasks(translated_masks, *out_shape)
 
     @property
     def areas(self):
@@ -497,6 +543,15 @@ class PolygonMasks(BaseInstanceMasks):
                 resized_mask.append(p)
             resized_masks.append(resized_mask)
         return PolygonMasks(resized_masks, *out_shape)
+
+    def translate(self,
+                  trans_matrix,
+                  out_shape,
+                  fill_val=0,
+                  flags=cv2.INTER_NEAREST,
+                  borderMode=cv2.BORDER_CONSTANT):
+        """Translate mask."""
+        raise NotImplementedError
 
     def to_bitmap(self):
         """convert polygon masks to bitmap masks."""
