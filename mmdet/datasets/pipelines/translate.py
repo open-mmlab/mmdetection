@@ -148,7 +148,6 @@ class Translate(object):
         """
         if np.random.rand() > self.prob:
             return results
-        print('ffffffffffffffffffffffffffff-----------------------')
         offset = random_negative(self.offset, random_negative_prob)
         # the transformation matrix of cv2
         trans_matrix = self.get_translate_matrix(offset, self.axis)
