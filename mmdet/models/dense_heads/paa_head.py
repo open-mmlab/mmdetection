@@ -91,7 +91,7 @@ class PAAHead(ATSSHead):
                 boxes can be ignored when are computing the loss.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict[str, Tensor]: A dictionary of loss gmm_assignment.
         """
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
@@ -312,13 +312,13 @@ class PAAHead(ATSSHead):
                 means_init=means_init,
                 precisions_init=precisions_init)
             gmm.fit(pos_loss_gmm)
-            components = gmm.predict(pos_loss_gmm)
+            gmm_assignment = gmm.predict(pos_loss_gmm)
             scores = gmm.score_samples(pos_loss_gmm)
-            components = torch.from_numpy(components).to(device)
+            gmm_assignment = torch.from_numpy(gmm_assignment).to(device)
             scores = torch.from_numpy(scores).to(device)
 
-            pos_inds_temp, ignore_inds_temp = self.boundary_scheme(
-                components, scores, pos_inds_gmm)
+            pos_inds_temp, ignore_inds_temp = self.gmm_separation_scheme(
+                gmm_assignment, scores, pos_inds_gmm)
             pos_inds_after_paa.append(pos_inds_temp)
             ignore_inds_after_paa.append(ignore_inds_temp)
 
@@ -332,21 +332,21 @@ class PAAHead(ATSSHead):
         num_pos = len(pos_inds_after_paa)
         return label, label_weight, bbox_weight, num_pos
 
-    def boundary_scheme(self, components, scores, pos_inds_gmm):
-        """A general interface of the boundary schemes. You can implement other
-        boundary schemes by rewriting this function.
+    def gmm_separation_scheme(self, gmm_assignment, scores, pos_inds_gmm):
+        """A general separation scheme for gmm model.
+
+        It separates a GMM distribution of candidate samples into three
+        parts, 0 1 and uncertain areas, and you can implement other
+        separation schemes by rewriting this function.
 
         Args:
-            components (Tensor): The prediction of GMM which is with one
-                dimension. The length is equaling to the number of samples
-                used to fit GMM The 0/1 value indicates which distribution
-                the sample come from.
+            gmm_assignment (Tensor): The prediction of GMM which is of shape
+                (num_samples,). The 0/1 value indicates the distribution
+                that each sample comes from.
             scores (Tensor): The probability of sample coming from the
-                fit GMM distribution. It is with one dimension and the
-                length is same as components.
+                fit GMM distribution. The tensor is of shape (num_samples,).
             pos_inds_gmm (Tensor): All the indexes of samples which are used
-                to fit GMM model. It is with one dimension and the length is
-                same sa components.
+                to fit GMM model. The tensor is of shape (num_samples,)
 
         Returns:
             tuple[Tensor]: The indices of positive and ignored samples.
@@ -358,7 +358,7 @@ class PAAHead(ATSSHead):
         # You can refer to issues such as
         # https://github.com/kkhoot/PAA/issues/8 and
         # https://github.com/kkhoot/PAA/issues/9.
-        fgs = components == 0
+        fgs = gmm_assignment == 0
         if fgs.nonzero().numel():
             _, pos_thr_ind = scores[fgs].topk(1)
             pos_inds_temp = pos_inds_gmm[fgs][:pos_thr_ind + 1]
