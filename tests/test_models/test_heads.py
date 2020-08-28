@@ -2,6 +2,7 @@ import mmcv
 import torch
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
+from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.models.dense_heads import (AnchorHead, CornerHead, FCOSHead,
                                       FSAFHead, GuidedAnchorHead)
 from mmdet.models.roi_heads.bbox_heads import BBoxHead
@@ -714,8 +715,11 @@ def test_corner_head_encode_and_decode_heatmap():
         'border': (0, 0, 0, 0)
     }]
 
-    gt_bboxes = [torch.Tensor([[10, 20, 200, 240]])]
-    gt_labels = [torch.LongTensor([1])]
+    gt_bboxes = [
+        torch.Tensor([[10, 20, 200, 240], [40, 50, 100, 200],
+                      [10, 20, 200, 240]])
+    ]
+    gt_labels = [torch.LongTensor([1, 1, 2])]
 
     self = CornerHead(num_classes=4, in_channels=1, corner_emb_channels=1)
 
@@ -762,5 +766,14 @@ def test_corner_head_encode_and_decode_heatmap():
     scores = scores[idx].view(-1)
     clses = clses[idx].view(-1)
 
-    assert bboxes[torch.where(scores > 0.05)].equal(gt_bboxes[0])
-    assert clses[torch.where(scores > 0.05)].equal(gt_labels[0].float())
+    valid_bboxes = bboxes[torch.where(scores > 0.05)]
+    valid_labels = clses[torch.where(scores > 0.05)]
+    max_coordinate = valid_bboxes.max()
+    offsets = valid_labels.to(valid_bboxes) * (max_coordinate + 1)
+    gt_offsets = gt_labels[0].to(gt_bboxes[0]) * (max_coordinate + 1)
+
+    offset_bboxes = valid_bboxes + offsets[:, None]
+    offset_gtbboxes = gt_bboxes[0] + gt_offsets[:, None]
+
+    iou_matrix = bbox_overlaps(offset_bboxes.numpy(), offset_gtbboxes.numpy())
+    assert (iou_matrix == 1).sum() == 3
