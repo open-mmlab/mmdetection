@@ -2,6 +2,7 @@ import warnings
 
 import matplotlib.pyplot as plt
 import mmcv
+import numpy as np
 import torch
 from mmcv.ops import RoIAlign, RoIPool
 from mmcv.parallel import collate, scatter
@@ -88,10 +89,18 @@ def inference_detector(model, img):
     """
     cfg = model.cfg
     device = next(model.parameters()).device  # model device
+    # prepare data
+    if isinstance(img, np.ndarray):
+        # directly add img
+        data = dict(img=img)
+        cfg = cfg.copy()
+        # set loading pipeline type
+        cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
+    else:
+        # add information into dict
+        data = dict(img_info=dict(filename=img), img_prefix=None)
     # build the data pipeline
     test_pipeline = Compose(cfg.data.test.pipeline)
-    # prepare data
-    data = dict(img_info=dict(filename=img), img_prefix=None)
     data = test_pipeline(data)
     data = collate([data], samples_per_gpu=1)
     if next(model.parameters()).is_cuda:
