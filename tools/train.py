@@ -9,7 +9,7 @@ import mmcv
 import torch
 from mmcv import Config, DictAction
 from mmcv.runner import init_dist
-from mmcv.utils import get_git_hash, import_modules_from_strings
+from mmcv.utils import get_git_hash
 
 from mmdet import __version__
 from mmdet.apis import set_random_seed, train_detector
@@ -87,6 +87,7 @@ def main():
         cfg.merge_from_dict(args.cfg_options)
     # import modules from string list.
     if cfg.get('custom_imports', None):
+        from mmcv.utils import import_modules_from_strings
         import_modules_from_strings(**cfg['custom_imports'])
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
