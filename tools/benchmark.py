@@ -6,6 +6,7 @@ from mmcv import Config
 from mmcv.cnn import fuse_conv_bn
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
+from mmcv.utils import import_modules_from_strings
 
 from mmdet.core import wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
@@ -31,6 +32,9 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    # import modules from string list.
+    if cfg.get('custom_imports', None):
+        import_modules_from_strings(**cfg['custom_imports'])
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True

@@ -8,6 +8,7 @@ import onnx
 import onnxruntime as rt
 import torch
 from mmcv.runner import load_checkpoint
+from mmcv.utils import import_modules_from_strings
 
 from mmdet.models import build_detector
 
@@ -147,6 +148,9 @@ if __name__ == '__main__':
     }
 
     cfg = mmcv.Config.fromfile(args.config)
+    # import modules from string list.
+    if cfg.get('custom_imports', None):
+        import_modules_from_strings(**cfg['custom_imports'])
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
