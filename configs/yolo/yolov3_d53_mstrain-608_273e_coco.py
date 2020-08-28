@@ -1,21 +1,14 @@
-_base_ = [
-    '../_base_/default_runtime.py',
-]
+_base_ = '../_base_/default_runtime.py'
 # model settings
 model = dict(
     type='YOLOV3',
     pretrained='open-mmlab://darknet53',
-    backbone=dict(
-        type='Darknet',
-        depth=53,
-        out_indices=(3, 4, 5),
-    ),
+    backbone=dict(type='Darknet', depth=53, out_indices=(3, 4, 5)),
     neck=dict(
         type='YOLOV3Neck',
         num_scales=3,
         in_channels=[1024, 512, 256],
-        out_channels=[512, 256, 128],
-    ),
+        out_channels=[512, 256, 128]),
     bbox_head=dict(
         type='YOLOV3Head',
         num_classes=80,
