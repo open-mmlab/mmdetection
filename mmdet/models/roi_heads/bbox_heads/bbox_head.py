@@ -206,7 +206,7 @@ class BBoxHead(nn.Module):
                 bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
-        if rescale:
+        if rescale and bboxes.size(0) > 0:
             if isinstance(scale_factor, float):
                 bboxes /= scale_factor
             else:
