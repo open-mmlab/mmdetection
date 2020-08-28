@@ -9,6 +9,7 @@ from mmdet.models.backbones.hourglass import HourglassNet
 from mmdet.models.backbones.res2net import Bottle2neck
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
 from mmdet.models.backbones.resnext import Bottleneck as BottleneckX
+from mmdet.models.backbones.xception import Xception
 from mmdet.models.utils import ResLayer
 
 
@@ -854,3 +855,15 @@ def test_hourglass_backbone():
     assert len(feat) == 2
     assert feat[0].shape == torch.Size([1, 256, 128, 128])
     assert feat[1].shape == torch.Size([1, 256, 128, 128])
+
+
+def test_xception_backend():
+
+    img = torch.randn(1, 3, 224, 224)
+
+    model = Xception(norm_cfg=None)
+    model.init_weights()
+    model.train()
+
+    output = model(img)
+    assert output.shape == torch.Size([1, 2048, 1, 1])
