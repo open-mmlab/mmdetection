@@ -62,7 +62,7 @@ class SABLRetinaHead(BaseDenseHead):
                  norm_cfg=None,
                  bbox_coder=dict(
                      type='BucketingBBoxCoder',
-                     bucket_num=14,
+                     num_buckets=14,
                      scale_factor=3.0),
                  reg_decoded_bbox=False,
                  background_label=None,
@@ -84,8 +84,8 @@ class SABLRetinaHead(BaseDenseHead):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
-        self.bucket_num = bbox_coder.bucket_num
-        self.side_num = int(np.ceil(self.bucket_num / 2))
+        self.num_buckets = bbox_coder.num_buckets
+        self.side_num = int(np.ceil(self.num_buckets / 2))
 
         assert (approx_anchor_generator['octave_base_scale'] ==
                 square_anchor_generator['scales'][0])

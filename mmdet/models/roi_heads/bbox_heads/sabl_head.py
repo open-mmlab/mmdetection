@@ -71,7 +71,7 @@ class SABLHead(nn.Module):
                  norm_cfg=None,
                  bbox_coder=dict(
                      type='BucketingBBoxCoder',
-                     bucket_num=14,
+                     num_buckets=14,
                      scale_factor=1.7),
                  loss_cls=dict(
                      type='CrossEntropyLoss',
@@ -88,10 +88,10 @@ class SABLHead(nn.Module):
         self.reg_in_channels = reg_in_channels
         self.roi_feat_size = roi_feat_size
         self.reg_feat_up_ratio = int(reg_feat_up_ratio)
-        self.bucket_num = bbox_coder.bucket_num
+        self.num_buckets = bbox_coder.num_buckets
         assert self.reg_feat_up_ratio // 2 >= 1
         self.up_reg_feat_size = roi_feat_size * self.reg_feat_up_ratio
-        assert self.up_reg_feat_size == bbox_coder.bucket_num
+        assert self.up_reg_feat_size == bbox_coder.num_buckets
         self.reg_pre_kernel = reg_pre_kernel
         self.reg_pos_kernel = reg_pos_kernel
         self.reg_pre_num = reg_pre_num
@@ -116,7 +116,7 @@ class SABLHead(nn.Module):
                                            self.roi_feat_size,
                                            self.cls_out_channels)
 
-        self.side_num = int(np.ceil(self.bucket_num / 2))
+        self.side_num = int(np.ceil(self.num_buckets / 2))
 
         if self.reg_feat_up_ratio > 1:
             self.upsample_x = nn.ConvTranspose1d(
@@ -481,8 +481,8 @@ class SABLHead(nn.Module):
             rois (Tensor): Shape (n*bs, 5), where n is image number per GPU,
                 and bs is the sampled RoIs per image.
             labels (Tensor): Shape (n*bs, ).
-            bbox_preds (list[Tensor]): Shape [(n*bs, bucket_num*2), \
-                (n*bs, bucket_num*2)].
+            bbox_preds (list[Tensor]): Shape [(n*bs, num_buckets*2), \
+                (n*bs, num_buckets*2)].
             pos_is_gts (list[Tensor]): Flags indicating if each positive bbox
                 is a gt bbox.
             img_metas (list[dict]): Meta info of each image.
@@ -526,8 +526,8 @@ class SABLHead(nn.Module):
         Args:
             rois (Tensor): shape (n, 4) or (n, 5)
             label (Tensor): shape (n, )
-            bbox_pred (list[Tensor]): shape [(n, bucket_num *2), \
-                (n, bucket_num *2)]
+            bbox_pred (list[Tensor]): shape [(n, num_buckets *2), \
+                (n, num_buckets *2)]
             img_meta (dict): Image meta info.
 
         Returns:

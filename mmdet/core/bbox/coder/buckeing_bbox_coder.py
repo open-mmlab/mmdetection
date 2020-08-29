@@ -17,7 +17,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
     Please refer to https://arxiv.org/abs/1912.04260 for more details.
 
     Args:
-        bucket_num (int): Number of buckets.
+        num_buckets (int): Number of buckets.
         scale_factor (int): Scale factor of proposals to generate buckets.
         offset_topk (int): Topk buckets are used to generate \
             bucket fine regression targets. Defaults to 2.
@@ -29,13 +29,13 @@ class BucketingBBoxCoder(BaseBBoxCoder):
     """
 
     def __init__(self,
-                 bucket_num,
+                 num_buckets,
                  scale_factor,
                  offset_topk=2,
                  offset_allow=1.0,
                  cls_ignore_neighbor=True):
         super(BucketingBBoxCoder, self).__init__()
-        self.bucket_num = bucket_num
+        self.num_buckets = num_buckets
         self.scale_factor = scale_factor
         self.offset_topk = offset_topk
         self.offset_allow = offset_allow
@@ -47,7 +47,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
 
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
-        encoded_bboxes = bbox2bucket(bboxes, gt_bboxes, self.bucket_num,
+        encoded_bboxes = bbox2bucket(bboxes, gt_bboxes, self.num_buckets,
                                      self.scale_factor, self.offset_topk,
                                      self.offset_allow,
                                      self.cls_ignore_neighbor)
@@ -60,18 +60,18 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         assert cls_preds.size(0) == bboxes.size(0) and offset_preds.size(
             0) == bboxes.size(0)
         decoded_bboxes = bucket2bbox(bboxes, cls_preds, offset_preds,
-                                     self.bucket_num, self.scale_factor,
+                                     self.num_buckets, self.scale_factor,
                                      max_shape)
 
         return decoded_bboxes
 
 
-def generat_buckets(proposals, bucket_num, scale_factor=1.0):
+def generat_buckets(proposals, num_buckets, scale_factor=1.0):
     """Generate buckets w.r.t bucket number and scale factor of proposals.
 
     Args:
         proposals (Tensor): Shape (n, 4)
-        bucket_num (int): Number of buckets.
+        num_buckets (int): Number of buckets.
         scale_factor (float): Scale factor to rescale proposals.
 
     Returns:
@@ -88,7 +88,7 @@ def generat_buckets(proposals, bucket_num, scale_factor=1.0):
     proposals = bbox_rescale(proposals, scale_factor)
 
     # number of buckets in each side
-    side_num = int(np.ceil(bucket_num / 2.0))
+    side_num = int(np.ceil(num_buckets / 2.0))
     pw = proposals[..., 2] - proposals[..., 0]
     ph = proposals[..., 3] - proposals[..., 1]
     px1 = proposals[..., 0]
@@ -96,8 +96,8 @@ def generat_buckets(proposals, bucket_num, scale_factor=1.0):
     px2 = proposals[..., 2]
     py2 = proposals[..., 3]
 
-    bucket_pw = pw / bucket_num
-    bucket_ph = ph / bucket_num
+    bucket_pw = pw / num_buckets
+    bucket_ph = ph / num_buckets
 
     # left buckets
     l_buckets = px1[:, None] + (0.5 + torch.arange(
@@ -122,7 +122,7 @@ def label2onehot(labels, label_num):
 
 def bbox2bucket(proposals,
                 gt,
-                bucket_num,
+                num_buckets,
                 scale_factor,
                 offset_topk=2,
                 offset_allow=1.0,
@@ -132,7 +132,7 @@ def bbox2bucket(proposals,
     Args:
         proposals (Tensor): Shape (n, 4)
         gt (Tensor): Shape (n, 4)
-        bucket_num (int): Number of buckets.
+        num_buckets (int): Number of buckets.
         scale_factor (float): Scale factor to rescale proposals.
         offset_topk (int): Topk buckets are used to generate \
             bucket fine regression targets. Defaults to 2.
@@ -146,13 +146,13 @@ def bbox2bucket(proposals,
         tuple[Tensor]: (offsets, offsets_weights, bucket_labels, cls_weights).
 
             - offsets: Fine regression targets.
-                Shape (n, bucket_num*2).
+                Shape (n, num_buckets*2).
             - offsets_weights: Fine regression weights.
-                Shape (n, bucket_num*2).
+                Shape (n, num_buckets*2).
             - bucket_labels: Bucketing estimation labels.
-                Shape (n, bucket_num*2).
+                Shape (n, num_buckets*2).
             - cls_weights: Bucketing estimation weights.
-                Shape (n, bucket_num*2).
+                Shape (n, num_buckets*2).
     """
     assert proposals.size() == gt.size()
 
@@ -160,7 +160,7 @@ def bbox2bucket(proposals,
     proposals = proposals.float()
     gt = gt.float()
     (bucket_pw, bucket_ph, l_buckets, r_buckets, t_buckets,
-     d_buckets) = generat_buckets(proposals, bucket_num, scale_factor)
+     d_buckets) = generat_buckets(proposals, num_buckets, scale_factor)
 
     gx1 = gt[..., 0]
     gy1 = gt[..., 1]
@@ -214,7 +214,7 @@ def bbox2bucket(proposals,
                                 dim=-1)
 
     # generate bucket labels and weight
-    side_num = int(np.ceil(bucket_num / 2.0))
+    side_num = int(np.ceil(num_buckets / 2.0))
     labels = torch.cat([
         l_label[:, 0][:, None], r_label[:, 0][:, None], t_label[:, 0][:, None],
         d_label[:, 0][:, None]
@@ -245,12 +245,12 @@ def bbox2bucket(proposals,
 def bucket2bbox(proposals,
                 cls_preds,
                 offset_preds,
-                bucket_num,
+                num_buckets,
                 scale_factor=1.0,
                 max_shape=None):
     """Apply bucketing estimation (cls preds) and fine regression (offset
     preds) to generate det bboxes."""
-    side_num = int(np.ceil(bucket_num / 2.0))
+    side_num = int(np.ceil(num_buckets / 2.0))
     cls_preds = cls_preds.view(-1, side_num)
     offset_preds = offset_preds.view(-1, side_num)
 
@@ -266,8 +266,8 @@ def bucket2bbox(proposals,
     px2 = rescaled_proposals[..., 2]
     py2 = rescaled_proposals[..., 3]
 
-    bucket_pw = pw / bucket_num
-    bucket_ph = ph / bucket_num
+    bucket_pw = pw / num_buckets
+    bucket_ph = ph / num_buckets
 
     score_inds_l = score_label[0::4, 0]
     score_inds_r = score_label[1::4, 0]

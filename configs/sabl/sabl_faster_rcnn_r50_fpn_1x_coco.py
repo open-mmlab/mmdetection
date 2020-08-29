@@ -25,7 +25,7 @@ model = dict(
             reg_class_agnostic=True,
             norm_cfg=None,
             bbox_coder=dict(
-                type='BucketingBBoxCoder', bucket_num=14, scale_factor=1.7),
+                type='BucketingBBoxCoder', num_buckets=14, scale_factor=1.7),
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
             loss_bbox_cls=dict(

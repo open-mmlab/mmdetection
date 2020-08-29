@@ -26,7 +26,7 @@ model = dict(
             scales=[4],
             strides=[8, 16, 32, 64, 128]),
         bbox_coder=dict(
-            type='BucketingBBoxCoder', bucket_num=14, scale_factor=3.0),
+            type='BucketingBBoxCoder', num_buckets=14, scale_factor=3.0),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
