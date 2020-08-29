@@ -21,7 +21,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         scale_factor (int): Scale factor of proposals to generate buckets.
         offset_topk (int): Topk buckets are used to generate \
             bucket fine regression targets. Defaults to 2.
-        offset_allow (float): Offset allowance to generate \
+        offset_upperbound (float): Offset upperbound to generate \
             bucket fine regression targets. \
             To avoid too large offset displacements. Defaults to 1.0.
         cls_ignore_neighbor (bool): Ignore second nearest bucket or Not. \
@@ -32,13 +32,13 @@ class BucketingBBoxCoder(BaseBBoxCoder):
                  num_buckets,
                  scale_factor,
                  offset_topk=2,
-                 offset_allow=1.0,
+                 offset_upperbound=1.0,
                  cls_ignore_neighbor=True):
         super(BucketingBBoxCoder, self).__init__()
         self.num_buckets = num_buckets
         self.scale_factor = scale_factor
         self.offset_topk = offset_topk
-        self.offset_allow = offset_allow
+        self.offset_upperbound = offset_upperbound
         self.cls_ignore_neighbor = cls_ignore_neighbor
 
     def encode(self, bboxes, gt_bboxes):
@@ -49,7 +49,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bbox2bucket(bboxes, gt_bboxes, self.num_buckets,
                                      self.scale_factor, self.offset_topk,
-                                     self.offset_allow,
+                                     self.offset_upperbound,
                                      self.cls_ignore_neighbor)
         return encoded_bboxes
 
@@ -134,7 +134,7 @@ def bbox2bucket(proposals,
                 num_buckets,
                 scale_factor,
                 offset_topk=2,
-                offset_allow=1.0,
+                offset_upperbound=1.0,
                 cls_ignore_neighbor=True):
     """Generate buckets estimation and fine regression targets.
 
@@ -145,7 +145,7 @@ def bbox2bucket(proposals,
         scale_factor (float): Scale factor to rescale proposals.
         offset_topk (int): Topk buckets are used to generate \
             bucket fine regression targets. Defaults to 2.
-        offset_allow (float): Offset allowance to generate \
+        offset_upperbound (float): Offset allowance to generate \
             bucket fine regression targets. \
             To avoid too large offset displacements. Defaults to 1.0.
         cls_ignore_neighbor (bool): Ignore second nearest bucket or Not. \
@@ -202,14 +202,18 @@ def bbox2bucket(proposals,
     # generate offset weights of top-k nearset buckets
     for k in range(offset_topk):
         if k >= 1:
-            offset_l_weights[inds, l_label[:, k]] = (l_topk[:, k] <
-                                                     offset_allow).float()
-            offset_r_weights[inds, r_label[:, k]] = (r_topk[:, k] <
-                                                     offset_allow).float()
-            offset_t_weights[inds, t_label[:, k]] = (t_topk[:, k] <
-                                                     offset_allow).float()
-            offset_d_weights[inds, d_label[:, k]] = (d_topk[:, k] <
-                                                     offset_allow).float()
+            offset_l_weights[inds, l_label[:,
+                                           k]] = (l_topk[:, k] <
+                                                  offset_upperbound).float()
+            offset_r_weights[inds, r_label[:,
+                                           k]] = (r_topk[:, k] <
+                                                  offset_upperbound).float()
+            offset_t_weights[inds, t_label[:,
+                                           k]] = (t_topk[:, k] <
+                                                  offset_upperbound).float()
+            offset_d_weights[inds, d_label[:,
+                                           k]] = (d_topk[:, k] <
+                                                  offset_upperbound).float()
         else:
             offset_l_weights[inds, l_label[:, k]] = 1.0
             offset_r_weights[inds, r_label[:, k]] = 1.0
@@ -258,7 +262,24 @@ def bucket2bbox(proposals,
                 scale_factor=1.0,
                 max_shape=None):
     """Apply bucketing estimation (cls preds) and fine regression (offset
-    preds) to generate det bboxes."""
+    preds) to generate det bboxes.
+
+    Args:
+        proposals (Tensor): Boxes to be transformed. Shape (n, 4)
+        cls_preds (Tensor): bucketing estimation. Shape (n, num_buckets*2).
+        offset_preds (Tensor): fine regression. Shape (n, num_buckets*2).
+        num_buckets (int): Number of buckets.
+        scale_factor (float): Scale factor to rescale proposals.
+        max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
+
+    Returns:
+        tuple[Tensor]: (bboxes, loc_confidence).
+
+            - bboxes: predicted bboxes. Shape (n, 4)
+            - loc_confidence: localization confidence of predicted bboxes.
+                Shape (n,).
+    """
+
     side_num = int(np.ceil(num_buckets / 2.0))
     cls_preds = cls_preds.view(-1, side_num)
     offset_preds = offset_preds.view(-1, side_num)
