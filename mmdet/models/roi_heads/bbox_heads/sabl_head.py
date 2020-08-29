@@ -31,7 +31,7 @@ class SABLHead(nn.Module):
             Defaults to 2.
         reg_pre_kernel (int): Kernel of 2D conv layers before \
             attention pooling. Defaults to 3.
-        reg_pos_kernel (int): Kernel of 1D conv layers after \
+        reg_post_kernel (int): Kernel of 1D conv layers after \
             attention pooling. Defaults to 3.
         reg_pre_num (int): Number of pre convs. Defaults to 2.
         reg_pos_num (int): Number of post convs. Defaults to 1.
@@ -41,8 +41,8 @@ class SABLHead(nn.Module):
             of reg offset branch. Defaults to 256.
         reg_cls_out_channels (int): Hidden and output channel \
             of reg cls branch. Defaults to 256.
-        cls_fcs_num (int): Number of fcs for cls branch. Defaults to 1.
-        reg_fcs_num (int): Number of fcs for reg branch.. Defaults to 0.
+        num_cls_fcs (int): Number of fcs for cls branch. Defaults to 1.
+        num_reg_fcs (int): Number of fcs for reg branch.. Defaults to 0.
         reg_class_agnostic (bool): Class agnostic regresion or not. \
             Defaults to True.
         norm_cfg (dict): Config of norm layers. Defaults to None.
@@ -58,15 +58,15 @@ class SABLHead(nn.Module):
                  roi_feat_size=7,
                  reg_feat_up_ratio=2,
                  reg_pre_kernel=3,
-                 reg_pos_kernel=3,
+                 reg_post_kernel=3,
                  reg_pre_num=2,
                  reg_pos_num=1,
                  num_classes=80,
                  cls_out_channels=1024,
                  reg_offset_out_channels=256,
                  reg_cls_out_channels=256,
-                 cls_fcs_num=1,
-                 reg_fcs_num=0,
+                 num_cls_fcs=1,
+                 num_reg_fcs=0,
                  reg_class_agnostic=True,
                  norm_cfg=None,
                  bbox_coder=dict(
@@ -93,15 +93,15 @@ class SABLHead(nn.Module):
         self.up_reg_feat_size = roi_feat_size * self.reg_feat_up_ratio
         assert self.up_reg_feat_size == bbox_coder.num_buckets
         self.reg_pre_kernel = reg_pre_kernel
-        self.reg_pos_kernel = reg_pos_kernel
+        self.reg_post_kernel = reg_post_kernel
         self.reg_pre_num = reg_pre_num
         self.reg_pos_num = reg_pos_num
         self.num_classes = num_classes
         self.cls_out_channels = cls_out_channels
         self.reg_offset_out_channels = reg_offset_out_channels
         self.reg_cls_out_channels = reg_cls_out_channels
-        self.cls_fcs_num = cls_fcs_num
-        self.reg_fcs_num = reg_fcs_num
+        self.num_cls_fcs = num_cls_fcs
+        self.num_reg_fcs = num_reg_fcs
         self.reg_class_agnostic = reg_class_agnostic
         assert self.reg_class_agnostic
         self.norm_cfg = norm_cfg
@@ -111,7 +111,7 @@ class SABLHead(nn.Module):
         self.loss_bbox_cls = build_loss(loss_bbox_cls)
         self.loss_bbox_reg = build_loss(loss_bbox_reg)
 
-        self.cls_fcs = self._add_fc_branch(self.cls_fcs_num,
+        self.cls_fcs = self._add_fc_branch(self.num_cls_fcs,
                                            self.cls_in_channels,
                                            self.roi_feat_size,
                                            self.cls_out_channels)
@@ -146,8 +146,8 @@ class SABLHead(nn.Module):
             reg_pos_conv_x = ConvModule(
                 reg_in_channels,
                 reg_in_channels,
-                kernel_size=(1, reg_pos_kernel),
-                padding=(0, reg_pos_kernel // 2),
+                kernel_size=(1, reg_post_kernel),
+                padding=(0, reg_post_kernel // 2),
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='ReLU'))
             self.reg_pos_conv_xs.append(reg_pos_conv_x)
@@ -156,8 +156,8 @@ class SABLHead(nn.Module):
             reg_pos_conv_y = ConvModule(
                 reg_in_channels,
                 reg_in_channels,
-                kernel_size=(reg_pos_kernel, 1),
-                padding=(reg_pos_kernel // 2, 0),
+                kernel_size=(reg_post_kernel, 1),
+                padding=(reg_post_kernel // 2, 0),
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='ReLU'))
             self.reg_pos_conv_ys.append(reg_pos_conv_y)
@@ -168,10 +168,10 @@ class SABLHead(nn.Module):
         self.fc_cls = nn.Linear(self.cls_out_channels, self.num_classes + 1)
         self.relu = nn.ReLU(inplace=True)
 
-        self.reg_cls_fcs = self._add_fc_branch(self.reg_fcs_num,
+        self.reg_cls_fcs = self._add_fc_branch(self.num_reg_fcs,
                                                self.reg_in_channels, 1,
                                                self.reg_cls_out_channels)
-        self.reg_offset_fcs = self._add_fc_branch(self.reg_fcs_num,
+        self.reg_offset_fcs = self._add_fc_branch(self.num_reg_fcs,
                                                   self.reg_in_channels, 1,
                                                   self.reg_offset_out_channels)
         self.fc_reg_cls = nn.Linear(self.reg_cls_out_channels, 1)
