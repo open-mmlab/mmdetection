@@ -324,7 +324,7 @@ def _check_bbox_head(bbox_cfg, bbox_head):
             _check_bbox_head(bbox_cfg, single_bbox_head)
     else:
         assert bbox_cfg['type'] == bbox_head.__class__.__name__
-        if bbox_cfg['type'] == 'SABL':
+        if bbox_cfg['type'] == 'SABLHead':
             assert bbox_cfg.cls_in_channels == bbox_head.cls_in_channels
             assert bbox_cfg.reg_in_channels == bbox_head.reg_in_channels
 
