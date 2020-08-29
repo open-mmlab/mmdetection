@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule
+from mmcv.cnn import ConvModule, kaiming_init, normal_init, xavier_init
 
 from mmdet.core import (build_bbox_coder, force_fp32, multi_apply,
                         multiclass_nms)
@@ -192,31 +192,16 @@ class SABLHead(nn.Module):
         ]:
             for m in module_list.modules():
                 if isinstance(m, nn.Linear):
-                    nn.init.xavier_uniform_(m.weight)
-                    nn.init.constant_(m.bias, 0)
+                    xavier_init(m, distribution='uniform')
         if self.reg_feat_up_ratio > 1:
-            nn.init.kaiming_normal_(
-                self.upsample_x.weight, mode='fan_out', nonlinearity='relu')
-            nn.init.constant_(self.upsample_x.bias, 0)
-            nn.init.kaiming_normal_(
-                self.upsample_y.weight, mode='fan_out', nonlinearity='relu')
-            nn.init.constant_(self.upsample_y.bias, 0)
+            kaiming_init(self.upsample_x, distribution='normal')
+            kaiming_init(self.upsample_y, distribution='normal')
 
-        for i in range(self.reg_pre_num):
-            self.reg_pre_convs[i].init_weights()
-        for i in range(self.reg_pos_num):
-            self.reg_pos_conv_xs[i].init_weights()
-            self.reg_pos_conv_ys[i].init_weights()
-        nn.init.normal_(self.reg_conv_att_x.weight, 0, 0.01)
-        nn.init.constant_(self.reg_conv_att_x.bias, 0)
-        nn.init.normal_(self.reg_conv_att_y.weight, 0, 0.01)
-        nn.init.constant_(self.reg_conv_att_y.bias, 0)
-        nn.init.normal_(self.fc_reg_offset.weight, 0, 0.001)
-        nn.init.constant_(self.fc_reg_offset.bias, 0)
-        nn.init.normal_(self.fc_reg_cls.weight, 0, 0.01)
-        nn.init.constant_(self.fc_reg_cls.bias, 0)
-        nn.init.normal_(self.fc_cls.weight, 0, 0.01)
-        nn.init.constant_(self.fc_cls.bias, 0)
+        normal_init(self.reg_conv_att_x, 0, 0.01)
+        normal_init(self.reg_conv_att_y, 0, 0.01)
+        normal_init(self.fc_reg_offset, 0, 0.001)
+        normal_init(self.fc_reg_cls, 0, 0.01)
+        normal_init(self.fc_cls, 0, 0.01)
 
     def cls_forward(self, cls_x):
         cls_x = cls_x.view(cls_x.size(0), -1)
