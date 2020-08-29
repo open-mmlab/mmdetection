@@ -84,7 +84,7 @@ class SABLRetinaHead(BaseDenseHead):
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
-        self.num_buckets = bbox_coder.num_buckets
+        self.num_buckets = bbox_coder['num_buckets']
         self.side_num = int(np.ceil(self.num_buckets / 2))
 
         assert (approx_anchor_generator['octave_base_scale'] ==
