@@ -228,11 +228,8 @@ def bbox2bucket(proposals,
 
     # generate bucket labels and weight
     side_num = int(np.ceil(num_buckets / 2.0))
-    labels = torch.cat([
-        l_label[:, 0][:, None], r_label[:, 0][:, None], t_label[:, 0][:, None],
-        d_label[:, 0][:, None]
-    ],
-                       dim=-1)
+    labels = torch.stack(
+        [l_label[:, 0], r_label[:, 0], t_label[:, 0], d_label[:, 0]], dim=-1)
 
     batch_size = labels.size(0)
     bucket_labels = label2onehot(labels.view(-1),
