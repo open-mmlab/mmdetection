@@ -75,12 +75,15 @@ def generat_buckets(proposals, bucket_num, scale_factor=1.0):
         scale_factor (float): Scale factor to rescale proposals.
 
     Returns:
-        bucket_pw: Width of buckets on x-axis. Shape (n, ).
-        bucket_ph: Height of buckets on y-axis. Shape (n, ).
-        l_buckets: Left buckets. Shape (n, ceil(side_num/2)).
-        r_buckets: Right buckets. Shape (n, ceil(side_num/2)).
-        t_buckets: Top buckets. Shape (n, ceil(side_num/2)).
-        d_buckets: Down buckets. Shape (n, ceil(side_num/2)).
+        tuple[Tensor]: (bucket_pw, bucket_ph, l_buckets, \
+            r_buckets, t_buckets, d_buckets)
+
+            - bucket_pw: Width of buckets on x-axis. Shape (n, ).
+            - bucket_ph: Height of buckets on y-axis. Shape (n, ).
+            - l_buckets: Left buckets. Shape (n, ceil(side_num/2)).
+            - r_buckets: Right buckets. Shape (n, ceil(side_num/2)).
+            - t_buckets: Top buckets. Shape (n, ceil(side_num/2)).
+            - d_buckets: Down buckets. Shape (n, ceil(side_num/2)).
     """
     proposals = bbox_rescale(proposals, scale_factor)
 
@@ -140,10 +143,16 @@ def bbox2bucket(proposals,
             Defaults to True.
 
     Returns:
-        offsets: Fine regression targets. Shape (n, bucket_num*2).
-        offsets_weights: Fine regression weights. Shape (n, bucket_num*2).
-        bucket_labels: Bucketing estimation labels. Shape (n, bucket_num*2).
-        cls_weights: Bucketing estimation weights. Shape (n, bucket_num*2).
+        tuple[Tensor]: (offsets, offsets_weights, bucket_labels, cls_weights).
+
+            - offsets: Fine regression targets.
+                Shape (n, bucket_num*2).
+            - offsets_weights: Fine regression weights.
+                Shape (n, bucket_num*2).
+            - bucket_labels: Bucketing estimation labels.
+                Shape (n, bucket_num*2).
+            - cls_weights: Bucketing estimation weights.
+                Shape (n, bucket_num*2).
     """
     assert proposals.size() == gt.size()
 

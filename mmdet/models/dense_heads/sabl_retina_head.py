@@ -216,17 +216,17 @@ class SABLRetinaHead(BaseDenseHead):
 
         return squares_list
 
-    def bucket_target(self,
-                      approx_list,
-                      inside_flag_list,
-                      square_list,
-                      gt_bboxes_list,
-                      img_metas,
-                      gt_bboxes_ignore_list=None,
-                      gt_labels_list=None,
-                      label_channels=None,
-                      sampling=True,
-                      unmap_outputs=True):
+    def get_target(self,
+                   approx_list,
+                   inside_flag_list,
+                   square_list,
+                   gt_bboxes_list,
+                   img_metas,
+                   gt_bboxes_ignore_list=None,
+                   gt_labels_list=None,
+                   label_channels=None,
+                   sampling=True,
+                   unmap_outputs=True):
         """Compute bucketing targets.
         Args:
             approx_list (list[list]): Multi level approxs of each image.
@@ -283,7 +283,7 @@ class SABLRetinaHead(BaseDenseHead):
         (all_labels, all_label_weights, all_bbox_cls_targets,
          all_bbox_cls_weights, all_bbox_reg_targets, all_bbox_reg_weights,
          pos_inds_list, neg_inds_list) = multi_apply(
-             self._bucket_target_single,
+             self._get_target_single,
              approx_flat_list,
              inside_flag_flat_list,
              square_flat_list,
@@ -316,17 +316,17 @@ class SABLRetinaHead(BaseDenseHead):
                 bbox_cls_weights_list, bbox_reg_targets_list,
                 bbox_reg_weights_list, num_total_pos, num_total_neg)
 
-    def _bucket_target_single(self,
-                              flat_approxs,
-                              inside_flags,
-                              flat_squares,
-                              gt_bboxes,
-                              gt_bboxes_ignore,
-                              gt_labels,
-                              img_meta,
-                              label_channels=None,
-                              sampling=True,
-                              unmap_outputs=True):
+    def _get_target_single(self,
+                           flat_approxs,
+                           inside_flags,
+                           flat_squares,
+                           gt_bboxes,
+                           gt_bboxes_ignore,
+                           gt_labels,
+                           img_meta,
+                           label_channels=None,
+                           sampling=True,
+                           unmap_outputs=True):
         """Compute regression and classification targets for anchors in a
         single image.
 
@@ -350,6 +350,7 @@ class SABLRetinaHead(BaseDenseHead):
 
         Returns:
             tuple:
+
                 - labels_list (Tensor): Labels in a single image
                 - label_weights (Tensor): Label weights in a single image
                 - bbox_cls_targets (Tensor): BBox cls targets in a single image
@@ -486,7 +487,7 @@ class SABLRetinaHead(BaseDenseHead):
 
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
-        cls_reg_targets = self.bucket_target(
+        cls_reg_targets = self.get_target(
             approxs_list,
             inside_flag_list,
             square_list,

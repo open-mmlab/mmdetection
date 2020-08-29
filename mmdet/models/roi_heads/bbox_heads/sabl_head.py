@@ -226,8 +226,8 @@ class SABLHead(nn.Module):
         return cls_score
 
     def attention_pool(self, reg_x):
-        # Extract direction-specific features
-        # fx and fy with attention methanism
+        """Extract direction-specific features fx and fy with attention
+        methanism."""
         reg_fx = reg_x
         reg_fy = reg_x
         reg_fx_att = self.reg_conv_att_x(reg_fx).sigmoid()
@@ -239,7 +239,7 @@ class SABLHead(nn.Module):
         return reg_fx, reg_fy
 
     def direction_feature_extractor(self, reg_x):
-        # Refine and extract direction-specific features
+        """Refine and extract direction-specific features."""
         for reg_pre_conv in self.reg_pre_convs:
             reg_x = reg_pre_conv(reg_x)
         reg_fx, reg_fy = self.attention_pool(reg_x)
@@ -276,8 +276,8 @@ class SABLHead(nn.Module):
         return offset_pred, cls_pred
 
     def side_aware_split(self, feat):
-        # Extract side-aware features aligned with
-        # orders of bucketing targets.
+        """Extract side-aware features aligned with orders of bucketing
+        targets."""
         l_end = int(np.ceil(self.up_reg_feat_size / 2))
         r_start = int(np.floor(self.up_reg_feat_size / 2))
         feat_fl = feat[:, :l_end]
