@@ -186,7 +186,7 @@ def bbox_rescale(bboxes, scale_factor=1.0):
     y1 = cy - 0.5 * h
     y2 = cy + 0.5 * h
     if bboxes.size(1) == 5:
-        bboxes_ = torch.stack([inds_, x1, y1, x2, y2], dim=-1)
+        rescaled_bboxes = torch.stack([inds_, x1, y1, x2, y2], dim=-1)
     else:
-        bboxes_ = torch.stack([x1, y1, x2, y2], dim=-1)
-    return bboxes_
+        rescaled_bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
+    return rescaled_bboxes
