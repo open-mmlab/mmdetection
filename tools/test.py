@@ -116,10 +116,21 @@ def main():
         torch.backends.cudnn.benchmark = True
     cfg.model.pretrained = None
     if cfg.model.get('neck'):
-        if cfg.model.neck.get('rfp_backbone'):
+        if isinstance(cfg.model.neck, list):
+            for neck_cfg in cfg.model.neck:
+                if neck_cfg.get('rfp_backbone'):
+                    if neck_cfg.rfp_backbone.get('pretrained'):
+                        neck_cfg.rfp_backbone.pretrained = None
+        elif cfg.model.neck.get('rfp_backbone'):
             if cfg.model.neck.rfp_backbone.get('pretrained'):
                 cfg.model.neck.rfp_backbone.pretrained = None
-    cfg.data.test.test_mode = True
+
+    # in case the test dataset is concatenated
+    if isinstance(cfg.data.test, dict):
+        cfg.data.test.test_mode = True
+    elif isinstance(cfg.data.test, list):
+        for ds_cfg in cfg.data.test:
+            ds_cfg.test_mode = True
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
