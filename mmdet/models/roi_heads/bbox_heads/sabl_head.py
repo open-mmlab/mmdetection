@@ -34,7 +34,7 @@ class SABLHead(nn.Module):
         reg_post_kernel (int): Kernel of 1D conv layers after \
             attention pooling. Defaults to 3.
         reg_pre_num (int): Number of pre convs. Defaults to 2.
-        reg_pos_num (int): Number of post convs. Defaults to 1.
+        reg_post_num (int): Number of post convs. Defaults to 1.
         num_classes (int): Number of classes in dataset. Defaults to 80.
         cls_out_channels (int): Hidden channels in cls fcs. Defaults to 1024.
         reg_offset_out_channels (int): Hidden and output channel \
@@ -60,7 +60,7 @@ class SABLHead(nn.Module):
                  reg_pre_kernel=3,
                  reg_post_kernel=3,
                  reg_pre_num=2,
-                 reg_pos_num=1,
+                 reg_post_num=1,
                  num_classes=80,
                  cls_out_channels=1024,
                  reg_offset_out_channels=256,
@@ -95,7 +95,7 @@ class SABLHead(nn.Module):
         self.reg_pre_kernel = reg_pre_kernel
         self.reg_post_kernel = reg_post_kernel
         self.reg_pre_num = reg_pre_num
-        self.reg_pos_num = reg_pos_num
+        self.reg_post_num = reg_post_num
         self.num_classes = num_classes
         self.cls_out_channels = cls_out_channels
         self.reg_offset_out_channels = reg_offset_out_channels
@@ -141,26 +141,26 @@ class SABLHead(nn.Module):
                 act_cfg=dict(type='ReLU'))
             self.reg_pre_convs.append(reg_pre_conv)
 
-        self.reg_pos_conv_xs = nn.ModuleList()
-        for i in range(self.reg_pos_num):
-            reg_pos_conv_x = ConvModule(
+        self.reg_post_conv_xs = nn.ModuleList()
+        for i in range(self.reg_post_num):
+            reg_post_conv_x = ConvModule(
                 reg_in_channels,
                 reg_in_channels,
                 kernel_size=(1, reg_post_kernel),
                 padding=(0, reg_post_kernel // 2),
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='ReLU'))
-            self.reg_pos_conv_xs.append(reg_pos_conv_x)
-        self.reg_pos_conv_ys = nn.ModuleList()
-        for i in range(self.reg_pos_num):
-            reg_pos_conv_y = ConvModule(
+            self.reg_post_conv_xs.append(reg_post_conv_x)
+        self.reg_post_conv_ys = nn.ModuleList()
+        for i in range(self.reg_post_num):
+            reg_post_conv_y = ConvModule(
                 reg_in_channels,
                 reg_in_channels,
                 kernel_size=(reg_post_kernel, 1),
                 padding=(reg_post_kernel // 2, 0),
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='ReLU'))
-            self.reg_pos_conv_ys.append(reg_pos_conv_y)
+            self.reg_post_conv_ys.append(reg_post_conv_y)
 
         self.reg_conv_att_x = nn.Conv2d(reg_in_channels, 1, 1)
         self.reg_conv_att_y = nn.Conv2d(reg_in_channels, 1, 1)
@@ -229,12 +229,12 @@ class SABLHead(nn.Module):
             reg_x = reg_pre_conv(reg_x)
         reg_fx, reg_fy = self.attention_pool(reg_x)
 
-        if self.reg_pos_num > 0:
+        if self.reg_post_num > 0:
             reg_fx = reg_fx.unsqueeze(2)
             reg_fy = reg_fy.unsqueeze(3)
-            for i in range(self.reg_pos_num):
-                reg_fx = self.reg_pos_conv_xs[i](reg_fx)
-                reg_fy = self.reg_pos_conv_ys[i](reg_fy)
+            for i in range(self.reg_post_num):
+                reg_fx = self.reg_post_conv_xs[i](reg_fx)
+                reg_fy = self.reg_post_conv_ys[i](reg_fy)
             reg_fx = reg_fx.squeeze(2)
             reg_fy = reg_fy.squeeze(3)
         if self.reg_feat_up_ratio > 1:
