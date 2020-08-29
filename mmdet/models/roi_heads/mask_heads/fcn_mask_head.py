@@ -180,8 +180,15 @@ class FCNMaskHead(nn.Module):
         if rescale:
             img_h, img_w = ori_shape[:2]
         else:
-            img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
-            img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
+            if isinstance(scale_factor, float):
+                img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
+                img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
+            else:
+                w_scale, h_scale = scale_factor[0], scale_factor[1]
+                img_h = np.round(ori_shape[0] * h_scale.item()).astype(
+                    np.int32)
+                img_w = np.round(ori_shape[1] * w_scale.item()).astype(
+                    np.int32)
             scale_factor = 1.0
 
         if not isinstance(scale_factor, (float, torch.Tensor)):

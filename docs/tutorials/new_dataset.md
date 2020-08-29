@@ -249,7 +249,7 @@ You may refer to [source code](../../mmdet/datasets/dataset_wrappers.py) for det
 
 ### Concatenate dataset
 
-There two ways to concatenate the dataset.
+There are three ways to concatenate the dataset.
 
 1. If the datasets you want to concatenate are in the same type with different annotation files, you can concatenate the dataset configs like the following.
 
@@ -257,6 +257,15 @@ There two ways to concatenate the dataset.
     dataset_A_train = dict(
         type='Dataset_A',
         ann_file = ['anno_file_1', 'anno_file_2'],
+        pipeline=train_pipeline
+    )
+    ```
+    If the concatenated dataset is used for test or evaluation, this manner supports to evaluate each dataset separately. To test the concatenated datasets as a whole, you can set `separate_eval=False` as below.
+    ```python
+    dataset_A_train = dict(
+        type='Dataset_A',
+        ann_file = ['anno_file_1', 'anno_file_2'],
+        separate_eval=False,
         pipeline=train_pipeline
     )
     ```
@@ -278,6 +287,28 @@ There two ways to concatenate the dataset.
         test = dataset_A_test
         )
     ```
+    If the concatenated dataset is used for test or evaluation, this manner also supports to evaluate each dataset separately.
+
+3. We also support to define `ConcatDataset` explicitly as the following.
+
+    ```python
+    dataset_A_val = dict()
+    dataset_B_val = dict()
+
+    data = dict(
+        imgs_per_gpu=2,
+        workers_per_gpu=2,
+        train=dataset_A_train,
+        val=dict(
+            type='ConcatDataset',
+            datasets=[dataset_A_val, dataset_B_val],
+            separate_eval=False))
+    ```
+    This manner allows users to evaluate all the datasets as a single one by setting `separate_eval=False`.
+
+**Note:**
+1. The option `separate_eval=False` assumes the datasets use `self.data_infos` during evaluation. Therefore, COCO datasets do not support this behavior since COCO datasets do not fully rely on `self.data_infos` for evaluation. Combining different types of ofdatasets and evaluating them as a whole is not tested thus is not suggested.
+2. Evaluating `ClassBalancedDataset` and `RepeatDataset` is not supported thus evaluating concatenated datasets of these types is also not supported.
 
 
 A more complex example that repeats `Dataset_A` and `Dataset_B` by N and M times, respectively, and then concatenates the repeated datasets is as the following.
