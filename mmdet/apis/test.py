@@ -56,7 +56,7 @@ def single_gpu_test(model,
                       for bbox_results, mask_results in result]
         results.extend(result)
 
-        batch_size = len(data['img'][0].data[0])
+        batch_size = len(result)
         for _ in range(batch_size):
             prog_bar.update()
     return results
@@ -98,7 +98,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
         results.extend(result)
 
         if rank == 0:
-            batch_size = len(data['img'][0].data[0])
+            batch_size = len(result)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 

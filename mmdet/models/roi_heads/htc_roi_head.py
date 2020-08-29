@@ -368,7 +368,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
-                bbox_label = [s.argmax(dim=1) for s in cls_score]
+                bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
                 rois = torch.cat([
                     bbox_head.regress_by_class(rois[i], bbox_label[i],
                                                bbox_pred[i], img_metas[i])
