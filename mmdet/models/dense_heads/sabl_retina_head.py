@@ -517,8 +517,8 @@ class SABLRetinaHead(BaseDenseHead):
             num_total_samples=num_total_samples)
         return dict(
             loss_cls=losses_cls,
-            losses_bbox_cls=losses_bbox_cls,
-            losses_bbox_reg=losses_bbox_reg)
+            loss_bbox_cls=losses_bbox_cls,
+            loss_bbox_reg=losses_bbox_reg)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def get_bboxes(self,

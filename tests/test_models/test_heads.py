@@ -470,8 +470,8 @@ def test_sabl_retina_head_loss():
         # When there is no truth, the cls loss should be nonzero but there
         # should be no box loss.
         empty_cls_loss = sum(empty_gt_losses['loss_cls'])
-        empty_box_cls_loss = sum(empty_gt_losses['losses_bbox_cls'])
-        empty_box_reg_loss = sum(empty_gt_losses['losses_bbox_reg'])
+        empty_box_cls_loss = sum(empty_gt_losses['loss_bbox_cls'])
+        empty_box_reg_loss = sum(empty_gt_losses['loss_bbox_reg'])
         assert empty_cls_loss.item() > 0, 'cls loss should be non-zero'
         assert empty_box_cls_loss.item() == 0, (
             'there should be no box cls loss when there are no true boxes')
@@ -487,8 +487,8 @@ def test_sabl_retina_head_loss():
         one_gt_losses = head.loss(cls_scores, bbox_preds, gt_bboxes, gt_labels,
                                   img_metas, gt_bboxes_ignore)
         onegt_cls_loss = sum(one_gt_losses['loss_cls'])
-        onegt_box_cls_loss = sum(one_gt_losses['losses_bbox_cls'])
-        onegt_box_reg_loss = sum(one_gt_losses['losses_bbox_reg'])
+        onegt_box_cls_loss = sum(one_gt_losses['loss_bbox_cls'])
+        onegt_box_reg_loss = sum(one_gt_losses['loss_bbox_reg'])
         assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
         assert onegt_box_cls_loss.item() > 0, 'box loss cls should be non-zero'
         assert onegt_box_reg_loss.item() > 0, 'box loss reg should be non-zero'

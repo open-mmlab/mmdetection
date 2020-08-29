@@ -141,7 +141,7 @@ class SABLHead(nn.Module):
                 act_cfg=dict(type='ReLU'))
             self.reg_pre_convs.append(reg_pre_conv)
 
-        self.reg_pos_conv_xs = nn.ModuleList()
+        self.reg_post_conv_xs = nn.ModuleList()
         for i in range(self.reg_post_num):
             reg_post_conv_x = ConvModule(
                 reg_in_channels,
@@ -150,8 +150,8 @@ class SABLHead(nn.Module):
                 padding=(0, reg_post_kernel // 2),
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='ReLU'))
-            self.reg_pos_conv_xs.append(reg_post_conv_x)
-        self.reg_pos_conv_ys = nn.ModuleList()
+            self.reg_post_conv_xs.append(reg_post_conv_x)
+        self.reg_post_conv_ys = nn.ModuleList()
         for i in range(self.reg_post_num):
             reg_post_conv_y = ConvModule(
                 reg_in_channels,
@@ -160,7 +160,7 @@ class SABLHead(nn.Module):
                 padding=(reg_post_kernel // 2, 0),
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='ReLU'))
-            self.reg_pos_conv_ys.append(reg_post_conv_y)
+            self.reg_post_conv_ys.append(reg_post_conv_y)
 
         self.reg_conv_att_x = nn.Conv2d(reg_in_channels, 1, 1)
         self.reg_conv_att_y = nn.Conv2d(reg_in_channels, 1, 1)
@@ -233,8 +233,8 @@ class SABLHead(nn.Module):
             reg_fx = reg_fx.unsqueeze(2)
             reg_fy = reg_fy.unsqueeze(3)
             for i in range(self.reg_post_num):
-                reg_fx = self.reg_pos_conv_xs[i](reg_fx)
-                reg_fy = self.reg_pos_conv_ys[i](reg_fy)
+                reg_fx = self.reg_post_conv_xs[i](reg_fx)
+                reg_fy = self.reg_post_conv_ys[i](reg_fy)
             reg_fx = reg_fx.squeeze(2)
             reg_fy = reg_fy.squeeze(3)
         if self.reg_feat_up_ratio > 1:
