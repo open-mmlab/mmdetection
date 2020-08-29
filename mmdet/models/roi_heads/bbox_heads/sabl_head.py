@@ -88,10 +88,10 @@ class SABLHead(nn.Module):
         self.reg_in_channels = reg_in_channels
         self.roi_feat_size = roi_feat_size
         self.reg_feat_up_ratio = int(reg_feat_up_ratio)
-        self.num_buckets = bbox_coder.num_buckets
+        self.num_buckets = bbox_coder['num_buckets']
         assert self.reg_feat_up_ratio // 2 >= 1
         self.up_reg_feat_size = roi_feat_size * self.reg_feat_up_ratio
-        assert self.up_reg_feat_size == bbox_coder.num_buckets
+        assert self.up_reg_feat_size == bbox_coder['num_buckets']
         self.reg_pre_kernel = reg_pre_kernel
         self.reg_post_kernel = reg_post_kernel
         self.reg_pre_num = reg_pre_num

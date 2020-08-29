@@ -101,16 +101,16 @@ def generat_buckets(proposals, num_buckets, scale_factor=1.0):
 
     # left buckets
     l_buckets = px1[:, None] + (0.5 + torch.arange(
-        0, side_num).cuda().float())[None, :] * bucket_w[:, None]
+        0, side_num).to(proposals).float())[None, :] * bucket_w[:, None]
     # right buckets
     r_buckets = px2[:, None] - (0.5 + torch.arange(
-        0, side_num).cuda().float())[None, :] * bucket_w[:, None]
+        0, side_num).to(proposals).float())[None, :] * bucket_w[:, None]
     # top buckets
     t_buckets = py1[:, None] + (0.5 + torch.arange(
-        0, side_num).cuda().float())[None, :] * bucket_h[:, None]
+        0, side_num).to(proposals).float())[None, :] * bucket_h[:, None]
     # down buckets
     d_buckets = py2[:, None] - (0.5 + torch.arange(
-        0, side_num).cuda().float())[None, :] * bucket_h[:, None]
+        0, side_num).to(proposals).float())[None, :] * bucket_h[:, None]
     return bucket_w, bucket_h, l_buckets, r_buckets, t_buckets, d_buckets
 
 
@@ -125,7 +125,8 @@ def label2onehot(labels, num_labels):
         flat_labels (Tensor): Shape (n, num_labels)
     """
     flat_labels = labels.new_zeros((labels.size(0), num_labels)).float()
-    flat_labels[torch.arange(0, labels.size(0)).cuda().long(), labels] = 1.0
+    flat_labels[torch.arange(0, labels.size(0)).to(labels).long(),
+                labels] = 1.0
     return flat_labels
 
 
@@ -197,7 +198,7 @@ def bbox2bucket(proposals,
     offset_r_weights = r_offsets.new_zeros(r_offsets.size())
     offset_t_weights = t_offsets.new_zeros(t_offsets.size())
     offset_d_weights = d_offsets.new_zeros(d_offsets.size())
-    inds = torch.arange(0, proposals.size(0)).cuda().long()
+    inds = torch.arange(0, proposals.size(0)).to(proposals).long()
 
     # generate offset weights of top-k nearset buckets
     for k in range(offset_topk):
@@ -306,7 +307,7 @@ def bucket2bbox(proposals,
     d_buckets = py2 - (0.5 + score_inds_d.float()) * bucket_h
 
     offsets = offset_preds.view(-1, 4, side_num)
-    inds = torch.arange(proposals.size(0)).cuda().long()
+    inds = torch.arange(proposals.size(0)).to(proposals).long()
     l_offsets = offsets[:, 0, :][inds, score_inds_l]
     r_offsets = offsets[:, 1, :][inds, score_inds_r]
     t_offsets = offsets[:, 2, :][inds, score_inds_t]
