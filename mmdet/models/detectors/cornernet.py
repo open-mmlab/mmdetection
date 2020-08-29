@@ -90,4 +90,4 @@ class CornerNet(SingleStageDetector):
         bboxes, labels = self.merge_aug_results(aug_results, img_metas)
         bbox_results = bbox2result(bboxes, labels, self.bbox_head.num_classes)
 
-        return bbox_results
+        return [bbox_results]
