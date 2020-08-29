@@ -75,11 +75,11 @@ def generat_buckets(proposals, num_buckets, scale_factor=1.0):
         scale_factor (float): Scale factor to rescale proposals.
 
     Returns:
-        tuple[Tensor]: (bucket_pw, bucket_ph, l_buckets, \
+        tuple[Tensor]: (bucket_w, bucket_h, l_buckets, \
             r_buckets, t_buckets, d_buckets)
 
-            - bucket_pw: Width of buckets on x-axis. Shape (n, ).
-            - bucket_ph: Height of buckets on y-axis. Shape (n, ).
+            - bucket_w: Width of buckets on x-axis. Shape (n, ).
+            - bucket_h: Height of buckets on y-axis. Shape (n, ).
             - l_buckets: Left buckets. Shape (n, ceil(side_num/2)).
             - r_buckets: Right buckets. Shape (n, ceil(side_num/2)).
             - t_buckets: Top buckets. Shape (n, ceil(side_num/2)).
@@ -96,22 +96,22 @@ def generat_buckets(proposals, num_buckets, scale_factor=1.0):
     px2 = proposals[..., 2]
     py2 = proposals[..., 3]
 
-    bucket_pw = pw / num_buckets
-    bucket_ph = ph / num_buckets
+    bucket_w = pw / num_buckets
+    bucket_h = ph / num_buckets
 
     # left buckets
     l_buckets = px1[:, None] + (0.5 + torch.arange(
-        0, side_num).cuda().float())[None, :] * bucket_pw[:, None]
+        0, side_num).cuda().float())[None, :] * bucket_w[:, None]
     # right buckets
     r_buckets = px2[:, None] - (0.5 + torch.arange(
-        0, side_num).cuda().float())[None, :] * bucket_pw[:, None]
+        0, side_num).cuda().float())[None, :] * bucket_w[:, None]
     # top buckets
     t_buckets = py1[:, None] + (0.5 + torch.arange(
-        0, side_num).cuda().float())[None, :] * bucket_ph[:, None]
+        0, side_num).cuda().float())[None, :] * bucket_h[:, None]
     # down buckets
     d_buckets = py2[:, None] - (0.5 + torch.arange(
-        0, side_num).cuda().float())[None, :] * bucket_ph[:, None]
-    return bucket_pw, bucket_ph, l_buckets, r_buckets, t_buckets, d_buckets
+        0, side_num).cuda().float())[None, :] * bucket_h[:, None]
+    return bucket_w, bucket_h, l_buckets, r_buckets, t_buckets, d_buckets
 
 
 def label2onehot(labels, label_num):
@@ -159,7 +159,7 @@ def bbox2bucket(proposals,
     # generate buckets
     proposals = proposals.float()
     gt = gt.float()
-    (bucket_pw, bucket_ph, l_buckets, r_buckets, t_buckets,
+    (bucket_w, bucket_h, l_buckets, r_buckets, t_buckets,
      d_buckets) = generat_buckets(proposals, num_buckets, scale_factor)
 
     gx1 = gt[..., 0]
@@ -169,10 +169,10 @@ def bbox2bucket(proposals,
 
     # generate offset targets and weights
     # offsets from buckets to gts
-    l_offsets = (l_buckets - gx1[:, None]) / bucket_pw[:, None]
-    r_offsets = (r_buckets - gx2[:, None]) / bucket_pw[:, None]
-    t_offsets = (t_buckets - gy1[:, None]) / bucket_ph[:, None]
-    d_offsets = (d_buckets - gy2[:, None]) / bucket_ph[:, None]
+    l_offsets = (l_buckets - gx1[:, None]) / bucket_w[:, None]
+    r_offsets = (r_buckets - gx2[:, None]) / bucket_w[:, None]
+    t_offsets = (t_buckets - gy1[:, None]) / bucket_h[:, None]
+    d_offsets = (d_buckets - gy2[:, None]) / bucket_h[:, None]
 
     # select top-k nearset buckets
     l_topk, l_label = l_offsets.abs().topk(
@@ -266,17 +266,17 @@ def bucket2bbox(proposals,
     px2 = rescaled_proposals[..., 2]
     py2 = rescaled_proposals[..., 3]
 
-    bucket_pw = pw / num_buckets
-    bucket_ph = ph / num_buckets
+    bucket_w = pw / num_buckets
+    bucket_h = ph / num_buckets
 
     score_inds_l = score_label[0::4, 0]
     score_inds_r = score_label[1::4, 0]
     score_inds_t = score_label[2::4, 0]
     score_inds_d = score_label[3::4, 0]
-    l_buckets = px1 + (0.5 + score_inds_l.float()) * bucket_pw
-    r_buckets = px2 - (0.5 + score_inds_r.float()) * bucket_pw
-    t_buckets = py1 + (0.5 + score_inds_t.float()) * bucket_ph
-    d_buckets = py2 - (0.5 + score_inds_d.float()) * bucket_ph
+    l_buckets = px1 + (0.5 + score_inds_l.float()) * bucket_w
+    r_buckets = px2 - (0.5 + score_inds_r.float()) * bucket_w
+    t_buckets = py1 + (0.5 + score_inds_t.float()) * bucket_h
+    d_buckets = py2 - (0.5 + score_inds_d.float()) * bucket_h
 
     offsets = offset_preds.view(-1, 4, side_num)
     inds = torch.arange(proposals.size(0)).cuda().long()
@@ -285,10 +285,10 @@ def bucket2bbox(proposals,
     t_offsets = offsets[:, 2, :][inds, score_inds_t]
     d_offsets = offsets[:, 3, :][inds, score_inds_d]
 
-    x1 = l_buckets - l_offsets * bucket_pw
-    x2 = r_buckets - r_offsets * bucket_pw
-    y1 = t_buckets - t_offsets * bucket_ph
-    y2 = d_buckets - d_offsets * bucket_ph
+    x1 = l_buckets - l_offsets * bucket_w
+    x2 = r_buckets - r_offsets * bucket_w
+    y1 = t_buckets - t_offsets * bucket_h
+    y2 = d_buckets - d_offsets * bucket_h
 
     if max_shape is not None:
         x1 = x1.clamp(min=0, max=max_shape[1] - 1)
