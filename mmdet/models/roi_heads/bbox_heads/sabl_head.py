@@ -223,8 +223,8 @@ class SABLHead(nn.Module):
         reg_fy = (reg_fy * reg_fy_att).sum(dim=3)
         return reg_fx, reg_fy
 
-    def direction_feature_extractor(self, reg_x):
-        """Refine and extract direction-specific features."""
+    def side_aware_feature_extractor(self, reg_x):
+        """Refine and extract side-aware features without split them."""
         for reg_pre_conv in self.reg_pre_convs:
             reg_x = reg_pre_conv(reg_x)
         reg_fx, reg_fy = self.attention_pool(reg_x)
@@ -245,6 +245,8 @@ class SABLHead(nn.Module):
         return reg_fx.contiguous(), reg_fy.contiguous()
 
     def reg_pred(self, x, offfset_fcs, cls_fcs):
+        """Predict bucketing esimation (cls_pred) and fine regression (offset
+        pred) with side-aware features."""
         x_offset = x.view(-1, self.reg_in_channels)
         x_cls = x.view(-1, self.reg_in_channels)
 
@@ -261,7 +263,7 @@ class SABLHead(nn.Module):
         return offset_pred, cls_pred
 
     def side_aware_split(self, feat):
-        """Extract side-aware features aligned with orders of bucketing
+        """Split side-aware features aligned with orders of bucketing
         targets."""
         l_end = int(np.ceil(self.up_reg_feat_size / 2))
         r_start = int(np.floor(self.up_reg_feat_size / 2))
@@ -273,7 +275,7 @@ class SABLHead(nn.Module):
         return feat
 
     def reg_forward(self, reg_x):
-        outs = self.direction_feature_extractor(reg_x)
+        outs = self.side_aware_feature_extractor(reg_x)
         edge_offset_preds = []
         edge_cls_preds = []
         reg_fx = outs[0]
