@@ -114,8 +114,17 @@ def generat_buckets(proposals, num_buckets, scale_factor=1.0):
     return bucket_w, bucket_h, l_buckets, r_buckets, t_buckets, d_buckets
 
 
-def label2onehot(labels, label_num):
-    flat_labels = labels.new_zeros((labels.size(0), label_num)).float()
+def label2onehot(labels, num_labels):
+    """Generate one hot labels from labels.
+
+    Args:
+        labels (Tensor): Shape (n,)
+        num_labels (int): Number of labels.
+
+    Returns:
+        flat_labels (Tensor): Shape (n, num_labels)
+    """
+    flat_labels = labels.new_zeros((labels.size(0), num_labels)).float()
     flat_labels[torch.arange(0, labels.size(0)).cuda().long(), labels] = 1.0
     return flat_labels
 
