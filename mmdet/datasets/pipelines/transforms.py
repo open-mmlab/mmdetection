@@ -306,6 +306,9 @@ class RandomFlip(object):
             Default: None.
         direction(str | list[str], optional): The flipping direction. Options
             are 'horizontal', 'vertical', 'diagonal'. Default: 'horizontal'.
+            If input is a list, the length must equal ``flip_ratio``. Each
+            element in ``flip_ratio`` indicates the flip probability of
+            corresponding direction.
     """
 
     def __init__(self, flip_ratio=None, direction='horizontal'):

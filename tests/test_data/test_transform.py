@@ -144,8 +144,12 @@ def test_flip():
     results['scale_factor'] = 1.0
     results['img_fields'] = ['img']
     results = flip_module(results)
-    assert np.array_equal(
-        mmcv.imflip(original_img, results['flip_direction']), results['img'])
+    if results['flip']:
+        assert np.array_equal(
+            mmcv.imflip(original_img, results['flip_direction']),
+            results['img'])
+    else:
+        assert np.array_equal(original_img, results['img'])
 
 
 def test_random_crop():
