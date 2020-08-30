@@ -44,8 +44,9 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     bboxes1 and bboxes2.
 
     Args:
-        bboxes1 (Tensor): shape (m, 4) in <x1, y1, x2, y2> format or empty.
-        bboxes2 (Tensor): shape (n, 4) in <x1, y1, x2, y2> format or empty.
+        bboxes1 (Tensor): shape (B, m, 4) in <x1, y1, x2, y2> format or empty.
+        bboxes2 (Tensor): shape (B, n, 4) in <x1, y1, x2, y2> format or empty.
+            B indicates the batch dim, in shape (B1, B2, ..., Bn).
             If is_aligned is ``True``, then m and n must be equal.
         mode (str): "iou" (intersection over union) or iof (intersection over
             foreground).
