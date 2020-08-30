@@ -60,8 +60,7 @@ def binary_cross_entropy(pred,
                          weight=None,
                          reduction='mean',
                          avg_factor=None,
-                         class_weight=None,
-                         pos_weight=None):
+                         class_weight=None):
     """Calculate the binary CrossEntropy loss.
 
     Args:
@@ -73,8 +72,6 @@ def binary_cross_entropy(pred,
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
         class_weight (list[float], optional): The weight for each class.
-        pos_weight (Tensor, optional): Weight of positive examples. Must be a
-            vector with length equal to the number of classes.
 
     Returns:
         torch.Tensor: The calculated loss
@@ -86,11 +83,7 @@ def binary_cross_entropy(pred,
     if weight is not None:
         weight = weight.float()
     loss = F.binary_cross_entropy_with_logits(
-        pred,
-        label.float(),
-        weight=class_weight,
-        reduction='none',
-        pos_weight=pos_weight)
+        pred, label.float(), pos_weight=class_weight, reduction='none')
     # do the reduction for the weighted loss
     loss = weight_reduce_loss(
         loss, weight, reduction=reduction, avg_factor=avg_factor)

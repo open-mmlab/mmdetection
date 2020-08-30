@@ -29,8 +29,6 @@ class YOLOV3Head(BaseDenseHead):
             Should be in descending order. Default: (32, 16, 8).
         one_hot_smoother (float): Set a non-zero value to enable label-smooth
             Default: 0.
-        balance_conf (bool): Whether to balance the confidence when calculating
-            loss. Default: False
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
@@ -57,7 +55,6 @@ class YOLOV3Head(BaseDenseHead):
                  bbox_coder=dict(type='YOLOBBoxCoder'),
                  featmap_strides=[32, 16, 8],
                  one_hot_smoother=0.,
-                 balance_conf=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
@@ -95,7 +92,6 @@ class YOLOV3Head(BaseDenseHead):
             self.sampler = build_sampler(sampler_cfg, context=self)
 
         self.one_hot_smoother = one_hot_smoother
-        self.balance_conf = balance_conf
 
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -387,23 +383,9 @@ class YOLOV3Head(BaseDenseHead):
         target_conf = target_map[..., 4]
         target_label = target_map[..., 5:]
 
-        if self.balance_conf:
-            num_pos_gt = max(int(torch.sum(target_conf)), 1)
-            num_total_grids = target_conf.numel()
-            pos_weight = num_total_grids / num_pos_gt
-            conf_loss_weight = 1 / pos_weight
-        else:
-            pos_weight = 1
-            conf_loss_weight = 1
-
-        pos_weight = target_label.new_tensor(pos_weight)
-
         loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
         loss_conf = self.loss_conf(
-            pred_conf,
-            target_conf,
-            pos_weight=pos_weight,
-            weight=pos_and_neg_mask * conf_loss_weight)
+            pred_conf, target_conf, weight=pos_and_neg_mask)
         loss_xy = self.loss_xy(pred_xy, target_xy, weight=pos_mask)
         loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
 
