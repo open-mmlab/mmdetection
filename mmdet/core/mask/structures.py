@@ -133,35 +133,6 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         """
         pass
 
-    @staticmethod
-    def warpAffine(data,
-                   trans_matrix,
-                   out_size,
-                   fill_val,
-                   flags=cv2.INTER_NEAREST,
-                   borderMode=cv2.BORDER_CONSTANT):
-        """Affine wrapper which transforms the source data using the given
-        trans_matrix.
-
-        Args:
-            data (np.ndarray): Source data.
-            trans_matrix (np.ndarray): Transformation matrix with shape (2, 3).
-            out_size (tuple): Size of the output data with format (w, h).
-            fill_val (int | float | tuple): Value used in case of a constant
-                border.
-            flags: Interpolation methods used in ``cv2.warpAffine``.
-            borderMode: pixel extrapolation method used in ``cv2.warpAffine``.
-        Returns:
-            np.ndarray: transformed data with the same shape as input data.
-        """
-        return cv2.warpAffine(
-            data,
-            trans_matrix,
-            dsize=out_size,  # dsize takes input size as order (w,h).
-            flags=flags,
-            borderMode=borderMode,
-            borderValue=fill_val)
-
 
 class BitmapMasks(BaseInstanceMasks):
     """This class represents masks in the form of bitmaps.
@@ -336,9 +307,15 @@ class BitmapMasks(BaseInstanceMasks):
         if len(self.masks) == 0:
             rotated_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
+            # dsize should be in type tuple[int] with format (w, h)
             rotated_masks = np.stack([
-                self.warpAffine(mask, rotate_matrix, out_shape[::-1], fill_val,
-                                flags, borderMode) for mask in self.masks
+                cv2.warpAffine(
+                    mask,
+                    rotate_matrix,
+                    dsize=out_shape[::-1],
+                    borderValue=fill_val,
+                    flags=flags,
+                    borderMode=borderMode) for mask in self.masks
             ]).astype(self.masks.dtype)
         return BitmapMasks(rotated_masks, *out_shape)
 
