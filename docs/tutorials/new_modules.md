@@ -154,9 +154,7 @@ model = dict(
 
 ### Add new necks
 
-Here we take PAFPN as an example.
-
-#### 1. Define a neck
+#### 1. Define a neck (e.g. PAFPN)
 
 Create a new file `mmdet/models/necks/pafpn.py`.
 
