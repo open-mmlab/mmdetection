@@ -130,7 +130,7 @@ def test_flip():
     # test flip_ratio is float, direction is list
     transform = dict(
         type='RandomFlip',
-        flip_ratio=[0.9],
+        flip_ratio=0.9,
         direction=['horizontal', 'vertical', 'diagonal'])
     flip_module = build_from_cfg(transform, PIPELINES)
 
