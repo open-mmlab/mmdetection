@@ -119,7 +119,7 @@ class Shear(object):
             fill_val (int | float | tuple): Value used in case of a constant
                 border. Same in ``cv2.warpAffine``.
             flags: Interpolation methods used in ``cv2.warpAffine``.
-            borderMode: pixel extrapolation method used in ``cv2.warpAffine``.
+            borderMode: Pixel extrapolation method used in ``cv2.warpAffine``.
         """
         for key in results.get('img_fields', ['img']):
             img = results[key]
@@ -136,27 +136,27 @@ class Shear(object):
         """Shear the bboxes."""
         h, w, c = results['img_shape']
         if self.axis == 'x':
-            shear_matrix = np.stack([[1, 0], [-magnitude,
-                                              1]]).astype(np.float32)  # [2, 2]
+            shear_matrix = np.stack([[1, magnitude],
+                                     [0, 1]]).astype(np.float32)  # [2, 2]
         else:
-            shear_matrix = np.stack([[1, -magnitude], [0,
-                                                       1]]).astype(np.float32)
+            shear_matrix = np.stack([[1, 0], [magnitude,
+                                              1]]).astype(np.float32)
         for key in results.get('bbox_fields', []):
             min_x, min_y, max_x, max_y = np.split(
                 results[key], results[key].shape[-1], axis=-1)
-            coordinates = np.stack([[min_y, min_x], [min_y, max_x],
-                                    [max_y, min_x],
-                                    [max_y, max_x]])  # [4, 2, nb_box, 1]
+            coordinates = np.stack([[min_x, min_y], [max_x, min_y],
+                                    [min_x, max_y],
+                                    [max_x, max_y]])  # [4, 2, nb_box, 1]
             coordinates = coordinates[..., 0].transpose(
                 (2, 1, 0)).astype(np.float32)  # [nb_box, 2, 4]
             new_coords = np.matmul(shear_matrix[None, :, :],
                                    coordinates)  # [nb_box, 2, 4]
             min_x, min_y = np.min(
-                new_coords[:, 1, :], axis=-1), np.min(
-                    new_coords[:, 0, :], axis=-1)
+                new_coords[:, 0, :], axis=-1), np.min(
+                    new_coords[:, 1, :], axis=-1)
             max_x, max_y = np.max(
-                new_coords[:, 1, :], axis=-1), np.max(
-                    new_coords[:, 0, :], axis=-1)
+                new_coords[:, 0, :], axis=-1), np.max(
+                    new_coords[:, 1, :], axis=-1)
             min_x, min_y = np.clip(
                 min_x, a_min=0, a_max=w), np.clip(
                     min_y, a_min=0, a_max=h)
