@@ -13,7 +13,7 @@ def level_to_value(level, max_value):
 
 
 def random_negative(value, random_negative_prob):
-    """Randomly negative value based on random_negative_prob."""
+    """Randomly negate value based on random_negative_prob."""
     return -value if np.random.rand() < random_negative_prob else value
 
 
@@ -40,21 +40,18 @@ class Shear(object):
     segmentation).
 
     Args:
-        level (int | float): The level for Translate and should be in
-            range (0,_MAX_LEVEL]. This value controls the offset used for
-            translate the image/bboxes/masks/seg along with x-axis or y-axis.
+        level (int | float): The level should be in range (0,_MAX_LEVEL].
         img_fill_val (int | float | tuple): The filled values for image border.
             If float, the same fill value will be used for all the three
-            channels of image. If tuple, the should be 3 elements (e.g.
-            equals the number of channels for image).
-        seg_ignore_label (int): The ``img_fill_val`` used for segmentation map.
+            channels of image. If tuple, the should be 3 elements.
+        seg_ignore_label (int): The fill value used for segmentation map.
             Note this value must equals ``ignore_label`` in ``semantic_head``
             of the corresponding config. Default 255.
-        prob (float): The probability for perform translating and should be in
-            range 0 to 1.
-        axis (str): Translate images along with x-axis or y-axis. The option
+        prob (float): The probability for performing Shear and should be in
+            range [0, 1].
+        axis (str): Shear images along with x-axis or y-axis. The option
             of axis is 'x' or 'y'.
-        max_shear_magnitude (float): The maximum magnitude for shear
+        max_shear_magnitude (float): The maximum magnitude for Shear
             transformation.
     """
 
@@ -100,51 +97,40 @@ class Shear(object):
         self.max_shear_magnitude = max_shear_magnitude
 
     @staticmethod
-    def warpAffine(data,
-                   trans_matrix,
-                   out_size,
-                   fill_val,
-                   flags=cv2.INTER_NEAREST,
-                   borderMode=cv2.BORDER_CONSTANT):
-        """Affine wrapper which transforms the source data using the given
-        trans_matrix.
-
-        Args:
-            data (np.ndarray): Source data.
-            trans_matrix (np.ndarray): Transformation matrix with shape (2, 3).
-            out_size (tuple): Size of the output data with format (w, h).
-            fill_val (int | float | tuple): Value used in case of a constant
-                border.
-            flags: Interpolation methods used in ``cv2.warpAffine``.
-            borderMode: pixel extrapolation method used in ``cv2.warpAffine``.
-
-        Returns:
-            np.ndarray: transformed data with the same shape as input data.
-        """
-        return cv2.warpAffine(
-            data,
-            trans_matrix,
-            dsize=out_size,  # dsize takes input size as order (w,h).
-            flags=flags,
-            borderMode=borderMode,
-            borderValue=fill_val)
-
-    @staticmethod
     def _get_shear_matrix(magnitude, axis='x'):
-        """Generates the transformation matrix for shear augmentation."""
+        """Generates the transformation matrix for Shear augmentation."""
         if axis == 'x':
             shear_matrix = np.float32([[1, magnitude, 0], [0, 1, 0]])
         elif axis == 'y':
             shear_matrix = np.float32([[1, 0, 0], [magnitude, 1, 0]])
         return shear_matrix
 
-    def _shear_img(self, results, shear_matrix, fill_val):
-        """Shear the image."""
+    def _shear_img(self,
+                   results,
+                   shear_matrix,
+                   fill_val,
+                   flags=cv2.INTER_NEAREST,
+                   borderMode=cv2.BORDER_CONSTANT):
+        """Shear the image.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+            shear_matrix (np.ndarray): Shear matrix with shape (2, 3).
+            fill_val (int | float | tuple): Value used in case of a constant
+                border. Same in ``cv2.warpAffine``.
+            flags: Interpolation methods used in ``cv2.warpAffine``.
+            borderMode: pixel extrapolation method used in ``cv2.warpAffine``.
+        """
         for key in results.get('img_fields', ['img']):
             img = results[key]
-            results[key] = self.warpAffine(img, shear_matrix,
-                                           img.shape[:2][::-1],
-                                           fill_val).astype(img.dtype)
+            # dsize should be in type tuple[int] with format (w, h)
+            results[key] = cv2.warpAffine(
+                img,
+                shear_matrix,
+                dsize=img.shape[:2][::-1],
+                borderValue=fill_val,
+                flags=flags,
+                borderMode=borderMode).astype(img.dtype)
 
     def _shear_bboxes(self, results, magnitude):
         """Shear the bboxes."""
@@ -191,13 +177,22 @@ class Shear(object):
                 results[key] = masks.shear(
                     shear_matrix, out_shape=(h, w), fill_val=fill_val)
 
-    def _shear_seg(self, results, shear_matrix, fill_val=255):
+    def _shear_seg(self,
+                   results,
+                   shear_matrix,
+                   fill_val=255,
+                   flags=cv2.INTER_NEAREST,
+                   borderMode=cv2.BORDER_CONSTANT):
         """Shear the segmentation maps."""
         for key in results.get('seg_fields', []):
             seg = results[key]
-            results[key] = self.warpAffine(seg, shear_matrix,
-                                           seg.shape[:2][::-1],
-                                           fill_val).astype(seg.dtype)
+            results[key] = cv2.warpAffine(
+                seg,
+                shear_matrix,
+                dsize=seg.shape[:2][::-1],
+                borderValue=fill_val,
+                flags=flags,
+                borderMode=borderMode).astype(seg.dtype)
 
     def _filter_invalid(self, results, min_bbox_size=0):
         """Filter bboxes and corresponding masks too small after shear
