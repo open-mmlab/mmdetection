@@ -71,7 +71,9 @@ class CornerNet(SingleStageDetector):
             ``imgs`` must including flipped image pairs.
 
         Returns:
-            bbox_results (tuple[np.ndarry]): Detection result of each class.
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
         """
         img_inds = list(range(len(imgs)))
 

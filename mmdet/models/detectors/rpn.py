@@ -101,7 +101,7 @@ class RPN(BaseDetector):
                 Defaults to False.
 
         Returns:
-            np.ndarray: proposals
+            list[np.ndarray]: proposals
         """
         x = self.extract_feat(img)
         proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
@@ -121,7 +121,7 @@ class RPN(BaseDetector):
                 Defaults to False.
 
         Returns:
-            np.ndarray: proposals
+            list[np.ndarray]: proposals
         """
         proposal_list = self.rpn_head.aug_test_rpn(
             self.extract_feats(imgs), img_metas)

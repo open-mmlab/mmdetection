@@ -104,7 +104,9 @@ class SingleStageDetector(BaseDetector):
                 Defaults to False.
 
         Returns:
-            np.ndarray: proposals
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)

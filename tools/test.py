@@ -140,9 +140,7 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
 
     # build the dataloader
-    samples_per_gpu = 1
-    if 'samples_per_gpu' in cfg.data.test:
-        samples_per_gpu = cfg.data.test.pop('samples_per_gpu')
+    samples_per_gpu = cfg.data.test.pop('samples_per_gpu', 1)
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
         dataset,
