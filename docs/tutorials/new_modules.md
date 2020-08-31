@@ -1,6 +1,7 @@
 # Tutorial 4: Adding New Modules
 
 ## Customize optimizer
+1. Optimizer definition
 
 A customized optimizer could be defined as following.
 
@@ -20,12 +21,31 @@ class MyOptimizer(Optimizer):
 
 ```
 
-Then add this module in `mmdet/core/optimizer/__init__.py` thus the registry will
-find the new module and add it:
+2. Add the optimizer to the registry
+
+To find the above module defined above, this module should be imported into the main namespace at first. There are two options to achieve it.
+
+- Modify `mmdet/core/optimizer/__init__.py` to import it.
+
+    The newly defined module should be imported in `mmdet/core/optimizer/__init__.py` so that the registry will
+    find the new module and add it:
 
 ```python
 from .my_optimizer import MyOptimizer
 ```
+
+- Use `custom_imports` in the config to manually import it
+```python
+custom_imports = dict(imports=['mmdet.core.optimizer.my_optimizer'], allow_failed_imports=False)
+```
+
+The module `mmdet.core.optimizer.my_optimizer` will be imported at the beginning of the program and the class `MyOptimizer` is then automatically registered.
+Note that only the package containing the class `MyOptimizer` should be imported.
+`mmdet.core.optimizer.my_optimizer.MyOptimizer` **cannot** be imported directly.
+
+Actually users can use a totally different file directory structure using this importing method, as long as the module root can be located in `PYTHONPATH`.
+
+3. Specify the optimizer in the config file
 
 Then you can use `MyOptimizer` in `optimizer` field of config files.
 In the configs, the optimizers are defined by the field `optimizer` like the following:
@@ -103,11 +123,20 @@ class MobileNet(nn.Module):
         pass
 ```
 
-2. Import the module in `mmdet/models/backbones/__init__.py`.
+2. Import the module.
 
+You can either add the following line to `mmdet/models/backbones/__init__.py`
 ```python
 from .mobilenet import MobileNet
 ```
+
+or alternatively add
+```python
+custom_imports = dict(
+    imports=['mmdet.models.backbones.mobilenet'],
+    allow_failed_imports=False)
+```
+to the config file and avoid modifying the original code.
 
 3. Use it in your config file.
 
@@ -127,41 +156,50 @@ Here we take PAFPN as an example.
 
 1. Create a new file in `mmdet/models/necks/pafpn.py`.
 
-    ```python
-    from ..registry import NECKS
+```python
+from ..registry import NECKS
 
-    @NECKS.register
-    class PAFPN(nn.Module):
+@NECKS.register
+class PAFPN(nn.Module):
 
-        def __init__(self,
-                    in_channels,
-                    out_channels,
-                    num_outs,
-                    start_level=0,
-                    end_level=-1,
-                    add_extra_convs=False):
-            pass
+    def __init__(self,
+                in_channels,
+                out_channels,
+                num_outs,
+                start_level=0,
+                end_level=-1,
+                add_extra_convs=False):
+        pass
 
-        def forward(self, inputs):
-            # implementation is ignored
-            pass
-    ```
+    def forward(self, inputs):
+        # implementation is ignored
+        pass
+```
 
-2. Import the module in `mmdet/models/necks/__init__.py`.
+2. Import the module.
 
-    ```python
-    from .pafpn import PAFPN
-    ```
+You can either add the following line to `mmdet/models/necks/__init__.py`,
+
+```python
+from .pafpn import PAFPN
+```
+or alternatively add
+```python
+custom_imports = dict(
+    imports=['mmdet.models.necks.mobilenet'],
+    allow_failed_imports=False)
+```
+to the config file and avoid modifying the original code.
 
 3. Modify the config file.
 
-    ```python
-    neck=dict(
-        type='PAFPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
-        num_outs=5)
-    ```
+```python
+neck=dict(
+    type='PAFPN',
+    in_channels=[256, 512, 1024, 2048],
+    out_channels=256,
+    num_outs=5)
+```
 
 ### Add new heads
 
@@ -298,7 +336,15 @@ class DoubleHeadRoIHead(StandardRoIHead):
         return bbox_results
 ```
 
-Last, the users need to add the module in the `mmdet/models/bbox_heads/__init__.py` and `mmdet/models/roi_heads/__init__.py` thus the corresponding registry could find and load them.
+Last, the users need to add the module in
+`mmdet/models/bbox_heads/__init__.py` and `mmdet/models/roi_heads/__init__.py` thus the corresponding registry could find and load them.
+
+Alternatively, the users can add
+```python
+custom_imports=dict(
+    imports=['mmdet.models.roi_heads.double_roi_head', 'mmdet.models.bbox_heads.double_bbox_head'])
+```
+to the config file and achieve the same goal.
 
 To config file of Double Head R-CNN is as the following
 
@@ -380,9 +426,15 @@ Then the users need to add it in the `mmdet/models/losses/__init__.py`.
 from .my_loss import MyLoss, my_loss
 
 ```
+Alternatively, you can add
+```python
+custom_imports=dict(
+    imports=['mmdet.models.losses.my_loss'])
+```
+to the config file and achieve the same goal.
 
 To use it, modify the `loss_xxx` field.
-Since MyLoss is for regrression, you need to modify the `loss_bbox` field in the head.
+Since MyLoss is for regression, you need to modify the `loss_bbox` field in the head.
 ```python
 loss_bbox=dict(type='MyLoss', loss_weight=1.0))
 ```
