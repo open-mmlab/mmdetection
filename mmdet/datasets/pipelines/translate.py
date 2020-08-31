@@ -8,14 +8,18 @@ _MAX_LEVEL = 10
 
 
 def level_to_value(level, max_value, random_negative_prob=0.5):
+    """Mapping level to value based on _MAX_LEVEL and max_value."""
     return (level / _MAX_LEVEL) * max_value
 
 
 def random_negative(value, random_negative_prob):
+    """Randomly negate value based on random_negative_prob."""
     return -value if np.random.rand() < random_negative_prob else value
 
 
 def bbox2fields():
+    """The key correspondence from bboxes to labels, masks and segmentation
+    maps."""
     bbox2label = {
         'gt_bboxes': 'gt_labels',
         'gt_bboxes_ignore': 'gt_labels_ignore'
@@ -102,36 +106,6 @@ class Translate(object):
             trans_matrix = np.float32([[1, 0, 0], [0, 1, offset]])
         return trans_matrix
 
-    @staticmethod
-    def warpAffine(data,
-                   trans_matrix,
-                   out_size,
-                   fill_val,
-                   flags=cv2.INTER_NEAREST,
-                   borderMode=cv2.BORDER_CONSTANT):
-        """Affine wrapper which transforms the source data using the given
-        trans_matrix.
-
-        Args:
-            data (np.ndarray): Source data.
-            trans_matrix (np.ndarray): Transformation matrix with shape (2, 3).
-            out_size (tuple): Size of the output data with format (w, h).
-            fill_val (int | float | tuple): Value used in case of a constant
-                border.
-            flags: Interpolation methods used in ``cv2.warpAffine``.
-            borderMode: pixel extrapolation method used in ``cv2.warpAffine``.
-
-        Returns:
-            np.ndarray: transformed data with the same shape as input data.
-        """
-        return cv2.warpAffine(
-            data,
-            trans_matrix,
-            dsize=out_size,  # dsize takes input size as order (w,h).
-            flags=flags,
-            borderMode=borderMode,
-            borderValue=fill_val)
-
     def __call__(self, results, min_size=0.0, random_negative_prob=0.5):
         """Call function to translate images, bounding boxes, masks and
         semantic segmentation maps.
@@ -163,13 +137,32 @@ class Translate(object):
         self._filter_invalid(results, min_size=min_size)
         return results
 
-    def _translate_img(self, results, trans_matrix, fill_val):
+    def _translate_img(self,
+                       results,
+                       trans_matrix,
+                       fill_val,
+                       flags=cv2.INTER_NEAREST,
+                       borderMode=cv2.BORDER_CONSTANT):
         """Translate images horizontally or vertically, according to
-        ``trans_matrix``."""
+        ``trans_matrix``.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+            trans_matrix (np.ndarray): Transformation matrix with shape (2, 3).
+            fill_val (int | float | tuple): Value used in case of a constant
+                border. Same in ``cv2.warpAffine``.
+            flags: Interpolation methods used in ``cv2.warpAffine``.
+            borderMode: pixel extrapolation method used in ``cv2.warpAffine``.
+        """
         for key in results.get('img_fields', ['img']):
-            results[key] = self.warpAffine(results[key], trans_matrix,
-                                           results[key].shape[:2][::-1],
-                                           fill_val)
+            # dsize should be in type tuple[int] with format: (w, h)
+            results[key] = cv2.warpAffine(
+                results[key],
+                trans_matrix,
+                dsize=results[key].shape[:2][::-1],
+                borderValue=fill_val,
+                flags=flags,
+                borderMode=borderMode)
 
     def _translate_bboxes(self, results, offset):
         """Shift bboxes horizontally or vertically, according to ``offset``."""
@@ -202,13 +195,22 @@ class Translate(object):
                 results[key] = results[key].translate(trans_matrix, (h, w),
                                                       fill_val)
 
-    def _translate_seg(self, results, trans_matrix, fill_val=255):
+    def _translate_seg(self,
+                       results,
+                       trans_matrix,
+                       fill_val=255,
+                       flags=cv2.INTER_NEAREST,
+                       borderMode=cv2.BORDER_CONSTANT):
         """Translate segmentation maps horizontally or vertically, according to
         ``trans_matrix``."""
         for key in results.get('seg_fields', []):
-            results[key] = self.warpAffine(results[key], trans_matrix,
-                                           results[key].shape[:2][::-1],
-                                           fill_val)
+            results[key] = cv2.warpAffine(
+                results[key],
+                trans_matrix,
+                dsize=results[key].shape[:2][::-1],
+                borderValue=fill_val,
+                flags=flags,
+                borderMode=borderMode)
 
     def _filter_invalid(self, results, min_size=0):
         """Filter bboxes and masks too small or translated out of image."""
