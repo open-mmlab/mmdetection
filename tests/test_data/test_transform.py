@@ -100,7 +100,7 @@ def test_flip():
     # test assertion for invalid direction
     with pytest.raises(AssertionError):
         transform = dict(
-            type='RandomFlip', flip_ratio=1, direction='horizonta')
+            type='RandomFlip', flip_ratio=1., direction='horizonta')
         build_from_cfg(transform, PIPELINES)
 
     transform = dict(type='RandomFlip', flip_ratio=1.)
