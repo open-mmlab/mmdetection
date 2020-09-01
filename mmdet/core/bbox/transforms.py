@@ -8,22 +8,27 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
     Args:
         bboxes (Tensor): Shape (..., 4*k)
         img_shape (tuple): Image shape.
-        direction (str): Flip direction, options are "horizontal" and
-            "vertical". Default: "horizontal"
+        direction (str): Flip direction, options are "horizontal", "vertical",
+            "diagonal". Default: "horizontal"
 
 
     Returns:
         Tensor: Flipped bboxes.
     """
     assert bboxes.shape[-1] % 4 == 0
-    assert direction in ['horizontal', 'vertical']
+    assert direction in ['horizontal', 'vertical', 'diagonal']
     flipped = bboxes.clone()
-    if direction == 'vertical':
+    if direction == 'horizontal':
+        flipped[..., 0::4] = img_shape[1] - bboxes[..., 2::4]
+        flipped[..., 2::4] = img_shape[1] - bboxes[..., 0::4]
+    elif direction == 'vertical':
         flipped[..., 1::4] = img_shape[0] - bboxes[..., 3::4]
         flipped[..., 3::4] = img_shape[0] - bboxes[..., 1::4]
     else:
-        flipped[:, 0::4] = img_shape[1] - bboxes[:, 2::4]
-        flipped[:, 2::4] = img_shape[1] - bboxes[:, 0::4]
+        flipped[..., 0::4] = img_shape[1] - bboxes[..., 2::4]
+        flipped[..., 1::4] = img_shape[0] - bboxes[..., 3::4]
+        flipped[..., 2::4] = img_shape[1] - bboxes[...:, 0::4]
+        flipped[..., 3::4] = img_shape[0] - bboxes[..., 1::4]
     return flipped
 
 
