@@ -53,6 +53,7 @@ class SABLHead(nn.Module):
     """
 
     def __init__(self,
+                 num_classes,
                  cls_in_channels=256,
                  reg_in_channels=256,
                  roi_feat_size=7,
@@ -61,7 +62,6 @@ class SABLHead(nn.Module):
                  reg_post_kernel=3,
                  reg_pre_num=2,
                  reg_post_num=1,
-                 num_classes=80,
                  cls_out_channels=1024,
                  reg_offset_out_channels=256,
                  reg_cls_out_channels=256,
