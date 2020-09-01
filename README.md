@@ -97,6 +97,7 @@ Supported methods:
 - [x] [DetectoRS](configs/detectors/README.md)
 - [x] [Generalized Focal Loss](configs/gfl/README.md)
 - [x] [CornerNet](configs/cornernet/README.md)
+- [x] [YOLOv3](configs/yolo/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
