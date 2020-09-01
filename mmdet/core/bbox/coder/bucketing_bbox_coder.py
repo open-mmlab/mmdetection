@@ -134,22 +134,6 @@ def generat_buckets(proposals, num_buckets, scale_factor=1.0):
     return bucket_w, bucket_h, l_buckets, r_buckets, t_buckets, d_buckets
 
 
-def label2onehot(labels, num_labels):
-    """Generate one hot labels from labels.
-
-    Args:
-        labels (Tensor): Shape (n,)
-        num_labels (int): Number of labels.
-
-    Returns:
-        flat_labels (Tensor): Shape (n, num_labels)
-    """
-    flat_labels = labels.new_zeros((labels.size(0), num_labels)).float()
-    flat_labels[torch.arange(0, labels.size(0)).to(labels).long(),
-                labels] = 1.0
-    return flat_labels
-
-
 def bbox2bucket(proposals,
                 gt,
                 num_buckets,
@@ -253,8 +237,7 @@ def bbox2bucket(proposals,
         [l_label[:, 0], r_label[:, 0], t_label[:, 0], d_label[:, 0]], dim=-1)
 
     batch_size = labels.size(0)
-    bucket_labels = label2onehot(labels.view(-1),
-                                 side_num).view(batch_size, -1)
+    bucket_labels = F.one_hot(labels.view(-1), side_num).view(batch_size, -1)
     bucket_cls_l_weights = (l_offsets.abs() < 1).float()
     bucket_cls_r_weights = (r_offsets.abs() < 1).float()
     bucket_cls_t_weights = (t_offsets.abs() < 1).float()
