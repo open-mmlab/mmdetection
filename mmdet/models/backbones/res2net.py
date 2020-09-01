@@ -98,7 +98,7 @@ class Bottle2neck(_Bottleneck):
         self.stage_type = stage_type
         self.scales = scales
         self.width = width
-        delattr(self, 'conv2')
+        # delattr(self, 'conv2')
         delattr(self, self.norm2_name)
 
     def forward(self, x):
