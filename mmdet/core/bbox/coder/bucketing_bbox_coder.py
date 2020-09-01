@@ -175,13 +175,13 @@ def bbox2bucket(proposals,
     Returns:
         tuple[Tensor]: (offsets, offsets_weights, bucket_labels, cls_weights).
 
-            - offsets: Fine regression targets.
+            - offsets: Fine regression targets. \
                 Shape (n, num_buckets*2).
-            - offsets_weights: Fine regression weights.
+            - offsets_weights: Fine regression weights. \
                 Shape (n, num_buckets*2).
-            - bucket_labels: Bucketing estimation labels.
+            - bucket_labels: Bucketing estimation labels. \
                 Shape (n, num_buckets*2).
-            - cls_weights: Bucketing estimation weights.
+            - cls_weights: Bucketing estimation weights. \
                 Shape (n, num_buckets*2).
     """
     assert proposals.size() == gt.size()
