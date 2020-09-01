@@ -72,6 +72,10 @@ class YOLOV3Neck(nn.Module):
         num_scales (int): The number of scales / stages.
         in_channels (int): The number of input channels.
         out_channels (int): The number of output channels.
+        enable_spp (bool): Whether the spatial pyramid pooling is enabled.
+            Default: False.
+        pooler_sizes (tuple): A set of sizes for spatial pyramid pooling.
+            Default: (5, 9, 13)
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
@@ -83,6 +87,8 @@ class YOLOV3Neck(nn.Module):
                  num_scales,
                  in_channels,
                  out_channels,
+                 enable_spp=False,
+                 spp_pooler_sizes=(5, 9, 13),
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
@@ -91,13 +97,20 @@ class YOLOV3Neck(nn.Module):
         self.num_scales = num_scales
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.enable_spp = enable_spp
 
         # shortcut
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
+        if self.enable_spp:
+            self.poolers = [nn.MaxPool2d(size, 1, padding=(size - 1) // 2)
+                            for size in spp_pooler_sizes]
+            self.in_channels[0] *= len(spp_pooler_sizes)
+
         # To support arbitrary scales, the code looks awful, but it works.
         # Better solution is welcomed.
-        self.detect1 = DetectionBlock(in_channels[0], out_channels[0], **cfg)
+        self.detect1 = DetectionBlock(
+            self.in_channels[0], self.out_channels[0], **cfg)
         for i in range(1, self.num_scales):
             in_c, out_c = self.in_channels[i], self.out_channels[i]
             self.add_module(f'conv{i}', ConvModule(in_c, out_c, 1, **cfg))
@@ -110,7 +123,13 @@ class YOLOV3Neck(nn.Module):
 
         # processed from bottom (high-lvl) to top (low-lvl)
         outs = []
-        out = self.detect1(feats[-1])
+
+        in_feat = feats[-1]
+        if self.enable_spp:
+            in_feat = torch.cat([pooler(in_feat)
+                                for pooler in self.poolers], 1)
+
+        out = self.detect1(in_feat)
         outs.append(out)
 
         for i, x in enumerate(reversed(feats[:-1])):
