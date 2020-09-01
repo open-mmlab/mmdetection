@@ -11,12 +11,8 @@ from ..builder import NECKS
 class DetectionBlock(nn.Module):
     """Detection block in YOLO neck.
 
-    Let out_channels = n, the DetectionBlock contains:
-    Six ConvLayers, 1 Conv2D Layer and 1 YoloLayer.
-    The first 6 ConvLayers are formed the following way:
-        1x1xn, 3x3x2n, 1x1xn, 3x3x2n, 1x1xn, 3x3x2n.
-    The Conv2D layer is 1x1x255.
-    Some block will have branch after the fifth ConvLayer.
+    Let out_channels = n, the DetectionBlock contains 5 ConvModules,
+    Their sizes are 1x1xn, 3x3x2n, 1x1xn, 3x3x2n, and 1x1xn respectively.
     The input channel is arbitrary (in_channels)
 
     Args:
@@ -61,9 +57,10 @@ class DetectionBlock(nn.Module):
 class YOLOV3Neck(nn.Module):
     """The neck of YOLOV3.
 
-    It can be treated as a simplified version of FPN. It
-    will take the result from Darknet backbone and do some upsampling and
-    concatenation. It will finally output the detection result.
+    It can be regarded as a simplified version of FPN.
+    It takes the feature maps from different levels of the Darknet backbone,
+    After some upsampling and concatenation, it outputs a set of
+    new feature maps which are passed to the head of YOLOV3.
 
     Note:
         The input feats should be from top to bottom.
