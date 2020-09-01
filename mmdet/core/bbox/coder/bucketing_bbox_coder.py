@@ -237,7 +237,8 @@ def bbox2bucket(proposals,
         [l_label[:, 0], r_label[:, 0], t_label[:, 0], d_label[:, 0]], dim=-1)
 
     batch_size = labels.size(0)
-    bucket_labels = F.one_hot(labels.view(-1), side_num).view(batch_size, -1)
+    bucket_labels = F.one_hot(labels.view(-1), side_num).view(batch_size,
+                                                              -1).float()
     bucket_cls_l_weights = (l_offsets.abs() < 1).float()
     bucket_cls_r_weights = (r_offsets.abs() < 1).float()
     bucket_cls_t_weights = (t_offsets.abs() < 1).float()
