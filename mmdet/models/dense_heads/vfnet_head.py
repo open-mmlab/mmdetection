@@ -31,13 +31,16 @@ def reduce_sum(tensor):
 
 @HEADS.register_module()
 class VFNetHead(AnchorFreeHead):
-    """Anchor-free head used in `VFNet <https://arxiv.org/xxxxxxxx>`_.
+    """Head of `VarifoclaNet (VFNet): An IoU-aware Dense Object Detector.
+
+    <https://arxiv.org/abs/2008.13367>`_.
 
     The VFNet predicts IoU-aware classification scores which mix the
-    object presence confidence and object localization accuracy. It is
-    built on the FCOS architecture and uses ATSS for defining positive/
-    negative training examples. The VFNet is trained with Varifocal loss
-    and empolys star deformable convolution to represent a bbox.
+    object presence confidence and object localization accuracy as the
+    detection score. It is built on the FCOS architecture and uses ATSS
+    for defining positive/negative training examples. The VFNet is trained
+    with Varifocal Loss and empolys star-shaped deformable convolution to
+    extract features for a bbox.
 
     Args:
         num_classes (int): Number of categories excluding the background

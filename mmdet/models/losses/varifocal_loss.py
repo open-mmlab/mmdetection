@@ -13,7 +13,7 @@ def varifocal_loss(pred,
                    iou_weighted=True,
                    reduction='mean',
                    avg_factor=None):
-    """`Varifocal Loss <https://arxiv.org/xxxxxxxxxx>`_
+    """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
     Args:
         pred (torch.Tensor): The prediction with shape (N, C), C is the
@@ -61,7 +61,7 @@ class VarifocalLoss(nn.Module):
                  iou_weighted=True,
                  reduction='mean',
                  loss_weight=1.0):
-        """`Varifocal Loss <https://arxiv.org/xxxxxxxxxx>`_
+        """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
         Args:
             use_sigmoid (bool, optional): Whether the prediction is
