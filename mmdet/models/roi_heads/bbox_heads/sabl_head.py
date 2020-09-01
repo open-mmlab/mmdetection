@@ -343,6 +343,36 @@ class SABLHead(nn.Module):
 
     def _bucket_target_single(self, pos_proposals, neg_proposals,
                               pos_gt_bboxes, pos_gt_labels, cfg):
+        """Compute bucketing estimation targets and fine regression targets for
+        a single image.
+
+        Args:
+            pos_proposals (Tensor): positive proposals of a single image,
+                 Shape (n_pos, 4)
+            neg_proposals (Tensor): negative proposals of a single image,
+                 Shape (n_neg, 4).
+            pos_gt_bboxes (Tensor): gt bboxes assigned to positive proposals
+                 of a single image, Shape (n_pos, 4).
+            pos_gt_labels (Tensor): gt labels assigned to positive proposals
+                 of a single image, Shape (n_pos, ).
+            cfg (dict): Config of calculating targets
+
+        Returns:
+            tuple:
+
+                - labels (Tensor): Labels in a single image. \
+                    Shape (n,).
+                - label_weights (Tensor): Label weights in a single image.\
+                    Shape (n,)
+                - bucket_cls_targets (Tensor): Bucket cls targets in \
+                    a single image. Shape (n, num_buckets*2).
+                - bucket_cls_weights (Tensor): Bucket cls weights in \
+                    a single image. Shape (n, num_buckets*2).
+                - bucket_offset_targets (Tensor): Bucket offset targets \
+                    in a single image. Shape (n, num_buckets*2).
+                - bucket_offset_targets (Tensor): Bucket offset weights \
+                    in a single image. Shape (n, num_buckets*2).
+        """
         num_pos = pos_proposals.size(0)
         num_neg = neg_proposals.size(0)
         num_samples = num_pos + num_neg
@@ -441,7 +471,7 @@ class SABLHead(nn.Module):
                 bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1] - 1)
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
 
-        if rescale:
+        if rescale and bboxes.size(0) > 0:
             if isinstance(scale_factor, float):
                 bboxes /= scale_factor
             else:

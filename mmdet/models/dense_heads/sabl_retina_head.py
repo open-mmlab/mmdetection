@@ -355,8 +355,8 @@ class SABLRetinaHead(BaseDenseHead):
                 - label_weights (Tensor): Label weights in a single image
                 - bbox_cls_targets (Tensor): BBox cls targets in a single image
                 - bbox_cls_weights (Tensor): BBox cls weights in a single image
-                - bbox_reg_targets (Tensor): BBox cls targets in a single image
-                - bbox_reg_weights (Tensor): BBox cls weights in a single image
+                - bbox_reg_targets (Tensor): BBox reg targets in a single image
+                - bbox_reg_weights (Tensor): BBox reg weights in a single image
                 - num_total_pos (int): Number of positive samples \
                     in a single image
                 - num_total_neg (int): Number of negative samples \
