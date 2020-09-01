@@ -19,13 +19,13 @@ class BucketingBBoxCoder(BaseBBoxCoder):
     Args:
         num_buckets (int): Number of buckets.
         scale_factor (int): Scale factor of proposals to generate buckets.
-        offset_topk (int): Topk buckets are used to generate \
-            bucket fine regression targets. Defaults to 2.
-        offset_upperbound (float): Offset upperbound to generate \
-            bucket fine regression targets. \
-            To avoid too large offset displacements. Defaults to 1.0.
-        cls_ignore_neighbor (bool): Ignore second nearest bucket or Not. \
-            Defaults to True.
+        offset_topk (int): Topk buckets are used to generate
+             bucket fine regression targets. Defaults to 2.
+        offset_upperbound (float): Offset upperbound to generate
+             bucket fine regression targets.
+             To avoid too large offset displacements. Defaults to 1.0.
+        cls_ignore_neighbor (bool): Ignore second nearest bucket or Not.
+             Defaults to True.
     """
 
     def __init__(self,
@@ -43,7 +43,17 @@ class BucketingBBoxCoder(BaseBBoxCoder):
 
     def encode(self, bboxes, gt_bboxes):
         """Get bucketing estimation and fine regression targets during
-        training."""
+        training.
+
+        Args:
+            bboxes (torch.Tensor): source boxes, e.g., object proposals.
+            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
+                ground truth boxes.
+
+        Returns:
+           encoded_bboxes(tuple[Tensor]): bucketing estimation
+            and fine regression targets and weights
+        """
 
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
@@ -54,7 +64,17 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         return encoded_bboxes
 
     def decode(self, bboxes, pred_bboxes, max_shape=None):
-        """Apply transformation `pred_bboxes` to `boxes`."""
+        """Apply transformation `pred_bboxes` to `boxes`.
+        Args:
+            boxes (torch.Tensor): Basic boxes.
+            pred_bboxes (torch.Tensor): Predictions for bucketing estimation
+                and fine regression
+            max_shape (tuple[int], optional): Maximum shape of boxes.
+                Defaults to None.
+
+        Returns:
+            torch.Tensor: Decoded boxes.
+        """
         assert len(pred_bboxes) == 2
         cls_preds, offset_preds = pred_bboxes
         assert cls_preds.size(0) == bboxes.size(0) and offset_preds.size(
@@ -75,8 +95,8 @@ def generat_buckets(proposals, num_buckets, scale_factor=1.0):
         scale_factor (float): Scale factor to rescale proposals.
 
     Returns:
-        tuple[Tensor]: (bucket_w, bucket_h, l_buckets, \
-            r_buckets, t_buckets, d_buckets)
+        tuple[Tensor]: (bucket_w, bucket_h, l_buckets, r_buckets,
+         t_buckets, d_buckets)
 
             - bucket_w: Width of buckets on x-axis. Shape (n, ).
             - bucket_h: Height of buckets on y-axis. Shape (n, ).
@@ -144,13 +164,13 @@ def bbox2bucket(proposals,
         gt (Tensor): Shape (n, 4)
         num_buckets (int): Number of buckets.
         scale_factor (float): Scale factor to rescale proposals.
-        offset_topk (int): Topk buckets are used to generate \
-            bucket fine regression targets. Defaults to 2.
-        offset_upperbound (float): Offset allowance to generate \
-            bucket fine regression targets. \
-            To avoid too large offset displacements. Defaults to 1.0.
-        cls_ignore_neighbor (bool): Ignore second nearest bucket or Not. \
-            Defaults to True.
+        offset_topk (int): Topk buckets are used to generate
+             bucket fine regression targets. Defaults to 2.
+        offset_upperbound (float): Offset allowance to generate
+             bucket fine regression targets.
+             To avoid too large offset displacements. Defaults to 1.0.
+        cls_ignore_neighbor (bool): Ignore second nearest bucket or Not.
+             Defaults to True.
 
     Returns:
         tuple[Tensor]: (offsets, offsets_weights, bucket_labels, cls_weights).
