@@ -147,6 +147,9 @@ Please refer to [Generalized Focal Loss](https://github.com/open-mmlab/mmdetecti
 ### CornerNet
 Please refer to [CornerNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/cornernet) for details.
 
+### YOLOv3
+Please refer to [YOLOv3](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).

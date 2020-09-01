@@ -145,6 +145,49 @@ def test_anchor_generator_with_tuples():
         assert torch.equal(anchor, anchor_tuples)
 
 
+def test_yolo_anchor_generator():
+    from mmdet.core.anchor import build_anchor_generator
+    if torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
+    anchor_generator_cfg = dict(
+        type='YOLOAnchorGenerator',
+        strides=[32, 16, 8],
+        base_sizes=[
+            [(116, 90), (156, 198), (373, 326)],
+            [(30, 61), (62, 45), (59, 119)],
+            [(10, 13), (16, 30), (33, 23)],
+        ])
+
+    featmap_sizes = [(14, 18), (28, 36), (56, 72)]
+    anchor_generator = build_anchor_generator(anchor_generator_cfg)
+
+    # check base anchors
+    expected_base_anchors = [
+        torch.Tensor([[-42.0000, -29.0000, 74.0000, 61.0000],
+                      [-62.0000, -83.0000, 94.0000, 115.0000],
+                      [-170.5000, -147.0000, 202.5000, 179.0000]]),
+        torch.Tensor([[-7.0000, -22.5000, 23.0000, 38.5000],
+                      [-23.0000, -14.5000, 39.0000, 30.5000],
+                      [-21.5000, -51.5000, 37.5000, 67.5000]]),
+        torch.Tensor([[-1.0000, -2.5000, 9.0000, 10.5000],
+                      [-4.0000, -11.0000, 12.0000, 19.0000],
+                      [-12.5000, -7.5000, 20.5000, 15.5000]])
+    ]
+    base_anchors = anchor_generator.base_anchors
+    for i, base_anchor in enumerate(base_anchors):
+        assert base_anchor.allclose(expected_base_anchors[i])
+
+    # check number of base anchors for each level
+    assert anchor_generator.num_base_anchors == [3, 3, 3]
+
+    # check anchor generation
+    anchors = anchor_generator.grid_anchors(featmap_sizes, device)
+    assert len(anchors) == 3
+
+
 def test_retina_anchor():
     from mmdet.models import build_head
     if torch.cuda.is_available():
