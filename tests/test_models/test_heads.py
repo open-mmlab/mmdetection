@@ -476,6 +476,7 @@ def test_bbox_head_loss():
 def test_sabl_bbox_head_loss():
     """Tests bbox head loss when truth is empty and non-empty."""
     self = SABLHead(
+        num_classes=4,
         cls_in_channels=3,
         reg_in_channels=3,
         cls_out_channels=3,
