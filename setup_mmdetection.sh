@@ -11,7 +11,7 @@ pip install mmcv-full
 mkdir data
 
 /# /snap/bin/gsutil
-gsutil -m rsync -r gs://bepro-dev/scouting_feed/ .
+gsutil -m rsync -r gs://bepro-dev/scouting_feed/mmdetection/ .
 #gsutil -m rsync -r gs://bepro-dev/scouting_feed/installation/nccl-repo-ubuntu1804-2.6.4-ga-cuda10.0_1-1_amd64.deb .
 sudo dpkg -i nccl-repo-ubuntu1804-2.6.4-ga-cuda10.0_1-1_amd64.deb
 sudo apt update
