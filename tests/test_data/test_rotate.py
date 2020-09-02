@@ -192,3 +192,6 @@ def test_rotate():
         img_fill_val=img_fill_val,
         prob=1.)
     rotate_module = build_from_cfg(transform, PIPELINES)
+    results_rotated = rotate_module(
+        copy.deepcopy(results), random_negative_prob=1.)
+    check_rotate(results_gt, results_rotated)
