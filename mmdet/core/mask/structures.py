@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
 
-import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -298,25 +297,36 @@ class BitmapMasks(BaseInstanceMasks):
                           left:left + self.width] = self.masks
         return BitmapMasks(expanded_mask, expanded_h, expanded_w)
 
-    def rotate(self,
-               rotate_matrix,
-               out_shape,
-               fill_val=0,
-               flags=cv2.INTER_NEAREST,
-               borderMode=cv2.BORDER_CONSTANT):
+    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+        """Rotate the BitmapMasks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            angle (int | float): Rotation angle in degrees. Positive values
+                mean counter-clockwise rotation.
+            center (tuple[float], optional): Center point (w, h) of the
+            rotation in source image. If not specified, the center of the
+                image will be used.
+            scale (int | float): Isotropic scale factor.
+            fill_val (int | float): Border value. Default 0 for masks.
+
+        Returns:
+            BitmapMasks: Rotated BitmapMasks.
+        """
         if len(self.masks) == 0:
-            rotated_masks = np.empty((0, *out_shape), dtype=np.uint8)
+            rotated_masks = np.empty((0, *out_shape), dtype=self.masks.dtype)
         else:
-            # dsize should be in type tuple[int] with format (w, h)
-            rotated_masks = np.stack([
-                cv2.warpAffine(
-                    mask,
-                    rotate_matrix,
-                    dsize=out_shape[::-1],
-                    borderValue=fill_val,
-                    flags=flags,
-                    borderMode=borderMode) for mask in self.masks
-            ]).astype(self.masks.dtype)
+            rotated_masks = mmcv.imrotate(
+                self.masks.transpose((1, 2, 0)),
+                angle,
+                center=center,
+                scale=scale,
+                border_value=fill_val)
+            if rotated_masks.ndim == 2:
+                # case when only one mask, (h, w)
+                rotated_masks = rotated_masks[:, :, None]  # (h, w, 1)
+            rotated_masks = rotated_masks.transpose(
+                (2, 0, 1)).astype(self.masks.dtype)
         return BitmapMasks(rotated_masks, *out_shape)
 
     @property
@@ -520,12 +530,7 @@ class PolygonMasks(BaseInstanceMasks):
             resized_masks.append(resized_mask)
         return PolygonMasks(resized_masks, *out_shape)
 
-    def rotate(self,
-               rotate_matrix,
-               out_shape,
-               fill_val=0,
-               flags=cv2.INTER_NEAREST,
-               borderMode=cv2.BORDER_CONSTANT):
+    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
         raise NotImplementedError
 
     def to_bitmap(self):

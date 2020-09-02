@@ -1,4 +1,5 @@
 import cv2
+import mmcv
 import numpy as np
 
 from mmdet.core.mask import BitmapMasks, PolygonMasks
@@ -41,11 +42,13 @@ class Rotate(object):
 
     Args:
         level (int | float): The level should be in range (0,_MAX_LEVEL].
-        scale (int | float): Rotation angle in degrees. Positive values
-            mean counter-clockwise rotation. Same in
-            ``cv2.getRotationMatrix2D``.
-        img_fill_val (int | float | tuple): The filled values for image border.
-            If float, the same fill value will be used for all the three
+        scale (int | float): Isotropic scale factor. Same in
+            ``mmcv.imrotate``.
+        center (int | float | tuple[float]): Center point (w, h) of the
+            rotation in the source image. If None, the center of the
+            image will be used. Same in ``mmcv.imrotate``.
+        img_fill_val (int | float | tuple): The fill value for image border.
+            If float, the same value will be used for all the three
             channels of image. If tuple, the should be 3 elements (e.g.
             equals the number of channels for image).
         seg_ignore_label (int): The fill value used for segmentation map.
@@ -53,13 +56,14 @@ class Rotate(object):
             of the corresponding config. Default 255.
         prob (float): The probability for perform transformation and
             should be in range 0 to 1.
-        max_rotate_angle (int | float): The maximum degrees for rotate
+        max_rotate_angle (int | float): The maximum angles for rotate
             transformation.
     """
 
     def __init__(self,
                  level,
                  scale=1,
+                 center=None,
                  img_fill_val=128,
                  seg_ignore_label=255,
                  prob=0.5,
@@ -73,10 +77,16 @@ class Rotate(object):
             'in range (0,_MAX_LEVEL]'
         assert isinstance(scale, (int, float)), \
             'The scale must be type int or float.'
-        assert 0 <= prob <= 1.0, \
-            'The probability of translation should be in range 0 to 1.'
+        if isinstance(center, (int, float)):
+            center = (center, center)
+        elif isinstance(center, tuple):
+            assert len(center) == 2, \
+                'center with type tuple must have 2 elements.'
+        else:
+            assert center is None, \
+                'center must be None or type int, float, tuple'
         if isinstance(img_fill_val, (float, int)):
-            img_fill_val = tuple([float(img_fill_val)])
+            img_fill_val = tuple([float(img_fill_val)] * 3)
         elif isinstance(img_fill_val, tuple):
             assert len(img_fill_val) == 3, \
                 'img_fill_val as tuple must have 3 elements.'
@@ -86,60 +96,38 @@ class Rotate(object):
                 'img_fill_val must be float or tuple with 3 elements.')
         assert np.all([0 <= val <= 255 for val in img_fill_val]), \
             'all elements of img_fill_val should between range [0,255].'
+        assert 0 <= prob <= 1.0, \
+            'The probability of translation should be in range 0 to 1.'
         assert isinstance(max_rotate_angle, (int, float)), \
             'max_rotate_angle should be type int or float.'
         self.level = level
         self.scale = scale
-        self.degrees = level_to_value(level, max_rotate_angle)
+        # Rotation angle in degrees. Positive values mean
+        # clockwise rotation.
+        self.angle = level_to_value(level, max_rotate_angle)
+        self.center = center
         self.img_fill_val = img_fill_val
         self.seg_ignore_label = seg_ignore_label
         self.prob = prob
         self.max_rotate_angle = max_rotate_angle
 
-    @staticmethod
-    def get_rotate_matrix(center, angle, scale):
-        """Generates the rotate matrix used for ``cv2.warpAffine``.
-        Args:
-            center (tuple[int]): Tuple with format (w, h). Center of
-                the rotation in source data.
-            angle (int | float): Rotation angle in degrees. Positive values
-                mean counter-clockwise rotation (the coordinate origin is
-                assumed to be the top-left corner).
-            scale (int | float): Isotropic scale factor. Same in
-                ``cv2.getRotationMatrix2D``.
-
-        Returns:
-            np.ndarray: The output affine transformation, 2x3
-                floating-point matrix.
-        """
-        return cv2.getRotationMatrix2D(center, angle, scale)
-
-    def _rotate_img(self,
-                    results,
-                    rotate_matrix,
-                    fill_val=128,
-                    flags=cv2.INTER_NEAREST,
-                    borderMode=cv2.BORDER_CONSTANT):
-        """Rotate image based on the rotate_matrix.
+    def _rotate_img(self, results, angle, center=None, scale=1.0):
+        """Rotate the image.
 
         Args:
             results (dict): Result dict from loading pipeline.
-            rotate_matrix (np.ndarray): Rotate matrix with shape (2, 3).
-            fill_val (int | float | tuple): Value used in case of a constant
-                border. Same in ``cv2.warpAffine``.
-            flags: Interpolation methods used in ``cv2.warpAffine``.
-            borderMode: pixel extrapolation method used in ``cv2.warpAffine``.
+            angle (float): Rotation angle in degrees, positive values
+                mean clockwise rotation. Same in ``mmcv.imrotate``.
+            center (tuple[float], optional): Center point (w, h) of the
+                rotation. Same in ``mmcv.imrotate``.
+            scale (int | float): Isotropic scale factor. Same in
+                ``mmcv.imrotate``.
         """
         for key in results.get('img_fields', ['img']):
             img = results[key].copy()
-            # dsize should be in type tuple[int] with format: (w, h)
-            results[key] = cv2.warpAffine(
-                img,
-                rotate_matrix,
-                dsize=img.shape[:2][::-1],
-                borderValue=fill_val,
-                flags=flags,
-                borderMode=borderMode).astype(img.dtype)
+            img_rotated = mmcv.imrotate(
+                img, angle, center, scale, border_value=self.img_fill_val)
+            results[key] = img_rotated.astype(img.dtype)
 
     def _rotate_bboxes(self, results, rotate_matrix):
         """Rotate the bboxes."""
@@ -158,7 +146,6 @@ class Rotate(object):
                 axis=1)  # [4, 3, nb_bbox, 1]
             coordinates = coordinates.transpose(
                 (2, 0, 1, 3))  # [nb_bbox, 4, 3, 1]
-            rotate_matrix = rotate_matrix.copy()  # [2, 3]
             rotated_coords = np.matmul(rotate_matrix,
                                        coordinates)  # [nb_bbox, 4, 2, 1]
             rotated_coords = rotated_coords[..., 0]  # [nb_bbox, 4, 2]
@@ -177,7 +164,12 @@ class Rotate(object):
             results[key] = np.stack([min_x, min_y, max_x, max_y],
                                     axis=-1).astype(results[key].dtype)
 
-    def _rotate_masks(self, results, rotate_matrix, fill_val=0):
+    def _rotate_masks(self,
+                      results,
+                      angle,
+                      center=None,
+                      scale=1.0,
+                      fill_val=0):
         """Rotate the masks."""
         h, w, c = results['img_shape']
         for key in results.get('mask_fields', []):
@@ -185,29 +177,25 @@ class Rotate(object):
             if isinstance(masks, PolygonMasks):
                 raise NotImplementedError
             elif isinstance(masks, BitmapMasks):
-                results[key] = masks.rotate(rotate_matrix, (h, w), fill_val)
+                results[key] = masks.rotate((h, w), angle, center, scale,
+                                            fill_val)
 
     def _rotate_seg(self,
                     results,
-                    rotate_matrix,
-                    fill_val=255,
-                    flags=cv2.INTER_NEAREST,
-                    borderMode=cv2.BORDER_CONSTANT):
+                    angle,
+                    center=None,
+                    scale=1.0,
+                    fill_val=255):
         """Rotate the segmentation map."""
         for key in results.get('seg_fields', []):
-            seg = results[key]
-            results[key] = cv2.warpAffine(
-                seg,
-                rotate_matrix,
-                dsize=seg.shape[:2][::-1],
-                borderValue=fill_val,
-                flags=flags,
-                borderMode=borderMode).astype(seg.dtype)
+            seg = results[key].copy()
+            results[key] = mmcv.imrotate(
+                seg, angle, center, scale,
+                border_value=fill_val).astype(seg.dtype)
 
     def _filter_invalid(self, results, min_bbox_size=0):
         """Filter bboxes and corresponding masks too small after rotate
         augmentation."""
-        # The key correspondence from bboxes to labels and masks.
         bbox2label, bbox2mask, _ = bbox2fields()
         for key in results.get('bbox_fields', []):
             bbox_w = results[key][:, 2] - results[key][:, 0]
@@ -231,22 +219,23 @@ class Rotate(object):
             results (dict): Result dict from loading pipeline.
             random_negative_prob (float): The probability that turns the
              offset negative.
+
         Returns:
             dict: Rotated results.
         """
         if np.random.rand() > self.prob:
             return results
-        degrees = random_negative(self.degrees, random_negative_prob)
-        h, w, c = results['img_shape']
-        # the rotate matrix used for transformation, defaultly
-        # the image center without shift is used.
-        rotate_matrix = self.get_rotate_matrix(
-            center=(w / 2, h / 2), angle=degrees, scale=self.scale)
-        self._rotate_img(results, rotate_matrix, fill_val=self.img_fill_val)
+        h, w = results['img'].shape[:2]
+        center = self.center
+        if center is None:
+            center = ((w - 1) * 0.5, (h - 1) * 0.5)
+        angle = random_negative(self.angle, random_negative_prob)
+        self._rotate_img(results, angle, center, self.scale)
+        rotate_matrix = cv2.getRotationMatrix2D(center, -angle, self.scale)
         self._rotate_bboxes(results, rotate_matrix)
-        self._rotate_masks(results, rotate_matrix, fill_val=0)
+        self._rotate_masks(results, angle, center, self.scale, fill_val=0)
         self._rotate_seg(
-            results, rotate_matrix, fill_val=self.seg_ignore_label)
+            results, angle, center, self.scale, fill_val=self.seg_ignore_label)
         self._filter_invalid(results)
         return results
 
@@ -254,6 +243,7 @@ class Rotate(object):
         repr_str = self.__class__.__name__
         repr_str += f'(level={self.level}, '
         repr_str += f'scale={self.scale}, '
+        repr_str += f'center={self.center}, '
         repr_str += f'img_fill_val={self.img_fill_val}, '
         repr_str += f'seg_ignore_label={self.seg_ignore_label}, '
         repr_str += f'prob={self.prob}, '
