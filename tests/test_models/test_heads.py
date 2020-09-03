@@ -1096,12 +1096,9 @@ def test_yolact_head_loss():
         loss_segm=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0))
     mask_head = YOLACTProtonet(
-        protonet_cfg=dict(
-            kernel_size=[3, 3, 3, -2, 3, 1],
-            num_channels=[256, 256, 256, None, 256, 32]),
+        num_classes=80,
         in_channels=256,
         num_protos=32,
-        num_classes=80,
         max_masks_to_train=100,
         loss_mask_weight=6.125)
     feat = [

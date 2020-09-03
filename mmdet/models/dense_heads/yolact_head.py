@@ -524,10 +524,9 @@ class YOLACTSegmHead(nn.Module):
             segm_targets = self.get_targets(cur_segm_pred, cur_gt_masks,
                                             cur_gt_labels)
             if segm_targets is None:
-                loss = self.loss_segm(
-                    cur_segm_pred,
-                    torch.zeros_like(cur_segm_pred),
-                    avg_factor=num_imgs * mask_h * mask_w)
+                loss = self.loss_segm(cur_segm_pred,
+                                      torch.zeros_like(cur_segm_pred),
+                                      torch.zeros_like(cur_segm_pred))
             else:
                 loss = self.loss_segm(
                     cur_segm_pred,
@@ -587,12 +586,12 @@ class YOLACTProtonet(nn.Module):
     """
 
     def __init__(self,
+                 num_classes,
                  in_channels=256,
                  proto_channels=(256, 256, 256, None, 256, 32),
                  proto_kernel_sizes=(3, 3, 3, -2, 3, 1),
                  include_last_relu=True,
                  num_protos=32,
-                 num_classes=80,
                  loss_mask_weight=1.0,
                  max_masks_to_train=100):
         super(YOLACTProtonet, self).__init__()
