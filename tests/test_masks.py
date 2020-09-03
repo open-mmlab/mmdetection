@@ -147,6 +147,17 @@ def test_bitmap_mask_flip():
     assert (bitmap_masks.masks == flipped_flipped_masks.masks).all()
     assert (flipped_masks.masks == raw_masks[:, ::-1, :]).all()
 
+    # diagonal flip with bitmap masks contain 3 instances
+    raw_masks = dummy_raw_bitmap_masks((3, 28, 28))
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
+    flipped_masks = bitmap_masks.flip(flip_direction='diagonal')
+    flipped_flipped_masks = flipped_masks.flip(flip_direction='diagonal')
+    assert len(flipped_masks) == 3
+    assert flipped_masks.height == 28
+    assert flipped_masks.width == 28
+    assert (bitmap_masks.masks == flipped_flipped_masks.masks).all()
+    assert (flipped_masks.masks == raw_masks[:, ::-1, ::-1]).all()
+
 
 def test_bitmap_mask_pad():
     # pad with empty bitmap masks
@@ -438,6 +449,18 @@ def test_polygon_mask_flip():
     polygon_masks = PolygonMasks(raw_masks, 28, 28)
     flipped_masks = polygon_masks.flip(flip_direction='vertical')
     flipped_flipped_masks = flipped_masks.flip(flip_direction='vertical')
+    assert len(flipped_masks) == 3
+    assert flipped_masks.height == 28
+    assert flipped_masks.width == 28
+    assert flipped_masks.to_ndarray().shape == (3, 28, 28)
+    assert (polygon_masks.to_ndarray() == flipped_flipped_masks.to_ndarray()
+            ).all()
+
+    # diagonal flip with polygon masks contain 3 instances
+    raw_masks = dummy_raw_polygon_masks((3, 28, 28))
+    polygon_masks = PolygonMasks(raw_masks, 28, 28)
+    flipped_masks = polygon_masks.flip(flip_direction='diagonal')
+    flipped_flipped_masks = flipped_masks.flip(flip_direction='diagonal')
     assert len(flipped_masks) == 3
     assert flipped_masks.height == 28
     assert flipped_masks.width == 28
