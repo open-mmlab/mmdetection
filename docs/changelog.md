@@ -4,8 +4,10 @@
 
 **Highlights**
 - Refactor common issues and add trouble shooting (#3530)
-- Support new methods [Yolact](https://arxiv.org/abs/1904.02689), [PAA Assign](https://arxiv.org/abs/2007.08103)
+- Support new methods [SABL](https://arxiv.org/abs/1912.04260), [YOLOv3](https://arxiv.org/abs/1804.02767), and [PAA Assign](https://arxiv.org/abs/2007.08103)
 - Support Batch Inference
+- Start to publish `mmdet` package to PyPI since v2.4.0
+- Switch model zoo to aliyun
 
 **Bug Fixes**
 - Fix default mean/std for onnx (#3491)
@@ -22,14 +24,18 @@
 - Fix import of fuse conv bn in benchmark.py (#3606)
 - Fix webcam demo (#3634)
 - Fix typo and itemize issues in tutorial (#3658)
+- Fix error in distributed training when some levels of FPN are not assigned with bounding boxes (#3670)
 
 **New Features**
-- Support Cutout (#3521)
+- Support Cutout augmentation (#3521)
 - Support evaluation on multiple datasets through ConcatDataset (#3522)
 - Support [PAA assign](https://arxiv.org/abs/2007.08103) #(3547)
 - Support eval metric with pickle results (#3607)
-- Support [YOLACT](https://arxiv.org/abs/1904.02689) (#3456)
+- Support [YOLOv3](https://arxiv.org/abs/1804.02767) (#3083)
+- Support [SABL](https://arxiv.org/abs/1912.04260) (#3603)
 - Support Batch Inference (#3564)
+- Support to publish to Pypi in github-action (#3510)
+- Support RandomFlip with horizontal/vertical/diagonal direction (#3608)
 
 **Improvements**
 - Refactor common issues in documentation (#3530)
@@ -41,6 +47,7 @@
 - Using config's loading in inference_detector (#3611)
 - Add atss 101 (#3639)
 - Support custom imports (#3641)
+- Update urls to download.openmmlab.com (#3665)
 
 
 ### v2.3.0 (5/8/2020)
