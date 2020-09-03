@@ -9,7 +9,7 @@ model = dict(
         num_scales=3,
         in_channels=[1024, 512, 256],
         out_channels=[512, 256, 128],
-        enable_spp=True,
+        spp_on=True,
         spp_pooler_sizes=(5, 9, 13)),
     bbox_head=dict(
         type='YOLOV3Head',
@@ -120,11 +120,11 @@ lr_config = dict(
     step=[218, 246])
 # runtime settings
 total_epochs = 273
-evaluation = dict(interval=1, metric=['bbox'])
+evaluation = dict(interval=7, metric=['bbox'])
 
-log_config = dict(  # config to register logger hook
-    interval=50,  # Interval to print the log
-    hooks=[
-        dict(type='TensorboardLoggerHook'),
-        dict(type='TextLoggerHook')
-    ])  # The logger used to record the training process.
+# log_config = dict(  # config to register logger hook
+#     interval=50,  # Interval to print the log
+#     hooks=[
+#         dict(type='TensorboardLoggerHook'),
+#         dict(type='TextLoggerHook')
+#     ])  # The logger used to record the training process.

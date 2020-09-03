@@ -11,16 +11,22 @@ from ..builder import NECKS
 class DetectionBlock(nn.Module):
     """Detection block in YOLO neck.
 
-    Let out_channels = n, the DetectionBlock contains 5 ConvModules,
+    Let out_channels = n, the DetectionBlock normally contains 5 ConvModules,
     Their sizes are 1x1xn, 3x3x2n, 1x1xn, 3x3x2n, and 1x1xn respectively.
+    If the spp is on, the DetectionBlock contains 6 ConvModules and
+    3 pooling layers, sizes are 1x1xn, 3x3x2n, 1x1xn,
+    5x5 maxpool, 9x9 maxpool, 13x13 maxpool, 1x1xn, 3x3x2n, 1x1xn.
     The input channel is arbitrary (in_channels)
-
+yolo
     Args:
         in_channels (int): The number of input channels.
         out_channels (int): The number of output channels.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
+        spp_on (bool): whether to integrate a spp module. Default: False.
+        spp_pooler_sizes (tuple): A set of sizes for spatial pyramid pooling.
+            Default: (5, 9, 13).
         norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True)
+            Default: dict(type='BN', requires_grad=True).
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='LeakyReLU', negative_slope=0.1).
     """
@@ -28,10 +34,13 @@ class DetectionBlock(nn.Module):
     def __init__(self,
                  in_channels,
                  out_channels,
+                 spp_on=False,
+                 spp_pooler_sizes=(5, 9, 13),
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(DetectionBlock, self).__init__()
+        self.spp_on = spp_on
         double_out_channels = out_channels * 2
 
         # shortcut
@@ -40,6 +49,14 @@ class DetectionBlock(nn.Module):
         self.conv2 = ConvModule(
             out_channels, double_out_channels, 3, padding=1, **cfg)
         self.conv3 = ConvModule(double_out_channels, out_channels, 1, **cfg)
+
+        if self.spp_on:
+            self.poolers = [nn.MaxPool2d(size, 1, padding=(size - 1) // 2)
+                            for size in spp_pooler_sizes]
+            self.conv_spp = ConvModule(
+                out_channels * (len(spp_pooler_sizes) + 1),
+                out_channels, 1, **cfg)
+
         self.conv4 = ConvModule(
             out_channels, double_out_channels, 3, padding=1, **cfg)
         self.conv5 = ConvModule(double_out_channels, out_channels, 1, **cfg)
@@ -48,6 +65,12 @@ class DetectionBlock(nn.Module):
         tmp = self.conv1(x)
         tmp = self.conv2(tmp)
         tmp = self.conv3(tmp)
+
+        if self.spp_on:
+            spp_feats = [tmp] + [pooler(tmp) for pooler in self.poolers]
+            tmp = torch.cat(spp_feats[::-1], 1)
+            tmp = self.conv_spp(tmp)
+
         tmp = self.conv4(tmp)
         out = self.conv5(tmp)
         return out
@@ -72,10 +95,10 @@ class YOLOV3Neck(nn.Module):
         num_scales (int): The number of scales / stages.
         in_channels (int): The number of input channels.
         out_channels (int): The number of output channels.
-        enable_spp (bool): Whether the spatial pyramid pooling is enabled.
+        spp_on (bool): Whether the spatial pyramid pooling is enabled.
             Default: False.
-        pooler_sizes (tuple): A set of sizes for spatial pyramid pooling.
-            Default: (5, 9, 13)
+        spp_pooler_sizes (tuple): A set of sizes for spatial pyramid pooling.
+            Default: (5, 9, 13).
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
@@ -87,7 +110,7 @@ class YOLOV3Neck(nn.Module):
                  num_scales,
                  in_channels,
                  out_channels,
-                 enable_spp=False,
+                 spp_on=False,
                  spp_pooler_sizes=(5, 9, 13),
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
@@ -97,20 +120,18 @@ class YOLOV3Neck(nn.Module):
         self.num_scales = num_scales
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.enable_spp = enable_spp
+        self.spp_on = spp_on
 
         # shortcut
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
-        if self.enable_spp:
-            self.poolers = [nn.MaxPool2d(size, 1, padding=(size - 1) // 2)
-                            for size in spp_pooler_sizes]
-            self.in_channels[0] *= len(spp_pooler_sizes)
+        # If spp is enabled, a spp block is added into the first DetectionBlock
+        self.detect1 = DetectionBlock(
+            self.in_channels[0], self.out_channels[0],
+            spp_on, spp_pooler_sizes, **cfg)
 
         # To support arbitrary scales, the code looks awful, but it works.
         # Better solution is welcomed.
-        self.detect1 = DetectionBlock(
-            self.in_channels[0], self.out_channels[0], **cfg)
         for i in range(1, self.num_scales):
             in_c, out_c = self.in_channels[i], self.out_channels[i]
             self.add_module(f'conv{i}', ConvModule(in_c, out_c, 1, **cfg))
@@ -123,13 +144,7 @@ class YOLOV3Neck(nn.Module):
 
         # processed from bottom (high-lvl) to top (low-lvl)
         outs = []
-
-        in_feat = feats[-1]
-        if self.enable_spp:
-            in_feat = torch.cat([pooler(in_feat)
-                                for pooler in self.poolers], 1)
-
-        out = self.detect1(in_feat)
+        out = self.detect1(feats[-1])
         outs.append(out)
 
         for i, x in enumerate(reversed(feats[:-1])):
