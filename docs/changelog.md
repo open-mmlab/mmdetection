@@ -6,7 +6,7 @@
 - Refactor common issues and add trouble shooting (#3530)
 - Support new methods [SABL](https://arxiv.org/abs/1912.04260), [YOLOv3](https://arxiv.org/abs/1804.02767), and [PAA Assign](https://arxiv.org/abs/2007.08103)
 - Support Batch Inference
-- Start to publish `mmdet` package to PyPI since v2.4.0
+- Start to publish `mmdet` package to PyPI since v2.3.0
 - Switch model zoo to aliyun
 
 **Bug Fixes**
