@@ -31,7 +31,7 @@ class MaxIoUAssigner(BaseAssigner):
             `bboxes` and `gt_bboxes_ignore`, or the contrary.
         match_low_quality (bool): Whether to allow low quality matches. This is
             usually allowed for RPN and single stage detectors, but not allowed
-            in the second stage. Details are demonetrated in Step 4.
+            in the second stage. Details are demonstrated in Step 4.
         gpu_assign_thr (int): The upper bound of the number of GT for GPU
             assign. When the number of gt is above this threshold, will assign
             on CPU device. Negative values mean not assign on CPU.

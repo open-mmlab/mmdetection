@@ -212,7 +212,7 @@ class BitmapMasks(BaseInstanceMasks):
 
     def flip(self, flip_direction='horizontal'):
         """See :func:`BaseInstanceMasks.flip`."""
-        assert flip_direction in ('horizontal', 'vertical')
+        assert flip_direction in ('horizontal', 'vertical', 'diagonal')
 
         if len(self.masks) == 0:
             flipped_masks = self.masks
@@ -403,22 +403,22 @@ class PolygonMasks(BaseInstanceMasks):
 
     def flip(self, flip_direction='horizontal'):
         """see :func:`BaseInstanceMasks.flip`"""
-        assert flip_direction in ('horizontal', 'vertical')
+        assert flip_direction in ('horizontal', 'vertical', 'diagonal')
         if len(self.masks) == 0:
             flipped_masks = PolygonMasks([], self.height, self.width)
         else:
-            if flip_direction == 'horizontal':
-                dim = self.width
-                idx = 0
-            else:
-                dim = self.height
-                idx = 1
             flipped_masks = []
             for poly_per_obj in self.masks:
                 flipped_poly_per_obj = []
                 for p in poly_per_obj:
                     p = p.copy()
-                    p[idx::2] = dim - p[idx::2]
+                    if flip_direction == 'horizontal':
+                        p[0::2] = self.width - p[0::2]
+                    elif flip_direction == 'vertical':
+                        p[1::2] = self.height - p[1::2]
+                    else:
+                        p[0::2] = self.width - p[0::2]
+                        p[1::2] = self.height - p[1::2]
                     flipped_poly_per_obj.append(p)
                 flipped_masks.append(flipped_poly_per_obj)
             flipped_masks = PolygonMasks(flipped_masks, self.height,

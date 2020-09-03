@@ -85,7 +85,8 @@ def test_rpn_forward():
         'foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py',
         # 'free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
         # 'atss/atss_r50_fpn_1x_coco.py',  # not ready for topk
-        'reppoints/reppoints_moment_r50_fpn_1x_coco.py'
+        'reppoints/reppoints_moment_r50_fpn_1x_coco.py',
+        'yolo/yolov3_d53_mstrain-608_273e_coco.py'
     ])
 def test_single_stage_forward_gpu(cfg_file):
     if not torch.cuda.is_available():

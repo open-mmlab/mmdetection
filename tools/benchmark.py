@@ -3,9 +3,9 @@ import time
 
 import torch
 from mmcv import Config
+from mmcv.cnn import fuse_conv_bn
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
-from tools.fuse_conv_bn import fuse_module
 
 from mmdet.core import wrap_fp16_model
 from mmdet.datasets import build_dataloader, build_dataset
@@ -31,6 +31,10 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    # import modules from string list.
+    if cfg.get('custom_imports', None):
+        from mmcv.utils import import_modules_from_strings
+        import_modules_from_strings(**cfg['custom_imports'])
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -54,7 +58,7 @@ def main():
         wrap_fp16_model(model)
     load_checkpoint(model, args.checkpoint, map_location='cpu')
     if args.fuse_conv_bn:
-        model = fuse_module(model)
+        model = fuse_conv_bn(model)
 
     model = MMDataParallel(model, device_ids=[0])
 
