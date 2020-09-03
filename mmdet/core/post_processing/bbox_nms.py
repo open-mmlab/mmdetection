@@ -65,11 +65,12 @@ def fast_nms(multi_bboxes,
              iou_thr,
              top_k,
              max_num=-1):
-    """Fast NMS in `YOLACT <https://arxiv.org/abs/1904.02689>`_. Fast NMS
-    allows already-removed detections to suppress other detections so that
-    every instance can be decided to be kept or discarded in parallel, which is
-    not possible in traditional NMS. This relaxation allows us to implement
-    Fast NMS entirely in standard GPU-accelerated matrix operations.
+    """Fast NMS in `YOLACT <https://arxiv.org/abs/1904.02689>`_.
+
+    Fast NMS allows already-removed detections to suppress other detections so
+    that every instance can be decided to be kept or discarded in parallel,
+    which is not possible in traditional NMS. This relaxation allows us to
+    implement Fast NMS entirely in standard GPU-accelerated matrix operations.
 
     Args:
         multi_bboxes (Tensor): shape (n, #class*4) or (n, 4)

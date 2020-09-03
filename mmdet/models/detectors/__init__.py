@@ -19,11 +19,11 @@ from .retinanet import RetinaNet
 from .rpn import RPN
 from .single_stage import SingleStageDetector
 from .two_stage import TwoStageDetector
-from .yolact import Yolact
+from .yolact import YOLACT
 
 __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'FastRCNN', 'FasterRCNN', 'MaskRCNN', 'CascadeRCNN', 'HybridTaskCascade',
     'RetinaNet', 'FCOS', 'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector',
-    'FOVEA', 'FSAF', 'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'Yolact'
+    'FOVEA', 'FSAF', 'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'YOLACT'
 ]

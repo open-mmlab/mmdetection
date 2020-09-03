@@ -3,7 +3,7 @@ _base_ = '../_base_/default_runtime.py'
 # model settings
 img_size = 550
 model = dict(
-    type='Yolact',
+    type='YOLACT',
     pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
@@ -24,7 +24,7 @@ model = dict(
         num_outs=5,
         upsample_cfg=dict(mode='bilinear')),
     bbox_head=dict(
-        type='YolactHead',
+        type='YOLACTHead',
         num_classes=80,
         in_channels=256,
         feat_channels=256,
@@ -51,19 +51,16 @@ model = dict(
         num_protos=32,
         use_ohem=True),
     mask_head=dict(
-        type='YolactProtonet',
-        protonet_cfg=dict(
-            kernel_size=[3, 3, 3, -2, 3, 1],
-            num_channels=[256, 256, 256, None, 256, 32]),
+        type='YOLACTProtonet',
         in_channels=256,
         num_protos=32,
         num_classes=80,
         max_masks_to_train=100,
         loss_mask_weight=6.125),
     segm_head=dict(
-        type='YolactSegmHead',
-        in_channels=256,
+        type='YOLACTSegmHead',
         num_classes=80,
+        in_channels=256,
         loss_segm=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)))
 # training and testing settings
@@ -79,8 +76,7 @@ train_cfg = dict(
     allowed_border=-1,
     pos_weight=-1,
     neg_pos_ratio=3,
-    debug=False,
-    min_gt_box_wh=[4.0, 4.0])
+    debug=False)
 test_cfg = dict(
     nms_pre=1000,
     min_bbox_size=0,
@@ -96,6 +92,7 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(4.0, 4.0)),
     dict(
         type='PhotoMetricDistortion',
         brightness_delta=32,
@@ -150,12 +147,12 @@ data = dict(
         pipeline=test_pipeline))
 # optimizer
 optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict()
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=500,
+    warmup_iters=1000,
     warmup_ratio=0.1,
     step=[20, 42, 49, 52])
 total_epochs = 55
