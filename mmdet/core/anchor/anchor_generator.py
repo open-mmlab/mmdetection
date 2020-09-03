@@ -33,7 +33,7 @@ class AnchorGenerator(object):
             relative to the feature grid center in multiple feature levels.
             By default it is set to be None and not used. If a list of tuple of
             float is given, they will be used to shift the centers of anchors.
-        center_offset (float): The offset of center in propotion to anchors'
+        center_offset (float): The offset of center in proportion to anchors'
             width and height. By default it is 0 in V2.0.
 
     Examples:
@@ -215,7 +215,7 @@ class AnchorGenerator(object):
             list[torch.Tensor]: Anchors in multiple feature levels. \
                 The sizes of each tensor should be [N, 4], where \
                 N = width * height * num_base_anchors, width and height \
-                are the sizes of the corresponding feature lavel, \
+                are the sizes of the corresponding feature level, \
                 num_base_anchors is the number of anchors for that level.
         """
         assert self.num_levels == len(featmap_sizes)
@@ -590,3 +590,139 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
         self.centers = [((stride - 1) / 2., (stride - 1) / 2.)
                         for stride in strides]
         self.base_anchors = self.gen_base_anchors()
+
+
+@ANCHOR_GENERATORS.register_module()
+class YOLOAnchorGenerator(AnchorGenerator):
+    """Anchor generator for YOLO.
+
+    Args:
+        strides (list[int] | list[tuple[int, int]]): Strides of anchors
+            in multiple feature levels.
+        base_sizes (list[list[tuple[int, int]]]): The basic sizes
+            of anchors in multiple levels.
+    """
+
+    def __init__(self, strides, base_sizes):
+        self.strides = [_pair(stride) for stride in strides]
+        self.centers = [(stride[0] / 2., stride[1] / 2.)
+                        for stride in self.strides]
+        self.base_sizes = []
+        num_anchor_per_level = len(base_sizes[0])
+        for base_sizes_per_level in base_sizes:
+            assert num_anchor_per_level == len(base_sizes_per_level)
+            self.base_sizes.append(
+                [_pair(base_size) for base_size in base_sizes_per_level])
+        self.base_anchors = self.gen_base_anchors()
+
+    @property
+    def num_levels(self):
+        """int: number of feature levels that the generator will be applied"""
+        return len(self.base_sizes)
+
+    def gen_base_anchors(self):
+        """Generate base anchors.
+
+        Returns:
+            list(torch.Tensor): Base anchors of a feature grid in multiple \
+                feature levels.
+        """
+        multi_level_base_anchors = []
+        for i, base_sizes_per_level in enumerate(self.base_sizes):
+            center = None
+            if self.centers is not None:
+                center = self.centers[i]
+            multi_level_base_anchors.append(
+                self.gen_single_level_base_anchors(base_sizes_per_level,
+                                                   center))
+        return multi_level_base_anchors
+
+    def gen_single_level_base_anchors(self, base_sizes_per_level, center=None):
+        """Generate base anchors of a single level.
+
+        Args:
+            base_sizes_per_level (list[tuple[int, int]]): Basic sizes of
+                anchors.
+            center (tuple[float], optional): The center of the base anchor
+                related to a single feature grid. Defaults to None.
+
+        Returns:
+            torch.Tensor: Anchors in a single-level feature maps.
+        """
+        x_center, y_center = center
+        base_anchors = []
+        for base_size in base_sizes_per_level:
+            w, h = base_size
+
+            # use float anchor and the anchor's center is aligned with the
+            # pixel center
+            base_anchor = torch.Tensor([
+                x_center - 0.5 * w, y_center - 0.5 * h, x_center + 0.5 * w,
+                y_center + 0.5 * h
+            ])
+            base_anchors.append(base_anchor)
+        base_anchors = torch.stack(base_anchors, dim=0)
+
+        return base_anchors
+
+    def responsible_flags(self, featmap_sizes, gt_bboxes, device='cuda'):
+        """Generate responsible anchor flags of grid cells in multiple scales.
+
+        Args:
+            featmap_sizes (list(tuple)): List of feature map sizes in multiple
+                feature levels.
+            gt_bboxes (Tensor): Ground truth boxes, shape (n, 4).
+            device (str): Device where the anchors will be put on.
+
+        Return:
+            list(torch.Tensor): responsible flags of anchors in multiple level
+        """
+        assert self.num_levels == len(featmap_sizes)
+        multi_level_responsible_flags = []
+        for i in range(self.num_levels):
+            anchor_stride = self.strides[i]
+            flags = self.single_level_responsible_flags(
+                featmap_sizes[i],
+                gt_bboxes,
+                anchor_stride,
+                self.num_base_anchors[i],
+                device=device)
+            multi_level_responsible_flags.append(flags)
+        return multi_level_responsible_flags
+
+    def single_level_responsible_flags(self,
+                                       featmap_size,
+                                       gt_bboxes,
+                                       stride,
+                                       num_base_anchors,
+                                       device='cuda'):
+        """Generate the responsible flags of anchor in a single feature map.
+
+        Args:
+            featmap_size (tuple[int]): The size of feature maps.
+            gt_bboxes (Tensor): Ground truth boxes, shape (n, 4).
+            stride (tuple(int)): stride of current level
+            num_base_anchors (int): The number of base anchors.
+            device (str, optional): Device where the flags will be put on.
+                Defaults to 'cuda'.
+
+        Returns:
+            torch.Tensor: The valid flags of each anchor in a single level \
+                feature map.
+        """
+        feat_h, feat_w = featmap_size
+        gt_bboxes_cx = ((gt_bboxes[:, 0] + gt_bboxes[:, 2]) * 0.5).to(device)
+        gt_bboxes_cy = ((gt_bboxes[:, 1] + gt_bboxes[:, 3]) * 0.5).to(device)
+        gt_bboxes_grid_x = torch.floor(gt_bboxes_cx / stride[0]).long()
+        gt_bboxes_grid_y = torch.floor(gt_bboxes_cy / stride[1]).long()
+
+        # row major indexing
+        gt_bboxes_grid_idx = gt_bboxes_grid_y * feat_w + gt_bboxes_grid_x
+
+        responsible_grid = torch.zeros(
+            feat_h * feat_w, dtype=torch.uint8, device=device)
+        responsible_grid[gt_bboxes_grid_idx] = 1
+
+        responsible_grid = responsible_grid[:, None].expand(
+            responsible_grid.size(0), num_base_anchors).contiguous().view(-1)
+        return responsible_grid
