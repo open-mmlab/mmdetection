@@ -84,14 +84,26 @@ def test_flip():
     with pytest.raises(AssertionError):
         transform = dict(type='RandomFlip', flip_ratio=1.5)
         build_from_cfg(transform, PIPELINES)
+    # test assertion for 0 <= sum(flip_ratio) <= 1
+    with pytest.raises(AssertionError):
+        transform = dict(
+            type='RandomFlip',
+            flip_ratio=[0.7, 0.8],
+            direction=['horizontal', 'vertical'])
+        build_from_cfg(transform, PIPELINES)
+
+    # test assertion for mismatch between number of flip_ratio and direction
+    with pytest.raises(AssertionError):
+        transform = dict(type='RandomFlip', flip_ratio=[0.4, 0.5])
+        build_from_cfg(transform, PIPELINES)
 
     # test assertion for invalid direction
     with pytest.raises(AssertionError):
         transform = dict(
-            type='RandomFlip', flip_ratio=1, direction='horizonta')
+            type='RandomFlip', flip_ratio=1., direction='horizonta')
         build_from_cfg(transform, PIPELINES)
 
-    transform = dict(type='RandomFlip', flip_ratio=1)
+    transform = dict(type='RandomFlip', flip_ratio=1.)
     flip_module = build_from_cfg(transform, PIPELINES)
 
     results = dict()
@@ -114,6 +126,58 @@ def test_flip():
     results = flip_module(results)
     assert np.equal(results['img'], results['img2']).all()
     assert np.equal(original_img, results['img']).all()
+
+    # test flip_ratio is float, direction is list
+    transform = dict(
+        type='RandomFlip',
+        flip_ratio=0.9,
+        direction=['horizontal', 'vertical', 'diagonal'])
+    flip_module = build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    # Set initial values for default meta_keys
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['img_fields'] = ['img']
+    results = flip_module(results)
+    if results['flip']:
+        assert np.array_equal(
+            mmcv.imflip(original_img, results['flip_direction']),
+            results['img'])
+    else:
+        assert np.array_equal(original_img, results['img'])
+
+    # test flip_ratio is list, direction is list
+    transform = dict(
+        type='RandomFlip',
+        flip_ratio=[0.3, 0.3, 0.2],
+        direction=['horizontal', 'vertical', 'diagonal'])
+    flip_module = build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../data/color.jpg'), 'color')
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    # Set initial values for default meta_keys
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['img_fields'] = ['img']
+    results = flip_module(results)
+    if results['flip']:
+        assert np.array_equal(
+            mmcv.imflip(original_img, results['flip_direction']),
+            results['img'])
+    else:
+        assert np.array_equal(original_img, results['img'])
 
 
 def test_random_crop():
