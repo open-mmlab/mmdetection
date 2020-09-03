@@ -1,5 +1,55 @@
 ## Changelog
 
+### v2.4.0 (5/9/2020)
+
+**Highlights**
+- Fix lots of issues/bugs and reorganize the trouble shooting page
+- Support new methods [SABL](https://arxiv.org/abs/1912.04260), [YOLOv3](https://arxiv.org/abs/1804.02767), and [PAA Assign](https://arxiv.org/abs/2007.08103)
+- Support Batch Inference
+- Start to publish `mmdet` package to PyPI since v2.3.0
+- Switch model zoo to download.openmmlab.com
+
+**Bug Fixes**
+- Fix default mean/std for onnx (#3491)
+- Fix coco evaluation and add metric items (#3497)
+- Fix typo for install.md (#3516)
+- Fix atss when sampler per gpu is 1 (#3528)
+- Fix import of fuse_conv_bn (#3529)
+- Fix bug of gaussian_target, update unittest of heatmap (#3543)
+- Fixed VOC2012 evaluate (#3553)
+- Fix scale factor bug of rescale (#3566)
+- Fix with_xxx_attributes in base detector (#3567)
+- Fix boxes scaling when number is 0 (#3575)
+- Fix rfp check when neck config is a list (#3591)
+- Fix import of fuse conv bn in benchmark.py (#3606)
+- Fix webcam demo (#3634)
+- Fix typo and itemize issues in tutorial (#3658)
+- Fix error in distributed training when some levels of FPN are not assigned with bounding boxes (#3670)
+
+**New Features**
+- Support Cutout augmentation (#3521)
+- Support evaluation on multiple datasets through ConcatDataset (#3522)
+- Support [PAA assign](https://arxiv.org/abs/2007.08103) #(3547)
+- Support eval metric with pickle results (#3607)
+- Support [YOLOv3](https://arxiv.org/abs/1804.02767) (#3083)
+- Support [SABL](https://arxiv.org/abs/1912.04260) (#3603)
+- Support Batch Inference (#3564)
+- Support to publish to Pypi in github-action (#3510)
+- Support RandomFlip with horizontal/vertical/diagonal direction (#3608)
+
+**Improvements**
+- Refactor common issues in documentation (#3530)
+- Add pytorch 1.6 to CI config (#3532)
+- Add config to runner meta (#3534)
+- Add eval-option flag for testing (#3537)
+- Add init_eval to evaluation hook (#3550)
+- Add include_bkg in ClassBalancedDataset (#3577)
+- Using config's loading in inference_detector (#3611)
+- Add atss 101 (#3639)
+- Support custom imports (#3641)
+- Update urls to download.openmmlab.com (#3665)
+
+
 ### v2.3.0 (5/8/2020)
 
 **Highlights**
