@@ -30,7 +30,8 @@ basic_arch_root = [
     'cascade_rcnn', 'double_heads', 'fcos', 'foveabox', 'free_anchor',
     'grid_rcnn', 'guided_anchoring', 'htc', 'libra_rcnn', 'atss', 'mask_rcnn',
     'ms_rcnn', 'nas_fpn', 'reppoints', 'retinanet', 'ssd', 'gn', 'ghm', 'fsaf',
-    'point_rend', 'nas_fcos', 'pisa', 'dynamic_rcnn', 'gfl', 'sabl', 'paa', 'yolo'
+    'point_rend', 'nas_fcos', 'pisa', 'dynamic_rcnn', 'gfl', 'sabl', 'paa',
+    'yolo'
 ]
 
 datasets_root = ['wider_face', 'pascal_voc', 'cityscapes', 'mask_rcnn']
