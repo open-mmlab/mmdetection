@@ -3,11 +3,11 @@
 ### v2.4.0 (5/9/2020)
 
 **Highlights**
-- Refactor common issues and add trouble shooting (#3530)
+- Fix lots of issues/bugs and reorganize the trouble shooting page
 - Support new methods [SABL](https://arxiv.org/abs/1912.04260), [YOLOv3](https://arxiv.org/abs/1804.02767), and [PAA Assign](https://arxiv.org/abs/2007.08103)
 - Support Batch Inference
 - Start to publish `mmdet` package to PyPI since v2.3.0
-- Switch model zoo to aliyun
+- Switch model zoo to download.openmmlab.com
 
 **Bug Fixes**
 - Fix default mean/std for onnx (#3491)
