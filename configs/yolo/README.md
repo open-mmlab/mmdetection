@@ -16,9 +16,9 @@
 
 |    Backbone     |  Scale  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Download  |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-------: |
-|   DarkNet-53    |   320   |   273e  |   2.7    |      63.9      |  27.9  | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_320_273e_coco/yolov3_d53_320_273e_coco-421362b6.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_320_273e_coco/yolov3_d53_320_273e_coco-20200819_172101.log.json) |
-|   DarkNet-53    |   416   |   273e  |   3.8    |      61.2      |  30.9  | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-416_273e_coco/yolov3_d53_mstrain-416_273e_coco-2b60fcd9.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-416_273e_coco/yolov3_d53_mstrain-416_273e_coco-20200819_173424.log.json) |
-|   DarkNet-53    |   608   |   273e  |   7.1    |      48.1      |  33.4  | [model](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-608_273e_coco/yolov3_d53_mstrain-608_273e_coco-139f5633.pth) &#124; [log](https://openmmlab.oss-accelerate.aliyuncs.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-608_273e_coco/yolov3_d53_mstrain-608_273e_coco-20200819_170820.log.json) |
+|   DarkNet-53    |   320   |   273e  |   2.7    |      63.9      |  27.9  | [model](http://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_320_273e_coco/yolov3_d53_320_273e_coco-421362b6.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_320_273e_coco/yolov3_d53_320_273e_coco-20200819_172101.log.json) |
+|   DarkNet-53    |   416   |   273e  |   3.8    |      61.2      |  30.9  | [model](http://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-416_273e_coco/yolov3_d53_mstrain-416_273e_coco-2b60fcd9.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-416_273e_coco/yolov3_d53_mstrain-416_273e_coco-20200819_173424.log.json) |
+|   DarkNet-53    |   608   |   273e  |   7.1    |      48.1      |  33.4  | [model](http://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-608_273e_coco/yolov3_d53_mstrain-608_273e_coco-139f5633.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/yolo/yolov3_d53_mstrain-608_273e_coco/yolov3_d53_mstrain-608_273e_coco-20200819_170820.log.json) |
 
 
 ## Credit
