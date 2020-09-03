@@ -33,8 +33,8 @@ class OHEMSampler(BaseSampler):
             if not hasattr(self.context, 'num_stages'):
                 bbox_results = self.context._bbox_forward(feats, rois)
             else:
-                bbox_results = self.context._bbox_forward(self.context.current_stage,
-                                                          feats, rois)
+                bbox_results = self.context._bbox_forward(
+                    self.context.current_stage, feats, rois)
             cls_score = bbox_results['cls_score']
             loss = self.bbox_head.loss(
                 cls_score=cls_score,
