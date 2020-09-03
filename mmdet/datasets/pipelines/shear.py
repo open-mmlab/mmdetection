@@ -1,4 +1,4 @@
-import cv2
+import mmcv
 import numpy as np
 
 from mmdet.core.mask import BitmapMasks, PolygonMasks
@@ -40,7 +40,7 @@ class Shear(object):
     segmentation).
 
     Args:
-        level (int | float): The level should be in range (0,_MAX_LEVEL].
+        level (int | float): The level should be in range [0,_MAX_LEVEL].
         img_fill_val (int | float | tuple): The filled values for image border.
             If float, the same fill value will be used for all the three
             channels of image. If tuple, the should be 3 elements.
@@ -49,8 +49,8 @@ class Shear(object):
             of the corresponding config. Default 255.
         prob (float): The probability for performing Shear and should be in
             range [0, 1].
-        axis (str): Shear images along with x-axis or y-axis. The option
-            of axis is 'x' or 'y'.
+        direction (str): The direction for shear, either "horizontal"
+            or "vertical".
         max_shear_magnitude (float): The maximum magnitude for Shear
             transformation.
     """
@@ -60,19 +60,16 @@ class Shear(object):
                  img_fill_val=128,
                  seg_ignore_label=255,
                  prob=0.5,
-                 axis='x',
+                 direction='horizontal',
                  max_shear_magnitude=0.3,
                  *args,
                  **kwargs):
         assert isinstance(level, (int, float)), \
             'The level must be type int or float.'
         assert 0 <= level <= _MAX_LEVEL, \
-            'The level used for calculating Translate\'s offset should be ' \
-            'in range (0,_MAX_LEVEL]'
-        assert 0 <= prob <= 1.0, \
-            'The probability of translation should be in range 0 to 1.'
+            'The level should be in range [0,_MAX_LEVEL]'
         if isinstance(img_fill_val, (float, int)):
-            img_fill_val = tuple([float(img_fill_val)])
+            img_fill_val = tuple([float(img_fill_val)] * 3)
         elif isinstance(img_fill_val, tuple):
             assert len(img_fill_val) == 3, \
                 'img_fill_val as tuple must have 3 elements.'
@@ -82,60 +79,50 @@ class Shear(object):
                 'img_fill_val must be float or tuple with 3 elements.')
         assert np.all([0 <= val <= 255 for val in img_fill_val]), \
             'all elements of img_fill_val should between range [0,255].'
-        assert axis in ('x', 'y'), \
-            'Translate should be alone with x-axis or y-axis.'
+        assert 0 <= prob <= 1.0, \
+            'The probability of shear should be in range [0, 1].'
+        assert direction in ('horizontal', 'vertical'), \
+            'direction must in be either "horizontal" or "vertical".'
         assert isinstance(max_shear_magnitude, float), \
             'max_shear_magnitude should be type float.'
-        assert 0. <= max_shear_magnitude < 1., \
-            'Defaultly max_shear_magnitude should be in range [0,1).'
+        assert 0. <= max_shear_magnitude <= 1., \
+            'Defaultly max_shear_magnitude should be in range [0,1].'
         self.level = level
         self.magnitude = level_to_value(level, max_shear_magnitude)
         self.img_fill_val = img_fill_val
         self.seg_ignore_label = seg_ignore_label
         self.prob = prob
-        self.axis = axis
+        self.direction = direction
         self.max_shear_magnitude = max_shear_magnitude
-
-    @staticmethod
-    def _get_shear_matrix(magnitude, axis='x'):
-        """Generates the transformation matrix for Shear augmentation."""
-        if axis == 'x':
-            shear_matrix = np.float32([[1, magnitude, 0], [0, 1, 0]])
-        elif axis == 'y':
-            shear_matrix = np.float32([[1, 0, 0], [magnitude, 1, 0]])
-        return shear_matrix
 
     def _shear_img(self,
                    results,
-                   shear_matrix,
-                   fill_val,
-                   flags=cv2.INTER_NEAREST,
-                   borderMode=cv2.BORDER_CONSTANT):
+                   magnitude,
+                   direction='horizontal',
+                   interpolation='bilinear'):
         """Shear the image.
 
         Args:
             results (dict): Result dict from loading pipeline.
-            shear_matrix (np.ndarray): Shear matrix with shape (2, 3).
-            fill_val (int | float | tuple): Value used in case of a constant
-                border. Same in ``cv2.warpAffine``.
-            flags: Interpolation methods used in ``cv2.warpAffine``.
-            borderMode: Pixel extrapolation method used in ``cv2.warpAffine``.
+            magnitude (int | float): The magnitude used for shear.
+            direction (str): The direction for shear, either "horizontal"
+                or "vertical".
+            interpolation (str): Same as in :func:`mmcv.imshear`.
         """
         for key in results.get('img_fields', ['img']):
-            img = results[key]
-            # dsize should be in type tuple[int] with format (w, h)
-            results[key] = cv2.warpAffine(
+            img = results[key].copy()
+            img_sheared = mmcv.imshear(
                 img,
-                shear_matrix,
-                dsize=img.shape[:2][::-1],
-                borderValue=fill_val,
-                flags=flags,
-                borderMode=borderMode).astype(img.dtype)
+                magnitude,
+                direction,
+                border_value=self.img_fill_val,
+                interpolation=interpolation)
+            results[key] = img_sheared.astype(img.dtype)
 
     def _shear_bboxes(self, results, magnitude):
         """Shear the bboxes."""
         h, w, c = results['img_shape']
-        if self.axis == 'x':
+        if self.direction == 'horizontal':
             shear_matrix = np.stack([[1, magnitude],
                                      [0, 1]]).astype(np.float32)  # [2, 2]
         else:
@@ -166,38 +153,44 @@ class Shear(object):
             results[key] = np.stack([min_x, min_y, max_x, max_y],
                                     axis=-1).astype(results[key].dtype)
 
-    def _shear_masks(self, results, shear_matrix, fill_val=0):
+    def _shear_masks(self,
+                     results,
+                     magnitude,
+                     direction='horizontal',
+                     fill_val=0,
+                     interpolation='bilinear'):
         """Shear the masks."""
         h, w, c = results['img_shape']
         for key in results.get('mask_fields', []):
-            if isinstance(results[key], PolygonMasks):
+            masks = results[key]
+            if isinstance(masks, PolygonMasks):
                 raise NotImplementedError
-            elif isinstance(results[key], BitmapMasks):
-                masks = results[key]
-                results[key] = masks.shear(
-                    shear_matrix, out_shape=(h, w), fill_val=fill_val)
+            elif isinstance(masks, BitmapMasks):
+                results[key] = masks.shear((h, w),
+                                           magnitude,
+                                           direction,
+                                           border_value=fill_val,
+                                           interpolation=interpolation)
 
     def _shear_seg(self,
                    results,
-                   shear_matrix,
+                   magnitude,
+                   direction='horizontal',
                    fill_val=255,
-                   flags=cv2.INTER_NEAREST,
-                   borderMode=cv2.BORDER_CONSTANT):
+                   interpolation='bilinear'):
         """Shear the segmentation maps."""
         for key in results.get('seg_fields', []):
-            seg = results[key]
-            results[key] = cv2.warpAffine(
+            seg = results[key].copy()
+            results[key] = mmcv.imshear(
                 seg,
-                shear_matrix,
-                dsize=seg.shape[:2][::-1],
-                borderValue=fill_val,
-                flags=flags,
-                borderMode=borderMode).astype(seg.dtype)
+                magnitude,
+                direction,
+                border_value=fill_val,
+                interpolation=interpolation).astype(seg.dtype)
 
     def _filter_invalid(self, results, min_bbox_size=0):
         """Filter bboxes and corresponding masks too small after shear
         augmentation."""
-        # The key correspondence from bboxes to labels and masks.
         bbox2label, bbox2mask, _ = bbox2fields()
         for key in results.get('bbox_fields', []):
             bbox_w = results[key][:, 2] - results[key][:, 0]
@@ -213,14 +206,18 @@ class Shear(object):
             if mask_key in results:
                 results[mask_key] = results[mask_key][valid_inds]
 
-    def __call__(self, results, random_negative_prob=0.5):
+    def __call__(self,
+                 results,
+                 random_negative_prob=0.5,
+                 interpolation='bilinear'):
         """Call function to shear images, bounding boxes, masks and semantic
         segmentation maps.
 
         Args:
             results (dict): Result dict from loading pipeline.
             random_negative_prob (float): The probability that turns the
-             offset negative.
+                offset negative.
+            interpolation (str): Same as in :func:`mmcv.imshear`.
 
         Returns:
             dict: Sheared results.
@@ -228,13 +225,21 @@ class Shear(object):
         if np.random.rand() > self.prob:
             return results
         magnitude = random_negative(self.magnitude, random_negative_prob)
-        # the shear matrix used for transformation
-        shear_matrix = self._get_shear_matrix(magnitude, self.axis)
-        self._shear_img(results, shear_matrix, fill_val=self.img_fill_val)
+        self._shear_img(results, magnitude, self.direction, interpolation)
         self._shear_bboxes(results, magnitude)
         # fill_val set to 0 for background of mask.
-        self._shear_masks(results, shear_matrix, fill_val=0)
-        self._shear_seg(results, shear_matrix, fill_val=self.seg_ignore_label)
+        self._shear_masks(
+            results,
+            magnitude,
+            self.direction,
+            fill_val=0,
+            interpolation=interpolation)
+        self._shear_seg(
+            results,
+            magnitude,
+            self.direction,
+            fill_val=self.seg_ignore_label,
+            interpolation=interpolation)
         self._filter_invalid(results)
         return results
 
@@ -244,6 +249,6 @@ class Shear(object):
         repr_str += f'img_fill_val={self.img_fill_val}, '
         repr_str += f'seg_ignore_label={self.seg_ignore_label}, '
         repr_str += f'prob={self.prob}, '
-        repr_str += f'axis={self.axis}, '
+        repr_str += f'direction={self.direction}, '
         repr_str += f'max_shear_magnitude={self.max_shear_magnitude})'
         return repr_str

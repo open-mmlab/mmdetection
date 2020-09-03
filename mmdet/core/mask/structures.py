@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
 
-import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -299,24 +298,38 @@ class BitmapMasks(BaseInstanceMasks):
         return BitmapMasks(expanded_mask, expanded_h, expanded_w)
 
     def shear(self,
-              shear_matrix,
               out_shape,
-              fill_val=0,
-              flags=cv2.INTER_NEAREST,
-              borderMode=cv2.BORDER_CONSTANT):
+              magnitude,
+              direction='horizontal',
+              border_value=0,
+              interpolation='bilinear'):
+        """Shear the BitmapMasks.
+
+        Args:
+            out_shape(tuple[int]): Shape for output mask, format (h, w).
+            magnitude (int | float): The magnitude used for shear.
+            direction (str): The shear direction, either "horizontal"
+                or "vertical".
+            border_value (int | tuple[int]): Value used in case of a
+                constant border.
+            interpolation (str): Same as in :func:`mmcv.imshear`.
+
+        Returns:
+            BitmapMasks: The sheared masks.
+        """
         if len(self.masks) == 0:
             sheared_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
-            # dsize should be in type tuple[int] with format: (w, h)
-            sheared_masks = np.stack([
-                cv2.warpAffine(
-                    mask,
-                    shear_matrix,
-                    dsize=out_shape[::-1],
-                    borderValue=fill_val,
-                    flags=flags,
-                    borderMode=borderMode) for mask in self.masks
-            ]).astype(self.masks.dtype)
+            sheared_masks = mmcv.imshear(
+                self.masks.transpose((1, 2, 0)),
+                magnitude,
+                direction,
+                border_value=border_value,
+                interpolation=interpolation)
+            if sheared_masks.ndim == 2:
+                sheared_masks = sheared_masks[:, :, None]
+            sheared_masks = sheared_masks.transpose(
+                (2, 0, 1)).astype(self.masks.dtype)
         return BitmapMasks(sheared_masks, *out_shape)
 
     @property
@@ -521,11 +534,11 @@ class PolygonMasks(BaseInstanceMasks):
         return PolygonMasks(resized_masks, *out_shape)
 
     def shear(self,
-              shear_matrix,
               out_shape,
-              fill_val=0,
-              flags=cv2.INTER_NEAREST,
-              borderMode=cv2.BORDER_CONSTANT):
+              magnitude,
+              direction='horizontal',
+              border_value=0,
+              interpolation='bilinear'):
         raise NotImplementedError
 
     def to_bitmap(self):
