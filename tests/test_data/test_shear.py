@@ -80,7 +80,7 @@ def test_shear():
         build_from_cfg(transform, PIPELINES)
 
     results = construct_toy_data()
-    # test case when no shear aug (level=0, axis='x')
+    # test case when no shear aug (level=0, direction='horizontal')
     img_fill_val = (104, 116, 124)
     seg_ignore_label = 255
     transform = dict(
@@ -89,31 +89,35 @@ def test_shear():
         prob=1.,
         img_fill_val=img_fill_val,
         seg_ignore_label=seg_ignore_label,
-        axis='x')
+        direction='horizontal')
     shear_module = build_from_cfg(transform, PIPELINES)
     results_wo_shear = shear_module(copy.deepcopy(results))
     check_shear(results, results_wo_shear)
 
-    # test case when no shear aug (level=0, axis='y')
+    # test case when no shear aug (level=0, direction='vertical')
     transform = dict(
         type='Shear',
         level=0,
         prob=1.,
         img_fill_val=img_fill_val,
         seg_ignore_label=seg_ignore_label,
-        axis='y')
+        direction='vertical')
     shear_module = build_from_cfg(transform, PIPELINES)
     results_wo_shear = shear_module(copy.deepcopy(results))
     check_shear(results, results_wo_shear)
 
     # test case when no shear aug (prob<=0)
     transform = dict(
-        type='Shear', level=10, prob=0., img_fill_val=img_fill_val, axis='y')
+        type='Shear',
+        level=10,
+        prob=0.,
+        img_fill_val=img_fill_val,
+        direction='vertical')
     shear_module = build_from_cfg(transform, PIPELINES)
     results_wo_shear = shear_module(copy.deepcopy(results))
     check_shear(results, results_wo_shear)
 
-    # test shear horizonally, magnitude=1
+    # test shear horizontally, magnitude=1
     transform = dict(
         type='Shear',
         level=10,
