@@ -297,6 +297,39 @@ class BitmapMasks(BaseInstanceMasks):
                           left:left + self.width] = self.masks
         return BitmapMasks(expanded_mask, expanded_h, expanded_w)
 
+    def translate(self,
+                  out_shape,
+                  offset,
+                  direction='horizontal',
+                  fill_val=0,
+                  interpolation='bilinear'):
+        """Translate the BitmapMasks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            offset (int | float): The offset for translate.
+            direction (str): The translate direction, either "horizontal"
+                or "vertical".
+            fill_val (int | float): Border value. Default 0 for masks.
+
+        Returns:
+            BitmapMasks: Translated BitmapMasks.
+        """
+        if len(self.masks) == 0:
+            translated_masks = np.empty((0, *out_shape), dtype=np.uint8)
+        else:
+            translated_masks = mmcv.imtranslate(
+                self.masks.transpose((1, 2, 0)),
+                offset,
+                direction,
+                border_value=fill_val,
+                interpolation=interpolation)
+            if translated_masks.ndim == 2:
+                translated_masks = translated_masks[:, :, None]
+            translated_masks = translated_masks.transpose(
+                (2, 0, 1)).astype(self.masks.dtype)
+        return BitmapMasks(translated_masks, *out_shape)
+
     @property
     def areas(self):
         """See :py:attr:`BaseInstanceMasks.areas`."""
@@ -497,6 +530,15 @@ class PolygonMasks(BaseInstanceMasks):
                 resized_mask.append(p)
             resized_masks.append(resized_mask)
         return PolygonMasks(resized_masks, *out_shape)
+
+    def translate(self,
+                  out_shape,
+                  offset,
+                  direction='horizontal',
+                  fill_val=0,
+                  interpolation='bilinear'):
+        """Translate the PolygonMasks."""
+        raise NotImplementedError
 
     def to_bitmap(self):
         """convert polygon masks to bitmap masks."""
