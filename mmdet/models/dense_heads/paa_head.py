@@ -137,6 +137,8 @@ class PAAHead(ATSSHead):
                 anchor_list,
             )
             num_pos = sum(num_pos)
+            if num_pos == 0:
+                num_pos = len(img_metas)
         # convert all tensor list to a flatten tensor
         cls_scores = torch.cat(cls_scores, 0).view(-1, cls_scores[0].size(-1))
         bbox_preds = torch.cat(bbox_preds, 0).view(-1, bbox_preds[0].size(-1))
