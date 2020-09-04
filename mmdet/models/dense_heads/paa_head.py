@@ -120,7 +120,6 @@ class PAAHead(ATSSHead):
         bbox_preds = [item.reshape(-1, 4) for item in bbox_preds]
         iou_preds = levels_to_images(iou_preds)
         iou_preds = [item.reshape(-1, 1) for item in iou_preds]
-
         pos_losses_list, = multi_apply(self.get_pos_loss, anchor_list,
                                        cls_scores, bbox_preds, labels,
                                        labels_weight, bboxes_target,
@@ -203,6 +202,8 @@ class PAAHead(ATSSHead):
         Returns:
             Tensor: Losses of all positive samples in single image.
         """
+        if not len(pos_inds):
+            return cls_score.new([]),
         anchors_all_level = torch.cat(anchors, 0)
         pos_scores = cls_score[pos_inds]
         pos_bbox_pred = bbox_pred[pos_inds]
