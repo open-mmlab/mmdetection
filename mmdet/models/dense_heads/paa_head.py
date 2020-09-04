@@ -362,6 +362,8 @@ class PAAHead(ATSSHead):
         # https://github.com/kkhoot/PAA/issues/8 and
         # https://github.com/kkhoot/PAA/issues/9.
         fgs = gmm_assignment == 0
+        pos_inds_temp = fgs.new_tensor([], dtype=torch.long)
+        ignore_inds_temp = fgs.new_tensor([], dtype=torch.long)
         if fgs.nonzero().numel():
             _, pos_thr_ind = scores[fgs].topk(1)
             pos_inds_temp = pos_inds_gmm[fgs][:pos_thr_ind + 1]
