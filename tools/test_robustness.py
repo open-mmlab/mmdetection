@@ -103,13 +103,12 @@ def single_gpu_test(model, data_loader, show=False):
             model.module.show_result(data, result, dataset.img_norm_cfg)
 
         # encode mask results
-        if isinstance(result, tuple):
-            bbox_results, mask_results = result
-            encoded_mask_results = encode_mask_results(mask_results)
-            result = bbox_results, encoded_mask_results
-        results.append(result)
+        if isinstance(result[0], tuple):
+            result = [(bbox_results, encode_mask_results(mask_results))
+                      for bbox_results, mask_results in result]
+        results.extend(result)
 
-        batch_size = data['img'][0].size(0)
+        batch_size = len(result)
         for _ in range(batch_size):
             prog_bar.update()
     return results
@@ -126,16 +125,13 @@ def multi_gpu_test(model, data_loader, tmpdir=None):
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
             # encode mask results
-            if isinstance(result, tuple):
-                bbox_results, mask_results = result
-                encoded_mask_results = encode_mask_results(mask_results)
-                result = bbox_results, encoded_mask_results
-        results.append(result)
-
-        results.append(result)
+            if isinstance(result[0], tuple):
+                result = [(bbox_results, encode_mask_results(mask_results))
+                          for bbox_results, mask_results in result]
+        results.extend(result)
 
         if rank == 0:
-            batch_size = data['img'][0].size(0)
+            batch_size = len(result)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 

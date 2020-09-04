@@ -68,22 +68,22 @@ def test_aug_test_size():
 def test_cascade_rcnn_aug_test():
     aug_result = model_aug_test_template(
         'configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py')
-    assert len(aug_result) == 80
+    assert len(aug_result[0]) == 80
 
 
 def test_mask_rcnn_aug_test():
     aug_result = model_aug_test_template(
         'configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py')
-    assert len(aug_result) == 2
-    assert len(aug_result[0]) == 80
-    assert len(aug_result[1]) == 80
+    assert len(aug_result[0]) == 2
+    assert len(aug_result[0][0]) == 80
+    assert len(aug_result[0][1]) == 80
 
 
 def test_htc_aug_test():
     aug_result = model_aug_test_template('configs/htc/htc_r50_fpn_1x_coco.py')
-    assert len(aug_result) == 2
-    assert len(aug_result[0]) == 80
-    assert len(aug_result[1]) == 80
+    assert len(aug_result[0]) == 2
+    assert len(aug_result[0][0]) == 80
+    assert len(aug_result[0][1]) == 80
 
 
 def test_cornernet_aug_test():
@@ -115,4 +115,4 @@ def test_cornernet_aug_test():
     model.eval()
     with torch.no_grad():
         aug_result = model(return_loss=False, rescale=True, **results)
-    assert len(aug_result) == 80
+    assert len(aug_result[0]) == 80
