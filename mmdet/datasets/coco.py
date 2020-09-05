@@ -93,12 +93,15 @@ class CocoDataset(CustomDataset):
             ids_in_cat |= set(self.coco.cat_img_map[class_id])
         ids_in_cat &= ids_with_ann
 
+        valid_img_ids = []
         for i, img_info in enumerate(self.data_infos):
             img_id = self.img_ids[i]
             if self.filter_empty_gt and img_id not in ids_in_cat:
                 continue
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
+                valid_img_ids.append(img_id)
+        self.img_ids = valid_img_ids
         return valid_inds
 
     def _parse_ann_info(self, img_info, ann_info):

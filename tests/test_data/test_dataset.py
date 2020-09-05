@@ -476,6 +476,7 @@ def test_allow_empty_images(classes, expected_length):
         pipeline=[],
         classes=classes,
         filter_empty_gt=True)
+
     # Get all
     full_dataset = dataset_class(
         ann_file='tests/data/coco_sample.json',
@@ -485,6 +486,8 @@ def test_allow_empty_images(classes, expected_length):
         filter_empty_gt=False)
 
     assert len(filtered_dataset) == expected_length
+    assert len(filtered_dataset.img_ids) == expected_length
     assert len(full_dataset) == 3
+    assert len(full_dataset.img_ids) == 3
     assert filtered_dataset.CLASSES == classes
     assert full_dataset.CLASSES == classes
