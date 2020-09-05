@@ -460,3 +460,28 @@ def _build_demo_runner():
     runner = EpochBasedRunner(
         model=model, work_dir=tmp_dir, logger=logging.getLogger())
     return runner
+
+
+
+@pytest.mark.parametrize('classes, expected_length', [(['bus'], 2),
+                                                      (['car'], 1),
+                                                      (['bus', 'car'], 2)])
+def test_allow_empty_images(classes, expected_length):
+    dataset_class = DATASETS.get('CocoDataset')
+    # Filter empty images
+    filtered_dataset = dataset_class(
+        ann_file='tests/data/coco_sample.json',
+        img_prefix='tests/data',
+        pipeline=[],
+        classes=classes,
+        filter_empty_gt=True)
+    # Get all
+    full_dataset = dataset_class(
+        ann_file='tests/data/coco_sample.json',
+        img_prefix='tests/data',
+        pipeline=[],
+        classes=classes,
+        filter_empty_gt=False)
+
+    assert len(filtered_dataset) == expected_length
+    assert len(full_dataset) == 3
