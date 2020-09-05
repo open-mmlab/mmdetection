@@ -73,7 +73,7 @@ class XMLDataset(CustomDataset):
                     subset_data_infos.append(data_info)
                     break
 
-        return subset_data_infos
+        self.data_infos = subset_data_infos
 
     def get_ann_info(self, idx):
         """Get annotation from XML file by index.

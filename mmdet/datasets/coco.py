@@ -84,42 +84,24 @@ class CocoDataset(CustomDataset):
         ann_info = self.coco.load_anns(ann_ids)
         return [ann['category_id'] for ann in ann_info]
 
-    def _filter_imgs(self, min_size=32):
-        """Filter images too small or without ground truths."""
-        valid_inds = []
-        ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
-        for i, img_info in enumerate(self.data_infos):
-            if self.filter_empty_gt and self.img_ids[i] not in ids_with_ann:
-                continue
-            if min(img_info['width'], img_info['height']) >= min_size:
-                valid_inds.append(i)
-        return valid_inds
-
     def get_subset_by_classes(self):
         """Get img ids that contain any category in class_ids.
 
         Different from the coco.getImgIds(), this function returns the id if
-        the img contains one of the categories rather than all.
-
-        Args:
-            class_ids (list[int]): list of category ids
-
-        Return:
-            ids (list[int]): integer list of img ids
+        the img contains one of the categories rather than all. For now, this
+        function is only triggered when `self.filter_empty_gt=True`.
         """
+        ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
+        valid_data_infos = []
+        valid_img_ids = []
+        for i, img_info in enumerate(self.data_infos):
+            img_id = self.img_ids[i]
+            if img_id in ids_with_ann:
+                valid_img_ids.append(img_id)
+                valid_data_infos.append(img_info)
 
-        if self.filter_empty_gt:
-            ids = set()
-            for i, class_id in enumerate(self.cat_ids):
-                ids |= set(self.coco.cat_img_map[class_id])
-            self.img_ids = list(ids)
-
-        data_infos = []
-        for i in self.img_ids:
-            info = self.coco.load_imgs([i])[0]
-            info['filename'] = info['file_name']
-            data_infos.append(info)
-        return data_infos
+        self.data_infos = valid_data_infos
+        self.img_ids = valid_img_ids
 
     def _parse_ann_info(self, img_info, ann_info):
         """Parse bbox and mask annotation.

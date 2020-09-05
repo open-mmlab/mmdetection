@@ -42,7 +42,7 @@ class CustomDataset(Dataset):
             ``img_prefix``, ``seg_prefix``, ``proposal_file`` if specified.
         test_mode (bool, optional): If set True, annotation will not be loaded.
         filter_empty_gt (bool, optional): If set true, images without bounding
-            boxes will be filtered out.
+            boxes of classes for training will be filtered out.
     """
 
     CLASSES = None
@@ -80,9 +80,9 @@ class CustomDataset(Dataset):
                                               self.proposal_file)
         # load annotations (and proposals)
         self.data_infos = self.load_annotations(self.ann_file)
-        # filter data infos if classes are customized
-        if self.custom_classes:
-            self.data_infos = self.get_subset_by_classes()
+        # filter data infos if datasets want to filter empty gt images
+        if self.filter_empty_gt:
+            self.get_subset_by_classes()
 
         if self.proposal_file is not None:
             self.proposals = self.load_proposals(self.proposal_file)
@@ -254,7 +254,8 @@ class CustomDataset(Dataset):
         return class_names
 
     def get_subset_by_classes(self):
-        return self.data_infos
+        """Get subset of dataset by classes."""
+        pass
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
