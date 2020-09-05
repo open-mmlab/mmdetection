@@ -25,12 +25,17 @@ class CityscapesDataset(CocoDataset):
         """Filter images too small or without ground truths."""
         valid_inds = []
         ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
+        ids_in_cat = set()
+        for i, class_id in enumerate(self.cat_ids):
+            ids_in_cat |= set(self.coco.cat_img_map[class_id])
+        ids_in_cat &= ids_with_ann
+
         for i, img_info in enumerate(self.data_infos):
             img_id = img_info['id']
             ann_ids = self.coco.getAnnIds(imgIds=[img_id])
             ann_info = self.coco.loadAnns(ann_ids)
             all_iscrowd = all([_['iscrowd'] for _ in ann_info])
-            if self.filter_empty_gt and (self.img_ids[i] not in ids_with_ann
+            if self.filter_empty_gt and (self.img_ids[i] not in ids_in_cat
                                          or all_iscrowd):
                 continue
             if min(img_info['width'], img_info['height']) >= min_size:

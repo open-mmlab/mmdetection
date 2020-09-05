@@ -204,11 +204,18 @@ def test_dataset_evaluation():
     tmp_dir.cleanup()
 
 
+@patch('mmdet.datasets.CocoDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.CustomDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.XMLDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.CityscapesDataset.load_annotations', MagicMock)
+@patch('mmdet.datasets.CocoDataset._filter_imgs', MagicMock)
+@patch('mmdet.datasets.CustomDataset._filter_imgs', MagicMock)
+@patch('mmdet.datasets.XMLDataset._filter_imgs', MagicMock)
+@patch('mmdet.datasets.CityscapesDataset._filter_imgs', MagicMock)
 @pytest.mark.parametrize('dataset',
                          ['CocoDataset', 'VOCDataset', 'CityscapesDataset'])
 def test_custom_classes_override_default(dataset):
     dataset_class = DATASETS.get(dataset)
-    dataset_class.load_annotations = MagicMock()
     if dataset in ['CocoDataset', 'CityscapesDataset']:
         dataset_class.coco = MagicMock()
         dataset_class.cat_ids = MagicMock()
@@ -225,7 +232,6 @@ def test_custom_classes_override_default(dataset):
 
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ('bus', 'car')
-    assert custom_dataset.custom_classes
 
     # Test setting classes as a list
     custom_dataset = dataset_class(
@@ -237,7 +243,6 @@ def test_custom_classes_override_default(dataset):
 
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ['bus', 'car']
-    assert custom_dataset.custom_classes
 
     # Test overriding not a subset
     custom_dataset = dataset_class(
@@ -249,7 +254,6 @@ def test_custom_classes_override_default(dataset):
 
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ['foo']
-    assert custom_dataset.custom_classes
 
     # Test default behavior
     custom_dataset = dataset_class(
@@ -260,7 +264,6 @@ def test_custom_classes_override_default(dataset):
         img_prefix='VOC2007' if dataset == 'VOCDataset' else '')
 
     assert custom_dataset.CLASSES == original_classes
-    assert not custom_dataset.custom_classes
 
     # Test sending file path
     import tempfile
@@ -277,7 +280,6 @@ def test_custom_classes_override_default(dataset):
 
     assert custom_dataset.CLASSES != original_classes
     assert custom_dataset.CLASSES == ['bus', 'car']
-    assert custom_dataset.custom_classes
 
 
 def test_dataset_wrapper():
@@ -484,3 +486,5 @@ def test_allow_empty_images(classes, expected_length):
 
     assert len(filtered_dataset) == expected_length
     assert len(full_dataset) == 3
+    assert filtered_dataset.CLASSES == classes
+    assert full_dataset.CLASSES == classes

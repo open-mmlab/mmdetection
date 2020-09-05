@@ -84,24 +84,22 @@ class CocoDataset(CustomDataset):
         ann_info = self.coco.load_anns(ann_ids)
         return [ann['category_id'] for ann in ann_info]
 
-    def get_subset_by_classes(self):
-        """Get img ids that contain any category in class_ids.
-
-        Different from the coco.getImgIds(), this function returns the id if
-        the img contains one of the categories rather than all. For now, this
-        function is only triggered when `self.filter_empty_gt=True`.
-        """
+    def _filter_imgs(self, min_size=32):
+        """Filter images too small or without ground truths."""
+        valid_inds = []
         ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
-        valid_data_infos = []
-        valid_img_ids = []
+        ids_in_cat = set()
+        for i, class_id in enumerate(self.cat_ids):
+            ids_in_cat |= set(self.coco.cat_img_map[class_id])
+        ids_in_cat &= ids_with_ann
+
         for i, img_info in enumerate(self.data_infos):
             img_id = self.img_ids[i]
-            if img_id in ids_with_ann:
-                valid_img_ids.append(img_id)
-                valid_data_infos.append(img_info)
-
-        self.data_infos = valid_data_infos
-        self.img_ids = valid_img_ids
+            if self.filter_empty_gt and img_id not in ids_in_cat:
+                continue
+            if min(img_info['width'], img_info['height']) >= min_size:
+                valid_inds.append(i)
+        return valid_inds
 
     def _parse_ann_info(self, img_info, ann_info):
         """Parse bbox and mask annotation.
