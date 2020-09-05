@@ -462,7 +462,6 @@ def _build_demo_runner():
     return runner
 
 
-
 @pytest.mark.parametrize('classes, expected_length', [(['bus'], 2),
                                                       (['car'], 1),
                                                       (['bus', 'car'], 2)])

@@ -237,12 +237,13 @@ class CustomDataset(Dataset):
                 string, take it as a file name. The file contains the name of
                 classes where each line contains one class name. If classes is
                 a tuple or list, override the CLASSES defined by the dataset.
+
+        Returns:
+            tuple[str]: Names of categories of the dataset.
         """
         if classes is None:
-            cls.custom_classes = False
             return cls.CLASSES
 
-        cls.custom_classes = True
         if isinstance(classes, str):
             # take it as a file path
             class_names = mmcv.list_from_file(classes)
