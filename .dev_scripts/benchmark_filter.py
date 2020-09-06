@@ -30,7 +30,8 @@ basic_arch_root = [
     'cascade_rcnn', 'double_heads', 'fcos', 'foveabox', 'free_anchor',
     'grid_rcnn', 'guided_anchoring', 'htc', 'libra_rcnn', 'atss', 'mask_rcnn',
     'ms_rcnn', 'nas_fpn', 'reppoints', 'retinanet', 'ssd', 'gn', 'ghm', 'fsaf',
-    'point_rend', 'nas_fcos', 'pisa', 'dynamic_rcnn'
+    'point_rend', 'nas_fcos', 'pisa', 'dynamic_rcnn', 'gfl', 'sabl', 'paa',
+    'yolo'
 ]
 
 datasets_root = ['wider_face', 'pascal_voc', 'cityscapes', 'mask_rcnn']
@@ -90,7 +91,11 @@ benchmark_pool = [
     'configs/pascal_voc/ssd300_voc0712.py',
     'configs/nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco.py',
     'configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
-    'configs/gn+ws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py'
+    'configs/gn+ws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py',
+    'configs/gfl/gfl_r50_fpn_1x_coco.py',
+    'configs/paa/paa_r50_fpn_1x_coco.py',
+    'configs/sabl/sabl_retinanet_r50_fpn_1x_coco.py',
+    'configs/yolo/yolov3_d53_320_273e_coco.py'
 ]
 
 

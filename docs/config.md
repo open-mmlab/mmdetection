@@ -327,7 +327,9 @@ data = dict(
                     dict(type='ImageToTensor', keys=['img']),
                     dict(type='Collect', keys=['img'])
                 ])
-        ]))
+        ],
+        samples_per_gpu=2  # Batch size of a single GPU used in testing
+        ))
 evaluation = dict(  # The config to build the evaluation hook, refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/evaluation/eval_hooks.py#L7 for more details.
     interval=1,  # Evaluation interval
     metric=['bbox', 'segm'])  # Metrics used during evaluation
