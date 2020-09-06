@@ -132,6 +132,25 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
+    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+        """Rotate the masks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            angle (int | float): Rotation angle in degrees. Positive values
+                mean counter-clockwise rotation.
+            center (tuple[float], optional): Center point (w, h) of the
+                rotation in source image. If not specified, the center of
+                the image will be used.
+            scale (int | float): Isotropic scale factor.
+            fill_val (int | float): Border value. Default 0 for masks.
+
+        Returns:
+            Rotated masks.
+        """
+        pass
+
 
 class BitmapMasks(BaseInstanceMasks):
     """This class represents masks in the form of bitmaps.
@@ -305,8 +324,8 @@ class BitmapMasks(BaseInstanceMasks):
             angle (int | float): Rotation angle in degrees. Positive values
                 mean counter-clockwise rotation.
             center (tuple[float], optional): Center point (w, h) of the
-            rotation in source image. If not specified, the center of the
-                image will be used.
+                rotation in source image. If not specified, the center of
+                the image will be used.
             scale (int | float): Isotropic scale factor.
             fill_val (int | float): Border value. Default 0 for masks.
 

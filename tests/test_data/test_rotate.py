@@ -9,7 +9,7 @@ from mmdet.datasets.builder import PIPELINES
 
 
 def construct_toy_data(poly2mask=True):
-    img = np.array([[1, 2, 3, 4], [5, 6, 7, 8]]).astype(np.uint8)
+    img = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.uint8)
     img = np.stack([img, img, img], axis=-1)
     results = dict()
     # image
@@ -38,28 +38,28 @@ def construct_toy_data(poly2mask=True):
     return results
 
 
-def _check_fields(results, results_shared, keys):
+def _check_fields(results, results_rotated, keys):
     for key in keys:
         if isinstance(results[key], (BitmapMasks, PolygonMasks)):
             assert np.equal(results[key].to_ndarray(),
-                            results_shared[key].to_ndarray()).all()
+                            results_rotated[key].to_ndarray()).all()
         else:
-            assert np.equal(results[key], results_shared[key]).all()
+            assert np.equal(results[key], results_rotated[key]).all()
 
 
-def check_rotate(results, results_shared):
+def check_rotate(results, results_rotated):
     # check image
-    _check_fields(results, results_shared, results.get('img_fields', ['img']))
+    _check_fields(results, results_rotated, results.get('img_fields', ['img']))
     # check bboxes
-    _check_fields(results, results_shared, results.get('bbox_fields', []))
+    _check_fields(results, results_rotated, results.get('bbox_fields', []))
     # check masks
-    _check_fields(results, results_shared, results.get('mask_fields', []))
+    _check_fields(results, results_rotated, results.get('mask_fields', []))
     # check segmentations
-    _check_fields(results, results_shared, results.get('seg_fields', []))
+    _check_fields(results, results_rotated, results.get('seg_fields', []))
     # _check gt_labels
     if 'gt_labels' in results:
         assert np.equal(results['gt_labels'],
-                        results_shared['gt_labels']).all()
+                        results_rotated['gt_labels']).all()
 
 
 def test_rotate():
