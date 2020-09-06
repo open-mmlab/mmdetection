@@ -132,6 +132,28 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
+    def translate(self,
+                  out_shape,
+                  offset,
+                  direction='horizontal',
+                  fill_val=0,
+                  interpolation='bilinear'):
+        """Translate the masks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            offset (int | float): The offset for translate.
+            direction (str): The translate direction, either "horizontal"
+                or "vertical".
+            fill_val (int | float): Border value. Default 0.
+            interpolation (str): Same as :func:`mmcv.imtranslate`.
+
+        Returns:
+            Translated masks.
+        """
+        pass
+
 
 class BitmapMasks(BaseInstanceMasks):
     """This class represents masks in the form of bitmaps.
@@ -311,6 +333,7 @@ class BitmapMasks(BaseInstanceMasks):
             direction (str): The translate direction, either "horizontal"
                 or "vertical".
             fill_val (int | float): Border value. Default 0 for masks.
+            interpolation (str): Same as :func:`mmcv.imtranslate`.
 
         Returns:
             BitmapMasks: Translated BitmapMasks.
