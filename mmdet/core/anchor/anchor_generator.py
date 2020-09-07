@@ -12,7 +12,7 @@ class AnchorGenerator(object):
 
     Args:
         strides (list[int] | list[tuple[int, int]]): Strides of anchors
-            in multiple feature levels.
+            in multiple feature levels in order (w, h).
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
         scales (list[int] | None): Anchor scales for anchors in a single level.
