@@ -49,7 +49,7 @@ test_cfg = dict(
     min_bbox_size=0,
     score_thr=0.05,
     conf_thr=0.005,
-    nms=dict(type='nms', iou_thr=0.45),
+    nms=dict(type='nms', iou_thr=0.7),
     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
@@ -100,13 +100,17 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+# ann_file=data_root + 'annotations/instances_val2017.json',
+#         img_prefix=data_root + 'val2017/',
+        ann_file=data_root + 'annotations/coco_yolo_5k.json', #######!!!!!!!!!!!!!!!
+        img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        # ann_file=data_root + 'annotations/instances_val2017.json',
+        # img_prefix=data_root + 'val2017/',
+        ann_file=data_root + 'annotations/coco_yolo_5k.json', #######!!!!!!!!!!!!!!!
+        img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
         pipeline=test_pipeline))
 # optimizer
 optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
