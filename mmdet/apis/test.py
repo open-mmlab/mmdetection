@@ -25,7 +25,10 @@ def single_gpu_test(model,
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
 
+        batch_size = len(result)
         if show or out_dir:
+            assert batch_size == 1, 'show or out during test only support ' \
+                                    'batch size of 1'
             img_tensor = data['img'][0]
             img_metas = data['img_metas'][0].data[0]
             imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
@@ -45,7 +48,7 @@ def single_gpu_test(model,
 
                 model.module.show_result(
                     img_show,
-                    result,
+                    result[0],
                     show=show,
                     out_file=out_file,
                     score_thr=show_score_thr)
@@ -56,7 +59,6 @@ def single_gpu_test(model,
                       for bbox_results, mask_results in result]
         results.extend(result)
 
-        batch_size = len(result)
         for _ in range(batch_size):
             prog_bar.update()
     return results
