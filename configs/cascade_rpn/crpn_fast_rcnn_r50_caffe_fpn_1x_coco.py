@@ -15,7 +15,7 @@ model = dict(
             bbox_coder=dict(target_stds=[0.04, 0.04, 0.08, 0.08]),
             loss_cls=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.5),
-        )))
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))))
 # model training and testing settings
 train_cfg = dict(
     rcnn=dict(
@@ -58,8 +58,17 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    train=dict(proposal_file='proposals/train.pkl', pipeline=train_pipeline),
-    val=dict(proposal_file='proposals/val.pkl', pipeline=test_pipeline),
-    test=dict(proposal_file='proposals/val.pkl', pipeline=test_pipeline))
+    train=dict(
+        proposal_file=data_root +
+        'proposals/crpn_r50_caffe_fpn_1x_train2017.pkl',
+        pipeline=train_pipeline),
+    val=dict(
+        proposal_file=data_root +
+        'proposals/crpn_r50_caffe_fpn_1x_val2017.pkl',
+        pipeline=test_pipeline),
+    test=dict(
+        proposal_file=data_root +
+        'proposals/crpn_r50_caffe_fpn_1x_val2017.pkl',
+        pipeline=test_pipeline))
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
