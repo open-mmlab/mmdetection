@@ -1,5 +1,4 @@
 import math
-
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
@@ -312,7 +311,7 @@ class Res2Net(ResNet):
             base_width=self.base_width,
             base_channels=self.base_channels,
             **kwargs)
-    
+
     def init_weights(self, pretrained=None):
         """Initialize the weights in backbone.
         Args:
