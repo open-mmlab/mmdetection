@@ -42,7 +42,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.3.0 was released in 5/8/2020.
+v2.4.0 was released in 5/9/2020.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -99,6 +99,7 @@ Supported methods:
 - [x] [CornerNet](configs/cornernet/README.md)
 - [x] [Side-Aware Boundary Localization](configs/sabl/README.md)
 - [x] [YOLOv3](configs/yolo/README.md)
+- [x] [PAA](configs/paa/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
