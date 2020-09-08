@@ -9,7 +9,7 @@ from mmdet.datasets.builder import PIPELINES
 
 
 def construct_toy_data(poly2mask=True):
-    img = np.array([[1, 2, 3, 4], [5, 6, 7, 8]]).astype(np.uint8)
+    img = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.uint8)
     img = np.stack([img, img, img], axis=-1)
     results = dict()
     # image
@@ -175,7 +175,7 @@ def test_shear():
     # test mask with type PolygonMasks
     results = construct_toy_data(poly2mask=False)
     transform = dict(
-        type='Shear', level=10, prob=1., img_fill_val=img_fill_val, axis='y')
+        type='Shear', level=10, prob=1., img_fill_val=img_fill_val)
     shear_module = build_from_cfg(transform, PIPELINES)
     with pytest.raises(NotImplementedError):
         shear_module(copy.deepcopy(results))
