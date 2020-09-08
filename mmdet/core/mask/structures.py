@@ -132,6 +132,29 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
+    def shear(self,
+              out_shape,
+              magnitude,
+              direction='horizontal',
+              border_value=0,
+              interpolation='bilinear'):
+        """Shear the masks.
+
+        Args:
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
+            magnitude (int | float): The magnitude used for shear.
+            direction (str): The shear direction, either "horizontal"
+                or "vertical".
+            border_value (int | tuple[int]): Value used in case of a
+                constant border. Default 0.
+            interpolation (str): Same as in :func:`mmcv.imshear`.
+
+        Returns:
+            ndarray: Sheared masks.
+        """
+        pass
+
 
 class BitmapMasks(BaseInstanceMasks):
     """This class represents masks in the form of bitmaps.
@@ -306,7 +329,7 @@ class BitmapMasks(BaseInstanceMasks):
         """Shear the BitmapMasks.
 
         Args:
-            out_shape(tuple[int]): Shape for output mask, format (h, w).
+            out_shape (tuple[int]): Shape for output mask, format (h, w).
             magnitude (int | float): The magnitude used for shear.
             direction (str): The shear direction, either "horizontal"
                 or "vertical".
