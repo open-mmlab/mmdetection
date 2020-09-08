@@ -122,6 +122,7 @@ class Darknet(nn.Module):
 
         self.norm_eval = norm_eval
 
+    # TODO: fix forward
     def forward(self, x):
         outs = []
         for i, layer_name in enumerate(self.cr_blocks):
@@ -196,4 +197,60 @@ class Darknet(nn.Module):
         for idx in range(res_repeat):
             model.add_module('res{}'.format(idx),
                              ResBlock(out_channels, **cfg))
+        return model
+
+    @staticmethod
+    def make_csp_conv_res_block(in_channels,
+                                out_channels,
+                                res_repeat,
+                                conv_cfg=None,
+                                norm_cfg=dict(type='BN', requires_grad=True),
+                                act_cfg=dict(type='LeakyReLU',
+                                             negative_slope=0.1)):
+        """ TODO: change documentation
+        In Darknet backbone, ConvLayer is usually followed by ResBlock. This
+        function will make that. The Conv layers always have 3x3 filters with
+        stride=2. The number of the filters in Conv layer is the same as the
+        out channels of the ResBlock.
+
+        Args:
+            in_channels (int): The number of input channels.
+            out_channels (int): The number of output channels.
+            res_repeat (int): The number of ResBlocks.
+            conv_cfg (dict): Config dict for convolution layer. Default: None.
+            norm_cfg (dict): Dictionary to construct and config norm layer.
+                Default: dict(type='BN', requires_grad=True)
+            act_cfg (dict): Config dict for activation layer.
+                Default: dict(type='LeakyReLU', negative_slope=0.1).
+        """
+
+        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
+
+        model = nn.Sequential()
+        model.add_module(
+            'preconv',
+            ConvModule(
+                in_channels, out_channels, 3, stride=2, padding=1, **cfg))
+        model.add_module(
+            'shortconv',
+            ConvModule(
+                out_channels, in_channels, 1, stride=1, padding=1, **cfg))
+        model.add_module(
+            'mainconv',
+            ConvModule(
+                out_channels, in_channels, 1, stride=1, padding=1, **cfg))
+
+        for idx in range(res_repeat):
+            model.add_module('res{}'.format(idx),
+                             ResBlock(out_channels, **cfg))
+
+        model.add_module(
+            'postconv',
+            ConvModule(
+                out_channels, in_channels, 1, stride=1, padding=1, **cfg))
+        model.add_module(
+            'finalconv',
+            ConvModule(
+                out_channels, out_channels, 1, stride=1, padding=1, **cfg))
+
         return model

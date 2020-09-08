@@ -157,7 +157,9 @@ class YOLOV4Neck(nn.Module):
             det_out_c = self.out_channels[det_channel_idx]
             self.add_module(f'downsample_conv{i}',  # TODO: check if this works
                             ConvModule(ds_in_c, ds_out_c, 3,
-                                       stride=2, **cfg))
+                                       stride=2,
+                                       padding=1,
+                                       **cfg))
             self.add_module(f'detect{i+1}',
                             DetectionBlock(det_in_c, det_out_c, **cfg))
 
