@@ -240,7 +240,7 @@ class CustomDataset(Dataset):
                 a tuple or list, override the CLASSES defined by the dataset.
 
         Returns:
-            tuple[str]: Names of categories of the dataset.
+            tuple[str] or list[str]: Names of categories of the dataset.
         """
         if classes is None:
             return cls.CLASSES
