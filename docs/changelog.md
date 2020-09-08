@@ -9,6 +9,10 @@
 - Start to publish `mmdet` package to PyPI since v2.3.0
 - Switch model zoo to download.openmmlab.com
 
+**Backwards Incompatible Changes**
+- Support Batch Inference (#3564)
+- Support RandomFlip with horizontal/vertical/diagonal direction (#3608)
+
 **Bug Fixes**
 - Fix default mean/std for onnx (#3491)
 - Fix coco evaluation and add metric items (#3497)
@@ -33,9 +37,8 @@
 - Support eval metric with pickle results (#3607)
 - Support [YOLOv3](https://arxiv.org/abs/1804.02767) (#3083)
 - Support [SABL](https://arxiv.org/abs/1912.04260) (#3603)
-- Support Batch Inference (#3564)
 - Support to publish to Pypi in github-action (#3510)
-- Support RandomFlip with horizontal/vertical/diagonal direction (#3608)
+- Support custom imports (#3641)
 
 **Improvements**
 - Refactor common issues in documentation (#3530)
@@ -45,8 +48,7 @@
 - Add init_eval to evaluation hook (#3550)
 - Add include_bkg in ClassBalancedDataset (#3577)
 - Using config's loading in inference_detector (#3611)
-- Add atss 101 (#3639)
-- Support custom imports (#3641)
+- Add ATSS ResNet-101 models in model zoo (#3639)
 - Update urls to download.openmmlab.com (#3665)
 
 
