@@ -94,10 +94,9 @@ class CustomDataset(Dataset):
             self.data_infos = [self.data_infos[i] for i in valid_inds]
             if self.proposals is not None:
                 self.proposals = [self.proposals[i] for i in valid_inds]
-
-        # set group flag for the sampler
-        if not self.test_mode:
+            # set group flag for the sampler
             self._set_group_flag()
+
         # processing pipeline
         self.pipeline = Compose(pipeline)
 
