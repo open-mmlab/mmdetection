@@ -18,10 +18,11 @@ A simple, fully convolutional model for real-time instance segmentation. This is
 # Evaluation
 Here are our YOLACT models along with their FPS on a Titan Xp and mAP on COCO's `val`:
 
-| Image Size | Backbone      | *FPS  | mAP  | Weights                                                                                                             |
-|:----------:|:-------------:|:----:|:----:|----------------------------------------------------------------------------------------------------------------------|
-| 550        | Resnet50-FPN  | 42.5 | 29.0 | [yolact_r50_epoch_55.pth](https://drive.google.com/file/d/1S30dWxxF1jmz7Tbh1cWbHZUiMpNOK1ts/view?usp=sharing) |
-| 550        | Resnet101-FPN | 33.5 | 30.4 | [yolact_r101_epoch_55.pth](https://drive.google.com/file/d/1yv752K659KbR9arOVD1f6Rst8i00OZnX/view?usp=sharing)|
+| Image Size | GPU x BS | Backbone      | *FPS  | mAP  | Weights |
+|:----------:|:--------:|:-------------:|:-----:|:----:|---------|
+| 550        | 1x8      | Resnet50-FPN  | 42.5 | 29.0 | [model](https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/yolact/yolact_r50_1x8_coco_20200908-f38d58df.pth) |
+| 550        | 8x8      | Resnet50-FPN  | 42.5 | 28.4 | [model](https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/yolact/yolact_r50_8x8_coco_20200908-ca34f5db.pth) |
+| 550        | 1x8      | Resnet101-FPN | 33.5 | 30.4 | [model](https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/yolact/yolact_r101_1x8_coco_20200908-4cbe9101.pth) |
 
 *Note: The FPS is evaluated by the [original implementation](https://github.com/dbolya/yolact). When calculating FPS, only the model inference time is taken into account. Data loading and post-processing operations such as converting masks to RLE code, generating COCO JSON results, image rendering are not included.
 
