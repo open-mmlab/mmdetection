@@ -27,7 +27,8 @@ class YOLOV3Head(BaseDenseHead):
         bbox_coder (dict): Config of bounding box coder.
         featmap_strides (List[int]): The stride of each scale.
             Should be in descending order. Default: (32, 16, 8).
-        one_hot_smoother (float): Set a non-zero value to enable label-smooth
+        one_hot_smoother (float): Set a non-zero value to enable label-smooth.
+            conventionally this value is set to 0.05
             Default: 0.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
@@ -70,7 +71,7 @@ class YOLOV3Head(BaseDenseHead):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 loss_wh=dict(type='MSELoss', loss_weight=1.0),
+                #  loss_wh=dict(type='MSELoss', loss_weight=1.0),
                  train_cfg=None,
                  test_cfg=None):
         super(YOLOV3Head, self).__init__()
@@ -103,7 +104,7 @@ class YOLOV3Head(BaseDenseHead):
         self.loss_cls = build_loss(loss_cls)
         self.loss_conf = build_loss(loss_conf)
         self.loss_xy = build_loss(loss_xy)
-        self.loss_wh = build_loss(loss_wh)
+        # self.loss_wh = build_loss(loss_wh)
         # usually the numbers of anchors for each level are the same
         # except SSD detectors
         self.num_anchors = self.anchor_generator.num_base_anchors[0]
@@ -337,14 +338,14 @@ class YOLOV3Head(BaseDenseHead):
         target_maps_list, neg_maps_list = self.get_targets(
             anchor_list, responsible_flag_list, gt_bboxes, gt_labels)
 
-        losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
+        losses_cls, losses_conf, losses_xy = multi_apply(
             self.loss_single, pred_maps, target_maps_list, neg_maps_list)
 
         return dict(
             loss_cls=losses_cls,
             loss_conf=losses_conf,
-            loss_xy=losses_xy,
-            loss_wh=losses_wh)
+            loss_xy=losses_xy)
+            # loss_wh=losses_wh)
 
     def loss_single(self, pred_map, target_map, neg_map):
         """Compute loss of a single image from a batch.
@@ -375,21 +376,37 @@ class YOLOV3Head(BaseDenseHead):
 
         pred_xy = pred_map[..., :2]
         pred_wh = pred_map[..., 2:4]
+        pred_box_x1y1 = pred_xy - 0.5 * pred_wh
+        pred_box_x2y2 = pred_xy + 0.5 * pred_wh
+        pred_box = torch.cat((pred_box_x1y1, pred_box_x2y2), -1)
         pred_conf = pred_map[..., 4]
         pred_label = pred_map[..., 5:]
 
         target_xy = target_map[..., :2]
         target_wh = target_map[..., 2:4]
+        target_box_x1y1 = target_xy - 0.5 * target_wh
+        target_box_x2y2 = target_xy + 0.5 * target_wh
+        target_box = torch.cat((target_box_x1y1, target_box_x2y2), -1)
         target_conf = target_map[..., 4]
-        target_label = target_map[..., 5:]
+        target_label = target_map[..., 5]
 
-        loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
+        pred_conf = pred_conf.reshape(-1, 1).contiguous()
+        target_conf = target_conf.reshape(-1).contiguous()
+        pred_label = pred_label.reshape(-1, self.num_classes).contiguous()
+        target_label = target_label.reshape(-1).contiguous()
+
+        target_conf = target_conf.long()
+        target_label = target_label.long()
+        # TODO: label smoothing may break
+        # TODO: change focal_loss.py back
+        # TODO: check if commenting the last one is right
+        loss_cls = self.loss_cls(pred_label, target_label) # , weight=pos_mask)
         loss_conf = self.loss_conf(
-            pred_conf, target_conf, weight=pos_and_neg_mask)
-        loss_xy = self.loss_xy(pred_xy, target_xy, weight=pos_mask)
-        loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
+            pred_conf, target_conf) #, weight=pos_and_neg_mask)
+        loss_xy = self.loss_xy(pred_box, target_box) #, weight=pos_mask)
+        # loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
 
-        return loss_cls, loss_conf, loss_xy, loss_wh
+        return loss_cls, loss_conf, loss_xy  # , loss_wh
 
     def get_targets(self, anchor_list, responsible_flag_list, gt_bboxes_list,
                     gt_labels_list):
@@ -473,14 +490,16 @@ class YOLOV3Head(BaseDenseHead):
 
         target_map[sampling_result.pos_inds, 4] = 1
 
-        gt_labels_one_hot = F.one_hot(
-            gt_labels, num_classes=self.num_classes).float()
-        if self.one_hot_smoother != 0:  # label smooth
-            gt_labels_one_hot = gt_labels_one_hot * (
-                1 - self.one_hot_smoother
-            ) + self.one_hot_smoother / self.num_classes
-        target_map[sampling_result.pos_inds, 5:] = gt_labels_one_hot[
-            sampling_result.pos_assigned_gt_inds]
+        # gt_labels_one_hot = F.one_hot(
+        #     gt_labels, num_classes=self.num_classes).float()
+        # if self.one_hot_smoother != 0:  # label smooth
+        #     gt_labels_one_hot = gt_labels_one_hot * (
+        #         1 - self.one_hot_smoother
+        #     ) + self.one_hot_smoother / self.num_classes
+        # target_map[sampling_result.pos_inds, 5:] = gt_labels_one_hot[
+        #     sampling_result.pos_assigned_gt_inds]
+        target_map[sampling_result.pos_inds, 5] = \
+            gt_labels[sampling_result.pos_assigned_gt_inds].float()
 
         neg_map = concat_anchors.new_zeros(
             concat_anchors.size(0), dtype=torch.uint8)

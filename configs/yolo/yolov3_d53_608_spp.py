@@ -25,32 +25,36 @@ model = dict(
         bbox_coder=dict(type='YOLOBBoxCoder'),
         featmap_strides=[32, 16, 8],
         loss_cls=dict(
-            type='CrossEntropyLoss',
-            use_sigmoid=True,
-            loss_weight=1.0,
-            reduction='sum'),
+            type='FocalLoss',
+            gamma=0,
+            alpha=0.25,
+            loss_weight=37.4),
         loss_conf=dict(
-            type='CrossEntropyLoss',
-            use_sigmoid=True,
-            loss_weight=1.0,
-            reduction='sum'),
+            type='FocalLoss',
+            gamma=0,
+            alpha=0.25,
+            loss_weight=122.17),  # 64.3),
         loss_xy=dict(
-            type='CrossEntropyLoss',
-            use_sigmoid=True,
-            loss_weight=2.0,
-            reduction='sum'),
-        loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')))
+            type='CIoULoss',
+            loss_weight=3.54)))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
         type='GridAssigner', pos_iou_thr=0.5, neg_iou_thr=0.5, min_pos_iou=0))
 test_cfg = dict(
-    nms_pre=1000,
-    min_bbox_size=0,
-    score_thr=0.05,
-    conf_thr=0.005,
-    nms=dict(type='nms', iou_thr=0.7),
+    nms_pre=4000,
+    min_bbox_size=2,
+    score_thr=0.001,
+    conf_thr=0.001,
+    nms=dict(type='nms', iou_thr=0.6),
     max_per_img=100)
+# test_cfg = dict(
+#     nms_pre=1000,
+#     min_bbox_size=0,
+#     score_thr=0.05,
+#     conf_thr=0.005,
+#     nms=dict(type='nms', iou_thr=0.7),
+#     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
@@ -113,7 +117,7 @@ data = dict(
         img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.937, weight_decay=0.0005)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
