@@ -32,7 +32,7 @@ This change influences all the test APIs in MMDetection and downstream codebases
 - Fix error in distributed training when some levels of FPN are not assigned with bounding boxes (#3670)
 - Fix the width and height orders of stride in valid flag generation (#3685)
 - Fix weight initialization bug in Res2Net DCN (#3714)
-
+- Fix bug in OHEMSampler (#3677)
 
 **New Features**
 - Support Cutout augmentation (#3521)
