@@ -10,9 +10,10 @@
 - Switch model zoo to download.openmmlab.com
 
 **Backwards Incompatible Changes**
-- Support Batch Inference (#3564): Since v2.4.0, MMDetection could inference model with multiple images in a single GPU.
-This change influences all the test APIs in MMDetection and downstream codebases.
+- Support Batch Inference (#3564, #3686, #3705): Since v2.4.0, MMDetection could inference model with multiple images in a single GPU.
+This change influences all the test APIs in MMDetection and downstream codebases. To help the users migrate their code, we use `replace_ImageToTensor` (#3686) to convert legacy test data pipelines during dataset initialization.
 - Support RandomFlip with horizontal/vertical/diagonal direction (#3608): Since v2.4.0, MMDetection supports horizontal/vertical/diagonal flip in the data augmentation. This influences bounding box, mask, and image transformations in data augmentation process and the process that will map those data back to the original format.
+- Migrate to use `mmlvis` and `mmpycocotools` for COCO and LVIS dataset (#3727). The APIs are fully compatible with the original `lvis` and `pycocotools`. Users need to uninstall the existing pycocotools and lvis packages in their environment first and install `mmlvis` & `mmpycocotools`.
 
 **Bug Fixes**
 - Fix default mean/std for onnx (#3491)
@@ -31,8 +32,8 @@ This change influences all the test APIs in MMDetection and downstream codebases
 - Fix typo and itemize issues in tutorial (#3658)
 - Fix error in distributed training when some levels of FPN are not assigned with bounding boxes (#3670)
 - Fix the width and height orders of stride in valid flag generation (#3685)
-- Fix mask rcnn training stuck problem when there is no positive roi in distributed training (#3713)
-- Fix bugs when specifying dataset classes and do not filter images in test mode (#3695)
+- Fix weight initialization bug in Res2Net DCN (#3714)
+- Fix bug in OHEMSampler (#3677)
 
 **New Features**
 - Support Cutout augmentation (#3521)
