@@ -345,7 +345,6 @@ class YOLOV3Head(BaseDenseHead):
             loss_cls=losses_cls,
             loss_conf=losses_conf,
             loss_xy=losses_xy)
-            # loss_wh=losses_wh)
 
     def loss_single(self, pred_map, target_map, neg_map):
         """Compute loss of a single image from a batch.
@@ -379,7 +378,9 @@ class YOLOV3Head(BaseDenseHead):
         pred_box_x1y1 = pred_xy - 0.5 * pred_wh
         pred_box_x2y2 = pred_xy + 0.5 * pred_wh
         pred_box = torch.cat((pred_box_x1y1, pred_box_x2y2), -1)
+        pred_box = pred_box.reshape(-1, 4).contiguous()
         pred_conf = pred_map[..., 4]
+        pred_conf = torch.cat((1.0 - pred_conf, pred_conf), -1)
         pred_label = pred_map[..., 5:]
 
         target_xy = target_map[..., :2]
@@ -387,26 +388,29 @@ class YOLOV3Head(BaseDenseHead):
         target_box_x1y1 = target_xy - 0.5 * target_wh
         target_box_x2y2 = target_xy + 0.5 * target_wh
         target_box = torch.cat((target_box_x1y1, target_box_x2y2), -1)
+        target_box = target_box.reshape(-1, 4).contiguous()
         target_conf = target_map[..., 4]
         target_label = target_map[..., 5]
 
-        pred_conf = pred_conf.reshape(-1, 1).contiguous()
+        pred_conf = pred_conf.reshape(-1, 2).contiguous()
         target_conf = target_conf.reshape(-1).contiguous()
         pred_label = pred_label.reshape(-1, self.num_classes).contiguous()
         target_label = target_label.reshape(-1).contiguous()
+        pos_mask = pos_mask.reshape(-1, 1).contiguous()
+        pos_and_neg_mask = pos_and_neg_mask.reshape(-1, 1).contiguous()
+        pos_mask_ciou = pos_mask.expand(-1, 4)
 
         target_conf = target_conf.long()
         target_label = target_label.long()
         # TODO: label smoothing may break
-        # TODO: change focal_loss.py back
-        # TODO: check if commenting the last one is right
-        loss_cls = self.loss_cls(pred_label, target_label) # , weight=pos_mask)
-        loss_conf = self.loss_conf(
-            pred_conf, target_conf) #, weight=pos_and_neg_mask)
-        loss_xy = self.loss_xy(pred_box, target_box) #, weight=pos_mask)
-        # loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
 
-        return loss_cls, loss_conf, loss_xy  # , loss_wh
+        loss_cls = self.loss_cls(
+            pred_label, target_label, weight=pos_mask)
+        loss_conf = self.loss_conf(
+            pred_conf, target_conf, weight=pos_and_neg_mask)
+        loss_xy = self.loss_xy(pred_box, target_box, weight=pos_mask_ciou)
+
+        return loss_cls, loss_conf, loss_xy
 
     def get_targets(self, anchor_list, responsible_flag_list, gt_bboxes_list,
                     gt_labels_list):

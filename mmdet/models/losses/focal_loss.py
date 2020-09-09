@@ -67,12 +67,6 @@ def sigmoid_focal_loss(pred,
     """
     # Function.apply does not accept keyword arguments, so the decorator
     # "weighted_loss" is not applicable
-    print()
-    print(pred.shape)
-    print(target.shape)
-    if weight:
-        print(weight.shape)
-    print()
     loss = _sigmoid_focal_loss(pred, target, gamma, alpha, None, 'none')
     if weight is not None:
         if weight.shape != loss.shape:
