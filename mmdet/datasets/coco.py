@@ -21,7 +21,7 @@ except AssertionError:
     raise AssertionError('Incompatible version of pycocotools is installed. '
                          'Run pip uninstall pycocotools first. Then run pip '
                          'install mmpycocotools to install open-mmlab forked '
-                         'lvis. ')
+                         'pycocotools.')
 
 
 @DATASETS.register_module()
