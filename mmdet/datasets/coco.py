@@ -14,6 +14,13 @@ from mmdet.core import eval_recalls
 from .builder import DATASETS
 from .custom import CustomDataset
 
+try:
+    import pycocotools
+    assert pycocotools.__version__ >= '12.0.2'
+except AssertionError:
+    raise ImportError('Please run pip install mmpycocotools to '
+                      'install open-mmlab forked pycocotools first.')
+
 
 @DATASETS.register_module()
 class CocoDataset(CustomDataset):
