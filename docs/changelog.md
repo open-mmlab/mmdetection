@@ -10,8 +10,8 @@
 - Switch model zoo to download.openmmlab.com
 
 **Backwards Incompatible Changes**
-- Support Batch Inference (#3564): Since v2.4.0, MMDetection could inference model with multiple images in a single GPU.
-This change influences all the test APIs in MMDetection and downstream codebases.
+- Support Batch Inference (#3564, #3686, #3705): Since v2.4.0, MMDetection could inference model with multiple images in a single GPU.
+This change influences all the test APIs in MMDetection and downstream codebases. To help the users migrate their code, we use `replace_ImageToTensor` (#3686) to convert legacy test data pipelines during dataset initialization.
 - Support RandomFlip with horizontal/vertical/diagonal direction (#3608): Since v2.4.0, MMDetection supports horizontal/vertical/diagonal flip in the data augmentation. This influences bounding box, mask, and image transformations in data augmentation process and the process that will map those data back to the original format.
 
 **Bug Fixes**
