@@ -3,15 +3,15 @@ import warnings
 
 
 def replace_ImageToTensor(pipelines):
-    """Replace ImageToTensor pipeline to DefaultFormatBundle, which is normally
-    useful in batch inference.
+    """Replace the ImageToTensor transform in a data pipeline to
+    DefaultFormatBundle, which is normally useful in batch inference.
 
     Args:
-        pipelines (list): pipeline list.
+        pipelines (list[dict]): Data pipeline configs.
 
     Returns:
         list: The new pipeline list with all ImageToTensor replaced by
-        DefaultFormatBundle.
+            DefaultFormatBundle.
 
     Examples:
         >>> pipelines = [

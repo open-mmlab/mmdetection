@@ -8,9 +8,9 @@ from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import wrap_fp16_model
-from mmdet.datasets import build_dataloader, build_dataset
+from mmdet.datasets import (build_dataloader, build_dataset,
+                            replace_ImageToTensor)
 from mmdet.models import build_detector
-from mmdet.utils import replace_ImageToTensor
 
 
 def parse_args():
