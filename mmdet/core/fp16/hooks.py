@@ -6,7 +6,7 @@ from mmcv.runner import OptimizerHook
 
 from ..utils.dist_utils import allreduce_grads
 from .utils import cast_tensor_type
-
+from .loss_scaler import DynamicLossScaler
 
 class Fp16OptimizerHook(OptimizerHook):
     """FP16 optimizer hook.
@@ -33,8 +33,9 @@ class Fp16OptimizerHook(OptimizerHook):
         self.grad_clip = grad_clip
         self.coalesce = coalesce
         self.bucket_size_mb = bucket_size_mb
-        self.loss_scale = loss_scale
+        # self.loss_scale = loss_scale
         self.distributed = distributed
+        self.loss_scaler = DynamicLossScaler(loss_scale)
 
     def before_run(self, runner):
         """Preparing steps before Mixed Precision Training.
@@ -74,9 +75,10 @@ class Fp16OptimizerHook(OptimizerHook):
         runner.model.zero_grad()
         runner.optimizer.zero_grad()
         # scale the loss value
-        scaled_loss = runner.outputs['loss'] * self.loss_scale
+        scaled_loss = runner.outputs['loss'] * self.loss_scaler.loss_scale
         scaled_loss.backward()
         # copy fp16 grads in the model to fp32 params in the optimizer
+
         fp32_weights = []
         for param_group in runner.optimizer.param_groups:
             fp32_weights += param_group['params']
@@ -85,15 +87,21 @@ class Fp16OptimizerHook(OptimizerHook):
         if self.distributed:
             allreduce_grads(fp32_weights, self.coalesce, self.bucket_size_mb)
         # scale the gradients back
-        for param in fp32_weights:
-            if param.grad is not None:
-                param.grad.div_(self.loss_scale)
-        if self.grad_clip is not None:
-            self.clip_grads(fp32_weights)
-        # update fp32 params
-        runner.optimizer.step()
-        # copy fp32 params to the fp16 model
-        self.copy_params_to_fp16(runner.model, fp32_weights)
+
+        has_overflow = self.loss_scaler.has_overflow(fp32_weights)
+        if not has_overflow:
+            for param in fp32_weights:
+                if param.grad is not None:
+                    param.grad.div_(self.loss_scaler.loss_scale)
+            if self.grad_clip is not None:
+                self.clip_grads(fp32_weights)
+            # update fp32 params
+            runner.optimizer.step()
+            # copy fp32 params to the fp16 model
+            self.copy_params_to_fp16(runner.model, fp32_weights)
+        else:
+            print('overflow, skip!')
+        self.loss_scaler.update_scale(has_overflow)
 
 
 def wrap_fp16_model(model):
