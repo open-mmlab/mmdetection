@@ -9,6 +9,11 @@
 - Start to publish `mmdet` package to PyPI since v2.3.0
 - Switch model zoo to download.openmmlab.com
 
+**Backwards Incompatible Changes**
+- Support Batch Inference (#3564): Since v2.4.0, MMDetection could inference model with multiple images in a single GPU.
+This change influences all the test APIs in MMDetection and downstream codebases.
+- Support RandomFlip with horizontal/vertical/diagonal direction (#3608): Since v2.4.0, MMDetection supports horizontal/vertical/diagonal flip in the data augmentation. This influences bounding box, mask, and image transformations in data augmentation process and the process that will map those data back to the original format.
+
 **Bug Fixes**
 - Fix default mean/std for onnx (#3491)
 - Fix coco evaluation and add metric items (#3497)
@@ -25,6 +30,9 @@
 - Fix webcam demo (#3634)
 - Fix typo and itemize issues in tutorial (#3658)
 - Fix error in distributed training when some levels of FPN are not assigned with bounding boxes (#3670)
+- Fix the width and height orders of stride in valid flag generation (#3685)
+- Fix mask rcnn training stuck problem when there is no positive roi in distributed training (#3713)
+- Fix bugs when specifying dataset classes and do not filter images in test mode (#3695)
 
 **New Features**
 - Support Cutout augmentation (#3521)
@@ -33,9 +41,8 @@
 - Support eval metric with pickle results (#3607)
 - Support [YOLOv3](https://arxiv.org/abs/1804.02767) (#3083)
 - Support [SABL](https://arxiv.org/abs/1912.04260) (#3603)
-- Support Batch Inference (#3564)
 - Support to publish to Pypi in github-action (#3510)
-- Support RandomFlip with horizontal/vertical/diagonal direction (#3608)
+- Support custom imports (#3641)
 
 **Improvements**
 - Refactor common issues in documentation (#3530)
@@ -45,9 +52,9 @@
 - Add init_eval to evaluation hook (#3550)
 - Add include_bkg in ClassBalancedDataset (#3577)
 - Using config's loading in inference_detector (#3611)
-- Add atss 101 (#3639)
-- Support custom imports (#3641)
+- Add ATSS ResNet-101 models in model zoo (#3639)
 - Update urls to download.openmmlab.com (#3665)
+- Support non-mask training for CocoDataset (#3711)
 
 
 ### v2.3.0 (5/8/2020)
