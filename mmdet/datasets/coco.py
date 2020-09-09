@@ -17,7 +17,7 @@ from .custom import CustomDataset
 try:
     import pycocotools
     assert pycocotools.__version__ >= '12.0.2'
-except ImportError:
+except AssertionError:
     raise ImportError('Please run pip install mmpycocotools to '
                       'install open-mmlab forked pycocotools first.')
 

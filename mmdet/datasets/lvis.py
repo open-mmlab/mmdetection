@@ -278,7 +278,7 @@ class LVISV05Dataset(CocoDataset):
             import lvis
             assert lvis.__version__ >= '10.5.3'
             from lvis import LVIS
-        except ImportError:
+        except (ImportError, AssertionError):
             raise ImportError('Please run pip install mmlvis to '
                               'install open-mmlab forked lvis first.')
         self.coco = LVIS(ann_file)
