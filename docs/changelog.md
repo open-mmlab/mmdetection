@@ -31,8 +31,8 @@ This change influences all the test APIs in MMDetection and downstream codebases
 - Fix typo and itemize issues in tutorial (#3658)
 - Fix error in distributed training when some levels of FPN are not assigned with bounding boxes (#3670)
 - Fix the width and height orders of stride in valid flag generation (#3685)
-- Fix mask rcnn training stuck problem when there is no positive roi in distributed training (#3713)
-- Fix bugs when specifying dataset classes and do not filter images in test mode (#3695)
+- Fix weight initialization bug in Res2Net DCN (#3714)
+
 
 **New Features**
 - Support Cutout augmentation (#3521)
