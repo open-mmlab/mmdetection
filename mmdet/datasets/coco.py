@@ -18,9 +18,10 @@ try:
     import pycocotools
     assert pycocotools.__version__ >= '12.0.2'
 except AssertionError:
-    raise ImportError('Please run pip install mmpycocotools to install '
-                      'open-mmlab forked pycocotools. Run pip uninstall '
-                      'pycocotools if you have old version installed.')
+    raise AssertionError('Incompatible version of pycocotools is installed. '
+                         'Run pip uninstall pycocotools first. Then run pip '
+                         'install mmpycocotools to install open-mmlab forked '
+                         'lvis. ')
 
 
 @DATASETS.register_module()
