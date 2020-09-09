@@ -331,6 +331,8 @@ class LVISV05Dataset(CocoDataset):
         """
 
         try:
+            import lvis
+            assert lvis.__version__ >= '10.5.3'
             from lvis import LVISResults, LVISEval
         except ImportError:
             raise ImportError('Please run pip install mmlvis to install '
@@ -702,8 +704,10 @@ class LVISV1Dataset(LVISDataset):
 
     def load_annotations(self, ann_file):
         try:
+            import lvis
+            assert lvis.__version__ >= '10.5.3'
             from lvis import LVIS
-        except ImportError:
+        except (ImportError, AssertionError):
             raise ImportError('Please run pip install mmlvis to install '
                               'open-mmlab forked lvis. Run pip uninstall lvis '
                               'if you have old version installed.')
