@@ -25,22 +25,24 @@ model = dict(
         bbox_coder=dict(type='YOLOBBoxCoder'),
         featmap_strides=[32, 16, 8],
         loss_cls=dict(
+            # type='CrossEntropyLoss',
+            # use_sigmoid=True,
             type='FocalLoss',
             gamma=0,
             alpha=0.25,
-            loss_weight=37.4),
-        loss_conf=dict(
-            type='FocalLoss',
-            gamma=0,
-            alpha=0.25,
-            loss_weight=122.17),  # 64.3),
+            loss_weight=37.4*10),
         # loss_conf=dict(
-        #     type='CrossEntropyLoss',
-        #     use_sigmoid=True,
-        #     loss_weight=122.17),
+        #     type='FocalLoss',
+        #     gamma=0,
+        #     alpha=0.25,
+        #     loss_weight=122.17),  # 64.3),
+        loss_conf=dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            loss_weight=64.3),
         loss_xy=dict(
             type='CIoULoss',
-            loss_weight=3.54)))
+            loss_weight=3.54*100)))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
@@ -121,7 +123,7 @@ data = dict(
         # img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.001, momentum=0.937, weight_decay=0.0005)
+optimizer = dict(type='SGD', lr=0.01, momentum=0.937, weight_decay=0.0005)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
