@@ -129,9 +129,9 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=2000,  # same as burn-in in darknet
     warmup_ratio=0.1,
-    step=[218, 246])
+    step=[50, 57])
 # runtime settings
-total_epochs = 273
+total_epochs = 63
 evaluation = dict(interval=7, metric=['bbox'])
 
 # log_config = dict(  # config to register logger hook
