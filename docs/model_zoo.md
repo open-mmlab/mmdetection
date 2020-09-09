@@ -150,6 +150,12 @@ Please refer to [CornerNet](https://github.com/open-mmlab/mmdetection/blob/maste
 ### YOLOv3
 Please refer to [YOLOv3](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolo) for details.
 
+### PAA
+Please refer to [PAA](https://github.com/open-mmlab/mmdetection/blob/master/configs/paa) for details.
+
+### SABL
+Please refer to [SABL](https://github.com/open-mmlab/mmdetection/blob/master/configs/sabl) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).

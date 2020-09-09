@@ -11,7 +11,7 @@ from .base_dense_head import BaseDenseHead
 from .guided_anchor_head import GuidedAnchorHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class SABLRetinaHead(BaseDenseHead):
     """Side-Aware Boundary Localization (SABL) for RetinaNet.
 
