@@ -279,8 +279,9 @@ class LVISV05Dataset(CocoDataset):
             assert lvis.__version__ >= '10.5.3'
             from lvis import LVIS
         except (ImportError, AssertionError):
-            raise ImportError('Please run pip install mmlvis to '
-                              'install open-mmlab forked lvis first.')
+            raise ImportError('Please run pip install mmlvis to install '
+                              'open-mmlab forked lvis. Run pip uninstall lvis '
+                              'if you have old version installed.')
         self.coco = LVIS(ann_file)
         assert not self.custom_classes, 'LVIS custom classes is not supported'
         self.cat_ids = self.coco.get_cat_ids()
@@ -332,8 +333,9 @@ class LVISV05Dataset(CocoDataset):
         try:
             from lvis import LVISResults, LVISEval
         except ImportError:
-            raise ImportError('Please follow config/lvis/README.md to '
-                              'install open-mmlab forked lvis first.')
+            raise ImportError('Please run pip install mmlvis to install '
+                              'open-mmlab forked lvis. Run pip uninstall lvis '
+                              'if you have old version installed.')
         assert isinstance(results, list), 'results must be a list'
         assert len(results) == len(self), (
             'The length of results is not equal to the dataset len: {} != {}'.
@@ -702,8 +704,9 @@ class LVISV1Dataset(LVISDataset):
         try:
             from lvis import LVIS
         except ImportError:
-            raise ImportError('Please follow config/lvis/README.md to '
-                              'install open-mmlab forked lvis first.')
+            raise ImportError('Please run pip install mmlvis to install '
+                              'open-mmlab forked lvis. Run pip uninstall lvis '
+                              'if you have old version installed.')
         self.coco = LVIS(ann_file)
         assert not self.custom_classes, 'LVIS custom classes is not supported'
         self.cat_ids = self.coco.get_cat_ids()
