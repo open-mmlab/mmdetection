@@ -338,7 +338,7 @@ class Res2Net(ResNet):
             if self.dcn is not None:
                 for m in self.modules():
                     if isinstance(m, Bottle2neck):
-                        # dcn in Res2Net bottle2neck is in ModuleList  
+                        # dcn in Res2Net bottle2neck is in ModuleList
                         for n in m.convs:
                             if hasattr(n, 'conv_offset'):
                                 constant_init(n.conv_offset, 0)
