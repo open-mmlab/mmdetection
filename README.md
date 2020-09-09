@@ -99,6 +99,7 @@ Supported methods:
 - [x] [CornerNet](configs/cornernet/README.md)
 - [x] [Side-Aware Boundary Localization](configs/sabl/README.md)
 - [x] [YOLOv3](configs/yolo/README.md)
+- [x] [PAA](configs/paa/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 

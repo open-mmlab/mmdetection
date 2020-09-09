@@ -12,7 +12,7 @@ class AnchorGenerator(object):
 
     Args:
         strides (list[int] | list[tuple[int, int]]): Strides of anchors
-            in multiple feature levels.
+            in multiple feature levels in order (w, h).
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
         scales (list[int] | None): Anchor scales for anchors in a single level.
@@ -242,8 +242,8 @@ class AnchorGenerator(object):
         Args:
             base_anchors (torch.Tensor): The base anchors of a feature grid.
             featmap_size (tuple[int]): Size of the feature maps.
-            stride (tuple[int], optional): Stride of the feature map.
-                Defaults to (16, 16).
+            stride (tuple[int], optional): Stride of the feature map in order
+                (w, h). Defaults to (16, 16).
             device (str, optional): Device the tensor will be put on.
                 Defaults to 'cuda'.
 
@@ -288,8 +288,8 @@ class AnchorGenerator(object):
             anchor_stride = self.strides[i]
             feat_h, feat_w = featmap_sizes[i]
             h, w = pad_shape[:2]
-            valid_feat_h = min(int(np.ceil(h / anchor_stride[0])), feat_h)
-            valid_feat_w = min(int(np.ceil(w / anchor_stride[1])), feat_w)
+            valid_feat_h = min(int(np.ceil(h / anchor_stride[1])), feat_h)
+            valid_feat_w = min(int(np.ceil(w / anchor_stride[0])), feat_w)
             flags = self.single_level_valid_flags((feat_h, feat_w),
                                                   (valid_feat_h, valid_feat_w),
                                                   self.num_base_anchors[i],

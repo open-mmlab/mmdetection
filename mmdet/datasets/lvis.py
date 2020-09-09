@@ -275,9 +275,11 @@ class LVISV05Dataset(CocoDataset):
         """
 
         try:
+            import lvis
+            assert lvis.__version__ >= '10.5.3'
             from lvis import LVIS
-        except ImportError:
-            raise ImportError('Please follow config/lvis/README.md to '
+        except (ImportError, AssertionError):
+            raise ImportError('Please run pip install mmlvis to '
                               'install open-mmlab forked lvis first.')
         self.coco = LVIS(ann_file)
         assert not self.custom_classes, 'LVIS custom classes is not supported'
