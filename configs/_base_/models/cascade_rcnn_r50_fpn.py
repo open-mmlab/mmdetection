@@ -178,6 +178,6 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.30,
-        nms=dict(type='nms', iou_threshold=0.60),
+        score_thr=0.10,
+        nms=dict(type='nms', iou_threshold=0.30),
         max_per_img=100))
