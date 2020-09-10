@@ -31,9 +31,8 @@ def reduce_sum(tensor):
 
 @HEADS.register_module()
 class VFNetHead(AnchorFreeHead):
-    """Head of `VarifoclaNet (VFNet): An IoU-aware Dense Object Detector.
-
-    <https://arxiv.org/abs/2008.13367>`_.
+    """Head of `VarifoclaNet (VFNet): An IoU-aware Dense Object
+    Detector.<https://arxiv.org/abs/2008.13367>`_.
 
     The VFNet predicts IoU-aware classification scores which mix the
     object presence confidence and object localization accuracy as the
@@ -246,7 +245,7 @@ class VFNetHead(AnchorFreeHead):
 
         Returns:
             tuple: iou-aware cls scores for each box, bbox predictions and
-            refined bbox predictions of input feature maps.
+                refined bbox predictions of input feature maps.
         """
         cls_feat = x
         reg_feat = x

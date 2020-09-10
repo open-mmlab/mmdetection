@@ -21,8 +21,9 @@ def varifocal_loss(pred,
         target (torch.Tensor): The learning target of the iou-aware
             classification score with shape (N, C), C is the number of classes.
         weight (torch.Tensor, optional): The weight of loss for each
-                prediction. Defaults to None.
-        alpha (float, optional): A balance factor for Varifocal Loss.
+            prediction. Defaults to None.
+        alpha (float, optional): A balance factor for the negative part of
+            Varifocal Loss, which is different from the alpha of Focal Loss.
             Defaults to 0.75.
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 2.0.
@@ -66,8 +67,9 @@ class VarifocalLoss(nn.Module):
         Args:
             use_sigmoid (bool, optional): Whether the prediction is
                 used for sigmoid or softmax. Defaults to True.
-            alpha (float, optional): A balance factor for Varifocal Loss.
-                Defaults to 0.75.
+            alpha (float, optional): A balance factor for the negative part of
+                Varifocal Loss, which is different from the alpha of Focal
+                Loss. Defaults to 0.75.
             gamma (float, optional): The gamma for calculating the modulating
                 factor. Defaults to 2.0.
             iou_weighted (bool, optional): Whether to weight the loss of the
