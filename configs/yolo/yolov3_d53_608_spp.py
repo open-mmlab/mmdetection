@@ -46,7 +46,8 @@ model = dict(
             type='CIoULoss',
             loss_weight=2.0,  # 3.54,
             reduction='sum'),
-        loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')))
+        # loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')
+        ))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(

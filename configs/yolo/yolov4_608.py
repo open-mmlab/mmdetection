@@ -2,18 +2,22 @@ _base_ = '../_base_/default_runtime.py'
 # model settings
 model = dict(
     type='YOLOV4',
-    pretrained='open-mmlab://darknet53',  # TODO: fix pretrained model
+    # pretrained='open-mmlab://darknet53',  # TODO: fix pretrained model
     backbone=dict(type='Darknet',
                   depth=53,
                   out_indices=(3, 4, 5),
-                  csp_on=True),
+                  csp_on=True,
+                #   act_cfg=dict(type='Mish'),
+                  ),
     neck=dict(
         type='YOLOV4Neck',
         num_scales=3,
         in_channels=[1024, 512, 256],
         out_channels=[512, 256, 128],
         spp_on=True,
-        spp_pooler_sizes=(5, 9, 13)),
+        spp_pooler_sizes=(5, 9, 13),
+        # act_cfg=dict(type='Mish'),
+        ),
     bbox_head=dict(
         type='YOLOV3Head',
         num_classes=80,
@@ -24,9 +28,13 @@ model = dict(
             base_sizes=[[(142, 110), (192, 243), (459, 401)],
                         [(36, 75), (76, 55), (72, 146)],
                         [(12, 16), (19, 36), (40, 28)]],
+            # base_sizes=[[(116, 90), (156, 198), (373, 326)],
+            #             [(30, 61), (62, 45), (59, 119)],
+            #             [(10, 13), (16, 30), (33, 23)]],
             strides=[32, 16, 8]),
         bbox_coder=dict(type='YOLOBBoxCoder'),
         featmap_strides=[32, 16, 8],
+        # act_cfg=dict(type='Mish'),
         loss_cls=dict(
             type='CrossEntropyLoss',
             use_sigmoid=True,
@@ -38,11 +46,10 @@ model = dict(
             loss_weight=1.0,
             reduction='sum'),
         loss_xy=dict(
-            type='CrossEntropyLoss',
-            use_sigmoid=True,
-            loss_weight=2.0,
+            type='CIoULoss',
+            loss_weight=2.0,  # 3.54,
             reduction='sum'),
-        loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')
+        # loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')
             ))
 # training and testing settings
 train_cfg = dict(
@@ -55,13 +62,6 @@ test_cfg = dict(
     conf_thr=0.001,
     nms=dict(type='nms', iou_thr=0.6),
     max_per_img=100)
-# test_cfg = dict(
-#     nms_pre=1000,
-#     min_bbox_size=0,
-#     score_thr=0.05,
-#     conf_thr=0.005,
-#     nms=dict(type='nms', iou_thr=0.7),
-#     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
@@ -102,7 +102,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=4,
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,

@@ -142,7 +142,7 @@ class YOLOV4Neck(nn.Module):
             # the in channels changed from in_c + out_c to in_c
             # because of the newly added feat_conv
             self.add_module(f'detect{i+1}',
-                            DetectionBlock(in_c + out_c, out_c, **cfg))
+                            DetectionBlock(in_c, out_c, **cfg))
 
         # downsampling PANet path
         # e.g. If the num_scales is 3 (as in original YOLO V4), i will be
@@ -155,7 +155,8 @@ class YOLOV4Neck(nn.Module):
             det_channel_idx = ds_channel_idx - 1
             det_in_c = self.in_channels[det_channel_idx]
             det_out_c = self.out_channels[det_channel_idx]
-            self.add_module(f'downsample_conv{i}',  # TODO: check if this works
+            # TODO: check if this works
+            self.add_module(f'downsample_conv{i-self.num_scales+1}',
                             ConvModule(ds_in_c, ds_out_c, 3,
                                        stride=2,
                                        padding=1,
@@ -186,7 +187,7 @@ class YOLOV4Neck(nn.Module):
             out = detect(tmp)
             outs.append(out)
 
-        for i in range(len(self.num_scales) - 1):
+        for i in range(self.num_scales - 1):
             x = outs[-1-i]
             downsample_conv = getattr(self, f'downsample_conv{i+1}')
             tmp = downsample_conv(x)

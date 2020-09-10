@@ -1,7 +1,10 @@
 import torch
 import torch.nn.functional as F
 
+from .registry import ACTIVATION_LAYERS
 
+
+@ACTIVATION_LAYERS.register_module()
 class Mish(torch.nn.Module):
     '''
     Applies the mish function element-wise:
@@ -19,7 +22,7 @@ class Mish(torch.nn.Module):
         '''
         Init method.
         '''
-        super().__init__()
+        super(Mish, self).__init__()
 
     def forward(self, input):
         '''

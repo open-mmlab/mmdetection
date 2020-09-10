@@ -40,9 +40,53 @@ class ResBlock(nn.Module):
         # shortcut
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
-        self.conv1 = ConvModule(in_channels, half_in_channels, 1, **cfg)
+        self.conv1 = ConvModule(
+            in_channels, half_in_channels, 1, **cfg)
         self.conv2 = ConvModule(
             half_in_channels, in_channels, 3, padding=1, **cfg)
+
+    def forward(self, x):
+        residual = x
+        out = self.conv1(x)
+        out = self.conv2(out)
+        out = out + residual
+
+        return out
+
+
+class ResBlockV4(nn.Module):
+    """The basic residual block used in Darknet. Each ResBlock consists of two
+    ConvModules and the input is added to the final output. Each ConvModule is
+    composed of Conv, BN, and LeakyReLU. In YoloV3 paper, the first convLayer
+    has half of the number of the filters as much as the second convLayer. The
+    first convLayer has filter size of 1x1 and the second one has the filter
+    size of 3x3.
+
+    Args:
+        in_channels (int): The input channels. Must be even.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: dict(type='BN', requires_grad=True)
+        act_cfg (dict): Config dict for activation layer.
+            Default: dict(type='LeakyReLU', negative_slope=0.1).
+    """
+
+    def __init__(self,
+                 in_channels,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
+        super(ResBlockV4, self).__init__()
+        # assert in_channels % 2 == 0  # ensure the in_channels is even
+        # half_in_channels = in_channels // 2
+
+        # shortcut
+        cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
+
+        self.conv1 = ConvModule(
+            in_channels, in_channels, 1, **cfg)
+        self.conv2 = ConvModule(
+            in_channels, in_channels, 3, padding=1, **cfg)
 
     def forward(self, x):
         residual = x
@@ -118,7 +162,11 @@ class Darknet(nn.Module):
             layer_name = f'conv_res_block{i + 1}'
             in_c, out_c = self.channels[i]
             if csp_on:
-                conv_module = Csp_conv_res_block(in_c, out_c, n_layers, **cfg)
+                conv_module = Csp_conv_res_block(in_c,
+                                                 out_c,
+                                                 n_layers,
+                                                 is_first_block=(i == 0),
+                                                 **cfg)
             else:
                 conv_module = self.make_conv_res_block(
                     in_c, out_c, n_layers, **cfg)
@@ -209,6 +257,7 @@ class Csp_conv_res_block(nn.Module):
                  in_channels,
                  out_channels,
                  res_repeat,
+                 is_first_block=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU',
@@ -216,23 +265,28 @@ class Csp_conv_res_block(nn.Module):
         super(Csp_conv_res_block, self).__init__()
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
+        bottleneck_channels = out_channels if is_first_block else in_channels
+
         self.preconv = ConvModule(
-                in_channels, out_channels, 3, stride=2, padding=1, **cfg)
+                    in_channels, out_channels, 3, stride=2, padding=1, **cfg)
         self.shortconv = ConvModule(
-                out_channels, in_channels, 1, stride=1, padding=1, **cfg)
+                out_channels, bottleneck_channels, 1, stride=1, **cfg)
         self.mainconv = ConvModule(
-                out_channels, in_channels, 1, stride=1, padding=1, **cfg)
+                out_channels, bottleneck_channels, 1, stride=1, **cfg)
 
         self.blocks = nn.Sequential()
-
         for idx in range(res_repeat):
-            self.blocks.add_module('res{}'.format(idx),
-                                   ResBlock(out_channels, **cfg))
+            if is_first_block:
+                self.blocks.add_module('res{}'.format(idx),
+                                       ResBlock(bottleneck_channels, **cfg))
+            else:
+                self.blocks.add_module('res{}'.format(idx),
+                                       ResBlockV4(bottleneck_channels, **cfg))
 
         self.postconv = ConvModule(
-                out_channels, in_channels, 1, stride=1, padding=1, **cfg)
+                bottleneck_channels, bottleneck_channels, 1, stride=1, **cfg)
         self.finalconv = ConvModule(
-                out_channels, out_channels, 1, stride=1, padding=1, **cfg)
+                2 * bottleneck_channels, out_channels, 1, stride=1, **cfg)
 
     def forward(self, x):
         x = self.preconv(x)
@@ -240,6 +294,6 @@ class Csp_conv_res_block(nn.Module):
         x_main = self.mainconv(x)
         x_main = self.blocks(x_main)
         x_main = self.postconv(x_main)
-        x_final = torch.cat((x_main, x_short), -1)
+        x_final = torch.cat((x_main, x_short), 1)
         x_final = self.finalconv(x_final)
         return x_final
