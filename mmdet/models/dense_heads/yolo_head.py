@@ -338,6 +338,15 @@ class YOLOV3Head(BaseDenseHead):
         target_maps_list, neg_maps_list = self.get_targets(
             anchor_list, responsible_flag_list, gt_bboxes, gt_labels)
 
+        # losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
+        #     self.loss_single, pred_maps, target_maps_list, neg_maps_list)
+
+        # return dict(
+        #     loss_cls=losses_cls,
+        #     loss_conf=losses_conf,
+        #     loss_xy=losses_xy,
+        #     loss_wh=losses_xy)
+
         losses_cls, losses_conf, losses_xy = multi_apply(
             self.loss_single, pred_maps, target_maps_list, neg_maps_list)
 
@@ -390,18 +399,18 @@ class YOLOV3Head(BaseDenseHead):
         target_box = torch.cat((target_box_x1y1, target_box_x2y2), -1)
         target_box = target_box.reshape(-1, 4).contiguous()
         target_conf = target_map[..., 4]
-        target_label = target_map[..., 5]
+        target_label = target_map[..., 5:]
 
         # pred_conf = pred_conf.reshape(-1, 2).contiguous()
         # target_conf = target_conf.reshape(-1).contiguous()
-        pred_label = pred_label.reshape(-1, self.num_classes).contiguous()
-        target_label = target_label.reshape(-1).contiguous()
-        pos_mask = pos_mask.reshape(-1, 1).contiguous()
+        # pred_label = pred_label.reshape(-1, self.num_classes).contiguous()
+        # target_label = target_label.reshape(-1).contiguous()
+        # pos_mask = pos_mask.reshape(-1, 1).contiguous()
         # pos_and_neg_mask = pos_and_neg_mask.reshape(-1, 1).contiguous()
         pos_mask_ciou = pos_mask.reshape(-1, 1).contiguous().expand(-1, 4)
 
         # target_conf = target_conf.long()
-        target_label = target_label.long()
+        # target_label = target_label.long()
         # TODO: label smoothing may break
 
         loss_cls = self.loss_cls(

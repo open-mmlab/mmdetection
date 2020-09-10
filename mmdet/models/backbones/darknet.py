@@ -2,6 +2,7 @@
 
 import logging
 
+import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, constant_init, kaiming_init
 from mmcv.runner import load_checkpoint
@@ -96,6 +97,7 @@ class Darknet(nn.Module):
                  out_indices=(3, 4, 5),
                  frozen_stages=-1,
                  conv_cfg=None,
+                 csp_on=False,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1),
                  norm_eval=True):
@@ -115,14 +117,16 @@ class Darknet(nn.Module):
         for i, n_layers in enumerate(self.layers):
             layer_name = f'conv_res_block{i + 1}'
             in_c, out_c = self.channels[i]
-            self.add_module(
-                layer_name,
-                self.make_conv_res_block(in_c, out_c, n_layers, **cfg))
+            if csp_on:
+                conv_module = Csp_conv_res_block(in_c, out_c, n_layers, **cfg)
+            else:
+                conv_module = self.make_conv_res_block(
+                    in_c, out_c, n_layers, **cfg)
+            self.add_module(layer_name, conv_module)
             self.cr_blocks.append(layer_name)
 
         self.norm_eval = norm_eval
 
-    # TODO: fix forward
     def forward(self, x):
         outs = []
         for i, layer_name in enumerate(self.cr_blocks):
@@ -199,58 +203,43 @@ class Darknet(nn.Module):
                              ResBlock(out_channels, **cfg))
         return model
 
-    @staticmethod
-    def make_csp_conv_res_block(in_channels,
-                                out_channels,
-                                res_repeat,
-                                conv_cfg=None,
-                                norm_cfg=dict(type='BN', requires_grad=True),
-                                act_cfg=dict(type='LeakyReLU',
-                                             negative_slope=0.1)):
-        """ TODO: change documentation
-        In Darknet backbone, ConvLayer is usually followed by ResBlock. This
-        function will make that. The Conv layers always have 3x3 filters with
-        stride=2. The number of the filters in Conv layer is the same as the
-        out channels of the ResBlock.
 
-        Args:
-            in_channels (int): The number of input channels.
-            out_channels (int): The number of output channels.
-            res_repeat (int): The number of ResBlocks.
-            conv_cfg (dict): Config dict for convolution layer. Default: None.
-            norm_cfg (dict): Dictionary to construct and config norm layer.
-                Default: dict(type='BN', requires_grad=True)
-            act_cfg (dict): Config dict for activation layer.
-                Default: dict(type='LeakyReLU', negative_slope=0.1).
-        """
-
+class Csp_conv_res_block(nn.Module):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 res_repeat,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 act_cfg=dict(type='LeakyReLU',
+                              negative_slope=0.1)):
+        super(Csp_conv_res_block, self).__init__()
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
-        model = nn.Sequential()
-        model.add_module(
-            'preconv',
-            ConvModule(
-                in_channels, out_channels, 3, stride=2, padding=1, **cfg))
-        model.add_module(
-            'shortconv',
-            ConvModule(
-                out_channels, in_channels, 1, stride=1, padding=1, **cfg))
-        model.add_module(
-            'mainconv',
-            ConvModule(
-                out_channels, in_channels, 1, stride=1, padding=1, **cfg))
+        self.preconv = ConvModule(
+                in_channels, out_channels, 3, stride=2, padding=1, **cfg)
+        self.shortconv = ConvModule(
+                out_channels, in_channels, 1, stride=1, padding=1, **cfg)
+        self.mainconv = ConvModule(
+                out_channels, in_channels, 1, stride=1, padding=1, **cfg)
+
+        self.blocks = nn.Sequential()
 
         for idx in range(res_repeat):
-            model.add_module('res{}'.format(idx),
-                             ResBlock(out_channels, **cfg))
+            self.blocks.add_module('res{}'.format(idx),
+                                   ResBlock(out_channels, **cfg))
 
-        model.add_module(
-            'postconv',
-            ConvModule(
-                out_channels, in_channels, 1, stride=1, padding=1, **cfg))
-        model.add_module(
-            'finalconv',
-            ConvModule(
-                out_channels, out_channels, 1, stride=1, padding=1, **cfg))
+        self.postconv = ConvModule(
+                out_channels, in_channels, 1, stride=1, padding=1, **cfg)
+        self.finalconv = ConvModule(
+                out_channels, out_channels, 1, stride=1, padding=1, **cfg)
 
-        return model
+    def forward(self, x):
+        x = self.preconv(x)
+        x_short = self.shortconv(x)
+        x_main = self.mainconv(x)
+        x_main = self.blocks(x_main)
+        x_main = self.postconv(x_main)
+        x_final = torch.cat((x_main, x_short), -1)
+        x_final = self.finalconv(x_final)
+        return x_final

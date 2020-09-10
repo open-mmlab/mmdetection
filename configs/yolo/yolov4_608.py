@@ -1,11 +1,14 @@
 _base_ = '../_base_/default_runtime.py'
 # model settings
 model = dict(
-    type='YOLOV3',
-    pretrained='open-mmlab://darknet53',
-    backbone=dict(type='Darknet', depth=53, out_indices=(3, 4, 5)),
+    type='YOLOV4',
+    pretrained='open-mmlab://darknet53',  # TODO: fix pretrained model
+    backbone=dict(type='Darknet',
+                  depth=53,
+                  out_indices=(3, 4, 5),
+                  csp_on=True),
     neck=dict(
-        type='YOLOV3Neck',
+        type='YOLOV4Neck',
         num_scales=3,
         in_channels=[1024, 512, 256],
         out_channels=[512, 256, 128],
@@ -18,35 +21,29 @@ model = dict(
         out_channels=[1024, 512, 256],
         anchor_generator=dict(
             type='YOLOAnchorGenerator',
-            base_sizes=[[(116, 90), (156, 198), (373, 326)],
-                        [(30, 61), (62, 45), (59, 119)],
-                        [(10, 13), (16, 30), (33, 23)]],
+            base_sizes=[[(142, 110), (192, 243), (459, 401)],
+                        [(36, 75), (76, 55), (72, 146)],
+                        [(12, 16), (19, 36), (40, 28)]],
             strides=[32, 16, 8]),
         bbox_coder=dict(type='YOLOBBoxCoder'),
         featmap_strides=[32, 16, 8],
         loss_cls=dict(
             type='CrossEntropyLoss',
             use_sigmoid=True,
-            # type='FocalLoss',
-            # gamma=0,
-            # alpha=0.25,
-            loss_weight=1.0,  # 37.4,
+            loss_weight=1.0,
             reduction='sum'),
-        # loss_conf=dict(
-        #     type='FocalLoss',
-        #     gamma=0,
-        #     alpha=0.25,
-        #     loss_weight=122.17),  # 64.3),
         loss_conf=dict(
             type='CrossEntropyLoss',
             use_sigmoid=True,
-            loss_weight=1.0,  # 64.3,
+            loss_weight=1.0,
             reduction='sum'),
         loss_xy=dict(
-            type='CIoULoss',
-            loss_weight=2.0,  # 3.54,
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            loss_weight=2.0,
             reduction='sum'),
-        loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')))
+        loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')
+            ))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(
@@ -127,7 +124,6 @@ data = dict(
         # img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
         pipeline=test_pipeline))
 # optimizer
-# optimizer = dict(type='SGD', lr=0.001, momentum=0.937, weight_decay=0.0005)
 optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
