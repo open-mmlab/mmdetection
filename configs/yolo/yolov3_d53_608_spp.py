@@ -126,7 +126,7 @@ data = dict(
         # img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.937, weight_decay=0.0005)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.937, weight_decay=0.0005)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
