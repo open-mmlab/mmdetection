@@ -3,12 +3,14 @@ _base_ = '../_base_/default_runtime.py'
 model = dict(
     type='YOLOV3',
     pretrained='open-mmlab://darknet53',
-    backbone=dict(type='Darknet', depth=53, out_indices=(3, 4, 5)),
+    backbone=dict(type='Darknet', depth=53, out_indices=(3, 4, 5),
+                  norm_cfg=dict(type='BN', requires_grad=True, eps=1e-04, momentum=0.03),),
     neck=dict(
         type='YOLOV3Neck',
         num_scales=3,
         in_channels=[1024, 512, 256],
         out_channels=[512, 256, 128],
+        norm_cfg=dict(type='BN', requires_grad=True, eps=1e-04, momentum=0.03),
         spp_on=True,
         spp_pooler_sizes=(5, 9, 13)),
     bbox_head=dict(
@@ -16,6 +18,7 @@ model = dict(
         num_classes=80,
         in_channels=[512, 256, 128],
         out_channels=[1024, 512, 256],
+        norm_cfg=dict(type='BN', requires_grad=True, eps=1e-04, momentum=0.03),
         anchor_generator=dict(
             type='YOLOAnchorGenerator',
             base_sizes=[[(116, 90), (156, 198), (373, 326)],
@@ -122,10 +125,10 @@ data = dict(
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        # ann_file=data_root + 'annotations/coco_yolo_5k.json', #######!!!!!!!!!!!!!!!
-        # img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
+        # ann_file=data_root + 'annotations/instances_val2017.json',
+        # img_prefix=data_root + 'val2017/',
+        ann_file=data_root + 'annotations/coco_yolo_5k.json', #######!!!!!!!!!!!!!!!
+        img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
         pipeline=test_pipeline))
 # optimizer
 # optimizer = dict(type='SGD', lr=0.001, momentum=0.937, weight_decay=0.0005)

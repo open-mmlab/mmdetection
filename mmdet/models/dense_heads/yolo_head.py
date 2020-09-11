@@ -43,6 +43,8 @@ class YOLOV3Head(BaseDenseHead):
         test_cfg (dict): Testing config of YOLOV3 head. Default: None.
     """
 
+    USING_IOU_LOSS = True
+
     def __init__(self,
                  num_classes,
                  in_channels,
@@ -347,15 +349,17 @@ class YOLOV3Head(BaseDenseHead):
         #     loss_xy=losses_xy,
         #     loss_wh=losses_xy)
 
-        losses_cls, losses_conf, losses_xy = multi_apply(
-            self.loss_single, pred_maps, target_maps_list, neg_maps_list)
+
+
+        losses_cls, losses_conf, losses_xy = self.get_loss(
+            self.loss_single, pred_maps, target_maps_list, neg_maps_list, anchor_list)
 
         return dict(
             loss_cls=losses_cls,
             loss_conf=losses_conf,
             loss_xy=losses_xy)
 
-    def loss_single(self, pred_map, target_map, neg_map):
+    def loss_single(self, pred_map, target_map, neg_map, anchors):
         """Compute loss of a single image from a batch.
 
         Args:
@@ -382,22 +386,35 @@ class YOLOV3Head(BaseDenseHead):
             warnings.warn('There is overlap between pos and neg sample.')
             pos_and_neg_mask = pos_and_neg_mask.clamp(min=0., max=1.)
 
-        pred_xy = pred_map[..., :2]
-        pred_wh = pred_map[..., 2:4]
-        pred_box_x1y1 = pred_xy - 0.5 * pred_wh
-        pred_box_x2y2 = pred_xy + 0.5 * pred_wh
-        pred_box = torch.cat((pred_box_x1y1, pred_box_x2y2), -1)
-        pred_box = pred_box.reshape(-1, 4).contiguous()
+        if not self.USING_IOU_LOSS:
+            pred_xy = pred_map[..., :2]
+            pred_wh = pred_map[..., 2:4]
+            # pred_box = pred_map[..., :4].reshape(-1, 4).contiguous()
+            target_xy = target_map[..., :2]
+            target_wh = target_map[..., 2:4]
+        else:
+            anchor_strides = []
+            for i in range(len(anchors)):
+                anchor_strides.append(
+                    torch.tensor(self.featmap_strides[i],
+                                 device=pred_map.device).repeat(len(anchors[i])))
+            concat_anchors = torch.cat(anchors)
+            anchor_strides = torch.cat(anchor_strides)
+            assert len(anchor_strides) == len(concat_anchors)
+            concat_anchors = concat_anchors.reshape(-1, 4)
+            anchor_strides = anchor_strides.reshape(-1, 4)
+
+            pred_xywh = pred_map[..., :4].reshape(-1, 4).contiguous()
+            pred_box = self.bbox_coder.decode(
+                concat_anchors, pred_xywh,
+                anchor_strides)
+            # pred_box = pred_box.reshape(-1, 4).contiguous()
+            target_box = target_map[..., :4].reshape(-1, 4).contiguous()
+
+
         pred_conf = pred_map[..., 4]
         # pred_conf = torch.cat((1.0 - pred_conf, pred_conf), -1)
         pred_label = pred_map[..., 5:]
-
-        target_xy = target_map[..., :2]
-        target_wh = target_map[..., 2:4]
-        target_box_x1y1 = target_xy - 0.5 * target_wh
-        target_box_x2y2 = target_xy + 0.5 * target_wh
-        target_box = torch.cat((target_box_x1y1, target_box_x2y2), -1)
-        target_box = target_box.reshape(-1, 4).contiguous()
         target_conf = target_map[..., 4]
         target_label = target_map[..., 5:]
 
@@ -417,9 +434,17 @@ class YOLOV3Head(BaseDenseHead):
             pred_label, target_label, weight=pos_mask)
         loss_conf = self.loss_conf(
             pred_conf, target_conf, weight=pos_and_neg_mask)
+
         loss_xy = self.loss_xy(pred_box, target_box, weight=pos_mask_ciou)
 
         return loss_cls, loss_conf, loss_xy
+
+    def get_loss(self, pred_map, target_map, neg_map, anchor_list):
+
+        # anchor_list to anchors
+
+        losses_cls, losses_conf, losses_xy = multi_apply(
+            self.loss_single, pred_maps, target_maps_list, neg_maps_list, anchors)
 
     def get_targets(self, anchor_list, responsible_flag_list, gt_bboxes_list,
                     gt_labels_list):
@@ -495,11 +520,14 @@ class YOLOV3Head(BaseDenseHead):
                                               gt_bboxes)
 
         target_map = concat_anchors.new_zeros(
-            concat_anchors.size(0), self.num_attrib)
+            concat_anchors.size(0), self.num_attrib)  # TODO: if +2, a bit hacky
 
-        target_map[sampling_result.pos_inds, :4] = self.bbox_coder.encode(
-            sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes,
-            anchor_strides[sampling_result.pos_inds])
+        if self.USING_IOU_LOSS:
+            target_map[sampling_result.pos_inds, :4] = sampling_result.pos_bboxes
+        else:
+            target_map[sampling_result.pos_inds, :4] = self.bbox_coder.encode(
+                    sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes,
+                    anchor_strides[sampling_result.pos_inds])
 
         target_map[sampling_result.pos_inds, 4] = 1
 

@@ -8,6 +8,7 @@ model = dict(
                   out_indices=(3, 4, 5),
                   csp_on=True,
                 #   act_cfg=dict(type='Mish'),
+                  norm_cfg=dict(type='BN', requires_grad=True, eps=1e-04, momentum=0.03),
                   ),
     neck=dict(
         type='YOLOV4Neck',
@@ -17,6 +18,7 @@ model = dict(
         spp_on=True,
         spp_pooler_sizes=(5, 9, 13),
         # act_cfg=dict(type='Mish'),
+        norm_cfg=dict(type='BN', requires_grad=True, eps=1e-04, momentum=0.03),
         ),
     bbox_head=dict(
         type='YOLOV3Head',
@@ -35,6 +37,7 @@ model = dict(
         bbox_coder=dict(type='YOLOBBoxCoder'),
         featmap_strides=[32, 16, 8],
         # act_cfg=dict(type='Mish'),
+        norm_cfg=dict(type='BN', requires_grad=True, eps=1e-04, momentum=0.03),
         loss_cls=dict(
             type='CrossEntropyLoss',
             use_sigmoid=True,
@@ -135,7 +138,7 @@ lr_config = dict(
     step=[218, 246])
 # runtime settings
 total_epochs = 273
-evaluation = dict(interval=1, metric=['bbox'])
+evaluation = dict(interval=7, metric=['bbox'])
 
 log_config = dict(  # config to register logger hook
     interval=50,  # Interval to print the log

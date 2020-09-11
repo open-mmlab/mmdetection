@@ -23,7 +23,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
 
     def encode(self, bboxes, gt_bboxes, stride):
         """Get box regression transformation deltas that can be used to
-        transform the ``bboxes`` into the ``gt_bboxes``.
+        transform the ``bboxes`` into the ``gt_bboxes``. xyxy to xywh
 
         Args:
             bboxes (torch.Tensor): Source boxes, e.g., anchors.
@@ -56,7 +56,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         return encoded_bboxes
 
     def decode(self, bboxes, pred_bboxes, stride):
-        """Apply transformation `pred_bboxes` to `boxes`.
+        """Apply transformation `pred_bboxes` to `boxes`. xywh to xyxy
 
         Args:
             boxes (torch.Tensor): Basic boxes, e.g. anchors.
