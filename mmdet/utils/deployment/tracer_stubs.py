@@ -184,36 +184,6 @@ class TracerStub(nn.Module):
         return all_at_once
 
 
-class AnchorsGridGeneratorStub(TracerStub):
-    def __init__(self, inner, namespace='mmdet_custom',
-                 name='anchor_grid_generator', **kwargs):
-        super().__init__(inner, namespace=namespace, name=name, **kwargs)
-        self.inner = lambda x, y, **kw: inner(x, y.shape[2:4], **kw)
-
-    def forward(self, base_anchors, featmap, stride=(16, 16), device='cpu'):
-        assert stride[0] == stride[1]
-        # Force `stride` and `device` to be passed in as kwargs.
-        return super().forward(base_anchors, featmap, stride=stride, device=device)
-
-    def symbolic(self, g, base_anchors, featmap):
-        stride = float(self.params['stride'][0])
-        shift = torch.full(self.params['base_anchors'].shape, - 0.5 * stride, dtype=torch.float32)
-        prior_boxes = g.op('Constant', value_t=torch.tensor(self.params['base_anchors'], dtype=torch.float32) + shift)
-        # TODO. im_data is not needed actually.
-        im_data = g.op('Constant', value_t=torch.zeros([1, 1, 1, 1], dtype=torch.float32))
-
-        return g.op('ExperimentalDetectronPriorGridGenerator',
-                    prior_boxes,
-                    featmap,
-                    im_data,
-                    stride_x_f=stride,
-                    stride_y_f=stride,
-                    h_i=0,
-                    w_i=0,
-                    flatten_i=1,
-                    outputs=self.num_outputs)
-
-
 class ROIFeatureExtractorStub(TracerStub):
 
     class Wrapper(torch.nn.Module):

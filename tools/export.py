@@ -34,7 +34,7 @@ from mmdet.models.roi_heads import SingleRoIExtractor
 from mmdet.parallel.data_cpu import scatter_cpu
 from mmdet.utils.deployment.ssd_export_helpers import *
 from mmdet.utils.deployment.symbolic import register_extra_symbolics
-from mmdet.utils.deployment.tracer_stubs import AnchorsGridGeneratorStub, ROIFeatureExtractorStub
+from mmdet.utils.deployment.tracer_stubs import ROIFeatureExtractorStub
 
 
 def export_to_onnx(model,
@@ -159,37 +159,6 @@ def export_to_openvino(cfg, onnx_model_path, output_dir_path, input_shape=None, 
     run(command_line, shell=True, check=True)
 
 
-def stub_anchor_generator(model, anchor_head_name):
-    anchor_head = getattr(model, anchor_head_name, None)
-    if anchor_head is not None and isinstance(anchor_head, AnchorHead):
-        anchor_generator = anchor_head.anchor_generator
-        anchor_generator.is_stubbed = True
-        num_levels = anchor_generator.num_levels
-        strides = anchor_generator.strides
-
-        single_level_grid_anchors_generators = []
-        for i in range(num_levels):
-            single_level_grid_anchors_generator = AnchorsGridGeneratorStub(anchor_generator.single_level_grid_anchors)
-            # Save base anchors as operation parameter. It's used at ONNX export time during symbolic call.
-            single_level_grid_anchors_generator.params['base_anchors'] = anchor_generator.base_anchors[i].cpu().numpy()
-            single_level_grid_anchors_generators.append(single_level_grid_anchors_generator)
-
-        def grid_anchors(self, featmap_sizes, device='cuda'):
-
-            assert num_levels == len(featmap_sizes)
-            multi_level_anchors = []
-            for i in range(num_levels):
-                anchors = single_level_grid_anchors_generators[i](
-                    anchor_generator.base_anchors[i].to(device),
-                    featmap_sizes[i],
-                    stride=strides[i],
-                    device=device)
-                multi_level_anchors.append(anchors)
-            return multi_level_anchors
-
-        anchor_generator.grid_anchors = grid_anchors.__get__(anchor_generator)
-
-
 def stub_roi_feature_extractor(model, extractor_name):
     if hasattr(model, extractor_name):
         extractor = getattr(model, extractor_name)
@@ -245,8 +214,6 @@ def main(args):
     fake_data = get_fake_input(cfg, device=device)
 
     if args.target == 'openvino' and not args.alt_ssd_export:
-        stub_anchor_generator(model, 'rpn_head')
-        stub_anchor_generator(model, 'bbox_head')
         if hasattr(model, 'roi_head'):
             stub_roi_feature_extractor(model.roi_head, 'bbox_roi_extractor')
             stub_roi_feature_extractor(model.roi_head, 'mask_roi_extractor')
