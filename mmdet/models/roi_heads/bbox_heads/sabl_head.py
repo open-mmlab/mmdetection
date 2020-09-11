@@ -10,7 +10,7 @@ from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.losses import accuracy
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class SABLHead(nn.Module):
     """Side-Aware Boundary Localization (SABL) for RoI-Head.
 
