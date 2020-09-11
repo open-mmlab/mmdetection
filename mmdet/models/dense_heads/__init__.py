@@ -11,14 +11,17 @@ from .ga_rpn_head import GARPNHead
 from .gfl_head import GFLHead
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 from .nasfcos_head import NASFCOSHead
+from .paa_head import PAAHead
 from .pisa_retinanet_head import PISARetinaHead
 from .pisa_ssd_head import PISASSDHead
 from .reppoints_head import RepPointsHead
 from .retina_head import RetinaHead
 from .retina_sepbn_head import RetinaSepBNHead
 from .rpn_head import RPNHead
+from .sabl_retina_head import SABLRetinaHead
 from .ssd_head import SSDHead
 from .yolact_head import YolactHead, YolactProtonet, YolactSegmHead
+from .yolo_head import YOLOV3Head
 
 __all__ = [
     'AnchorFreeHead', 'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption',
@@ -26,5 +29,6 @@ __all__ = [
     'SSDHead', 'FCOSHead', 'RepPointsHead', 'FoveaHead',
     'FreeAnchorRetinaHead', 'ATSSHead', 'FSAFHead', 'NASFCOSHead',
     'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead', 'YolactHead',
-    'YolactSegmHead', 'YolactProtonet'
+    'YolactSegmHead', 'YolactProtonet', 'PAAHead', 'YOLOV3Head',
+    'SABLRetinaHead'
 ]

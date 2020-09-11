@@ -11,7 +11,7 @@ Documentation: https://mmdetection.readthedocs.io/
 MMDetection is an open source object detection toolbox based on PyTorch. It is
 a part of the OpenMMLab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
 
-The master branch works with **PyTorch 1.3 to 1.5**.
+The master branch works with **PyTorch 1.3 to 1.6**.
 The old v1.x branch works with PyTorch 1.1 to 1.4, but v2.0 is strongly recommended for faster speed, higher performance, better design and more friendly usage.
 
 ![demo image](resources/coco_test_12510.jpg)
@@ -42,7 +42,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.2.0 was released in 1/7/2020.
+v2.4.0 was released in 5/9/2020.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -96,6 +96,10 @@ Supported methods:
 - [x] [GRoIE](configs/groie/README.md)
 - [x] [DetectoRS](configs/detectors/README.md)
 - [x] [Generalized Focal Loss](configs/gfl/README.md)
+- [x] [CornerNet](configs/cornernet/README.md)
+- [x] [Side-Aware Boundary Localization](configs/sabl/README.md)
+- [x] [YOLOv3](configs/yolo/README.md)
+- [x] [PAA](configs/paa/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
@@ -109,6 +113,8 @@ Please refer to [install.md](docs/install.md) for installation and dataset prepa
 Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection.
 We provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
 There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
+
+For trouble shooting, please refer to [trouble_shooting.md](docs/trouble_shooting.md)
 
 ## Contributing
 

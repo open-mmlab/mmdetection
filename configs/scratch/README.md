@@ -15,8 +15,8 @@
 
 | Model        | Backbone  | Style   | Lr schd | box AP | mask AP | Download |
 |:------------:|:---------:|:-------:|:-------:|:------:|:-------:|:--------:|
-| Faster R-CNN | R-50-FPN  | pytorch | 6x      | 40.7   |         | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/scratch/faster_rcnn_r50_fpn_gn-all_scratch_6x_coco/scratch_faster_rcnn_r50_fpn_gn_6x_bbox_mAP-0.407_20200201_193013-90813d01.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/scratch/faster_rcnn_r50_fpn_gn-all_scratch_6x_coco/scratch_faster_rcnn_r50_fpn_gn_6x_20200201_193013.log.json) |
-| Mask R-CNN   | R-50-FPN  | pytorch | 6x      | 41.2   | 37.4    | [model](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/scratch/mask_rcnn_r50_fpn_gn-all_scratch_6x_coco/scratch_mask_rcnn_r50_fpn_gn_6x_bbox_mAP-0.412__segm_mAP-0.374_20200201_193051-1e190a40.pth) &#124; [log](https://open-mmlab.s3.ap-northeast-2.amazonaws.com/mmdetection/v2.0/scratch/mask_rcnn_r50_fpn_gn-all_scratch_6x_coco/scratch_mask_rcnn_r50_fpn_gn_6x_20200201_193051.log.json)  |
+| Faster R-CNN | R-50-FPN  | pytorch | 6x      | 40.7   |         | [model](http://download.openmmlab.com/mmdetection/v2.0/scratch/faster_rcnn_r50_fpn_gn-all_scratch_6x_coco/scratch_faster_rcnn_r50_fpn_gn_6x_bbox_mAP-0.407_20200201_193013-90813d01.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/scratch/faster_rcnn_r50_fpn_gn-all_scratch_6x_coco/scratch_faster_rcnn_r50_fpn_gn_6x_20200201_193013.log.json) |
+| Mask R-CNN   | R-50-FPN  | pytorch | 6x      | 41.2   | 37.4    | [model](http://download.openmmlab.com/mmdetection/v2.0/scratch/mask_rcnn_r50_fpn_gn-all_scratch_6x_coco/scratch_mask_rcnn_r50_fpn_gn_6x_bbox_mAP-0.412__segm_mAP-0.374_20200201_193051-1e190a40.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/scratch/mask_rcnn_r50_fpn_gn-all_scratch_6x_coco/scratch_mask_rcnn_r50_fpn_gn_6x_20200201_193051.log.json)  |
 
 Note:
 - The above models are trained with 16 GPUs.
