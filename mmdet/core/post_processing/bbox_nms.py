@@ -55,7 +55,8 @@ def multiclass_nms(multi_bboxes,
         bboxes = multi_bboxes.new_zeros((0, 5))
         labels = multi_bboxes.new_zeros((0, ), dtype=torch.long)
 
-        if torch.onnx.is_in_onnx_export():
+        if hasattr(torch.onnx,
+                   'is_in_onnx_export') and torch.onnx.is_in_onnx_export():
             raise RuntimeError('[ONNX Error] Can not record NMS '
                                'as it has not been executed this time')
         return bboxes, labels
