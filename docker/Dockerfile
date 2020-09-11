@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y git ninja-build libglib2.0-0 libsm6 lib
     && rm -rf /var/lib/apt/lists/*
 
 # Install mmdetection
-RUN conda clean --all
+RUN conda install cython -y && conda clean --all
 ARG MMDET_BRANCH=ote
 RUN git clone --recursive --branch $MMDET_BRANCH https://github.com/opencv/mmdetection.git /mmdetection
 WORKDIR /mmdetection
