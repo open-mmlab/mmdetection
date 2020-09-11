@@ -34,7 +34,6 @@ RUN git clone --recursive --branch $MMDET_BRANCH https://github.com/opencv/mmdet
 WORKDIR /mmdetection
 ENV FORCE_CUDA="0"
 RUN pip install cython
-RUN pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
 RUN pip install --no-cache-dir -e .['all']
 
 # Install OpenVINO
