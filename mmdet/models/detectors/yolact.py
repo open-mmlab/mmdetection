@@ -1,12 +1,12 @@
 import torch
 
-from mmdet.core import bbox2result, multi_apply
+from mmdet.core import bbox2result
 from ..builder import DETECTORS, build_head
 from .single_stage import SingleStageDetector
 
 
 @DETECTORS.register_module()
-class Yolact(SingleStageDetector):
+class YOLACT(SingleStageDetector):
     """Implementation of `YOLACT <https://arxiv.org/abs/1904.02689>`_"""
 
     def __init__(self,
@@ -18,31 +18,16 @@ class Yolact(SingleStageDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
-        super(Yolact, self).__init__(backbone, neck, bbox_head, train_cfg,
+        super(YOLACT, self).__init__(backbone, neck, bbox_head, train_cfg,
                                      test_cfg, pretrained)
         self.segm_head = build_head(segm_head)
         self.mask_head = build_head(mask_head)
         self.init_segm_mask_weights()
-        if train_cfg is not None:
-            self.min_gt_box_wh = train_cfg.min_gt_box_wh
 
     def init_segm_mask_weights(self):
         """Initialize weights of the YOLACT semg head and YOLACT mask head."""
         self.segm_head.init_weights()
         self.mask_head.init_weights()
-
-    def process_gt_single(self, gt_bboxes, gt_labels, gt_masks, min_gt_box_wh,
-                          device):
-        """Cuda the gt_masks and discard boxes that are smaller than we'd
-        like."""
-        gt_masks = gt_masks.to_tensor(torch.uint8, device)
-        w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
-        h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
-        keep = (w > min_gt_box_wh[0]) & (h > min_gt_box_wh[1])
-        gt_bboxes = gt_bboxes[keep]
-        gt_labels = gt_labels[keep]
-        gt_masks = gt_masks[keep]
-        return gt_bboxes, gt_labels, gt_masks
 
     def forward_dummy(self, img):
         """Used for computing network flops.
@@ -78,17 +63,11 @@ class Yolact(SingleStageDetector):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        gt_bboxes, gt_labels, gt_masks = multi_apply(
-            self.process_gt_single,
-            gt_bboxes,
-            gt_labels,
-            gt_masks,
-            min_gt_box_wh=self.min_gt_box_wh,
-            device=img.device)
-
-        if any([labels.size(0) == 0 for labels in gt_labels]):
-            # dumb loss
-            return {'loss_cls': torch.zeros_like(img, requires_grad=True)}
+        # convert Bitmap mask or Polygon Mask to Tensor here
+        gt_masks = [
+            gt_mask.to_tensor(dtype=torch.uint8, device=img.device)
+            for gt_mask in gt_masks
+        ]
 
         x = self.extract_feat(img)
 

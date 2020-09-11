@@ -6,8 +6,8 @@ from mmdet.core import bbox2roi, build_assigner, build_sampler
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.models.dense_heads import (AnchorHead, CornerHead, FCOSHead,
                                       FSAFHead, GuidedAnchorHead, PAAHead,
-                                      SABLRetinaHead, YolactHead,
-                                      YolactProtonet, YolactSegmHead, paa_head)
+                                      SABLRetinaHead, YOLACTHead,
+                                      YOLACTProtonet, YOLACTSegmHead, paa_head)
 from mmdet.models.dense_heads.paa_head import levels_to_images
 from mmdet.models.roi_heads.bbox_heads import BBoxHead, SABLHead
 from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
@@ -1063,7 +1063,7 @@ def test_yolact_head_loss():
             neg_pos_ratio=3,
             debug=False,
             min_gt_box_wh=[4.0, 4.0]))
-    bbox_head = YolactHead(
+    bbox_head = YOLACTHead(
         num_classes=80,
         in_channels=256,
         feat_channels=256,
@@ -1090,18 +1090,15 @@ def test_yolact_head_loss():
         num_protos=32,
         use_ohem=True,
         train_cfg=train_cfg)
-    segm_head = YolactSegmHead(
+    segm_head = YOLACTSegmHead(
         in_channels=256,
         num_classes=80,
         loss_segm=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0))
-    mask_head = YolactProtonet(
-        protonet_cfg=dict(
-            kernel_size=[3, 3, 3, -2, 3, 1],
-            num_channels=[256, 256, 256, None, 256, 32]),
+    mask_head = YOLACTProtonet(
+        num_classes=80,
         in_channels=256,
         num_protos=32,
-        num_classes=80,
         max_masks_to_train=100,
         loss_mask_weight=6.125)
     feat = [

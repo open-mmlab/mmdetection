@@ -342,7 +342,8 @@ def _demo_mm_inputs(input_shape=(1, 3, 300, 300),
 
 
 def test_yolact_forward():
-    model, train_cfg, test_cfg = _get_detector_cfg('yolact/yolact_r50.py')
+    model, train_cfg, test_cfg = _get_detector_cfg(
+        'yolact/yolact_r50_1x8_coco.py')
     model['pretrained'] = None
 
     from mmdet.models import build_detector

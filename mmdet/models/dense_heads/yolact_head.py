@@ -12,7 +12,7 @@ from .anchor_head import AnchorHead
 
 
 @HEADS.register_module()
-class YolactHead(AnchorHead):
+class YOLACTHead(AnchorHead):
     """YOLACT box head used in https://arxiv.org/abs/1904.02689.
 
     Note that YOLACT head is a light version of RetinaNet head.
@@ -66,7 +66,7 @@ class YolactHead(AnchorHead):
         self.use_ohem = use_ohem
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        super(YolactHead, self).__init__(
+        super(YOLACTHead, self).__init__(
             num_classes,
             in_channels,
             loss_cls=loss_cls,
@@ -451,7 +451,7 @@ class YolactHead(AnchorHead):
 
 
 @HEADS.register_module()
-class YolactSegmHead(nn.Module):
+class YOLACTSegmHead(nn.Module):
     """YOLACT segmentation head used in https://arxiv.org/abs/1904.02689.
 
     Apply a semantic segmentation loss on feature space using layers that are
@@ -466,13 +466,13 @@ class YolactSegmHead(nn.Module):
     """
 
     def __init__(self,
+                 num_classes,
                  in_channels=256,
-                 num_classes=80,
                  loss_segm=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0)):
-        super(YolactSegmHead, self).__init__()
+        super(YOLACTSegmHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.loss_segm = build_loss(loss_segm)
@@ -567,14 +567,16 @@ class YolactSegmHead(nn.Module):
 
 
 @HEADS.register_module()
-class YolactProtonet(nn.Module):
+class YOLACTProtonet(nn.Module):
     """YOLACT mask head used in https://arxiv.org/abs/1904.02689.
 
     This head outputs the mask prototypes for YOLACT.
 
     Args:
-        protonet_cfg (dict): Config of Protonet.
         in_channels (int): Number of channels in the input feature map.
+        proto_channels (tuple[int]): Output channels of protonet convs.
+        proto_kernel_sizes (tuple[int]): Kernel sizes of protonet convs.
+        include_last_relu (Bool): If keep the last relu of protonet.
         num_protos (int): Number of prototypes.
         num_classes (int): Number of categories excluding the background
             category.
@@ -584,32 +586,38 @@ class YolactProtonet(nn.Module):
     """
 
     def __init__(self,
-                 protonet_cfg,
+                 num_classes,
                  in_channels=256,
+                 proto_channels=(256, 256, 256, None, 256, 32),
+                 proto_kernel_sizes=(3, 3, 3, -2, 3, 1),
+                 include_last_relu=True,
                  num_protos=32,
-                 num_classes=80,
                  loss_mask_weight=1.0,
                  max_masks_to_train=100):
-        super(YolactProtonet, self).__init__()
-        self.protonet = self.make_net(in_channels, protonet_cfg)
+        super(YOLACTProtonet, self).__init__()
+        self.in_channels = in_channels
+        self.proto_channels = proto_channels
+        self.proto_kernel_sizes = proto_kernel_sizes
+        self.include_last_relu = include_last_relu
+        self.protonet = self._init_layers()
+
         self.loss_mask_weight = loss_mask_weight
         self.num_protos = num_protos
         self.num_classes = num_classes
         self.max_masks_to_train = max_masks_to_train
         self.fp16_enabled = False
 
-    def make_net(self, in_channels, protonet_cfg, include_last_relu=True):
+    def _init_layers(self):
         """A helper function to take a config setting and turn it into a
         network."""
-
-        def make_layer(num_channels, kernel_size):
-            nonlocal in_channels
-
-            # Possible patterns:
-            # ( 256, 3) -> conv
-            # ( 256,-2) -> deconv
-            # (None,-2) -> bilinear interpolate
-
+        # Possible patterns:
+        # ( 256, 3) -> conv
+        # ( 256,-2) -> deconv
+        # (None,-2) -> bilinear interpolate
+        in_channels = self.in_channels
+        protonets = nn.ModuleList()
+        for num_channels, kernel_size in zip(self.proto_channels,
+                                             self.proto_kernel_sizes):
             if kernel_size > 0:
                 layer = nn.Conv2d(
                     in_channels,
@@ -628,21 +636,13 @@ class YolactProtonet(nn.Module):
                         num_channels,
                         -kernel_size,
                         padding=kernel_size // 2)
-
+            protonets.append(layer)
+            protonets.append(nn.ReLU(inplace=True))
             in_channels = num_channels if num_channels is not None \
                 else in_channels
-
-            return [layer, nn.ReLU(inplace=True)]
-
-        # Use sum to concat together all the component layer lists
-        net = sum([
-            make_layer(x, y) for x, y in zip(protonet_cfg['num_channels'],
-                                             protonet_cfg['kernel_size'])
-        ], [])
-        if not include_last_relu:
-            net = net[:-1]
-
-        return nn.Sequential(*(net))
+        if not self.include_last_relu:
+            protonets = protonets[:-1]
+        return nn.Sequential(*protonets)
 
     def init_weights(self):
         """Initialize weights of the head."""
@@ -766,7 +766,7 @@ class YolactProtonet(nn.Module):
             mask_targets = self.get_targets(cur_mask_pred, cur_gt_masks,
                                             pos_assigned_gt_inds)
             if num_pos == 0:
-                continue
+                loss = cur_mask_pred.sum() * 0.
             elif mask_targets is None:
                 loss = F.binary_cross_entropy(cur_mask_pred,
                                               torch.zeros_like(cur_mask_pred),
@@ -787,6 +787,8 @@ class YolactProtonet(nn.Module):
                 loss = torch.sum(loss)
             loss_mask.append(loss)
 
+        if total_pos == 0:
+            total_pos += 1  # avoid nan
         loss_mask = [x / total_pos for x in loss_mask]
 
         return dict(loss_mask=loss_mask)
@@ -882,7 +884,7 @@ class YolactProtonet(nn.Module):
 
         return masks * crop_mask.float()
 
-    def sanitize_coordinates(self, _x1, _x2, img_size, padding=0, cast=True):
+    def sanitize_coordinates(self, x1, x2, img_size, padding=0, cast=True):
         """Sanitizes the input coordinates so that x1 < x2, x1 != x2, x1 >= 0,
         and x2 <= image_size. Also converts from relative to absolute
         coordinates and casts the results to long tensors.
@@ -896,21 +898,21 @@ class YolactProtonet(nn.Module):
             img_size (int): Size of the input image.
             padding (int): x1 >= padding, x2 <= image_size-padding.
             cast (bool): If cast is false, the result won't be cast to longs.
+
         Returns:
             tuple:
                 x1 (Tensor): Sanitized _x1.
                 x2 (Tensor): Sanitized _x2.
         """
-        _x1 = _x1 * img_size
-        _x2 = _x2 * img_size
+        x1 = x1 * img_size
+        x2 = x2 * img_size
         if cast:
-            _x1 = _x1.long()
-            _x2 = _x2.long()
-        x1 = torch.min(_x1, _x2)
-        x2 = torch.max(_x1, _x2)
+            x1 = x1.long()
+            x2 = x2.long()
+        x1 = torch.min(x1, x2)
+        x2 = torch.max(x1, x2)
         x1 = torch.clamp(x1 - padding, min=0)
         x2 = torch.clamp(x2 + padding, max=img_size)
-
         return x1, x2
 
 
