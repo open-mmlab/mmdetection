@@ -29,7 +29,7 @@ RUN ln -s /usr/bin/python3.7 /usr/bin/python && \
 RUN pip install torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install mmdetection
-ARG MMDET_BRANCH=develop
+ARG MMDET_BRANCH=ote
 RUN git clone --recursive --branch $MMDET_BRANCH https://github.com/opencv/mmdetection.git /mmdetection
 WORKDIR /mmdetection
 ENV FORCE_CUDA="0"
