@@ -31,6 +31,7 @@ from mmdet.datasets.pipelines import Compose
 from mmdet.models import detectors
 from mmdet.models.dense_heads.anchor_head import AnchorHead
 from mmdet.models.roi_heads import SingleRoIExtractor
+from mmdet.parallel.data_cpu import scatter_cpu
 from mmdet.utils.deployment.ssd_export_helpers import *
 from mmdet.utils.deployment.symbolic import register_extra_symbolics
 from mmdet.utils.deployment.tracer_stubs import ROIFeatureExtractorStub
@@ -174,7 +175,10 @@ def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
     test_pipeline = Compose(test_pipeline)
     data = dict(img=np.zeros(orig_img_shape, dtype=np.uint8))
     data = test_pipeline(data)
-    data = scatter(collate([data], samples_per_gpu=1), [device])[0]
+    if device == torch.device('cpu'):
+        data = scatter_cpu(collate([data], samples_per_gpu=1))[0]
+    else:
+        data = scatter(collate([data], samples_per_gpu=1), [device])[0]
     return data
 
 

@@ -25,7 +25,7 @@ from openvino.inference_engine import IECore
 from ...models import build_detector
 
 
-class PerformanceCounters(object):
+class PerformanceCounters:
     def __init__(self):
         self.pc = {}
 
@@ -49,7 +49,7 @@ class PerformanceCounters(object):
                                           stats['status'], stats['real_time'] / stats['calls']))
 
 
-class ModelOpenVINO(object):
+class ModelOpenVINO:
 
     def __init__(self,
                  xml_file_path,
@@ -143,7 +143,7 @@ class ModelOpenVINO(object):
                 pass
 
     def configure_inputs(self, required):
-        self.net_inputs_mapping = OrderedDict((i, i) for i in self.net.inputs.keys())
+        self.net_inputs_mapping = OrderedDict((i, i) for i in self.net.input_info.keys())
         self.check_required(self.net_inputs_mapping.keys(), required)
 
     def configure_outputs(self, required):
@@ -208,7 +208,7 @@ class DetectorOpenVINO(ModelOpenVINO):
                          required_inputs=('image', ),
                          required_outputs=None,
                          **kwargs)
-        self.n, self.c, self.h, self.w = self.net.inputs['image'].shape
+        self.n, self.c, self.h, self.w = self.net.input_info['image'].input_data.shape
         assert self.n == 1, 'Only batch 1 is supported.'
 
     def configure_outputs(self, required):
