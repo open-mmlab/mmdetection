@@ -136,11 +136,13 @@ class SingleStageDetector(BaseDetector):
                 Defaults to False.
 
         Returns:
-            list[ndarray]: bbox results of each class
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
         """
         assert hasattr(self.bbox_head, 'aug_test'), \
             f'{self.bbox_head.__class__.__name__}' \
             ' does not support test-time augmentation'
 
         feats = self.extract_feats(imgs)
-        return self.bbox_head.aug_test(feats, img_metas, rescale=rescale)
+        return [self.bbox_head.aug_test(feats, img_metas, rescale=rescale)]
