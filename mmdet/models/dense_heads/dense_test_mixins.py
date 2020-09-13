@@ -1,3 +1,5 @@
+from inspect import signature
+
 import torch
 
 from mmdet.core import bbox2result, bbox_mapping_back, multiclass_nms
@@ -33,13 +35,13 @@ class BBoxTestMixin(object):
             scores = torch.cat(aug_scores, dim=0)
             return bboxes, scores
 
-    def aug_test_bboxes(self, imgs, img_metas, rescale=False):
+    def aug_test_bboxes(self, feats, img_metas, rescale=False):
         """Test det bboxes with test time augmentation.
 
         Args:
-            imgs (list[Tensor]): the outer list indicates test-time
+            feats (list[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
-                which contains all images in the batch.
+                which contains features for all images in the batch.
             img_metas (list[list[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch. each dict has image information.
@@ -49,16 +51,22 @@ class BBoxTestMixin(object):
         Returns:
             list[ndarray]: bbox results of each class
         """
-        # recompute feats to save memory
-        feats = self.extract_feats(imgs)
+        # check with_nms argument
+        gb_sig = signature(self.get_bboxes)
+        gb_args = [p.name for p in gb_sig.parameters.values()]
+        gbs_sig = signature(self._get_bboxes_single)
+        gbs_args = [p.name for p in gbs_sig.parameters.values()]
+        assert ('with_nms' in gb_args) and ('with_nms' in gbs_args), \
+            f'{self.__class__.__name__}' \
+            ' does not support test-time augmentation'
 
         aug_bboxes = []
         aug_scores = []
         for x, img_meta in zip(feats, img_metas):
             # only one image in the batch
-            outs = self.bbox_head(x)
+            outs = self.forward(x)
             bbox_inputs = outs + (img_meta, self.test_cfg, False, False)
-            det_bboxes, det_scores = self.bbox_head.get_bboxes(*bbox_inputs)[0]
+            det_bboxes, det_scores = self.get_bboxes(*bbox_inputs)[0]
             aug_bboxes.append(det_bboxes)
             aug_scores.append(det_scores)
 
@@ -76,6 +84,5 @@ class BBoxTestMixin(object):
             _det_bboxes = det_bboxes.clone()
             _det_bboxes[:, :4] *= det_bboxes.new_tensor(
                 img_metas[0][0]['scale_factor'])
-        bbox_results = bbox2result(_det_bboxes, det_labels,
-                                   self.bbox_head.num_classes)
+        bbox_results = bbox2result(_det_bboxes, det_labels, self.num_classes)
         return bbox_results

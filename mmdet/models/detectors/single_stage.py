@@ -121,5 +121,24 @@ class SingleStageDetector(BaseDetector):
         return bbox_results[0]
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        """Test function with test time augmentation."""
-        raise NotImplementedError
+        """Test function with test time augmentation.
+
+        Args:
+            imgs (list[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            img_metas (list[list[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. each dict has image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[ndarray]: bbox results of each class
+        """
+        assert hasattr(self.bbox_head, 'aug_test'), \
+            f'{self.bbox_head.__class__.__name__}' \
+            ' does not support test-time augmentation'
+
+        feats = self.extract_feats(imgs)
+        return self.bbox_head.aug_test(feats, img_metas, rescale=rescale)
