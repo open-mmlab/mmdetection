@@ -561,7 +561,22 @@ class PolygonMasks(BaseInstanceMasks):
                   fill_val=0,
                   interpolation='bilinear'):
         """Translate the PolygonMasks."""
-        raise NotImplementedError
+        if len(self.masks) == 0:
+            translated_masks = PolygonMasks([], *out_shape)
+        else:
+            translated_masks = []
+            for poly_per_obj in self.masks:
+                translated_poly_per_obj = []
+                for p in poly_per_obj:
+                    p = p.copy()
+                    if direction == 'horizontal':
+                        p[0::2] = np.clip(p[0::2] + offset, 0, out_shape[1])
+                    elif direction == 'vertical':
+                        p[1::2] = np.clip(p[1::2] + offset, 0, out_shape[0])
+                    translated_poly_per_obj.append(p)
+                translated_masks.append(translated_poly_per_obj)
+            translated_masks = PolygonMasks(translated_masks, *out_shape)
+        return translated_masks
 
     def to_bitmap(self):
         """convert polygon masks to bitmap masks."""

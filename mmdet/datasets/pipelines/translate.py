@@ -145,8 +145,7 @@ class Translate(object):
         for key in results.get('mask_fields', []):
             masks = results[key]
             if isinstance(masks, PolygonMasks):
-                # PolygonMasks is not supported currently
-                raise NotImplementedError
+                results[key] = masks.translate((h, w), offset, direction)
             elif isinstance(masks, BitmapMasks):
                 results[key] = masks.translate((h, w), offset, direction,
                                                fill_val, interpolation)
