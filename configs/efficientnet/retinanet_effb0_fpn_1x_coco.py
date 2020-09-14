@@ -63,7 +63,10 @@ lr_config = dict(
     _delete_=True,
     policy='CosineAnnealing',
     min_lr=0,
+    by_epoch=False,
     warmup='linear',
     warmup_iters=1,
     warmup_ratio=0.1,
     warmup_by_epoch=True)
+
+total_epochs = 80
