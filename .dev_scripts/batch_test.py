@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import subprocess
 import time
 
 import mmcv
@@ -239,8 +240,7 @@ def main():
         record['terminate'] = True
         dump_dict(record, args.json_out)
         check_finish(result_dict, args.json_out)
-        # call('xx')  # hack there to force all processes exit
-        os.system('kill %d' % os.getpid())
+        subprocess.call('xxx')
 
 
 if __name__ == '__main__':
