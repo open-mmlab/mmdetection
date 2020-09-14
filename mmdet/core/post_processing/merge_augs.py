@@ -14,7 +14,7 @@ def merge_aug_proposals(aug_proposals, img_metas, rpn_test_cfg):
             original image size.
 
         img_metas (list[dict]): list of image info dict where each dict has:
-            'img_shape', 'scale_factor', 'flip', and my also contain
+            'img_shape', 'scale_factor', 'flip', and may also contain
             'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
             For details on the values of these keys see
             `mmdet/datasets/pipelines/formatting.py:Collect`.
