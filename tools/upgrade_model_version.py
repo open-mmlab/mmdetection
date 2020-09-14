@@ -136,15 +136,23 @@ def convert(in_file, out_file, num_classes):
             new_key = 'roi_head.{}'.format(key)
 
         # classification
-        m = re.search(
-            r'(conv_cls|retina_cls|rpn_cls|fc_cls|fcos_cls|'
-            r'fovea_cls).(weight|bias)', new_key)
+        if is_two_stage:
+            m = re.search(
+                r'(conv_cls|retina_cls|fc_cls|fcos_cls|'
+                r'fovea_cls).(weight|bias)', new_key)
+        else:
+            m = re.search(
+                r'(conv_cls|retina_cls|rpn_cls|fc_cls|fcos_cls|'
+                r'fovea_cls).(weight|bias)', new_key)
         if m is not None:
             print(f'reorder cls channels of {new_key}')
             new_val = reorder_cls_channel(val, num_classes)
 
         # regression
-        m = re.search(r'(fc_reg|rpn_reg).(weight|bias)', new_key)
+        if is_two_stage:
+            m = re.search(r'(fc_reg).(weight|bias)', new_key)
+        else:
+            m = re.search(r'(fc_reg|rpn_reg).(weight|bias)', new_key)
         if m is not None and not reg_cls_agnostic:
             print(f'truncate regression channels of {new_key}')
             new_val = truncate_reg_channel(val, num_classes)
