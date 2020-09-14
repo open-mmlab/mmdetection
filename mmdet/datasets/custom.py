@@ -202,7 +202,8 @@ class CustomDataset(Dataset):
                  logger=None,
                  proposal_nums=(100, 300, 1000),
                  iou_thr=0.5,
-                 scale_ranges=None):
+                 scale_ranges=None,
+                 **kwargs):
         """Evaluate the dataset.
 
         Args:

@@ -26,7 +26,8 @@ class VOCDataset(XMLDataset):
                  logger=None,
                  proposal_nums=(100, 300, 1000),
                  iou_thr=0.5,
-                 scale_ranges=None):
+                 scale_ranges=None,
+                 **kwargs):
         if not isinstance(metric, str):
             assert len(metric) == 1
             metric = metric[0]

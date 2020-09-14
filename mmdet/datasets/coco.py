@@ -354,6 +354,9 @@ class CocoDataset(CustomDataset):
             iou_thrs (Sequence[float]): IoU threshold used for evaluating
                 recalls. If set to a list, the average recall of all IoUs will
                 also be computed. Default: 0.5.
+            test_cfg (dict[str: float]): Dictionary with testing parameters from
+                config. It is used to calculate f1-score for text detection task
+                for prediction which score is higher than score_thr value.
 
         Returns:
             dict[str: float]
