@@ -2,14 +2,14 @@
 
 We list some common troubles faced by many users and their corresponding solutions here. Feel free to enrich the list if you find any frequent issues and have ways to help others to solve them.
 
-- Compatibility issue between MMCV and MMDetection; "ConvWS is already registered in conv layer"
+- Compatibility issue between MMCV and MMDetection; "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, <=xxx."
 
-    Please install the correct version of MMCV for the version of your MMDetection following the instruction above.
+    Please install the correct version of MMCV for the version of your MMDetection following the installation instruction[installation instruction](https://mmdetection.readthedocs.io/en/latest/install.html#install-mmdetection).
 
 - "No module named 'mmcv.ops'"; "No module named 'mmcv._ext'".
 
     1. Uninstall existing mmcv in the environment using `pip uninstall mmcv`.
-    2. Install mmcv-full following the instruction above.
+    2. Install mmcv-full following the [installation instruction](https://mmdetection.readthedocs.io/en/latest/install.html#install-mmdetection).
 
 - "invalid device function" or "no kernel image is available for execution".
 

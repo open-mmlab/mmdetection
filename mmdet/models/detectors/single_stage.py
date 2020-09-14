@@ -104,7 +104,9 @@ class SingleStageDetector(BaseDetector):
                 Defaults to False.
 
         Returns:
-            np.ndarray: proposals
+            list[list[np.ndarray]]: BBox results of each image and classes.
+                The outer list corresponds to each image. The inner list
+                corresponds to each class.
         """
         x = self.extract_feat(img)
         outs = self.bbox_head(x)
@@ -118,7 +120,7 @@ class SingleStageDetector(BaseDetector):
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in bbox_list
         ]
-        return bbox_results[0]
+        return bbox_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test function with test time augmentation."""
