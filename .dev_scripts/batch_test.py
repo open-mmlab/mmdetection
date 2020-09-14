@@ -1,3 +1,14 @@
+"""
+some instructions
+1. Fill the models that needs to be checked in the modelzoo_dict
+2. Arange the structure of the directory as follows, the script will find the
+   corresponding config itself:
+   model_dir/model_family/checkpoints
+   e.g.: models/faster_rcnn/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+         models/faster_rcnn/faster_rcnn_r101_fpn_1x_coco_20200130-047c8118.pth
+3. Excute the batch_test.sh
+"""
+
 import argparse
 import json
 import os
@@ -49,6 +60,7 @@ def parse_args():
 
 
 def check_finish(all_model_dict, result_file):
+    # check if all models are checked
     tested_cfgs = []
     with open(result_file, 'r+') as f:
         for line in f:
@@ -64,6 +76,7 @@ def check_finish(all_model_dict, result_file):
 
 
 def dump_dict(record_dict, json_out):
+    # dump result json dict
     with open(json_out, 'a+') as f:
         mmcv.dump(record_dict, f, file_format='json')
         f.write('\n')
@@ -191,6 +204,7 @@ def main():
         record['terminate'] = True
         dump_dict(record, args.json_out)
         check_finish(result_dict, args.json_out)
+        # hack there to throw some error to prevent hang out
         subprocess.call('xxx')
 
 
