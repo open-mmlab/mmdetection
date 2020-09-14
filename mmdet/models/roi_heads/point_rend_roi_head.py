@@ -138,26 +138,51 @@ class PointRendRoIHead(StandardRoIHead):
                          det_labels,
                          rescale=False):
         """Obtain mask prediction without augmentation."""
-        # image shape of the first image in the batch (only one)
-        ori_shape = img_metas[0]['ori_shape']
-        scale_factor = img_metas[0]['scale_factor']
-        if det_bboxes.shape[0] == 0:
-            segm_result = [[] for _ in range(self.mask_head.num_classes)]
+        ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
+        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+        num_imgs = len(det_bboxes)
+        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
+            segm_results = [[[] for _ in range(self.mask_head.num_classes)]
+                            for _ in range(num_imgs)]
         else:
             # if det_bboxes is rescaled to the original image size, we need to
             # rescale it back to the testing scale to obtain RoIs.
-            if rescale and not isinstance(scale_factor, float):
-                scale_factor = det_bboxes.new_tensor(scale_factor)
-            _bboxes = (
-                det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
-            mask_rois = bbox2roi([_bboxes])
+            if rescale and not isinstance(scale_factors[0], float):
+                scale_factors = [
+                    torch.from_numpy(scale_factor).to(det_bboxes[0].device)
+                    for scale_factor in scale_factors
+                ]
+            _bboxes = [
+                det_bboxes[i][:, :4] *
+                scale_factors[i] if rescale else det_bboxes[i][:, :4]
+                for i in range(len(det_bboxes))
+            ]
+            mask_rois = bbox2roi(_bboxes)
             mask_results = self._mask_forward(x, mask_rois)
-            mask_results['mask_pred'] = self._mask_point_forward_test(
-                x, mask_rois, det_labels, mask_results['mask_pred'], img_metas)
-            segm_result = self.mask_head.get_seg_masks(
-                mask_results['mask_pred'], _bboxes, det_labels, self.test_cfg,
-                ori_shape, scale_factor, rescale)
-        return segm_result
+            # split batch mask prediction back to each image
+            mask_pred = mask_results['mask_pred']
+            num_mask_roi_per_img = [len(det_bbox) for det_bbox in det_bboxes]
+            mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
+            mask_rois = mask_rois.split(num_mask_roi_per_img, 0)
+
+            # apply mask post-processing to each image individually
+            segm_results = []
+            for i in range(num_imgs):
+                if det_bboxes[i].shape[0] == 0:
+                    segm_results.append(
+                        [[] for _ in range(self.mask_head.num_classes)])
+                else:
+                    x_i = [xx[[i]] for xx in x]
+                    mask_rois_i = mask_rois[i]
+                    mask_rois_i[:, 0] = 0  # TODO: remove this hack
+                    mask_pred_i = self._mask_point_forward_test(
+                        x_i, mask_rois_i, det_labels[i], mask_preds[i],
+                        [img_metas])
+                    segm_result = self.mask_head.get_seg_masks(
+                        mask_pred_i, _bboxes[i], det_labels[i], self.test_cfg,
+                        ori_shapes[i], scale_factors[i], rescale)
+                    segm_results.append(segm_result)
+        return segm_results
 
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):
         """Test for mask head with test time augmentation."""

@@ -1,5 +1,63 @@
 ## Changelog
 
+### v2.4.0 (5/9/2020)
+
+**Highlights**
+- Fix lots of issues/bugs and reorganize the trouble shooting page
+- Support new methods [SABL](https://arxiv.org/abs/1912.04260), [YOLOv3](https://arxiv.org/abs/1804.02767), and [PAA Assign](https://arxiv.org/abs/2007.08103)
+- Support Batch Inference
+- Start to publish `mmdet` package to PyPI since v2.3.0
+- Switch model zoo to download.openmmlab.com
+
+**Backwards Incompatible Changes**
+- Support Batch Inference (#3564, #3686, #3705): Since v2.4.0, MMDetection could inference model with multiple images in a single GPU.
+This change influences all the test APIs in MMDetection and downstream codebases. To help the users migrate their code, we use `replace_ImageToTensor` (#3686) to convert legacy test data pipelines during dataset initialization.
+- Support RandomFlip with horizontal/vertical/diagonal direction (#3608): Since v2.4.0, MMDetection supports horizontal/vertical/diagonal flip in the data augmentation. This influences bounding box, mask, and image transformations in data augmentation process and the process that will map those data back to the original format.
+- Migrate to use `mmlvis` and `mmpycocotools` for COCO and LVIS dataset (#3727). The APIs are fully compatible with the original `lvis` and `pycocotools`. Users need to uninstall the existing pycocotools and lvis packages in their environment first and install `mmlvis` & `mmpycocotools`.
+
+**Bug Fixes**
+- Fix default mean/std for onnx (#3491)
+- Fix coco evaluation and add metric items (#3497)
+- Fix typo for install.md (#3516)
+- Fix atss when sampler per gpu is 1 (#3528)
+- Fix import of fuse_conv_bn (#3529)
+- Fix bug of gaussian_target, update unittest of heatmap (#3543)
+- Fixed VOC2012 evaluate (#3553)
+- Fix scale factor bug of rescale (#3566)
+- Fix with_xxx_attributes in base detector (#3567)
+- Fix boxes scaling when number is 0 (#3575)
+- Fix rfp check when neck config is a list (#3591)
+- Fix import of fuse conv bn in benchmark.py (#3606)
+- Fix webcam demo (#3634)
+- Fix typo and itemize issues in tutorial (#3658)
+- Fix error in distributed training when some levels of FPN are not assigned with bounding boxes (#3670)
+- Fix the width and height orders of stride in valid flag generation (#3685)
+- Fix weight initialization bug in Res2Net DCN (#3714)
+- Fix bug in OHEMSampler (#3677)
+
+**New Features**
+- Support Cutout augmentation (#3521)
+- Support evaluation on multiple datasets through ConcatDataset (#3522)
+- Support [PAA assign](https://arxiv.org/abs/2007.08103) #(3547)
+- Support eval metric with pickle results (#3607)
+- Support [YOLOv3](https://arxiv.org/abs/1804.02767) (#3083)
+- Support [SABL](https://arxiv.org/abs/1912.04260) (#3603)
+- Support to publish to Pypi in github-action (#3510)
+- Support custom imports (#3641)
+
+**Improvements**
+- Refactor common issues in documentation (#3530)
+- Add pytorch 1.6 to CI config (#3532)
+- Add config to runner meta (#3534)
+- Add eval-option flag for testing (#3537)
+- Add init_eval to evaluation hook (#3550)
+- Add include_bkg in ClassBalancedDataset (#3577)
+- Using config's loading in inference_detector (#3611)
+- Add ATSS ResNet-101 models in model zoo (#3639)
+- Update urls to download.openmmlab.com (#3665)
+- Support non-mask training for CocoDataset (#3711)
+
+
 ### v2.3.0 (5/8/2020)
 
 **Highlights**

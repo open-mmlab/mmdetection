@@ -11,7 +11,8 @@ from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 
 from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.core import wrap_fp16_model
-from mmdet.datasets import build_dataloader, build_dataset
+from mmdet.datasets import (build_dataloader, build_dataset,
+                            replace_ImageToTensor)
 from mmdet.models import build_detector
 
 
@@ -111,15 +112,30 @@ def main():
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
+    # import modules from string list.
+    if cfg.get('custom_imports', None):
+        from mmcv.utils import import_modules_from_strings
+        import_modules_from_strings(**cfg['custom_imports'])
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
     cfg.model.pretrained = None
     if cfg.model.get('neck'):
-        if cfg.model.neck.get('rfp_backbone'):
+        if isinstance(cfg.model.neck, list):
+            for neck_cfg in cfg.model.neck:
+                if neck_cfg.get('rfp_backbone'):
+                    if neck_cfg.rfp_backbone.get('pretrained'):
+                        neck_cfg.rfp_backbone.pretrained = None
+        elif cfg.model.neck.get('rfp_backbone'):
             if cfg.model.neck.rfp_backbone.get('pretrained'):
                 cfg.model.neck.rfp_backbone.pretrained = None
-    cfg.data.test.test_mode = True
+
+    # in case the test dataset is concatenated
+    if isinstance(cfg.data.test, dict):
+        cfg.data.test.test_mode = True
+    elif isinstance(cfg.data.test, list):
+        for ds_cfg in cfg.data.test:
+            ds_cfg.test_mode = True
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
@@ -129,11 +145,14 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
 
     # build the dataloader
-    # TODO: support multiple images per gpu (only minor changes are needed)
+    samples_per_gpu = cfg.data.test.pop('samples_per_gpu', 1)
+    if samples_per_gpu > 1:
+        # Replace 'ImageToTensor' to 'DefaultFormatBundle'
+        cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
         dataset,
-        samples_per_gpu=1,
+        samples_per_gpu=samples_per_gpu,
         workers_per_gpu=cfg.data.workers_per_gpu,
         dist=distributed,
         shuffle=False)

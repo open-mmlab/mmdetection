@@ -62,6 +62,7 @@ optimizer = dict(type='SGD', lr=0.08, momentum=0.9, weight_decay=4e-5)
 lr_config = dict(
     _delete_=True,
     policy='CosineAnnealing',
+    by_epoch=False,
     min_lr=0,
     by_epoch=False,
     warmup='linear',
