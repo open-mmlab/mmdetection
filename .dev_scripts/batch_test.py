@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 import subprocess
-import time
 
 import mmcv
 import torch
@@ -10,50 +9,22 @@ from mmcv import Config, get_logger
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 
-from mmdet.apis import single_gpu_test
-from mmdet.apis.test import collect_results_gpu
-from mmdet.core import encode_mask_results, wrap_fp16_model
+from mmdet.apis import multi_gpu_test, single_gpu_test
+from mmdet.core import wrap_fp16_model
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.models import build_detector
 
 modelzoo_dict = {
-    'configs/atss/atss_r50_fpn_1x_coco.py': {
-        'bbox': 39.4
-    },
-    'configs/carafe/mask_rcnn_r50_fpn_carafe_1x_coco.py': {
-        'bbox': 39.3,
-        'segm': 35.8
-    },
-    'configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py': {
-        'bbox': 40.3
-    },
-    'configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py': {
-        'bbox': 41.2,
-        'segm': 35.9
-    },
-    'configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py': {
-        'bbox': 41.2
-    },
-    'configs/dcn/mask_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py': {
-        'bbox': 41.8,
-        'ap mask': 37.4
-    },
-    'configs/detectors/detectors_cascade_rcnn_r50_1x_coco.py': {
-        'bbox': 47.4
-    },
-    'configs/double_heads/dh_faster_rcnn_r50_fpn_1x_coco.py': {
-        'bbox': 40.0
-    },
-    'configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x.py': {
-        'bbox': 38.9
-    },
     'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py': {
-        'bbox': 37.4
+        'bbox': 0.374
     },
     'configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py': {
-        'bbox': 38.2,
-        'segm': 34.7
+        'bbox': 0.382,
+        'segm': 0.347
+    },
+    'configs/rpn/rpn_r50_fpn_1x_coco.py': {
+        'AR@1000': 0.582
     }
 }
 
@@ -86,7 +57,6 @@ def check_finish(all_model_dict, result_file):
     is_finish = True
     for cfg in sorted(all_model_dict.keys()):
         if cfg not in tested_cfgs:
-            is_finish = False
             return cfg
     if is_finish:
         with open(result_file, 'a+') as f:
@@ -101,6 +71,9 @@ def dump_dict(record_dict, json_out):
 
 def main():
     args = parse_args()
+    # touch the output json if not exist
+    with open(args.json_out, 'a+'):
+        pass
     # init distributed env first, since logger depends on the dist
     # info.
     if args.launcher == 'none':
@@ -115,22 +88,18 @@ def main():
     # read info of checkpoints and config
     result_dict = dict()
     for model_family_dir in os.listdir(args.model_dir):
-        model_family_dir_path = os.path.join(args.model_dir, model_family_dir)
-        for model_dir in os.listdir(model_family_dir_path):
-            model_dir_path = os.path.join(model_family_dir_path, model_dir)
-            cpt = [f for f in os.listdir(model_dir_path) if f.endswith('.pth')]
-            assert len(cpt) == 1, f'no valid checkpoint for {model_dir}'
-            cpt = cpt[0]
-            cpt_path = os.path.join(model_dir_path, cpt)
-            config_path = os.path.join('configs', model_family_dir,
-                                       model_dir) + '.py'
-            # check if the config name in modelzoo dict
-            assert config_path in modelzoo_dict, \
-                f'{config_path} not in modelzoo dict'
+        for model in os.listdir(
+                os.path.join(args.model_dir, model_family_dir)):
+            # cpt: rpn_r50_fpn_1x_coco_20200218-5525fa2e.pth
+            # cfg: rpn_r50_fpn_1x_coco.py
+            cfg = model.split('.')[0][:-18] + '.py'
+            cfg_path = os.path.join('configs', model_family_dir, cfg)
             assert os.path.isfile(
-                config_path), f'no valid config path for {config_path}'
-            result_dict[config_path] = cpt_path
-
+                cfg_path), f'{cfg_path} is not valid config path'
+            cpt_path = os.path.join(args.model_dir, model_family_dir, model)
+            result_dict[cfg_path] = cpt_path
+            assert cfg_path in modelzoo_dict, f'please fill the ' \
+                                              f'performance of cfg: {cfg_path}'
     cfg = check_finish(result_dict, args.json_out)
     cpt = result_dict[cfg]
     try:
@@ -161,7 +130,7 @@ def main():
                 ds_cfg.test_mode = True
 
         # build the dataloader
-        samples_per_gpu = cfg.data.test.pop('samples_per_gpu', 1)
+        samples_per_gpu = 2  # hack test with 2 image per gpu
         if samples_per_gpu > 1:
             # Replace 'ImageToTensor' to 'DefaultFormatBundle'
             cfg.data.test.pipeline = replace_ImageToTensor(
@@ -197,42 +166,24 @@ def main():
                 model.cuda(),
                 device_ids=[torch.cuda.current_device()],
                 broadcast_buffers=False)
-            model.eval()
-            results = []
-            dataset = data_loader.dataset
-            rank, world_size = get_dist_info()
-            if rank == 0:
-                prog_bar = mmcv.ProgressBar(len(dataset))
-            # This line can prevent deadlock problem in some cases.
-            time.sleep(2)
-            for i, data in enumerate(data_loader):
-                with torch.no_grad():
-                    if 'faster_rcnn' in cpt and i == 20 and rank == 0:
-                        record[3333333]
-                    result = model(return_loss=False, rescale=True, **data)
-                    # encode mask results
-                    if isinstance(result[0], tuple):
-                        result = [(bbox_results,
-                                   encode_mask_results(mask_results))
-                                  for bbox_results, mask_results in result]
-                results.extend(result)
-
-                if rank == 0:
-                    batch_size = len(result)
-                    for _ in range(batch_size * world_size):
-                        prog_bar.update()
-
-            # collect results from all ranks
-            outputs = collect_results_gpu(results, len(dataset))
-
+            outputs = multi_gpu_test(model, data_loader, args.tmpdir,
+                                     args.gpu_collect)
         if rank == 0:
             ref_mAP_dict = modelzoo_dict[cfg_name]
             metrics = list(ref_mAP_dict.keys())
+            metrics = [
+                m if m != 'AR@1000' else 'proposal_fast' for m in metrics
+            ]
             eval_results = dataset.evaluate(outputs, metrics)
             print(eval_results)
             for metric in metrics:
-                eval_metric = eval_results[f'{metric}_mAP']
+                metric_key = f'{metric}_mAP' if metric != 'proposal_fast' \
+                    else 'AR@1000'
+                eval_metric = eval_results[metric_key]
                 record[metric] = eval_metric
+                if abs(record[metric] -
+                       modelzoo_dict[cfg_name][metric_key]) > 0.003:
+                    record['is_normal'] = False
             dump_dict(record, args.json_out)
             check_finish(result_dict, args.json_out)
     except Exception as e:
