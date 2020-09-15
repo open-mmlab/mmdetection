@@ -4,7 +4,7 @@ import mmcv
 import numpy as np
 from numpy import random
 
-from mmdet.core import PolygonMasks
+from mmdet.core import BitmapMasks, PolygonMasks
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..builder import PIPELINES
 
@@ -1253,6 +1253,11 @@ class Albu(object):
         # update final shape
         if self.update_pad_shape:
             results['pad_shape'] = results['img'].shape
+
+        if 'masks' in results and \
+                not isinstance(results['masks'], BitmapMasks):
+            h, w = results['img_info']['height'], results['img_info']['width']
+            results['masks'] = BitmapMasks(results['masks'], h, w)
 
         return results
 
