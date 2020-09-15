@@ -9,7 +9,7 @@ from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
-eps = 1e-12
+EPS = 1e-12
 
 
 def reduce_mean(tensor):
@@ -294,7 +294,7 @@ class ATSSHead(AnchorHead):
 
         bbox_avg_factor = sum(bbox_avg_factor)
         bbox_avg_factor = reduce_mean(bbox_avg_factor).item()
-        if bbox_avg_factor < eps:
+        if bbox_avg_factor < EPS:
             bbox_avg_factor = 1
         losses_bbox = list(map(lambda x: x / bbox_avg_factor, losses_bbox))
         return dict(
