@@ -1,5 +1,4 @@
 # model settings
-# AnchorGenerator and rcnn score threshold were modified for scouting feed.
 model = dict(
     type='CascadeRCNN',
     pretrained='torchvision://resnet50',
@@ -16,8 +15,8 @@ model = dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
-        # num_outs=5),
         num_outs=4),
+        # num_outs=5),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -43,7 +42,7 @@ model = dict(
         stage_loss_weights=[1, 0.5, 0.25],
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', out_size=7, sample_num=0),
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
         bbox_head=[
@@ -161,7 +160,6 @@ train_cfg = dict(
             assigner=dict(
                 type='MaxIoUAssigner',
                 pos_iou_thr=0.7,
-
                 neg_iou_thr=0.7,
                 min_pos_iou=0.7,
                 match_low_quality=False,
@@ -184,5 +182,6 @@ test_cfg = dict(
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(
-        score_thr=0.70, nms=dict(type='nms', iou_thr=0.10), max_per_img=100))
-# score_thr=0.60, nms=dict(type='nms', iou_thr=0.80), max_per_img=100))
+        score_thr=0.50,
+        nms=dict(type='nms', iou_threshold=0.80),
+        max_per_img=100))
