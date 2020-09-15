@@ -179,8 +179,7 @@ def main():
                 model.cuda(),
                 device_ids=[torch.cuda.current_device()],
                 broadcast_buffers=False)
-            outputs = multi_gpu_test(model, data_loader, args.tmpdir,
-                                     args.gpu_collect)
+            outputs = multi_gpu_test(model, data_loader, 'tmp')
         if rank == 0:
             ref_mAP_dict = modelzoo_dict[cfg_name]
             metrics = list(ref_mAP_dict.keys())
@@ -192,7 +191,7 @@ def main():
             for metric in metrics:
                 metric_key = f'{metric}_mAP' if metric != 'proposal_fast' \
                     else 'AR@1000'
-                eval_metric = eval_results[metric_key]
+                eval_metric = eval_results[metric]
                 record[metric] = eval_metric
                 if abs(record[metric] -
                        modelzoo_dict[cfg_name][metric_key]) > 0.003:
