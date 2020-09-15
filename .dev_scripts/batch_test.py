@@ -189,12 +189,13 @@ def main():
             eval_results = dataset.evaluate(outputs, metrics)
             print(eval_results)
             for metric in metrics:
-                metric_key = f'{metric}_mAP' if metric != 'proposal_fast' \
-                    else 'AR@1000'
-                eval_metric = eval_results[metric]
-                record[metric] = eval_metric
-                if abs(record[metric] -
-                       modelzoo_dict[cfg_name][metric_key]) > 0.003:
+                if metric == 'proposal_fast':
+                    ref_metric = modelzoo_dict[cfg_name]['AR@1000']
+                    eval_metric = eval_results['AR@1000']
+                else:
+                    ref_metric = modelzoo_dict[cfg_name][metric]
+                    eval_metric = eval_results[f'{metric}_mAP']
+                if abs(ref_metric - eval_metric) > 0.003:
                     record['is_normal'] = False
             dump_dict(record, args.json_out)
             check_finish(result_dict, args.json_out)

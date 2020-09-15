@@ -1,8 +1,8 @@
 export PYTHONPATH=${PWD}
 
-partition=platform
-model_dir=$1
-json_out=$2
+partition=$1
+model_dir=$2
+json_out=$3
 job_name=batch_test
 gpus=8
 gpu_per_node=8
@@ -17,5 +17,3 @@ do
     lastLine=$(tail -n 1 $json_out)
     echo $lastLine
 done
-
-# python .dev_scripts/batch_test.py models $json_out
