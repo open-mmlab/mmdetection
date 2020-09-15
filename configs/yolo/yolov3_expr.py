@@ -121,13 +121,13 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=2000,  # same as burn-in in darknet
     warmup_ratio=0.1,
-    step=[218, 246])
+    step=[21800, 24600])
 # runtime settings
-total_epochs = 273
-evaluation = dict(interval=2, metric=['bbox'])
-checkpoint_config = dict(interval=2)
+total_epochs = 27300
+evaluation = dict(interval=50, metric=['bbox'])
+checkpoint_config = dict(interval=50)
 log_config = dict(  # config to register logger hook
-    interval=5,  # Interval to print the log
+    interval=1,  # Interval to print the log
     hooks=[
         dict(type='TensorboardLoggerHook'),
         dict(type='TextLoggerHook')
