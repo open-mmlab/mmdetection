@@ -28,10 +28,8 @@ class EvalHook(Hook):
         key_indicator (str | None): Key indicator to measure the best
             checkpoint during evaluation when ``save_best`` is set to True.
             Options are the evaluation metrics to the test dataset. e.g.,
-             ``top1_acc``, ``top5_acc``, ``mean_class_accuracy``,
-            ``mean_average_precision`` for action recognition dataset
-            (RawframeDataset and VideoDataset). ``AR@AN``, ``auc`` for action
-            localization dataset (ActivityNetDataset). Default: `top1_acc`.
+            ``bbox_mAP``, ``segm_mAP`` for bbox detection and instance
+            segmentation. ``AR@100`` for proposal recall. Default: `bbox_mAP`.
         rule (str | None): Comparison rule for best score. If set to None,
             it will infer a reasonable rule. Default: 'None'.
         **eval_kwargs: Evaluation arguments fed into the evaluate function of
@@ -172,6 +170,15 @@ class DistEvalHook(EvalHook):
             processes. Default: None.
         gpu_collect (bool): Whether to use gpu or cpu to collect results.
             Default: False.
+        save_best (bool): Whether to save best checkpoint during evaluation.
+            Default: True.
+        key_indicator (str | None): Key indicator to measure the best
+            checkpoint during evaluation when ``save_best`` is set to True.
+            Options are the evaluation metrics to the test dataset. e.g.,
+            ``bbox_mAP``, ``segm_mAP`` for bbox detection and instance
+            segmentation. ``AR@100`` for proposal recall. Default: `bbox_mAP`.
+        rule (str | None): Comparison rule for best score. If set to None,
+            it will infer a reasonable rule. Default: 'None'.
         **eval_kwargs: Evaluation arguments fed into the evaluate function of
             the dataset.
     """
@@ -182,9 +189,18 @@ class DistEvalHook(EvalHook):
                  interval=1,
                  tmpdir=None,
                  gpu_collect=False,
+                 save_best=False,
+                 key_indicator='bbox_mAP',
+                 rule=None,
                  **eval_kwargs):
         super().__init__(
-            dataloader, start=start, interval=interval, **eval_kwargs)
+            dataloader,
+            start=start,
+            interval=interval,
+            save_best=save_best,
+            key_indicator=key_indicator,
+            rule=rule,
+            **eval_kwargs)
         self.tmpdir = tmpdir
         self.gpu_collect = gpu_collect
 
