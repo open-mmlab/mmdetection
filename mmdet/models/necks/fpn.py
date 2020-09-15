@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
+from mmcv.runner import auto_fp16
 
-from mmdet.core import auto_fp16
 from ..builder import NECKS
 
 

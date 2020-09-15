@@ -5,9 +5,10 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, build_upsample_layer
 from mmcv.ops import Conv2d
 from mmcv.ops.carafe import CARAFEPack
+from mmcv.runner import auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import auto_fp16, force_fp32, mask_target
+from mmdet.core import mask_target
 from mmdet.models.builder import HEADS, build_loss
 
 BYTES_PER_FLOAT = 4

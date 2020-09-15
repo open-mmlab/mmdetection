@@ -1,7 +1,8 @@
 import numpy as np
 import torch
+from mmcv.runner import force_fp32
 
-from mmdet.core import force_fp32, multi_apply, multiclass_nms
+from mmdet.core import multi_apply, multiclass_nms
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead

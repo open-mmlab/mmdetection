@@ -1,8 +1,9 @@
 import numpy as np
 import torch
 from mmcv.cnn import normal_init
+from mmcv.runner import force_fp32
 
-from mmdet.core import (anchor_inside_flags, force_fp32, images_to_levels,
+from mmdet.core import (anchor_inside_flags, images_to_levels,
                         multi_apply, unmap)
 from ..builder import HEADS
 from ..losses.accuracy import accuracy
