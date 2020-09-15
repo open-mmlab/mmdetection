@@ -123,9 +123,9 @@ lr_config = dict(
     warmup_ratio=0.1,
     step=[21800, 24600])
 # runtime settings
-total_epochs = 27300
-evaluation = dict(interval=50, metric=['bbox'])
-checkpoint_config = dict(interval=50)
+total_epochs = 273
+evaluation = dict(interval=4, metric=['bbox'])
+checkpoint_config = dict(interval=4)
 log_config = dict(  # config to register logger hook
     interval=1,  # Interval to print the log
     hooks=[
