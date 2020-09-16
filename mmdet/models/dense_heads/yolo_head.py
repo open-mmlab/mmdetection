@@ -69,10 +69,11 @@ class YOLOV3Head(BaseDenseHead):
         super(YOLOV3Head, self).__init__()
         # Check params
         assert (len(in_channels) == len(out_channels) == len(featmap_strides))
-        assert (loss_cls != None) and (loss_conf != None)
-        assert (loss_bbox != None) ^ (loss_xy != None and loss_wh != None)
+        assert (loss_cls is not None) and (loss_conf is not None)
+        assert (loss_bbox is not None) ^ (loss_xy is not None and loss_wh is
+                                          not None)
 
-        self.using_iou_loss = loss_bbox != None
+        self.using_iou_loss = loss_bbox is not None
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -338,7 +339,8 @@ class YOLOV3Head(BaseDenseHead):
 
         level_idx_list = list(range(len(pred_maps)))
         losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
-            self.loss_single, pred_maps, target_maps_list, neg_maps_list, anchor_list, level_idx_list)
+            self.loss_single, pred_maps, target_maps_list,
+            neg_maps_list, anchor_list, level_idx_list)
 
         return dict(
             loss_cls=losses_cls,
@@ -386,8 +388,10 @@ class YOLOV3Head(BaseDenseHead):
 
         if self.using_iou_loss:
             # preparation for box decoding
-            anchor_strides = torch.tensor(self.featmap_strides[level_idx],
-                                 device=pred_map.device).repeat(len(anchors[level_idx])).repeat(num_imgs)
+            anchor_strides = torch.tensor(
+                self.featmap_strides[level_idx],
+                device=pred_map.device).repeat(len(
+                    anchors[level_idx])).repeat(num_imgs)
             anchors = anchors[level_idx].repeat(num_imgs, 1)
             assert len(anchor_strides) == len(anchors)
             pred_xywh = pred_map[..., :4].reshape(-1, 4).contiguous()
@@ -487,7 +491,8 @@ class YOLOV3Head(BaseDenseHead):
             concat_anchors.size(0), self.num_attrib)
 
         if self.using_iou_loss:
-            target_map[sampling_result.pos_inds, :4] = sampling_result.pos_bboxes
+            target_map[sampling_result.pos_inds, :4] = \
+                sampling_result.pos_bboxes
         else:
             target_map[sampling_result.pos_inds, :4] = self.bbox_coder.encode(
                     sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes,

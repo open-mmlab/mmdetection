@@ -7,7 +7,8 @@ model = dict(
                   depth=53,
                   out_indices=(3, 4, 5),
                   csp_on=True,
-                  norm_cfg=dict(type='BN', requires_grad=True, eps=1e-04, momentum=0.03),
+                  norm_cfg=dict(type='BN', requires_grad=True,
+                                eps=1e-04, momentum=0.03),
                   ),
     neck=dict(
         type='YOLOV4Neck',
