@@ -562,7 +562,31 @@ class PolygonMasks(BaseInstanceMasks):
               direction='horizontal',
               border_value=0,
               interpolation='bilinear'):
-        raise NotImplementedError
+        if len(self.masks) == 0:
+            sheared_masks = PolygonMasks([], *out_shape)
+        else:
+            sheared_masks = []
+            if direction == 'horizontal':
+                shear_matrix = np.stack([[1, magnitude],
+                                         [0, 1]]).astype(np.float32)
+            elif direction == 'vertical':
+                shear_matrix = np.stack([[1, 0], [magnitude,
+                                                  1]]).astype(np.float32)
+            for poly_per_obj in self.masks:
+                sheared_poly = []
+                for p in poly_per_obj:
+                    p = p.copy()
+                    p = np.stack([p[0::2], p[1::2]], axis=0)  # [2, n]
+                    new_coords = np.matmul(shear_matrix, p)  # [2, n]
+                    new_coords[0, :] = np.clip(new_coords[0, :], 0,
+                                               out_shape[1])
+                    new_coords[1, :] = np.clip(new_coords[1, :], 0,
+                                               out_shape[0])
+                    sheared_poly.append(
+                        new_coords.transpose((1, 0)).reshape(-1))
+                sheared_masks.append(sheared_poly)
+            sheared_masks = PolygonMasks(sheared_masks, *out_shape)
+        return sheared_masks
 
     def to_bitmap(self):
         """convert polygon masks to bitmap masks."""

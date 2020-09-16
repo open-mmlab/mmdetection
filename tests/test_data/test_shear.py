@@ -30,8 +30,9 @@ def construct_toy_data(poly2mask=True):
                             dtype=np.uint8)[None, :, :]
         results['gt_masks'] = BitmapMasks(gt_masks, 2, 4)
     else:
-        # TODO support for PolygonMasks
-        results['gt_masks'] = PolygonMasks([[np.empty(0)]], 2, 4)
+        raw_masks = [[np.array([1, 0, 2, 0, 2, 1, 1, 1], dtype=np.float)]]
+        results['gt_masks'] = PolygonMasks(raw_masks, 2, 4)
+
     # segmentations
     results['seg_fields'] = ['gt_semantic_seg']
     results['gt_semantic_seg'] = img[..., 0]
@@ -143,8 +144,17 @@ def test_shear():
         [[1, 2, 3, 4], [255, 5, 6, 7]], dtype=results['gt_semantic_seg'].dtype)
     check_shear(results_gt, results_sheared)
 
+    # test PolygonMasks with shear horizontally, magnitude=1
+    results = construct_toy_data(poly2mask=False)
+    results_sheared = shear_module(
+        copy.deepcopy(results), random_negative_prob=0.)
+    gt_masks = [[np.array([1, 0, 2, 0, 3, 1, 2, 1], dtype=np.float)]]
+    results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
+    check_shear(results_gt, results_sheared)
+
     # test shear vertically, magnitude=-1
     img_fill_val = 128
+    results = construct_toy_data()
     transform = dict(
         type='Shear',
         level=10,
@@ -172,10 +182,10 @@ def test_shear():
         dtype=results['gt_semantic_seg'].dtype)
     check_shear(results_gt, results_sheared)
 
-    # test mask with type PolygonMasks
+    # test PolygonMasks with shear vertically, magnitude=-1
     results = construct_toy_data(poly2mask=False)
-    transform = dict(
-        type='Shear', level=10, prob=1., img_fill_val=img_fill_val)
-    shear_module = build_from_cfg(transform, PIPELINES)
-    with pytest.raises(NotImplementedError):
-        shear_module(copy.deepcopy(results))
+    results_sheared = shear_module(
+        copy.deepcopy(results), random_negative_prob=1.)
+    gt_masks = [[np.array([1, 0, 2, 0, 2, 0, 1, 0], dtype=np.float)]]
+    results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
+    check_shear(results_gt, results_sheared)

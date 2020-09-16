@@ -1,7 +1,6 @@
 import mmcv
 import numpy as np
 
-from mmdet.core.mask import BitmapMasks, PolygonMasks
 from ..builder import PIPELINES
 
 _MAX_LEVEL = 10
@@ -138,18 +137,14 @@ class Shear(object):
                 (2, 1, 0)).astype(np.float32)  # [nb_box, 2, 4]
             new_coords = np.matmul(shear_matrix[None, :, :],
                                    coordinates)  # [nb_box, 2, 4]
-            min_x, min_y = np.min(
-                new_coords[:, 0, :], axis=-1), np.min(
-                    new_coords[:, 1, :], axis=-1)
-            max_x, max_y = np.max(
-                new_coords[:, 0, :], axis=-1), np.max(
-                    new_coords[:, 1, :], axis=-1)
-            min_x, min_y = np.clip(
-                min_x, a_min=0, a_max=w), np.clip(
-                    min_y, a_min=0, a_max=h)
-            max_x, max_y = np.clip(
-                max_x, a_min=min_x, a_max=w), np.clip(
-                    max_y, a_min=min_y, a_max=h)
+            min_x = np.min(new_coords[:, 0, :], axis=-1)
+            min_y = np.min(new_coords[:, 1, :], axis=-1)
+            max_x = np.max(new_coords[:, 0, :], axis=-1)
+            max_y = np.max(new_coords[:, 1, :], axis=-1)
+            min_x = np.clip(min_x, a_min=0, a_max=w)
+            min_y = np.clip(min_y, a_min=0, a_max=h)
+            max_x = np.clip(max_x, a_min=min_x, a_max=w)
+            max_y = np.clip(max_y, a_min=min_y, a_max=h)
             results[key] = np.stack([min_x, min_y, max_x, max_y],
                                     axis=-1).astype(results[key].dtype)
 
@@ -163,14 +158,11 @@ class Shear(object):
         h, w, c = results['img_shape']
         for key in results.get('mask_fields', []):
             masks = results[key]
-            if isinstance(masks, PolygonMasks):
-                raise NotImplementedError
-            elif isinstance(masks, BitmapMasks):
-                results[key] = masks.shear((h, w),
-                                           magnitude,
-                                           direction,
-                                           border_value=fill_val,
-                                           interpolation=interpolation)
+            results[key] = masks.shear((h, w),
+                                       magnitude,
+                                       direction,
+                                       border_value=fill_val,
+                                       interpolation=interpolation)
 
     def _shear_seg(self,
                    results,
@@ -196,6 +188,7 @@ class Shear(object):
             bbox_w = results[key][:, 2] - results[key][:, 0]
             bbox_h = results[key][:, 3] - results[key][:, 1]
             valid_inds = (bbox_w > min_bbox_size) & (bbox_h > min_bbox_size)
+            valid_inds = np.nonzero(valid_inds)[0]
             results[key] = results[key][valid_inds]
             # label fields. e.g. gt_labels and gt_labels_ignore
             label_key = bbox2label.get(key)
