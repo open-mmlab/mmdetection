@@ -336,7 +336,7 @@ class CocoDataset(CustomDataset):
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=np.arange(0.5, 0.96, 0.05),
-                 test_cfg=None):
+                 score_thr=None):
         """Evaluation in COCO protocol.
 
         Args:
@@ -354,9 +354,8 @@ class CocoDataset(CustomDataset):
             iou_thrs (Sequence[float]): IoU threshold used for evaluating
                 recalls. If set to a list, the average recall of all IoUs will
                 also be computed. Default: 0.5.
-            test_cfg (dict[str: float]): Dictionary with testing parameters from
-                config. It is used to calculate f1-score for text detection task
-                for prediction which score is higher than score_thr value.
+            score_thr (float): Score threshold used to calculate
+                f1-score for text detection task.
 
         Returns:
             dict[str: float]
@@ -424,7 +423,7 @@ class CocoDataset(CustomDataset):
                     predictions = cocoEval.cocoDt.imgToAnns
                     gt_annotations = cocoEval.cocoGt.imgToAnns
                     recall, precision, hmean, _ = text_eval(
-                        predictions, gt_annotations, test_cfg.score_thr,
+                        predictions, gt_annotations, score_thr,
                         show_recall_graph=False,
                         use_transcriptions=False)
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.

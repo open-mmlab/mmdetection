@@ -150,11 +150,14 @@ def main():
         if args.out:
             print(f'\nwriting results to {args.out}')
             mmcv.dump(outputs, args.out)
-        kwargs = {} if args.options is None else args.options
+        kwargs = cfg.get('evaluation', {})
+        kwargs.pop('interval', None)
+        kwargs.update({} if args.options is None else args.options)
+        kwargs['metric'] = args.eval
         if args.format_only:
             dataset.format_results(outputs, **kwargs)
         if args.eval:
-            dataset.evaluate(outputs, args.eval, test_cfg=cfg.test_cfg, **kwargs)
+            dataset.evaluate(outputs, **kwargs)
 
 
 if __name__ == '__main__':
