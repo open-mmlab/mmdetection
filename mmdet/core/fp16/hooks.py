@@ -4,9 +4,11 @@ import torch
 import torch.nn as nn
 from mmcv.runner import OptimizerHook
 
-from ..utils.dist_utils import allreduce_grads
-from .utils import cast_tensor_type
+from mmdet.utils import get_root_logger
 from .loss_scaler import LossScaler
+from .utils import cast_tensor_type
+from ..utils.dist_utils import allreduce_grads
+
 
 class Fp16OptimizerHook(OptimizerHook):
     """FP16 optimizer hook.
@@ -21,7 +23,8 @@ class Fp16OptimizerHook(OptimizerHook):
     Refer to https://arxiv.org/abs/1710.03740 for more details.
 
     Args:
-        loss_scale (float): Scale factor multiplied with loss.
+        loss_scale (float | str): Scale factor multiplied with loss. If
+            'dynamic' is specified, then dynamic loss scaling will be used.
     """
 
     def __init__(self,
@@ -65,7 +68,8 @@ class Fp16OptimizerHook(OptimizerHook):
             fp16_param.data.copy_(fp32_param.data)
 
     def after_train_iter(self, runner):
-        """Backward optimization steps for Mixed Precision Training.
+        """Backward optimization steps for Mixed Precision Training. For
+        dynamic loss scaling, please refer `loss_scalar.py`
 
         1. Scale the loss by a scale factor.
         2. Backward the loss to obtain the gradients (fp16).
@@ -88,10 +92,11 @@ class Fp16OptimizerHook(OptimizerHook):
         # allreduce grads
         if self.distributed:
             allreduce_grads(fp32_weights, self.coalesce, self.bucket_size_mb)
-        # scale the gradients back
 
         has_overflow = self.loss_scaler.has_overflow(fp32_weights)
+        # if has overflow, skip this iteration
         if not has_overflow:
+            # scale the gradients back
             for param in fp32_weights:
                 if param.grad is not None:
                     param.grad.div_(self.loss_scaler.loss_scale)
@@ -101,9 +106,10 @@ class Fp16OptimizerHook(OptimizerHook):
             runner.optimizer.step()
             # copy fp32 params to the fp16 model
             self.copy_params_to_fp16(runner.model, fp32_weights)
-        else:
-            print('overflow, skip!')
         self.loss_scaler.update_scale(has_overflow)
+        if has_overflow:
+            get_root_logger().warning('Check overflow, downscale loss scale '
+                                      f'to {self.loss_scaler.cur_scale}')
 
 
 def wrap_fp16_model(model):
@@ -166,4 +172,3 @@ def patch_forward_method(func, src_type, dst_type, convert_output=True):
         return output
 
     return new_forward
-
