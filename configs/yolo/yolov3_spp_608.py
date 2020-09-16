@@ -30,26 +30,17 @@ model = dict(
         loss_cls=dict(
             type='CrossEntropyLoss',
             use_sigmoid=True,
-            # type='FocalLoss',
-            # gamma=0,
-            # alpha=0.25,
-            loss_weight=1.0,  # 37.4,
+            loss_weight=1.0,
             reduction='sum'),
-        # loss_conf=dict(
-        #     type='FocalLoss',
-        #     gamma=0,
-        #     alpha=0.25,
-        #     loss_weight=122.17),  # 64.3),
         loss_conf=dict(
             type='CrossEntropyLoss',
             use_sigmoid=True,
-            loss_weight=1.0,  # 64.3,
+            loss_weight=1.0,
             reduction='sum'),
-        loss_xy=dict(
-            type='CIoULoss',
-            loss_weight=2.0,  # 3.54,
+        loss_bbox=dict(
+            type='GIoULoss',
+            loss_weight=10.0,
             reduction='sum'),
-        # loss_wh=dict(type='MSELoss', loss_weight=2.0, reduction='sum')
         ))
 # training and testing settings
 train_cfg = dict(
@@ -62,13 +53,6 @@ test_cfg = dict(
     conf_thr=0.001,
     nms=dict(type='nms', iou_thr=0.6),
     max_per_img=100)
-# test_cfg = dict(
-#     nms_pre=1000,
-#     min_bbox_size=0,
-#     score_thr=0.05,
-#     conf_thr=0.005,
-#     nms=dict(type='nms', iou_thr=0.7),
-#     max_per_img=100)
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
@@ -120,18 +104,16 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
-        # ann_file=data_root + 'annotations/coco_yolo_5k.json', #######!!!!!!!!!!!!!!!
-        # img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        # ann_file=data_root + 'annotations/instances_val2017.json',
-        # img_prefix=data_root + 'val2017/',
-        ann_file=data_root + 'annotations/coco_yolo_5k.json', #######!!!!!!!!!!!!!!!
-        img_prefix=data_root + 'val2014/', #######!!!!!!!!!!!!!!!
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        img_prefix=data_root + 'val2017/',
+        # if the test weight is transformed from ultralytic/yolov3
+        # ann_file=data_root + 'annotations/coco_yolo_5k.json',
+        # img_prefix=data_root + 'val2014/',
         pipeline=test_pipeline))
 # optimizer
-# optimizer = dict(type='SGD', lr=0.001, momentum=0.937, weight_decay=0.0005)
 optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy

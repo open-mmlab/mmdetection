@@ -155,7 +155,6 @@ class YOLOV4Neck(nn.Module):
             det_channel_idx = ds_channel_idx - 1
             det_in_c = self.in_channels[det_channel_idx]
             det_out_c = self.out_channels[det_channel_idx]
-            # TODO: check if this works
             self.add_module(f'downsample_conv{i-self.num_scales+1}',
                             ConvModule(ds_in_c, ds_out_c, 3,
                                        stride=2,
