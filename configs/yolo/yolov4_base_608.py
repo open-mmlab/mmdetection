@@ -75,6 +75,6 @@ evaluation = dict(interval=7, metric=['bbox'])
 log_config = dict(  # config to register logger hook
     interval=50,  # Interval to print the log
     hooks=[
-        dict(type='TensorboardLoggerHook'),
+        # dict(type='TensorboardLoggerHook'),
         dict(type='TextLoggerHook')
     ])  # The logger used to record the training process.
