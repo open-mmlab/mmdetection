@@ -126,7 +126,7 @@ lr_config = dict(
     step=[218, 246])
 # runtime settings
 total_epochs = 273
-evaluation = dict(interval=1, metric=['bbox'])
+evaluation = dict(interval=7, metric=['bbox'])
 
 log_config = dict(  # config to register logger hook
     interval=50,  # Interval to print the log
