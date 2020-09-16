@@ -5,9 +5,9 @@ import torch.nn as nn
 from mmcv.runner import OptimizerHook
 
 from mmdet.utils import get_root_logger
+from ..utils.dist_utils import allreduce_grads
 from .loss_scaler import LossScaler
 from .utils import cast_tensor_type
-from ..utils.dist_utils import allreduce_grads
 
 
 class Fp16OptimizerHook(OptimizerHook):
