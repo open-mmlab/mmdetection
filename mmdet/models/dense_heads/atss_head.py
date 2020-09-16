@@ -9,6 +9,8 @@ from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
+EPS = 1e-12
+
 
 def reduce_mean(tensor):
     if not (dist.is_available() and dist.is_initialized()):
@@ -219,7 +221,7 @@ class ATSSHead(AnchorHead):
         else:
             loss_bbox = bbox_pred.sum() * 0
             loss_centerness = centerness.sum() * 0
-            centerness_targets = torch.tensor(0).cuda()
+            centerness_targets = bbox_targets.new_tensor(0.)
 
         return loss_cls, loss_bbox, loss_centerness, centerness_targets.sum()
 
@@ -292,6 +294,8 @@ class ATSSHead(AnchorHead):
 
         bbox_avg_factor = sum(bbox_avg_factor)
         bbox_avg_factor = reduce_mean(bbox_avg_factor).item()
+        if bbox_avg_factor < EPS:
+            bbox_avg_factor = 1
         losses_bbox = list(map(lambda x: x / bbox_avg_factor, losses_bbox))
         return dict(
             loss_cls=losses_cls,
@@ -445,7 +449,6 @@ class ATSSHead(AnchorHead):
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-
         mlvl_scores = torch.cat(mlvl_scores)
         # Add a dummy background class to the backend when using sigmoid
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
