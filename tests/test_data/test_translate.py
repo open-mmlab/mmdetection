@@ -462,8 +462,11 @@ def test_translate():
                     p[0::2] = np.clip(p[0::2] + offset, 0, out_shape[1])
                 elif direction == 'vertical':
                     p[1::2] = np.clip(p[1::2] + offset, 0, out_shape[0])
-                translated_poly_per_obj.append(p)
-            translated_masks.append(translated_poly_per_obj)
+                if PolygonMasks([[p]], *out_shape).areas[0] > 0:
+                    # filter invalid (area=0)
+                    translated_poly_per_obj.append(p)
+            if len(translated_poly_per_obj):
+                translated_masks.append(translated_poly_per_obj)
         translated_masks = PolygonMasks(translated_masks, *out_shape)
         return translated_masks
 
@@ -471,14 +474,24 @@ def test_translate():
     for key in results.get('mask_fields', []):
         masks = results[key]
         translated_gt = _translated_gt(masks, 'vertical', -offset, (h, w))
-
-        mask = results_translated[key].to_ndarray(
-        ) != translated_gt.to_ndarray()
-        print(results_translated[key].to_ndarray()[mask])
-        print('--------------------------')
-        print(translated_gt.to_ndarray()[mask])
         assert np.equal(results_translated[key].to_ndarray(),
                         translated_gt.to_ndarray()).all()
 
-
-test_translate()
+    # test translate horizontally with PolygonMasks (right shift)
+    results = construct_toy_data(False)
+    transform = dict(
+        type='Translate',
+        level=8,
+        prob=1.0,
+        img_fill_val=img_fill_val,
+        seg_ignore_label=seg_ignore_label)
+    translate_module = build_from_cfg(transform, PIPELINES)
+    offset = translate_module.offset
+    results_translated = translate_module(
+        copy.deepcopy(results), random_negative_prob=0.0)
+    h, w = results['img_shape'][:2]
+    for key in results.get('mask_fields', []):
+        masks = results[key]
+        translated_gt = _translated_gt(masks, 'horizontal', offset, (h, w))
+        assert np.equal(results_translated[key].to_ndarray(),
+                        translated_gt.to_ndarray()).all()

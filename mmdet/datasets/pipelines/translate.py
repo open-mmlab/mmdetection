@@ -169,6 +169,7 @@ class Translate(object):
             bbox_w = results[key][:, 2] - results[key][:, 0]
             bbox_h = results[key][:, 3] - results[key][:, 1]
             valid_inds = (bbox_w > min_size) & (bbox_h > min_size)
+            valid_inds = np.nonzero(valid_inds)[0]
             results[key] = results[key][valid_inds]
             # label fields. e.g. gt_labels and gt_labels_ignore
             label_key = bbox2label.get(key)
