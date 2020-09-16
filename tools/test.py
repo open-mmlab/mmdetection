@@ -11,7 +11,8 @@ from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 
 from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.core import wrap_fp16_model
-from mmdet.datasets import build_dataloader, build_dataset
+from mmdet.datasets import (build_dataloader, build_dataset,
+                            replace_ImageToTensor)
 from mmdet.models import build_detector
 
 
@@ -145,6 +146,9 @@ def main():
 
     # build the dataloader
     samples_per_gpu = cfg.data.test.pop('samples_per_gpu', 1)
+    if samples_per_gpu > 1:
+        # Replace 'ImageToTensor' to 'DefaultFormatBundle'
+        cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(
         dataset,
