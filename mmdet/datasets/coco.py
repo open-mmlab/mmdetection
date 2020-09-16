@@ -14,6 +14,15 @@ from mmdet.core import eval_recalls
 from .builder import DATASETS
 from .custom import CustomDataset
 
+try:
+    import pycocotools
+    assert pycocotools.__version__ >= '12.0.2'
+except AssertionError:
+    raise AssertionError('Incompatible version of pycocotools is installed. '
+                         'Run pip uninstall pycocotools first. Then run pip '
+                         'install mmpycocotools to install open-mmlab forked '
+                         'pycocotools.')
+
 
 @DATASETS.register_module()
 class CocoDataset(CustomDataset):
@@ -157,7 +166,7 @@ class CocoDataset(CustomDataset):
             else:
                 gt_bboxes.append(bbox)
                 gt_labels.append(self.cat2label[ann['category_id']])
-                gt_masks_ann.append(ann['segmentation'])
+                gt_masks_ann.append(ann.get('segmentation', None))
 
         if gt_bboxes:
             gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
