@@ -562,6 +562,7 @@ class PolygonMasks(BaseInstanceMasks):
               direction='horizontal',
               border_value=0,
               interpolation='bilinear'):
+        """See :func:`BaseInstanceMasks.shear`."""
         if len(self.masks) == 0:
             sheared_masks = PolygonMasks([], *out_shape)
         else:
