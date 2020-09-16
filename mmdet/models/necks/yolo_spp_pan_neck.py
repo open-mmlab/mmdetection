@@ -181,21 +181,21 @@ class YOLOV4Neck(nn.Module):
 
             # Cat with low-lvl feats
             tmp = F.interpolate(tmp, scale_factor=2)
-            tmp = torch.cat((tmp, tmp_x), 1)
+            tmp = torch.cat((tmp_x, tmp), 1)
 
             detect = getattr(self, f'detect{i+2}')
             out = detect(tmp)
             outs.append(out)
 
+        cur_feat = outs[-1]
         for i in range(self.num_scales - 1):
-            x = outs[-1-i]
             downsample_conv = getattr(self, f'downsample_conv{i+1}')
-            tmp = downsample_conv(x)
+            tmp = downsample_conv(cur_feat)
             tmp = torch.cat((tmp, outs[-2-i]), 1)
 
             detect = getattr(self, f'detect{i+self.num_scales+1}')
-            out = detect(tmp)
-            outs[-2-i] = out
+            cur_feat = detect(tmp)
+            outs[-2-i] = cur_feat
 
         return tuple(outs)
 
