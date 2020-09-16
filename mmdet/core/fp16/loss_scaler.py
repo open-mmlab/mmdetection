@@ -1,7 +1,7 @@
 class LossScaler:
-    """ Class that manages loss scaling in mixed precision training which
+    """Class that manages loss scaling in mixed precision training which
     supports both dynamic or static mode. The implementation refers to
-    https://github.com/NVIDIA/apex/blob/master/apex/fp16_utils/loss_scaler.py
+    https://github.com/NVIDIA/apex/blob/master/apex/fp16_utils/loss_scaler.py.
 
     Indirectly, by supplying ``mode='dynamic'`` for dynamic loss scaling.
     It's important to understand how :class:`LossScaler` operates.
@@ -40,7 +40,7 @@ class LossScaler:
 
     def has_overflow(self, params):
         """Check if params contain overflow."""
-        if self.mode is not 'dynamic':
+        if self.mode != 'dynamic':
             return False
         for p in params:
             if p.grad is not None and LossScaler._has_inf_or_nan(p.grad.data):
@@ -52,7 +52,7 @@ class LossScaler:
         try:
             cpu_sum = float(x.float().sum())
         except RuntimeError as instance:
-            if "value cannot be converted" not in instance.args[0]:
+            if 'value cannot be converted' not in instance.args[0]:
                 raise
             return True
         else:
@@ -62,8 +62,8 @@ class LossScaler:
             return False
 
     def update_scale(self, overflow):
-        """update the current loss scale value when overflow happens"""
-        if self.mode is not 'dynamic':
+        """update the current loss scale value when overflow happens."""
+        if self.mode != 'dynamic':
             return
         if overflow:
             self.cur_scale = max(self.cur_scale / self.scale_factor, 1)
