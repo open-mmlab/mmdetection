@@ -94,10 +94,12 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         self.bbox_assigner = []
         self.bbox_sampler = []
         if self.train_cfg is not None:
-            for rcnn_train_cfg in self.train_cfg:
+            for idx, rcnn_train_cfg in enumerate(self.train_cfg):
                 self.bbox_assigner.append(
                     build_assigner(rcnn_train_cfg.assigner))
-                self.bbox_sampler.append(build_sampler(rcnn_train_cfg.sampler))
+                self.current_stage = idx
+                self.bbox_sampler.append(
+                    build_sampler(rcnn_train_cfg.sampler, context=self))
 
     def init_weights(self, pretrained):
         """Initialize the weights in head.

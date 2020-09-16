@@ -14,6 +14,8 @@ jobs:
           python-version: 3.7
       - name: Install torch
         run: pip install torch
+      - name: Install wheel
+        run: pip install wheel
       - name: Build MMDetection
         run: python setup.py sdist bdist_wheel
       - name: Publish distribution to PyPI
