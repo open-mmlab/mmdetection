@@ -156,3 +156,135 @@ We support many other learning rate schedule [here](https://github.com/open-mmla
         warmup_ratio=1.0 / 10,
         min_lr_ratio=1e-5)
     ```
+
+## Customize hooks
+
+### Customize self-implemented hooks
+
+#### 1. Implement a new hook
+
+There are some need when the users might need to implement a new hook. MMDetection supports customized hooks in training (#3395) since v2.3.0. Thus the users could implement a hook directly in mmdet or their mmdet-based codebases and use the hook by only modify the config in training.
+Before v2.3.0, the users need to modify the code to get the hook registered before training starts.
+Here we give an example of creating a new hook in mmdet and using it in training.
+
+```python
+from mmcv.runner import HOOKS, Hook
+
+
+@HOOKS.register_module()
+class MyHook(Hook):
+
+    def __init__(self, a, b):
+        pass
+
+    def before_run(self, runner):
+        pass
+
+    def after_run(self, runner):
+        pass
+
+    def before_epoch(self, runner):
+        pass
+
+    def after_epoch(self, runner):
+        pass
+
+    def before_iter(self, runner):
+        pass
+
+    def after_iter(self, runner):
+        pass
+```
+
+Depending on the functionality of the hook, the users need to specify what the hook will do at each stage of the training in `before_run`, `after_run`, `before_epoch`, `after_epoch`, `before_iter`, and `after_iter`.
+
+#### 2. Register the new hook
+
+Then we need to make `MyHook` imported, assume the file is in `mmdet/core/utils/my_hook.py` there are two ways to do that:
+
+- Modify `mmdet/core/utils/__init__.py` to import it.
+
+    The newly defined module should be imported in `mmdet/core/utils/__init__.py` so that the registry will
+    find the new module and add it:
+
+```python
+from .my_hook import MyHook
+```
+
+- Use `custom_imports` in the config to manually import it
+
+```python
+custom_imports = dict(imports=['mmdet.core.utils.my_hook'], allow_failed_imports=False)
+```
+
+#### 3. Modify the config
+
+```python
+custom_hooks = [
+    dict(type='MyHook', a=a_value, b=b_value)
+]
+```
+
+You can also set the priority of the hook by add key `priority` to `'NORMAL'` or `'HIGHEST'` as below
+
+```python
+custom_hooks = [
+    dict(type='MyHook', a=a_value, b=b_value, priority='NORMAL')
+]
+```
+
+### Use hooks implemented in MMCV
+
+If the hook is already implemented in MMCV, you can directly modify the config to use the hook as below
+
+```python
+custom_hooks = [
+    dict(type='MyHook', a=a_value, b=b_value, priority='NORMAL')
+]
+```
+
+### Modify default runtime hooks
+
+There are some common hooks that will not be registerd through `custom_hooks`, they are
+
+- log_config
+- checkpoint_config
+- evaluation
+- lr_config
+- optimizer_config
+- momentum_config
+
+The above-mentioned tutorials already covers how to modify `optimizer_config`, `momentum_config`, and `lr_config`.
+Here we reveals how what we can do with `log_config`, `checkpoint_config`, and `evaluation`.
+
+#### Checkpoint config
+The MMCV runner will use `checkpoint_config` to initialize [`CheckpointHook`](https://github.com/open-mmlab/mmcv/blob/9ecd6b0d5ff9d2172c49a182eaa669e9f27bb8e7/mmcv/runner/hooks/checkpoint.py#L9).
+
+```python
+checkpoint_config = dict(interval=1)
+```
+
+The users could set `max_keep_ckpts` to only save only small number of checkpoints or decide whether to store state dict of optimizer by `save_optimizer`. More details of the arguments are [here](https://mmcv.readthedocs.io/en/latest/api.html#mmcv.runner.CheckpointHook)
+
+#### Log config
+
+The `log_config` wraps multiple logger hooks and enables to set intervals. Now MMCV supports `WandbLoggerHook`, `MlflowLoggerHook`, and `TensorboardLoggerHook`.
+The detail usages can be found in the [doc](https://mmcv.readthedocs.io/en/latest/api.html#mmcv.runner.LoggerHook).
+
+```python
+log_config = dict(
+    interval=50,
+    hooks=[
+        dict(type='TextLoggerHook'),
+        dict(type='TensorboardLoggerHook')
+    ])
+```
+
+#### Evaluation config
+
+The config of `evaluation` will be used to initialize the [`EvalHook`](https://github.com/open-mmlab/mmdetection/blob/7a404a2c000620d52156774a5025070d9e00d918/mmdet/core/evaluation/eval_hooks.py#L8).
+Except the key `interval`, other arguments such as `metric` will be passed to the `dataset.evaluate()`
+
+```python
+evaluation = dict(interval=1, metric='bbox')
+```
