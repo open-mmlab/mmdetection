@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
@@ -550,7 +551,33 @@ class PolygonMasks(BaseInstanceMasks):
         return PolygonMasks(resized_masks, *out_shape)
 
     def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
-        raise NotImplementedError
+        """See :func:`BaseInstanceMasks.rotate`."""
+        if len(self.masks) == 0:
+            rotated_masks = PolygonMasks([], *out_shape)
+        else:
+            rotated_masks = []
+            rotate_matrix = cv2.getRotationMatrix2D(center, -angle, scale)
+            for poly_per_obj in self.masks:
+                rotated_poly = []
+                for p in poly_per_obj:
+                    p = p.copy()
+                    coords = np.stack([p[0::2], p[1::2]], axis=1)  # [n, 2]
+                    # pad 1 to convert from format [x, y] to homogeneous
+                    # coordinates format [x, y, 1]
+                    coords = np.concatenate(
+                        (coords, np.ones((coords.shape[0], 1), coords.dtype)),
+                        axis=1)  # [n, 3]
+                    rotated_coords = np.matmul(
+                        rotate_matrix[None, :, :],
+                        coords[:, :, None])[..., 0]  # [n, 2, 1] -> [n, 2]
+                    rotated_coords[:, 0] = np.clip(rotated_coords[:, 0], 0,
+                                                   out_shape[1])
+                    rotated_coords[:, 1] = np.clip(rotated_coords[:, 1], 0,
+                                                   out_shape[0])
+                    rotated_poly.append(rotated_coords.reshape(-1))
+                rotated_masks.append(rotated_poly)
+            rotated_masks = PolygonMasks(rotated_masks, *out_shape)
+        return rotated_masks
 
     def to_bitmap(self):
         """convert polygon masks to bitmap masks."""

@@ -30,8 +30,8 @@ def construct_toy_data(poly2mask=True):
                             dtype=np.uint8)[None, :, :]
         results['gt_masks'] = BitmapMasks(gt_masks, 2, 4)
     else:
-        # TODO support for PolygonMasks
-        results['gt_masks'] = PolygonMasks([[np.empty(0)]], 2, 4)
+        raw_masks = [[np.array([0, 0, 2, 0, 2, 1, 0, 1], dtype=np.float)]]
+        results['gt_masks'] = PolygonMasks(raw_masks, 2, 4)
     # segmentations
     results['seg_fields'] = ['gt_semantic_seg']
     results['gt_semantic_seg'] = img[..., 0]
@@ -113,14 +113,6 @@ def test_rotate():
     results_wo_rotate = rotate_module(copy.deepcopy(results))
     check_rotate(results, results_wo_rotate)
 
-    # test mask with type PolygonMasks
-    results = construct_toy_data(poly2mask=False)
-    transform = dict(
-        type='Rotate', level=10, prob=1., img_fill_val=img_fill_val)
-    rotate_module = build_from_cfg(transform, PIPELINES)
-    with pytest.raises(NotImplementedError):
-        rotate_module(copy.deepcopy(results))
-
     # test clockwise rotation with angle 90
     results = construct_toy_data()
     img_fill_val = 128
@@ -149,6 +141,14 @@ def test_rotate():
                             255]]).astype(results['gt_semantic_seg'].dtype)
     check_rotate(results_gt, results_rotated)
 
+    # test clockwise rotation with angle 90, PolygonMasks
+    results = construct_toy_data(poly2mask=False)
+    results_rotated = rotate_module(
+        copy.deepcopy(results), random_negative_prob=0.)
+    gt_masks = [[np.array([2, 0, 2, 1, 1, 1, 1, 0], dtype=np.float)]]
+    results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
+    check_rotate(results_gt, results_rotated)
+
     # test counter-clockwise roatation with angle 90,
     # and specify the ratation center
     img_fill_val = (104, 116, 124)
@@ -159,8 +159,9 @@ def test_rotate():
         center=(0, 0),
         img_fill_val=img_fill_val,
         prob=1.)
+    results = construct_toy_data()
     rotate_module = build_from_cfg(transform, PIPELINES)
-    # set random_negative_prob to 0 for counter-clockwise rotation
+    # set random_negative_prob to 1 for counter-clockwise rotation
     results_rotated = rotate_module(
         copy.deepcopy(results), random_negative_prob=1.)
     results_gt = copy.deepcopy(results)
@@ -194,4 +195,13 @@ def test_rotate():
     rotate_module = build_from_cfg(transform, PIPELINES)
     results_rotated = rotate_module(
         copy.deepcopy(results), random_negative_prob=1.)
+    check_rotate(results_gt, results_rotated)
+
+    # test counter-clockwise roatation with angle 90,
+    # and specify the ratation center, PolygonMasks
+    results = construct_toy_data(poly2mask=False)
+    results_rotated = rotate_module(
+        copy.deepcopy(results), random_negative_prob=1.)
+    gt_masks = [[np.array([0, 0, 0, 0, 1, 0, 1, 0], dtype=np.float)]]
+    results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
     check_rotate(results_gt, results_rotated)

@@ -2,7 +2,6 @@ import cv2
 import mmcv
 import numpy as np
 
-from mmdet.core.mask import BitmapMasks, PolygonMasks
 from mmdet.datasets import PIPELINES
 
 _MAX_LEVEL = 10
@@ -174,11 +173,7 @@ class Rotate(object):
         h, w, c = results['img_shape']
         for key in results.get('mask_fields', []):
             masks = results[key]
-            if isinstance(masks, PolygonMasks):
-                raise NotImplementedError
-            elif isinstance(masks, BitmapMasks):
-                results[key] = masks.rotate((h, w), angle, center, scale,
-                                            fill_val)
+            results[key] = masks.rotate((h, w), angle, center, scale, fill_val)
 
     def _rotate_seg(self,
                     results,
@@ -201,6 +196,7 @@ class Rotate(object):
             bbox_w = results[key][:, 2] - results[key][:, 0]
             bbox_h = results[key][:, 3] - results[key][:, 1]
             valid_inds = (bbox_w > min_bbox_size) & (bbox_h > min_bbox_size)
+            valid_inds = np.nonzero(valid_inds)[0]
             results[key] = results[key][valid_inds]
             # label fields. e.g. gt_labels and gt_labels_ignore
             label_key = bbox2label.get(key)
