@@ -152,6 +152,7 @@ def main():
             mmcv.dump(outputs, args.out)
         kwargs = cfg.get('evaluation', {})
         kwargs.pop('interval', None)
+        kwargs.pop('gpu_collect', None)
         kwargs.update({} if args.options is None else args.options)
         kwargs['metric'] = args.eval
         if args.format_only:
