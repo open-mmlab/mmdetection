@@ -1,6 +1,6 @@
 import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
-from mmcv.runner import load_checkpoint, auto_fp16
+from mmcv.runner import auto_fp16, load_checkpoint
 
 from mmdet.models.backbones import ResNet
 from mmdet.models.builder import SHARED_HEADS

@@ -5,8 +5,7 @@ from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
-                        images_to_levels, multi_apply,
-                        multiclass_nms, unmap)
+                        images_to_levels, multi_apply, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
