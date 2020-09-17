@@ -477,9 +477,9 @@ class ATSSHead(AnchorHead):
                     unmap_outputs=True):
         """Get targets for ATSS head.
 
-        This method is almost the same as `AnchorHead.get_targets()`. Besides
-        returning the targets as the parent method does, it also returns the
-        anchors as the first element of the returned tuple.
+        This method is almost the same as `AnchorHead.get_targets()`.
+        Besides returning the targets as the parent method does, it also
+        returns the anchors as the first element of the returned tuple.
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs

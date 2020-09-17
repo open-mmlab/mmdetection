@@ -139,8 +139,8 @@ class RPN(BaseDetector):
     def show_result(self, data, result, dataset=None, top_k=20):
         """Show RPN proposals on the image.
 
-        Although we assume batch size is 1, this method supports arbitrary
-        batch size.
+        Although we assume batch size is 1, this method supports
+        arbitrary batch size.
         """
         img_tensor = data['img'][0]
         img_metas = data['img_metas'][0].data[0]

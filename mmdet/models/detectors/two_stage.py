@@ -10,8 +10,8 @@ from .base import BaseDetector
 class TwoStageDetector(BaseDetector):
     """Base class for two-stage detectors.
 
-    Two-stage detectors typically consisting of a region proposal network and a
-    task-specific regression head.
+    Two-stage detectors typically consisting of a region proposal
+    network and a task-specific regression head.
     """
 
     def __init__(self,
@@ -201,8 +201,8 @@ class TwoStageDetector(BaseDetector):
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test with augmentations.
 
-        If rescale is False, then returned bboxes and masks will fit the scale
-        of imgs[0].
+        If rescale is False, then returned bboxes and masks will fit the
+        scale of imgs[0].
         """
         # recompute feats to save memory
         x = self.extract_feats(imgs)

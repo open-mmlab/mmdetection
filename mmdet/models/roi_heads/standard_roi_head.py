@@ -267,8 +267,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def aug_test(self, x, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
 
-        If rescale is False, then returned bboxes and masks will fit the scale
-        of imgs[0].
+        If rescale is False, then returned bboxes and masks will fit the
+        scale of imgs[0].
         """
         # recompute feats to save memory
         det_bboxes, det_labels = self.aug_test_bboxes(x, img_metas,
