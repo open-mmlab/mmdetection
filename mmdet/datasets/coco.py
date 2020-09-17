@@ -360,16 +360,30 @@ class CocoDataset(CustomDataset):
             dict[str: float]
         """
 
+        def get_metrics_name(metric):
+            return metric.split('@')[0]
+
+        def get_metrics_params(metric):
+            metrics_name_params = metric.split('@')
+            if len(metrics_name_params) == 2:
+                return {k:v for k,v in (x.split('=') for x in metrics_name_params[1].split(','))}
+            elif len(metrics_name_params) == 1:
+                return {}
+            else:
+                raise RuntimeError(f'Failed to parse metrics: {metric}')
+
         metrics = metric if isinstance(metric, list) else [metric]
         allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast', 'f1']
         for metric in metrics:
-            if metric not in allowed_metrics:
+            if get_metrics_name(metric) not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
         eval_results = {}
         for metric in metrics:
+            metric_params = get_metrics_params(metric)
+            metric = get_metrics_name(metric)
             cocoGt = copy.deepcopy(self.coco)
             msg = f'Evaluating {metric}...'
             if logger is None:
@@ -422,7 +436,7 @@ class CocoDataset(CustomDataset):
                     predictions = cocoEval.cocoDt.imgToAnns
                     gt_annotations = cocoEval.cocoGt.imgToAnns
                     recall, precision, hmean, _ = text_eval(
-                        predictions, gt_annotations, test_cfg.score_thr,
+                        predictions, gt_annotations, float(metric_params.get('thr', 0)),
                         show_recall_graph=False,
                         use_transcriptions=False)
                     print('Text detection recall={:.4f} precision={:.4f} hmean={:.4f}'.
