@@ -114,9 +114,9 @@ def truncate_reg_channel(val, num_classes=81):
 def convert(in_file, out_file, num_classes):
     """Convert keys in checkpoints.
 
-    There can be some breaking changes during the development of
-    mmdetection, and this tool is used for upgrading checkpoints trained
-    with old versions to the latest one.
+    There can be some breaking changes during the development of mmdetection,
+    and this tool is used for upgrading checkpoints trained with old versions
+    to the latest one.
     """
     checkpoint = torch.load(in_file)
     in_state_dict = checkpoint.pop('state_dict')

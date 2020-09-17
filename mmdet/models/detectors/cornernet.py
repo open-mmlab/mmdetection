@@ -9,9 +9,8 @@ from .single_stage import SingleStageDetector
 class CornerNet(SingleStageDetector):
     """CornerNet.
 
-    This detector is the implementation of the paper `CornerNet:
-    Detecting Objects as Paired Keypoints
-    <https://arxiv.org/abs/1808.01244>`_ .
+    This detector is the implementation of the paper `CornerNet: Detecting
+    Objects as Paired Keypoints <https://arxiv.org/abs/1808.01244>`_ .
     """
 
     def __init__(self,

@@ -150,9 +150,8 @@ class CornerHead(BaseDenseHead):
     def _init_corner_kpt_layers(self):
         """Initialize corner keypoint layers.
 
-        Including corner heatmap branch and corner offset branch. Each
-        branch has two parts: prefix `tl_` for top-left and `br_` for
-        bottom-right.
+        Including corner heatmap branch and corner offset branch. Each branch
+        has two parts: prefix `tl_` for top-left and `br_` for bottom-right.
         """
         self.tl_pool, self.br_pool = nn.ModuleList(), nn.ModuleList()
         self.tl_heat, self.br_heat = nn.ModuleList(), nn.ModuleList()
@@ -189,8 +188,8 @@ class CornerHead(BaseDenseHead):
     def _init_corner_emb_layers(self):
         """Initialize corner embedding layers.
 
-        Only include corner embedding branch with two parts: prefix
-        `tl_` for top-left and `br_` for bottom-right.
+        Only include corner embedding branch with two parts: prefix `tl_` for
+        top-left and `br_` for bottom-right.
         """
         self.tl_emb, self.br_emb = nn.ModuleList(), nn.ModuleList()
 
@@ -207,8 +206,7 @@ class CornerHead(BaseDenseHead):
     def _init_layers(self):
         """Initialize layers for CornerHead.
 
-        Including two parts: corner keypoint layers and corner embedding
-        layers
+        Including two parts: corner keypoint layers and corner embedding layers
         """
         self._init_corner_kpt_layers()
         if self.with_corner_emb:

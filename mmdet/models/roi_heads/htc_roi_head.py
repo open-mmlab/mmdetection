@@ -472,8 +472,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
     def aug_test(self, img_feats, proposal_list, img_metas, rescale=False):
         """Test with augmentations.
 
-        If rescale is False, then returned bboxes and masks will fit the
-        scale of imgs[0].
+        If rescale is False, then returned bboxes and masks will fit the scale
+        of imgs[0].
         """
         if self.with_semantic:
             semantic_feats = [

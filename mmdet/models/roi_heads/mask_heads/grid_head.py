@@ -189,8 +189,7 @@ class GridHead(nn.Module):
     def calc_sub_regions(self):
         """Compute point specific representation regions.
 
-        See Grid R-CNN Plus (https://arxiv.org/abs/1906.05688) for
-        details.
+        See Grid R-CNN Plus (https://arxiv.org/abs/1906.05688) for details.
         """
         # to make it consistent with the original implementation, half_size
         # is computed as 2 * quarter_size, which is smaller

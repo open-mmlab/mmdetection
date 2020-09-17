@@ -81,8 +81,8 @@ class LoadImageFromFile(object):
 class LoadImageFromWebcam(LoadImageFromFile):
     """Load an image from webcam.
 
-    Similar with :obj:`LoadImageFromFile`, but the image read from
-    webcam is in ``results['img']``.
+    Similar with :obj:`LoadImageFromFile`, but the image read from webcam is in
+    ``results['img']``.
     """
 
     def __call__(self, results):
