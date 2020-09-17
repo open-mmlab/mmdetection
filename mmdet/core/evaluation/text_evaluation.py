@@ -53,7 +53,13 @@ def polygon_from_points(points):
     """ Returns a Polygon object to use with the Polygon2 class from a list of 8 points:
         x1,y1,x2,y2,x3,y3,x4,y4 """
 
-    point_mat = np.array(points[:8]).astype(np.int32).reshape(4, 2)
+    if not (isinstance(points, list) and isinstance(points[0], list)):
+        decoded_mask = mask_utils.decode(points)
+        decoded_mask = np.ascontiguousarray(decoded_mask)
+        contours, _ = cv2.findContours(decoded_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+        assert len(contours) == 1
+    
+    point_mat = np.array(points).reshape(-1, 2)
     return plg.Polygon(point_mat)
 
 
