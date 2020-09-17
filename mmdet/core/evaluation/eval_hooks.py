@@ -25,13 +25,16 @@ class EvalHook(Hook):
         interval (int): Evaluation interval (by epochs). Default: 1.
         save_best (bool): Whether to save best checkpoint during evaluation.
             Default: True.
-        key_indicator (str | None): Key indicator to measure the best
+        key_indicator (str, optional): Key indicator to measure the best
             checkpoint during evaluation when ``save_best`` is set to True.
             Options are the evaluation metrics to the test dataset. e.g.,
             ``bbox_mAP``, ``segm_mAP`` for bbox detection and instance
-            segmentation. ``AR@100`` for proposal recall. Default: `bbox_mAP`.
-        rule (str | None): Comparison rule for best score. If set to None,
-            it will infer a reasonable rule. Default: 'None'.
+            segmentation. ``AR@100`` for proposal recall. If not specified,
+            the first key will be used. Default: None.
+        rule (str, optional): Comparison rule for best score. If set to None,
+            it will infer a reasonable rule. Keys contain 'mAP' or 'AR' will
+            be inferred by 'greater' rule. Keys contain 'loss' will be inferred
+             by 'lees' rule. Options are 'greater', 'less'. Default: None.
         **eval_kwargs: Evaluation arguments fed into the evaluate function of
             the dataset.
     """
@@ -46,7 +49,7 @@ class EvalHook(Hook):
                  start=None,
                  interval=1,
                  save_best=False,
-                 key_indicator='bbox_mAP',
+                 key_indicator=None,
                  rule=None,
                  **eval_kwargs):
         if not isinstance(dataloader, DataLoader):
@@ -59,23 +62,21 @@ class EvalHook(Hook):
                 f'The evaluation start epoch {start} is smaller than 0, '
                 f'use 0 instead', UserWarning)
             start = 0
-        if save_best and not key_indicator:
-            raise ValueError('key_indicator should not be None, when '
-                             'save_best is set to True.')
         if rule not in self.rule_map and rule is not None:
             raise KeyError(f'rule must be greater, less or None, '
                            f'but got {rule}.')
 
         if rule is None and save_best:
-            if any(key in key_indicator for key in self.greater_keys):
-                rule = 'greater'
-            elif any(key in key_indicator for key in self.less_keys):
-                rule = 'less'
-            else:
-                raise ValueError(
-                    f'key_indicator must be in {self.greater_keys} '
-                    f'or in {self.less_keys} when rule is None, '
-                    f'but got {key_indicator}')
+            if key_indicator is not None:
+                if any(key in key_indicator for key in self.greater_keys):
+                    rule = 'greater'
+                elif any(key in key_indicator for key in self.less_keys):
+                    rule = 'less'
+                else:
+                    raise ValueError(
+                        f'key_indicator must be in {self.greater_keys} '
+                        f'or in {self.less_keys} when rule is None, '
+                        f'but got {key_indicator}')
         self.dataloader = dataloader
         self.interval = interval
         self.start = start
@@ -151,10 +152,9 @@ class EvalHook(Hook):
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
         runner.log_buffer.ready = True
-        if self.key_indicator is not None:
-            return eval_res[self.key_indicator]
-        else:
-            return None
+        if self.key_indicator is None:
+            self.key_indicator = list(eval_res.keys())[0]
+        return eval_res[self.key_indicator]
 
 
 class DistEvalHook(EvalHook):
