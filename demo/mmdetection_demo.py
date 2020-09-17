@@ -8,7 +8,7 @@ import glob
 import os
 from datetime import datetime
 
-def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file, video_path, dsort_img_path):
+def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file, video_path):
     """
     frame_offset: skipping this many frames
     frame_count:  run detection on this many frames
@@ -156,4 +156,4 @@ if __name__ == '__main__':
     dsort_dir = sys.argv[6]
 
     # python demo/mmdetection_demo.py PVO4R8Dh-trim.mp4 configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_bepro.py checkpoint/crcnn_r50_bepro_stitch.pth 0 87150 /home/dmitriy.khvan/tmp/   
-    process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file, data_dir, dsort_dir)
+    process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file, data_dir)
