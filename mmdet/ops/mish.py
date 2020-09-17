@@ -18,6 +18,7 @@ class Mish(torch.nn.Module):
         >>> input = torch.randn(2)
         >>> output = m(input)
     '''
+
     def __init__(self):
         '''
         Init method.

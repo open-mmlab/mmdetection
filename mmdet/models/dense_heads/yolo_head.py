@@ -70,8 +70,8 @@ class YOLOV3Head(BaseDenseHead):
         # Check params
         assert (len(in_channels) == len(out_channels) == len(featmap_strides))
         assert (loss_cls is not None) and (loss_conf is not None)
-        assert (loss_bbox is not None) ^ (loss_xy is not None and loss_wh is
-                                          not None)
+        assert (loss_bbox is not None) ^ (
+            loss_xy is not None and loss_wh is not None)
 
         self.using_iou_loss = loss_bbox is not None
         self.num_classes = num_classes
@@ -339,8 +339,8 @@ class YOLOV3Head(BaseDenseHead):
 
         level_idx_list = list(range(len(pred_maps)))
         losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
-            self.loss_single, pred_maps, target_maps_list,
-            neg_maps_list, anchor_list, level_idx_list)
+            self.loss_single, pred_maps, target_maps_list, neg_maps_list,
+            anchor_list, level_idx_list)
 
         return dict(
             loss_cls=losses_cls,
@@ -381,8 +381,7 @@ class YOLOV3Head(BaseDenseHead):
         target_conf = target_map[..., 4]
         target_label = target_map[..., 5:]
 
-        loss_cls = self.loss_cls(
-            pred_label, target_label, weight=pos_mask)
+        loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
         loss_conf = self.loss_conf(
             pred_conf, target_conf, weight=pos_and_neg_mask)
 
@@ -396,13 +395,12 @@ class YOLOV3Head(BaseDenseHead):
             assert len(anchor_strides) == len(anchors)
             pred_xywh = pred_map[..., :4].reshape(-1, 4).contiguous()
             # decode box for IoU loss
-            pred_box = self.bbox_coder.decode(
-                anchors, pred_xywh,
-                anchor_strides)
+            pred_box = self.bbox_coder.decode(anchors, pred_xywh,
+                                              anchor_strides)
             target_box = target_map[..., :4].reshape(-1, 4).contiguous()
             pos_mask_ciou = pos_mask.reshape(-1, 1).contiguous().expand(-1, 4)
-            loss_xy = self.loss_bbox(pred_box, target_box,
-                                     weight=pos_mask_ciou)
+            loss_xy = self.loss_bbox(
+                pred_box, target_box, weight=pos_mask_ciou)
             loss_wh = torch.zeros_like(loss_xy)
         else:
             pred_xy = pred_map[..., :2]
@@ -495,8 +493,8 @@ class YOLOV3Head(BaseDenseHead):
                 sampling_result.pos_bboxes
         else:
             target_map[sampling_result.pos_inds, :4] = self.bbox_coder.encode(
-                    sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes,
-                    anchor_strides[sampling_result.pos_inds])
+                sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes,
+                anchor_strides[sampling_result.pos_inds])
 
         target_map[sampling_result.pos_inds, 4] = 1
 

@@ -40,8 +40,7 @@ class ResBlock(nn.Module):
         # shortcut
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
-        self.conv1 = ConvModule(
-            in_channels, half_in_channels, 1, **cfg)
+        self.conv1 = ConvModule(in_channels, half_in_channels, 1, **cfg)
         self.conv2 = ConvModule(
             half_in_channels, in_channels, 3, padding=1, **cfg)
 
@@ -83,10 +82,8 @@ class ResBlockV4(nn.Module):
         # shortcut
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
-        self.conv1 = ConvModule(
-            in_channels, in_channels, 1, **cfg)
-        self.conv2 = ConvModule(
-            in_channels, in_channels, 3, padding=1, **cfg)
+        self.conv1 = ConvModule(in_channels, in_channels, 1, **cfg)
+        self.conv2 = ConvModule(in_channels, in_channels, 3, padding=1, **cfg)
 
     def forward(self, x):
         residual = x
@@ -162,14 +159,11 @@ class Darknet(nn.Module):
             layer_name = f'conv_res_block{i + 1}'
             in_c, out_c = self.channels[i]
             if csp_on:
-                conv_module = Csp_conv_res_block(in_c,
-                                                 out_c,
-                                                 n_layers,
-                                                 is_first_block=(i == 0),
-                                                 **cfg)
+                conv_module = Csp_conv_res_block(
+                    in_c, out_c, n_layers, is_first_block=(i == 0), **cfg)
             else:
-                conv_module = self.make_conv_res_block(
-                    in_c, out_c, n_layers, **cfg)
+                conv_module = self.make_conv_res_block(in_c, out_c, n_layers,
+                                                       **cfg)
             self.add_module(layer_name, conv_module)
             self.cr_blocks.append(layer_name)
 
@@ -253,6 +247,7 @@ class Darknet(nn.Module):
 
 
 class Csp_conv_res_block(nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -260,19 +255,18 @@ class Csp_conv_res_block(nn.Module):
                  is_first_block=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 act_cfg=dict(type='LeakyReLU',
-                              negative_slope=0.1)):
+                 act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
         super(Csp_conv_res_block, self).__init__()
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
         bottleneck_channels = out_channels if is_first_block else in_channels
 
         self.preconv = ConvModule(
-                    in_channels, out_channels, 3, stride=2, padding=1, **cfg)
+            in_channels, out_channels, 3, stride=2, padding=1, **cfg)
         self.shortconv = ConvModule(
-                out_channels, bottleneck_channels, 1, stride=1, **cfg)
+            out_channels, bottleneck_channels, 1, stride=1, **cfg)
         self.mainconv = ConvModule(
-                out_channels, bottleneck_channels, 1, stride=1, **cfg)
+            out_channels, bottleneck_channels, 1, stride=1, **cfg)
 
         self.blocks = nn.Sequential()
         for idx in range(res_repeat):
@@ -284,9 +278,9 @@ class Csp_conv_res_block(nn.Module):
                                        ResBlockV4(bottleneck_channels, **cfg))
 
         self.postconv = ConvModule(
-                bottleneck_channels, bottleneck_channels, 1, stride=1, **cfg)
+            bottleneck_channels, bottleneck_channels, 1, stride=1, **cfg)
         self.finalconv = ConvModule(
-                2 * bottleneck_channels, out_channels, 1, stride=1, **cfg)
+            2 * bottleneck_channels, out_channels, 1, stride=1, **cfg)
 
     def forward(self, x):
         x = self.preconv(x)

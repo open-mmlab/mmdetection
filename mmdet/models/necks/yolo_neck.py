@@ -51,11 +51,13 @@ yolo
         self.conv3 = ConvModule(double_out_channels, out_channels, 1, **cfg)
 
         if self.spp_on:
-            self.poolers = [nn.MaxPool2d(size, 1, padding=(size - 1) // 2)
-                            for size in spp_pooler_sizes]
+            self.poolers = [
+                nn.MaxPool2d(size, 1, padding=(size - 1) // 2)
+                for size in spp_pooler_sizes
+            ]
             self.conv_spp = ConvModule(
-                out_channels * (len(spp_pooler_sizes) + 1),
-                out_channels, 1, **cfg)
+                out_channels * (len(spp_pooler_sizes) + 1), out_channels, 1,
+                **cfg)
 
         self.conv4 = ConvModule(
             out_channels, double_out_channels, 3, padding=1, **cfg)
@@ -126,9 +128,9 @@ class YOLOV3Neck(nn.Module):
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
         # If spp is enabled, a spp block is added into the first DetectionBlock
-        self.detect1 = DetectionBlock(
-            self.in_channels[0], self.out_channels[0],
-            spp_on, spp_pooler_sizes, **cfg)
+        self.detect1 = DetectionBlock(self.in_channels[0],
+                                      self.out_channels[0], spp_on,
+                                      spp_pooler_sizes, **cfg)
 
         # To support arbitrary scales, the code looks awful, but it works.
         # Better solution is welcomed.

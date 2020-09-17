@@ -3,9 +3,12 @@ _base_ = '../_base_/default_runtime.py'
 model = dict(
     type='YOLOV3',
     pretrained='open-mmlab://darknet53',
-    backbone=dict(type='Darknet', depth=53, out_indices=(3, 4, 5),
-                  norm_cfg=dict(type='BN', requires_grad=True,
-                                eps=1e-04, momentum=0.03)),
+    backbone=dict(
+        type='Darknet',
+        depth=53,
+        out_indices=(3, 4, 5),
+        norm_cfg=dict(type='BN', requires_grad=True, eps=1e-04,
+                      momentum=0.03)),
     neck=dict(
         type='YOLOV3Neck',
         num_scales=3,
@@ -38,11 +41,8 @@ model = dict(
             use_sigmoid=True,
             loss_weight=1.0,
             reduction='sum'),
-        loss_bbox=dict(
-            type='GIoULoss',
-            loss_weight=10.0,
-            reduction='sum'),
-        ))
+        loss_bbox=dict(type='GIoULoss', loss_weight=10.0, reduction='sum'),
+    ))
 # training and testing settings
 train_cfg = dict(
     assigner=dict(

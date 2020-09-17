@@ -51,11 +51,13 @@ yolo
         self.conv3 = ConvModule(double_out_channels, out_channels, 1, **cfg)
 
         if self.spp_on:
-            self.poolers = [nn.MaxPool2d(size, 1, padding=(size - 1) // 2)
-                            for size in spp_pooler_sizes]
+            self.poolers = [
+                nn.MaxPool2d(size, 1, padding=(size - 1) // 2)
+                for size in spp_pooler_sizes
+            ]
             self.conv_spp = ConvModule(
-                out_channels * (len(spp_pooler_sizes) + 1),
-                out_channels, 1, **cfg)
+                out_channels * (len(spp_pooler_sizes) + 1), out_channels, 1,
+                **cfg)
 
         self.conv4 = ConvModule(
             out_channels, double_out_channels, 3, padding=1, **cfg)
@@ -126,9 +128,9 @@ class YOLOV4Neck(nn.Module):
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
 
         # If spp is enabled, a spp block is added into the first DetectionBlock
-        self.detect1 = DetectionBlock(
-            self.in_channels[0], self.out_channels[0],
-            spp_on, spp_pooler_sizes, **cfg)
+        self.detect1 = DetectionBlock(self.in_channels[0],
+                                      self.out_channels[0], spp_on,
+                                      spp_pooler_sizes, **cfg)
 
         # To support arbitrary scales, the code looks awful, but it works.
         # Better solution is welcomed.
@@ -136,13 +138,11 @@ class YOLOV4Neck(nn.Module):
             in_c, out_c = self.in_channels[i], self.out_channels[i]
             self.add_module(f'upsample_conv{i}',
                             ConvModule(in_c, out_c, 1, **cfg))
-            self.add_module(f'feat_conv{i}',
-                            ConvModule(in_c, out_c, 1, **cfg))
+            self.add_module(f'feat_conv{i}', ConvModule(in_c, out_c, 1, **cfg))
             # note: here YOLO v4 is different than YOLO v3
             # the in channels changed from in_c + out_c to in_c
             # because of the newly added feat_conv
-            self.add_module(f'detect{i+1}',
-                            DetectionBlock(in_c, out_c, **cfg))
+            self.add_module(f'detect{i+1}', DetectionBlock(in_c, out_c, **cfg))
 
         # downsampling PANet path
         # e.g. If the num_scales is 3 (as in original YOLO V4), i will be
@@ -155,11 +155,9 @@ class YOLOV4Neck(nn.Module):
             det_channel_idx = ds_channel_idx - 1
             det_in_c = self.in_channels[det_channel_idx]
             det_out_c = self.out_channels[det_channel_idx]
-            self.add_module(f'downsample_conv{i-self.num_scales+1}',
-                            ConvModule(ds_in_c, ds_out_c, 3,
-                                       stride=2,
-                                       padding=1,
-                                       **cfg))
+            self.add_module(
+                f'downsample_conv{i-self.num_scales+1}',
+                ConvModule(ds_in_c, ds_out_c, 3, stride=2, padding=1, **cfg))
             self.add_module(f'detect{i+1}',
                             DetectionBlock(det_in_c, det_out_c, **cfg))
 
@@ -190,11 +188,11 @@ class YOLOV4Neck(nn.Module):
         for i in range(self.num_scales - 1):
             downsample_conv = getattr(self, f'downsample_conv{i+1}')
             tmp = downsample_conv(cur_feat)
-            tmp = torch.cat((tmp, outs[-2-i]), 1)
+            tmp = torch.cat((tmp, outs[-2 - i]), 1)
 
             detect = getattr(self, f'detect{i+self.num_scales+1}')
             cur_feat = detect(tmp)
-            outs[-2-i] = cur_feat
+            outs[-2 - i] = cur_feat
 
         return tuple(outs)
 
