@@ -1,3 +1,4 @@
+import copy
 import itertools
 import logging
 import os.path as osp
@@ -368,8 +369,8 @@ class CocoDataset(CustomDataset):
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
         eval_results = {}
-        cocoGt = self.coco
         for metric in metrics:
+            cocoGt = copy.deepcopy(self.coco)
             msg = f'Evaluating {metric}...'
             if logger is None:
                 msg = '\n' + msg
