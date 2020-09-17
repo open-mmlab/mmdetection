@@ -13,7 +13,8 @@ from mmdet.models.builder import HEADS, build_loss
 class MaskIoUHead(nn.Module):
     """Mask IoU Head.
 
-    This head predicts the IoU of predicted masks and corresponding gt masks.
+    This head predicts the IoU of predicted masks and corresponding gt
+    masks.
     """
 
     def __init__(self,
