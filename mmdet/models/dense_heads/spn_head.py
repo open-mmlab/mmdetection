@@ -192,12 +192,12 @@ class SPNHead(nn.Module):
                 mask_cpu = (pred_cpu > thr).astype(np.uint8)
                 contours, _ = cv2.findContours(mask_cpu, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+                if len(contours) > cfg.nms_post:
+                    print(len(contours))
+                    contours = sorted(contours, key=lambda x: cv2.contourArea(x))[:cfg.nms_post]
+
                 contours = unclip_contours(contours)
-
-                mask_cpu = np.zeros_like(mask_cpu)
-                cv2.drawContours(mask_cpu, contours, -1, 1, -1)
         
-
                 boxes = []
                 labels = []
 
@@ -206,11 +206,13 @@ class SPNHead(nn.Module):
                     boxes.append(torch.tensor(np.array([[x, y, x + w, y + h, 1.0]]), device=mask_preds[0].device,
                                               dtype=torch.float))
                     labels.append(torch.tensor(np.array([[1]])))
-                    cv2.rectangle(mask_cpu, (x, y), (x+w, y+h), 1)
 
-
+                # mask_cpu = np.zeros_like(mask_cpu)
+                # for c in contours:
+                #     cv2.rectangle(mask_cpu, (x, y), (x+w, y+h), 1)
+                # cv2.drawContours(mask_cpu, contours, -1, 1, -1)
                 # cv2.imshow("res", mask_cpu * 255)
-                # # cv2.waitKey(0)
+                # cv2.waitKey(0)
 
                 if boxes:
                     boxes = torch.cat(boxes)
