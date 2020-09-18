@@ -105,7 +105,7 @@ Assume that you have already downloaded the checkpoints to the directory `checkp
 4. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
 
    ```shell
-   ./tools/dist_test.sh configs/mask_rcnn_r50_fpn_1x_coco.py \
+   ./tools/dist_test.sh configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
        8 --out results.pkl --eval bbox segm
    ```
@@ -149,7 +149,7 @@ python demo/image_demo.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} [--dev
 Examples:
 
 ```shell
-python demo/image_demo.py demo/demo.jpg configs/faster_rcnn_r50_fpn_1x_coco.py \
+python demo/image_demo.py demo/demo.jpg configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth --device cpu
 ```
 
@@ -164,7 +164,7 @@ python demo/webcam_demo.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--device ${GPU_ID}
 Examples:
 
 ```shell
-python demo/webcam_demo.py configs/faster_rcnn_r50_fpn_1x_coco.py \
+python demo/webcam_demo.py configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
@@ -297,7 +297,7 @@ If you run MMDetection on a cluster managed with [slurm](https://slurm.schedmd.c
 Here is an example of using 16 GPUs to train Mask R-CNN on the dev partition.
 
 ```shell
-GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
+GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
 You can check [slurm_train.sh](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) for full arguments and environment variables.
