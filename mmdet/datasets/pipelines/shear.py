@@ -54,15 +54,13 @@ class Shear(object):
             transformation.
     """
 
-    def __init__(
-        self,
-        level,
-        img_fill_val=128,
-        seg_ignore_label=255,
-        prob=0.5,
-        direction='horizontal',
-        max_shear_magnitude=0.3,
-    ):
+    def __init__(self,
+                 level,
+                 img_fill_val=128,
+                 seg_ignore_label=255,
+                 prob=0.5,
+                 direction='horizontal',
+                 max_shear_magnitude=0.3):
         assert isinstance(level, (int, float)), 'The level must be type ' \
             f'int or float, got {type(level)}.'
         assert 0 <= level <= _MAX_LEVEL, 'The level should be in range ' \
