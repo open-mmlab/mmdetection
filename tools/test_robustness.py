@@ -26,6 +26,7 @@ except ImportError:
     from mmcv.runner.fp16_utils import wrap_fp16_model
 
 
+
 def coco_eval_with_return(result_files,
                           result_types,
                           coco,

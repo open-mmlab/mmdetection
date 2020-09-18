@@ -159,11 +159,10 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         on whether ``return_loss`` is ``True``.
 
         Note this setting will change the expected inputs. When
-        ``return_loss=True``, img and img_meta are single-nested (i.e.
-        Tensor and List[dict]), and when ``resturn_loss=False``, img and
-        img_meta should be double nested (i.e.  List[Tensor],
-        List[List[dict]]), with the outer list indicating test time
-        augmentations.
+        ``return_loss=True``, img and img_meta are single-nested (i.e. Tensor
+        and List[dict]), and when ``resturn_loss=False``, img and img_meta
+        should be double nested (i.e.  List[Tensor], List[List[dict]]), with
+        the outer list indicating test time augmentations.
         """
         if return_loss:
             return self.forward_train(img, img_metas, **kwargs)
@@ -243,10 +242,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
     def val_step(self, data, optimizer):
         """The iteration step during validation.
 
-        This method shares the same signature as :func:`train_step`, but
-        used during val epochs. Note that the evaluation after training
-        epochs is not implemented with this method, but an evaluation
-        hook.
+        This method shares the same signature as :func:`train_step`, but used
+        during val epochs. Note that the evaluation after training epochs is
+        not implemented with this method, but an evaluation hook.
         """
         losses = self(**data)
         loss, log_vars = self._parse_losses(losses)

@@ -9,9 +9,9 @@ from .anchor_head import AnchorHead
 class RetinaSepBNHead(AnchorHead):
     """"RetinaHead with separate BN.
 
-    In RetinaHead, conv/norm layers are shared across different FPN
-    levels, while in RetinaSepBNHead, conv layers are shared across
-    different FPN levels, but BN layers are separated.
+    In RetinaHead, conv/norm layers are shared across different FPN levels,
+    while in RetinaSepBNHead, conv layers are shared across different FPN
+    levels, but BN layers are separated.
     """
 
     def __init__(self,

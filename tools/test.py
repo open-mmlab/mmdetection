@@ -20,6 +20,7 @@ except ImportError:
     from mmcv.runner.fp16_utils import wrap_fp16_model
 
 
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='MMDet test (and eval) a model')

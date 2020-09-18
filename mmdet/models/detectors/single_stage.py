@@ -10,8 +10,8 @@ from .base import BaseDetector
 class SingleStageDetector(BaseDetector):
     """Base class for single-stage detectors.
 
-    Single-stage detectors directly and densely predict bounding boxes
-    on the output features of the backbone+neck.
+    Single-stage detectors directly and densely predict bounding boxes on the
+    output features of the backbone+neck.
     """
 
     def __init__(self,

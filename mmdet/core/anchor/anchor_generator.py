@@ -574,8 +574,8 @@ class LegacyAnchorGenerator(AnchorGenerator):
 class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
     """Legacy anchor generator used in MMDetection V1.x.
 
-    The difference between `LegacySSDAnchorGenerator` and
-    `SSDAnchorGenerator` can be found in `LegacyAnchorGenerator`.
+    The difference between `LegacySSDAnchorGenerator` and `SSDAnchorGenerator`
+    can be found in `LegacyAnchorGenerator`.
     """
 
     def __init__(self,
