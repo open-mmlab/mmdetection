@@ -77,7 +77,6 @@ class SPNHead(nn.Module):
 
         self.init_weights()
 
-
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, )):
@@ -112,27 +111,6 @@ class SPNHead(nn.Module):
         proposal_list = self.get_bboxes(*rpn_outs, cfg=None)
         return proposal_list
 
-    def _forward_train(self, preds, targets, image_shapes):
-        # Segmentation map must be transformed into boxes for detection.
-        # sampled into a training batch.
-        with torch.no_grad():
-            boxes = self.box_selector_train(preds, image_shapes, targets)
-        loss_seg = self.loss_evaluator(preds, targets)
-        losses = {"loss_seg": loss_seg}
-        return boxes, losses
-
-    def _forward_test(self, preds, image_shapes):
-        # torch.cuda.synchronize()
-        # start_time = time.time()
-        boxes, rotated_boxes, polygons, scores = self.box_selector_test(
-            preds, image_shapes)
-        # torch.cuda.synchronize()
-        # end_time = time.time()
-        # print('post time:', end_time - start_time)
-        seg_results = {'rotated_boxes': rotated_boxes,
-                       'polygons': polygons, 'preds': preds, 'scores': scores}
-        return boxes, seg_results
-
     def get_targets(self, mask_pred, gt_masks):
         united_masks = []
         for masks in gt_masks:
@@ -140,7 +118,8 @@ class SPNHead(nn.Module):
             final_mask = np.zeros_like(masks[0])
             clipped_contours = []
             for mask in masks:
-                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                contours, _ = cv2.findContours(
+                    mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 contours = clip_contours(contours)
                 clipped_contours.extend(contours)
 
@@ -164,16 +143,16 @@ class SPNHead(nn.Module):
     def loss(self, mask_pred, gt_masks, img_metas):
         mask_targets = self.get_targets(mask_pred, gt_masks)
 
-        if 0:
-            cpu_targets = [np.squeeze(mask.cpu().numpy().astype(np.uint8))
-                        for mask in mask_targets]
-            cpu_preds = [c.detach().cpu().numpy() for c in mask_pred]
-            for m, cc in zip(cpu_targets, cpu_preds):
-                for mb, c in zip(m, cc):
-                    cv2.imshow('target', np.squeeze(mb) * 255)
-                    cv2.imshow('preds', (np.squeeze(c) * 255).astype(np.uint8))
-                    cv2.imshow('thresdolded', ((np.squeeze(c) > 0.5) * 255).astype(np.uint8))
-                    cv2.waitKey(1)
+        # cpu_targets = [np.squeeze(mask.cpu().numpy().astype(np.uint8))
+        #                for mask in mask_targets]
+        # cpu_preds = [c.detach().cpu().numpy() for c in mask_pred]
+        # for m, cc in zip(cpu_targets, cpu_preds):
+        #     for mb, c in zip(m, cc):
+        #         cv2.imshow('target', np.squeeze(mb) * 255)
+        #         cv2.imshow('preds', (np.squeeze(c) * 255).astype(np.uint8))
+        #         cv2.imshow('thresdolded',
+        #                    ((np.squeeze(c) > 0.5) * 255).astype(np.uint8))
+        #         cv2.waitKey(1)
 
         mask_loss = sum(self.loss_mask(pred, target)
                         for pred, target in zip(mask_pred, mask_targets))
@@ -190,14 +169,14 @@ class SPNHead(nn.Module):
             for mask_idx_in_batch, mask_in_batch in enumerate(level_pred):
                 pred_cpu = np.squeeze(mask_in_batch.detach().cpu().numpy())
                 mask_cpu = (pred_cpu > thr).astype(np.uint8)
-                contours, _ = cv2.findContours(mask_cpu, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                contours, _ = cv2.findContours(
+                    mask_cpu, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
                 if len(contours) > cfg.nms_post:
-                    print(len(contours))
                     contours = sorted(contours, key=lambda x: cv2.contourArea(x))[:cfg.nms_post]
 
                 contours = unclip_contours(contours)
-        
+
                 boxes = []
                 labels = []
 
@@ -224,6 +203,5 @@ class SPNHead(nn.Module):
                         (0, 1), device=mask_preds[0].device, dtype=torch.int)
 
                 proposals_list.append(boxes)
-                    
 
         return proposals_list
