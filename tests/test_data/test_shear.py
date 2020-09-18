@@ -189,3 +189,13 @@ def test_shear():
     gt_masks = [[np.array([1, 0, 2, 0, 2, 0, 1, 0], dtype=np.float)]]
     results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
     check_shear(results_gt, results_sheared)
+
+    results = construct_toy_data()
+    # same mask for BitmapMasks and PolygonMasks
+    results['gt_masks'] = BitmapMasks(
+        np.array([[0, 1, 1, 0], [0, 1, 1, 0]], dtype=np.uint8)[None, :, :], 2,
+        4)
+    results['gt_bboxes'] = np.array([[1., 0., 2., 1.]], dtype=np.float32)
+    results_sheared_bitmap = shear_module(
+        copy.deepcopy(results), random_negative_prob=1.)
+    check_shear(results_sheared_bitmap, results_sheared)
