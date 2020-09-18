@@ -147,8 +147,7 @@ class TwoStageDetector(BaseDetector):
                 gt_bboxes,
                 gt_labels=None,
                 gt_bboxes_ignore=gt_bboxes_ignore,
-                proposal_cfg=proposal_cfg,
-                gt_masks=gt_masks)
+                proposal_cfg=proposal_cfg)
             losses.update(rpn_losses)
         else:
             proposal_list = proposals
