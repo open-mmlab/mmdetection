@@ -160,6 +160,8 @@ class SPNHead(nn.Module):
         return loss
 
     def get_bboxes(self, mask_preds, cfg, rescale=False):
+        cfg = self.test_cfg if cfg is None else cfg
+        
         batch_size = mask_preds[0].shape[0]
         proposals_list = []
 
