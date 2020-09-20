@@ -75,7 +75,7 @@ class FCOSHead(AnchorFreeHead):
                      loss_weight=1.0),
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  **kwargs):
-        self.regress_ranges = regress_ranges
+        self.regress_ranges = regress_ranges    # FCOS使用回归范围限制来实现多尺度特异
         self.center_sampling = center_sampling
         self.center_sample_radius = center_sample_radius
         self.norm_on_bbox = norm_on_bbox

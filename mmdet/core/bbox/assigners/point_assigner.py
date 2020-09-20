@@ -34,6 +34,7 @@ class PointAssigner(BaseAssigner):
             (i) the point is within the k closest points to the gt bbox
             (ii) the distance between this point and the gt is smaller than
                 other gt bboxes
+            匹配k个最近的点，且是距离此点最近的gt
 
         Args:
             points (Tensor): points to be assigned, shape(n, 3) while last
@@ -97,7 +98,7 @@ class PointAssigner(BaseAssigner):
             gt_wh = gt_bboxes_wh[[idx], :]
             # compute the distance between gt center and
             #   all points in this level
-            points_gt_dist = ((lvl_points - gt_point) / gt_wh).norm(dim=1)
+            points_gt_dist = ((lvl_points - gt_point) / gt_wh).norm(dim=1)  # 点和GT两两之间距离
             # find the nearest k points to gt center in this level
             min_dist, min_dist_index = torch.topk(
                 points_gt_dist, self.pos_num, largest=False)

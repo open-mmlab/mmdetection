@@ -5,7 +5,7 @@ _base_ = [
 # model settings
 model = dict(
     type='FCOS',
-    pretrained='open-mmlab://detectron/resnet50_caffe',
+    pretrained='/media/alpha/Data/MK/Documents/mmdetection/weights/resnet50_caffe-788b5fa3.pth',    # 预训练模型
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -85,7 +85,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=4,  # batch size
     workers_per_gpu=4,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),

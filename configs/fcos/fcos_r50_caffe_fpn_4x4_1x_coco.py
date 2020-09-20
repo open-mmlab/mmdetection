@@ -5,7 +5,7 @@ _base_ = [
 # model settings
 model = dict(
     type='FCOS',
-    pretrained='open-mmlab://detectron/resnet50_caffe',
+    pretrained='/home/mk/Documents/mmdetection_local/weights/resnet50_caffe-788b5fa3.pth',
     backbone=dict(
         type='ResNet',
         depth=50,

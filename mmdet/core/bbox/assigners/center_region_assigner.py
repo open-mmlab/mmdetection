@@ -74,7 +74,7 @@ class CenterRegionAssigner(BaseAssigner):
     Each proposals will be assigned with `-1`, `0`, or a positive integer
     indicating the ground truth index.
     - -1: negative samples
-    - semi-positive numbers: positive sample, index (0-based) of assigned gt
+    - semi-positive numbers: positive sample, index (0-based) of assigned gt 从1开始？0 for BG
 
     Args:
         pos_scale (float): Threshold within which pixels are
@@ -97,7 +97,7 @@ class CenterRegionAssigner(BaseAssigner):
                  ignore_gt_scale=0.5,
                  foreground_dominate=False,
                  iou_calculator=dict(type='BboxOverlaps2D')):
-        self.pos_scale = pos_scale
+        self.pos_scale = pos_scale  # 缩放尺度范围
         self.neg_scale = neg_scale
         self.min_pos_iof = min_pos_iof
         self.ignore_gt_scale = ignore_gt_scale
@@ -154,6 +154,7 @@ class CenterRegionAssigner(BaseAssigner):
             >>> expected_gt_inds = torch.LongTensor([1, 0])
             >>> assert torch.all(assign_result.gt_inds == expected_gt_inds)
         """
+        # 匹配和中心区域IoU>thres的最小的框
         # There are in total 5 steps in the pixel assignment
         # 1. Find core (the center region, say inner 0.2)
         #     and shadow (the relatively ourter part, say inner 0.2-0.5)
@@ -162,7 +163,8 @@ class CenterRegionAssigner(BaseAssigner):
         # 3. Assign prior bboxes in gt_core with a one-hot id of the gt in
         #      the image.
         #    3.1. For overlapping objects, the prior bboxes in gt_core is
-        #           assigned with the object with smallest area
+        #           assigned with the object with smallest area.
+        #           需要保证bbox和gt-core的IoU > self.min_pos_iof(不是match IoU最大，match > thres的较小框)
         # 4. Assign prior bboxes with class label according to its gt id.
         #    4.1. Assign -1 to prior bboxes lying in shadowed gts
         #    4.2. Assign positive prior boxes with the corresponding label
@@ -177,11 +179,11 @@ class CenterRegionAssigner(BaseAssigner):
         # 2. Find prior bboxes that lie in gt_core and gt_shadow regions
         bbox_centers = (bboxes[:, 2:4] + bboxes[:, 0:2]) / 2
         # The center points lie within the gt boxes
-        is_bbox_in_gt = is_located_in(bbox_centers, gt_bboxes)
+        is_bbox_in_gt = is_located_in(bbox_centers, gt_bboxes)  # 判断是否在GT内，不是 是否在GT-core内
         # Only calculate bbox and gt_core IoF. This enables small prior bboxes
         #   to match large gts
         bbox_and_gt_core_overlaps = self.iou_calculator(
-            bboxes, gt_core, mode='iof')
+            bboxes, gt_core, mode='iof')    # 计算box和中心区域的IoU
         # The center point of effective priors should be within the gt box
         is_bbox_in_gt_core = is_bbox_in_gt & (
             bbox_and_gt_core_overlaps > self.min_pos_iof)  # shape (n, k)
@@ -190,7 +192,7 @@ class CenterRegionAssigner(BaseAssigner):
             self.iou_calculator(bboxes, gt_shadow, mode='iof') >
             self.min_pos_iof)
         # Rule out center effective positive pixels
-        is_bbox_in_gt_shadow &= (~is_bbox_in_gt_core)
+        is_bbox_in_gt_shadow &= (~is_bbox_in_gt_core)   # 不在gt框，但和shadow iof大的框
 
         num_gts, num_bboxes = gt_bboxes.size(0), bboxes.size(0)
         if num_gts == 0 or num_bboxes == 0:

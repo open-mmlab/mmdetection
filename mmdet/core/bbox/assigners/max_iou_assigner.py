@@ -71,7 +71,7 @@ class MaxIoUAssigner(BaseAssigner):
            assign it to that bbox
         4. for each gt bbox, assign its nearest proposals (may be more than
            one) to itself
-
+        需要计算每一对anchor-gt之间的IoU，overlaps=[len(GT),len(box)]
         Args:
             bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
@@ -87,7 +87,7 @@ class MaxIoUAssigner(BaseAssigner):
             >>> bboxes = torch.Tensor([[0, 0, 10, 10], [10, 10, 20, 20]])
             >>> gt_bboxes = torch.Tensor([[0, 0, 10, 9]])
             >>> assign_result = self.assign(bboxes, gt_bboxes)
-            >>> expected_gt_inds = torch.LongTensor([1, 0])
+            >>> expected_gt_inds = torch.LongTensor([1, 0]) # 0 for BG
             >>> assert torch.all(assign_result.gt_inds == expected_gt_inds)
         """
         assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
@@ -102,7 +102,7 @@ class MaxIoUAssigner(BaseAssigner):
             if gt_labels is not None:
                 gt_labels = gt_labels.cpu()
 
-        overlaps = self.iou_calculator(gt_bboxes, bboxes)
+        overlaps = self.iou_calculator(gt_bboxes, bboxes)   # 计算任意一堆anchor-gt的IoU
 
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
                 and gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):

@@ -74,6 +74,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
 
         1. assign every bbox to background_label (-1)
         2. use the max IoU of each group of approxs to assign
+        一个点上generate多个anchor，选择最大IoU的anchor，变成一个点上一个anchor分配到gt. 一点多anchor，其余同maxiou
         2. assign proposals whose iou with all gts < neg_iou_thr to background
         3. for each bbox, if the iou with its nearest gt >= pos_iou_thr,
            assign it to that bbox
@@ -82,10 +83,10 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
 
         Args:
             approxs (Tensor): Bounding boxes to be assigned,
-                shape(approxs_per_octave*n, 4).
+                shape(approxs_per_octave*n, 4). 对approx的所有anchor匹配，即na*ng个
             squares (Tensor): Base Bounding boxes to be assigned,
-                shape(n, 4).
-            approxs_per_octave (int): number of approxs per octave
+                shape(n, 4).    关系不大
+            approxs_per_octave (int): number of approxs per octave 每个level的一个点上anchor的数量，na
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
@@ -121,7 +122,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         all_overlaps = self.iou_calculator(approxs, gt_bboxes)
 
         overlaps, _ = all_overlaps.view(approxs_per_octave, num_squares,
-                                        num_gts).max(dim=0)
+                                        num_gts).max(dim=0)     # 每个点的多个anchor中取最大，一点多个anchor变成一个anchor
         overlaps = torch.transpose(overlaps, 0, 1)
 
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
