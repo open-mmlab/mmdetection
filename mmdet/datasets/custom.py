@@ -1,4 +1,5 @@
 import os.path as osp
+from collections import OrderedDict
 
 import mmcv
 import numpy as np
@@ -291,7 +292,7 @@ class CustomDataset(Dataset):
         if metric not in allowed_metrics:
             raise KeyError(f'metric {metric} is not supported')
         annotations = [self.get_ann_info(i) for i in range(len(self))]
-        eval_results = {}
+        eval_results = OrderedDict()
         if metric == 'mAP':
             assert isinstance(iou_thr, float)
             mean_ap, _ = eval_map(

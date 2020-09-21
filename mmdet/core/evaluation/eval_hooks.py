@@ -32,9 +32,9 @@ class EvalHook(Hook):
             segmentation. ``AR@100`` for proposal recall. If not specified,
             the first key will be used. Default: None.
         rule (str, optional): Comparison rule for best score. If set to None,
-            it will infer a reasonable rule. Keys contain 'mAP' or 'AR' will
+            it will infer a reasonable rule. Keys such as 'mAP' or 'AR' will
             be inferred by 'greater' rule. Keys contain 'loss' will be inferred
-             by 'lees' rule. Options are 'greater', 'less'. Default: None.
+             by 'less' rule. Options are 'greater', 'less'. Default: None.
         **eval_kwargs: Evaluation arguments fed into the evaluate function of
             the dataset.
     """
