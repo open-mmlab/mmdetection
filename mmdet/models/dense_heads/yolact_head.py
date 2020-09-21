@@ -333,7 +333,9 @@ class YOLACTHead(AnchorHead):
         mlvl_anchors = self.anchor_generator.grid_anchors(
             featmap_sizes, device=device)
 
-        result_list = []
+        det_bboxes = []
+        det_labels = []
+        det_coeffs = []
         for img_id in range(len(img_metas)):
             cls_score_list = [
                 cls_scores[i][img_id].detach() for i in range(num_levels)
@@ -346,12 +348,14 @@ class YOLACTHead(AnchorHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                coeff_pred_list, mlvl_anchors,
-                                                img_shape, scale_factor, cfg,
-                                                rescale)
-            result_list.append(proposals)
-        return result_list
+            bbox_res = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                               coeff_pred_list, mlvl_anchors,
+                                               img_shape, scale_factor, cfg,
+                                               rescale)
+            det_bboxes.append(bbox_res[0])
+            det_labels.append(bbox_res[1])
+            det_coeffs.append(bbox_res[2])
+        return det_bboxes, det_labels, det_coeffs
 
     def _get_bboxes_single(self,
                            cls_score_list,
@@ -824,21 +828,20 @@ class YOLACTProtonet(nn.Module):
         Args:
             mask_pred (Tensor): shape (N, H, W).
             label_pred (Tensor): shape (N, ).
-            img_meta (list[dict]): Meta information of each image, e.g.,
+            img_meta (dict): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             rescale (bool): If rescale is False, then returned masks will
                 fit the scale of imgs[0].
         Returns:
             list[ndarray]: Mask predictions grouped by their predicted classes.
         """
-        ori_shape = img_meta[0]['ori_shape']
-        scale_factor = img_meta[0]['scale_factor']
+        ori_shape = img_meta['ori_shape']
+        scale_factor = img_meta['scale_factor']
         if rescale:
             img_h, img_w = ori_shape[:2]
         else:
             img_h = np.round(ori_shape[0] * scale_factor[1]).astype(np.int32)
             img_w = np.round(ori_shape[1] * scale_factor[0]).astype(np.int32)
-            scale_factor = 1.0
 
         mask_pred = mask_pred.cpu().numpy()
         mask_pred = mask_pred.astype(np.float32)
