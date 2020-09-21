@@ -154,7 +154,9 @@ class PAAHead(ATSSHead):
             & (labels < self.background_label)).nonzero().reshape(-1)
 
         losses_cls = self.loss_cls(
-            cls_scores, labels, labels_weight,
+            cls_scores,
+            labels,
+            labels_weight,
             avg_factor=np.max([num_pos, len(img_metas)]))
         if num_pos:
             pos_bbox_pred = self.bbox_coder.decode(
