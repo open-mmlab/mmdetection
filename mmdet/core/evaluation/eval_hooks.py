@@ -62,11 +62,52 @@ class EvalHook(Hook):
                 f'The evaluation start epoch {start} is smaller than 0, '
                 f'use 0 instead', UserWarning)
             start = 0
+        # if rule not in self.rule_map and rule is not None:
+        #     raise KeyError(f'rule must be greater, less or None, '
+        #                    f'but got {rule}.')
+        #
+        # if rule is None and save_best:
+        #     if key_indicator is not None:
+        #         if any(key in key_indicator for key in self.greater_keys):
+        #             rule = 'greater'
+        #         elif any(key in key_indicator for key in self.less_keys):
+        #             rule = 'less'
+        #         else:
+        #             raise ValueError(
+        #                 f'key_indicator must be in {self.greater_keys} '
+        #                 f'or in {self.less_keys} when rule is None, '
+        #                 f'but got {key_indicator}')
+        self.dataloader = dataloader
+        self.interval = interval
+        self.start = start
+        self.save_best = save_best
+        # self.key_indicator = key_indicator
+        # self.rule = rule
+        self.eval_kwargs = eval_kwargs
+        self.initial_epoch_flag = True
+
+        self.logger = get_root_logger()
+
+        # if self.save_best:
+        #     self.compare_func = self.rule_map[self.rule]
+        #     self.best_score = self.init_value_map[self.rule]
+        if self.save_best:
+            self._init_rule(rule, key_indicator)
+            self.best_json = dict()
+
+    def _init_rule(self, rule, key_indicator):
+        """Initialize rule, key_indicator, comparison_func, and best score.
+
+        Args:
+            rule (str | None): Comparison rule for best score.
+            key_indicator (str | None): Key indicator to determine the
+                comparison rule.
+        """
         if rule not in self.rule_map and rule is not None:
             raise KeyError(f'rule must be greater, less or None, '
                            f'but got {rule}.')
 
-        if rule is None and save_best:
+        if rule is None:
             if key_indicator is not None:
                 if any(key in key_indicator for key in self.greater_keys):
                     rule = 'greater'
@@ -77,22 +118,11 @@ class EvalHook(Hook):
                         f'key_indicator must be in {self.greater_keys} '
                         f'or in {self.less_keys} when rule is None, '
                         f'but got {key_indicator}')
-        self.dataloader = dataloader
-        self.interval = interval
-        self.start = start
-        self.save_best = save_best
-        self.key_indicator = key_indicator
         self.rule = rule
-        self.eval_kwargs = eval_kwargs
-        self.initial_epoch_flag = True
-
-        self.logger = get_root_logger()
-
-        if self.save_best:
+        self.key_indicator = key_indicator
+        if self.rule is not None:
             self.compare_func = self.rule_map[self.rule]
             self.best_score = self.init_value_map[self.rule]
-
-        self.best_json = dict()
 
     def before_train_epoch(self, runner):
         """Evaluate the model only at the start of training."""
@@ -152,9 +182,15 @@ class EvalHook(Hook):
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
         runner.log_buffer.ready = True
-        if self.key_indicator is None:
-            self.key_indicator = list(eval_res.keys())[0]
-        return eval_res[self.key_indicator]
+        if self.save_best:
+            if self.key_indicator is None:
+                key_indicator = list(eval_res.keys())[0]
+                # key_indicator is not specified in __init__()
+                # infer from eval_results
+                self._init_rule(self.rule, key_indicator)
+            return eval_res[self.key_indicator]
+        else:
+            return None
 
 
 class DistEvalHook(EvalHook):
