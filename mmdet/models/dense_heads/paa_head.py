@@ -7,7 +7,7 @@ from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead
 
-eps = 1e-12
+EPS = 1e-12
 try:
     import sklearn.mixture as skm
 except ImportError:
@@ -138,8 +138,6 @@ class PAAHead(ATSSHead):
                 anchor_list,
             )
             num_pos = sum(num_pos)
-            if num_pos == 0:
-                num_pos = len(img_metas)
         # convert all tensor list to a flatten tensor
         cls_scores = torch.cat(cls_scores, 0).view(-1, cls_scores[0].size(-1))
         bbox_preds = torch.cat(bbox_preds, 0).view(-1, bbox_preds[0].size(-1))
@@ -156,7 +154,8 @@ class PAAHead(ATSSHead):
             & (labels < self.background_label)).nonzero().reshape(-1)
 
         losses_cls = self.loss_cls(
-            cls_scores, labels, labels_weight, avg_factor=num_pos)
+            cls_scores, labels, labels_weight,
+            avg_factor=np.max([num_pos, len(img_metas)]))
         if num_pos:
             pos_bbox_pred = self.bbox_coder.decode(
                 flatten_anchors[pos_inds_flatten],
@@ -171,7 +170,7 @@ class PAAHead(ATSSHead):
             losses_bbox = self.loss_bbox(
                 pos_bbox_pred,
                 pos_bbox_target,
-                iou_target.clamp(min=eps),
+                iou_target.clamp(min=EPS),
                 avg_factor=iou_target.sum())
         else:
             losses_iou = iou_preds.sum() * 0
@@ -281,8 +280,8 @@ class PAAHead(ATSSHead):
             mask = (pos_inds >= inds_level_interval[i]) & (
                 pos_inds < inds_level_interval[i + 1])
             pos_level_mask.append(mask)
-        pos_inds_after_paa = []
-        ignore_inds_after_paa = []
+        pos_inds_after_paa = [label.new_tensor([])]
+        ignore_inds_after_paa = [label.new_tensor([])]
         for gt_ind in range(num_gt):
             pos_inds_gmm = []
             pos_loss_gmm = []
@@ -306,7 +305,7 @@ class PAAHead(ATSSHead):
             min_loss, max_loss = pos_loss_gmm.min(), pos_loss_gmm.max()
             means_init = [[min_loss], [max_loss]]
             weights_init = [0.5, 0.5]
-            precisions_init = [[[1.0]], [[1.0]]]
+            precisions_init = [[1.0], [1.0]]
             if skm is None:
                 raise ImportError('Please run "pip install sklearn" '
                                   'to install sklearn first.')
@@ -314,7 +313,8 @@ class PAAHead(ATSSHead):
                 2,
                 weights_init=weights_init,
                 means_init=means_init,
-                precisions_init=precisions_init)
+                precisions_init=precisions_init,
+                covariance_type='diag')
             gmm.fit(pos_loss_gmm)
             gmm_assignment = gmm.predict(pos_loss_gmm)
             scores = gmm.score_samples(pos_loss_gmm)
