@@ -8,7 +8,7 @@ import glob
 import os
 from datetime import datetime
 
-def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file, video_path, dsort_img_path):
+def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file, video_path):
     """
     frame_offset: skipping this many frames
     frame_count:  run detection on this many frames
@@ -44,14 +44,6 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
     last_boxes = []
 
     for index in range(slice_start,slice_end):
-        # debug: frame slices
-        if index == slice_start or index == (slice_end-1):
-            if index == slice_start:
-                dump_frame_path = './demo/dump/_start_frame.jpg'
-            else:
-                dump_frame_path = './demo/dump/_end_frame.jpg'
-            cv2.imwrite(dump_frame_path, video[index])
-
         frame = video[index]
         f_number = f_number + 1
         
@@ -59,11 +51,6 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
             print('[DBG] Empty frame received!')
             break
 
-        # dump frame for tracking
-        f_id = "%05d.jpg" % f_number
-        img_dsort = os.path.join(dsort_img_path,f_id)
-        cv2.imwrite(img_dsort, frame)
-    
         start_time = time.time()
         result = inference_detector(model, frame)
         end_time = time.time()
@@ -100,7 +87,7 @@ def process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file,
             end_process = time.time()
             print('[DBG][{}/{}] frame inference time: {} {}, elapsed time: {} {}'.format(f_number+slice_start, slice_end-1, end_time-start_time, '.s', (end_process-start_process), '.s'))
 
-        if f_number == 1 or f_number % 1000 == 0:
+        if f_number == 1 or f_number % 3000 == 0:
             dump_path = "./demo/dump/dump-%06d.jpg" % (f_number)
             cv2.imwrite(dump_path, frame)
             log_file.flush()
@@ -166,7 +153,6 @@ if __name__ == '__main__':
     checkpoint_file = sys.argv[3]
     frame_offset = sys.argv[4]
     frame_count = sys.argv[5]
-    dsort_dir = sys.argv[6]
 
     # python demo/mmdetection_demo.py PVO4R8Dh-trim.mp4 configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_bepro.py checkpoint/crcnn_r50_bepro_stitch.pth 0 87150 /home/dmitriy.khvan/tmp/   
-    process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file, data_dir, dsort_dir)
+    process_video_crcnn(frame_offset, frame_count, config_file, checkpoint_file, data_dir)
