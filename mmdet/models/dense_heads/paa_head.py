@@ -57,12 +57,29 @@ class PAAHead(ATSSHead):
         topk (int): Select topk samples with smallest loss in
             each level.
         score_voting (bool): Whether to use score voting in post-process.
+        covariance_type : String describing the type of covariance parameters
+            to be used in :class:`sklearn.mixture.GaussianMixture`.
+            It must be one of:
+
+            - 'full': each component has its own general covariance matrix
+            - 'tied': all components share the same general covariance matrix
+            - 'diag': each component has its own diagonal covariance matrix
+            - 'spherical': each component has its own single variance
+            Default: 'diag'. From 'full' to 'spherical', the gmm fitting
+            process is faster yet the performance could be influenced. For most
+            cases, 'diag' may be a good choice.
     """
 
-    def __init__(self, *args, topk=9, score_voting=True, **kwargs):
+    def __init__(self,
+                 *args,
+                 topk=9,
+                 score_voting=True,
+                 covariance_type='full',
+                 **kwargs):
         # topk used in paa reassign process
         self.topk = topk
         self.with_score_voting = score_voting
+        self.covariance_type = covariance_type
         super(PAAHead, self).__init__(*args, **kwargs)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
@@ -154,8 +171,10 @@ class PAAHead(ATSSHead):
             & (labels < self.background_label)).nonzero().reshape(-1)
 
         losses_cls = self.loss_cls(
-            cls_scores, labels, labels_weight,
-            avg_factor=np.max([num_pos, len(img_metas)]))
+            cls_scores,
+            labels,
+            labels_weight,
+            avg_factor=np.max([num_pos, len(img_metas)]))  # avoid num_pos=0
         if num_pos:
             pos_bbox_pred = self.bbox_coder.decode(
                 flatten_anchors[pos_inds_flatten],
@@ -314,7 +333,7 @@ class PAAHead(ATSSHead):
                 weights_init=weights_init,
                 means_init=means_init,
                 precisions_init=precisions_init,
-                covariance_type='diag')
+                covariance_type=self.covariance_type)
             gmm.fit(pos_loss_gmm)
             gmm_assignment = gmm.predict(pos_loss_gmm)
             scores = gmm.score_samples(pos_loss_gmm)
