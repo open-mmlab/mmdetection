@@ -6,10 +6,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, normal_init
+from mmcv.runner import force_fp32
 
 from mmdet.core import (build_anchor_generator, build_assigner,
-                        build_bbox_coder, build_sampler, force_fp32,
-                        images_to_levels, multi_apply, multiclass_nms)
+                        build_bbox_coder, build_sampler, images_to_levels,
+                        multi_apply, multiclass_nms)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 

@@ -6,9 +6,9 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn
+from mmcv.runner import auto_fp16
 from mmcv.utils import print_log
 
-from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
 
 

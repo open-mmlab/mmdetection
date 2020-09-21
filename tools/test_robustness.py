@@ -16,9 +16,14 @@ from robustness_eval import get_results
 
 from mmdet import datasets
 from mmdet.apis import set_random_seed
-from mmdet.core import encode_mask_results, eval_map, wrap_fp16_model
+from mmdet.core import encode_mask_results, eval_map
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
+
+try:
+    from mmcv.runner import wrap_fp16_model
+except ImportError:
+    from mmcv.runner.fp16_utils import wrap_fp16_model
 
 
 def coco_eval_with_return(result_files,
