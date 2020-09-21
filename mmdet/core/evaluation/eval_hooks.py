@@ -62,35 +62,15 @@ class EvalHook(Hook):
                 f'The evaluation start epoch {start} is smaller than 0, '
                 f'use 0 instead', UserWarning)
             start = 0
-        # if rule not in self.rule_map and rule is not None:
-        #     raise KeyError(f'rule must be greater, less or None, '
-        #                    f'but got {rule}.')
-        #
-        # if rule is None and save_best:
-        #     if key_indicator is not None:
-        #         if any(key in key_indicator for key in self.greater_keys):
-        #             rule = 'greater'
-        #         elif any(key in key_indicator for key in self.less_keys):
-        #             rule = 'less'
-        #         else:
-        #             raise ValueError(
-        #                 f'key_indicator must be in {self.greater_keys} '
-        #                 f'or in {self.less_keys} when rule is None, '
-        #                 f'but got {key_indicator}')
         self.dataloader = dataloader
         self.interval = interval
         self.start = start
         self.save_best = save_best
-        # self.key_indicator = key_indicator
-        # self.rule = rule
         self.eval_kwargs = eval_kwargs
         self.initial_epoch_flag = True
 
         self.logger = get_root_logger()
 
-        # if self.save_best:
-        #     self.compare_func = self.rule_map[self.rule]
-        #     self.best_score = self.init_value_map[self.rule]
         if self.save_best:
             self._init_rule(rule, key_indicator)
             self.best_json = dict()
