@@ -6,9 +6,9 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn
+from mmcv.runner import auto_fp16
 from mmcv.utils import print_log
 
-from mmdet.core import auto_fp16
 from mmdet.utils import get_root_logger
 
 
@@ -68,7 +68,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             img (list[Tensor]): List of tensors of shape (1, C, H, W).
                 Typically these should be mean centered and std scaled.
             img_metas (list[dict]): List of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and my also contain
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys, see
                 :class:`mmdet.datasets.pipelines.Collect`.

@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.ops import DeformConv2d, MaskedConv2d
+from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_anchor_generator,
                         build_assigner, build_bbox_coder, build_sampler,
-                        calc_region, force_fp32, images_to_levels, multi_apply,
+                        calc_region, images_to_levels, multi_apply,
                         multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
