@@ -4,10 +4,10 @@ import numpy as np
 import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (HOOKS, DistSamplerSeedHook, EpochBasedRunner,
-                         OptimizerHook, build_optimizer)
+                         Fp16OptimizerHook, OptimizerHook, build_optimizer)
 from mmcv.utils import build_from_cfg
 
-from mmdet.core import DistEvalHook, EvalHook, Fp16OptimizerHook
+from mmdet.core import DistEvalHook, EvalHook
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.utils import get_root_logger
 
