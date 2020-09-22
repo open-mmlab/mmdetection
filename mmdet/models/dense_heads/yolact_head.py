@@ -1,12 +1,11 @@
-import mmcv
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, xavier_init
+from mmcv.runner import force_fp32
 
-from mmdet.core import (build_sampler, fast_nms, force_fp32, images_to_levels,
-                        multi_apply)
+from mmdet.core import build_sampler, fast_nms, images_to_levels, multi_apply
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -843,14 +842,18 @@ class YOLACTProtonet(nn.Module):
             img_h = np.round(ori_shape[0] * scale_factor[1]).astype(np.int32)
             img_w = np.round(ori_shape[1] * scale_factor[0]).astype(np.int32)
 
-        mask_pred = mask_pred.cpu().numpy()
-        mask_pred = mask_pred.astype(np.float32)
         cls_segms = [[] for _ in range(self.num_classes)]
+        if mask_pred.size(0) == 0:
+            return cls_segms
+
+        mask_pred = F.interpolate(
+            mask_pred.unsqueeze(0), (img_h, img_w),
+            mode='bilinear',
+            align_corners=False).squeeze(0) > 0.5
+        mask_pred = mask_pred.cpu().numpy().astype(np.uint8)
 
         for m, l in zip(mask_pred, label_pred):
-            im_mask = mmcv.imresize(m, (img_w, img_h))
-            im_mask = (im_mask > 0.5).astype(np.uint8)
-            cls_segms[l].append(im_mask)
+            cls_segms[l].append(m)
         return cls_segms
 
     def crop(self, masks, boxes, padding=1):
