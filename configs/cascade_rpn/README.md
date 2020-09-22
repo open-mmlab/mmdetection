@@ -1,7 +1,7 @@
 
 # Cascade RPN
 
-We provide the code for reproducing experiment results of [Cascade RPN](https://arxiv.org/abs/1909.06720). Questions and issues related to Cascade RPN can be discussed in [Official Repo](https://github.com/thangvubk/Cascade-RPN).
+We provide the code for reproducing experiment results of [Cascade RPN](https://arxiv.org/abs/1909.06720).
 ```
 @inproceedings{vu2019cascade,
   title={Cascade RPN: Delving into High-Quality Region Proposal Network with Adaptive Convolution},
@@ -15,15 +15,10 @@ We provide the code for reproducing experiment results of [Cascade RPN](https://
 ### Region proposal performance
 | Method | Backbone | Style | Mem (GB) | Train time (s/iter) | Inf time (fps) | AR 1000 |                Download                |
 |:------:|:--------:|:-----:|:--------:|:-------------------:|:--------------:|:-------:|:--------------------------------------:|
-|   RPN  | R-50-FPN | caffe |     -    |          -          |        -       |   58.3  |                    -                   |
-|  CRPN  | R-50-FPN | caffe |     -    |          -          |        -       |   71.7  | [model](http://bit.ly/cascade_rpn_r50) |
+|  CRPN  | R-50-FPN | caffe |     -    |          -          |        -       |   72.0  | [model](https://drive.google.com/file/d/1qxVdOnCgK-ee7_z0x6mvAir_glMu2Ihi/view?usp=sharing) |
 
 ### Detection performance
 |     Method    |   Proposal  | Backbone |  Style  | Schedule | Mem (GB) | Train time (s/iter) | Inf time (fps) | box AP |                   Download                   |
 |:-------------:|:-----------:|:--------:|:-------:|:--------:|:--------:|:-------------------:|:--------------:|:------:|:--------------------------------------------:|
-|   Fast R-CNN  |     RPN     | R-50-FPN |  caffe  |    1x    |    3.5   |        0.250        |      16.5      |  36.9  |                       -                      |
-|   Fast R-CNN  | Cascade RPN | R-50-FPN |  caffe  |    1x    |    3.5   |        0.250        |      16.5      |  40.0  |     [model](http://bit.ly/crpn_fast_r50)     |
-|  Faster R-CNN |     RPN     | R-50-FPN |  caffe  |    1x    |    3.8   |        0.353        |      13.6      |  37.0  |                       -                      |
-|  Faster R-CNN | Cascade RPN | R-50-FPN |  caffe  |    1x    |    4.6   |        0.561        |      11.1      |  40.5  |    [model](http://bit.ly/crpn_faster_r50)    |
-| Cascade R-CNN |     RPN     | R-50-FPN | pytorch |    1x    |    4.1   |        0.455        |      11.9      |  40.8  |                       -                      |
-| Cascade R-CNN | Cascade RPN | R-50-FPN | pytorch |    1x    |    5.2   |        0.650        |       9.6      |  41.6  | [model](http://bit.ly/crpn_cascade_rcnn_r50) |
+|   Fast R-CNN  | Cascade RPN | R-50-FPN |  caffe  |    1x    |    -     |          -          |        -       |  39.9  | [model](https://drive.google.com/file/d/1NmbnuY5VHi8I9FE8xnp5uNvh2i-t-6_L/view?usp=sharing) |
+|  Faster R-CNN | Cascade RPN | R-50-FPN |  caffe  |    1x    |    -     |          -          |        -       |  40.4  | [model](https://drive.google.com/file/d/1dS3Q66qXMJpcuuQgDNkLp669E5w1UMuZ/view?usp=sharing) |
