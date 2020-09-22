@@ -6,8 +6,8 @@ from mmcv import Config
 from mmcv.cnn import fuse_conv_bn
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
+from mmcv.runner.fp16_utils import wrap_fp16_model
 
-from mmdet.core import wrap_fp16_model
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.models import build_detector
