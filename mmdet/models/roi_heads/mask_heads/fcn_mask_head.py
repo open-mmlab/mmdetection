@@ -2,8 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, build_upsample_layer
-from mmcv.ops import Conv2d
+from mmcv.cnn import Conv2d, ConvModule, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
 from mmcv.runner import auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
