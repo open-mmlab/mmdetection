@@ -576,7 +576,6 @@ class PolygonMasks(BaseInstanceMasks):
             for poly_per_obj in self.masks:
                 sheared_poly = []
                 for p in poly_per_obj:
-                    p = p.copy()
                     p = np.stack([p[0::2], p[1::2]], axis=0)  # [2, n]
                     new_coords = np.matmul(shear_matrix, p)  # [2, n]
                     new_coords[0, :] = np.clip(new_coords[0, :], 0,

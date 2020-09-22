@@ -116,7 +116,7 @@ class Shear(object):
             interpolation (str): Same as in :func:`mmcv.imshear`.
         """
         for key in results.get('img_fields', ['img']):
-            img = results[key].copy()
+            img = results[key]
             img_sheared = mmcv.imshear(
                 img,
                 magnitude,
@@ -179,7 +179,7 @@ class Shear(object):
                    interpolation='bilinear'):
         """Shear the segmentation maps."""
         for key in results.get('seg_fields', []):
-            seg = results[key].copy()
+            seg = results[key]
             results[key] = mmcv.imshear(
                 seg,
                 magnitude,
