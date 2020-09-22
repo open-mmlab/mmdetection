@@ -147,6 +147,7 @@ class StageCascadeRPNHead(RPNHead):
                                img_meta,
                                featmap_sizes,
                                label_channels=1):
+        """Get anchor targets based on region for single level."""
         assign_result = self.assigner.assign(
             anchors,
             valid_flags,

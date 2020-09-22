@@ -6,6 +6,7 @@ from .base_assigner import BaseAssigner
 
 
 def calc_region(bbox, ratio, stride, featmap_size=None):
+    """Calculate region of box on feature map."""
     # project bbox on the feature
     f_bbox = bbox / stride
     x1 = torch.round((1 - ratio) * f_bbox[0] + ratio * f_bbox[2])
@@ -21,6 +22,7 @@ def calc_region(bbox, ratio, stride, featmap_size=None):
 
 
 def anchor_ctr_inside_region_flags(anchors, stride, region):
+    """Get the flag indicate whether anchor centers are inside regions."""
     x1, y1, x2, y2 = region
     f_anchors = anchors / stride
     x = (f_anchors[:, 0] + f_anchors[:, 2]) * 0.5
@@ -33,6 +35,7 @@ def anchor_outside_flags(flat_anchors,
                          valid_flags,
                          img_shape,
                          allowed_border=0):
+    """Get the flag indicate whether anchors are outside img."""
     img_h, img_w = img_shape[:2]
     if allowed_border >= 0:
         inside_flags = valid_flags & \
