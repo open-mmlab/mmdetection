@@ -1,11 +1,11 @@
 # Tutorial 4: Adding New Modules
 
 ## Customize optimizer
-1. Optimizer definition
+#### 1. Define a new optimizer
 
 A customized optimizer could be defined as following.
 
-Assume you want to add a optimizer named as `MyOptimizer`, which has arguments `a`, `b`, and `c`.
+Assume you want to add a optimizer named `MyOptimizer`, which has arguments `a`, `b`, and `c`.
 You need to create a new directory named `mmdet/core/optimizer`.
 And then implement the new optimizer in a file, e.g., in `mmdet/core/optimizer/my_optimizer.py`:
 
@@ -21,7 +21,7 @@ class MyOptimizer(Optimizer):
 
 ```
 
-2. Add the optimizer to the registry
+#### 2. Add the optimizer to registry.
 
 To find the above module defined above, this module should be imported into the main namespace at first. There are two options to achieve it.
 
@@ -45,14 +45,14 @@ Note that only the package containing the class `MyOptimizer` should be imported
 
 Actually users can use a totally different file directory structure using this importing method, as long as the module root can be located in `PYTHONPATH`.
 
-3. Specify the optimizer in the config file
+#### 3. Specify the optimizer in the config file
 
 Then you can use `MyOptimizer` in `optimizer` field of config files.
 In the configs, the optimizers are defined by the field `optimizer` like the following:
 ```python
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 ```
-To use your own optimizer, the field can be changed as
+To use your own optimizer, the field can be changed to
 ```python
 optimizer = dict(type='MyOptimizer', a=a_value, b=b_value, c=c_value)
 ```
@@ -102,7 +102,9 @@ We basically categorize model components into 4 types.
 
 Here we show how to develop new components with an example of MobileNet.
 
-1. Create a new file `mmdet/models/backbones/mobilenet.py`.
+#### 1. Define a new backbone (e.g. MobileNet)
+
+Create a new file `mmdet/models/backbones/mobilenet.py`.
 
 ```python
 import torch.nn as nn
@@ -123,7 +125,7 @@ class MobileNet(nn.Module):
         pass
 ```
 
-2. Import the module.
+#### 2. Import the module.
 
 You can either add the following line to `mmdet/models/backbones/__init__.py`
 ```python
@@ -136,9 +138,9 @@ custom_imports = dict(
     imports=['mmdet.models.backbones.mobilenet'],
     allow_failed_imports=False)
 ```
-to the config file and avoid modifying the original code.
+to the config file to avoid modifying the original code.
 
-3. Use it in your config file.
+#### 3. Use the backbone in your config file.
 
 ```python
 model = dict(
@@ -152,9 +154,9 @@ model = dict(
 
 ### Add new necks
 
-Here we take PAFPN as an example.
+#### 1. Define a neck (e.g. PAFPN)
 
-1. Create a new file in `mmdet/models/necks/pafpn.py`.
+Create a new file `mmdet/models/necks/pafpn.py`.
 
 ```python
 from ..registry import NECKS
@@ -176,14 +178,16 @@ class PAFPN(nn.Module):
         pass
 ```
 
-2. Import the module.
+#### 2. Import the module.
 
 You can either add the following line to `mmdet/models/necks/__init__.py`,
 
 ```python
 from .pafpn import PAFPN
 ```
+
 or alternatively add
+
 ```python
 custom_imports = dict(
     imports=['mmdet.models.necks.mobilenet'],
@@ -191,7 +195,7 @@ custom_imports = dict(
 ```
 to the config file and avoid modifying the original code.
 
-3. Modify the config file.
+#### 3. Modify the config file.
 
 ```python
 neck=dict(
@@ -346,7 +350,7 @@ custom_imports=dict(
 ```
 to the config file and achieve the same goal.
 
-To config file of Double Head R-CNN is as the following
+The config file of Double Head R-CNN is as the following
 
 ```python
 _base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
@@ -375,7 +379,7 @@ model = dict(
 
 ```
 
-Since MMDetection 2.0, the config system support to inherit configs such that the users can focus on the modification.
+Since MMDetection 2.0, the config system supports to inherit configs such that the users can focus on the modification.
 The Double Head R-CNN mainly uses a new DoubleHeadRoIHead and a new
 `DoubleConvFCBBoxHead`, the arguments are set according to the `__init__` function of each module.
 
