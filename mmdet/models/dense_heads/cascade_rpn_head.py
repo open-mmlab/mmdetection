@@ -548,8 +548,9 @@ class CascadeRPNHead(BaseDenseHead):
         if proposal_cfg is None:
             return losses
         else:
-            proposal_list = self.stages[-1].get_bboxes(
-                anchor_list, cls_score, bbox_pred, img_metas, self.test_cfg)
+            proposal_list = self.stages[-1].get_bboxes(anchor_list, cls_score,
+                                                       bbox_pred, img_metas,
+                                                       self.test_cfg)
             return losses, proposal_list
 
     def simple_test_rpn(self, x, img_metas):
