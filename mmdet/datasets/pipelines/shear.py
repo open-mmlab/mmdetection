@@ -52,6 +52,9 @@ class Shear(object):
             or "vertical".
         max_shear_magnitude (float): The maximum magnitude for Shear
             transformation.
+        random_negative_prob (float): The probability that turns the
+                offset negative. Should be in range [0,1]
+        interpolation (str): Same as in :func:`mmcv.imshear`.
     """
 
     def __init__(self,
@@ -60,7 +63,9 @@ class Shear(object):
                  seg_ignore_label=255,
                  prob=0.5,
                  direction='horizontal',
-                 max_shear_magnitude=0.3):
+                 max_shear_magnitude=0.3,
+                 random_negative_prob=0.5,
+                 interpolation='bilinear'):
         assert isinstance(level, (int, float)), 'The level must be type ' \
             f'int or float, got {type(level)}.'
         assert 0 <= level <= _MAX_LEVEL, 'The level should be in range ' \
@@ -93,6 +98,8 @@ class Shear(object):
         self.prob = prob
         self.direction = direction
         self.max_shear_magnitude = max_shear_magnitude
+        self.random_negative_prob = random_negative_prob
+        self.interpolation = interpolation
 
     def _shear_img(self,
                    results,
@@ -199,26 +206,20 @@ class Shear(object):
             if mask_key in results:
                 results[mask_key] = results[mask_key][valid_inds]
 
-    def __call__(self,
-                 results,
-                 random_negative_prob=0.5,
-                 interpolation='bilinear'):
+    def __call__(self, results):
         """Call function to shear images, bounding boxes, masks and semantic
         segmentation maps.
 
         Args:
             results (dict): Result dict from loading pipeline.
-            random_negative_prob (float): The probability that turns the
-                offset negative.
-            interpolation (str): Same as in :func:`mmcv.imshear`.
 
         Returns:
             dict: Sheared results.
         """
         if np.random.rand() > self.prob:
             return results
-        magnitude = random_negative(self.magnitude, random_negative_prob)
-        self._shear_img(results, magnitude, self.direction, interpolation)
+        magnitude = random_negative(self.magnitude, self.random_negative_prob)
+        self._shear_img(results, magnitude, self.direction, self.interpolation)
         self._shear_bboxes(results, magnitude)
         # fill_val set to 0 for background of mask.
         self._shear_masks(
@@ -226,13 +227,13 @@ class Shear(object):
             magnitude,
             self.direction,
             fill_val=0,
-            interpolation=interpolation)
+            interpolation=self.interpolation)
         self._shear_seg(
             results,
             magnitude,
             self.direction,
             fill_val=self.seg_ignore_label,
-            interpolation=interpolation)
+            interpolation=self.interpolation)
         self._filter_invalid(results)
         return results
 
@@ -243,5 +244,7 @@ class Shear(object):
         repr_str += f'seg_ignore_label={self.seg_ignore_label}, '
         repr_str += f'prob={self.prob}, '
         repr_str += f'direction={self.direction}, '
-        repr_str += f'max_shear_magnitude={self.max_shear_magnitude})'
+        repr_str += f'max_shear_magnitude={self.max_shear_magnitude}, '
+        repr_str += f'random_negative_prob={self.random_negative_prob}, '
+        repr_str += f'interpolation={self.interpolation})'
         return repr_str

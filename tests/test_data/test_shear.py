@@ -125,10 +125,10 @@ def test_shear():
         prob=1.,
         img_fill_val=img_fill_val,
         direction='horizontal',
-        max_shear_magnitude=1.)
+        max_shear_magnitude=1.,
+        random_negative_prob=0.)
     shear_module = build_from_cfg(transform, PIPELINES)
-    results_sheared = shear_module(
-        copy.deepcopy(results), random_negative_prob=0.)
+    results_sheared = shear_module(copy.deepcopy(results))
     results_gt = copy.deepcopy(results)
     img_s = np.array([[1, 2, 3, 4], [0, 5, 6, 7]], dtype=np.uint8)
     img_s = np.stack([img_s, img_s, img_s], axis=-1)
@@ -146,8 +146,7 @@ def test_shear():
 
     # test PolygonMasks with shear horizontally, magnitude=1
     results = construct_toy_data(poly2mask=False)
-    results_sheared = shear_module(
-        copy.deepcopy(results), random_negative_prob=0.)
+    results_sheared = shear_module(copy.deepcopy(results))
     gt_masks = [[np.array([1, 0, 2, 0, 3, 1, 2, 1], dtype=np.float)]]
     results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
     check_shear(results_gt, results_sheared)
@@ -161,10 +160,10 @@ def test_shear():
         prob=1.,
         img_fill_val=img_fill_val,
         direction='vertical',
-        max_shear_magnitude=1.)
+        max_shear_magnitude=1.,
+        random_negative_prob=1.)
     shear_module = build_from_cfg(transform, PIPELINES)
-    results_sheared = shear_module(
-        copy.deepcopy(results), random_negative_prob=1.)
+    results_sheared = shear_module(copy.deepcopy(results))
     results_gt = copy.deepcopy(results)
     img_s = np.array([[1, 6, img_fill_val, img_fill_val],
                       [5, img_fill_val, img_fill_val, img_fill_val]],
@@ -184,8 +183,7 @@ def test_shear():
 
     # test PolygonMasks with shear vertically, magnitude=-1
     results = construct_toy_data(poly2mask=False)
-    results_sheared = shear_module(
-        copy.deepcopy(results), random_negative_prob=1.)
+    results_sheared = shear_module(copy.deepcopy(results))
     gt_masks = [[np.array([1, 0, 2, 0, 2, 0, 1, 0], dtype=np.float)]]
     results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
     check_shear(results_gt, results_sheared)
@@ -196,6 +194,8 @@ def test_shear():
         np.array([[0, 1, 1, 0], [0, 1, 1, 0]], dtype=np.uint8)[None, :, :], 2,
         4)
     results['gt_bboxes'] = np.array([[1., 0., 2., 1.]], dtype=np.float32)
-    results_sheared_bitmap = shear_module(
-        copy.deepcopy(results), random_negative_prob=1.)
+    results_sheared_bitmap = shear_module(copy.deepcopy(results))
     check_shear(results_sheared_bitmap, results_sheared)
+
+
+test_shear()
