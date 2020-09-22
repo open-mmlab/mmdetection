@@ -26,6 +26,7 @@ from mmdet.core.bbox.transforms import bbox2result
 from mmdet.core.mask.transforms import mask2result
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.datasets.pipelines import Compose
+from mmdet.utils import ExtendedDictAction
 
 
 def postprocess(result, img_meta, num_classes=80, rescale=True):
@@ -105,6 +106,8 @@ def main(args):
         raise ValueError('Unknown model type.')
 
     cfg = mmcv.Config.fromfile(args.config)
+    if args.update_config:
+        cfg.merge_from_dict(args.update_config)
     cfg.model.pretrained = None
     cfg.data.test.test_mode = True
 
@@ -207,6 +210,8 @@ def parse_args():
     parser.add_argument('--show', action='store_true', help='visualize results')
     parser.add_argument('--score_thr', type=float, default=0.3,
                         help='show only detections with confidence larger than the threshold')
+    parser.add_argument('--update_config', nargs='+', action=ExtendedDictAction,
+                        help='Update configuration file by parameters specified here.')
     args = parser.parse_args()
     return args
 
