@@ -196,6 +196,3 @@ def test_shear():
     results['gt_bboxes'] = np.array([[1., 0., 2., 1.]], dtype=np.float32)
     results_sheared_bitmap = shear_module(copy.deepcopy(results))
     check_shear(results_sheared_bitmap, results_sheared)
-
-
-test_shear()
