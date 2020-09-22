@@ -5,7 +5,7 @@
 ### Customize optimizer supported by Pytorch
 
 We already support to use all the optimizers implemented by PyTorch, and the only modification is to change the `optimizer` field of config files.
-For example, if you want to use `ADAM`, though the performance will drop a lot, the modification could be as the following.
+For example, if you want to use `ADAM` (note that the performance will drop a lot), the modification could be as the following.
 
 ```python
 optimizer = dict(type='Adam', lr=0.0003, weight_decay=0.0001)
@@ -77,7 +77,7 @@ optimizer = dict(type='MyOptimizer', a=a_value, b=b_value, c=c_value)
 
 ### Customize optimizer constructor
 
-Some models may have some parameter-specific settings for optimization, e.g. weight decay for BatchNoarm layers.
+Some models may have some parameter-specific settings for optimization, e.g. weight decay for BatchNorm layers.
 The users can do those fine-grained parameter tuning through customizing optimizer constructor.
 
 ```python
@@ -103,7 +103,7 @@ The default optimizer constructor is implemented [here](https://github.com/open-
 
 ### Additional settings
 
-For tricks that not implemented by the optimizer, they should be implemented through optimizer constructor (e.g., set parameter-wise learning rates) or hooks. We list some common settings that could stabilize the training or accelerate the training. Feel free to create PR, issue for more settings.
+Tricks not implemented by the optimizer should be implemented through optimizer constructor (e.g., set parameter-wise learning rates) or hooks. We list some common settings that could stabilize the training or accelerate the training. Feel free to create PR, issue for more settings.
 
 - Use gradient clip to stabilize training
 Some models need gradient clip to clip the gradients to stabilize the training process. An example is as below:
@@ -113,7 +113,7 @@ optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 ```
 
-If your config inherits the base config which already set the `optimizer_config`, you might need `_delete_=True` to overide the unnecessary settings. See the [config documenetation](https://mmdetection.readthedocs.io/en/latest/config.html) for more details.
+If your config inherits the base config which already sets the `optimizer_config`, you might need `_delete_=True` to overide the unnecessary settings. See the [config documenetation](https://mmdetection.readthedocs.io/en/latest/config.html) for more details.
 
 - Use momentum schedule to accelerate model convergence
 We support momentum scheduler to modify model's momentum according to learning rate, which could make the model converge in a faster way.
@@ -163,7 +163,7 @@ We support many other learning rate schedule [here](https://github.com/open-mmla
 
 #### 1. Implement a new hook
 
-There are some need when the users might need to implement a new hook. MMDetection supports customized hooks in training (#3395) since v2.3.0. Thus the users could implement a hook directly in mmdet or their mmdet-based codebases and use the hook by only modify the config in training.
+There are some occasions when the users might need to implement a new hook. MMDetection supports customized hooks in training (#3395) since v2.3.0. Thus the users could implement a hook directly in mmdet or their mmdet-based codebases and use the hook by only modifying the config in training.
 Before v2.3.0, the users need to modify the code to get the hook registered before training starts.
 Here we give an example of creating a new hook in mmdet and using it in training.
 
@@ -200,7 +200,7 @@ Depending on the functionality of the hook, the users need to specify what the h
 
 #### 2. Register the new hook
 
-Then we need to make `MyHook` imported, assume the file is in `mmdet/core/utils/my_hook.py` there are two ways to do that:
+Then we need to make `MyHook` imported. Assuming the file is in `mmdet/core/utils/my_hook.py` there are two ways to do that:
 
 - Modify `mmdet/core/utils/__init__.py` to import it.
 
@@ -225,7 +225,7 @@ custom_hooks = [
 ]
 ```
 
-You can also set the priority of the hook by add key `priority` to `'NORMAL'` or `'HIGHEST'` as below
+You can also set the priority of the hook by adding key `priority` to `'NORMAL'` or `'HIGHEST'` as below
 
 ```python
 custom_hooks = [
@@ -245,7 +245,7 @@ custom_hooks = [
 
 ### Modify default runtime hooks
 
-There are some common hooks that will not be registerd through `custom_hooks`, they are
+There are some common hooks that are not registerd through `custom_hooks`, they are
 
 - log_config
 - checkpoint_config
