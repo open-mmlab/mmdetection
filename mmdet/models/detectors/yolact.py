@@ -111,7 +111,6 @@ class YOLACT(SingleStageDetector):
         ]
 
         num_imgs = len(img_metas)
-        ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
             segm_results = [[[] for _ in range(self.mask_head.num_classes)]
