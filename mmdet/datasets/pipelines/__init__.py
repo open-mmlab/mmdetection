@@ -1,9 +1,9 @@
-from .aug_only_img import (BrightnessTransform, ColorTransform,
-                           ContrastTransform, EqualizeTransform)
 from .auto_augment import AutoAugment
 from .compose import Compose
 from .formating import (Collect, DefaultFormatBundle, ImageToTensor,
                         ToDataContainer, ToTensor, Transpose, to_tensor)
+from .img_augment import (BrightnessTransform, ColorTransform,
+                          ContrastTransform, EqualizeTransform)
 from .instaboost import InstaBoost
 from .loading import (LoadAnnotations, LoadImageFromFile, LoadImageFromWebcam,
                       LoadMultiChannelImageFromFiles, LoadProposals)
