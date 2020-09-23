@@ -13,8 +13,8 @@ class EvalHook(Hook):
     """Evaluation hook.
 
     Notes:
-        If new arguments are added for EvalHook, tools/test.py may be
-    effected.
+        If new arguments are added for EvalHook, tools/test.py,
+        tools/eval_metric.py may be effected.
 
     Attributes:
         dataloader (DataLoader): A PyTorch dataloader.
