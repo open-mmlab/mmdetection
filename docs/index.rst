@@ -17,6 +17,7 @@ Welcome to MMDetection's documentation!
    changelog.md
    projects.md
    trouble_shooting.md
+   conventions.md
 
 .. toctree::
    :maxdepth: 2
