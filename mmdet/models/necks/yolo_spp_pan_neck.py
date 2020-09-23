@@ -79,18 +79,18 @@ yolo
 
 
 @NECKS.register_module()
-class YOLOV3Neck(nn.Module):
-    """The neck of YOLOV3.
+class YOLOV4Neck(nn.Module):
+    """The neck of YOLOV4.
 
     It can be regarded as a simplified version of FPN.
     It takes the feature maps from different levels of the Darknet backbone,
     After some upsampling and concatenation, it outputs a set of
-    new feature maps which are passed to the head of YOLOV3.
+    new feature maps which are passed to the head of YOLO.
 
     Note:
         The input feats should be from top to bottom.
             i.e., from high-lvl to low-lvl
-        But YOLOV3Neck will process them in reversed order.
+        But YOLOV4Neck will process them in reversed order.
             i.e., from bottom (high-lvl) to top (low-lvl)
 
     Args:
@@ -117,7 +117,7 @@ class YOLOV3Neck(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  act_cfg=dict(type='LeakyReLU', negative_slope=0.1)):
-        super(YOLOV3Neck, self).__init__()
+        super(YOLOV4Neck, self).__init__()
         assert (num_scales == len(in_channels) == len(out_channels))
         self.num_scales = num_scales
         self.in_channels = in_channels
@@ -136,10 +136,30 @@ class YOLOV3Neck(nn.Module):
         # Better solution is welcomed.
         for i in range(1, self.num_scales):
             in_c, out_c = self.in_channels[i], self.out_channels[i]
-            self.add_module(f'conv{i}', ConvModule(in_c, out_c, 1, **cfg))
-            # in_c + out_c : High-lvl feats will be cat with low-lvl feats
+            self.add_module(f'upsample_conv{i}',
+                            ConvModule(in_c, out_c, 1, **cfg))
+            self.add_module(f'feat_conv{i}', ConvModule(in_c, out_c, 1, **cfg))
+            # note: here YOLO v4 is different than YOLO v3
+            # the in channels changed from in_c + out_c to in_c
+            # because of the newly added feat_conv
+            self.add_module(f'detect{i+1}', DetectionBlock(in_c, out_c, **cfg))
+
+        # downsampling PANet path
+        # e.g. If the num_scales is 3 (as in original YOLO V4), i will be
+        # 3 and 4, downsample (ds) will use channels from idx 2 and 1,
+        # detection block (det) will use channels from idx 1 and 0
+        for i in range(self.num_scales, self.num_scales * 2 - 1):
+            ds_channel_idx = self.num_scales * 2 - 1 - i
+            ds_in_c = self.out_channels[ds_channel_idx]
+            ds_out_c = self.in_channels[ds_channel_idx]
+            det_channel_idx = ds_channel_idx - 1
+            det_in_c = self.in_channels[det_channel_idx]
+            det_out_c = self.out_channels[det_channel_idx]
+            self.add_module(
+                f'downsample_conv{i-self.num_scales+1}',
+                ConvModule(ds_in_c, ds_out_c, 3, stride=2, padding=1, **cfg))
             self.add_module(f'detect{i+1}',
-                            DetectionBlock(in_c + out_c, out_c, **cfg))
+                            DetectionBlock(det_in_c, det_out_c, **cfg))
 
     def forward(self, feats):
         assert len(feats) == self.num_scales
@@ -150,16 +170,29 @@ class YOLOV3Neck(nn.Module):
         outs.append(out)
 
         for i, x in enumerate(reversed(feats[:-1])):
-            conv = getattr(self, f'conv{i+1}')
-            tmp = conv(out)
+            upsample_conv = getattr(self, f'upsample_conv{i+1}')
+            tmp = upsample_conv(out)
+
+            feat_conv = getattr(self, f'feat_conv{i+1}')
+            tmp_x = feat_conv(x)
 
             # Cat with low-lvl feats
             tmp = F.interpolate(tmp, scale_factor=2)
-            tmp = torch.cat((tmp, x), 1)
+            tmp = torch.cat((tmp_x, tmp), 1)
 
             detect = getattr(self, f'detect{i+2}')
             out = detect(tmp)
             outs.append(out)
+
+        cur_feat = outs[-1]
+        for i in range(self.num_scales - 1):
+            downsample_conv = getattr(self, f'downsample_conv{i+1}')
+            tmp = downsample_conv(cur_feat)
+            tmp = torch.cat((tmp, outs[-2 - i]), 1)
+
+            detect = getattr(self, f'detect{i+self.num_scales+1}')
+            cur_feat = detect(tmp)
+            outs[-2 - i] = cur_feat
 
         return tuple(outs)
 
