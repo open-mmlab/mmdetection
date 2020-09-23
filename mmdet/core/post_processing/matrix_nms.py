@@ -51,7 +51,8 @@ def matrix_nms(seg_masks, cate_labels, cate_scores,
         decay_matrix = (1-decay_iou)/(1-compensate_iou)
         decay_coefficient, _ = decay_matrix.min(0)
     else:
-        raise NotImplementedError
+        raise NotImplementedError('{} kernel is not supported in matrix nms!'.
+                                  format(kernel))
 
     # update the score.
     cate_scores_update = cate_scores * decay_coefficient
