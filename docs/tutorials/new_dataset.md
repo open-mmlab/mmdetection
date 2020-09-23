@@ -42,6 +42,7 @@ The annotation json files in COCO format has the following necessary keys:
 ```
 
 There are three necessary keys in the json file:
+
 - `images`: contains a list of images with theire informations like `file_name`, `height`, `width`, and `id`.
 - `annotations`: contains the list of instance annotations.
 - `categories`: contains the list of categories names and their ID.
@@ -94,6 +95,7 @@ annotations like crowd/difficult/ignored bboxes, we use `bboxes_ignore` and `lab
 to cover them.
 
 Here is an example.
+
 ```
 [
     {
@@ -216,6 +218,7 @@ Currently it supports to concat and repeat datasets.
 ### Repeat dataset
 
 We use `RepeatDataset` as wrapper to repeat the dataset. For example, suppose the original dataset is `Dataset_A`, to repeat it, the config looks like the following
+
 ```python
 dataset_A_train = dict(
         type='RepeatDataset',
@@ -234,6 +237,7 @@ We use `ClassBalancedDataset` as wrapper to repeat the dataset based on category
 frequency. The dataset to repeat needs to instantiate function `self.get_cat_ids(idx)`
 to support `ClassBalancedDataset`.
 For example, to repeat `Dataset_A` with `oversample_thr=1e-3`, the config looks like the following
+
 ```python
 dataset_A_train = dict(
         type='ClassBalancedDataset',
@@ -245,6 +249,7 @@ dataset_A_train = dict(
         )
     )
 ```
+
 You may refer to [source code](../../mmdet/datasets/dataset_wrappers.py) for details.
 
 ### Concatenate dataset
@@ -260,7 +265,9 @@ There are three ways to concatenate the dataset.
         pipeline=train_pipeline
     )
     ```
+
     If the concatenated dataset is used for test or evaluation, this manner supports to evaluate each dataset separately. To test the concatenated datasets as a whole, you can set `separate_eval=False` as below.
+
     ```python
     dataset_A_train = dict(
         type='Dataset_A',
@@ -287,6 +294,7 @@ There are three ways to concatenate the dataset.
         test = dataset_A_test
         )
     ```
+
     If the concatenated dataset is used for test or evaluation, this manner also supports to evaluate each dataset separately.
 
 3. We also support to define `ConcatDataset` explicitly as the following.
@@ -304,12 +312,13 @@ There are three ways to concatenate the dataset.
             datasets=[dataset_A_val, dataset_B_val],
             separate_eval=False))
     ```
+
     This manner allows users to evaluate all the datasets as a single one by setting `separate_eval=False`.
 
 **Note:**
+
 1. The option `separate_eval=False` assumes the datasets use `self.data_infos` during evaluation. Therefore, COCO datasets do not support this behavior since COCO datasets do not fully rely on `self.data_infos` for evaluation. Combining different types of ofdatasets and evaluating them as a whole is not tested thus is not suggested.
 2. Evaluating `ClassBalancedDataset` and `RepeatDataset` is not supported thus evaluating concatenated datasets of these types is also not supported.
-
 
 A more complex example that repeats `Dataset_A` and `Dataset_B` by N and M times, respectively, and then concatenates the repeated datasets is as the following.
 
@@ -378,6 +387,7 @@ car
 ```
 
 Users can set the classes as a file path, the dataset will load it and convert it to a list automatically.
+
 ```python
 classes = 'path/to/classes.txt'
 data = dict(
