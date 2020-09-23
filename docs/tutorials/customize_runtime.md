@@ -157,6 +157,22 @@ We support many other learning rate schedule [here](https://github.com/open-mmla
         min_lr_ratio=1e-5)
     ```
 
+## Customize workflow
+
+Workflow is a list of (phase, epochs) to specify the running order and epochs.
+By default it is set to be
+```python
+workflow = [('train', 1)]
+```
+which means running 1 epoch for training.
+Sometimes user may want to check some metrics (e.g. loss, accuracy) about the model on the validate set.
+In such case, we can set the workflow as
+```python
+[('train', 1), ('val', 1)]
+```
+so that 1 epochs for training and 1 epoch for validation will be ran iteratively.
+
+
 ## Customize hooks
 
 ### Customize self-implemented hooks
