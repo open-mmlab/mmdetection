@@ -196,3 +196,22 @@ def test_shear():
     results['gt_bboxes'] = np.array([[1., 0., 2., 1.]], dtype=np.float32)
     results_sheared_bitmap = shear_module(copy.deepcopy(results))
     check_shear(results_sheared_bitmap, results_sheared)
+
+    # test AutoAugment equipped with Shear
+    policies = [[dict(type='Shear', level=10, prob=1.)]]
+    autoaug = dict(type='AutoAugment', policies=policies)
+    autoaug_module = build_from_cfg(autoaug, PIPELINES)
+    autoaug_module(copy.deepcopy(results))
+
+    policies = [[
+        dict(type='Shear', level=10, prob=1.),
+        dict(
+            type='Shear',
+            level=8,
+            img_fill_val=img_fill_val,
+            direction='vertical',
+            max_shear_magnitude=1.)
+    ]]
+    autoaug = dict(type='AutoAugment', policies=policies)
+    autoaug_module = build_from_cfg(autoaug, PIPELINES)
+    autoaug_module(copy.deepcopy(results))
