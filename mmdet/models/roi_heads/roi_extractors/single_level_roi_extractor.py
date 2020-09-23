@@ -1,6 +1,6 @@
 import torch
+from mmcv.runner import force_fp32
 
-from mmdet.core import force_fp32
 from mmdet.models.builder import ROI_EXTRACTORS
 from .base_roi_extractor import BaseRoIExtractor
 
@@ -76,5 +76,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
                 roi_feats[inds] = roi_feats_t
             else:
-                roi_feats += sum(x.view(-1)[0] for x in self.parameters()) * 0.
+                roi_feats += sum(
+                    x.view(-1)[0]
+                    for x in self.parameters()) * 0. + feats[i].sum() * 0.
         return roi_feats

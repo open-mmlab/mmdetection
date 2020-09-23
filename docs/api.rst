@@ -34,11 +34,6 @@ post_processing
 .. automodule:: mmdet.core.post_processing
     :members:
 
-fp16
-^^^^^^^^^^
-.. automodule:: mmdet.core.fp16
-    :members:
-
 optimizer
 ^^^^^^^^^^
 .. automodule:: mmdet.core.optimizer

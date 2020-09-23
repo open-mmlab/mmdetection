@@ -301,18 +301,61 @@ class RandomFlip(object):
     otherwise it will be randomly decided by a ratio specified in the init
     method.
 
+    When random flip is enabled, ``flip_ratio``/``direction`` can either be a
+    float/string or tuple of float/string. There are 3 flip modes:
+
+    - ``flip_ratio`` is float, ``direction`` is string: the image will be
+        ``direction``ly flipped with probability of ``flip_ratio`` .
+        E.g., ``flip_ratio=0.5``, ``direction='horizontal'``,
+        then image will be horizontally flipped with probability of 0.5.
+    - ``flip_ratio`` is float, ``direction`` is list of string: the image wil
+        be ``direction[i]``ly flipped with probability of
+        ``flip_ratio/len(direction)``.
+        E.g., ``flip_ratio=0.5``, ``direction=['horizontal', 'vertical']``,
+        then image will be horizontally flipped with probability of 0.25,
+        vertically with probability of 0.25.
+    - ``flip_ratio`` is list of float, ``direction`` is list of string:
+        given ``len(flip_ratio) == len(direction)``, the image wil
+        be ``direction[i]``ly flipped with probability of ``flip_ratio[i]``.
+        E.g., ``flip_ratio=[0.3, 0.5]``, ``direction=['horizontal',
+        'vertical']``, then image will be horizontally flipped with probability
+         of 0.3, vertically with probability of 0.5
+
     Args:
-        flip_ratio (float, optional): The flipping probability. Default: None.
-        direction(str, optional): The flipping direction. Options are
-            'horizontal' and 'vertical'. Default: 'horizontal'.
+        flip_ratio (float | list[float], optional): The flipping probability.
+            Default: None.
+        direction(str | list[str], optional): The flipping direction. Options
+            are 'horizontal', 'vertical', 'diagonal'. Default: 'horizontal'.
+            If input is a list, the length must equal ``flip_ratio``. Each
+            element in ``flip_ratio`` indicates the flip probability of
+            corresponding direction.
     """
 
     def __init__(self, flip_ratio=None, direction='horizontal'):
+        if isinstance(flip_ratio, list):
+            assert mmcv.is_list_of(flip_ratio, float)
+            assert 0 <= sum(flip_ratio) <= 1
+        elif isinstance(flip_ratio, float):
+            assert 0 <= flip_ratio <= 1
+        elif flip_ratio is None:
+            pass
+        else:
+            raise ValueError('flip_ratios must be None, float, '
+                             'or list of float')
         self.flip_ratio = flip_ratio
+
+        valid_directions = ['horizontal', 'vertical', 'diagonal']
+        if isinstance(direction, str):
+            assert direction in valid_directions
+        elif isinstance(direction, list):
+            assert mmcv.is_list_of(direction, str)
+            assert set(direction).issubset(set(valid_directions))
+        else:
+            raise ValueError('direction must be either str or list of str')
         self.direction = direction
-        if flip_ratio is not None:
-            assert flip_ratio >= 0 and flip_ratio <= 1
-        assert direction in ['horizontal', 'vertical']
+
+        if isinstance(flip_ratio, list):
+            assert len(self.flip_ratio) == len(self.direction)
 
     def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
@@ -337,6 +380,13 @@ class RandomFlip(object):
             h = img_shape[0]
             flipped[..., 1::4] = h - bboxes[..., 3::4]
             flipped[..., 3::4] = h - bboxes[..., 1::4]
+        elif direction == 'diagonal':
+            w = img_shape[1]
+            h = img_shape[0]
+            flipped[..., 0::4] = w - bboxes[..., 2::4]
+            flipped[..., 1::4] = h - bboxes[..., 3::4]
+            flipped[..., 2::4] = w - bboxes[..., 0::4]
+            flipped[..., 3::4] = h - bboxes[..., 1::4]
         else:
             raise ValueError(f"Invalid flipping direction '{direction}'")
         return flipped
@@ -354,10 +404,28 @@ class RandomFlip(object):
         """
 
         if 'flip' not in results:
-            flip = True if np.random.rand() < self.flip_ratio else False
-            results['flip'] = flip
+            if isinstance(self.direction, list):
+                # None means non-flip
+                direction_list = self.direction + [None]
+            else:
+                # None means non-flip
+                direction_list = [self.direction, None]
+
+            if isinstance(self.flip_ratio, list):
+                non_flip_ratio = 1 - sum(self.flip_ratio)
+                flip_ratio_list = self.flip_ratio + [non_flip_ratio]
+            else:
+                non_flip_ratio = 1 - self.flip_ratio
+                # exclude non-flip
+                single_ratio = self.flip_ratio / (len(direction_list) - 1)
+                flip_ratio_list = [single_ratio] * (len(direction_list) -
+                                                    1) + [non_flip_ratio]
+
+            cur_dir = np.random.choice(direction_list, p=flip_ratio_list)
+
+            results['flip'] = cur_dir is not None
         if 'flip_direction' not in results:
-            results['flip_direction'] = self.direction
+            results['flip_direction'] = cur_dir
         if results['flip']:
             # flip image
             for key in results.get('img_fields', ['img']):
@@ -1529,4 +1597,78 @@ class RandomCenterCropPad(object):
         repr_str += f'to_rgb={self.to_rgb}, '
         repr_str += f'test_mode={self.test_mode}, '
         repr_str += f'test_pad_mode={self.test_pad_mode})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class CutOut(object):
+    """CutOut operation.
+
+    Randomly drop some regions of image used in
+    `Cutout <https://arxiv.org/abs/1708.04552>`_.
+
+    Args:
+        n_holes (int | tuple[int, int]): Number of regions to be dropped.
+            If it is given as a list, number of holes will be randomly
+            selected from the closed interval [`n_holes[0]`, `n_holes[1]`].
+        cutout_shape (tuple[int, int] | list[tuple[int, int]]): The candidate
+            shape of dropped regions. It can be `tuple[int, int]` to use a
+            fixed cutout shape, or `list[tuple[int, int]]` to randomly choose
+            shape from the list.
+        cutout_ratio (tuple[float, float] | list[tuple[float, float]]): The
+            candidate ratio of dropped regions. It can be `tuple[float, float]`
+            to use a fixed ratio or `list[tuple[float, float]]` to randomly
+            choose ratio from the list. Please note that `cutout_shape`
+            and `cutout_ratio` cannot be both given at the same time.
+        fill_in (tuple[float, float, float] | tuple[int, int, int]): The value
+            of pixel to fill in the dropped regions. Default: (0, 0, 0).
+    """
+
+    def __init__(self,
+                 n_holes,
+                 cutout_shape=None,
+                 cutout_ratio=None,
+                 fill_in=(0, 0, 0)):
+
+        assert (cutout_shape is None) ^ (cutout_ratio is None), \
+            'Either cutout_shape or cutout_ratio should be specified.'
+        assert (isinstance(cutout_shape, (list, tuple))
+                or isinstance(cutout_ratio, (list, tuple)))
+        if isinstance(n_holes, tuple):
+            assert len(n_holes) == 2 and 0 <= n_holes[0] < n_holes[1]
+        else:
+            n_holes = (n_holes, n_holes)
+        self.n_holes = n_holes
+        self.fill_in = fill_in
+        self.with_ratio = cutout_ratio is not None
+        self.candidates = cutout_ratio if self.with_ratio else cutout_shape
+        if not isinstance(self.candidates, list):
+            self.candidates = [self.candidates]
+
+    def __call__(self, results):
+        """Call function to drop some regions of image."""
+        h, w, c = results['img'].shape
+        n_holes = np.random.randint(self.n_holes[0], self.n_holes[1] + 1)
+        for _ in range(n_holes):
+            x1 = np.random.randint(0, w)
+            y1 = np.random.randint(0, h)
+            index = np.random.randint(0, len(self.candidates))
+            if not self.with_ratio:
+                cutout_w, cutout_h = self.candidates[index]
+            else:
+                cutout_w = int(self.candidates[index][0] * w)
+                cutout_h = int(self.candidates[index][1] * h)
+
+            x2 = np.clip(x1 + cutout_w, 0, w)
+            y2 = np.clip(y1 + cutout_h, 0, h)
+            results['img'][y1:y2, x1:x2, :] = self.fill_in
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(n_holes={self.n_holes}, '
+        repr_str += (f'cutout_ratio={self.candidates}, ' if self.with_ratio
+                     else f'cutout_shape={self.candidates}, ')
+        repr_str += f'fill_in={self.fill_in})'
         return repr_str
