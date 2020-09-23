@@ -150,7 +150,8 @@ class EvalHook(Hook):
         if self.save_best and self.compare_func(key_score, self.best_score):
             self.best_score = key_score
             self.logger.info(
-                f'Now best checkpoint is epoch_{runner.epoch + 1}.pth')
+                f'Now best checkpoint is epoch_{runner.epoch + 1}.pth.'
+                f'Best {self.key_indicator} is {self.best_score}')
             self.best_json['best_score'] = self.best_score
             self.best_json['best_ckpt'] = current_ckpt_path
             self.best_json['key_indicator'] = self.key_indicator
