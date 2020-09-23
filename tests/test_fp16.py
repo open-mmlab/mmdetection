@@ -2,9 +2,8 @@ import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-
-from mmdet.core import auto_fp16, force_fp32
-from mmdet.core.fp16.utils import cast_tensor_type
+from mmcv.runner import auto_fp16, force_fp32
+from mmcv.runner.fp16_utils import cast_tensor_type
 
 
 def test_cast_tensor_type():
