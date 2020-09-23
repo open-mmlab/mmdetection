@@ -140,8 +140,12 @@ class CentripetalHead(CornerHead):
             normal_init(self.br_dcn_offset[i].conv, std=0.1)
             _ = [x.conv.reset_parameters() for x in self.tl_guiding_shift[i]]
             _ = [x.conv.reset_parameters() for x in self.br_guiding_shift[i]]
-            _ = [x.conv.reset_parameters() for x in self.tl_centripetal_shift[i]]
-            _ = [x.conv.reset_parameters() for x in self.br_centripetal_shift[i]]
+            _ = [
+                x.conv.reset_parameters() for x in self.tl_centripetal_shift[i]
+            ]
+            _ = [
+                x.conv.reset_parameters() for x in self.br_centripetal_shift[i]
+            ]
 
     def forward_single(self, x, lvl_ind):
         """Forward feature of a single level.
