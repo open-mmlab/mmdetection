@@ -12,7 +12,7 @@ class CentripetalHead(CornerHead):
     """Head of CentripetalNet: Pursuing High-quality Keypoint Pairs for Object
     Detection.
 
-    CentripetalHead is inherit from :class:`CornerHead`. It removes the
+    CentripetalHead inherits from :class:`CornerHead`. It removes the
     embedding branch and adds guiding shift and centripetal shift branches.
     More details can be found in the `paper
     <https://arxiv.org/abs/2003.09119>`_ .
